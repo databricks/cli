@@ -17,11 +17,11 @@ type App struct {
 
 // Create an example..
 type CreateExampleRequest struct {
+	// The example to create under the parent Supervisor Agent.
+	Example *Example `json:"example,omitempty"`
 	// Parent resource where this example will be created. Format:
 	// supervisor-agents/{supervisor_agent_id}
 	Parent *string `json:"parent,omitempty"`
-	// The example to create under the parent Supervisor Agent.
-	Example *Example `json:"example,omitempty"`
 }
 
 type CreateSupervisorAgentRequest struct {
@@ -42,15 +42,15 @@ type CreateToolRequest struct {
 // An example associated with a Supervisor Agent. Contains a question and
 // guidelines for how the agent should respond..
 type Example struct {
+	// The universally unique identifier (UUID) of the example.
+	ExampleId *string `json:"example_id,omitempty"`
+	// Guidelines for answering the question.
+	Guidelines []string `json:"guidelines,omitempty"`
 	// Full resource name:
 	// supervisor-agents/{supervisor_agent_id}/examples/{example_id}
 	Name *string `json:"name,omitempty"`
 	// The example question.
 	Question *string `json:"question,omitempty"`
-	// Guidelines for answering the question.
-	Guidelines []string `json:"guidelines,omitempty"`
-	// The universally unique identifier (UUID) of the example.
-	ExampleId *string `json:"example_id,omitempty"`
 }
 
 type GenieSpace struct {
@@ -60,16 +60,14 @@ type GenieSpace struct {
 }
 
 type KnowledgeAssistant struct {
-	// Deprecated: use knowledge_assistant_id instead.
-	ServingEndpointName *string `json:"serving_endpoint_name,omitempty"`
 	// The ID of the knowledge assistant.
 	KnowledgeAssistantId *string `json:"knowledge_assistant_id,omitempty"`
+	// Deprecated: use knowledge_assistant_id instead.
+	ServingEndpointName *string `json:"serving_endpoint_name,omitempty"`
 }
 
 // List examples..
 type ListExamplesRequest struct {
-	// Parent resource to list from. Format: supervisor-agents/{supervisor_agent_id}
-	Parent *string `json:"parent,omitempty"`
 	// The maximum number of examples to return. If unspecified, at most 100
 	// examples will be returned. The maximum value is 100; values above 100 will be
 	// coerced to 100.
@@ -78,6 +76,8 @@ type ListExamplesRequest struct {
 	// retrieve the subsequent page. If unspecified, the first page will be
 	// returned.
 	PageToken *string `json:"page_token,omitempty"`
+	// Parent resource to list from. Format: supervisor-agents/{supervisor_agent_id}
+	Parent *string `json:"parent,omitempty"`
 }
 
 // A list of Supervisor Agent examples..
@@ -98,53 +98,60 @@ type ListSupervisorAgentsRequest struct {
 }
 
 type ListSupervisorAgentsResponse struct {
-	SupervisorAgents []SupervisorAgent `json:"supervisor_agents,omitempty"`
 	// A token that can be sent as `page_token` to retrieve the next page. If this
 	// field is omitted, there are no subsequent pages.
-	NextPageToken *string `json:"next_page_token,omitempty"`
+	NextPageToken    *string           `json:"next_page_token,omitempty"`
+	SupervisorAgents []SupervisorAgent `json:"supervisor_agents,omitempty"`
 }
 
 type ListToolsRequest struct {
-	// Parent resource to list from. Format: supervisor-agents/{supervisor_agent_id}
-	Parent    *string `json:"parent,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
 	PageToken *string `json:"page_token,omitempty"`
+	// Parent resource to list from. Format: supervisor-agents/{supervisor_agent_id}
+	Parent *string `json:"parent,omitempty"`
 }
 
 type ListToolsResponse struct {
-	Tools         []Tool  `json:"tools,omitempty"`
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	Tools         []Tool  `json:"tools,omitempty"`
 }
 
 type SupervisorAgent struct {
-	// The resource name of the SupervisorAgent. Format:
-	// supervisor-agents/{supervisor_agent_id}
-	Name *string `json:"name,omitempty"`
-	// The display name of the Supervisor Agent, unique at workspace level.
-	DisplayName *string `json:"display_name,omitempty"`
-	// Description of what this agent can do (user-facing).
-	Description *string `json:"description,omitempty"`
-	// Optional natural-language instructions for the supervisor agent.
-	Instructions *string `json:"instructions,omitempty"`
-	// Deprecated: Use supervisor_agent_id instead.
-	Id *string `json:"id,omitempty"`
-	// The universally unique identifier (UUID) of the Supervisor Agent.
-	SupervisorAgentId *string `json:"supervisor_agent_id,omitempty"`
-	// The creator of the Supervisor Agent.
-	Creator *string `json:"creator,omitempty"`
 	// Creation timestamp.
 	CreateTime *types.Time `json:"create_time,omitempty"`
+	// The creator of the Supervisor Agent.
+	Creator *string `json:"creator,omitempty"`
+	// Description of what this agent can do (user-facing).
+	Description *string `json:"description,omitempty"`
+	// The display name of the Supervisor Agent, unique at workspace level.
+	DisplayName *string `json:"display_name,omitempty"`
 	// The name of the supervisor agent's serving endpoint.
 	EndpointName *string `json:"endpoint_name,omitempty"`
 	// The MLflow experiment ID.
 	ExperimentId *string `json:"experiment_id,omitempty"`
+	// Deprecated: Use supervisor_agent_id instead.
+	Id *string `json:"id,omitempty"`
+	// Optional natural-language instructions for the supervisor agent.
+	Instructions *string `json:"instructions,omitempty"`
+	// The resource name of the SupervisorAgent. Format:
+	// supervisor-agents/{supervisor_agent_id}
+	Name *string `json:"name,omitempty"`
+	// The universally unique identifier (UUID) of the Supervisor Agent.
+	SupervisorAgentId *string `json:"supervisor_agent_id,omitempty"`
 }
 
 type Tool struct {
+	App *App `json:"app,omitempty"`
+	// Description of what this tool does (user-facing).
+	Description *string     `json:"description,omitempty"`
+	GenieSpace  *GenieSpace `json:"genie_space,omitempty"`
+	// Deprecated: Use tool_id instead.
+	Id                 *string             `json:"id,omitempty"`
+	KnowledgeAssistant *KnowledgeAssistant `json:"knowledge_assistant,omitempty"`
 	// Full resource name: supervisor-agents/{supervisor_agent_id}/tools/{tool_id}
 	Name *string `json:"name,omitempty"`
-	// Deprecated: Use tool_id instead.
-	Id *string `json:"id,omitempty"`
+	// User specified id of the Tool.
+	ToolId *string `json:"tool_id,omitempty"`
 	// Tool type. Must be one of: "genie_space", "knowledge_assistant",
 	// "uc_function", "uc_connection", "uc_mcp", "app", "volume", "dashboard",
 	// "serving_endpoint", "table", "vector_search_index", "catalog", "schema",
@@ -153,17 +160,10 @@ type Tool struct {
 	// remain equivalent to "dashboard", "table", and "databricks_web_search"
 	// respectively. The "databricks_web_search" tool_type maps to the `web_search`
 	// spec field.
-	ToolType           *string             `json:"tool_type,omitempty"`
-	GenieSpace         *GenieSpace         `json:"genie_space,omitempty"`
-	KnowledgeAssistant *KnowledgeAssistant `json:"knowledge_assistant,omitempty"`
-	UcFunction         *UcFunction         `json:"uc_function,omitempty"`
-	App                *App                `json:"app,omitempty"`
-	Volume             *Volume             `json:"volume,omitempty"`
-	UcConnection       *UcConnection       `json:"uc_connection,omitempty"`
-	// Description of what this tool does (user-facing).
-	Description *string `json:"description,omitempty"`
-	// User specified id of the Tool.
-	ToolId *string `json:"tool_id,omitempty"`
+	ToolType     *string       `json:"tool_type,omitempty"`
+	UcConnection *UcConnection `json:"uc_connection,omitempty"`
+	UcFunction   *UcFunction   `json:"uc_function,omitempty"`
+	Volume       *Volume       `json:"volume,omitempty"`
 }
 
 // Databricks UC connection. Supported connection: external mcp server..
@@ -178,10 +178,10 @@ type UcFunction struct {
 
 // Update an example..
 type UpdateExampleRequest struct {
+	Example *Example `json:"example,omitempty"`
 	// The resource name of the example to update. Format:
 	// supervisor-agents/{supervisor_agent_id}/examples/{example_id}
-	Name    *string  `json:"name,omitempty"`
-	Example *Example `json:"example,omitempty"`
+	Name *string `json:"name,omitempty"`
 	// Comma-delimited list of fields to update on the example. Allowed values:
 	// `question`, `guidelines`. Examples: - `question` - `question,guidelines`
 	UpdateMask *string `json:"update_mask,omitempty"`

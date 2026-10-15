@@ -23,19 +23,19 @@ type ListTagPoliciesRequest struct {
 }
 
 type ListTagPoliciesResponse struct {
-	TagPolicies   []TagPolicy `json:"tag_policies,omitempty"`
 	NextPageToken *string     `json:"next_page_token,omitempty"`
+	TagPolicies   []TagPolicy `json:"tag_policies,omitempty"`
 }
 
 type TagPolicy struct {
-	TagKey      *string `json:"tag_key,omitempty"`
-	Id          *string `json:"id,omitempty"`
-	Description *string `json:"description,omitempty"`
-	Values      []Value `json:"values,omitempty"`
 	// Timestamp when the tag policy was created
-	CreateTime *types.Time `json:"create_time,omitempty"`
+	CreateTime  *types.Time `json:"create_time,omitempty"`
+	Description *string     `json:"description,omitempty"`
+	Id          *string     `json:"id,omitempty"`
+	TagKey      *string     `json:"tag_key,omitempty"`
 	// Timestamp when the tag policy was last updated
 	UpdateTime *types.Time `json:"update_time,omitempty"`
+	Values     []Value     `json:"values,omitempty"`
 }
 
 type UpdateTagPolicyRequest struct {

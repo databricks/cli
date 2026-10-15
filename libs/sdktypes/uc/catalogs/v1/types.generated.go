@@ -60,166 +60,169 @@ const (
 )
 
 type AzureEncryptionSettings struct {
-	AzureTenantId             *string `json:"azure_tenant_id,omitempty"`
 	AzureCmkAccessConnectorId *string `json:"azure_cmk_access_connector_id,omitempty"`
 	AzureCmkManagedIdentityId *string `json:"azure_cmk_managed_identity_id,omitempty"`
+	AzureTenantId             *string `json:"azure_tenant_id,omitempty"`
 }
 
 type CatalogInfo struct {
-	// Name of catalog.
-	Name *string `json:"name,omitempty"`
-	// Username of current owner of catalog.
-	Owner *string `json:"owner,omitempty"`
+	// Indicates whether the principal is limited to retrieving metadata for the
+	// associated object through the BROWSE privilege when include_browse is enabled
+	// in the request.
+	BrowseOnly  *bool       `json:"browse_only,omitempty"`
+	CatalogType CatalogType `json:"catalog_type,omitempty"`
 	// User-provided free-form text description.
 	Comment *string `json:"comment,omitempty"`
-	// Storage root URL for managed tables within catalog.
-	StorageRoot *string `json:"storage_root,omitempty"`
-	// Whether predictive optimization should be enabled for this object and objects
-	// under it.
-	EnablePredictiveOptimization *string     `json:"enable_predictive_optimization,omitempty"`
-	CatalogType                  CatalogType `json:"catalog_type,omitempty"`
-	// The name of delta sharing provider.
-	//
-	// A Delta Sharing catalog is a catalog that is based on a Delta share on a
-	// remote sharing server.
-	ProviderName *string `json:"provider_name,omitempty"`
-	// The name of the share under the share provider.
-	ShareName *string `json:"share_name,omitempty"`
 	// The name of the connection to an external data source.
 	ConnectionName *string `json:"connection_name,omitempty"`
-	// Unique identifier of parent metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
 	// Time at which this catalog was created, in epoch milliseconds.
 	CreatedAt *int64 `json:"created_at,omitempty"`
 	// Username of catalog creator.
 	CreatedBy *string `json:"created_by,omitempty"`
+	// Custom maximum retention period in hours for the catalog
+	CustomMaxRetentionHours             *int64                               `json:"custom_max_retention_hours,omitempty"`
+	EffectivePredictiveOptimizationFlag *EffectivePredictiveOptimizationFlag `json:"effective_predictive_optimization_flag,omitempty"`
+	// Whether predictive optimization should be enabled for this object and objects
+	// under it.
+	EnablePredictiveOptimization *string `json:"enable_predictive_optimization,omitempty"`
+	// The full name of the catalog. Corresponds with the name field.
+	FullName *string `json:"full_name,omitempty"`
+	// Whether the current securable is accessible from all workspaces or a specific
+	// set of workspaces.
+	IsolationMode CatalogIsolationMode `json:"isolation_mode,omitempty"`
+	// Control CMK encryption for managed catalog data
+	ManagedEncryptionSettings *EncryptionSettings `json:"managed_encryption_settings,omitempty"`
+	// Unique identifier of parent metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// Name of catalog.
+	Name *string `json:"name,omitempty"`
+	// A map of key-value properties attached to the securable.
+	Options map[string]string `json:"options,omitempty"`
+	// Username of current owner of catalog.
+	Owner *string `json:"owner,omitempty"`
+	// A map of key-value properties attached to the securable.
+	Properties map[string]string `json:"properties,omitempty"`
+	// The name of delta sharing provider.
+	//
+	// A Delta Sharing catalog is a catalog that is based on a Delta share on a
+	// remote sharing server.
+	ProviderName     *string           `json:"provider_name,omitempty"`
+	ProvisioningInfo *ProvisioningInfo `json:"provisioning_info,omitempty"`
+	SecurableType    SecurableType     `json:"securable_type,omitempty"`
+	// The name of the share under the share provider.
+	ShareName *string `json:"share_name,omitempty"`
+	// Storage Location URL (full path) for managed tables within catalog.
+	StorageLocation *string `json:"storage_location,omitempty"`
+	// Storage root URL for managed tables within catalog.
+	StorageRoot *string `json:"storage_root,omitempty"`
 	// Time at which this catalog was last modified, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of user who last modified catalog.
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Storage Location URL (full path) for managed tables within catalog.
-	StorageLocation *string `json:"storage_location,omitempty"`
-	// Whether the current securable is accessible from all workspaces or a specific
-	// set of workspaces.
-	IsolationMode                       CatalogIsolationMode                 `json:"isolation_mode,omitempty"`
-	EffectivePredictiveOptimizationFlag *EffectivePredictiveOptimizationFlag `json:"effective_predictive_optimization_flag,omitempty"`
-	// Indicates whether the principal is limited to retrieving metadata for the
-	// associated object through the BROWSE privilege when include_browse is enabled
-	// in the request.
-	BrowseOnly       *bool             `json:"browse_only,omitempty"`
-	ProvisioningInfo *ProvisioningInfo `json:"provisioning_info,omitempty"`
-	// The full name of the catalog. Corresponds with the name field.
-	FullName      *string       `json:"full_name,omitempty"`
-	SecurableType SecurableType `json:"securable_type,omitempty"`
-	// Custom maximum retention period in hours for the catalog
-	CustomMaxRetentionHours *int64 `json:"custom_max_retention_hours,omitempty"`
-	// Control CMK encryption for managed catalog data
-	ManagedEncryptionSettings *EncryptionSettings `json:"managed_encryption_settings,omitempty"`
-	// A map of key-value properties attached to the securable.
-	Properties map[string]string `json:"properties,omitempty"`
-	// A map of key-value properties attached to the securable.
-	Options map[string]string `json:"options,omitempty"`
 }
 
 type CreateCatalogRequest struct {
-	// Name of catalog.
-	Name *string `json:"name,omitempty"`
-	// Username of current owner of catalog.
-	Owner *string `json:"owner,omitempty"`
+	// Indicates whether the principal is limited to retrieving metadata for the
+	// associated object through the BROWSE privilege when include_browse is enabled
+	// in the request.
+	BrowseOnly  *bool       `json:"browse_only,omitempty"`
+	CatalogType CatalogType `json:"catalog_type,omitempty"`
 	// User-provided free-form text description.
 	Comment *string `json:"comment,omitempty"`
-	// Storage root URL for managed tables within catalog.
-	StorageRoot *string `json:"storage_root,omitempty"`
-	// Whether predictive optimization should be enabled for this object and objects
-	// under it.
-	EnablePredictiveOptimization *string     `json:"enable_predictive_optimization,omitempty"`
-	CatalogType                  CatalogType `json:"catalog_type,omitempty"`
-	// The name of delta sharing provider.
-	//
-	// A Delta Sharing catalog is a catalog that is based on a Delta share on a
-	// remote sharing server.
-	ProviderName *string `json:"provider_name,omitempty"`
-	// The name of the share under the share provider.
-	ShareName *string `json:"share_name,omitempty"`
 	// The name of the connection to an external data source.
 	ConnectionName *string `json:"connection_name,omitempty"`
-	// Unique identifier of parent metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
 	// Time at which this catalog was created, in epoch milliseconds.
 	CreatedAt *int64 `json:"created_at,omitempty"`
 	// Username of catalog creator.
 	CreatedBy *string `json:"created_by,omitempty"`
+	// Custom maximum retention period in hours for the catalog
+	CustomMaxRetentionHours             *int64                               `json:"custom_max_retention_hours,omitempty"`
+	EffectivePredictiveOptimizationFlag *EffectivePredictiveOptimizationFlag `json:"effective_predictive_optimization_flag,omitempty"`
+	// Whether predictive optimization should be enabled for this object and objects
+	// under it.
+	EnablePredictiveOptimization *string `json:"enable_predictive_optimization,omitempty"`
+	// The full name of the catalog. Corresponds with the name field.
+	FullName *string `json:"full_name,omitempty"`
+	// Whether the current securable is accessible from all workspaces or a specific
+	// set of workspaces.
+	IsolationMode CatalogIsolationMode `json:"isolation_mode,omitempty"`
+	// Control CMK encryption for managed catalog data
+	ManagedEncryptionSettings *EncryptionSettings `json:"managed_encryption_settings,omitempty"`
+	// Unique identifier of parent metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// Name of catalog.
+	Name *string `json:"name,omitempty"`
+	// A map of key-value properties attached to the securable.
+	Options map[string]string `json:"options,omitempty"`
+	// Username of current owner of catalog.
+	Owner *string `json:"owner,omitempty"`
+	// A map of key-value properties attached to the securable.
+	Properties map[string]string `json:"properties,omitempty"`
+	// The name of delta sharing provider.
+	//
+	// A Delta Sharing catalog is a catalog that is based on a Delta share on a
+	// remote sharing server.
+	ProviderName     *string           `json:"provider_name,omitempty"`
+	ProvisioningInfo *ProvisioningInfo `json:"provisioning_info,omitempty"`
+	SecurableType    SecurableType     `json:"securable_type,omitempty"`
+	// The name of the share under the share provider.
+	ShareName *string `json:"share_name,omitempty"`
+	// Storage Location URL (full path) for managed tables within catalog.
+	StorageLocation *string `json:"storage_location,omitempty"`
+	// Storage root URL for managed tables within catalog.
+	StorageRoot *string `json:"storage_root,omitempty"`
 	// Time at which this catalog was last modified, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of user who last modified catalog.
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Storage Location URL (full path) for managed tables within catalog.
-	StorageLocation *string `json:"storage_location,omitempty"`
-	// Whether the current securable is accessible from all workspaces or a specific
-	// set of workspaces.
-	IsolationMode                       CatalogIsolationMode                 `json:"isolation_mode,omitempty"`
-	EffectivePredictiveOptimizationFlag *EffectivePredictiveOptimizationFlag `json:"effective_predictive_optimization_flag,omitempty"`
-	// Indicates whether the principal is limited to retrieving metadata for the
-	// associated object through the BROWSE privilege when include_browse is enabled
-	// in the request.
-	BrowseOnly       *bool             `json:"browse_only,omitempty"`
-	ProvisioningInfo *ProvisioningInfo `json:"provisioning_info,omitempty"`
-	// The full name of the catalog. Corresponds with the name field.
-	FullName      *string       `json:"full_name,omitempty"`
-	SecurableType SecurableType `json:"securable_type,omitempty"`
-	// Custom maximum retention period in hours for the catalog
-	CustomMaxRetentionHours *int64 `json:"custom_max_retention_hours,omitempty"`
-	// Control CMK encryption for managed catalog data
-	ManagedEncryptionSettings *EncryptionSettings `json:"managed_encryption_settings,omitempty"`
-	// A map of key-value properties attached to the securable.
-	Properties map[string]string `json:"properties,omitempty"`
-	// A map of key-value properties attached to the securable.
-	Options map[string]string `json:"options,omitempty"`
 }
 
 type DeleteCatalogRequest struct {
-	// The name of the catalog.
-	NameArg *string `json:"name_arg,omitempty"`
 	// Force deletion even if the catalog is not empty.
 	Force *bool `json:"force,omitempty"`
+	// The name of the catalog.
+	NameArg *string `json:"name_arg,omitempty"`
 }
 
 type EffectivePredictiveOptimizationFlag struct {
-	// Whether predictive optimization should be enabled for this object and objects
-	// under it.
-	Value *string `json:"value,omitempty"`
-	// The type of the object from which the flag was inherited. If there was no
-	// inheritance, this field is left blank.
-	InheritedFromType *string `json:"inherited_from_type,omitempty"`
 	// The name of the object from which the flag was inherited. If there was no
 	// inheritance, this field is left blank.
 	InheritedFromName *string `json:"inherited_from_name,omitempty"`
+	// The type of the object from which the flag was inherited. If there was no
+	// inheritance, this field is left blank.
+	InheritedFromType *string `json:"inherited_from_type,omitempty"`
+	// Whether predictive optimization should be enabled for this object and objects
+	// under it.
+	Value *string `json:"value,omitempty"`
 }
 
 // Encryption Settings are used to carry metadata for securable encryption at
 // rest. Currently used for catalogs, we can use the information supplied here
 // to interact with a CMK..
 type EncryptionSettings struct {
-	// the CMK uuid in AWS and GCP, null otherwise.
-	CustomerManagedKeyId *string `json:"customer_managed_key_id,omitempty"`
-	// the AKV URL in Azure, null otherwise.
-	AzureKeyVaultKeyId *string `json:"azure_key_vault_key_id,omitempty"`
 	// optional Azure settings - only required if an Azure CMK is used.
 	AzureEncryptionSettings *AzureEncryptionSettings `json:"azure_encryption_settings,omitempty"`
+	// the AKV URL in Azure, null otherwise.
+	AzureKeyVaultKeyId *string `json:"azure_key_vault_key_id,omitempty"`
+	// the CMK uuid in AWS and GCP, null otherwise.
+	CustomerManagedKeyId *string `json:"customer_managed_key_id,omitempty"`
 }
 
 type GetCatalogRequest struct {
-	// The name of the catalog.
-	NameArg *string `json:"name_arg,omitempty"`
 	// Whether to include catalogs in the response for which the principal can only
 	// access selective metadata for
 	IncludeBrowse *bool `json:"include_browse,omitempty"`
+	// The name of the catalog.
+	NameArg *string `json:"name_arg,omitempty"`
 }
 
 type ListCatalogsRequest struct {
 	// Whether to include catalogs in the response for which the principal can only
 	// access selective metadata for
 	IncludeBrowse *bool `json:"include_browse,omitempty"`
+	// Whether to include catalogs not bound to the workspace. Effective only if the
+	// user has permission to update the catalog–workspace binding.
+	IncludeUnbound *bool `json:"include_unbound,omitempty"`
 	// Maximum number of catalogs to return. - when set to 0, the page length is set
 	// to a server configured value (recommended); - when set to a value greater
 	// than 0, the page length is the minimum of this value and a server configured
@@ -232,9 +235,6 @@ type ListCatalogsRequest struct {
 	MaxResults *int `json:"max_results,omitempty"`
 	// Opaque pagination token to go to next page based on previous query.
 	PageToken *string `json:"page_token,omitempty"`
-	// Whether to include catalogs not bound to the workspace. Effective only if the
-	// user has permission to update the catalog–workspace binding.
-	IncludeUnbound *bool `json:"include_unbound,omitempty"`
 }
 
 type ListCatalogsResponse struct {
@@ -253,63 +253,63 @@ type ProvisioningInfo struct {
 }
 
 type UpdateCatalogRequest struct {
-	// The name of the catalog.
-	NameArg *string `json:"name_arg,omitempty"`
-	// New name for the catalog.
-	NewName *string `json:"new_name,omitempty"`
-	// Name of catalog.
-	Name *string `json:"name,omitempty"`
-	// Username of current owner of catalog.
-	Owner *string `json:"owner,omitempty"`
+	// Indicates whether the principal is limited to retrieving metadata for the
+	// associated object through the BROWSE privilege when include_browse is enabled
+	// in the request.
+	BrowseOnly  *bool       `json:"browse_only,omitempty"`
+	CatalogType CatalogType `json:"catalog_type,omitempty"`
 	// User-provided free-form text description.
 	Comment *string `json:"comment,omitempty"`
-	// Storage root URL for managed tables within catalog.
-	StorageRoot *string `json:"storage_root,omitempty"`
-	// Whether predictive optimization should be enabled for this object and objects
-	// under it.
-	EnablePredictiveOptimization *string     `json:"enable_predictive_optimization,omitempty"`
-	CatalogType                  CatalogType `json:"catalog_type,omitempty"`
-	// The name of delta sharing provider.
-	//
-	// A Delta Sharing catalog is a catalog that is based on a Delta share on a
-	// remote sharing server.
-	ProviderName *string `json:"provider_name,omitempty"`
-	// The name of the share under the share provider.
-	ShareName *string `json:"share_name,omitempty"`
 	// The name of the connection to an external data source.
 	ConnectionName *string `json:"connection_name,omitempty"`
-	// Unique identifier of parent metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
 	// Time at which this catalog was created, in epoch milliseconds.
 	CreatedAt *int64 `json:"created_at,omitempty"`
 	// Username of catalog creator.
 	CreatedBy *string `json:"created_by,omitempty"`
+	// Custom maximum retention period in hours for the catalog
+	CustomMaxRetentionHours             *int64                               `json:"custom_max_retention_hours,omitempty"`
+	EffectivePredictiveOptimizationFlag *EffectivePredictiveOptimizationFlag `json:"effective_predictive_optimization_flag,omitempty"`
+	// Whether predictive optimization should be enabled for this object and objects
+	// under it.
+	EnablePredictiveOptimization *string `json:"enable_predictive_optimization,omitempty"`
+	// The full name of the catalog. Corresponds with the name field.
+	FullName *string `json:"full_name,omitempty"`
+	// Whether the current securable is accessible from all workspaces or a specific
+	// set of workspaces.
+	IsolationMode CatalogIsolationMode `json:"isolation_mode,omitempty"`
+	// Control CMK encryption for managed catalog data
+	ManagedEncryptionSettings *EncryptionSettings `json:"managed_encryption_settings,omitempty"`
+	// Unique identifier of parent metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// Name of catalog.
+	Name *string `json:"name,omitempty"`
+	// The name of the catalog.
+	NameArg *string `json:"name_arg,omitempty"`
+	// New name for the catalog.
+	NewName *string `json:"new_name,omitempty"`
+	// A map of key-value properties attached to the securable.
+	Options map[string]string `json:"options,omitempty"`
+	// Username of current owner of catalog.
+	Owner *string `json:"owner,omitempty"`
+	// A map of key-value properties attached to the securable.
+	Properties map[string]string `json:"properties,omitempty"`
+	// The name of delta sharing provider.
+	//
+	// A Delta Sharing catalog is a catalog that is based on a Delta share on a
+	// remote sharing server.
+	ProviderName     *string           `json:"provider_name,omitempty"`
+	ProvisioningInfo *ProvisioningInfo `json:"provisioning_info,omitempty"`
+	SecurableType    SecurableType     `json:"securable_type,omitempty"`
+	// The name of the share under the share provider.
+	ShareName *string `json:"share_name,omitempty"`
+	// Storage Location URL (full path) for managed tables within catalog.
+	StorageLocation *string `json:"storage_location,omitempty"`
+	// Storage root URL for managed tables within catalog.
+	StorageRoot *string `json:"storage_root,omitempty"`
 	// Time at which this catalog was last modified, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of user who last modified catalog.
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Storage Location URL (full path) for managed tables within catalog.
-	StorageLocation *string `json:"storage_location,omitempty"`
-	// Whether the current securable is accessible from all workspaces or a specific
-	// set of workspaces.
-	IsolationMode                       CatalogIsolationMode                 `json:"isolation_mode,omitempty"`
-	EffectivePredictiveOptimizationFlag *EffectivePredictiveOptimizationFlag `json:"effective_predictive_optimization_flag,omitempty"`
-	// Indicates whether the principal is limited to retrieving metadata for the
-	// associated object through the BROWSE privilege when include_browse is enabled
-	// in the request.
-	BrowseOnly       *bool             `json:"browse_only,omitempty"`
-	ProvisioningInfo *ProvisioningInfo `json:"provisioning_info,omitempty"`
-	// The full name of the catalog. Corresponds with the name field.
-	FullName      *string       `json:"full_name,omitempty"`
-	SecurableType SecurableType `json:"securable_type,omitempty"`
-	// Custom maximum retention period in hours for the catalog
-	CustomMaxRetentionHours *int64 `json:"custom_max_retention_hours,omitempty"`
-	// Control CMK encryption for managed catalog data
-	ManagedEncryptionSettings *EncryptionSettings `json:"managed_encryption_settings,omitempty"`
-	// A map of key-value properties attached to the securable.
-	Properties map[string]string `json:"properties,omitempty"`
-	// A map of key-value properties attached to the securable.
-	Options map[string]string `json:"options,omitempty"`
 }
 
 // AzureEncryptionSettingsToSDK converts the mirror to the sdk-go type.

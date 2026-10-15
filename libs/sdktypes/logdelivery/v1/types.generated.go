@@ -35,11 +35,33 @@ const (
 
 // * Log Delivery Configuration.
 type CreateLogDeliveryConfigurationParams struct {
+	// <Databricks> account ID.
+	AccountId *string `json:"account_id,omitempty"`
 	// The unique UUID of log delivery configuration
 	ConfigId *string `json:"config_id,omitempty"`
 	// The optional human-readable name of the log delivery configuration. Defaults
 	// to empty.
 	ConfigName *string `json:"config_name,omitempty"`
+	// Time in epoch milliseconds when the log delivery configuration was created.
+	CreationTime *int64 `json:"creation_time,omitempty"`
+	// The ID for a method:credentials/create that represents the AWS IAM role with
+	// policy and trust relationship as described in the main billable usage
+	// documentation page. See [Configure billable usage delivery].
+	//
+	// [Configure billable usage delivery]: https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html
+	CredentialsId *string `json:"credentials_id,omitempty"`
+	// The optional delivery path prefix within Amazon S3 storage. Defaults to
+	// empty, which means that logs are delivered to the root of the bucket. This
+	// must be a valid S3 object key. This must not start or end with a slash
+	// character.
+	DeliveryPathPrefix *string `json:"delivery_path_prefix,omitempty"`
+	// This field applies only if log_type is BILLABLE_USAGE. This is the optional
+	// start month and year for delivery, specified in YYYY-MM format. Defaults to
+	// current year and month. BILLABLE_USAGE logs are not available for usage
+	// before March 2019 (2019-03).
+	DeliveryStartTime *string `json:"delivery_start_time,omitempty"`
+	// The LogDeliveryStatus of this log delivery configuration
+	LogDeliveryStatus *LogDeliveryStatus `json:"log_delivery_status,omitempty"`
 	// Log delivery type. Supported values are: * `BILLABLE_USAGE` — Configure
 	// [billable usage log delivery]. For the CSV schema, see the [View billable
 	// usage]. * `AUDIT_LOGS` — Configure [audit log delivery]. For the JSON
@@ -60,20 +82,20 @@ type CreateLogDeliveryConfigurationParams struct {
 	// [Configuring audit logs]: https://docs.databricks.com/administration-guide/account-settings/audit-logs.html
 	// [View billable usage]: https://docs.databricks.com/administration-guide/account-settings/usage.html
 	OutputFormat LogDeliveryOutputFormat `json:"output_format,omitempty"`
-	// <Databricks> account ID.
-	AccountId *string `json:"account_id,omitempty"`
-	// The ID for a method:credentials/create that represents the AWS IAM role with
-	// policy and trust relationship as described in the main billable usage
-	// documentation page. See [Configure billable usage delivery].
-	//
-	// [Configure billable usage delivery]: https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html
-	CredentialsId *string `json:"credentials_id,omitempty"`
+	// Status of log delivery configuration. Set to `ENABLED` (enabled) or
+	// `DISABLED` (disabled). Defaults to `ENABLED`. You can [enable or disable the
+	// configuration](#operation/patch-log-delivery-config-status) later. Deletion
+	// of a configuration is not supported, so disable a log delivery configuration
+	// that is no longer needed.
+	Status LogDeliveryConfigStatus `json:"status,omitempty"`
 	// The ID for a method:storage/create that represents the S3 bucket with bucket
 	// policy as described in the main billable usage documentation page. See
 	// [Configure billable usage delivery].
 	//
 	// [Configure billable usage delivery]: https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html
 	StorageConfigurationId *string `json:"storage_configuration_id,omitempty"`
+	// Time in epoch milliseconds when the log delivery configuration was updated.
+	UpdateTime *int64 `json:"update_time,omitempty"`
 	// Optional filter that specifies workspace IDs to deliver logs for. By default
 	// the workspace filter is empty and log delivery applies at the account level,
 	// delivering workspace-level logs for all workspaces in your account, plus
@@ -87,28 +109,6 @@ type CreateLogDeliveryConfigurationParams struct {
 	// some types of <Databricks> deployments there is only one workspace per
 	// account ID, so this field is unnecessary.
 	WorkspaceIdsFilter []int64 `json:"workspace_ids_filter,omitempty"`
-	// The optional delivery path prefix within Amazon S3 storage. Defaults to
-	// empty, which means that logs are delivered to the root of the bucket. This
-	// must be a valid S3 object key. This must not start or end with a slash
-	// character.
-	DeliveryPathPrefix *string `json:"delivery_path_prefix,omitempty"`
-	// This field applies only if log_type is BILLABLE_USAGE. This is the optional
-	// start month and year for delivery, specified in YYYY-MM format. Defaults to
-	// current year and month. BILLABLE_USAGE logs are not available for usage
-	// before March 2019 (2019-03).
-	DeliveryStartTime *string `json:"delivery_start_time,omitempty"`
-	// Status of log delivery configuration. Set to `ENABLED` (enabled) or
-	// `DISABLED` (disabled). Defaults to `ENABLED`. You can [enable or disable the
-	// configuration](#operation/patch-log-delivery-config-status) later. Deletion
-	// of a configuration is not supported, so disable a log delivery configuration
-	// that is no longer needed.
-	Status LogDeliveryConfigStatus `json:"status,omitempty"`
-	// Time in epoch milliseconds when the log delivery configuration was created.
-	CreationTime *int64 `json:"creation_time,omitempty"`
-	// Time in epoch milliseconds when the log delivery configuration was updated.
-	UpdateTime *int64 `json:"update_time,omitempty"`
-	// The LogDeliveryStatus of this log delivery configuration
-	LogDeliveryStatus *LogDeliveryStatus `json:"log_delivery_status,omitempty"`
 }
 
 // * Properties of the new log delivery configuration..
@@ -132,14 +132,14 @@ type ListLogDeliveryConfigurationRequest struct {
 	AccountId *string `json:"account_id,omitempty"`
 	// The Credentials id to filter the search results with
 	CredentialsId *string `json:"credentials_id,omitempty"`
-	// The Storage Configuration id to filter the search results with
-	StorageConfigurationId *string `json:"storage_configuration_id,omitempty"`
-	// The log delivery status to filter the search results with
-	Status LogDeliveryConfigStatus `json:"status,omitempty"`
 	// A page token received from a previous get all budget configurations call.
 	// This token can be used to retrieve the subsequent page. Requests first page
 	// if absent.
 	PageToken *string `json:"page_token,omitempty"`
+	// The log delivery status to filter the search results with
+	Status LogDeliveryConfigStatus `json:"status,omitempty"`
+	// The Storage Configuration id to filter the search results with
+	StorageConfigurationId *string `json:"storage_configuration_id,omitempty"`
 }
 
 type ListLogDeliveryConfigurationResponse struct {
@@ -152,11 +152,33 @@ type ListLogDeliveryConfigurationResponse struct {
 
 // * Log Delivery Configuration.
 type LogDeliveryConfiguration struct {
+	// <Databricks> account ID.
+	AccountId *string `json:"account_id,omitempty"`
 	// The unique UUID of log delivery configuration
 	ConfigId *string `json:"config_id,omitempty"`
 	// The optional human-readable name of the log delivery configuration. Defaults
 	// to empty.
 	ConfigName *string `json:"config_name,omitempty"`
+	// Time in epoch milliseconds when the log delivery configuration was created.
+	CreationTime *int64 `json:"creation_time,omitempty"`
+	// The ID for a method:credentials/create that represents the AWS IAM role with
+	// policy and trust relationship as described in the main billable usage
+	// documentation page. See [Configure billable usage delivery].
+	//
+	// [Configure billable usage delivery]: https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html
+	CredentialsId *string `json:"credentials_id,omitempty"`
+	// The optional delivery path prefix within Amazon S3 storage. Defaults to
+	// empty, which means that logs are delivered to the root of the bucket. This
+	// must be a valid S3 object key. This must not start or end with a slash
+	// character.
+	DeliveryPathPrefix *string `json:"delivery_path_prefix,omitempty"`
+	// This field applies only if log_type is BILLABLE_USAGE. This is the optional
+	// start month and year for delivery, specified in YYYY-MM format. Defaults to
+	// current year and month. BILLABLE_USAGE logs are not available for usage
+	// before March 2019 (2019-03).
+	DeliveryStartTime *string `json:"delivery_start_time,omitempty"`
+	// The LogDeliveryStatus of this log delivery configuration
+	LogDeliveryStatus *LogDeliveryStatus `json:"log_delivery_status,omitempty"`
 	// Log delivery type. Supported values are: * `BILLABLE_USAGE` — Configure
 	// [billable usage log delivery]. For the CSV schema, see the [View billable
 	// usage]. * `AUDIT_LOGS` — Configure [audit log delivery]. For the JSON
@@ -177,20 +199,20 @@ type LogDeliveryConfiguration struct {
 	// [Configuring audit logs]: https://docs.databricks.com/administration-guide/account-settings/audit-logs.html
 	// [View billable usage]: https://docs.databricks.com/administration-guide/account-settings/usage.html
 	OutputFormat LogDeliveryOutputFormat `json:"output_format,omitempty"`
-	// <Databricks> account ID.
-	AccountId *string `json:"account_id,omitempty"`
-	// The ID for a method:credentials/create that represents the AWS IAM role with
-	// policy and trust relationship as described in the main billable usage
-	// documentation page. See [Configure billable usage delivery].
-	//
-	// [Configure billable usage delivery]: https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html
-	CredentialsId *string `json:"credentials_id,omitempty"`
+	// Status of log delivery configuration. Set to `ENABLED` (enabled) or
+	// `DISABLED` (disabled). Defaults to `ENABLED`. You can [enable or disable the
+	// configuration](#operation/patch-log-delivery-config-status) later. Deletion
+	// of a configuration is not supported, so disable a log delivery configuration
+	// that is no longer needed.
+	Status LogDeliveryConfigStatus `json:"status,omitempty"`
 	// The ID for a method:storage/create that represents the S3 bucket with bucket
 	// policy as described in the main billable usage documentation page. See
 	// [Configure billable usage delivery].
 	//
 	// [Configure billable usage delivery]: https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html
 	StorageConfigurationId *string `json:"storage_configuration_id,omitempty"`
+	// Time in epoch milliseconds when the log delivery configuration was updated.
+	UpdateTime *int64 `json:"update_time,omitempty"`
 	// Optional filter that specifies workspace IDs to deliver logs for. By default
 	// the workspace filter is empty and log delivery applies at the account level,
 	// delivering workspace-level logs for all workspaces in your account, plus
@@ -204,31 +226,17 @@ type LogDeliveryConfiguration struct {
 	// some types of <Databricks> deployments there is only one workspace per
 	// account ID, so this field is unnecessary.
 	WorkspaceIdsFilter []int64 `json:"workspace_ids_filter,omitempty"`
-	// The optional delivery path prefix within Amazon S3 storage. Defaults to
-	// empty, which means that logs are delivered to the root of the bucket. This
-	// must be a valid S3 object key. This must not start or end with a slash
-	// character.
-	DeliveryPathPrefix *string `json:"delivery_path_prefix,omitempty"`
-	// This field applies only if log_type is BILLABLE_USAGE. This is the optional
-	// start month and year for delivery, specified in YYYY-MM format. Defaults to
-	// current year and month. BILLABLE_USAGE logs are not available for usage
-	// before March 2019 (2019-03).
-	DeliveryStartTime *string `json:"delivery_start_time,omitempty"`
-	// Status of log delivery configuration. Set to `ENABLED` (enabled) or
-	// `DISABLED` (disabled). Defaults to `ENABLED`. You can [enable or disable the
-	// configuration](#operation/patch-log-delivery-config-status) later. Deletion
-	// of a configuration is not supported, so disable a log delivery configuration
-	// that is no longer needed.
-	Status LogDeliveryConfigStatus `json:"status,omitempty"`
-	// Time in epoch milliseconds when the log delivery configuration was created.
-	CreationTime *int64 `json:"creation_time,omitempty"`
-	// Time in epoch milliseconds when the log delivery configuration was updated.
-	UpdateTime *int64 `json:"update_time,omitempty"`
-	// The LogDeliveryStatus of this log delivery configuration
-	LogDeliveryStatus *LogDeliveryStatus `json:"log_delivery_status,omitempty"`
 }
 
 type LogDeliveryStatus struct {
+	// The UTC time for the latest log delivery attempt.
+	LastAttemptTime *string `json:"last_attempt_time,omitempty"`
+	// The UTC time for the latest successful log delivery.
+	LastSuccessfulAttemptTime *string `json:"last_successful_attempt_time,omitempty"`
+	// Informative message about the latest log delivery attempt. If the log
+	// delivery fails with USER_FAILURE, error details will be provided for fixing
+	// misconfigurations in cloud permissions.
+	Message *string `json:"message,omitempty"`
 	// Enum that describes the status. Possible values are: * `CREATED`: There were
 	// no log delivery attempts since the config was created. * `SUCCEEDED`: The
 	// latest attempt of log delivery has succeeded completely. * `USER_FAILURE`:
@@ -239,25 +247,17 @@ type LogDeliveryStatus struct {
 	// delivery status as the configuration has been disabled since the release of
 	// this feature or there are no workspaces in the account.
 	Status LogDeliveryStatusEnum `json:"status,omitempty"`
-	// The UTC time for the latest log delivery attempt.
-	LastAttemptTime *string `json:"last_attempt_time,omitempty"`
-	// The UTC time for the latest successful log delivery.
-	LastSuccessfulAttemptTime *string `json:"last_successful_attempt_time,omitempty"`
-	// Informative message about the latest log delivery attempt. If the log
-	// delivery fails with USER_FAILURE, error details will be provided for fixing
-	// misconfigurations in cloud permissions.
-	Message *string `json:"message,omitempty"`
 }
 
 // * Update Log Delivery Configuration.
 type UpdateLogDeliveryConfigurationRequest struct {
-	// The log delivery configuration id of customer
-	ConfigId *string `json:"config_id,omitempty"`
 	// <Databricks> account ID of any type. For non-E2 account types, get your
 	// account ID from the [Accounts Console].
 	//
 	// [Accounts Console]: https://docs.databricks.com/administration-guide/account-settings/usage.html
 	AccountId *string `json:"account_id,omitempty"`
+	// The log delivery configuration id of customer
+	ConfigId *string `json:"config_id,omitempty"`
 	// Status of log delivery configuration. Set to `ENABLED` (enabled) or
 	// `DISABLED` (disabled). Defaults to `ENABLED`. You can [enable or disable the
 	// configuration](#operation/patch-log-delivery-config-status) later. Deletion

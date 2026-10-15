@@ -72,9 +72,6 @@ type ColumnInfo struct {
 // The server composes `Endpoint.name` from `parent` and `endpoint_id`; any
 // client-supplied `endpoint.name` is ignored..
 type CreateEndpointRequest struct {
-	// The Workspace where this Endpoint will be created. Format:
-	// `workspaces/{workspace_id}`
-	Parent *string `json:"parent,omitempty"`
 	// The Endpoint resource to create. Fields other than `endpoint.name` carry the
 	// desired configuration; `endpoint.name` is server-assigned from `parent` and
 	// `endpoint_id`.
@@ -85,6 +82,9 @@ type CreateEndpointRequest struct {
 	// annotate it OPTIONAL on the wire; the server still rejects empty values with
 	// INVALID_PARAMETER_VALUE.
 	EndpointId *string `json:"endpoint_id,omitempty"`
+	// The Workspace where this Endpoint will be created. Format:
+	// `workspaces/{workspace_id}`
+	Parent *string `json:"parent,omitempty"`
 }
 
 // AIP-133 conformant Create. The index is nested under `index`; `parent`
@@ -92,9 +92,6 @@ type CreateEndpointRequest struct {
 // table name. The server composes `Index.name` from `parent` and `index_id`;
 // any client-supplied `index.name` is ignored..
 type CreateIndexRequest struct {
-	// The Endpoint where this Index will be created. Format:
-	// `workspaces/{workspace_id}/endpoints/{endpoint_id}`
-	Parent *string `json:"parent,omitempty"`
 	// The Index resource to create. Fields other than `index.name` carry the
 	// desired configuration; `index.name` is server-assigned from `parent` and
 	// `index_id`.
@@ -105,6 +102,9 @@ type CreateIndexRequest struct {
 	// annotate it OPTIONAL on the wire; the server still rejects empty values with
 	// INVALID_PARAMETER_VALUE.
 	IndexId *string `json:"index_id,omitempty"`
+	// The Endpoint where this Index will be created. Format:
+	// `workspaces/{workspace_id}/endpoints/{endpoint_id}`
+	Parent *string `json:"parent,omitempty"`
 }
 
 // User-defined key/value tag attached to an AI Search endpoint for cost
@@ -118,17 +118,19 @@ type CustomTag struct {
 
 // Per-row outcome of a data-plane upsert or delete operation..
 type DataModificationResult struct {
-	// Count of rows processed successfully.
-	SuccessRowCount *int64 `json:"success_row_count,omitempty"`
 	// Primary keys of rows that failed to process.
 	FailedPrimaryKeys []string `json:"failed_primary_keys,omitempty"`
+	// Count of rows processed successfully.
+	SuccessRowCount *int64 `json:"success_row_count,omitempty"`
 }
 
 // Specification for a Delta Sync index — the index is kept in sync with a
 // source Delta table..
 type DeltaSyncIndexSpec struct {
-	// The full name of the source Delta table.
-	SourceTable *string `json:"source_table,omitempty"`
+	// [Optional] Select the columns to sync with the index. If left blank, all
+	// columns from the source table are synced. The primary key column and
+	// embedding source or vector column are always synced.
+	ColumnsToSync []string `json:"columns_to_sync,omitempty"`
 	// The columns that contain the embedding source.
 	EmbeddingSourceColumns []EmbeddingSourceColumn `json:"embedding_source_columns,omitempty"`
 	// The columns that contain the embedding vectors.
@@ -136,10 +138,6 @@ type DeltaSyncIndexSpec struct {
 	// [Optional] Name of the Delta table to sync the index contents and computed
 	// embeddings to.
 	EmbeddingWritebackTable *string `json:"embedding_writeback_table,omitempty"`
-	// [Optional] Select the columns to sync with the index. If left blank, all
-	// columns from the source table are synced. The primary key column and
-	// embedding source or vector column are always synced.
-	ColumnsToSync []string `json:"columns_to_sync,omitempty"`
 	// The ID of the pipeline that is used to sync the index.
 	PipelineId *string `json:"pipeline_id,omitempty"`
 	// Pipeline execution mode. Required on create — the backend rejects an unset
@@ -149,137 +147,139 @@ type DeltaSyncIndexSpec struct {
 	// `required`, tripping the OpenAPI required-vs-properties consistency check.
 	// The field inherits the service's launch stage.
 	PipelineType PipelineType `json:"pipeline_type,omitempty"`
+	// The full name of the source Delta table.
+	SourceTable *string `json:"source_table,omitempty"`
 }
 
 // Specification for a Direct Access index — the customer manages vectors and
 // metadata directly..
 type DirectAccessIndexSpec struct {
+	// The columns that contain the embedding source.
+	EmbeddingSourceColumns []EmbeddingSourceColumn `json:"embedding_source_columns,omitempty"`
 	// The columns that contain the embedding vectors.
 	EmbeddingVectorColumns []EmbeddingVectorColumn `json:"embedding_vector_columns,omitempty"`
 	// The schema of the index in JSON format. Supported types are `integer`,
 	// `long`, `float`, `double`, `boolean`, `string`, `date`, `timestamp`.
 	// Supported types for vector columns: `array<float>`, `array<double>`.
 	SchemaJson *string `json:"schema_json,omitempty"`
-	// The columns that contain the embedding source.
-	EmbeddingSourceColumns []EmbeddingSourceColumn `json:"embedding_source_columns,omitempty"`
 }
 
 // Name of an embedding source column and its associated embedding model
 // endpoint..
 type EmbeddingSourceColumn struct {
-	// Name of the source column.
-	Name *string `json:"name,omitempty"`
 	// Name of the embedding model endpoint, used by default for both ingestion and
 	// querying.
 	EmbeddingModelEndpoint *string `json:"embedding_model_endpoint,omitempty"`
 	// Name of the embedding model endpoint which, if specified, is used for
 	// querying (not ingestion).
 	ModelEndpointNameForQuery *string `json:"model_endpoint_name_for_query,omitempty"`
+	// Name of the source column.
+	Name *string `json:"name,omitempty"`
 }
 
 // Name and dimension of an embedding vector column..
 type EmbeddingVectorColumn struct {
-	// Name of the column.
-	Name *string `json:"name,omitempty"`
 	// Dimension of the embedding vector.
 	EmbeddingDimension *int `json:"embedding_dimension,omitempty"`
+	// Name of the column.
+	Name *string `json:"name,omitempty"`
 }
 
 // An AI Search endpoint — compute infrastructure that hosts AI Search indexes
 // and serves queries against them. Customers create, query, and delete
 // endpoints; the system manages provisioning, scaling, and health status..
 type Endpoint struct {
+	// The user-selected budget policy id for the endpoint.
+	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
+	// Time the endpoint was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
+	// Creator of the endpoint
+	Creator *string `json:"creator,omitempty"`
+	// The custom tags assigned to the endpoint
+	CustomTags []CustomTag `json:"custom_tags,omitempty"`
+	// The budget policy id applied to the endpoint
+	EffectiveBudgetPolicyId *string `json:"effective_budget_policy_id,omitempty"`
+	// Current status of the endpoint
+	EndpointStatus *EndpointStatus `json:"endpoint_status,omitempty"`
+	// Type of endpoint. Required on create and immutable thereafter.
+	EndpointType EndpointType `json:"endpoint_type,omitempty"`
+	// Unique identifier of the endpoint
+	Id *string `json:"id,omitempty"`
+	// Number of indexes on the endpoint
+	IndexCount *int `json:"index_count,omitempty"`
+	// User who last updated the endpoint
+	LastUpdatedUser *string `json:"last_updated_user,omitempty"`
 	// Name of the AI Search endpoint. Server-assigned full resource path
 	// (`workspaces/{workspace}/endpoints/{endpoint}`) on output. On create, the
 	// user-supplied short name is conveyed via `CreateEndpointRequest.endpoint_id`;
 	// the server composes the full `name` and returns it on the response.
 	Name *string `json:"name,omitempty"`
-	// Creator of the endpoint
-	Creator *string `json:"creator,omitempty"`
-	// Time the endpoint was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	// Time the endpoint was last updated.
-	UpdateTime *types.Time `json:"update_time,omitempty"`
-	// Type of endpoint. Required on create and immutable thereafter.
-	EndpointType EndpointType `json:"endpoint_type,omitempty"`
-	// User who last updated the endpoint
-	LastUpdatedUser *string `json:"last_updated_user,omitempty"`
-	// Unique identifier of the endpoint
-	Id *string `json:"id,omitempty"`
-	// Current status of the endpoint
-	EndpointStatus *EndpointStatus `json:"endpoint_status,omitempty"`
-	// Number of indexes on the endpoint
-	IndexCount *int `json:"index_count,omitempty"`
-	// The user-selected budget policy id for the endpoint.
-	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
-	// The budget policy id applied to the endpoint
-	EffectiveBudgetPolicyId *string `json:"effective_budget_policy_id,omitempty"`
-	// The custom tags assigned to the endpoint
-	CustomTags []CustomTag `json:"custom_tags,omitempty"`
-	// Throughput information for the endpoint
-	ThroughputInfo *EndpointThroughputInfo `json:"throughput_info,omitempty"`
-	// Scaling information for the endpoint
-	ScalingInfo *EndpointScalingInfo `json:"scaling_info,omitempty"`
-	// The usage policy id applied to the endpoint.
-	UsagePolicyId *string `json:"usage_policy_id,omitempty"`
 	// The client-supplied desired number of replicas for the endpoint, applied at
 	// create/update time. Mutually exclusive with `target_qps`.
 	ReplicaCount *int `json:"replica_count,omitempty"`
+	// Scaling information for the endpoint
+	ScalingInfo *EndpointScalingInfo `json:"scaling_info,omitempty"`
 	// Target QPS for the endpoint. Mutually exclusive with `replica_count`.
 	// Best-effort; the system does not guarantee this QPS will be achieved.
 	TargetQps *int `json:"target_qps,omitempty"`
+	// Throughput information for the endpoint
+	ThroughputInfo *EndpointThroughputInfo `json:"throughput_info,omitempty"`
+	// Time the endpoint was last updated.
+	UpdateTime *types.Time `json:"update_time,omitempty"`
+	// The usage policy id applied to the endpoint.
+	UsagePolicyId *string `json:"usage_policy_id,omitempty"`
 }
 
 // Scaling information for a Standard endpoint: the current scaling state, the
 // requested QPS target, and the progress of an in-progress scaling change..
 type EndpointScalingInfo struct {
-	// The current state of the scaling change request.
-	State ScalingChangeState `json:"state,omitempty"`
 	// The requested QPS target for the endpoint. Best-effort; the system does not
 	// guarantee this QPS will be achieved.
 	RequestedTargetQps *int64 `json:"requested_target_qps,omitempty"`
+	// The current state of the scaling change request.
+	State ScalingChangeState `json:"state,omitempty"`
 }
 
 // Lifecycle and health state of an AI Search endpoint, along with any
 // human-readable detail about that state..
 type EndpointStatus struct {
-	// Current lifecycle state of the endpoint. See `State` for the meaning of each
-	// value.
-	State EndpointStatus_State `json:"state,omitempty"`
 	// Human-readable detail about the endpoint's current state or the reason for a
 	// state transition.
 	Message *string `json:"message,omitempty"`
+	// Current lifecycle state of the endpoint. See `State` for the meaning of each
+	// value.
+	State EndpointStatus_State `json:"state,omitempty"`
 }
 
 // Throughput information for an AI Search endpoint, including requested and
 // current concurrency settings..
 type EndpointThroughputInfo struct {
-	// The requested concurrency (total CPU) for the endpoint
-	RequestedConcurrency *float64 `json:"requested_concurrency,omitempty"`
+	// Additional information about the throughput change request
+	ChangeRequestMessage *string `json:"change_request_message,omitempty"`
+	// The state of the most recent throughput change request
+	ChangeRequestState ThroughputChangeRequestState `json:"change_request_state,omitempty"`
 	// The current concurrency (total CPU) allocated to the endpoint
 	CurrentConcurrency *float64 `json:"current_concurrency,omitempty"`
 	// The current utilization of concurrency as a percentage (0-100)
 	CurrentConcurrencyUtilizationPercentage *float64 `json:"current_concurrency_utilization_percentage,omitempty"`
-	// The minimum concurrency allowed for this endpoint
-	MinimalConcurrencyAllowed *float64 `json:"minimal_concurrency_allowed,omitempty"`
-	// The maximum concurrency allowed for this endpoint
-	MaximumConcurrencyAllowed *float64 `json:"maximum_concurrency_allowed,omitempty"`
-	// The state of the most recent throughput change request
-	ChangeRequestState ThroughputChangeRequestState `json:"change_request_state,omitempty"`
-	// Additional information about the throughput change request
-	ChangeRequestMessage *string `json:"change_request_message,omitempty"`
-	// The requested number of replicas for the endpoint
-	RequestedNumReplicas *int `json:"requested_num_replicas,omitempty"`
 	// The current number of replicas allocated to the endpoint
 	CurrentNumReplicas *int `json:"current_num_replicas,omitempty"`
+	// The maximum concurrency allowed for this endpoint
+	MaximumConcurrencyAllowed *float64 `json:"maximum_concurrency_allowed,omitempty"`
+	// The minimum concurrency allowed for this endpoint
+	MinimalConcurrencyAllowed *float64 `json:"minimal_concurrency_allowed,omitempty"`
+	// The requested concurrency (total CPU) for the endpoint
+	RequestedConcurrency *float64 `json:"requested_concurrency,omitempty"`
+	// The requested number of replicas for the endpoint
+	RequestedNumReplicas *int `json:"requested_num_replicas,omitempty"`
 }
 
 // Facet aggregation rows returned by a query..
 type FacetResultData struct {
-	// Number of facet rows returned.
-	FacetRowCount *int `json:"facet_row_count,omitempty"`
 	// Facet rows; each row is `[facet_column_name, value_or_range, count]`.
 	FacetArray [][]json.RawMessage `json:"facet_array,omitempty"`
+	// Number of facet rows returned.
+	FacetRowCount *int `json:"facet_row_count,omitempty"`
 }
 
 // An AI Search index — a searchable collection of vectors and metadata hosted
@@ -287,47 +287,44 @@ type FacetResultData struct {
 // create, get, list, and delete them. The `{index}` segment of the resource
 // name is the index's Unity Catalog table name..
 type Index struct {
+	// Creator of the index.
+	Creator               *string                `json:"creator,omitempty"`
+	DeltaSyncIndexSpec    *DeltaSyncIndexSpec    `json:"delta_sync_index_spec,omitempty"`
+	DirectAccessIndexSpec *DirectAccessIndexSpec `json:"direct_access_index_spec,omitempty"`
+	// Name of the endpoint associated with the index. Ignored on create — the
+	// endpoint is taken from `CreateIndexRequest.parent`; populated only on output.
+	Endpoint *string `json:"endpoint,omitempty"`
+	// The subtype of the index. Set on create and immutable thereafter.
+	IndexSubtype IndexSubtype `json:"index_subtype,omitempty"`
+	// Type of index. Required on create and immutable thereafter.
+	IndexType IndexType `json:"index_type,omitempty"`
 	// Name of the AI Search index. Server-assigned full resource path
 	// (`workspaces/{workspace}/endpoints/{endpoint}/indexes/{index}`) on output,
 	// where `{index}` is the index's Unity Catalog table name. On create, the
 	// user-supplied UC table name is conveyed via `CreateIndexRequest.index_id`;
 	// the server composes the full `name` and returns it on the response.
 	Name *string `json:"name,omitempty"`
-	// Name of the endpoint associated with the index. Ignored on create — the
-	// endpoint is taken from `CreateIndexRequest.parent`; populated only on output.
-	Endpoint *string `json:"endpoint,omitempty"`
 	// Primary key of the index. Set on create and immutable thereafter.
 	PrimaryKey *string `json:"primary_key,omitempty"`
-	// Type of index. Required on create and immutable thereafter.
-	IndexType             IndexType              `json:"index_type,omitempty"`
-	DirectAccessIndexSpec *DirectAccessIndexSpec `json:"direct_access_index_spec,omitempty"`
-	DeltaSyncIndexSpec    *DeltaSyncIndexSpec    `json:"delta_sync_index_spec,omitempty"`
 	// Current status of the index.
 	Status *IndexStatus `json:"status,omitempty"`
-	// Creator of the index.
-	Creator *string `json:"creator,omitempty"`
-	// The subtype of the index. Set on create and immutable thereafter.
-	IndexSubtype IndexSubtype `json:"index_subtype,omitempty"`
 }
 
 // Lifecycle and health state of an AI Search index, along with human-readable
 // detail about that state and basic indexing progress..
 type IndexStatus struct {
-	// Human-readable detail about the index's current state.
-	Message *string `json:"message,omitempty"`
-	// Number of rows indexed.
-	IndexedRowCount *int64 `json:"indexed_row_count,omitempty"`
-	// Whether the index is ready for search.
-	Ready *bool `json:"ready,omitempty"`
 	// Index API URL used to perform operations on the index.
 	IndexUrl *string `json:"index_url,omitempty"`
+	// Number of rows indexed.
+	IndexedRowCount *int64 `json:"indexed_row_count,omitempty"`
+	// Human-readable detail about the index's current state.
+	Message *string `json:"message,omitempty"`
+	// Whether the index is ready for search.
+	Ready *bool `json:"ready,omitempty"`
 }
 
 // Request to list AI Search endpoints in a workspace, with optional pagination..
 type ListEndpointsRequest struct {
-	// The Workspace that owns this collection of endpoints. Format:
-	// `workspaces/{workspace_id}`
-	Parent *string `json:"parent,omitempty"`
 	// Best-effort upper bound on the number of results to return. Honored as an
 	// upper bound by the shim: `page_size` only narrows the legacy backend's
 	// response, never widens it, so the practical cap is `min(page_size,
@@ -335,6 +332,9 @@ type ListEndpointsRequest struct {
 	PageSize *int `json:"page_size,omitempty"`
 	// Page token from a previous response. If not provided, returns the first page.
 	PageToken *string `json:"page_token,omitempty"`
+	// The Workspace that owns this collection of endpoints. Format:
+	// `workspaces/{workspace_id}`
+	Parent *string `json:"parent,omitempty"`
 }
 
 // Response for ListEndpoints carrying the page of endpoints and an optional
@@ -349,9 +349,6 @@ type ListEndpointsResponse struct {
 
 // Request to list AI Search indexes on an endpoint, with optional pagination..
 type ListIndexesRequest struct {
-	// The Endpoint that owns this collection of indexes. Format:
-	// `workspaces/{workspace_id}/endpoints/{endpoint_id}`
-	Parent *string `json:"parent,omitempty"`
 	// Best-effort upper bound on the number of results to return. Honored as an
 	// upper bound by the shim: `page_size` only narrows the legacy backend's
 	// response, never widens it, so the practical cap is `min(page_size,
@@ -359,6 +356,9 @@ type ListIndexesRequest struct {
 	PageSize *int `json:"page_size,omitempty"`
 	// Page token from a previous response. If not provided, returns the first page.
 	PageToken *string `json:"page_token,omitempty"`
+	// The Endpoint that owns this collection of indexes. Format:
+	// `workspaces/{workspace_id}/endpoints/{endpoint_id}`
+	Parent *string `json:"parent,omitempty"`
 }
 
 // Response for ListIndexes carrying the page of indexes and an optional
@@ -379,48 +379,48 @@ type ListIndexesResponse struct {
 // is exposed as `max_results`; v1 returns up to `max_results` rows in a single
 // response (no cursor pagination — see the note on `max_results` below)..
 type QueryIndexRequest struct {
-	// Full resource name of the index to query. Format:
-	// `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`
-	Name *string `json:"name,omitempty"`
 	// Column names to include in each result row.
 	Columns []string `json:"columns,omitempty"`
-	// Query vector. Required for Direct Access indexes and Delta Sync indexes with
-	// self-managed vectors.
-	QueryVector []float32 `json:"query_vector,omitempty"`
-	// Query text. Required for Delta Sync indexes that compute embeddings from a
-	// model endpoint.
-	QueryText *string `json:"query_text,omitempty"`
-	// JSON string describing query filters (e.g. `{"id >": 5}`).
-	FiltersJson *string `json:"filters_json,omitempty"`
-	// Score threshold for the approximate nearest-neighbor search. Defaults to 0.0.
-	ScoreThreshold *float32 `json:"score_threshold,omitempty"`
-	// Query type: `ANN`, `HYBRID`, or `FULL_TEXT`. Defaults to `ANN`.
-	QueryType *string `json:"query_type,omitempty"`
 	// Columns whose values are sent to the reranker.
 	ColumnsToRerank []string `json:"columns_to_rerank,omitempty"`
-	// If set, results are reranked before being returned.
-	Reranker *RerankerConfig `json:"reranker,omitempty"`
-	// Text columns to search for `query_text`. When empty, all text columns are
-	// searched.
-	QueryColumns []string `json:"query_columns,omitempty"`
-	// Sort clauses, e.g. `["rating DESC", "price ASC"]`. Overrides relevance
-	// ordering.
-	SortColumns []string `json:"sort_columns,omitempty"`
 	// Facets to compute over the matched results (e.g. `"category TOP 5"`).
 	Facets []string `json:"facets,omitempty"`
+	// JSON string describing query filters (e.g. `{"id >": 5}`).
+	FiltersJson *string `json:"filters_json,omitempty"`
 	// Maximum number of results to return (the legacy `num_results`). Defaults to
 	// 10. Prefer `page_size`; when both are set, `page_size` takes precedence.
 	MaxResults *int `json:"max_results,omitempty"`
+	// Full resource name of the index to query. Format:
+	// `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`
+	Name *string `json:"name,omitempty"`
+	// Text columns to search for `query_text`. When empty, all text columns are
+	// searched.
+	QueryColumns []string `json:"query_columns,omitempty"`
+	// Query text. Required for Delta Sync indexes that compute embeddings from a
+	// model endpoint.
+	QueryText *string `json:"query_text,omitempty"`
+	// Query type: `ANN`, `HYBRID`, or `FULL_TEXT`. Defaults to `ANN`.
+	QueryType *string `json:"query_type,omitempty"`
+	// Query vector. Required for Direct Access indexes and Delta Sync indexes with
+	// self-managed vectors.
+	QueryVector []float32 `json:"query_vector,omitempty"`
+	// If set, results are reranked before being returned.
+	Reranker *RerankerConfig `json:"reranker,omitempty"`
+	// Score threshold for the approximate nearest-neighbor search. Defaults to 0.0.
+	ScoreThreshold *float32 `json:"score_threshold,omitempty"`
+	// Sort clauses, e.g. `["rating DESC", "price ASC"]`. Overrides relevance
+	// ordering.
+	SortColumns []string `json:"sort_columns,omitempty"`
 }
 
 // Response for QueryIndex carrying the matched rows and their column metadata..
 type QueryIndexResponse struct {
+	// Facet aggregation rows, when facets were requested.
+	FacetResult *FacetResultData `json:"facet_result,omitempty"`
 	// Metadata describing the result columns.
 	Manifest *ResultManifest `json:"manifest,omitempty"`
 	// The matched result rows.
 	Result *ResultData `json:"result,omitempty"`
-	// Facet aggregation rows, when facets were requested.
-	FacetResult *FacetResultData `json:"facet_result,omitempty"`
 }
 
 // Request to remove rows by primary key from a Direct Access AI Search index.
@@ -437,10 +437,10 @@ type RemoveDataRequest struct {
 
 // Response for RemoveData..
 type RemoveDataResponse struct {
-	// Overall status of the delete.
-	Status DataModificationStatus `json:"status,omitempty"`
 	// Per-row outcome of the delete.
 	Result *DataModificationResult `json:"result,omitempty"`
+	// Overall status of the delete.
+	Status DataModificationStatus `json:"status,omitempty"`
 }
 
 // Configuration for reranking query results with a reranker model..
@@ -448,10 +448,10 @@ type RerankerConfig struct {
 	// Reranker identifier: "databricks_reranker" for the base model, or a Model
 	// Serving endpoint name when `model_type` is MODEL_TYPE_FINETUNED.
 	Model *string `json:"model,omitempty"`
-	// Parameters controlling reranking.
-	Parameters *RerankerConfig_RerankerParameters `json:"parameters,omitempty"`
 	// Discriminator for how `model` is interpreted.
 	ModelType RerankerConfig_ModelType `json:"model_type,omitempty"`
+	// Parameters controlling reranking.
+	Parameters *RerankerConfig_RerankerParameters `json:"parameters,omitempty"`
 }
 
 // Parameters controlling how the reranker processes results..
@@ -462,11 +462,11 @@ type RerankerConfig_RerankerParameters struct {
 
 // The rows of a query result set..
 type ResultData struct {
-	// Number of rows in the result set.
-	RowCount *int `json:"row_count,omitempty"`
 	// Result rows; each row is a list of column values aligned with the manifest
 	// columns.
 	DataArray [][]json.RawMessage `json:"data_array,omitempty"`
+	// Number of rows in the result set.
+	RowCount *int `json:"row_count,omitempty"`
 }
 
 // Metadata describing the columns of a query result set..
@@ -532,19 +532,19 @@ type UpdateEndpointRequest struct {
 
 // Request to upsert rows into a Direct Access AI Search index..
 type UpsertDataRequest struct {
+	// JSON document describing the rows to upsert.
+	InputsJson *string `json:"inputs_json,omitempty"`
 	// Full resource name of the index. Must be a Direct Access index. Format:
 	// `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`
 	Name *string `json:"name,omitempty"`
-	// JSON document describing the rows to upsert.
-	InputsJson *string `json:"inputs_json,omitempty"`
 }
 
 // Response for UpsertData..
 type UpsertDataResponse struct {
-	// Overall status of the upsert.
-	Status DataModificationStatus `json:"status,omitempty"`
 	// Per-row outcome of the upsert.
 	Result *DataModificationResult `json:"result,omitempty"`
+	// Overall status of the upsert.
+	Status DataModificationStatus `json:"status,omitempty"`
 }
 
 // ColumnInfoToSDK converts the mirror to the sdk-go type.

@@ -44,20 +44,20 @@ const (
 )
 
 type AccessControlRequest struct {
-	UserName             *string         `json:"user_name,omitempty"`
 	GroupName            *string         `json:"group_name,omitempty"`
-	ServicePrincipalName *string         `json:"service_principal_name,omitempty"`
 	PermissionLevel      PermissionLevel `json:"permission_level,omitempty"`
+	ServicePrincipalName *string         `json:"service_principal_name,omitempty"`
+	UserName             *string         `json:"user_name,omitempty"`
 }
 
 type AccessControlResponse struct {
-	UserName             *string `json:"user_name,omitempty"`
-	GroupName            *string `json:"group_name,omitempty"`
-	ServicePrincipalName *string `json:"service_principal_name,omitempty"`
-	// Display name of the user or service principal.
-	DisplayName *string `json:"display_name,omitempty"`
 	// All permissions.
 	AllPermissions []Permission `json:"all_permissions,omitempty"`
+	// Display name of the user or service principal.
+	DisplayName          *string `json:"display_name,omitempty"`
+	GroupName            *string `json:"group_name,omitempty"`
+	ServicePrincipalName *string `json:"service_principal_name,omitempty"`
+	UserName             *string `json:"user_name,omitempty"`
 }
 
 // represents an identity trying to access a resource - user or a service
@@ -68,20 +68,20 @@ type Actor struct {
 }
 
 type CheckPolicyRequest struct {
-	Actor      *Actor  `json:"actor,omitempty"`
-	Permission *string `json:"permission,omitempty"`
+	Actor            *Actor               `json:"actor,omitempty"`
+	AuthzIdentity    RequestAuthzIdentity `json:"authz_identity,omitempty"`
+	ConsistencyToken *ConsistencyToken    `json:"consistency_token,omitempty"`
+	Permission       *string              `json:"permission,omitempty"`
 	// Ex: (servicePrincipal/use, accounts/<account-id>/servicePrincipals/<sp-id>)
 	// Ex: (servicePrincipal.ruleSet/update,
 	// accounts/<account-id>/servicePrincipals/<sp-id>/ruleSets/default)
-	Resource         *string              `json:"resource,omitempty"`
-	ConsistencyToken *ConsistencyToken    `json:"consistency_token,omitempty"`
-	AuthzIdentity    RequestAuthzIdentity `json:"authz_identity,omitempty"`
-	ResourceInfo     *ResourceInfo        `json:"resource_info,omitempty"`
+	Resource     *string       `json:"resource,omitempty"`
+	ResourceInfo *ResourceInfo `json:"resource_info,omitempty"`
 }
 
 type CheckPolicyResponse struct {
-	IsPermitted      *bool             `json:"is_permitted,omitempty"`
 	ConsistencyToken *ConsistencyToken `json:"consistency_token,omitempty"`
+	IsPermitted      *bool             `json:"is_permitted,omitempty"`
 }
 
 type ConsistencyToken struct {
@@ -91,17 +91,6 @@ type ConsistencyToken struct {
 type GetRuleSetRequest struct {
 	// <Databricks> account ID.
 	AccountId *string `json:"account_id,omitempty"`
-	// The ruleset name associated with the request.
-	//
-	// Examples | Summary :--- | :--- `name=accounts/<ACCOUNT_ID>/ruleSets/default`
-	// | A name for a rule set on the account.
-	// `name=accounts/<ACCOUNT_ID>/groups/<GROUP_ID>/ruleSets/default` | A name for
-	// a rule set on the group.
-	// `name=accounts/<ACCOUNT_ID>/servicePrincipals/<SERVICE_PRINCIPAL_APPLICATION_ID>/ruleSets/default`
-	// | A name for a rule set on the service principal.
-	// `name=accounts/<ACCOUNT_ID>/tagPolicies/<TAG_POLICY_ID>/ruleSets/default` | A
-	// name for a rule set on the tag policy.
-	Name *string `json:"name,omitempty"`
 	// Etag used for versioning. The response is at least as fresh as the eTag
 	// provided. Etag is used for optimistic concurrency control as a way to help
 	// prevent simultaneous updates of a rule set from overwriting each other. It is
@@ -115,6 +104,17 @@ type GetRuleSetRequest struct {
 	// `etag=RENUAAABhSweA4NvVmmUYdiU717H3Tgy0UJdor3gE4a+mq/oj9NjAf8ZsQ==` | An etag
 	// encoded a specific version of the rule set to get or to be updated.
 	Etag *string `json:"etag,omitempty"`
+	// The ruleset name associated with the request.
+	//
+	// Examples | Summary :--- | :--- `name=accounts/<ACCOUNT_ID>/ruleSets/default`
+	// | A name for a rule set on the account.
+	// `name=accounts/<ACCOUNT_ID>/groups/<GROUP_ID>/ruleSets/default` | A name for
+	// a rule set on the group.
+	// `name=accounts/<ACCOUNT_ID>/servicePrincipals/<SERVICE_PRINCIPAL_APPLICATION_ID>/ruleSets/default`
+	// | A name for a rule set on the service principal.
+	// `name=accounts/<ACCOUNT_ID>/tagPolicies/<TAG_POLICY_ID>/ruleSets/default` | A
+	// name for a rule set on the tag policy.
+	Name *string `json:"name,omitempty"`
 }
 
 type GrantRule struct {
@@ -163,47 +163,47 @@ type ListWorkspacePermissionsResponse struct {
 }
 
 type Permission struct {
-	PermissionLevel     PermissionLevel `json:"permission_level,omitempty"`
 	Inherited           *bool           `json:"inherited,omitempty"`
 	InheritedFromObject []string        `json:"inherited_from_object,omitempty"`
+	PermissionLevel     PermissionLevel `json:"permission_level,omitempty"`
 }
 
 type PermissionOutput struct {
-	PermissionLevel WorkspacePermission `json:"permission_level,omitempty"`
 	// The results of a permissions query.
-	Description *string `json:"description,omitempty"`
+	Description     *string             `json:"description,omitempty"`
+	PermissionLevel WorkspacePermission `json:"permission_level,omitempty"`
 }
 
 type PermissionsDescription struct {
-	PermissionLevel PermissionLevel `json:"permission_level,omitempty"`
 	Description     *string         `json:"description,omitempty"`
+	PermissionLevel PermissionLevel `json:"permission_level,omitempty"`
 }
 
 type PermissionsResponse struct {
+	AccessControlList []AccessControlResponse `json:"access_control_list,omitempty"`
 	ObjectId          *string                 `json:"object_id,omitempty"`
 	ObjectType        *string                 `json:"object_type,omitempty"`
-	AccessControlList []AccessControlResponse `json:"access_control_list,omitempty"`
 }
 
 // Information about the principal assigned to the workspace..
 type PrincipalOutput struct {
-	UserName             *string `json:"user_name,omitempty"`
-	GroupName            *string `json:"group_name,omitempty"`
-	ServicePrincipalName *string `json:"service_principal_name,omitempty"`
-	// The unique, opaque id of the principal.
-	PrincipalId *int64 `json:"principal_id,omitempty"`
 	// The display name of the principal.
 	DisplayName *string `json:"display_name,omitempty"`
+	GroupName   *string `json:"group_name,omitempty"`
+	// The unique, opaque id of the principal.
+	PrincipalId          *int64  `json:"principal_id,omitempty"`
+	ServicePrincipalName *string `json:"service_principal_name,omitempty"`
+	UserName             *string `json:"user_name,omitempty"`
 }
 
 type ResourceInfo struct {
 	// Id of the current resource.
 	Id *string `json:"id,omitempty"`
+	// The legacy acl path of the current resource.
+	LegacyAclPath *string `json:"legacy_acl_path,omitempty"`
 	// Parent resource info for the current resource. The parent may have another
 	// parent.
 	ParentResourceInfo *ResourceInfo `json:"parent_resource_info,omitempty"`
-	// The legacy acl path of the current resource.
-	LegacyAclPath *string `json:"legacy_acl_path,omitempty"`
 }
 
 type Role struct {
@@ -212,8 +212,6 @@ type Role struct {
 }
 
 type RuleSet struct {
-	// Name of the rule set.
-	Name *string `json:"name,omitempty"`
 	// Identifies the version of the rule set returned. Etag used for versioning.
 	// The response is at least as fresh as the eTag provided. Etag is used for
 	// optimistic concurrency control as a way to help prevent simultaneous updates
@@ -224,11 +222,11 @@ type RuleSet struct {
 	// identify the rule set version you are updating.
 	Etag       *string     `json:"etag,omitempty"`
 	GrantRules []GrantRule `json:"grant_rules,omitempty"`
+	// Name of the rule set.
+	Name *string `json:"name,omitempty"`
 }
 
 type RuleSetUpdateRequest struct {
-	// Name of the rule set.
-	Name *string `json:"name,omitempty"`
 	// Identifies the version of the rule set returned. Etag used for versioning.
 	// The response is at least as fresh as the eTag provided. Etag is used for
 	// optimistic concurrency control as a way to help prevent simultaneous updates
@@ -239,9 +237,14 @@ type RuleSetUpdateRequest struct {
 	// identify the rule set version you are updating.
 	Etag       *string     `json:"etag,omitempty"`
 	GrantRules []GrantRule `json:"grant_rules,omitempty"`
+	// Name of the rule set.
+	Name *string `json:"name,omitempty"`
 }
 
 type SetObjectPermissionsRequest struct {
+	AccessControlList []AccessControlRequest `json:"access_control_list,omitempty"`
+	// The id of the request object.
+	RequestObjectId *string `json:"request_object_id,omitempty"`
 	// The type of the request object. Can be one of the following: alerts,
 	// alertsv2, authorization, clusters, cluster-policies, dashboards,
 	// database-projects, dbsql-dashboards, directories, experiments, files, genie,
@@ -249,12 +252,12 @@ type SetObjectPermissionsRequest struct {
 	// registered-models, repos, serving-endpoints, supervisor-agents,
 	// vector-search-endpoints, or warehouses.
 	RequestObjectType *string `json:"request_object_type,omitempty"`
-	// The id of the request object.
-	RequestObjectId   *string                `json:"request_object_id,omitempty"`
-	AccessControlList []AccessControlRequest `json:"access_control_list,omitempty"`
 }
 
 type UpdateObjectPermissionsRequest struct {
+	AccessControlList []AccessControlRequest `json:"access_control_list,omitempty"`
+	// The id of the request object.
+	RequestObjectId *string `json:"request_object_id,omitempty"`
 	// The type of the request object. Can be one of the following: alerts,
 	// alertsv2, authorization, clusters, cluster-policies, dashboards,
 	// database-projects, dbsql-dashboards, directories, experiments, files, genie,
@@ -262,9 +265,6 @@ type UpdateObjectPermissionsRequest struct {
 	// registered-models, repos, serving-endpoints, supervisor-agents,
 	// vector-search-endpoints, or warehouses.
 	RequestObjectType *string `json:"request_object_type,omitempty"`
-	// The id of the request object.
-	RequestObjectId   *string                `json:"request_object_id,omitempty"`
-	AccessControlList []AccessControlRequest `json:"access_control_list,omitempty"`
 }
 
 type UpdateRuleSetRequest struct {
@@ -278,10 +278,6 @@ type UpdateRuleSetRequest struct {
 type UpdateWorkspacePermissionAssignmentRequest struct {
 	// The account ID.
 	AccountId *string `json:"account_id,omitempty"`
-	// The workspace ID.
-	WorkspaceId *int64 `json:"workspace_id,omitempty"`
-	// The ID of the user, service principal, or group.
-	PrincipalId *int64 `json:"principal_id,omitempty"`
 	// Array of permissions assignments to update on the workspace. Valid values are
 	// "USER" and "ADMIN" (case-sensitive). If both "USER" and "ADMIN" are provided,
 	// "ADMIN" takes precedence. Other values will be ignored. Note that excluding
@@ -289,17 +285,21 @@ type UpdateWorkspacePermissionAssignmentRequest struct {
 	// providing an empty list, which will result in the deletion of all permissions
 	// for the principal.
 	Permissions []WorkspacePermission `json:"permissions,omitempty"`
+	// The ID of the user, service principal, or group.
+	PrincipalId *int64 `json:"principal_id,omitempty"`
+	// The workspace ID.
+	WorkspaceId *int64 `json:"workspace_id,omitempty"`
 }
 
 // The output format for existing workspace PermissionAssignment records, which
 // contains some info for user consumption..
 type WorkspacePermissionAssignmentOutput struct {
-	// Information about the principal assigned to the workspace.
-	Principal *PrincipalOutput `json:"principal,omitempty"`
-	// The permissions level of the principal.
-	Permissions []WorkspacePermission `json:"permissions,omitempty"`
 	// Error response associated with a workspace permission assignment, if any.
 	Error *string `json:"error,omitempty"`
+	// The permissions level of the principal.
+	Permissions []WorkspacePermission `json:"permissions,omitempty"`
+	// Information about the principal assigned to the workspace.
+	Principal *PrincipalOutput `json:"principal,omitempty"`
 }
 
 // AccessControlRequestToSDK converts the mirror to the sdk-go type.

@@ -279,15 +279,11 @@ const (
 )
 
 type ChunkInfo struct {
-	// The position within the sequence of result set chunks.
-	ChunkIndex *int `json:"chunk_index,omitempty"`
-	// The starting row offset within the result set.
-	RowOffset *int64 `json:"row_offset,omitempty"`
-	// The number of rows within the result chunk.
-	RowCount *int64 `json:"row_count,omitempty"`
 	// The number of bytes in the result chunk. This field is not available when
 	// using `INLINE` disposition.
 	ByteCount *int64 `json:"byte_count,omitempty"`
+	// The position within the sequence of result set chunks.
+	ChunkIndex *int `json:"chunk_index,omitempty"`
 	// When fetching, provides the `chunk_index` for the _next_ chunk. If absent,
 	// indicates there are no more chunks. The next chunk can be fetched with a
 	// :method:statementexecution/getstatementresultchunkn request.
@@ -297,45 +293,49 @@ type ChunkInfo struct {
 	// joined with your `$DATABRICKS_HOST`, and should be treated as an opaque link.
 	// This is an alternative to using `next_chunk_index`.
 	NextChunkInternalLink *string `json:"next_chunk_internal_link,omitempty"`
+	// The number of rows within the result chunk.
+	RowCount *int64 `json:"row_count,omitempty"`
+	// The starting row offset within the result set.
+	RowOffset *int64 `json:"row_offset,omitempty"`
 }
 
 type ColumnInfo struct {
+	// User-provided free-form text description.
+	Comment *string     `json:"comment,omitempty"`
+	Mask    *ColumnMask `json:"mask,omitempty"`
 	// Name of Column.
 	Name *string `json:"name,omitempty"`
-	// Full data type specification as SQL/catalogString text.
-	TypeText *string        `json:"type_text,omitempty"`
-	TypeName ColumnTypeName `json:"type_name,omitempty"`
+	// Whether field may be Null (default: true).
+	Nullable *bool `json:"nullable,omitempty"`
+	// Partition index for column.
+	PartitionIndex *int `json:"partition_index,omitempty"`
 	// Ordinal position of column (starting at position 0).
 	Position *int `json:"position,omitempty"`
+	// Format of IntervalType.
+	TypeIntervalType *string `json:"type_interval_type,omitempty"`
+	// Full data type specification, JSON-serialized.
+	TypeJson *string        `json:"type_json,omitempty"`
+	TypeName ColumnTypeName `json:"type_name,omitempty"`
 	// Digits of precision; required for DecimalTypes.
 	TypePrecision *int `json:"type_precision,omitempty"`
 	// Digits to right of decimal; Required for DecimalTypes.
 	TypeScale *int `json:"type_scale,omitempty"`
-	// Format of IntervalType.
-	TypeIntervalType *string `json:"type_interval_type,omitempty"`
-	// Full data type specification, JSON-serialized.
-	TypeJson *string `json:"type_json,omitempty"`
-	// User-provided free-form text description.
-	Comment *string `json:"comment,omitempty"`
-	// Whether field may be Null (default: true).
-	Nullable *bool `json:"nullable,omitempty"`
-	// Partition index for column.
-	PartitionIndex *int        `json:"partition_index,omitempty"`
-	Mask           *ColumnMask `json:"mask,omitempty"`
+	// Full data type specification as SQL/catalogString text.
+	TypeText *string `json:"type_text,omitempty"`
 }
 
 type ColumnMask struct {
 	// The full name of the column mask SQL UDF.
 	FunctionName *string `json:"function_name,omitempty"`
+	// The list of table columns or literals to be passed as additional arguments to
+	// a column mask function, carrying the type (column reference vs constant
+	// literal) of each argument. Deprecated: use using_column_names instead.
+	UsingArguments []PolicyFunctionArgument `json:"using_arguments,omitempty"`
 	// The list of additional table columns to be passed as input to the column mask
 	// function. The first arg of the mask function should be of the type of the
 	// column being masked and the types of the rest of the args should match the
 	// types of columns in 'using_column_names'.
 	UsingColumnNames []string `json:"using_column_names,omitempty"`
-	// The list of table columns or literals to be passed as additional arguments to
-	// a column mask function, carrying the type (column reference vs constant
-	// literal) of each argument. Deprecated: use using_column_names instead.
-	UsingArguments []PolicyFunctionArgument `json:"using_arguments,omitempty"`
 }
 
 // Serialization format for DatabricksServiceException. Note the definition of
@@ -350,29 +350,25 @@ type DatabricksServiceExceptionProto struct {
 }
 
 type ExternalLink struct {
+	// The number of bytes in the result chunk. This field is not available when
+	// using `INLINE` disposition.
+	ByteCount *int64 `json:"byte_count,omitempty"`
+	// The position within the sequence of result set chunks.
+	ChunkIndex *int `json:"chunk_index,omitempty"`
+	// Indicates the date-time that the given external link will expire and becomes
+	// invalid, after which point a new `external_link` must be requested.
+	Expiration *string `json:"expiration,omitempty"`
 	// A short-lived cloud-storage URL pointing to a chunk of result data, hosted by
 	// an external service, with a short expiration time (<= 15 minutes). As this
 	// URL contains a temporary credential, it should be considered sensitive and
 	// the client should not expose this URL in a log.
 	ExternalLink *string `json:"external_link,omitempty"`
-	// Indicates the date-time that the given external link will expire and becomes
-	// invalid, after which point a new `external_link` must be requested.
-	Expiration *string `json:"expiration,omitempty"`
 	// HTTP headers that must be included with a GET request to the `external_link`.
 	// Each header is provided as a key-value pair. Headers are typically used to
 	// pass a decryption key to the external service. The values of these headers
 	// should be considered sensitive and the client should not expose these values
 	// in a log.
 	HttpHeaders map[string]string `json:"http_headers,omitempty"`
-	// The position within the sequence of result set chunks.
-	ChunkIndex *int `json:"chunk_index,omitempty"`
-	// The starting row offset within the result set.
-	RowOffset *int64 `json:"row_offset,omitempty"`
-	// The number of rows within the result chunk.
-	RowCount *int64 `json:"row_count,omitempty"`
-	// The number of bytes in the result chunk. This field is not available when
-	// using `INLINE` disposition.
-	ByteCount *int64 `json:"byte_count,omitempty"`
 	// When fetching, provides the `chunk_index` for the _next_ chunk. If absent,
 	// indicates there are no more chunks. The next chunk can be fetched with a
 	// :method:statementexecution/getstatementresultchunkn request.
@@ -382,16 +378,20 @@ type ExternalLink struct {
 	// joined with your `$DATABRICKS_HOST`, and should be treated as an opaque link.
 	// This is an alternative to using `next_chunk_index`.
 	NextChunkInternalLink *string `json:"next_chunk_internal_link,omitempty"`
+	// The number of rows within the result chunk.
+	RowCount *int64 `json:"row_count,omitempty"`
+	// The starting row offset within the result set.
+	RowOffset *int64 `json:"row_offset,omitempty"`
 }
 
 // Genie AI Response.
 type GenieAttachment struct {
-	Text               *TextAttachment                    `json:"text,omitempty"`
+	// Attachment ID
+	AttachmentId       *string                            `json:"attachment_id,omitempty"`
 	Query              *GenieQueryAttachment              `json:"query,omitempty"`
 	SuggestedQuestions *GenieSuggestedQuestionsAttachment `json:"suggested_questions,omitempty"`
+	Text               *TextAttachment                    `json:"text,omitempty"`
 	Viz                *GenieVizAttachment                `json:"viz,omitempty"`
-	// Attachment ID
-	AttachmentId *string `json:"attachment_id,omitempty"`
 }
 
 // Request to cancel an in-flight agent-mode response..
@@ -408,66 +408,66 @@ type GenieCancelResponseRequest struct {
 // agent-mode response and item endpoints for agent conversations. Conversation
 // management, feedback, comments, and attachment operations support both modes..
 type GenieConversation struct {
-	// Conversation ID. Legacy identifier, use conversation_id instead
-	Id *string `json:"id,omitempty"`
-	// Genie space ID
-	SpaceId *string `json:"space_id,omitempty"`
-	// ID of the user who created the conversation
-	UserId *int64 `json:"user_id,omitempty"`
-	// Timestamp when the message was created
-	CreatedTimestamp *int64 `json:"created_timestamp,omitempty"`
-	// Timestamp when the message was last updated
-	LastUpdatedTimestamp *int64 `json:"last_updated_timestamp,omitempty"`
-	// Conversation title
-	Title *string `json:"title,omitempty"`
 	// Conversation ID
 	ConversationId *string `json:"conversation_id,omitempty"`
+	// Timestamp when the message was created
+	CreatedTimestamp *int64 `json:"created_timestamp,omitempty"`
+	// Conversation ID. Legacy identifier, use conversation_id instead
+	Id *string `json:"id,omitempty"`
+	// Timestamp when the message was last updated
+	LastUpdatedTimestamp *int64 `json:"last_updated_timestamp,omitempty"`
+	// Genie space ID
+	SpaceId *string `json:"space_id,omitempty"`
+	// Conversation title
+	Title *string `json:"title,omitempty"`
+	// ID of the user who created the conversation
+	UserId *int64 `json:"user_id,omitempty"`
 }
 
 type GenieConversationSummary struct {
-	ConversationId   *string `json:"conversation_id,omitempty"`
-	Title            *string `json:"title,omitempty"`
-	CreatedTimestamp *int64  `json:"created_timestamp,omitempty"`
 	// Whether this is a classic chat or an agent-mode conversation. Allows callers
 	// to route message retrieval (chat vs. agent endpoint) without an extra lookup.
-	AgentType GenieConversationType `json:"agent_type,omitempty"`
+	AgentType        GenieConversationType `json:"agent_type,omitempty"`
+	ConversationId   *string               `json:"conversation_id,omitempty"`
+	CreatedTimestamp *int64                `json:"created_timestamp,omitempty"`
+	Title            *string               `json:"title,omitempty"`
 }
 
 type GenieCreateConversationMessageRequest struct {
-	// The ID associated with the Genie space where the conversation is started.
-	SpaceId *string `json:"space_id,omitempty"`
-	// The ID associated with the conversation.
-	ConversationId *string `json:"conversation_id,omitempty"`
 	// User message content.
 	Content *string `json:"content,omitempty"`
+	// The ID associated with the conversation.
+	ConversationId *string `json:"conversation_id,omitempty"`
 	// Enable visualization generation.
 	EnableVisualization *bool `json:"enable_visualization,omitempty"`
+	// The ID associated with the Genie space where the conversation is started.
+	SpaceId *string `json:"space_id,omitempty"`
 }
 
 type GenieCreateEvalRunRequest struct {
-	// The ID associated with the Genie space where the evaluations will be
-	// executed.
-	SpaceId *string `json:"space_id,omitempty"`
 	// List of benchmark question IDs to evaluate. These questions must exist in the
 	// specified Genie space. If none are specified, then all benchmark questions
 	// are evaluated.
 	BenchmarkQuestionIds []string `json:"benchmark_question_ids,omitempty"`
+	// The ID associated with the Genie space where the evaluations will be
+	// executed.
+	SpaceId *string `json:"space_id,omitempty"`
 }
 
 type GenieCreateMessageCommentRequest struct {
-	// The ID associated with the Genie space.
-	SpaceId *string `json:"space_id,omitempty"`
+	// Comment text content.
+	Content *string `json:"content,omitempty"`
 	// The ID associated with the conversation.
 	ConversationId *string `json:"conversation_id,omitempty"`
 	// The ID associated with the message.
 	MessageId *string `json:"message_id,omitempty"`
-	// Comment text content.
-	Content *string `json:"content,omitempty"`
+	// The ID associated with the Genie space.
+	SpaceId *string `json:"space_id,omitempty"`
 }
 
 type GenieCreateSpaceRequest struct {
-	// Warehouse to associate with the new space
-	WarehouseId *string `json:"warehouse_id,omitempty"`
+	// Optional description
+	Description *string `json:"description,omitempty"`
 	// Parent folder path where the space will be registered
 	ParentPath *string `json:"parent_path,omitempty"`
 	// The contents of the Genie Space in serialized string form. Use the [Get Genie
@@ -477,53 +477,45 @@ type GenieCreateSpaceRequest struct {
 	SerializedSpace *string `json:"serialized_space,omitempty"`
 	// Optional title override
 	Title *string `json:"title,omitempty"`
-	// Optional description
-	Description *string `json:"description,omitempty"`
+	// Warehouse to associate with the new space
+	WarehouseId *string `json:"warehouse_id,omitempty"`
 }
 
 type GenieEvalResponse struct {
 	// The response content (either text or SQL query).
 	Response *string `json:"response,omitempty"`
-	// SQL Statement Execution response.
-	SqlExecutionResult *StatementResponse `json:"sql_execution_result,omitempty"`
 	// Type of response
 	ResponseType GenieEvalResponseType `json:"response_type,omitempty"`
+	// SQL Statement Execution response.
+	SqlExecutionResult *StatementResponse `json:"sql_execution_result,omitempty"`
 }
 
 // Shows summary information for an evaluation result. For detailed information
 // including SQL execution results, actual/expected responses, and assessment
 // scores, use GenieGetEvalResultDetails..
 type GenieEvalResult struct {
+	// Stored snapshot of original benchmark answer text.
+	BenchmarkAnswer *string `json:"benchmark_answer,omitempty"`
+	// The ID of the benchmark question that was evaluated.
+	BenchmarkQuestionId *string `json:"benchmark_question_id,omitempty"`
+	// User ID who created evaluation result.
+	CreatedByUser *int64 `json:"created_by_user,omitempty"`
+	// Stored snapshot of original benchmark question text.
+	Question *string `json:"question,omitempty"`
 	// Unique identifier for this evaluation result.
 	ResultId *string `json:"result_id,omitempty"`
 	// The ID of the space the evaluation result belongs to.
 	SpaceId *string `json:"space_id,omitempty"`
-	// The ID of the benchmark question that was evaluated.
-	BenchmarkQuestionId *string `json:"benchmark_question_id,omitempty"`
 	// Current status of this evaluation result.
 	Status EvaluationStatusType `json:"status,omitempty"`
-	// Stored snapshot of original benchmark question text.
-	Question *string `json:"question,omitempty"`
-	// Stored snapshot of original benchmark answer text.
-	BenchmarkAnswer *string `json:"benchmark_answer,omitempty"`
-	// User ID who created evaluation result.
-	CreatedByUser *int64 `json:"created_by_user,omitempty"`
 }
 
 // Shows detailed information for an evaluation result..
 type GenieEvalResultDetails struct {
-	// The unique identifier for the evaluation result.
-	ResultId *string `json:"result_id,omitempty"`
-	// The ID of the space the evaluation result belongs to.
-	SpaceId *string `json:"space_id,omitempty"`
-	// The ID of the benchmark question that was evaluated.
-	BenchmarkQuestionId *string `json:"benchmark_question_id,omitempty"`
-	// Current status of the evaluation run.
-	EvalRunStatus EvaluationStatusType `json:"eval_run_status,omitempty"`
+	// The actual response generated by Genie.
+	ActualResponse []GenieEvalResponse `json:"actual_response,omitempty"`
 	// Assessment of the evaluation result: good, bad, or needs review
 	Assessment GenieEvalAssessment `json:"assessment,omitempty"`
-	// Whether this evaluation was manually assessed.
-	ManualAssessment *bool `json:"manual_assessment,omitempty"`
 	// Reasons for the assessment score.
 	//
 	// Assessment reasons describe why a Genie response was scored as BAD.
@@ -573,73 +565,81 @@ type GenieEvalResultDetails struct {
 	// (deprecated) - LLM_JUDGE_SYNTAX_ERROR (deprecated) - LLM_JUDGE_SEMANTIC_ERROR
 	// (deprecated)
 	AssessmentReasons []ScoreReason `json:"assessment_reasons,omitempty"`
-	// The actual response generated by Genie.
-	ActualResponse []GenieEvalResponse `json:"actual_response,omitempty"`
+	// The ID of the benchmark question that was evaluated.
+	BenchmarkQuestionId *string `json:"benchmark_question_id,omitempty"`
+	// Current status of the evaluation run.
+	EvalRunStatus EvaluationStatusType `json:"eval_run_status,omitempty"`
 	// The expected responses from the benchmark.
 	ExpectedResponse []GenieEvalResponse `json:"expected_response,omitempty"`
+	// Whether this evaluation was manually assessed.
+	ManualAssessment *bool `json:"manual_assessment,omitempty"`
+	// The unique identifier for the evaluation result.
+	ResultId *string `json:"result_id,omitempty"`
+	// The ID of the space the evaluation result belongs to.
+	SpaceId *string `json:"space_id,omitempty"`
 }
 
 // A benchmark evaluation run. The public benchmark API currently evaluates
 // chat-mode responses..
 type GenieEvalRunResponse struct {
+	// Timestamp when the evaluation run was created (milliseconds since epoch).
+	CreatedTimestamp *int64 `json:"created_timestamp,omitempty"`
 	// The unique identifier for the evaluation run.
 	EvalRunId *string `json:"eval_run_id,omitempty"`
 	// Current status of the evaluation run.
 	EvalRunStatus EvaluationStatusType `json:"eval_run_status,omitempty"`
-	// User ID who initiated the evaluation run.
-	RunByUser *int64 `json:"run_by_user,omitempty"`
-	// Timestamp when the evaluation run was created (milliseconds since epoch).
-	CreatedTimestamp *int64 `json:"created_timestamp,omitempty"`
-	// Total number of questions in the evaluation run.
-	NumQuestions *int64 `json:"num_questions,omitempty"`
-	// Number of questions answered correctly.
-	NumCorrect *int64 `json:"num_correct,omitempty"`
-	// Number of questions that need manual review.
-	NumNeedsReview *int64 `json:"num_needs_review,omitempty"`
-	// Number of questions that have been completed.
-	NumDone *int64 `json:"num_done,omitempty"`
 	// Timestamp when the evaluation run was last updated (milliseconds since
 	// epoch).
 	LastUpdatedTimestamp *int64 `json:"last_updated_timestamp,omitempty"`
+	// Number of questions answered correctly.
+	NumCorrect *int64 `json:"num_correct,omitempty"`
+	// Number of questions that have been completed.
+	NumDone *int64 `json:"num_done,omitempty"`
+	// Number of questions that need manual review.
+	NumNeedsReview *int64 `json:"num_needs_review,omitempty"`
+	// Total number of questions in the evaluation run.
+	NumQuestions *int64 `json:"num_questions,omitempty"`
+	// User ID who initiated the evaluation run.
+	RunByUser *int64 `json:"run_by_user,omitempty"`
 }
 
 type GenieExecuteMessageAttachmentQueryRequest struct {
+	// Attachment ID
+	AttachmentId *string `json:"attachment_id,omitempty"`
+	// Conversation ID
+	ConversationId *string `json:"conversation_id,omitempty"`
 	// Message ID
 	MessageId *string `json:"message_id,omitempty"`
 	// Genie space ID
 	SpaceId *string `json:"space_id,omitempty"`
-	// Conversation ID
-	ConversationId *string `json:"conversation_id,omitempty"`
-	// Attachment ID
-	AttachmentId *string `json:"attachment_id,omitempty"`
 }
 
 type GenieExecuteMessageQueryRequest struct {
+	// Conversation ID
+	ConversationId *string `json:"conversation_id,omitempty"`
 	// Message ID
 	MessageId *string `json:"message_id,omitempty"`
 	// Genie space ID
 	SpaceId *string `json:"space_id,omitempty"`
-	// Conversation ID
-	ConversationId *string `json:"conversation_id,omitempty"`
 }
 
 // Feedback containing rating and optional comment.
 type GenieFeedback struct {
-	// The feedback rating
-	Rating GenieFeedbackRating `json:"rating,omitempty"`
 	// Optional feedback comment text
 	Comment *string `json:"comment,omitempty"`
+	// The feedback rating
+	Rating GenieFeedbackRating `json:"rating,omitempty"`
 }
 
 type GenieGenerateDownloadFullQueryResultRequest struct {
-	// Genie space ID
-	SpaceId *string `json:"space_id,omitempty"`
+	// Attachment ID
+	AttachmentId *string `json:"attachment_id,omitempty"`
 	// Conversation ID
 	ConversationId *string `json:"conversation_id,omitempty"`
 	// Message ID
 	MessageId *string `json:"message_id,omitempty"`
-	// Attachment ID
-	AttachmentId *string `json:"attachment_id,omitempty"`
+	// Genie space ID
+	SpaceId *string `json:"space_id,omitempty"`
 }
 
 type GenieGenerateDownloadFullQueryResultResponse struct {
@@ -651,19 +651,19 @@ type GenieGenerateDownloadFullQueryResultResponse struct {
 }
 
 type GenieGetDownloadFullQueryResultRequest struct {
-	// Genie space ID
-	SpaceId *string `json:"space_id,omitempty"`
-	// Conversation ID
-	ConversationId *string `json:"conversation_id,omitempty"`
-	// Message ID
-	MessageId *string `json:"message_id,omitempty"`
 	// Attachment ID
 	AttachmentId *string `json:"attachment_id,omitempty"`
+	// Conversation ID
+	ConversationId *string `json:"conversation_id,omitempty"`
 	// Download ID. This ID is provided by the [Generate Download
 	// endpoint](:method:genie/generateDownloadFullQueryResult)
 	DownloadId *string `json:"download_id,omitempty"`
 	// JWT signature for the download_id to ensure secure access to query results
 	DownloadIdSignature *string `json:"download_id_signature,omitempty"`
+	// Message ID
+	MessageId *string `json:"message_id,omitempty"`
+	// Genie space ID
+	SpaceId *string `json:"space_id,omitempty"`
 }
 
 type GenieGetDownloadFullQueryResultResponse struct {
@@ -679,22 +679,22 @@ type GenieGetMessageQueryResultResponse struct {
 }
 
 type GenieGetSpaceRequest struct {
-	// The ID associated with the Genie space
-	SpaceId *string `json:"space_id,omitempty"`
 	// Whether to include the serialized space export in the response. Requires at
 	// least CAN EDIT permission on the space.
 	IncludeSerializedSpace *bool `json:"include_serialized_space,omitempty"`
+	// The ID associated with the Genie space
+	SpaceId *string `json:"space_id,omitempty"`
 }
 
 type GenieListConversationCommentsRequest struct {
-	// The ID associated with the Genie space.
-	SpaceId *string `json:"space_id,omitempty"`
 	// The ID associated with the conversation.
 	ConversationId *string `json:"conversation_id,omitempty"`
 	// Maximum number of comments to return per page.
 	PageSize *int `json:"page_size,omitempty"`
 	// Pagination token for getting the next page of results.
 	PageToken *string `json:"page_token,omitempty"`
+	// The ID associated with the Genie space.
+	SpaceId *string `json:"space_id,omitempty"`
 }
 
 type GenieListConversationCommentsResponse struct {
@@ -705,14 +705,14 @@ type GenieListConversationCommentsResponse struct {
 }
 
 type GenieListConversationMessagesRequest struct {
-	// The ID associated with the Genie space where the conversation is located
-	SpaceId *string `json:"space_id,omitempty"`
 	// The ID of the conversation to list messages from
 	ConversationId *string `json:"conversation_id,omitempty"`
 	// Maximum number of messages to return per page
 	PageSize *int `json:"page_size,omitempty"`
 	// Token to get the next page of results
 	PageToken *string `json:"page_token,omitempty"`
+	// The ID associated with the Genie space where the conversation is located
+	SpaceId *string `json:"space_id,omitempty"`
 }
 
 type GenieListConversationMessagesResponse struct {
@@ -723,15 +723,15 @@ type GenieListConversationMessagesResponse struct {
 }
 
 type GenieListConversationsRequest struct {
-	// The ID of the Genie space to retrieve conversations from.
-	SpaceId *string `json:"space_id,omitempty"`
+	// Include all conversations in the space across all users. Requires at least
+	// CAN MANAGE permission on the space.
+	IncludeAll *bool `json:"include_all,omitempty"`
 	// Maximum number of conversations to return per page
 	PageSize *int `json:"page_size,omitempty"`
 	// Token to get the next page of results
 	PageToken *string `json:"page_token,omitempty"`
-	// Include all conversations in the space across all users. Requires at least
-	// CAN MANAGE permission on the space.
-	IncludeAll *bool `json:"include_all,omitempty"`
+	// The ID of the Genie space to retrieve conversations from.
+	SpaceId *string `json:"space_id,omitempty"`
 }
 
 type GenieListConversationsResponse struct {
@@ -742,14 +742,14 @@ type GenieListConversationsResponse struct {
 }
 
 type GenieListEvalResultsRequest struct {
-	// The ID associated with the Genie space where the evaluation run is located.
-	SpaceId *string `json:"space_id,omitempty"`
 	// The unique identifier for the evaluation run.
 	EvalRunId *string `json:"eval_run_id,omitempty"`
 	// Maximum number of eval results to return per page.
 	PageSize *int `json:"page_size,omitempty"`
 	// Opaque token to retrieve the next page of results.
 	PageToken *string `json:"page_token,omitempty"`
+	// The ID associated with the Genie space where the evaluation run is located.
+	SpaceId *string `json:"space_id,omitempty"`
 }
 
 type GenieListEvalResultsResponse struct {
@@ -760,12 +760,12 @@ type GenieListEvalResultsResponse struct {
 }
 
 type GenieListEvalRunsRequest struct {
-	// The ID associated with the Genie space where the evaluation run is located.
-	SpaceId *string `json:"space_id,omitempty"`
 	// Maximum number of evaluation runs to return per page
 	PageSize *int `json:"page_size,omitempty"`
 	// Token to get the next page of results
 	PageToken *string `json:"page_token,omitempty"`
+	// The ID associated with the Genie space where the evaluation run is located.
+	SpaceId *string `json:"space_id,omitempty"`
 }
 
 type GenieListEvalRunsResponse struct {
@@ -776,8 +776,6 @@ type GenieListEvalRunsResponse struct {
 }
 
 type GenieListMessageCommentsRequest struct {
-	// The ID associated with the Genie space.
-	SpaceId *string `json:"space_id,omitempty"`
 	// The ID associated with the conversation.
 	ConversationId *string `json:"conversation_id,omitempty"`
 	// The ID associated with the message.
@@ -786,6 +784,8 @@ type GenieListMessageCommentsRequest struct {
 	PageSize *int `json:"page_size,omitempty"`
 	// Pagination token for getting the next page of results.
 	PageToken *string `json:"page_token,omitempty"`
+	// The ID associated with the Genie space.
+	SpaceId *string `json:"space_id,omitempty"`
 }
 
 type GenieListMessageCommentsResponse struct {
@@ -803,109 +803,108 @@ type GenieListSpacesRequest struct {
 }
 
 type GenieListSpacesResponse struct {
-	// List of Genie spaces
-	Spaces []GenieSpace `json:"spaces,omitempty"`
 	// Token to get the next page of results
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// List of Genie spaces
+	Spaces []GenieSpace `json:"spaces,omitempty"`
 }
 
 type GenieMessage struct {
-	// Message ID. Legacy identifier, use message_id instead
-	Id *string `json:"id,omitempty"`
-	// Genie space ID
-	SpaceId *string `json:"space_id,omitempty"`
-	// Conversation ID
-	ConversationId *string `json:"conversation_id,omitempty"`
-	// ID of the user who created the message
-	UserId *int64 `json:"user_id,omitempty"`
-	// Timestamp when the message was created
-	CreatedTimestamp *int64 `json:"created_timestamp,omitempty"`
-	// Timestamp when the message was last updated
-	LastUpdatedTimestamp *int64                      `json:"last_updated_timestamp,omitempty"`
-	Status               MessageStatus_MessageStatus `json:"status,omitempty"`
-	// User message content
-	Content *string `json:"content,omitempty"`
 	// AI-generated response to the message
 	Attachments []GenieAttachment `json:"attachments,omitempty"`
+	// User message content
+	Content *string `json:"content,omitempty"`
+	// Conversation ID
+	ConversationId *string `json:"conversation_id,omitempty"`
+	// Timestamp when the message was created
+	CreatedTimestamp *int64 `json:"created_timestamp,omitempty"`
+	// Error message if Genie failed to respond to the message
+	Error *MessageError `json:"error,omitempty"`
+	// User feedback for the message if provided
+	Feedback *GenieFeedback `json:"feedback,omitempty"`
+	// Message ID. Legacy identifier, use message_id instead
+	Id *string `json:"id,omitempty"`
+	// Timestamp when the message was last updated
+	LastUpdatedTimestamp *int64 `json:"last_updated_timestamp,omitempty"`
+	// Message ID
+	MessageId *string `json:"message_id,omitempty"`
 	// The result of SQL query if the message includes a query attachment.
 	// Deprecated. Use `query_result_metadata` in `GenieQueryAttachment` instead.
 	QueryResult *Result `json:"query_result,omitempty"`
-	// Error message if Genie failed to respond to the message
-	Error *MessageError `json:"error,omitempty"`
-	// Message ID
-	MessageId *string `json:"message_id,omitempty"`
-	// User feedback for the message if provided
-	Feedback *GenieFeedback `json:"feedback,omitempty"`
+	// Genie space ID
+	SpaceId *string                     `json:"space_id,omitempty"`
+	Status  MessageStatus_MessageStatus `json:"status,omitempty"`
+	// ID of the user who created the message
+	UserId *int64 `json:"user_id,omitempty"`
 }
 
 // A comment on a Genie conversation message..
 type GenieMessageComment struct {
-	// Genie space ID
-	SpaceId *string `json:"space_id,omitempty"`
-	// Conversation ID
-	ConversationId *string `json:"conversation_id,omitempty"`
-	// Message ID
-	MessageId *string `json:"message_id,omitempty"`
-	// Comment ID
-	MessageCommentId *string `json:"message_comment_id,omitempty"`
-	// ID of the user who created the comment
-	UserId *int64 `json:"user_id,omitempty"`
 	// Comment text content
 	Content *string `json:"content,omitempty"`
+	// Conversation ID
+	ConversationId *string `json:"conversation_id,omitempty"`
 	// Timestamp when the comment was created
 	CreatedTimestamp *int64 `json:"created_timestamp,omitempty"`
+	// Comment ID
+	MessageCommentId *string `json:"message_comment_id,omitempty"`
+	// Message ID
+	MessageId *string `json:"message_id,omitempty"`
+	// Genie space ID
+	SpaceId *string `json:"space_id,omitempty"`
+	// ID of the user who created the comment
+	UserId *int64 `json:"user_id,omitempty"`
 }
 
 type GenieQueryAttachment struct {
-	// Name of the query
-	Title *string `json:"title,omitempty"`
-	// AI generated SQL query
-	Query *string `json:"query,omitempty"`
 	// Description of the query
 	Description *string `json:"description,omitempty"`
+	Id          *string `json:"id,omitempty"`
 	// Time when the user updated the query last
 	LastUpdatedTimestamp *int64                     `json:"last_updated_timestamp,omitempty"`
 	Parameters           []QueryAttachmentParameter `json:"parameters,omitempty"`
-	Id                   *string                    `json:"id,omitempty"`
+	// AI generated SQL query
+	Query *string `json:"query,omitempty"`
+	// Metadata associated with the query result.
+	QueryResultMetadata *GenieResultMetadata `json:"query_result_metadata,omitempty"`
 	// Statement Execution API statement id. Use [Get status, manifest, and result
 	// first chunk](:method:statementexecution/getstatement) to get the full result
 	// data.
 	StatementId *string `json:"statement_id,omitempty"`
-	// Metadata associated with the query result.
-	QueryResultMetadata *GenieResultMetadata `json:"query_result_metadata,omitempty"`
 	// Insights into how Genie came to generate the SQL.
 	Thoughts []Thought `json:"thoughts,omitempty"`
+	// Name of the query
+	Title *string `json:"title,omitempty"`
 }
 
 type GenieResultMetadata struct {
-	// The number of rows in the result set.
-	RowCount *int64 `json:"row_count,omitempty"`
 	// Indicates whether the result set is truncated.
 	IsTruncated *bool `json:"is_truncated,omitempty"`
+	// The number of rows in the result set.
+	RowCount *int64 `json:"row_count,omitempty"`
 }
 
 type GenieSendMessageFeedbackRequest struct {
-	// The ID associated with the Genie space where the message is located.
-	SpaceId *string `json:"space_id,omitempty"`
+	// Optional text feedback that will be stored as a comment.
+	Comment *string `json:"comment,omitempty"`
 	// The ID associated with the conversation.
 	ConversationId *string `json:"conversation_id,omitempty"`
 	// The ID associated with the message to provide feedback for.
 	MessageId *string `json:"message_id,omitempty"`
 	// The rating (POSITIVE, NEGATIVE, or NONE).
 	Rating GenieFeedbackRating `json:"rating,omitempty"`
-	// Optional text feedback that will be stored as a comment.
-	Comment *string `json:"comment,omitempty"`
+	// The ID associated with the Genie space where the message is located.
+	SpaceId *string `json:"space_id,omitempty"`
 }
 
 type GenieSpace struct {
-	// Genie space ID
-	SpaceId *string `json:"space_id,omitempty"`
-	// Title of the Genie Space
-	Title *string `json:"title,omitempty"`
+	// Time when the Genie space was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
 	// Description of the Genie Space
 	Description *string `json:"description,omitempty"`
-	// Warehouse associated with the Genie Space
-	WarehouseId *string `json:"warehouse_id,omitempty"`
+	// ETag for this space. Pass this value back in the update request to prevent
+	// overwriting concurrent changes.
+	Etag *string `json:"etag,omitempty"`
 	// Parent folder path of the Genie Space
 	ParentPath *string `json:"parent_path,omitempty"`
 	// The contents of the Genie Space in serialized string form. This field is
@@ -914,33 +913,34 @@ type GenieSpace struct {
 	// includes the `serialized_space` field. This field provides the structure of
 	// the JSON string that represents the space's layout and components.
 	SerializedSpace *string `json:"serialized_space,omitempty"`
-	// ETag for this space. Pass this value back in the update request to prevent
-	// overwriting concurrent changes.
-	Etag *string `json:"etag,omitempty"`
-	// Time when the Genie space was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
+	// Genie space ID
+	SpaceId *string `json:"space_id,omitempty"`
+	// Title of the Genie Space
+	Title *string `json:"title,omitempty"`
 	// Time when the Genie space was last modified, matching the value shown in the
 	// Genie Agent UI.
 	UpdateTime *types.Time `json:"update_time,omitempty"`
+	// Warehouse associated with the Genie Space
+	WarehouseId *string `json:"warehouse_id,omitempty"`
 }
 
 type GenieStartConversationRequest struct {
-	// The ID associated with the Genie space where you want to start a
-	// conversation.
-	SpaceId *string `json:"space_id,omitempty"`
 	// The text of the message that starts the conversation.
 	Content *string `json:"content,omitempty"`
 	// Enable visualization generation.
 	EnableVisualization *bool `json:"enable_visualization,omitempty"`
+	// The ID associated with the Genie space where you want to start a
+	// conversation.
+	SpaceId *string `json:"space_id,omitempty"`
 }
 
 type GenieStartConversationResponse struct {
-	// Message ID
-	MessageId *string       `json:"message_id,omitempty"`
-	Message   *GenieMessage `json:"message,omitempty"`
+	Conversation *GenieConversation `json:"conversation,omitempty"`
 	// Conversation ID
-	ConversationId *string            `json:"conversation_id,omitempty"`
-	Conversation   *GenieConversation `json:"conversation,omitempty"`
+	ConversationId *string       `json:"conversation_id,omitempty"`
+	Message        *GenieMessage `json:"message,omitempty"`
+	// Message ID
+	MessageId *string `json:"message_id,omitempty"`
 }
 
 // Follow-up questions suggested by Genie.
@@ -950,34 +950,34 @@ type GenieSuggestedQuestionsAttachment struct {
 }
 
 type GenieUpdateSpaceRequest struct {
-	// Genie space ID
-	SpaceId *string `json:"space_id,omitempty"`
+	// Optional description
+	Description *string `json:"description,omitempty"`
+	// ETag returned by a previous GET or UPDATE. When set, the update will fail if
+	// the space has been modified since. Omit to apply the update unconditionally.
+	Etag *string `json:"etag,omitempty"`
+	// Parent workspace folder path to move this Genie space under.
+	ParentPath *string `json:"parent_path,omitempty"`
 	// The contents of the Genie Space in serialized string form (full replacement).
 	// Use the [Get Genie Space](:method:genie/getspace) API to retrieve an example
 	// response, which includes the `serialized_space` field. This field provides
 	// the structure of the JSON string that represents the space's layout and
 	// components.
 	SerializedSpace *string `json:"serialized_space,omitempty"`
+	// Genie space ID
+	SpaceId *string `json:"space_id,omitempty"`
 	// Optional title override
 	Title *string `json:"title,omitempty"`
-	// Optional description
-	Description *string `json:"description,omitempty"`
 	// Optional warehouse override
 	WarehouseId *string `json:"warehouse_id,omitempty"`
-	// ETag returned by a previous GET or UPDATE. When set, the update will fail if
-	// the space has been modified since. Omit to apply the update unconditionally.
-	Etag *string `json:"etag,omitempty"`
-	// Parent workspace folder path to move this Genie space under.
-	ParentPath *string `json:"parent_path,omitempty"`
 }
 
 // Visualization generated by Genie for a query result. Use the attachment ID
 // with the download visualization API to retrieve the rendered image..
 type GenieVizAttachment struct {
-	// Name of the visualization
-	Title *string `json:"title,omitempty"`
 	// The ID of the query attachment the visualization was generated from
 	QueryAttachmentId *string `json:"query_attachment_id,omitempty"`
+	// Name of the visualization
+	Title *string `json:"title,omitempty"`
 }
 
 // copied from proto3 / Google Well Known Types, source:
@@ -1012,19 +1012,19 @@ type PolicyFunctionArgument struct {
 
 type QueryAttachmentParameter struct {
 	Keyword *string `json:"keyword,omitempty"`
-	Value   *string `json:"value,omitempty"`
 	SqlType *string `json:"sql_type,omitempty"`
+	Value   *string `json:"value,omitempty"`
 }
 
 type Result struct {
+	// If result is truncated
+	IsTruncated *bool `json:"is_truncated,omitempty"`
+	// Row count of the result
+	RowCount *int64 `json:"row_count,omitempty"`
 	// Statement Execution API statement id. Use [Get status, manifest, and result
 	// first chunk](:method:statementexecution/getstatement) to get the full result
 	// data.
 	StatementId *string `json:"statement_id,omitempty"`
-	// Row count of the result
-	RowCount *int64 `json:"row_count,omitempty"`
-	// If result is truncated
-	IsTruncated *bool `json:"is_truncated,omitempty"`
 	// JWT corresponding to the statement contained in this result
 	StatementIdSignature *string `json:"statement_id_signature,omitempty"`
 }
@@ -1036,19 +1036,15 @@ type Result struct {
 // return the link for the requested chunk; `executeStatement` and
 // `getStatementResult` responses can contain links for multiple chunks..
 type ResultData struct {
-	ExternalLinks []ExternalLink `json:"external_links,omitempty"`
-	// The `JSON_ARRAY` format is an array of arrays of values, where each non-null
-	// value is formatted as a string. Null values are encoded as JSON `null`.
-	DataArray []ListValue `json:"data_array,omitempty"`
-	// The position within the sequence of result set chunks.
-	ChunkIndex *int `json:"chunk_index,omitempty"`
-	// The starting row offset within the result set.
-	RowOffset *int64 `json:"row_offset,omitempty"`
-	// The number of rows within the result chunk.
-	RowCount *int64 `json:"row_count,omitempty"`
 	// The number of bytes in the result chunk. This field is not available when
 	// using `INLINE` disposition.
 	ByteCount *int64 `json:"byte_count,omitempty"`
+	// The position within the sequence of result set chunks.
+	ChunkIndex *int `json:"chunk_index,omitempty"`
+	// The `JSON_ARRAY` format is an array of arrays of values, where each non-null
+	// value is formatted as a string. Null values are encoded as JSON `null`.
+	DataArray     []ListValue    `json:"data_array,omitempty"`
+	ExternalLinks []ExternalLink `json:"external_links,omitempty"`
 	// When fetching, provides the `chunk_index` for the _next_ chunk. If absent,
 	// indicates there are no more chunks. The next chunk can be fetched with a
 	// :method:statementexecution/getstatementresultchunkn request.
@@ -1058,21 +1054,25 @@ type ResultData struct {
 	// joined with your `$DATABRICKS_HOST`, and should be treated as an opaque link.
 	// This is an alternative to using `next_chunk_index`.
 	NextChunkInternalLink *string `json:"next_chunk_internal_link,omitempty"`
+	// The number of rows within the result chunk.
+	RowCount *int64 `json:"row_count,omitempty"`
+	// The starting row offset within the result set.
+	RowOffset *int64 `json:"row_offset,omitempty"`
 }
 
 // The result manifest provides schema and metadata for the result set..
 type ResultManifest struct {
-	Format Format  `json:"format,omitempty"`
-	Schema *Schema `json:"schema,omitempty"`
-	// The total number of chunks that the result set has been divided into.
-	TotalChunkCount *int `json:"total_chunk_count,omitempty"`
 	// Array of result set chunk metadata.
 	Chunks []ChunkInfo `json:"chunks,omitempty"`
-	// The total number of rows in the result set.
-	TotalRowCount *int64 `json:"total_row_count,omitempty"`
+	Format Format      `json:"format,omitempty"`
+	Schema *Schema     `json:"schema,omitempty"`
 	// The total number of bytes in the result set. This field is not available when
 	// using `INLINE` disposition.
 	TotalByteCount *int64 `json:"total_byte_count,omitempty"`
+	// The total number of chunks that the result set has been divided into.
+	TotalChunkCount *int `json:"total_chunk_count,omitempty"`
+	// The total number of rows in the result set.
+	TotalRowCount *int64 `json:"total_row_count,omitempty"`
 	// Indicates whether the result is truncated due to `row_limit` or `byte_limit`.
 	Truncated *bool `json:"truncated,omitempty"`
 }
@@ -1083,17 +1083,21 @@ type Schema struct {
 }
 
 type StatementResponse struct {
+	Manifest *ResultManifest `json:"manifest,omitempty"`
+	Result   *ResultData     `json:"result,omitempty"`
 	// The statement ID is returned upon successfully submitting a SQL statement,
 	// and is a required reference for all subsequent calls.
 	StatementId *string          `json:"statement_id,omitempty"`
 	Status      *StatementStatus `json:"status,omitempty"`
-	Manifest    *ResultManifest  `json:"manifest,omitempty"`
-	Result      *ResultData      `json:"result,omitempty"`
 }
 
 // The status response includes execution state and if relevant, error
 // information..
 type StatementStatus struct {
+	Error *DatabricksServiceExceptionProto `json:"error,omitempty"`
+	// SQLSTATE error code returned when the statement execution fails. Only
+	// populated when the statement status is `FAILED`.
+	SqlState *string `json:"sql_state,omitempty"`
 	// Statement execution state: - `PENDING`: waiting for warehouse - `RUNNING`:
 	// running - `SUCCEEDED`: execution was successful, result data available for
 	// fetch - `FAILED`: execution failed; reason for failure described in
@@ -1101,11 +1105,7 @@ type StatementStatus struct {
 	// explicit cancel call, or timeout with `on_wait_timeout=CANCEL` - `CLOSED`:
 	// execution successful, and statement closed; result no longer available for
 	// fetch
-	State StatementStatus_State            `json:"state,omitempty"`
-	Error *DatabricksServiceExceptionProto `json:"error,omitempty"`
-	// SQLSTATE error code returned when the statement execution fails. Only
-	// populated when the statement status is `FAILED`.
-	SqlState *string `json:"sql_state,omitempty"`
+	State StatementStatus_State `json:"state,omitempty"`
 }
 
 // copied from proto3 / Google Well Known Types, source:
@@ -1139,6 +1139,8 @@ type TextAttachment struct {
 
 // A single thought in the AI's reasoning process for a query..
 type Thought struct {
+	// The md formatted content for this thought.
+	Content *string `json:"content,omitempty"`
 	// The category of this thought. The possible values are: *
 	// `THOUGHT_TYPE_DESCRIPTION`: A high-level description of how the question was
 	// interpreted. * `THOUGHT_TYPE_UNDERSTANDING`: How ambiguous parts of the
@@ -1147,8 +1149,6 @@ type Thought struct {
 	// author-defined instructions were referenced. * `THOUGHT_TYPE_STEPS`: The
 	// logical steps taken to compute the answer.
 	ThoughtType ThoughtType `json:"thought_type,omitempty"`
-	// The md formatted content for this thought.
-	Content *string `json:"content,omitempty"`
 }
 
 // copied from proto3 / Google Well Known Types, source:
@@ -1160,12 +1160,12 @@ type Thought struct {
 //
 // The JSON representation for `Value` is JSON value..
 type Value struct {
+	BoolValue   *bool      `json:"bool_value,omitempty"`
+	ListValue   *ListValue `json:"list_value,omitempty"`
 	NullValue   NullValue  `json:"null_value,omitempty"`
 	NumberValue *float64   `json:"number_value,omitempty"`
 	StringValue *string    `json:"string_value,omitempty"`
-	BoolValue   *bool      `json:"bool_value,omitempty"`
 	StructValue *Struct    `json:"struct_value,omitempty"`
-	ListValue   *ListValue `json:"list_value,omitempty"`
 }
 
 // ChunkInfoToSDK converts the mirror to the sdk-go type.

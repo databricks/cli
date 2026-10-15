@@ -69,9 +69,6 @@ type AnomalyDetectionConfig struct {
 
 // Request to cancel a refresh..
 type CancelRefreshRequest struct {
-	// The type of the monitored object. Can be one of the following: `schema` or
-	// `table`.
-	ObjectType *string `json:"object_type,omitempty"`
 	// The UUID of the request object. It is `schema_id` for `schema`, and
 	// `table_id` for `table`.
 	//
@@ -87,6 +84,9 @@ type CancelRefreshRequest struct {
 	// [schema_id]: https://docs.databricks.com/api/workspace/schemas/get#schema_id
 	// [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id
 	ObjectId *string `json:"object_id,omitempty"`
+	// The type of the monitored object. Can be one of the following: `schema` or
+	// `table`.
+	ObjectType *string `json:"object_type,omitempty"`
 	// Unique id of the refresh operation.
 	RefreshId *int64 `json:"refresh_id,omitempty"`
 }
@@ -111,6 +111,8 @@ type CreateRefreshRequest struct {
 
 // The data quality monitoring workflow cron schedule..
 type CronSchedule struct {
+	// Read only field that indicates whether the schedule is paused or not.
+	PauseStatus CronSchedulePauseStatus `json:"pause_status,omitempty"`
 	// The expression that determines when to run the monitor. See [examples].
 	//
 	// [examples]: https://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html
@@ -121,21 +123,48 @@ type CronSchedule struct {
 	// details. The timezone id (e.g., ``America/Los_Angeles``) in which to evaluate
 	// the quartz expression.
 	TimezoneId *string `json:"timezone_id,omitempty"`
-	// Read only field that indicates whether the schedule is paused or not.
-	PauseStatus CronSchedulePauseStatus `json:"pause_status,omitempty"`
 }
 
 // Data Profiling Configurations..
 type DataProfilingConfig struct {
-	// ID of the schema where output tables are created.
-	OutputSchemaId *string `json:"output_schema_id,omitempty"`
 	// Field for specifying the absolute path to a custom directory to store
 	// data-monitoring assets. Normally prepopulated to a default user location via
 	// UI and Python APIs.
-	AssetsDir    *string             `json:"assets_dir,omitempty"`
-	InferenceLog *InferenceLogConfig `json:"inference_log,omitempty"`
-	TimeSeries   *TimeSeriesConfig   `json:"time_series,omitempty"`
-	Snapshot     *SnapshotConfig     `json:"snapshot,omitempty"`
+	AssetsDir *string `json:"assets_dir,omitempty"`
+	// Baseline table name. Baseline data is used to compute drift from the data in
+	// the monitored `table_name`. The baseline table and the monitored table shall
+	// have the same schema.
+	BaselineTableName *string `json:"baseline_table_name,omitempty"`
+	// Custom metrics.
+	CustomMetrics []DataProfilingCustomMetric `json:"custom_metrics,omitempty"`
+	// Id of dashboard that visualizes the computed metrics. This can be empty if
+	// the monitor is in PENDING state.
+	DashboardId *string `json:"dashboard_id,omitempty"`
+	// Table that stores drift metrics data. Format: `catalog.schema.table_name`.
+	DriftMetricsTableName *string `json:"drift_metrics_table_name,omitempty"`
+	// The warehouse for dashboard creation
+	EffectiveWarehouseId *string             `json:"effective_warehouse_id,omitempty"`
+	InferenceLog         *InferenceLogConfig `json:"inference_log,omitempty"`
+	// The latest error message for a monitor failure.
+	LatestMonitorFailureMessage *string `json:"latest_monitor_failure_message,omitempty"`
+	// Represents the current monitor configuration version in use. The version will
+	// be represented in a numeric fashion (1,2,3...). The field has flexibility to
+	// take on negative values, which can indicate corrupted monitor_version
+	// numbers.
+	MonitorVersion *int64 `json:"monitor_version,omitempty"`
+	// Unity Catalog table to monitor. Format: `catalog.schema.table_name`
+	MonitoredTableName *string `json:"monitored_table_name,omitempty"`
+	// Field for specifying notification settings.
+	NotificationSettings *NotificationSettings `json:"notification_settings,omitempty"`
+	// ID of the schema where output tables are created.
+	OutputSchemaId *string `json:"output_schema_id,omitempty"`
+	// Table that stores profile metrics data. Format: `catalog.schema.table_name`.
+	ProfileMetricsTableName *string `json:"profile_metrics_table_name,omitempty"`
+	// The cron schedule.
+	Schedule *CronSchedule `json:"schedule,omitempty"`
+	// Whether to skip creating a default dashboard summarizing data quality
+	// metrics.
+	SkipBuiltinDashboard *bool `json:"skip_builtin_dashboard,omitempty"`
 	// List of column expressions to slice data with for targeted analysis. The data
 	// is grouped by each expression independently, resulting in a separate slice
 	// for each predicate and its complements. For example
@@ -143,49 +172,18 @@ type DataProfilingConfig struct {
 	// slices: two slices for `col_2 > 10` (True and False), and one slice per
 	// unique value in `col1`. For high-cardinality columns, only the top 100 unique
 	// values by frequency will generate slices.
-	SlicingExprs []string `json:"slicing_exprs,omitempty"`
-	// Custom metrics.
-	CustomMetrics []DataProfilingCustomMetric `json:"custom_metrics,omitempty"`
-	// Baseline table name. Baseline data is used to compute drift from the data in
-	// the monitored `table_name`. The baseline table and the monitored table shall
-	// have the same schema.
-	BaselineTableName *string `json:"baseline_table_name,omitempty"`
-	// The cron schedule.
-	Schedule *CronSchedule `json:"schedule,omitempty"`
-	// Field for specifying notification settings.
-	NotificationSettings *NotificationSettings `json:"notification_settings,omitempty"`
-	// Whether to skip creating a default dashboard summarizing data quality
-	// metrics.
-	SkipBuiltinDashboard *bool `json:"skip_builtin_dashboard,omitempty"`
+	SlicingExprs []string        `json:"slicing_exprs,omitempty"`
+	Snapshot     *SnapshotConfig `json:"snapshot,omitempty"`
+	// The data profiling monitor status.
+	Status     DataProfilingStatus `json:"status,omitempty"`
+	TimeSeries *TimeSeriesConfig   `json:"time_series,omitempty"`
 	// Optional argument to specify the warehouse for dashboard creation. If not
 	// specified, the first running warehouse will be used.
 	WarehouseId *string `json:"warehouse_id,omitempty"`
-	// Unity Catalog table to monitor. Format: `catalog.schema.table_name`
-	MonitoredTableName *string `json:"monitored_table_name,omitempty"`
-	// The data profiling monitor status.
-	Status DataProfilingStatus `json:"status,omitempty"`
-	// The latest error message for a monitor failure.
-	LatestMonitorFailureMessage *string `json:"latest_monitor_failure_message,omitempty"`
-	// Table that stores profile metrics data. Format: `catalog.schema.table_name`.
-	ProfileMetricsTableName *string `json:"profile_metrics_table_name,omitempty"`
-	// Table that stores drift metrics data. Format: `catalog.schema.table_name`.
-	DriftMetricsTableName *string `json:"drift_metrics_table_name,omitempty"`
-	// Id of dashboard that visualizes the computed metrics. This can be empty if
-	// the monitor is in PENDING state.
-	DashboardId *string `json:"dashboard_id,omitempty"`
-	// Represents the current monitor configuration version in use. The version will
-	// be represented in a numeric fashion (1,2,3...). The field has flexibility to
-	// take on negative values, which can indicate corrupted monitor_version
-	// numbers.
-	MonitorVersion *int64 `json:"monitor_version,omitempty"`
-	// The warehouse for dashboard creation
-	EffectiveWarehouseId *string `json:"effective_warehouse_id,omitempty"`
 }
 
 // Custom metric definition..
 type DataProfilingCustomMetric struct {
-	// Name of the metric in the output tables.
-	Name *string `json:"name,omitempty"`
 	// Jinja template for a SQL expression that specifies how to compute the metric.
 	// See [create metric definition].
 	//
@@ -195,6 +193,8 @@ type DataProfilingCustomMetric struct {
 	// Can use ``":table"`` to indicate that the metric needs information from
 	// multiple columns.
 	InputColumns []string `json:"input_columns,omitempty"`
+	// Name of the metric in the output tables.
+	Name *string `json:"name,omitempty"`
 	// The output type of the custom metric.
 	OutputDataType *string `json:"output_data_type,omitempty"`
 	// The type of the custom metric.
@@ -203,25 +203,25 @@ type DataProfilingCustomMetric struct {
 
 // Inference log configuration..
 type InferenceLogConfig struct {
-	// Problem type the model aims to solve.
-	ProblemType InferenceProblemType `json:"problem_type,omitempty"`
-	// Column for the timestamp.
-	TimestampColumn *string `json:"timestamp_column,omitempty"`
 	// List of granularities to use when aggregating data into time windows based on
 	// their timestamp.
 	Granularities []AggregationGranularity `json:"granularities,omitempty"`
-	// Column for the prediction.
-	PredictionColumn *string `json:"prediction_column,omitempty"`
 	// Column for the label.
 	LabelColumn *string `json:"label_column,omitempty"`
 	// Column for the model identifier.
 	ModelIdColumn *string `json:"model_id_column,omitempty"`
+	// Column for the prediction.
+	PredictionColumn *string `json:"prediction_column,omitempty"`
+	// Problem type the model aims to solve.
+	ProblemType InferenceProblemType `json:"problem_type,omitempty"`
+	// Column for the timestamp.
+	TimestampColumn *string `json:"timestamp_column,omitempty"`
 }
 
 // Request to list Monitors..
 type ListMonitorRequest struct {
-	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
+	PageToken *string `json:"page_token,omitempty"`
 }
 
 // Response for listing Monitors..
@@ -232,40 +232,6 @@ type ListMonitorResponse struct {
 
 // Request to list refreshes..
 type ListRefreshRequest struct {
-	// The type of the monitored object. Can be one of the following: `schema` or
-	// `table`.
-	ObjectType *string `json:"object_type,omitempty"`
-	// The UUID of the request object. It is `schema_id` for `schema`, and
-	// `table_id` for `table`.
-	//
-	// Find the `schema_id` from either: 1. The [schema_id] of the `Schemas`
-	// resource. 2. In [Catalog Explorer] > select the `schema` > go to the
-	// `Details` tab > the `Schema ID` field.
-	//
-	// Find the `table_id` from either: 1. The [table_id] of the `Tables` resource.
-	// 2. In [Catalog Explorer] > select the `table` > go to the `Details` tab > the
-	// `Table ID` field.
-	//
-	// [Catalog Explorer]: https://docs.databricks.com/aws/en/catalog-explorer/
-	// [schema_id]: https://docs.databricks.com/api/workspace/schemas/get#schema_id
-	// [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id
-	ObjectId  *string `json:"object_id,omitempty"`
-	PageToken *string `json:"page_token,omitempty"`
-	PageSize  *int    `json:"page_size,omitempty"`
-}
-
-// Response for listing refreshes..
-type ListRefreshResponse struct {
-	Refreshes     []Refresh `json:"refreshes,omitempty"`
-	NextPageToken *string   `json:"next_page_token,omitempty"`
-}
-
-// Monitor for the data quality of unity catalog entities such as schema or
-// table..
-type Monitor struct {
-	// The type of the monitored object. Can be one of the following: `schema` or
-	// `table`.
-	ObjectType *string `json:"object_type,omitempty"`
 	// The UUID of the request object. It is `schema_id` for `schema`, and
 	// `table_id` for `table`.
 	//
@@ -281,11 +247,45 @@ type Monitor struct {
 	// [schema_id]: https://docs.databricks.com/api/workspace/schemas/get#schema_id
 	// [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id
 	ObjectId *string `json:"object_id,omitempty"`
+	// The type of the monitored object. Can be one of the following: `schema` or
+	// `table`.
+	ObjectType *string `json:"object_type,omitempty"`
+	PageSize   *int    `json:"page_size,omitempty"`
+	PageToken  *string `json:"page_token,omitempty"`
+}
+
+// Response for listing refreshes..
+type ListRefreshResponse struct {
+	NextPageToken *string   `json:"next_page_token,omitempty"`
+	Refreshes     []Refresh `json:"refreshes,omitempty"`
+}
+
+// Monitor for the data quality of unity catalog entities such as schema or
+// table..
+type Monitor struct {
 	// Anomaly Detection Configuration, applicable to `schema` object types.
 	AnomalyDetectionConfig *AnomalyDetectionConfig `json:"anomaly_detection_config,omitempty"`
 	// Data Profiling Configuration, applicable to `table` object types. Exactly one
 	// `Analysis Configuration` must be present.
 	DataProfilingConfig *DataProfilingConfig `json:"data_profiling_config,omitempty"`
+	// The UUID of the request object. It is `schema_id` for `schema`, and
+	// `table_id` for `table`.
+	//
+	// Find the `schema_id` from either: 1. The [schema_id] of the `Schemas`
+	// resource. 2. In [Catalog Explorer] > select the `schema` > go to the
+	// `Details` tab > the `Schema ID` field.
+	//
+	// Find the `table_id` from either: 1. The [table_id] of the `Tables` resource.
+	// 2. In [Catalog Explorer] > select the `table` > go to the `Details` tab > the
+	// `Table ID` field.
+	//
+	// [Catalog Explorer]: https://docs.databricks.com/aws/en/catalog-explorer/
+	// [schema_id]: https://docs.databricks.com/api/workspace/schemas/get#schema_id
+	// [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id
+	ObjectId *string `json:"object_id,omitempty"`
+	// The type of the monitored object. Can be one of the following: `schema` or
+	// `table`.
+	ObjectType *string `json:"object_type,omitempty"`
 }
 
 // Destination of the data quality monitoring notification..
@@ -304,9 +304,11 @@ type NotificationSettings struct {
 // The Refresh object gives information on a refresh of the data quality
 // monitoring pipeline..
 type Refresh struct {
-	// The type of the monitored object. Can be one of the following: `schema` or
-	// `table`.
-	ObjectType *string `json:"object_type,omitempty"`
+	// Time when the refresh ended (milliseconds since 1/1/1970 UTC).
+	EndTimeMs *int64 `json:"end_time_ms,omitempty"`
+	// An optional message to give insight into the current state of the refresh
+	// (e.g. FAILURE messages).
+	Message *string `json:"message,omitempty"`
 	// The UUID of the request object. It is `schema_id` for `schema`, and
 	// `table_id` for `table`.
 	//
@@ -322,17 +324,15 @@ type Refresh struct {
 	// [schema_id]: https://docs.databricks.com/api/workspace/schemas/get#schema_id
 	// [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id
 	ObjectId *string `json:"object_id,omitempty"`
+	// The type of the monitored object. Can be one of the following: `schema` or
+	// `table`.
+	ObjectType *string `json:"object_type,omitempty"`
 	// Unique id of the refresh operation.
 	RefreshId *int64 `json:"refresh_id,omitempty"`
-	// The current state of the refresh.
-	State RefreshState `json:"state,omitempty"`
-	// An optional message to give insight into the current state of the refresh
-	// (e.g. FAILURE messages).
-	Message *string `json:"message,omitempty"`
 	// Time when the refresh started (milliseconds since 1/1/1970 UTC).
 	StartTimeMs *int64 `json:"start_time_ms,omitempty"`
-	// Time when the refresh ended (milliseconds since 1/1/1970 UTC).
-	EndTimeMs *int64 `json:"end_time_ms,omitempty"`
+	// The current state of the refresh.
+	State RefreshState `json:"state,omitempty"`
 	// What triggered the refresh.
 	Trigger RefreshTrigger `json:"trigger,omitempty"`
 }
@@ -343,18 +343,17 @@ type SnapshotConfig struct {
 
 // Time series analysis configuration..
 type TimeSeriesConfig struct {
-	// Column for the timestamp.
-	TimestampColumn *string `json:"timestamp_column,omitempty"`
 	// List of granularities to use when aggregating data into time windows based on
 	// their timestamp.
 	Granularities []AggregationGranularity `json:"granularities,omitempty"`
+	// Column for the timestamp.
+	TimestampColumn *string `json:"timestamp_column,omitempty"`
 }
 
 // Request to update a Monitor..
 type UpdateMonitorRequest struct {
-	// The type of the monitored object. Can be one of the following: `schema` or
-	// `table`.
-	ObjectType *string `json:"object_type,omitempty"`
+	// The monitor to update.
+	Monitor *Monitor `json:"monitor,omitempty"`
 	// The UUID of the request object. It is `schema_id` for `schema`, and
 	// `table_id` for `table`.
 	//
@@ -370,8 +369,9 @@ type UpdateMonitorRequest struct {
 	// [schema_id]: https://docs.databricks.com/api/workspace/schemas/get#schema_id
 	// [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id
 	ObjectId *string `json:"object_id,omitempty"`
-	// The monitor to update.
-	Monitor *Monitor `json:"monitor,omitempty"`
+	// The type of the monitored object. Can be one of the following: `schema` or
+	// `table`.
+	ObjectType *string `json:"object_type,omitempty"`
 	// The field mask to specify which fields to update as a comma-separated list.
 	// Example value:
 	// `data_profiling_config.custom_metrics,data_profiling_config.schedule.quartz_cron_expression`
@@ -380,9 +380,6 @@ type UpdateMonitorRequest struct {
 
 // Request to update a refresh..
 type UpdateRefreshRequest struct {
-	// The type of the monitored object. Can be one of the following: `schema` or
-	// `table`.
-	ObjectType *string `json:"object_type,omitempty"`
 	// The UUID of the request object. It is `schema_id` for `schema`, and
 	// `table_id` for `table`.
 	//
@@ -398,10 +395,13 @@ type UpdateRefreshRequest struct {
 	// [schema_id]: https://docs.databricks.com/api/workspace/schemas/get#schema_id
 	// [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id
 	ObjectId *string `json:"object_id,omitempty"`
-	// Unique id of the refresh operation.
-	RefreshId *int64 `json:"refresh_id,omitempty"`
+	// The type of the monitored object. Can be one of the following: `schema` or
+	// `table`.
+	ObjectType *string `json:"object_type,omitempty"`
 	// The refresh to update.
 	Refresh *Refresh `json:"refresh,omitempty"`
+	// Unique id of the refresh operation.
+	RefreshId *int64 `json:"refresh_id,omitempty"`
 	// The field mask to specify which fields to update.
 	UpdateMask *string `json:"update_mask,omitempty"`
 }

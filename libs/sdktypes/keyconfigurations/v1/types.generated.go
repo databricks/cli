@@ -18,10 +18,10 @@ const (
 )
 
 type AwsKeyInfoOutput struct {
-	// The AWS KMS key's Amazon Resource Name (ARN).
-	KeyArn *string `json:"key_arn,omitempty"`
 	// The AWS KMS key alias.
 	KeyAlias *string `json:"key_alias,omitempty"`
+	// The AWS KMS key's Amazon Resource Name (ARN).
+	KeyArn *string `json:"key_arn,omitempty"`
 	// The AWS KMS key region.
 	KeyRegion *string `json:"key_region,omitempty"`
 	// This field applies only if the `use_cases` property includes `STORAGE`. If
@@ -32,27 +32,27 @@ type AwsKeyInfoOutput struct {
 }
 
 type AzureKeyInfo struct {
-	// The base URI of the KeyVault.
-	KeyVaultUri *string `json:"key_vault_uri,omitempty"`
-	// The name of the key in KeyVault.
-	KeyName *string `json:"key_name,omitempty"`
-	// The current key version.
-	Version *string `json:"version,omitempty"`
-	// The tenant id where the KeyVault lives.
-	TenantId *string `json:"tenant_id,omitempty"`
 	// The Disk Encryption Set id that is used to represent the key info used for
 	// Managed Disk BYOK use case
 	DiskEncryptionSetId *string `json:"disk_encryption_set_id,omitempty"`
 	// The structure to store key access credential This is set if the Managed
 	// Identity is being used to access the Azure Key Vault key.
 	KeyAccessConfiguration *KeyAccessConfiguration `json:"key_access_configuration,omitempty"`
+	// The name of the key in KeyVault.
+	KeyName *string `json:"key_name,omitempty"`
+	// The base URI of the KeyVault.
+	KeyVaultUri *string `json:"key_vault_uri,omitempty"`
+	// The tenant id where the KeyVault lives.
+	TenantId *string `json:"tenant_id,omitempty"`
+	// The current key version.
+	Version *string `json:"version,omitempty"`
 }
 
 type CreateAwsKeyInfo struct {
-	// The AWS KMS key's Amazon Resource Name (ARN).
-	KeyArn *string `json:"key_arn,omitempty"`
 	// The AWS KMS key alias.
 	KeyAlias *string `json:"key_alias,omitempty"`
+	// The AWS KMS key's Amazon Resource Name (ARN).
+	KeyArn *string `json:"key_arn,omitempty"`
 	// The AWS KMS key region.
 	KeyRegion *string `json:"key_region,omitempty"`
 	// This field applies only if the `use_cases` property includes `STORAGE`. If
@@ -63,38 +63,38 @@ type CreateAwsKeyInfo struct {
 }
 
 type CreateAzureKeyInfo struct {
-	// The base URI of the KeyVault.
-	KeyVaultUri *string `json:"key_vault_uri,omitempty"`
-	// The name of the key in KeyVault.
-	KeyName *string `json:"key_name,omitempty"`
-	// The current key version.
-	Version *string `json:"version,omitempty"`
-	// The tenant id where the KeyVault lives.
-	TenantId *string `json:"tenant_id,omitempty"`
 	// The Disk Encryption Set id that is used to represent the key info used for
 	// Managed Disk BYOK use case
 	DiskEncryptionSetId *string `json:"disk_encryption_set_id,omitempty"`
 	// The structure to store key access credential This is set if the Managed
 	// Identity is being used to access the Azure Key Vault key.
 	KeyAccessConfiguration *KeyAccessConfiguration `json:"key_access_configuration,omitempty"`
+	// The name of the key in KeyVault.
+	KeyName *string `json:"key_name,omitempty"`
+	// The base URI of the KeyVault.
+	KeyVaultUri *string `json:"key_vault_uri,omitempty"`
+	// The tenant id where the KeyVault lives.
+	TenantId *string `json:"tenant_id,omitempty"`
+	// The current key version.
+	Version *string `json:"version,omitempty"`
 }
 
 type CreateCustomerManagedKeyRequest struct {
 	AccountId    *string             `json:"account_id,omitempty"`
 	AwsKeyInfo   *CreateAwsKeyInfo   `json:"aws_key_info,omitempty"`
-	GcpKeyInfo   *CreateGcpKeyInfo   `json:"gcp_key_info,omitempty"`
 	AzureKeyInfo *CreateAzureKeyInfo `json:"azure_key_info,omitempty"`
+	GcpKeyInfo   *CreateGcpKeyInfo   `json:"gcp_key_info,omitempty"`
 	// The cases that the key can be used for.
 	UseCases []CmkUseCase `json:"use_cases,omitempty"`
 }
 
 type CreateGcpKeyInfo struct {
-	// Globally unique kms key resource id of the form
-	// projects/testProjectId/locations/us-east4/keyRings/gcpCmkKeyRing/cryptoKeys/cmk-eastus4
-	KmsKeyId *string `json:"kms_key_id,omitempty"`
 	// Globally unique service account email that has access to the KMS key. The
 	// service account exists within the Databricks CP project.
 	GcpServiceAccount *GcpServiceAccount `json:"gcp_service_account,omitempty"`
+	// Globally unique kms key resource id of the form
+	// projects/testProjectId/locations/us-east4/keyRings/gcpCmkKeyRing/cryptoKeys/cmk-eastus4
+	KmsKeyId *string `json:"kms_key_id,omitempty"`
 	// When true, <Databricks> will not use OAuth to grant the service account
 	// access to the KMS key. The customer is responsible for granting access
 	// manually.
@@ -102,26 +102,26 @@ type CreateGcpKeyInfo struct {
 }
 
 type CustomerManagedKey struct {
-	// ID of the encryption key configuration object.
-	CustomerManagedKeyId *string `json:"customer_managed_key_id,omitempty"`
-	// Time in epoch milliseconds when the customer key was created.
-	CreationTime *int64 `json:"creation_time,omitempty"`
 	// The <Databricks> account ID that holds the customer-managed key.
 	AccountId    *string           `json:"account_id,omitempty"`
 	AwsKeyInfo   *AwsKeyInfoOutput `json:"aws_key_info,omitempty"`
 	AzureKeyInfo *AzureKeyInfo     `json:"azure_key_info,omitempty"`
-	GcpKeyInfo   *GcpKeyInfo       `json:"gcp_key_info,omitempty"`
+	// Time in epoch milliseconds when the customer key was created.
+	CreationTime *int64 `json:"creation_time,omitempty"`
+	// ID of the encryption key configuration object.
+	CustomerManagedKeyId *string     `json:"customer_managed_key_id,omitempty"`
+	GcpKeyInfo           *GcpKeyInfo `json:"gcp_key_info,omitempty"`
 	// The cases that the key can be used for.
 	UseCases []CmkUseCase `json:"use_cases,omitempty"`
 }
 
 type GcpKeyInfo struct {
-	// Globally unique kms key resource id of the form
-	// projects/testProjectId/locations/us-east4/keyRings/gcpCmkKeyRing/cryptoKeys/cmk-eastus4
-	KmsKeyId *string `json:"kms_key_id,omitempty"`
 	// Globally unique service account email that has access to the KMS key. The
 	// service account exists within the Databricks CP project.
 	GcpServiceAccount *GcpServiceAccount `json:"gcp_service_account,omitempty"`
+	// Globally unique kms key resource id of the form
+	// projects/testProjectId/locations/us-east4/keyRings/gcpCmkKeyRing/cryptoKeys/cmk-eastus4
+	KmsKeyId *string `json:"kms_key_id,omitempty"`
 	// When true, <Databricks> will not use OAuth to grant the service account
 	// access to the KMS key. The customer is responsible for granting access
 	// manually.

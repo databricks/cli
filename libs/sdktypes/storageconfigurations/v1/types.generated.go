@@ -10,10 +10,6 @@ import (
 
 type CreateStorageConfigurationRequest struct {
 	AccountId *string `json:"account_id,omitempty"`
-	// The human-readable name of the storage configuration.
-	StorageConfigurationName *string `json:"storage_configuration_name,omitempty"`
-	// Root S3 bucket information.
-	RootBucketInfo *RootBucketInfo `json:"root_bucket_info,omitempty"`
 	// Optional IAM role that is used to access the workspace catalog which is
 	// created during workspace creation for UC by Default. If a storage
 	// configuration with this field populated is used to create a workspace, then a
@@ -21,6 +17,10 @@ type CreateStorageConfigurationRequest struct {
 	// catalog shares the root bucket with internal workspace storage (including
 	// DBFS root) but uses a dedicated bucket path prefix.
 	RoleArn *string `json:"role_arn,omitempty"`
+	// Root S3 bucket information.
+	RootBucketInfo *RootBucketInfo `json:"root_bucket_info,omitempty"`
+	// The human-readable name of the storage configuration.
+	StorageConfigurationName *string `json:"storage_configuration_name,omitempty"`
 }
 
 type RootBucketInfo struct {
@@ -29,14 +29,8 @@ type RootBucketInfo struct {
 }
 
 type StorageConfiguration struct {
-	// <Databricks> storage configuration ID.
-	StorageConfigurationId *string `json:"storage_configuration_id,omitempty"`
 	// The <Databricks> account ID associated with this storage configuration.
 	AccountId *string `json:"account_id,omitempty"`
-	// The root bucket information for the storage configuration.
-	RootBucketInfo *RootBucketInfo `json:"root_bucket_info,omitempty"`
-	// The human-readable name of the storage configuration.
-	StorageConfigurationName *string `json:"storage_configuration_name,omitempty"`
 	// Time in epoch milliseconds when the storage configuration was created.
 	CreationTime *int64 `json:"creation_time,omitempty"`
 	// Optional IAM role that is used to access the workspace catalog which is
@@ -46,6 +40,12 @@ type StorageConfiguration struct {
 	// catalog shares the root bucket with internal workspace storage (including
 	// DBFS root) but uses a dedicated bucket path prefix.
 	RoleArn *string `json:"role_arn,omitempty"`
+	// The root bucket information for the storage configuration.
+	RootBucketInfo *RootBucketInfo `json:"root_bucket_info,omitempty"`
+	// <Databricks> storage configuration ID.
+	StorageConfigurationId *string `json:"storage_configuration_id,omitempty"`
+	// The human-readable name of the storage configuration.
+	StorageConfigurationName *string `json:"storage_configuration_name,omitempty"`
 }
 
 // CreateStorageConfigurationRequestToSDK converts the mirror to the sdk-go type.

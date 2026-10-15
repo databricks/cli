@@ -56,8 +56,25 @@ type CloudResourceContainer struct {
 
 type CreateWorkspaceRequest struct {
 	AccountId *string `json:"account_id,omitempty"`
-	// The human-readable name of the workspace.
-	WorkspaceName *string `json:"workspace_name,omitempty"`
+	AwsRegion *string `json:"aws_region,omitempty"`
+	// DEPRECATED: This field is being ignored by the server and will be removed in
+	// the future. The cloud name. This field always has the value `gcp`.
+	Cloud                  *string                 `json:"cloud,omitempty"`
+	CloudResourceContainer *CloudResourceContainer `json:"cloud_resource_container,omitempty"`
+	// If the compute mode is `SERVERLESS`, a serverless workspace is created that
+	// comes pre-configured with serverless compute and default storage, providing a
+	// fully-managed, enterprise-ready SaaS experience. This means you don't need to
+	// provide any resources managed by you, such as credentials, storage, or
+	// network. If the compute mode is `HYBRID` (which is the default option), a
+	// classic workspace is created that uses customer-managed resources.
+	ComputeMode ComputeMode `json:"compute_mode,omitempty"`
+	// ID of the workspace's credential configuration object.
+	CredentialsId *string `json:"credentials_id,omitempty"`
+	// The custom tags key-value pairing that is attached to this workspace. The
+	// key-value pair is a string of utf-8 characters. The value can be an empty
+	// string, with maximum length of 255 characters. The key can be of maximum
+	// length of 127 characters, and cannot be empty.
+	CustomTags map[string]string `json:"custom_tags,omitempty"`
 	// The deployment name defines part of the subdomain for the workspace. The
 	// workspace URL for the web application and REST APIs is
 	// <workspace-deployment-name>.cloud.databricks.com. For example, if the
@@ -78,25 +95,25 @@ type CreateWorkspaceRequest struct {
 	// be unique across all non-deleted deployments across all AWS regions. If a new
 	// workspace omits this property, the server generates a unique deployment name
 	// for you with the pattern dbc-xxxxxxxx-xxxx.
-	DeploymentName *string `json:"deployment_name,omitempty"`
-	AwsRegion      *string `json:"aws_region,omitempty"`
+	DeploymentName          *string                  `json:"deployment_name,omitempty"`
+	GcpManagedNetworkConfig *GcpManagedNetworkConfig `json:"gcp_managed_network_config,omitempty"`
+	GkeConfig               *GkeConfig               `json:"gke_config,omitempty"`
 	// The Google Cloud region of the workspace data plane in your Google account
 	// (for example, `us-east4`).
 	Location *string `json:"location,omitempty"`
-	// DEPRECATED: This field is being ignored by the server and will be removed in
-	// the future. The cloud name. This field always has the value `gcp`.
-	Cloud                  *string                 `json:"cloud,omitempty"`
-	PricingTier            PricingTier             `json:"pricing_tier,omitempty"`
-	CloudResourceContainer *CloudResourceContainer `json:"cloud_resource_container,omitempty"`
-	// ID of the workspace's credential configuration object.
-	CredentialsId *string `json:"credentials_id,omitempty"`
-	// ID of the workspace's storage configuration object.
-	StorageConfigurationId *string `json:"storage_configuration_id,omitempty"`
+	// The ID of the workspace's managed services encryption key configuration
+	// object. This is used to help protect and control access to the workspace's
+	// notebooks, secrets, Databricks SQL queries, and query history. The provided
+	// key configuration object property use_cases must contain MANAGED_SERVICES.
+	ManagedServicesCustomerManagedKeyId *string `json:"managed_services_customer_managed_key_id,omitempty"`
+	// The object ID of network connectivity config. Once assigned, the workspace
+	// serverless compute resources use the same set of stable IP CIDR blocks and
+	// optional private link to access your resources.
+	NetworkConnectivityConfigId *string `json:"network_connectivity_config_id,omitempty"`
 	// The ID of the workspace's network configuration object. To use AWS
 	// PrivateLink, this field is required.
-	NetworkId               *string                  `json:"network_id,omitempty"`
-	GcpManagedNetworkConfig *GcpManagedNetworkConfig `json:"gcp_managed_network_config,omitempty"`
-	GkeConfig               *GkeConfig               `json:"gke_config,omitempty"`
+	NetworkId   *string     `json:"network_id,omitempty"`
+	PricingTier PricingTier `json:"pricing_tier,omitempty"`
 	// ID of the workspace's private access settings object. Only used for
 	// PrivateLink. You must specify this ID if you are using [AWS PrivateLink] for
 	// either front-end (user-to-workspace connection), back-end (data plane to
@@ -106,32 +123,15 @@ type CreateWorkspaceRequest struct {
 	// [<Databricks> article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html
 	// [AWS PrivateLink]: https://aws.amazon.com/privatelink/
 	PrivateAccessSettingsId *string `json:"private_access_settings_id,omitempty"`
-	// The ID of the workspace's managed services encryption key configuration
-	// object. This is used to help protect and control access to the workspace's
-	// notebooks, secrets, Databricks SQL queries, and query history. The provided
-	// key configuration object property use_cases must contain MANAGED_SERVICES.
-	ManagedServicesCustomerManagedKeyId *string `json:"managed_services_customer_managed_key_id,omitempty"`
+	// ID of the workspace's storage configuration object.
+	StorageConfigurationId *string `json:"storage_configuration_id,omitempty"`
 	// The ID of the workspace's storage encryption key configuration object. This
 	// is used to encrypt the workspace's root S3 bucket (root DBFS and system data)
 	// and, optionally, cluster EBS volumes. The provided key configuration object
 	// property use_cases must contain STORAGE.
 	StorageCustomerManagedKeyId *string `json:"storage_customer_managed_key_id,omitempty"`
-	// The custom tags key-value pairing that is attached to this workspace. The
-	// key-value pair is a string of utf-8 characters. The value can be an empty
-	// string, with maximum length of 255 characters. The key can be of maximum
-	// length of 127 characters, and cannot be empty.
-	CustomTags map[string]string `json:"custom_tags,omitempty"`
-	// If the compute mode is `SERVERLESS`, a serverless workspace is created that
-	// comes pre-configured with serverless compute and default storage, providing a
-	// fully-managed, enterprise-ready SaaS experience. This means you don't need to
-	// provide any resources managed by you, such as credentials, storage, or
-	// network. If the compute mode is `HYBRID` (which is the default option), a
-	// classic workspace is created that uses customer-managed resources.
-	ComputeMode ComputeMode `json:"compute_mode,omitempty"`
-	// The object ID of network connectivity config. Once assigned, the workspace
-	// serverless compute resources use the same set of stable IP CIDR blocks and
-	// optional private link to access your resources.
-	NetworkConnectivityConfigId *string `json:"network_connectivity_config_id,omitempty"`
+	// The human-readable name of the workspace.
+	WorkspaceName *string `json:"workspace_name,omitempty"`
 }
 
 type GcpCloudResourceContainer struct {
@@ -142,22 +142,22 @@ type GcpCloudResourceContainer struct {
 // configurations that are network attributions of a workspace. DEPRECATED. Use
 // GkeConfig instead..
 type GcpCommonNetworkConfig struct {
-	// The type of network connectivity of the GKE cluster.
-	GkeConnectivityType GkeConnectivityType `json:"gke_connectivity_type,omitempty"`
 	// The IP range that will be used to allocate GKE cluster master resources from.
 	// This field must not be set if gke_cluster_type=PUBLIC_NODE_PUBLIC_MASTER.
 	GkeClusterMasterIpRange *string `json:"gke_cluster_master_ip_range,omitempty"`
+	// The type of network connectivity of the GKE cluster.
+	GkeConnectivityType GkeConnectivityType `json:"gke_connectivity_type,omitempty"`
 }
 
 // The network configuration for the workspace..
 type GcpManagedNetworkConfig struct {
-	// The IP range which will be used to allocate GKE cluster nodes from. Note:
-	// Pods, services and master IP range must be mutually exclusive.
-	SubnetCidr *string `json:"subnet_cidr,omitempty"`
 	// The IP range that will be used to allocate GKE cluster Pods from.
 	GkeClusterPodIpRange *string `json:"gke_cluster_pod_ip_range,omitempty"`
 	// The IP range that will be used to allocate GKE cluster Services from.
 	GkeClusterServiceIpRange *string `json:"gke_cluster_service_ip_range,omitempty"`
+	// The IP range which will be used to allocate GKE cluster nodes from. Note:
+	// Pods, services and master IP range must be mutually exclusive.
+	SubnetCidr *string `json:"subnet_cidr,omitempty"`
 }
 
 // The configurations of the GKE cluster used by the GCP workspace..
@@ -175,27 +175,43 @@ type UpdateWorkspaceRequest struct {
 }
 
 type Workspace struct {
-	// A unique integer ID for the workspace
-	WorkspaceId *int64 `json:"workspace_id,omitempty"`
-	// The human-readable name of the workspace.
-	WorkspaceName *string `json:"workspace_name,omitempty"`
-	AwsRegion     *string `json:"aws_region,omitempty"`
-	// Time in epoch milliseconds when the workspace was created.
-	CreationTime   *int64  `json:"creation_time,omitempty"`
-	DeploymentName *string `json:"deployment_name,omitempty"`
-	// The status of a workspace
-	WorkspaceStatus WorkspaceStatus `json:"workspace_status,omitempty"`
 	// <Databricks> account ID.
-	AccountId *string `json:"account_id,omitempty"`
+	AccountId          *string             `json:"account_id,omitempty"`
+	AwsRegion          *string             `json:"aws_region,omitempty"`
+	AzureWorkspaceInfo *AzureWorkspaceInfo `json:"azure_workspace_info,omitempty"`
+	// The cloud name. This field can have values like `azure`, `gcp`.
+	Cloud                  *string                 `json:"cloud,omitempty"`
+	CloudResourceContainer *CloudResourceContainer `json:"cloud_resource_container,omitempty"`
+	// The compute mode of the workspace.
+	ComputeMode ComputeMode `json:"compute_mode,omitempty"`
+	// Time in epoch milliseconds when the workspace was created.
+	CreationTime *int64 `json:"creation_time,omitempty"`
 	// ID of the workspace's credential configuration object.
 	CredentialsId *string `json:"credentials_id,omitempty"`
-	// ID of the workspace's storage configuration object.
-	StorageConfigurationId *string `json:"storage_configuration_id,omitempty"`
-	// Message describing the current workspace status.
-	WorkspaceStatusMessage  *string                  `json:"workspace_status_message,omitempty"`
-	NetworkId               *string                  `json:"network_id,omitempty"`
+	// The custom tags key-value pairing that is attached to this workspace. The
+	// key-value pair is a string of utf-8 characters. The value can be an empty
+	// string, with maximum length of 255 characters. The key can be of maximum
+	// length of 127 characters, and cannot be empty.
+	CustomTags     map[string]string `json:"custom_tags,omitempty"`
+	DeploymentName *string           `json:"deployment_name,omitempty"`
+	// A client owned field used to indicate the workspace status that the client
+	// expects to be in. For now this is only used to unblock Temporal workflow for
+	// GCP least privileged workspace.
+	ExpectedWorkspaceStatus WorkspaceStatus          `json:"expected_workspace_status,omitempty"`
 	GcpManagedNetworkConfig *GcpManagedNetworkConfig `json:"gcp_managed_network_config,omitempty"`
-	PricingTier             PricingTier              `json:"pricing_tier,omitempty"`
+	GkeConfig               *GkeConfig               `json:"gke_config,omitempty"`
+	// The Google Cloud region of the workspace data plane in your Google account
+	// (for example, `us-east4`).
+	Location *string `json:"location,omitempty"`
+	// ID of the key configuration for encrypting managed services.
+	ManagedServicesCustomerManagedKeyId *string `json:"managed_services_customer_managed_key_id,omitempty"`
+	// The network configuration for the workspace. DEPRECATED. Use `network_id`
+	// instead.
+	Network *WorkspaceNetwork `json:"network,omitempty"`
+	// The object ID of network connectivity config.
+	NetworkConnectivityConfigId *string     `json:"network_connectivity_config_id,omitempty"`
+	NetworkId                   *string     `json:"network_id,omitempty"`
+	PricingTier                 PricingTier `json:"pricing_tier,omitempty"`
 	// ID of the workspace's private access settings object. Only used for
 	// PrivateLink. You must specify this ID if you are using [AWS PrivateLink] for
 	// either front-end (user-to-workspace connection), back-end (data plane to
@@ -207,46 +223,30 @@ type Workspace struct {
 	// [<Databricks> article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html
 	// [AWS PrivateLink]: https://aws.amazon.com/privatelink/
 	PrivateAccessSettingsId *string `json:"private_access_settings_id,omitempty"`
-	// ID of the key configuration for encrypting managed services.
-	ManagedServicesCustomerManagedKeyId *string `json:"managed_services_customer_managed_key_id,omitempty"`
+	// ID of the workspace's storage configuration object.
+	StorageConfigurationId *string `json:"storage_configuration_id,omitempty"`
 	// ID of the key configuration for encrypting workspace storage.
 	StorageCustomerManagedKeyId *string `json:"storage_customer_managed_key_id,omitempty"`
-	// The Google Cloud region of the workspace data plane in your Google account
-	// (for example, `us-east4`).
-	Location *string `json:"location,omitempty"`
-	// The cloud name. This field can have values like `azure`, `gcp`.
-	Cloud *string `json:"cloud,omitempty"`
-	// The network configuration for the workspace. DEPRECATED. Use `network_id`
-	// instead.
-	Network                *WorkspaceNetwork       `json:"network,omitempty"`
-	AzureWorkspaceInfo     *AzureWorkspaceInfo     `json:"azure_workspace_info,omitempty"`
-	GkeConfig              *GkeConfig              `json:"gke_config,omitempty"`
-	CloudResourceContainer *CloudResourceContainer `json:"cloud_resource_container,omitempty"`
-	// The custom tags key-value pairing that is attached to this workspace. The
-	// key-value pair is a string of utf-8 characters. The value can be an empty
-	// string, with maximum length of 255 characters. The key can be of maximum
-	// length of 127 characters, and cannot be empty.
-	CustomTags map[string]string `json:"custom_tags,omitempty"`
-	// The object ID of network connectivity config.
-	NetworkConnectivityConfigId *string `json:"network_connectivity_config_id,omitempty"`
 	// The storage mode of the workspace.
 	StorageMode StorageMode `json:"storage_mode,omitempty"`
-	// The compute mode of the workspace.
-	ComputeMode ComputeMode `json:"compute_mode,omitempty"`
-	// A client owned field used to indicate the workspace status that the client
-	// expects to be in. For now this is only used to unblock Temporal workflow for
-	// GCP least privileged workspace.
-	ExpectedWorkspaceStatus WorkspaceStatus `json:"expected_workspace_status,omitempty"`
+	// A unique integer ID for the workspace
+	WorkspaceId *int64 `json:"workspace_id,omitempty"`
+	// The human-readable name of the workspace.
+	WorkspaceName *string `json:"workspace_name,omitempty"`
+	// The status of a workspace
+	WorkspaceStatus WorkspaceStatus `json:"workspace_status,omitempty"`
+	// Message describing the current workspace status.
+	WorkspaceStatusMessage *string `json:"workspace_status_message,omitempty"`
 }
 
 // The network configuration for workspaces..
 type WorkspaceNetwork struct {
-	GcpManagedNetworkConfig *GcpManagedNetworkConfig `json:"gcp_managed_network_config,omitempty"`
-	NetworkId               *string                  `json:"network_id,omitempty"`
 	// The shared network config for GCP workspace. This object has common network
 	// configurations that are network attributions of a workspace. This object is
 	// input-only.
-	GcpCommonNetworkConfig *GcpCommonNetworkConfig `json:"gcp_common_network_config,omitempty"`
+	GcpCommonNetworkConfig  *GcpCommonNetworkConfig  `json:"gcp_common_network_config,omitempty"`
+	GcpManagedNetworkConfig *GcpManagedNetworkConfig `json:"gcp_managed_network_config,omitempty"`
+	NetworkId               *string                  `json:"network_id,omitempty"`
 }
 
 // AzureWorkspaceInfoToSDK converts the mirror to the sdk-go type.

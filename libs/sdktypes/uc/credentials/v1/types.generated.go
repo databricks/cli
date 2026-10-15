@@ -51,10 +51,10 @@ type AccountsCreateStorageCredentialRequest struct {
 	// account ID from the [Accounts Console]
 	//
 	// [Accounts Console]: https://docs.databricks.com/administration-guide/account-settings/usage.html
-	AccountId *string `json:"account_id,omitempty"`
-	// Unity Catalog metastore ID
-	MetastoreId    *string                          `json:"metastore_id,omitempty"`
+	AccountId      *string                          `json:"account_id,omitempty"`
 	CredentialInfo *CreateAccountsStorageCredential `json:"credential_info,omitempty"`
+	// Unity Catalog metastore ID
+	MetastoreId *string `json:"metastore_id,omitempty"`
 	// Optional, default false. Supplying true to this argument skips validation of
 	// the created set of credentials.
 	SkipValidation *bool `json:"skip_validation,omitempty"`
@@ -71,12 +71,12 @@ type AccountsDeleteStorageCredentialRequest struct {
 	//
 	// [Accounts Console]: https://docs.databricks.com/administration-guide/account-settings/usage.html
 	AccountId *string `json:"account_id,omitempty"`
+	// Force deletion even if the Storage Credential is not empty. Default is false.
+	Force *bool `json:"force,omitempty"`
 	// Unity Catalog metastore ID
 	MetastoreId *string `json:"metastore_id,omitempty"`
 	// Name of the storage credential.
 	NameArg *string `json:"name_arg,omitempty"`
-	// Force deletion even if the Storage Credential is not empty. Default is false.
-	Force *bool `json:"force,omitempty"`
 }
 
 // The storage credential was successfully retrieved..
@@ -96,12 +96,12 @@ type AccountsUpdateStorageCredentialRequest struct {
 	// account ID from the [Accounts Console]
 	//
 	// [Accounts Console]: https://docs.databricks.com/administration-guide/account-settings/usage.html
-	AccountId *string `json:"account_id,omitempty"`
+	AccountId      *string                          `json:"account_id,omitempty"`
+	CredentialInfo *UpdateAccountsStorageCredential `json:"credential_info,omitempty"`
 	// Unity Catalog metastore ID
 	MetastoreId *string `json:"metastore_id,omitempty"`
 	// Name of the storage credential.
-	NameArg        *string                          `json:"name_arg,omitempty"`
-	CredentialInfo *UpdateAccountsStorageCredential `json:"credential_info,omitempty"`
+	NameArg *string `json:"name_arg,omitempty"`
 	// Optional. Supplying true to this argument skips validation of the updated set
 	// of credentials.
 	SkipValidation *bool `json:"skip_validation,omitempty"`
@@ -123,15 +123,15 @@ type AwsCredentials_StsRole struct {
 
 // The AWS IAM role configuration.
 type AwsIamRole struct {
+	// The external ID used in role assumption to prevent the confused deputy
+	// problem.
+	ExternalId *string `json:"external_id,omitempty"`
 	// The Amazon Resource Name (ARN) of the AWS IAM role used to vend temporary
 	// credentials.
 	RoleArn *string `json:"role_arn,omitempty"`
 	// The Amazon Resource Name (ARN) of the AWS IAM user managed by <Databricks>.
 	// This is the identity that is going to assume the AWS IAM role.
 	UnityCatalogIamArn *string `json:"unity_catalog_iam_arn,omitempty"`
-	// The external ID used in role assumption to prevent the confused deputy
-	// problem.
-	ExternalId *string `json:"external_id,omitempty"`
 }
 
 // Azure Active Directory token, essentially the Oauth token for Azure Service
@@ -149,6 +149,8 @@ type AzureManagedIdentity struct {
 	// format
 	// `/subscriptions/{guid}/resourceGroups/{rg-name}/providers/Microsoft.Databricks/accessConnectors/{connector-name}`.
 	AccessConnectorId *string `json:"access_connector_id,omitempty"`
+	// The <Databricks> internal ID that represents this managed identity.
+	CredentialId *string `json:"credential_id,omitempty"`
 	// The Azure resource ID of the managed identity. Use the format,
 	// `/subscriptions/{guid}/resourceGroups/{rg-name}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/{identity-name}`
 	// This is only available for user-assgined identities. For system-assigned
@@ -156,21 +158,19 @@ type AzureManagedIdentity struct {
 	// field is not provided, then we assume the AzureManagedIdentity is using the
 	// system-assigned identity.
 	ManagedIdentityId *string `json:"managed_identity_id,omitempty"`
-	// The <Databricks> internal ID that represents this managed identity.
-	CredentialId *string `json:"credential_id,omitempty"`
 }
 
 // The Azure service principal configuration. Only applicable when purpose is
 // **STORAGE**..
 type AzureServicePrincipal struct {
-	// The directory ID corresponding to the Azure Active Directory (AAD) tenant of
-	// the application.
-	DirectoryId *string `json:"directory_id,omitempty"`
 	// The application ID of the application registration within the referenced AAD
 	// tenant.
 	ApplicationId *string `json:"application_id,omitempty"`
 	// The client secret generated for the above app ID in AAD.
 	ClientSecret *string `json:"client_secret,omitempty"`
+	// The directory ID corresponding to the Azure Active Directory (AAD) tenant of
+	// the application.
+	DirectoryId *string `json:"directory_id,omitempty"`
 }
 
 // Azure temporary credentials for API authentication. Read more at
@@ -185,37 +185,42 @@ type AzureUserDelegationSas struct {
 type CloudflareApiToken struct {
 	// The access key ID associated with the API token.
 	AccessKeyId *string `json:"access_key_id,omitempty"`
-	// The secret access token generated for the above access key ID.
-	SecretAccessKey *string `json:"secret_access_key,omitempty"`
 	// The ID of the account associated with the API token.
 	AccountId *string `json:"account_id,omitempty"`
+	// The secret access token generated for the above access key ID.
+	SecretAccessKey *string `json:"secret_access_key,omitempty"`
 }
 
 type CreateAccountsStorageCredential struct {
-	// The credential name. The name must be unique among storage and service
-	// credentials within the metastore.
-	Name                        *string                      `json:"name,omitempty"`
-	AwsIamRole                  *AwsIamRole                  `json:"aws_iam_role,omitempty"`
-	AzureServicePrincipal       *AzureServicePrincipal       `json:"azure_service_principal,omitempty"`
-	GcpServiceAccountKey        *GcpServiceAccountKey        `json:"gcp_service_account_key,omitempty"`
-	AzureManagedIdentity        *AzureManagedIdentity        `json:"azure_managed_identity,omitempty"`
-	DatabricksGcpServiceAccount *DatabricksGcpServiceAccount `json:"databricks_gcp_service_account,omitempty"`
-	CloudflareApiToken          *CloudflareApiToken          `json:"cloudflare_api_token,omitempty"`
+	AwsIamRole            *AwsIamRole            `json:"aws_iam_role,omitempty"`
+	AzureManagedIdentity  *AzureManagedIdentity  `json:"azure_managed_identity,omitempty"`
+	AzureServicePrincipal *AzureServicePrincipal `json:"azure_service_principal,omitempty"`
+	CloudflareApiToken    *CloudflareApiToken    `json:"cloudflare_api_token,omitempty"`
 	// Comment associated with the credential.
 	Comment *string `json:"comment,omitempty"`
-	// Whether the credential is usable only for read operations. Only applicable
-	// when purpose is **STORAGE**.
-	ReadOnly *bool `json:"read_only,omitempty"`
-	// Username of current owner of credential.
-	Owner *string `json:"owner,omitempty"`
-	// The unique identifier of the credential.
-	Id *string `json:"id,omitempty"`
-	// Unique identifier of the parent metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
 	// Time at which this credential was created, in epoch milliseconds.
 	CreatedAt *int64 `json:"created_at,omitempty"`
 	// Username of credential creator.
-	CreatedBy *string `json:"created_by,omitempty"`
+	CreatedBy                   *string                      `json:"created_by,omitempty"`
+	DatabricksGcpServiceAccount *DatabricksGcpServiceAccount `json:"databricks_gcp_service_account,omitempty"`
+	// The full name of the credential.
+	FullName             *string               `json:"full_name,omitempty"`
+	GcpServiceAccountKey *GcpServiceAccountKey `json:"gcp_service_account_key,omitempty"`
+	// The unique identifier of the credential.
+	Id *string `json:"id,omitempty"`
+	// Whether the current securable is accessible from all workspaces or a specific
+	// set of workspaces.
+	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
+	// Unique identifier of the parent metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// The credential name. The name must be unique among storage and service
+	// credentials within the metastore.
+	Name *string `json:"name,omitempty"`
+	// Username of current owner of credential.
+	Owner *string `json:"owner,omitempty"`
+	// Whether the credential is usable only for read operations. Only applicable
+	// when purpose is **STORAGE**.
+	ReadOnly *bool `json:"read_only,omitempty"`
 	// Time at which this credential was last modified, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of user who last modified the credential.
@@ -223,11 +228,6 @@ type CreateAccountsStorageCredential struct {
 	// Whether this credential is the current metastore's root storage credential.
 	// Only applicable when purpose is **STORAGE**.
 	UsedForManagedStorage *bool `json:"used_for_managed_storage,omitempty"`
-	// The full name of the credential.
-	FullName *string `json:"full_name,omitempty"`
-	// Whether the current securable is accessible from all workspaces or a specific
-	// set of workspaces.
-	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
 }
 
 type CreateCredentialAwsCredentials struct {
@@ -235,33 +235,38 @@ type CreateCredentialAwsCredentials struct {
 }
 
 type CreateCredentialRequest struct {
+	AwsIamRole            *AwsIamRole            `json:"aws_iam_role,omitempty"`
+	AzureManagedIdentity  *AzureManagedIdentity  `json:"azure_managed_identity,omitempty"`
+	AzureServicePrincipal *AzureServicePrincipal `json:"azure_service_principal,omitempty"`
+	CloudflareApiToken    *CloudflareApiToken    `json:"cloudflare_api_token,omitempty"`
+	// Comment associated with the credential.
+	Comment *string `json:"comment,omitempty"`
+	// Time at which this credential was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of credential creator.
+	CreatedBy                   *string                      `json:"created_by,omitempty"`
+	DatabricksGcpServiceAccount *DatabricksGcpServiceAccount `json:"databricks_gcp_service_account,omitempty"`
+	// The full name of the credential.
+	FullName             *string               `json:"full_name,omitempty"`
+	GcpServiceAccountKey *GcpServiceAccountKey `json:"gcp_service_account_key,omitempty"`
+	// The unique identifier of the credential.
+	Id *string `json:"id,omitempty"`
+	// Whether the current securable is accessible from all workspaces or a specific
+	// set of workspaces.
+	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
+	// Unique identifier of the parent metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// The credential name. The name must be unique among storage and service
+	// credentials within the metastore.
+	Name *string `json:"name,omitempty"`
+	// Username of current owner of credential.
+	Owner *string `json:"owner,omitempty"`
+	// Whether the credential is usable only for read operations. Only applicable
+	// when purpose is **STORAGE**.
+	ReadOnly *bool `json:"read_only,omitempty"`
 	// Optional. Supplying true to this argument skips validation of the created set
 	// of credentials.
 	SkipValidation *bool `json:"skip_validation,omitempty"`
-	// The credential name. The name must be unique among storage and service
-	// credentials within the metastore.
-	Name                        *string                      `json:"name,omitempty"`
-	AwsIamRole                  *AwsIamRole                  `json:"aws_iam_role,omitempty"`
-	AzureServicePrincipal       *AzureServicePrincipal       `json:"azure_service_principal,omitempty"`
-	GcpServiceAccountKey        *GcpServiceAccountKey        `json:"gcp_service_account_key,omitempty"`
-	AzureManagedIdentity        *AzureManagedIdentity        `json:"azure_managed_identity,omitempty"`
-	DatabricksGcpServiceAccount *DatabricksGcpServiceAccount `json:"databricks_gcp_service_account,omitempty"`
-	CloudflareApiToken          *CloudflareApiToken          `json:"cloudflare_api_token,omitempty"`
-	// Comment associated with the credential.
-	Comment *string `json:"comment,omitempty"`
-	// Whether the credential is usable only for read operations. Only applicable
-	// when purpose is **STORAGE**.
-	ReadOnly *bool `json:"read_only,omitempty"`
-	// Username of current owner of credential.
-	Owner *string `json:"owner,omitempty"`
-	// The unique identifier of the credential.
-	Id *string `json:"id,omitempty"`
-	// Unique identifier of the parent metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Time at which this credential was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of credential creator.
-	CreatedBy *string `json:"created_by,omitempty"`
 	// Time at which this credential was last modified, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of user who last modified the credential.
@@ -269,47 +274,47 @@ type CreateCredentialRequest struct {
 	// Whether this credential is the current metastore's root storage credential.
 	// Only applicable when purpose is **STORAGE**.
 	UsedForManagedStorage *bool `json:"used_for_managed_storage,omitempty"`
-	// The full name of the credential.
-	FullName *string `json:"full_name,omitempty"`
-	// Whether the current securable is accessible from all workspaces or a specific
-	// set of workspaces.
-	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
 }
 
 type CreateCredentialsRequest struct {
-	AccountId *string `json:"account_id,omitempty"`
+	AccountId      *string                         `json:"account_id,omitempty"`
+	AwsCredentials *CreateCredentialAwsCredentials `json:"aws_credentials,omitempty"`
 	// The human-readable name of the credential configuration object.
-	CredentialsName *string                         `json:"credentials_name,omitempty"`
-	AwsCredentials  *CreateCredentialAwsCredentials `json:"aws_credentials,omitempty"`
+	CredentialsName *string `json:"credentials_name,omitempty"`
 }
 
 type CreateStorageCredentialRequest struct {
-	// Supplying true to this argument skips validation of the created credential.
-	SkipValidation *bool `json:"skip_validation,omitempty"`
-	// The credential name. The name must be unique among storage and service
-	// credentials within the metastore.
-	Name                        *string                      `json:"name,omitempty"`
-	AwsIamRole                  *AwsIamRole                  `json:"aws_iam_role,omitempty"`
-	AzureServicePrincipal       *AzureServicePrincipal       `json:"azure_service_principal,omitempty"`
-	GcpServiceAccountKey        *GcpServiceAccountKey        `json:"gcp_service_account_key,omitempty"`
-	AzureManagedIdentity        *AzureManagedIdentity        `json:"azure_managed_identity,omitempty"`
-	DatabricksGcpServiceAccount *DatabricksGcpServiceAccount `json:"databricks_gcp_service_account,omitempty"`
-	CloudflareApiToken          *CloudflareApiToken          `json:"cloudflare_api_token,omitempty"`
+	AwsIamRole            *AwsIamRole            `json:"aws_iam_role,omitempty"`
+	AzureManagedIdentity  *AzureManagedIdentity  `json:"azure_managed_identity,omitempty"`
+	AzureServicePrincipal *AzureServicePrincipal `json:"azure_service_principal,omitempty"`
+	CloudflareApiToken    *CloudflareApiToken    `json:"cloudflare_api_token,omitempty"`
 	// Comment associated with the credential.
 	Comment *string `json:"comment,omitempty"`
-	// Whether the credential is usable only for read operations. Only applicable
-	// when purpose is **STORAGE**.
-	ReadOnly *bool `json:"read_only,omitempty"`
-	// Username of current owner of credential.
-	Owner *string `json:"owner,omitempty"`
-	// The unique identifier of the credential.
-	Id *string `json:"id,omitempty"`
-	// Unique identifier of the parent metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
 	// Time at which this credential was created, in epoch milliseconds.
 	CreatedAt *int64 `json:"created_at,omitempty"`
 	// Username of credential creator.
-	CreatedBy *string `json:"created_by,omitempty"`
+	CreatedBy                   *string                      `json:"created_by,omitempty"`
+	DatabricksGcpServiceAccount *DatabricksGcpServiceAccount `json:"databricks_gcp_service_account,omitempty"`
+	// The full name of the credential.
+	FullName             *string               `json:"full_name,omitempty"`
+	GcpServiceAccountKey *GcpServiceAccountKey `json:"gcp_service_account_key,omitempty"`
+	// The unique identifier of the credential.
+	Id *string `json:"id,omitempty"`
+	// Whether the current securable is accessible from all workspaces or a specific
+	// set of workspaces.
+	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
+	// Unique identifier of the parent metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// The credential name. The name must be unique among storage and service
+	// credentials within the metastore.
+	Name *string `json:"name,omitempty"`
+	// Username of current owner of credential.
+	Owner *string `json:"owner,omitempty"`
+	// Whether the credential is usable only for read operations. Only applicable
+	// when purpose is **STORAGE**.
+	ReadOnly *bool `json:"read_only,omitempty"`
+	// Supplying true to this argument skips validation of the created credential.
+	SkipValidation *bool `json:"skip_validation,omitempty"`
 	// Time at which this credential was last modified, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of user who last modified the credential.
@@ -317,38 +322,38 @@ type CreateStorageCredentialRequest struct {
 	// Whether this credential is the current metastore's root storage credential.
 	// Only applicable when purpose is **STORAGE**.
 	UsedForManagedStorage *bool `json:"used_for_managed_storage,omitempty"`
-	// The full name of the credential.
-	FullName *string `json:"full_name,omitempty"`
-	// Whether the current securable is accessible from all workspaces or a specific
-	// set of workspaces.
-	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
 }
 
 type CredentialInfo struct {
-	// The credential name. The name must be unique among storage and service
-	// credentials within the metastore.
-	Name                        *string                      `json:"name,omitempty"`
-	AwsIamRole                  *AwsIamRole                  `json:"aws_iam_role,omitempty"`
-	AzureServicePrincipal       *AzureServicePrincipal       `json:"azure_service_principal,omitempty"`
-	GcpServiceAccountKey        *GcpServiceAccountKey        `json:"gcp_service_account_key,omitempty"`
-	AzureManagedIdentity        *AzureManagedIdentity        `json:"azure_managed_identity,omitempty"`
-	DatabricksGcpServiceAccount *DatabricksGcpServiceAccount `json:"databricks_gcp_service_account,omitempty"`
-	CloudflareApiToken          *CloudflareApiToken          `json:"cloudflare_api_token,omitempty"`
+	AwsIamRole            *AwsIamRole            `json:"aws_iam_role,omitempty"`
+	AzureManagedIdentity  *AzureManagedIdentity  `json:"azure_managed_identity,omitempty"`
+	AzureServicePrincipal *AzureServicePrincipal `json:"azure_service_principal,omitempty"`
+	CloudflareApiToken    *CloudflareApiToken    `json:"cloudflare_api_token,omitempty"`
 	// Comment associated with the credential.
 	Comment *string `json:"comment,omitempty"`
-	// Whether the credential is usable only for read operations. Only applicable
-	// when purpose is **STORAGE**.
-	ReadOnly *bool `json:"read_only,omitempty"`
-	// Username of current owner of credential.
-	Owner *string `json:"owner,omitempty"`
-	// The unique identifier of the credential.
-	Id *string `json:"id,omitempty"`
-	// Unique identifier of the parent metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
 	// Time at which this credential was created, in epoch milliseconds.
 	CreatedAt *int64 `json:"created_at,omitempty"`
 	// Username of credential creator.
-	CreatedBy *string `json:"created_by,omitempty"`
+	CreatedBy                   *string                      `json:"created_by,omitempty"`
+	DatabricksGcpServiceAccount *DatabricksGcpServiceAccount `json:"databricks_gcp_service_account,omitempty"`
+	// The full name of the credential.
+	FullName             *string               `json:"full_name,omitempty"`
+	GcpServiceAccountKey *GcpServiceAccountKey `json:"gcp_service_account_key,omitempty"`
+	// The unique identifier of the credential.
+	Id *string `json:"id,omitempty"`
+	// Whether the current securable is accessible from all workspaces or a specific
+	// set of workspaces.
+	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
+	// Unique identifier of the parent metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// The credential name. The name must be unique among storage and service
+	// credentials within the metastore.
+	Name *string `json:"name,omitempty"`
+	// Username of current owner of credential.
+	Owner *string `json:"owner,omitempty"`
+	// Whether the credential is usable only for read operations. Only applicable
+	// when purpose is **STORAGE**.
+	ReadOnly *bool `json:"read_only,omitempty"`
 	// Time at which this credential was last modified, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of user who last modified the credential.
@@ -356,52 +361,47 @@ type CredentialInfo struct {
 	// Whether this credential is the current metastore's root storage credential.
 	// Only applicable when purpose is **STORAGE**.
 	UsedForManagedStorage *bool `json:"used_for_managed_storage,omitempty"`
-	// The full name of the credential.
-	FullName *string `json:"full_name,omitempty"`
-	// Whether the current securable is accessible from all workspaces or a specific
-	// set of workspaces.
-	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
 }
 
 type Credentials struct {
-	// <Databricks> credential configuration ID.
-	CredentialsId *string `json:"credentials_id,omitempty"`
 	// The <Databricks> account ID that hosts the credential.
 	AccountId      *string         `json:"account_id,omitempty"`
 	AwsCredentials *AwsCredentials `json:"aws_credentials,omitempty"`
-	// The human-readable name of the credential configuration object.
-	CredentialsName *string `json:"credentials_name,omitempty"`
 	// Time in epoch milliseconds when the credential was created.
 	CreationTime *int64 `json:"creation_time,omitempty"`
+	// <Databricks> credential configuration ID.
+	CredentialsId *string `json:"credentials_id,omitempty"`
+	// The human-readable name of the credential configuration object.
+	CredentialsName *string `json:"credentials_name,omitempty"`
 }
 
 // GCP long-lived credential. <Databricks>-created Google Cloud Storage service
 // account..
 type DatabricksGcpServiceAccount struct {
+	// The <Databricks> internal ID that represents this managed identity.
+	CredentialId *string `json:"credential_id,omitempty"`
 	// The email of the service account.
 	Email *string `json:"email,omitempty"`
 	// The ID that represents the private key for this Service Account
 	PrivateKeyId *string `json:"private_key_id,omitempty"`
-	// The <Databricks> internal ID that represents this managed identity.
-	CredentialId *string `json:"credential_id,omitempty"`
 }
 
 type DeleteCredentialRequest struct {
-	// Name of the credential.
-	NameArg *string `json:"name_arg,omitempty"`
 	// Force an update even if there are dependent services (when purpose is
 	// **SERVICE**) or dependent external locations and external tables (when
 	// purpose is **STORAGE**).
 	Force *bool `json:"force,omitempty"`
+	// Name of the credential.
+	NameArg *string `json:"name_arg,omitempty"`
 }
 
 type DeleteStorageCredentialRequest struct {
-	// Name of the storage credential.
-	NameArg *string `json:"name_arg,omitempty"`
 	// Force an update even if there are dependent external locations or external
 	// tables (when purpose is **STORAGE**) or dependent services (when purpose is
 	// **SERVICE**).
 	Force *bool `json:"force,omitempty"`
+	// Name of the storage credential.
+	NameArg *string `json:"name_arg,omitempty"`
 }
 
 // GCP temporary credentials for API authentication. Read more at
@@ -414,42 +414,42 @@ type GcpOauthToken struct {
 type GcpServiceAccountKey struct {
 	// The email of the service account.
 	Email *string `json:"email,omitempty"`
-	// The ID of the service account's private key.
-	PrivateKeyId *string `json:"private_key_id,omitempty"`
 	// The service account's RSA private key.
 	PrivateKey *string `json:"private_key,omitempty"`
+	// The ID of the service account's private key.
+	PrivateKeyId *string `json:"private_key_id,omitempty"`
 }
 
 type GenerateTemporaryPathCredentialRequest struct {
-	// URL for path-based access.
-	Url *string `json:"url,omitempty"`
-	// The operation being performed on the path.
-	Operation PathOperation `json:"operation,omitempty"`
 	// Optional. When set to true, the service will not validate that the generated
 	// credentials can perform write operations, therefore no new paths will be
 	// created and the response will not contain valid credentials. Defaults to
 	// false.
 	DryRun *bool `json:"dry_run,omitempty"`
+	// The operation being performed on the path.
+	Operation PathOperation `json:"operation,omitempty"`
+	// URL for path-based access.
+	Url *string `json:"url,omitempty"`
 }
 
 type GenerateTemporaryPathCredentialResponse struct {
 	AwsTempCredentials     *TemporaryAwsCredentials   `json:"aws_temp_credentials,omitempty"`
-	AzureUserDelegationSas *AzureUserDelegationSas    `json:"azure_user_delegation_sas,omitempty"`
-	GcpOauthToken          *GcpOauthToken             `json:"gcp_oauth_token,omitempty"`
 	AzureAad               *AzureActiveDirectoryToken `json:"azure_aad,omitempty"`
-	R2TempCredentials      *R2Credentials             `json:"r2_temp_credentials,omitempty"`
+	AzureUserDelegationSas *AzureUserDelegationSas    `json:"azure_user_delegation_sas,omitempty"`
 	// Server time when the credential will expire, in epoch milliseconds. The API
 	// client is advised to cache the credential given this expiration time.
-	ExpirationTime *int64 `json:"expiration_time,omitempty"`
+	ExpirationTime    *int64         `json:"expiration_time,omitempty"`
+	GcpOauthToken     *GcpOauthToken `json:"gcp_oauth_token,omitempty"`
+	R2TempCredentials *R2Credentials `json:"r2_temp_credentials,omitempty"`
 	// The URL of the storage path accessible by the temporary credential.
 	Url *string `json:"url,omitempty"`
 }
 
 type GenerateTemporaryServiceCredentialRequest struct {
+	AzureOptions *GenerateTemporaryServiceCredentialRequest_AzureOptions `json:"azure_options,omitempty"`
 	// The name of the service credential used to generate a temporary credential
-	CredentialName *string                                                 `json:"credential_name,omitempty"`
-	AzureOptions   *GenerateTemporaryServiceCredentialRequest_AzureOptions `json:"azure_options,omitempty"`
-	GcpOptions     *GenerateTemporaryServiceCredentialRequest_GcpOptions   `json:"gcp_options,omitempty"`
+	CredentialName *string                                               `json:"credential_name,omitempty"`
+	GcpOptions     *GenerateTemporaryServiceCredentialRequest_GcpOptions `json:"gcp_options,omitempty"`
 }
 
 // The Azure cloud options to customize the requested temporary credential.
@@ -469,46 +469,46 @@ type GenerateTemporaryServiceCredentialRequest_GcpOptions struct {
 }
 
 type GenerateTemporaryTableCredentialRequest struct {
-	// UUID of the table to read or write.
-	TableId *string `json:"table_id,omitempty"`
 	// The operation performed against the table data, either READ or READ_WRITE. If
 	// READ_WRITE is specified, the credentials returned will have write
 	// permissions, otherwise, it will be read only.
 	Operation TableOperation `json:"operation,omitempty"`
+	// UUID of the table to read or write.
+	TableId *string `json:"table_id,omitempty"`
 }
 
 type GenerateTemporaryTableCredentialResponse struct {
 	AwsTempCredentials     *TemporaryAwsCredentials   `json:"aws_temp_credentials,omitempty"`
-	AzureUserDelegationSas *AzureUserDelegationSas    `json:"azure_user_delegation_sas,omitempty"`
-	GcpOauthToken          *GcpOauthToken             `json:"gcp_oauth_token,omitempty"`
 	AzureAad               *AzureActiveDirectoryToken `json:"azure_aad,omitempty"`
-	R2TempCredentials      *R2Credentials             `json:"r2_temp_credentials,omitempty"`
+	AzureUserDelegationSas *AzureUserDelegationSas    `json:"azure_user_delegation_sas,omitempty"`
 	// Server time when the credential will expire, in epoch milliseconds. The API
 	// client is advised to cache the credential given this expiration time.
-	ExpirationTime *int64 `json:"expiration_time,omitempty"`
+	ExpirationTime    *int64         `json:"expiration_time,omitempty"`
+	GcpOauthToken     *GcpOauthToken `json:"gcp_oauth_token,omitempty"`
+	R2TempCredentials *R2Credentials `json:"r2_temp_credentials,omitempty"`
 	// The URL of the storage path accessible by the temporary credential.
 	Url *string `json:"url,omitempty"`
 }
 
 // Generate volume credentials RPC.
 type GenerateTemporaryVolumeCredentialRequest struct {
-	// Id of the volume to read or write.
-	VolumeId *string `json:"volume_id,omitempty"`
 	// The operation performed against the volume data, either READ_VOLUME or
 	// WRITE_VOLUME. If WRITE_VOLUME is specified, the credentials returned will
 	// have write permissions, otherwise, it will be read only.
 	Operation VolumeOperation `json:"operation,omitempty"`
+	// Id of the volume to read or write.
+	VolumeId *string `json:"volume_id,omitempty"`
 }
 
 type GenerateTemporaryVolumeCredentialResponse struct {
 	AwsTempCredentials     *TemporaryAwsCredentials   `json:"aws_temp_credentials,omitempty"`
-	AzureUserDelegationSas *AzureUserDelegationSas    `json:"azure_user_delegation_sas,omitempty"`
-	GcpOauthToken          *GcpOauthToken             `json:"gcp_oauth_token,omitempty"`
 	AzureAad               *AzureActiveDirectoryToken `json:"azure_aad,omitempty"`
-	R2TempCredentials      *R2Credentials             `json:"r2_temp_credentials,omitempty"`
+	AzureUserDelegationSas *AzureUserDelegationSas    `json:"azure_user_delegation_sas,omitempty"`
 	// Server time when the credential will expire, in epoch milliseconds. The API
 	// client is advised to cache the credential given this expiration time.
-	ExpirationTime *int64 `json:"expiration_time,omitempty"`
+	ExpirationTime    *int64         `json:"expiration_time,omitempty"`
+	GcpOauthToken     *GcpOauthToken `json:"gcp_oauth_token,omitempty"`
+	R2TempCredentials *R2Credentials `json:"r2_temp_credentials,omitempty"`
 	// The URL of the storage path accessible by the temporary credential.
 	Url *string `json:"url,omitempty"`
 }
@@ -557,11 +557,11 @@ type ListStorageCredentialsRequest struct {
 }
 
 type ListStorageCredentialsResponse struct {
-	StorageCredentials []StorageCredentialInfo `json:"storage_credentials,omitempty"`
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. __page_token__ should be set to this value for the next request
 	// (for the next page of results).
-	NextPageToken *string `json:"next_page_token,omitempty"`
+	NextPageToken      *string                 `json:"next_page_token,omitempty"`
+	StorageCredentials []StorageCredentialInfo `json:"storage_credentials,omitempty"`
 }
 
 // R2 temporary credentials for API authentication. Read more at
@@ -576,30 +576,35 @@ type R2Credentials struct {
 }
 
 type StorageCredentialInfo struct {
-	// The credential name. The name must be unique among storage and service
-	// credentials within the metastore.
-	Name                        *string                      `json:"name,omitempty"`
-	AwsIamRole                  *AwsIamRole                  `json:"aws_iam_role,omitempty"`
-	AzureServicePrincipal       *AzureServicePrincipal       `json:"azure_service_principal,omitempty"`
-	GcpServiceAccountKey        *GcpServiceAccountKey        `json:"gcp_service_account_key,omitempty"`
-	AzureManagedIdentity        *AzureManagedIdentity        `json:"azure_managed_identity,omitempty"`
-	DatabricksGcpServiceAccount *DatabricksGcpServiceAccount `json:"databricks_gcp_service_account,omitempty"`
-	CloudflareApiToken          *CloudflareApiToken          `json:"cloudflare_api_token,omitempty"`
+	AwsIamRole            *AwsIamRole            `json:"aws_iam_role,omitempty"`
+	AzureManagedIdentity  *AzureManagedIdentity  `json:"azure_managed_identity,omitempty"`
+	AzureServicePrincipal *AzureServicePrincipal `json:"azure_service_principal,omitempty"`
+	CloudflareApiToken    *CloudflareApiToken    `json:"cloudflare_api_token,omitempty"`
 	// Comment associated with the credential.
 	Comment *string `json:"comment,omitempty"`
-	// Whether the credential is usable only for read operations. Only applicable
-	// when purpose is **STORAGE**.
-	ReadOnly *bool `json:"read_only,omitempty"`
-	// Username of current owner of credential.
-	Owner *string `json:"owner,omitempty"`
-	// The unique identifier of the credential.
-	Id *string `json:"id,omitempty"`
-	// Unique identifier of the parent metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
 	// Time at which this credential was created, in epoch milliseconds.
 	CreatedAt *int64 `json:"created_at,omitempty"`
 	// Username of credential creator.
-	CreatedBy *string `json:"created_by,omitempty"`
+	CreatedBy                   *string                      `json:"created_by,omitempty"`
+	DatabricksGcpServiceAccount *DatabricksGcpServiceAccount `json:"databricks_gcp_service_account,omitempty"`
+	// The full name of the credential.
+	FullName             *string               `json:"full_name,omitempty"`
+	GcpServiceAccountKey *GcpServiceAccountKey `json:"gcp_service_account_key,omitempty"`
+	// The unique identifier of the credential.
+	Id *string `json:"id,omitempty"`
+	// Whether the current securable is accessible from all workspaces or a specific
+	// set of workspaces.
+	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
+	// Unique identifier of the parent metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// The credential name. The name must be unique among storage and service
+	// credentials within the metastore.
+	Name *string `json:"name,omitempty"`
+	// Username of current owner of credential.
+	Owner *string `json:"owner,omitempty"`
+	// Whether the credential is usable only for read operations. Only applicable
+	// when purpose is **STORAGE**.
+	ReadOnly *bool `json:"read_only,omitempty"`
 	// Time at which this credential was last modified, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of user who last modified the credential.
@@ -607,11 +612,6 @@ type StorageCredentialInfo struct {
 	// Whether this credential is the current metastore's root storage credential.
 	// Only applicable when purpose is **STORAGE**.
 	UsedForManagedStorage *bool `json:"used_for_managed_storage,omitempty"`
-	// The full name of the credential.
-	FullName *string `json:"full_name,omitempty"`
-	// Whether the current securable is accessible from all workspaces or a specific
-	// set of workspaces.
-	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
 }
 
 // AWS temporary credentials for API authentication. Read more at
@@ -619,53 +619,58 @@ type StorageCredentialInfo struct {
 type TemporaryAwsCredentials struct {
 	// The access key ID that identifies the temporary credentials.
 	AccessKeyId *string `json:"access_key_id,omitempty"`
+	// The Amazon Resource Name (ARN) of the S3 access point for temporary
+	// credentials related the external location.
+	AccessPoint *string `json:"access_point,omitempty"`
 	// The secret access key that can be used to sign AWS API requests.
 	SecretAccessKey *string `json:"secret_access_key,omitempty"`
 	// The token that users must pass to AWS API to use the temporary credentials.
 	SessionToken *string `json:"session_token,omitempty"`
-	// The Amazon Resource Name (ARN) of the S3 access point for temporary
-	// credentials related the external location.
-	AccessPoint *string `json:"access_point,omitempty"`
 }
 
 type TemporaryCredentials struct {
 	AwsTempCredentials     *TemporaryAwsCredentials   `json:"aws_temp_credentials,omitempty"`
-	AzureUserDelegationSas *AzureUserDelegationSas    `json:"azure_user_delegation_sas,omitempty"`
-	GcpOauthToken          *GcpOauthToken             `json:"gcp_oauth_token,omitempty"`
 	AzureAad               *AzureActiveDirectoryToken `json:"azure_aad,omitempty"`
-	R2TempCredentials      *R2Credentials             `json:"r2_temp_credentials,omitempty"`
+	AzureUserDelegationSas *AzureUserDelegationSas    `json:"azure_user_delegation_sas,omitempty"`
 	// Server time when the credential will expire, in epoch milliseconds. The API
 	// client is advised to cache the credential given this expiration time.
-	ExpirationTime *int64 `json:"expiration_time,omitempty"`
+	ExpirationTime    *int64         `json:"expiration_time,omitempty"`
+	GcpOauthToken     *GcpOauthToken `json:"gcp_oauth_token,omitempty"`
+	R2TempCredentials *R2Credentials `json:"r2_temp_credentials,omitempty"`
 	// The URL of the storage path accessible by the temporary credential.
 	Url *string `json:"url,omitempty"`
 }
 
 type UpdateAccountsStorageCredential struct {
-	// The credential name. The name must be unique among storage and service
-	// credentials within the metastore.
-	Name                        *string                      `json:"name,omitempty"`
-	AwsIamRole                  *AwsIamRole                  `json:"aws_iam_role,omitempty"`
-	AzureServicePrincipal       *AzureServicePrincipal       `json:"azure_service_principal,omitempty"`
-	GcpServiceAccountKey        *GcpServiceAccountKey        `json:"gcp_service_account_key,omitempty"`
-	AzureManagedIdentity        *AzureManagedIdentity        `json:"azure_managed_identity,omitempty"`
-	DatabricksGcpServiceAccount *DatabricksGcpServiceAccount `json:"databricks_gcp_service_account,omitempty"`
-	CloudflareApiToken          *CloudflareApiToken          `json:"cloudflare_api_token,omitempty"`
+	AwsIamRole            *AwsIamRole            `json:"aws_iam_role,omitempty"`
+	AzureManagedIdentity  *AzureManagedIdentity  `json:"azure_managed_identity,omitempty"`
+	AzureServicePrincipal *AzureServicePrincipal `json:"azure_service_principal,omitempty"`
+	CloudflareApiToken    *CloudflareApiToken    `json:"cloudflare_api_token,omitempty"`
 	// Comment associated with the credential.
 	Comment *string `json:"comment,omitempty"`
-	// Whether the credential is usable only for read operations. Only applicable
-	// when purpose is **STORAGE**.
-	ReadOnly *bool `json:"read_only,omitempty"`
-	// Username of current owner of credential.
-	Owner *string `json:"owner,omitempty"`
-	// The unique identifier of the credential.
-	Id *string `json:"id,omitempty"`
-	// Unique identifier of the parent metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
 	// Time at which this credential was created, in epoch milliseconds.
 	CreatedAt *int64 `json:"created_at,omitempty"`
 	// Username of credential creator.
-	CreatedBy *string `json:"created_by,omitempty"`
+	CreatedBy                   *string                      `json:"created_by,omitempty"`
+	DatabricksGcpServiceAccount *DatabricksGcpServiceAccount `json:"databricks_gcp_service_account,omitempty"`
+	// The full name of the credential.
+	FullName             *string               `json:"full_name,omitempty"`
+	GcpServiceAccountKey *GcpServiceAccountKey `json:"gcp_service_account_key,omitempty"`
+	// The unique identifier of the credential.
+	Id *string `json:"id,omitempty"`
+	// Whether the current securable is accessible from all workspaces or a specific
+	// set of workspaces.
+	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
+	// Unique identifier of the parent metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// The credential name. The name must be unique among storage and service
+	// credentials within the metastore.
+	Name *string `json:"name,omitempty"`
+	// Username of current owner of credential.
+	Owner *string `json:"owner,omitempty"`
+	// Whether the credential is usable only for read operations. Only applicable
+	// when purpose is **STORAGE**.
+	ReadOnly *bool `json:"read_only,omitempty"`
 	// Time at which this credential was last modified, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of user who last modified the credential.
@@ -673,48 +678,48 @@ type UpdateAccountsStorageCredential struct {
 	// Whether this credential is the current metastore's root storage credential.
 	// Only applicable when purpose is **STORAGE**.
 	UsedForManagedStorage *bool `json:"used_for_managed_storage,omitempty"`
-	// The full name of the credential.
-	FullName *string `json:"full_name,omitempty"`
-	// Whether the current securable is accessible from all workspaces or a specific
-	// set of workspaces.
-	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
 }
 
 type UpdateCredentialRequest struct {
-	// Name of the credential.
-	NameArg *string `json:"name_arg,omitempty"`
-	// New name of credential.
-	NewName *string `json:"new_name,omitempty"`
-	// Supply true to this argument to skip validation of the updated credential.
-	SkipValidation *bool `json:"skip_validation,omitempty"`
+	AwsIamRole            *AwsIamRole            `json:"aws_iam_role,omitempty"`
+	AzureManagedIdentity  *AzureManagedIdentity  `json:"azure_managed_identity,omitempty"`
+	AzureServicePrincipal *AzureServicePrincipal `json:"azure_service_principal,omitempty"`
+	CloudflareApiToken    *CloudflareApiToken    `json:"cloudflare_api_token,omitempty"`
+	// Comment associated with the credential.
+	Comment *string `json:"comment,omitempty"`
+	// Time at which this credential was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of credential creator.
+	CreatedBy                   *string                      `json:"created_by,omitempty"`
+	DatabricksGcpServiceAccount *DatabricksGcpServiceAccount `json:"databricks_gcp_service_account,omitempty"`
 	// Force an update even if there are dependent services (when purpose is
 	// **SERVICE**) or dependent external locations and external tables (when
 	// purpose is **STORAGE**).
 	Force *bool `json:"force,omitempty"`
+	// The full name of the credential.
+	FullName             *string               `json:"full_name,omitempty"`
+	GcpServiceAccountKey *GcpServiceAccountKey `json:"gcp_service_account_key,omitempty"`
+	// The unique identifier of the credential.
+	Id *string `json:"id,omitempty"`
+	// Whether the current securable is accessible from all workspaces or a specific
+	// set of workspaces.
+	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
+	// Unique identifier of the parent metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
 	// The credential name. The name must be unique among storage and service
 	// credentials within the metastore.
-	Name                        *string                      `json:"name,omitempty"`
-	AwsIamRole                  *AwsIamRole                  `json:"aws_iam_role,omitempty"`
-	AzureServicePrincipal       *AzureServicePrincipal       `json:"azure_service_principal,omitempty"`
-	GcpServiceAccountKey        *GcpServiceAccountKey        `json:"gcp_service_account_key,omitempty"`
-	AzureManagedIdentity        *AzureManagedIdentity        `json:"azure_managed_identity,omitempty"`
-	DatabricksGcpServiceAccount *DatabricksGcpServiceAccount `json:"databricks_gcp_service_account,omitempty"`
-	CloudflareApiToken          *CloudflareApiToken          `json:"cloudflare_api_token,omitempty"`
-	// Comment associated with the credential.
-	Comment *string `json:"comment,omitempty"`
+	Name *string `json:"name,omitempty"`
+	// Name of the credential.
+	NameArg *string `json:"name_arg,omitempty"`
+	// New name of credential.
+	NewName *string `json:"new_name,omitempty"`
+	// Username of current owner of credential.
+	Owner *string `json:"owner,omitempty"`
 	// Whether the credential is usable only for read operations. Only applicable
 	// when purpose is **STORAGE**.
 	ReadOnly *bool `json:"read_only,omitempty"`
-	// Username of current owner of credential.
-	Owner *string `json:"owner,omitempty"`
-	// The unique identifier of the credential.
-	Id *string `json:"id,omitempty"`
-	// Unique identifier of the parent metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Time at which this credential was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of credential creator.
-	CreatedBy *string `json:"created_by,omitempty"`
+	// Supply true to this argument to skip validation of the updated credential.
+	SkipValidation *bool `json:"skip_validation,omitempty"`
 	// Time at which this credential was last modified, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of user who last modified the credential.
@@ -722,47 +727,47 @@ type UpdateCredentialRequest struct {
 	// Whether this credential is the current metastore's root storage credential.
 	// Only applicable when purpose is **STORAGE**.
 	UsedForManagedStorage *bool `json:"used_for_managed_storage,omitempty"`
-	// The full name of the credential.
-	FullName *string `json:"full_name,omitempty"`
-	// Whether the current securable is accessible from all workspaces or a specific
-	// set of workspaces.
-	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
 }
 
 type UpdateStorageCredentialRequest struct {
+	AwsIamRole            *AwsIamRole            `json:"aws_iam_role,omitempty"`
+	AzureManagedIdentity  *AzureManagedIdentity  `json:"azure_managed_identity,omitempty"`
+	AzureServicePrincipal *AzureServicePrincipal `json:"azure_service_principal,omitempty"`
+	CloudflareApiToken    *CloudflareApiToken    `json:"cloudflare_api_token,omitempty"`
+	// Comment associated with the credential.
+	Comment *string `json:"comment,omitempty"`
+	// Time at which this credential was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of credential creator.
+	CreatedBy                   *string                      `json:"created_by,omitempty"`
+	DatabricksGcpServiceAccount *DatabricksGcpServiceAccount `json:"databricks_gcp_service_account,omitempty"`
+	// Force update even if there are dependent external locations or external
+	// tables.
+	Force *bool `json:"force,omitempty"`
+	// The full name of the credential.
+	FullName             *string               `json:"full_name,omitempty"`
+	GcpServiceAccountKey *GcpServiceAccountKey `json:"gcp_service_account_key,omitempty"`
+	// The unique identifier of the credential.
+	Id *string `json:"id,omitempty"`
+	// Whether the current securable is accessible from all workspaces or a specific
+	// set of workspaces.
+	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
+	// Unique identifier of the parent metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// The credential name. The name must be unique among storage and service
+	// credentials within the metastore.
+	Name *string `json:"name,omitempty"`
 	// Name of the storage credential.
 	NameArg *string `json:"name_arg,omitempty"`
 	// New name for the storage credential.
 	NewName *string `json:"new_name,omitempty"`
-	// Supplying true to this argument skips validation of the updated credential.
-	SkipValidation *bool `json:"skip_validation,omitempty"`
-	// Force update even if there are dependent external locations or external
-	// tables.
-	Force *bool `json:"force,omitempty"`
-	// The credential name. The name must be unique among storage and service
-	// credentials within the metastore.
-	Name                        *string                      `json:"name,omitempty"`
-	AwsIamRole                  *AwsIamRole                  `json:"aws_iam_role,omitempty"`
-	AzureServicePrincipal       *AzureServicePrincipal       `json:"azure_service_principal,omitempty"`
-	GcpServiceAccountKey        *GcpServiceAccountKey        `json:"gcp_service_account_key,omitempty"`
-	AzureManagedIdentity        *AzureManagedIdentity        `json:"azure_managed_identity,omitempty"`
-	DatabricksGcpServiceAccount *DatabricksGcpServiceAccount `json:"databricks_gcp_service_account,omitempty"`
-	CloudflareApiToken          *CloudflareApiToken          `json:"cloudflare_api_token,omitempty"`
-	// Comment associated with the credential.
-	Comment *string `json:"comment,omitempty"`
+	// Username of current owner of credential.
+	Owner *string `json:"owner,omitempty"`
 	// Whether the credential is usable only for read operations. Only applicable
 	// when purpose is **STORAGE**.
 	ReadOnly *bool `json:"read_only,omitempty"`
-	// Username of current owner of credential.
-	Owner *string `json:"owner,omitempty"`
-	// The unique identifier of the credential.
-	Id *string `json:"id,omitempty"`
-	// Unique identifier of the parent metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Time at which this credential was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of credential creator.
-	CreatedBy *string `json:"created_by,omitempty"`
+	// Supplying true to this argument skips validation of the updated credential.
+	SkipValidation *bool `json:"skip_validation,omitempty"`
 	// Time at which this credential was last modified, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of user who last modified the credential.
@@ -770,66 +775,61 @@ type UpdateStorageCredentialRequest struct {
 	// Whether this credential is the current metastore's root storage credential.
 	// Only applicable when purpose is **STORAGE**.
 	UsedForManagedStorage *bool `json:"used_for_managed_storage,omitempty"`
-	// The full name of the credential.
-	FullName *string `json:"full_name,omitempty"`
-	// Whether the current securable is accessible from all workspaces or a specific
-	// set of workspaces.
-	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
 }
 
 type ValidateCredentialRequest struct {
-	CredentialName              *string                      `json:"credential_name,omitempty"`
 	AwsIamRole                  *AwsIamRole                  `json:"aws_iam_role,omitempty"`
 	AzureManagedIdentity        *AzureManagedIdentity        `json:"azure_managed_identity,omitempty"`
+	CredentialName              *string                      `json:"credential_name,omitempty"`
 	DatabricksGcpServiceAccount *DatabricksGcpServiceAccount `json:"databricks_gcp_service_account,omitempty"`
 	// The name of an existing external location to validate. Only applicable for
 	// storage credentials (purpose is **STORAGE**.)
 	ExternalLocationName *string `json:"external_location_name,omitempty"`
-	// The external location url to validate. Only applicable when purpose is
-	// **STORAGE**.
-	Url *string `json:"url,omitempty"`
 	// Whether the credential is only usable for read operations. Only applicable
 	// for storage credentials (purpose is **STORAGE**.)
 	ReadOnly *bool `json:"read_only,omitempty"`
+	// The external location url to validate. Only applicable when purpose is
+	// **STORAGE**.
+	Url *string `json:"url,omitempty"`
 }
 
 type ValidateCredentialRequest_ValidationResult struct {
-	// The results of the tested operation.
-	Result ValidateCredentialRequest_Result `json:"result,omitempty"`
 	// Error message would exist when the result does not equal to **PASS**.
 	Message *string `json:"message,omitempty"`
+	// The results of the tested operation.
+	Result ValidateCredentialRequest_Result `json:"result,omitempty"`
 }
 
 type ValidateCredentialResponse struct {
-	// The results of the validation check.
-	Results []ValidateCredentialRequest_ValidationResult `json:"results,omitempty"`
 	// Whether the tested location is a directory in cloud storage. Only applicable
 	// for when purpose is **STORAGE**.
 	IsDir *bool `json:"isDir,omitempty"`
+	// The results of the validation check.
+	Results []ValidateCredentialRequest_ValidationResult `json:"results,omitempty"`
 }
 
 type ValidateStorageCredentialRequest struct {
-	StorageCredentialName       *string                      `json:"storage_credential_name,omitempty"`
 	AwsIamRole                  *AwsIamRole                  `json:"aws_iam_role,omitempty"`
-	AzureServicePrincipal       *AzureServicePrincipal       `json:"azure_service_principal,omitempty"`
 	AzureManagedIdentity        *AzureManagedIdentity        `json:"azure_managed_identity,omitempty"`
-	DatabricksGcpServiceAccount *DatabricksGcpServiceAccount `json:"databricks_gcp_service_account,omitempty"`
+	AzureServicePrincipal       *AzureServicePrincipal       `json:"azure_service_principal,omitempty"`
 	CloudflareApiToken          *CloudflareApiToken          `json:"cloudflare_api_token,omitempty"`
+	DatabricksGcpServiceAccount *DatabricksGcpServiceAccount `json:"databricks_gcp_service_account,omitempty"`
 	// The name of an existing external location to validate.
 	ExternalLocationName *string `json:"external_location_name,omitempty"`
+	// Whether the storage credential is only usable for read operations.
+	ReadOnly              *bool   `json:"read_only,omitempty"`
+	StorageCredentialName *string `json:"storage_credential_name,omitempty"`
 	// The external location url to validate.
 	Url *string `json:"url,omitempty"`
-	// Whether the storage credential is only usable for read operations.
-	ReadOnly *bool `json:"read_only,omitempty"`
 }
 
 type ValidateStorageCredentialRequest_ValidationResult struct {
+	// Error message would exist when the result does not equal to **PASS**.
+	Message *string `json:"message,omitempty"`
 	// The operation tested.
 	Operation ValidateStorageCredentialRequest_FileOperation `json:"operation,omitempty"`
 	// The results of the tested operation.
 	Result ValidateStorageCredentialRequest_Result `json:"result,omitempty"`
-	// Error message would exist when the result does not equal to **PASS**.
-	Message *string `json:"message,omitempty"`
 }
 
 type ValidateStorageCredentialResponse struct {

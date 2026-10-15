@@ -23,78 +23,46 @@ const (
 )
 
 type AwsSqsQueue struct {
-	// The AQS queue url in the format https://sqs.{region}.amazonaws.com/{account
-	// id}/{queue name}. Only required for provided_sqs.
-	QueueUrl *string `json:"queue_url,omitempty"`
 	// Unique identifier included in the name of file events managed cloud
 	// resources.
 	ManagedResourceId *string `json:"managed_resource_id,omitempty"`
+	// The AQS queue url in the format https://sqs.{region}.amazonaws.com/{account
+	// id}/{queue name}. Only required for provided_sqs.
+	QueueUrl *string `json:"queue_url,omitempty"`
 }
 
 type AzureQueueStorage struct {
+	// Unique identifier included in the name of file events managed cloud
+	// resources.
+	ManagedResourceId *string `json:"managed_resource_id,omitempty"`
 	// The AQS queue url in the format https://{storage
 	// account}.queue.core.windows.net/{queue name} Only required for provided_aqs.
 	QueueUrl *string `json:"queue_url,omitempty"`
-	// Optional subscription id for the queue, event grid subscription, and external
-	// location storage account. Required for locations with a service principal
-	// storage credential
-	SubscriptionId *string `json:"subscription_id,omitempty"`
 	// Optional resource group for the queue, event grid subscription, and external
 	// location storage account. Only required for locations with a service
 	// principal storage credential
 	ResourceGroup *string `json:"resource_group,omitempty"`
-	// Unique identifier included in the name of file events managed cloud
-	// resources.
-	ManagedResourceId *string `json:"managed_resource_id,omitempty"`
+	// Optional subscription id for the queue, event grid subscription, and external
+	// location storage account. Required for locations with a service principal
+	// storage credential
+	SubscriptionId *string `json:"subscription_id,omitempty"`
 }
 
 type CreateExternalLocationRequest struct {
-	// Skips validation of the storage credential associated with the external
-	// location.
-	SkipValidation *bool `json:"skip_validation,omitempty"`
-	// Name of the external location.
-	Name *string `json:"name,omitempty"`
-	// Path URL of the external location.
-	Url *string `json:"url,omitempty"`
-	// Name of the storage credential used with this location.
-	CredentialName *string `json:"credential_name,omitempty"`
-	// Indicates whether the external location is read-only.
-	ReadOnly *bool `json:"read_only,omitempty"`
+	// Indicates whether the principal is limited to retrieving metadata for the
+	// associated object through the BROWSE privilege when include_browse is enabled
+	// in the request.
+	BrowseOnly *bool `json:"browse_only,omitempty"`
 	// User-provided free-form text description.
 	Comment *string `json:"comment,omitempty"`
-	// Whether to enable file events on this external location. Default to `true`.
-	// Set to `false` to disable file events. The actual applied value may differ
-	// due to server-side defaults; check `effective_enable_file_events` for the
-	// effective state.
-	EnableFileEvents *bool `json:"enable_file_events,omitempty"`
-	// File event queue settings. If `enable_file_events` is not `false`, must be
-	// defined and have exactly one of the documented properties.
-	FileEventQueue *FileEventQueue `json:"file_event_queue,omitempty"`
-	// The owner of the external location.
-	Owner             *string            `json:"owner,omitempty"`
-	EncryptionDetails *EncryptionDetails `json:"encryption_details,omitempty"`
-	// Unique identifier of metastore hosting the external location.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Unique ID of the location's storage credential.
-	CredentialId *string `json:"credential_id,omitempty"`
 	// Time at which this external location was created, in epoch milliseconds.
 	CreatedAt *int64 `json:"created_at,omitempty"`
 	// Username of external location creator.
 	CreatedBy *string `json:"created_by,omitempty"`
-	// Time at which external location this was last modified, in epoch
-	// milliseconds.
-	UpdatedAt *int64 `json:"updated_at,omitempty"`
-	// Username of user who last modified the external location.
-	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Indicates whether the principal is limited to retrieving metadata for the
-	// associated object through the BROWSE privilege when include_browse is enabled
-	// in the request.
-	BrowseOnly    *bool         `json:"browse_only,omitempty"`
-	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
-	// Indicates whether fallback mode is enabled for this external location. When
-	// fallback mode is enabled, the access to the location falls back to cluster
-	// credentials if UC credentials are not sufficient.
-	Fallback *bool `json:"fallback,omitempty"`
+	// Unique ID of the location's storage credential.
+	CredentialId *string `json:"credential_id,omitempty"`
+	// Name of the storage credential used with this location.
+	CredentialName *string `json:"credential_name,omitempty"`
 	// The effective value of `enable_file_events` after applying server-side
 	// defaults.
 	EffectiveEnableFileEvents *bool `json:"effective_enable_file_events,omitempty"`
@@ -103,13 +71,45 @@ type CreateExternalLocationRequest struct {
 	// the user explicitly set `enable_file_events`. Use this field instead of
 	// `file_event_queue` for reading the actual queue state.
 	EffectiveFileEventQueue *FileEventQueue `json:"effective_file_event_queue,omitempty"`
+	// Whether to enable file events on this external location. Default to `true`.
+	// Set to `false` to disable file events. The actual applied value may differ
+	// due to server-side defaults; check `effective_enable_file_events` for the
+	// effective state.
+	EnableFileEvents  *bool              `json:"enable_file_events,omitempty"`
+	EncryptionDetails *EncryptionDetails `json:"encryption_details,omitempty"`
+	// Indicates whether fallback mode is enabled for this external location. When
+	// fallback mode is enabled, the access to the location falls back to cluster
+	// credentials if UC credentials are not sufficient.
+	Fallback *bool `json:"fallback,omitempty"`
+	// File event queue settings. If `enable_file_events` is not `false`, must be
+	// defined and have exactly one of the documented properties.
+	FileEventQueue *FileEventQueue `json:"file_event_queue,omitempty"`
+	IsolationMode  IsolationMode   `json:"isolation_mode,omitempty"`
+	// Unique identifier of metastore hosting the external location.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// Name of the external location.
+	Name *string `json:"name,omitempty"`
+	// The owner of the external location.
+	Owner *string `json:"owner,omitempty"`
+	// Indicates whether the external location is read-only.
+	ReadOnly *bool `json:"read_only,omitempty"`
+	// Skips validation of the storage credential associated with the external
+	// location.
+	SkipValidation *bool `json:"skip_validation,omitempty"`
+	// Time at which external location this was last modified, in epoch
+	// milliseconds.
+	UpdatedAt *int64 `json:"updated_at,omitempty"`
+	// Username of user who last modified the external location.
+	UpdatedBy *string `json:"updated_by,omitempty"`
+	// Path URL of the external location.
+	Url *string `json:"url,omitempty"`
 }
 
 type DeleteExternalLocationRequest struct {
-	// Name of the external location.
-	NameArg *string `json:"name_arg,omitempty"`
 	// Force deletion even if there are dependent external tables or mounts.
 	Force *bool `json:"force,omitempty"`
+	// Name of the external location.
+	NameArg *string `json:"name_arg,omitempty"`
 }
 
 // Encryption options that apply to clients connecting to cloud storage..
@@ -118,49 +118,20 @@ type EncryptionDetails struct {
 }
 
 type ExternalLocationInfo struct {
-	// Name of the external location.
-	Name *string `json:"name,omitempty"`
-	// Path URL of the external location.
-	Url *string `json:"url,omitempty"`
-	// Name of the storage credential used with this location.
-	CredentialName *string `json:"credential_name,omitempty"`
-	// Indicates whether the external location is read-only.
-	ReadOnly *bool `json:"read_only,omitempty"`
+	// Indicates whether the principal is limited to retrieving metadata for the
+	// associated object through the BROWSE privilege when include_browse is enabled
+	// in the request.
+	BrowseOnly *bool `json:"browse_only,omitempty"`
 	// User-provided free-form text description.
 	Comment *string `json:"comment,omitempty"`
-	// Whether to enable file events on this external location. Default to `true`.
-	// Set to `false` to disable file events. The actual applied value may differ
-	// due to server-side defaults; check `effective_enable_file_events` for the
-	// effective state.
-	EnableFileEvents *bool `json:"enable_file_events,omitempty"`
-	// File event queue settings. If `enable_file_events` is not `false`, must be
-	// defined and have exactly one of the documented properties.
-	FileEventQueue *FileEventQueue `json:"file_event_queue,omitempty"`
-	// The owner of the external location.
-	Owner             *string            `json:"owner,omitempty"`
-	EncryptionDetails *EncryptionDetails `json:"encryption_details,omitempty"`
-	// Unique identifier of metastore hosting the external location.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Unique ID of the location's storage credential.
-	CredentialId *string `json:"credential_id,omitempty"`
 	// Time at which this external location was created, in epoch milliseconds.
 	CreatedAt *int64 `json:"created_at,omitempty"`
 	// Username of external location creator.
 	CreatedBy *string `json:"created_by,omitempty"`
-	// Time at which external location this was last modified, in epoch
-	// milliseconds.
-	UpdatedAt *int64 `json:"updated_at,omitempty"`
-	// Username of user who last modified the external location.
-	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Indicates whether the principal is limited to retrieving metadata for the
-	// associated object through the BROWSE privilege when include_browse is enabled
-	// in the request.
-	BrowseOnly    *bool         `json:"browse_only,omitempty"`
-	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
-	// Indicates whether fallback mode is enabled for this external location. When
-	// fallback mode is enabled, the access to the location falls back to cluster
-	// credentials if UC credentials are not sufficient.
-	Fallback *bool `json:"fallback,omitempty"`
+	// Unique ID of the location's storage credential.
+	CredentialId *string `json:"credential_id,omitempty"`
+	// Name of the storage credential used with this location.
+	CredentialName *string `json:"credential_name,omitempty"`
 	// The effective value of `enable_file_events` after applying server-side
 	// defaults.
 	EffectiveEnableFileEvents *bool `json:"effective_enable_file_events,omitempty"`
@@ -169,39 +140,71 @@ type ExternalLocationInfo struct {
 	// the user explicitly set `enable_file_events`. Use this field instead of
 	// `file_event_queue` for reading the actual queue state.
 	EffectiveFileEventQueue *FileEventQueue `json:"effective_file_event_queue,omitempty"`
+	// Whether to enable file events on this external location. Default to `true`.
+	// Set to `false` to disable file events. The actual applied value may differ
+	// due to server-side defaults; check `effective_enable_file_events` for the
+	// effective state.
+	EnableFileEvents  *bool              `json:"enable_file_events,omitempty"`
+	EncryptionDetails *EncryptionDetails `json:"encryption_details,omitempty"`
+	// Indicates whether fallback mode is enabled for this external location. When
+	// fallback mode is enabled, the access to the location falls back to cluster
+	// credentials if UC credentials are not sufficient.
+	Fallback *bool `json:"fallback,omitempty"`
+	// File event queue settings. If `enable_file_events` is not `false`, must be
+	// defined and have exactly one of the documented properties.
+	FileEventQueue *FileEventQueue `json:"file_event_queue,omitempty"`
+	IsolationMode  IsolationMode   `json:"isolation_mode,omitempty"`
+	// Unique identifier of metastore hosting the external location.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// Name of the external location.
+	Name *string `json:"name,omitempty"`
+	// The owner of the external location.
+	Owner *string `json:"owner,omitempty"`
+	// Indicates whether the external location is read-only.
+	ReadOnly *bool `json:"read_only,omitempty"`
+	// Time at which external location this was last modified, in epoch
+	// milliseconds.
+	UpdatedAt *int64 `json:"updated_at,omitempty"`
+	// Username of user who last modified the external location.
+	UpdatedBy *string `json:"updated_by,omitempty"`
+	// Path URL of the external location.
+	Url *string `json:"url,omitempty"`
 }
 
 type FileEventQueue struct {
-	ProvidedAqs    *AzureQueueStorage `json:"provided_aqs,omitempty"`
-	ProvidedSqs    *AwsSqsQueue       `json:"provided_sqs,omitempty"`
-	ProvidedPubsub *GcpPubsub         `json:"provided_pubsub,omitempty"`
 	ManagedAqs     *AzureQueueStorage `json:"managed_aqs,omitempty"`
-	ManagedSqs     *AwsSqsQueue       `json:"managed_sqs,omitempty"`
 	ManagedPubsub  *GcpPubsub         `json:"managed_pubsub,omitempty"`
+	ManagedSqs     *AwsSqsQueue       `json:"managed_sqs,omitempty"`
+	ProvidedAqs    *AzureQueueStorage `json:"provided_aqs,omitempty"`
+	ProvidedPubsub *GcpPubsub         `json:"provided_pubsub,omitempty"`
+	ProvidedSqs    *AwsSqsQueue       `json:"provided_sqs,omitempty"`
 }
 
 type GcpPubsub struct {
+	// Unique identifier included in the name of file events managed cloud
+	// resources.
+	ManagedResourceId *string `json:"managed_resource_id,omitempty"`
 	// The Pub/Sub subscription name in the format
 	// projects/{project}/subscriptions/{subscription name}. Only required for
 	// provided_pubsub.
 	SubscriptionName *string `json:"subscription_name,omitempty"`
-	// Unique identifier included in the name of file events managed cloud
-	// resources.
-	ManagedResourceId *string `json:"managed_resource_id,omitempty"`
 }
 
 type GetExternalLocationRequest struct {
-	// Name of the external location.
-	NameArg *string `json:"name_arg,omitempty"`
 	// Whether to include external locations in the response for which the principal
 	// can only access selective metadata for
 	IncludeBrowse *bool `json:"include_browse,omitempty"`
+	// Name of the external location.
+	NameArg *string `json:"name_arg,omitempty"`
 }
 
 type ListExternalLocationsRequest struct {
 	// Whether to include external locations in the response for which the principal
 	// can only access selective metadata for
 	IncludeBrowse *bool `json:"include_browse,omitempty"`
+	// Whether to include external locations not bound to the workspace. Effective
+	// only if the user has permission to update the location–workspace binding.
+	IncludeUnbound *bool `json:"include_unbound,omitempty"`
 	// Maximum number of external locations to return. If not set, all the external
 	// locations are returned (not recommended). - when set to a value greater than
 	// 0, the page length is the minimum of this value and a server configured
@@ -211,9 +214,6 @@ type ListExternalLocationsRequest struct {
 	MaxResults *int `json:"max_results,omitempty"`
 	// Opaque pagination token to go to next page based on previous query.
 	PageToken *string `json:"page_token,omitempty"`
-	// Whether to include external locations not bound to the workspace. Effective
-	// only if the user has permission to update the location–workspace binding.
-	IncludeUnbound *bool `json:"include_unbound,omitempty"`
 }
 
 type ListExternalLocationsResponse struct {
@@ -236,59 +236,20 @@ type SseEncryptionDetails struct {
 }
 
 type UpdateExternalLocationRequest struct {
-	// Name of the external location.
-	NameArg *string `json:"name_arg,omitempty"`
-	// New name for the external location.
-	NewName *string `json:"new_name,omitempty"`
-	// Force update even if changing url invalidates dependent external tables or
-	// mounts.
-	Force *bool `json:"force,omitempty"`
-	// Skips validation of the storage credential associated with the external
-	// location.
-	SkipValidation *bool `json:"skip_validation,omitempty"`
-	// Name of the external location.
-	Name *string `json:"name,omitempty"`
-	// Path URL of the external location.
-	Url *string `json:"url,omitempty"`
-	// Name of the storage credential used with this location.
-	CredentialName *string `json:"credential_name,omitempty"`
-	// Indicates whether the external location is read-only.
-	ReadOnly *bool `json:"read_only,omitempty"`
+	// Indicates whether the principal is limited to retrieving metadata for the
+	// associated object through the BROWSE privilege when include_browse is enabled
+	// in the request.
+	BrowseOnly *bool `json:"browse_only,omitempty"`
 	// User-provided free-form text description.
 	Comment *string `json:"comment,omitempty"`
-	// Whether to enable file events on this external location. Default to `true`.
-	// Set to `false` to disable file events. The actual applied value may differ
-	// due to server-side defaults; check `effective_enable_file_events` for the
-	// effective state.
-	EnableFileEvents *bool `json:"enable_file_events,omitempty"`
-	// File event queue settings. If `enable_file_events` is not `false`, must be
-	// defined and have exactly one of the documented properties.
-	FileEventQueue *FileEventQueue `json:"file_event_queue,omitempty"`
-	// The owner of the external location.
-	Owner             *string            `json:"owner,omitempty"`
-	EncryptionDetails *EncryptionDetails `json:"encryption_details,omitempty"`
-	// Unique identifier of metastore hosting the external location.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Unique ID of the location's storage credential.
-	CredentialId *string `json:"credential_id,omitempty"`
 	// Time at which this external location was created, in epoch milliseconds.
 	CreatedAt *int64 `json:"created_at,omitempty"`
 	// Username of external location creator.
 	CreatedBy *string `json:"created_by,omitempty"`
-	// Time at which external location this was last modified, in epoch
-	// milliseconds.
-	UpdatedAt *int64 `json:"updated_at,omitempty"`
-	// Username of user who last modified the external location.
-	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Indicates whether the principal is limited to retrieving metadata for the
-	// associated object through the BROWSE privilege when include_browse is enabled
-	// in the request.
-	BrowseOnly    *bool         `json:"browse_only,omitempty"`
-	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
-	// Indicates whether fallback mode is enabled for this external location. When
-	// fallback mode is enabled, the access to the location falls back to cluster
-	// credentials if UC credentials are not sufficient.
-	Fallback *bool `json:"fallback,omitempty"`
+	// Unique ID of the location's storage credential.
+	CredentialId *string `json:"credential_id,omitempty"`
+	// Name of the storage credential used with this location.
+	CredentialName *string `json:"credential_name,omitempty"`
 	// The effective value of `enable_file_events` after applying server-side
 	// defaults.
 	EffectiveEnableFileEvents *bool `json:"effective_enable_file_events,omitempty"`
@@ -297,6 +258,45 @@ type UpdateExternalLocationRequest struct {
 	// the user explicitly set `enable_file_events`. Use this field instead of
 	// `file_event_queue` for reading the actual queue state.
 	EffectiveFileEventQueue *FileEventQueue `json:"effective_file_event_queue,omitempty"`
+	// Whether to enable file events on this external location. Default to `true`.
+	// Set to `false` to disable file events. The actual applied value may differ
+	// due to server-side defaults; check `effective_enable_file_events` for the
+	// effective state.
+	EnableFileEvents  *bool              `json:"enable_file_events,omitempty"`
+	EncryptionDetails *EncryptionDetails `json:"encryption_details,omitempty"`
+	// Indicates whether fallback mode is enabled for this external location. When
+	// fallback mode is enabled, the access to the location falls back to cluster
+	// credentials if UC credentials are not sufficient.
+	Fallback *bool `json:"fallback,omitempty"`
+	// File event queue settings. If `enable_file_events` is not `false`, must be
+	// defined and have exactly one of the documented properties.
+	FileEventQueue *FileEventQueue `json:"file_event_queue,omitempty"`
+	// Force update even if changing url invalidates dependent external tables or
+	// mounts.
+	Force         *bool         `json:"force,omitempty"`
+	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
+	// Unique identifier of metastore hosting the external location.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// Name of the external location.
+	Name *string `json:"name,omitempty"`
+	// Name of the external location.
+	NameArg *string `json:"name_arg,omitempty"`
+	// New name for the external location.
+	NewName *string `json:"new_name,omitempty"`
+	// The owner of the external location.
+	Owner *string `json:"owner,omitempty"`
+	// Indicates whether the external location is read-only.
+	ReadOnly *bool `json:"read_only,omitempty"`
+	// Skips validation of the storage credential associated with the external
+	// location.
+	SkipValidation *bool `json:"skip_validation,omitempty"`
+	// Time at which external location this was last modified, in epoch
+	// milliseconds.
+	UpdatedAt *int64 `json:"updated_at,omitempty"`
+	// Username of user who last modified the external location.
+	UpdatedBy *string `json:"updated_by,omitempty"`
+	// Path URL of the external location.
+	Url *string `json:"url,omitempty"`
 }
 
 // AwsSqsQueueToSDK converts the mirror to the sdk-go type.

@@ -34,41 +34,51 @@ type CreateOnlineStoreRequest struct {
 }
 
 type ListOnlineStoresRequest struct {
-	// Pagination token to go to the next page based on a previous query.
-	PageToken *string `json:"page_token,omitempty"`
 	// The maximum number of results to return. Defaults to 100 if not specified.
 	PageSize *int `json:"page_size,omitempty"`
+	// Pagination token to go to the next page based on a previous query.
+	PageToken *string `json:"page_token,omitempty"`
 }
 
 type ListOnlineStoresResponse struct {
-	// List of online stores.
-	OnlineStores []OnlineStore `json:"online_stores,omitempty"`
 	// Pagination token to request the next page of results for this query.
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// List of online stores.
+	OnlineStores []OnlineStore `json:"online_stores,omitempty"`
 }
 
 // An OnlineStore is a logical database instance that stores and serves features
 // online..
 type OnlineStore struct {
-	// The name of the online store. This is the unique identifier for the online
-	// store.
-	Name *string `json:"name,omitempty"`
-	// The email of the creator of the online store.
-	Creator *string `json:"creator,omitempty"`
-	// The timestamp when the online store was created.
-	CreationTime *types.Time `json:"creation_time,omitempty"`
-	// The current state of the online store.
-	State OnlineStore_State `json:"state,omitempty"`
 	// The capacity of the online store. Valid values are "CU_1", "CU_2", "CU_4",
 	// "CU_8".
 	Capacity *string `json:"capacity,omitempty"`
+	// The timestamp when the online store was created.
+	CreationTime *types.Time `json:"creation_time,omitempty"`
+	// The email of the creator of the online store.
+	Creator *string `json:"creator,omitempty"`
+	// The name of the online store. This is the unique identifier for the online
+	// store.
+	Name *string `json:"name,omitempty"`
 	// The number of read replicas for the online store. Defaults to 0.
 	ReadReplicaCount *int `json:"read_replica_count,omitempty"`
+	// The current state of the online store.
+	State OnlineStore_State `json:"state,omitempty"`
 	// The usage policy applied to the online store to track billing.
 	UsagePolicyId *string `json:"usage_policy_id,omitempty"`
 }
 
 type PublishSpec struct {
+	// Budget policy id used to attribute the serverless compute cost of the synced
+	// online-table sync pipeline. Applied only when the sync pipeline is first
+	// created (the initial publish of a new online table); republishing to an
+	// existing online table does not update it.
+	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
+	// Full Unity Catalog name of one of the features materialized in the source
+	// table, used to derive the synced online table's entity and timeseries
+	// columns. Required for view sources without a UC PrimaryKeyConstraint; ignored
+	// when the source already has one.
+	FullFeatureName *string `json:"full_feature_name,omitempty"`
 	// The name of the target online store.
 	OnlineStore *string `json:"online_store,omitempty"`
 	// The full three-part (catalog, schema, table) name of the online table.
@@ -76,29 +86,19 @@ type PublishSpec struct {
 	// The publish mode of the pipeline that syncs the online table with the source
 	// table.
 	PublishMode PublishSpec_PublishMode `json:"publish_mode,omitempty"`
-	// Full Unity Catalog name of one of the features materialized in the source
-	// table, used to derive the synced online table's entity and timeseries
-	// columns. Required for view sources without a UC PrimaryKeyConstraint; ignored
-	// when the source already has one.
-	FullFeatureName *string `json:"full_feature_name,omitempty"`
 	// Custom tags to apply to the synced online-table sync pipeline created for
 	// this publish. They are forwarded to the pipeline's compute as cluster tags so
 	// its cost can be attributed in the billing system tables. Applied only when
 	// the sync pipeline is first created (the initial publish of a new online
 	// table); republishing to an existing online table does not update them.
 	Tags map[string]string `json:"tags,omitempty"`
-	// Budget policy id used to attribute the serverless compute cost of the synced
-	// online-table sync pipeline. Applied only when the sync pipeline is first
-	// created (the initial publish of a new online table); republishing to an
-	// existing online table does not update it.
-	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
 }
 
 type PublishTableRequest struct {
-	// The full three-part (catalog, schema, table) name of the source table.
-	SourceTableName *string `json:"source_table_name,omitempty"`
 	// The specification for publishing the online table from the source table.
 	PublishSpec *PublishSpec `json:"publish_spec,omitempty"`
+	// The full three-part (catalog, schema, table) name of the source table.
+	SourceTableName *string `json:"source_table_name,omitempty"`
 }
 
 type PublishTableResponse struct {

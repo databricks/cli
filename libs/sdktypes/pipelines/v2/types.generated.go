@@ -243,57 +243,38 @@ type AutoFullRefreshPolicy struct {
 }
 
 type AvroTransformerOptions struct {
+	// (Optional) Parse mode for Avro data. Valid values: FAILFAST, PERMISSIVE.
+	// Defaults to PERMISSIVE.
+	ParseMode ParseMode `json:"parse_mode,omitempty"`
 	// Inline Avro JSON schema string.
 	Schema *string `json:"schema,omitempty"`
 	// Path to a schema file (.avsc).
 	SchemaFilePath *string `json:"schema_file_path,omitempty"`
-	// (Optional) Parse mode for Avro data. Valid values: FAILFAST, PERMISSIVE.
-	// Defaults to PERMISSIVE.
-	ParseMode ParseMode `json:"parse_mode,omitempty"`
 	// (Optional) Schema registry to resolve the Avro schema at runtime instead of
 	// providing it inline or via a file path.
 	SchemaRegistry *SchemaRegistryConfig `json:"schema_registry,omitempty"`
 }
 
 type ClonePipelineRequest struct {
-	// Source pipeline to clone from
-	PipelineId *string `json:"pipeline_id,omitempty"`
-	// If present, the last-modified time of the pipeline settings before the clone.
-	// If the settings were modified after that time, then the request will fail
-	// with a conflict.
-	ExpectedLastModified *int64 `json:"expected_last_modified,omitempty"`
 	// If false, deployment will fail if name conflicts with that of another
 	// pipeline.
 	AllowDuplicateNames *bool `json:"allow_duplicate_names,omitempty"`
-	// Unique identifier for this pipeline.
-	Id *string `json:"id,omitempty"`
-	// Friendly identifier for this pipeline.
-	Name *string `json:"name,omitempty"`
-	// DBFS root directory for storing checkpoints and tables.
-	Storage *string `json:"storage,omitempty"`
-	// String-String configuration for this pipeline execution.
-	Configuration map[string]string `json:"configuration,omitempty"`
+	// Budget policy of this pipeline.
+	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
+	// A catalog in Unity Catalog to publish data from this pipeline to. If `target`
+	// is specified, tables in this pipeline are published to a `target` schema
+	// inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is
+	// not specified, no data is published to Unity Catalog.
+	Catalog *string `json:"catalog,omitempty"`
+	// SDP Release Channel that specifies which version to use.
+	Channel *string `json:"channel,omitempty"`
+	// The type of clone to perform. Currently, only deep copies are supported
+	CloneMode CloneMode `json:"clone_mode,omitempty"`
 	// Cluster settings for this pipeline deployment. Applies to classic
 	// (non-serverless) pipelines. Omit this field when `serverless` is `true`.
 	Clusters []PipelineCluster `json:"clusters,omitempty"`
-	// Libraries or code needed by this deployment.
-	Libraries []PipelineLibrary `json:"libraries,omitempty"`
-	// The configuration for a managed ingestion pipeline. These settings cannot be
-	// used with the 'libraries', 'schema', 'target', or 'catalog' settings.
-	IngestionDefinition *IngestionPipelineDefinition `json:"ingestion_definition,omitempty"`
-	// The definition of a gateway pipeline to support change data capture.
-	GatewayDefinition *IngestionGatewayPipelineDefinition `json:"gateway_definition,omitempty"`
-	// Which pipeline trigger to use. Deprecated: Use `continuous` instead.
-	Trigger *PipelineTrigger `json:"trigger,omitempty"`
-	// Target schema (database) to add tables in this pipeline to. Exactly one of
-	// `schema` or `target` must be specified. To publish to Unity Catalog, also
-	// specify `catalog`. This legacy field is deprecated for pipeline creation in
-	// favor of the `schema` field.
-	Target *string `json:"target,omitempty"`
-	// The default schema (database) where tables are read from or published to.
-	Schema *string `json:"schema,omitempty"`
-	// Filters on which Pipeline packages to include in the deployed graph.
-	Filters *Filters `json:"filters,omitempty"`
+	// String-String configuration for this pipeline execution.
+	Configuration map[string]string `json:"configuration,omitempty"`
 	// Whether the pipeline is continuous or triggered. This replaces `trigger`.
 	//
 	// Deprecated: wrap the pipeline in a continuous job instead, which also lets
@@ -301,57 +282,76 @@ type ClonePipelineRequest struct {
 	// pipeline is started by a continuous job, the job's setting takes precedence
 	// and this field is ignored.
 	Continuous *bool `json:"continuous,omitempty"`
+	// Deployment type of this pipeline.
+	Deployment *PipelineDeployment `json:"deployment,omitempty"`
 	// Whether the pipeline is in Development mode. Defaults to false.
 	//
 	// Deprecated: set development mode for each update instead.
 	Development *bool `json:"development,omitempty"`
-	// Whether Photon is enabled for this pipeline.
-	Photon *bool `json:"photon,omitempty"`
 	// Pipeline product edition.
 	Edition *string `json:"edition,omitempty"`
-	// SDP Release Channel that specifies which version to use.
-	Channel *string `json:"channel,omitempty"`
-	// A catalog in Unity Catalog to publish data from this pipeline to. If `target`
-	// is specified, tables in this pipeline are published to a `target` schema
-	// inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is
-	// not specified, no data is published to Unity Catalog.
-	Catalog *string `json:"catalog,omitempty"`
+	// Environment specification for this pipeline used to install dependencies.
+	Environment *PipelinesEnvironment `json:"environment,omitempty"`
+	// Event log configuration for this pipeline
+	EventLog *EventLogSpec `json:"event_log,omitempty"`
+	// If present, the last-modified time of the pipeline settings before the clone.
+	// If the settings were modified after that time, then the request will fail
+	// with a conflict.
+	ExpectedLastModified *int64 `json:"expected_last_modified,omitempty"`
+	// Filters on which Pipeline packages to include in the deployed graph.
+	Filters *Filters `json:"filters,omitempty"`
+	// The definition of a gateway pipeline to support change data capture.
+	GatewayDefinition *IngestionGatewayPipelineDefinition `json:"gateway_definition,omitempty"`
+	// Unique identifier for this pipeline.
+	Id *string `json:"id,omitempty"`
+	// The configuration for a managed ingestion pipeline. These settings cannot be
+	// used with the 'libraries', 'schema', 'target', or 'catalog' settings.
+	IngestionDefinition *IngestionPipelineDefinition `json:"ingestion_definition,omitempty"`
+	// Libraries or code needed by this deployment.
+	Libraries []PipelineLibrary `json:"libraries,omitempty"`
+	// Friendly identifier for this pipeline.
+	Name *string `json:"name,omitempty"`
 	// List of notification settings for this pipeline.
 	Notifications []Notifications `json:"notifications,omitempty"`
+	// Path of the pipeline parent folder in workspace file tree.
+	//
+	// If absent, the pipeline doesn't have a workspace object.
+	ParentPath *string `json:"parent_path,omitempty"`
+	// Whether Photon is enabled for this pipeline.
+	Photon *bool `json:"photon,omitempty"`
+	// Source pipeline to clone from
+	PipelineId *string `json:"pipeline_id,omitempty"`
+	// Restart window of this pipeline.
+	RestartWindow *RestartWindow `json:"restart_window,omitempty"`
+	// Root path for this pipeline. This is used as the root directory when editing
+	// the pipeline in the <Databricks> user interface and it is added to sys.path
+	// when executing Python sources during pipeline execution.
+	RootPath *string `json:"root_path,omitempty"`
+	// The default schema (database) where tables are read from or published to.
+	Schema *string `json:"schema,omitempty"`
 	// Whether serverless compute is enabled for this pipeline. Serverless is the
 	// recommended compute for new pipelines; set this to `true` to run the pipeline
 	// on serverless. For notebook/file pipelines, omitting this field uses classic
 	// compute configured through the `clusters` field. When `true`, omit
 	// `clusters`; Photon is always enabled.
 	Serverless *bool `json:"serverless,omitempty"`
-	// Deployment type of this pipeline.
-	Deployment *PipelineDeployment `json:"deployment,omitempty"`
-	// Restart window of this pipeline.
-	RestartWindow *RestartWindow `json:"restart_window,omitempty"`
-	// Budget policy of this pipeline.
-	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
+	// Serverless compute ID specified by the user for serverless pipelines.
+	ServerlessComputeId *string `json:"serverless_compute_id,omitempty"`
+	// DBFS root directory for storing checkpoints and tables.
+	Storage *string `json:"storage,omitempty"`
 	// A map of tags associated with the pipeline. These are forwarded to the
 	// cluster as cluster tags, and are therefore subject to the same limitations. A
 	// maximum of 25 tags can be added to the pipeline.
 	Tags map[string]string `json:"tags,omitempty"`
-	// Event log configuration for this pipeline
-	EventLog *EventLogSpec `json:"event_log,omitempty"`
-	// Root path for this pipeline. This is used as the root directory when editing
-	// the pipeline in the <Databricks> user interface and it is added to sys.path
-	// when executing Python sources during pipeline execution.
-	RootPath *string `json:"root_path,omitempty"`
-	// Environment specification for this pipeline used to install dependencies.
-	Environment *PipelinesEnvironment `json:"environment,omitempty"`
-	// Path of the pipeline parent folder in workspace file tree.
-	//
-	// If absent, the pipeline doesn't have a workspace object.
-	ParentPath *string `json:"parent_path,omitempty"`
+	// Target schema (database) to add tables in this pipeline to. Exactly one of
+	// `schema` or `target` must be specified. To publish to Unity Catalog, also
+	// specify `catalog`. This legacy field is deprecated for pipeline creation in
+	// favor of the `schema` field.
+	Target *string `json:"target,omitempty"`
+	// Which pipeline trigger to use. Deprecated: Use `continuous` instead.
+	Trigger *PipelineTrigger `json:"trigger,omitempty"`
 	// Usage policy of this pipeline.
 	UsagePolicyId *string `json:"usage_policy_id,omitempty"`
-	// Serverless compute ID specified by the user for serverless pipelines.
-	ServerlessComputeId *string `json:"serverless_compute_id,omitempty"`
-	// The type of clone to perform. Currently, only deep copies are supported
-	CloneMode CloneMode `json:"clone_mode,omitempty"`
 }
 
 type ClonePipelineResponse struct {
@@ -381,62 +381,42 @@ type ConnectionParameters struct {
 // Wrapper message for source-specific options to support multiple connector
 // types.
 type ConnectorOptions struct {
-	GoogleAdsOptions          *GoogleAdsOptions           `json:"google_ads_options,omitempty"`
-	TiktokAdsOptions          *TikTokAdsOptions           `json:"tiktok_ads_options,omitempty"`
-	SharepointOptions         *SharepointOptions          `json:"sharepoint_options,omitempty"`
-	GdriveOptions             *GoogleDriveOptions         `json:"gdrive_options,omitempty"`
-	OutlookOptions            *OutlookOptions             `json:"outlook_options,omitempty"`
-	SmartsheetOptions         *SmartsheetOptions          `json:"smartsheet_options,omitempty"`
-	JiraOptions               *JiraConnectorOptions       `json:"jira_options,omitempty"`
-	ConfluenceOptions         *ConfluenceConnectorOptions `json:"confluence_options,omitempty"`
-	MetaAdsOptions            *MetaMarketingOptions       `json:"meta_ads_options,omitempty"`
-	ZendeskSupportOptions     *ZendeskSupportOptions      `json:"zendesk_support_options,omitempty"`
-	KafkaOptions              *KafkaOptions               `json:"kafka_options,omitempty"`
-	RabbitmqOptions           *RabbitmqOptions            `json:"rabbitmq_options,omitempty"`
-	MarketoOptions            *MarketoOptions             `json:"marketo_options,omitempty"`
-	LinkedinAdsOptions        *LinkedInAdsOptions         `json:"linkedin_ads_options,omitempty"`
-	RedditAdsOptions          *RedditAdsOptions           `json:"reddit_ads_options,omitempty"`
 	ApiSourceConnectorOptions *ApiSourceConnectorOptions  `json:"api_source_connector_options,omitempty"`
+	ConfluenceOptions         *ConfluenceConnectorOptions `json:"confluence_options,omitempty"`
+	GdriveOptions             *GoogleDriveOptions         `json:"gdrive_options,omitempty"`
+	GoogleAdsOptions          *GoogleAdsOptions           `json:"google_ads_options,omitempty"`
+	JiraOptions               *JiraConnectorOptions       `json:"jira_options,omitempty"`
+	KafkaOptions              *KafkaOptions               `json:"kafka_options,omitempty"`
+	LinkedinAdsOptions        *LinkedInAdsOptions         `json:"linkedin_ads_options,omitempty"`
+	MarketoOptions            *MarketoOptions             `json:"marketo_options,omitempty"`
+	MetaAdsOptions            *MetaMarketingOptions       `json:"meta_ads_options,omitempty"`
+	OutlookOptions            *OutlookOptions             `json:"outlook_options,omitempty"`
+	RabbitmqOptions           *RabbitmqOptions            `json:"rabbitmq_options,omitempty"`
+	RedditAdsOptions          *RedditAdsOptions           `json:"reddit_ads_options,omitempty"`
+	SharepointOptions         *SharepointOptions          `json:"sharepoint_options,omitempty"`
+	SmartsheetOptions         *SmartsheetOptions          `json:"smartsheet_options,omitempty"`
+	TiktokAdsOptions          *TikTokAdsOptions           `json:"tiktok_ads_options,omitempty"`
+	ZendeskSupportOptions     *ZendeskSupportOptions      `json:"zendesk_support_options,omitempty"`
 }
 
 type CreatePipelineRequest struct {
 	// If false, deployment will fail if name conflicts with that of another
 	// pipeline.
-	AllowDuplicateNames *bool              `json:"allow_duplicate_names,omitempty"`
-	DryRun              *bool              `json:"dry_run,omitempty"`
-	RunAs               *PipelinesJobRunAs `json:"run_as,omitempty"`
-	// Key/value map of default parameters to use for pipeline execution. Maximum
-	// total size: 10k characters (JSON format)
-	Parameters map[string]string `json:"parameters,omitempty"`
-	// Unique identifier for this pipeline.
-	Id *string `json:"id,omitempty"`
-	// Friendly identifier for this pipeline.
-	Name *string `json:"name,omitempty"`
-	// DBFS root directory for storing checkpoints and tables.
-	Storage *string `json:"storage,omitempty"`
-	// String-String configuration for this pipeline execution.
-	Configuration map[string]string `json:"configuration,omitempty"`
+	AllowDuplicateNames *bool `json:"allow_duplicate_names,omitempty"`
+	// Budget policy of this pipeline.
+	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
+	// A catalog in Unity Catalog to publish data from this pipeline to. If `target`
+	// is specified, tables in this pipeline are published to a `target` schema
+	// inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is
+	// not specified, no data is published to Unity Catalog.
+	Catalog *string `json:"catalog,omitempty"`
+	// SDP Release Channel that specifies which version to use.
+	Channel *string `json:"channel,omitempty"`
 	// Cluster settings for this pipeline deployment. Applies to classic
 	// (non-serverless) pipelines. Omit this field when `serverless` is `true`.
 	Clusters []PipelineCluster `json:"clusters,omitempty"`
-	// Libraries or code needed by this deployment.
-	Libraries []PipelineLibrary `json:"libraries,omitempty"`
-	// The configuration for a managed ingestion pipeline. These settings cannot be
-	// used with the 'libraries', 'schema', 'target', or 'catalog' settings.
-	IngestionDefinition *IngestionPipelineDefinition `json:"ingestion_definition,omitempty"`
-	// The definition of a gateway pipeline to support change data capture.
-	GatewayDefinition *IngestionGatewayPipelineDefinition `json:"gateway_definition,omitempty"`
-	// Which pipeline trigger to use. Deprecated: Use `continuous` instead.
-	Trigger *PipelineTrigger `json:"trigger,omitempty"`
-	// Target schema (database) to add tables in this pipeline to. Exactly one of
-	// `schema` or `target` must be specified. To publish to Unity Catalog, also
-	// specify `catalog`. This legacy field is deprecated for pipeline creation in
-	// favor of the `schema` field.
-	Target *string `json:"target,omitempty"`
-	// The default schema (database) where tables are read from or published to.
-	Schema *string `json:"schema,omitempty"`
-	// Filters on which Pipeline packages to include in the deployed graph.
-	Filters *Filters `json:"filters,omitempty"`
+	// String-String configuration for this pipeline execution.
+	Configuration map[string]string `json:"configuration,omitempty"`
 	// Whether the pipeline is continuous or triggered. This replaces `trigger`.
 	//
 	// Deprecated: wrap the pipeline in a continuous job instead, which also lets
@@ -444,63 +424,83 @@ type CreatePipelineRequest struct {
 	// pipeline is started by a continuous job, the job's setting takes precedence
 	// and this field is ignored.
 	Continuous *bool `json:"continuous,omitempty"`
+	// Deployment type of this pipeline.
+	Deployment *PipelineDeployment `json:"deployment,omitempty"`
 	// Whether the pipeline is in Development mode. Defaults to false.
 	//
 	// Deprecated: set development mode for each update instead.
 	Development *bool `json:"development,omitempty"`
-	// Whether Photon is enabled for this pipeline.
-	Photon *bool `json:"photon,omitempty"`
+	DryRun      *bool `json:"dry_run,omitempty"`
 	// Pipeline product edition.
 	Edition *string `json:"edition,omitempty"`
-	// SDP Release Channel that specifies which version to use.
-	Channel *string `json:"channel,omitempty"`
-	// A catalog in Unity Catalog to publish data from this pipeline to. If `target`
-	// is specified, tables in this pipeline are published to a `target` schema
-	// inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is
-	// not specified, no data is published to Unity Catalog.
-	Catalog *string `json:"catalog,omitempty"`
+	// Environment specification for this pipeline used to install dependencies.
+	Environment *PipelinesEnvironment `json:"environment,omitempty"`
+	// Event log configuration for this pipeline
+	EventLog *EventLogSpec `json:"event_log,omitempty"`
+	// Filters on which Pipeline packages to include in the deployed graph.
+	Filters *Filters `json:"filters,omitempty"`
+	// The definition of a gateway pipeline to support change data capture.
+	GatewayDefinition *IngestionGatewayPipelineDefinition `json:"gateway_definition,omitempty"`
+	// Unique identifier for this pipeline.
+	Id *string `json:"id,omitempty"`
+	// The configuration for a managed ingestion pipeline. These settings cannot be
+	// used with the 'libraries', 'schema', 'target', or 'catalog' settings.
+	IngestionDefinition *IngestionPipelineDefinition `json:"ingestion_definition,omitempty"`
+	// Libraries or code needed by this deployment.
+	Libraries []PipelineLibrary `json:"libraries,omitempty"`
+	// Friendly identifier for this pipeline.
+	Name *string `json:"name,omitempty"`
 	// List of notification settings for this pipeline.
 	Notifications []Notifications `json:"notifications,omitempty"`
+	// Key/value map of default parameters to use for pipeline execution. Maximum
+	// total size: 10k characters (JSON format)
+	Parameters map[string]string `json:"parameters,omitempty"`
+	// Path of the pipeline parent folder in workspace file tree.
+	//
+	// If absent, the pipeline doesn't have a workspace object.
+	ParentPath *string `json:"parent_path,omitempty"`
+	// Whether Photon is enabled for this pipeline.
+	Photon *bool `json:"photon,omitempty"`
+	// Restart window of this pipeline.
+	RestartWindow *RestartWindow `json:"restart_window,omitempty"`
+	// Root path for this pipeline. This is used as the root directory when editing
+	// the pipeline in the <Databricks> user interface and it is added to sys.path
+	// when executing Python sources during pipeline execution.
+	RootPath *string            `json:"root_path,omitempty"`
+	RunAs    *PipelinesJobRunAs `json:"run_as,omitempty"`
+	// The default schema (database) where tables are read from or published to.
+	Schema *string `json:"schema,omitempty"`
 	// Whether serverless compute is enabled for this pipeline. Serverless is the
 	// recommended compute for new pipelines; set this to `true` to run the pipeline
 	// on serverless. For notebook/file pipelines, omitting this field uses classic
 	// compute configured through the `clusters` field. When `true`, omit
 	// `clusters`; Photon is always enabled.
 	Serverless *bool `json:"serverless,omitempty"`
-	// Deployment type of this pipeline.
-	Deployment *PipelineDeployment `json:"deployment,omitempty"`
-	// Restart window of this pipeline.
-	RestartWindow *RestartWindow `json:"restart_window,omitempty"`
-	// Budget policy of this pipeline.
-	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
+	// Serverless compute ID specified by the user for serverless pipelines.
+	ServerlessComputeId *string `json:"serverless_compute_id,omitempty"`
+	// DBFS root directory for storing checkpoints and tables.
+	Storage *string `json:"storage,omitempty"`
 	// A map of tags associated with the pipeline. These are forwarded to the
 	// cluster as cluster tags, and are therefore subject to the same limitations. A
 	// maximum of 25 tags can be added to the pipeline.
 	Tags map[string]string `json:"tags,omitempty"`
-	// Event log configuration for this pipeline
-	EventLog *EventLogSpec `json:"event_log,omitempty"`
-	// Root path for this pipeline. This is used as the root directory when editing
-	// the pipeline in the <Databricks> user interface and it is added to sys.path
-	// when executing Python sources during pipeline execution.
-	RootPath *string `json:"root_path,omitempty"`
-	// Environment specification for this pipeline used to install dependencies.
-	Environment *PipelinesEnvironment `json:"environment,omitempty"`
-	// Path of the pipeline parent folder in workspace file tree.
-	//
-	// If absent, the pipeline doesn't have a workspace object.
-	ParentPath *string `json:"parent_path,omitempty"`
+	// Target schema (database) to add tables in this pipeline to. Exactly one of
+	// `schema` or `target` must be specified. To publish to Unity Catalog, also
+	// specify `catalog`. This legacy field is deprecated for pipeline creation in
+	// favor of the `schema` field.
+	Target *string `json:"target,omitempty"`
+	// Which pipeline trigger to use. Deprecated: Use `continuous` instead.
+	Trigger *PipelineTrigger `json:"trigger,omitempty"`
 	// Usage policy of this pipeline.
 	UsagePolicyId *string `json:"usage_policy_id,omitempty"`
-	// Serverless compute ID specified by the user for serverless pipelines.
-	ServerlessComputeId *string `json:"serverless_compute_id,omitempty"`
 }
 
 type CreatePipelineResponse struct {
+	// Only returned when dry_run is true.
+	EffectiveSettings *PipelineSpec `json:"effective_settings,omitempty"`
 	// The unique identifier for the newly created pipeline. Only returned when
 	// dry_run is false.
 	PipelineId *string `json:"pipeline_id,omitempty"`
-	// Only returned when dry_run is true.
-	EffectiveSettings *PipelineSpec `json:"effective_settings,omitempty"`
 }
 
 type CronTrigger struct {
@@ -533,59 +533,34 @@ type DataStagingOptions struct {
 }
 
 type DeletePipelineRequest struct {
-	PipelineId *string `json:"pipeline_id,omitempty"`
-	// If true, deletion will proceed even if resource cleanup fails. By default,
-	// deletion will fail if resources cleanup is required but fails.
-	Force *bool `json:"force,omitempty"`
 	// If false, pipeline deletion will not cascade to its datasets (MVs, STs,
 	// Views). By default, this parameter will be true and all tables will be
 	// deleted with the pipeline.
 	Cascade *bool `json:"cascade,omitempty"`
+	// If true, deletion will proceed even if resource cleanup fails. By default,
+	// deletion will fail if resources cleanup is required but fails.
+	Force      *bool   `json:"force,omitempty"`
+	PipelineId *string `json:"pipeline_id,omitempty"`
 }
 
 type EditPipelineRequest struct {
-	// Unique identifier for this pipeline.
-	PipelineId *string `json:"pipeline_id,omitempty"`
 	// If false, deployment will fail if name has changed and conflicts the name of
 	// another pipeline.
 	AllowDuplicateNames *bool `json:"allow_duplicate_names,omitempty"`
-	// If present, the last-modified time of the pipeline settings before the edit.
-	// If the settings were modified after that time, then the request will fail
-	// with a conflict.
-	ExpectedLastModified *int64             `json:"expected_last_modified,omitempty"`
-	RunAs                *PipelinesJobRunAs `json:"run_as,omitempty"`
-	// Key/value map of default parameters to use for pipeline execution. Maximum
-	// total size: 10k characters (JSON format)
-	Parameters map[string]string `json:"parameters,omitempty"`
-	// Unique identifier for this pipeline.
-	Id *string `json:"id,omitempty"`
-	// Friendly identifier for this pipeline.
-	Name *string `json:"name,omitempty"`
-	// DBFS root directory for storing checkpoints and tables.
-	Storage *string `json:"storage,omitempty"`
-	// String-String configuration for this pipeline execution.
-	Configuration map[string]string `json:"configuration,omitempty"`
+	// Budget policy of this pipeline.
+	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
+	// A catalog in Unity Catalog to publish data from this pipeline to. If `target`
+	// is specified, tables in this pipeline are published to a `target` schema
+	// inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is
+	// not specified, no data is published to Unity Catalog.
+	Catalog *string `json:"catalog,omitempty"`
+	// SDP Release Channel that specifies which version to use.
+	Channel *string `json:"channel,omitempty"`
 	// Cluster settings for this pipeline deployment. Applies to classic
 	// (non-serverless) pipelines. Omit this field when `serverless` is `true`.
 	Clusters []PipelineCluster `json:"clusters,omitempty"`
-	// Libraries or code needed by this deployment.
-	Libraries []PipelineLibrary `json:"libraries,omitempty"`
-	// The configuration for a managed ingestion pipeline. These settings cannot be
-	// used with the 'libraries', 'schema', 'target', or 'catalog' settings.
-	IngestionDefinition *IngestionPipelineDefinition `json:"ingestion_definition,omitempty"`
-	// The definition of a gateway pipeline to support change data capture.
-	GatewayDefinition *IngestionGatewayPipelineDefinition `json:"gateway_definition,omitempty"`
-	// Which pipeline trigger to use. Deprecated: Use `continuous` instead.
-	Trigger *PipelineTrigger `json:"trigger,omitempty"`
-	// Target schema (database) to add tables in this pipeline to. Exactly one of
-	// `schema` or `target` must be specified. To publish to Unity Catalog, also
-	// specify `catalog`. This legacy field is deprecated for pipeline creation in
-	// favor of the `schema` field.
-	Target *string `json:"target,omitempty"`
-	// The default schema (database) where tables are read from or published to.
-	Schema *string `json:"schema,omitempty"`
-	// Filters on which Pipeline packages to include in the deployed graph.
-	Filters *Filters `json:"filters,omitempty"`
+	// String-String configuration for this pipeline execution.
+	Configuration map[string]string `json:"configuration,omitempty"`
 	// Whether the pipeline is continuous or triggered. This replaces `trigger`.
 	//
 	// Deprecated: wrap the pipeline in a continuous job instead, which also lets
@@ -593,55 +568,80 @@ type EditPipelineRequest struct {
 	// pipeline is started by a continuous job, the job's setting takes precedence
 	// and this field is ignored.
 	Continuous *bool `json:"continuous,omitempty"`
+	// Deployment type of this pipeline.
+	Deployment *PipelineDeployment `json:"deployment,omitempty"`
 	// Whether the pipeline is in Development mode. Defaults to false.
 	//
 	// Deprecated: set development mode for each update instead.
 	Development *bool `json:"development,omitempty"`
-	// Whether Photon is enabled for this pipeline.
-	Photon *bool `json:"photon,omitempty"`
 	// Pipeline product edition.
 	Edition *string `json:"edition,omitempty"`
-	// SDP Release Channel that specifies which version to use.
-	Channel *string `json:"channel,omitempty"`
-	// A catalog in Unity Catalog to publish data from this pipeline to. If `target`
-	// is specified, tables in this pipeline are published to a `target` schema
-	// inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is
-	// not specified, no data is published to Unity Catalog.
-	Catalog *string `json:"catalog,omitempty"`
+	// Environment specification for this pipeline used to install dependencies.
+	Environment *PipelinesEnvironment `json:"environment,omitempty"`
+	// Event log configuration for this pipeline
+	EventLog *EventLogSpec `json:"event_log,omitempty"`
+	// If present, the last-modified time of the pipeline settings before the edit.
+	// If the settings were modified after that time, then the request will fail
+	// with a conflict.
+	ExpectedLastModified *int64 `json:"expected_last_modified,omitempty"`
+	// Filters on which Pipeline packages to include in the deployed graph.
+	Filters *Filters `json:"filters,omitempty"`
+	// The definition of a gateway pipeline to support change data capture.
+	GatewayDefinition *IngestionGatewayPipelineDefinition `json:"gateway_definition,omitempty"`
+	// Unique identifier for this pipeline.
+	Id *string `json:"id,omitempty"`
+	// The configuration for a managed ingestion pipeline. These settings cannot be
+	// used with the 'libraries', 'schema', 'target', or 'catalog' settings.
+	IngestionDefinition *IngestionPipelineDefinition `json:"ingestion_definition,omitempty"`
+	// Libraries or code needed by this deployment.
+	Libraries []PipelineLibrary `json:"libraries,omitempty"`
+	// Friendly identifier for this pipeline.
+	Name *string `json:"name,omitempty"`
 	// List of notification settings for this pipeline.
 	Notifications []Notifications `json:"notifications,omitempty"`
+	// Key/value map of default parameters to use for pipeline execution. Maximum
+	// total size: 10k characters (JSON format)
+	Parameters map[string]string `json:"parameters,omitempty"`
+	// Path of the pipeline parent folder in workspace file tree.
+	//
+	// If absent, the pipeline doesn't have a workspace object.
+	ParentPath *string `json:"parent_path,omitempty"`
+	// Whether Photon is enabled for this pipeline.
+	Photon *bool `json:"photon,omitempty"`
+	// Unique identifier for this pipeline.
+	PipelineId *string `json:"pipeline_id,omitempty"`
+	// Restart window of this pipeline.
+	RestartWindow *RestartWindow `json:"restart_window,omitempty"`
+	// Root path for this pipeline. This is used as the root directory when editing
+	// the pipeline in the <Databricks> user interface and it is added to sys.path
+	// when executing Python sources during pipeline execution.
+	RootPath *string            `json:"root_path,omitempty"`
+	RunAs    *PipelinesJobRunAs `json:"run_as,omitempty"`
+	// The default schema (database) where tables are read from or published to.
+	Schema *string `json:"schema,omitempty"`
 	// Whether serverless compute is enabled for this pipeline. Serverless is the
 	// recommended compute for new pipelines; set this to `true` to run the pipeline
 	// on serverless. For notebook/file pipelines, omitting this field uses classic
 	// compute configured through the `clusters` field. When `true`, omit
 	// `clusters`; Photon is always enabled.
 	Serverless *bool `json:"serverless,omitempty"`
-	// Deployment type of this pipeline.
-	Deployment *PipelineDeployment `json:"deployment,omitempty"`
-	// Restart window of this pipeline.
-	RestartWindow *RestartWindow `json:"restart_window,omitempty"`
-	// Budget policy of this pipeline.
-	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
+	// Serverless compute ID specified by the user for serverless pipelines.
+	ServerlessComputeId *string `json:"serverless_compute_id,omitempty"`
+	// DBFS root directory for storing checkpoints and tables.
+	Storage *string `json:"storage,omitempty"`
 	// A map of tags associated with the pipeline. These are forwarded to the
 	// cluster as cluster tags, and are therefore subject to the same limitations. A
 	// maximum of 25 tags can be added to the pipeline.
 	Tags map[string]string `json:"tags,omitempty"`
-	// Event log configuration for this pipeline
-	EventLog *EventLogSpec `json:"event_log,omitempty"`
-	// Root path for this pipeline. This is used as the root directory when editing
-	// the pipeline in the <Databricks> user interface and it is added to sys.path
-	// when executing Python sources during pipeline execution.
-	RootPath *string `json:"root_path,omitempty"`
-	// Environment specification for this pipeline used to install dependencies.
-	Environment *PipelinesEnvironment `json:"environment,omitempty"`
-	// Path of the pipeline parent folder in workspace file tree.
-	//
-	// If absent, the pipeline doesn't have a workspace object.
-	ParentPath *string `json:"parent_path,omitempty"`
+	// Target schema (database) to add tables in this pipeline to. Exactly one of
+	// `schema` or `target` must be specified. To publish to Unity Catalog, also
+	// specify `catalog`. This legacy field is deprecated for pipeline creation in
+	// favor of the `schema` field.
+	Target *string `json:"target,omitempty"`
+	// Which pipeline trigger to use. Deprecated: Use `continuous` instead.
+	Trigger *PipelineTrigger `json:"trigger,omitempty"`
 	// Usage policy of this pipeline.
 	UsagePolicyId *string `json:"usage_policy_id,omitempty"`
-	// Serverless compute ID specified by the user for serverless pipelines.
-	ServerlessComputeId *string `json:"serverless_compute_id,omitempty"`
 }
 
 type ErrorDetail struct {
@@ -653,88 +653,88 @@ type ErrorDetail struct {
 
 // Configurable event log parameters..
 type EventLogSpec struct {
+	// The UC catalog the event log is published under.
+	Catalog *string `json:"catalog,omitempty"`
 	// The name the event log is published to in UC.
 	Name *string `json:"name,omitempty"`
 	// The UC schema the event log is published under.
 	Schema *string `json:"schema,omitempty"`
-	// The UC catalog the event log is published under.
-	Catalog *string `json:"catalog,omitempty"`
 }
 
 type FileFilter struct {
-	PathFilter     *string `json:"path_filter,omitempty"`
-	ModifiedBefore *string `json:"modified_before,omitempty"`
 	ModifiedAfter  *string `json:"modified_after,omitempty"`
+	ModifiedBefore *string `json:"modified_before,omitempty"`
+	PathFilter     *string `json:"path_filter,omitempty"`
 }
 
 type FileIngestionOptions struct {
+	CorruptRecordColumn *string `json:"corrupt_record_column,omitempty"`
+	// Generic options
+	FileFilters []FileFilter `json:"file_filters,omitempty"`
 	// required for TableSpec
 	Format FileIngestionOptions_FileFormat `json:"format,omitempty"`
-	// Generic options
-	FileFilters         []FileFilter                             `json:"file_filters,omitempty"`
-	InferColumnTypes    *bool                                    `json:"infer_column_types,omitempty"`
+	// Format-specific options Based on
+	// https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/options#file-format-options
+	FormatOptions      map[string]string `json:"format_options,omitempty"`
+	IgnoreCorruptFiles *bool             `json:"ignore_corrupt_files,omitempty"`
+	InferColumnTypes   *bool             `json:"infer_column_types,omitempty"`
+	// Column name case sensitivity
+	// https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#change-case-sensitive-behavior
+	ReaderCaseSensitive *bool                                    `json:"reader_case_sensitive,omitempty"`
+	RescuedDataColumn   *string                                  `json:"rescued_data_column,omitempty"`
 	SchemaEvolutionMode FileIngestionOptions_SchemaEvolutionMode `json:"schema_evolution_mode,omitempty"`
 	// Override inferred schema of specific columns Based on
 	// https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#override-schema-inference-with-schema-hints
 	SchemaHints         *string `json:"schema_hints,omitempty"`
-	IgnoreCorruptFiles  *bool   `json:"ignore_corrupt_files,omitempty"`
-	CorruptRecordColumn *string `json:"corrupt_record_column,omitempty"`
-	RescuedDataColumn   *string `json:"rescued_data_column,omitempty"`
 	SingleVariantColumn *string `json:"single_variant_column,omitempty"`
-	// Column name case sensitivity
-	// https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#change-case-sensitive-behavior
-	ReaderCaseSensitive *bool `json:"reader_case_sensitive,omitempty"`
-	// Format-specific options Based on
-	// https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/options#file-format-options
-	FormatOptions map[string]string `json:"format_options,omitempty"`
 }
 
 type Filters struct {
-	// Paths to include.
-	Include []string `json:"include,omitempty"`
 	// Paths to exclude.
 	Exclude []string `json:"exclude,omitempty"`
+	// Paths to include.
+	Include []string `json:"include,omitempty"`
 }
 
 type GetPipelineResponse struct {
-	// The ID of the pipeline.
-	PipelineId *string `json:"pipeline_id,omitempty"`
-	// The pipeline specification. This field is not returned when called by
-	// `ListPipelines`.
-	Spec *PipelineSpec `json:"spec,omitempty"`
-	// The pipeline state.
-	State PipelineState_PipelineState `json:"state,omitempty"`
 	// An optional message detailing the cause of the pipeline state.
 	Cause *string `json:"cause,omitempty"`
 	// The ID of the cluster that the pipeline is running on.
 	ClusterId *string `json:"cluster_id,omitempty"`
-	// A human friendly identifier for the pipeline, taken from the `spec`.
-	Name *string `json:"name,omitempty"`
-	// The health of a pipeline.
-	Health PipelineHealthStatus `json:"health,omitempty"`
 	// The username of the pipeline creator.
 	CreatorUserName *string `json:"creator_user_name,omitempty"`
-	// Status of the latest updates for the pipeline. Ordered with the newest update
-	// first.
-	LatestUpdates []UpdateStateInfo `json:"latest_updates,omitempty"`
-	// The last time the pipeline settings were modified or created.
-	LastModified *int64 `json:"last_modified,omitempty"`
-	// Username of the user that the pipeline will run on behalf of.
-	RunAsUserName *string `json:"run_as_user_name,omitempty"`
 	// Serverless budget policy ID of this pipeline.
 	EffectiveBudgetPolicyId *string `json:"effective_budget_policy_id,omitempty"`
 	// Publishing mode of the pipeline
 	EffectivePublishingMode PublishingMode `json:"effective_publishing_mode,omitempty"`
+	// Serverless compute ID resolved for the pipeline.
+	EffectiveServerlessComputeId *string `json:"effective_serverless_compute_id,omitempty"`
+	// The health of a pipeline.
+	Health PipelineHealthStatus `json:"health,omitempty"`
+	// The last time the pipeline settings were modified or created.
+	LastModified *int64 `json:"last_modified,omitempty"`
+	// Status of the latest updates for the pipeline. Ordered with the newest update
+	// first.
+	LatestUpdates []UpdateStateInfo `json:"latest_updates,omitempty"`
+	// A human friendly identifier for the pipeline, taken from the `spec`.
+	Name *string `json:"name,omitempty"`
+	// Key/value map of default parameters to use for pipeline execution. Maximum
+	// total size: 10k characters (JSON format)
+	Parameters map[string]string `json:"parameters,omitempty"`
+	// The ID of the pipeline.
+	PipelineId *string `json:"pipeline_id,omitempty"`
 	// The user or service principal that the pipeline runs as, if specified in the
 	// request. This field indicates the explicit configuration of `run_as` for the
 	// pipeline. To find the value in all cases, explicit or implicit, use
 	// `run_as_user_name`.
 	RunAs *PipelinesJobRunAs `json:"run_as,omitempty"`
-	// Key/value map of default parameters to use for pipeline execution. Maximum
-	// total size: 10k characters (JSON format)
-	Parameters map[string]string `json:"parameters,omitempty"`
-	// Serverless compute ID resolved for the pipeline.
-	EffectiveServerlessComputeId *string `json:"effective_serverless_compute_id,omitempty"`
+	// Username of the user that the pipeline will run on behalf of.
+	RunAsUserName *string `json:"run_as_user_name,omitempty"`
+	// The pipeline specification. This field is not returned when called by
+	// `ListPipelines`.
+	Spec *PipelineSpec `json:"spec,omitempty"`
+	// The pipeline state.
+	State PipelineState_PipelineState `json:"state,omitempty"`
 }
 
 type GetUpdateResponse struct {
@@ -760,6 +760,10 @@ type GoogleAdsConfig struct {
 // requires a destination table, so it cannot be specified at the schema/source
 // level..
 type GoogleAdsCustomReportOptions struct {
+	// (Optional) Metric fields to select (e.g. "metrics.clicks",
+	// "metrics.cost_micros"). Multiple values are joined into the GAQL SELECT
+	// clause.
+	Metrics []string `json:"metrics,omitempty"`
 	// (Required) Google Ads resource to query (e.g. "ad_group_ad", "keyword_view",
 	// "search_term_view"). Must be a resource that has metrics. Values are
 	// validated against Google Ads' field-service catalog at pipeline plan time.
@@ -773,87 +777,62 @@ type GoogleAdsCustomReportOptions struct {
 	// segments.week, or segments.month — that segment is used as the incremental
 	// cursor for the table.
 	Segments []string `json:"segments,omitempty"`
-	// (Optional) Metric fields to select (e.g. "metrics.clicks",
-	// "metrics.cost_micros"). Multiple values are joined into the GAQL SELECT
-	// clause.
-	Metrics []string `json:"metrics,omitempty"`
 }
 
 // Google Ads specific options for ingestion (object-level). When set, these
 // values override the corresponding fields in GoogleAdsConfig
 // (source_configurations)..
 type GoogleAdsOptions struct {
-	// (Optional at this level) Manager Account ID (also called MCC Account ID) used
-	// to list and access customer accounts under this manager account. Overrides
-	// GoogleAdsConfig.manager_account_id from source_configurations when set.
-	ManagerAccountId *string `json:"manager_account_id,omitempty"`
-	// (Optional) Number of days to look back for report tables to capture
-	// late-arriving data. If not specified, defaults to 30 days.
-	LookbackWindowDays *int `json:"lookback_window_days,omitempty"`
-	// (Optional) Start date for the initial sync of report tables in YYYY-MM-DD
-	// format. This determines the earliest date from which to sync historical data.
-	// If not specified, defaults to 2 years of historical data.
-	SyncStartDate *string `json:"sync_start_date,omitempty"`
 	// (Optional) Custom report definition. When set, the table is treated as a
 	// user-defined Google Ads custom report: the connector synthesizes a GAQL query
 	// from the resource, fields, segments, and metrics specified here. When unset,
 	// the table must match one of the connector's prebuilt sources.
 	CustomReportOptions *GoogleAdsCustomReportOptions `json:"custom_report_options,omitempty"`
+	// (Optional) Number of days to look back for report tables to capture
+	// late-arriving data. If not specified, defaults to 30 days.
+	LookbackWindowDays *int `json:"lookback_window_days,omitempty"`
+	// (Optional at this level) Manager Account ID (also called MCC Account ID) used
+	// to list and access customer accounts under this manager account. Overrides
+	// GoogleAdsConfig.manager_account_id from source_configurations when set.
+	ManagerAccountId *string `json:"manager_account_id,omitempty"`
+	// (Optional) Start date for the initial sync of report tables in YYYY-MM-DD
+	// format. This determines the earliest date from which to sync historical data.
+	// If not specified, defaults to 2 years of historical data.
+	SyncStartDate *string `json:"sync_start_date,omitempty"`
 }
 
 type GoogleDriveOptions struct {
-	// Google Drive URL.
-	Url                  *string                                  `json:"url,omitempty"`
 	EntityType           GoogleDriveOptions_GoogleDriveEntityType `json:"entity_type,omitempty"`
 	FileIngestionOptions *FileIngestionOptions                    `json:"file_ingestion_options,omitempty"`
+	// Google Drive URL.
+	Url *string `json:"url,omitempty"`
 }
 
 type IngestionGatewayPipelineDefinition struct {
-	// Immutable. The Unity Catalog connection that this gateway pipeline uses to
-	// communicate with the source.
-	ConnectionName *string `json:"connection_name,omitempty"`
 	// [Deprecated, use connection_name instead] Immutable. The Unity Catalog
 	// connection that this gateway pipeline uses to communicate with the source.
 	ConnectionId *string `json:"connection_id,omitempty"`
+	// Immutable. The Unity Catalog connection that this gateway pipeline uses to
+	// communicate with the source.
+	ConnectionName *string `json:"connection_name,omitempty"`
+	// Optional, Internal. Parameters required to establish an initial connection
+	// with the source.
+	ConnectionParameters *ConnectionParameters `json:"connection_parameters,omitempty"`
 	// Required, Immutable. The name of the catalog for the gateway pipeline's
 	// storage location.
 	GatewayStorageCatalog *string `json:"gateway_storage_catalog,omitempty"`
-	// Required, Immutable. The name of the schema for the gateway pipelines's
-	// storage location.
-	GatewayStorageSchema *string `json:"gateway_storage_schema,omitempty"`
 	// Optional. The Unity Catalog-compatible name for the gateway storage location.
 	// This is the destination to use for the data that is extracted by the gateway.
 	// Spark Declarative Pipelines system will automatically create the storage
 	// location under the catalog and schema.
 	GatewayStorageName *string `json:"gateway_storage_name,omitempty"`
-	// Optional, Internal. Parameters required to establish an initial connection
-	// with the source.
-	ConnectionParameters *ConnectionParameters `json:"connection_parameters,omitempty"`
+	// Required, Immutable. The name of the schema for the gateway pipelines's
+	// storage location.
+	GatewayStorageSchema *string `json:"gateway_storage_schema,omitempty"`
 }
 
 type IngestionPipelineDefinition struct {
-	ConnectionName             *string `json:"connection_name,omitempty"`
-	IngestionGatewayId         *string `json:"ingestion_gateway_id,omitempty"`
-	IngestFromUcForeignCatalog *bool   `json:"ingest_from_uc_foreign_catalog,omitempty"`
-	// Required. Settings specifying tables to replicate and the destination for the
-	// replicated tables.
-	Objects []IngestionPipelineDefinition_IngestionConfig `json:"objects,omitempty"`
-	// The type of the foreign source. The source type will be inferred from the
-	// source connection or ingestion gateway. This field is output only and will be
-	// ignored if provided.
-	SourceType IngestionSourceType `json:"source_type,omitempty"`
-	// Configuration settings to control the ingestion of tables. These settings are
-	// applied to all tables in the pipeline.
-	TableConfiguration *IngestionPipelineDefinition_TableSpecificConfig `json:"table_configuration,omitempty"`
-	// Netsuite only configuration. When the field is set for a netsuite connector,
-	// the jar stored in the field will be validated and added to the classpath of
-	// pipeline's cluster.
-	NetsuiteJarPath *string `json:"netsuite_jar_path,omitempty"`
-	// Top-level source configurations
-	SourceConfigurations []SourceConfig `json:"source_configurations,omitempty"`
-	// (Optional) A window that specifies a set of time ranges for snapshot queries
-	// in CDC.
-	FullRefreshWindow *OperationTimeWindow `json:"full_refresh_window,omitempty"`
+	ConnectionName *string `json:"connection_name,omitempty"`
 	// (Optional) Connector Type for sources. Ex: CDC, Query Based.
 	ConnectorType ConnectorType `json:"connector_type,omitempty"`
 	// (Optional) Location of staged data storage. This is required for migration
@@ -862,6 +841,27 @@ type IngestionPipelineDefinition struct {
 	// be created in catalog and schema/target specified in the top level pipeline
 	// definition.
 	DataStagingOptions *DataStagingOptions `json:"data_staging_options,omitempty"`
+	// (Optional) A window that specifies a set of time ranges for snapshot queries
+	// in CDC.
+	FullRefreshWindow          *OperationTimeWindow `json:"full_refresh_window,omitempty"`
+	IngestFromUcForeignCatalog *bool                `json:"ingest_from_uc_foreign_catalog,omitempty"`
+	IngestionGatewayId         *string              `json:"ingestion_gateway_id,omitempty"`
+	// Netsuite only configuration. When the field is set for a netsuite connector,
+	// the jar stored in the field will be validated and added to the classpath of
+	// pipeline's cluster.
+	NetsuiteJarPath *string `json:"netsuite_jar_path,omitempty"`
+	// Required. Settings specifying tables to replicate and the destination for the
+	// replicated tables.
+	Objects []IngestionPipelineDefinition_IngestionConfig `json:"objects,omitempty"`
+	// Top-level source configurations
+	SourceConfigurations []SourceConfig `json:"source_configurations,omitempty"`
+	// The type of the foreign source. The source type will be inferred from the
+	// source connection or ingestion gateway. This field is output only and will be
+	// ignored if provided.
+	SourceType IngestionSourceType `json:"source_type,omitempty"`
+	// Configuration settings to control the ingestion of tables. These settings are
+	// applied to all tables in the pipeline.
+	TableConfiguration *IngestionPipelineDefinition_TableSpecificConfig `json:"table_configuration,omitempty"`
 }
 
 // Fanout configuration for multi-table routing from streaming sources. Routes
@@ -879,14 +879,12 @@ type IngestionPipelineDefinition_FanoutOptions struct {
 }
 
 type IngestionPipelineDefinition_IngestionConfig struct {
+	Report *IngestionPipelineDefinition_ReportSpec `json:"report,omitempty"`
 	Schema *IngestionPipelineDefinition_SchemaSpec `json:"schema,omitempty"`
 	Table  *IngestionPipelineDefinition_TableSpec  `json:"table,omitempty"`
-	Report *IngestionPipelineDefinition_ReportSpec `json:"report,omitempty"`
 }
 
 type IngestionPipelineDefinition_ReportSpec struct {
-	// Required. Report URL in the source system.
-	SourceUrl *string `json:"source_url,omitempty"`
 	// Required. Destination catalog to store table.
 	DestinationCatalog *string `json:"destination_catalog,omitempty"`
 	// Required. Destination schema to store table.
@@ -894,6 +892,8 @@ type IngestionPipelineDefinition_ReportSpec struct {
 	// Required. Destination table name. The pipeline fails if a table with that
 	// name already exists.
 	DestinationTable *string `json:"destination_table,omitempty"`
+	// Required. Report URL in the source system.
+	SourceUrl *string `json:"source_url,omitempty"`
 	// Configuration settings to control the ingestion of tables. These settings
 	// override the table_configuration defined in the IngestionPipelineDefinition
 	// object.
@@ -901,6 +901,19 @@ type IngestionPipelineDefinition_ReportSpec struct {
 }
 
 type IngestionPipelineDefinition_SchemaSpec struct {
+	// (Optional) Source Specific Connector Options
+	ConnectorOptions *ConnectorOptions `json:"connector_options,omitempty"`
+	// Required. Destination catalog to store tables.
+	DestinationCatalog *string `json:"destination_catalog,omitempty"`
+	// Required. Destination schema to store tables in. Tables with the same name as
+	// the source tables are created in this destination schema. The pipeline fails
+	// If a table with the same name already exists.
+	DestinationSchema *string `json:"destination_schema,omitempty"`
+	// Fanout options for multi-table routing from streaming sources. When set,
+	// records are routed to destination tables based on a per-record routing key.
+	// The key value becomes the table name:
+	// {destination_catalog}.{destination_schema}.{key_value}.
+	FanoutOptions *IngestionPipelineDefinition_FanoutOptions `json:"fanout_options,omitempty"`
 	// The source catalog name. Might be optional depending on the type of source.
 	SourceCatalog *string `json:"source_catalog,omitempty"`
 	// Schema name in the source database. Optional: some source types (for example
@@ -908,26 +921,22 @@ type IngestionPipelineDefinition_SchemaSpec struct {
 	// a pipeline's definition. Clients that assume it is always present should
 	// handle its absence.
 	SourceSchema *string `json:"source_schema,omitempty"`
-	// Required. Destination catalog to store tables.
-	DestinationCatalog *string `json:"destination_catalog,omitempty"`
-	// Required. Destination schema to store tables in. Tables with the same name as
-	// the source tables are created in this destination schema. The pipeline fails
-	// If a table with the same name already exists.
-	DestinationSchema *string `json:"destination_schema,omitempty"`
 	// Configuration settings to control the ingestion of tables. These settings are
 	// applied to all tables in this schema and override the table_configuration
 	// defined in the IngestionPipelineDefinition object.
 	TableConfiguration *IngestionPipelineDefinition_TableSpecificConfig `json:"table_configuration,omitempty"`
-	// (Optional) Source Specific Connector Options
-	ConnectorOptions *ConnectorOptions `json:"connector_options,omitempty"`
-	// Fanout options for multi-table routing from streaming sources. When set,
-	// records are routed to destination tables based on a per-record routing key.
-	// The key value becomes the table name:
-	// {destination_catalog}.{destination_schema}.{key_value}.
-	FanoutOptions *IngestionPipelineDefinition_FanoutOptions `json:"fanout_options,omitempty"`
 }
 
 type IngestionPipelineDefinition_TableSpec struct {
+	// (Optional) Source Specific Connector Options
+	ConnectorOptions *ConnectorOptions `json:"connector_options,omitempty"`
+	// Required. Destination catalog to store table.
+	DestinationCatalog *string `json:"destination_catalog,omitempty"`
+	// Required. Destination schema to store table.
+	DestinationSchema *string `json:"destination_schema,omitempty"`
+	// Optional. Destination table name. The pipeline fails if a table with that
+	// name already exists. If not set, the source table name is used.
+	DestinationTable *string `json:"destination_table,omitempty"`
 	// Source catalog name. Might be optional depending on the type of source.
 	SourceCatalog *string `json:"source_catalog,omitempty"`
 	// Schema name in the source database. Might be optional depending on the type
@@ -938,50 +947,13 @@ type IngestionPipelineDefinition_TableSpec struct {
 	// a pipeline's definition. Clients that assume it is always present should
 	// handle its absence.
 	SourceTable *string `json:"source_table,omitempty"`
-	// Required. Destination catalog to store table.
-	DestinationCatalog *string `json:"destination_catalog,omitempty"`
-	// Required. Destination schema to store table.
-	DestinationSchema *string `json:"destination_schema,omitempty"`
-	// Optional. Destination table name. The pipeline fails if a table with that
-	// name already exists. If not set, the source table name is used.
-	DestinationTable *string `json:"destination_table,omitempty"`
 	// Configuration settings to control the ingestion of tables. These settings
 	// override the table_configuration defined in the IngestionPipelineDefinition
 	// object and the SchemaSpec.
 	TableConfiguration *IngestionPipelineDefinition_TableSpecificConfig `json:"table_configuration,omitempty"`
-	// (Optional) Source Specific Connector Options
-	ConnectorOptions *ConnectorOptions `json:"connector_options,omitempty"`
 }
 
 type IngestionPipelineDefinition_TableSpecificConfig struct {
-	ScdType ScdType_ScdType `json:"scd_type,omitempty"`
-	// The primary key of the table used to apply changes.
-	PrimaryKeys []string `json:"primary_keys,omitempty"`
-	// The column names specifying the logical order of events in the source data.
-	// Spark Declarative Pipelines uses this sequencing to handle change events that
-	// arrive out of order.
-	SequenceBy []string `json:"sequence_by,omitempty"`
-	// A list of column names to be included for the ingestion. When not specified,
-	// all columns except ones in exclude_columns will be included. Future columns
-	// will be automatically included. When specified, all other future columns will
-	// be automatically excluded from ingestion. This field in mutually exclusive
-	// with `exclude_columns`.
-	IncludeColumns []string `json:"include_columns,omitempty"`
-	// A list of column names to be excluded for the ingestion. When not specified,
-	// include_columns fully controls what columns to be ingested. When specified,
-	// all other columns including future ones will be automatically included for
-	// ingestion. This field in mutually exclusive with `include_columns`.
-	ExcludeColumns []string `json:"exclude_columns,omitempty"`
-	// If true, formula fields defined in the table are included in the ingestion.
-	// This setting is only valid for the Salesforce connector
-	SalesforceIncludeFormulaFields *bool `json:"salesforce_include_formula_fields,omitempty"`
-	// (Optional) Additional custom parameters for Workday Report
-	WorkdayReportParameters *IngestionPipelineDefinition_WorkdayReportParameters `json:"workday_report_parameters,omitempty"`
-	// (Optional, Immutable) The row filter condition to be applied to the table. It
-	// must not contain the WHERE keyword, only the actual filter condition. It must
-	// be in DBSQL format.
-	RowFilter                 *string                                                                    `json:"row_filter,omitempty"`
-	QueryBasedConnectorConfig *IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfig `json:"query_based_connector_config,omitempty"`
 	// (Optional, Mutable) Policy for auto full refresh, if enabled pipeline will
 	// automatically try to fix issues by doing a full refresh on the table in the
 	// retry run. auto_full_refresh_policy in table configuration will override the
@@ -989,19 +961,6 @@ type IngestionPipelineDefinition_TableSpecificConfig struct {
 	// "auto_full_refresh_policy": { "enabled": true, "min_interval_hours": 23, } }
 	// If unspecified, auto full refresh is disabled.
 	AutoFullRefreshPolicy *AutoFullRefreshPolicy `json:"auto_full_refresh_policy,omitempty"`
-	// Table properties to set on the destination table. These are key-value pairs
-	// that configure various Delta table behaviors or any user defined properties.
-	// Example: {"delta.feature.variantType": "supported",
-	// "delta.enableTypeWidening": "true"} Note: table_properties in table specific
-	// configuration will override the table_properties of the pipeline definition.
-	TableProperties map[string]string `json:"table_properties,omitempty"`
-	// Whether to enable auto clustering on the destination table. When enabled,
-	// Delta will automatically optimize the data layout based on the clustering
-	// columns for improved query performance. Note: enable_auto_clustering in table
-	// specific configuration will override the pipeline definition. Note: we can
-	// only provide enable_auto_clustering or clustering_columns, added as separate
-	// fields as we cannot have repeated field in oneof.
-	EnableAutoClustering *bool `json:"enable_auto_clustering,omitempty"`
 	// List of column names to use for clustering the destination table. When
 	// specified, the destination Delta table will be clustered by these columns.
 	// This can improve query performance when filtering on these columns. Note:
@@ -1010,9 +969,50 @@ type IngestionPipelineDefinition_TableSpecificConfig struct {
 	// clustering_columns, added as separate fields as we cannot have repeated field
 	// in oneof.
 	ClusteringColumns []string `json:"clustering_columns,omitempty"`
+	// Whether to enable auto clustering on the destination table. When enabled,
+	// Delta will automatically optimize the data layout based on the clustering
+	// columns for improved query performance. Note: enable_auto_clustering in table
+	// specific configuration will override the pipeline definition. Note: we can
+	// only provide enable_auto_clustering or clustering_columns, added as separate
+	// fields as we cannot have repeated field in oneof.
+	EnableAutoClustering *bool `json:"enable_auto_clustering,omitempty"`
+	// A list of column names to be excluded for the ingestion. When not specified,
+	// include_columns fully controls what columns to be ingested. When specified,
+	// all other columns including future ones will be automatically included for
+	// ingestion. This field in mutually exclusive with `include_columns`.
+	ExcludeColumns []string `json:"exclude_columns,omitempty"`
+	// A list of column names to be included for the ingestion. When not specified,
+	// all columns except ones in exclude_columns will be included. Future columns
+	// will be automatically included. When specified, all other future columns will
+	// be automatically excluded from ingestion. This field in mutually exclusive
+	// with `exclude_columns`.
+	IncludeColumns []string `json:"include_columns,omitempty"`
+	// The primary key of the table used to apply changes.
+	PrimaryKeys               []string                                                                   `json:"primary_keys,omitempty"`
+	QueryBasedConnectorConfig *IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfig `json:"query_based_connector_config,omitempty"`
+	// (Optional, Immutable) The row filter condition to be applied to the table. It
+	// must not contain the WHERE keyword, only the actual filter condition. It must
+	// be in DBSQL format.
+	RowFilter *string `json:"row_filter,omitempty"`
+	// If true, formula fields defined in the table are included in the ingestion.
+	// This setting is only valid for the Salesforce connector
+	SalesforceIncludeFormulaFields *bool           `json:"salesforce_include_formula_fields,omitempty"`
+	ScdType                        ScdType_ScdType `json:"scd_type,omitempty"`
+	// The column names specifying the logical order of events in the source data.
+	// Spark Declarative Pipelines uses this sequencing to handle change events that
+	// arrive out of order.
+	SequenceBy []string `json:"sequence_by,omitempty"`
 	// (Optional) Name of the struct column added to each ingested record to hold
 	// per row source metadata.
 	SourceMetadataColumn *string `json:"source_metadata_column,omitempty"`
+	// Table properties to set on the destination table. These are key-value pairs
+	// that configure various Delta table behaviors or any user defined properties.
+	// Example: {"delta.feature.variantType": "supported",
+	// "delta.enableTypeWidening": "true"} Note: table_properties in table specific
+	// configuration will override the table_properties of the pipeline definition.
+	TableProperties map[string]string `json:"table_properties,omitempty"`
+	// (Optional) Additional custom parameters for Workday Report
+	WorkdayReportParameters *IngestionPipelineDefinition_WorkdayReportParameters `json:"workday_report_parameters,omitempty"`
 }
 
 // Configurations that are only applicable for query-based ingestion connectors..
@@ -1049,15 +1049,15 @@ type IngestionPipelineDefinition_WorkdayReportParameters struct {
 	// should not be used. Use `parameters` instead. The incremental behavior is now
 	// controlled by the `parameters` field.
 	Incremental *bool `json:"incremental,omitempty"`
-	// (Optional) Additional custom parameters for Workday Report This field is
-	// deprecated and should not be used. Use `parameters` instead.
-	ReportParameters []IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValue `json:"report_parameters,omitempty"`
 	// Parameters for the Workday report. Each key represents the parameter name
 	// (e.g., "start_date", "end_date"), and the corresponding value is a SQL-like
 	// expression used to compute the parameter value at runtime. Example: {
 	// "start_date": "{ coalesce(current_offset(), date(\"2025-02-01\")) }",
 	// "end_date": "{ current_date() - INTERVAL 1 DAY }" }
 	Parameters map[string]string `json:"parameters,omitempty"`
+	// (Optional) Additional custom parameters for Workday Report This field is
+	// deprecated and should not be used. Use `parameters` instead.
+	ReportParameters []IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValue `json:"report_parameters,omitempty"`
 }
 
 type IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValue struct {
@@ -1082,37 +1082,37 @@ type JsonTransformerOptions struct {
 	AsVariant *bool `json:"as_variant,omitempty"`
 	// Inline schema string for JSON parsing (Spark DDL format).
 	Schema *string `json:"schema,omitempty"`
-	// Path to a schema file (.ddl).
-	SchemaFilePath *string `json:"schema_file_path,omitempty"`
 	// (Optional) Schema evolution mode for schema inference.
 	SchemaEvolutionMode FileIngestionOptions_SchemaEvolutionMode `json:"schema_evolution_mode,omitempty"`
+	// Path to a schema file (.ddl).
+	SchemaFilePath *string `json:"schema_file_path,omitempty"`
 	// (Optional) Schema hints as a comma-separated string of "column_name type"
 	// pairs.
 	SchemaHints *string `json:"schema_hints,omitempty"`
 }
 
 type KafkaOptions struct {
-	// Topics to subscribe to. Only one of topics or topic_pattern must be
-	// specified.
-	Topics []string `json:"topics,omitempty"`
-	// Java regex pattern to subscribe to matching topics. Only one of topics or
-	// topic_pattern must be specified.
-	TopicPattern *string `json:"topic_pattern,omitempty"`
-	// (Optional) Transformer for the message key. If not specified, the key is left
-	// as raw bytes.
-	KeyTransformer *Transformer `json:"key_transformer,omitempty"`
-	// (Optional) Transformer for the message value. If not specified, the value is
-	// left as raw bytes.
-	ValueTransformer *Transformer `json:"value_transformer,omitempty"`
-	// (Optional) Where to begin reading when no checkpoint exists. Valid values:
-	// "latest" and "earliest". Defaults to "latest".
-	StartingOffset *string `json:"starting_offset,omitempty"`
-	// Internal option to control the maximum number of offsets to process per
-	// trigger.
-	MaxOffsetsPerTrigger *int64 `json:"max_offsets_per_trigger,omitempty"`
 	// Undocumented backdoor mechanism for overriding parameters to pass to the
 	// Kafka client. This is not supported and may break at any time.
 	ClientConfig map[string]string `json:"client_config,omitempty"`
+	// (Optional) Transformer for the message key. If not specified, the key is left
+	// as raw bytes.
+	KeyTransformer *Transformer `json:"key_transformer,omitempty"`
+	// Internal option to control the maximum number of offsets to process per
+	// trigger.
+	MaxOffsetsPerTrigger *int64 `json:"max_offsets_per_trigger,omitempty"`
+	// (Optional) Where to begin reading when no checkpoint exists. Valid values:
+	// "latest" and "earliest". Defaults to "latest".
+	StartingOffset *string `json:"starting_offset,omitempty"`
+	// Java regex pattern to subscribe to matching topics. Only one of topics or
+	// topic_pattern must be specified.
+	TopicPattern *string `json:"topic_pattern,omitempty"`
+	// Topics to subscribe to. Only one of topics or topic_pattern must be
+	// specified.
+	Topics []string `json:"topics,omitempty"`
+	// (Optional) Transformer for the message value. If not specified, the value is
+	// left as raw bytes.
+	ValueTransformer *Transformer `json:"value_transformer,omitempty"`
 }
 
 // LinkedIn Ads specific options for ingestion. sync_start_date and
@@ -1120,19 +1120,19 @@ type KafkaOptions struct {
 // reports. custom_report_options defines a custom (user-defined) adAnalytics
 // report and is only valid on a table object..
 type LinkedInAdsOptions struct {
-	// (Optional) Start date for the initial sync of report tables, YYYY-MM-DD.
-	// Earliest date from which to sync historical data; overrides the default when
-	// set. For finder attributedRevenueMetrics, this must be between 30 and 366
-	// days before today. If not specified, defaults to 1 year of history.
-	SyncStartDate *string `json:"sync_start_date,omitempty"`
-	// (Optional) Days to look back during incremental sync for late-arriving data.
-	// If not specified, defaults to 30 days.
-	LookbackWindowDays *int `json:"lookback_window_days,omitempty"`
 	// (Optional) Custom report definition. Only valid on a table object. When set,
 	// the table is synthesized from /rest/adAnalytics using the finder, pivots,
 	// time granularity and metrics here. When unset, the table must match one of
 	// the connector's prebuilt sources.
 	CustomReportOptions *LinkedInAdsOptions_LinkedInAdsCustomReportOptions `json:"custom_report_options,omitempty"`
+	// (Optional) Days to look back during incremental sync for late-arriving data.
+	// If not specified, defaults to 30 days.
+	LookbackWindowDays *int `json:"lookback_window_days,omitempty"`
+	// (Optional) Start date for the initial sync of report tables, YYYY-MM-DD.
+	// Earliest date from which to sync historical data; overrides the default when
+	// set. For finder attributedRevenueMetrics, this must be between 30 and 366
+	// days before today. If not specified, defaults to 1 year of history.
+	SyncStartDate *string `json:"sync_start_date,omitempty"`
 }
 
 // User-defined custom report for the LinkedIn Ads connector. The destination
@@ -1140,13 +1140,10 @@ type LinkedInAdsOptions struct {
 // date from the enclosing LinkedInAdsOptions.sync_start_date, and the account
 // it runs against from the source schema (namespace) -- none are repeated here..
 type LinkedInAdsOptions_LinkedInAdsCustomReportOptions struct {
-	// (Required) adAnalytics finder. See LinkedInAdsFinder.
-	Finder LinkedInAdsOptions_LinkedInAdsCustomReportOptions_LinkedInAdsFinder `json:"finder,omitempty"`
 	// (Required) Entity pivots to group by; count/constraints depend on finder.
 	EntityGranularity []LinkedInAdsOptions_LinkedInAdsCustomReportOptions_LinkedInAdsEntityGranularity `json:"entity_granularity,omitempty"`
-	// (Optional) Time aggregation. Defaults to DAILY when unspecified. Used by
-	// analytics/statistics; ignored for attributedRevenueMetrics.
-	TimeGranularity LinkedInAdsOptions_LinkedInAdsCustomReportOptions_LinkedInAdsTimeGranularity `json:"time_granularity,omitempty"`
+	// (Required) adAnalytics finder. See LinkedInAdsFinder.
+	Finder LinkedInAdsOptions_LinkedInAdsCustomReportOptions_LinkedInAdsFinder `json:"finder,omitempty"`
 	// (Optional) LinkedIn metric names for the report. Open vocabulary (not an
 	// enum): the valid set is large (~100) and evolves with the LinkedIn
 	// adAnalytics API, so values are passed through verbatim. If empty, a
@@ -1155,18 +1152,22 @@ type LinkedInAdsOptions_LinkedInAdsCustomReportOptions struct {
 	// Ignored for attributedRevenueMetrics (always returns the full
 	// RevenueAttributionMetrics struct).
 	Metrics []string `json:"metrics,omitempty"`
+	// (Optional) Time aggregation. Defaults to DAILY when unspecified. Used by
+	// analytics/statistics; ignored for attributedRevenueMetrics.
+	TimeGranularity LinkedInAdsOptions_LinkedInAdsCustomReportOptions_LinkedInAdsTimeGranularity `json:"time_granularity,omitempty"`
 }
 
 // The request/response messages for the ListPipelines API. The default behavior
 // is to return the 25 newest events in timestamp descending order for the given
 // pipeline..
 type ListPipelineEventsRequest struct {
-	// The pipeline to return events for.
-	PipelineId *string `json:"pipeline_id,omitempty"`
-	// Page token returned by previous call. This field is mutually exclusive with
-	// all fields in this request except max_results. An error is returned if any
-	// fields other than max_results are set when this field is set.
-	PageToken *string `json:"page_token,omitempty"`
+	// Criteria to select a subset of results, expressed using a SQL-like syntax.
+	// The supported filters are: 1. level='INFO' (or WARN or ERROR) 2. level in
+	// ('INFO', 'WARN') 3. id='[event-id]' 4. timestamp > 'TIMESTAMP' (or >=,<,<=,=)
+	//
+	// Composite expressions are supported, for example: level in ('ERROR', 'WARN')
+	// AND timestamp> '2021-07-22T06:37:33.083Z'
+	Filter *string `json:"filter,omitempty"`
 	// Max number of entries to return in a single page. The system may return fewer
 	// than max_results events in a response, even if there are more events
 	// available.
@@ -1175,13 +1176,12 @@ type ListPipelineEventsRequest struct {
 	// ["timestamp asc"]. The sort order can be ascending or descending. By default,
 	// events are returned in descending order by timestamp.
 	OrderBy []string `json:"order_by,omitempty"`
-	// Criteria to select a subset of results, expressed using a SQL-like syntax.
-	// The supported filters are: 1. level='INFO' (or WARN or ERROR) 2. level in
-	// ('INFO', 'WARN') 3. id='[event-id]' 4. timestamp > 'TIMESTAMP' (or >=,<,<=,=)
-	//
-	// Composite expressions are supported, for example: level in ('ERROR', 'WARN')
-	// AND timestamp> '2021-07-22T06:37:33.083Z'
-	Filter *string `json:"filter,omitempty"`
+	// Page token returned by previous call. This field is mutually exclusive with
+	// all fields in this request except max_results. An error is returned if any
+	// fields other than max_results are set when this field is set.
+	PageToken *string `json:"page_token,omitempty"`
+	// The pipeline to return events for.
+	PipelineId *string `json:"pipeline_id,omitempty"`
 }
 
 type ListPipelineEventsResponse struct {
@@ -1196,17 +1196,6 @@ type ListPipelineEventsResponse struct {
 // The request/response messages for the ListPipelines API. The default behavior
 // is to return the 25 first pipelines in ascending order of pipeline id..
 type ListPipelinesRequest struct {
-	// Page token returned by previous call
-	PageToken *string `json:"page_token,omitempty"`
-	// The maximum number of entries to return in a single page. The system may
-	// return fewer than max_results pipelines in a response, even if there are more
-	// pipelines available. This field is optional. The default value is 25. The
-	// maximum value is 100. An error is returned if the value of max_results is
-	// greater than 100.
-	MaxResults *int `json:"max_results,omitempty"`
-	// A list of strings specifying the order of results. Supported order_by fields
-	// are id and name. The default is id asc. This field is optional.
-	OrderBy []string `json:"order_by,omitempty"`
 	// Select a subset of results based on the specified criteria. The supported
 	// filters are:
 	//
@@ -1217,37 +1206,48 @@ type ListPipelinesRequest struct {
 	//
 	// Composite filters are not supported. This field is optional.
 	Filter *string `json:"filter,omitempty"`
+	// The maximum number of entries to return in a single page. The system may
+	// return fewer than max_results pipelines in a response, even if there are more
+	// pipelines available. This field is optional. The default value is 25. The
+	// maximum value is 100. An error is returned if the value of max_results is
+	// greater than 100.
+	MaxResults *int `json:"max_results,omitempty"`
+	// A list of strings specifying the order of results. Supported order_by fields
+	// are id and name. The default is id asc. This field is optional.
+	OrderBy []string `json:"order_by,omitempty"`
+	// Page token returned by previous call
+	PageToken *string `json:"page_token,omitempty"`
 }
 
 type ListPipelinesResponse struct {
-	// The list of pipelines matching the request criteria.
-	Statuses []PipelineStateInfo `json:"statuses,omitempty"`
 	// If present, a token to fetch the next page of pipelines.
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// The list of pipelines matching the request criteria.
+	Statuses []PipelineStateInfo `json:"statuses,omitempty"`
 }
 
 // The request/response messages for the ListUpdates API. The default behavior
 // is to return the 25 most recent updates in timestamp descending order for the
 // given pipeline. No custom sorting or filtering is supported..
 type ListUpdatesRequest struct {
-	// The pipeline to return updates for.
-	PipelineId *string `json:"pipeline_id,omitempty"`
-	// Page token returned by previous call
-	PageToken *string `json:"page_token,omitempty"`
 	// Max number of entries to return in a single page.
 	MaxResults *int `json:"max_results,omitempty"`
+	// Page token returned by previous call
+	PageToken *string `json:"page_token,omitempty"`
+	// The pipeline to return updates for.
+	PipelineId *string `json:"pipeline_id,omitempty"`
 	// If present, returns updates until and including this update_id.
 	UntilUpdateId *string `json:"until_update_id,omitempty"`
 }
 
 type ListUpdatesResponse struct {
-	Updates []UpdateInfo `json:"updates,omitempty"`
 	// If present, then there are more results, and this a token to be used in a
 	// subsequent request to fetch the next page.
 	NextPageToken *string `json:"next_page_token,omitempty"`
 	// If present, then this token can be used in a subsequent request to fetch the
 	// previous page.
-	PrevPageToken *string `json:"prev_page_token,omitempty"`
+	PrevPageToken *string      `json:"prev_page_token,omitempty"`
+	Updates       []UpdateInfo `json:"updates,omitempty"`
 }
 
 type ManualTrigger struct {
@@ -1263,12 +1263,10 @@ type MarketoOptions struct {
 
 // Meta Marketing (Meta Ads) specific options for ingestion.
 type MetaMarketingOptions struct {
-	// (Optional, DEPRECATED — use custom_report_options.level) Granularity of
-	// data to pull (account, ad, adset, campaign)
-	Level *string `json:"level,omitempty"`
-	// (Optional, DEPRECATED — use custom_report_options.breakdowns) Breakdowns to
-	// configure
-	Breakdowns []string `json:"breakdowns,omitempty"`
+	// (Optional, DEPRECATED — use
+	// custom_report_options.action_attribution_windows) Action attribution windows
+	// for insights reporting (e.g. "28d_click", "1d_view")
+	ActionAttributionWindows []string `json:"action_attribution_windows,omitempty"`
 	// (Optional, DEPRECATED — use custom_report_options.action_breakdowns) Action
 	// breakdowns
 	ActionBreakdowns []string `json:"action_breakdowns,omitempty"`
@@ -1276,25 +1274,27 @@ type MetaMarketingOptions struct {
 	// Timing used to report action statistics (impression, conversion, mixed, or
 	// lifetime)
 	ActionReportTime *string `json:"action_report_time,omitempty"`
-	// (Optional) Start date in yyyy-MM-dd format (e.g. 2025-01-15). Data added
-	// after this date will be ingested, shared by prebuilt and custom reports.
-	StartDate *string `json:"start_date,omitempty"`
+	// (Optional, DEPRECATED — use custom_report_options.breakdowns) Breakdowns to
+	// configure
+	Breakdowns []string `json:"breakdowns,omitempty"`
 	// (Optional) Window in days to revisit data during sync to capture updated
 	// conversion data from the API, shared by prebuilt and custom reports.
 	CustomInsightsLookbackWindow *int `json:"custom_insights_lookback_window,omitempty"`
-	// (Optional, DEPRECATED — use custom_report_options.time_increment) Value in
-	// string by which to aggregate statistics (can take all_days, monthly or number
-	// of days)
-	TimeIncrement *string `json:"time_increment,omitempty"`
-	// (Optional, DEPRECATED — use
-	// custom_report_options.action_attribution_windows) Action attribution windows
-	// for insights reporting (e.g. "28d_click", "1d_view")
-	ActionAttributionWindows []string `json:"action_attribution_windows,omitempty"`
 	// (Optional) Per-table custom report definition. When set, defines the shape of
 	// the insights call for this table
 	// (level/fields/breakdowns/action_breakdowns/etc.). Supersedes the deprecated
 	// flat report-shape fields above.
 	CustomReportOptions *MetaMarketingOptions_MetaMarketingCustomReportOptions `json:"custom_report_options,omitempty"`
+	// (Optional, DEPRECATED — use custom_report_options.level) Granularity of
+	// data to pull (account, ad, adset, campaign)
+	Level *string `json:"level,omitempty"`
+	// (Optional) Start date in yyyy-MM-dd format (e.g. 2025-01-15). Data added
+	// after this date will be ingested, shared by prebuilt and custom reports.
+	StartDate *string `json:"start_date,omitempty"`
+	// (Optional, DEPRECATED — use custom_report_options.time_increment) Value in
+	// string by which to aggregate statistics (can take all_days, monthly or number
+	// of days)
+	TimeIncrement *string `json:"time_increment,omitempty"`
 }
 
 // Defines the shape of a single Meta Ads custom report (one /insights call
@@ -1302,21 +1302,21 @@ type MetaMarketingOptions struct {
 // MetaMarketingOptions, not here. Metrics are not customer-selectable; the
 // connector returns a fixed standard metric set..
 type MetaMarketingOptions_MetaMarketingCustomReportOptions struct {
-	// (Optional) Granularity of data to pull (account, ad, adset, campaign)
-	Level *string `json:"level,omitempty"`
-	// (Optional) Breakdowns to configure for data aggregation
-	Breakdowns []string `json:"breakdowns,omitempty"`
+	// (Optional) Action attribution windows for insights reporting (e.g.
+	// "28d_click", "1d_view")
+	ActionAttributionWindows []string `json:"action_attribution_windows,omitempty"`
 	// (Optional) Action breakdowns to configure for data aggregation
 	ActionBreakdowns []string `json:"action_breakdowns,omitempty"`
 	// (Optional) Timing used to report action statistics (impression, conversion,
 	// mixed, or lifetime)
 	ActionReportTime *string `json:"action_report_time,omitempty"`
+	// (Optional) Breakdowns to configure for data aggregation
+	Breakdowns []string `json:"breakdowns,omitempty"`
+	// (Optional) Granularity of data to pull (account, ad, adset, campaign)
+	Level *string `json:"level,omitempty"`
 	// (Optional) Value in string by which to aggregate statistics (all_days,
 	// monthly or number of days)
 	TimeIncrement *string `json:"time_increment,omitempty"`
-	// (Optional) Action attribution windows for insights reporting (e.g.
-	// "28d_click", "1d_view")
-	ActionAttributionWindows []string `json:"action_attribution_windows,omitempty"`
 }
 
 type NotebookLibrary struct {
@@ -1325,8 +1325,6 @@ type NotebookLibrary struct {
 }
 
 type Notifications struct {
-	// A list of email addresses notified when a configured alert is triggered.
-	EmailRecipients []string `json:"email_recipients,omitempty"`
 	// A list of alerts that trigger the sending of notifications to the configured
 	// destinations. The supported alerts are:
 	//
@@ -1335,16 +1333,18 @@ type Notifications struct {
 	// `on-update-fatal-failure`: A pipeline update fails with a non-retryable
 	// (fatal) error. * `on-flow-failure`: A single data flow fails.
 	Alerts []string `json:"alerts,omitempty"`
+	// A list of email addresses notified when a configured alert is triggered.
+	EmailRecipients []string `json:"email_recipients,omitempty"`
 }
 
 // Proto representing a window.
 type OperationTimeWindow struct {
-	// An integer between 0 and 23 denoting the start hour for the window in the
-	// 24-hour day.
-	StartHour *int `json:"start_hour,omitempty"`
 	// Days of week in which the window is allowed to happen If not specified all
 	// days of the week will be used.
 	DaysOfWeek []DayOfWeek `json:"days_of_week,omitempty"`
+	// An integer between 0 and 23 denoting the start hour for the window in the
+	// 24-hour day.
+	StartHour *int `json:"start_hour,omitempty"`
 	// Time zone id of window. See
 	// https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html
 	// for details. If not specified, UTC will be used.
@@ -1352,24 +1352,12 @@ type OperationTimeWindow struct {
 }
 
 type Origin struct {
+	// The id of a batch. Unique within a flow.
+	BatchId *int64 `json:"batch_id,omitempty"`
 	// The cloud provider, e.g., AWS or Azure.
 	Cloud *string `json:"cloud,omitempty"`
-	// The cloud region.
-	Region *string `json:"region,omitempty"`
-	// The org id of the user. Unique within a cloud.
-	OrgId *int64 `json:"org_id,omitempty"`
-	// The id of the pipeline. Globally unique.
-	PipelineId *string `json:"pipeline_id,omitempty"`
-	// The name of the pipeline. Not unique.
-	PipelineName *string `json:"pipeline_name,omitempty"`
 	// The id of the cluster where an execution happens. Unique within a region.
 	ClusterId *string `json:"cluster_id,omitempty"`
-	// The id of an execution. Globally unique.
-	UpdateId *string `json:"update_id,omitempty"`
-	// The id of a maintenance run. Globally unique.
-	MaintenanceId *string `json:"maintenance_id,omitempty"`
-	// The id of a (delta) table. Globally unique.
-	TableId *string `json:"table_id,omitempty"`
 	// The name of a dataset. Unique within a pipeline.
 	DatasetName *string `json:"dataset_name,omitempty"`
 	// The id of the flow. Globally unique. Incremental queries will generally reuse
@@ -1377,22 +1365,14 @@ type Origin struct {
 	FlowId *string `json:"flow_id,omitempty"`
 	// The name of the flow. Not unique.
 	FlowName *string `json:"flow_name,omitempty"`
-	// The id of a batch. Unique within a flow.
-	BatchId *int64 `json:"batch_id,omitempty"`
-	// The id of the request that caused an update.
-	RequestId *string `json:"request_id,omitempty"`
-	// The Unity Catalog id of the MV or ST being updated.
-	UcResourceId *string `json:"uc_resource_id,omitempty"`
 	// The optional host name where the event was triggered
 	Host *string `json:"host,omitempty"`
-	// Materialization name.
-	MaterializationName *string `json:"materialization_name,omitempty"`
-	// The name of the source UC connection (if known) from whose data ingestion is
-	// described by this event.
-	IngestionSourceConnectionName *string `json:"ingestion_source_connection_name,omitempty"`
 	// The name of the source catalog name (if known) from whose data ingestion is
 	// described by this event.
 	IngestionSourceCatalogName *string `json:"ingestion_source_catalog_name,omitempty"`
+	// The name of the source UC connection (if known) from whose data ingestion is
+	// described by this event.
+	IngestionSourceConnectionName *string `json:"ingestion_source_connection_name,omitempty"`
 	// The name of the source schema name (if known) from whose data ingestion is
 	// described by this event.
 	IngestionSourceSchemaName *string `json:"ingestion_source_schema_name,omitempty"`
@@ -1402,35 +1382,47 @@ type Origin struct {
 	// An optional implementation-defined source table version of a dataset being
 	// (re)ingested.
 	IngestionSourceTableVersion *string `json:"ingestion_source_table_version,omitempty"`
+	// The id of a maintenance run. Globally unique.
+	MaintenanceId *string `json:"maintenance_id,omitempty"`
+	// Materialization name.
+	MaterializationName *string `json:"materialization_name,omitempty"`
+	// The org id of the user. Unique within a cloud.
+	OrgId *int64 `json:"org_id,omitempty"`
+	// The id of the pipeline. Globally unique.
+	PipelineId *string `json:"pipeline_id,omitempty"`
+	// The name of the pipeline. Not unique.
+	PipelineName *string `json:"pipeline_name,omitempty"`
+	// The cloud region.
+	Region *string `json:"region,omitempty"`
+	// The id of the request that caused an update.
+	RequestId *string `json:"request_id,omitempty"`
+	// The id of a (delta) table. Globally unique.
+	TableId *string `json:"table_id,omitempty"`
+	// The Unity Catalog id of the MV or ST being updated.
+	UcResourceId *string `json:"uc_resource_id,omitempty"`
+	// The id of an execution. Globally unique.
+	UpdateId *string `json:"update_id,omitempty"`
 }
 
 // Outlook specific options for ingestion.
 type OutlookOptions struct {
-	// Deprecated. Use include_folders instead.
-	FolderFilter []string `json:"folder_filter,omitempty"`
-	// Deprecated. Use include_senders instead.
-	SenderFilter []string `json:"sender_filter,omitempty"`
-	// Deprecated. Use include_subjects instead.
-	SubjectFilter []string `json:"subject_filter,omitempty"`
-	// (Optional) Start date for the initial sync in YYYY-MM-DD format. Format:
-	// YYYY-MM-DD (e.g., 2024-01-01) This determines the earliest date from which to
-	// sync historical data. If not specified, complete history is ingested.
-	StartDate *string `json:"start_date,omitempty"`
+	// (Optional) Controls which attachments to ingest. If not specified, defaults
+	// to ALL.
+	AttachmentMode OutlookAttachmentMode `json:"attachment_mode,omitempty"`
 	// (Optional) Defines how the body_content column is populated. TEXT_HTML:
 	// Preserves full formatting, links, and styling. TEXT_PLAIN: Converts body to
 	// plain text. Recommended for AI/RAG pipelines to reduce token usage and noise.
 	BodyFormat OutlookBodyFormat `json:"body_format,omitempty"`
-	// (Optional) Controls which attachments to ingest. If not specified, defaults
-	// to ALL.
-	AttachmentMode OutlookAttachmentMode `json:"attachment_mode,omitempty"`
-	// (Optional) List of mailboxes to sync (e.g. mailbox email addresses or
-	// identifiers). If not specified, all accessible mailboxes are ingested. Filter
-	// semantics: OR between different mailboxes.
-	IncludeMailboxes []string `json:"include_mailboxes,omitempty"`
+	// Deprecated. Use include_folders instead.
+	FolderFilter []string `json:"folder_filter,omitempty"`
 	// (Optional) Filter mail folders to include in the sync. If not specified, all
 	// folders will be synced. Examples: Inbox, Sent Items, Custom_Folder Filter
 	// semantics: OR between different folders.
 	IncludeFolders []string `json:"include_folders,omitempty"`
+	// (Optional) List of mailboxes to sync (e.g. mailbox email addresses or
+	// identifiers). If not specified, all accessible mailboxes are ingested. Filter
+	// semantics: OR between different mailboxes.
+	IncludeMailboxes []string `json:"include_mailboxes,omitempty"`
 	// (Optional) Filter emails by sender address. Uses exact email match. Examples:
 	// user@vendor.com, alerts@system.io, noreply@company.com If not specified,
 	// emails from all senders will be synced. Filter semantics: OR between
@@ -1442,6 +1434,14 @@ type OutlookOptions struct {
 	// (prefix), "Support Ticket", "URGENT*" If not specified, emails with all
 	// subjects will be synced. Filter semantics: OR between different subjects.
 	IncludeSubjects []string `json:"include_subjects,omitempty"`
+	// Deprecated. Use include_senders instead.
+	SenderFilter []string `json:"sender_filter,omitempty"`
+	// (Optional) Start date for the initial sync in YYYY-MM-DD format. Format:
+	// YYYY-MM-DD (e.g., 2024-01-01) This determines the earliest date from which to
+	// sync historical data. If not specified, complete history is ingested.
+	StartDate *string `json:"start_date,omitempty"`
+	// Deprecated. Use include_subjects instead.
+	SubjectFilter []string `json:"subject_filter,omitempty"`
 }
 
 type PathPattern struct {
@@ -1450,39 +1450,22 @@ type PathPattern struct {
 }
 
 type PipelineCluster struct {
-	// A label for the cluster specification, either `default` to configure the
-	// default cluster settings applied to both the update and maintenance clusters,
-	// `updates` to configure the update cluster, or `maintenance` to configure the
-	// maintenance cluster. This field is optional. The default value is `default`.
-	Label *string `json:"label,omitempty"`
 	// Note: This field won't be persisted. Only API users will check this field.
-	ApplyPolicyDefaultValues *bool `json:"apply_policy_default_values,omitempty"`
-	// An object containing a set of optional, user-specified Spark configuration
-	// key-value pairs. See :method:clusters/create for more details.
-	SparkConf map[string]string `json:"spark_conf,omitempty"`
+	ApplyPolicyDefaultValues *bool               `json:"apply_policy_default_values,omitempty"`
+	Autoscale                *PipelinesAutoScale `json:"autoscale,omitempty"`
 	// Attributes related to clusters running on Amazon Web Services. If not
 	// specified at cluster creation, a set of default values will be used.
 	AwsAttributes *PipelinesAwsAttributes `json:"aws_attributes,omitempty"`
 	// Attributes related to clusters running on Microsoft Azure. If not specified
 	// at cluster creation, a set of default values will be used.
 	AzureAttributes *PipelinesAzureAttributes `json:"azure_attributes,omitempty"`
-	// Attributes related to clusters running on Google Cloud Platform. If not
-	// specified at cluster creation, a set of default values will be used.
-	GcpAttributes *PipelinesGcpAttributes `json:"gcp_attributes,omitempty"`
-	// This field encodes, through a single value, the resources available to each
-	// of the Spark nodes in this cluster. For example, the Spark nodes can be
-	// provisioned and optimized for memory or compute intensive workloads. A list
-	// of available node types can be retrieved by using the
-	// :method:clusters/listNodeTypes API call.
-	NodeTypeId *string `json:"node_type_id,omitempty"`
-	// The node type of the Spark driver. Note that this field is optional; if
-	// unset, the driver node type will be set as the same value as `node_type_id`
-	// defined above.
-	DriverNodeTypeId *string `json:"driver_node_type_id,omitempty"`
-	// SSH public key contents that will be added to each Spark node in this
-	// cluster. The corresponding private keys can be used to login with the user
-	// name `ubuntu` on port `2200`. Up to 10 keys can be specified.
-	SshPublicKeys []string `json:"ssh_public_keys,omitempty"`
+	// The configuration for delivering spark logs to a long-term storage
+	// destination. Only dbfs destinations are supported. Only one destination can
+	// be specified for one cluster. If the conf is given, the logs will be
+	// delivered to the destination every `5 mins`. The destination of driver logs
+	// is `$destination/$clusterId/driver`, while the destination of executor logs
+	// is `$destination/$clusterId/executor`.
+	ClusterLogConf *PipelinesClusterLogConf `json:"cluster_log_conf,omitempty"`
 	// Additional tags for cluster resources. <Databricks> will tag all cluster
 	// resources (e.g., AWS instances and EBS volumes) with these tags in addition
 	// to `default_tags`. Notes:
@@ -1492,13 +1475,43 @@ type PipelineCluster struct {
 	// - Clusters can only reuse cloud resources if the resources' tags are a subset
 	// of the cluster tags
 	CustomTags map[string]string `json:"custom_tags,omitempty"`
-	// The configuration for delivering spark logs to a long-term storage
-	// destination. Only dbfs destinations are supported. Only one destination can
-	// be specified for one cluster. If the conf is given, the logs will be
-	// delivered to the destination every `5 mins`. The destination of driver logs
-	// is `$destination/$clusterId/driver`, while the destination of executor logs
-	// is `$destination/$clusterId/executor`.
-	ClusterLogConf *PipelinesClusterLogConf `json:"cluster_log_conf,omitempty"`
+	// The optional ID of the instance pool for the driver of the cluster belongs.
+	// The pool cluster uses the instance pool with id (instance_pool_id) if the
+	// driver pool is not assigned.
+	DriverInstancePoolId *string `json:"driver_instance_pool_id,omitempty"`
+	// The node type of the Spark driver. Note that this field is optional; if
+	// unset, the driver node type will be set as the same value as `node_type_id`
+	// defined above.
+	DriverNodeTypeId *string `json:"driver_node_type_id,omitempty"`
+	// Whether to enable local disk encryption for the cluster.
+	EnableLocalDiskEncryption *bool `json:"enable_local_disk_encryption,omitempty"`
+	// Attributes related to clusters running on Google Cloud Platform. If not
+	// specified at cluster creation, a set of default values will be used.
+	GcpAttributes *PipelinesGcpAttributes `json:"gcp_attributes,omitempty"`
+	// The configuration for storing init scripts. Any number of destinations can be
+	// specified. The scripts are executed sequentially in the order provided. If
+	// `cluster_log_conf` is specified, init script logs are sent to
+	// `<destination>/<cluster-ID>/init_scripts`.
+	InitScripts []PipelinesInitScriptInfo `json:"init_scripts,omitempty"`
+	// The optional ID of the instance pool to which the cluster belongs.
+	InstancePoolId *string `json:"instance_pool_id,omitempty"`
+	// A label for the cluster specification, either `default` to configure the
+	// default cluster settings applied to both the update and maintenance clusters,
+	// `updates` to configure the update cluster, or `maintenance` to configure the
+	// maintenance cluster. This field is optional. The default value is `default`.
+	Label *string `json:"label,omitempty"`
+	// This field encodes, through a single value, the resources available to each
+	// of the Spark nodes in this cluster. For example, the Spark nodes can be
+	// provisioned and optimized for memory or compute intensive workloads. A list
+	// of available node types can be retrieved by using the
+	// :method:clusters/listNodeTypes API call.
+	NodeTypeId *string `json:"node_type_id,omitempty"`
+	NumWorkers *int    `json:"num_workers,omitempty"`
+	// The ID of the cluster policy used to create the cluster if applicable.
+	PolicyId *string `json:"policy_id,omitempty"`
+	// An object containing a set of optional, user-specified Spark configuration
+	// key-value pairs. See :method:clusters/create for more details.
+	SparkConf map[string]string `json:"spark_conf,omitempty"`
 	// An object containing a set of optional, user-specified environment variable
 	// key-value pairs. Please note that key-value pair of the form (X,Y) will be
 	// exported as is (i.e., `export X='Y'`) while launching the driver and workers.
@@ -1512,34 +1525,21 @@ type PipelineCluster struct {
 	// "SPARK_LOCAL_DIRS": "/local_disk0"}` or `{"SPARK_DAEMON_JAVA_OPTS":
 	// "$SPARK_DAEMON_JAVA_OPTS -Dspark.shuffle.service.enabled=true"}`
 	SparkEnvVars map[string]string `json:"spark_env_vars,omitempty"`
-	// The configuration for storing init scripts. Any number of destinations can be
-	// specified. The scripts are executed sequentially in the order provided. If
-	// `cluster_log_conf` is specified, init script logs are sent to
-	// `<destination>/<cluster-ID>/init_scripts`.
-	InitScripts []PipelinesInitScriptInfo `json:"init_scripts,omitempty"`
-	// The optional ID of the instance pool to which the cluster belongs.
-	InstancePoolId *string `json:"instance_pool_id,omitempty"`
-	// The ID of the cluster policy used to create the cluster if applicable.
-	PolicyId *string `json:"policy_id,omitempty"`
-	// Whether to enable local disk encryption for the cluster.
-	EnableLocalDiskEncryption *bool `json:"enable_local_disk_encryption,omitempty"`
-	// The optional ID of the instance pool for the driver of the cluster belongs.
-	// The pool cluster uses the instance pool with id (instance_pool_id) if the
-	// driver pool is not assigned.
-	DriverInstancePoolId *string             `json:"driver_instance_pool_id,omitempty"`
-	NumWorkers           *int                `json:"num_workers,omitempty"`
-	Autoscale            *PipelinesAutoScale `json:"autoscale,omitempty"`
+	// SSH public key contents that will be added to each Spark node in this
+	// cluster. The corresponding private keys can be used to login with the user
+	// name `ubuntu` on port `2200`. Up to 10 keys can be specified.
+	SshPublicKeys []string `json:"ssh_public_keys,omitempty"`
 }
 
 type PipelineDeployment struct {
-	// The deployment method that manages the pipeline.
-	Kind DeploymentKind `json:"kind,omitempty"`
-	// The path to the file containing metadata about the deployment.
-	MetadataFilePath *string `json:"metadata_file_path,omitempty"`
 	// ID of the deployment that manages this pipeline. Only set when `kind` is
 	// `BUNDLE`. Used to look up deployment metadata from the Deployment Metadata
 	// service.
 	DeploymentId *string `json:"deployment_id,omitempty"`
+	// The deployment method that manages the pipeline.
+	Kind DeploymentKind `json:"kind,omitempty"`
+	// The path to the file containing metadata about the deployment.
+	MetadataFilePath *string `json:"metadata_file_path,omitempty"`
 	// ID of the version of the deployment that produced this pipeline. Only set
 	// when `kind` is `BUNDLE`. Identifies a specific snapshot of the deployment in
 	// the Deployment Metadata service.
@@ -1547,24 +1547,24 @@ type PipelineDeployment struct {
 }
 
 type PipelineEvent struct {
-	// A time-based, globally unique id.
-	Id *string `json:"id,omitempty"`
-	// A sequencing object to identify and order events.
-	Sequence *Sequencing `json:"sequence,omitempty"`
-	// Describes where the event originates from.
-	Origin *Origin `json:"origin,omitempty"`
-	// The time of the event.
-	Timestamp *string `json:"timestamp,omitempty"`
-	// The display message associated with the event.
-	Message *string `json:"message,omitempty"`
-	// The severity level of the event.
-	Level EventLevel `json:"level,omitempty"`
 	// Information about an error captured by the event.
 	Error *ErrorDetail `json:"error,omitempty"`
 	// The event type. Should always correspond to the details
 	EventType *string `json:"event_type,omitempty"`
+	// A time-based, globally unique id.
+	Id *string `json:"id,omitempty"`
+	// The severity level of the event.
+	Level EventLevel `json:"level,omitempty"`
 	// Maturity level for event_type.
 	MaturityLevel MaturityLevel `json:"maturity_level,omitempty"`
+	// The display message associated with the event.
+	Message *string `json:"message,omitempty"`
+	// Describes where the event originates from.
+	Origin *Origin `json:"origin,omitempty"`
+	// A sequencing object to identify and order events.
+	Sequence *Sequencing `json:"sequence,omitempty"`
+	// The time of the event.
+	Timestamp *string `json:"timestamp,omitempty"`
 	// Information about which fields were truncated from this event due to size
 	// constraints. If empty or absent, no truncation occurred. See
 	// https://docs.databricks.com/en/ldp/monitor-event-logs for information on
@@ -1573,44 +1573,29 @@ type PipelineEvent struct {
 }
 
 type PipelineLibrary struct {
-	Jar      *string                `json:"jar,omitempty"`
-	Maven    *PipelinesMavenLibrary `json:"maven,omitempty"`
-	Whl      *string                `json:"whl,omitempty"`
-	Notebook *NotebookLibrary       `json:"notebook,omitempty"`
 	File     *NotebookLibrary       `json:"file,omitempty"`
 	Glob     *PathPattern           `json:"glob,omitempty"`
+	Jar      *string                `json:"jar,omitempty"`
+	Maven    *PipelinesMavenLibrary `json:"maven,omitempty"`
+	Notebook *NotebookLibrary       `json:"notebook,omitempty"`
+	Whl      *string                `json:"whl,omitempty"`
 }
 
 type PipelineSpec struct {
-	// Unique identifier for this pipeline.
-	Id *string `json:"id,omitempty"`
-	// Friendly identifier for this pipeline.
-	Name *string `json:"name,omitempty"`
-	// DBFS root directory for storing checkpoints and tables.
-	Storage *string `json:"storage,omitempty"`
-	// String-String configuration for this pipeline execution.
-	Configuration map[string]string `json:"configuration,omitempty"`
+	// Budget policy of this pipeline.
+	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
+	// A catalog in Unity Catalog to publish data from this pipeline to. If `target`
+	// is specified, tables in this pipeline are published to a `target` schema
+	// inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is
+	// not specified, no data is published to Unity Catalog.
+	Catalog *string `json:"catalog,omitempty"`
+	// SDP Release Channel that specifies which version to use.
+	Channel *string `json:"channel,omitempty"`
 	// Cluster settings for this pipeline deployment. Applies to classic
 	// (non-serverless) pipelines. Omit this field when `serverless` is `true`.
 	Clusters []PipelineCluster `json:"clusters,omitempty"`
-	// Libraries or code needed by this deployment.
-	Libraries []PipelineLibrary `json:"libraries,omitempty"`
-	// The configuration for a managed ingestion pipeline. These settings cannot be
-	// used with the 'libraries', 'schema', 'target', or 'catalog' settings.
-	IngestionDefinition *IngestionPipelineDefinition `json:"ingestion_definition,omitempty"`
-	// The definition of a gateway pipeline to support change data capture.
-	GatewayDefinition *IngestionGatewayPipelineDefinition `json:"gateway_definition,omitempty"`
-	// Which pipeline trigger to use. Deprecated: Use `continuous` instead.
-	Trigger *PipelineTrigger `json:"trigger,omitempty"`
-	// Target schema (database) to add tables in this pipeline to. Exactly one of
-	// `schema` or `target` must be specified. To publish to Unity Catalog, also
-	// specify `catalog`. This legacy field is deprecated for pipeline creation in
-	// favor of the `schema` field.
-	Target *string `json:"target,omitempty"`
-	// The default schema (database) where tables are read from or published to.
-	Schema *string `json:"schema,omitempty"`
-	// Filters on which Pipeline packages to include in the deployed graph.
-	Filters *Filters `json:"filters,omitempty"`
+	// String-String configuration for this pipeline execution.
+	Configuration map[string]string `json:"configuration,omitempty"`
 	// Whether the pipeline is continuous or triggered. This replaces `trigger`.
 	//
 	// Deprecated: wrap the pipeline in a continuous job instead, which also lets
@@ -1618,90 +1603,105 @@ type PipelineSpec struct {
 	// pipeline is started by a continuous job, the job's setting takes precedence
 	// and this field is ignored.
 	Continuous *bool `json:"continuous,omitempty"`
+	// Deployment type of this pipeline.
+	Deployment *PipelineDeployment `json:"deployment,omitempty"`
 	// Whether the pipeline is in Development mode. Defaults to false.
 	//
 	// Deprecated: set development mode for each update instead.
 	Development *bool `json:"development,omitempty"`
-	// Whether Photon is enabled for this pipeline.
-	Photon *bool `json:"photon,omitempty"`
 	// Pipeline product edition.
 	Edition *string `json:"edition,omitempty"`
-	// SDP Release Channel that specifies which version to use.
-	Channel *string `json:"channel,omitempty"`
-	// A catalog in Unity Catalog to publish data from this pipeline to. If `target`
-	// is specified, tables in this pipeline are published to a `target` schema
-	// inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is
-	// not specified, no data is published to Unity Catalog.
-	Catalog *string `json:"catalog,omitempty"`
+	// Environment specification for this pipeline used to install dependencies.
+	Environment *PipelinesEnvironment `json:"environment,omitempty"`
+	// Event log configuration for this pipeline
+	EventLog *EventLogSpec `json:"event_log,omitempty"`
+	// Filters on which Pipeline packages to include in the deployed graph.
+	Filters *Filters `json:"filters,omitempty"`
+	// The definition of a gateway pipeline to support change data capture.
+	GatewayDefinition *IngestionGatewayPipelineDefinition `json:"gateway_definition,omitempty"`
+	// Unique identifier for this pipeline.
+	Id *string `json:"id,omitempty"`
+	// The configuration for a managed ingestion pipeline. These settings cannot be
+	// used with the 'libraries', 'schema', 'target', or 'catalog' settings.
+	IngestionDefinition *IngestionPipelineDefinition `json:"ingestion_definition,omitempty"`
+	// Libraries or code needed by this deployment.
+	Libraries []PipelineLibrary `json:"libraries,omitempty"`
+	// Friendly identifier for this pipeline.
+	Name *string `json:"name,omitempty"`
 	// List of notification settings for this pipeline.
 	Notifications []Notifications `json:"notifications,omitempty"`
+	// Path of the pipeline parent folder in workspace file tree.
+	//
+	// If absent, the pipeline doesn't have a workspace object.
+	ParentPath *string `json:"parent_path,omitempty"`
+	// Whether Photon is enabled for this pipeline.
+	Photon *bool `json:"photon,omitempty"`
+	// Restart window of this pipeline.
+	RestartWindow *RestartWindow `json:"restart_window,omitempty"`
+	// Root path for this pipeline. This is used as the root directory when editing
+	// the pipeline in the <Databricks> user interface and it is added to sys.path
+	// when executing Python sources during pipeline execution.
+	RootPath *string `json:"root_path,omitempty"`
+	// The default schema (database) where tables are read from or published to.
+	Schema *string `json:"schema,omitempty"`
 	// Whether serverless compute is enabled for this pipeline. Serverless is the
 	// recommended compute for new pipelines; set this to `true` to run the pipeline
 	// on serverless. For notebook/file pipelines, omitting this field uses classic
 	// compute configured through the `clusters` field. When `true`, omit
 	// `clusters`; Photon is always enabled.
 	Serverless *bool `json:"serverless,omitempty"`
-	// Deployment type of this pipeline.
-	Deployment *PipelineDeployment `json:"deployment,omitempty"`
-	// Restart window of this pipeline.
-	RestartWindow *RestartWindow `json:"restart_window,omitempty"`
-	// Budget policy of this pipeline.
-	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
+	// Serverless compute ID specified by the user for serverless pipelines.
+	ServerlessComputeId *string `json:"serverless_compute_id,omitempty"`
+	// DBFS root directory for storing checkpoints and tables.
+	Storage *string `json:"storage,omitempty"`
 	// A map of tags associated with the pipeline. These are forwarded to the
 	// cluster as cluster tags, and are therefore subject to the same limitations. A
 	// maximum of 25 tags can be added to the pipeline.
 	Tags map[string]string `json:"tags,omitempty"`
-	// Event log configuration for this pipeline
-	EventLog *EventLogSpec `json:"event_log,omitempty"`
-	// Root path for this pipeline. This is used as the root directory when editing
-	// the pipeline in the <Databricks> user interface and it is added to sys.path
-	// when executing Python sources during pipeline execution.
-	RootPath *string `json:"root_path,omitempty"`
-	// Environment specification for this pipeline used to install dependencies.
-	Environment *PipelinesEnvironment `json:"environment,omitempty"`
-	// Path of the pipeline parent folder in workspace file tree.
-	//
-	// If absent, the pipeline doesn't have a workspace object.
-	ParentPath *string `json:"parent_path,omitempty"`
+	// Target schema (database) to add tables in this pipeline to. Exactly one of
+	// `schema` or `target` must be specified. To publish to Unity Catalog, also
+	// specify `catalog`. This legacy field is deprecated for pipeline creation in
+	// favor of the `schema` field.
+	Target *string `json:"target,omitempty"`
+	// Which pipeline trigger to use. Deprecated: Use `continuous` instead.
+	Trigger *PipelineTrigger `json:"trigger,omitempty"`
 	// Usage policy of this pipeline.
 	UsagePolicyId *string `json:"usage_policy_id,omitempty"`
-	// Serverless compute ID specified by the user for serverless pipelines.
-	ServerlessComputeId *string `json:"serverless_compute_id,omitempty"`
 }
 
 type PipelineStateInfo struct {
-	// The unique identifier of the pipeline.
-	PipelineId *string                     `json:"pipeline_id,omitempty"`
-	State      PipelineState_PipelineState `json:"state,omitempty"`
 	// The unique identifier of the cluster running the pipeline.
 	ClusterId *string `json:"cluster_id,omitempty"`
-	// The user-friendly name of the pipeline.
-	Name *string `json:"name,omitempty"`
+	// The username of the pipeline creator.
+	CreatorUserName *string `json:"creator_user_name,omitempty"`
+	// The health of a pipeline.
+	Health PipelineHealthStatus `json:"health,omitempty"`
 	// Status of the latest updates for the pipeline. Ordered with the newest update
 	// first.
 	LatestUpdates []UpdateStateInfo `json:"latest_updates,omitempty"`
-	// The username of the pipeline creator.
-	CreatorUserName *string `json:"creator_user_name,omitempty"`
+	// The user-friendly name of the pipeline.
+	Name *string `json:"name,omitempty"`
+	// The unique identifier of the pipeline.
+	PipelineId *string `json:"pipeline_id,omitempty"`
 	// The username that the pipeline runs as. This is a read only value derived
 	// from the pipeline owner.
-	RunAsUserName *string `json:"run_as_user_name,omitempty"`
-	// The health of a pipeline.
-	Health PipelineHealthStatus `json:"health,omitempty"`
+	RunAsUserName *string                     `json:"run_as_user_name,omitempty"`
+	State         PipelineState_PipelineState `json:"state,omitempty"`
 }
 
 type PipelineTrigger struct {
-	Manual *ManualTrigger `json:"manual,omitempty"`
 	Cron   *CronTrigger   `json:"cron,omitempty"`
+	Manual *ManualTrigger `json:"manual,omitempty"`
 }
 
 type PipelinesAutoScale struct {
+	// The maximum number of workers to which the cluster can scale up when
+	// overloaded. `max_workers` must be strictly greater than `min_workers`.
+	MaxWorkers *int `json:"max_workers,omitempty"`
 	// The minimum number of workers the cluster can scale down to when
 	// underutilized. It is also the initial number of workers the cluster will have
 	// after creation.
 	MinWorkers *int `json:"min_workers,omitempty"`
-	// The maximum number of workers to which the cluster can scale up when
-	// overloaded. `max_workers` must be strictly greater than `min_workers`.
-	MaxWorkers *int `json:"max_workers,omitempty"`
 	// Databricks Enhanced Autoscaling optimizes cluster utilization by
 	// automatically allocating cluster resources based on workload volume, with
 	// minimal impact to the data processing latency of your pipelines. Enhanced
@@ -1713,50 +1713,10 @@ type PipelinesAutoScale struct {
 // Attributes set during cluster creation which are related to Amazon Web
 // Services..
 type PipelinesAwsAttributes struct {
-	// The first ``first_on_demand`` nodes of the cluster will be placed on
-	// on-demand instances. If this value is greater than 0, the cluster driver node
-	// in particular will be placed on an on-demand instance. If this value is
-	// greater than or equal to the current cluster size, all nodes will be placed
-	// on on-demand instances. If this value is less than the current cluster size,
-	// ``first_on_demand`` nodes will be placed on on-demand instances and the
-	// remainder will be placed on ``availability`` instances. Note that this value
-	// does not affect cluster size and cannot currently be mutated over the
-	// lifetime of a cluster.
-	FirstOnDemand *int `json:"first_on_demand,omitempty"`
 	// Availability type used for all subsequent nodes past the ``first_on_demand``
 	// ones. Note: If ``first_on_demand`` is zero, this availability type will be
 	// used for the entire cluster.
 	Availability PipelinesAwsAvailability `json:"availability,omitempty"`
-	// Identifier for the availability zone/datacenter in which the cluster resides.
-	// This string will be of a form like "us-west-2a". The provided availability
-	// zone must be in the same region as the <Databricks> deployment. For example,
-	// "us-west-2a" is not a valid zone id if the <Databricks> deployment resides in
-	// the "us-east-1" region. This is an optional field at cluster creation, and if
-	// not specified, a default zone will be used. If the zone specified is "auto",
-	// will try to place cluster in a zone with high availability, and will retry
-	// placement in a different AZ if there is not enough capacity. The list of
-	// available zones as well as the default value can be found by using the `List
-	// Zones` method.
-	ZoneId *string `json:"zone_id,omitempty"`
-	// Nodes for this cluster will only be placed on AWS instances with this
-	// instance profile. If omitted, nodes will be placed on instances without an
-	// IAM instance profile. The instance profile must have previously been added to
-	// the <Databricks> environment by an account administrator.
-	//
-	// This feature may only be available to certain customer plans.
-	InstanceProfileArn *string `json:"instance_profile_arn,omitempty"`
-	// The bid price for AWS spot instances, as a percentage of the corresponding
-	// instance type's on-demand price. For example, if this field is set to 50, and
-	// the cluster needs a new ``r3.xlarge`` spot instance, then the bid price is
-	// half of the price of on-demand ``r3.xlarge`` instances. Similarly, if this
-	// field is set to 200, the bid price is twice the price of on-demand
-	// ``r3.xlarge`` instances. If not specified, the default value is 100. When
-	// spot instances are requested for this cluster, only spot instances whose bid
-	// price percentage matches this field will be considered. Note that, for
-	// safety, we enforce this field to be no more than 10000.
-	SpotBidPricePercent *int `json:"spot_bid_price_percent,omitempty"`
-	// The type of EBS volumes that will be launched with this cluster.
-	EbsVolumeType PipelinesEbsVolumeType `json:"ebs_volume_type,omitempty"`
 	// The number of volumes launched for each instance. Users can choose up to 10
 	// volumes. This feature is only enabled for supported node types. Legacy node
 	// types cannot specify custom EBS volumes. For node types with no instance
@@ -1774,16 +1734,60 @@ type PipelinesAwsAttributes struct {
 	// Please note that if EBS volumes are specified, then the Spark configuration
 	// ``spark.local.dir`` will be overridden.
 	EbsVolumeCount *int `json:"ebs_volume_count,omitempty"`
+	EbsVolumeIops  *int `json:"ebs_volume_iops,omitempty"`
 	// The size of each EBS volume (in GiB) launched for each instance. For general
 	// purpose SSD, this value must be within the range 100 - 4096. For throughput
 	// optimized HDD, this value must be within the range 500 - 4096.
 	EbsVolumeSize       *int `json:"ebs_volume_size,omitempty"`
-	EbsVolumeIops       *int `json:"ebs_volume_iops,omitempty"`
 	EbsVolumeThroughput *int `json:"ebs_volume_throughput,omitempty"`
+	// The type of EBS volumes that will be launched with this cluster.
+	EbsVolumeType PipelinesEbsVolumeType `json:"ebs_volume_type,omitempty"`
+	// The first ``first_on_demand`` nodes of the cluster will be placed on
+	// on-demand instances. If this value is greater than 0, the cluster driver node
+	// in particular will be placed on an on-demand instance. If this value is
+	// greater than or equal to the current cluster size, all nodes will be placed
+	// on on-demand instances. If this value is less than the current cluster size,
+	// ``first_on_demand`` nodes will be placed on on-demand instances and the
+	// remainder will be placed on ``availability`` instances. Note that this value
+	// does not affect cluster size and cannot currently be mutated over the
+	// lifetime of a cluster.
+	FirstOnDemand *int `json:"first_on_demand,omitempty"`
+	// Nodes for this cluster will only be placed on AWS instances with this
+	// instance profile. If omitted, nodes will be placed on instances without an
+	// IAM instance profile. The instance profile must have previously been added to
+	// the <Databricks> environment by an account administrator.
+	//
+	// This feature may only be available to certain customer plans.
+	InstanceProfileArn *string `json:"instance_profile_arn,omitempty"`
+	// The bid price for AWS spot instances, as a percentage of the corresponding
+	// instance type's on-demand price. For example, if this field is set to 50, and
+	// the cluster needs a new ``r3.xlarge`` spot instance, then the bid price is
+	// half of the price of on-demand ``r3.xlarge`` instances. Similarly, if this
+	// field is set to 200, the bid price is twice the price of on-demand
+	// ``r3.xlarge`` instances. If not specified, the default value is 100. When
+	// spot instances are requested for this cluster, only spot instances whose bid
+	// price percentage matches this field will be considered. Note that, for
+	// safety, we enforce this field to be no more than 10000.
+	SpotBidPricePercent *int `json:"spot_bid_price_percent,omitempty"`
+	// Identifier for the availability zone/datacenter in which the cluster resides.
+	// This string will be of a form like "us-west-2a". The provided availability
+	// zone must be in the same region as the <Databricks> deployment. For example,
+	// "us-west-2a" is not a valid zone id if the <Databricks> deployment resides in
+	// the "us-east-1" region. This is an optional field at cluster creation, and if
+	// not specified, a default zone will be used. If the zone specified is "auto",
+	// will try to place cluster in a zone with high availability, and will retry
+	// placement in a different AZ if there is not enough capacity. The list of
+	// available zones as well as the default value can be found by using the `List
+	// Zones` method.
+	ZoneId *string `json:"zone_id,omitempty"`
 }
 
 // Attributes set during cluster creation which are related to Azure..
 type PipelinesAzureAttributes struct {
+	// Availability type used for all subsequent nodes past the ``first_on_demand``
+	// ones. Note: If ``first_on_demand`` is zero (which only happens on pool
+	// clusters), this availability type will be used for the entire cluster.
+	Availability PipelinesAzureAvailability `json:"availability,omitempty"`
 	// The first ``first_on_demand`` nodes of the cluster will be placed on
 	// on-demand instances. This value should be greater than 0, to make sure the
 	// cluster driver node is placed on an on-demand instance. If this value is
@@ -1794,10 +1798,6 @@ type PipelinesAzureAttributes struct {
 	// does not affect cluster size and cannot currently be mutated over the
 	// lifetime of a cluster.
 	FirstOnDemand *int `json:"first_on_demand,omitempty"`
-	// Availability type used for all subsequent nodes past the ``first_on_demand``
-	// ones. Note: If ``first_on_demand`` is zero (which only happens on pool
-	// clusters), this availability type will be used for the entire cluster.
-	Availability PipelinesAzureAvailability `json:"availability,omitempty"`
 	// The max bid price to be used for Azure spot instances. The Max price for the
 	// bid cannot be higher than the on-demand price of the instance. If not
 	// specified, the default value is -1, which specifies that the instance cannot
@@ -1844,24 +1844,17 @@ type PipelinesEnvironment struct {
 
 // Attributes set during cluster creation which are related to Gcp..
 type PipelinesGcpAttributes struct {
+	// This field determines whether the spark executors will be scheduled to run on
+	// preemptible VMs, on-demand VMs, or preemptible VMs with a fallback to
+	// on-demand VMs if the former is unavailable.
+	Availability PipelinesGcpAvailability `json:"availability,omitempty"`
+	// boot disk size in GB
+	BootDiskSize *int `json:"boot_disk_size,omitempty"`
 	// If provided, the cluster will impersonate the google service account when
 	// accessing gcloud services (like GCS). The google service account must have
 	// previously been added to the <Databricks> environment by an account
 	// administrator.
 	GoogleServiceAccount *string `json:"google_service_account,omitempty"`
-	// boot disk size in GB
-	BootDiskSize *int `json:"boot_disk_size,omitempty"`
-	// This field determines whether the spark executors will be scheduled to run on
-	// preemptible VMs, on-demand VMs, or preemptible VMs with a fallback to
-	// on-demand VMs if the former is unavailable.
-	Availability PipelinesGcpAvailability `json:"availability,omitempty"`
-	// Identifier for the availability zone in which the cluster resides. This can
-	// be one of the following: - "HA" => High availability, spread nodes across
-	// availability zones for a <Databricks> deployment region [default]. - "AUTO"
-	// => <Databricks> picks an availability zone to schedule the cluster on. - A
-	// GCP availability zone => Pick One of the available zones for (machine type +
-	// region) from https://cloud.google.com/compute/docs/regions-zones.
-	ZoneId *string `json:"zone_id,omitempty"`
 	// The number of local SSDs to attach to each worker and driver for this
 	// cluster. If left unspecified, the default number of local SSDs for the node
 	// type will be used.
@@ -1874,6 +1867,13 @@ type PipelinesGcpAttributes struct {
 	// Validation is performed at the RPC layer and the RPC will be rejected if the
 	// specified local_ssd_count is invalid.
 	LocalSsdCount *int `json:"local_ssd_count,omitempty"`
+	// Identifier for the availability zone in which the cluster resides. This can
+	// be one of the following: - "HA" => High availability, spread nodes across
+	// availability zones for a <Databricks> deployment region [default]. - "AUTO"
+	// => <Databricks> picks an availability zone to schedule the cluster on. - A
+	// GCP availability zone => Pick One of the available zones for (machine type +
+	// region) from https://cloud.google.com/compute/docs/regions-zones.
+	ZoneId *string `json:"zone_id,omitempty"`
 }
 
 // Config for an individual init script.
@@ -1889,46 +1889,27 @@ type PipelinesInitScriptInfo struct {
 // Only `user_name` or `service_principal_name` can be specified. If both are
 // specified, an error is thrown..
 type PipelinesJobRunAs struct {
-	UserName             *string `json:"user_name,omitempty"`
-	ServicePrincipalName *string `json:"service_principal_name,omitempty"`
 	GroupName            *string `json:"group_name,omitempty"`
+	ServicePrincipalName *string `json:"service_principal_name,omitempty"`
+	UserName             *string `json:"user_name,omitempty"`
 }
 
 type PipelinesMavenLibrary struct {
 	// Gradle-style maven coordinates. For example: "org.jsoup:jsoup:1.7.2".
 	Coordinates *string `json:"coordinates,omitempty"`
-	// Maven repo to install the Maven package from. If omitted, both Maven Central
-	// Repository and Spark Packages are searched.
-	Repo *string `json:"repo,omitempty"`
 	// List of dependencies to exclude. For example: `["slf4j:slf4j",
 	// "*:hadoop-client"]`.
 	//
 	// Maven dependency exclusions:
 	// https://maven.apache.org/guides/introduction/introduction-to-optional-and-excludes-dependencies.html.
 	Exclusions []string `json:"exclusions,omitempty"`
+	// Maven repo to install the Maven package from. If omitted, both Maven Central
+	// Repository and Spark Packages are searched.
+	Repo *string `json:"repo,omitempty"`
 }
 
 // A storage location in Amazon S3.
 type PipelinesS3StorageInfo struct {
-	// S3 destination, e.g. ``s3://my-bucket/some-prefix`` Note that logs will be
-	// delivered using cluster iam role, please make sure you set cluster iam role
-	// and the role has write access to the destination. Please also note that you
-	// cannot use AWS keys to deliver logs.
-	Destination *string `json:"destination,omitempty"`
-	// S3 region, e.g. ``us-west-2``. Either region or endpoint needs to be set. If
-	// both are set, endpoint will be used.
-	Region *string `json:"region,omitempty"`
-	// S3 endpoint, e.g. ``https://s3-us-west-2.amazonaws.com``. Either region or
-	// endpoint needs to be set. If both are set, endpoint will be used.
-	Endpoint *string `json:"endpoint,omitempty"`
-	// Flag to enable server side encryption, ``false`` by default.
-	EnableEncryption *bool `json:"enable_encryption,omitempty"`
-	// The encryption type, it could be ``sse-s3`` or ``sse-kms``. It will be used
-	// only when encryption is enabled and the default type is ``sse-s3``.
-	EncryptionType *string `json:"encryption_type,omitempty"`
-	// Kms key which will be used if encryption is enabled and encryption type is
-	// set to ``sse-kms``.
-	KmsKey *string `json:"kms_key,omitempty"`
 	// Set canned access control list for the logs, e.g.
 	// ``bucket-owner-full-control``. If ``canned_cal`` is set, please make sure the
 	// cluster iam role has ``s3:PutObjectAcl`` permission on the destination bucket
@@ -1938,6 +1919,25 @@ type PipelinesS3StorageInfo struct {
 	// you are using cross account role for writing data, you may want to set
 	// ``bucket-owner-full-control`` to make bucket owner able to read the logs.
 	CannedAcl *string `json:"canned_acl,omitempty"`
+	// S3 destination, e.g. ``s3://my-bucket/some-prefix`` Note that logs will be
+	// delivered using cluster iam role, please make sure you set cluster iam role
+	// and the role has write access to the destination. Please also note that you
+	// cannot use AWS keys to deliver logs.
+	Destination *string `json:"destination,omitempty"`
+	// Flag to enable server side encryption, ``false`` by default.
+	EnableEncryption *bool `json:"enable_encryption,omitempty"`
+	// The encryption type, it could be ``sse-s3`` or ``sse-kms``. It will be used
+	// only when encryption is enabled and the default type is ``sse-s3``.
+	EncryptionType *string `json:"encryption_type,omitempty"`
+	// S3 endpoint, e.g. ``https://s3-us-west-2.amazonaws.com``. Either region or
+	// endpoint needs to be set. If both are set, endpoint will be used.
+	Endpoint *string `json:"endpoint,omitempty"`
+	// Kms key which will be used if encryption is enabled and encryption type is
+	// set to ``sse-kms``.
+	KmsKey *string `json:"kms_key,omitempty"`
+	// S3 region, e.g. ``us-west-2``. Either region or endpoint needs to be set. If
+	// both are set, endpoint will be used.
+	Region *string `json:"region,omitempty"`
 }
 
 // PG-specific catalog-level configuration parameters.
@@ -1949,10 +1949,10 @@ type PostgresCatalogConfig struct {
 // PostgresSlotConfig contains the configuration for a Postgres logical
 // replication slot.
 type PostgresSlotConfig struct {
-	// The name of the logical replication slot to use for the Postgres source
-	SlotName *string `json:"slot_name,omitempty"`
 	// The name of the publication to use for the Postgres source
 	PublicationName *string `json:"publication_name,omitempty"`
+	// The name of the logical replication slot to use for the Postgres source
+	SlotName *string `json:"slot_name,omitempty"`
 }
 
 type ProtobufTransformerOptions struct {
@@ -1960,14 +1960,14 @@ type ProtobufTransformerOptions struct {
 	DescFilePath *string `json:"desc_file_path,omitempty"`
 	// Required: fully-qualified message type name.
 	MessageName *string `json:"message_name,omitempty"`
+	// (Optional) Parse mode for Protobuf data. Valid values: FAILFAST, PERMISSIVE.
+	// Defaults to PERMISSIVE.
+	ParseMode ParseMode `json:"parse_mode,omitempty"`
 	// (Optional) Maximum expansion depth for recursive protobuf fields. Spark SQL
 	// does not natively support recursive types, so recursive fields are expanded
 	// up to this depth and truncated beyond it. Valid values: -1 (disallow
 	// recursive fields), 0 (drop), 1-10.
 	RecursiveFieldsMaxDepth *int `json:"recursive_fields_max_depth,omitempty"`
-	// (Optional) Parse mode for Protobuf data. Valid values: FAILFAST, PERMISSIVE.
-	// Defaults to PERMISSIVE.
-	ParseMode ParseMode `json:"parse_mode,omitempty"`
 	// (Optional) Schema registry to resolve the Protobuf schema at runtime instead
 	// of providing it via desc_file_path.
 	SchemaRegistry *SchemaRegistryConfig `json:"schema_registry,omitempty"`
@@ -1984,30 +1984,30 @@ type RabbitmqOptions struct {
 
 // Reddit Ads specific options for ingestion.
 type RedditAdsOptions struct {
-	// (Optional) Start date for the initial sync of report tables in YYYY-MM-DD
-	// format. This determines the earliest date from which to sync historical data.
-	// If not specified, defaults to 2 years ago.
-	SyncStartDate *string `json:"sync_start_date,omitempty"`
-	// (Optional) Number of days to look back for report tables during incremental
-	// sync to capture late-arriving conversions and attribution data. If not
-	// specified, defaults to 30 days.
-	LookbackWindowDays *int `json:"lookback_window_days,omitempty"`
 	// (Optional) Custom report definition. When set, the table is treated as a
 	// user-defined Reddit Ads custom report. When unset, the table must match one
 	// of the connector's prebuilt sources.
 	CustomReportOptions *RedditAdsOptions_RedditAdsCustomReportOptions `json:"custom_report_options,omitempty"`
+	// (Optional) Number of days to look back for report tables during incremental
+	// sync to capture late-arriving conversions and attribution data. If not
+	// specified, defaults to 30 days.
+	LookbackWindowDays *int `json:"lookback_window_days,omitempty"`
+	// (Optional) Start date for the initial sync of report tables in YYYY-MM-DD
+	// format. This determines the earliest date from which to sync historical data.
+	// If not specified, defaults to 2 years ago.
+	SyncStartDate *string `json:"sync_start_date,omitempty"`
 }
 
 // User-defined custom report for the Reddit Ads connector. Applies only to the
 // custom_report table — prebuilt tables ignore this..
 type RedditAdsOptions_RedditAdsCustomReportOptions struct {
-	// (Optional) Fields to include in the report (maps to the Reddit Ads API
-	// `fields` parameter). Examples: IMPRESSIONS, CLICKS, SPEND, CPC, CTR.
-	Fields []string `json:"fields,omitempty"`
 	// (Optional) Breakdown dimensions to group report data by. Examples:
 	// CAMPAIGN_ID, DATE, COUNTRY, REGION, AD_ID. Must include at least one time
 	// dimension (DATE or HOUR).
 	Breakdowns []string `json:"breakdowns,omitempty"`
+	// (Optional) Fields to include in the report (maps to the Reddit Ads API
+	// `fields` parameter). Examples: IMPRESSIONS, CLICKS, SPEND, CPC, CTR.
+	Fields []string `json:"fields,omitempty"`
 }
 
 // Specifies a replace_where predicate override for a replace where flow..
@@ -2020,14 +2020,14 @@ type ReplaceWhereOverride struct {
 }
 
 type RestartWindow struct {
-	// An integer between 0 and 23 denoting the start hour for the restart window in
-	// the 24-hour day. Continuous pipeline restart is triggered only within a
-	// five-hour window starting at this hour.
-	StartHour *int `json:"start_hour,omitempty"`
 	// Days of week in which the restart is allowed to happen (within a five-hour
 	// window starting at start_hour). If not specified all days of the week will be
 	// used.
 	DaysOfWeek []DayOfWeek `json:"days_of_week,omitempty"`
+	// An integer between 0 and 23 denoting the start hour for the restart window in
+	// the 24-hour day. Continuous pipeline restart is triggered only within a
+	// five-hour window starting at this hour.
+	StartHour *int `json:"start_hour,omitempty"`
 	// Time zone id of restart window. See
 	// https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html
 	// for details. If not specified, UTC will be used.
@@ -2036,10 +2036,10 @@ type RestartWindow struct {
 
 // Configuration for rewinding a specific dataset..
 type RewindDatasetSpec struct {
-	// The identifier of the dataset (e.g., "main.foo.tbl1").
-	Identifier *string `json:"identifier,omitempty"`
 	// Whether to cascade the rewind to dependent datasets. Must be specified.
 	Cascade *bool `json:"cascade,omitempty"`
+	// The identifier of the dataset (e.g., "main.foo.tbl1").
+	Identifier *string `json:"identifier,omitempty"`
 	// Whether to reset checkpoints for this dataset.
 	ResetCheckpoints *bool `json:"reset_checkpoints,omitempty"`
 }
@@ -2047,35 +2047,35 @@ type RewindDatasetSpec struct {
 // Information about a rewind being requested for this pipeline or some of the
 // datasets in it..
 type RewindSpec struct {
-	// The base timestamp to rewind to. Exactly one of rewind_timestamp or
-	// rewind_point_id must be specified.
-	RewindTimestamp *string `json:"rewind_timestamp,omitempty"`
-	// If true, this is a dry run and we should emit the RewindSummary but not
-	// perform the rewind.
-	DryRun *bool `json:"dry_run,omitempty"`
 	// List of datasets to rewind with specific configuration for each. When not
 	// specified, all datasets will be rewound with cascade = true and
 	// reset_checkpoints = true.
 	Datasets []RewindDatasetSpec `json:"datasets,omitempty"`
+	// If true, this is a dry run and we should emit the RewindSummary but not
+	// perform the rewind.
+	DryRun *bool `json:"dry_run,omitempty"`
+	// The base timestamp to rewind to. Exactly one of rewind_timestamp or
+	// rewind_point_id must be specified.
+	RewindTimestamp *string `json:"rewind_timestamp,omitempty"`
 }
 
 type SchemaRegistryConfig struct {
 	// Required: Confluent-compatible schema registry options.
 	ConfluentOptions *ConfluentSchemaRegistryOptions `json:"confluent_options,omitempty"`
+	// (Optional) UC connection for registry authentication. Specify if different
+	// from the top-level source connection.
+	ConnectionName *string `json:"connection_name,omitempty"`
 	// (Optional, Protobuf only) Selects a specific message from a schema that
 	// defines multiple Protobuf messages. Simple ("Location") or fully-qualified
 	// ("com.example.protos.Location"). Defaults to the first message.
 	ProtobufMessageName *string `json:"protobuf_message_name,omitempty"`
-	// (Optional) UC connection for registry authentication. Specify if different
-	// from the top-level source connection.
-	ConnectionName *string `json:"connection_name,omitempty"`
 }
 
 type Sequencing struct {
-	// the ID assigned by the data plane.
-	DataPlaneId *DataPlaneId `json:"data_plane_id,omitempty"`
 	// A sequence number, unique and increasing per pipeline.
 	ControlPlaneSeqNo *int64 `json:"control_plane_seq_no,omitempty"`
+	// the ID assigned by the data plane.
+	DataPlaneId *DataPlaneId `json:"data_plane_id,omitempty"`
 }
 
 type SerializedException struct {
@@ -2088,13 +2088,13 @@ type SerializedException struct {
 }
 
 type SharepointOptions struct {
-	// Required. The SharePoint URL.
-	Url *string `json:"url,omitempty"`
 	// (Optional) The type of SharePoint entity to ingest. If not specified,
 	// defaults to FILE.
 	EntityType SharepointOptions_SharepointEntityType `json:"entity_type,omitempty"`
 	// (Optional) File ingestion options for processing files.
 	FileIngestionOptions *FileIngestionOptions `json:"file_ingestion_options,omitempty"`
+	// Required. The SharePoint URL.
+	Url *string `json:"url,omitempty"`
 }
 
 // Smartsheet specific options for ingestion.
@@ -2110,64 +2110,64 @@ type SmartsheetOptions struct {
 // SourceCatalogConfig contains catalog-level custom configuration parameters
 // for each source.
 type SourceCatalogConfig struct {
+	Postgres *PostgresCatalogConfig `json:"postgres,omitempty"`
 	// Source catalog name
-	SourceCatalog *string                `json:"source_catalog,omitempty"`
-	Postgres      *PostgresCatalogConfig `json:"postgres,omitempty"`
+	SourceCatalog *string `json:"source_catalog,omitempty"`
 }
 
 type SourceConfig struct {
-	// Catalog-level source configuration parameters
-	Catalog                  *SourceCatalogConfig      `json:"catalog,omitempty"`
-	GoogleAdsConfig          *GoogleAdsConfig          `json:"google_ads_config,omitempty"`
 	ApiSourceConnectorConfig *ApiSourceConnectorConfig `json:"api_source_connector_config,omitempty"`
+	// Catalog-level source configuration parameters
+	Catalog         *SourceCatalogConfig `json:"catalog,omitempty"`
+	GoogleAdsConfig *GoogleAdsConfig     `json:"google_ads_config,omitempty"`
 }
 
 type StackFrame struct {
 	// Class from which the method call originated
 	DeclaringClass *string `json:"declaring_class,omitempty"`
-	// Name of the method which was called
-	MethodName *string `json:"method_name,omitempty"`
 	// File where the method is defined
 	FileName *string `json:"file_name,omitempty"`
 	// Line from which the method was called
 	LineNumber *int `json:"line_number,omitempty"`
+	// Name of the method which was called
+	MethodName *string `json:"method_name,omitempty"`
 }
 
 type StartUpdateRequest struct {
-	PipelineId *string `json:"pipeline_id,omitempty"`
+	Cause UpdateCause `json:"cause,omitempty"`
+	// Whether the update is started in the development mode. This is recommended
+	// for interactive development and testing. Reuses compute for faster iteration
+	// and disables automatic retries. Not recommended for production.
+	Development *bool `json:"development,omitempty"`
 	// If true, this update will reset all tables before running.
-	FullRefresh *bool       `json:"full_refresh,omitempty"`
-	Cause       UpdateCause `json:"cause,omitempty"`
-	// A list of tables to update without fullRefresh. If both refresh_selection and
-	// full_refresh_selection are empty, this is a full graph update. Full Refresh
-	// on a table means that the states of the table will be reset before the
-	// refresh.
-	RefreshSelection []string `json:"refresh_selection,omitempty"`
+	FullRefresh *bool `json:"full_refresh,omitempty"`
 	// A list of tables to update with fullRefresh. If both refresh_selection and
 	// full_refresh_selection are empty, this is a full graph update. Full Refresh
 	// on a table means that the states of the table will be reset before the
 	// refresh.
 	FullRefreshSelection []string `json:"full_refresh_selection,omitempty"`
-	// A list of flows for which this update should reset the streaming checkpoint.
-	// This selection will not clear the data in the flow's target table. Flows in
-	// this list may also appear in refresh_selection and full_refresh_selection.
-	ResetCheckpointSelection []string `json:"reset_checkpoint_selection,omitempty"`
-	// If true, this update only validates the correctness of pipeline source code
-	// but does not materialize or publish any datasets.
-	ValidateOnly *bool `json:"validate_only,omitempty"`
-	// Whether the update is started in the development mode. This is recommended
-	// for interactive development and testing. Reuses compute for faster iteration
-	// and disables automatic retries. Not recommended for production.
-	Development *bool `json:"development,omitempty"`
-	// The information about the requested rewind operation. If specified this is a
-	// rewind mode update.
-	RewindSpec *RewindSpec `json:"rewind_spec,omitempty"`
 	// Key/value map of parameters to pass to the pipeline execution
 	Parameters map[string]string `json:"parameters,omitempty"`
+	PipelineId *string           `json:"pipeline_id,omitempty"`
+	// A list of tables to update without fullRefresh. If both refresh_selection and
+	// full_refresh_selection are empty, this is a full graph update. Full Refresh
+	// on a table means that the states of the table will be reset before the
+	// refresh.
+	RefreshSelection []string `json:"refresh_selection,omitempty"`
 	// A list of predicate overrides for replace_where flows in this update. Only
 	// replace_where flows may be specified. Flows not listed use their original
 	// predicate.
 	ReplaceWhereOverrides []ReplaceWhereOverride `json:"replace_where_overrides,omitempty"`
+	// A list of flows for which this update should reset the streaming checkpoint.
+	// This selection will not clear the data in the flow's target table. Flows in
+	// this list may also appear in refresh_selection and full_refresh_selection.
+	ResetCheckpointSelection []string `json:"reset_checkpoint_selection,omitempty"`
+	// The information about the requested rewind operation. If specified this is a
+	// rewind mode update.
+	RewindSpec *RewindSpec `json:"rewind_spec,omitempty"`
+	// If true, this update only validates the correctness of pipeline source code
+	// but does not materialize or publish any datasets.
+	ValidateOnly *bool `json:"validate_only,omitempty"`
 }
 
 type StartUpdateResponse struct {
@@ -2180,65 +2180,65 @@ type StopPipelineRequest struct {
 
 // TikTok Ads specific options for ingestion.
 type TikTokAdsOptions struct {
-	// (Optional) Number of days to look back for report tables during incremental
-	// sync to capture late-arriving conversions and attribution data.
-	LookbackWindowDays *int `json:"lookback_window_days,omitempty"`
-	// (Optional) Start date for the initial sync of report tables in YYYY-MM-DD
-	// format. This determines the earliest date from which to sync historical data.
-	SyncStartDate *string `json:"sync_start_date,omitempty"`
-	// Deprecated. Use custom_report_options.dimensions instead.
-	Dimensions []string `json:"dimensions,omitempty"`
-	// Deprecated. Use custom_report_options.metrics instead.
-	Metrics []string `json:"metrics,omitempty"`
-	// Deprecated. Use custom_report_options.report_type instead.
-	ReportType TikTokAdsOptions_TikTokReportType `json:"report_type,omitempty"`
-	// Deprecated. Use custom_report_options.data_level instead.
-	DataLevel TikTokAdsOptions_TikTokDataLevel `json:"data_level,omitempty"`
-	// Deprecated. Use custom_report_options.query_lifetime instead.
-	QueryLifetime *bool `json:"query_lifetime,omitempty"`
 	// (Optional) Custom report definition. When set, the table is treated as a
 	// user-defined TikTok Ads custom report: the connector synthesizes a report
 	// request from the dimensions, metrics, report type, and data level specified
 	// here. Supersedes the deprecated top-level dimensions/metrics/report_type/
 	// data_level/query_lifetime fields above.
 	CustomReportOptions *TikTokAdsOptions_TikTokAdsCustomReportOptions `json:"custom_report_options,omitempty"`
+	// Deprecated. Use custom_report_options.data_level instead.
+	DataLevel TikTokAdsOptions_TikTokDataLevel `json:"data_level,omitempty"`
+	// Deprecated. Use custom_report_options.dimensions instead.
+	Dimensions []string `json:"dimensions,omitempty"`
+	// (Optional) Number of days to look back for report tables during incremental
+	// sync to capture late-arriving conversions and attribution data.
+	LookbackWindowDays *int `json:"lookback_window_days,omitempty"`
+	// Deprecated. Use custom_report_options.metrics instead.
+	Metrics []string `json:"metrics,omitempty"`
+	// Deprecated. Use custom_report_options.query_lifetime instead.
+	QueryLifetime *bool `json:"query_lifetime,omitempty"`
+	// Deprecated. Use custom_report_options.report_type instead.
+	ReportType TikTokAdsOptions_TikTokReportType `json:"report_type,omitempty"`
+	// (Optional) Start date for the initial sync of report tables in YYYY-MM-DD
+	// format. This determines the earliest date from which to sync historical data.
+	SyncStartDate *string `json:"sync_start_date,omitempty"`
 }
 
 // User-defined custom report for the TikTok Ads connector. Groups the
 // dimensions + metrics + report type + data level that define a TikTok Ads
 // custom report request..
 type TikTokAdsOptions_TikTokAdsCustomReportOptions struct {
+	// (Optional) Data level for the report. If not specified, defaults to
+	// AUCTION_CAMPAIGN.
+	DataLevel TikTokAdsOptions_TikTokDataLevel `json:"data_level,omitempty"`
 	// (Optional) Dimensions to include in the report (e.g. "campaign_id",
 	// "adgroup_id", "ad_id", "stat_time_day", "stat_time_hour").
 	Dimensions []string `json:"dimensions,omitempty"`
 	// (Optional) Metrics to include in the report (e.g. "spend", "impressions",
 	// "clicks", "conversion", "cpc").
 	Metrics []string `json:"metrics,omitempty"`
-	// (Optional) Report type for the TikTok Ads API. If not specified, defaults to
-	// BASIC.
-	ReportType TikTokAdsOptions_TikTokReportType `json:"report_type,omitempty"`
-	// (Optional) Data level for the report. If not specified, defaults to
-	// AUCTION_CAMPAIGN.
-	DataLevel TikTokAdsOptions_TikTokDataLevel `json:"data_level,omitempty"`
 	// (Optional) Whether to request lifetime metrics (all-time aggregated data).
 	// When true, the report returns all-time data. If not specified, defaults to
 	// false.
 	QueryLifetime *bool `json:"query_lifetime,omitempty"`
+	// (Optional) Report type for the TikTok Ads API. If not specified, defaults to
+	// BASIC.
+	ReportType TikTokAdsOptions_TikTokReportType `json:"report_type,omitempty"`
 }
 
 // Specifies how to transform binary data into structured data..
 type Transformer struct {
+	AvroOptions *AvroTransformerOptions `json:"avro_options,omitempty"`
 	// Required: the wire format of the data.
-	Format          Transformer_Format          `json:"format,omitempty"`
-	JsonOptions     *JsonTransformerOptions     `json:"json_options,omitempty"`
-	AvroOptions     *AvroTransformerOptions     `json:"avro_options,omitempty"`
-	ProtobufOptions *ProtobufTransformerOptions `json:"protobuf_options,omitempty"`
+	Format Transformer_Format `json:"format,omitempty"`
 	// Optional input column to transform. When set, the transformer reads from this
 	// column instead of the default source column.
-	InputColumn *string `json:"input_column,omitempty"`
+	InputColumn *string                 `json:"input_column,omitempty"`
+	JsonOptions *JsonTransformerOptions `json:"json_options,omitempty"`
 	// Optional output column name. When set, the transformed result is written to
 	// this column instead of replacing the input column.
-	OutputColumn *string `json:"output_column,omitempty"`
+	OutputColumn    *string                     `json:"output_column,omitempty"`
+	ProtobufOptions *ProtobufTransformerOptions `json:"protobuf_options,omitempty"`
 }
 
 // Information about truncations applied to this event..
@@ -2256,48 +2256,48 @@ type Truncation_TruncationDetail struct {
 }
 
 type UpdateInfo struct {
-	// The ID of the pipeline.
-	PipelineId *string `json:"pipeline_id,omitempty"`
-	// The ID of this update.
-	UpdateId *string `json:"update_id,omitempty"`
+	// What triggered this update.
+	Cause UpdateCause `json:"cause,omitempty"`
+	// The ID of the cluster that the update is running on.
+	ClusterId *string `json:"cluster_id,omitempty"`
 	// The pipeline configuration with system defaults applied where unspecified by
 	// the user. Not returned by ListUpdates.
 	Config *PipelineSpec `json:"config,omitempty"`
-	// What triggered this update.
-	Cause UpdateCause `json:"cause,omitempty"`
-	// The update state.
-	State UpdateState `json:"state,omitempty"`
-	// The ID of the cluster that the update is running on.
-	ClusterId *string `json:"cluster_id,omitempty"`
 	// The time when this update was created.
 	CreationTime *int64 `json:"creation_time,omitempty"`
 	// If true, this update will reset all tables before running.
 	FullRefresh *bool `json:"full_refresh,omitempty"`
-	// A list of tables to update without fullRefresh. If both refresh_selection and
-	// full_refresh_selection are empty, this is a full graph update. Full Refresh
-	// on a table means that the states of the table will be reset before the
-	// refresh.
-	RefreshSelection []string `json:"refresh_selection,omitempty"`
 	// A list of tables to update with fullRefresh. If both refresh_selection and
 	// full_refresh_selection are empty, this is a full graph update. Full Refresh
 	// on a table means that the states of the table will be reset before the
 	// refresh.
 	FullRefreshSelection []string `json:"full_refresh_selection,omitempty"`
-	// If true, this update only validates the correctness of pipeline source code
-	// but does not materialize or publish any datasets.
-	ValidateOnly *bool `json:"validate_only,omitempty"`
 	// Indicates whether the update is either part of a continuous job run, or
 	// running in legacy continuous pipeline mode. Returned only for GetUpdate; not
 	// populated in ListUpdates responses.
 	Mode UpdateMode `json:"mode,omitempty"`
 	// Key/value map of parameters used to initiate the update
 	Parameters map[string]string `json:"parameters,omitempty"`
+	// The ID of the pipeline.
+	PipelineId *string `json:"pipeline_id,omitempty"`
+	// A list of tables to update without fullRefresh. If both refresh_selection and
+	// full_refresh_selection are empty, this is a full graph update. Full Refresh
+	// on a table means that the states of the table will be reset before the
+	// refresh.
+	RefreshSelection []string `json:"refresh_selection,omitempty"`
+	// The update state.
+	State UpdateState `json:"state,omitempty"`
+	// The ID of this update.
+	UpdateId *string `json:"update_id,omitempty"`
+	// If true, this update only validates the correctness of pipeline source code
+	// but does not materialize or publish any datasets.
+	ValidateOnly *bool `json:"validate_only,omitempty"`
 }
 
 type UpdateStateInfo struct {
-	UpdateId     *string     `json:"update_id,omitempty"`
-	State        UpdateState `json:"state,omitempty"`
 	CreationTime *string     `json:"creation_time,omitempty"`
+	State        UpdateState `json:"state,omitempty"`
+	UpdateId     *string     `json:"update_id,omitempty"`
 }
 
 // Zendesk Support specific options for ingestion.

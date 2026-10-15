@@ -27,11 +27,11 @@ const (
 
 // Create an example..
 type CreateExampleRequest struct {
+	// The example to create under the parent Knowledge Assistant.
+	Example *Example `json:"example,omitempty"`
 	// Parent resource where this example will be created. Format:
 	// knowledge-assistants/{knowledge_assistant_id}
 	Parent *string `json:"parent,omitempty"`
-	// The example to create under the parent Knowledge Assistant.
-	Example *Example `json:"example,omitempty"`
 }
 
 type CreateKnowledgeAssistantRequest struct {
@@ -40,37 +40,37 @@ type CreateKnowledgeAssistantRequest struct {
 }
 
 type CreateKnowledgeSourceRequest struct {
+	KnowledgeSource *KnowledgeSource `json:"knowledge_source,omitempty"`
 	// Parent resource where this source will be created. Format:
 	// knowledge-assistants/{knowledge_assistant_id}
-	Parent          *string          `json:"parent,omitempty"`
-	KnowledgeSource *KnowledgeSource `json:"knowledge_source,omitempty"`
+	Parent *string `json:"parent,omitempty"`
 }
 
 // An example associated with a Knowledge Assistant. Contains a question and
 // guidelines for how the assistant should respond..
 type Example struct {
+	// Timestamp when this example was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
+	// The universally unique identifier (UUID) of the example.
+	ExampleId *string `json:"example_id,omitempty"`
+	// Guidelines for answering the question. Optional — examples may be created
+	// with just a question; the front-end form does not require guidelines.
+	Guidelines []string `json:"guidelines,omitempty"`
 	// Full resource name:
 	// knowledge-assistants/{knowledge_assistant_id}/examples/{example_id}
 	Name *string `json:"name,omitempty"`
 	// The example question.
 	Question *string `json:"question,omitempty"`
-	// Guidelines for answering the question. Optional — examples may be created
-	// with just a question; the front-end form does not require guidelines.
-	Guidelines []string `json:"guidelines,omitempty"`
-	// The universally unique identifier (UUID) of the example.
-	ExampleId *string `json:"example_id,omitempty"`
-	// Timestamp when this example was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
 	// Timestamp when this example was last updated.
 	UpdateTime *types.Time `json:"update_time,omitempty"`
 }
 
 // FileTableSpec specifies a file table source configuration..
 type FileTableSpec struct {
-	// Full UC name of the table, in the format of {CATALOG}.{SCHEMA}.{TABLE_NAME}.
-	TableName *string `json:"table_name,omitempty"`
 	// The name of the column containing BINARY file content to be indexed.
 	FileCol *string `json:"file_col,omitempty"`
+	// Full UC name of the table, in the format of {CATALOG}.{SCHEMA}.{TABLE_NAME}.
+	TableName *string `json:"table_name,omitempty"`
 }
 
 // FilesSpec specifies a files source configuration..
@@ -81,49 +81,49 @@ type FilesSpec struct {
 
 // IndexSpec specifies a vector search index source configuration..
 type IndexSpec struct {
+	// The column that specifies a link or reference to where the information came
+	// from.
+	DocUriCol *string `json:"doc_uri_col,omitempty"`
 	// Full UC name of the vector search index, in the format of
 	// {CATALOG}.{SCHEMA}.{INDEX_NAME}.
 	IndexName *string `json:"index_name,omitempty"`
 	// The column that includes the document text for retrieval.
 	TextCol *string `json:"text_col,omitempty"`
-	// The column that specifies a link or reference to where the information came
-	// from.
-	DocUriCol *string `json:"doc_uri_col,omitempty"`
 }
 
 // Entity message that represents a knowledge assistant. Note: REQUIRED
 // annotations below represent create-time requirements. For updates, required
 // fields are determined by the update mask..
 type KnowledgeAssistant struct {
+	// Creation timestamp.
+	CreateTime *types.Time `json:"create_time,omitempty"`
+	// The creator of the Knowledge Assistant.
+	Creator *string `json:"creator,omitempty"`
+	// Description of what this agent can do (user-facing). Required when creating a
+	// Knowledge Assistant. When updating a Knowledge Assistant, optional unless
+	// included in update_mask.
+	Description *string `json:"description,omitempty"`
+	// The display name of the Knowledge Assistant, unique at workspace level.
+	// Required when creating a Knowledge Assistant. When updating a Knowledge
+	// Assistant, optional unless included in update_mask.
+	DisplayName *string `json:"display_name,omitempty"`
+	// The name of the knowledge assistant agent endpoint.
+	EndpointName *string `json:"endpoint_name,omitempty"`
+	// Error details when the Knowledge Assistant is in FAILED state.
+	ErrorInfo *string `json:"error_info,omitempty"`
+	// The MLflow experiment ID.
+	ExperimentId *string `json:"experiment_id,omitempty"`
+	// Deprecated: use knowledge_assistant_id instead.
+	Id *string `json:"id,omitempty"`
+	// Additional global instructions on how the agent should generate answers.
+	// Optional on create and update. When updating a Knowledge Assistant, include
+	// this field in update_mask to modify it.
+	Instructions *string `json:"instructions,omitempty"`
 	// The resource name of the Knowledge Assistant. Format:
 	// knowledge-assistants/{knowledge_assistant_id}
 	Name *string `json:"name,omitempty"`
 	// State of the Knowledge Assistant. Not returned in List responses.
 	State KnowledgeAssistant_State `json:"state,omitempty"`
-	// Deprecated: use knowledge_assistant_id instead.
-	Id *string `json:"id,omitempty"`
-	// The display name of the Knowledge Assistant, unique at workspace level.
-	// Required when creating a Knowledge Assistant. When updating a Knowledge
-	// Assistant, optional unless included in update_mask.
-	DisplayName *string `json:"display_name,omitempty"`
-	// Description of what this agent can do (user-facing). Required when creating a
-	// Knowledge Assistant. When updating a Knowledge Assistant, optional unless
-	// included in update_mask.
-	Description *string `json:"description,omitempty"`
-	// Additional global instructions on how the agent should generate answers.
-	// Optional on create and update. When updating a Knowledge Assistant, include
-	// this field in update_mask to modify it.
-	Instructions *string `json:"instructions,omitempty"`
-	// The creator of the Knowledge Assistant.
-	Creator *string `json:"creator,omitempty"`
-	// Creation timestamp.
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	// The name of the knowledge assistant agent endpoint.
-	EndpointName *string `json:"endpoint_name,omitempty"`
-	// The MLflow experiment ID.
-	ExperimentId *string `json:"experiment_id,omitempty"`
-	// Error details when the Knowledge Assistant is in FAILED state.
-	ErrorInfo *string `json:"error_info,omitempty"`
 }
 
 // KnowledgeSource represents a source of knowledge for the KnowledgeAssistant.
@@ -131,38 +131,35 @@ type KnowledgeAssistant struct {
 // REQUIRED annotations below represent create-time requirements. For updates,
 // required fields are determined by the update mask..
 type KnowledgeSource struct {
-	// Full resource name:
-	// knowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}
-	Name *string `json:"name,omitempty"`
-	// Human-readable display name of the knowledge source. Required when creating a
-	// Knowledge Source. When updating a Knowledge Source, optional unless included
-	// in update_mask.
-	DisplayName *string `json:"display_name,omitempty"`
+	// Timestamp when this knowledge source was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
 	// Description of the knowledge source. Required when creating a Knowledge
 	// Source. When updating a Knowledge Source, optional unless included in
 	// update_mask.
 	Description *string `json:"description,omitempty"`
+	// Human-readable display name of the knowledge source. Required when creating a
+	// Knowledge Source. When updating a Knowledge Source, optional unless included
+	// in update_mask.
+	DisplayName *string        `json:"display_name,omitempty"`
+	FileTable   *FileTableSpec `json:"file_table,omitempty"`
+	Files       *FilesSpec     `json:"files,omitempty"`
+	Id          *string        `json:"id,omitempty"`
+	Index       *IndexSpec     `json:"index,omitempty"`
+	// Timestamp representing the cutoff before which content in this knowledge
+	// source is being ingested.
+	KnowledgeCutoffTime *types.Time `json:"knowledge_cutoff_time,omitempty"`
+	// Full resource name:
+	// knowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}
+	Name *string `json:"name,omitempty"`
 	// The type of the source: "index", "files", or "file_table". Required when
 	// creating a Knowledge Source. When updating a Knowledge Source, this field is
 	// ignored.
 	SourceType *string               `json:"source_type,omitempty"`
-	Index      *IndexSpec            `json:"index,omitempty"`
-	Files      *FilesSpec            `json:"files,omitempty"`
-	FileTable  *FileTableSpec        `json:"file_table,omitempty"`
 	State      KnowledgeSource_State `json:"state,omitempty"`
-	Id         *string               `json:"id,omitempty"`
-	// Timestamp representing the cutoff before which content in this knowledge
-	// source is being ingested.
-	KnowledgeCutoffTime *types.Time `json:"knowledge_cutoff_time,omitempty"`
-	// Timestamp when this knowledge source was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
 }
 
 // List examples..
 type ListExamplesRequest struct {
-	// Parent resource to list from. Format:
-	// knowledge-assistants/{knowledge_assistant_id}
-	Parent *string `json:"parent,omitempty"`
 	// The maximum number of examples to return. If unspecified, at most 100
 	// examples will be returned. The maximum value is 100; values above 100 will be
 	// coerced to 100.
@@ -171,6 +168,9 @@ type ListExamplesRequest struct {
 	// retrieve the subsequent page. If unspecified, the first page will be
 	// returned.
 	PageToken *string `json:"page_token,omitempty"`
+	// Parent resource to list from. Format:
+	// knowledge-assistants/{knowledge_assistant_id}
+	Parent *string `json:"parent,omitempty"`
 }
 
 // A list of Knowledge Assistant examples..
@@ -200,11 +200,11 @@ type ListKnowledgeAssistantsResponse struct {
 }
 
 type ListKnowledgeSourcesRequest struct {
-	// Parent resource to list from. Format:
-	// knowledge-assistants/{knowledge_assistant_id}
-	Parent    *string `json:"parent,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
 	PageToken *string `json:"page_token,omitempty"`
+	// Parent resource to list from. Format:
+	// knowledge-assistants/{knowledge_assistant_id}
+	Parent *string `json:"parent,omitempty"`
 }
 
 type ListKnowledgeSourcesResponse struct {
@@ -220,10 +220,10 @@ type SyncKnowledgeSourcesRequest struct {
 
 // Update an example..
 type UpdateExampleRequest struct {
+	Example *Example `json:"example,omitempty"`
 	// The resource name of the example to update. Format:
 	// knowledge-assistants/{knowledge_assistant_id}/examples/{example_id}
-	Name    *string  `json:"name,omitempty"`
-	Example *Example `json:"example,omitempty"`
+	Name *string `json:"name,omitempty"`
 	// Comma-delimited list of fields to update on the example. Allowed values:
 	// `question`, `guidelines`. Examples: - `question` - `question,guidelines`
 	UpdateMask *string `json:"update_mask,omitempty"`
@@ -242,13 +242,13 @@ type UpdateKnowledgeAssistantRequest struct {
 }
 
 type UpdateKnowledgeSourceRequest struct {
-	// The resource name of the Knowledge Source to update. Format:
-	// knowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}
-	Name *string `json:"name,omitempty"`
 	// The Knowledge Source update payload. Only fields listed in update_mask are
 	// updated. REQUIRED annotations on Knowledge Source fields describe create-time
 	// requirements and do not mean all those fields are required for update.
 	KnowledgeSource *KnowledgeSource `json:"knowledge_source,omitempty"`
+	// The resource name of the Knowledge Source to update. Format:
+	// knowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}
+	Name *string `json:"name,omitempty"`
 	// Comma-delimited list of fields to update on the Knowledge Source. Allowed
 	// values: `display_name`, `description`. Examples: - `display_name` -
 	// `display_name,description`

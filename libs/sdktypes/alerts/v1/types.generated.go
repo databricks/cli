@@ -34,25 +34,10 @@ const (
 )
 
 type Alert struct {
-	// UUID identifying the alert.
-	Id *string `json:"id,omitempty"`
-	// The display name of the alert.
-	DisplayName *string `json:"display_name,omitempty"`
-	// UUID of the query attached to the alert.
-	QueryId *string `json:"query_id,omitempty"`
-	// Current state of the alert's trigger status. This field is set to UNKNOWN if
-	// the alert has not yet been evaluated or ran into an error during the last
-	// evaluation.
-	State AlertState `json:"state,omitempty"`
-	// Number of seconds an alert must wait after being triggered to rearm itself.
-	// After rearming, it can be triggered again. If 0 or not specified, the alert
-	// will not be triggered again.
-	SecondsToRetrigger *int `json:"seconds_to_retrigger,omitempty"`
-	// The workspace state of the alert. Used for tracking trashed status.
-	LifecycleState LifecycleState `json:"lifecycle_state,omitempty"`
-	// Timestamp when the alert was last triggered, if the alert has been triggered
-	// before.
-	TriggerTime *types.Time `json:"trigger_time,omitempty"`
+	// Trigger conditions of the alert.
+	Condition *AlertCondition `json:"condition,omitempty"`
+	// The timestamp indicating when the alert was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
 	// Custom body of alert notification, if it exists. See
 	// [here](/sql/user/alerts/index.html) for custom templating instructions.
 	CustomBody *string `json:"custom_body,omitempty"`
@@ -60,22 +45,39 @@ type Alert struct {
 	// subject entries and Slack notification headers, for example. See
 	// [here](/sql/user/alerts/index.html) for custom templating instructions.
 	CustomSubject *string `json:"custom_subject,omitempty"`
-	// Trigger conditions of the alert.
-	Condition *AlertCondition `json:"condition,omitempty"`
+	// The display name of the alert.
+	DisplayName *string `json:"display_name,omitempty"`
+	// UUID identifying the alert.
+	Id *string `json:"id,omitempty"`
+	// The workspace state of the alert. Used for tracking trashed status.
+	LifecycleState LifecycleState `json:"lifecycle_state,omitempty"`
+	// Whether to notify alert subscribers when alert returns back to normal.
+	NotifyOnOk *bool `json:"notify_on_ok,omitempty"`
 	// The owner's username. This field is set to "Unavailable" if the user has been
 	// deleted.
 	OwnerUserName *string `json:"owner_user_name,omitempty"`
 	// The workspace path of the folder containing the alert.
 	ParentPath *string `json:"parent_path,omitempty"`
-	// The timestamp indicating when the alert was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
+	// UUID of the query attached to the alert.
+	QueryId *string `json:"query_id,omitempty"`
+	// Number of seconds an alert must wait after being triggered to rearm itself.
+	// After rearming, it can be triggered again. If 0 or not specified, the alert
+	// will not be triggered again.
+	SecondsToRetrigger *int `json:"seconds_to_retrigger,omitempty"`
+	// Current state of the alert's trigger status. This field is set to UNKNOWN if
+	// the alert has not yet been evaluated or ran into an error during the last
+	// evaluation.
+	State AlertState `json:"state,omitempty"`
+	// Timestamp when the alert was last triggered, if the alert has been triggered
+	// before.
+	TriggerTime *types.Time `json:"trigger_time,omitempty"`
 	// The timestamp indicating when the alert was updated.
 	UpdateTime *types.Time `json:"update_time,omitempty"`
-	// Whether to notify alert subscribers when alert returns back to normal.
-	NotifyOnOk *bool `json:"notify_on_ok,omitempty"`
 }
 
 type AlertCondition struct {
+	// Alert state if result is empty.
+	EmptyResultState AlertState `json:"empty_result_state,omitempty"`
 	// Operator used for comparison in alert evaluation.
 	Op AlertOperator `json:"op,omitempty"`
 	// Name of the column from the query result to use for comparison in alert
@@ -83,13 +85,11 @@ type AlertCondition struct {
 	Operand *AlertOperand `json:"operand,omitempty"`
 	// Threshold value used for comparison in alert evaluation.
 	Threshold *AlertOperand `json:"threshold,omitempty"`
-	// Alert state if result is empty.
-	EmptyResultState AlertState `json:"empty_result_state,omitempty"`
 }
 
 type AlertOperand struct {
-	Value  *AlertOperandValue  `json:"value,omitempty"`
 	Column *AlertOperandColumn `json:"column,omitempty"`
+	Value  *AlertOperandValue  `json:"value,omitempty"`
 }
 
 type AlertOperandColumn struct {
@@ -97,9 +97,9 @@ type AlertOperandColumn struct {
 }
 
 type AlertOperandValue struct {
-	StringValue *string  `json:"string_value,omitempty"`
-	DoubleValue *float64 `json:"double_value,omitempty"`
 	BoolValue   *bool    `json:"bool_value,omitempty"`
+	DoubleValue *float64 `json:"double_value,omitempty"`
+	StringValue *string  `json:"string_value,omitempty"`
 }
 
 type CreateAlertRequest struct {
@@ -111,14 +111,8 @@ type CreateAlertRequest struct {
 }
 
 type CreateAlertRequestAlert struct {
-	// The display name of the alert.
-	DisplayName *string `json:"display_name,omitempty"`
-	// UUID of the query attached to the alert.
-	QueryId *string `json:"query_id,omitempty"`
-	// Number of seconds an alert must wait after being triggered to rearm itself.
-	// After rearming, it can be triggered again. If 0 or not specified, the alert
-	// will not be triggered again.
-	SecondsToRetrigger *int `json:"seconds_to_retrigger,omitempty"`
+	// Trigger conditions of the alert.
+	Condition *AlertCondition `json:"condition,omitempty"`
 	// Custom body of alert notification, if it exists. See
 	// [here](/sql/user/alerts/index.html) for custom templating instructions.
 	CustomBody *string `json:"custom_body,omitempty"`
@@ -126,44 +120,83 @@ type CreateAlertRequestAlert struct {
 	// subject entries and Slack notification headers, for example. See
 	// [here](/sql/user/alerts/index.html) for custom templating instructions.
 	CustomSubject *string `json:"custom_subject,omitempty"`
-	// Trigger conditions of the alert.
-	Condition *AlertCondition `json:"condition,omitempty"`
-	// The workspace path of the folder containing the alert.
-	ParentPath *string `json:"parent_path,omitempty"`
+	// The display name of the alert.
+	DisplayName *string `json:"display_name,omitempty"`
 	// Whether to notify alert subscribers when alert returns back to normal.
 	NotifyOnOk *bool `json:"notify_on_ok,omitempty"`
+	// The workspace path of the folder containing the alert.
+	ParentPath *string `json:"parent_path,omitempty"`
+	// UUID of the query attached to the alert.
+	QueryId *string `json:"query_id,omitempty"`
+	// Number of seconds an alert must wait after being triggered to rearm itself.
+	// After rearming, it can be triggered again. If 0 or not specified, the alert
+	// will not be triggered again.
+	SecondsToRetrigger *int `json:"seconds_to_retrigger,omitempty"`
 }
 
 type ListAlertsRequest struct {
-	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
+	PageToken *string `json:"page_token,omitempty"`
 }
 
 type ListAlertsResponse struct {
-	Results       []ListAlertsResponseAlert `json:"results,omitempty"`
 	NextPageToken *string                   `json:"next_page_token,omitempty"`
+	Results       []ListAlertsResponseAlert `json:"results,omitempty"`
 }
 
 type ListAlertsResponseAlert struct {
-	// UUID identifying the alert.
-	Id *string `json:"id,omitempty"`
+	// Trigger conditions of the alert.
+	Condition *AlertCondition `json:"condition,omitempty"`
+	// The timestamp indicating when the alert was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
+	// Custom body of alert notification, if it exists. See
+	// [here](/sql/user/alerts/index.html) for custom templating instructions.
+	CustomBody *string `json:"custom_body,omitempty"`
+	// Custom subject of alert notification, if it exists. This can include email
+	// subject entries and Slack notification headers, for example. See
+	// [here](/sql/user/alerts/index.html) for custom templating instructions.
+	CustomSubject *string `json:"custom_subject,omitempty"`
 	// The display name of the alert.
 	DisplayName *string `json:"display_name,omitempty"`
+	// UUID identifying the alert.
+	Id *string `json:"id,omitempty"`
+	// The workspace state of the alert. Used for tracking trashed status.
+	LifecycleState LifecycleState `json:"lifecycle_state,omitempty"`
+	// Whether to notify alert subscribers when alert returns back to normal.
+	NotifyOnOk *bool `json:"notify_on_ok,omitempty"`
+	// The owner's username. This field is set to "Unavailable" if the user has been
+	// deleted.
+	OwnerUserName *string `json:"owner_user_name,omitempty"`
 	// UUID of the query attached to the alert.
 	QueryId *string `json:"query_id,omitempty"`
+	// Number of seconds an alert must wait after being triggered to rearm itself.
+	// After rearming, it can be triggered again. If 0 or not specified, the alert
+	// will not be triggered again.
+	SecondsToRetrigger *int `json:"seconds_to_retrigger,omitempty"`
 	// Current state of the alert's trigger status. This field is set to UNKNOWN if
 	// the alert has not yet been evaluated or ran into an error during the last
 	// evaluation.
 	State AlertState `json:"state,omitempty"`
-	// Number of seconds an alert must wait after being triggered to rearm itself.
-	// After rearming, it can be triggered again. If 0 or not specified, the alert
-	// will not be triggered again.
-	SecondsToRetrigger *int `json:"seconds_to_retrigger,omitempty"`
-	// The workspace state of the alert. Used for tracking trashed status.
-	LifecycleState LifecycleState `json:"lifecycle_state,omitempty"`
 	// Timestamp when the alert was last triggered, if the alert has been triggered
 	// before.
 	TriggerTime *types.Time `json:"trigger_time,omitempty"`
+	// The timestamp indicating when the alert was updated.
+	UpdateTime *types.Time `json:"update_time,omitempty"`
+}
+
+type UpdateAlertRequest struct {
+	Alert *UpdateAlertRequestAlert `json:"alert,omitempty"`
+	// If true, automatically resolve alert display name conflicts. Otherwise, fail
+	// the request if the alert's display name conflicts with an existing alert's
+	// display name.
+	AutoResolveDisplayName *bool   `json:"auto_resolve_display_name,omitempty"`
+	Id                     *string `json:"id,omitempty"`
+	UpdateMask             *string `json:"update_mask,omitempty"`
+}
+
+type UpdateAlertRequestAlert struct {
+	// Trigger conditions of the alert.
+	Condition *AlertCondition `json:"condition,omitempty"`
 	// Custom body of alert notification, if it exists. See
 	// [here](/sql/user/alerts/index.html) for custom templating instructions.
 	CustomBody *string `json:"custom_body,omitempty"`
@@ -171,52 +204,19 @@ type ListAlertsResponseAlert struct {
 	// subject entries and Slack notification headers, for example. See
 	// [here](/sql/user/alerts/index.html) for custom templating instructions.
 	CustomSubject *string `json:"custom_subject,omitempty"`
-	// Trigger conditions of the alert.
-	Condition *AlertCondition `json:"condition,omitempty"`
+	// The display name of the alert.
+	DisplayName *string `json:"display_name,omitempty"`
+	// Whether to notify alert subscribers when alert returns back to normal.
+	NotifyOnOk *bool `json:"notify_on_ok,omitempty"`
 	// The owner's username. This field is set to "Unavailable" if the user has been
 	// deleted.
 	OwnerUserName *string `json:"owner_user_name,omitempty"`
-	// The timestamp indicating when the alert was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	// The timestamp indicating when the alert was updated.
-	UpdateTime *types.Time `json:"update_time,omitempty"`
-	// Whether to notify alert subscribers when alert returns back to normal.
-	NotifyOnOk *bool `json:"notify_on_ok,omitempty"`
-}
-
-type UpdateAlertRequest struct {
-	Alert      *UpdateAlertRequestAlert `json:"alert,omitempty"`
-	UpdateMask *string                  `json:"update_mask,omitempty"`
-	Id         *string                  `json:"id,omitempty"`
-	// If true, automatically resolve alert display name conflicts. Otherwise, fail
-	// the request if the alert's display name conflicts with an existing alert's
-	// display name.
-	AutoResolveDisplayName *bool `json:"auto_resolve_display_name,omitempty"`
-}
-
-type UpdateAlertRequestAlert struct {
-	// The display name of the alert.
-	DisplayName *string `json:"display_name,omitempty"`
 	// UUID of the query attached to the alert.
 	QueryId *string `json:"query_id,omitempty"`
 	// Number of seconds an alert must wait after being triggered to rearm itself.
 	// After rearming, it can be triggered again. If 0 or not specified, the alert
 	// will not be triggered again.
 	SecondsToRetrigger *int `json:"seconds_to_retrigger,omitempty"`
-	// Custom body of alert notification, if it exists. See
-	// [here](/sql/user/alerts/index.html) for custom templating instructions.
-	CustomBody *string `json:"custom_body,omitempty"`
-	// Custom subject of alert notification, if it exists. This can include email
-	// subject entries and Slack notification headers, for example. See
-	// [here](/sql/user/alerts/index.html) for custom templating instructions.
-	CustomSubject *string `json:"custom_subject,omitempty"`
-	// Trigger conditions of the alert.
-	Condition *AlertCondition `json:"condition,omitempty"`
-	// The owner's username. This field is set to "Unavailable" if the user has been
-	// deleted.
-	OwnerUserName *string `json:"owner_user_name,omitempty"`
-	// Whether to notify alert subscribers when alert returns back to normal.
-	NotifyOnOk *bool `json:"notify_on_ok,omitempty"`
 }
 
 // AlertToSDK converts the mirror to the sdk-go type.

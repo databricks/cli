@@ -25,25 +25,25 @@ type ListPolicyFamiliesRequest struct {
 }
 
 type ListPolicyFamiliesResponse struct {
-	// List of policy families.
-	PolicyFamilies []PolicyFamily `json:"policy_families,omitempty"`
 	// A token that can be used to get the next page of results. If not present,
 	// there are no more results to show.
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// List of policy families.
+	PolicyFamilies []PolicyFamily `json:"policy_families,omitempty"`
 }
 
 type PolicyFamily struct {
-	// Unique identifier for the policy family.
-	PolicyFamilyId *string `json:"policy_family_id,omitempty"`
-	// Name of the policy family.
-	Name *string `json:"name,omitempty"`
-	// Human-readable description of the purpose of the policy family.
-	Description *string `json:"description,omitempty"`
 	// Policy definition document expressed in [Databricks Cluster Policy Definition
 	// Language].
 	//
 	// [Databricks Cluster Policy Definition Language]: https://docs.databricks.com/administration-guide/clusters/policy-definition.html
 	Definition *string `json:"definition,omitempty"`
+	// Human-readable description of the purpose of the policy family.
+	Description *string `json:"description,omitempty"`
+	// Name of the policy family.
+	Name *string `json:"name,omitempty"`
+	// Unique identifier for the policy family.
+	PolicyFamilyId *string `json:"policy_family_id,omitempty"`
 }
 
 // GetPolicyFamilyRequestToSDK converts the mirror to the sdk-go type.

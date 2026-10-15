@@ -65,11 +65,6 @@ const (
 )
 
 type AccessRequestDestinations struct {
-	// The access request destinations for the securable.
-	Destinations []NotificationDestination `json:"destinations,omitempty"`
-	// The securable for which the access request destinations are being modified or
-	// read.
-	Securable *Securable `json:"securable,omitempty"`
 	// Indicates whether any destinations are hidden from the caller due to a lack
 	// of permissions. This value is true if the caller does not have permission to
 	// see all destinations.
@@ -78,12 +73,17 @@ type AccessRequestDestinations struct {
 	// same value as securable (if destination is set directly on the securable) or
 	// the nearest parent securable with destinations set.
 	DestinationSourceSecurable *Securable `json:"destination_source_securable,omitempty"`
-	// The type of the securable. Redundant with the type in the securable object,
-	// but necessary for Terraform integration
-	SecurableType *string `json:"securable_type,omitempty"`
+	// The access request destinations for the securable.
+	Destinations []NotificationDestination `json:"destinations,omitempty"`
 	// The full name of the securable. Redundant with the name in the securable
 	// object, but necessary for Terraform integration
 	FullName *string `json:"full_name,omitempty"`
+	// The securable for which the access request destinations are being modified or
+	// read.
+	Securable *Securable `json:"securable,omitempty"`
+	// The type of the securable. Redundant with the type in the securable object,
+	// but necessary for Terraform integration
+	SecurableType *string `json:"securable_type,omitempty"`
 }
 
 type BatchCreateAccessRequestsRequest struct {
@@ -152,22 +152,22 @@ type Principal struct {
 // Generic definition of a securable, which is uniquely defined in a metastore
 // by its type and full name..
 type Securable struct {
-	// Required. The type of securable (catalog/schema/table). Optional if
-	// resource_name is present.
-	Type SecurableType `json:"type,omitempty"`
 	// Required. The full name of the catalog/schema/table. Optional if
 	// resource_name is present.
 	FullName *string `json:"full_name,omitempty"`
 	// Optional. The name of the Share object that contains the securable when the
 	// securable is getting shared in D2D Delta Sharing.
 	ProviderShare *string `json:"provider_share,omitempty"`
+	// Required. The type of securable (catalog/schema/table). Optional if
+	// resource_name is present.
+	Type SecurableType `json:"type,omitempty"`
 }
 
 type SecurablePermissions struct {
-	// The securable for which the access request destinations are being requested.
-	Securable *Securable `json:"securable,omitempty"`
 	// List of requested Unity Catalog permissions.
 	Permissions []string `json:"permissions,omitempty"`
+	// The securable for which the access request destinations are being requested.
+	Securable *Securable `json:"securable,omitempty"`
 }
 
 type UpdateAccessRequestDestinationsRequest struct {

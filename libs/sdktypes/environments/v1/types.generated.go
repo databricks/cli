@@ -112,23 +112,23 @@ const (
 
 // Databricks Error that is returned by all Databricks APIs..
 type ApiError struct {
+	Details    []json.RawMessage `json:"details,omitempty"`
 	ErrorCode  ErrorCode         `json:"error_code,omitempty"`
 	Message    *string           `json:"message,omitempty"`
 	StackTrace *string           `json:"stack_trace,omitempty"`
-	Details    []json.RawMessage `json:"details,omitempty"`
 }
 
 // Request message for CreateWorkspaceBaseEnvironment..
 type CreateWorkspaceBaseEnvironmentRequest struct {
+	// A unique identifier for this request. A random UUID is recommended. This
+	// request is only idempotent if a request_id is provided.
+	RequestId *string `json:"request_id,omitempty"`
 	// Required. The workspace base environment to create.
 	WorkspaceBaseEnvironment *WorkspaceBaseEnvironment `json:"workspace_base_environment,omitempty"`
 	// The ID to use for the workspace base environment, which will become the final
 	// component of the resource name. This value should be 4-63 characters, and
 	// valid characters are /[a-z][0-9]-/.
 	WorkspaceBaseEnvironmentId *string `json:"workspace_base_environment_id,omitempty"`
-	// A unique identifier for this request. A random UUID is recommended. This
-	// request is only idempotent if a request_id is provided.
-	RequestId *string `json:"request_id,omitempty"`
 }
 
 // A singleton resource representing the default workspace base environment
@@ -136,15 +136,15 @@ type CreateWorkspaceBaseEnvironmentRequest struct {
 // are used as defaults for serverless notebooks and jobs in the workspace, for
 // both CPU and GPU compute types..
 type DefaultWorkspaceBaseEnvironment struct {
-	// The resource name of this singleton resource. Format:
-	// default-workspace-base-environment
-	Name *string `json:"name,omitempty"`
 	// The default workspace base environment for CPU compute. Format:
 	// workspace-base-environments/{workspace_base_environment}
 	CpuWorkspaceBaseEnvironment *string `json:"cpu_workspace_base_environment,omitempty"`
 	// The default workspace base environment for GPU compute. Format:
 	// workspace-base-environments/{workspace_base_environment}
 	GpuWorkspaceBaseEnvironment *string `json:"gpu_workspace_base_environment,omitempty"`
+	// The resource name of this singleton resource. Format:
+	// default-workspace-base-environment
+	Name *string `json:"name,omitempty"`
 }
 
 // Environment specification for a WorkspaceBaseEnvironment. Contains the
@@ -173,29 +173,29 @@ type ListWorkspaceBaseEnvironmentsRequest struct {
 
 // Response message for ListWorkspaceBaseEnvironments..
 type ListWorkspaceBaseEnvironmentsResponse struct {
-	// The list of workspace base environments.
-	WorkspaceBaseEnvironments []WorkspaceBaseEnvironment `json:"workspace_base_environments,omitempty"`
 	// Token to retrieve the next page of results. Empty if there are no more
 	// results.
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// The list of workspace base environments.
+	WorkspaceBaseEnvironments []WorkspaceBaseEnvironment `json:"workspace_base_environments,omitempty"`
 }
 
 // This resource represents a long-running operation that is the result of a
 // network API call..
 type Operation struct {
-	// The server-assigned name, which is only unique within the same service that
-	// originally returns it. If you use the default HTTP mapping, the `name` should
-	// be a resource name ending with `operations/{unique_id}`.
-	Name *string `json:"name,omitempty"`
+	// If the value is `false`, it means the operation is still in progress. If
+	// `true`, the operation is completed, and either `error` or `response` is
+	// available.
+	Done  *bool     `json:"done,omitempty"`
+	Error *ApiError `json:"error,omitempty"`
 	// Service-specific metadata associated with the operation. It typically
 	// contains progress information and common metadata such as create time. Some
 	// services might not provide such metadata.
 	Metadata json.RawMessage `json:"metadata,omitempty"`
-	// If the value is `false`, it means the operation is still in progress. If
-	// `true`, the operation is completed, and either `error` or `response` is
-	// available.
-	Done     *bool           `json:"done,omitempty"`
-	Error    *ApiError       `json:"error,omitempty"`
+	// The server-assigned name, which is only unique within the same service that
+	// originally returns it. If you use the default HTTP mapping, the `name` should
+	// be a resource name ending with `operations/{unique_id}`.
+	Name     *string         `json:"name,omitempty"`
 	Response json.RawMessage `json:"response,omitempty"`
 }
 
@@ -233,31 +233,31 @@ type UpdateWorkspaceBaseEnvironmentRequest struct {
 // configuration consisting of an environment version and a list of
 // dependencies..
 type WorkspaceBaseEnvironment struct {
-	// The resource name of the workspace base environment. Format:
-	// workspace-base-environments/{workspace-base-environment}
-	Name *string `json:"name,omitempty"`
+	// The type of base environment (CPU or GPU).
+	BaseEnvironmentType BaseEnvironmentType `json:"base_environment_type,omitempty"`
+	// Timestamp when the environment was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
+	// User ID of the creator.
+	CreatorUserId *string `json:"creator_user_id,omitempty"`
 	// Human-readable display name for the workspace base environment.
 	DisplayName *string `json:"display_name,omitempty"`
 	// The WSFS or UC Volumes path to the environment YAML file.
 	Filepath *string `json:"filepath,omitempty"`
-	// User ID of the creator.
-	CreatorUserId *string `json:"creator_user_id,omitempty"`
-	// Timestamp when the environment was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	// User ID of the last user who updated the environment.
-	LastUpdatedUserId *string `json:"last_updated_user_id,omitempty"`
-	// Timestamp when the environment was last updated.
-	UpdateTime *types.Time `json:"update_time,omitempty"`
-	// The status of the materialized workspace base environment.
-	Status WorkspaceBaseEnvironmentCache_Status `json:"status,omitempty"`
-	// Status message providing additional details about the environment status.
-	Message *string `json:"message,omitempty"`
 	// Whether this is the default environment for the workspace.
 	IsDefault *bool `json:"is_default,omitempty"`
-	// The type of base environment (CPU or GPU).
-	BaseEnvironmentType BaseEnvironmentType `json:"base_environment_type,omitempty"`
+	// User ID of the last user who updated the environment.
+	LastUpdatedUserId *string `json:"last_updated_user_id,omitempty"`
+	// Status message providing additional details about the environment status.
+	Message *string `json:"message,omitempty"`
+	// The resource name of the workspace base environment. Format:
+	// workspace-base-environments/{workspace-base-environment}
+	Name *string `json:"name,omitempty"`
 	// The environment specification containing version and dependencies.
 	Spec *EnvironmentSpec `json:"spec,omitempty"`
+	// The status of the materialized workspace base environment.
+	Status WorkspaceBaseEnvironmentCache_Status `json:"status,omitempty"`
+	// Timestamp when the environment was last updated.
+	UpdateTime *types.Time `json:"update_time,omitempty"`
 }
 
 // Metadata for the WorkspaceBaseEnvironment long-running operations. This

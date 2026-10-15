@@ -251,27 +251,31 @@ const (
 // Configures the channel name and DBSQL version of the warehouse.
 // CHANNEL_NAME_CUSTOM should be chosen only when `dbsql_version` is specified..
 type Channel struct {
-	Name         ChannelName `json:"name,omitempty"`
 	DbsqlVersion *string     `json:"dbsql_version,omitempty"`
+	Name         ChannelName `json:"name,omitempty"`
 }
 
 // Request message for CreateDefaultWarehouseOverride..
 type CreateDefaultWarehouseOverrideRequest struct {
+	// Required. The default warehouse override to create.
+	DefaultWarehouseOverride *DefaultWarehouseOverride `json:"default_warehouse_override,omitempty"`
 	// Required. The ID to use for the override, which will become the final
 	// component of the override's resource name. Can be a numeric user ID or the
 	// literal string "me" for the current user.
 	DefaultWarehouseOverrideId *string `json:"default_warehouse_override_id,omitempty"`
-	// Required. The default warehouse override to create.
-	DefaultWarehouseOverride *DefaultWarehouseOverride `json:"default_warehouse_override,omitempty"`
 }
 
 // Creates a new SQL warehouse..
 type CreateWarehouseRequest struct {
-	// Logical name for the cluster.
+	// The amount of time in minutes that a SQL warehouse must be idle (i.e., no
+	// RUNNING queries) before it is automatically stopped.
 	//
-	// Supported values: - Must be unique within an org. - Must be less than 100
-	// characters.
-	Name *string `json:"name,omitempty"`
+	// Supported values: - Must be == 0 or >= 10 mins - 0 indicates no autostop.
+	//
+	// Defaults to 120 mins
+	AutoStopMins *int `json:"auto_stop_mins,omitempty"`
+	// Channel Details
+	Channel *Channel `json:"channel,omitempty"`
 	// Size of the clusters allocated for this warehouse. Increasing the size of a
 	// spark cluster allows you to run larger queries on it. If you want to increase
 	// the number of concurrent queries, please tune max_num_clusters.
@@ -279,6 +283,23 @@ type CreateWarehouseRequest struct {
 	// Supported values: - 2X-Small - X-Small - Small - Medium - Large - X-Large -
 	// 2X-Large - 3X-Large - 4X-Large - 5X-Large
 	ClusterSize *string `json:"cluster_size,omitempty"`
+	// warehouse creator name
+	CreatorName *string `json:"creator_name,omitempty"`
+	// Configures whether the warehouse should use Photon optimized clusters.
+	//
+	// Defaults to true.
+	EnablePhoton *bool `json:"enable_photon,omitempty"`
+	// Configures whether the warehouse should use serverless compute
+	EnableServerlessCompute *bool `json:"enable_serverless_compute,omitempty"`
+	// Deprecated. Instance profile used to pass IAM role to the cluster
+	InstanceProfileArn *string `json:"instance_profile_arn,omitempty"`
+	// Maximum number of clusters that the autoscaler will create to handle
+	// concurrent queries.
+	//
+	// Supported values: - Must be >= min_num_clusters - Must be <= 40.
+	//
+	// Defaults to min_clusters if unset.
+	MaxNumClusters *int `json:"max_num_clusters,omitempty"`
 	// Minimum number of available clusters that will be maintained for this SQL
 	// warehouse. Increasing this will ensure that a larger number of clusters are
 	// always running and therefore may reduce the cold start time for new queries.
@@ -288,45 +309,24 @@ type CreateWarehouseRequest struct {
 	//
 	// Defaults to 1
 	MinNumClusters *int `json:"min_num_clusters,omitempty"`
-	// Maximum number of clusters that the autoscaler will create to handle
-	// concurrent queries.
+	// Logical name for the cluster.
 	//
-	// Supported values: - Must be >= min_num_clusters - Must be <= 40.
-	//
-	// Defaults to min_clusters if unset.
-	MaxNumClusters *int `json:"max_num_clusters,omitempty"`
-	// The amount of time in minutes that a SQL warehouse must be idle (i.e., no
-	// RUNNING queries) before it is automatically stopped.
-	//
-	// Supported values: - Must be == 0 or >= 10 mins - 0 indicates no autostop.
-	//
-	// Defaults to 120 mins
-	AutoStopMins *int `json:"auto_stop_mins,omitempty"`
-	// warehouse creator name
-	CreatorName *string `json:"creator_name,omitempty"`
-	// Deprecated. Instance profile used to pass IAM role to the cluster
-	InstanceProfileArn *string `json:"instance_profile_arn,omitempty"`
+	// Supported values: - Must be unique within an org. - Must be less than 100
+	// characters.
+	Name *string `json:"name,omitempty"`
+	// Configurations whether the endpoint should use spot instances.
+	SpotInstancePolicy EndpointSpotInstancePolicy `json:"spot_instance_policy,omitempty"`
+	// Warehouse statement timeout in seconds.
+	StatementTimeout *int `json:"statement_timeout,omitempty"`
 	// A set of key-value pairs that will be tagged on all resources (e.g., AWS
 	// instances and EBS volumes) associated with this SQL warehouse.
 	//
 	// Supported values: - Number of tags < 45.
 	Tags *EndpointTags `json:"tags,omitempty"`
-	// Configurations whether the endpoint should use spot instances.
-	SpotInstancePolicy EndpointSpotInstancePolicy `json:"spot_instance_policy,omitempty"`
-	// Configures whether the warehouse should use Photon optimized clusters.
-	//
-	// Defaults to true.
-	EnablePhoton *bool `json:"enable_photon,omitempty"`
-	// Channel Details
-	Channel *Channel `json:"channel,omitempty"`
-	// Configures whether the warehouse should use serverless compute
-	EnableServerlessCompute *bool `json:"enable_serverless_compute,omitempty"`
 	// Warehouse type: `PRO` or `CLASSIC`. If you want to use serverless compute,
 	// you must set to `PRO` and also set the field `enable_serverless_compute` to
 	// `true`.
 	WarehouseType WarehouseType `json:"warehouse_type,omitempty"`
-	// Warehouse statement timeout in seconds.
-	StatementTimeout *int `json:"statement_timeout,omitempty"`
 }
 
 type CreateWarehouseResponse struct {
@@ -339,11 +339,11 @@ type CreateWarehouseResponse struct {
 // selected for SQL operations. If no override exists for a user, the workspace
 // default warehouse will be used..
 type DefaultWarehouseOverride struct {
+	// The ID component of the resource name (user ID).
+	DefaultWarehouseOverrideId *string `json:"default_warehouse_override_id,omitempty"`
 	// The resource name of the default warehouse override. Format:
 	// default-warehouse-overrides/{default_warehouse_override_id}
 	Name *string `json:"name,omitempty"`
-	// The ID component of the resource name (user ID).
-	DefaultWarehouseOverrideId *string `json:"default_warehouse_override_id,omitempty"`
 	// The type of override behavior.
 	Type DefaultWarehouseOverrideType `json:"type,omitempty"`
 	// The specific warehouse ID when type is CUSTOM. Not set for LAST_SELECTED
@@ -356,13 +356,15 @@ type DefaultWarehouseOverride struct {
 // warehouse is modified. If a field is unset, the existing configuration value
 // in the SQL warehouse is retained. Thus, this API is not idempotent..
 type EditWarehouseRequest struct {
-	// Required. Id of the warehouse to configure.
-	Id *string `json:"id,omitempty"`
-	// Logical name for the cluster.
+	// The amount of time in minutes that a SQL warehouse must be idle (i.e., no
+	// RUNNING queries) before it is automatically stopped.
 	//
-	// Supported values: - Must be unique within an org. - Must be less than 100
-	// characters.
-	Name *string `json:"name,omitempty"`
+	// Supported values: - Must be == 0 or >= 10 mins - 0 indicates no autostop.
+	//
+	// Defaults to 120 mins
+	AutoStopMins *int `json:"auto_stop_mins,omitempty"`
+	// Channel Details
+	Channel *Channel `json:"channel,omitempty"`
 	// Size of the clusters allocated for this warehouse. Increasing the size of a
 	// spark cluster allows you to run larger queries on it. If you want to increase
 	// the number of concurrent queries, please tune max_num_clusters.
@@ -370,6 +372,25 @@ type EditWarehouseRequest struct {
 	// Supported values: - 2X-Small - X-Small - Small - Medium - Large - X-Large -
 	// 2X-Large - 3X-Large - 4X-Large - 5X-Large
 	ClusterSize *string `json:"cluster_size,omitempty"`
+	// warehouse creator name
+	CreatorName *string `json:"creator_name,omitempty"`
+	// Configures whether the warehouse should use Photon optimized clusters.
+	//
+	// Defaults to true.
+	EnablePhoton *bool `json:"enable_photon,omitempty"`
+	// Configures whether the warehouse should use serverless compute
+	EnableServerlessCompute *bool `json:"enable_serverless_compute,omitempty"`
+	// Required. Id of the warehouse to configure.
+	Id *string `json:"id,omitempty"`
+	// Deprecated. Instance profile used to pass IAM role to the cluster
+	InstanceProfileArn *string `json:"instance_profile_arn,omitempty"`
+	// Maximum number of clusters that the autoscaler will create to handle
+	// concurrent queries.
+	//
+	// Supported values: - Must be >= min_num_clusters - Must be <= 40.
+	//
+	// Defaults to min_clusters if unset.
+	MaxNumClusters *int `json:"max_num_clusters,omitempty"`
 	// Minimum number of available clusters that will be maintained for this SQL
 	// warehouse. Increasing this will ensure that a larger number of clusters are
 	// always running and therefore may reduce the cold start time for new queries.
@@ -379,45 +400,24 @@ type EditWarehouseRequest struct {
 	//
 	// Defaults to 1
 	MinNumClusters *int `json:"min_num_clusters,omitempty"`
-	// Maximum number of clusters that the autoscaler will create to handle
-	// concurrent queries.
+	// Logical name for the cluster.
 	//
-	// Supported values: - Must be >= min_num_clusters - Must be <= 40.
-	//
-	// Defaults to min_clusters if unset.
-	MaxNumClusters *int `json:"max_num_clusters,omitempty"`
-	// The amount of time in minutes that a SQL warehouse must be idle (i.e., no
-	// RUNNING queries) before it is automatically stopped.
-	//
-	// Supported values: - Must be == 0 or >= 10 mins - 0 indicates no autostop.
-	//
-	// Defaults to 120 mins
-	AutoStopMins *int `json:"auto_stop_mins,omitempty"`
-	// warehouse creator name
-	CreatorName *string `json:"creator_name,omitempty"`
-	// Deprecated. Instance profile used to pass IAM role to the cluster
-	InstanceProfileArn *string `json:"instance_profile_arn,omitempty"`
+	// Supported values: - Must be unique within an org. - Must be less than 100
+	// characters.
+	Name *string `json:"name,omitempty"`
+	// Configurations whether the endpoint should use spot instances.
+	SpotInstancePolicy EndpointSpotInstancePolicy `json:"spot_instance_policy,omitempty"`
+	// Warehouse statement timeout in seconds.
+	StatementTimeout *int `json:"statement_timeout,omitempty"`
 	// A set of key-value pairs that will be tagged on all resources (e.g., AWS
 	// instances and EBS volumes) associated with this SQL warehouse.
 	//
 	// Supported values: - Number of tags < 45.
 	Tags *EndpointTags `json:"tags,omitempty"`
-	// Configurations whether the endpoint should use spot instances.
-	SpotInstancePolicy EndpointSpotInstancePolicy `json:"spot_instance_policy,omitempty"`
-	// Configures whether the warehouse should use Photon optimized clusters.
-	//
-	// Defaults to true.
-	EnablePhoton *bool `json:"enable_photon,omitempty"`
-	// Channel Details
-	Channel *Channel `json:"channel,omitempty"`
-	// Configures whether the warehouse should use serverless compute
-	EnableServerlessCompute *bool `json:"enable_serverless_compute,omitempty"`
 	// Warehouse type: `PRO` or `CLASSIC`. If you want to use serverless compute,
 	// you must set to `PRO` and also set the field `enable_serverless_compute` to
 	// `true`.
 	WarehouseType WarehouseType `json:"warehouse_type,omitempty"`
-	// Warehouse statement timeout in seconds.
-	StatementTimeout *int `json:"statement_timeout,omitempty"`
 }
 
 type EndpointConfPair struct {
@@ -426,27 +426,29 @@ type EndpointConfPair struct {
 }
 
 type EndpointHealth struct {
-	// Health status of the endpoint.
-	Status EndpointHealth_Status `json:"status,omitempty"`
-	// Deprecated. split into summary and details for security
-	Message *string `json:"message,omitempty"`
+	// Details about errors that are causing current degraded/failed status.
+	Details *string `json:"details,omitempty"`
 	// The reason for failure to bring up clusters for this warehouse. This is
 	// available when status is 'FAILED' and sometimes when it is DEGRADED.
 	FailureReason *TerminationReason `json:"failure_reason,omitempty"`
+	// Deprecated. split into summary and details for security
+	Message *string `json:"message,omitempty"`
+	// Health status of the endpoint.
+	Status EndpointHealth_Status `json:"status,omitempty"`
 	// A short summary of the health status in case of degraded/failed warehouses.
 	Summary *string `json:"summary,omitempty"`
-	// Details about errors that are causing current degraded/failed status.
-	Details *string `json:"details,omitempty"`
 }
 
 type EndpointInfo struct {
-	// unique identifier for warehouse
-	Id *string `json:"id,omitempty"`
-	// Logical name for the cluster.
+	// The amount of time in minutes that a SQL warehouse must be idle (i.e., no
+	// RUNNING queries) before it is automatically stopped.
 	//
-	// Supported values: - Must be unique within an org. - Must be less than 100
-	// characters.
-	Name *string `json:"name,omitempty"`
+	// Supported values: - Must be == 0 or >= 10 mins - 0 indicates no autostop.
+	//
+	// Defaults to 120 mins
+	AutoStopMins *int `json:"auto_stop_mins,omitempty"`
+	// Channel Details
+	Channel *Channel `json:"channel,omitempty"`
 	// Size of the clusters allocated for this warehouse. Increasing the size of a
 	// spark cluster allows you to run larger queries on it. If you want to increase
 	// the number of concurrent queries, please tune max_num_clusters.
@@ -454,6 +456,30 @@ type EndpointInfo struct {
 	// Supported values: - 2X-Small - X-Small - Small - Medium - Large - X-Large -
 	// 2X-Large - 3X-Large - 4X-Large - 5X-Large
 	ClusterSize *string `json:"cluster_size,omitempty"`
+	// warehouse creator name
+	CreatorName *string `json:"creator_name,omitempty"`
+	// Configures whether the warehouse should use Photon optimized clusters.
+	//
+	// Defaults to true.
+	EnablePhoton *bool `json:"enable_photon,omitempty"`
+	// Configures whether the warehouse should use serverless compute
+	EnableServerlessCompute *bool `json:"enable_serverless_compute,omitempty"`
+	// Optional health status. Assume the warehouse is healthy if this field is not
+	// set.
+	Health *EndpointHealth `json:"health,omitempty"`
+	// unique identifier for warehouse
+	Id *string `json:"id,omitempty"`
+	// Deprecated. Instance profile used to pass IAM role to the cluster
+	InstanceProfileArn *string `json:"instance_profile_arn,omitempty"`
+	// the jdbc connection string for this warehouse
+	JdbcUrl *string `json:"jdbc_url,omitempty"`
+	// Maximum number of clusters that the autoscaler will create to handle
+	// concurrent queries.
+	//
+	// Supported values: - Must be >= min_num_clusters - Must be <= 40.
+	//
+	// Defaults to min_clusters if unset.
+	MaxNumClusters *int `json:"max_num_clusters,omitempty"`
 	// Minimum number of available clusters that will be maintained for this SQL
 	// warehouse. Increasing this will ensure that a larger number of clusters are
 	// always running and therefore may reduce the cold start time for new queries.
@@ -463,58 +489,32 @@ type EndpointInfo struct {
 	//
 	// Defaults to 1
 	MinNumClusters *int `json:"min_num_clusters,omitempty"`
-	// Maximum number of clusters that the autoscaler will create to handle
-	// concurrent queries.
+	// Logical name for the cluster.
 	//
-	// Supported values: - Must be >= min_num_clusters - Must be <= 40.
-	//
-	// Defaults to min_clusters if unset.
-	MaxNumClusters *int `json:"max_num_clusters,omitempty"`
-	// The amount of time in minutes that a SQL warehouse must be idle (i.e., no
-	// RUNNING queries) before it is automatically stopped.
-	//
-	// Supported values: - Must be == 0 or >= 10 mins - 0 indicates no autostop.
-	//
-	// Defaults to 120 mins
-	AutoStopMins *int `json:"auto_stop_mins,omitempty"`
-	// warehouse creator name
-	CreatorName *string `json:"creator_name,omitempty"`
-	// Deprecated. Instance profile used to pass IAM role to the cluster
-	InstanceProfileArn *string `json:"instance_profile_arn,omitempty"`
+	// Supported values: - Must be unique within an org. - Must be less than 100
+	// characters.
+	Name *string `json:"name,omitempty"`
+	// Deprecated. current number of active sessions for the warehouse
+	NumActiveSessions *int64 `json:"num_active_sessions,omitempty"`
+	// current number of clusters running for the service
+	NumClusters *int `json:"num_clusters,omitempty"`
+	// ODBC parameters for the SQL warehouse
+	OdbcParams *OdbcParams `json:"odbc_params,omitempty"`
+	// Configurations whether the endpoint should use spot instances.
+	SpotInstancePolicy EndpointSpotInstancePolicy `json:"spot_instance_policy,omitempty"`
+	// state of the endpoint
+	State EndpointState `json:"state,omitempty"`
+	// Warehouse statement timeout in seconds.
+	StatementTimeout *int `json:"statement_timeout,omitempty"`
 	// A set of key-value pairs that will be tagged on all resources (e.g., AWS
 	// instances and EBS volumes) associated with this SQL warehouse.
 	//
 	// Supported values: - Number of tags < 45.
 	Tags *EndpointTags `json:"tags,omitempty"`
-	// Configurations whether the endpoint should use spot instances.
-	SpotInstancePolicy EndpointSpotInstancePolicy `json:"spot_instance_policy,omitempty"`
-	// Configures whether the warehouse should use Photon optimized clusters.
-	//
-	// Defaults to true.
-	EnablePhoton *bool `json:"enable_photon,omitempty"`
-	// Channel Details
-	Channel *Channel `json:"channel,omitempty"`
-	// Configures whether the warehouse should use serverless compute
-	EnableServerlessCompute *bool `json:"enable_serverless_compute,omitempty"`
 	// Warehouse type: `PRO` or `CLASSIC`. If you want to use serverless compute,
 	// you must set to `PRO` and also set the field `enable_serverless_compute` to
 	// `true`.
 	WarehouseType WarehouseType `json:"warehouse_type,omitempty"`
-	// Warehouse statement timeout in seconds.
-	StatementTimeout *int `json:"statement_timeout,omitempty"`
-	// current number of clusters running for the service
-	NumClusters *int `json:"num_clusters,omitempty"`
-	// Deprecated. current number of active sessions for the warehouse
-	NumActiveSessions *int64 `json:"num_active_sessions,omitempty"`
-	// state of the endpoint
-	State EndpointState `json:"state,omitempty"`
-	// the jdbc connection string for this warehouse
-	JdbcUrl *string `json:"jdbc_url,omitempty"`
-	// ODBC parameters for the SQL warehouse
-	OdbcParams *OdbcParams `json:"odbc_params,omitempty"`
-	// Optional health status. Assume the warehouse is healthy if this field is not
-	// set.
-	Health *EndpointHealth `json:"health,omitempty"`
 }
 
 type EndpointTagPair struct {
@@ -527,13 +527,15 @@ type EndpointTags struct {
 }
 
 type GetWarehouseResponse struct {
-	// unique identifier for warehouse
-	Id *string `json:"id,omitempty"`
-	// Logical name for the cluster.
+	// The amount of time in minutes that a SQL warehouse must be idle (i.e., no
+	// RUNNING queries) before it is automatically stopped.
 	//
-	// Supported values: - Must be unique within an org. - Must be less than 100
-	// characters.
-	Name *string `json:"name,omitempty"`
+	// Supported values: - Must be == 0 or >= 10 mins - 0 indicates no autostop.
+	//
+	// Defaults to 120 mins
+	AutoStopMins *int `json:"auto_stop_mins,omitempty"`
+	// Channel Details
+	Channel *Channel `json:"channel,omitempty"`
 	// Size of the clusters allocated for this warehouse. Increasing the size of a
 	// spark cluster allows you to run larger queries on it. If you want to increase
 	// the number of concurrent queries, please tune max_num_clusters.
@@ -541,6 +543,30 @@ type GetWarehouseResponse struct {
 	// Supported values: - 2X-Small - X-Small - Small - Medium - Large - X-Large -
 	// 2X-Large - 3X-Large - 4X-Large - 5X-Large
 	ClusterSize *string `json:"cluster_size,omitempty"`
+	// warehouse creator name
+	CreatorName *string `json:"creator_name,omitempty"`
+	// Configures whether the warehouse should use Photon optimized clusters.
+	//
+	// Defaults to true.
+	EnablePhoton *bool `json:"enable_photon,omitempty"`
+	// Configures whether the warehouse should use serverless compute
+	EnableServerlessCompute *bool `json:"enable_serverless_compute,omitempty"`
+	// Optional health status. Assume the warehouse is healthy if this field is not
+	// set.
+	Health *EndpointHealth `json:"health,omitempty"`
+	// unique identifier for warehouse
+	Id *string `json:"id,omitempty"`
+	// Deprecated. Instance profile used to pass IAM role to the cluster
+	InstanceProfileArn *string `json:"instance_profile_arn,omitempty"`
+	// the jdbc connection string for this warehouse
+	JdbcUrl *string `json:"jdbc_url,omitempty"`
+	// Maximum number of clusters that the autoscaler will create to handle
+	// concurrent queries.
+	//
+	// Supported values: - Must be >= min_num_clusters - Must be <= 40.
+	//
+	// Defaults to min_clusters if unset.
+	MaxNumClusters *int `json:"max_num_clusters,omitempty"`
 	// Minimum number of available clusters that will be maintained for this SQL
 	// warehouse. Increasing this will ensure that a larger number of clusters are
 	// always running and therefore may reduce the cold start time for new queries.
@@ -550,83 +576,44 @@ type GetWarehouseResponse struct {
 	//
 	// Defaults to 1
 	MinNumClusters *int `json:"min_num_clusters,omitempty"`
-	// Maximum number of clusters that the autoscaler will create to handle
-	// concurrent queries.
+	// Logical name for the cluster.
 	//
-	// Supported values: - Must be >= min_num_clusters - Must be <= 40.
-	//
-	// Defaults to min_clusters if unset.
-	MaxNumClusters *int `json:"max_num_clusters,omitempty"`
-	// The amount of time in minutes that a SQL warehouse must be idle (i.e., no
-	// RUNNING queries) before it is automatically stopped.
-	//
-	// Supported values: - Must be == 0 or >= 10 mins - 0 indicates no autostop.
-	//
-	// Defaults to 120 mins
-	AutoStopMins *int `json:"auto_stop_mins,omitempty"`
-	// warehouse creator name
-	CreatorName *string `json:"creator_name,omitempty"`
-	// Deprecated. Instance profile used to pass IAM role to the cluster
-	InstanceProfileArn *string `json:"instance_profile_arn,omitempty"`
+	// Supported values: - Must be unique within an org. - Must be less than 100
+	// characters.
+	Name *string `json:"name,omitempty"`
+	// Deprecated. current number of active sessions for the warehouse
+	NumActiveSessions *int64 `json:"num_active_sessions,omitempty"`
+	// current number of clusters running for the service
+	NumClusters *int `json:"num_clusters,omitempty"`
+	// ODBC parameters for the SQL warehouse
+	OdbcParams *OdbcParams `json:"odbc_params,omitempty"`
+	// Configurations whether the endpoint should use spot instances.
+	SpotInstancePolicy EndpointSpotInstancePolicy `json:"spot_instance_policy,omitempty"`
+	// state of the endpoint
+	State EndpointState `json:"state,omitempty"`
+	// Warehouse statement timeout in seconds.
+	StatementTimeout *int `json:"statement_timeout,omitempty"`
 	// A set of key-value pairs that will be tagged on all resources (e.g., AWS
 	// instances and EBS volumes) associated with this SQL warehouse.
 	//
 	// Supported values: - Number of tags < 45.
 	Tags *EndpointTags `json:"tags,omitempty"`
-	// Configurations whether the endpoint should use spot instances.
-	SpotInstancePolicy EndpointSpotInstancePolicy `json:"spot_instance_policy,omitempty"`
-	// Configures whether the warehouse should use Photon optimized clusters.
-	//
-	// Defaults to true.
-	EnablePhoton *bool `json:"enable_photon,omitempty"`
-	// Channel Details
-	Channel *Channel `json:"channel,omitempty"`
-	// Configures whether the warehouse should use serverless compute
-	EnableServerlessCompute *bool `json:"enable_serverless_compute,omitempty"`
 	// Warehouse type: `PRO` or `CLASSIC`. If you want to use serverless compute,
 	// you must set to `PRO` and also set the field `enable_serverless_compute` to
 	// `true`.
 	WarehouseType WarehouseType `json:"warehouse_type,omitempty"`
-	// Warehouse statement timeout in seconds.
-	StatementTimeout *int `json:"statement_timeout,omitempty"`
-	// current number of clusters running for the service
-	NumClusters *int `json:"num_clusters,omitempty"`
-	// Deprecated. current number of active sessions for the warehouse
-	NumActiveSessions *int64 `json:"num_active_sessions,omitempty"`
-	// state of the endpoint
-	State EndpointState `json:"state,omitempty"`
-	// the jdbc connection string for this warehouse
-	JdbcUrl *string `json:"jdbc_url,omitempty"`
-	// ODBC parameters for the SQL warehouse
-	OdbcParams *OdbcParams `json:"odbc_params,omitempty"`
-	// Optional health status. Assume the warehouse is healthy if this field is not
-	// set.
-	Health *EndpointHealth `json:"health,omitempty"`
 }
 
 type GetWorkspaceWarehouseConfigResponse struct {
-	// Security policy for warehouses
-	SecurityPolicy EndpointSecurityPolicy `json:"security_policy,omitempty"`
+	// Optional: Channel selection details
+	Channel *Channel `json:"channel,omitempty"`
+	// Deprecated: Use sql_configuration_parameters
+	ConfigParam *RepeatedEndpointConfPairs `json:"config_param,omitempty"`
 	// Spark confs for external hive metastore configuration JSON serialized size
 	// must be less than <= 512K
 	DataAccessConfig []EndpointConfPair `json:"data_access_config,omitempty"`
-	// AWS Only: The instance profile used to pass an IAM role to the SQL
-	// warehouses. This configuration is also applied to the workspace's serverless
-	// compute for notebooks and jobs.
-	InstanceProfileArn *string `json:"instance_profile_arn,omitempty"`
-	// Optional: Channel selection details
-	Channel *Channel `json:"channel,omitempty"`
 	// Deprecated: only setting this to true is allowed.
 	EnableServerlessCompute *bool `json:"enable_serverless_compute,omitempty"`
-	// Deprecated: Use sql_configuration_parameters
-	GlobalParam *RepeatedEndpointConfPairs `json:"global_param,omitempty"`
-	// Deprecated: Use sql_configuration_parameters
-	ConfigParam *RepeatedEndpointConfPairs `json:"config_param,omitempty"`
-	// SQL configuration parameters
-	SqlConfigurationParameters *RepeatedEndpointConfPairs `json:"sql_configuration_parameters,omitempty"`
-	// GCP only: Google Service Account used to pass to cluster to access Google
-	// Cloud Storage
-	GoogleServiceAccount *string `json:"google_service_account,omitempty"`
 	// List of Warehouse Types allowed in this workspace (limits allowed value of
 	// the type field in CreateWarehouse and EditWarehouse). Note: Some types cannot
 	// be disabled, they don't need to be specified in SetWorkspaceWarehouseConfig.
@@ -634,6 +621,19 @@ type GetWorkspaceWarehouseConfigResponse struct {
 	// another type. Used by frontend to save specific type availability in the
 	// warehouse create and edit form UI.
 	EnabledWarehouseTypes []WarehouseTypePair `json:"enabled_warehouse_types,omitempty"`
+	// Deprecated: Use sql_configuration_parameters
+	GlobalParam *RepeatedEndpointConfPairs `json:"global_param,omitempty"`
+	// GCP only: Google Service Account used to pass to cluster to access Google
+	// Cloud Storage
+	GoogleServiceAccount *string `json:"google_service_account,omitempty"`
+	// AWS Only: The instance profile used to pass an IAM role to the SQL
+	// warehouses. This configuration is also applied to the workspace's serverless
+	// compute for notebooks and jobs.
+	InstanceProfileArn *string `json:"instance_profile_arn,omitempty"`
+	// Security policy for warehouses
+	SecurityPolicy EndpointSecurityPolicy `json:"security_policy,omitempty"`
+	// SQL configuration parameters
+	SqlConfigurationParameters *RepeatedEndpointConfPairs `json:"sql_configuration_parameters,omitempty"`
 }
 
 // Request message for ListDefaultWarehouseOverrides..
@@ -661,18 +661,18 @@ type ListDefaultWarehouseOverridesResponse struct {
 }
 
 type ListWarehousesResponse struct {
-	// A list of warehouses and their configurations.
-	Warehouses []EndpointInfo `json:"warehouses,omitempty"`
 	// A token, which can be sent as `page_token` to retrieve the next page. If this
 	// field is omitted, there are no subsequent pages.
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// A list of warehouses and their configurations.
+	Warehouses []EndpointInfo `json:"warehouses,omitempty"`
 }
 
 type OdbcParams struct {
 	Hostname *string `json:"hostname,omitempty"`
 	Path     *string `json:"path,omitempty"`
-	Protocol *string `json:"protocol,omitempty"`
 	Port     *int    `json:"port,omitempty"`
+	Protocol *string `json:"protocol,omitempty"`
 }
 
 type RepeatedEndpointConfPairs struct {
@@ -686,28 +686,15 @@ type RepeatedEndpointConfPairs struct {
 //
 // This is idempotent..
 type SetWorkspaceWarehouseConfigRequest struct {
-	// Security policy for warehouses
-	SecurityPolicy EndpointSecurityPolicy `json:"security_policy,omitempty"`
+	// Optional: Channel selection details
+	Channel *Channel `json:"channel,omitempty"`
+	// Deprecated: Use sql_configuration_parameters
+	ConfigParam *RepeatedEndpointConfPairs `json:"config_param,omitempty"`
 	// Spark confs for external hive metastore configuration JSON serialized size
 	// must be less than <= 512K
 	DataAccessConfig []EndpointConfPair `json:"data_access_config,omitempty"`
-	// AWS Only: The instance profile used to pass an IAM role to the SQL
-	// warehouses. This configuration is also applied to the workspace's serverless
-	// compute for notebooks and jobs.
-	InstanceProfileArn *string `json:"instance_profile_arn,omitempty"`
-	// Optional: Channel selection details
-	Channel *Channel `json:"channel,omitempty"`
 	// Deprecated: only setting this to true is allowed.
 	EnableServerlessCompute *bool `json:"enable_serverless_compute,omitempty"`
-	// Deprecated: Use sql_configuration_parameters
-	GlobalParam *RepeatedEndpointConfPairs `json:"global_param,omitempty"`
-	// Deprecated: Use sql_configuration_parameters
-	ConfigParam *RepeatedEndpointConfPairs `json:"config_param,omitempty"`
-	// SQL configuration parameters
-	SqlConfigurationParameters *RepeatedEndpointConfPairs `json:"sql_configuration_parameters,omitempty"`
-	// GCP only: Google Service Account used to pass to cluster to access Google
-	// Cloud Storage
-	GoogleServiceAccount *string `json:"google_service_account,omitempty"`
 	// List of Warehouse Types allowed in this workspace (limits allowed value of
 	// the type field in CreateWarehouse and EditWarehouse). Note: Some types cannot
 	// be disabled, they don't need to be specified in SetWorkspaceWarehouseConfig.
@@ -715,20 +702,37 @@ type SetWorkspaceWarehouseConfigRequest struct {
 	// another type. Used by frontend to save specific type availability in the
 	// warehouse create and edit form UI.
 	EnabledWarehouseTypes []WarehouseTypePair `json:"enabled_warehouse_types,omitempty"`
+	// Deprecated: Use sql_configuration_parameters
+	GlobalParam *RepeatedEndpointConfPairs `json:"global_param,omitempty"`
+	// GCP only: Google Service Account used to pass to cluster to access Google
+	// Cloud Storage
+	GoogleServiceAccount *string `json:"google_service_account,omitempty"`
+	// AWS Only: The instance profile used to pass an IAM role to the SQL
+	// warehouses. This configuration is also applied to the workspace's serverless
+	// compute for notebooks and jobs.
+	InstanceProfileArn *string `json:"instance_profile_arn,omitempty"`
+	// Security policy for warehouses
+	SecurityPolicy EndpointSecurityPolicy `json:"security_policy,omitempty"`
+	// SQL configuration parameters
+	SqlConfigurationParameters *RepeatedEndpointConfPairs `json:"sql_configuration_parameters,omitempty"`
 }
 
 type TerminationReason struct {
 	// status code indicating why the cluster was terminated
 	Code TerminationCode `json:"code,omitempty"`
-	// type of the termination
-	Type TerminationType `json:"type,omitempty"`
 	// list of parameters that provide additional information about why the cluster
 	// was terminated
 	Parameters map[string]string `json:"parameters,omitempty"`
+	// type of the termination
+	Type TerminationType `json:"type,omitempty"`
 }
 
 // Request message for UpdateDefaultWarehouseOverride..
 type UpdateDefaultWarehouseOverrideRequest struct {
+	// If set to true, and the override is not found, a new override will be
+	// created. In this situation, `update_mask` is ignored and all fields are
+	// applied. Defaults to false.
+	AllowMissing *bool `json:"allow_missing,omitempty"`
 	// Required. The default warehouse override to update. The name field must be
 	// set in the format:
 	// default-warehouse-overrides/{default_warehouse_override_id} The
@@ -739,28 +743,20 @@ type UpdateDefaultWarehouseOverrideRequest struct {
 	// specified in the mask will be updated. Use "*" to update all fields. When
 	// allow_missing is true, this field is ignored and all fields are applied.
 	UpdateMask *string `json:"update_mask,omitempty"`
-	// If set to true, and the override is not found, a new override will be
-	// created. In this situation, `update_mask` is ignored and all fields are
-	// applied. Defaults to false.
-	AllowMissing *bool `json:"allow_missing,omitempty"`
 }
 
 // * Configuration values to enable or disable the access to specific warehouse
 // types in the workspace..
 type WarehouseTypePair struct {
-	WarehouseType WarehouseType `json:"warehouse_type,omitempty"`
 	// If set to false the specific warehouse type will not be allowed as a value
 	// for warehouse_type in CreateWarehouse and EditWarehouse
-	Enabled *bool `json:"enabled,omitempty"`
+	Enabled       *bool         `json:"enabled,omitempty"`
+	WarehouseType WarehouseType `json:"warehouse_type,omitempty"`
 }
 
 // Lists all of the SQL warehouses. TODO: consider paginating to limit the
 // number of warehouses returned..
 type ListWarehousesRequest struct {
-	// Deprecated: this field is ignored by the server. Service Principal which will
-	// be used to fetch the list of endpoints. If not specified, SQL Gateway will
-	// use the user from the session header.
-	RunAsUserId *int64 `json:"run_as_user_id,omitempty"`
 	// The max number of warehouses to return.
 	PageSize *int `json:"page_size,omitempty"`
 	// A page token, received from a previous `ListWarehouses` call. Provide this to
@@ -769,6 +765,10 @@ type ListWarehousesRequest struct {
 	// When paginating, all other parameters provided to `ListWarehouses` must match
 	// the call that provided the page token.
 	PageToken *string `json:"page_token,omitempty"`
+	// Deprecated: this field is ignored by the server. Service Principal which will
+	// be used to fetch the list of endpoints. If not specified, SQL Gateway will
+	// use the user from the session header.
+	RunAsUserId *int64 `json:"run_as_user_id,omitempty"`
 }
 
 // Starts a SQL warehouse. This API is idempotent..

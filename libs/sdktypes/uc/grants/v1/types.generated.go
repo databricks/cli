@@ -8,16 +8,16 @@ import (
 )
 
 type EffectivePrivilege struct {
-	// The privilege assigned to the principal.
-	Privilege *string `json:"privilege,omitempty"`
-	// The type of the object that conveys this privilege via inheritance. This
-	// field is omitted when privilege is not inherited (it's assigned to the
-	// securable itself).
-	InheritedFromType *string `json:"inherited_from_type,omitempty"`
 	// The full name of the object that conveys this privilege via inheritance. This
 	// field is omitted when privilege is not inherited (it's assigned to the
 	// securable itself).
 	InheritedFromName *string `json:"inherited_from_name,omitempty"`
+	// The type of the object that conveys this privilege via inheritance. This
+	// field is omitted when privilege is not inherited (it's assigned to the
+	// securable itself).
+	InheritedFromType *string `json:"inherited_from_type,omitempty"`
+	// The privilege assigned to the principal.
+	Privilege *string `json:"privilege,omitempty"`
 }
 
 type EffectivePrivilegeAssignment struct {
@@ -29,13 +29,6 @@ type EffectivePrivilegeAssignment struct {
 }
 
 type GetEffectivePermissionsRequest struct {
-	// Type of securable.
-	SecurableType *string `json:"securable_type,omitempty"`
-	// Full name of securable.
-	SecurableFullName *string `json:"securable_full_name,omitempty"`
-	// If provided, only the effective permissions for the specified principal (user
-	// or group) are returned.
-	Principal *string `json:"principal,omitempty"`
 	// Specifies the maximum number of privileges to return (page length). Every
 	// EffectivePrivilegeAssignment present in a single page response is guaranteed
 	// to contain all the effective privileges granted on (or inherited by) the
@@ -51,6 +44,13 @@ type GetEffectivePermissionsRequest struct {
 	MaxResults *int `json:"max_results,omitempty"`
 	// Opaque token for the next page of results (pagination).
 	PageToken *string `json:"page_token,omitempty"`
+	// If provided, only the effective permissions for the specified principal (user
+	// or group) are returned.
+	Principal *string `json:"principal,omitempty"`
+	// Full name of securable.
+	SecurableFullName *string `json:"securable_full_name,omitempty"`
+	// Type of securable.
+	SecurableType *string `json:"securable_type,omitempty"`
 }
 
 type GetEffectivePermissionsResponse struct {
@@ -64,13 +64,6 @@ type GetEffectivePermissionsResponse struct {
 }
 
 type GetPermissionsRequest struct {
-	// Type of securable.
-	SecurableType *string `json:"securable_type,omitempty"`
-	// Full name of securable.
-	SecurableFullName *string `json:"securable_full_name,omitempty"`
-	// If provided, only the permissions for the specified principal (user or group)
-	// are returned.
-	Principal *string `json:"principal,omitempty"`
 	// Specifies the maximum number of privileges to return (page length). Every
 	// PrivilegeAssignment present in a single page response is guaranteed to
 	// contain all the privileges granted on the requested Securable for the
@@ -85,6 +78,13 @@ type GetPermissionsRequest struct {
 	MaxResults *int `json:"max_results,omitempty"`
 	// Opaque pagination token to go to next page based on previous query.
 	PageToken *string `json:"page_token,omitempty"`
+	// If provided, only the permissions for the specified principal (user or group)
+	// are returned.
+	Principal *string `json:"principal,omitempty"`
+	// Full name of securable.
+	SecurableFullName *string `json:"securable_full_name,omitempty"`
+	// Type of securable.
+	SecurableType *string `json:"securable_type,omitempty"`
 }
 
 type GetPermissionsResponse struct {
@@ -97,13 +97,8 @@ type GetPermissionsResponse struct {
 }
 
 type ListEffectivePrivilegeAssignmentsRequest struct {
-	// Type of securable.
-	SecurableType *string `json:"securable_type,omitempty"`
 	// Full name of securable.
 	FullName *string `json:"full_name,omitempty"`
-	// If provided, only the effective permissions for the specified principal (user
-	// or group) are returned.
-	Principal *string `json:"principal,omitempty"`
 	// Specifies the maximum number of privilege assignments to return (page
 	// length). Every EffectivePrivilegeAssignment present in a single page response
 	// is guaranteed to contain all the effective privileges granted on (or
@@ -119,6 +114,11 @@ type ListEffectivePrivilegeAssignmentsRequest struct {
 	PageSize *int `json:"page_size,omitempty"`
 	// Opaque pagination token to go to next page based on previous query.
 	PageToken *string `json:"page_token,omitempty"`
+	// If provided, only the effective permissions for the specified principal (user
+	// or group) are returned.
+	Principal *string `json:"principal,omitempty"`
+	// Type of securable.
+	SecurableType *string `json:"securable_type,omitempty"`
 }
 
 type ListEffectivePrivilegeAssignmentsResponse struct {
@@ -132,13 +132,8 @@ type ListEffectivePrivilegeAssignmentsResponse struct {
 }
 
 type ListPrivilegeAssignmentsRequest struct {
-	// Type of securable.
-	SecurableType *string `json:"securable_type,omitempty"`
 	// Full name of securable.
 	FullName *string `json:"full_name,omitempty"`
-	// If provided, only the permissions for the specified principal (user or group)
-	// are returned.
-	Principal *string `json:"principal,omitempty"`
 	// Specifies the maximum number of privilege assignments to return (page
 	// length). Every PrivilegeAssignment present in a single page response is
 	// guaranteed to contain all the privileges granted on the requested Securable
@@ -153,22 +148,27 @@ type ListPrivilegeAssignmentsRequest struct {
 	PageSize *int `json:"page_size,omitempty"`
 	// Opaque pagination token to go to next page based on previous query.
 	PageToken *string `json:"page_token,omitempty"`
+	// If provided, only the permissions for the specified principal (user or group)
+	// are returned.
+	Principal *string `json:"principal,omitempty"`
+	// Type of securable.
+	SecurableType *string `json:"securable_type,omitempty"`
 }
 
 type ListPrivilegeAssignmentsResponse struct {
-	PrivilegeAssignments []PrivilegeAssignment `json:"privilege_assignments,omitempty"`
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. __page_token__ should be set to this value for the next request
 	// (for the next page of results).
-	NextPageToken *string `json:"next_page_token,omitempty"`
+	NextPageToken        *string               `json:"next_page_token,omitempty"`
+	PrivilegeAssignments []PrivilegeAssignment `json:"privilege_assignments,omitempty"`
 }
 
 type PermissionsChange struct {
+	// The set of privileges to add.
+	Add []string `json:"add,omitempty"`
 	// The principal whose privileges we are changing. Only one of principal or
 	// principal_id should be specified, never both at the same time.
 	Principal *string `json:"principal,omitempty"`
-	// The set of privileges to add.
-	Add []string `json:"add,omitempty"`
 	// The set of privileges to remove.
 	Remove []string `json:"remove,omitempty"`
 }
@@ -182,15 +182,15 @@ type PrivilegeAssignment struct {
 }
 
 type UpdatePermissionsRequest struct {
-	// Type of securable.
-	SecurableType *string `json:"securable_type,omitempty"`
-	// Full name of securable.
-	SecurableFullName *string `json:"securable_full_name,omitempty"`
+	// Array of permissions change objects.
+	Changes []PermissionsChange `json:"changes,omitempty"`
 	// Optional, default false. Specifies whether all the permissions should be
 	// returned in the response.
 	OmitPermissionsInResponse *bool `json:"omit_permissions_in_response,omitempty"`
-	// Array of permissions change objects.
-	Changes []PermissionsChange `json:"changes,omitempty"`
+	// Full name of securable.
+	SecurableFullName *string `json:"securable_full_name,omitempty"`
+	// Type of securable.
+	SecurableType *string `json:"securable_type,omitempty"`
 }
 
 type UpdatePermissionsResponse struct {

@@ -24,6 +24,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -279,6 +281,9 @@ func generate(outRoot, pkg string) error {
 
 	cfg := printer.Config{Mode: printer.UseSpaces | printer.TabIndent, Tabwidth: 8}
 	for _, d := range decls {
+		if writeStruct(&buf, d.(*ast.GenDecl)) {
+			continue
+		}
 		if err := cfg.Fprint(&buf, fset, d); err != nil {
 			return err
 		}
@@ -422,4 +427,65 @@ func pruneImports(src []byte) ([]byte, error) {
 		return nil, err
 	}
 	return format.Source(out.Bytes())
+}
+
+// writeStruct renders a struct type declaration with its fields sorted by JSON
+// name, the order the previous SDK used. Serialized output (bundle config,
+// state, request bodies) follows struct field order, so this keeps it stable.
+// The declaration is rendered as text because the printer places comments by
+// position and the fields are reordered.
+func writeStruct(buf *bytes.Buffer, gd *ast.GenDecl) bool {
+	if gd.Tok != token.TYPE {
+		return false
+	}
+	ts := gd.Specs[0].(*ast.TypeSpec)
+	st, ok := ts.Type.(*ast.StructType)
+	if !ok {
+		return false
+	}
+	writeComment(buf, gd.Doc)
+	fmt.Fprintf(buf, "type %s struct {\n", ts.Name.Name)
+	fields := slices.Clone(st.Fields.List)
+	slices.SortStableFunc(fields, func(a, b *ast.Field) int {
+		return strings.Compare(jsonName(a), jsonName(b))
+	})
+	for _, f := range fields {
+		writeComment(buf, f.Doc)
+		var names []string
+		for _, n := range f.Names {
+			names = append(names, n.Name)
+		}
+		buf.WriteString(strings.Join(names, ", "))
+		if len(names) > 0 {
+			buf.WriteString(" ")
+		}
+		buf.WriteString(exprString(f.Type))
+		if f.Tag != nil {
+			buf.WriteString(" " + f.Tag.Value)
+		}
+		buf.WriteString("\n")
+	}
+	buf.WriteString("}\n\n")
+	return true
+}
+
+func writeComment(buf *bytes.Buffer, cg *ast.CommentGroup) {
+	if cg == nil {
+		return
+	}
+	for _, c := range cg.List {
+		buf.WriteString(c.Text + "\n")
+	}
+}
+
+func jsonName(f *ast.Field) string {
+	if f.Tag == nil {
+		return ""
+	}
+	tag, err := strconv.Unquote(f.Tag.Value)
+	if err != nil {
+		return ""
+	}
+	name, _, _ := strings.Cut(reflect.StructTag(tag).Get("json"), ",")
+	return name
 }

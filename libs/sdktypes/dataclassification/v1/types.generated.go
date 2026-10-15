@@ -22,12 +22,12 @@ const (
 // Auto-tagging configuration for a classification tag. When enabled, detected
 // columns are automatically tagged with Unity Catalog tags..
 type AutoTaggingConfig struct {
+	// Whether auto-tagging is enabled or disabled for this classification tag.
+	AutoTaggingMode AutoTaggingConfig_AutoTaggingMode `json:"auto_tagging_mode,omitempty"`
 	// The Classification Tag. For built-in classes this is a system tag (e.g.,
 	// "class.name", "class.location"); for custom classes it is a user-defined
 	// governance tag key.
 	ClassificationTag *string `json:"classification_tag,omitempty"`
-	// Whether auto-tagging is enabled or disabled for this classification tag.
-	AutoTaggingMode AutoTaggingConfig_AutoTaggingMode `json:"auto_tagging_mode,omitempty"`
 }
 
 // Data Classification configuration for a Unity Catalog catalog. This message
@@ -36,13 +36,13 @@ type AutoTaggingConfig struct {
 // Classification, Delete disables it - It has no unique identifier of its own
 // and uses its parent catalog's identifier (catalog_name).
 type CatalogConfig struct {
-	// Resource name in the format: catalogs/{catalog_name}/config.
-	Name            *string                    `json:"name,omitempty"`
-	IncludedSchemas *CatalogConfig_SchemaNames `json:"included_schemas,omitempty"`
-	ExcludedSchemas *CatalogConfig_SchemaNames `json:"excluded_schemas,omitempty"`
 	// List of auto-tagging configurations for this catalog. Empty list means no
 	// auto-tagging is enabled.
-	AutoTagConfigs []AutoTaggingConfig `json:"auto_tag_configs,omitempty"`
+	AutoTagConfigs  []AutoTaggingConfig        `json:"auto_tag_configs,omitempty"`
+	ExcludedSchemas *CatalogConfig_SchemaNames `json:"excluded_schemas,omitempty"`
+	IncludedSchemas *CatalogConfig_SchemaNames `json:"included_schemas,omitempty"`
+	// Resource name in the format: catalogs/{catalog_name}/config.
+	Name *string `json:"name,omitempty"`
 }
 
 // Wrapper message for a list of schema names..
@@ -54,10 +54,10 @@ type CatalogConfig_SchemaNames struct {
 // Create Data Classification configuration for a catalog. Creating a config
 // enables Data Classification for the catalog..
 type CreateCatalogConfigRequest struct {
-	// Parent resource in the format: catalogs/{catalog_name}
-	Parent *string `json:"parent,omitempty"`
 	// The configuration to create.
 	CatalogConfig *CatalogConfig `json:"catalog_config,omitempty"`
+	// Parent resource in the format: catalogs/{catalog_name}
+	Parent *string `json:"parent,omitempty"`
 }
 
 // Request to update the Data Classification configuration for a catalog.

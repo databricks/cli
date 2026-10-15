@@ -23,67 +23,67 @@ const (
 )
 
 type CreateSchemaRequest struct {
-	// Name of schema, relative to parent catalog.
-	Name *string `json:"name,omitempty"`
-	// Name of parent catalog.
-	CatalogName *string `json:"catalog_name,omitempty"`
-	// Username of current owner of schema.
-	Owner *string `json:"owner,omitempty"`
-	// User-provided free-form text description.
-	Comment *string `json:"comment,omitempty"`
-	// Storage root URL for managed tables within schema.
-	StorageRoot *string `json:"storage_root,omitempty"`
-	// Whether predictive optimization should be enabled for this object and objects
-	// under it.
-	EnablePredictiveOptimization *string `json:"enable_predictive_optimization,omitempty"`
-	// Unique identifier of parent metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Full name of schema, in form of __catalog_name__.__schema_name__.
-	FullName *string `json:"full_name,omitempty"`
-	// Time at which this schema was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of schema creator.
-	CreatedBy *string `json:"created_by,omitempty"`
-	// Time at which this schema was created, in epoch milliseconds.
-	UpdatedAt *int64 `json:"updated_at,omitempty"`
-	// Username of user who last modified schema.
-	UpdatedBy *string `json:"updated_by,omitempty"`
-	// The type of the parent catalog.
-	CatalogType CatalogType `json:"catalog_type,omitempty"`
-	// Storage location for managed tables within schema.
-	StorageLocation                     *string                              `json:"storage_location,omitempty"`
-	EffectivePredictiveOptimizationFlag *EffectivePredictiveOptimizationFlag `json:"effective_predictive_optimization_flag,omitempty"`
-	// The unique identifier of the schema.
-	SchemaId *string `json:"schema_id,omitempty"`
 	// Indicates whether the principal is limited to retrieving metadata for the
 	// associated object through the BROWSE privilege when include_browse is enabled
 	// in the request.
 	BrowseOnly *bool `json:"browse_only,omitempty"`
+	// Name of parent catalog.
+	CatalogName *string `json:"catalog_name,omitempty"`
+	// The type of the parent catalog.
+	CatalogType CatalogType `json:"catalog_type,omitempty"`
+	// User-provided free-form text description.
+	Comment *string `json:"comment,omitempty"`
+	// Time at which this schema was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of schema creator.
+	CreatedBy *string `json:"created_by,omitempty"`
 	// Custom maximum retention period in hours for the schema.
-	CustomMaxRetentionHours *int64 `json:"custom_max_retention_hours,omitempty"`
-	// A map of key-value properties attached to the securable.
-	Properties map[string]string `json:"properties,omitempty"`
+	CustomMaxRetentionHours             *int64                               `json:"custom_max_retention_hours,omitempty"`
+	EffectivePredictiveOptimizationFlag *EffectivePredictiveOptimizationFlag `json:"effective_predictive_optimization_flag,omitempty"`
+	// Whether predictive optimization should be enabled for this object and objects
+	// under it.
+	EnablePredictiveOptimization *string `json:"enable_predictive_optimization,omitempty"`
+	// Full name of schema, in form of __catalog_name__.__schema_name__.
+	FullName *string `json:"full_name,omitempty"`
+	// Unique identifier of parent metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// Name of schema, relative to parent catalog.
+	Name *string `json:"name,omitempty"`
 	// A map of key-value properties attached to the securable.
 	Options map[string]string `json:"options,omitempty"`
+	// Username of current owner of schema.
+	Owner *string `json:"owner,omitempty"`
+	// A map of key-value properties attached to the securable.
+	Properties map[string]string `json:"properties,omitempty"`
+	// The unique identifier of the schema.
+	SchemaId *string `json:"schema_id,omitempty"`
+	// Storage location for managed tables within schema.
+	StorageLocation *string `json:"storage_location,omitempty"`
+	// Storage root URL for managed tables within schema.
+	StorageRoot *string `json:"storage_root,omitempty"`
+	// Time at which this schema was created, in epoch milliseconds.
+	UpdatedAt *int64 `json:"updated_at,omitempty"`
+	// Username of user who last modified schema.
+	UpdatedBy *string `json:"updated_by,omitempty"`
 }
 
 type DeleteSchemaRequest struct {
-	// Full name of the schema.
-	FullNameArg *string `json:"full_name_arg,omitempty"`
 	// Force deletion even if the schema is not empty.
 	Force *bool `json:"force,omitempty"`
+	// Full name of the schema.
+	FullNameArg *string `json:"full_name_arg,omitempty"`
 }
 
 type EffectivePredictiveOptimizationFlag struct {
-	// Whether predictive optimization should be enabled for this object and objects
-	// under it.
-	Value *string `json:"value,omitempty"`
-	// The type of the object from which the flag was inherited. If there was no
-	// inheritance, this field is left blank.
-	InheritedFromType *string `json:"inherited_from_type,omitempty"`
 	// The name of the object from which the flag was inherited. If there was no
 	// inheritance, this field is left blank.
 	InheritedFromName *string `json:"inherited_from_name,omitempty"`
+	// The type of the object from which the flag was inherited. If there was no
+	// inheritance, this field is left blank.
+	InheritedFromType *string `json:"inherited_from_type,omitempty"`
+	// Whether predictive optimization should be enabled for this object and objects
+	// under it.
+	Value *string `json:"value,omitempty"`
 }
 
 type GetSchemaRequest struct {
@@ -97,6 +97,9 @@ type GetSchemaRequest struct {
 type ListSchemasRequest struct {
 	// Parent catalog for schemas of interest.
 	CatalogName *string `json:"catalog_name,omitempty"`
+	// Whether to include schemas in the response for which the principal can only
+	// access selective metadata for
+	IncludeBrowse *bool `json:"include_browse,omitempty"`
 	// Maximum number of schemas to return. If not set, all the schemas are returned
 	// (not recommended). - when set to a value greater than 0, the page length is
 	// the minimum of this value and a server configured value; - when set to 0, the
@@ -105,112 +108,109 @@ type ListSchemasRequest struct {
 	MaxResults *int `json:"max_results,omitempty"`
 	// Opaque pagination token to go to next page based on previous query.
 	PageToken *string `json:"page_token,omitempty"`
-	// Whether to include schemas in the response for which the principal can only
-	// access selective metadata for
-	IncludeBrowse *bool `json:"include_browse,omitempty"`
 }
 
 type ListSchemasResponse struct {
-	// An array of schema information objects.
-	Schemas []SchemaInfo `json:"schemas,omitempty"`
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. __page_token__ should be set to this value for the next request
 	// (for the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// An array of schema information objects.
+	Schemas []SchemaInfo `json:"schemas,omitempty"`
 }
 
 type SchemaInfo struct {
-	// Name of schema, relative to parent catalog.
-	Name *string `json:"name,omitempty"`
-	// Name of parent catalog.
-	CatalogName *string `json:"catalog_name,omitempty"`
-	// Username of current owner of schema.
-	Owner *string `json:"owner,omitempty"`
-	// User-provided free-form text description.
-	Comment *string `json:"comment,omitempty"`
-	// Storage root URL for managed tables within schema.
-	StorageRoot *string `json:"storage_root,omitempty"`
-	// Whether predictive optimization should be enabled for this object and objects
-	// under it.
-	EnablePredictiveOptimization *string `json:"enable_predictive_optimization,omitempty"`
-	// Unique identifier of parent metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Full name of schema, in form of __catalog_name__.__schema_name__.
-	FullName *string `json:"full_name,omitempty"`
-	// Time at which this schema was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of schema creator.
-	CreatedBy *string `json:"created_by,omitempty"`
-	// Time at which this schema was created, in epoch milliseconds.
-	UpdatedAt *int64 `json:"updated_at,omitempty"`
-	// Username of user who last modified schema.
-	UpdatedBy *string `json:"updated_by,omitempty"`
-	// The type of the parent catalog.
-	CatalogType CatalogType `json:"catalog_type,omitempty"`
-	// Storage location for managed tables within schema.
-	StorageLocation                     *string                              `json:"storage_location,omitempty"`
-	EffectivePredictiveOptimizationFlag *EffectivePredictiveOptimizationFlag `json:"effective_predictive_optimization_flag,omitempty"`
-	// The unique identifier of the schema.
-	SchemaId *string `json:"schema_id,omitempty"`
 	// Indicates whether the principal is limited to retrieving metadata for the
 	// associated object through the BROWSE privilege when include_browse is enabled
 	// in the request.
 	BrowseOnly *bool `json:"browse_only,omitempty"`
+	// Name of parent catalog.
+	CatalogName *string `json:"catalog_name,omitempty"`
+	// The type of the parent catalog.
+	CatalogType CatalogType `json:"catalog_type,omitempty"`
+	// User-provided free-form text description.
+	Comment *string `json:"comment,omitempty"`
+	// Time at which this schema was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of schema creator.
+	CreatedBy *string `json:"created_by,omitempty"`
 	// Custom maximum retention period in hours for the schema.
-	CustomMaxRetentionHours *int64 `json:"custom_max_retention_hours,omitempty"`
-	// A map of key-value properties attached to the securable.
-	Properties map[string]string `json:"properties,omitempty"`
+	CustomMaxRetentionHours             *int64                               `json:"custom_max_retention_hours,omitempty"`
+	EffectivePredictiveOptimizationFlag *EffectivePredictiveOptimizationFlag `json:"effective_predictive_optimization_flag,omitempty"`
+	// Whether predictive optimization should be enabled for this object and objects
+	// under it.
+	EnablePredictiveOptimization *string `json:"enable_predictive_optimization,omitempty"`
+	// Full name of schema, in form of __catalog_name__.__schema_name__.
+	FullName *string `json:"full_name,omitempty"`
+	// Unique identifier of parent metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// Name of schema, relative to parent catalog.
+	Name *string `json:"name,omitempty"`
 	// A map of key-value properties attached to the securable.
 	Options map[string]string `json:"options,omitempty"`
+	// Username of current owner of schema.
+	Owner *string `json:"owner,omitempty"`
+	// A map of key-value properties attached to the securable.
+	Properties map[string]string `json:"properties,omitempty"`
+	// The unique identifier of the schema.
+	SchemaId *string `json:"schema_id,omitempty"`
+	// Storage location for managed tables within schema.
+	StorageLocation *string `json:"storage_location,omitempty"`
+	// Storage root URL for managed tables within schema.
+	StorageRoot *string `json:"storage_root,omitempty"`
+	// Time at which this schema was created, in epoch milliseconds.
+	UpdatedAt *int64 `json:"updated_at,omitempty"`
+	// Username of user who last modified schema.
+	UpdatedBy *string `json:"updated_by,omitempty"`
 }
 
 type UpdateSchemaRequest struct {
-	// Full name of the schema.
-	FullNameArg *string `json:"full_name_arg,omitempty"`
-	// New name for the schema.
-	NewName *string `json:"new_name,omitempty"`
-	// Name of schema, relative to parent catalog.
-	Name *string `json:"name,omitempty"`
-	// Name of parent catalog.
-	CatalogName *string `json:"catalog_name,omitempty"`
-	// Username of current owner of schema.
-	Owner *string `json:"owner,omitempty"`
-	// User-provided free-form text description.
-	Comment *string `json:"comment,omitempty"`
-	// Storage root URL for managed tables within schema.
-	StorageRoot *string `json:"storage_root,omitempty"`
-	// Whether predictive optimization should be enabled for this object and objects
-	// under it.
-	EnablePredictiveOptimization *string `json:"enable_predictive_optimization,omitempty"`
-	// Unique identifier of parent metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Full name of schema, in form of __catalog_name__.__schema_name__.
-	FullName *string `json:"full_name,omitempty"`
-	// Time at which this schema was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of schema creator.
-	CreatedBy *string `json:"created_by,omitempty"`
-	// Time at which this schema was created, in epoch milliseconds.
-	UpdatedAt *int64 `json:"updated_at,omitempty"`
-	// Username of user who last modified schema.
-	UpdatedBy *string `json:"updated_by,omitempty"`
-	// The type of the parent catalog.
-	CatalogType CatalogType `json:"catalog_type,omitempty"`
-	// Storage location for managed tables within schema.
-	StorageLocation                     *string                              `json:"storage_location,omitempty"`
-	EffectivePredictiveOptimizationFlag *EffectivePredictiveOptimizationFlag `json:"effective_predictive_optimization_flag,omitempty"`
-	// The unique identifier of the schema.
-	SchemaId *string `json:"schema_id,omitempty"`
 	// Indicates whether the principal is limited to retrieving metadata for the
 	// associated object through the BROWSE privilege when include_browse is enabled
 	// in the request.
 	BrowseOnly *bool `json:"browse_only,omitempty"`
+	// Name of parent catalog.
+	CatalogName *string `json:"catalog_name,omitempty"`
+	// The type of the parent catalog.
+	CatalogType CatalogType `json:"catalog_type,omitempty"`
+	// User-provided free-form text description.
+	Comment *string `json:"comment,omitempty"`
+	// Time at which this schema was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of schema creator.
+	CreatedBy *string `json:"created_by,omitempty"`
 	// Custom maximum retention period in hours for the schema.
-	CustomMaxRetentionHours *int64 `json:"custom_max_retention_hours,omitempty"`
-	// A map of key-value properties attached to the securable.
-	Properties map[string]string `json:"properties,omitempty"`
+	CustomMaxRetentionHours             *int64                               `json:"custom_max_retention_hours,omitempty"`
+	EffectivePredictiveOptimizationFlag *EffectivePredictiveOptimizationFlag `json:"effective_predictive_optimization_flag,omitempty"`
+	// Whether predictive optimization should be enabled for this object and objects
+	// under it.
+	EnablePredictiveOptimization *string `json:"enable_predictive_optimization,omitempty"`
+	// Full name of schema, in form of __catalog_name__.__schema_name__.
+	FullName *string `json:"full_name,omitempty"`
+	// Full name of the schema.
+	FullNameArg *string `json:"full_name_arg,omitempty"`
+	// Unique identifier of parent metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// Name of schema, relative to parent catalog.
+	Name *string `json:"name,omitempty"`
+	// New name for the schema.
+	NewName *string `json:"new_name,omitempty"`
 	// A map of key-value properties attached to the securable.
 	Options map[string]string `json:"options,omitempty"`
+	// Username of current owner of schema.
+	Owner *string `json:"owner,omitempty"`
+	// A map of key-value properties attached to the securable.
+	Properties map[string]string `json:"properties,omitempty"`
+	// The unique identifier of the schema.
+	SchemaId *string `json:"schema_id,omitempty"`
+	// Storage location for managed tables within schema.
+	StorageLocation *string `json:"storage_location,omitempty"`
+	// Storage root URL for managed tables within schema.
+	StorageRoot *string `json:"storage_root,omitempty"`
+	// Time at which this schema was created, in epoch milliseconds.
+	UpdatedAt *int64 `json:"updated_at,omitempty"`
+	// Username of user who last modified schema.
+	UpdatedBy *string `json:"updated_by,omitempty"`
 }
 
 // CreateSchemaRequestToSDK converts the mirror to the sdk-go type.

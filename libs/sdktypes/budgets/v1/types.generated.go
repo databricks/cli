@@ -48,62 +48,62 @@ type ActionConfiguration struct {
 }
 
 type AlertConfiguration struct {
+	// Configured actions for this alert. These define what happens when an alert
+	// enters a triggered state.
+	ActionConfigurations []ActionConfiguration `json:"action_configurations,omitempty"`
 	// <Databricks> alert configuration ID.
 	AlertConfigurationId *string `json:"alert_configuration_id,omitempty"`
+	// Per-principal threshold overrides for this alert. Only applies to per-user
+	// alerts (`scope_type` = `ALERT_CONFIGURATION_SCOPE_TYPE_PER_USER`); ignored
+	// for shared alerts.
+	PrincipalOverrides []PrincipalOverride `json:"principal_overrides,omitempty"`
+	// The threshold for the budget alert to determine if it is in a triggered
+	// state. The number is evaluated based on `quantity_type`.
+	QuantityThreshold *string `json:"quantity_threshold,omitempty"`
+	// The way to calculate cost for this budget alert. This is what
+	// `quantity_threshold` is measured in.
+	QuantityType AlertConfigurationQuantityType `json:"quantity_type,omitempty"`
+	// How the alert threshold is evaluated. Determines whether spend is tracked in
+	// aggregate or per individual user.
+	ScopeType AlertConfigurationScopeType `json:"scope_type,omitempty"`
 	// The time window of usage data for the budget.
 	TimePeriod AlertConfigurationTimePeriod `json:"time_period,omitempty"`
 	// The evaluation method to determine when this budget alert is in a triggered
 	// state.
 	TriggerType AlertConfigurationTriggerType `json:"trigger_type,omitempty"`
-	// The way to calculate cost for this budget alert. This is what
-	// `quantity_threshold` is measured in.
-	QuantityType AlertConfigurationQuantityType `json:"quantity_type,omitempty"`
-	// The threshold for the budget alert to determine if it is in a triggered
-	// state. The number is evaluated based on `quantity_type`.
-	QuantityThreshold *string `json:"quantity_threshold,omitempty"`
-	// Configured actions for this alert. These define what happens when an alert
-	// enters a triggered state.
-	ActionConfigurations []ActionConfiguration `json:"action_configurations,omitempty"`
-	// How the alert threshold is evaluated. Determines whether spend is tracked in
-	// aggregate or per individual user.
-	ScopeType AlertConfigurationScopeType `json:"scope_type,omitempty"`
-	// Per-principal threshold overrides for this alert. Only applies to per-user
-	// alerts (`scope_type` = `ALERT_CONFIGURATION_SCOPE_TYPE_PER_USER`); ignored
-	// for shared alerts.
-	PrincipalOverrides []PrincipalOverride `json:"principal_overrides,omitempty"`
 }
 
 type BudgetConfiguration struct {
-	// <Databricks> budget configuration ID.
-	BudgetConfigurationId *string `json:"budget_configuration_id,omitempty"`
 	// <Databricks> account ID.
 	AccountId *string `json:"account_id,omitempty"`
-	// Creation time of this budget configuration.
-	CreateTime *int64 `json:"create_time,omitempty"`
-	// Update time of this budget configuration.
-	UpdateTime *int64 `json:"update_time,omitempty"`
 	// Alerts to configure when this budget is in a triggered state. Budgets must
 	// have exactly one alert configuration.
 	AlertConfigurations []AlertConfiguration `json:"alert_configurations,omitempty"`
+	// <Databricks> budget configuration ID.
+	BudgetConfigurationId *string `json:"budget_configuration_id,omitempty"`
+	// Creation time of this budget configuration.
+	CreateTime *int64 `json:"create_time,omitempty"`
+	// Human-readable name of budget configuration. Max Length: 128
+	DisplayName *string `json:"display_name,omitempty"`
 	// Configured filters for this budget. These are applied to your account's usage
 	// to limit the scope of what is considered for this budget. Leave empty to
 	// include all usage for this account. All provided filters must be matched for
 	// usage to be included.
 	Filter *BudgetConfigurationFilter `json:"filter,omitempty"`
-	// Human-readable name of budget configuration. Max Length: 128
-	DisplayName *string `json:"display_name,omitempty"`
 	// The resource scope for this budget. Determines whether the budget tracks all
 	// resources or a specific resource.
 	ResourceType BudgetResourceType `json:"resource_type,omitempty"`
+	// Update time of this budget configuration.
+	UpdateTime *int64 `json:"update_time,omitempty"`
 }
 
 type BudgetConfigurationFilter struct {
-	// If provided, usage must match with the provided <Databricks> workspace IDs.
-	WorkspaceId *BudgetConfigurationFilter_WorkspaceIdClause `json:"workspace_id,omitempty"`
 	// A list of tag keys and values that will limit the budget to usage that
 	// includes those specific custom tags. Tags are case-sensitive and should be
 	// entered exactly as they appear in your usage data.
 	Tags []BudgetConfigurationFilter_TagClause `json:"tags,omitempty"`
+	// If provided, usage must match with the provided <Databricks> workspace IDs.
+	WorkspaceId *BudgetConfigurationFilter_WorkspaceIdClause `json:"workspace_id,omitempty"`
 }
 
 type BudgetConfigurationFilter_Clause struct {
@@ -127,13 +127,13 @@ type CreateBudgetConfigurationBudget struct {
 	// Alerts to configure when this budget is in a triggered state. Budgets must
 	// have exactly one alert configuration.
 	AlertConfigurations []CreateBudgetConfigurationBudgetAlertConfigurations `json:"alert_configurations,omitempty"`
+	// Human-readable name of budget configuration. Max Length: 128
+	DisplayName *string `json:"display_name,omitempty"`
 	// Configured filters for this budget. These are applied to your account's usage
 	// to limit the scope of what is considered for this budget. Leave empty to
 	// include all usage for this account. All provided filters must be matched for
 	// usage to be included.
 	Filter *BudgetConfigurationFilter `json:"filter,omitempty"`
-	// Human-readable name of budget configuration. Max Length: 128
-	DisplayName *string `json:"display_name,omitempty"`
 	// The resource scope for this budget. Determines whether the budget tracks all
 	// resources or a specific resource.
 	ResourceType BudgetResourceType `json:"resource_type,omitempty"`
@@ -147,27 +147,27 @@ type CreateBudgetConfigurationBudgetActionConfigurations struct {
 }
 
 type CreateBudgetConfigurationBudgetAlertConfigurations struct {
+	// Configured actions for this alert. These define what happens when an alert
+	// enters a triggered state.
+	ActionConfigurations []CreateBudgetConfigurationBudgetActionConfigurations `json:"action_configurations,omitempty"`
+	// Per-principal threshold overrides for this alert. Only applies to per-user
+	// alerts (`scope_type` = `ALERT_CONFIGURATION_SCOPE_TYPE_PER_USER`); ignored
+	// for shared alerts.
+	PrincipalOverrides []PrincipalOverride `json:"principal_overrides,omitempty"`
+	// The threshold for the budget alert to determine if it is in a triggered
+	// state. The number is evaluated based on `quantity_type`.
+	QuantityThreshold *string `json:"quantity_threshold,omitempty"`
+	// The way to calculate cost for this budget alert. This is what
+	// `quantity_threshold` is measured in.
+	QuantityType AlertConfigurationQuantityType `json:"quantity_type,omitempty"`
+	// How the alert threshold is evaluated. Determines whether spend is tracked in
+	// aggregate or per individual user.
+	ScopeType AlertConfigurationScopeType `json:"scope_type,omitempty"`
 	// The time window of usage data for the budget.
 	TimePeriod AlertConfigurationTimePeriod `json:"time_period,omitempty"`
 	// The evaluation method to determine when this budget alert is in a triggered
 	// state.
 	TriggerType AlertConfigurationTriggerType `json:"trigger_type,omitempty"`
-	// The way to calculate cost for this budget alert. This is what
-	// `quantity_threshold` is measured in.
-	QuantityType AlertConfigurationQuantityType `json:"quantity_type,omitempty"`
-	// The threshold for the budget alert to determine if it is in a triggered
-	// state. The number is evaluated based on `quantity_type`.
-	QuantityThreshold *string `json:"quantity_threshold,omitempty"`
-	// Configured actions for this alert. These define what happens when an alert
-	// enters a triggered state.
-	ActionConfigurations []CreateBudgetConfigurationBudgetActionConfigurations `json:"action_configurations,omitempty"`
-	// How the alert threshold is evaluated. Determines whether spend is tracked in
-	// aggregate or per individual user.
-	ScopeType AlertConfigurationScopeType `json:"scope_type,omitempty"`
-	// Per-principal threshold overrides for this alert. Only applies to per-user
-	// alerts (`scope_type` = `ALERT_CONFIGURATION_SCOPE_TYPE_PER_USER`); ignored
-	// for shared alerts.
-	PrincipalOverrides []PrincipalOverride `json:"principal_overrides,omitempty"`
 }
 
 type CreateBudgetConfigurationRequest struct {
@@ -203,39 +203,39 @@ type ListBudgetConfigurationsResponse struct {
 // Per-principal threshold override on a PER_USER alert: bumps the alert's
 // quantity_threshold for one principal_id..
 type PrincipalOverride struct {
-	// Account-level principal id (user, group, or service principal).
-	PrincipalId *int64 `json:"principal_id,omitempty"`
 	// Dollar amount that overrides the parent alert's quantity_threshold for this
 	// principal.
 	OverrideThreshold *string `json:"override_threshold,omitempty"`
+	// Account-level principal id (user, group, or service principal).
+	PrincipalId *int64 `json:"principal_id,omitempty"`
 }
 
 type UpdateBudgetConfigurationBudget struct {
-	// <Databricks> budget configuration ID.
-	BudgetConfigurationId *string `json:"budget_configuration_id,omitempty"`
 	// <Databricks> account ID.
 	AccountId *string `json:"account_id,omitempty"`
 	// Alerts to configure when this budget is in a triggered state. Budgets must
 	// have exactly one alert configuration.
 	AlertConfigurations []AlertConfiguration `json:"alert_configurations,omitempty"`
+	// <Databricks> budget configuration ID.
+	BudgetConfigurationId *string `json:"budget_configuration_id,omitempty"`
+	// Human-readable name of budget configuration. Max Length: 128
+	DisplayName *string `json:"display_name,omitempty"`
 	// Configured filters for this budget. These are applied to your account's usage
 	// to limit the scope of what is considered for this budget. Leave empty to
 	// include all usage for this account. All provided filters must be matched for
 	// usage to be included.
 	Filter *BudgetConfigurationFilter `json:"filter,omitempty"`
-	// Human-readable name of budget configuration. Max Length: 128
-	DisplayName *string `json:"display_name,omitempty"`
 	// The resource scope for this budget. Determines whether the budget tracks all
 	// resources or a specific resource.
 	ResourceType BudgetResourceType `json:"resource_type,omitempty"`
 }
 
 type UpdateBudgetConfigurationRequest struct {
-	// The <Databricks> budget configuration ID.
-	BudgetId *string `json:"budget_id,omitempty"`
 	// The updated budget. This will overwrite the budget specified by the budget
 	// ID.
 	Budget *UpdateBudgetConfigurationBudget `json:"budget,omitempty"`
+	// The <Databricks> budget configuration ID.
+	BudgetId *string `json:"budget_id,omitempty"`
 }
 
 type UpdateBudgetConfigurationResponse struct {

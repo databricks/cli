@@ -74,10 +74,10 @@ type BooleanMessage struct {
 }
 
 type ClusterAutoRestartMessage struct {
-	Enabled                         *bool                                        `json:"enabled,omitempty"`
 	CanToggle                       *bool                                        `json:"can_toggle,omitempty"`
-	MaintenanceWindow               *ClusterAutoRestartMessage_MaintenanceWindow `json:"maintenance_window,omitempty"`
+	Enabled                         *bool                                        `json:"enabled,omitempty"`
 	EnablementDetails               *ClusterAutoRestartMessage_EnablementDetails `json:"enablement_details,omitempty"`
+	MaintenanceWindow               *ClusterAutoRestartMessage_MaintenanceWindow `json:"maintenance_window,omitempty"`
 	RestartEvenIfNoUpdatesAvailable *bool                                        `json:"restart_even_if_no_updates_available,omitempty"`
 }
 
@@ -88,13 +88,13 @@ type ClusterAutoRestartMessage struct {
 // additional details. For example, using these details we can check why exactly
 // the feature is disabled for this customer..
 type ClusterAutoRestartMessage_EnablementDetails struct {
-	// The feature is unavailable if the customer doesn't have enterprise tier
-	UnavailableForNonEnterpriseTier *bool `json:"unavailable_for_non_enterprise_tier,omitempty"`
+	// The feature is force enabled if compliance mode is active
+	ForcedForComplianceMode *bool `json:"forced_for_compliance_mode,omitempty"`
 	// The feature is unavailable if the corresponding entitlement disabled (see
 	// getShieldEntitlementEnable)
 	UnavailableForDisabledEntitlement *bool `json:"unavailable_for_disabled_entitlement,omitempty"`
-	// The feature is force enabled if compliance mode is active
-	ForcedForComplianceMode *bool `json:"forced_for_compliance_mode,omitempty"`
+	// The feature is unavailable if the customer doesn't have enterprise tier
+	UnavailableForNonEnterpriseTier *bool `json:"unavailable_for_non_enterprise_tier,omitempty"`
 }
 
 type ClusterAutoRestartMessage_MaintenanceWindow struct {
@@ -102,8 +102,8 @@ type ClusterAutoRestartMessage_MaintenanceWindow struct {
 }
 
 type ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedSchedule struct {
-	Frequency       ClusterAutoRestartMessage_MaintenanceWindow_WeekDayFrequency `json:"frequency,omitempty"`
 	DayOfWeek       ClusterAutoRestartMessage_MaintenanceWindow_DayOfWeek        `json:"day_of_week,omitempty"`
+	Frequency       ClusterAutoRestartMessage_MaintenanceWindow_WeekDayFrequency `json:"frequency,omitempty"`
 	WindowStartTime *ClusterAutoRestartMessage_MaintenanceWindow_WindowStartTime `json:"window_start_time,omitempty"`
 }
 
@@ -139,18 +139,16 @@ type ListAccountSettingsMetadataRequest struct {
 }
 
 type ListAccountSettingsMetadataResponse struct {
-	// List of all settings available via public APIs and their metadata
-	SettingsMetadata []SettingsMetadata `json:"settings_metadata,omitempty"`
 	// A token that can be sent as `page_token` to retrieve the next page. If this
 	// field is omitted, there are no subsequent pages.
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// List of all settings available via public APIs and their metadata
+	SettingsMetadata []SettingsMetadata `json:"settings_metadata,omitempty"`
 }
 
 type ListAccountUserPreferencesMetadataRequest struct {
 	// <Databricks> account ID of the account being managed.
 	AccountId *string `json:"account_id,omitempty"`
-	// User ID of the user whose settings metadata is being retrieved.
-	UserId *string `json:"user_id,omitempty"`
 	// The maximum number of settings to return. The service may return fewer than
 	// this value. If unspecified, at most 200 settings will be returned. The
 	// maximum value is 1000; values above 1000 will be coerced to 1000.
@@ -163,14 +161,16 @@ type ListAccountUserPreferencesMetadataRequest struct {
 	// `ListAccountUserPreferencesMetadataRequest` must match the call that provided
 	// the page token.
 	PageToken *string `json:"page_token,omitempty"`
+	// User ID of the user whose settings metadata is being retrieved.
+	UserId *string `json:"user_id,omitempty"`
 }
 
 type ListAccountUserPreferencesMetadataResponse struct {
-	// List of all settings available via public APIs and their metadata
-	SettingsMetadata []SettingsMetadata `json:"settings_metadata,omitempty"`
 	// A token that can be sent as `page_token` to retrieve the next page. If this
 	// field is omitted, there are no subsequent pages.
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// List of all settings available via public APIs and their metadata
+	SettingsMetadata []SettingsMetadata `json:"settings_metadata,omitempty"`
 }
 
 type ListWorkspaceSettingsMetadataRequest struct {
@@ -188,11 +188,11 @@ type ListWorkspaceSettingsMetadataRequest struct {
 }
 
 type ListWorkspaceSettingsMetadataResponse struct {
-	// List of all settings available via public APIs and their metadata
-	SettingsMetadata []SettingsMetadata `json:"settings_metadata,omitempty"`
 	// A token that can be sent as `page_token` to retrieve the next page. If this
 	// field is omitted, there are no subsequent pages.
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// List of all settings available via public APIs and their metadata
+	SettingsMetadata []SettingsMetadata `json:"settings_metadata,omitempty"`
 }
 
 type OperationalEmailCustomRecipientMessage struct {
@@ -208,11 +208,11 @@ type PatchPublicAccountSettingRequest struct {
 
 type PatchPublicAccountUserPreferenceRequest struct {
 	// <Databricks> account ID of the account being managed.
-	AccountId *string `json:"account_id,omitempty"`
+	AccountId *string         `json:"account_id,omitempty"`
+	Name      *string         `json:"name,omitempty"`
+	Setting   *UserPreference `json:"setting,omitempty"`
 	// User ID of the user whose setting is being updated.
-	UserId  *string         `json:"user_id,omitempty"`
-	Name    *string         `json:"name,omitempty"`
-	Setting *UserPreference `json:"setting,omitempty"`
+	UserId *string `json:"user_id,omitempty"`
 }
 
 type PatchPublicWorkspaceSettingRequest struct {
@@ -226,57 +226,57 @@ type PersonalComputeMessage struct {
 }
 
 type RestrictWorkspaceAdminsMessage struct {
-	Status RestrictWorkspaceAdminsMessage_Status `json:"status,omitempty"`
 	// When true, workspace admins cannot create governance tags. ALLOW_ALL status
 	// does not override this; they are independent.
-	DisableGovTagCreation *bool `json:"disable_gov_tag_creation,omitempty"`
+	DisableGovTagCreation *bool                                 `json:"disable_gov_tag_creation,omitempty"`
+	Status                RestrictWorkspaceAdminsMessage_Status `json:"status,omitempty"`
 }
 
 type Setting struct {
-	// Name of the setting.
-	Name                                           *string                                   `json:"name,omitempty"`
-	BooleanVal                                     *BooleanMessage                           `json:"boolean_val,omitempty"`
-	StringVal                                      *StringMessage                            `json:"string_val,omitempty"`
-	IntegerVal                                     *IntegerMessage                           `json:"integer_val,omitempty"`
-	AutomaticClusterUpdateWorkspace                *ClusterAutoRestartMessage                `json:"automatic_cluster_update_workspace,omitempty"`
-	AibiDashboardEmbeddingApprovedDomains          *AibiDashboardEmbeddingApprovedDomains    `json:"aibi_dashboard_embedding_approved_domains,omitempty"`
 	AibiDashboardEmbeddingAccessPolicy             *AibiDashboardEmbeddingAccessPolicy       `json:"aibi_dashboard_embedding_access_policy,omitempty"`
-	RestrictWorkspaceAdmins                        *RestrictWorkspaceAdminsMessage           `json:"restrict_workspace_admins,omitempty"`
-	PersonalCompute                                *PersonalComputeMessage                   `json:"personal_compute,omitempty"`
-	WorkspaceLabel                                 *WorkspaceLabelMessage                    `json:"workspace_label,omitempty"`
+	AibiDashboardEmbeddingApprovedDomains          *AibiDashboardEmbeddingApprovedDomains    `json:"aibi_dashboard_embedding_approved_domains,omitempty"`
 	AllowedAppsUserApiScopes                       *AllowedAppsUserApiScopesMessage          `json:"allowed_apps_user_api_scopes,omitempty"`
-	OperationalEmailCustomRecipient                *OperationalEmailCustomRecipientMessage   `json:"operational_email_custom_recipient,omitempty"`
+	AutomaticClusterUpdateWorkspace                *ClusterAutoRestartMessage                `json:"automatic_cluster_update_workspace,omitempty"`
+	BooleanVal                                     *BooleanMessage                           `json:"boolean_val,omitempty"`
 	CollaborationPlatformConnectivity              *CollaborationPlatformConnectivityMessage `json:"collaboration_platform_connectivity,omitempty"`
-	EffectiveBooleanVal                            *BooleanMessage                           `json:"effective_boolean_val,omitempty"`
-	EffectiveStringVal                             *StringMessage                            `json:"effective_string_val,omitempty"`
-	EffectiveIntegerVal                            *IntegerMessage                           `json:"effective_integer_val,omitempty"`
-	EffectiveAutomaticClusterUpdateWorkspace       *ClusterAutoRestartMessage                `json:"effective_automatic_cluster_update_workspace,omitempty"`
-	EffectiveAibiDashboardEmbeddingApprovedDomains *AibiDashboardEmbeddingApprovedDomains    `json:"effective_aibi_dashboard_embedding_approved_domains,omitempty"`
 	EffectiveAibiDashboardEmbeddingAccessPolicy    *AibiDashboardEmbeddingAccessPolicy       `json:"effective_aibi_dashboard_embedding_access_policy,omitempty"`
-	EffectiveRestrictWorkspaceAdmins               *RestrictWorkspaceAdminsMessage           `json:"effective_restrict_workspace_admins,omitempty"`
-	EffectivePersonalCompute                       *PersonalComputeMessage                   `json:"effective_personal_compute,omitempty"`
-	EffectiveWorkspaceLabel                        *WorkspaceLabelMessage                    `json:"effective_workspace_label,omitempty"`
+	EffectiveAibiDashboardEmbeddingApprovedDomains *AibiDashboardEmbeddingApprovedDomains    `json:"effective_aibi_dashboard_embedding_approved_domains,omitempty"`
 	EffectiveAllowedAppsUserApiScopes              *AllowedAppsUserApiScopesMessage          `json:"effective_allowed_apps_user_api_scopes,omitempty"`
-	EffectiveOperationalEmailCustomRecipient       *OperationalEmailCustomRecipientMessage   `json:"effective_operational_email_custom_recipient,omitempty"`
+	EffectiveAutomaticClusterUpdateWorkspace       *ClusterAutoRestartMessage                `json:"effective_automatic_cluster_update_workspace,omitempty"`
+	EffectiveBooleanVal                            *BooleanMessage                           `json:"effective_boolean_val,omitempty"`
 	EffectiveCollaborationPlatformConnectivity     *CollaborationPlatformConnectivityMessage `json:"effective_collaboration_platform_connectivity,omitempty"`
+	EffectiveIntegerVal                            *IntegerMessage                           `json:"effective_integer_val,omitempty"`
+	EffectiveOperationalEmailCustomRecipient       *OperationalEmailCustomRecipientMessage   `json:"effective_operational_email_custom_recipient,omitempty"`
+	EffectivePersonalCompute                       *PersonalComputeMessage                   `json:"effective_personal_compute,omitempty"`
+	EffectiveRestrictWorkspaceAdmins               *RestrictWorkspaceAdminsMessage           `json:"effective_restrict_workspace_admins,omitempty"`
+	EffectiveStringVal                             *StringMessage                            `json:"effective_string_val,omitempty"`
+	EffectiveWorkspaceLabel                        *WorkspaceLabelMessage                    `json:"effective_workspace_label,omitempty"`
+	IntegerVal                                     *IntegerMessage                           `json:"integer_val,omitempty"`
+	// Name of the setting.
+	Name                            *string                                 `json:"name,omitempty"`
+	OperationalEmailCustomRecipient *OperationalEmailCustomRecipientMessage `json:"operational_email_custom_recipient,omitempty"`
+	PersonalCompute                 *PersonalComputeMessage                 `json:"personal_compute,omitempty"`
+	RestrictWorkspaceAdmins         *RestrictWorkspaceAdminsMessage         `json:"restrict_workspace_admins,omitempty"`
+	StringVal                       *StringMessage                          `json:"string_val,omitempty"`
+	WorkspaceLabel                  *WorkspaceLabelMessage                  `json:"workspace_label,omitempty"`
 }
 
 type SettingsMetadata struct {
-	// Name of the setting.
-	Name *string `json:"name,omitempty"`
 	// Setting description for what this setting controls
 	Description *string `json:"description,omitempty"`
-	// Sample message depicting the type of the setting. To set this setting, the
-	// value sent must match this type.
-	Type *string `json:"type,omitempty"`
-	// Link to databricks documentation for the setting
-	DocsLink *string `json:"docs_link,omitempty"`
-	// Preview phase for feature preview settings. This field is not set for
-	// non-preview settings.
-	PreviewPhase PreviewPhase `json:"preview_phase,omitempty"`
 	// Human-readable display name for the setting or feature preview. This field
 	// may be unset if no display name is available.
 	DisplayName *string `json:"display_name,omitempty"`
+	// Link to databricks documentation for the setting
+	DocsLink *string `json:"docs_link,omitempty"`
+	// Name of the setting.
+	Name *string `json:"name,omitempty"`
+	// Preview phase for feature preview settings. This field is not set for
+	// non-preview settings.
+	PreviewPhase PreviewPhase `json:"preview_phase,omitempty"`
+	// Sample message depicting the type of the setting. To set this setting, the
+	// value sent must match this type.
+	Type *string `json:"type,omitempty"`
 }
 
 type StringMessage struct {
@@ -289,20 +289,20 @@ type StringMessage struct {
 // all users, user preferences allow personal customization (e.g., UI theme,
 // editor preferences) without affecting other users..
 type UserPreference struct {
-	// Name of the setting.
-	Name *string `json:"name,omitempty"`
-	// User ID of the user.
-	UserId              *string         `json:"user_id,omitempty"`
 	BooleanVal          *BooleanMessage `json:"boolean_val,omitempty"`
-	StringVal           *StringMessage  `json:"string_val,omitempty"`
 	EffectiveBooleanVal *BooleanMessage `json:"effective_boolean_val,omitempty"`
 	EffectiveStringVal  *StringMessage  `json:"effective_string_val,omitempty"`
+	// Name of the setting.
+	Name      *string        `json:"name,omitempty"`
+	StringVal *StringMessage `json:"string_val,omitempty"`
+	// User ID of the user.
+	UserId *string `json:"user_id,omitempty"`
 }
 
 // Workspace label and color for display (e.g. in account console)..
 type WorkspaceLabelMessage struct {
-	Label *string `json:"label,omitempty"`
 	Color *string `json:"color,omitempty"`
+	Label *string `json:"label,omitempty"`
 }
 
 // AibiDashboardEmbeddingAccessPolicyToSDK converts the mirror to the sdk-go type.

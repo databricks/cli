@@ -45,34 +45,34 @@ type CreateExternalMetadataRequest struct {
 }
 
 type ExternalMetadata struct {
-	// Name of the external metadata object.
-	Name *string `json:"name,omitempty"`
-	// Type of external system.
-	SystemType SystemType `json:"system_type,omitempty"`
-	// Type of entity within the external system.
-	EntityType *string `json:"entity_type,omitempty"`
-	// URL associated with the external metadata object.
-	Url *string `json:"url,omitempty"`
-	// User-provided free-form text description.
-	Description *string `json:"description,omitempty"`
 	// List of columns associated with the external metadata object.
 	Columns []string `json:"columns,omitempty"`
-	// A map of key-value properties attached to the external metadata object.
-	Properties map[string]string `json:"properties,omitempty"`
-	// Owner of the external metadata object.
-	Owner *string `json:"owner,omitempty"`
-	// Unique identifier of parent metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
 	// Time at which this external metadata object was created.
 	CreateTime *types.Time `json:"create_time,omitempty"`
 	// Username of external metadata object creator.
 	CreatedBy *string `json:"created_by,omitempty"`
+	// User-provided free-form text description.
+	Description *string `json:"description,omitempty"`
+	// Type of entity within the external system.
+	EntityType *string `json:"entity_type,omitempty"`
+	// Unique identifier of the external metadata object.
+	Id *string `json:"id,omitempty"`
+	// Unique identifier of parent metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// Name of the external metadata object.
+	Name *string `json:"name,omitempty"`
+	// Owner of the external metadata object.
+	Owner *string `json:"owner,omitempty"`
+	// A map of key-value properties attached to the external metadata object.
+	Properties map[string]string `json:"properties,omitempty"`
+	// Type of external system.
+	SystemType SystemType `json:"system_type,omitempty"`
 	// Time at which this external metadata object was last modified.
 	UpdateTime *types.Time `json:"update_time,omitempty"`
 	// Username of user who last modified external metadata object.
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Unique identifier of the external metadata object.
-	Id *string `json:"id,omitempty"`
+	// URL associated with the external metadata object.
+	Url *string `json:"url,omitempty"`
 }
 
 type ListExternalMetadataRequest struct {

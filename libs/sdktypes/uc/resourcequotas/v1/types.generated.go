@@ -52,27 +52,27 @@ type ListQuotasRequest struct {
 }
 
 type ListQuotasResponse struct {
-	// An array of returned QuotaInfos.
-	Quotas []QuotaInfo `json:"quotas,omitempty"`
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. __page_token__ should be set to this value for the next request.
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// An array of returned QuotaInfos.
+	Quotas []QuotaInfo `json:"quotas,omitempty"`
 }
 
 type QuotaInfo struct {
-	// The quota parent securable type.
-	ParentSecurableType SecurableType `json:"parent_securable_type,omitempty"`
+	// The timestamp that indicates when the quota count was last updated.
+	LastRefreshedAt *int64 `json:"last_refreshed_at,omitempty"`
 	// Name of the parent resource. Returns metastore ID if the parent is a
 	// metastore.
 	ParentFullName *string `json:"parent_full_name,omitempty"`
-	// The name of the quota.
-	QuotaName *string `json:"quota_name,omitempty"`
+	// The quota parent securable type.
+	ParentSecurableType SecurableType `json:"parent_securable_type,omitempty"`
 	// The current usage of the resource quota.
 	QuotaCount *int `json:"quota_count,omitempty"`
 	// The current limit of the resource quota.
 	QuotaLimit *int `json:"quota_limit,omitempty"`
-	// The timestamp that indicates when the quota count was last updated.
-	LastRefreshedAt *int64 `json:"last_refreshed_at,omitempty"`
+	// The name of the quota.
+	QuotaName *string `json:"quota_name,omitempty"`
 }
 
 // GetQuotaResponseToSDK converts the mirror to the sdk-go type.

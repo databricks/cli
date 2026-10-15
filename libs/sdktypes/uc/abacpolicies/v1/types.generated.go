@@ -105,10 +105,6 @@ type GrantOptions struct {
 }
 
 type ListPoliciesRequest struct {
-	// Required. The type of the securable to list policies for.
-	OnSecurableType *string `json:"on_securable_type,omitempty"`
-	// Required. The fully qualified name of securable to list policies for.
-	OnSecurableFullname *string `json:"on_securable_fullname,omitempty"`
 	// Optional. Whether to include policies defined on parent securables. By
 	// default, the inherited policies are not included.
 	IncludeInherited *bool `json:"include_inherited,omitempty"`
@@ -117,69 +113,73 @@ type ListPoliciesRequest struct {
 	// configured value (recommended); - When set to a value greater than 0, the
 	// page length is the minimum of this value and a server configured value;
 	MaxResults *int `json:"max_results,omitempty"`
+	// Required. The fully qualified name of securable to list policies for.
+	OnSecurableFullname *string `json:"on_securable_fullname,omitempty"`
+	// Required. The type of the securable to list policies for.
+	OnSecurableType *string `json:"on_securable_type,omitempty"`
 	// Optional. Opaque pagination token to go to next page based on previous query.
 	PageToken *string `json:"page_token,omitempty"`
 }
 
 type ListPoliciesResponse struct {
-	// The list of retrieved policies.
-	Policies []PolicyInfo `json:"policies,omitempty"`
 	// Optional opaque token for continuing pagination. `page_token` should be set
 	// to this value for the next request to retrieve the next page of results.
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// The list of retrieved policies.
+	Policies []PolicyInfo `json:"policies,omitempty"`
 }
 
 type MatchColumn struct {
-	// The condition expression used to match a table column.
-	Condition *string `json:"condition,omitempty"`
 	// Optional alias of the matched column.
 	Alias *string `json:"alias,omitempty"`
+	// The condition expression used to match a table column.
+	Condition *string `json:"condition,omitempty"`
 }
 
 type PolicyInfo struct {
-	// Unique identifier of the policy. This field is output only and is generated
-	// by the system.
-	Id *string `json:"id,omitempty"`
-	// Type of the securable on which the policy is defined. Only `CATALOG`,
-	// `SCHEMA` and `TABLE` are supported at this moment. Required on create.
-	OnSecurableType SecurableType `json:"on_securable_type,omitempty"`
-	// Full name of the securable on which the policy is defined. Required on
-	// create.
-	OnSecurableFullname *string `json:"on_securable_fullname,omitempty"`
-	// Name of the policy. Required on create and optional on update. To rename the
-	// policy, set `name` to a different value on update.
-	Name *string `json:"name,omitempty"`
+	ColumnMask *ColumnMaskOptions `json:"column_mask,omitempty"`
 	// Optional description of the policy.
 	Comment *string `json:"comment,omitempty"`
-	// List of user or group names that the policy applies to. Required on create
-	// and optional on update.
-	ToPrincipals []string `json:"to_principals,omitempty"`
+	// Time at which the policy was created, in epoch milliseconds. Output only.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of the user who created the policy. Output only.
+	CreatedBy *string      `json:"created_by,omitempty"`
+	Deny      *DenyOptions `json:"deny,omitempty"`
 	// Optional list of user or group names that should be excluded from the policy.
 	ExceptPrincipals []string `json:"except_principals,omitempty"`
 	// Type of securables that the policy should take effect on. Required on create
 	// and optional on update.
 	ForSecurableType SecurableType `json:"for_securable_type,omitempty"`
-	// Optional condition when the policy should take effect.
-	WhenCondition *string `json:"when_condition,omitempty"`
-	// Type of the policy. Required on create.
-	PolicyType PolicyType         `json:"policy_type,omitempty"`
-	RowFilter  *RowFilterOptions  `json:"row_filter,omitempty"`
-	ColumnMask *ColumnMaskOptions `json:"column_mask,omitempty"`
-	Deny       *DenyOptions       `json:"deny,omitempty"`
-	Grant      *GrantOptions      `json:"grant,omitempty"`
+	Grant            *GrantOptions `json:"grant,omitempty"`
+	// Unique identifier of the policy. This field is output only and is generated
+	// by the system.
+	Id *string `json:"id,omitempty"`
 	// Optional list of condition expressions used to match table columns. Only
 	// valid when `for_securable_type` is `TABLE`. When specified, the policy only
 	// applies to tables whose columns satisfy all match conditions.
 	MatchColumns []MatchColumn `json:"match_columns,omitempty"`
-	// Time at which the policy was created, in epoch milliseconds. Output only.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of the user who created the policy. Output only.
-	CreatedBy *string `json:"created_by,omitempty"`
+	// Name of the policy. Required on create and optional on update. To rename the
+	// policy, set `name` to a different value on update.
+	Name *string `json:"name,omitempty"`
+	// Full name of the securable on which the policy is defined. Required on
+	// create.
+	OnSecurableFullname *string `json:"on_securable_fullname,omitempty"`
+	// Type of the securable on which the policy is defined. Only `CATALOG`,
+	// `SCHEMA` and `TABLE` are supported at this moment. Required on create.
+	OnSecurableType SecurableType `json:"on_securable_type,omitempty"`
+	// Type of the policy. Required on create.
+	PolicyType PolicyType        `json:"policy_type,omitempty"`
+	RowFilter  *RowFilterOptions `json:"row_filter,omitempty"`
+	// List of user or group names that the policy applies to. Required on create
+	// and optional on update.
+	ToPrincipals []string `json:"to_principals,omitempty"`
 	// Time at which the policy was last modified, in epoch milliseconds. Output
 	// only.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of the user who last modified the policy. Output only.
 	UpdatedBy *string `json:"updated_by,omitempty"`
+	// Optional condition when the policy should take effect.
+	WhenCondition *string `json:"when_condition,omitempty"`
 }
 
 type RowFilterOptions struct {
@@ -195,8 +195,8 @@ type RowFilterOptions struct {
 
 // An expression that introspects tags at query time..
 type TagIntrospectionExpression struct {
-	TagValue       *TagValueExtraction       `json:"tag_value,omitempty"`
 	ColumnTagValue *ColumnTagValueExtraction `json:"column_tag_value,omitempty"`
+	TagValue       *TagValueExtraction       `json:"tag_value,omitempty"`
 }
 
 // Extracts the value of a securable-level tag: get_tag_value("tagKey")..
@@ -206,12 +206,12 @@ type TagValueExtraction struct {
 }
 
 type UpdatePolicyRequest struct {
-	// Required. The type of the securable to update the policy for.
-	OnSecurableType *string `json:"on_securable_type,omitempty"`
-	// Required. The fully qualified name of the securable to update the policy for.
-	OnSecurableFullname *string `json:"on_securable_fullname,omitempty"`
 	// Required. The name of the policy to update.
 	Name *string `json:"name,omitempty"`
+	// Required. The fully qualified name of the securable to update the policy for.
+	OnSecurableFullname *string `json:"on_securable_fullname,omitempty"`
+	// Required. The type of the securable to update the policy for.
+	OnSecurableType *string `json:"on_securable_type,omitempty"`
 	// Optional fields to update. This is the request body for updating a policy.
 	// Use `update_mask` field to specify which fields in the request is to be
 	// updated. - If `update_mask` is empty or "*", all specified fields will be

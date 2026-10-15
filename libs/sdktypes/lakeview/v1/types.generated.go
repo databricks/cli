@@ -28,18 +28,18 @@ const (
 )
 
 type AuthorizationDetails struct {
-	// The type of authorization downscoping policy. Ex: `workspace_rule_set`
-	// defines access rules for a specific workspace resource
-	Type *string `json:"type,omitempty"`
+	// Represents downscoped permission rules with specific access rights. This
+	// field is specific to `workspace_rule_set` constraint.
+	GrantRules []AuthorizationDetails_GrantRule `json:"grant_rules,omitempty"`
+	// The acl path of the tree store resource resource.
+	ResourceLegacyAclPath *string `json:"resource_legacy_acl_path,omitempty"`
 	// The resource name to which the authorization rule applies. This field is
 	// specific to `workspace_rule_set` constraint. Format:
 	// `workspaces/{workspace_id}/dashboards/{dashboard_id}`
 	ResourceName *string `json:"resource_name,omitempty"`
-	// The acl path of the tree store resource resource.
-	ResourceLegacyAclPath *string `json:"resource_legacy_acl_path,omitempty"`
-	// Represents downscoped permission rules with specific access rights. This
-	// field is specific to `workspace_rule_set` constraint.
-	GrantRules []AuthorizationDetails_GrantRule `json:"grant_rules,omitempty"`
+	// The type of authorization downscoping policy. Ex: `workspace_rule_set`
+	// defines access rules for a specific workspace resource
+	Type *string `json:"type,omitempty"`
 }
 
 type AuthorizationDetails_GrantRule struct {
@@ -86,25 +86,26 @@ type CronSchedule struct {
 }
 
 type Dashboard struct {
+	// The timestamp of when the dashboard was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
 	// UUID identifying the dashboard.
 	DashboardId *string `json:"dashboard_id,omitempty"`
 	// The display name of the dashboard.
 	DisplayName *string `json:"display_name,omitempty"`
-	// The workspace path of the dashboard asset, including the file name. Exported
-	// dashboards always have the file extension `.lvdash.json`. This field is
-	// excluded in List Dashboards responses.
-	Path *string `json:"path,omitempty"`
-	// The timestamp of when the dashboard was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	// The timestamp of when the dashboard was last updated by the user. This field
-	// is excluded in List Dashboards responses.
-	UpdateTime *types.Time `json:"update_time,omitempty"`
-	// The warehouse ID used to run the dashboard.
-	WarehouseId *string `json:"warehouse_id,omitempty"`
 	// The etag for the dashboard. Can be optionally provided on updates to ensure
 	// that the dashboard has not been modified since the last read. This field is
 	// excluded in List Dashboards responses.
 	Etag *string `json:"etag,omitempty"`
+	// The state of the dashboard resource. Used for tracking trashed status.
+	LifecycleState LifecycleState `json:"lifecycle_state,omitempty"`
+	// The workspace path of the folder containing the dashboard. Includes leading
+	// slash and no trailing slash. This field is excluded in List Dashboards
+	// responses.
+	ParentPath *string `json:"parent_path,omitempty"`
+	// The workspace path of the dashboard asset, including the file name. Exported
+	// dashboards always have the file extension `.lvdash.json`. This field is
+	// excluded in List Dashboards responses.
+	Path *string `json:"path,omitempty"`
 	// The contents of the dashboard in serialized string form. This field is
 	// excluded in List Dashboards responses. Use the [get dashboard API] to
 	// retrieve an example response, which includes the `serialized_dashboard`
@@ -113,30 +114,30 @@ type Dashboard struct {
 	//
 	// [get dashboard API]: https://docs.databricks.com/api/workspace/lakeview/get
 	SerializedDashboard *string `json:"serialized_dashboard,omitempty"`
-	// The state of the dashboard resource. Used for tracking trashed status.
-	LifecycleState LifecycleState `json:"lifecycle_state,omitempty"`
-	// The workspace path of the folder containing the dashboard. Includes leading
-	// slash and no trailing slash. This field is excluded in List Dashboards
-	// responses.
-	ParentPath *string `json:"parent_path,omitempty"`
-}
-
-type DashboardCreate struct {
-	// UUID identifying the dashboard.
-	DashboardId *string `json:"dashboard_id,omitempty"`
-	// The display name of the dashboard.
-	DisplayName *string `json:"display_name,omitempty"`
-	// The workspace path of the dashboard asset, including the file name. Exported
-	// dashboards always have the file extension `.lvdash.json`. This field is
-	// excluded in List Dashboards responses.
-	Path *string `json:"path,omitempty"`
-	// The timestamp of when the dashboard was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
 	// The timestamp of when the dashboard was last updated by the user. This field
 	// is excluded in List Dashboards responses.
 	UpdateTime *types.Time `json:"update_time,omitempty"`
 	// The warehouse ID used to run the dashboard.
 	WarehouseId *string `json:"warehouse_id,omitempty"`
+}
+
+type DashboardCreate struct {
+	// The timestamp of when the dashboard was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
+	// UUID identifying the dashboard.
+	DashboardId *string `json:"dashboard_id,omitempty"`
+	// The display name of the dashboard.
+	DisplayName *string `json:"display_name,omitempty"`
+	// The state of the dashboard resource. Used for tracking trashed status.
+	LifecycleState LifecycleState `json:"lifecycle_state,omitempty"`
+	// The workspace path of the folder containing the dashboard. Includes leading
+	// slash and no trailing slash. This field is excluded in List Dashboards
+	// responses.
+	ParentPath *string `json:"parent_path,omitempty"`
+	// The workspace path of the dashboard asset, including the file name. Exported
+	// dashboards always have the file extension `.lvdash.json`. This field is
+	// excluded in List Dashboards responses.
+	Path *string `json:"path,omitempty"`
 	// The contents of the dashboard in serialized string form. This field is
 	// excluded in List Dashboards responses. Use the [get dashboard API] to
 	// retrieve an example response, which includes the `serialized_dashboard`
@@ -145,34 +146,33 @@ type DashboardCreate struct {
 	//
 	// [get dashboard API]: https://docs.databricks.com/api/workspace/lakeview/get
 	SerializedDashboard *string `json:"serialized_dashboard,omitempty"`
-	// The state of the dashboard resource. Used for tracking trashed status.
-	LifecycleState LifecycleState `json:"lifecycle_state,omitempty"`
-	// The workspace path of the folder containing the dashboard. Includes leading
-	// slash and no trailing slash. This field is excluded in List Dashboards
-	// responses.
-	ParentPath *string `json:"parent_path,omitempty"`
+	// The timestamp of when the dashboard was last updated by the user. This field
+	// is excluded in List Dashboards responses.
+	UpdateTime *types.Time `json:"update_time,omitempty"`
+	// The warehouse ID used to run the dashboard.
+	WarehouseId *string `json:"warehouse_id,omitempty"`
 }
 
 type DeleteScheduleRequest struct {
-	// UUID identifying the schedule.
-	ScheduleId *string `json:"schedule_id,omitempty"`
 	// UUID identifying the dashboard to which the schedule belongs.
 	DashboardId *string `json:"dashboard_id,omitempty"`
 	// The etag for the schedule. Optionally, it can be provided to verify that the
 	// schedule has not been modified from its last retrieval.
 	Etag *string `json:"etag,omitempty"`
+	// UUID identifying the schedule.
+	ScheduleId *string `json:"schedule_id,omitempty"`
 }
 
 type DeleteSubscriptionRequest struct {
-	// UUID identifying the subscription.
-	SubscriptionId *string `json:"subscription_id,omitempty"`
-	// UUID identifying the schedule which the subscription belongs.
-	ScheduleId *string `json:"schedule_id,omitempty"`
 	// UUID identifying the dashboard which the subscription belongs.
 	DashboardId *string `json:"dashboard_id,omitempty"`
 	// The etag for the subscription. Can be optionally provided to ensure that the
 	// subscription has not been modified since the last read.
 	Etag *string `json:"etag,omitempty"`
+	// UUID identifying the schedule which the subscription belongs.
+	ScheduleId *string `json:"schedule_id,omitempty"`
+	// UUID identifying the subscription.
+	SubscriptionId *string `json:"subscription_id,omitempty"`
 }
 
 type GetPublishedDashboardTokenInfoRequest struct {
@@ -185,15 +185,15 @@ type GetPublishedDashboardTokenInfoRequest struct {
 }
 
 type GetPublishedDashboardTokenInfoResponse struct {
+	// Authorization constraints for accessing the published dashboard. Currently
+	// includes `workspace_rule_set` and could be enriched with
+	// `unity_catalog_privileges` before oAuth token generation.
+	AuthorizationDetails []AuthorizationDetails `json:"authorization_details,omitempty"`
 	// Custom claim generated from external_value and external_viewer_id. Format:
 	// `urn:aibi:external_data:<external_value>:<external_viewer_id>:<dashboard_id>`
 	CustomClaim *string `json:"custom_claim,omitempty"`
 	// Scope defining access permissions.
 	Scope *string `json:"scope,omitempty"`
-	// Authorization constraints for accessing the published dashboard. Currently
-	// includes `workspace_rule_set` and could be enriched with
-	// `unity_catalog_privileges` before oAuth token generation.
-	AuthorizationDetails []AuthorizationDetails `json:"authorization_details,omitempty"`
 }
 
 type ListDashboardsRequest struct {
@@ -227,40 +227,40 @@ type ListSchedulesRequest struct {
 }
 
 type ListSchedulesResponse struct {
-	Schedules []Schedule `json:"schedules,omitempty"`
 	// A token that can be used as a `page_token` in subsequent requests to retrieve
 	// the next page of results. If this field is omitted, there are no subsequent
 	// schedules.
-	NextPageToken *string `json:"next_page_token,omitempty"`
+	NextPageToken *string    `json:"next_page_token,omitempty"`
+	Schedules     []Schedule `json:"schedules,omitempty"`
 }
 
 type ListSubscriptionsRequest struct {
 	// UUID identifying the dashboard which the subscriptions belongs.
 	DashboardId *string `json:"dashboard_id,omitempty"`
-	// UUID identifying the schedule which the subscriptions belongs.
-	ScheduleId *string `json:"schedule_id,omitempty"`
 	// The number of subscriptions to return per page.
 	PageSize *int `json:"page_size,omitempty"`
 	// A page token, received from a previous `ListSubscriptions` call. Use this to
 	// retrieve the subsequent page.
 	PageToken *string `json:"page_token,omitempty"`
+	// UUID identifying the schedule which the subscriptions belongs.
+	ScheduleId *string `json:"schedule_id,omitempty"`
 }
 
 type ListSubscriptionsResponse struct {
-	Subscriptions []Subscription `json:"subscriptions,omitempty"`
 	// A token that can be used as a `page_token` in subsequent requests to retrieve
 	// the next page of results. If this field is omitted, there are no subsequent
 	// subscriptions.
-	NextPageToken *string `json:"next_page_token,omitempty"`
+	NextPageToken *string        `json:"next_page_token,omitempty"`
+	Subscriptions []Subscription `json:"subscriptions,omitempty"`
 }
 
 type MigrateDashboardRequest struct {
-	// UUID of the dashboard to be migrated.
-	SourceDashboardId *string `json:"source_dashboard_id,omitempty"`
 	// Display name for the new Lakeview dashboard.
 	DisplayName *string `json:"display_name,omitempty"`
 	// The workspace path of the folder to contain the migrated Lakeview dashboard.
 	ParentPath *string `json:"parent_path,omitempty"`
+	// UUID of the dashboard to be migrated.
+	SourceDashboardId *string `json:"source_dashboard_id,omitempty"`
 	// Flag to indicate if mustache parameter syntax ({{ param }}) should be
 	// auto-updated to named syntax (:param) when converting datasets in the
 	// dashboard.
@@ -282,12 +282,12 @@ type PublishDashboardRequest struct {
 type PublishedDashboard struct {
 	// The display name of the published dashboard.
 	DisplayName *string `json:"display_name,omitempty"`
-	// The warehouse ID used to run the published dashboard.
-	WarehouseId *string `json:"warehouse_id,omitempty"`
 	// Indicates whether credentials are embedded in the published dashboard.
 	EmbedCredentials *bool `json:"embed_credentials,omitempty"`
 	// The timestamp of when the published dashboard was last revised.
 	RevisionCreateTime *types.Time `json:"revision_create_time,omitempty"`
+	// The warehouse ID used to run the published dashboard.
+	WarehouseId *string `json:"warehouse_id,omitempty"`
 }
 
 // Request to revert a dashboard draft to its last published state..
@@ -306,23 +306,23 @@ type RevertDashboardResponse struct {
 }
 
 type Schedule struct {
-	// UUID identifying the schedule.
-	ScheduleId *string `json:"schedule_id,omitempty"`
-	// UUID identifying the dashboard to which the schedule belongs.
-	DashboardId *string `json:"dashboard_id,omitempty"`
+	// A timestamp indicating when the schedule was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
 	// The cron expression describing the frequency of the periodic refresh for this
 	// schedule.
 	CronSchedule *CronSchedule `json:"cron_schedule,omitempty"`
-	// The status indicates whether this schedule is paused or not.
-	PauseStatus SchedulePauseStatus `json:"pause_status,omitempty"`
+	// UUID identifying the dashboard to which the schedule belongs.
+	DashboardId *string `json:"dashboard_id,omitempty"`
 	// The display name for schedule.
 	DisplayName *string `json:"display_name,omitempty"`
 	// The etag for the schedule. Must be left empty on create, must be provided on
 	// updates to ensure that the schedule has not been modified since the last
 	// read, and can be optionally provided on delete.
 	Etag *string `json:"etag,omitempty"`
-	// A timestamp indicating when the schedule was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
+	// The status indicates whether this schedule is paused or not.
+	PauseStatus SchedulePauseStatus `json:"pause_status,omitempty"`
+	// UUID identifying the schedule.
+	ScheduleId *string `json:"schedule_id,omitempty"`
 	// A timestamp indicating when the schedule was last updated.
 	UpdateTime *types.Time `json:"update_time,omitempty"`
 	// The warehouse id to run the dashboard with for the schedule.
@@ -330,19 +330,19 @@ type Schedule struct {
 }
 
 type ScheduleCreate struct {
-	// UUID identifying the schedule.
-	ScheduleId *string `json:"schedule_id,omitempty"`
-	// UUID identifying the dashboard to which the schedule belongs.
-	DashboardId *string `json:"dashboard_id,omitempty"`
+	// A timestamp indicating when the schedule was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
 	// The cron expression describing the frequency of the periodic refresh for this
 	// schedule.
 	CronSchedule *CronSchedule `json:"cron_schedule,omitempty"`
-	// The status indicates whether this schedule is paused or not.
-	PauseStatus SchedulePauseStatus `json:"pause_status,omitempty"`
+	// UUID identifying the dashboard to which the schedule belongs.
+	DashboardId *string `json:"dashboard_id,omitempty"`
 	// The display name for schedule.
 	DisplayName *string `json:"display_name,omitempty"`
-	// A timestamp indicating when the schedule was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
+	// The status indicates whether this schedule is paused or not.
+	PauseStatus SchedulePauseStatus `json:"pause_status,omitempty"`
+	// UUID identifying the schedule.
+	ScheduleId *string `json:"schedule_id,omitempty"`
 	// A timestamp indicating when the schedule was last updated.
 	UpdateTime *types.Time `json:"update_time,omitempty"`
 	// The warehouse id to run the dashboard with for the schedule.
@@ -350,39 +350,39 @@ type ScheduleCreate struct {
 }
 
 type Subscription struct {
-	// UUID identifying the subscription.
-	SubscriptionId *string `json:"subscription_id,omitempty"`
-	// UUID identifying the schedule to which the subscription belongs.
-	ScheduleId *string `json:"schedule_id,omitempty"`
-	// UUID identifying the dashboard to which the subscription belongs.
-	DashboardId *string `json:"dashboard_id,omitempty"`
-	// Subscriber details for users and destinations to be added as subscribers to
-	// the schedule.
-	Subscriber *Subscription_Subscriber `json:"subscriber,omitempty"`
+	// A timestamp indicating when the subscription was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
 	// UserId of the user who adds subscribers (users or notification destinations)
 	// to the dashboard's schedule.
 	CreatedByUserId *int64 `json:"created_by_user_id,omitempty"`
+	// UUID identifying the dashboard to which the subscription belongs.
+	DashboardId *string `json:"dashboard_id,omitempty"`
 	// The etag for the subscription. Must be left empty on create, can be
 	// optionally provided on delete to ensure that the subscription has not been
 	// deleted since the last read.
 	Etag *string `json:"etag,omitempty"`
-	// A timestamp indicating when the subscription was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	// A timestamp indicating when the subscription was last updated.
-	UpdateTime *types.Time `json:"update_time,omitempty"`
+	// UUID identifying the schedule to which the subscription belongs.
+	ScheduleId *string `json:"schedule_id,omitempty"`
 	// Controls whether notifications are sent to the subscriber for scheduled
 	// dashboard refreshes. If not defined, defaults to false in the backend to
 	// match the current behavior (refresh and notify)
 	SkipNotify *bool `json:"skip_notify,omitempty"`
+	// Subscriber details for users and destinations to be added as subscribers to
+	// the schedule.
+	Subscriber *Subscription_Subscriber `json:"subscriber,omitempty"`
+	// UUID identifying the subscription.
+	SubscriptionId *string `json:"subscription_id,omitempty"`
+	// A timestamp indicating when the subscription was last updated.
+	UpdateTime *types.Time `json:"update_time,omitempty"`
 }
 
 type Subscription_Subscriber struct {
-	// The user to receive the subscription email. This parameter is mutually
-	// exclusive with `destination_subscriber`.
-	UserSubscriber *Subscription_Subscriber_User `json:"user_subscriber,omitempty"`
 	// The destination to receive the subscription email. This parameter is mutually
 	// exclusive with `user_subscriber`.
 	DestinationSubscriber *Subscription_Subscriber_Destination `json:"destination_subscriber,omitempty"`
+	// The user to receive the subscription email. This parameter is mutually
+	// exclusive with `destination_subscriber`.
+	UserSubscriber *Subscription_Subscriber_User `json:"user_subscriber,omitempty"`
 }
 
 type Subscription_Subscriber_Destination struct {
@@ -396,26 +396,26 @@ type Subscription_Subscriber_User struct {
 }
 
 type SubscriptionCreate struct {
-	// UUID identifying the subscription.
-	SubscriptionId *string `json:"subscription_id,omitempty"`
-	// UUID identifying the schedule to which the subscription belongs.
-	ScheduleId *string `json:"schedule_id,omitempty"`
-	// UUID identifying the dashboard to which the subscription belongs.
-	DashboardId *string `json:"dashboard_id,omitempty"`
-	// Subscriber details for users and destinations to be added as subscribers to
-	// the schedule.
-	Subscriber *Subscription_Subscriber `json:"subscriber,omitempty"`
+	// A timestamp indicating when the subscription was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
 	// UserId of the user who adds subscribers (users or notification destinations)
 	// to the dashboard's schedule.
 	CreatedByUserId *int64 `json:"created_by_user_id,omitempty"`
-	// A timestamp indicating when the subscription was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	// A timestamp indicating when the subscription was last updated.
-	UpdateTime *types.Time `json:"update_time,omitempty"`
+	// UUID identifying the dashboard to which the subscription belongs.
+	DashboardId *string `json:"dashboard_id,omitempty"`
+	// UUID identifying the schedule to which the subscription belongs.
+	ScheduleId *string `json:"schedule_id,omitempty"`
 	// Controls whether notifications are sent to the subscriber for scheduled
 	// dashboard refreshes. If not defined, defaults to false in the backend to
 	// match the current behavior (refresh and notify)
 	SkipNotify *bool `json:"skip_notify,omitempty"`
+	// Subscriber details for users and destinations to be added as subscribers to
+	// the schedule.
+	Subscriber *Subscription_Subscriber `json:"subscriber,omitempty"`
+	// UUID identifying the subscription.
+	SubscriptionId *string `json:"subscription_id,omitempty"`
+	// A timestamp indicating when the subscription was last updated.
+	UpdateTime *types.Time `json:"update_time,omitempty"`
 }
 
 type UpdateDashboardRequest struct {

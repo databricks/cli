@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/databricks/cli/libs/utils"
 	"io/fs"
 	"os"
 	"strings"
@@ -253,7 +254,7 @@ func (i *installer) setupPythonVirtualEnvironment(ctx context.Context, w *sdkcli
 		}
 		runtimeVersion, ok := cfgpickers.GetRuntimeVersion(*cluster)
 		if !ok {
-			return fmt.Errorf("unsupported runtime: %s", cluster.SparkVersion)
+			return fmt.Errorf("unsupported runtime: %s", utils.Deref(cluster.SparkVersion))
 		}
 		sp.Update("Installing Databricks Connect v" + runtimeVersion)
 		pipSpec := "databricks-connect==" + runtimeVersion

@@ -69,23 +69,23 @@ type Ai21LabsConfig struct {
 }
 
 type AiGatewayConfig struct {
-	// Configuration to enable usage tracking using system tables. These tables
-	// allow you to monitor operational usage on endpoints and their associated
-	// costs.
-	UsageTrackingConfig *UsageTrackingConfig `json:"usage_tracking_config,omitempty"`
+	// Configuration for traffic fallback which auto fallbacks to other served
+	// entities if the request to a served entity fails with certain error codes, to
+	// increase availability.
+	FallbackConfig *FallbackConfig `json:"fallback_config,omitempty"`
+	// Configuration for AI Guardrails to prevent unwanted data and unsafe data in
+	// requests and responses.
+	Guardrails *AiGuardrails `json:"guardrails,omitempty"`
 	// Configuration for payload logging using inference tables. Use these tables to
 	// monitor and audit data being sent to and received from model APIs and to
 	// improve model quality.
 	InferenceTableConfig *InferenceTableConfig `json:"inference_table_config,omitempty"`
 	// Configuration for rate limits which can be set to limit endpoint traffic.
 	RateLimits []AiGatewayRateLimit `json:"rate_limits,omitempty"`
-	// Configuration for AI Guardrails to prevent unwanted data and unsafe data in
-	// requests and responses.
-	Guardrails *AiGuardrails `json:"guardrails,omitempty"`
-	// Configuration for traffic fallback which auto fallbacks to other served
-	// entities if the request to a served entity fails with certain error codes, to
-	// increase availability.
-	FallbackConfig *FallbackConfig `json:"fallback_config,omitempty"`
+	// Configuration to enable usage tracking using system tables. These tables
+	// allow you to monitor operational usage on endpoints and their associated
+	// costs.
+	UsageTrackingConfig *UsageTrackingConfig `json:"usage_tracking_config,omitempty"`
 }
 
 type AiGatewayRateLimit struct {
@@ -96,28 +96,28 @@ type AiGatewayRateLimit struct {
 	// 'service_principal', and 'endpoint' are supported, with 'endpoint' being the
 	// default if not specified.
 	Key *string `json:"key,omitempty"`
-	// Renewal period field for a rate limit. Currently, only 'minute' is supported.
-	RenewalPeriod *string `json:"renewal_period,omitempty"`
 	// Principal field for a user, user group, or service principal to apply rate
 	// limiting to. Accepts a user email, group name, or service principal
 	// application ID.
 	Principal *string `json:"principal,omitempty"`
+	// Renewal period field for a rate limit. Currently, only 'minute' is supported.
+	RenewalPeriod *string `json:"renewal_period,omitempty"`
 	// Used to specify how many tokens are allowed for a key within the
 	// renewal_period.
 	Tokens *int64 `json:"tokens,omitempty"`
 }
 
 type AiGuardrailParameters struct {
-	// Indicates whether the safety filter is enabled.
-	Safety *bool `json:"safety,omitempty"`
-	// Configuration for guardrail PII filter.
-	Pii *PiiSettings `json:"pii,omitempty"`
-	// The list of allowed topics. Given a chat request, this guardrail flags the
-	// request if its topic is not in the allowed topics.
-	ValidTopics []string `json:"valid_topics,omitempty"`
 	// List of invalid keywords. AI guardrail uses keyword or string matching to
 	// decide if the keyword exists in the request or response content.
 	InvalidKeywords []string `json:"invalid_keywords,omitempty"`
+	// Configuration for guardrail PII filter.
+	Pii *PiiSettings `json:"pii,omitempty"`
+	// Indicates whether the safety filter is enabled.
+	Safety *bool `json:"safety,omitempty"`
+	// The list of allowed topics. Given a chat request, this guardrail flags the
+	// request if its topic is not in the allowed topics.
+	ValidTopics []string `json:"valid_topics,omitempty"`
 }
 
 type AiGuardrails struct {
@@ -128,14 +128,20 @@ type AiGuardrails struct {
 }
 
 type AmazonBedrockConfig struct {
-	// The AWS region to use. Bedrock has to be enabled there.
-	AwsRegion *string `json:"aws_region,omitempty"`
 	// The <Databricks> secret key reference for an AWS access key ID with
 	// permissions to interact with Bedrock services. If you prefer to paste your
 	// API key directly, see `aws_access_key_id_plaintext`. You must provide an API
 	// key using one of the following fields: `aws_access_key_id` or
 	// `aws_access_key_id_plaintext`.
 	AwsAccessKeyId *string `json:"aws_access_key_id,omitempty"`
+	// An AWS access key ID with permissions to interact with Bedrock services
+	// provided as a plaintext string. If you prefer to reference your key using
+	// Databricks Secrets, see `aws_access_key_id`. You must provide an API key
+	// using one of the following fields: `aws_access_key_id` or
+	// `aws_access_key_id_plaintext`.
+	AwsAccessKeyIdPlaintext *string `json:"aws_access_key_id_plaintext,omitempty"`
+	// The AWS region to use. Bedrock has to be enabled there.
+	AwsRegion *string `json:"aws_region,omitempty"`
 	// The <Databricks> secret key reference for an AWS secret access key paired
 	// with the access key ID, with permissions to interact with Bedrock services.
 	// If you prefer to paste your API key directly, see
@@ -143,21 +149,15 @@ type AmazonBedrockConfig struct {
 	// the following fields: `aws_secret_access_key` or
 	// `aws_secret_access_key_plaintext`.
 	AwsSecretAccessKey *string `json:"aws_secret_access_key,omitempty"`
-	// The underlying provider in Amazon Bedrock. Supported values (case
-	// insensitive) include: Anthropic, Cohere, AI21Labs, Amazon.
-	BedrockProvider *string `json:"bedrock_provider,omitempty"`
-	// An AWS access key ID with permissions to interact with Bedrock services
-	// provided as a plaintext string. If you prefer to reference your key using
-	// Databricks Secrets, see `aws_access_key_id`. You must provide an API key
-	// using one of the following fields: `aws_access_key_id` or
-	// `aws_access_key_id_plaintext`.
-	AwsAccessKeyIdPlaintext *string `json:"aws_access_key_id_plaintext,omitempty"`
 	// An AWS secret access key paired with the access key ID, with permissions to
 	// interact with Bedrock services provided as a plaintext string. If you prefer
 	// to reference your key using Databricks Secrets, see `aws_secret_access_key`.
 	// You must provide an API key using one of the following fields:
 	// `aws_secret_access_key` or `aws_secret_access_key_plaintext`.
 	AwsSecretAccessKeyPlaintext *string `json:"aws_secret_access_key_plaintext,omitempty"`
+	// The underlying provider in Amazon Bedrock. Supported values (case
+	// insensitive) include: Anthropic, Cohere, AI21Labs, Amazon.
+	BedrockProvider *string `json:"bedrock_provider,omitempty"`
 	// ARN of the instance profile that the external model will use to access AWS
 	// resources. You must authenticate using an instance profile or access keys. If
 	// you prefer to authenticate using access keys, see `aws_access_key_id`,
@@ -200,15 +200,15 @@ type AutoCaptureConfig struct {
 	// The name of the catalog in Unity Catalog. NOTE: On update, you cannot change
 	// the catalog name if the inference table is already enabled.
 	CatalogName *string `json:"catalog_name,omitempty"`
-	// The name of the schema in Unity Catalog. NOTE: On update, you cannot change
-	// the schema name if the inference table is already enabled.
-	SchemaName *string `json:"schema_name,omitempty"`
-	// The prefix of the table in Unity Catalog. NOTE: On update, you cannot change
-	// the prefix name if the inference table is already enabled.
-	TableNamePrefix *string           `json:"table_name_prefix,omitempty"`
-	State           *AutoCaptureState `json:"state,omitempty"`
 	// Indicates whether the inference table is enabled.
 	Enabled *bool `json:"enabled,omitempty"`
+	// The name of the schema in Unity Catalog. NOTE: On update, you cannot change
+	// the schema name if the inference table is already enabled.
+	SchemaName *string           `json:"schema_name,omitempty"`
+	State      *AutoCaptureState `json:"state,omitempty"`
+	// The prefix of the table in Unity Catalog. NOTE: On update, you cannot change
+	// the prefix name if the inference table is already enabled.
+	TableNamePrefix *string `json:"table_name_prefix,omitempty"`
 }
 
 type AutoCaptureState struct {
@@ -225,6 +225,9 @@ type BearerTokenAuth struct {
 }
 
 type CohereConfig struct {
+	// This is an optional field to provide a customized base URL for the Cohere
+	// API. If left unspecified, the standard Cohere base URL is used.
+	CohereApiBase *string `json:"cohere_api_base,omitempty"`
 	// The <Databricks> secret key reference for a Cohere API key. If you prefer to
 	// paste your API key directly, see `cohere_api_key_plaintext`. You must provide
 	// an API key using one of the following fields: `cohere_api_key` or
@@ -235,76 +238,73 @@ type CohereConfig struct {
 	// API key using one of the following fields: `cohere_api_key` or
 	// `cohere_api_key_plaintext`.
 	CohereApiKeyPlaintext *string `json:"cohere_api_key_plaintext,omitempty"`
-	// This is an optional field to provide a customized base URL for the Cohere
-	// API. If left unspecified, the standard Cohere base URL is used.
-	CohereApiBase *string `json:"cohere_api_base,omitempty"`
 }
 
 type CreateInferenceEndpointRequest struct {
-	// The name of the serving endpoint. This field is required and must be unique
-	// across a <Workspace>. An endpoint name can consist of alphanumeric
-	// characters, dashes, and underscores.
-	Name *string `json:"name,omitempty"`
-	// The core config of the serving endpoint.
-	Config *EndpointCoreConfig `json:"config,omitempty"`
-	// Tags to be attached to the serving endpoint and automatically propagated to
-	// billing logs.
-	Tags []EndpointTag `json:"tags,omitempty"`
-	// Enable route optimization for the serving endpoint.
-	RouteOptimized *bool `json:"route_optimized,omitempty"`
-	// Rate limits to be applied to the serving endpoint. NOTE: this field is
-	// deprecated, please use AI Gateway to manage rate limits.
-	RateLimits []RateLimit `json:"rate_limits,omitempty"`
 	// The AI Gateway configuration for the serving endpoint. NOTE: External model,
 	// provisioned throughput, and pay-per-token endpoints are fully supported;
 	// agent endpoints currently only support inference tables.
 	AiGateway *AiGatewayConfig `json:"ai_gateway,omitempty"`
 	// The budget policy to be applied to the serving endpoint.
 	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
+	// The core config of the serving endpoint.
+	Config      *EndpointCoreConfig `json:"config,omitempty"`
+	Description *string             `json:"description,omitempty"`
 	// Email notification settings.
 	EmailNotifications *EmailNotifications `json:"email_notifications,omitempty"`
-	Description        *string             `json:"description,omitempty"`
+	// The name of the serving endpoint. This field is required and must be unique
+	// across a <Workspace>. An endpoint name can consist of alphanumeric
+	// characters, dashes, and underscores.
+	Name *string `json:"name,omitempty"`
+	// Rate limits to be applied to the serving endpoint. NOTE: this field is
+	// deprecated, please use AI Gateway to manage rate limits.
+	RateLimits []RateLimit `json:"rate_limits,omitempty"`
+	// Enable route optimization for the serving endpoint.
+	RouteOptimized *bool `json:"route_optimized,omitempty"`
+	// Tags to be attached to the serving endpoint and automatically propagated to
+	// billing logs.
+	Tags []EndpointTag `json:"tags,omitempty"`
 	// Configuration for persisting endpoint telemetry (logs, traces, and metrics)
 	// to Unity Catalog tables.
 	TelemetryConfig *TelemetryConfig `json:"telemetry_config,omitempty"`
 }
 
 type CreatePtEndpointRequest struct {
-	// The name of the serving endpoint. This field is required and must be unique
-	// across a <Workspace>. An endpoint name can consist of alphanumeric
-	// characters, dashes, and underscores.
-	Name *string `json:"name,omitempty"`
-	// The core config of the serving endpoint.
-	Config *PtEndpointCoreConfig `json:"config,omitempty"`
-	// Tags to be attached to the serving endpoint and automatically propagated to
-	// billing logs.
-	Tags []EndpointTag `json:"tags,omitempty"`
 	// The AI Gateway configuration for the serving endpoint.
 	AiGateway *AiGatewayConfig `json:"ai_gateway,omitempty"`
 	// The budget policy associated with the endpoint.
 	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
+	// The core config of the serving endpoint.
+	Config *PtEndpointCoreConfig `json:"config,omitempty"`
 	// Email notification settings.
 	EmailNotifications *EmailNotifications `json:"email_notifications,omitempty"`
+	// The name of the serving endpoint. This field is required and must be unique
+	// across a <Workspace>. An endpoint name can consist of alphanumeric
+	// characters, dashes, and underscores.
+	Name *string `json:"name,omitempty"`
+	// Tags to be attached to the serving endpoint and automatically propagated to
+	// billing logs.
+	Tags []EndpointTag `json:"tags,omitempty"`
 }
 
 // Configs needed to create a custom provider model route..
 type CustomProviderConfig struct {
-	// This is a field to provide the URL of the custom provider API.
-	CustomProviderUrl *string `json:"custom_provider_url,omitempty"`
-	// This is a field to provide bearer token authentication for the custom
-	// provider API. You can only specify one authentication method.
-	BearerTokenAuth *BearerTokenAuth `json:"bearer_token_auth,omitempty"`
 	// This is a field to provide API key authentication for the custom provider
 	// API. You can only specify one authentication method.
 	ApiKeyAuth *ApiKeyAuth `json:"api_key_auth,omitempty"`
+	// This is a field to provide bearer token authentication for the custom
+	// provider API. You can only specify one authentication method.
+	BearerTokenAuth *BearerTokenAuth `json:"bearer_token_auth,omitempty"`
+	// This is a field to provide the URL of the custom provider API.
+	CustomProviderUrl *string `json:"custom_provider_url,omitempty"`
 }
 
 // Details necessary to query this object's API through the DataPlane APIs..
 type DataPlaneInfo struct {
-	// The URL of the endpoint for this operation in the dataplane.
-	EndpointUrl *string `json:"endpoint_url,omitempty"`
 	// Authorization details as a string.
 	AuthorizationDetails *string `json:"authorization_details,omitempty"`
+	// The URL of the endpoint for this operation in the dataplane.
+	EndpointUrl *string `json:"endpoint_url,omitempty"`
 }
 
 type DatabricksModelServingConfig struct {
@@ -315,9 +315,6 @@ type DatabricksModelServingConfig struct {
 	// an API key using one of the following fields: `databricks_api_token` or
 	// `databricks_api_token_plaintext`.
 	DatabricksApiToken *string `json:"databricks_api_token,omitempty"`
-	// The URL of the <Databricks> workspace containing the model serving endpoint
-	// pointed to by this external model.
-	DatabricksWorkspaceUrl *string `json:"databricks_workspace_url,omitempty"`
 	// The Databricks API token that corresponds to a user or service principal with
 	// Can Query access to the model serving endpoint pointed to by this external
 	// model provided as a plaintext string. If you prefer to reference your key
@@ -325,18 +322,26 @@ type DatabricksModelServingConfig struct {
 	// key using one of the following fields: `databricks_api_token` or
 	// `databricks_api_token_plaintext`.
 	DatabricksApiTokenPlaintext *string `json:"databricks_api_token_plaintext,omitempty"`
+	// The URL of the <Databricks> workspace containing the model serving endpoint
+	// pointed to by this external model.
+	DatabricksWorkspaceUrl *string `json:"databricks_workspace_url,omitempty"`
 }
 
 type EmailNotifications struct {
-	// A list of email addresses to be notified when an endpoint successfully
-	// updates its configuration or state.
-	OnUpdateSuccess []string `json:"on_update_success,omitempty"`
 	// A list of email addresses to be notified when an endpoint fails to update its
 	// configuration or state.
 	OnUpdateFailure []string `json:"on_update_failure,omitempty"`
+	// A list of email addresses to be notified when an endpoint successfully
+	// updates its configuration or state.
+	OnUpdateSuccess []string `json:"on_update_success,omitempty"`
 }
 
 type EndpointCoreConfig struct {
+	// Configuration for legacy Inference Tables which automatically log requests
+	// and responses to Unity Catalog. Deprecated: please use AI Gateway inference
+	// tables instead. See
+	// https://docs.databricks.com/aws/en/ai-gateway/inference-tables.
+	AutoCaptureConfig *AutoCaptureConfig `json:"auto_capture_config,omitempty"`
 	// The list of served entities under the serving endpoint config.
 	ServedEntities []ServedModel `json:"served_entities,omitempty"`
 	// (Deprecated, use served_entities instead) The list of served models under the
@@ -344,14 +349,14 @@ type EndpointCoreConfig struct {
 	ServedModels []ServedModel `json:"served_models,omitempty"`
 	// The traffic configuration associated with the serving endpoint config.
 	TrafficConfig *TrafficConfig `json:"traffic_config,omitempty"`
+}
+
+type EndpointCoreConfigOutput struct {
 	// Configuration for legacy Inference Tables which automatically log requests
 	// and responses to Unity Catalog. Deprecated: please use AI Gateway inference
 	// tables instead. See
 	// https://docs.databricks.com/aws/en/ai-gateway/inference-tables.
 	AutoCaptureConfig *AutoCaptureConfig `json:"auto_capture_config,omitempty"`
-}
-
-type EndpointCoreConfigOutput struct {
 	// The config version that the serving endpoint is currently serving.
 	ConfigVersion *int64 `json:"config_version,omitempty"`
 	// The list of served entities under the serving endpoint config.
@@ -361,11 +366,6 @@ type EndpointCoreConfigOutput struct {
 	ServedModels []ServedModel `json:"served_models,omitempty"`
 	// The traffic configuration associated with the serving endpoint config.
 	TrafficConfig *TrafficConfig `json:"traffic_config,omitempty"`
-	// Configuration for legacy Inference Tables which automatically log requests
-	// and responses to Unity Catalog. Deprecated: please use AI Gateway inference
-	// tables instead. See
-	// https://docs.databricks.com/aws/en/ai-gateway/inference-tables.
-	AutoCaptureConfig *AutoCaptureConfig `json:"auto_capture_config,omitempty"`
 }
 
 type EndpointCoreConfigSummary struct {
@@ -388,17 +388,17 @@ type ExternalFunctionRequest struct {
 	// The connection name to use. This is required to identify the external
 	// connection.
 	ConnectionName *string `json:"connection_name,omitempty"`
-	// The HTTP method to use (e.g., 'GET', 'POST').
-	Method ExternalFunctionRequest_HttpMethod `json:"method,omitempty"`
-	// The relative path for the API endpoint. This is required.
-	Path *string `json:"path,omitempty"`
-	// The JSON payload to send in the request body.
-	Json *string `json:"json,omitempty"`
 	// Additional headers for the request. If not provided, only auth headers from
 	// connections would be passed.
 	Headers *string `json:"headers,omitempty"`
+	// The JSON payload to send in the request body.
+	Json *string `json:"json,omitempty"`
+	// The HTTP method to use (e.g., 'GET', 'POST').
+	Method ExternalFunctionRequest_HttpMethod `json:"method,omitempty"`
 	// Query parameters for the request.
 	Params *string `json:"params,omitempty"`
+	// The relative path for the API endpoint. This is required.
+	Path *string `json:"path,omitempty"`
 	// Optional subdomain to prepend to the connection URL's host. If provided, this
 	// will be added as a prefix to the connection URL's host. For example, if the
 	// connection URL is `https://api.example.com/v1` and `sub_domain` is
@@ -407,24 +407,24 @@ type ExternalFunctionRequest struct {
 }
 
 type ExternalModel struct {
+	Ai21labsConfig               *Ai21LabsConfig               `json:"ai21labs_config,omitempty"`
+	AmazonBedrockConfig          *AmazonBedrockConfig          `json:"amazon_bedrock_config,omitempty"`
+	AnthropicConfig              *AnthropicConfig              `json:"anthropic_config,omitempty"`
+	CohereConfig                 *CohereConfig                 `json:"cohere_config,omitempty"`
+	CustomProviderConfig         *CustomProviderConfig         `json:"custom_provider_config,omitempty"`
+	DatabricksModelServingConfig *DatabricksModelServingConfig `json:"databricks_model_serving_config,omitempty"`
+	GoogleCloudVertexAiConfig    *GoogleCloudVertexAiConfig    `json:"google_cloud_vertex_ai_config,omitempty"`
+	// The name of the external model.
+	Name         *string       `json:"name,omitempty"`
+	OpenaiConfig *OpenAiConfig `json:"openai_config,omitempty"`
+	PalmConfig   *PaLmConfig   `json:"palm_config,omitempty"`
 	// The name of the provider for the external model. Currently, the supported
 	// providers are 'ai21labs', 'anthropic', 'amazon-bedrock', 'cohere',
 	// 'databricks-model-serving', 'google-cloud-vertex-ai', 'openai', 'palm', and
 	// 'custom'.
 	Provider *string `json:"provider,omitempty"`
-	// The name of the external model.
-	Name *string `json:"name,omitempty"`
 	// The task type of the external model.
-	Task                         *string                       `json:"task,omitempty"`
-	Ai21labsConfig               *Ai21LabsConfig               `json:"ai21labs_config,omitempty"`
-	AnthropicConfig              *AnthropicConfig              `json:"anthropic_config,omitempty"`
-	AmazonBedrockConfig          *AmazonBedrockConfig          `json:"amazon_bedrock_config,omitempty"`
-	CohereConfig                 *CohereConfig                 `json:"cohere_config,omitempty"`
-	GoogleCloudVertexAiConfig    *GoogleCloudVertexAiConfig    `json:"google_cloud_vertex_ai_config,omitempty"`
-	DatabricksModelServingConfig *DatabricksModelServingConfig `json:"databricks_model_serving_config,omitempty"`
-	OpenaiConfig                 *OpenAiConfig                 `json:"openai_config,omitempty"`
-	PalmConfig                   *PaLmConfig                   `json:"palm_config,omitempty"`
-	CustomProviderConfig         *CustomProviderConfig         `json:"custom_provider_config,omitempty"`
+	Task *string `json:"task,omitempty"`
 }
 
 type FallbackConfig struct {
@@ -440,10 +440,10 @@ type FallbackConfig struct {
 // All fields are not sensitive as they are hard-coded in the system and made
 // available to customers..
 type FoundationModel struct {
-	Name        *string `json:"name,omitempty"`
+	Description *string `json:"description,omitempty"`
 	DisplayName *string `json:"display_name,omitempty"`
 	Docs        *string `json:"docs,omitempty"`
-	Description *string `json:"description,omitempty"`
+	Name        *string `json:"name,omitempty"`
 }
 
 type GetServedModelBuildLogsResponse struct {
@@ -466,6 +466,15 @@ type GoogleCloudVertexAiConfig struct {
 	// [Best practices for managing service account keys]:
 	// https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys
 	PrivateKey *string `json:"private_key,omitempty"`
+	// The private key for the service account which has access to the Google Cloud
+	// Vertex AI Service provided as a plaintext secret. See [Best practices for
+	// managing service account keys]. If you prefer to reference your key using
+	// Databricks Secrets, see `private_key`. You must provide an API key using one
+	// of the following fields: `private_key` or `private_key_plaintext`.
+	//
+	// [Best practices for managing service account keys]:
+	// https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys
+	PrivateKeyPlaintext *string `json:"private_key_plaintext,omitempty"`
 	// This is the Google Cloud project id that the service account is associated
 	// with.
 	ProjectId *string `json:"project_id,omitempty"`
@@ -476,109 +485,100 @@ type GoogleCloudVertexAiConfig struct {
 	// [supported regions]:
 	// https://cloud.google.com/vertex-ai/docs/general/locations
 	Region *string `json:"region,omitempty"`
-	// The private key for the service account which has access to the Google Cloud
-	// Vertex AI Service provided as a plaintext secret. See [Best practices for
-	// managing service account keys]. If you prefer to reference your key using
-	// Databricks Secrets, see `private_key`. You must provide an API key using one
-	// of the following fields: `private_key` or `private_key_plaintext`.
-	//
-	// [Best practices for managing service account keys]:
-	// https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys
-	PrivateKeyPlaintext *string `json:"private_key_plaintext,omitempty"`
 }
 
 type InferenceEndpoint struct {
-	// The name of the serving endpoint.
-	Name *string `json:"name,omitempty"`
-	// The email of the user who created the serving endpoint.
-	Creator *string `json:"creator,omitempty"`
-	// The timestamp when the endpoint was created in Unix time.
-	CreationTimestamp *int64 `json:"creation_timestamp,omitempty"`
-	// The timestamp when the endpoint was last updated by a user in Unix time.
-	LastUpdatedTimestamp *int64 `json:"last_updated_timestamp,omitempty"`
-	// Information corresponding to the state of the serving endpoint.
-	State *InferenceEndpointState `json:"state,omitempty"`
+	// The AI Gateway configuration for the serving endpoint. NOTE: External model,
+	// provisioned throughput, and pay-per-token endpoints are fully supported;
+	// agent endpoints currently only support inference tables.
+	AiGateway *AiGatewayConfig `json:"ai_gateway,omitempty"`
+	// The budget policy associated with the endpoint.
+	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
 	// The config that is currently being served by the endpoint.
 	Config *EndpointCoreConfigSummary `json:"config,omitempty"`
-	// Tags attached to the serving endpoint.
-	Tags []EndpointTag `json:"tags,omitempty"`
+	// The timestamp when the endpoint was created in Unix time.
+	CreationTimestamp *int64 `json:"creation_timestamp,omitempty"`
+	// The email of the user who created the serving endpoint.
+	Creator *string `json:"creator,omitempty"`
+	// Description of the endpoint
+	Description *string `json:"description,omitempty"`
 	// System-generated ID of the endpoint, included to be used by the Permissions
 	// API.
 	Id *string `json:"id,omitempty"`
-	// The task type of the serving endpoint.
-	Task *string `json:"task,omitempty"`
-	// The AI Gateway configuration for the serving endpoint. NOTE: External model,
-	// provisioned throughput, and pay-per-token endpoints are fully supported;
-	// agent endpoints currently only support inference tables.
-	AiGateway *AiGatewayConfig `json:"ai_gateway,omitempty"`
-	// The budget policy associated with the endpoint.
-	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
-	// Description of the endpoint
-	Description *string `json:"description,omitempty"`
-	// The usage policy associated with serving endpoint.
-	UsagePolicyId *string `json:"usage_policy_id,omitempty"`
-	// Telemetry configuration for the endpoint, including inference-table payload
-	// logging.
-	TelemetryConfig *TelemetryConfig `json:"telemetry_config,omitempty"`
-}
-
-type InferenceEndpointDetailed struct {
-	// The name of the serving endpoint.
-	Name *string `json:"name,omitempty"`
-	// The email of the user who created the serving endpoint.
-	Creator *string `json:"creator,omitempty"`
-	// The timestamp when the endpoint was created in Unix time.
-	CreationTimestamp *int64 `json:"creation_timestamp,omitempty"`
 	// The timestamp when the endpoint was last updated by a user in Unix time.
 	LastUpdatedTimestamp *int64 `json:"last_updated_timestamp,omitempty"`
+	// The name of the serving endpoint.
+	Name *string `json:"name,omitempty"`
 	// Information corresponding to the state of the serving endpoint.
 	State *InferenceEndpointState `json:"state,omitempty"`
-	// The config that is currently being served by the endpoint.
-	Config *EndpointCoreConfigOutput `json:"config,omitempty"`
-	// The config that the endpoint is attempting to update to.
-	PendingConfig *PendingConfig `json:"pending_config,omitempty"`
-	// System-generated ID of the endpoint. This is used to refer to the endpoint in
-	// the Permissions API
-	Id *string `json:"id,omitempty"`
-	// The permission level of the principal making the request.
-	PermissionLevel ServingEndpointDetailedPermissionLevel `json:"permission_level,omitempty"`
 	// Tags attached to the serving endpoint.
 	Tags []EndpointTag `json:"tags,omitempty"`
 	// The task type of the serving endpoint.
 	Task *string `json:"task,omitempty"`
-	// Boolean representing if route optimization has been enabled for the endpoint
-	RouteOptimized *bool `json:"route_optimized,omitempty"`
-	// Endpoint invocation url if route optimization is enabled for endpoint
-	EndpointUrl *string `json:"endpoint_url,omitempty"`
-	// Information required to query DataPlane APIs.
-	DataPlaneInfo *ModelDataPlaneInfo `json:"data_plane_info,omitempty"`
+	// Telemetry configuration for the endpoint, including inference-table payload
+	// logging.
+	TelemetryConfig *TelemetryConfig `json:"telemetry_config,omitempty"`
+	// The usage policy associated with serving endpoint.
+	UsagePolicyId *string `json:"usage_policy_id,omitempty"`
+}
+
+type InferenceEndpointDetailed struct {
 	// The AI Gateway configuration for the serving endpoint. NOTE: External model,
 	// provisioned throughput, and pay-per-token endpoints are fully supported;
 	// agent endpoints currently only support inference tables.
 	AiGateway *AiGatewayConfig `json:"ai_gateway,omitempty"`
 	// The budget policy associated with the endpoint.
 	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
-	// Email notification settings.
-	EmailNotifications *EmailNotifications `json:"email_notifications,omitempty"`
+	// The config that is currently being served by the endpoint.
+	Config *EndpointCoreConfigOutput `json:"config,omitempty"`
+	// The timestamp when the endpoint was created in Unix time.
+	CreationTimestamp *int64 `json:"creation_timestamp,omitempty"`
+	// The email of the user who created the serving endpoint.
+	Creator *string `json:"creator,omitempty"`
+	// Information required to query DataPlane APIs.
+	DataPlaneInfo *ModelDataPlaneInfo `json:"data_plane_info,omitempty"`
 	// Description of the serving model
 	Description *string `json:"description,omitempty"`
+	// Email notification settings.
+	EmailNotifications *EmailNotifications `json:"email_notifications,omitempty"`
+	// Endpoint invocation url if route optimization is enabled for endpoint
+	EndpointUrl *string `json:"endpoint_url,omitempty"`
+	// System-generated ID of the endpoint. This is used to refer to the endpoint in
+	// the Permissions API
+	Id *string `json:"id,omitempty"`
+	// The timestamp when the endpoint was last updated by a user in Unix time.
+	LastUpdatedTimestamp *int64 `json:"last_updated_timestamp,omitempty"`
+	// The name of the serving endpoint.
+	Name *string `json:"name,omitempty"`
+	// The config that the endpoint is attempting to update to.
+	PendingConfig *PendingConfig `json:"pending_config,omitempty"`
+	// The permission level of the principal making the request.
+	PermissionLevel ServingEndpointDetailedPermissionLevel `json:"permission_level,omitempty"`
+	// Boolean representing if route optimization has been enabled for the endpoint
+	RouteOptimized *bool `json:"route_optimized,omitempty"`
+	// Information corresponding to the state of the serving endpoint.
+	State *InferenceEndpointState `json:"state,omitempty"`
+	// Tags attached to the serving endpoint.
+	Tags []EndpointTag `json:"tags,omitempty"`
+	// The task type of the serving endpoint.
+	Task *string `json:"task,omitempty"`
 	// Telemetry configuration for the endpoint, including inference-table payload
 	// logging.
 	TelemetryConfig *TelemetryConfig `json:"telemetry_config,omitempty"`
 }
 
 type InferenceEndpointState struct {
-	// The state of an endpoint, indicating whether or not the endpoint is
-	// queryable. An endpoint is READY if all of the served entities in its active
-	// configuration are ready. If any of the actively served entities are in a
-	// non-ready state, the endpoint state will be NOT_READY.
-	Ready InferenceEndpointState_ReadyState `json:"ready,omitempty"`
 	// The state of an endpoint's config update. This informs the user if the
 	// pending_config is in progress, if the update failed, or if there is no update
 	// in progress. Note that if the endpoint's config_update state value is
 	// IN_PROGRESS, another update can not be made until the update completes or
 	// fails.
 	ConfigUpdate InferenceEndpointState_ConfigUpdateState `json:"config_update,omitempty"`
+	// The state of an endpoint, indicating whether or not the endpoint is
+	// queryable. An endpoint is READY if all of the served entities in its active
+	// configuration are ready. If any of the actively served entities are in a
+	// non-ready state, the endpoint state will be NOT_READY.
+	Ready InferenceEndpointState_ReadyState `json:"ready,omitempty"`
 }
 
 type InferenceTableConfig struct {
@@ -586,6 +586,8 @@ type InferenceTableConfig struct {
 	// tables. NOTE: On update, you have to disable inference table first in order
 	// to change the catalog name.
 	CatalogName *string `json:"catalog_name,omitempty"`
+	// Indicates whether the inference table is enabled.
+	Enabled *bool `json:"enabled,omitempty"`
 	// The name of the schema in Unity Catalog. Required when enabling inference
 	// tables. NOTE: On update, you have to disable inference table first in order
 	// to change the schema name.
@@ -593,8 +595,6 @@ type InferenceTableConfig struct {
 	// The prefix of the table in Unity Catalog. NOTE: On update, you have to
 	// disable inference table first in order to change the prefix name.
 	TableNamePrefix *string `json:"table_name_prefix,omitempty"`
-	// Indicates whether the inference table is enabled.
-	Enabled *bool `json:"enabled,omitempty"`
 }
 
 type ListInferenceEndpointsResponse struct {
@@ -611,22 +611,45 @@ type ModelDataPlaneInfo struct {
 
 // Configs needed to create an OpenAI model route..
 type OpenAiConfig struct {
+	// This field is only required for Azure AD OpenAI and is the Microsoft Entra
+	// Client ID.
+	MicrosoftEntraClientId *string `json:"microsoft_entra_client_id,omitempty"`
+	// The <Databricks> secret key reference for a client secret used for Microsoft
+	// Entra ID authentication. If you prefer to paste your client secret directly,
+	// see `microsoft_entra_client_secret_plaintext`. You must provide an API key
+	// using one of the following fields: `microsoft_entra_client_secret` or
+	// `microsoft_entra_client_secret_plaintext`.
+	MicrosoftEntraClientSecret *string `json:"microsoft_entra_client_secret,omitempty"`
+	// The client secret used for Microsoft Entra ID authentication provided as a
+	// plaintext string. If you prefer to reference your key using Databricks
+	// Secrets, see `microsoft_entra_client_secret`. You must provide an API key
+	// using one of the following fields: `microsoft_entra_client_secret` or
+	// `microsoft_entra_client_secret_plaintext`.
+	MicrosoftEntraClientSecretPlaintext *string `json:"microsoft_entra_client_secret_plaintext,omitempty"`
+	// This field is only required for Azure AD OpenAI and is the Microsoft Entra
+	// Tenant ID.
+	MicrosoftEntraTenantId *string `json:"microsoft_entra_tenant_id,omitempty"`
+	// This is a field to provide a customized base URl for the OpenAI API. For
+	// Azure OpenAI, this field is required, and is the base URL for the Azure
+	// OpenAI API service provided by Azure. For other OpenAI API types, this field
+	// is optional, and if left unspecified, the standard OpenAI base URL is used.
+	OpenaiApiBase *string `json:"openai_api_base,omitempty"`
 	// The <Databricks> secret key reference for an OpenAI API key using the OpenAI
 	// or Azure service. If you prefer to paste your API key directly, see
 	// `openai_api_key_plaintext`. You must provide an API key using one of the
 	// following fields: `openai_api_key` or `openai_api_key_plaintext`.
 	OpenaiApiKey *string `json:"openai_api_key,omitempty"`
+	// The OpenAI API key using the OpenAI or Azure service provided as a plaintext
+	// string. If you prefer to reference your key using Databricks Secrets, see
+	// `openai_api_key`. You must provide an API key using one of the following
+	// fields: `openai_api_key` or `openai_api_key_plaintext`.
+	OpenaiApiKeyPlaintext *string `json:"openai_api_key_plaintext,omitempty"`
 	// This is an optional field to specify the type of OpenAI API to use. For Azure
 	// OpenAI, this field is required, and adjust this parameter to represent the
 	// preferred security access validation protocol. For access token validation,
 	// use azure. For authentication using Azure Active Directory (Azure AD) use,
 	// azuread.
 	OpenaiApiType *string `json:"openai_api_type,omitempty"`
-	// This is a field to provide a customized base URl for the OpenAI API. For
-	// Azure OpenAI, this field is required, and is the base URL for the Azure
-	// OpenAI API service provided by Azure. For other OpenAI API types, this field
-	// is optional, and if left unspecified, the standard OpenAI base URL is used.
-	OpenaiApiBase *string `json:"openai_api_base,omitempty"`
 	// This is an optional field to specify the OpenAI API version. For Azure
 	// OpenAI, this field is required, and is the version of the Azure OpenAI
 	// service to utilize, specified by a date.
@@ -637,29 +660,6 @@ type OpenAiConfig struct {
 	// This is an optional field to specify the organization in OpenAI or Azure
 	// OpenAI.
 	OpenaiOrganization *string `json:"openai_organization,omitempty"`
-	// This field is only required for Azure AD OpenAI and is the Microsoft Entra
-	// Tenant ID.
-	MicrosoftEntraTenantId *string `json:"microsoft_entra_tenant_id,omitempty"`
-	// This field is only required for Azure AD OpenAI and is the Microsoft Entra
-	// Client ID.
-	MicrosoftEntraClientId *string `json:"microsoft_entra_client_id,omitempty"`
-	// The <Databricks> secret key reference for a client secret used for Microsoft
-	// Entra ID authentication. If you prefer to paste your client secret directly,
-	// see `microsoft_entra_client_secret_plaintext`. You must provide an API key
-	// using one of the following fields: `microsoft_entra_client_secret` or
-	// `microsoft_entra_client_secret_plaintext`.
-	MicrosoftEntraClientSecret *string `json:"microsoft_entra_client_secret,omitempty"`
-	// The OpenAI API key using the OpenAI or Azure service provided as a plaintext
-	// string. If you prefer to reference your key using Databricks Secrets, see
-	// `openai_api_key`. You must provide an API key using one of the following
-	// fields: `openai_api_key` or `openai_api_key_plaintext`.
-	OpenaiApiKeyPlaintext *string `json:"openai_api_key_plaintext,omitempty"`
-	// The client secret used for Microsoft Entra ID authentication provided as a
-	// plaintext string. If you prefer to reference your key using Databricks
-	// Secrets, see `microsoft_entra_client_secret`. You must provide an API key
-	// using one of the following fields: `microsoft_entra_client_secret` or
-	// `microsoft_entra_client_secret_plaintext`.
-	MicrosoftEntraClientSecretPlaintext *string `json:"microsoft_entra_client_secret_plaintext,omitempty"`
 }
 
 type PaLmConfig struct {
@@ -676,12 +676,12 @@ type PaLmConfig struct {
 }
 
 type PatchInferenceEndpointTagsRequest struct {
-	// The name of the serving endpoint who's tags to patch. This field is required.
-	Name *string `json:"name,omitempty"`
 	// List of endpoint tags to add
 	AddTags []EndpointTag `json:"add_tags,omitempty"`
 	// List of tag keys to delete
 	DeleteTags []string `json:"delete_tags,omitempty"`
+	// The name of the serving endpoint who's tags to patch. This field is required.
+	Name *string `json:"name,omitempty"`
 }
 
 type PatchInferenceEndpointTagsResponse struct {
@@ -708,24 +708,24 @@ type PayloadTable struct {
 }
 
 type PendingConfig struct {
+	// Configuration for legacy Inference Tables which automatically log requests
+	// and responses to Unity Catalog. Deprecated: please use AI Gateway inference
+	// tables instead. See
+	// https://docs.databricks.com/aws/en/ai-gateway/inference-tables.
+	AutoCaptureConfig *AutoCaptureConfig `json:"auto_capture_config,omitempty"`
+	// The config version that the serving endpoint is currently serving.
+	ConfigVersion *int `json:"config_version,omitempty"`
 	// The list of served entities belonging to the last issued update to the
 	// serving endpoint.
 	ServedEntities []ServedModel `json:"served_entities,omitempty"`
 	// (Deprecated, use served_entities instead) The list of served models belonging
 	// to the last issued update to the serving endpoint.
 	ServedModels []ServedModel `json:"served_models,omitempty"`
+	// The timestamp when the update to the pending config started.
+	StartTime *int64 `json:"start_time,omitempty"`
 	// The traffic config defining how invocations to the serving endpoint should be
 	// routed.
 	TrafficConfig *TrafficConfig `json:"traffic_config,omitempty"`
-	// The config version that the serving endpoint is currently serving.
-	ConfigVersion *int `json:"config_version,omitempty"`
-	// The timestamp when the update to the pending config started.
-	StartTime *int64 `json:"start_time,omitempty"`
-	// Configuration for legacy Inference Tables which automatically log requests
-	// and responses to Unity Catalog. Deprecated: please use AI Gateway inference
-	// tables instead. See
-	// https://docs.databricks.com/aws/en/ai-gateway/inference-tables.
-	AutoCaptureConfig *AutoCaptureConfig `json:"auto_capture_config,omitempty"`
 }
 
 type PiiSettings struct {
@@ -740,12 +740,11 @@ type PtEndpointCoreConfig struct {
 }
 
 type PtServedModel struct {
-	// The name of a served entity. It must be unique across an endpoint. A served
-	// entity name can consist of alphanumeric characters, dashes, and underscores.
-	// If not specified for an external model, this field defaults to
-	// external_model.name, with '.' and ':' replaced with '-', and if not specified
-	// for other entities, it defaults to entity_name-entity_version.
-	Name *string `json:"name,omitempty"`
+	// Whether burst scaling is enabled. When enabled (default), the endpoint can
+	// automatically scale up beyond provisioned capacity to handle traffic spikes.
+	// When disabled, the endpoint maintains fixed capacity at
+	// provisioned_model_units.
+	BurstScalingEnabled *bool `json:"burst_scaling_enabled,omitempty"`
 	// The name of the entity to be served. The entity may be a model in the
 	// Databricks Model Registry, a model in the Unity Catalog (UC), or a function
 	// of type FEATURE_SPEC in the UC. If it is a UC object, the full name of the
@@ -753,59 +752,65 @@ type PtServedModel struct {
 	// **catalog_name.schema_name.model_name**.
 	EntityName    *string `json:"entity_name,omitempty"`
 	EntityVersion *string `json:"entity_version,omitempty"`
+	// The name of a served entity. It must be unique across an endpoint. A served
+	// entity name can consist of alphanumeric characters, dashes, and underscores.
+	// If not specified for an external model, this field defaults to
+	// external_model.name, with '.' and ':' replaced with '-', and if not specified
+	// for other entities, it defaults to entity_name-entity_version.
+	Name *string `json:"name,omitempty"`
 	// The number of model units to be provisioned.
 	ProvisionedModelUnits *int64 `json:"provisioned_model_units,omitempty"`
-	// Whether burst scaling is enabled. When enabled (default), the endpoint can
-	// automatically scale up beyond provisioned capacity to handle traffic spikes.
-	// When disabled, the endpoint maintains fixed capacity at
-	// provisioned_model_units.
-	BurstScalingEnabled *bool `json:"burst_scaling_enabled,omitempty"`
 }
 
 type PutInferenceEndpointAiGatewayRequest struct {
+	// Configuration for traffic fallback which auto fallbacks to other served
+	// entities if the request to a served entity fails with certain error codes, to
+	// increase availability.
+	FallbackConfig *FallbackConfig `json:"fallback_config,omitempty"`
+	// Configuration for AI Guardrails to prevent unwanted data and unsafe data in
+	// requests and responses.
+	Guardrails *AiGuardrails `json:"guardrails,omitempty"`
+	// Configuration for payload logging using inference tables. Use these tables to
+	// monitor and audit data being sent to and received from model APIs and to
+	// improve model quality.
+	InferenceTableConfig *InferenceTableConfig `json:"inference_table_config,omitempty"`
 	// The name of the serving endpoint whose AI Gateway is being updated. This
 	// field is required.
 	Name *string `json:"name,omitempty"`
+	// Configuration for rate limits which can be set to limit endpoint traffic.
+	RateLimits []AiGatewayRateLimit `json:"rate_limits,omitempty"`
 	// Configuration to enable usage tracking using system tables. These tables
 	// allow you to monitor operational usage on endpoints and their associated
 	// costs.
 	UsageTrackingConfig *UsageTrackingConfig `json:"usage_tracking_config,omitempty"`
-	// Configuration for payload logging using inference tables. Use these tables to
-	// monitor and audit data being sent to and received from model APIs and to
-	// improve model quality.
-	InferenceTableConfig *InferenceTableConfig `json:"inference_table_config,omitempty"`
-	// Configuration for rate limits which can be set to limit endpoint traffic.
-	RateLimits []AiGatewayRateLimit `json:"rate_limits,omitempty"`
-	// Configuration for AI Guardrails to prevent unwanted data and unsafe data in
-	// requests and responses.
-	Guardrails *AiGuardrails `json:"guardrails,omitempty"`
-	// Configuration for traffic fallback which auto fallbacks to other served
-	// entities if the request to a served entity fails with certain error codes, to
-	// increase availability.
-	FallbackConfig *FallbackConfig `json:"fallback_config,omitempty"`
 }
 
 type PutInferenceEndpointAiGatewayResponse struct {
-	// Configuration to enable usage tracking using system tables. These tables
-	// allow you to monitor operational usage on endpoints and their associated
-	// costs.
-	UsageTrackingConfig *UsageTrackingConfig `json:"usage_tracking_config,omitempty"`
+	// Configuration for traffic fallback which auto fallbacks to other served
+	// entities if the request to a served entity fails with certain error codes, to
+	// increase availability.
+	FallbackConfig *FallbackConfig `json:"fallback_config,omitempty"`
+	// Configuration for AI Guardrails to prevent unwanted data and unsafe data in
+	// requests and responses.
+	Guardrails *AiGuardrails `json:"guardrails,omitempty"`
 	// Configuration for payload logging using inference tables. Use these tables to
 	// monitor and audit data being sent to and received from model APIs and to
 	// improve model quality.
 	InferenceTableConfig *InferenceTableConfig `json:"inference_table_config,omitempty"`
 	// Configuration for rate limits which can be set to limit endpoint traffic.
 	RateLimits []AiGatewayRateLimit `json:"rate_limits,omitempty"`
-	// Configuration for AI Guardrails to prevent unwanted data and unsafe data in
-	// requests and responses.
-	Guardrails *AiGuardrails `json:"guardrails,omitempty"`
-	// Configuration for traffic fallback which auto fallbacks to other served
-	// entities if the request to a served entity fails with certain error codes, to
-	// increase availability.
-	FallbackConfig *FallbackConfig `json:"fallback_config,omitempty"`
+	// Configuration to enable usage tracking using system tables. These tables
+	// allow you to monitor operational usage on endpoints and their associated
+	// costs.
+	UsageTrackingConfig *UsageTrackingConfig `json:"usage_tracking_config,omitempty"`
 }
 
 type PutInferenceEndpointConfigRequest struct {
+	// Configuration for legacy Inference Tables which automatically log requests
+	// and responses to Unity Catalog. Deprecated: please use AI Gateway inference
+	// tables instead. See
+	// https://docs.databricks.com/aws/en/ai-gateway/inference-tables.
+	AutoCaptureConfig *AutoCaptureConfig `json:"auto_capture_config,omitempty"`
 	// The name of the serving endpoint to update. This field is required.
 	Name *string `json:"name,omitempty"`
 	// The list of served entities under the serving endpoint config.
@@ -815,11 +820,6 @@ type PutInferenceEndpointConfigRequest struct {
 	ServedModels []ServedModel `json:"served_models,omitempty"`
 	// The traffic configuration associated with the serving endpoint config.
 	TrafficConfig *TrafficConfig `json:"traffic_config,omitempty"`
-	// Configuration for legacy Inference Tables which automatically log requests
-	// and responses to Unity Catalog. Deprecated: please use AI Gateway inference
-	// tables instead. See
-	// https://docs.databricks.com/aws/en/ai-gateway/inference-tables.
-	AutoCaptureConfig *AutoCaptureConfig `json:"auto_capture_config,omitempty"`
 }
 
 type PutInferenceEndpointRateLimitsRequest struct {
@@ -836,9 +836,9 @@ type PutInferenceEndpointRateLimitsResponse struct {
 }
 
 type PutPtEndpointConfigRequest struct {
-	// The name of the pt endpoint to update. This field is required.
-	Name   *string               `json:"name,omitempty"`
 	Config *PtEndpointCoreConfig `json:"config,omitempty"`
+	// The name of the pt endpoint to update. This field is required.
+	Name *string `json:"name,omitempty"`
 }
 
 type RateLimit struct {
@@ -854,21 +854,36 @@ type RateLimit struct {
 }
 
 type Route struct {
+	ServedEntityName *string `json:"served_entity_name,omitempty"`
 	// The name of the served model this route configures traffic for.
 	ServedModelName *string `json:"served_model_name,omitempty"`
 	// The percentage of endpoint traffic to send to this route. It must be an
 	// integer between 0 and 100 inclusive.
-	TrafficPercentage *int    `json:"traffic_percentage,omitempty"`
-	ServedEntityName  *string `json:"served_entity_name,omitempty"`
+	TrafficPercentage *int `json:"traffic_percentage,omitempty"`
 }
 
 type ServedModel struct {
-	// The name of a served entity. It must be unique across an endpoint. A served
-	// entity name can consist of alphanumeric characters, dashes, and underscores.
-	// If not specified for an external model, this field defaults to
-	// external_model.name, with '.' and ':' replaced with '-', and if not specified
-	// for other entities, it defaults to entity_name-entity_version.
-	Name *string `json:"name,omitempty"`
+	// Whether burst scaling is enabled. When enabled (default), the endpoint can
+	// automatically scale up beyond provisioned capacity to handle traffic spikes.
+	// When disabled, the endpoint maintains fixed capacity at
+	// provisioned_model_units.
+	BurstScalingEnabled *bool   `json:"burst_scaling_enabled,omitempty"`
+	CreationTimestamp   *int64  `json:"creation_timestamp,omitempty"`
+	Creator             *string `json:"creator,omitempty"`
+	// The name of the entity to be served. The entity may be a model in the
+	// Databricks Model Registry, a model in the Unity Catalog (UC), or a function
+	// of type FEATURE_SPEC in the UC. If it is a UC object, the full name of the
+	// object should be given in the form of
+	// **catalog_name.schema_name.model_name**.
+	EntityName    *string `json:"entity_name,omitempty"`
+	EntityVersion *string `json:"entity_version,omitempty"`
+	// An object containing a set of optional, user-specified environment variable
+	// key-value pairs used for serving this entity. Note: this is an experimental
+	// feature and subject to change. Example entity environment variables that
+	// refer to <Databricks> secrets: `{"OPENAI_API_KEY":
+	// "{{secrets/my_scope/my_key}}", "DATABRICKS_TOKEN":
+	// "{{secrets/my_scope2/my_key2}}"}`
+	EnvironmentVars map[string]string `json:"environment_vars,omitempty"`
 	// The external model to be served. NOTE: Only one of external_model and
 	// (entity_name, entity_version, workload_size, workload_type, and
 	// scale_to_zero_enabled) can be specified with the latter set being used for
@@ -877,24 +892,35 @@ type ServedModel struct {
 	// external_model. If the endpoint is created without external_model, users
 	// cannot update it to add external_model later. The task type of all external
 	// models within an endpoint must be the same.
-	ExternalModel *ExternalModel `json:"external_model,omitempty"`
-	// The name of the entity to be served. The entity may be a model in the
-	// Databricks Model Registry, a model in the Unity Catalog (UC), or a function
-	// of type FEATURE_SPEC in the UC. If it is a UC object, the full name of the
-	// object should be given in the form of
-	// **catalog_name.schema_name.model_name**.
-	EntityName    *string `json:"entity_name,omitempty"`
-	EntityVersion *string `json:"entity_version,omitempty"`
-	// The minimum tokens per second that the endpoint can scale down to.
-	MinProvisionedThroughput *int `json:"min_provisioned_throughput,omitempty"`
+	ExternalModel   *ExternalModel   `json:"external_model,omitempty"`
+	FoundationModel *FoundationModel `json:"foundation_model,omitempty"`
+	// ARN of the instance profile that the served entity uses to access AWS
+	// resources.
+	InstanceProfileArn *string `json:"instance_profile_arn,omitempty"`
+	// The maximum provisioned concurrency that the endpoint can scale up to. Do not
+	// use if workload_size is specified.
+	MaxProvisionedConcurrency *int `json:"max_provisioned_concurrency,omitempty"`
 	// The maximum tokens per second that the endpoint can scale up to.
 	MaxProvisionedThroughput *int `json:"max_provisioned_throughput,omitempty"`
 	// The minimum provisioned concurrency that the endpoint can scale down to. Do
 	// not use if workload_size is specified.
 	MinProvisionedConcurrency *int `json:"min_provisioned_concurrency,omitempty"`
-	// The maximum provisioned concurrency that the endpoint can scale up to. Do not
-	// use if workload_size is specified.
-	MaxProvisionedConcurrency *int `json:"max_provisioned_concurrency,omitempty"`
+	// The minimum tokens per second that the endpoint can scale down to.
+	MinProvisionedThroughput *int    `json:"min_provisioned_throughput,omitempty"`
+	ModelName                *string `json:"model_name,omitempty"`
+	ModelVersion             *string `json:"model_version,omitempty"`
+	// The name of a served entity. It must be unique across an endpoint. A served
+	// entity name can consist of alphanumeric characters, dashes, and underscores.
+	// If not specified for an external model, this field defaults to
+	// external_model.name, with '.' and ':' replaced with '-', and if not specified
+	// for other entities, it defaults to entity_name-entity_version.
+	Name *string `json:"name,omitempty"`
+	// The number of model units provisioned.
+	ProvisionedModelUnits *int64 `json:"provisioned_model_units,omitempty"`
+	// Whether the compute resources for the served entity should scale down to
+	// zero.
+	ScaleToZeroEnabled *bool             `json:"scale_to_zero_enabled,omitempty"`
+	State              *ServedModelState `json:"state,omitempty"`
 	// The workload size of the served entity. The workload size corresponds to a
 	// range of provisioned concurrency that the compute autoscales between. A
 	// single unit of provisioned concurrency can process one request at a time.
@@ -905,44 +931,18 @@ type ServedModel struct {
 	// concurrency for each workload size is 0. Do not use if
 	// min_provisioned_concurrency and max_provisioned_concurrency are specified.
 	WorkloadSize *string `json:"workload_size,omitempty"`
-	// The number of model units provisioned.
-	ProvisionedModelUnits *int64 `json:"provisioned_model_units,omitempty"`
-	// Whether burst scaling is enabled. When enabled (default), the endpoint can
-	// automatically scale up beyond provisioned capacity to handle traffic spikes.
-	// When disabled, the endpoint maintains fixed capacity at
-	// provisioned_model_units.
-	BurstScalingEnabled *bool `json:"burst_scaling_enabled,omitempty"`
-	// Whether the compute resources for the served entity should scale down to
-	// zero.
-	ScaleToZeroEnabled *bool   `json:"scale_to_zero_enabled,omitempty"`
-	ModelName          *string `json:"model_name,omitempty"`
-	ModelVersion       *string `json:"model_version,omitempty"`
-	// An object containing a set of optional, user-specified environment variable
-	// key-value pairs used for serving this entity. Note: this is an experimental
-	// feature and subject to change. Example entity environment variables that
-	// refer to <Databricks> secrets: `{"OPENAI_API_KEY":
-	// "{{secrets/my_scope/my_key}}", "DATABRICKS_TOKEN":
-	// "{{secrets/my_scope2/my_key2}}"}`
-	EnvironmentVars map[string]string `json:"environment_vars,omitempty"`
-	// ARN of the instance profile that the served entity uses to access AWS
-	// resources.
-	InstanceProfileArn *string           `json:"instance_profile_arn,omitempty"`
-	FoundationModel    *FoundationModel  `json:"foundation_model,omitempty"`
-	State              *ServedModelState `json:"state,omitempty"`
-	Creator            *string           `json:"creator,omitempty"`
-	CreationTimestamp  *int64            `json:"creation_timestamp,omitempty"`
 }
 
 type ServedModelLite struct {
-	Name *string `json:"name,omitempty"`
-	// Only one of model_name and entity_name should be populated
-	ModelName  *string `json:"model_name,omitempty"`
-	EntityName *string `json:"entity_name,omitempty"`
-	// Only one of model_version and entity_version should be populated
-	ModelVersion    *string          `json:"model_version,omitempty"`
+	EntityName      *string          `json:"entity_name,omitempty"`
 	EntityVersion   *string          `json:"entity_version,omitempty"`
 	ExternalModel   *ExternalModel   `json:"external_model,omitempty"`
 	FoundationModel *FoundationModel `json:"foundation_model,omitempty"`
+	// Only one of model_name and entity_name should be populated
+	ModelName *string `json:"model_name,omitempty"`
+	// Only one of model_version and entity_version should be populated
+	ModelVersion *string `json:"model_version,omitempty"`
+	Name         *string `json:"name,omitempty"`
 }
 
 type ServedModelState struct {
@@ -951,22 +951,22 @@ type ServedModelState struct {
 }
 
 type TelemetryConfig struct {
-	TelemetryProfileId *string                 `json:"telemetry_profile_id,omitempty"`
-	TableNames         *UnityCatalogTableNames `json:"table_names,omitempty"`
-	// Configuration for inference table payload logging, including sampling.
-	InferenceTableConfig *TelemetryInferenceTableConfig `json:"inference_table_config,omitempty"`
 	// The telemetry signals to enable for this endpoint. If empty or omitted, all
 	// signals are enabled; otherwise only the listed signals are enabled.
 	EnabledTelemetryFeatures []TelemetryFeature `json:"enabled_telemetry_features,omitempty"`
+	// Configuration for inference table payload logging, including sampling.
+	InferenceTableConfig *TelemetryInferenceTableConfig `json:"inference_table_config,omitempty"`
+	TableNames           *UnityCatalogTableNames        `json:"table_names,omitempty"`
+	TelemetryProfileId   *string                        `json:"telemetry_profile_id,omitempty"`
 }
 
 // Inference table payload logging configuration.
 type TelemetryInferenceTableConfig struct {
+	// The full name of the inference table created for this endpoint.
+	Name *string `json:"name,omitempty"`
 	// Fraction of requests sampled for payload logging, in the range [0.0, 1.0],
 	// where 1.0 logs all requests.
 	SamplingFraction *float64 `json:"sampling_fraction,omitempty"`
-	// The full name of the inference table created for this endpoint.
-	Name *string `json:"name,omitempty"`
 }
 
 type TrafficConfig struct {
@@ -976,6 +976,9 @@ type TrafficConfig struct {
 
 type UnityCatalogTableNames struct {
 	// The full three-level Unity Catalog name (catalog.schema.table) of the table
+	// that receives exported annotations.
+	AnnotationsTable *string `json:"annotations_table,omitempty"`
+	// The full three-level Unity Catalog name (catalog.schema.table) of the table
 	// that receives exported logs.
 	LogsTable *string `json:"logs_table,omitempty"`
 	// The full three-level Unity Catalog name (catalog.schema.table) of the table
@@ -984,23 +987,20 @@ type UnityCatalogTableNames struct {
 	// The full three-level Unity Catalog name (catalog.schema.table) of the table
 	// that receives exported traces (spans).
 	TracesTable *string `json:"traces_table,omitempty"`
-	// The full three-level Unity Catalog name (catalog.schema.table) of the table
-	// that receives exported annotations.
-	AnnotationsTable *string `json:"annotations_table,omitempty"`
 }
 
 type UpdateInferenceEndpointNotificationsRequest struct {
-	// The name of the serving endpoint whose notifications are being updated. This
-	// field is required.
-	Name *string `json:"name,omitempty"`
 	// The email notification settings to update. Specify email addresses to notify
 	// when endpoint state changes occur.
 	EmailNotifications *EmailNotifications `json:"email_notifications,omitempty"`
+	// The name of the serving endpoint whose notifications are being updated. This
+	// field is required.
+	Name *string `json:"name,omitempty"`
 }
 
 type UpdateInferenceEndpointNotificationsResponse struct {
-	Name               *string             `json:"name,omitempty"`
 	EmailNotifications *EmailNotifications `json:"email_notifications,omitempty"`
+	Name               *string             `json:"name,omitempty"`
 }
 
 type UsageTrackingConfig struct {

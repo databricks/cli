@@ -54,50 +54,38 @@ const (
 )
 
 type Alert struct {
-	// The canonical identifier of the alert to retrieve information about.
-	Id *string `json:"id,omitempty"`
-	// The display name of the alert.
-	DisplayName *string `json:"display_name,omitempty"`
-	// The owner's username. This field is set to "Unavailable" if the user has been
-	// deleted.
-	OwnerUserName *string `json:"owner_user_name,omitempty"`
 	// The timestamp indicating when the alert was created.
 	CreateTime *types.Time `json:"create_time,omitempty"`
-	// The timestamp indicating when the alert was updated.
-	UpdateTime *types.Time `json:"update_time,omitempty"`
-	// The workspace path of the folder containing the alert. Can only be set on
-	// create, and cannot be updated.
-	ParentPath *string `json:"parent_path,omitempty"`
-	// Text of the query to be run.
-	QueryText *string `json:"query_text,omitempty"`
-	// ID of the SQL warehouse attached to the alert.
-	WarehouseId *string `json:"warehouse_id,omitempty"`
-	// The run as username or application ID of service principal. On Create and
-	// Update, this field can be set to application ID of an active service
-	// principal. Setting this field requires the servicePrincipal/user role.
-	// Deprecated: Use `run_as` field instead. This field will be removed in a
-	// future release.
-	RunAsUserName *string          `json:"run_as_user_name,omitempty"`
-	Evaluation    *AlertEvaluation `json:"evaluation,omitempty"`
-	Schedule      *CronSchedule    `json:"schedule,omitempty"`
-	// Indicates whether the query is trashed.
-	LifecycleState AlertLifecycleState `json:"lifecycle_state,omitempty"`
-	// Custom summary for the alert. support mustache template.
-	CustomSummary *string `json:"custom_summary,omitempty"`
 	// Custom description for the alert. support mustache template.
 	CustomDescription *string `json:"custom_description,omitempty"`
-	// Specifies the identity that will be used to run the alert. This field allows
-	// you to configure alerts to run as a specific user or service principal. - For
-	// user identity: Set `user_name` to the email of an active workspace user.
-	// Users can only set this to their own email. - For service principal: Set
-	// `service_principal_name` to the application ID. Requires the
-	// `servicePrincipal/user` role. If not specified, the alert will run as the
-	// request user.
-	RunAs *AlertRunAs `json:"run_as,omitempty"`
+	// Custom summary for the alert. support mustache template.
+	CustomSummary *string `json:"custom_summary,omitempty"`
+	// The format used to interpret the `custom_summary` and `custom_description`
+	// templates.
+	//
+	// `HTML` treats both templates as HTML with Mustache `{{VARIABLE_NAME}}`
+	// placeholders. `MARKDOWN` treats them as Markdown with allowlisted
+	// `@VARIABLE_NAME` placeholders and converts them to the format each
+	// notification destination expects, so a single template renders correctly in
+	// email, Slack, and Microsoft Teams.
+	//
+	// When unset, the API applies no default. Responses omit the field unless a
+	// format is stored, and a template with no format is rendered as HTML.
+	CustomTemplateFormat CustomTemplateFormat `json:"custom_template_format,omitempty"`
+	// The display name of the alert.
+	DisplayName *string `json:"display_name,omitempty"`
 	// The actual identity that will be used to execute the alert. This is an
 	// output-only field that shows the resolved run-as identity after applying
 	// permissions and defaults.
-	EffectiveRunAs *AlertRunAs `json:"effective_run_as,omitempty"`
+	EffectiveRunAs *AlertRunAs      `json:"effective_run_as,omitempty"`
+	Evaluation     *AlertEvaluation `json:"evaluation,omitempty"`
+	// The canonical identifier of the alert to retrieve information about.
+	Id *string `json:"id,omitempty"`
+	// Indicates whether the query is trashed.
+	LifecycleState AlertLifecycleState `json:"lifecycle_state,omitempty"`
+	// The owner's username. This field is set to "Unavailable" if the user has been
+	// deleted.
+	OwnerUserName *string `json:"owner_user_name,omitempty"`
 	// A list of parameters to pass into the alert SQL query statement containing
 	// parameter markers. Static values only.
 	//
@@ -115,49 +103,61 @@ type Alert struct {
 	//
 	// [`cast` function]: https://docs.databricks.com/sql/language-manual/functions/cast.html
 	Parameters []AlertStatementParameter `json:"parameters,omitempty"`
-	// The format used to interpret the `custom_summary` and `custom_description`
-	// templates.
-	//
-	// `HTML` treats both templates as HTML with Mustache `{{VARIABLE_NAME}}`
-	// placeholders. `MARKDOWN` treats them as Markdown with allowlisted
-	// `@VARIABLE_NAME` placeholders and converts them to the format each
-	// notification destination expects, so a single template renders correctly in
-	// email, Slack, and Microsoft Teams.
-	//
-	// When unset, the API applies no default. Responses omit the field unless a
-	// format is stored, and a template with no format is rendered as HTML.
-	CustomTemplateFormat CustomTemplateFormat `json:"custom_template_format,omitempty"`
+	// The workspace path of the folder containing the alert. Can only be set on
+	// create, and cannot be updated.
+	ParentPath *string `json:"parent_path,omitempty"`
+	// Text of the query to be run.
+	QueryText *string `json:"query_text,omitempty"`
+	// Specifies the identity that will be used to run the alert. This field allows
+	// you to configure alerts to run as a specific user or service principal. - For
+	// user identity: Set `user_name` to the email of an active workspace user.
+	// Users can only set this to their own email. - For service principal: Set
+	// `service_principal_name` to the application ID. Requires the
+	// `servicePrincipal/user` role. If not specified, the alert will run as the
+	// request user.
+	RunAs *AlertRunAs `json:"run_as,omitempty"`
+	// The run as username or application ID of service principal. On Create and
+	// Update, this field can be set to application ID of an active service
+	// principal. Setting this field requires the servicePrincipal/user role.
+	// Deprecated: Use `run_as` field instead. This field will be removed in a
+	// future release.
+	RunAsUserName *string       `json:"run_as_user_name,omitempty"`
+	Schedule      *CronSchedule `json:"schedule,omitempty"`
+	// The timestamp indicating when the alert was updated.
+	UpdateTime *types.Time `json:"update_time,omitempty"`
+	// ID of the SQL warehouse attached to the alert.
+	WarehouseId *string `json:"warehouse_id,omitempty"`
 }
 
 type AlertEvaluation struct {
-	// Source column from result to use to evaluate alert
-	Source *AlertOperandColumn `json:"source,omitempty"`
 	// Operator used for comparison in alert evaluation.
 	ComparisonOperator ComparisonOperator `json:"comparison_operator,omitempty"`
-	// Threshold to user for alert evaluation, can be a column or a value.
-	Threshold *AlertOperand `json:"threshold,omitempty"`
-	// User or Notification Destination to notify when alert is triggered.
-	Notification *AlertNotification `json:"notification,omitempty"`
-	// Latest state of alert evaluation.
-	State AlertEvaluationState `json:"state,omitempty"`
-	// Timestamp of the last evaluation.
-	LastEvaluatedAt *types.Time `json:"last_evaluated_at,omitempty"`
 	// Alert state if result is empty. Please avoid setting this field to be
 	// `UNKNOWN` because `UNKNOWN` state is planned to be deprecated.
 	EmptyResultState AlertEvaluationState `json:"empty_result_state,omitempty"`
+	// Timestamp of the last evaluation.
+	LastEvaluatedAt *types.Time `json:"last_evaluated_at,omitempty"`
+	// User or Notification Destination to notify when alert is triggered.
+	Notification *AlertNotification `json:"notification,omitempty"`
+	// Source column from result to use to evaluate alert
+	Source *AlertOperandColumn `json:"source,omitempty"`
+	// Latest state of alert evaluation.
+	State AlertEvaluationState `json:"state,omitempty"`
+	// Threshold to user for alert evaluation, can be a column or a value.
+	Threshold *AlertOperand `json:"threshold,omitempty"`
 }
 
 type AlertNotification struct {
-	Subscriptions []AlertSubscription `json:"subscriptions,omitempty"`
+	// Whether to notify alert subscribers when alert returns back to normal.
+	NotifyOnOk *bool `json:"notify_on_ok,omitempty"`
 	// Number of seconds an alert waits after being triggered before it is allowed
 	// to send another notification. If set to 0 or omitted, the alert will not send
 	// any further notifications after the first trigger Setting this value to 1
 	// allows the alert to send a notification on every evaluation where the
 	// condition is met, effectively making it always retrigger for notification
 	// purposes.
-	RetriggerSeconds *int `json:"retrigger_seconds,omitempty"`
-	// Whether to notify alert subscribers when alert returns back to normal.
-	NotifyOnOk *bool `json:"notify_on_ok,omitempty"`
+	RetriggerSeconds *int                `json:"retrigger_seconds,omitempty"`
+	Subscriptions    []AlertSubscription `json:"subscriptions,omitempty"`
 }
 
 type AlertOperand struct {
@@ -166,21 +166,21 @@ type AlertOperand struct {
 }
 
 type AlertOperandColumn struct {
-	Name    *string `json:"name,omitempty"`
-	Display *string `json:"display,omitempty"`
 	// If not set, the behavior is equivalent to using `First row` in the UI.
 	Aggregation Aggregation `json:"aggregation,omitempty"`
+	Display     *string     `json:"display,omitempty"`
+	Name        *string     `json:"name,omitempty"`
 }
 
 type AlertOperandValue struct {
-	StringValue *string  `json:"string_value,omitempty"`
-	DoubleValue *float64 `json:"double_value,omitempty"`
 	BoolValue   *bool    `json:"bool_value,omitempty"`
+	DoubleValue *float64 `json:"double_value,omitempty"`
+	StringValue *string  `json:"string_value,omitempty"`
 }
 
 type AlertRunAs struct {
-	UserName             *string `json:"user_name,omitempty"`
 	ServicePrincipalName *string `json:"service_principal_name,omitempty"`
+	UserName             *string `json:"user_name,omitempty"`
 }
 
 // A named parameter bound to the alert query. Only flat, named scalar
@@ -191,18 +191,18 @@ type AlertStatementParameter struct {
 	// Required, must be non-empty, and must be unique across the alert's
 	// parameters.
 	Name *string `json:"name,omitempty"`
-	// The value bound to the parameter, represented as a string. If omitted, the
-	// value is interpreted as NULL.
-	Value *string `json:"value,omitempty"`
 	// The SQL data type of the parameter, for example `STRING`, `INT`, or
 	// `DECIMAL(10, 2)`. If no type is given the type is assumed to be `STRING`.
 	// Complex types such as `ARRAY`, `MAP`, and `STRUCT` are not supported.
 	Type *string `json:"type,omitempty"`
+	// The value bound to the parameter, represented as a string. If omitted, the
+	// value is interpreted as NULL.
+	Value *string `json:"value,omitempty"`
 }
 
 type AlertSubscription struct {
-	UserEmail     *string `json:"user_email,omitempty"`
 	DestinationId *string `json:"destination_id,omitempty"`
+	UserEmail     *string `json:"user_email,omitempty"`
 }
 
 type CreateAlertRequest struct {
@@ -210,6 +210,8 @@ type CreateAlertRequest struct {
 }
 
 type CronSchedule struct {
+	// Indicate whether this schedule is paused or not.
+	PauseStatus SchedulePauseStatus `json:"pause_status,omitempty"`
 	// A cron expression using quartz syntax that specifies the schedule for this
 	// pipeline. Should use the quartz format described here:
 	// http://www.quartz-scheduler.org/documentation/quartz-2.1.7/tutorials/tutorial-lesson-06.html
@@ -219,13 +221,11 @@ type CronSchedule struct {
 	// https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html
 	// for details.
 	TimezoneId *string `json:"timezone_id,omitempty"`
-	// Indicate whether this schedule is paused or not.
-	PauseStatus SchedulePauseStatus `json:"pause_status,omitempty"`
 }
 
 type ListAlertsRequest struct {
-	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
+	PageToken *string `json:"page_token,omitempty"`
 }
 
 type ListAlertsResponse struct {

@@ -26,40 +26,40 @@ const (
 // An item representing an ACL rule applied to the given principal (user or
 // group) on the associated scope point..
 type AclItem struct {
-	// The principal in which the permission is applied.
-	Principal *string `json:"principal,omitempty"`
 	// The permission level applied to the principal.
 	Permission AclPermission `json:"permission,omitempty"`
+	// The principal in which the permission is applied.
+	Principal *string `json:"principal,omitempty"`
 }
 
 // The metadata of the Azure KeyVault for a secret scope of type
 // `AZURE_KEYVAULT`.
 type AzureKeyVaultSecretScopeMetadata struct {
+	// The DNS of the KeyVault
+	DnsName *string `json:"dns_name,omitempty"`
 	// The resource id of the azure KeyVault that user wants to associate the scope
 	// with.
 	ResourceId *string `json:"resource_id,omitempty"`
-	// The DNS of the KeyVault
-	DnsName *string `json:"dns_name,omitempty"`
 }
 
 type CreateScopeRequest struct {
-	// Scope name requested by the user. Scope names are unique.
-	Scope *string `json:"scope,omitempty"`
+	// The metadata for the secret scope if the type is ``AZURE_KEYVAULT``
+	BackendAzureKeyvault *AzureKeyVaultSecretScopeMetadata `json:"backend_azure_keyvault,omitempty"`
 	// The principal that is initially granted ``MANAGE`` permission to the created
 	// scope.
 	InitialManagePrincipal *string `json:"initial_manage_principal,omitempty"`
+	// Scope name requested by the user. Scope names are unique.
+	Scope *string `json:"scope,omitempty"`
 	// The backend type the scope will be created with. If not specified, will
 	// default to ``DATABRICKS``
 	ScopeBackendType ScopeBackendType `json:"scope_backend_type,omitempty"`
-	// The metadata for the secret scope if the type is ``AZURE_KEYVAULT``
-	BackendAzureKeyvault *AzureKeyVaultSecretScopeMetadata `json:"backend_azure_keyvault,omitempty"`
 }
 
 type DeleteAclRequest struct {
-	// The name of the scope to remove permissions from.
-	Scope *string `json:"scope,omitempty"`
 	// The principal to remove an existing ACL from.
 	Principal *string `json:"principal,omitempty"`
+	// The name of the scope to remove permissions from.
+	Scope *string `json:"scope,omitempty"`
 }
 
 type DeleteScopeRequest struct {
@@ -68,24 +68,24 @@ type DeleteScopeRequest struct {
 }
 
 type DeleteSecretRequest struct {
-	// The name of the scope that contains the secret to delete.
-	Scope *string `json:"scope,omitempty"`
 	// Name of the secret to delete.
 	Key *string `json:"key,omitempty"`
+	// The name of the scope that contains the secret to delete.
+	Scope *string `json:"scope,omitempty"`
 }
 
 type GetAclRequest struct {
-	// The name of the scope to fetch ACL information from.
-	Scope *string `json:"scope,omitempty"`
 	// The principal to fetch ACL information for.
 	Principal *string `json:"principal,omitempty"`
+	// The name of the scope to fetch ACL information from.
+	Scope *string `json:"scope,omitempty"`
 }
 
 type GetSecretRequest struct {
-	// The name of the scope that contains the secret.
-	Scope *string `json:"scope,omitempty"`
 	// Name of the secret to fetch value information.
 	Key *string `json:"key,omitempty"`
+	// The name of the scope that contains the secret.
+	Scope *string `json:"scope,omitempty"`
 }
 
 type GetSecretResponse struct {
@@ -121,21 +121,21 @@ type ListSecretsResponse struct {
 }
 
 type PutAclRequest struct {
-	// The name of the scope to apply permissions to.
-	Scope *string `json:"scope,omitempty"`
-	// The principal in which the permission is applied.
-	Principal *string `json:"principal,omitempty"`
 	// The permission level applied to the principal.
 	Permission AclPermission `json:"permission,omitempty"`
+	// The principal in which the permission is applied.
+	Principal *string `json:"principal,omitempty"`
+	// The name of the scope to apply permissions to.
+	Scope *string `json:"scope,omitempty"`
 }
 
 type PutSecretRequest struct {
-	// The name of the scope to which the secret will be associated with.
-	Scope *string `json:"scope,omitempty"`
+	BytesValue []byte `json:"bytes_value,omitempty"`
 	// A unique name to identify the secret.
-	Key         *string `json:"key,omitempty"`
+	Key *string `json:"key,omitempty"`
+	// The name of the scope to which the secret will be associated with.
+	Scope       *string `json:"scope,omitempty"`
 	StringValue *string `json:"string_value,omitempty"`
-	BytesValue  []byte  `json:"bytes_value,omitempty"`
 }
 
 // The metadata about a secret. Returned when listing secrets. Does not contain
@@ -151,12 +151,12 @@ type SecretMetadata struct {
 // different types (Databricks-managed, Azure KeyVault backed, etc), and ACLs
 // can be applied to control permissions for all secrets within a scope..
 type SecretScope struct {
-	// A unique name to identify the secret scope.
-	Name *string `json:"name,omitempty"`
 	// The type of secret scope backend.
 	BackendType ScopeBackendType `json:"backend_type,omitempty"`
 	// The metadata for the secret scope if the type is ``AZURE_KEYVAULT``
 	KeyvaultMetadata *AzureKeyVaultSecretScopeMetadata `json:"keyvault_metadata,omitempty"`
+	// A unique name to identify the secret scope.
+	Name *string `json:"name,omitempty"`
 }
 
 // AclItemToSDK converts the mirror to the sdk-go type.

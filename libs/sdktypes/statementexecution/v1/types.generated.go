@@ -82,15 +82,11 @@ type CancelStatementRequest struct {
 }
 
 type ChunkInfo struct {
-	// The position within the sequence of result set chunks.
-	ChunkIndex *int `json:"chunk_index,omitempty"`
-	// The starting row offset within the result set.
-	RowOffset *int64 `json:"row_offset,omitempty"`
-	// The number of rows within the result chunk.
-	RowCount *int64 `json:"row_count,omitempty"`
 	// The number of bytes in the result chunk. This field is not available when
 	// using `INLINE` disposition.
 	ByteCount *int64 `json:"byte_count,omitempty"`
+	// The position within the sequence of result set chunks.
+	ChunkIndex *int `json:"chunk_index,omitempty"`
 	// When fetching, provides the `chunk_index` for the _next_ chunk. If absent,
 	// indicates there are no more chunks. The next chunk can be fetched with a
 	// :method:statementexecution/getstatementresultchunkn request.
@@ -100,50 +96,32 @@ type ChunkInfo struct {
 	// joined with your `$DATABRICKS_HOST`, and should be treated as an opaque link.
 	// This is an alternative to using `next_chunk_index`.
 	NextChunkInternalLink *string `json:"next_chunk_internal_link,omitempty"`
+	// The number of rows within the result chunk.
+	RowCount *int64 `json:"row_count,omitempty"`
+	// The starting row offset within the result set.
+	RowOffset *int64 `json:"row_offset,omitempty"`
 }
 
 type ColumnInfo struct {
 	// The name of the column.
 	Name *string `json:"name,omitempty"`
-	// The full SQL type specification.
-	TypeText *string `json:"type_text,omitempty"`
+	// The ordinal position of the column (starting at position 0).
+	Position *int `json:"position,omitempty"`
+	// The format of the interval type.
+	TypeIntervalType *string `json:"type_interval_type,omitempty"`
 	// The name of the base data type. This doesn't include details for complex
 	// types such as STRUCT, MAP or ARRAY.
 	TypeName ColumnTypeName `json:"type_name,omitempty"`
-	// The ordinal position of the column (starting at position 0).
-	Position *int `json:"position,omitempty"`
 	// Specifies the number of digits in a number. This applies to the DECIMAL type.
 	TypePrecision *int `json:"type_precision,omitempty"`
 	// Specifies the number of digits to the right of the decimal point in a number.
 	// This applies to the DECIMAL type.
 	TypeScale *int `json:"type_scale,omitempty"`
-	// The format of the interval type.
-	TypeIntervalType *string `json:"type_interval_type,omitempty"`
+	// The full SQL type specification.
+	TypeText *string `json:"type_text,omitempty"`
 }
 
 type ExecuteStatementRequest struct {
-	// The SQL statement to execute. The statement can optionally be parameterized,
-	// see `parameters`. The maximum query text size is 16 MiB.
-	Statement *string `json:"statement,omitempty"`
-	// Warehouse upon which to execute a statement. See also [What are SQL
-	// warehouses?]
-	//
-	// [What are SQL warehouses?]: https://docs.databricks.com/sql/admin/warehouse-type.html
-	WarehouseId *string `json:"warehouse_id,omitempty"`
-	// Sets default catalog for statement execution, similar to [`USE CATALOG`] in
-	// SQL.
-	//
-	// [`USE CATALOG`]: https://docs.databricks.com/sql/language-manual/sql-ref-syntax-ddl-use-catalog.html
-	Catalog *string `json:"catalog,omitempty"`
-	// Sets default schema for statement execution, similar to [`USE SCHEMA`] in
-	// SQL.
-	//
-	// [`USE SCHEMA`]: https://docs.databricks.com/sql/language-manual/sql-ref-syntax-ddl-use-schema.html
-	Schema *string `json:"schema,omitempty"`
-	// Applies the given row limit to the statement's result set, but unlike the
-	// `LIMIT` clause in SQL, it also sets the `truncated` field in the response to
-	// indicate whether the result was trimmed due to the limit or not.
-	RowLimit *int64 `json:"row_limit,omitempty"`
 	// Applies the given byte limit to the statement's result size. Byte counts are
 	// based on internal data representations and might not match the final size in
 	// the requested `format`. If the result was truncated due to the byte limit,
@@ -151,6 +129,36 @@ type ExecuteStatementRequest struct {
 	// `EXTERNAL_LINKS` disposition, a default `byte_limit` of 100 GiB is applied if
 	// `byte_limit` is not explicitly set.
 	ByteLimit *int64 `json:"byte_limit,omitempty"`
+	// Sets default catalog for statement execution, similar to [`USE CATALOG`] in
+	// SQL.
+	//
+	// [`USE CATALOG`]: https://docs.databricks.com/sql/language-manual/sql-ref-syntax-ddl-use-catalog.html
+	Catalog *string `json:"catalog,omitempty"`
+	// The fetch disposition provides two modes of fetching results: `INLINE` and
+	// `EXTERNAL_LINKS`.
+	//
+	// Statements executed with `INLINE` disposition will return result data inline,
+	// in `JSON_ARRAY` format, in a series of chunks. If a given statement produces
+	// a result set with a size larger than 25 MiB, that statement execution is
+	// aborted, and no result set will be available.
+	//
+	// **NOTE** Byte limits are computed based upon internal representations of the
+	// result set data, and might not match the sizes visible in JSON responses.
+	//
+	// Statements executed with `EXTERNAL_LINKS` disposition will return result data
+	// as external links: URLs that point to cloud storage internal to the
+	// workspace. Using `EXTERNAL_LINKS` disposition allows statements to generate
+	// arbitrarily sized result sets for fetching up to 100 GiB. The resulting links
+	// have two important properties:
+	//
+	// 1. They point to resources _external_ to the <Databricks> compute; therefore
+	// any associated authentication information (typically a personal access token,
+	// OAuth token, or similar) _must be removed_ when fetching from these links.
+	//
+	// 2. These are short-lived cloud-storage URLs with a specific expiration,
+	// indicated in the response. The behavior when attempting to use an expired
+	// link is cloud specific.
+	Disposition Disposition `json:"disposition,omitempty"`
 	// Statement execution supports three result formats: `JSON_ARRAY` (default),
 	// `ARROW_STREAM`, and `CSV`.
 	//
@@ -188,46 +196,6 @@ type ExecuteStatementRequest struct {
 	// [Apache Arrow streaming format]: https://arrow.apache.org/docs/format/Columnar.html#ipc-streaming-format
 	// [RFC 4180]: https://www.rfc-editor.org/rfc/rfc4180
 	Format Format `json:"format,omitempty"`
-	// The fetch disposition provides two modes of fetching results: `INLINE` and
-	// `EXTERNAL_LINKS`.
-	//
-	// Statements executed with `INLINE` disposition will return result data inline,
-	// in `JSON_ARRAY` format, in a series of chunks. If a given statement produces
-	// a result set with a size larger than 25 MiB, that statement execution is
-	// aborted, and no result set will be available.
-	//
-	// **NOTE** Byte limits are computed based upon internal representations of the
-	// result set data, and might not match the sizes visible in JSON responses.
-	//
-	// Statements executed with `EXTERNAL_LINKS` disposition will return result data
-	// as external links: URLs that point to cloud storage internal to the
-	// workspace. Using `EXTERNAL_LINKS` disposition allows statements to generate
-	// arbitrarily sized result sets for fetching up to 100 GiB. The resulting links
-	// have two important properties:
-	//
-	// 1. They point to resources _external_ to the <Databricks> compute; therefore
-	// any associated authentication information (typically a personal access token,
-	// OAuth token, or similar) _must be removed_ when fetching from these links.
-	//
-	// 2. These are short-lived cloud-storage URLs with a specific expiration,
-	// indicated in the response. The behavior when attempting to use an expired
-	// link is cloud specific.
-	Disposition Disposition `json:"disposition,omitempty"`
-	// The time in seconds the call will wait for the statement's result set as
-	// `Ns`, where `N` can be set to 0 or to a value between 5 and 50.
-	//
-	// When set to `0s`, the statement will execute in asynchronous mode and the
-	// call will not wait for the execution to finish. In this case, the call
-	// returns directly with `PENDING` state and a statement ID which can be used
-	// for polling with :method:statementexecution/getStatement.
-	//
-	// When set between 5 and 50 seconds, the call will behave synchronously up to
-	// this timeout and wait for the statement execution to finish. If the execution
-	// finishes within this time, the call returns immediately with a manifest and
-	// result data (or a `FAILED` state in case of an execution error). If the
-	// statement takes longer to execute, `on_wait_timeout` determines what should
-	// happen after the timeout is reached.
-	WaitTimeout *string `json:"wait_timeout,omitempty"`
 	// When `wait_timeout > 0s`, the call will block up to the specified time. If
 	// the statement execution doesn't finish within this time, `on_wait_timeout`
 	// determines whether the execution should continue or be canceled. When set to
@@ -278,32 +246,60 @@ type ExecuteStatementRequest struct {
 	// { ..., "query_tags": [ { "key": "team", "value": "eng" }, { "key": "some key
 	// only tag" } ] }
 	QueryTags []QueryTag `json:"query_tags,omitempty"`
+	// Applies the given row limit to the statement's result set, but unlike the
+	// `LIMIT` clause in SQL, it also sets the `truncated` field in the response to
+	// indicate whether the result was trimmed due to the limit or not.
+	RowLimit *int64 `json:"row_limit,omitempty"`
+	// Sets default schema for statement execution, similar to [`USE SCHEMA`] in
+	// SQL.
+	//
+	// [`USE SCHEMA`]: https://docs.databricks.com/sql/language-manual/sql-ref-syntax-ddl-use-schema.html
+	Schema *string `json:"schema,omitempty"`
+	// The SQL statement to execute. The statement can optionally be parameterized,
+	// see `parameters`. The maximum query text size is 16 MiB.
+	Statement *string `json:"statement,omitempty"`
+	// The time in seconds the call will wait for the statement's result set as
+	// `Ns`, where `N` can be set to 0 or to a value between 5 and 50.
+	//
+	// When set to `0s`, the statement will execute in asynchronous mode and the
+	// call will not wait for the execution to finish. In this case, the call
+	// returns directly with `PENDING` state and a statement ID which can be used
+	// for polling with :method:statementexecution/getStatement.
+	//
+	// When set between 5 and 50 seconds, the call will behave synchronously up to
+	// this timeout and wait for the statement execution to finish. If the execution
+	// finishes within this time, the call returns immediately with a manifest and
+	// result data (or a `FAILED` state in case of an execution error). If the
+	// statement takes longer to execute, `on_wait_timeout` determines what should
+	// happen after the timeout is reached.
+	WaitTimeout *string `json:"wait_timeout,omitempty"`
+	// Warehouse upon which to execute a statement. See also [What are SQL
+	// warehouses?]
+	//
+	// [What are SQL warehouses?]: https://docs.databricks.com/sql/admin/warehouse-type.html
+	WarehouseId *string `json:"warehouse_id,omitempty"`
 }
 
 type ExternalLink struct {
+	// The number of bytes in the result chunk. This field is not available when
+	// using `INLINE` disposition.
+	ByteCount *int64 `json:"byte_count,omitempty"`
+	// The position within the sequence of result set chunks.
+	ChunkIndex *int `json:"chunk_index,omitempty"`
+	// Indicates the date-time that the given external link will expire and becomes
+	// invalid, after which point a new `external_link` must be requested.
+	Expiration *string `json:"expiration,omitempty"`
 	// A short-lived cloud-storage URL pointing to a chunk of result data, hosted by
 	// an external service, with a short expiration time (<= 15 minutes). As this
 	// URL contains a temporary credential, it should be considered sensitive and
 	// the client should not expose this URL in a log.
 	ExternalLink *string `json:"external_link,omitempty"`
-	// Indicates the date-time that the given external link will expire and becomes
-	// invalid, after which point a new `external_link` must be requested.
-	Expiration *string `json:"expiration,omitempty"`
 	// HTTP headers that must be included with a GET request to the `external_link`.
 	// Each header is provided as a key-value pair. Headers are typically used to
 	// pass a decryption key to the external service. The values of these headers
 	// should be considered sensitive and the client should not expose these values
 	// in a log.
 	HttpHeaders map[string]string `json:"http_headers,omitempty"`
-	// The position within the sequence of result set chunks.
-	ChunkIndex *int `json:"chunk_index,omitempty"`
-	// The starting row offset within the result set.
-	RowOffset *int64 `json:"row_offset,omitempty"`
-	// The number of rows within the result chunk.
-	RowCount *int64 `json:"row_count,omitempty"`
-	// The number of bytes in the result chunk. This field is not available when
-	// using `INLINE` disposition.
-	ByteCount *int64 `json:"byte_count,omitempty"`
 	// When fetching, provides the `chunk_index` for the _next_ chunk. If absent,
 	// indicates there are no more chunks. The next chunk can be fetched with a
 	// :method:statementexecution/getstatementresultchunkn request.
@@ -313,13 +309,17 @@ type ExternalLink struct {
 	// joined with your `$DATABRICKS_HOST`, and should be treated as an opaque link.
 	// This is an alternative to using `next_chunk_index`.
 	NextChunkInternalLink *string `json:"next_chunk_internal_link,omitempty"`
+	// The number of rows within the result chunk.
+	RowCount *int64 `json:"row_count,omitempty"`
+	// The starting row offset within the result set.
+	RowOffset *int64 `json:"row_offset,omitempty"`
 }
 
 type GetResultDataRequest struct {
+	ChunkIndex *int `json:"chunk_index,omitempty"`
 	// The statement ID is returned upon successfully submitting a SQL statement,
 	// and is a required reference for all subsequent calls.
 	StatementId *string `json:"statement_id,omitempty"`
-	ChunkIndex  *int    `json:"chunk_index,omitempty"`
 	// For warehouse statement URLs, this field contains the warehouse_id path
 	// parameter.
 	WarehouseId *string `json:"warehouse_id,omitempty"`
@@ -349,19 +349,15 @@ type QueryTag struct {
 // `external_links` array prepares the API to return multiple links in a single
 // response. Currently only a single link is returned.).
 type ResultData struct {
-	ExternalLinks []ExternalLink `json:"external_links,omitempty"`
-	// The `JSON_ARRAY` format is an array of arrays of values, where each non-null
-	// value is formatted as a string. Null values are encoded as JSON `null`.
-	DataArray [][]json.RawMessage `json:"data_array,omitempty"`
-	// The position within the sequence of result set chunks.
-	ChunkIndex *int `json:"chunk_index,omitempty"`
-	// The starting row offset within the result set.
-	RowOffset *int64 `json:"row_offset,omitempty"`
-	// The number of rows within the result chunk.
-	RowCount *int64 `json:"row_count,omitempty"`
 	// The number of bytes in the result chunk. This field is not available when
 	// using `INLINE` disposition.
 	ByteCount *int64 `json:"byte_count,omitempty"`
+	// The position within the sequence of result set chunks.
+	ChunkIndex *int `json:"chunk_index,omitempty"`
+	// The `JSON_ARRAY` format is an array of arrays of values, where each non-null
+	// value is formatted as a string. Null values are encoded as JSON `null`.
+	DataArray     [][]json.RawMessage `json:"data_array,omitempty"`
+	ExternalLinks []ExternalLink      `json:"external_links,omitempty"`
 	// When fetching, provides the `chunk_index` for the _next_ chunk. If absent,
 	// indicates there are no more chunks. The next chunk can be fetched with a
 	// :method:statementexecution/getstatementresultchunkn request.
@@ -371,21 +367,25 @@ type ResultData struct {
 	// joined with your `$DATABRICKS_HOST`, and should be treated as an opaque link.
 	// This is an alternative to using `next_chunk_index`.
 	NextChunkInternalLink *string `json:"next_chunk_internal_link,omitempty"`
+	// The number of rows within the result chunk.
+	RowCount *int64 `json:"row_count,omitempty"`
+	// The starting row offset within the result set.
+	RowOffset *int64 `json:"row_offset,omitempty"`
 }
 
 // The result manifest provides schema and metadata for the result set..
 type ResultManifest struct {
-	Format Format  `json:"format,omitempty"`
-	Schema *Schema `json:"schema,omitempty"`
-	// The total number of chunks that the result set has been divided into.
-	TotalChunkCount *int `json:"total_chunk_count,omitempty"`
 	// Array of result set chunk metadata.
 	Chunks []ChunkInfo `json:"chunks,omitempty"`
-	// The total number of rows in the result set.
-	TotalRowCount *int64 `json:"total_row_count,omitempty"`
+	Format Format      `json:"format,omitempty"`
+	Schema *Schema     `json:"schema,omitempty"`
 	// The total number of bytes in the result set. This field is not available when
 	// using `INLINE` disposition.
 	TotalByteCount *int64 `json:"total_byte_count,omitempty"`
+	// The total number of chunks that the result set has been divided into.
+	TotalChunkCount *int `json:"total_chunk_count,omitempty"`
+	// The total number of rows in the result set.
+	TotalRowCount *int64 `json:"total_row_count,omitempty"`
 	// Indicates whether the result is truncated due to `row_limit` or `byte_limit`.
 	Truncated *bool `json:"truncated,omitempty"`
 }
@@ -405,9 +405,6 @@ type ServiceError struct {
 type StatementParameter struct {
 	// The name of a parameter marker to be substituted in the statement.
 	Name *string `json:"name,omitempty"`
-	// The value to substitute, represented as a string. If omitted, the value is
-	// interpreted as NULL.
-	Value *string `json:"value,omitempty"`
 	// The data type, given as a string. For example: `INT`, `STRING`,
 	// `DECIMAL(10,2)`. If no type is given the type is assumed to be `STRING`.
 	// Complex types, such as `ARRAY`, `MAP`, and `STRUCT` are not supported. For
@@ -415,20 +412,27 @@ type StatementParameter struct {
 	//
 	// [Data types]: https://docs.databricks.com/sql/language-manual/functions/cast.html
 	Type *string `json:"type,omitempty"`
+	// The value to substitute, represented as a string. If omitted, the value is
+	// interpreted as NULL.
+	Value *string `json:"value,omitempty"`
 }
 
 type StatementResponse struct {
+	Manifest *ResultManifest `json:"manifest,omitempty"`
+	Result   *ResultData     `json:"result,omitempty"`
 	// The statement ID is returned upon successfully submitting a SQL statement,
 	// and is a required reference for all subsequent calls.
 	StatementId *string          `json:"statement_id,omitempty"`
 	Status      *StatementStatus `json:"status,omitempty"`
-	Manifest    *ResultManifest  `json:"manifest,omitempty"`
-	Result      *ResultData      `json:"result,omitempty"`
 }
 
 // The status response includes execution state and if relevant, error
 // information..
 type StatementStatus struct {
+	Error *ServiceError `json:"error,omitempty"`
+	// SQLSTATE error code returned when the statement execution fails. Only
+	// populated when the statement status is `FAILED`.
+	SqlState *string `json:"sql_state,omitempty"`
 	// Statement execution state: - `PENDING`: waiting for warehouse - `RUNNING`:
 	// running - `SUCCEEDED`: execution was successful, result data available for
 	// fetch - `FAILED`: execution failed; reason for failure described in
@@ -437,10 +441,6 @@ type StatementStatus struct {
 	// execution successful, and statement closed; result no longer available for
 	// fetch
 	State StatementStatus_State `json:"state,omitempty"`
-	Error *ServiceError         `json:"error,omitempty"`
-	// SQLSTATE error code returned when the statement execution fails. Only
-	// populated when the statement status is `FAILED`.
-	SqlState *string `json:"sql_state,omitempty"`
 }
 
 // CancelStatementRequestToSDK converts the mirror to the sdk-go type.

@@ -24,11 +24,6 @@ type GetCatalogWorkspaceBindingsResponse struct {
 }
 
 type GetWorkspaceBindingsRequest struct {
-	// The type of the securable to bind to a workspace (catalog,
-	// storage_credential, credential, or external_location).
-	SecurableType *string `json:"securable_type,omitempty"`
-	// The name of the securable.
-	SecurableFullName *string `json:"securable_full_name,omitempty"`
 	// Maximum number of workspace bindings to return. - When set to 0, the page
 	// length is set to a server configured value (recommended); - When set to a
 	// value greater than 0, the page length is the minimum of this value and a
@@ -38,6 +33,11 @@ type GetWorkspaceBindingsRequest struct {
 	MaxResults *int `json:"max_results,omitempty"`
 	// Opaque pagination token to go to next page based on previous query.
 	PageToken *string `json:"page_token,omitempty"`
+	// The name of the securable.
+	SecurableFullName *string `json:"securable_full_name,omitempty"`
+	// The type of the securable to bind to a workspace (catalog,
+	// storage_credential, credential, or external_location).
+	SecurableType *string `json:"securable_type,omitempty"`
 }
 
 type GetWorkspaceBindingsResponse struct {
@@ -50,10 +50,10 @@ type GetWorkspaceBindingsResponse struct {
 }
 
 type UpdateCatalogWorkspaceBindingsRequest struct {
-	// The name of the catalog.
-	CatalogName *string `json:"catalog_name,omitempty"`
 	// A list of workspace IDs.
 	AssignWorkspaces []int64 `json:"assign_workspaces,omitempty"`
+	// The name of the catalog.
+	CatalogName *string `json:"catalog_name,omitempty"`
 	// A list of workspace IDs.
 	UnassignWorkspaces []int64 `json:"unassign_workspaces,omitempty"`
 }
@@ -64,17 +64,17 @@ type UpdateCatalogWorkspaceBindingsResponse struct {
 }
 
 type UpdateWorkspaceBindingsRequest struct {
-	// The type of the securable to bind to a workspace (catalog,
-	// storage_credential, credential, or external_location).
-	SecurableType *string `json:"securable_type,omitempty"`
-	// The name of the securable.
-	SecurableFullName *string `json:"securable_full_name,omitempty"`
 	// List of workspace bindings to add. If a binding for the workspace already
 	// exists with a different binding_type, adding it again with a new binding_type
 	// will update the existing binding (e.g., from READ_WRITE to READ_ONLY).
 	Add []WorkspaceBindingInfo `json:"add,omitempty"`
 	// List of workspace bindings to remove.
 	Remove []WorkspaceBindingInfo `json:"remove,omitempty"`
+	// The name of the securable.
+	SecurableFullName *string `json:"securable_full_name,omitempty"`
+	// The type of the securable to bind to a workspace (catalog,
+	// storage_credential, credential, or external_location).
+	SecurableType *string `json:"securable_type,omitempty"`
 }
 
 // A list of workspace IDs that are bound to the securable.
@@ -84,10 +84,10 @@ type UpdateWorkspaceBindingsResponse struct {
 }
 
 type WorkspaceBindingInfo struct {
-	// Required
-	WorkspaceId *int64 `json:"workspace_id,omitempty"`
 	// One of READ_WRITE/READ_ONLY. Default is READ_WRITE.
 	BindingType BindingType `json:"binding_type,omitempty"`
+	// Required
+	WorkspaceId *int64 `json:"workspace_id,omitempty"`
 }
 
 // GetCatalogWorkspaceBindingsResponseToSDK converts the mirror to the sdk-go type.

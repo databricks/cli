@@ -8,6 +8,22 @@ import (
 )
 
 type AddInstanceProfileRequest struct {
+	// The AWS IAM role ARN of the role associated with the instance profile. This
+	// field is required if your role name and instance profile name do not match
+	// and you want to use the instance profile with [Databricks SQL
+	// Serverless](/sql/admin/serverless.html).
+	//
+	// Otherwise, this field is optional.
+	IamRoleArn *string `json:"iam_role_arn,omitempty"`
+	// The AWS ARN of the instance profile to register with <Databricks>. This field
+	// is required.
+	InstanceProfileArn *string `json:"instance_profile_arn,omitempty"`
+	// Boolean flag indicating whether the instance profile should only be used in
+	// credential passthrough scenarios. If true, it means the instance profile
+	// contains an meta IAM role which could assume a wide range of roles. Therefore
+	// it should always be used with authorization. This field is optional, the
+	// default value is `false`.
+	IsMetaInstanceProfile *bool `json:"is_meta_instance_profile,omitempty"`
 	// By default, <Databricks> validates that it has sufficient permissions to
 	// launch instances with the instance profile. This validation uses AWS dry-run
 	// mode for the RunInstances API. If validation fails with an error message that
@@ -16,25 +32,16 @@ type AddInstanceProfileRequest struct {
 	// can pass this flag to skip the validation and forcibly add the instance
 	// profile.
 	SkipValidation *bool `json:"skip_validation,omitempty"`
-	// The AWS ARN of the instance profile to register with <Databricks>. This field
-	// is required.
-	InstanceProfileArn *string `json:"instance_profile_arn,omitempty"`
-	// Boolean flag indicating whether the instance profile should only be used in
-	// credential passthrough scenarios. If true, it means the instance profile
-	// contains an meta IAM role which could assume a wide range of roles. Therefore
-	// it should always be used with authorization. This field is optional, the
-	// default value is `false`.
-	IsMetaInstanceProfile *bool `json:"is_meta_instance_profile,omitempty"`
-	// The AWS IAM role ARN of the role associated with the instance profile. This
-	// field is required if your role name and instance profile name do not match
-	// and you want to use the instance profile with [Databricks SQL
-	// Serverless](/sql/admin/serverless.html).
-	//
-	// Otherwise, this field is optional.
-	IamRoleArn *string `json:"iam_role_arn,omitempty"`
 }
 
 type EditInstanceProfileRequest struct {
+	// The AWS IAM role ARN of the role associated with the instance profile. This
+	// field is required if your role name and instance profile name do not match
+	// and you want to use the instance profile with [Databricks SQL
+	// Serverless](/sql/admin/serverless.html).
+	//
+	// Otherwise, this field is optional.
+	IamRoleArn *string `json:"iam_role_arn,omitempty"`
 	// The AWS ARN of the instance profile to register with <Databricks>. This field
 	// is required.
 	InstanceProfileArn *string `json:"instance_profile_arn,omitempty"`
@@ -44,16 +51,16 @@ type EditInstanceProfileRequest struct {
 	// it should always be used with authorization. This field is optional, the
 	// default value is `false`.
 	IsMetaInstanceProfile *bool `json:"is_meta_instance_profile,omitempty"`
-	// The AWS IAM role ARN of the role associated with the instance profile. This
-	// field is required if your role name and instance profile name do not match
-	// and you want to use the instance profile with [Databricks SQL
-	// Serverless](/sql/admin/serverless.html).
-	//
-	// Otherwise, this field is optional.
-	IamRoleArn *string `json:"iam_role_arn,omitempty"`
 }
 
 type InstanceProfile struct {
+	// The AWS IAM role ARN of the role associated with the instance profile. This
+	// field is required if your role name and instance profile name do not match
+	// and you want to use the instance profile with [Databricks SQL
+	// Serverless](/sql/admin/serverless.html).
+	//
+	// Otherwise, this field is optional.
+	IamRoleArn *string `json:"iam_role_arn,omitempty"`
 	// The AWS ARN of the instance profile to register with <Databricks>. This field
 	// is required.
 	InstanceProfileArn *string `json:"instance_profile_arn,omitempty"`
@@ -63,13 +70,6 @@ type InstanceProfile struct {
 	// it should always be used with authorization. This field is optional, the
 	// default value is `false`.
 	IsMetaInstanceProfile *bool `json:"is_meta_instance_profile,omitempty"`
-	// The AWS IAM role ARN of the role associated with the instance profile. This
-	// field is required if your role name and instance profile name do not match
-	// and you want to use the instance profile with [Databricks SQL
-	// Serverless](/sql/admin/serverless.html).
-	//
-	// Otherwise, this field is optional.
-	IamRoleArn *string `json:"iam_role_arn,omitempty"`
 }
 
 type ListInstanceProfilesResponse struct {

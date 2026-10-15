@@ -114,5 +114,5 @@ func TestRetryMessage(t *testing.T) {
 	apiErr := apierr.FromHTTPError(http.StatusGatewayTimeout, nil, []byte(`{"message":"boom"}`))
 	assert.Equal(t, "retrying", retryMessage(errors.New("x")))
 	assert.Equal(t, "retrying after 504 Gateway Timeout", retryMessage(apiErr))
-	assert.Equal(t, "retrying after 504 Gateway Timeout: failed to upload /a/b: "+apiErr.Error(), retryMessage(fmt.Errorf("failed to upload /a/b: %w", apiErr)))
+	assert.Equal(t, "retrying after 504 Gateway Timeout: failed to upload /a/b: boom", retryMessage(fmt.Errorf("failed to upload /a/b: %w", apiErr)))
 }

@@ -31,12 +31,6 @@ type ListSecretsRequest struct {
 	// The name of the catalog under which to list secrets. Both **catalog_name**
 	// and **schema_name** must be specified together.
 	CatalogName *string `json:"catalog_name,omitempty"`
-	// The name of the schema under which to list secrets. Both **catalog_name** and
-	// **schema_name** must be specified together.
-	SchemaName *string `json:"schema_name,omitempty"`
-	// Opaque pagination token to go to the next page based on previous query. The
-	// maximum page length is determined by a server configured value.
-	PageToken *string `json:"page_token,omitempty"`
 	// Maximum number of secrets to return.
 	//
 	// - If not specified, at most 1000 secrets are returned. - If set to a value
@@ -44,54 +38,38 @@ type ListSecretsRequest struct {
 	// set to 0, the page length is set to 1000. - If set to a value less than 0, an
 	// invalid parameter error is returned.
 	PageSize *int `json:"page_size,omitempty"`
+	// Opaque pagination token to go to the next page based on previous query. The
+	// maximum page length is determined by a server configured value.
+	PageToken *string `json:"page_token,omitempty"`
+	// The name of the schema under which to list secrets. Both **catalog_name** and
+	// **schema_name** must be specified together.
+	SchemaName *string `json:"schema_name,omitempty"`
 }
 
 // Response message for ListSecrets..
 type ListSecretsResponse struct {
-	// An array of secret objects.
-	Secrets []Secret `json:"secrets,omitempty"`
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. **page_token** should be set to this value for the next request.
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// An array of secret objects.
+	Secrets []Secret `json:"secrets,omitempty"`
 }
 
 // A secret stored in Unity Catalog. Secrets are three-level namespace objects
 // (catalog.schema.secret) that securely store sensitive credential data such as
 // passwords, tokens, and keys..
 type Secret struct {
-	// The name of the secret, relative to its parent schema.
-	Name *string `json:"name,omitempty"`
-	// The owner of the secret. Defaults to the creating principal on creation. Can
-	// be updated to transfer ownership of the secret to another principal.
-	Owner *string `json:"owner,omitempty"`
-	// The effective owner of the secret, which may differ from the directly-set
-	// **owner** due to inheritance.
-	EffectiveOwner *string `json:"effective_owner,omitempty"`
-	// Unique identifier of the metastore hosting the secret.
-	MetastoreId *string `json:"metastore_id,omitempty"`
+	// The name of the catalog where the schema and the secret reside.
+	CatalogName *string `json:"catalog_name,omitempty"`
+	// User-provided free-form text description of the secret.
+	Comment *string `json:"comment,omitempty"`
 	// The time at which this secret was created.
 	CreateTime *types.Time `json:"create_time,omitempty"`
 	// The principal that created the secret.
 	CreatedBy *string `json:"created_by,omitempty"`
-	// The time at which this secret was last updated.
-	UpdateTime *types.Time `json:"update_time,omitempty"`
-	// The principal that last updated the secret.
-	UpdatedBy *string `json:"updated_by,omitempty"`
-	// User-provided free-form text description of the secret.
-	Comment *string `json:"comment,omitempty"`
-	// The three-level (fully qualified) name of the secret, in the form of
-	// **catalog_name.schema_name.secret_name**.
-	FullName *string `json:"full_name,omitempty"`
-	// The name of the catalog where the schema and the secret reside.
-	CatalogName *string `json:"catalog_name,omitempty"`
-	// The name of the schema where the secret resides.
-	SchemaName *string `json:"schema_name,omitempty"`
-	// The secret value to store. This field is input-only and is not returned in
-	// responses — use the **effective_value** field (via GetSecret with
-	// **include_value** set to true) to read the secret value. The maximum size is
-	// 60 KiB (pre-encryption). Accepted content includes passwords, tokens, keys,
-	// and other sensitive credential data.
-	Value *string `json:"value,omitempty"`
+	// The effective owner of the secret, which may differ from the directly-set
+	// **owner** due to inheritance.
+	EffectiveOwner *string `json:"effective_owner,omitempty"`
 	// The secret value. Only populated in responses when you have the
 	// **READ_SECRET** privilege and **include_value** is set to true in the
 	// request. The maximum size is 60 KiB.
@@ -101,6 +79,28 @@ type Secret struct {
 	// It is purely informational and does not trigger any automatic actions or
 	// affect the secret's lifecycle.
 	ExpireTime *types.Time `json:"expire_time,omitempty"`
+	// The three-level (fully qualified) name of the secret, in the form of
+	// **catalog_name.schema_name.secret_name**.
+	FullName *string `json:"full_name,omitempty"`
+	// Unique identifier of the metastore hosting the secret.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// The name of the secret, relative to its parent schema.
+	Name *string `json:"name,omitempty"`
+	// The owner of the secret. Defaults to the creating principal on creation. Can
+	// be updated to transfer ownership of the secret to another principal.
+	Owner *string `json:"owner,omitempty"`
+	// The name of the schema where the secret resides.
+	SchemaName *string `json:"schema_name,omitempty"`
+	// The time at which this secret was last updated.
+	UpdateTime *types.Time `json:"update_time,omitempty"`
+	// The principal that last updated the secret.
+	UpdatedBy *string `json:"updated_by,omitempty"`
+	// The secret value to store. This field is input-only and is not returned in
+	// responses — use the **effective_value** field (via GetSecret with
+	// **include_value** set to true) to read the secret value. The maximum size is
+	// 60 KiB (pre-encryption). Accepted content includes passwords, tokens, keys,
+	// and other sensitive credential data.
+	Value *string `json:"value,omitempty"`
 }
 
 // Request message for UpdateSecret..

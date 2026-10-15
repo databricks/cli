@@ -27,37 +27,37 @@ type CreateEntityTagAssignmentRequest struct {
 type EntityTagAssignment struct {
 	// The fully qualified name of the entity to which the tag is assigned
 	EntityName *string `json:"entity_name,omitempty"`
+	// The type of the entity to which the tag is assigned.
+	EntityType *string `json:"entity_type,omitempty"`
+	// The source type of the tag assignment, e.g., user-assigned or system-assigned
+	SourceType TagAssignmentSourceType `json:"source_type,omitempty"`
 	// The key of the tag
 	TagKey *string `json:"tag_key,omitempty"`
 	// The value of the tag
 	TagValue *string `json:"tag_value,omitempty"`
-	// The type of the entity to which the tag is assigned.
-	EntityType *string `json:"entity_type,omitempty"`
 	// The timestamp when the tag assignment was last updated
 	UpdateTime *types.Time `json:"update_time,omitempty"`
 	// The user or principal who updated the tag assignment
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// The source type of the tag assignment, e.g., user-assigned or system-assigned
-	SourceType TagAssignmentSourceType `json:"source_type,omitempty"`
 }
 
 // Request to list entity tag assignments.
 type ListEntityTagAssignmentsRequest struct {
 	// The fully qualified name of the entity to which the tag is assigned
 	EntityName *string `json:"entity_name,omitempty"`
+	// The type of the entity to which the tag is assigned.
+	EntityType *string `json:"entity_type,omitempty"`
 	// Optional. Maximum number of tag assignments to return in a single page
 	MaxResults *int `json:"max_results,omitempty"`
 	// Optional. Pagination token to retrieve the next page of results
 	PageToken *string `json:"page_token,omitempty"`
-	// The type of the entity to which the tag is assigned.
-	EntityType *string `json:"entity_type,omitempty"`
 }
 
 type ListEntityTagAssignmentsResponse struct {
-	// The list of tag assignments
-	TagAssignments []EntityTagAssignment `json:"tag_assignments,omitempty"`
 	// Optional. Pagination token for retrieving the next page of results
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// The list of tag assignments
+	TagAssignments []EntityTagAssignment `json:"tag_assignments,omitempty"`
 }
 
 // Request to update an entity tag assignment.

@@ -53,33 +53,33 @@ type ColumnInfo struct {
 }
 
 type CreateEndpointRequest struct {
-	// Name of the AI Search endpoint
-	Name *string `json:"name,omitempty"`
-	// Type of endpoint
-	EndpointType EndpointType `json:"endpoint_type,omitempty"`
 	// The budget policy id to be applied
 	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
-	// The usage policy id to be applied once we've migrated to usage policies
-	UsagePolicyId *string `json:"usage_policy_id,omitempty"`
+	// Type of endpoint
+	EndpointType EndpointType `json:"endpoint_type,omitempty"`
+	// Name of the AI Search endpoint
+	Name *string `json:"name,omitempty"`
 	// Target QPS for the endpoint. Mutually exclusive with num_replicas. The actual
 	// replica count is calculated at index creation/sync time based on this value.
 	// Best-effort target; the system does not guarantee this QPS will be achieved.
 	TargetQps *int64 `json:"target_qps,omitempty"`
+	// The usage policy id to be applied once we've migrated to usage policies
+	UsagePolicyId *string `json:"usage_policy_id,omitempty"`
 }
 
 type CreateVectorIndexRequest struct {
-	// Name of the index
-	Name *string `json:"name,omitempty"`
+	DeltaSyncIndexSpec    *DeltaSyncVectorIndexSpecRequest `json:"delta_sync_index_spec,omitempty"`
+	DirectAccessIndexSpec *DirectAccessVectorIndexSpec     `json:"direct_access_index_spec,omitempty"`
 	// Name of the endpoint to be used for serving the index
 	EndpointName *string `json:"endpoint_name,omitempty"`
-	// Primary key of the index
-	PrimaryKey            *string                          `json:"primary_key,omitempty"`
-	IndexType             VectorIndexType                  `json:"index_type,omitempty"`
-	DirectAccessIndexSpec *DirectAccessVectorIndexSpec     `json:"direct_access_index_spec,omitempty"`
-	DeltaSyncIndexSpec    *DeltaSyncVectorIndexSpecRequest `json:"delta_sync_index_spec,omitempty"`
 	// The subtype of the index. Use `HYBRID` or `FULL_TEXT`. `VECTOR` is not
 	// supported.
-	IndexSubtype IndexSubtype `json:"index_subtype,omitempty"`
+	IndexSubtype IndexSubtype    `json:"index_subtype,omitempty"`
+	IndexType    VectorIndexType `json:"index_type,omitempty"`
+	// Name of the index
+	Name *string `json:"name,omitempty"`
+	// Primary key of the index
+	PrimaryKey *string `json:"primary_key,omitempty"`
 }
 
 type CustomTag struct {
@@ -99,19 +99,33 @@ type DeleteDataVectorIndexRequest struct {
 }
 
 type DeleteDataVectorIndexResponse struct {
-	// Status of the delete operation.
-	Status UpsertDeleteDataStatus `json:"status,omitempty"`
 	// Result of the upsert or delete operation.
 	Result *UpsertDeleteDataResult `json:"result,omitempty"`
+	// Status of the delete operation.
+	Status UpsertDeleteDataStatus `json:"status,omitempty"`
 }
 
 type DeltaSyncVectorIndexSpec struct {
-	// The name of the source table.
-	SourceTable *string `json:"source_table,omitempty"`
+	// [Optional] Alias for columns_to_sync. Select the columns to include in the
+	// vector index. If you leave this field blank, all columns from the source
+	// table are included. The primary key column and embedding source column or
+	// embedding vector column are always included. Only one of columns_to_sync or
+	// columns_to_index may be specified.
+	ColumnsToIndex []string `json:"columns_to_index,omitempty"`
+	// [Optional] Select the columns to sync with the vector index. If you leave
+	// this field blank, all columns from the source table are synced with the
+	// index. The primary key column and embedding source column or embedding vector
+	// column are always synced.
+	ColumnsToSync []string `json:"columns_to_sync,omitempty"`
 	// The columns that contain the embedding source.
 	EmbeddingSourceColumns []EmbeddingSourceColumn `json:"embedding_source_columns,omitempty"`
 	// The columns that contain the embedding vectors.
 	EmbeddingVectorColumns []EmbeddingVectorColumn `json:"embedding_vector_columns,omitempty"`
+	// [Optional] Name of the Delta table to sync the vector index contents and
+	// computed embeddings to.
+	EmbeddingWritebackTable *string `json:"embedding_writeback_table,omitempty"`
+	// The ID of the pipeline that is used to sync the index.
+	PipelineId *string `json:"pipeline_id,omitempty"`
 	// Pipeline execution mode. - `TRIGGERED`: If the pipeline uses the triggered
 	// execution mode, the system stops processing after successfully refreshing the
 	// source table in the pipeline once, ensuring the table is updated based on the
@@ -119,31 +133,31 @@ type DeltaSyncVectorIndexSpec struct {
 	// continuous execution, the pipeline processes new data as it arrives in the
 	// source table to keep vector index fresh.
 	PipelineType PipelineType `json:"pipeline_type,omitempty"`
-	// The ID of the pipeline that is used to sync the index.
-	PipelineId *string `json:"pipeline_id,omitempty"`
-	// [Optional] Name of the Delta table to sync the vector index contents and
-	// computed embeddings to.
-	EmbeddingWritebackTable *string `json:"embedding_writeback_table,omitempty"`
-	// [Optional] Select the columns to sync with the vector index. If you leave
-	// this field blank, all columns from the source table are synced with the
-	// index. The primary key column and embedding source column or embedding vector
-	// column are always synced.
-	ColumnsToSync []string `json:"columns_to_sync,omitempty"`
-	// [Optional] Alias for columns_to_sync. Select the columns to include in the
-	// vector index. If you leave this field blank, all columns from the source
-	// table are included. The primary key column and embedding source column or
-	// embedding vector column are always included. Only one of columns_to_sync or
-	// columns_to_index may be specified.
-	ColumnsToIndex []string `json:"columns_to_index,omitempty"`
+	// The name of the source table.
+	SourceTable *string `json:"source_table,omitempty"`
 }
 
 type DeltaSyncVectorIndexSpecRequest struct {
-	// The name of the source table.
-	SourceTable *string `json:"source_table,omitempty"`
+	// [Optional] Alias for columns_to_sync. Select the columns to include in the
+	// vector index. If you leave this field blank, all columns from the source
+	// table are included. The primary key column and embedding source column or
+	// embedding vector column are always included. Only one of columns_to_sync or
+	// columns_to_index may be specified.
+	ColumnsToIndex []string `json:"columns_to_index,omitempty"`
+	// [Optional] Select the columns to sync with the vector index. If you leave
+	// this field blank, all columns from the source table are synced with the
+	// index. The primary key column and embedding source column or embedding vector
+	// column are always synced.
+	ColumnsToSync []string `json:"columns_to_sync,omitempty"`
 	// The columns that contain the embedding source.
 	EmbeddingSourceColumns []EmbeddingSourceColumn `json:"embedding_source_columns,omitempty"`
 	// The columns that contain the embedding vectors.
 	EmbeddingVectorColumns []EmbeddingVectorColumn `json:"embedding_vector_columns,omitempty"`
+	// [Optional] Name of the Delta table to sync the vector index contents and
+	// computed embeddings to.
+	EmbeddingWritebackTable *string `json:"embedding_writeback_table,omitempty"`
+	// The ID of the pipeline that is used to sync the index.
+	PipelineId *string `json:"pipeline_id,omitempty"`
 	// Pipeline execution mode. - `TRIGGERED`: If the pipeline uses the triggered
 	// execution mode, the system stops processing after successfully refreshing the
 	// source table in the pipeline once, ensuring the table is updated based on the
@@ -151,25 +165,14 @@ type DeltaSyncVectorIndexSpecRequest struct {
 	// continuous execution, the pipeline processes new data as it arrives in the
 	// source table to keep vector index fresh.
 	PipelineType PipelineType `json:"pipeline_type,omitempty"`
-	// The ID of the pipeline that is used to sync the index.
-	PipelineId *string `json:"pipeline_id,omitempty"`
-	// [Optional] Name of the Delta table to sync the vector index contents and
-	// computed embeddings to.
-	EmbeddingWritebackTable *string `json:"embedding_writeback_table,omitempty"`
-	// [Optional] Select the columns to sync with the vector index. If you leave
-	// this field blank, all columns from the source table are synced with the
-	// index. The primary key column and embedding source column or embedding vector
-	// column are always synced.
-	ColumnsToSync []string `json:"columns_to_sync,omitempty"`
-	// [Optional] Alias for columns_to_sync. Select the columns to include in the
-	// vector index. If you leave this field blank, all columns from the source
-	// table are included. The primary key column and embedding source column or
-	// embedding vector column are always included. Only one of columns_to_sync or
-	// columns_to_index may be specified.
-	ColumnsToIndex []string `json:"columns_to_index,omitempty"`
+	// The name of the source table.
+	SourceTable *string `json:"source_table,omitempty"`
 }
 
 type DirectAccessVectorIndexSpec struct {
+	// The columns that contain the embedding source. The format should be
+	// array[double].
+	EmbeddingSourceColumns []EmbeddingSourceColumn `json:"embedding_source_columns,omitempty"`
 	// The columns that contain the embedding vectors. The format should be
 	// array[double].
 	EmbeddingVectorColumns []EmbeddingVectorColumn `json:"embedding_vector_columns,omitempty"`
@@ -177,52 +180,49 @@ type DirectAccessVectorIndexSpec struct {
 	// `long`, `float`, `double`, `boolean`, `string`, `date`, `timestamp`.
 	// Supported types for vector column: `array<float>`, `array<double>`,`.
 	SchemaJson *string `json:"schema_json,omitempty"`
-	// The columns that contain the embedding source. The format should be
-	// array[double].
-	EmbeddingSourceColumns []EmbeddingSourceColumn `json:"embedding_source_columns,omitempty"`
 }
 
 type EmbeddingSourceColumn struct {
-	// Name of the column
-	Name                       *string `json:"name,omitempty"`
 	EmbeddingModelEndpointName *string `json:"embedding_model_endpoint_name,omitempty"`
 	// Name of the embedding model endpoint which, if specified, is used for
 	// querying (not ingestion).
 	ModelEndpointNameForQuery *string `json:"model_endpoint_name_for_query,omitempty"`
+	// Name of the column
+	Name *string `json:"name,omitempty"`
 }
 
 type EmbeddingVectorColumn struct {
-	// Name of the column
-	Name *string `json:"name,omitempty"`
 	// Dimension of the embedding vector
 	EmbeddingDimension *int `json:"embedding_dimension,omitempty"`
+	// Name of the column
+	Name *string `json:"name,omitempty"`
 }
 
 type Endpoint struct {
-	// Name of the AI Search endpoint
-	Name *string `json:"name,omitempty"`
-	// Creator of the endpoint
-	Creator *string `json:"creator,omitempty"`
-	// Timestamp of endpoint creation
-	CreationTimestamp *int64 `json:"creation_timestamp,omitempty"`
-	// Timestamp of last update to the endpoint
-	LastUpdatedTimestamp *int64 `json:"last_updated_timestamp,omitempty"`
-	// Type of endpoint
-	EndpointType EndpointType `json:"endpoint_type,omitempty"`
-	// User who last updated the endpoint
-	LastUpdatedUser *string `json:"last_updated_user,omitempty"`
-	// Unique identifier of the endpoint
-	Id *string `json:"id,omitempty"`
-	// Current status of the endpoint
-	EndpointStatus *EndpointStatus `json:"endpoint_status,omitempty"`
-	// Number of indexes on the endpoint
-	NumIndexes *int `json:"num_indexes,omitempty"`
 	// The user-selected budget policy id for the endpoint.
 	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
-	// The budget policy id applied to the endpoint
-	EffectiveBudgetPolicyId *string `json:"effective_budget_policy_id,omitempty"`
+	// Timestamp of endpoint creation
+	CreationTimestamp *int64 `json:"creation_timestamp,omitempty"`
+	// Creator of the endpoint
+	Creator *string `json:"creator,omitempty"`
 	// The custom tags assigned to the endpoint
 	CustomTags []CustomTag `json:"custom_tags,omitempty"`
+	// The budget policy id applied to the endpoint
+	EffectiveBudgetPolicyId *string `json:"effective_budget_policy_id,omitempty"`
+	// Current status of the endpoint
+	EndpointStatus *EndpointStatus `json:"endpoint_status,omitempty"`
+	// Type of endpoint
+	EndpointType EndpointType `json:"endpoint_type,omitempty"`
+	// Unique identifier of the endpoint
+	Id *string `json:"id,omitempty"`
+	// Timestamp of last update to the endpoint
+	LastUpdatedTimestamp *int64 `json:"last_updated_timestamp,omitempty"`
+	// User who last updated the endpoint
+	LastUpdatedUser *string `json:"last_updated_user,omitempty"`
+	// Name of the AI Search endpoint
+	Name *string `json:"name,omitempty"`
+	// Number of indexes on the endpoint
+	NumIndexes *int `json:"num_indexes,omitempty"`
 	// Scaling information for the endpoint
 	ScalingInfo *EndpointScalingInfo `json:"scaling_info,omitempty"`
 }
@@ -230,37 +230,37 @@ type Endpoint struct {
 // Scaling information for a Standard endpoint: the current scaling state, the
 // requested QPS target, and the progress of an in-progress scaling change..
 type EndpointScalingInfo struct {
-	// The current state of the scaling change request.
-	State ScalingChangeState `json:"state,omitempty"`
 	// The requested QPS target for the endpoint. Best-effort; the system does not
 	// guarantee this QPS will be achieved.
 	RequestedTargetQps *int64 `json:"requested_target_qps,omitempty"`
+	// The current state of the scaling change request.
+	State ScalingChangeState `json:"state,omitempty"`
 }
 
 // Status information of an endpoint.
 type EndpointStatus struct {
-	// Current state of the endpoint
-	State EndpointStatus_State `json:"state,omitempty"`
 	// Additional status message
 	Message *string `json:"message,omitempty"`
+	// Current state of the endpoint
+	State EndpointStatus_State `json:"state,omitempty"`
 }
 
 // Facet aggregation rows returned by a query..
 type FacetResultData struct {
-	// Number of facet rows returned.
-	FacetRowCount *int `json:"facet_row_count,omitempty"`
 	// Facet rows. Each row is `[facet_column_name, value_or_range, count]`.
 	FacetArray [][]json.RawMessage `json:"facet_array,omitempty"`
+	// Number of facet rows returned.
+	FacetRowCount *int `json:"facet_row_count,omitempty"`
 }
 
 type GetVectorIndexRequest struct {
-	// Name of the index
-	Name *string `json:"name,omitempty"`
 	// If true, the URL returned for the index is guaranteed to be compatible with
 	// the reranker. Currently this means we return the CP URL regardless of how the
 	// index is being accessed. If not set or set to false, the URL may still be
 	// compatible with the reranker depending on what URL we return.
 	EnsureRerankerCompatible *bool `json:"ensure_reranker_compatible,omitempty"`
+	// Name of the index
+	Name *string `json:"name,omitempty"`
 }
 
 type ListEndpointResponse struct {
@@ -289,10 +289,10 @@ type ListVectorIndexRequest struct {
 }
 
 type ListVectorIndexResponse struct {
-	VectorIndexes []MiniVectorIndex `json:"vector_indexes,omitempty"`
 	// A token that can be used to get the next page of results. If not present,
 	// there are no more results to show.
-	NextPageToken *string `json:"next_page_token,omitempty"`
+	NextPageToken *string           `json:"next_page_token,omitempty"`
+	VectorIndexes []MiniVectorIndex `json:"vector_indexes,omitempty"`
 }
 
 // Key-value pair..
@@ -305,10 +305,10 @@ type MapStringValueEntry struct {
 
 // Metric specification.
 type Metric struct {
-	// Metric name
-	Name *string `json:"name,omitempty"`
 	// Metric labels
 	Labels []MetricLabel `json:"labels,omitempty"`
+	// Metric name
+	Name *string `json:"name,omitempty"`
 	// Percentile for the metric
 	Percentile *float64 `json:"percentile,omitempty"`
 }
@@ -338,29 +338,29 @@ type MetricValues struct {
 }
 
 type MiniVectorIndex struct {
-	// Name of the index
-	Name *string `json:"name,omitempty"`
-	// Name of the endpoint associated with the index
-	EndpointName *string `json:"endpoint_name,omitempty"`
-	// Primary key of the index
-	PrimaryKey            *string                      `json:"primary_key,omitempty"`
-	IndexType             VectorIndexType              `json:"index_type,omitempty"`
-	DirectAccessIndexSpec *DirectAccessVectorIndexSpec `json:"direct_access_index_spec,omitempty"`
-	DeltaSyncIndexSpec    *DeltaSyncVectorIndexSpec    `json:"delta_sync_index_spec,omitempty"`
-	Status                *VectorIndexStatus           `json:"status,omitempty"`
 	// The user who created the index.
-	Creator *string `json:"creator,omitempty"`
-	// The subtype of the index.
-	IndexSubtype IndexSubtype `json:"index_subtype,omitempty"`
+	Creator               *string                      `json:"creator,omitempty"`
+	DeltaSyncIndexSpec    *DeltaSyncVectorIndexSpec    `json:"delta_sync_index_spec,omitempty"`
+	DirectAccessIndexSpec *DirectAccessVectorIndexSpec `json:"direct_access_index_spec,omitempty"`
 	// ID of the endpoint associated with the index.
 	EndpointId *string `json:"endpoint_id,omitempty"`
+	// Name of the endpoint associated with the index
+	EndpointName *string `json:"endpoint_name,omitempty"`
+	// The subtype of the index.
+	IndexSubtype IndexSubtype    `json:"index_subtype,omitempty"`
+	IndexType    VectorIndexType `json:"index_type,omitempty"`
+	// Name of the index
+	Name *string `json:"name,omitempty"`
+	// Primary key of the index
+	PrimaryKey *string            `json:"primary_key,omitempty"`
+	Status     *VectorIndexStatus `json:"status,omitempty"`
 }
 
 type PatchEndpointBudgetPolicyRequest struct {
-	// Name of the AI Search endpoint
-	Name *string `json:"name,omitempty"`
 	// The budget policy id to be applied
 	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
+	// Name of the AI Search endpoint
+	Name *string `json:"name,omitempty"`
 }
 
 type PatchEndpointBudgetPolicyResponse struct {
@@ -379,22 +379,26 @@ type PatchEndpointRequest struct {
 
 // Request payload for getting next page of results..
 type QueryVectorIndexNextPageRequest struct {
-	// Name of the vector index to query.
-	Name *string `json:"name,omitempty"`
 	// Name of the endpoint.
 	EndpointName *string `json:"endpoint_name,omitempty"`
+	// Name of the vector index to query.
+	Name *string `json:"name,omitempty"`
 	// Page token returned from previous `QueryVectorIndex` or
 	// `QueryVectorIndexNextPage` API.
 	PageToken *string `json:"page_token,omitempty"`
 }
 
 type QueryVectorIndexRequest struct {
-	// Name of the vector index to query.
-	Name *string `json:"name,omitempty"`
-	// Number of results to return. Defaults to 10.
-	NumResults *int `json:"num_results,omitempty"`
 	// List of column names to include in the response.
 	Columns []string `json:"columns,omitempty"`
+	// Column names used to retrieve data to send to the reranker.
+	ColumnsToRerank []string `json:"columns_to_rerank,omitempty"`
+	// Facets to compute over the matched results. Each entry has one of these
+	// forms: `"<column>"` - top 10 distinct values by count `"<column> TOP <n>"` -
+	// top n distinct values, where n > 0 `"<column> BUCKETS [[from,to],...]"` -
+	// inclusive numeric ranges `TOP` and `BUCKETS` are case-insensitive. A column
+	// may appear at most once.
+	Facets []string `json:"facets,omitempty"`
 	// JSON string representing query filters.
 	//
 	// Example filters:
@@ -404,18 +408,21 @@ type QueryVectorIndexRequest struct {
 	// >=": 5}`: Filter for id greater than equal to 5. - `{"id": 5}`: Filter for id
 	// equal to 5.
 	FiltersJson *string `json:"filters_json,omitempty"`
-	// Query vector. Required for Direct Vector Access Index and Delta Sync Index
-	// using self-managed vectors.
-	QueryVector []float32 `json:"query_vector,omitempty"`
+	// Name of the vector index to query.
+	Name *string `json:"name,omitempty"`
+	// Number of results to return. Defaults to 10.
+	NumResults *int `json:"num_results,omitempty"`
+	// Text columns to search for `query_text`. When empty, all text columns are
+	// searched.
+	QueryColumns []string `json:"query_columns,omitempty"`
 	// Query text. Required for Delta Sync Index using model endpoint.
 	QueryText *string `json:"query_text,omitempty"`
-	// Threshold for the approximate nearest neighbor search. Defaults to 0.0.
-	ScoreThreshold *float32 `json:"score_threshold,omitempty"`
 	// The query type to use. Choices are `ANN` and `HYBRID` and `FULL_TEXT`.
 	// Defaults to `ANN`.
 	QueryType *string `json:"query_type,omitempty"`
-	// Column names used to retrieve data to send to the reranker.
-	ColumnsToRerank []string `json:"columns_to_rerank,omitempty"`
+	// Query vector. Required for Direct Vector Access Index and Delta Sync Index
+	// using self-managed vectors.
+	QueryVector []float32 `json:"query_vector,omitempty"`
 	// If set, the top 50 results are reranked with the Databricks Reranker model
 	// before returning the `num_results` results to the user. The setting
 	// `columns_to_rerank` selects which columns are used for reranking. For each
@@ -424,33 +431,26 @@ type QueryVectorIndexRequest struct {
 	// https://docs.databricks.com/aws/en/vector-search/query-vector-search#rerank
 	// for more information.
 	Reranker *RerankerConfig `json:"reranker,omitempty"`
-	// Text columns to search for `query_text`. When empty, all text columns are
-	// searched.
-	QueryColumns []string `json:"query_columns,omitempty"`
+	// Threshold for the approximate nearest neighbor search. Defaults to 0.0.
+	ScoreThreshold *float32 `json:"score_threshold,omitempty"`
 	// Sort results by column values instead of the default relevance ordering. Each
 	// clause has the form `"<column> ASC"` or `"<column> DESC"`, for example
 	// `["rating DESC", "price ASC"]`.
 	SortColumns []string `json:"sort_columns,omitempty"`
-	// Facets to compute over the matched results. Each entry has one of these
-	// forms: `"<column>"` - top 10 distinct values by count `"<column> TOP <n>"` -
-	// top n distinct values, where n > 0 `"<column> BUCKETS [[from,to],...]"` -
-	// inclusive numeric ranges `TOP` and `BUCKETS` are case-insensitive. A column
-	// may appear at most once.
-	Facets []string `json:"facets,omitempty"`
 }
 
 type QueryVectorIndexResponse struct {
+	// Facet aggregation rows returned by a query.
+	FacetResult *FacetResultData `json:"facet_result,omitempty"`
 	// Metadata about the result set.
 	Manifest *ResultManifest `json:"manifest,omitempty"`
-	// Data returned in the query result.
-	Result *ResultData `json:"result,omitempty"`
 	// [Optional] Token that can be used in `QueryVectorIndexNextPage` API to get
 	// next page of results. If more than 1000 results satisfy the query, they are
 	// returned in groups of 1000. Empty value means no more results. The maximum
 	// number of results that can be returned is 10,000.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-	// Facet aggregation rows returned by a query.
-	FacetResult *FacetResultData `json:"facet_result,omitempty"`
+	// Data returned in the query result.
+	Result *ResultData `json:"result,omitempty"`
 }
 
 type RerankerConfig struct {
@@ -468,10 +468,10 @@ type RerankerConfig_RerankerParameters struct {
 
 // Data returned in the query result..
 type ResultData struct {
-	// Number of rows in the result set.
-	RowCount *int `json:"row_count,omitempty"`
 	// Data rows returned in the query.
 	DataArray [][]json.RawMessage `json:"data_array,omitempty"`
+	// Number of rows in the result set.
+	RowCount *int `json:"row_count,omitempty"`
 }
 
 // Metadata about the result set..
@@ -488,18 +488,18 @@ type ResultManifest struct {
 
 // Request to retrieve user-visible metrics.
 type RetrieveUserVisibleMetricsRequest struct {
-	// AI Search endpoint name
-	Name *string `json:"name,omitempty"`
-	// Start time for metrics query
-	StartTime *types.Time `json:"start_time,omitempty"`
 	// End time for metrics query
 	EndTime *types.Time `json:"end_time,omitempty"`
 	// Granularity in seconds
 	GranularityInSeconds *int `json:"granularity_in_seconds,omitempty"`
 	// List of metrics to retrieve
 	Metrics []Metric `json:"metrics,omitempty"`
+	// AI Search endpoint name
+	Name *string `json:"name,omitempty"`
 	// Token for pagination
 	PageToken *string `json:"page_token,omitempty"`
+	// Start time for metrics query
+	StartTime *types.Time `json:"start_time,omitempty"`
 }
 
 // Response containing user-visible metrics.
@@ -512,12 +512,12 @@ type RetrieveUserVisibleMetricsResponse struct {
 }
 
 type ScanVectorIndexRequest struct {
+	// Primary key of the last entry returned in the previous scan.
+	LastPrimaryKey *string `json:"last_primary_key,omitempty"`
 	// Name of the vector index to scan.
 	Name *string `json:"name,omitempty"`
 	// Number of results to return. Defaults to 10.
 	NumResults *int `json:"num_results,omitempty"`
-	// Primary key of the last entry returned in the previous scan.
-	LastPrimaryKey *string `json:"last_primary_key,omitempty"`
 }
 
 // Response to a scan vector index request..
@@ -539,77 +539,77 @@ type SyncVectorIndexRequest struct {
 }
 
 type UpdateEndpointCustomTagsRequest struct {
-	// Name of the AI Search endpoint
-	Name *string `json:"name,omitempty"`
 	// The new custom tags for the AI Search endpoint
 	CustomTags []CustomTag `json:"custom_tags,omitempty"`
+	// Name of the AI Search endpoint
+	Name *string `json:"name,omitempty"`
 }
 
 type UpdateEndpointCustomTagsResponse struct {
-	// The name of the AI Search endpoint whose custom tags were updated.
-	Name *string `json:"name,omitempty"`
 	// All the custom tags that are applied to the AI Search endpoint.
 	CustomTags []CustomTag `json:"custom_tags,omitempty"`
+	// The name of the AI Search endpoint whose custom tags were updated.
+	Name *string `json:"name,omitempty"`
 }
 
 type UpsertDataVectorIndexRequest struct {
+	// JSON string representing the data to be upserted.
+	InputsJson *string `json:"inputs_json,omitempty"`
 	// Name of the vector index where data is to be upserted. Must be a Direct
 	// Vector Access Index.
 	Name *string `json:"name,omitempty"`
-	// JSON string representing the data to be upserted.
-	InputsJson *string `json:"inputs_json,omitempty"`
 }
 
 type UpsertDataVectorIndexResponse struct {
-	// Status of the upsert operation.
-	Status UpsertDeleteDataStatus `json:"status,omitempty"`
 	// Result of the upsert or delete operation.
 	Result *UpsertDeleteDataResult `json:"result,omitempty"`
+	// Status of the upsert operation.
+	Status UpsertDeleteDataStatus `json:"status,omitempty"`
 }
 
 type UpsertDeleteDataResult struct {
-	// Count of successfully processed rows.
-	SuccessRowCount *int64 `json:"success_row_count,omitempty"`
 	// List of primary keys for rows that failed to process.
 	FailedPrimaryKeys []string `json:"failed_primary_keys,omitempty"`
+	// Count of successfully processed rows.
+	SuccessRowCount *int64 `json:"success_row_count,omitempty"`
 }
 
 type Value struct {
+	BoolValue   *bool      `json:"bool_value,omitempty"`
+	ListValue   *ListValue `json:"list_value,omitempty"`
 	NumberValue *float64   `json:"number_value,omitempty"`
 	StringValue *string    `json:"string_value,omitempty"`
-	BoolValue   *bool      `json:"bool_value,omitempty"`
 	StructValue *Struct    `json:"struct_value,omitempty"`
-	ListValue   *ListValue `json:"list_value,omitempty"`
 }
 
 type VectorIndex struct {
-	// Name of the index
-	Name *string `json:"name,omitempty"`
-	// Name of the endpoint associated with the index
-	EndpointName *string `json:"endpoint_name,omitempty"`
-	// Primary key of the index
-	PrimaryKey            *string                      `json:"primary_key,omitempty"`
-	IndexType             VectorIndexType              `json:"index_type,omitempty"`
-	DirectAccessIndexSpec *DirectAccessVectorIndexSpec `json:"direct_access_index_spec,omitempty"`
-	DeltaSyncIndexSpec    *DeltaSyncVectorIndexSpec    `json:"delta_sync_index_spec,omitempty"`
-	Status                *VectorIndexStatus           `json:"status,omitempty"`
 	// The user who created the index.
-	Creator *string `json:"creator,omitempty"`
-	// The subtype of the index.
-	IndexSubtype IndexSubtype `json:"index_subtype,omitempty"`
+	Creator               *string                      `json:"creator,omitempty"`
+	DeltaSyncIndexSpec    *DeltaSyncVectorIndexSpec    `json:"delta_sync_index_spec,omitempty"`
+	DirectAccessIndexSpec *DirectAccessVectorIndexSpec `json:"direct_access_index_spec,omitempty"`
 	// ID of the endpoint associated with the index.
 	EndpointId *string `json:"endpoint_id,omitempty"`
+	// Name of the endpoint associated with the index
+	EndpointName *string `json:"endpoint_name,omitempty"`
+	// The subtype of the index.
+	IndexSubtype IndexSubtype    `json:"index_subtype,omitempty"`
+	IndexType    VectorIndexType `json:"index_type,omitempty"`
+	// Name of the index
+	Name *string `json:"name,omitempty"`
+	// Primary key of the index
+	PrimaryKey *string            `json:"primary_key,omitempty"`
+	Status     *VectorIndexStatus `json:"status,omitempty"`
 }
 
 type VectorIndexStatus struct {
-	// Message associated with the index status
-	Message *string `json:"message,omitempty"`
-	// Number of rows indexed
-	IndexedRowCount *int64 `json:"indexed_row_count,omitempty"`
-	// Whether the index is ready for search
-	Ready *bool `json:"ready,omitempty"`
 	// Index API Url to be used to perform operations on the index
 	IndexUrl *string `json:"index_url,omitempty"`
+	// Number of rows indexed
+	IndexedRowCount *int64 `json:"indexed_row_count,omitempty"`
+	// Message associated with the index status
+	Message *string `json:"message,omitempty"`
+	// Whether the index is ready for search
+	Ready *bool `json:"ready,omitempty"`
 }
 
 // ColumnInfoToSDK converts the mirror to the sdk-go type.

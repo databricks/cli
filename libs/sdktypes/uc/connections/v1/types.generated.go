@@ -99,91 +99,91 @@ const (
 )
 
 type ConnectionInfo struct {
-	// Name of the connection.
-	Name *string `json:"name,omitempty"`
-	// The type of connection.
-	ConnectionType ConnectionType `json:"connection_type,omitempty"`
-	// Username of current owner of the connection.
-	Owner *string `json:"owner,omitempty"`
-	// If the connection is read only.
-	ReadOnly *bool `json:"read_only,omitempty"`
 	// User-provided free-form text description.
 	Comment *string `json:"comment,omitempty"`
+	// Unique identifier of the Connection.
+	ConnectionId *string `json:"connection_id,omitempty"`
+	// The type of connection.
+	ConnectionType ConnectionType `json:"connection_type,omitempty"`
+	// Time at which this connection was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of connection creator.
+	CreatedBy *string `json:"created_by,omitempty"`
+	// The type of credential.
+	CredentialType CredentialType `json:"credential_type,omitempty"`
 	// [Create,Update:OPT] Connection environment settings as EnvironmentSettings
 	// object.
 	EnvironmentSettings *EnvironmentSettings `json:"environment_settings,omitempty"`
 	// Full name of connection.
 	FullName *string `json:"full_name,omitempty"`
-	// URL of the remote data source, extracted from options.
-	Url *string `json:"url,omitempty"`
-	// The type of credential.
-	CredentialType CredentialType `json:"credential_type,omitempty"`
-	// Unique identifier of the Connection.
-	ConnectionId *string `json:"connection_id,omitempty"`
 	// Unique identifier of parent metastore.
 	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Time at which this connection was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of connection creator.
-	CreatedBy *string `json:"created_by,omitempty"`
+	// Name of the connection.
+	Name *string `json:"name,omitempty"`
+	// A map of key-value properties attached to the securable.
+	Options map[string]string `json:"options,omitempty"`
+	// Username of current owner of the connection.
+	Owner *string `json:"owner,omitempty"`
+	// A map of key-value properties attached to the securable.
+	Properties       map[string]string `json:"properties,omitempty"`
+	ProvisioningInfo *ProvisioningInfo `json:"provisioning_info,omitempty"`
+	// If the connection is read only.
+	ReadOnly      *bool         `json:"read_only,omitempty"`
+	SecurableType SecurableType `json:"securable_type,omitempty"`
 	// Time at which this connection was updated, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of user who last modified connection.
-	UpdatedBy        *string           `json:"updated_by,omitempty"`
-	SecurableType    SecurableType     `json:"securable_type,omitempty"`
-	ProvisioningInfo *ProvisioningInfo `json:"provisioning_info,omitempty"`
-	// A map of key-value properties attached to the securable.
-	Options map[string]string `json:"options,omitempty"`
-	// A map of key-value properties attached to the securable.
-	Properties map[string]string `json:"properties,omitempty"`
+	UpdatedBy *string `json:"updated_by,omitempty"`
+	// URL of the remote data source, extracted from options.
+	Url *string `json:"url,omitempty"`
 }
 
 type CreateConnectionRequest struct {
-	// Parent schema for schema-level connections, in format
-	// "schemas/{catalog}.{schema}". Absent for metastore-level (L1) connections.
-	Parent *string `json:"parent,omitempty"`
-	// Name of the connection.
-	Name *string `json:"name,omitempty"`
-	// The type of connection.
-	ConnectionType ConnectionType `json:"connection_type,omitempty"`
-	// Username of current owner of the connection.
-	Owner *string `json:"owner,omitempty"`
-	// If the connection is read only.
-	ReadOnly *bool `json:"read_only,omitempty"`
 	// User-provided free-form text description.
 	Comment *string `json:"comment,omitempty"`
+	// Unique identifier of the Connection.
+	ConnectionId *string `json:"connection_id,omitempty"`
+	// The type of connection.
+	ConnectionType ConnectionType `json:"connection_type,omitempty"`
+	// Time at which this connection was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of connection creator.
+	CreatedBy *string `json:"created_by,omitempty"`
+	// The type of credential.
+	CredentialType CredentialType `json:"credential_type,omitempty"`
 	// [Create,Update:OPT] Connection environment settings as EnvironmentSettings
 	// object.
 	EnvironmentSettings *EnvironmentSettings `json:"environment_settings,omitempty"`
 	// Full name of connection.
 	FullName *string `json:"full_name,omitempty"`
-	// URL of the remote data source, extracted from options.
-	Url *string `json:"url,omitempty"`
-	// The type of credential.
-	CredentialType CredentialType `json:"credential_type,omitempty"`
-	// Unique identifier of the Connection.
-	ConnectionId *string `json:"connection_id,omitempty"`
 	// Unique identifier of parent metastore.
 	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Time at which this connection was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of connection creator.
-	CreatedBy *string `json:"created_by,omitempty"`
+	// Name of the connection.
+	Name *string `json:"name,omitempty"`
+	// A map of key-value properties attached to the securable.
+	Options map[string]string `json:"options,omitempty"`
+	// Username of current owner of the connection.
+	Owner *string `json:"owner,omitempty"`
+	// Parent schema for schema-level connections, in format
+	// "schemas/{catalog}.{schema}". Absent for metastore-level (L1) connections.
+	Parent *string `json:"parent,omitempty"`
+	// A map of key-value properties attached to the securable.
+	Properties       map[string]string `json:"properties,omitempty"`
+	ProvisioningInfo *ProvisioningInfo `json:"provisioning_info,omitempty"`
+	// If the connection is read only.
+	ReadOnly      *bool         `json:"read_only,omitempty"`
+	SecurableType SecurableType `json:"securable_type,omitempty"`
 	// Time at which this connection was updated, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of user who last modified connection.
-	UpdatedBy        *string           `json:"updated_by,omitempty"`
-	SecurableType    SecurableType     `json:"securable_type,omitempty"`
-	ProvisioningInfo *ProvisioningInfo `json:"provisioning_info,omitempty"`
-	// A map of key-value properties attached to the securable.
-	Options map[string]string `json:"options,omitempty"`
-	// A map of key-value properties attached to the securable.
-	Properties map[string]string `json:"properties,omitempty"`
+	UpdatedBy *string `json:"updated_by,omitempty"`
+	// URL of the remote data source, extracted from options.
+	Url *string `json:"url,omitempty"`
 }
 
 type EnvironmentSettings struct {
-	JavaDependencies   []string `json:"java_dependencies,omitempty"`
 	EnvironmentVersion *string  `json:"environment_version,omitempty"`
+	JavaDependencies   []string `json:"java_dependencies,omitempty"`
 }
 
 type ListConnectionsRequest struct {
@@ -216,47 +216,47 @@ type ProvisioningInfo struct {
 }
 
 type UpdateConnectionRequest struct {
-	// Name of the connection.
-	NameArg *string `json:"name_arg,omitempty"`
-	// New name for the connection.
-	NewName *string `json:"new_name,omitempty"`
-	// Name of the connection.
-	Name *string `json:"name,omitempty"`
-	// The type of connection.
-	ConnectionType ConnectionType `json:"connection_type,omitempty"`
-	// Username of current owner of the connection.
-	Owner *string `json:"owner,omitempty"`
-	// If the connection is read only.
-	ReadOnly *bool `json:"read_only,omitempty"`
 	// User-provided free-form text description.
 	Comment *string `json:"comment,omitempty"`
+	// Unique identifier of the Connection.
+	ConnectionId *string `json:"connection_id,omitempty"`
+	// The type of connection.
+	ConnectionType ConnectionType `json:"connection_type,omitempty"`
+	// Time at which this connection was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of connection creator.
+	CreatedBy *string `json:"created_by,omitempty"`
+	// The type of credential.
+	CredentialType CredentialType `json:"credential_type,omitempty"`
 	// [Create,Update:OPT] Connection environment settings as EnvironmentSettings
 	// object.
 	EnvironmentSettings *EnvironmentSettings `json:"environment_settings,omitempty"`
 	// Full name of connection.
 	FullName *string `json:"full_name,omitempty"`
-	// URL of the remote data source, extracted from options.
-	Url *string `json:"url,omitempty"`
-	// The type of credential.
-	CredentialType CredentialType `json:"credential_type,omitempty"`
-	// Unique identifier of the Connection.
-	ConnectionId *string `json:"connection_id,omitempty"`
 	// Unique identifier of parent metastore.
 	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Time at which this connection was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of connection creator.
-	CreatedBy *string `json:"created_by,omitempty"`
+	// Name of the connection.
+	Name *string `json:"name,omitempty"`
+	// Name of the connection.
+	NameArg *string `json:"name_arg,omitempty"`
+	// New name for the connection.
+	NewName *string `json:"new_name,omitempty"`
+	// A map of key-value properties attached to the securable.
+	Options map[string]string `json:"options,omitempty"`
+	// Username of current owner of the connection.
+	Owner *string `json:"owner,omitempty"`
+	// A map of key-value properties attached to the securable.
+	Properties       map[string]string `json:"properties,omitempty"`
+	ProvisioningInfo *ProvisioningInfo `json:"provisioning_info,omitempty"`
+	// If the connection is read only.
+	ReadOnly      *bool         `json:"read_only,omitempty"`
+	SecurableType SecurableType `json:"securable_type,omitempty"`
 	// Time at which this connection was updated, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of user who last modified connection.
-	UpdatedBy        *string           `json:"updated_by,omitempty"`
-	SecurableType    SecurableType     `json:"securable_type,omitempty"`
-	ProvisioningInfo *ProvisioningInfo `json:"provisioning_info,omitempty"`
-	// A map of key-value properties attached to the securable.
-	Options map[string]string `json:"options,omitempty"`
-	// A map of key-value properties attached to the securable.
-	Properties map[string]string `json:"properties,omitempty"`
+	UpdatedBy *string `json:"updated_by,omitempty"`
+	// URL of the remote data source, extracted from options.
+	Url *string `json:"url,omitempty"`
 }
 
 // ConnectionInfoToSDK converts the mirror to the sdk-go type.

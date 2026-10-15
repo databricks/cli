@@ -42,26 +42,26 @@ type InstallLibrariesRequest struct {
 }
 
 type Library struct {
-	Jar          *string            `json:"jar,omitempty"`
-	Egg          *string            `json:"egg,omitempty"`
-	Pypi         *PythonPyPiLibrary `json:"pypi,omitempty"`
-	Maven        *MavenLibrary      `json:"maven,omitempty"`
 	Cran         *RCranLibrary      `json:"cran,omitempty"`
-	Whl          *string            `json:"whl,omitempty"`
+	Egg          *string            `json:"egg,omitempty"`
+	Jar          *string            `json:"jar,omitempty"`
+	Maven        *MavenLibrary      `json:"maven,omitempty"`
+	Pypi         *PythonPyPiLibrary `json:"pypi,omitempty"`
 	Requirements *string            `json:"requirements,omitempty"`
+	Whl          *string            `json:"whl,omitempty"`
 }
 
 // The status of the library on a specific cluster..
 type LibraryFullStatus struct {
-	// Unique identifier for the library.
-	Library *Library `json:"library,omitempty"`
-	// Status of installing the library on the cluster.
-	Status LibraryInstallStatus `json:"status,omitempty"`
-	// All the info and warning messages that have occurred so far for this library.
-	Messages []string `json:"messages,omitempty"`
 	// Whether the library was set to be installed on all clusters via the libraries
 	// UI.
 	IsLibraryForAllClusters *bool `json:"is_library_for_all_clusters,omitempty"`
+	// Unique identifier for the library.
+	Library *Library `json:"library,omitempty"`
+	// All the info and warning messages that have occurred so far for this library.
+	Messages []string `json:"messages,omitempty"`
+	// Status of installing the library on the cluster.
+	Status LibraryInstallStatus `json:"status,omitempty"`
 }
 
 type ListAllClusterLibraryStatusesResponse struct {
@@ -72,15 +72,15 @@ type ListAllClusterLibraryStatusesResponse struct {
 type MavenLibrary struct {
 	// Gradle-style maven coordinates. For example: "org.jsoup:jsoup:1.7.2".
 	Coordinates *string `json:"coordinates,omitempty"`
-	// Maven repo to install the Maven package from. If omitted, both Maven Central
-	// Repository and Spark Packages are searched.
-	Repo *string `json:"repo,omitempty"`
 	// List of dependences to exclude. For example: `["slf4j:slf4j",
 	// "*:hadoop-client"]`.
 	//
 	// Maven dependency exclusions:
 	// https://maven.apache.org/guides/introduction/introduction-to-optional-and-excludes-dependencies.html.
 	Exclusions []string `json:"exclusions,omitempty"`
+	// Maven repo to install the Maven package from. If omitted, both Maven Central
+	// Repository and Spark Packages are searched.
+	Repo *string `json:"repo,omitempty"`
 }
 
 type PythonPyPiLibrary struct {

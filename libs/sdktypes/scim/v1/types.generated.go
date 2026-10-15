@@ -63,14 +63,16 @@ const (
 )
 
 type AccountComplexValue struct {
+	Ref     *string `json:"$ref,omitempty"`
 	Display *string `json:"display,omitempty"`
 	Primary *bool   `json:"primary,omitempty"`
-	Ref     *string `json:"$ref,omitempty"`
 	Type    *string `json:"type,omitempty"`
 	Value   *string `json:"value,omitempty"`
 }
 
 type AccountGroup struct {
+	// <Databricks> account ID
+	AccountId *string `json:"account_id,omitempty"`
 	// String that represents a human-readable group name
 	DisplayName *string `json:"displayName,omitempty"`
 	// external_id should be unique for identifying groups
@@ -82,8 +84,6 @@ type AccountGroup struct {
 	Meta *AccountResourceMeta `json:"meta,omitempty"`
 	// Indicates if the group has the admin role.
 	Roles []AccountComplexValue `json:"roles,omitempty"`
-	// <Databricks> account ID
-	AccountId *string `json:"account_id,omitempty"`
 }
 
 type AccountName struct {
@@ -109,6 +109,8 @@ type AccountResourceMeta struct {
 }
 
 type AccountServicePrincipal struct {
+	// <Databricks> account ID
+	AccountId *string `json:"account_id,omitempty"`
 	// If this user is active
 	Active *bool `json:"active,omitempty"`
 	// UUID relating to the service principal
@@ -120,11 +122,11 @@ type AccountServicePrincipal struct {
 	Id *string `json:"id,omitempty"`
 	// Indicates if the group has the admin role.
 	Roles []AccountComplexValue `json:"roles,omitempty"`
-	// <Databricks> account ID
-	AccountId *string `json:"account_id,omitempty"`
 }
 
 type AccountUser struct {
+	// <Databricks> account ID
+	AccountId *string `json:"account_id,omitempty"`
 	// If this user is active
 	Active *bool `json:"active,omitempty"`
 	// String that represents a concatenation of given and family names. For example
@@ -144,19 +146,19 @@ type AccountUser struct {
 	// Email address of the <Databricks> user. This attribute cannot be updated
 	// through the SCIM PATCH or PUT APIs; any supplied change is ignored.
 	UserName *string `json:"userName,omitempty"`
-	// <Databricks> account ID
-	AccountId *string `json:"account_id,omitempty"`
 }
 
 type ComplexValue struct {
+	Ref     *string `json:"$ref,omitempty"`
 	Display *string `json:"display,omitempty"`
 	Primary *bool   `json:"primary,omitempty"`
-	Ref     *string `json:"$ref,omitempty"`
 	Type    *string `json:"type,omitempty"`
 	Value   *string `json:"value,omitempty"`
 }
 
 type CreateAccountGroupRequest struct {
+	// <Databricks> account ID
+	AccountId *string `json:"account_id,omitempty"`
 	// String that represents a human-readable group name
 	DisplayName *string `json:"displayName,omitempty"`
 	ExternalId  *string `json:"externalId,omitempty"`
@@ -167,11 +169,11 @@ type CreateAccountGroupRequest struct {
 	Meta *AccountResourceMeta `json:"meta,omitempty"`
 	// Indicates if the group has the admin role.
 	Roles []AccountComplexValue `json:"roles,omitempty"`
-	// <Databricks> account ID
-	AccountId *string `json:"account_id,omitempty"`
 }
 
 type CreateAccountServicePrincipalRequest struct {
+	// <Databricks> account ID
+	AccountId *string `json:"account_id,omitempty"`
 	// If this user is active
 	Active *bool `json:"active,omitempty"`
 	// UUID relating to the service principal
@@ -183,11 +185,11 @@ type CreateAccountServicePrincipalRequest struct {
 	Id *string `json:"id,omitempty"`
 	// Indicates if the group has the admin role.
 	Roles []AccountComplexValue `json:"roles,omitempty"`
-	// <Databricks> account ID
-	AccountId *string `json:"account_id,omitempty"`
 }
 
 type CreateAccountUserRequest struct {
+	// <Databricks> account ID
+	AccountId *string `json:"account_id,omitempty"`
 	// If this user is active
 	Active *bool `json:"active,omitempty"`
 	// String that represents a concatenation of given and family names. For example
@@ -204,8 +206,6 @@ type CreateAccountUserRequest struct {
 	Roles []AccountComplexValue `json:"roles,omitempty"`
 	// Email address of the <Databricks> user.
 	UserName *string `json:"userName,omitempty"`
-	// <Databricks> account ID
-	AccountId *string `json:"account_id,omitempty"`
 }
 
 type CreateGroupRequest struct {
@@ -284,6 +284,8 @@ type CreateUserRequest struct {
 
 // Get user details.
 type GetAccountUserRequest struct {
+	// <Databricks> account ID
+	AccountId *string `json:"account_id,omitempty"`
 	// Comma-separated list of attributes to return in response.
 	Attributes *string `json:"attributes,omitempty"`
 	// Desired number of results per page. Default is 10000.
@@ -307,8 +309,6 @@ type GetAccountUserRequest struct {
 	SortOrder AccountGetSortOrder_GetSortOrder `json:"sortOrder,omitempty"`
 	// Specifies the index of the first result. First item is number 1.
 	StartIndex *int `json:"startIndex,omitempty"`
-	// <Databricks> account ID
-	AccountId *string `json:"account_id,omitempty"`
 }
 
 type GetPasswordPermissionLevelsResponse struct {
@@ -369,6 +369,12 @@ type Group struct {
 type ListAccountGroupsRequest struct {
 	// <Databricks> account ID
 	AccountId *string `json:"account_id,omitempty"`
+	// Comma-separated list of attributes to return in response.
+	Attributes *string `json:"attributes,omitempty"`
+	// Desired number of results per page. Default is 10000.
+	Count *int64 `json:"count,omitempty"`
+	// Comma-separated list of attributes to exclude in response.
+	ExcludedAttributes *string `json:"excludedAttributes,omitempty"`
 	// Query by which the results have to be filtered. Supported operators are
 	// equals(`eq`), contains(`co`), starts with(`sw`) and not equals(`ne`).
 	// Additionally, simple expressions can be formed using logical operators -
@@ -377,25 +383,19 @@ type ListAccountGroupsRequest struct {
 	//
 	// [SCIM RFC]: https://tools.ietf.org/html/rfc7644#section-3.4.2.2
 	Filter *string `json:"filter,omitempty"`
-	// Comma-separated list of attributes to return in response.
-	Attributes *string `json:"attributes,omitempty"`
-	// Comma-separated list of attributes to exclude in response.
-	ExcludedAttributes *string `json:"excludedAttributes,omitempty"`
-	// Specifies the index of the first result. First item is number 1.
-	StartIndex *int64 `json:"startIndex,omitempty"`
-	// Desired number of results per page. Default is 10000.
-	Count *int64 `json:"count,omitempty"`
 	// Attribute to sort the results.
 	SortBy *string `json:"sortBy,omitempty"`
 	// The order to sort the results.
 	SortOrder AccountListSort_Order `json:"sortOrder,omitempty"`
+	// Specifies the index of the first result. First item is number 1.
+	StartIndex *int64 `json:"startIndex,omitempty"`
 }
 
 type ListAccountGroupsResponse struct {
-	// Total results returned in the response.
-	ItemsPerPage *int `json:"itemsPerPage,omitempty"`
 	// User objects returned in the response.
 	Resources []AccountGroup `json:"Resources,omitempty"`
+	// Total results returned in the response.
+	ItemsPerPage *int `json:"itemsPerPage,omitempty"`
 	// Starting index of all the results that matched the request filters. First
 	// item is number 1.
 	StartIndex *int64 `json:"startIndex,omitempty"`
@@ -405,6 +405,8 @@ type ListAccountGroupsResponse struct {
 
 // List service principals.
 type ListAccountServicePrincipalsRequest struct {
+	// <Databricks> account ID
+	AccountId *string `json:"account_id,omitempty"`
 	// Comma-separated list of attributes to return in response.
 	Attributes *string `json:"attributes,omitempty"`
 	// Desired number of results per page. Default is 10000.
@@ -425,15 +427,13 @@ type ListAccountServicePrincipalsRequest struct {
 	SortOrder AccountListSort_Order `json:"sortOrder,omitempty"`
 	// Specifies the index of the first result. First item is number 1.
 	StartIndex *int64 `json:"startIndex,omitempty"`
-	// <Databricks> account ID
-	AccountId *string `json:"account_id,omitempty"`
 }
 
 type ListAccountServicePrincipalsResponse struct {
-	// Total results returned in the response.
-	ItemsPerPage *int `json:"itemsPerPage,omitempty"`
 	// User objects returned in the response.
 	Resources []AccountServicePrincipal `json:"Resources,omitempty"`
+	// Total results returned in the response.
+	ItemsPerPage *int `json:"itemsPerPage,omitempty"`
 	// Starting index of all the results that matched the request filters. First
 	// item is number 1.
 	StartIndex *int64 `json:"startIndex,omitempty"`
@@ -443,6 +443,8 @@ type ListAccountServicePrincipalsResponse struct {
 
 // List users.
 type ListAccountUsersRequest struct {
+	// <Databricks> account ID
+	AccountId *string `json:"account_id,omitempty"`
 	// Comma-separated list of attributes to return in response.
 	Attributes *string `json:"attributes,omitempty"`
 	// Desired number of results per page. Default is 10000.
@@ -464,15 +466,13 @@ type ListAccountUsersRequest struct {
 	SortOrder AccountListSort_Order `json:"sortOrder,omitempty"`
 	// Specifies the index of the first result. First item is number 1.
 	StartIndex *int64 `json:"startIndex,omitempty"`
-	// <Databricks> account ID
-	AccountId *string `json:"account_id,omitempty"`
 }
 
 type ListAccountUsersResponse struct {
-	// Total results returned in the response.
-	ItemsPerPage *int `json:"itemsPerPage,omitempty"`
 	// User objects returned in the response.
 	Resources []AccountUser `json:"Resources,omitempty"`
+	// Total results returned in the response.
+	ItemsPerPage *int `json:"itemsPerPage,omitempty"`
 	// Starting index of all the results that matched the request filters. First
 	// item is number 1.
 	StartIndex *int64 `json:"startIndex,omitempty"`
@@ -482,6 +482,12 @@ type ListAccountUsersResponse struct {
 
 // List group details.
 type ListGroupsRequest struct {
+	// Comma-separated list of attributes to return in response.
+	Attributes *string `json:"attributes,omitempty"`
+	// Desired number of results per page.
+	Count *int64 `json:"count,omitempty"`
+	// Comma-separated list of attributes to exclude in response.
+	ExcludedAttributes *string `json:"excludedAttributes,omitempty"`
 	// Query by which the results have to be filtered. Supported operators are
 	// equals(`eq`), contains(`co`), starts with(`sw`) and not equals(`ne`).
 	// Additionally, simple expressions can be formed using logical operators -
@@ -490,25 +496,19 @@ type ListGroupsRequest struct {
 	//
 	// [SCIM RFC]: https://tools.ietf.org/html/rfc7644#section-3.4.2.2
 	Filter *string `json:"filter,omitempty"`
-	// Comma-separated list of attributes to return in response.
-	Attributes *string `json:"attributes,omitempty"`
-	// Comma-separated list of attributes to exclude in response.
-	ExcludedAttributes *string `json:"excludedAttributes,omitempty"`
-	// Specifies the index of the first result. First item is number 1.
-	StartIndex *int64 `json:"startIndex,omitempty"`
-	// Desired number of results per page.
-	Count *int64 `json:"count,omitempty"`
 	// Attribute to sort the results.
 	SortBy *string `json:"sortBy,omitempty"`
 	// The order to sort the results.
 	SortOrder ListSort_Order `json:"sortOrder,omitempty"`
+	// Specifies the index of the first result. First item is number 1.
+	StartIndex *int64 `json:"startIndex,omitempty"`
 }
 
 type ListGroupsResponse struct {
-	// Total results returned in the response.
-	ItemsPerPage *int `json:"itemsPerPage,omitempty"`
 	// User objects returned in the response.
 	Resources []Group `json:"Resources,omitempty"`
+	// Total results returned in the response.
+	ItemsPerPage *int `json:"itemsPerPage,omitempty"`
 	// The schema of the service principal.
 	Schemas []ListResponseSchema `json:"schemas,omitempty"`
 	// Starting index of all the results that matched the request filters. First
@@ -519,10 +519,10 @@ type ListGroupsResponse struct {
 }
 
 type ListServicePrincipalResponse struct {
-	// Total results returned in the response.
-	ItemsPerPage *int `json:"itemsPerPage,omitempty"`
 	// User objects returned in the response.
 	Resources []ServicePrincipal `json:"Resources,omitempty"`
+	// Total results returned in the response.
+	ItemsPerPage *int `json:"itemsPerPage,omitempty"`
 	// The schema of the List response.
 	Schemas []ListResponseSchema `json:"schemas,omitempty"`
 	// Starting index of all the results that matched the request filters. First
@@ -582,10 +582,10 @@ type ListUsersRequest struct {
 }
 
 type ListUsersResponse struct {
-	// Total results returned in the response.
-	ItemsPerPage *int `json:"itemsPerPage,omitempty"`
 	// User objects returned in the response.
 	Resources []User `json:"Resources,omitempty"`
+	// Total results returned in the response.
+	ItemsPerPage *int `json:"itemsPerPage,omitempty"`
 	// The schema of the List response.
 	Schemas []ListResponseSchema `json:"schemas,omitempty"`
 	// Starting index of all the results that matched the request filters. First
@@ -666,60 +666,60 @@ type Patch struct {
 }
 
 type PatchAccountGroupRequest struct {
-	// Unique ID in the <Databricks> workspace.
-	Id         *string        `json:"id,omitempty"`
 	Operations []AccountPatch `json:"Operations,omitempty"`
+	// <Databricks> account ID
+	AccountId *string `json:"account_id,omitempty"`
+	// Unique ID in the <Databricks> workspace.
+	Id *string `json:"id,omitempty"`
 	// The schema of the patch request. Must be
 	// ["urn:ietf:params:scim:api:messages:2.0:PatchOp"].
 	Schemas []AccountPatchSchema_PatchSchema `json:"schemas,omitempty"`
-	// <Databricks> account ID
-	AccountId *string `json:"account_id,omitempty"`
 }
 
 type PatchAccountServicePrincipalRequest struct {
-	// Unique ID in the <Databricks> workspace.
-	Id         *string        `json:"id,omitempty"`
 	Operations []AccountPatch `json:"Operations,omitempty"`
+	// <Databricks> account ID
+	AccountId *string `json:"account_id,omitempty"`
+	// Unique ID in the <Databricks> workspace.
+	Id *string `json:"id,omitempty"`
 	// The schema of the patch request. Must be
 	// ["urn:ietf:params:scim:api:messages:2.0:PatchOp"].
 	Schemas []AccountPatchSchema_PatchSchema `json:"schemas,omitempty"`
-	// <Databricks> account ID
-	AccountId *string `json:"account_id,omitempty"`
 }
 
 type PatchAccountUserRequest struct {
-	// Unique ID in the <Databricks> workspace.
-	Id         *string        `json:"id,omitempty"`
 	Operations []AccountPatch `json:"Operations,omitempty"`
+	// <Databricks> account ID
+	AccountId *string `json:"account_id,omitempty"`
+	// Unique ID in the <Databricks> workspace.
+	Id *string `json:"id,omitempty"`
 	// The schema of the patch request. Must be
 	// ["urn:ietf:params:scim:api:messages:2.0:PatchOp"].
 	Schemas []AccountPatchSchema_PatchSchema `json:"schemas,omitempty"`
-	// <Databricks> account ID
-	AccountId *string `json:"account_id,omitempty"`
 }
 
 type PatchGroupRequest struct {
-	// Unique ID in the <Databricks> workspace.
-	Id         *string `json:"id,omitempty"`
 	Operations []Patch `json:"Operations,omitempty"`
+	// Unique ID in the <Databricks> workspace.
+	Id *string `json:"id,omitempty"`
 	// The schema of the patch request. Must be
 	// ["urn:ietf:params:scim:api:messages:2.0:PatchOp"].
 	Schemas []PatchSchema `json:"schemas,omitempty"`
 }
 
 type PatchServicePrincipalRequest struct {
-	// Unique ID in the <Databricks> workspace.
-	Id         *string `json:"id,omitempty"`
 	Operations []Patch `json:"Operations,omitempty"`
+	// Unique ID in the <Databricks> workspace.
+	Id *string `json:"id,omitempty"`
 	// The schema of the patch request. Must be
 	// ["urn:ietf:params:scim:api:messages:2.0:PatchOp"].
 	Schemas []PatchSchema `json:"schemas,omitempty"`
 }
 
 type PatchUserRequest struct {
-	// Unique ID in the <Databricks> workspace.
-	Id         *string `json:"id,omitempty"`
 	Operations []Patch `json:"Operations,omitempty"`
+	// Unique ID in the <Databricks> workspace.
+	Id *string `json:"id,omitempty"`
 	// The schema of the patch request. Must be
 	// ["urn:ietf:params:scim:api:messages:2.0:PatchOp"].
 	Schemas []PatchSchema `json:"schemas,omitempty"`
@@ -754,6 +754,8 @@ type ServicePrincipal struct {
 }
 
 type UpdateAccountGroupRequest struct {
+	// <Databricks> account ID
+	AccountId *string `json:"account_id,omitempty"`
 	// String that represents a human-readable group name
 	DisplayName *string `json:"displayName,omitempty"`
 	ExternalId  *string `json:"externalId,omitempty"`
@@ -764,11 +766,11 @@ type UpdateAccountGroupRequest struct {
 	Meta *AccountResourceMeta `json:"meta,omitempty"`
 	// Indicates if the group has the admin role.
 	Roles []AccountComplexValue `json:"roles,omitempty"`
-	// <Databricks> account ID
-	AccountId *string `json:"account_id,omitempty"`
 }
 
 type UpdateAccountServicePrincipalRequest struct {
+	// <Databricks> account ID
+	AccountId *string `json:"account_id,omitempty"`
 	// If this user is active
 	Active *bool `json:"active,omitempty"`
 	// UUID relating to the service principal
@@ -780,11 +782,11 @@ type UpdateAccountServicePrincipalRequest struct {
 	Id *string `json:"id,omitempty"`
 	// Indicates if the group has the admin role.
 	Roles []AccountComplexValue `json:"roles,omitempty"`
-	// <Databricks> account ID
-	AccountId *string `json:"account_id,omitempty"`
 }
 
 type UpdateAccountUserRequest struct {
+	// <Databricks> account ID
+	AccountId *string `json:"account_id,omitempty"`
 	// If this user is active
 	Active *bool `json:"active,omitempty"`
 	// String that represents a concatenation of given and family names. For example
@@ -804,8 +806,6 @@ type UpdateAccountUserRequest struct {
 	// Email address of the <Databricks> user. This attribute cannot be updated
 	// through the SCIM PATCH or PUT APIs; any supplied change is ignored.
 	UserName *string `json:"userName,omitempty"`
-	// <Databricks> account ID
-	AccountId *string `json:"account_id,omitempty"`
 }
 
 type UpdateGroupRequest struct {

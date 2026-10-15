@@ -32,11 +32,11 @@ const (
 )
 
 type CreateExperimentRequest struct {
-	// Experiment name.
-	Name *string `json:"name,omitempty"`
 	// Location where all artifacts for the experiment are stored. If not provided,
 	// the remote server will select an appropriate default.
 	ArtifactLocation *string `json:"artifact_location,omitempty"`
+	// Experiment name.
+	Name *string `json:"name,omitempty"`
 	// A collection of tags to set on the experiment. Maximum tag size and number of
 	// tags per request depends on the storage backend. All storage backends are
 	// guaranteed to support tag keys up to 250 bytes in size and tag values up to
@@ -58,14 +58,14 @@ type CreateExperimentResponse struct {
 type CreateLoggedModelRequest struct {
 	// The ID of the experiment that owns the model.
 	ExperimentId *string `json:"experiment_id,omitempty"`
-	// The name of the model (optional). If not specified one will be generated.
-	Name *string `json:"name,omitempty"`
 	// The type of the model, such as ``"Agent"``, ``"Classifier"``, ``"LLM"``.
 	ModelType *string `json:"model_type,omitempty"`
-	// The ID of the run that created the model.
-	SourceRunId *string `json:"source_run_id,omitempty"`
+	// The name of the model (optional). If not specified one will be generated.
+	Name *string `json:"name,omitempty"`
 	// Parameters attached to the model.
 	Params []LoggedModelParameter `json:"params,omitempty"`
+	// The ID of the run that created the model.
+	SourceRunId *string `json:"source_run_id,omitempty"`
 	// Tags attached to the model.
 	Tags []LoggedModelTag `json:"tags,omitempty"`
 }
@@ -78,16 +78,16 @@ type CreateLoggedModelResponse struct {
 type CreateRunRequest struct {
 	// ID of the associated experiment.
 	ExperimentId *string `json:"experiment_id,omitempty"`
-	// ID of the user executing the run. This field is deprecated as of MLflow 1.0,
-	// and will be removed in a future MLflow release. Use 'mlflow.user' tag
-	// instead.
-	UserId *string `json:"user_id,omitempty"`
 	// The name of the run.
 	RunName *string `json:"run_name,omitempty"`
 	// Unix timestamp in milliseconds of when the run started.
 	StartTime *int64 `json:"start_time,omitempty"`
 	// Additional metadata for run.
 	Tags []RunTag `json:"tags,omitempty"`
+	// ID of the user executing the run. This field is deprecated as of MLflow 1.0,
+	// and will be removed in a future MLflow release. Use 'mlflow.user' tag
+	// instead.
+	UserId *string `json:"user_id,omitempty"`
 }
 
 type CreateRunResponse struct {
@@ -98,35 +98,35 @@ type CreateRunResponse struct {
 // Dataset. Represents a reference to data used for training, testing, or
 // evaluation during the model development process..
 type Dataset struct {
-	// The name of the dataset. E.g. “my.uc.table@2” “nyc-taxi-dataset”,
-	// “fantastic-elk-3”
-	Name *string `json:"name,omitempty"`
 	// Dataset digest, e.g. an md5 hash of the dataset that uniquely identifies it
 	// within datasets of the same name.
 	Digest *string `json:"digest,omitempty"`
-	// The type of the dataset source, e.g. ‘databricks-uc-table’, ‘DBFS’,
-	// ‘S3’, ...
-	SourceType *string `json:"source_type,omitempty"`
-	// Source information for the dataset. Note that the source may not exactly
-	// reproduce the dataset if it was transformed / modified before use with
-	// MLflow.
-	Source *string `json:"source,omitempty"`
-	// The schema of the dataset. E.g., MLflow ColSpec JSON for a dataframe, MLflow
-	// TensorSpec JSON for an ndarray, or another schema format.
-	Schema *string `json:"schema,omitempty"`
+	// The name of the dataset. E.g. “my.uc.table@2” “nyc-taxi-dataset”,
+	// “fantastic-elk-3”
+	Name *string `json:"name,omitempty"`
 	// The profile of the dataset. Summary statistics for the dataset, such as the
 	// number of rows in a table, the mean / std / mode of each column in a table,
 	// or the number of elements in an array.
 	Profile *string `json:"profile,omitempty"`
+	// The schema of the dataset. E.g., MLflow ColSpec JSON for a dataframe, MLflow
+	// TensorSpec JSON for an ndarray, or another schema format.
+	Schema *string `json:"schema,omitempty"`
+	// Source information for the dataset. Note that the source may not exactly
+	// reproduce the dataset if it was transformed / modified before use with
+	// MLflow.
+	Source *string `json:"source,omitempty"`
+	// The type of the dataset source, e.g. ‘databricks-uc-table’, ‘DBFS’,
+	// ‘S3’, ...
+	SourceType *string `json:"source_type,omitempty"`
 }
 
 // DatasetInput. Represents a dataset and input tags..
 type DatasetInput struct {
+	// The dataset being used as a Run input.
+	Dataset *Dataset `json:"dataset,omitempty"`
 	// A list of tags for the dataset input, e.g. a “context” tag with value
 	// “training”
 	Tags []InputTag `json:"tags,omitempty"`
-	// The dataset being used as a Run input.
-	Dataset *Dataset `json:"dataset,omitempty"`
 }
 
 type DeleteExperimentRequest struct {
@@ -142,12 +142,12 @@ type DeleteRunRequest struct {
 type DeleteRunsRequest struct {
 	// The ID of the experiment containing the runs to delete.
 	ExperimentId *string `json:"experiment_id,omitempty"`
-	// The maximum creation timestamp in milliseconds since the UNIX epoch for
-	// deleting runs. Only runs created prior to or at this timestamp are deleted.
-	MaxTimestampMillis *int64 `json:"max_timestamp_millis,omitempty"`
 	// An optional positive integer indicating the maximum number of runs to delete.
 	// The maximum allowed value for max_runs is 10000.
 	MaxRuns *int `json:"max_runs,omitempty"`
+	// The maximum creation timestamp in milliseconds since the UNIX epoch for
+	// deleting runs. Only runs created prior to or at this timestamp are deleted.
+	MaxTimestampMillis *int64 `json:"max_timestamp_millis,omitempty"`
 }
 
 type DeleteRunsResponse struct {
@@ -156,27 +156,27 @@ type DeleteRunsResponse struct {
 }
 
 type DeleteTagRequest struct {
-	// ID of the run that the tag was logged under. Must be provided.
-	RunId *string `json:"run_id,omitempty"`
 	// Name of the tag. Maximum size is 255 bytes. Must be provided.
 	Key *string `json:"key,omitempty"`
+	// ID of the run that the tag was logged under. Must be provided.
+	RunId *string `json:"run_id,omitempty"`
 }
 
 // An experiment and its metadata..
 type Experiment struct {
-	// Unique identifier for the experiment.
-	ExperimentId *string `json:"experiment_id,omitempty"`
-	// Human readable name that identifies the experiment.
-	Name *string `json:"name,omitempty"`
 	// Location where artifacts for the experiment are stored.
 	ArtifactLocation *string `json:"artifact_location,omitempty"`
+	// Creation time
+	CreationTime *int64 `json:"creation_time,omitempty"`
+	// Unique identifier for the experiment.
+	ExperimentId *string `json:"experiment_id,omitempty"`
+	// Last update time
+	LastUpdateTime *int64 `json:"last_update_time,omitempty"`
 	// Current life cycle stage of the experiment: "active" or "deleted". Deleted
 	// experiments are not returned by APIs.
 	LifecycleStage *string `json:"lifecycle_stage,omitempty"`
-	// Last update time
-	LastUpdateTime *int64 `json:"last_update_time,omitempty"`
-	// Creation time
-	CreationTime *int64 `json:"creation_time,omitempty"`
+	// Human readable name that identifies the experiment.
+	Name *string `json:"name,omitempty"`
 	// Tags: Additional metadata key-value pairs.
 	Tags []ExperimentTag `json:"tags,omitempty"`
 	// The location where the experiment's traces are stored. Unset when traces are
@@ -200,12 +200,12 @@ type ExperimentTraceLocation struct {
 
 // Metadata of a single artifact file or directory..
 type FileInfo struct {
-	// The path relative to the root artifact directory run.
-	Path *string `json:"path,omitempty"`
-	// Whether the path is a directory.
-	IsDir *bool `json:"is_dir,omitempty"`
 	// The size in bytes of the file. Unset for directories.
 	FileSize *int64 `json:"file_size,omitempty"`
+	// Whether the path is a directory.
+	IsDir *bool `json:"is_dir,omitempty"`
+	// The path relative to the root artifact directory run.
+	Path *string `json:"path,omitempty"`
 }
 
 type FinalizeLoggedModelRequest struct {
@@ -286,14 +286,6 @@ type InputTag struct {
 }
 
 type ListArtifactsRequest struct {
-	// ID of the run whose artifacts to list. Must be provided.
-	RunId *string `json:"run_id,omitempty"`
-	// [Deprecated, use `run_id` instead] ID of the run whose artifacts to list.
-	// This field will be removed in a future MLflow version.
-	RunUuid *string `json:"run_uuid,omitempty"`
-	// Filter artifacts matching this path (a relative path from the root artifact
-	// directory).
-	Path *string `json:"path,omitempty"`
 	// The token indicating the page of artifact results to fetch. `page_token` is
 	// not supported when listing artifacts in UC Volumes. A maximum of 1000
 	// artifacts will be retrieved for UC Volumes. Please call
@@ -301,21 +293,26 @@ type ListArtifactsRequest struct {
 	// Volumes, which supports pagination. See [List directory contents | Files
 	// API](/api/workspace/files/listdirectorycontents).
 	PageToken *string `json:"page_token,omitempty"`
+	// Filter artifacts matching this path (a relative path from the root artifact
+	// directory).
+	Path *string `json:"path,omitempty"`
+	// ID of the run whose artifacts to list. Must be provided.
+	RunId *string `json:"run_id,omitempty"`
+	// [Deprecated, use `run_id` instead] ID of the run whose artifacts to list.
+	// This field will be removed in a future MLflow version.
+	RunUuid *string `json:"run_uuid,omitempty"`
 }
 
 type ListArtifactsResponse struct {
-	// The root artifact directory for the run.
-	RootUri *string `json:"root_uri,omitempty"`
 	// The file location and metadata for artifacts.
 	Files []FileInfo `json:"files,omitempty"`
 	// The token that can be used to retrieve the next page of artifact results.
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// The root artifact directory for the run.
+	RootUri *string `json:"root_uri,omitempty"`
 }
 
 type ListExperimentsRequest struct {
-	// Qualifier for type of experiments to be returned. If unspecified, return only
-	// active experiments.
-	ViewType ViewType `json:"view_type,omitempty"`
 	// Maximum number of experiments desired. If `max_results` is unspecified,
 	// return all experiments. If `max_results` is too large, it'll be automatically
 	// capped at 1000. Callers of this endpoint are encouraged to pass max_results
@@ -323,6 +320,9 @@ type ListExperimentsRequest struct {
 	MaxResults *int64 `json:"max_results,omitempty"`
 	// Token indicating the page of experiments to fetch
 	PageToken *string `json:"page_token,omitempty"`
+	// Qualifier for type of experiments to be returned. If unspecified, return only
+	// active experiments.
+	ViewType ViewType `json:"view_type,omitempty"`
 }
 
 type ListExperimentsResponse struct {
@@ -334,41 +334,41 @@ type ListExperimentsResponse struct {
 }
 
 type ListMetricHistoryRequest struct {
+	// Maximum number of Metric records to return per paginated request. Default is
+	// set to 25,000. If set higher than 25,000, a request Exception will be raised.
+	MaxResults *int `json:"max_results,omitempty"`
+	// Name of the metric.
+	MetricKey *string `json:"metric_key,omitempty"`
+	// Token indicating the page of metric histories to fetch.
+	PageToken *string `json:"page_token,omitempty"`
 	// ID of the run from which to fetch metric values. Must be provided.
 	RunId *string `json:"run_id,omitempty"`
 	// [Deprecated, use `run_id` instead] ID of the run from which to fetch metric
 	// values. This field will be removed in a future MLflow version.
 	RunUuid *string `json:"run_uuid,omitempty"`
-	// Name of the metric.
-	MetricKey *string `json:"metric_key,omitempty"`
-	// Token indicating the page of metric histories to fetch.
-	PageToken *string `json:"page_token,omitempty"`
-	// Maximum number of Metric records to return per paginated request. Default is
-	// set to 25,000. If set higher than 25,000, a request Exception will be raised.
-	MaxResults *int `json:"max_results,omitempty"`
 }
 
 type LogBatchRequest struct {
-	// ID of the run to log under
-	RunId *string `json:"run_id,omitempty"`
 	// Metrics to log. A single request can contain up to 1000 metrics, and up to
 	// 1000 metrics, params, and tags in total.
 	Metrics []Metric `json:"metrics,omitempty"`
 	// Params to log. A single request can contain up to 100 params, and up to 1000
 	// metrics, params, and tags in total.
 	Params []Param `json:"params,omitempty"`
+	// ID of the run to log under
+	RunId *string `json:"run_id,omitempty"`
 	// Tags to log. A single request can contain up to 100 tags, and up to 1000
 	// metrics, params, and tags in total.
 	Tags []RunTag `json:"tags,omitempty"`
 }
 
 type LogInputsRequest struct {
-	// ID of the run to log under
-	RunId *string `json:"run_id,omitempty"`
 	// Dataset inputs
 	Datasets []DatasetInput `json:"datasets,omitempty"`
 	// Model inputs
 	Models []ModelInput `json:"models,omitempty"`
+	// ID of the run to log under
+	RunId *string `json:"run_id,omitempty"`
 }
 
 type LogLoggedModelParamsRequest struct {
@@ -379,51 +379,51 @@ type LogLoggedModelParamsRequest struct {
 }
 
 type LogMetricRequest struct {
+	// Dataset digest of the dataset associated with the metric, e.g. an md5 hash of
+	// the dataset that uniquely identifies it within datasets of the same name.
+	DatasetDigest *string `json:"dataset_digest,omitempty"`
+	// The name of the dataset associated with the metric. E.g. “my.uc.table@2”
+	// “nyc-taxi-dataset”, “fantastic-elk-3”
+	DatasetName *string `json:"dataset_name,omitempty"`
+	// Name of the metric.
+	Key *string `json:"key,omitempty"`
+	// ID of the logged model associated with the metric, if applicable
+	ModelId *string `json:"model_id,omitempty"`
 	// ID of the run under which to log the metric. Must be provided.
 	RunId *string `json:"run_id,omitempty"`
 	// [Deprecated, use `run_id` instead] ID of the run under which to log the
 	// metric. This field will be removed in a future MLflow version.
 	RunUuid *string `json:"run_uuid,omitempty"`
-	// Name of the metric.
-	Key *string `json:"key,omitempty"`
-	// Double value of the metric being logged.
-	Value *float64 `json:"value,omitempty"`
-	// Unix timestamp in milliseconds at the time metric was logged.
-	Timestamp *int64 `json:"timestamp,omitempty"`
 	// Step at which to log the metric
 	Step *int64 `json:"step,omitempty"`
-	// ID of the logged model associated with the metric, if applicable
-	ModelId *string `json:"model_id,omitempty"`
-	// The name of the dataset associated with the metric. E.g. “my.uc.table@2”
-	// “nyc-taxi-dataset”, “fantastic-elk-3”
-	DatasetName *string `json:"dataset_name,omitempty"`
-	// Dataset digest of the dataset associated with the metric, e.g. an md5 hash of
-	// the dataset that uniquely identifies it within datasets of the same name.
-	DatasetDigest *string `json:"dataset_digest,omitempty"`
+	// Unix timestamp in milliseconds at the time metric was logged.
+	Timestamp *int64 `json:"timestamp,omitempty"`
+	// Double value of the metric being logged.
+	Value *float64 `json:"value,omitempty"`
 }
 
 type LogModelRequest struct {
-	// ID of the run to log under
-	RunId *string `json:"run_id,omitempty"`
 	// MLmodel file in json format.
 	ModelJson *string `json:"model_json,omitempty"`
+	// ID of the run to log under
+	RunId *string `json:"run_id,omitempty"`
 }
 
 type LogOutputsRequest struct {
-	// The ID of the Run from which to log outputs.
-	RunId *string `json:"run_id,omitempty"`
 	// The model outputs from the Run.
 	Models []ModelOutput `json:"models,omitempty"`
+	// The ID of the Run from which to log outputs.
+	RunId *string `json:"run_id,omitempty"`
 }
 
 type LogParamRequest struct {
+	// Name of the param. Maximum size is 255 bytes.
+	Key *string `json:"key,omitempty"`
 	// ID of the run under which to log the param. Must be provided.
 	RunId *string `json:"run_id,omitempty"`
 	// [Deprecated, use `run_id` instead] ID of the run under which to log the
 	// param. This field will be removed in a future MLflow version.
 	RunUuid *string `json:"run_uuid,omitempty"`
-	// Name of the param. Maximum size is 255 bytes.
-	Key *string `json:"key,omitempty"`
 	// String value of the param being logged. Maximum size is 500 bytes.
 	Value *string `json:"value,omitempty"`
 }
@@ -431,45 +431,45 @@ type LogParamRequest struct {
 // A logged model message includes logged model attributes, tags, registration
 // info, params, and linked run metrics..
 type LoggedModel struct {
-	// The logged model attributes such as model ID, status, tags, etc.
-	Info *LoggedModelInfo `json:"info,omitempty"`
 	// The params and metrics attached to the logged model.
 	Data *LoggedModelData `json:"data,omitempty"`
+	// The logged model attributes such as model ID, status, tags, etc.
+	Info *LoggedModelInfo `json:"info,omitempty"`
 }
 
 // A LoggedModelData message includes logged model params and linked metrics..
 type LoggedModelData struct {
-	// Immutable string key-value pairs of the model.
-	Params []LoggedModelParameter `json:"params,omitempty"`
 	// Performance metrics linked to the model.
 	Metrics []Metric `json:"metrics,omitempty"`
+	// Immutable string key-value pairs of the model.
+	Params []LoggedModelParameter `json:"params,omitempty"`
 }
 
 // A LoggedModelInfo includes logged model attributes, tags, and registration
 // info..
 type LoggedModelInfo struct {
-	// The unique identifier for the logged model.
-	ModelId *string `json:"model_id,omitempty"`
-	// The ID of the experiment that owns the model.
-	ExperimentId *string `json:"experiment_id,omitempty"`
-	// The name of the model.
-	Name *string `json:"name,omitempty"`
+	// The URI of the directory where model artifacts are stored.
+	ArtifactUri *string `json:"artifact_uri,omitempty"`
 	// The timestamp when the model was created in milliseconds since the UNIX
 	// epoch.
 	CreationTimestampMs *int64 `json:"creation_timestamp_ms,omitempty"`
+	// The ID of the user or principal that created the model.
+	CreatorId *int64 `json:"creator_id,omitempty"`
+	// The ID of the experiment that owns the model.
+	ExperimentId *string `json:"experiment_id,omitempty"`
 	// The timestamp when the model was last updated in milliseconds since the UNIX
 	// epoch.
 	LastUpdatedTimestampMs *int64 `json:"last_updated_timestamp_ms,omitempty"`
-	// The URI of the directory where model artifacts are stored.
-	ArtifactUri *string `json:"artifact_uri,omitempty"`
-	// The status of whether or not the model is ready for use.
-	Status LoggedModelStatus `json:"status,omitempty"`
-	// The ID of the user or principal that created the model.
-	CreatorId *int64 `json:"creator_id,omitempty"`
+	// The unique identifier for the logged model.
+	ModelId *string `json:"model_id,omitempty"`
 	// The type of model, such as ``"Agent"``, ``"Classifier"``, ``"LLM"``.
 	ModelType *string `json:"model_type,omitempty"`
+	// The name of the model.
+	Name *string `json:"name,omitempty"`
 	// The ID of the run that created the model.
 	SourceRunId *string `json:"source_run_id,omitempty"`
+	// The status of whether or not the model is ready for use.
+	Status LoggedModelStatus `json:"status,omitempty"`
 	// Details on the current model status.
 	StatusMessage *string `json:"status_message,omitempty"`
 	// Mutable string key-value pairs set on the model.
@@ -494,26 +494,26 @@ type LoggedModelTag struct {
 
 // Metric associated with a run, represented as a key-value pair..
 type Metric struct {
-	// The key identifying the metric.
-	Key *string `json:"key,omitempty"`
-	// The value of the metric.
-	Value *float64 `json:"value,omitempty"`
-	// The timestamp at which the metric was recorded.
-	Timestamp *int64 `json:"timestamp,omitempty"`
-	// The step at which the metric was logged.
-	Step *int64 `json:"step,omitempty"`
-	// The name of the dataset associated with the metric. E.g. “my.uc.table@2”
-	// “nyc-taxi-dataset”, “fantastic-elk-3”
-	DatasetName *string `json:"dataset_name,omitempty"`
 	// The dataset digest of the dataset associated with the metric, e.g. an md5
 	// hash of the dataset that uniquely identifies it within datasets of the same
 	// name.
 	DatasetDigest *string `json:"dataset_digest,omitempty"`
+	// The name of the dataset associated with the metric. E.g. “my.uc.table@2”
+	// “nyc-taxi-dataset”, “fantastic-elk-3”
+	DatasetName *string `json:"dataset_name,omitempty"`
+	// The key identifying the metric.
+	Key *string `json:"key,omitempty"`
 	// The ID of the logged model or registered model version associated with the
 	// metric, if applicable.
 	ModelId *string `json:"model_id,omitempty"`
 	// The ID of the run containing the metric.
 	RunId *string `json:"run_id,omitempty"`
+	// The step at which the metric was logged.
+	Step *int64 `json:"step,omitempty"`
+	// The timestamp at which the metric was recorded.
+	Timestamp *int64 `json:"timestamp,omitempty"`
+	// The value of the metric.
+	Value *float64 `json:"value,omitempty"`
 }
 
 // Represents a LoggedModel or Registered Model Version input to a Run..
@@ -551,13 +551,13 @@ type RestoreRunRequest struct {
 type RestoreRunsRequest struct {
 	// The ID of the experiment containing the runs to restore.
 	ExperimentId *string `json:"experiment_id,omitempty"`
+	// An optional positive integer indicating the maximum number of runs to
+	// restore. The maximum allowed value for max_runs is 10000.
+	MaxRuns *int `json:"max_runs,omitempty"`
 	// The minimum deletion timestamp in milliseconds since the UNIX epoch for
 	// restoring runs. Only runs deleted no earlier than this timestamp are
 	// restored.
 	MinTimestampMillis *int64 `json:"min_timestamp_millis,omitempty"`
-	// An optional positive integer indicating the maximum number of runs to
-	// restore. The maximum allowed value for max_runs is 10000.
-	MaxRuns *int `json:"max_runs,omitempty"`
 }
 
 type RestoreRunsResponse struct {
@@ -567,10 +567,10 @@ type RestoreRunsResponse struct {
 
 // A single run..
 type Run struct {
-	// Run metadata.
-	Info *RunInfo `json:"info,omitempty"`
 	// Run data.
 	Data *RunData `json:"data,omitempty"`
+	// Run metadata.
+	Info *RunInfo `json:"info,omitempty"`
 	// Run inputs.
 	Inputs *RunInputs `json:"inputs,omitempty"`
 }
@@ -587,31 +587,31 @@ type RunData struct {
 
 // Metadata of a single run..
 type RunInfo struct {
-	// Unique identifier for the run.
-	RunId *string `json:"run_id,omitempty"`
-	// [Deprecated, use run_id instead] Unique identifier for the run. This field
-	// will be removed in a future MLflow version.
-	RunUuid *string `json:"run_uuid,omitempty"`
-	// The experiment ID.
-	ExperimentId *string `json:"experiment_id,omitempty"`
-	// The name of the run.
-	RunName *string `json:"run_name,omitempty"`
-	// User who initiated the run. This field is deprecated as of MLflow 1.0, and
-	// will be removed in a future MLflow release. Use 'mlflow.user' tag instead.
-	UserId *string `json:"user_id,omitempty"`
-	// Current status of the run.
-	Status RunStatus `json:"status,omitempty"`
-	// Unix timestamp of when the run started in milliseconds.
-	StartTime *int64 `json:"start_time,omitempty"`
-	// Unix timestamp of when the run ended in milliseconds.
-	EndTime *int64 `json:"end_time,omitempty"`
 	// URI of the directory where artifacts should be uploaded. This can be a local
 	// path (starting with "/"), or a distributed file system (DFS) path, like
 	// ``s3://bucket/directory`` or ``dbfs:/my/directory``. If not set, the local
 	// ``./mlruns`` directory is chosen.
 	ArtifactUri *string `json:"artifact_uri,omitempty"`
+	// Unix timestamp of when the run ended in milliseconds.
+	EndTime *int64 `json:"end_time,omitempty"`
+	// The experiment ID.
+	ExperimentId *string `json:"experiment_id,omitempty"`
 	// Current life cycle stage of the experiment : OneOf("active", "deleted")
 	LifecycleStage *string `json:"lifecycle_stage,omitempty"`
+	// Unique identifier for the run.
+	RunId *string `json:"run_id,omitempty"`
+	// The name of the run.
+	RunName *string `json:"run_name,omitempty"`
+	// [Deprecated, use run_id instead] Unique identifier for the run. This field
+	// will be removed in a future MLflow version.
+	RunUuid *string `json:"run_uuid,omitempty"`
+	// Unix timestamp of when the run started in milliseconds.
+	StartTime *int64 `json:"start_time,omitempty"`
+	// Current status of the run.
+	Status RunStatus `json:"status,omitempty"`
+	// User who initiated the run. This field is deprecated as of MLflow 1.0, and
+	// will be removed in a future MLflow release. Use 'mlflow.user' tag instead.
+	UserId *string `json:"user_id,omitempty"`
 }
 
 // Run inputs..
@@ -631,17 +631,17 @@ type RunTag struct {
 }
 
 type SearchExperimentsRequest struct {
-	// Maximum number of experiments desired. Max threshold is 3000.
-	MaxResults *int64 `json:"max_results,omitempty"`
-	// Token indicating the page of experiments to fetch
-	PageToken *string `json:"page_token,omitempty"`
 	// String representing a SQL filter condition (e.g. "name ILIKE
 	// 'my-experiment%'")
 	Filter *string `json:"filter,omitempty"`
+	// Maximum number of experiments desired. Max threshold is 3000.
+	MaxResults *int64 `json:"max_results,omitempty"`
 	// List of columns for ordering search results, which can include experiment
 	// name and last updated timestamp with an optional "DESC" or "ASC" annotation,
 	// where "ASC" is the default. Tiebreaks are done by experiment id DESC.
 	OrderBy []string `json:"order_by,omitempty"`
+	// Token indicating the page of experiments to fetch
+	PageToken *string `json:"page_token,omitempty"`
 	// Qualifier for type of experiments to be returned. If unspecified, return only
 	// active experiments.
 	ViewType ViewType `json:"view_type,omitempty"`
@@ -656,6 +656,13 @@ type SearchExperimentsResponse struct {
 }
 
 type SearchLoggedModelsRequest struct {
+	// List of datasets on which to apply the metrics filter clauses. For example, a
+	// filter with `metrics.accuracy > 0.9` and dataset info with name
+	// "test_dataset" means we will return all logged models with accuracy > 0.9 on
+	// the test_dataset. Metric values from ANY dataset matching the criteria are
+	// considered. If no datasets are specified, then metrics across all datasets
+	// are considered in the filter.
+	Datasets []SearchLoggedModelsRequest_Dataset `json:"datasets,omitempty"`
 	// The IDs of the experiments in which to search for logged models.
 	ExperimentIds []string `json:"experiment_ids,omitempty"`
 	// A filter expression over logged model info and data that allows returning a
@@ -664,13 +671,6 @@ type SearchLoggedModelsRequest struct {
 	//
 	// Example: ``params.alpha < 0.3 AND metrics.accuracy > 0.9``.
 	Filter *string `json:"filter,omitempty"`
-	// List of datasets on which to apply the metrics filter clauses. For example, a
-	// filter with `metrics.accuracy > 0.9` and dataset info with name
-	// "test_dataset" means we will return all logged models with accuracy > 0.9 on
-	// the test_dataset. Metric values from ANY dataset matching the criteria are
-	// considered. If no datasets are specified, then metrics across all datasets
-	// are considered in the filter.
-	Datasets []SearchLoggedModelsRequest_Dataset `json:"datasets,omitempty"`
 	// The maximum number of Logged Models to return. The maximum limit is 50.
 	MaxResults *int `json:"max_results,omitempty"`
 	// The list of columns for ordering the results, with additional fields for
@@ -681,27 +681,27 @@ type SearchLoggedModelsRequest struct {
 }
 
 type SearchLoggedModelsRequest_Dataset struct {
-	// The name of the dataset.
-	DatasetName *string `json:"dataset_name,omitempty"`
 	// The digest of the dataset.
 	DatasetDigest *string `json:"dataset_digest,omitempty"`
+	// The name of the dataset.
+	DatasetName *string `json:"dataset_name,omitempty"`
 }
 
 type SearchLoggedModelsRequest_OrderBy struct {
-	// The name of the field to order by, e.g. "metrics.accuracy".
-	FieldName *string `json:"field_name,omitempty"`
 	// Whether the search results order is ascending or not.
 	Ascending *bool `json:"ascending,omitempty"`
-	// If ``field_name`` refers to a metric, this field specifies the name of the
-	// dataset associated with the metric. Only metrics associated with the
-	// specified dataset name will be considered for ordering. This field may only
-	// be set if ``field_name`` refers to a metric.
-	DatasetName *string `json:"dataset_name,omitempty"`
 	// If ``field_name`` refers to a metric, this field specifies the digest of the
 	// dataset associated with the metric. Only metrics associated with the
 	// specified dataset name and digest will be considered for ordering. This field
 	// may only be set if ``dataset_name`` is also set.
 	DatasetDigest *string `json:"dataset_digest,omitempty"`
+	// If ``field_name`` refers to a metric, this field specifies the name of the
+	// dataset associated with the metric. Only metrics associated with the
+	// specified dataset name will be considered for ordering. This field may only
+	// be set if ``field_name`` refers to a metric.
+	DatasetName *string `json:"dataset_name,omitempty"`
+	// The name of the field to order by, e.g. "metrics.accuracy".
+	FieldName *string `json:"field_name,omitempty"`
 }
 
 type SearchLoggedModelsResponse struct {
@@ -726,9 +726,6 @@ type SearchRunsRequest struct {
 	//
 	// Supported operators are `=`, `!=`, `>`, `>=`, `<`, and `<=`.
 	Filter *string `json:"filter,omitempty"`
-	// Whether to display only active, only deleted, or all runs. Defaults to only
-	// active runs.
-	RunViewType ViewType `json:"run_view_type,omitempty"`
 	// Maximum number of runs desired. Max threshold is 50000
 	MaxResults *int `json:"max_results,omitempty"`
 	// List of columns to be ordered by, including attributes, params, metrics, and
@@ -740,13 +737,16 @@ type SearchRunsRequest struct {
 	OrderBy []string `json:"order_by,omitempty"`
 	// Token for the current page of runs.
 	PageToken *string `json:"page_token,omitempty"`
+	// Whether to display only active, only deleted, or all runs. Defaults to only
+	// active runs.
+	RunViewType ViewType `json:"run_view_type,omitempty"`
 }
 
 type SearchRunsResponse struct {
-	// Runs that match the search criteria.
-	Runs []Run `json:"runs,omitempty"`
 	// Token for the next page of runs.
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// Runs that match the search criteria.
+	Runs []Run `json:"runs,omitempty"`
 }
 
 type SetExperimentTagRequest struct {
@@ -767,13 +767,13 @@ type SetLoggedModelTagsRequest struct {
 }
 
 type SetTagRequest struct {
+	// Name of the tag. Keys up to 250 bytes in size are supported.
+	Key *string `json:"key,omitempty"`
 	// ID of the run under which to log the tag. Must be provided.
 	RunId *string `json:"run_id,omitempty"`
 	// [Deprecated, use `run_id` instead] ID of the run under which to log the tag.
 	// This field will be removed in a future MLflow version.
 	RunUuid *string `json:"run_uuid,omitempty"`
-	// Name of the tag. Keys up to 250 bytes in size are supported.
-	Key *string `json:"key,omitempty"`
 	// String value of the tag being logged. Values up to 64KB in size are
 	// supported.
 	Value *string `json:"value,omitempty"`
@@ -784,6 +784,9 @@ type SetTagRequest struct {
 type UcTraceLocation struct {
 	// The name of the Unity Catalog catalog.
 	Catalog *string `json:"catalog,omitempty"`
+	// The trace-table prefix actually in effect: `table_prefix` if it was set on
+	// creation, otherwise the server-generated default.
+	EffectiveTablePrefix *string `json:"effective_table_prefix,omitempty"`
 	// The name of the Unity Catalog schema within `catalog`.
 	Schema *string `json:"schema,omitempty"`
 	// The prefix for the trace tables, which are named
@@ -793,9 +796,6 @@ type UcTraceLocation struct {
 	// stays empty on read; the resolved value is always available in
 	// `effective_table_prefix`.
 	TablePrefix *string `json:"table_prefix,omitempty"`
-	// The trace-table prefix actually in effect: `table_prefix` if it was set on
-	// creation, otherwise the server-generated default.
-	EffectiveTablePrefix *string `json:"effective_table_prefix,omitempty"`
 }
 
 type UpdateExperimentRequest struct {
@@ -807,17 +807,17 @@ type UpdateExperimentRequest struct {
 }
 
 type UpdateRunRequest struct {
+	// Unix timestamp in milliseconds of when the run ended.
+	EndTime *int64 `json:"end_time,omitempty"`
 	// ID of the run to update. Must be provided.
 	RunId *string `json:"run_id,omitempty"`
+	// Updated name of the run.
+	RunName *string `json:"run_name,omitempty"`
 	// [Deprecated, use `run_id` instead] ID of the run to update. This field will
 	// be removed in a future MLflow version.
 	RunUuid *string `json:"run_uuid,omitempty"`
 	// Updated status of the run.
 	Status RunStatus `json:"status,omitempty"`
-	// Unix timestamp in milliseconds of when the run ended.
-	EndTime *int64 `json:"end_time,omitempty"`
-	// Updated name of the run.
-	RunName *string `json:"run_name,omitempty"`
 }
 
 type UpdateRunResponse struct {

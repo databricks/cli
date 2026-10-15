@@ -63,26 +63,26 @@ const (
 
 // Details about a Channel..
 type ChannelInfo struct {
-	// Name of the channel
-	Name ChannelName `json:"name,omitempty"`
 	// DB SQL Version the Channel is mapped to.
 	DbsqlVersion *string `json:"dbsql_version,omitempty"`
+	// Name of the channel
+	Name ChannelName `json:"name,omitempty"`
 }
 
 type ExternalQuerySource struct {
-	// The canonical identifier for this Lakeview dashboard
-	DashboardId *string `json:"dashboard_id,omitempty"`
-	// The canonical identifier for this legacy dashboard
-	LegacyDashboardId *string `json:"legacy_dashboard_id,omitempty"`
 	// The canonical identifier for this SQL alert
 	AlertId *string `json:"alert_id,omitempty"`
+	// The canonical identifier for this Lakeview dashboard
+	DashboardId *string `json:"dashboard_id,omitempty"`
+	// The canonical identifier for this Genie space
+	GenieSpaceId *string                      `json:"genie_space_id,omitempty"`
+	JobInfo      *ExternalQuerySource_JobInfo `json:"job_info,omitempty"`
+	// The canonical identifier for this legacy dashboard
+	LegacyDashboardId *string `json:"legacy_dashboard_id,omitempty"`
 	// The canonical identifier for this notebook
 	NotebookId *string `json:"notebook_id,omitempty"`
 	// The canonical identifier for this SQL query
-	SqlQueryId *string                      `json:"sql_query_id,omitempty"`
-	JobInfo    *ExternalQuerySource_JobInfo `json:"job_info,omitempty"`
-	// The canonical identifier for this Genie space
-	GenieSpaceId *string `json:"genie_space_id,omitempty"`
+	SqlQueryId *string `json:"sql_query_id,omitempty"`
 }
 
 type ExternalQuerySource_JobInfo struct {
@@ -106,6 +106,9 @@ type ListQueriesRequest struct {
 	// a URL, the parameters of this filter are specified with dot notation. For
 	// example: `filter_by.statement_ids`.
 	FilterBy *QueryFilter `json:"filter_by,omitempty"`
+	// Whether to include the query metrics with each query. Only use this for a
+	// small subset of queries (max_results). Defaults to false.
+	IncludeMetrics *bool `json:"include_metrics,omitempty"`
 	// Limit the number of results returned in one page. Must be less than 1000 and
 	// the default is 100.
 	MaxResults *int `json:"max_results,omitempty"`
@@ -114,184 +117,181 @@ type ListQueriesRequest struct {
 	// example, the character '+' needs to be replaced by %2B. This field is
 	// optional.
 	PageToken *string `json:"page_token,omitempty"`
-	// Whether to include the query metrics with each query. Only use this for a
-	// small subset of queries (max_results). Defaults to false.
-	IncludeMetrics *bool `json:"include_metrics,omitempty"`
 }
 
 type ListQueriesResponse struct {
-	// A token that can be used to get the next page of results.
-	NextPageToken *string `json:"next_page_token,omitempty"`
 	// Whether there is another page of results.
-	HasNextPage *bool       `json:"has_next_page,omitempty"`
-	Res         []QueryInfo `json:"res,omitempty"`
+	HasNextPage *bool `json:"has_next_page,omitempty"`
+	// A token that can be used to get the next page of results.
+	NextPageToken *string     `json:"next_page_token,omitempty"`
+	Res           []QueryInfo `json:"res,omitempty"`
 }
 
 type QueryFilter struct {
 	// A range filter for query submitted time. The time range must be less than or
 	// equal to 30 days.
 	QueryStartTimeRange *TimeRange `json:"query_start_time_range,omitempty"`
-	// A list of user IDs who ran the queries.
-	UserIds []int64 `json:"user_ids,omitempty"`
+	// A list of statement IDs.
+	StatementIds []string `json:"statement_ids,omitempty"`
 	// A list of statuses (QUEUED, RUNNING, CANCELED, FAILED, FINISHED) to match
 	// query results. Corresponds to the `status` field in the response. Filtering
 	// for multiple statuses is not recommended. Instead, opt to filter by a single
 	// status multiple times and then combine the results.
 	Statuses []QueryStatus `json:"statuses,omitempty"`
+	// A list of user IDs who ran the queries.
+	UserIds []int64 `json:"user_ids,omitempty"`
 	// A list of warehouse IDs.
 	WarehouseIds []string `json:"warehouse_ids,omitempty"`
-	// A list of statement IDs.
-	StatementIds []string `json:"statement_ids,omitempty"`
 }
 
 type QueryInfo struct {
-	// The query ID.
-	QueryId *string `json:"query_id,omitempty"`
-	// Query status with one the following values: - `QUEUED`: Query has been
-	// received and queued. - `RUNNING`: Query has started. - `CANCELED`: Query has
-	// been cancelled by the user. - `FAILED`: Query has failed. - `FINISHED`: Query
-	// has completed.
-	Status QueryStatus `json:"status,omitempty"`
-	// The text of the query.
-	QueryText *string `json:"query_text,omitempty"`
-	// The time the query started.
-	QueryStartTimeMs *int64 `json:"query_start_time_ms,omitempty"`
-	// The time execution of the query ended.
-	ExecutionEndTimeMs *int64 `json:"execution_end_time_ms,omitempty"`
-	// The time the query ended.
-	QueryEndTimeMs *int64 `json:"query_end_time_ms,omitempty"`
-	// The ID of the user who ran the query.
-	UserId *int64 `json:"user_id,omitempty"`
-	// The email address or username of the user who ran the query.
-	UserName *string `json:"user_name,omitempty"`
-	// URL to the Spark UI query plan.
-	SparkUiUrl *string `json:"spark_ui_url,omitempty"`
-	// Alias for `warehouse_id`.
-	EndpointId *string `json:"endpoint_id,omitempty"`
-	// The number of results returned by the query.
-	RowsProduced *int64 `json:"rows_produced,omitempty"`
-	// Message describing why the query could not complete.
-	ErrorMessage *string `json:"error_message,omitempty"`
-	// A key that can be used to look up query details.
-	LookupKey *string `json:"lookup_key,omitempty"`
-	// Metrics about query execution.
-	Metrics *QueryMetrics `json:"metrics,omitempty"`
-	// The ID of the user whose credentials were used to run the query.
-	ExecutedAsUserId *int64 `json:"executed_as_user_id,omitempty"`
-	// The email address or username of the user whose credentials were used to run
-	// the query.
-	ExecutedAsUserName *string `json:"executed_as_user_name,omitempty"`
-	// The spark session UUID that query ran on. This is either the Spark Connect,
-	// DBSQL, or SDP session ID.
-	SessionId *string `json:"session_id,omitempty"`
-	// Whether more updates for the query are expected.
-	IsFinal *bool `json:"is_final,omitempty"`
+	// The ID of the cached query if this result retrieved from cache
+	CacheQueryId *string `json:"cache_query_id,omitempty"`
 	// SQL Warehouse channel information at the time of query execution
 	ChannelUsed *ChannelInfo `json:"channel_used,omitempty"`
-	// Whether plans exist for the execution, or the reason why they are missing
-	PlansState PlansState `json:"plans_state,omitempty"`
-	// Type of statement for this query
-	StatementType QueryStatementType `json:"statement_type,omitempty"`
-	// Warehouse ID.
-	WarehouseId *string `json:"warehouse_id,omitempty"`
-	// Total time of the statement execution. This value does not include the time
-	// taken to retrieve the results, which can result in a discrepancy between this
-	// value and the start-to-finish wall-clock time.
-	Duration *int64 `json:"duration,omitempty"`
 	// Client application that ran the statement. For example: Databricks SQL
 	// Editor, Tableau, and Power BI. This field is derived from information
 	// provided by client applications. While values are expected to remain static
 	// over time, this cannot be guaranteed.
 	ClientApplication *string `json:"client_application,omitempty"`
+	// Total time of the statement execution. This value does not include the time
+	// taken to retrieve the results, which can result in a discrepancy between this
+	// value and the start-to-finish wall-clock time.
+	Duration *int64 `json:"duration,omitempty"`
+	// Alias for `warehouse_id`.
+	EndpointId *string `json:"endpoint_id,omitempty"`
+	// Message describing why the query could not complete.
+	ErrorMessage *string `json:"error_message,omitempty"`
+	// The ID of the user whose credentials were used to run the query.
+	ExecutedAsUserId *int64 `json:"executed_as_user_id,omitempty"`
+	// The email address or username of the user whose credentials were used to run
+	// the query.
+	ExecutedAsUserName *string `json:"executed_as_user_name,omitempty"`
+	// The time execution of the query ended.
+	ExecutionEndTimeMs *int64 `json:"execution_end_time_ms,omitempty"`
+	// Whether more updates for the query are expected.
+	IsFinal *bool `json:"is_final,omitempty"`
+	// A key that can be used to look up query details.
+	LookupKey *string `json:"lookup_key,omitempty"`
+	// Metrics about query execution.
+	Metrics *QueryMetrics `json:"metrics,omitempty"`
+	// Whether plans exist for the execution, or the reason why they are missing
+	PlansState PlansState `json:"plans_state,omitempty"`
+	// The time the query ended.
+	QueryEndTimeMs *int64 `json:"query_end_time_ms,omitempty"`
+	// The query ID.
+	QueryId *string `json:"query_id,omitempty"`
 	// A struct that contains key-value pairs representing <Databricks> entities
 	// that were involved in the execution of this statement, such as jobs,
 	// notebooks, or dashboards. This field only records <Databricks> entities.
 	QuerySource *ExternalQuerySource `json:"query_source,omitempty"`
-	// The ID of the cached query if this result retrieved from cache
-	CacheQueryId *string `json:"cache_query_id,omitempty"`
+	// The time the query started.
+	QueryStartTimeMs *int64 `json:"query_start_time_ms,omitempty"`
 	// A query execution can be optionally annotated with query tags
 	QueryTags []QueryTag `json:"query_tags,omitempty"`
+	// The text of the query.
+	QueryText *string `json:"query_text,omitempty"`
+	// The number of results returned by the query.
+	RowsProduced *int64 `json:"rows_produced,omitempty"`
+	// The spark session UUID that query ran on. This is either the Spark Connect,
+	// DBSQL, or SDP session ID.
+	SessionId *string `json:"session_id,omitempty"`
+	// URL to the Spark UI query plan.
+	SparkUiUrl *string `json:"spark_ui_url,omitempty"`
+	// Type of statement for this query
+	StatementType QueryStatementType `json:"statement_type,omitempty"`
+	// Query status with one the following values: - `QUEUED`: Query has been
+	// received and queued. - `RUNNING`: Query has started. - `CANCELED`: Query has
+	// been cancelled by the user. - `FAILED`: Query has failed. - `FINISHED`: Query
+	// has completed.
+	Status QueryStatus `json:"status,omitempty"`
+	// The ID of the user who ran the query.
+	UserId *int64 `json:"user_id,omitempty"`
+	// The email address or username of the user who ran the query.
+	UserName *string `json:"user_name,omitempty"`
+	// Warehouse ID.
+	WarehouseId *string `json:"warehouse_id,omitempty"`
 }
 
 // A query metric that encapsulates a set of measurements for a single query.
 // Metrics come from the driver and are stored in the history service database..
 type QueryMetrics struct {
-	// Total execution time of the query from the client’s point of view, in
-	// milliseconds.
-	TotalTimeMs *int64 `json:"total_time_ms,omitempty"`
-	// Total size of data read by the query, in bytes.
-	ReadBytes *int64 `json:"read_bytes,omitempty"`
-	// Total number of rows returned by the query.
-	RowsProducedCount *int64 `json:"rows_produced_count,omitempty"`
 	// Time spent loading metadata and optimizing the query, in milliseconds.
 	CompilationTimeMs *int64 `json:"compilation_time_ms,omitempty"`
 	// Time spent executing the query, in milliseconds.
 	ExecutionTimeMs *int64 `json:"execution_time_ms,omitempty"`
-	// Size of persistent data read from cloud object storage on your cloud tenant,
-	// in bytes.
-	ReadRemoteBytes *int64 `json:"read_remote_bytes,omitempty"`
-	// Size pf persistent data written to cloud object storage in your cloud tenant,
-	// in bytes.
-	WriteRemoteBytes *int64 `json:"write_remote_bytes,omitempty"`
-	// Size of persistent data read from the cache, in bytes.
-	ReadCacheBytes *int64 `json:"read_cache_bytes,omitempty"`
-	// Size of data temporarily written to disk while executing the query, in bytes.
-	SpillToDiskBytes *int64 `json:"spill_to_disk_bytes,omitempty"`
-	// Sum of execution time for all of the query’s tasks, in milliseconds.
-	TaskTotalTimeMs *int64 `json:"task_total_time_ms,omitempty"`
-	// Number of files read after pruning
-	ReadFilesCount *int64 `json:"read_files_count,omitempty"`
-	// Number of partitions read after pruning.
-	ReadPartitionsCount *int64 `json:"read_partitions_count,omitempty"`
-	// Total execution time for all individual Photon query engine tasks in the
-	// query, in milliseconds.
-	PhotonTotalTimeMs *int64 `json:"photon_total_time_ms,omitempty"`
-	// Total number of rows read by the query.
-	RowsReadCount *int64 `json:"rows_read_count,omitempty"`
-	// Time spent fetching the query results after the execution finished, in
-	// milliseconds.
-	ResultFetchTimeMs *int64 `json:"result_fetch_time_ms,omitempty"`
 	// Total amount of data sent over the network between executor nodes during
 	// shuffle, in bytes.
 	NetworkSentBytes *int64 `json:"network_sent_bytes,omitempty"`
-	// `true` if the query result was fetched from cache, `false` otherwise.
-	ResultFromCache *bool `json:"result_from_cache,omitempty"`
-	// Total number of file bytes in all tables not read due to pruning
-	PrunedBytes *int64 `json:"pruned_bytes,omitempty"`
-	// Total number of files from all tables not read due to pruning
-	PrunedFilesCount *int64 `json:"pruned_files_count,omitempty"`
-	// Timestamp of when the query was enqueued waiting for a cluster to be
-	// provisioned for the warehouse. This field is optional and will not appear if
-	// the query skipped the provisioning queue.
-	ProvisioningQueueStartTimestamp *int64 `json:"provisioning_queue_start_timestamp,omitempty"`
 	// Timestamp of when the query was enqueued waiting while the warehouse was at
 	// max load. This field is optional and will not appear if the query skipped the
 	// overloading queue.
 	OverloadingQueueStartTimestamp *int64 `json:"overloading_queue_start_timestamp,omitempty"`
+	// Total execution time for all individual Photon query engine tasks in the
+	// query, in milliseconds.
+	PhotonTotalTimeMs *int64 `json:"photon_total_time_ms,omitempty"`
+	// projected remaining work to be done aggregated across all stages in the
+	// query, in milliseconds
+	ProjectedRemainingTaskTotalTimeMs *int64 `json:"projected_remaining_task_total_time_ms,omitempty"`
+	// projected lower bound on remaining total task time based on
+	// projected_remaining_task_total_time_ms / maximum concurrency
+	ProjectedRemainingWallclockTimeMs *int64 `json:"projected_remaining_wallclock_time_ms,omitempty"`
+	// Timestamp of when the query was enqueued waiting for a cluster to be
+	// provisioned for the warehouse. This field is optional and will not appear if
+	// the query skipped the provisioning queue.
+	ProvisioningQueueStartTimestamp *int64 `json:"provisioning_queue_start_timestamp,omitempty"`
+	// Total number of file bytes in all tables not read due to pruning
+	PrunedBytes *int64 `json:"pruned_bytes,omitempty"`
+	// Total number of files from all tables not read due to pruning
+	PrunedFilesCount *int64 `json:"pruned_files_count,omitempty"`
 	// Timestamp of when the underlying compute started compilation of the query.
 	QueryCompilationStartTimestamp *int64 `json:"query_compilation_start_timestamp,omitempty"`
+	// Total size of data read by the query, in bytes.
+	ReadBytes *int64 `json:"read_bytes,omitempty"`
+	// Size of persistent data read from the cache, in bytes.
+	ReadCacheBytes *int64 `json:"read_cache_bytes,omitempty"`
+	// Total number of file bytes in all tables read
+	ReadFilesBytes *int64 `json:"read_files_bytes,omitempty"`
+	// Number of files read after pruning
+	ReadFilesCount *int64 `json:"read_files_count,omitempty"`
+	// Number of partitions read after pruning.
+	ReadPartitionsCount *int64 `json:"read_partitions_count,omitempty"`
+	// Size of persistent data read from cloud object storage on your cloud tenant,
+	// in bytes.
+	ReadRemoteBytes *int64 `json:"read_remote_bytes,omitempty"`
+	// number of remaining tasks to complete this is based on the current status and
+	// could be bigger or smaller in the future based on future updates
+	RemainingTaskCount *int64 `json:"remaining_task_count,omitempty"`
+	// Time spent fetching the query results after the execution finished, in
+	// milliseconds.
+	ResultFetchTimeMs *int64 `json:"result_fetch_time_ms,omitempty"`
+	// `true` if the query result was fetched from cache, `false` otherwise.
+	ResultFromCache *bool `json:"result_from_cache,omitempty"`
+	// Total number of rows returned by the query.
+	RowsProducedCount *int64 `json:"rows_produced_count,omitempty"`
+	// Total number of rows read by the query.
+	RowsReadCount *int64 `json:"rows_read_count,omitempty"`
+	// number of remaining tasks to complete, calculated by autoscaler
+	// StatementAnalysis.scala deprecated: use remaining_task_count instead
+	RunnableTasks *int64 `json:"runnable_tasks,omitempty"`
+	// Size of data temporarily written to disk while executing the query, in bytes.
+	SpillToDiskBytes *int64 `json:"spill_to_disk_bytes,omitempty"`
 	// sum of task times completed in a range of wall clock time, approximated to a
 	// configurable number of points aggregated over all stages and jobs in the
 	// query (based on task_total_time_ms)
 	TaskTimeOverTimeRange *TaskTimeOverRange `json:"task_time_over_time_range,omitempty"`
+	// Sum of execution time for all of the query’s tasks, in milliseconds.
+	TaskTotalTimeMs *int64 `json:"task_total_time_ms,omitempty"`
+	// Total execution time of the query from the client’s point of view, in
+	// milliseconds.
+	TotalTimeMs *int64 `json:"total_time_ms,omitempty"`
 	// remaining work to be done across all stages in the query, calculated by
 	// autoscaler StatementAnalysis.scala, in milliseconds deprecated: using
 	// projected_remaining_task_total_time_ms instead
 	WorkToBeDone *int64 `json:"work_to_be_done,omitempty"`
-	// number of remaining tasks to complete, calculated by autoscaler
-	// StatementAnalysis.scala deprecated: use remaining_task_count instead
-	RunnableTasks *int64 `json:"runnable_tasks,omitempty"`
-	// projected remaining work to be done aggregated across all stages in the
-	// query, in milliseconds
-	ProjectedRemainingTaskTotalTimeMs *int64 `json:"projected_remaining_task_total_time_ms,omitempty"`
-	// number of remaining tasks to complete this is based on the current status and
-	// could be bigger or smaller in the future based on future updates
-	RemainingTaskCount *int64 `json:"remaining_task_count,omitempty"`
-	// projected lower bound on remaining total task time based on
-	// projected_remaining_task_total_time_ms / maximum concurrency
-	ProjectedRemainingWallclockTimeMs *int64 `json:"projected_remaining_wallclock_time_ms,omitempty"`
-	// Total number of file bytes in all tables read
-	ReadFilesBytes *int64 `json:"read_files_bytes,omitempty"`
+	// Size pf persistent data written to cloud object storage in your cloud tenant,
+	// in bytes.
+	WriteRemoteBytes *int64 `json:"write_remote_bytes,omitempty"`
 }
 
 // * A query execution can be annotated with an optional key-value pair to allow
@@ -317,10 +317,10 @@ type TaskTimeOverRangeEntry struct {
 }
 
 type TimeRange struct {
-	// The start time in milliseconds.
-	StartTimeMs *int64 `json:"start_time_ms,omitempty"`
 	// The end time in milliseconds.
 	EndTimeMs *int64 `json:"end_time_ms,omitempty"`
+	// The start time in milliseconds.
+	StartTimeMs *int64 `json:"start_time_ms,omitempty"`
 }
 
 // ChannelInfoToSDK converts the mirror to the sdk-go type.

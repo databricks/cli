@@ -9,6 +9,12 @@ import (
 )
 
 type CreateCredentialsRequest struct {
+	// The authenticating email associated with your Git provider user account. Used
+	// for authentication with the remote repository and also sets the author &
+	// committer identity for commits. Required for most Git providers except AWS
+	// CodeCommit. Learn more at
+	// https://docs.databricks.com/aws/en/repos/get-access-tokens-from-git-provider
+	GitEmail *string `json:"git_email,omitempty"`
 	// Git provider. This field is case-insensitive. The available Git providers are
 	// `gitHub`, `bitbucketCloud`, `gitLab`, `azureDevOpsServices` (Azure DevOps
 	// Services, including Microsoft Entra ID authentication), `gitHubEnterprise`,
@@ -21,6 +27,10 @@ type CreateCredentialsRequest struct {
 	// depending on your Git provider / token requirements. Required for AWS
 	// CodeCommit.
 	GitUsername *string `json:"git_username,omitempty"`
+	// if the credential is the default for the given provider
+	IsDefaultForProvider *bool `json:"is_default_for_provider,omitempty"`
+	// the name of the git credential, used for identification and ease of lookup
+	Name *string `json:"name,omitempty"`
 	// The personal access token used to authenticate to the corresponding Git
 	// provider. For certain providers, support may exist for other types of scoped
 	// access tokens. [Learn more].
@@ -30,21 +40,17 @@ type CreateCredentialsRequest struct {
 	// The ID of the service principal whose credentials will be modified. Only
 	// service principal managers can perform this action.
 	PrincipalId *int64 `json:"principal_id,omitempty"`
-	// the name of the git credential, used for identification and ease of lookup
-	Name *string `json:"name,omitempty"`
-	// if the credential is the default for the given provider
-	IsDefaultForProvider *bool `json:"is_default_for_provider,omitempty"`
+}
+
+type CreateCredentialsResponse struct {
+	// ID of the credential object in the workspace.
+	CredentialId *int64 `json:"credential_id,omitempty"`
 	// The authenticating email associated with your Git provider user account. Used
 	// for authentication with the remote repository and also sets the author &
 	// committer identity for commits. Required for most Git providers except AWS
 	// CodeCommit. Learn more at
 	// https://docs.databricks.com/aws/en/repos/get-access-tokens-from-git-provider
 	GitEmail *string `json:"git_email,omitempty"`
-}
-
-type CreateCredentialsResponse struct {
-	// ID of the credential object in the workspace.
-	CredentialId *int64 `json:"credential_id,omitempty"`
 	// The Git provider associated with the credential.
 	GitProvider *string `json:"git_provider,omitempty"`
 	// The username provided with your Git provider account and associated with the
@@ -53,21 +59,21 @@ type CreateCredentialsResponse struct {
 	// depending on your Git provider / token requirements. Required for AWS
 	// CodeCommit.
 	GitUsername *string `json:"git_username,omitempty"`
-	// the name of the git credential, used for identification and ease of lookup
-	Name *string `json:"name,omitempty"`
 	// if the credential is the default for the given provider
 	IsDefaultForProvider *bool `json:"is_default_for_provider,omitempty"`
+	// the name of the git credential, used for identification and ease of lookup
+	Name *string `json:"name,omitempty"`
+}
+
+type Credential struct {
+	// ID of the credential object in the workspace.
+	CredentialId *int64 `json:"credential_id,omitempty"`
 	// The authenticating email associated with your Git provider user account. Used
 	// for authentication with the remote repository and also sets the author &
 	// committer identity for commits. Required for most Git providers except AWS
 	// CodeCommit. Learn more at
 	// https://docs.databricks.com/aws/en/repos/get-access-tokens-from-git-provider
 	GitEmail *string `json:"git_email,omitempty"`
-}
-
-type Credential struct {
-	// ID of the credential object in the workspace.
-	CredentialId *int64 `json:"credential_id,omitempty"`
 	// The Git provider associated with the credential. One of `gitHub`,
 	// `bitbucketCloud`, `gitLab`, `azureDevOpsServices` (Azure DevOps Services,
 	// including Microsoft Entra ID authentication), `gitHubEnterprise`,
@@ -80,16 +86,10 @@ type Credential struct {
 	// depending on your Git provider / token requirements. Required for AWS
 	// CodeCommit.
 	GitUsername *string `json:"git_username,omitempty"`
-	// the name of the git credential, used for identification and ease of lookup
-	Name *string `json:"name,omitempty"`
 	// if the credential is the default for the given provider
 	IsDefaultForProvider *bool `json:"is_default_for_provider,omitempty"`
-	// The authenticating email associated with your Git provider user account. Used
-	// for authentication with the remote repository and also sets the author &
-	// committer identity for commits. Required for most Git providers except AWS
-	// CodeCommit. Learn more at
-	// https://docs.databricks.com/aws/en/repos/get-access-tokens-from-git-provider
-	GitEmail *string `json:"git_email,omitempty"`
+	// the name of the git credential, used for identification and ease of lookup
+	Name *string `json:"name,omitempty"`
 }
 
 type DeleteCredentialsRequest struct {
@@ -111,6 +111,12 @@ type GetCredentialsRequest struct {
 type GetCredentialsResponse struct {
 	// ID of the credential object in the workspace.
 	CredentialId *int64 `json:"credential_id,omitempty"`
+	// The authenticating email associated with your Git provider user account. Used
+	// for authentication with the remote repository and also sets the author &
+	// committer identity for commits. Required for most Git providers except AWS
+	// CodeCommit. Learn more at
+	// https://docs.databricks.com/aws/en/repos/get-access-tokens-from-git-provider
+	GitEmail *string `json:"git_email,omitempty"`
 	// The Git provider associated with the credential.
 	GitProvider *string `json:"git_provider,omitempty"`
 	// The username provided with your Git provider account and associated with the
@@ -119,16 +125,10 @@ type GetCredentialsResponse struct {
 	// depending on your Git provider / token requirements. Required for AWS
 	// CodeCommit.
 	GitUsername *string `json:"git_username,omitempty"`
-	// the name of the git credential, used for identification and ease of lookup
-	Name *string `json:"name,omitempty"`
 	// if the credential is the default for the given provider
 	IsDefaultForProvider *bool `json:"is_default_for_provider,omitempty"`
-	// The authenticating email associated with your Git provider user account. Used
-	// for authentication with the remote repository and also sets the author &
-	// committer identity for commits. Required for most Git providers except AWS
-	// CodeCommit. Learn more at
-	// https://docs.databricks.com/aws/en/repos/get-access-tokens-from-git-provider
-	GitEmail *string `json:"git_email,omitempty"`
+	// the name of the git credential, used for identification and ease of lookup
+	Name *string `json:"name,omitempty"`
 }
 
 type ListCredentialsRequest struct {
@@ -143,14 +143,12 @@ type ListCredentialsResponse struct {
 }
 
 type UpdateCredentialsRequest struct {
-	// The ID for the corresponding credential to access.
-	Id *int64 `json:"id,omitempty"`
-	// The personal access token used to authenticate to the corresponding Git
-	// provider. For certain providers, support may exist for other types of scoped
-	// access tokens. [Learn more].
-	//
-	// [Learn more]: https://docs.databricks.com/repos/get-access-tokens-from-git-provider.html
-	PersonalAccessToken *string `json:"personal_access_token,omitempty"`
+	// The authenticating email associated with your Git provider user account. Used
+	// for authentication with the remote repository and also sets the author &
+	// committer identity for commits. Required for most Git providers except AWS
+	// CodeCommit. Learn more at
+	// https://docs.databricks.com/aws/en/repos/get-access-tokens-from-git-provider
+	GitEmail *string `json:"git_email,omitempty"`
 	// Git provider. This field is case-insensitive. The available Git providers are
 	// `gitHub`, `bitbucketCloud`, `gitLab`, `azureDevOpsServices` (Azure DevOps
 	// Services, including Microsoft Entra ID authentication), `gitHubEnterprise`,
@@ -163,19 +161,21 @@ type UpdateCredentialsRequest struct {
 	// depending on your Git provider / token requirements. Required for AWS
 	// CodeCommit.
 	GitUsername *string `json:"git_username,omitempty"`
+	// The ID for the corresponding credential to access.
+	Id *int64 `json:"id,omitempty"`
+	// if the credential is the default for the given provider
+	IsDefaultForProvider *bool `json:"is_default_for_provider,omitempty"`
+	// the name of the git credential, used for identification and ease of lookup
+	Name *string `json:"name,omitempty"`
+	// The personal access token used to authenticate to the corresponding Git
+	// provider. For certain providers, support may exist for other types of scoped
+	// access tokens. [Learn more].
+	//
+	// [Learn more]: https://docs.databricks.com/repos/get-access-tokens-from-git-provider.html
+	PersonalAccessToken *string `json:"personal_access_token,omitempty"`
 	// The ID of the service principal whose credentials will be modified. Only
 	// service principal managers can perform this action.
 	PrincipalId *int64 `json:"principal_id,omitempty"`
-	// the name of the git credential, used for identification and ease of lookup
-	Name *string `json:"name,omitempty"`
-	// if the credential is the default for the given provider
-	IsDefaultForProvider *bool `json:"is_default_for_provider,omitempty"`
-	// The authenticating email associated with your Git provider user account. Used
-	// for authentication with the remote repository and also sets the author &
-	// committer identity for commits. Required for most Git providers except AWS
-	// CodeCommit. Learn more at
-	// https://docs.databricks.com/aws/en/repos/get-access-tokens-from-git-provider
-	GitEmail *string `json:"git_email,omitempty"`
 }
 
 // CreateCredentialsRequestToSDK converts the mirror to the sdk-go type.

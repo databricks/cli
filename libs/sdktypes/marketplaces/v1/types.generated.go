@@ -123,8 +123,8 @@ const (
 )
 
 type AddExchangeForListingRequest struct {
-	ListingId  *string `json:"listing_id,omitempty"`
 	ExchangeId *string `json:"exchange_id,omitempty"`
+	ListingId  *string `json:"listing_id,omitempty"`
 }
 
 type AddExchangeForListingResponse struct {
@@ -154,10 +154,10 @@ type ConsumerTerms struct {
 // contact info for the consumer requesting data or performing a listing
 // installation.
 type ContactInfo struct {
+	Company   *string `json:"company,omitempty"`
+	Email     *string `json:"email,omitempty"`
 	FirstName *string `json:"first_name,omitempty"`
 	LastName  *string `json:"last_name,omitempty"`
-	Email     *string `json:"email,omitempty"`
-	Company   *string `json:"company,omitempty"`
 }
 
 type CreateExchangeFilterRequest struct {
@@ -177,26 +177,26 @@ type CreateExchangeResponse struct {
 }
 
 type CreateFileRequest struct {
+	DisplayName         *string             `json:"display_name,omitempty"`
 	FileParent          *FileParent         `json:"file_parent,omitempty"`
 	MarketplaceFileType MarketplaceFileType `json:"marketplace_file_type,omitempty"`
 	MimeType            *string             `json:"mime_type,omitempty"`
-	DisplayName         *string             `json:"display_name,omitempty"`
 }
 
 type CreateFileResponse struct {
+	FileInfo *FileInfo `json:"file_info,omitempty"`
 	// Pre-signed POST URL to blob storage
-	UploadUrl *string   `json:"upload_url,omitempty"`
-	FileInfo  *FileInfo `json:"file_info,omitempty"`
+	UploadUrl *string `json:"upload_url,omitempty"`
 }
 
 type CreateInstallationRequest struct {
-	ListingId   *string `json:"listing_id,omitempty"`
-	ShareName   *string `json:"share_name,omitempty"`
-	CatalogName *string `json:"catalog_name,omitempty"`
-	// for git repo installations
-	RepoDetail            *RepoInstallation         `json:"repo_detail,omitempty"`
-	RecipientType         DeltaSharingRecipientType `json:"recipient_type,omitempty"`
 	AcceptedConsumerTerms *ConsumerTerms            `json:"accepted_consumer_terms,omitempty"`
+	CatalogName           *string                   `json:"catalog_name,omitempty"`
+	ListingId             *string                   `json:"listing_id,omitempty"`
+	RecipientType         DeltaSharingRecipientType `json:"recipient_type,omitempty"`
+	// for git repo installations
+	RepoDetail *RepoInstallation `json:"repo_detail,omitempty"`
+	ShareName  *string           `json:"share_name,omitempty"`
 }
 
 type CreateInstallationResponse struct {
@@ -213,15 +213,15 @@ type CreateListingResponse struct {
 
 // Data request messages also creates a lead (maybe).
 type CreatePersonalizationRequest struct {
-	ListingId             *string                   `json:"listing_id,omitempty"`
-	Comment               *string                   `json:"comment,omitempty"`
-	IntendedUse           *string                   `json:"intended_use,omitempty"`
-	FirstName             *string                   `json:"first_name,omitempty"`
-	LastName              *string                   `json:"last_name,omitempty"`
-	Company               *string                   `json:"company,omitempty"`
-	IsFromLighthouse      *bool                     `json:"is_from_lighthouse,omitempty"`
-	RecipientType         DeltaSharingRecipientType `json:"recipient_type,omitempty"`
 	AcceptedConsumerTerms *ConsumerTerms            `json:"accepted_consumer_terms,omitempty"`
+	Comment               *string                   `json:"comment,omitempty"`
+	Company               *string                   `json:"company,omitempty"`
+	FirstName             *string                   `json:"first_name,omitempty"`
+	IntendedUse           *string                   `json:"intended_use,omitempty"`
+	IsFromLighthouse      *bool                     `json:"is_from_lighthouse,omitempty"`
+	LastName              *string                   `json:"last_name,omitempty"`
+	ListingId             *string                   `json:"listing_id,omitempty"`
+	RecipientType         DeltaSharingRecipientType `json:"recipient_type,omitempty"`
 }
 
 type CreatePersonalizationResponse struct {
@@ -249,63 +249,63 @@ type DataRefreshInfo struct {
 }
 
 type Exchange struct {
-	Id             *string           `json:"id,omitempty"`
-	Name           *string           `json:"name,omitempty"`
 	Comment        *string           `json:"comment,omitempty"`
-	Filters        []ExchangeFilter  `json:"filters,omitempty"`
 	CreatedAt      *int64            `json:"created_at,omitempty"`
 	CreatedBy      *string           `json:"created_by,omitempty"`
+	Filters        []ExchangeFilter  `json:"filters,omitempty"`
+	Id             *string           `json:"id,omitempty"`
+	LinkedListings []ExchangeListing `json:"linked_listings,omitempty"`
+	Name           *string           `json:"name,omitempty"`
 	UpdatedAt      *int64            `json:"updated_at,omitempty"`
 	UpdatedBy      *string           `json:"updated_by,omitempty"`
-	LinkedListings []ExchangeListing `json:"linked_listings,omitempty"`
 }
 
 type ExchangeFilter struct {
-	Id          *string            `json:"id,omitempty"`
-	ExchangeId  *string            `json:"exchange_id,omitempty"`
-	FilterValue *string            `json:"filter_value,omitempty"`
-	Name        *string            `json:"name,omitempty"`
 	CreatedAt   *int64             `json:"created_at,omitempty"`
 	CreatedBy   *string            `json:"created_by,omitempty"`
+	ExchangeId  *string            `json:"exchange_id,omitempty"`
+	FilterType  ExchangeFilterType `json:"filter_type,omitempty"`
+	FilterValue *string            `json:"filter_value,omitempty"`
+	Id          *string            `json:"id,omitempty"`
+	Name        *string            `json:"name,omitempty"`
 	UpdatedAt   *int64             `json:"updated_at,omitempty"`
 	UpdatedBy   *string            `json:"updated_by,omitempty"`
-	FilterType  ExchangeFilterType `json:"filter_type,omitempty"`
 }
 
 type ExchangeListing struct {
-	Id           *string `json:"id,omitempty"`
-	ExchangeId   *string `json:"exchange_id,omitempty"`
-	ExchangeName *string `json:"exchange_name,omitempty"`
-	ListingId    *string `json:"listing_id,omitempty"`
-	ListingName  *string `json:"listing_name,omitempty"`
 	CreatedAt    *int64  `json:"created_at,omitempty"`
 	CreatedBy    *string `json:"created_by,omitempty"`
+	ExchangeId   *string `json:"exchange_id,omitempty"`
+	ExchangeName *string `json:"exchange_name,omitempty"`
+	Id           *string `json:"id,omitempty"`
+	ListingId    *string `json:"listing_id,omitempty"`
+	ListingName  *string `json:"listing_name,omitempty"`
 }
 
 type FileInfo struct {
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Name displayed to users for applicable files, e.g. embedded notebooks
+	DisplayName         *string             `json:"display_name,omitempty"`
+	DownloadLink        *string             `json:"download_link,omitempty"`
+	FileParent          *FileParent         `json:"file_parent,omitempty"`
 	Id                  *string             `json:"id,omitempty"`
 	MarketplaceFileType MarketplaceFileType `json:"marketplace_file_type,omitempty"`
-	FileParent          *FileParent         `json:"file_parent,omitempty"`
 	MimeType            *string             `json:"mime_type,omitempty"`
-	DownloadLink        *string             `json:"download_link,omitempty"`
-	CreatedAt           *int64              `json:"created_at,omitempty"`
-	UpdatedAt           *int64              `json:"updated_at,omitempty"`
-	// Name displayed to users for applicable files, e.g. embedded notebooks
-	DisplayName *string    `json:"display_name,omitempty"`
-	Status      FileStatus `json:"status,omitempty"`
+	Status              FileStatus          `json:"status,omitempty"`
 	// Populated if status is in a failed state with more information on reason for
 	// the failure.
 	StatusMessage *string `json:"status_message,omitempty"`
+	UpdatedAt     *int64  `json:"updated_at,omitempty"`
 }
 
 type FileParent struct {
-	ParentId       *string        `json:"parent_id,omitempty"`
 	FileParentType FileParentType `json:"file_parent_type,omitempty"`
+	ParentId       *string        `json:"parent_id,omitempty"`
 }
 
 type GetAllPersonalizationRequestsForConsumerResponse struct {
-	PersonalizationRequests []PersonalizationRequest `json:"personalization_requests,omitempty"`
 	NextPageToken           *string                  `json:"next_page_token,omitempty"`
+	PersonalizationRequests []PersonalizationRequest `json:"personalization_requests,omitempty"`
 }
 
 type GetExchangeResponse struct {
@@ -318,8 +318,8 @@ type GetFileResponse struct {
 
 type GetInstallationDetailsRequest struct {
 	ListingId *string `json:"listing_id,omitempty"`
-	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
+	PageToken *string `json:"page_token,omitempty"`
 }
 
 type GetLatestVersionProviderAnalyticsDashboardResponse struct {
@@ -329,13 +329,13 @@ type GetLatestVersionProviderAnalyticsDashboardResponse struct {
 
 type GetListingContentMetadataRequest struct {
 	ListingId *string `json:"listing_id,omitempty"`
-	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
+	PageToken *string `json:"page_token,omitempty"`
 }
 
 type GetListingContentMetadataResponse struct {
-	SharedDataObjects []SharedDataObject `json:"shared_data_objects,omitempty"`
 	NextPageToken     *string            `json:"next_page_token,omitempty"`
+	SharedDataObjects []SharedDataObject `json:"shared_data_objects,omitempty"`
 }
 
 type GetListingResponse struct {
@@ -352,13 +352,13 @@ type GetPersonalizationRequestsForConsumerResponse struct {
 }
 
 type GetPersonalizationRequestsForProviderRequest struct {
-	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
+	PageToken *string `json:"page_token,omitempty"`
 }
 
 type GetPersonalizationRequestsForProviderResponse struct {
-	PersonalizationRequests []PersonalizationRequest `json:"personalization_requests,omitempty"`
 	NextPageToken           *string                  `json:"next_page_token,omitempty"`
+	PersonalizationRequests []PersonalizationRequest `json:"personalization_requests,omitempty"`
 }
 
 type GetProviderResponse struct {
@@ -379,19 +379,19 @@ type GetPublishedProviderForConsumerResponse struct {
 }
 
 type InstallationDetail struct {
-	Id            *string                   `json:"id,omitempty"`
-	ListingId     *string                   `json:"listing_id,omitempty"`
-	ShareName     *string                   `json:"share_name,omitempty"`
 	CatalogName   *string                   `json:"catalog_name,omitempty"`
-	InstalledOn   *int64                    `json:"installed_on,omitempty"`
-	Status        InstallationStatus        `json:"status,omitempty"`
 	ErrorMessage  *string                   `json:"error_message,omitempty"`
+	Id            *string                   `json:"id,omitempty"`
+	InstalledOn   *int64                    `json:"installed_on,omitempty"`
+	ListingId     *string                   `json:"listing_id,omitempty"`
 	ListingName   *string                   `json:"listing_name,omitempty"`
+	RecipientType DeltaSharingRecipientType `json:"recipient_type,omitempty"`
 	RepoName      *string                   `json:"repo_name,omitempty"`
 	RepoPath      *string                   `json:"repo_path,omitempty"`
-	RecipientType DeltaSharingRecipientType `json:"recipient_type,omitempty"`
-	Tokens        []TokenInfo               `json:"tokens,omitempty"`
+	ShareName     *string                   `json:"share_name,omitempty"`
+	Status        InstallationStatus        `json:"status,omitempty"`
 	TokenDetail   *TokenDetail              `json:"token_detail,omitempty"`
+	Tokens        []TokenInfo               `json:"tokens,omitempty"`
 }
 
 type ListAllInstallationsResponse struct {
@@ -401,8 +401,8 @@ type ListAllInstallationsResponse struct {
 
 type ListExchangeFiltersRequest struct {
 	ExchangeId *string `json:"exchange_id,omitempty"`
-	PageToken  *string `json:"page_token,omitempty"`
 	PageSize   *int    `json:"page_size,omitempty"`
+	PageToken  *string `json:"page_token,omitempty"`
 }
 
 type ListExchangeFiltersResponse struct {
@@ -412,8 +412,8 @@ type ListExchangeFiltersResponse struct {
 
 type ListExchangesForListingRequest struct {
 	ListingId *string `json:"listing_id,omitempty"`
-	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
+	PageToken *string `json:"page_token,omitempty"`
 }
 
 type ListExchangesForListingResponse struct {
@@ -422,8 +422,8 @@ type ListExchangesForListingResponse struct {
 }
 
 type ListExchangesRequest struct {
-	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
+	PageToken *string `json:"page_token,omitempty"`
 }
 
 type ListExchangesResponse struct {
@@ -433,8 +433,8 @@ type ListExchangesResponse struct {
 
 type ListFilesRequest struct {
 	FileParent *FileParent `json:"file_parent,omitempty"`
-	PageToken  *string     `json:"page_token,omitempty"`
 	PageSize   *int        `json:"page_size,omitempty"`
+	PageToken  *string     `json:"page_token,omitempty"`
 }
 
 type ListFilesResponse struct {
@@ -448,8 +448,8 @@ type ListFulfillmentsResponse struct {
 }
 
 type ListInstallationsRequest struct {
-	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
+	PageToken *string `json:"page_token,omitempty"`
 }
 
 type ListInstallationsResponse struct {
@@ -459,14 +459,14 @@ type ListInstallationsResponse struct {
 
 type ListListingFulfillmentsRequest struct {
 	ListingId *string `json:"listing_id,omitempty"`
-	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
+	PageToken *string `json:"page_token,omitempty"`
 }
 
 type ListListingsForExchangeRequest struct {
 	ExchangeId *string `json:"exchange_id,omitempty"`
-	PageToken  *string `json:"page_token,omitempty"`
 	PageSize   *int    `json:"page_size,omitempty"`
+	PageToken  *string `json:"page_token,omitempty"`
 }
 
 type ListListingsForExchangeResponse struct {
@@ -475,102 +475,99 @@ type ListListingsForExchangeResponse struct {
 }
 
 type ListListingsRequest struct {
-	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
+	PageToken *string `json:"page_token,omitempty"`
 }
 
 type ListPersonalizationRequestsForConsumerRequest struct {
-	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
+	PageToken *string `json:"page_token,omitempty"`
 }
 
 type ListProviderAnalyticsDashboardResponse struct {
-	Id      *string `json:"id,omitempty"`
-	Version *int64  `json:"version,omitempty"`
 	// dashboard_id will be used to open Lakeview dashboard.
 	DashboardId *string `json:"dashboard_id,omitempty"`
+	Id          *string `json:"id,omitempty"`
+	Version     *int64  `json:"version,omitempty"`
 }
 
 type ListProvidersRequest struct {
-	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
+	PageToken *string `json:"page_token,omitempty"`
 }
 
 type ListProvidersResponse struct {
-	Providers     []ProviderInfo `json:"providers,omitempty"`
 	NextPageToken *string        `json:"next_page_token,omitempty"`
+	Providers     []ProviderInfo `json:"providers,omitempty"`
 }
 
 // Listing messages.
 type ListPublishedListingsForConsumerRequest struct {
-	PageToken *string `json:"page_token,omitempty"`
-	PageSize  *int    `json:"page_size,omitempty"`
 	// Matches any of the following asset types
 	Assets []AssetType `json:"assets,omitempty"`
 	// Matches any of the following categories
 	Categories []Category `json:"categories,omitempty"`
-	// Matches listings with this tag
-	Tags *ListingTag `json:"tags,omitempty"`
 	// Filters each listing based on if it is free.
 	IsFree *bool `json:"is_free,omitempty"`
 	// Filters each listing based on if it is a private exchange.
 	IsPrivateExchange *bool `json:"is_private_exchange,omitempty"`
 	// Filters each listing based on whether it is a staff pick.
-	IsStaffPick *bool `json:"is_staff_pick,omitempty"`
+	IsStaffPick *bool   `json:"is_staff_pick,omitempty"`
+	PageSize    *int    `json:"page_size,omitempty"`
+	PageToken   *string `json:"page_token,omitempty"`
 	// Matches any of the following provider ids
 	ProviderIds []string `json:"provider_ids,omitempty"`
+	// Matches listings with this tag
+	Tags *ListingTag `json:"tags,omitempty"`
 }
 
 type ListPublishedProvidersForConsumerRequest struct {
-	PageToken  *string `json:"page_token,omitempty"`
-	PageSize   *int    `json:"page_size,omitempty"`
 	IsFeatured *bool   `json:"is_featured,omitempty"`
+	PageSize   *int    `json:"page_size,omitempty"`
+	PageToken  *string `json:"page_token,omitempty"`
 }
 
 type ListPublishedProvidersForConsumerResponse struct {
-	Providers     []ProviderInfo `json:"providers,omitempty"`
 	NextPageToken *string        `json:"next_page_token,omitempty"`
+	Providers     []ProviderInfo `json:"providers,omitempty"`
 }
 
 type Listing struct {
+	Detail  *ListingDetail  `json:"detail,omitempty"`
 	Id      *string         `json:"id,omitempty"`
 	Summary *ListingSummary `json:"summary,omitempty"`
-	Detail  *ListingDetail  `json:"detail,omitempty"`
 }
 
 type ListingDetail struct {
-	Description               *string    `json:"description,omitempty"`
-	TermsOfService            *string    `json:"terms_of_service,omitempty"`
-	DocumentationLink         *string    `json:"documentation_link,omitempty"`
-	SupportLink               *string    `json:"support_link,omitempty"`
-	FileIds                   []string   `json:"file_ids,omitempty"`
-	PrivacyPolicyLink         *string    `json:"privacy_policy_link,omitempty"`
-	EmbeddedNotebookFileInfos []FileInfo `json:"embedded_notebook_file_infos,omitempty"`
-	// Which geo region the listing data is collected from
-	GeographicalCoverage *string `json:"geographical_coverage,omitempty"`
-	// Whether the dataset is free or paid
-	Cost Cost `json:"cost,omitempty"`
-	// What the pricing model is (e.g. paid, subscription, paid upfront); should
-	// only be present if cost is paid
-	PricingModel *string `json:"pricing_model,omitempty"`
-	// How often data is updated
-	UpdateFrequency *DataRefreshInfo `json:"update_frequency,omitempty"`
-	// Smallest unit of time in the dataset
-	CollectionGranularity *DataRefreshInfo `json:"collection_granularity,omitempty"`
-	// The starting date timestamp for when the data spans
-	CollectionDateStart *int64 `json:"collection_date_start,omitempty"`
-	// The ending date timestamp for when the data spans
-	CollectionDateEnd *int64 `json:"collection_date_end,omitempty"`
-	// Where/how the data is sourced
-	DataSource *string `json:"data_source,omitempty"`
-	// size of the dataset in GB
-	Size *float64 `json:"size,omitempty"`
 	// Type of assets included in the listing. eg. GIT_REPO, DATA_TABLE, MODEL,
 	// NOTEBOOK
 	Assets []AssetType `json:"assets,omitempty"`
+	// The ending date timestamp for when the data spans
+	CollectionDateEnd *int64 `json:"collection_date_end,omitempty"`
+	// The starting date timestamp for when the data spans
+	CollectionDateStart *int64 `json:"collection_date_start,omitempty"`
+	// Smallest unit of time in the dataset
+	CollectionGranularity *DataRefreshInfo `json:"collection_granularity,omitempty"`
+	// Whether the dataset is free or paid
+	Cost Cost `json:"cost,omitempty"`
+	// Where/how the data is sourced
+	DataSource                *string    `json:"data_source,omitempty"`
+	Description               *string    `json:"description,omitempty"`
+	DocumentationLink         *string    `json:"documentation_link,omitempty"`
+	EmbeddedNotebookFileInfos []FileInfo `json:"embedded_notebook_file_infos,omitempty"`
+	FileIds                   []string   `json:"file_ids,omitempty"`
+	// Which geo region the listing data is collected from
+	GeographicalCoverage *string `json:"geographical_coverage,omitempty"`
 	// ID 20, 21 removed don't use License of the data asset - Required for listings
 	// with model based assets
 	License *string `json:"license,omitempty"`
+	// What the pricing model is (e.g. paid, subscription, paid upfront); should
+	// only be present if cost is paid
+	PricingModel      *string `json:"pricing_model,omitempty"`
+	PrivacyPolicyLink *string `json:"privacy_policy_link,omitempty"`
+	// size of the dataset in GB
+	Size        *float64 `json:"size,omitempty"`
+	SupportLink *string  `json:"support_link,omitempty"`
 	// Listing tags - Simple key value pair to annotate listings. When should I use
 	// tags vs dedicated fields? Using tags avoids the need to add new columns in
 	// the database for new annotations. However, this should be used sparingly
@@ -578,15 +575,18 @@ type ListingDetail struct {
 	// optional and won't need to have NOT NULL integrity check 2. The value is
 	// fairly fixed, static and low cardinality (eg. enums). 3. The value won't be
 	// used in filters or joins with other tables.
-	Tags []ListingTag `json:"tags,omitempty"`
+	Tags           []ListingTag `json:"tags,omitempty"`
+	TermsOfService *string      `json:"terms_of_service,omitempty"`
+	// How often data is updated
+	UpdateFrequency *DataRefreshInfo `json:"update_frequency,omitempty"`
 }
 
 type ListingFulfillment struct {
-	ListingId       *string                   `json:"listing_id,omitempty"`
 	FulfillmentType FulfillmentType           `json:"fulfillment_type,omitempty"`
-	ShareInfo       *ShareInfo                `json:"share_info,omitempty"`
-	RepoInfo        *RepoInfo                 `json:"repo_info,omitempty"`
+	ListingId       *string                   `json:"listing_id,omitempty"`
 	RecipientType   DeltaSharingRecipientType `json:"recipient_type,omitempty"`
+	RepoInfo        *RepoInfo                 `json:"repo_info,omitempty"`
+	ShareInfo       *ShareInfo                `json:"share_info,omitempty"`
 }
 
 type ListingSetting struct {
@@ -594,27 +594,27 @@ type ListingSetting struct {
 }
 
 type ListingSummary struct {
-	Name           *string         `json:"name,omitempty"`
-	Subtitle       *string         `json:"subtitle,omitempty"`
-	Status         ListingStatus   `json:"status,omitempty"`
-	Share          *ShareInfo      `json:"share,omitempty"`
-	ProviderRegion *RegionInfo     `json:"provider_region,omitempty"`
-	Setting        *ListingSetting `json:"setting,omitempty"`
-	CreatedAt      *int64          `json:"created_at,omitempty"`
-	CreatedBy      *string         `json:"created_by,omitempty"`
-	UpdatedAt      *int64          `json:"updated_at,omitempty"`
-	UpdatedBy      *string         `json:"updated_by,omitempty"`
-	PublishedAt    *int64          `json:"published_at,omitempty"`
-	PublishedBy    *string         `json:"published_by,omitempty"`
-	Categories     []Category      `json:"categories,omitempty"`
-	ListingType    ListingType     `json:"listingType,omitempty"`
-	CreatedById    *int64          `json:"created_by_id,omitempty"`
-	UpdatedById    *int64          `json:"updated_by_id,omitempty"`
-	ProviderId     *string         `json:"provider_id,omitempty"`
-	ExchangeIds    []string        `json:"exchange_ids,omitempty"`
+	Categories  []Category `json:"categories,omitempty"`
+	CreatedAt   *int64     `json:"created_at,omitempty"`
+	CreatedBy   *string    `json:"created_by,omitempty"`
+	CreatedById *int64     `json:"created_by_id,omitempty"`
+	ExchangeIds []string   `json:"exchange_ids,omitempty"`
 	// if a git repo is being created, a listing will be initialized with this field
 	// as opposed to a share
-	GitRepo *RepoInfo `json:"git_repo,omitempty"`
+	GitRepo        *RepoInfo       `json:"git_repo,omitempty"`
+	ListingType    ListingType     `json:"listingType,omitempty"`
+	Name           *string         `json:"name,omitempty"`
+	ProviderId     *string         `json:"provider_id,omitempty"`
+	ProviderRegion *RegionInfo     `json:"provider_region,omitempty"`
+	PublishedAt    *int64          `json:"published_at,omitempty"`
+	PublishedBy    *string         `json:"published_by,omitempty"`
+	Setting        *ListingSetting `json:"setting,omitempty"`
+	Share          *ShareInfo      `json:"share,omitempty"`
+	Status         ListingStatus   `json:"status,omitempty"`
+	Subtitle       *string         `json:"subtitle,omitempty"`
+	UpdatedAt      *int64          `json:"updated_at,omitempty"`
+	UpdatedBy      *string         `json:"updated_by,omitempty"`
+	UpdatedById    *int64          `json:"updated_by_id,omitempty"`
 }
 
 type ListingTag struct {
@@ -626,43 +626,43 @@ type ListingTag struct {
 }
 
 type PersonalizationRequest struct {
-	Id             *string                      `json:"id,omitempty"`
-	ConsumerRegion *RegionInfo                  `json:"consumer_region,omitempty"`
-	ContactInfo    *ContactInfo                 `json:"contact_info,omitempty"`
-	Comment        *string                      `json:"comment,omitempty"`
-	IntendedUse    *string                      `json:"intended_use,omitempty"`
-	Status         PersonalizationRequestStatus `json:"status,omitempty"`
-	StatusMessage  *string                      `json:"status_message,omitempty"`
-	// Share information is required for data listings but should be empty/ignored
-	// for non-data listings (MCP and App).
-	Share            *ShareInfo                `json:"share,omitempty"`
+	Comment          *string                   `json:"comment,omitempty"`
+	ConsumerRegion   *RegionInfo               `json:"consumer_region,omitempty"`
+	ContactInfo      *ContactInfo              `json:"contact_info,omitempty"`
 	CreatedAt        *int64                    `json:"created_at,omitempty"`
-	ListingId        *string                   `json:"listing_id,omitempty"`
-	UpdatedAt        *int64                    `json:"updated_at,omitempty"`
-	MetastoreId      *string                   `json:"metastore_id,omitempty"`
-	ListingName      *string                   `json:"listing_name,omitempty"`
+	Id               *string                   `json:"id,omitempty"`
+	IntendedUse      *string                   `json:"intended_use,omitempty"`
 	IsFromLighthouse *bool                     `json:"is_from_lighthouse,omitempty"`
+	ListingId        *string                   `json:"listing_id,omitempty"`
+	ListingName      *string                   `json:"listing_name,omitempty"`
+	MetastoreId      *string                   `json:"metastore_id,omitempty"`
 	ProviderId       *string                   `json:"provider_id,omitempty"`
 	RecipientType    DeltaSharingRecipientType `json:"recipient_type,omitempty"`
+	// Share information is required for data listings but should be empty/ignored
+	// for non-data listings (MCP and App).
+	Share         *ShareInfo                   `json:"share,omitempty"`
+	Status        PersonalizationRequestStatus `json:"status,omitempty"`
+	StatusMessage *string                      `json:"status_message,omitempty"`
+	UpdatedAt     *int64                       `json:"updated_at,omitempty"`
 }
 
 type ProviderInfo struct {
-	Id                   *string `json:"id,omitempty"`
-	Name                 *string `json:"name,omitempty"`
-	Description          *string `json:"description,omitempty"`
-	IconFilePath         *string `json:"icon_file_path,omitempty"`
 	BusinessContactEmail *string `json:"business_contact_email,omitempty"`
-	SupportContactEmail  *string `json:"support_contact_email,omitempty"`
-	// is_featured is accessible by consumers only
-	IsFeatured *bool `json:"is_featured,omitempty"`
-	// published_by is only applicable to data aggregators (e.g. Crux)
-	PublishedBy          *string `json:"published_by,omitempty"`
 	CompanyWebsiteLink   *string `json:"company_website_link,omitempty"`
-	IconFileId           *string `json:"icon_file_id,omitempty"`
-	TermOfServiceLink    *string `json:"term_of_service_link,omitempty"`
-	PrivacyPolicyLink    *string `json:"privacy_policy_link,omitempty"`
 	DarkModeIconFileId   *string `json:"dark_mode_icon_file_id,omitempty"`
 	DarkModeIconFilePath *string `json:"dark_mode_icon_file_path,omitempty"`
+	Description          *string `json:"description,omitempty"`
+	IconFileId           *string `json:"icon_file_id,omitempty"`
+	IconFilePath         *string `json:"icon_file_path,omitempty"`
+	Id                   *string `json:"id,omitempty"`
+	// is_featured is accessible by consumers only
+	IsFeatured        *bool   `json:"is_featured,omitempty"`
+	Name              *string `json:"name,omitempty"`
+	PrivacyPolicyLink *string `json:"privacy_policy_link,omitempty"`
+	// published_by is only applicable to data aggregators (e.g. Crux)
+	PublishedBy         *string `json:"published_by,omitempty"`
+	SupportContactEmail *string `json:"support_contact_email,omitempty"`
+	TermOfServiceLink   *string `json:"term_of_service_link,omitempty"`
 }
 
 type RegionInfo struct {
@@ -685,18 +685,18 @@ type RepoInstallation struct {
 }
 
 type SearchPublishedListingsForConsumerRequest struct {
-	// Fuzzy matches query
-	Query             *string `json:"query,omitempty"`
-	IsFree            *bool   `json:"is_free,omitempty"`
-	IsPrivateExchange *bool   `json:"is_private_exchange,omitempty"`
+	// Matches any of the following asset types
+	Assets []AssetType `json:"assets,omitempty"`
+	// Matches any of the following categories
+	Categories        []Category `json:"categories,omitempty"`
+	IsFree            *bool      `json:"is_free,omitempty"`
+	IsPrivateExchange *bool      `json:"is_private_exchange,omitempty"`
+	PageSize          *int       `json:"page_size,omitempty"`
+	PageToken         *string    `json:"page_token,omitempty"`
 	// Matches any of the following provider ids
 	ProviderIds []string `json:"provider_ids,omitempty"`
-	// Matches any of the following categories
-	Categories []Category `json:"categories,omitempty"`
-	// Matches any of the following asset types
-	Assets    []AssetType `json:"assets,omitempty"`
-	PageToken *string     `json:"page_token,omitempty"`
-	PageSize  *int        `json:"page_size,omitempty"`
+	// Fuzzy matches query
+	Query *string `json:"query,omitempty"`
 }
 
 type SearchPublishedListingsForConsumerResponse struct {
@@ -710,34 +710,34 @@ type ShareInfo struct {
 }
 
 type SharedDataObject struct {
-	// Name of the shared object
-	Name *string `json:"name,omitempty"`
 	// The type of the data object. Could be one of: TABLE, SCHEMA, NOTEBOOK_FILE,
 	// MODEL, VOLUME
 	DataObjectType *string `json:"data_object_type,omitempty"`
+	// Name of the shared object
+	Name *string `json:"name,omitempty"`
 }
 
 type TokenDetail struct {
+	BearerToken    *string `json:"bearerToken,omitempty"`
+	Endpoint       *string `json:"endpoint,omitempty"`
+	ExpirationTime *string `json:"expirationTime,omitempty"`
 	// These field names must follow the delta sharing protocol. Original message:
 	// RetrieveToken.Response in managed-catalog/api/messages/recipient.proto
-	ShareCredentialsVersion *int    `json:"shareCredentialsVersion,omitempty"`
-	BearerToken             *string `json:"bearerToken,omitempty"`
-	Endpoint                *string `json:"endpoint,omitempty"`
-	ExpirationTime          *string `json:"expirationTime,omitempty"`
+	ShareCredentialsVersion *int `json:"shareCredentialsVersion,omitempty"`
 }
 
 type TokenInfo struct {
-	// Unique id of the Recipient Token.
-	Id *string `json:"id,omitempty"`
+	// Full activation url to retrieve the access token. It will be empty if the
+	// token is already retrieved.
+	ActivationUrl *string `json:"activation_url,omitempty"`
 	// Time at which this Recipient Token was created, in epoch milliseconds.
 	CreatedAt *int64 `json:"created_at,omitempty"`
 	// Username of Recipient Token creator.
 	CreatedBy *string `json:"created_by,omitempty"`
-	// Full activation url to retrieve the access token. It will be empty if the
-	// token is already retrieved.
-	ActivationUrl *string `json:"activation_url,omitempty"`
 	// Expiration timestamp of the token in epoch milliseconds.
 	ExpirationTime *int64 `json:"expiration_time,omitempty"`
+	// Unique id of the Recipient Token.
+	Id *string `json:"id,omitempty"`
 	// Time at which this Recipient Token was updated, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of Recipient Token updater.
@@ -745,8 +745,8 @@ type TokenInfo struct {
 }
 
 type UpdateExchangeFilterRequest struct {
-	Id     *string         `json:"id,omitempty"`
 	Filter *ExchangeFilter `json:"filter,omitempty"`
+	Id     *string         `json:"id,omitempty"`
 }
 
 type UpdateExchangeFilterResponse struct {
@@ -754,8 +754,8 @@ type UpdateExchangeFilterResponse struct {
 }
 
 type UpdateExchangeRequest struct {
-	Id       *string   `json:"id,omitempty"`
 	Exchange *Exchange `json:"exchange,omitempty"`
+	Id       *string   `json:"id,omitempty"`
 }
 
 type UpdateExchangeResponse struct {
@@ -763,9 +763,9 @@ type UpdateExchangeResponse struct {
 }
 
 type UpdateInstallationRequest struct {
-	ListingId      *string             `json:"listing_id,omitempty"`
-	InstallationId *string             `json:"installation_id,omitempty"`
 	Installation   *InstallationDetail `json:"installation,omitempty"`
+	InstallationId *string             `json:"installation_id,omitempty"`
+	ListingId      *string             `json:"listing_id,omitempty"`
 	RotateToken    *bool               `json:"rotate_token,omitempty"`
 }
 
@@ -784,10 +784,10 @@ type UpdateListingResponse struct {
 
 type UpdatePersonalizationRequestStatusRequest struct {
 	ListingId *string                      `json:"listing_id,omitempty"`
-	RequestId *string                      `json:"request_id,omitempty"`
-	Status    PersonalizationRequestStatus `json:"status,omitempty"`
 	Reason    *string                      `json:"reason,omitempty"`
+	RequestId *string                      `json:"request_id,omitempty"`
 	Share     *ShareInfo                   `json:"share,omitempty"`
+	Status    PersonalizationRequestStatus `json:"status,omitempty"`
 }
 
 type UpdatePersonalizationRequestStatusResponse struct {
@@ -804,11 +804,11 @@ type UpdateProviderAnalyticsDashboardRequest struct {
 }
 
 type UpdateProviderAnalyticsDashboardResponse struct {
+	// this is newly created Lakeview dashboard for the user
+	DashboardId *string `json:"dashboard_id,omitempty"`
 	// id & version should be the same as the request
 	Id      *string `json:"id,omitempty"`
 	Version *int64  `json:"version,omitempty"`
-	// this is newly created Lakeview dashboard for the user
-	DashboardId *string `json:"dashboard_id,omitempty"`
 }
 
 type UpdateProviderRequest struct {

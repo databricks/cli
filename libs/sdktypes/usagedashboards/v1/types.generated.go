@@ -21,8 +21,6 @@ const (
 )
 
 type CreateBillingUsageDashboardRequest struct {
-	// The workspace ID of the workspace in which the usage dashboard is created.
-	WorkspaceId *int64 `json:"workspace_id,omitempty"`
 	// <Databricks> account ID.
 	AccountId *string `json:"account_id,omitempty"`
 	// Workspace level usage dashboard shows usage data for the specified workspace
@@ -32,6 +30,8 @@ type CreateBillingUsageDashboardRequest struct {
 	// The major version of the usage dashboard template to use. Defaults to
 	// VERSION_1.
 	MajorVersion UsageDashboardMajorVersion `json:"major_version,omitempty"`
+	// The workspace ID of the workspace in which the usage dashboard is created.
+	WorkspaceId *int64 `json:"workspace_id,omitempty"`
 }
 
 type CreateBillingUsageDashboardResponse struct {
@@ -40,14 +40,14 @@ type CreateBillingUsageDashboardResponse struct {
 }
 
 type GetBillingUsageDashboardRequest struct {
-	// The workspace ID of the workspace in which the usage dashboard is created.
-	WorkspaceId *int64 `json:"workspace_id,omitempty"`
 	// <Databricks> account ID.
 	AccountId *string `json:"account_id,omitempty"`
 	// Workspace level usage dashboard shows usage data for the specified workspace
 	// ID. Global level usage dashboard shows usage data for all workspaces in the
 	// account.
 	DashboardType UsageDashboardType `json:"dashboard_type,omitempty"`
+	// The workspace ID of the workspace in which the usage dashboard is created.
+	WorkspaceId *int64 `json:"workspace_id,omitempty"`
 }
 
 type GetBillingUsageDashboardResponse struct {

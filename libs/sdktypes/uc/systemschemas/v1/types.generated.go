@@ -8,34 +8,34 @@ import (
 )
 
 type EnableSystemSchemaRequest struct {
-	// Full name of the system schema.
-	Schema *string `json:"schema,omitempty"`
-	// The metastore ID under which the system schema lives.
-	MetastoreId *string `json:"metastore_id,omitempty"`
 	// the catalog for which the system schema is to enabled in
 	CatalogName *string `json:"catalog_name,omitempty"`
+	// The metastore ID under which the system schema lives.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// Full name of the system schema.
+	Schema *string `json:"schema,omitempty"`
 }
 
 type ListSystemSchemasRequest struct {
-	// The ID for the metastore in which the system schema resides.
-	MetastoreId *string `json:"metastore_id,omitempty"`
 	// Maximum number of schemas to return. - When set to 0, the page length is set
 	// to a server configured value (recommended); - When set to a value greater
 	// than 0, the page length is the minimum of this value and a server configured
 	// value; - When set to a value less than 0, an invalid parameter error is
 	// returned; - If not set, all the schemas are returned (not recommended).
 	MaxResults *int `json:"max_results,omitempty"`
+	// The ID for the metastore in which the system schema resides.
+	MetastoreId *string `json:"metastore_id,omitempty"`
 	// Opaque pagination token to go to next page based on previous query.
 	PageToken *string `json:"page_token,omitempty"`
 }
 
 type ListSystemSchemasResponse struct {
-	// An array of system schema information objects.
-	Schemas []SystemSchemaInfo `json:"schemas,omitempty"`
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. __page_token__ should be set to this value for the next request
 	// (for the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// An array of system schema information objects.
+	Schemas []SystemSchemaInfo `json:"schemas,omitempty"`
 }
 
 type SystemSchemaInfo struct {

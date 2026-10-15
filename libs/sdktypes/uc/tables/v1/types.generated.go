@@ -193,42 +193,42 @@ const (
 )
 
 type ColumnInfo struct {
+	// User-provided free-form text description.
+	Comment *string     `json:"comment,omitempty"`
+	Mask    *ColumnMask `json:"mask,omitempty"`
 	// Name of Column.
 	Name *string `json:"name,omitempty"`
-	// Full data type specification as SQL/catalogString text.
-	TypeText *string        `json:"type_text,omitempty"`
-	TypeName ColumnTypeName `json:"type_name,omitempty"`
+	// Whether field may be Null (default: true).
+	Nullable *bool `json:"nullable,omitempty"`
+	// Partition index for column.
+	PartitionIndex *int `json:"partition_index,omitempty"`
 	// Ordinal position of column (starting at position 0).
 	Position *int `json:"position,omitempty"`
+	// Format of IntervalType.
+	TypeIntervalType *string `json:"type_interval_type,omitempty"`
+	// Full data type specification, JSON-serialized.
+	TypeJson *string        `json:"type_json,omitempty"`
+	TypeName ColumnTypeName `json:"type_name,omitempty"`
 	// Digits of precision; required for DecimalTypes.
 	TypePrecision *int `json:"type_precision,omitempty"`
 	// Digits to right of decimal; Required for DecimalTypes.
 	TypeScale *int `json:"type_scale,omitempty"`
-	// Format of IntervalType.
-	TypeIntervalType *string `json:"type_interval_type,omitempty"`
-	// Full data type specification, JSON-serialized.
-	TypeJson *string `json:"type_json,omitempty"`
-	// User-provided free-form text description.
-	Comment *string `json:"comment,omitempty"`
-	// Whether field may be Null (default: true).
-	Nullable *bool `json:"nullable,omitempty"`
-	// Partition index for column.
-	PartitionIndex *int        `json:"partition_index,omitempty"`
-	Mask           *ColumnMask `json:"mask,omitempty"`
+	// Full data type specification as SQL/catalogString text.
+	TypeText *string `json:"type_text,omitempty"`
 }
 
 type ColumnMask struct {
 	// The full name of the column mask SQL UDF.
 	FunctionName *string `json:"function_name,omitempty"`
+	// The list of table columns or literals to be passed as additional arguments to
+	// a column mask function, carrying the type (column reference vs constant
+	// literal) of each argument. Deprecated: use using_column_names instead.
+	UsingArguments []PolicyFunctionArgument `json:"using_arguments,omitempty"`
 	// The list of additional table columns to be passed as input to the column mask
 	// function. The first arg of the mask function should be of the type of the
 	// column being masked and the types of the rest of the args should match the
 	// types of columns in 'using_column_names'.
 	UsingColumnNames []string `json:"using_column_names,omitempty"`
-	// The list of table columns or literals to be passed as additional arguments to
-	// a column mask function, carrying the type (column reference vs constant
-	// literal) of each argument. Deprecated: use using_column_names instead.
-	UsingArguments []PolicyFunctionArgument `json:"using_arguments,omitempty"`
 }
 
 // A connection that is dependent on a SQL object..
@@ -238,22 +238,75 @@ type ConnectionDependency struct {
 }
 
 type CreateTableConstraintRequest struct {
+	Constraint *TableConstraint `json:"constraint,omitempty"`
 	// The full name of the table referenced by the constraint.
-	FullNameArg *string          `json:"full_name_arg,omitempty"`
-	Constraint  *TableConstraint `json:"constraint,omitempty"`
+	FullNameArg *string `json:"full_name_arg,omitempty"`
 }
 
 type CreateTableRequest struct {
-	// Name of table, relative to parent schema.
-	Name *string `json:"name,omitempty"`
+	// The AWS access point to use when accesing s3 for this external location.
+	AccessPoint *string `json:"access_point,omitempty"`
+	// Indicates whether the principal is limited to retrieving metadata for the
+	// associated object through the BROWSE privilege when include_browse is enabled
+	// in the request.
+	BrowseOnly *bool `json:"browse_only,omitempty"`
 	// Name of parent catalog.
 	CatalogName *string `json:"catalog_name,omitempty"`
+	// The array of __ColumnInfo__ definitions of the table's columns.
+	Columns []ColumnInfo `json:"columns,omitempty"`
+	// User-provided free-form text description.
+	Comment *string `json:"comment,omitempty"`
+	// Time at which this table was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of table creator.
+	CreatedBy *string `json:"created_by,omitempty"`
+	// Unique ID of the Data Access Configuration to use with the table data.
+	DataAccessConfigurationId *string          `json:"data_access_configuration_id,omitempty"`
+	DataSourceFormat          DataSourceFormat `json:"data_source_format,omitempty"`
+	// Time at which this table was deleted, in epoch milliseconds. Field is omitted
+	// if table is not deleted.
+	DeletedAt *int64 `json:"deleted_at,omitempty"`
+	// Information pertaining to current state of the delta table.
+	DeltaRuntimePropertiesKvpairs       *DeltaRuntimePropertiesKvPairs       `json:"delta_runtime_properties_kvpairs,omitempty"`
+	EffectivePredictiveOptimizationFlag *EffectivePredictiveOptimizationFlag `json:"effective_predictive_optimization_flag,omitempty"`
+	EnablePredictiveOptimization        *string                              `json:"enable_predictive_optimization,omitempty"`
+	EncryptionDetails                   *EncryptionDetails                   `json:"encryption_details,omitempty"`
+	// Full name of table, in form of
+	// __catalog_name__.__schema_name__.__table_name__
+	FullName *string `json:"full_name,omitempty"`
+	// Unique identifier of parent metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// Name of table, relative to parent schema.
+	Name *string `json:"name,omitempty"`
+	// Username of current owner of table.
+	Owner *string `json:"owner,omitempty"`
+	// The pipeline ID of the table. Applicable for tables created by pipelines
+	// (Materialized View, Streaming Table, etc.).
+	PipelineId *string `json:"pipeline_id,omitempty"`
+	// A map of key-value properties attached to the securable.
+	Properties map[string]string `json:"properties,omitempty"`
+	RowFilter  *RowFilter        `json:"row_filter,omitempty"`
 	// Name of parent schema relative to its parent catalog.
-	SchemaName       *string          `json:"schema_name,omitempty"`
-	TableType        TableType        `json:"table_type,omitempty"`
-	DataSourceFormat DataSourceFormat `json:"data_source_format,omitempty"`
+	SchemaName *string `json:"schema_name,omitempty"`
+	// SecurableKindManifest of table, including capabilities the table has.
+	SecurableKindManifest *SecurableKindManifest `json:"securable_kind_manifest,omitempty"`
+	// List of schemes whose objects can be referenced without qualification.
+	SqlPath *string `json:"sql_path,omitempty"`
+	// Name of the storage credential, when a storage credential is configured for
+	// use with this table.
+	StorageCredentialName *string `json:"storage_credential_name,omitempty"`
 	// Storage root URL for table (for **MANAGED**, **EXTERNAL** tables).
 	StorageLocation *string `json:"storage_location,omitempty"`
+	// List of table constraints. Note: this field is not set in the output of the
+	// __listTables__ API.
+	TableConstraints []TableConstraint `json:"table_constraints,omitempty"`
+	// The unique identifier of the table.
+	TableId   *string   `json:"table_id,omitempty"`
+	TableType TableType `json:"table_type,omitempty"`
+	// Time at which this table was last modified, in epoch milliseconds.
+	UpdatedAt *int64 `json:"updated_at,omitempty"`
+	// Username of user who last modified the table.
+	UpdatedBy *string `json:"updated_by,omitempty"`
 	// View definition SQL (when __table_type__ is **VIEW**, **MATERIALIZED_VIEW**,
 	// or **STREAMING_TABLE**)
 	ViewDefinition *string `json:"view_definition,omitempty"`
@@ -264,59 +317,6 @@ type CreateTableRequest struct {
 	// provided and recorded. Note: this field is not set in the output of the
 	// __listTables__ API.
 	ViewDependencies *DependencyList `json:"view_dependencies,omitempty"`
-	// List of schemes whose objects can be referenced without qualification.
-	SqlPath *string `json:"sql_path,omitempty"`
-	// Username of current owner of table.
-	Owner *string `json:"owner,omitempty"`
-	// User-provided free-form text description.
-	Comment *string `json:"comment,omitempty"`
-	// Name of the storage credential, when a storage credential is configured for
-	// use with this table.
-	StorageCredentialName *string `json:"storage_credential_name,omitempty"`
-	// List of table constraints. Note: this field is not set in the output of the
-	// __listTables__ API.
-	TableConstraints []TableConstraint `json:"table_constraints,omitempty"`
-	RowFilter        *RowFilter        `json:"row_filter,omitempty"`
-	// The pipeline ID of the table. Applicable for tables created by pipelines
-	// (Materialized View, Streaming Table, etc.).
-	PipelineId                   *string `json:"pipeline_id,omitempty"`
-	EnablePredictiveOptimization *string `json:"enable_predictive_optimization,omitempty"`
-	// Unique identifier of parent metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Full name of table, in form of
-	// __catalog_name__.__schema_name__.__table_name__
-	FullName *string `json:"full_name,omitempty"`
-	// Unique ID of the Data Access Configuration to use with the table data.
-	DataAccessConfigurationId *string `json:"data_access_configuration_id,omitempty"`
-	// Time at which this table was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of table creator.
-	CreatedBy *string `json:"created_by,omitempty"`
-	// Time at which this table was last modified, in epoch milliseconds.
-	UpdatedAt *int64 `json:"updated_at,omitempty"`
-	// Username of user who last modified the table.
-	UpdatedBy *string `json:"updated_by,omitempty"`
-	// The unique identifier of the table.
-	TableId *string `json:"table_id,omitempty"`
-	// Information pertaining to current state of the delta table.
-	DeltaRuntimePropertiesKvpairs *DeltaRuntimePropertiesKvPairs `json:"delta_runtime_properties_kvpairs,omitempty"`
-	// Time at which this table was deleted, in epoch milliseconds. Field is omitted
-	// if table is not deleted.
-	DeletedAt                           *int64                               `json:"deleted_at,omitempty"`
-	EffectivePredictiveOptimizationFlag *EffectivePredictiveOptimizationFlag `json:"effective_predictive_optimization_flag,omitempty"`
-	// The AWS access point to use when accesing s3 for this external location.
-	AccessPoint *string `json:"access_point,omitempty"`
-	// Indicates whether the principal is limited to retrieving metadata for the
-	// associated object through the BROWSE privilege when include_browse is enabled
-	// in the request.
-	BrowseOnly        *bool              `json:"browse_only,omitempty"`
-	EncryptionDetails *EncryptionDetails `json:"encryption_details,omitempty"`
-	// SecurableKindManifest of table, including capabilities the table has.
-	SecurableKindManifest *SecurableKindManifest `json:"securable_kind_manifest,omitempty"`
-	// The array of __ColumnInfo__ definitions of the table's columns.
-	Columns []ColumnInfo `json:"columns,omitempty"`
-	// A map of key-value properties attached to the securable.
-	Properties map[string]string `json:"properties,omitempty"`
 }
 
 // A credential that is dependent on a SQL object..
@@ -326,14 +326,14 @@ type CredentialDependency struct {
 }
 
 type DeleteTableConstraintRequest struct {
-	// Full name of the table referenced by the constraint.
-	FullNameArg *string `json:"full_name_arg,omitempty"`
-	// The name of the constraint to delete.
-	ConstraintName *string `json:"constraint_name,omitempty"`
 	// If true, try deleting all child constraints of the current constraint. If
 	// false, reject this operation if the current constraint has any child
 	// constraints.
 	Cascade *bool `json:"cascade,omitempty"`
+	// The name of the constraint to delete.
+	ConstraintName *string `json:"constraint_name,omitempty"`
+	// Full name of the table referenced by the constraint.
+	FullNameArg *string `json:"full_name_arg,omitempty"`
 }
 
 // Properties pertaining to the current state of the delta table as given by the
@@ -348,10 +348,10 @@ type DeltaRuntimePropertiesKvPairs struct {
 // __table__, __function__, __connection__, __credential__, __volume__, or
 // __secret__..
 type Dependency struct {
-	Table      *TableDependency      `json:"table,omitempty"`
-	Function   *FunctionDependency   `json:"function,omitempty"`
 	Connection *ConnectionDependency `json:"connection,omitempty"`
 	Credential *CredentialDependency `json:"credential,omitempty"`
+	Function   *FunctionDependency   `json:"function,omitempty"`
+	Table      *TableDependency      `json:"table,omitempty"`
 }
 
 // A list of dependencies..
@@ -361,15 +361,15 @@ type DependencyList struct {
 }
 
 type EffectivePredictiveOptimizationFlag struct {
-	// Whether predictive optimization should be enabled for this object and objects
-	// under it.
-	Value *string `json:"value,omitempty"`
-	// The type of the object from which the flag was inherited. If there was no
-	// inheritance, this field is left blank.
-	InheritedFromType *string `json:"inherited_from_type,omitempty"`
 	// The name of the object from which the flag was inherited. If there was no
 	// inheritance, this field is left blank.
 	InheritedFromName *string `json:"inherited_from_name,omitempty"`
+	// The type of the object from which the flag was inherited. If there was no
+	// inheritance, this field is left blank.
+	InheritedFromType *string `json:"inherited_from_type,omitempty"`
+	// Whether predictive optimization should be enabled for this object and objects
+	// under it.
+	Value *string `json:"value,omitempty"`
 }
 
 // Encryption options that apply to clients connecting to cloud storage..
@@ -378,14 +378,14 @@ type EncryptionDetails struct {
 }
 
 type ForeignKeyConstraint struct {
+	// Column names for this constraint.
+	ChildColumns []string `json:"child_columns,omitempty"`
 	// The name of the constraint.
 	Name *string `json:"name,omitempty"`
 	// Column names for this constraint.
-	ChildColumns []string `json:"child_columns,omitempty"`
+	ParentColumns []string `json:"parent_columns,omitempty"`
 	// The full name of the parent constraint.
 	ParentTable *string `json:"parent_table,omitempty"`
-	// Column names for this constraint.
-	ParentColumns []string `json:"parent_columns,omitempty"`
 	// True if the constraint is RELY, false or unset if NORELY.
 	Rely *bool `json:"rely,omitempty"`
 }
@@ -400,11 +400,11 @@ type FunctionDependency struct {
 type GetTableRequest struct {
 	// Full name of the table.
 	FullNameArg *string `json:"full_name_arg,omitempty"`
-	// Whether delta metadata should be included in the response.
-	IncludeDeltaMetadata *bool `json:"include_delta_metadata,omitempty"`
 	// Whether to include tables in the response for which the principal can only
 	// access selective metadata for.
 	IncludeBrowse *bool `json:"include_browse,omitempty"`
+	// Whether delta metadata should be included in the response.
+	IncludeDeltaMetadata *bool `json:"include_delta_metadata,omitempty"`
 	// Whether to include a manifest containing table capabilities in the response.
 	IncludeManifestCapabilities *bool `json:"include_manifest_capabilities,omitempty"`
 }
@@ -412,12 +412,8 @@ type GetTableRequest struct {
 type ListTableSummariesRequest struct {
 	// Name of parent catalog for tables of interest.
 	CatalogName *string `json:"catalog_name,omitempty"`
-	// A sql LIKE pattern (% and _) for schema names. All schemas will be returned
-	// if not set or empty.
-	SchemaNamePattern *string `json:"schema_name_pattern,omitempty"`
-	// A sql LIKE pattern (% and _) for table names. All tables will be returned if
-	// not set or empty.
-	TableNamePattern *string `json:"table_name_pattern,omitempty"`
+	// Whether to include a manifest containing table capabilities in the response.
+	IncludeManifestCapabilities *bool `json:"include_manifest_capabilities,omitempty"`
 	// Maximum number of summaries for tables to return. If not set, the page length
 	// is set to a server configured value (10000, as of 1/5/2024). - when set to a
 	// value greater than 0, the page length is the minimum of this value and a
@@ -428,32 +424,37 @@ type ListTableSummariesRequest struct {
 	MaxResults *int `json:"max_results,omitempty"`
 	// Opaque pagination token to go to next page based on previous query.
 	PageToken *string `json:"page_token,omitempty"`
-	// Whether to include a manifest containing table capabilities in the response.
-	IncludeManifestCapabilities *bool `json:"include_manifest_capabilities,omitempty"`
+	// A sql LIKE pattern (% and _) for schema names. All schemas will be returned
+	// if not set or empty.
+	SchemaNamePattern *string `json:"schema_name_pattern,omitempty"`
+	// A sql LIKE pattern (% and _) for table names. All tables will be returned if
+	// not set or empty.
+	TableNamePattern *string `json:"table_name_pattern,omitempty"`
 }
 
 type ListTableSummariesResponse struct {
-	// List of table summaries.
-	Tables []TableSummary `json:"tables,omitempty"`
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. __page_token__ should be set to this value for the next request
 	// (for the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// List of table summaries.
+	Tables []TableSummary `json:"tables,omitempty"`
 }
 
 type ListTablesRequest struct {
 	// Name of parent catalog for tables of interest.
 	CatalogName *string `json:"catalog_name,omitempty"`
-	// Parent schema of tables.
-	SchemaName *string `json:"schema_name,omitempty"`
+	// Whether to include tables in the response for which the principal can only
+	// access selective metadata for.
+	IncludeBrowse *bool `json:"include_browse,omitempty"`
+	// Whether to include a manifest containing table capabilities in the response.
+	IncludeManifestCapabilities *bool `json:"include_manifest_capabilities,omitempty"`
 	// Maximum number of tables to return. If not set, all the tables are returned
 	// (not recommended). - when set to a value greater than 0, the page length is
 	// the minimum of this value and a server configured value; - when set to 0, the
 	// page length is set to a server configured value (recommended); - when set to
 	// a value less than 0, an invalid parameter error is returned;
 	MaxResults *int `json:"max_results,omitempty"`
-	// Opaque token to send for the next page of results (pagination).
-	PageToken *string `json:"page_token,omitempty"`
 	// Whether to omit the columns of the table from the response or not.
 	OmitColumns *bool `json:"omit_columns,omitempty"`
 	// Whether to omit the properties of the table from the response or not.
@@ -461,20 +462,19 @@ type ListTablesRequest struct {
 	// Whether to omit the username of the table (e.g. owner, updated_by,
 	// created_by) from the response or not.
 	OmitUsername *bool `json:"omit_username,omitempty"`
-	// Whether to include tables in the response for which the principal can only
-	// access selective metadata for.
-	IncludeBrowse *bool `json:"include_browse,omitempty"`
-	// Whether to include a manifest containing table capabilities in the response.
-	IncludeManifestCapabilities *bool `json:"include_manifest_capabilities,omitempty"`
+	// Opaque token to send for the next page of results (pagination).
+	PageToken *string `json:"page_token,omitempty"`
+	// Parent schema of tables.
+	SchemaName *string `json:"schema_name,omitempty"`
 }
 
 type ListTablesResponse struct {
-	// An array of table information objects.
-	Tables []TableInfo `json:"tables,omitempty"`
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. __page_token__ should be set to this value for the next request
 	// (for the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// An array of table information objects.
+	Tables []TableInfo `json:"tables,omitempty"`
 }
 
 type NamedTableConstraint struct {
@@ -486,40 +486,40 @@ type NamedTableConstraint struct {
 // mostly used by UI to provide user friendly hints and descriptions in order to
 // facilitate the securable creation process..
 type OptionSpec struct {
-	// The unique name of the option.
-	Name *string `json:"name,omitempty"`
-	// The type of the option.
-	Type OptionSpec_OptionType `json:"type,omitempty"`
-	// The default value of the option, for example, value '443' for 'port' option.
-	DefaultValue *string `json:"default_value,omitempty"`
 	// For drop down / radio button selections, UI will want to know the possible
 	// input values, it can also be used by other option types to limit input
 	// selections.
 	AllowedValues []string `json:"allowed_values,omitempty"`
+	// The default value of the option, for example, value '443' for 'port' option.
+	DefaultValue *string `json:"default_value,omitempty"`
+	// A concise user facing description of what the input value of this option
+	// should look like.
+	Description *string `json:"description,omitempty"`
 	// The hint is used on the UI to suggest what the input value can possibly be
 	// like, for example: example.com for 'host' option. Unlike default value, it
 	// will not be applied automatically without user input.
 	Hint *string `json:"hint,omitempty"`
-	// A concise user facing description of what the input value of this option
-	// should look like.
-	Description *string `json:"description,omitempty"`
+	// Indicates whether an option should be displayed with copy button on the UI.
+	IsCopiable *bool `json:"is_copiable,omitempty"`
+	// Indicates whether an option can be provided by users in the create/update
+	// path of an entity.
+	IsCreatable *bool `json:"is_creatable,omitempty"`
+	// Is the option value not user settable and is thus not shown on the UI.
+	IsHidden *bool `json:"is_hidden,omitempty"`
+	// Specifies whether this option is safe to log, i.e. no sensitive information.
+	IsLoggable *bool `json:"is_loggable,omitempty"`
 	// Is the option required.
 	IsRequired *bool `json:"is_required,omitempty"`
 	// Is the option value considered secret and thus redacted on the UI.
 	IsSecret *bool `json:"is_secret,omitempty"`
-	// Is the option value not user settable and is thus not shown on the UI.
-	IsHidden *bool `json:"is_hidden,omitempty"`
 	// Is the option updatable by users.
 	IsUpdatable *bool `json:"is_updatable,omitempty"`
+	// The unique name of the option.
+	Name *string `json:"name,omitempty"`
 	// Specifies when the option value is displayed on the UI within the OAuth flow.
 	OauthStage OptionSpec_OauthStage `json:"oauth_stage,omitempty"`
-	// Specifies whether this option is safe to log, i.e. no sensitive information.
-	IsLoggable *bool `json:"is_loggable,omitempty"`
-	// Indicates whether an option can be provided by users in the create/update
-	// path of an entity.
-	IsCreatable *bool `json:"is_creatable,omitempty"`
-	// Indicates whether an option should be displayed with copy button on the UI.
-	IsCopiable *bool `json:"is_copiable,omitempty"`
+	// The type of the option.
+	Type OptionSpec_OptionType `json:"type,omitempty"`
 }
 
 // A positional argument passed to a row filter or column mask function.
@@ -530,40 +530,40 @@ type PolicyFunctionArgument struct {
 }
 
 type PrimaryKeyConstraint struct {
-	// The name of the constraint.
-	Name *string `json:"name,omitempty"`
 	// Column names for this constraint.
 	ChildColumns []string `json:"child_columns,omitempty"`
-	// Column names that represent a timeseries.
-	TimeseriesColumns []string `json:"timeseries_columns,omitempty"`
+	// The name of the constraint.
+	Name *string `json:"name,omitempty"`
 	// True if the constraint is RELY, false or unset if NORELY.
 	Rely *bool `json:"rely,omitempty"`
+	// Column names that represent a timeseries.
+	TimeseriesColumns []string `json:"timeseries_columns,omitempty"`
 }
 
 type RowFilter struct {
 	// The full name of the row filter SQL UDF.
 	FunctionName *string `json:"function_name,omitempty"`
-	// The list of table columns to be passed as input to the row filter function.
-	// The column types should match the types of the filter function arguments.
-	InputColumnNames []string `json:"input_column_names,omitempty"`
 	// The list of table columns or literals to be passed as additional arguments to
 	// a row filter function, carrying the type (column reference vs constant
 	// literal) of each argument. Deprecated: use input_column_names instead.
 	InputArguments []PolicyFunctionArgument `json:"input_arguments,omitempty"`
+	// The list of table columns to be passed as input to the row filter function.
+	// The column types should match the types of the filter function arguments.
+	InputColumnNames []string `json:"input_column_names,omitempty"`
 }
 
 // Manifest of a specific securable kind..
 type SecurableKindManifest struct {
-	// Securable Type of the kind.
-	SecurableType SecurableType `json:"securable_type,omitempty"`
-	// Securable kind to get manifest of.
-	SecurableKind SecurableKind `json:"securable_kind,omitempty"`
 	// Privileges that can be assigned to the securable.
 	AssignablePrivileges []string `json:"assignable_privileges,omitempty"`
-	// Detailed specs of allowed options.
-	Options []OptionSpec `json:"options,omitempty"`
 	// A list of capabilities in the securable kind.
 	Capabilities []string `json:"capabilities,omitempty"`
+	// Detailed specs of allowed options.
+	Options []OptionSpec `json:"options,omitempty"`
+	// Securable kind to get manifest of.
+	SecurableKind SecurableKind `json:"securable_kind,omitempty"`
+	// Securable Type of the kind.
+	SecurableType SecurableType `json:"securable_type,omitempty"`
 }
 
 // Server-Side Encryption properties for clients communicating with AWS s3..
@@ -580,9 +580,9 @@ type SseEncryptionDetails struct {
 // __primary_key_constraint__, __foreign_key_constraint__,
 // __named_table_constraint__..
 type TableConstraint struct {
-	PrimaryKeyConstraint *PrimaryKeyConstraint `json:"primary_key_constraint,omitempty"`
 	ForeignKeyConstraint *ForeignKeyConstraint `json:"foreign_key_constraint,omitempty"`
 	NamedTableConstraint *NamedTableConstraint `json:"named_table_constraint,omitempty"`
+	PrimaryKeyConstraint *PrimaryKeyConstraint `json:"primary_key_constraint,omitempty"`
 }
 
 // A table that is dependent on a SQL object..
@@ -598,16 +598,69 @@ type TableExistsResponse struct {
 }
 
 type TableInfo struct {
-	// Name of table, relative to parent schema.
-	Name *string `json:"name,omitempty"`
+	// The AWS access point to use when accesing s3 for this external location.
+	AccessPoint *string `json:"access_point,omitempty"`
+	// Indicates whether the principal is limited to retrieving metadata for the
+	// associated object through the BROWSE privilege when include_browse is enabled
+	// in the request.
+	BrowseOnly *bool `json:"browse_only,omitempty"`
 	// Name of parent catalog.
 	CatalogName *string `json:"catalog_name,omitempty"`
+	// The array of __ColumnInfo__ definitions of the table's columns.
+	Columns []ColumnInfo `json:"columns,omitempty"`
+	// User-provided free-form text description.
+	Comment *string `json:"comment,omitempty"`
+	// Time at which this table was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of table creator.
+	CreatedBy *string `json:"created_by,omitempty"`
+	// Unique ID of the Data Access Configuration to use with the table data.
+	DataAccessConfigurationId *string          `json:"data_access_configuration_id,omitempty"`
+	DataSourceFormat          DataSourceFormat `json:"data_source_format,omitempty"`
+	// Time at which this table was deleted, in epoch milliseconds. Field is omitted
+	// if table is not deleted.
+	DeletedAt *int64 `json:"deleted_at,omitempty"`
+	// Information pertaining to current state of the delta table.
+	DeltaRuntimePropertiesKvpairs       *DeltaRuntimePropertiesKvPairs       `json:"delta_runtime_properties_kvpairs,omitempty"`
+	EffectivePredictiveOptimizationFlag *EffectivePredictiveOptimizationFlag `json:"effective_predictive_optimization_flag,omitempty"`
+	EnablePredictiveOptimization        *string                              `json:"enable_predictive_optimization,omitempty"`
+	EncryptionDetails                   *EncryptionDetails                   `json:"encryption_details,omitempty"`
+	// Full name of table, in form of
+	// __catalog_name__.__schema_name__.__table_name__
+	FullName *string `json:"full_name,omitempty"`
+	// Unique identifier of parent metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// Name of table, relative to parent schema.
+	Name *string `json:"name,omitempty"`
+	// Username of current owner of table.
+	Owner *string `json:"owner,omitempty"`
+	// The pipeline ID of the table. Applicable for tables created by pipelines
+	// (Materialized View, Streaming Table, etc.).
+	PipelineId *string `json:"pipeline_id,omitempty"`
+	// A map of key-value properties attached to the securable.
+	Properties map[string]string `json:"properties,omitempty"`
+	RowFilter  *RowFilter        `json:"row_filter,omitempty"`
 	// Name of parent schema relative to its parent catalog.
-	SchemaName       *string          `json:"schema_name,omitempty"`
-	TableType        TableType        `json:"table_type,omitempty"`
-	DataSourceFormat DataSourceFormat `json:"data_source_format,omitempty"`
+	SchemaName *string `json:"schema_name,omitempty"`
+	// SecurableKindManifest of table, including capabilities the table has.
+	SecurableKindManifest *SecurableKindManifest `json:"securable_kind_manifest,omitempty"`
+	// List of schemes whose objects can be referenced without qualification.
+	SqlPath *string `json:"sql_path,omitempty"`
+	// Name of the storage credential, when a storage credential is configured for
+	// use with this table.
+	StorageCredentialName *string `json:"storage_credential_name,omitempty"`
 	// Storage root URL for table (for **MANAGED**, **EXTERNAL** tables).
 	StorageLocation *string `json:"storage_location,omitempty"`
+	// List of table constraints. Note: this field is not set in the output of the
+	// __listTables__ API.
+	TableConstraints []TableConstraint `json:"table_constraints,omitempty"`
+	// The unique identifier of the table.
+	TableId   *string   `json:"table_id,omitempty"`
+	TableType TableType `json:"table_type,omitempty"`
+	// Time at which this table was last modified, in epoch milliseconds.
+	UpdatedAt *int64 `json:"updated_at,omitempty"`
+	// Username of user who last modified the table.
+	UpdatedBy *string `json:"updated_by,omitempty"`
 	// View definition SQL (when __table_type__ is **VIEW**, **MATERIALIZED_VIEW**,
 	// or **STREAMING_TABLE**)
 	ViewDefinition *string `json:"view_definition,omitempty"`
@@ -618,82 +671,82 @@ type TableInfo struct {
 	// provided and recorded. Note: this field is not set in the output of the
 	// __listTables__ API.
 	ViewDependencies *DependencyList `json:"view_dependencies,omitempty"`
-	// List of schemes whose objects can be referenced without qualification.
-	SqlPath *string `json:"sql_path,omitempty"`
-	// Username of current owner of table.
-	Owner *string `json:"owner,omitempty"`
-	// User-provided free-form text description.
-	Comment *string `json:"comment,omitempty"`
-	// Name of the storage credential, when a storage credential is configured for
-	// use with this table.
-	StorageCredentialName *string `json:"storage_credential_name,omitempty"`
-	// List of table constraints. Note: this field is not set in the output of the
-	// __listTables__ API.
-	TableConstraints []TableConstraint `json:"table_constraints,omitempty"`
-	RowFilter        *RowFilter        `json:"row_filter,omitempty"`
-	// The pipeline ID of the table. Applicable for tables created by pipelines
-	// (Materialized View, Streaming Table, etc.).
-	PipelineId                   *string `json:"pipeline_id,omitempty"`
-	EnablePredictiveOptimization *string `json:"enable_predictive_optimization,omitempty"`
-	// Unique identifier of parent metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Full name of table, in form of
-	// __catalog_name__.__schema_name__.__table_name__
-	FullName *string `json:"full_name,omitempty"`
-	// Unique ID of the Data Access Configuration to use with the table data.
-	DataAccessConfigurationId *string `json:"data_access_configuration_id,omitempty"`
-	// Time at which this table was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of table creator.
-	CreatedBy *string `json:"created_by,omitempty"`
-	// Time at which this table was last modified, in epoch milliseconds.
-	UpdatedAt *int64 `json:"updated_at,omitempty"`
-	// Username of user who last modified the table.
-	UpdatedBy *string `json:"updated_by,omitempty"`
-	// The unique identifier of the table.
-	TableId *string `json:"table_id,omitempty"`
-	// Information pertaining to current state of the delta table.
-	DeltaRuntimePropertiesKvpairs *DeltaRuntimePropertiesKvPairs `json:"delta_runtime_properties_kvpairs,omitempty"`
-	// Time at which this table was deleted, in epoch milliseconds. Field is omitted
-	// if table is not deleted.
-	DeletedAt                           *int64                               `json:"deleted_at,omitempty"`
-	EffectivePredictiveOptimizationFlag *EffectivePredictiveOptimizationFlag `json:"effective_predictive_optimization_flag,omitempty"`
-	// The AWS access point to use when accesing s3 for this external location.
-	AccessPoint *string `json:"access_point,omitempty"`
-	// Indicates whether the principal is limited to retrieving metadata for the
-	// associated object through the BROWSE privilege when include_browse is enabled
-	// in the request.
-	BrowseOnly        *bool              `json:"browse_only,omitempty"`
-	EncryptionDetails *EncryptionDetails `json:"encryption_details,omitempty"`
-	// SecurableKindManifest of table, including capabilities the table has.
-	SecurableKindManifest *SecurableKindManifest `json:"securable_kind_manifest,omitempty"`
-	// The array of __ColumnInfo__ definitions of the table's columns.
-	Columns []ColumnInfo `json:"columns,omitempty"`
-	// A map of key-value properties attached to the securable.
-	Properties map[string]string `json:"properties,omitempty"`
 }
 
 type TableSummary struct {
 	// The full name of the table.
-	FullName  *string   `json:"full_name,omitempty"`
-	TableType TableType `json:"table_type,omitempty"`
+	FullName *string `json:"full_name,omitempty"`
 	// SecurableKindManifest of table, including capabilities the table has.
 	SecurableKindManifest *SecurableKindManifest `json:"securable_kind_manifest,omitempty"`
+	TableType             TableType              `json:"table_type,omitempty"`
 }
 
 type UpdateTableRequest struct {
-	// Full name of the table.
-	FullNameArg *string `json:"full_name_arg,omitempty"`
-	// Name of table, relative to parent schema.
-	Name *string `json:"name,omitempty"`
+	// The AWS access point to use when accesing s3 for this external location.
+	AccessPoint *string `json:"access_point,omitempty"`
+	// Indicates whether the principal is limited to retrieving metadata for the
+	// associated object through the BROWSE privilege when include_browse is enabled
+	// in the request.
+	BrowseOnly *bool `json:"browse_only,omitempty"`
 	// Name of parent catalog.
 	CatalogName *string `json:"catalog_name,omitempty"`
+	// The array of __ColumnInfo__ definitions of the table's columns.
+	Columns []ColumnInfo `json:"columns,omitempty"`
+	// User-provided free-form text description.
+	Comment *string `json:"comment,omitempty"`
+	// Time at which this table was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of table creator.
+	CreatedBy *string `json:"created_by,omitempty"`
+	// Unique ID of the Data Access Configuration to use with the table data.
+	DataAccessConfigurationId *string          `json:"data_access_configuration_id,omitempty"`
+	DataSourceFormat          DataSourceFormat `json:"data_source_format,omitempty"`
+	// Time at which this table was deleted, in epoch milliseconds. Field is omitted
+	// if table is not deleted.
+	DeletedAt *int64 `json:"deleted_at,omitempty"`
+	// Information pertaining to current state of the delta table.
+	DeltaRuntimePropertiesKvpairs       *DeltaRuntimePropertiesKvPairs       `json:"delta_runtime_properties_kvpairs,omitempty"`
+	EffectivePredictiveOptimizationFlag *EffectivePredictiveOptimizationFlag `json:"effective_predictive_optimization_flag,omitempty"`
+	EnablePredictiveOptimization        *string                              `json:"enable_predictive_optimization,omitempty"`
+	EncryptionDetails                   *EncryptionDetails                   `json:"encryption_details,omitempty"`
+	// Full name of table, in form of
+	// __catalog_name__.__schema_name__.__table_name__
+	FullName *string `json:"full_name,omitempty"`
+	// Full name of the table.
+	FullNameArg *string `json:"full_name_arg,omitempty"`
+	// Unique identifier of parent metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// Name of table, relative to parent schema.
+	Name *string `json:"name,omitempty"`
+	// Username of current owner of table.
+	Owner *string `json:"owner,omitempty"`
+	// The pipeline ID of the table. Applicable for tables created by pipelines
+	// (Materialized View, Streaming Table, etc.).
+	PipelineId *string `json:"pipeline_id,omitempty"`
+	// A map of key-value properties attached to the securable.
+	Properties map[string]string `json:"properties,omitempty"`
+	RowFilter  *RowFilter        `json:"row_filter,omitempty"`
 	// Name of parent schema relative to its parent catalog.
-	SchemaName       *string          `json:"schema_name,omitempty"`
-	TableType        TableType        `json:"table_type,omitempty"`
-	DataSourceFormat DataSourceFormat `json:"data_source_format,omitempty"`
+	SchemaName *string `json:"schema_name,omitempty"`
+	// SecurableKindManifest of table, including capabilities the table has.
+	SecurableKindManifest *SecurableKindManifest `json:"securable_kind_manifest,omitempty"`
+	// List of schemes whose objects can be referenced without qualification.
+	SqlPath *string `json:"sql_path,omitempty"`
+	// Name of the storage credential, when a storage credential is configured for
+	// use with this table.
+	StorageCredentialName *string `json:"storage_credential_name,omitempty"`
 	// Storage root URL for table (for **MANAGED**, **EXTERNAL** tables).
 	StorageLocation *string `json:"storage_location,omitempty"`
+	// List of table constraints. Note: this field is not set in the output of the
+	// __listTables__ API.
+	TableConstraints []TableConstraint `json:"table_constraints,omitempty"`
+	// The unique identifier of the table.
+	TableId   *string   `json:"table_id,omitempty"`
+	TableType TableType `json:"table_type,omitempty"`
+	// Time at which this table was last modified, in epoch milliseconds.
+	UpdatedAt *int64 `json:"updated_at,omitempty"`
+	// Username of user who last modified the table.
+	UpdatedBy *string `json:"updated_by,omitempty"`
 	// View definition SQL (when __table_type__ is **VIEW**, **MATERIALIZED_VIEW**,
 	// or **STREAMING_TABLE**)
 	ViewDefinition *string `json:"view_definition,omitempty"`
@@ -704,59 +757,6 @@ type UpdateTableRequest struct {
 	// provided and recorded. Note: this field is not set in the output of the
 	// __listTables__ API.
 	ViewDependencies *DependencyList `json:"view_dependencies,omitempty"`
-	// List of schemes whose objects can be referenced without qualification.
-	SqlPath *string `json:"sql_path,omitempty"`
-	// Username of current owner of table.
-	Owner *string `json:"owner,omitempty"`
-	// User-provided free-form text description.
-	Comment *string `json:"comment,omitempty"`
-	// Name of the storage credential, when a storage credential is configured for
-	// use with this table.
-	StorageCredentialName *string `json:"storage_credential_name,omitempty"`
-	// List of table constraints. Note: this field is not set in the output of the
-	// __listTables__ API.
-	TableConstraints []TableConstraint `json:"table_constraints,omitempty"`
-	RowFilter        *RowFilter        `json:"row_filter,omitempty"`
-	// The pipeline ID of the table. Applicable for tables created by pipelines
-	// (Materialized View, Streaming Table, etc.).
-	PipelineId                   *string `json:"pipeline_id,omitempty"`
-	EnablePredictiveOptimization *string `json:"enable_predictive_optimization,omitempty"`
-	// Unique identifier of parent metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Full name of table, in form of
-	// __catalog_name__.__schema_name__.__table_name__
-	FullName *string `json:"full_name,omitempty"`
-	// Unique ID of the Data Access Configuration to use with the table data.
-	DataAccessConfigurationId *string `json:"data_access_configuration_id,omitempty"`
-	// Time at which this table was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of table creator.
-	CreatedBy *string `json:"created_by,omitempty"`
-	// Time at which this table was last modified, in epoch milliseconds.
-	UpdatedAt *int64 `json:"updated_at,omitempty"`
-	// Username of user who last modified the table.
-	UpdatedBy *string `json:"updated_by,omitempty"`
-	// The unique identifier of the table.
-	TableId *string `json:"table_id,omitempty"`
-	// Information pertaining to current state of the delta table.
-	DeltaRuntimePropertiesKvpairs *DeltaRuntimePropertiesKvPairs `json:"delta_runtime_properties_kvpairs,omitempty"`
-	// Time at which this table was deleted, in epoch milliseconds. Field is omitted
-	// if table is not deleted.
-	DeletedAt                           *int64                               `json:"deleted_at,omitempty"`
-	EffectivePredictiveOptimizationFlag *EffectivePredictiveOptimizationFlag `json:"effective_predictive_optimization_flag,omitempty"`
-	// The AWS access point to use when accesing s3 for this external location.
-	AccessPoint *string `json:"access_point,omitempty"`
-	// Indicates whether the principal is limited to retrieving metadata for the
-	// associated object through the BROWSE privilege when include_browse is enabled
-	// in the request.
-	BrowseOnly        *bool              `json:"browse_only,omitempty"`
-	EncryptionDetails *EncryptionDetails `json:"encryption_details,omitempty"`
-	// SecurableKindManifest of table, including capabilities the table has.
-	SecurableKindManifest *SecurableKindManifest `json:"securable_kind_manifest,omitempty"`
-	// The array of __ColumnInfo__ definitions of the table's columns.
-	Columns []ColumnInfo `json:"columns,omitempty"`
-	// A map of key-value properties attached to the securable.
-	Properties map[string]string `json:"properties,omitempty"`
 }
 
 // ColumnInfoToSDK converts the mirror to the sdk-go type.

@@ -163,45 +163,52 @@ const (
 )
 
 type CleanRoom struct {
+	// Whether clean room access is restricted due to [CSP]
+	//
+	// [CSP]: https://docs.databricks.com/en/security/privacy/security-profile.html
+	AccessRestricted CleanRoom_AccessRestricted `json:"access_restricted,omitempty"`
+	Comment          *string                    `json:"comment,omitempty"`
+	// When the clean room was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Whether allow task to write to shared output schema. When enabled, clean room
+	// task runs triggered by the current collaborator can write to the run-scoped
+	// shared output schema which is accessible by all collaborators.
+	EnableSharedOutput *bool `json:"enable_shared_output,omitempty"`
+	// The alias of the collaborator tied to the local clean room.
+	LocalCollaboratorAlias *string `json:"local_collaborator_alias,omitempty"`
 	// The name of the clean room. It should follow [UC securable naming
 	// requirements].
 	//
 	// [UC securable naming requirements]: https://docs.databricks.com/en/data-governance/unity-catalog/index.html#securable-object-naming-requirements
 	Name *string `json:"name,omitempty"`
+	// Output catalog of the clean room. It is an output only field. Output catalog
+	// is manipulated using the separate CreateCleanRoomOutputCatalog API.
+	OutputCatalog *CleanRoomOutputCatalog `json:"output_catalog,omitempty"`
+	// This is the <Databricks> username of the owner of the local clean room
+	// securable for permission management.
+	Owner *string `json:"owner,omitempty"`
 	// Central clean room details. During creation, users need to specify
 	// cloud_vendor, region, and collaborators.global_metastore_id. This field will
 	// not be filled in the ListCleanRooms call.
 	RemoteDetailedInfo *CleanRoomRemoteDetail `json:"remote_detailed_info,omitempty"`
-	// This is the <Databricks> username of the owner of the local clean room
-	// securable for permission management.
-	Owner   *string `json:"owner,omitempty"`
-	Comment *string `json:"comment,omitempty"`
-	// When the clean room was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// When the clean room was last updated, in epoch milliseconds.
-	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Clean room status.
 	Status CleanRoom_Status_Enum `json:"status,omitempty"`
-	// The alias of the collaborator tied to the local clean room.
-	LocalCollaboratorAlias *string `json:"local_collaborator_alias,omitempty"`
-	// Output catalog of the clean room. It is an output only field. Output catalog
-	// is manipulated using the separate CreateCleanRoomOutputCatalog API.
-	OutputCatalog *CleanRoomOutputCatalog `json:"output_catalog,omitempty"`
-	// Whether clean room access is restricted due to [CSP]
-	//
-	// [CSP]: https://docs.databricks.com/en/security/privacy/security-profile.html
-	AccessRestricted CleanRoom_AccessRestricted `json:"access_restricted,omitempty"`
-	// Whether allow task to write to shared output schema. When enabled, clean room
-	// task runs triggered by the current collaborator can write to the run-scoped
-	// shared output schema which is accessible by all collaborators.
-	EnableSharedOutput *bool `json:"enable_shared_output,omitempty"`
+	// When the clean room was last updated, in epoch milliseconds.
+	UpdatedAt *int64 `json:"updated_at,omitempty"`
 }
 
 // Metadata of the clean room asset.
 type CleanRoomAsset struct {
+	// When the asset is added to the clean room, in epoch milliseconds.
+	AddedAt *int64 `json:"added_at,omitempty"`
+	// The type of the asset.
+	AssetType CleanRoomAsset_AssetType `json:"asset_type,omitempty"`
 	// The name of the clean room this asset belongs to. This field is required for
 	// create operations and populated by the server for responses.
-	CleanRoomName *string `json:"clean_room_name,omitempty"`
+	CleanRoomName            *string                                  `json:"clean_room_name,omitempty"`
+	ForeignTable             *CleanRoomAsset_ForeignTable             `json:"foreign_table,omitempty"`
+	ForeignTableLocalDetails *CleanRoomAsset_ForeignTableLocalDetails `json:"foreign_table_local_details,omitempty"`
+	JarAnalysis              *CleanRoomAsset_JarAnalysis              `json:"jar_analysis,omitempty"`
 	// A fully qualified name that uniquely identifies the asset within the clean
 	// room. This is also the name displayed in the clean room UI.
 	//
@@ -211,24 +218,17 @@ type CleanRoomAsset struct {
 	// For notebooks, the name is the notebook file name. For jar analyses, the name
 	// is the jar analysis name. For Genie spaces, the name is derived from the
 	// clean room; the caller does not choose it.
-	Name *string `json:"name,omitempty"`
-	// The type of the asset.
-	AssetType CleanRoomAsset_AssetType `json:"asset_type,omitempty"`
-	// When the asset is added to the clean room, in epoch milliseconds.
-	AddedAt *int64 `json:"added_at,omitempty"`
-	// Status of the asset
-	Status CleanRoomAsset_Status_Enum `json:"status,omitempty"`
+	Name     *string                  `json:"name,omitempty"`
+	Notebook *CleanRoomAsset_Notebook `json:"notebook,omitempty"`
 	// The alias of the collaborator who owns this asset
-	OwnerCollaboratorAlias   *string                                  `json:"owner_collaborator_alias,omitempty"`
-	TableLocalDetails        *CleanRoomAsset_TableLocalDetails        `json:"table_local_details,omitempty"`
-	VolumeLocalDetails       *CleanRoomAsset_VolumeLocalDetails       `json:"volume_local_details,omitempty"`
-	ViewLocalDetails         *CleanRoomAsset_ViewLocalDetails         `json:"view_local_details,omitempty"`
-	ForeignTableLocalDetails *CleanRoomAsset_ForeignTableLocalDetails `json:"foreign_table_local_details,omitempty"`
-	Table                    *CleanRoomAsset_Table                    `json:"table,omitempty"`
-	Notebook                 *CleanRoomAsset_Notebook                 `json:"notebook,omitempty"`
-	View                     *CleanRoomAsset_View                     `json:"view,omitempty"`
-	ForeignTable             *CleanRoomAsset_ForeignTable             `json:"foreign_table,omitempty"`
-	JarAnalysis              *CleanRoomAsset_JarAnalysis              `json:"jar_analysis,omitempty"`
+	OwnerCollaboratorAlias *string `json:"owner_collaborator_alias,omitempty"`
+	// Status of the asset
+	Status             CleanRoomAsset_Status_Enum         `json:"status,omitempty"`
+	Table              *CleanRoomAsset_Table              `json:"table,omitempty"`
+	TableLocalDetails  *CleanRoomAsset_TableLocalDetails  `json:"table_local_details,omitempty"`
+	View               *CleanRoomAsset_View               `json:"view,omitempty"`
+	ViewLocalDetails   *CleanRoomAsset_ViewLocalDetails   `json:"view_local_details,omitempty"`
+	VolumeLocalDetails *CleanRoomAsset_VolumeLocalDetails `json:"volume_local_details,omitempty"`
 }
 
 type CleanRoomAsset_ForeignTable struct {
@@ -243,49 +243,49 @@ type CleanRoomAsset_ForeignTableLocalDetails struct {
 }
 
 type CleanRoomAsset_JarAnalysis struct {
-	// Server generated etag that represents the jar analysis version.
-	Etag *string `json:"etag,omitempty"`
+	// The full paths in central to the jar files that are added to the library
+	// during execution (e.g. /Volumes/creator/schema/volume/folder/my_jar_file.jar)
+	// Only returned for the owner collaborator.
+	CentralJarFilePaths []string `json:"central_jar_file_paths,omitempty"`
 	// Optional description of the jar analysis shown to all collaborators.
 	Description *string `json:"description,omitempty"`
-	// Collaborators that can run the jar.
-	RunnerCollaboratorAliases []string `json:"runner_collaborator_aliases,omitempty"`
-	// All existing approvals or rejections.
-	Reviews []CleanRoomJarAnalysisReview `json:"reviews,omitempty"`
-	// Top-level status derived from all reviews.
-	ReviewState CleanRoomJarAnalysisReview_JarAnalysisReviewState `json:"review_state,omitempty"`
+	// The serverless environment version used to execute the JAR analysis (e.g.
+	// "4"). If not specified, uses the service-configured JAR analysis default.
+	EnvironmentVersion *string `json:"environment_version,omitempty"`
+	// Server generated etag that represents the jar analysis version.
+	Etag *string `json:"etag,omitempty"`
 	// The full name of the class containing the main method to be executed. This
 	// class must be contained in a JAR provided as a library The code must use
 	// `SparkContext.getOrCreate` to obtain a Spark context; otherwise, runs of the
 	// job fail
 	MainClassName *string `json:"main_class_name,omitempty"`
-	// The full paths in central to the jar files that are added to the library
-	// during execution (e.g. /Volumes/creator/schema/volume/folder/my_jar_file.jar)
-	// Only returned for the owner collaborator.
-	CentralJarFilePaths []string `json:"central_jar_file_paths,omitempty"`
-	// The serverless environment version used to execute the JAR analysis (e.g.
-	// "4"). If not specified, uses the service-configured JAR analysis default.
-	EnvironmentVersion *string `json:"environment_version,omitempty"`
+	// Top-level status derived from all reviews.
+	ReviewState CleanRoomJarAnalysisReview_JarAnalysisReviewState `json:"review_state,omitempty"`
+	// All existing approvals or rejections.
+	Reviews []CleanRoomJarAnalysisReview `json:"reviews,omitempty"`
+	// Collaborators that can run the jar.
+	RunnerCollaboratorAliases []string `json:"runner_collaborator_aliases,omitempty"`
 }
 
 type CleanRoomAsset_Notebook struct {
-	// Base 64 representation of the notebook contents. This is the same format as
-	// returned by [workspace/export] with the format of **HTML**.
-	//
-	// [workspace/export]: https://docs.databricks.com/api/workspace/workspace/export
-	NotebookContent *string `json:"notebook_content,omitempty"`
-	// Server generated etag that represents the notebook version.
-	Etag *string `json:"etag,omitempty"`
-	// Aliases of collaborators that can run the notebook.
-	RunnerCollaboratorAliases []string `json:"runner_collaborator_aliases,omitempty"`
-	// All existing approvals or rejections
-	Reviews []CleanRoomNotebookReview `json:"reviews,omitempty"`
-	// Top-level status derived from all reviews
-	ReviewState CleanRoomNotebookReview_NotebookReviewState `json:"review_state,omitempty"`
 	// Optional description of the notebook shown to all collaborators.
 	Description *string `json:"description,omitempty"`
 	// The serverless environment version used to execute the notebook (e.g. "4").
 	// Defaults to "2" if not specified.
 	EnvironmentVersion *string `json:"environment_version,omitempty"`
+	// Server generated etag that represents the notebook version.
+	Etag *string `json:"etag,omitempty"`
+	// Base 64 representation of the notebook contents. This is the same format as
+	// returned by [workspace/export] with the format of **HTML**.
+	//
+	// [workspace/export]: https://docs.databricks.com/api/workspace/workspace/export
+	NotebookContent *string `json:"notebook_content,omitempty"`
+	// Top-level status derived from all reviews
+	ReviewState CleanRoomNotebookReview_NotebookReviewState `json:"review_state,omitempty"`
+	// All existing approvals or rejections
+	Reviews []CleanRoomNotebookReview `json:"reviews,omitempty"`
+	// Aliases of collaborators that can run the notebook.
+	RunnerCollaboratorAliases []string `json:"runner_collaborator_aliases,omitempty"`
 }
 
 type CleanRoomAsset_Table struct {
@@ -319,37 +319,21 @@ type CleanRoomAsset_VolumeLocalDetails struct {
 }
 
 type CleanRoomAutoApprovalRule struct {
+	AuthorCollaboratorAlias *string                               `json:"author_collaborator_alias,omitempty"`
+	AuthorScope             CleanRoomAutoApprovalRule_AuthorScope `json:"author_scope,omitempty"`
 	// The name of the clean room this auto-approval rule belongs to.
 	CleanRoomName *string `json:"clean_room_name,omitempty"`
+	// Timestamp of when the rule was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
 	// A generated UUID identifying the rule.
 	RuleId *string `json:"rule_id,omitempty"`
 	// The owner of the rule to whom the rule applies.
-	RuleOwnerCollaboratorAlias *string                               `json:"rule_owner_collaborator_alias,omitempty"`
-	AuthorCollaboratorAlias    *string                               `json:"author_collaborator_alias,omitempty"`
-	AuthorScope                CleanRoomAutoApprovalRule_AuthorScope `json:"author_scope,omitempty"`
-	RunnerCollaboratorAlias    *string                               `json:"runner_collaborator_alias,omitempty"`
-	// Timestamp of when the rule was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
+	RuleOwnerCollaboratorAlias *string `json:"rule_owner_collaborator_alias,omitempty"`
+	RunnerCollaboratorAlias    *string `json:"runner_collaborator_alias,omitempty"`
 }
 
 // Publicly visible clean room collaborator..
 type CleanRoomCollaborator struct {
-	// The global Unity Catalog metastore ID of the collaborator. The identifier is
-	// of format cloud:region:metastore-uuid.
-	GlobalMetastoreId *string `json:"global_metastore_id,omitempty"`
-	// [Organization
-	// name](:method:metastores/list#metastores-delta_sharing_organization_name)
-	// configured in the metastore
-	OrganizationName *string `json:"organization_name,omitempty"`
-	// Workspace ID of the user who is receiving the clean room "invitation". Must
-	// be specified if invite_recipient_email is specified. It should be empty when
-	// the collaborator is the creator of the clean room.
-	InviteRecipientWorkspaceId *int64 `json:"invite_recipient_workspace_id,omitempty"`
-	// Email of the user who is receiving the clean room "invitation". It should be
-	// empty for the creator of the clean room, and non-empty for the invitees of
-	// the clean room. It is only returned in the output when clean room creator
-	// calls GET
-	InviteRecipientEmail *string `json:"invite_recipient_email,omitempty"`
 	// Collaborator alias specified by the clean room creator. It is unique across
 	// all collaborators of this clean room, and used to derive multiple values
 	// internally such as catalog alias and clean room name for single metastore
@@ -362,77 +346,93 @@ type CleanRoomCollaborator struct {
 	// it is the organization name of the metastore. It is not restricted to these
 	// values and could change in the future
 	DisplayName *string `json:"display_name,omitempty"`
+	// The global Unity Catalog metastore ID of the collaborator. The identifier is
+	// of format cloud:region:metastore-uuid.
+	GlobalMetastoreId *string `json:"global_metastore_id,omitempty"`
+	// Email of the user who is receiving the clean room "invitation". It should be
+	// empty for the creator of the clean room, and non-empty for the invitees of
+	// the clean room. It is only returned in the output when clean room creator
+	// calls GET
+	InviteRecipientEmail *string `json:"invite_recipient_email,omitempty"`
+	// Workspace ID of the user who is receiving the clean room "invitation". Must
+	// be specified if invite_recipient_email is specified. It should be empty when
+	// the collaborator is the creator of the clean room.
+	InviteRecipientWorkspaceId *int64 `json:"invite_recipient_workspace_id,omitempty"`
+	// [Organization
+	// name](:method:metastores/list#metastores-delta_sharing_organization_name)
+	// configured in the metastore
+	OrganizationName *string `json:"organization_name,omitempty"`
 }
 
 // This only applies to a JAR Analysis as a first-class asset in the Clean Room,
 // and not to Volumes.
 type CleanRoomJarAnalysisReview struct {
-	// collaborator alias of the reviewer
-	ReviewerCollaboratorAlias *string `json:"reviewer_collaborator_alias,omitempty"`
+	// review comment
+	Comment *string `json:"comment,omitempty"`
 	// timestamp of when the review was submitted
 	CreatedAtMillis *int64 `json:"created_at_millis,omitempty"`
 	// review outcome
 	ReviewState CleanRoomJarAnalysisReview_JarAnalysisReviewState `json:"review_state,omitempty"`
-	// review comment
-	Comment *string `json:"comment,omitempty"`
 	// specified when the review was not explicitly made by a user
 	ReviewSubReason CleanRoomJarAnalysisReview_JarAnalysisReviewSubReason `json:"review_sub_reason,omitempty"`
+	// collaborator alias of the reviewer
+	ReviewerCollaboratorAlias *string `json:"reviewer_collaborator_alias,omitempty"`
 }
 
 type CleanRoomNotebookReview struct {
-	// Collaborator alias of the reviewer
-	ReviewerCollaboratorAlias *string `json:"reviewer_collaborator_alias,omitempty"`
+	// Review comment
+	Comment *string `json:"comment,omitempty"`
 	// When the review was submitted, in epoch milliseconds
 	CreatedAtMillis *int64 `json:"created_at_millis,omitempty"`
 	// Review outcome
 	ReviewState CleanRoomNotebookReview_NotebookReviewState `json:"review_state,omitempty"`
-	// Review comment
-	Comment *string `json:"comment,omitempty"`
 	// Specified when the review was not explicitly made by a user
 	ReviewSubReason CleanRoomNotebookReview_NotebookReviewSubReason `json:"review_sub_reason,omitempty"`
+	// Collaborator alias of the reviewer
+	ReviewerCollaboratorAlias *string `json:"reviewer_collaborator_alias,omitempty"`
 }
 
 // Stores information about a single task run..
 type CleanRoomNotebookTaskRun struct {
-	// Asset name of the notebook executed in this task run.
-	NotebookName *string `json:"notebook_name,omitempty"`
-	// When the task run started, in epoch milliseconds.
-	StartTime *int64 `json:"start_time,omitempty"`
-	// Duration of the task run, in milliseconds.
-	RunDuration *int64 `json:"run_duration,omitempty"`
-	// State of the task run.
-	NotebookJobRunState *CleanRoomTaskRunState `json:"notebook_job_run_state,omitempty"`
 	// Job run info of the task in the runner's local workspace. This field is only
 	// included in the LIST API. if the task was run within the same workspace the
 	// API is being called. If the task run was in a different workspace under the
 	// same metastore, only the workspace_id is included.
 	CollaboratorJobRunInfo *CollaboratorJobRunInfo `json:"collaborator_job_run_info,omitempty"`
-	// Name of the output schema associated with the clean rooms notebook task run.
-	OutputSchemaName *string `json:"output_schema_name,omitempty"`
-	// Expiration time of the output schema of the task run (if any), in epoch
-	// milliseconds.
-	OutputSchemaExpirationTime *int64 `json:"output_schema_expiration_time,omitempty"`
 	// Etag of the notebook executed in this task run, used to identify the notebook
 	// version.
 	NotebookEtag *string `json:"notebook_etag,omitempty"`
+	// State of the task run.
+	NotebookJobRunState *CleanRoomTaskRunState `json:"notebook_job_run_state,omitempty"`
+	// Asset name of the notebook executed in this task run.
+	NotebookName *string `json:"notebook_name,omitempty"`
 	// The timestamp of when the notebook was last updated.
 	NotebookUpdatedAt *int64 `json:"notebook_updated_at,omitempty"`
+	// Expiration time of the output schema of the task run (if any), in epoch
+	// milliseconds.
+	OutputSchemaExpirationTime *int64 `json:"output_schema_expiration_time,omitempty"`
+	// Name of the output schema associated with the clean rooms notebook task run.
+	OutputSchemaName *string `json:"output_schema_name,omitempty"`
+	// Duration of the task run, in milliseconds.
+	RunDuration *int64 `json:"run_duration,omitempty"`
+	// Expiration time of the shared output schema of the task run (if any), in
+	// epoch milliseconds.
+	SharedOutputSchemaExpirationTime *int64 `json:"shared_output_schema_expiration_time,omitempty"`
 	// Name of the shared output schema associated with the clean rooms notebook
 	// task run. This schema is accessible by all collaborators when
 	// enable_shared_output is true.
 	SharedOutputSchemaName *string `json:"shared_output_schema_name,omitempty"`
-	// Expiration time of the shared output schema of the task run (if any), in
-	// epoch milliseconds.
-	SharedOutputSchemaExpirationTime *int64 `json:"shared_output_schema_expiration_time,omitempty"`
+	// When the task run started, in epoch milliseconds.
+	StartTime *int64 `json:"start_time,omitempty"`
 }
 
 type CleanRoomOutputCatalog struct {
-	Status CleanRoomOutputCatalog_OutputCatalogStatus `json:"status,omitempty"`
 	// The name of the output catalog in UC. It should follow [UC securable naming
 	// requirements]. The field will always exist if status is CREATED.
 	//
 	// [UC securable naming requirements]: https://docs.databricks.com/en/data-governance/unity-catalog/index.html#securable-object-naming-requirements
-	CatalogName *string `json:"catalog_name,omitempty"`
+	CatalogName *string                                    `json:"catalog_name,omitempty"`
+	Status      CleanRoomOutputCatalog_OutputCatalogStatus `json:"status,omitempty"`
 }
 
 // Publicly visible central clean room details..
@@ -441,8 +441,6 @@ type CleanRoomRemoteDetail struct {
 	CentralCleanRoomId *string `json:"central_clean_room_id,omitempty"`
 	// Cloud vendor (aws,azure,gcp) of the central clean room.
 	CloudVendor *string `json:"cloud_vendor,omitempty"`
-	// Region of the central clean room.
-	Region *string `json:"region,omitempty"`
 	// Collaborators in the central clean room. There should one and only one
 	// collaborator in the list that satisfies the owner condition:
 	//
@@ -450,12 +448,12 @@ type CleanRoomRemoteDetail struct {
 	// CreateCleanRoom).
 	//
 	// 2. Its invite_recipient_email is empty.
-	Collaborators []CleanRoomCollaborator `json:"collaborators,omitempty"`
+	Collaborators             []CleanRoomCollaborator    `json:"collaborators,omitempty"`
+	ComplianceSecurityProfile *ComplianceSecurityProfile `json:"compliance_security_profile,omitempty"`
 	// Collaborator who creates the clean room.
 	Creator *CleanRoomCollaborator `json:"creator,omitempty"`
 	// Egress network policy to apply to the central clean room workspace.
-	EgressNetworkPolicy       *EgressNetworkPolicy       `json:"egress_network_policy,omitempty"`
-	ComplianceSecurityProfile *ComplianceSecurityProfile `json:"compliance_security_profile,omitempty"`
+	EgressNetworkPolicy *EgressNetworkPolicy `json:"egress_network_policy,omitempty"`
 	// Whether to enable shared output for the central clean room. When enabled,
 	// clean room task runs can write to the run-scoped shared output schema which
 	// is accessible by all collaborators.
@@ -465,32 +463,34 @@ type CleanRoomRemoteDetail struct {
 	// names and READMEs, add their own data assets, and trigger runs, but cannot
 	// view notebook code, provider data assets, or notebook run output.
 	PackageProviderCollaboratorAlias *string `json:"package_provider_collaborator_alias,omitempty"`
+	// Region of the central clean room.
+	Region *string `json:"region,omitempty"`
 }
 
 // Stores information about a single task run..
 type CleanRoomTaskRun struct {
-	// Name of the executable.
-	Name *string `json:"name,omitempty"`
-	// The type of Clean Room task.
-	TaskType CleanRoomTaskType `json:"task_type,omitempty"`
-	// When the task run started, in epoch milliseconds.
-	StartTime *int64 `json:"start_time,omitempty"`
-	// Duration of the task run, in milliseconds.
-	RunDuration *int64 `json:"run_duration,omitempty"`
-	// State of the task run.
-	TaskRunState *CleanRoomTaskRunState `json:"task_run_state,omitempty"`
+	// Information about the analysis run (etag, updated at)
+	AnalysisDetails *CleanRoomTaskRun_CleanRoomTaskAnalysisDetails `json:"analysis_details,omitempty"`
 	// Job run info of the task in the runner's local workspace. This field is only
 	// included in the LIST API if the task was run within the same workspace the
 	// API is being called. If the task run was in a different workspace under the
 	// same metastore, only the workspace_id is included.
 	CollaboratorJobRunInfo *CollaboratorJobRunInfo `json:"collaborator_job_run_info,omitempty"`
+	// Name of the executable.
+	Name *string `json:"name,omitempty"`
 	// Information about run output
 	OutputInfo *CleanRoomTaskRun_OutputInfo `json:"output_info,omitempty"`
-	// Information about the analysis run (etag, updated at)
-	AnalysisDetails *CleanRoomTaskRun_CleanRoomTaskAnalysisDetails `json:"analysis_details,omitempty"`
+	// Duration of the task run, in milliseconds.
+	RunDuration *int64 `json:"run_duration,omitempty"`
 	// Information about shared output accessible by all collaborators. This field
 	// is only populated when enable_shared_output is true.
 	SharedOutputInfo *CleanRoomTaskRun_OutputInfo `json:"shared_output_info,omitempty"`
+	// When the task run started, in epoch milliseconds.
+	StartTime *int64 `json:"start_time,omitempty"`
+	// State of the task run.
+	TaskRunState *CleanRoomTaskRunState `json:"task_run_state,omitempty"`
+	// The type of Clean Room task.
+	TaskType CleanRoomTaskType `json:"task_type,omitempty"`
 }
 
 type CleanRoomTaskRun_CleanRoomTaskAnalysisDetails struct {
@@ -502,11 +502,11 @@ type CleanRoomTaskRun_CleanRoomTaskAnalysisDetails struct {
 }
 
 type CleanRoomTaskRun_OutputInfo struct {
-	// Name of the output schema associated with the clean room task run.
-	OutputSchemaName *string `json:"output_schema_name,omitempty"`
 	// Expiration time of the output schema of the task run (if any), in epoch
 	// milliseconds.
 	OutputSchemaExpirationTime *int64 `json:"output_schema_expiration_time,omitempty"`
+	// Name of the output schema associated with the clean room task run.
+	OutputSchemaName *string `json:"output_schema_name,omitempty"`
 }
 
 // Stores the run state of the clean rooms notebook task..
@@ -522,6 +522,8 @@ type CleanRoomTaskRunState struct {
 }
 
 type CollaboratorJobRunInfo struct {
+	// Alias of the collaborator that triggered the task run.
+	CollaboratorAlias *string `json:"collaborator_alias,omitempty"`
 	// Job ID of the task run in the collaborator's workspace.
 	CollaboratorJobId *int64 `json:"collaborator_job_id,omitempty"`
 	// Job run ID of the task run in the collaborator's workspace.
@@ -530,57 +532,55 @@ type CollaboratorJobRunInfo struct {
 	CollaboratorTaskRunId *int64 `json:"collaborator_task_run_id,omitempty"`
 	// ID of the collaborator's workspace that triggered the task run.
 	CollaboratorWorkspaceId *int64 `json:"collaborator_workspace_id,omitempty"`
-	// Alias of the collaborator that triggered the task run.
-	CollaboratorAlias *string `json:"collaborator_alias,omitempty"`
 }
 
 type ColumnInfo struct {
+	// User-provided free-form text description.
+	Comment *string     `json:"comment,omitempty"`
+	Mask    *ColumnMask `json:"mask,omitempty"`
 	// Name of Column.
 	Name *string `json:"name,omitempty"`
-	// Full data type specification as SQL/catalogString text.
-	TypeText *string        `json:"type_text,omitempty"`
-	TypeName ColumnTypeName `json:"type_name,omitempty"`
+	// Whether field may be Null (default: true).
+	Nullable *bool `json:"nullable,omitempty"`
+	// Partition index for column.
+	PartitionIndex *int `json:"partition_index,omitempty"`
 	// Ordinal position of column (starting at position 0).
 	Position *int `json:"position,omitempty"`
+	// Format of IntervalType.
+	TypeIntervalType *string `json:"type_interval_type,omitempty"`
+	// Full data type specification, JSON-serialized.
+	TypeJson *string        `json:"type_json,omitempty"`
+	TypeName ColumnTypeName `json:"type_name,omitempty"`
 	// Digits of precision; required for DecimalTypes.
 	TypePrecision *int `json:"type_precision,omitempty"`
 	// Digits to right of decimal; Required for DecimalTypes.
 	TypeScale *int `json:"type_scale,omitempty"`
-	// Format of IntervalType.
-	TypeIntervalType *string `json:"type_interval_type,omitempty"`
-	// Full data type specification, JSON-serialized.
-	TypeJson *string `json:"type_json,omitempty"`
-	// User-provided free-form text description.
-	Comment *string `json:"comment,omitempty"`
-	// Whether field may be Null (default: true).
-	Nullable *bool `json:"nullable,omitempty"`
-	// Partition index for column.
-	PartitionIndex *int        `json:"partition_index,omitempty"`
-	Mask           *ColumnMask `json:"mask,omitempty"`
+	// Full data type specification as SQL/catalogString text.
+	TypeText *string `json:"type_text,omitempty"`
 }
 
 type ColumnMask struct {
 	// The full name of the column mask SQL UDF.
 	FunctionName *string `json:"function_name,omitempty"`
+	// The list of table columns or literals to be passed as additional arguments to
+	// a column mask function, carrying the type (column reference vs constant
+	// literal) of each argument. Deprecated: use using_column_names instead.
+	UsingArguments []PolicyFunctionArgument `json:"using_arguments,omitempty"`
 	// The list of additional table columns to be passed as input to the column mask
 	// function. The first arg of the mask function should be of the type of the
 	// column being masked and the types of the rest of the args should match the
 	// types of columns in 'using_column_names'.
 	UsingColumnNames []string `json:"using_column_names,omitempty"`
-	// The list of table columns or literals to be passed as additional arguments to
-	// a column mask function, carrying the type (column reference vs constant
-	// literal) of each argument. Deprecated: use using_column_names instead.
-	UsingArguments []PolicyFunctionArgument `json:"using_arguments,omitempty"`
 }
 
 // The compliance security profile used to process regulated data following
 // compliance standards..
 type ComplianceSecurityProfile struct {
-	// Whether the compliance security profile is enabled.
-	IsEnabled *bool `json:"is_enabled,omitempty"`
 	// The list of compliance standards that the compliance security profile is
 	// configured to enforce.
 	ComplianceStandards []ComplianceStandard `json:"compliance_standards,omitempty"`
+	// Whether the compliance security profile is enabled.
+	IsEnabled *bool `json:"is_enabled,omitempty"`
 }
 
 type CreateCleanRoomAssetRequest struct {
@@ -588,23 +588,23 @@ type CreateCleanRoomAssetRequest struct {
 }
 
 type CreateCleanRoomAssetReviewRequest struct {
-	// Name of the clean room
-	CleanRoomName *string `json:"clean_room_name,omitempty"`
-	// Name of the asset
-	Name *string `json:"name,omitempty"`
 	// Asset type. Can either be NOTEBOOK_FILE or JAR_ANALYSIS.
-	AssetType         CleanRoomAsset_AssetType  `json:"asset_type,omitempty"`
-	NotebookReview    *NotebookVersionReview    `json:"notebook_review,omitempty"`
+	AssetType CleanRoomAsset_AssetType `json:"asset_type,omitempty"`
+	// Name of the clean room
+	CleanRoomName     *string                   `json:"clean_room_name,omitempty"`
 	JarAnalysisReview *JarAnalysisVersionReview `json:"jar_analysis_review,omitempty"`
+	// Name of the asset
+	Name           *string                `json:"name,omitempty"`
+	NotebookReview *NotebookVersionReview `json:"notebook_review,omitempty"`
 }
 
 type CreateCleanRoomAssetReviewResponse struct {
+	JarAnalysisReviewState CleanRoomJarAnalysisReview_JarAnalysisReviewState `json:"jar_analysis_review_state,omitempty"`
+	// All existing jar analysis approvals or rejections
+	JarAnalysisReviews  []CleanRoomJarAnalysisReview                `json:"jar_analysis_reviews,omitempty"`
+	NotebookReviewState CleanRoomNotebookReview_NotebookReviewState `json:"notebook_review_state,omitempty"`
 	// All existing notebook approvals or rejections
 	NotebookReviews []CleanRoomNotebookReview `json:"notebook_reviews,omitempty"`
-	// All existing jar analysis approvals or rejections
-	JarAnalysisReviews     []CleanRoomJarAnalysisReview                      `json:"jar_analysis_reviews,omitempty"`
-	NotebookReviewState    CleanRoomNotebookReview_NotebookReviewState       `json:"notebook_review_state,omitempty"`
-	JarAnalysisReviewState CleanRoomJarAnalysisReview_JarAnalysisReviewState `json:"jar_analysis_review_state,omitempty"`
 }
 
 type CreateCleanRoomAutoApprovalRuleRequest struct {
@@ -635,11 +635,11 @@ type EgressNetworkPolicy struct {
 }
 
 type EgressNetworkPolicy_InternetAccessPolicy struct {
-	RestrictionMode             EgressNetworkPolicy_InternetAccessPolicy_RestrictionMode       `json:"restriction_mode,omitempty"`
 	AllowedInternetDestinations []EgressNetworkPolicy_InternetAccessPolicy_InternetDestination `json:"allowed_internet_destinations,omitempty"`
 	AllowedStorageDestinations  []EgressNetworkPolicy_InternetAccessPolicy_StorageDestination  `json:"allowed_storage_destinations,omitempty"`
 	// Optional. If not specified, assume the policy is enforced for all workloads.
-	LogOnlyMode *EgressNetworkPolicy_InternetAccessPolicy_LogOnlyMode `json:"log_only_mode,omitempty"`
+	LogOnlyMode     *EgressNetworkPolicy_InternetAccessPolicy_LogOnlyMode    `json:"log_only_mode,omitempty"`
+	RestrictionMode EgressNetworkPolicy_InternetAccessPolicy_RestrictionMode `json:"restriction_mode,omitempty"`
 }
 
 // Users can specify accessible internet destinations when outbound access is
@@ -647,8 +647,8 @@ type EgressNetworkPolicy_InternetAccessPolicy struct {
 // being, though going forwards we want to support host names and IP addresses..
 type EgressNetworkPolicy_InternetAccessPolicy_InternetDestination struct {
 	Destination *string                                                                                           `json:"destination,omitempty"`
-	Type        EgressNetworkPolicy_InternetAccessPolicy_InternetDestination_InternetDestinationType              `json:"type,omitempty"`
 	Protocol    EgressNetworkPolicy_InternetAccessPolicy_InternetDestination_InternetDestinationFilteringProtocol `json:"protocol,omitempty"`
+	Type        EgressNetworkPolicy_InternetAccessPolicy_InternetDestination_InternetDestinationType              `json:"type,omitempty"`
 }
 
 type EgressNetworkPolicy_InternetAccessPolicy_LogOnlyMode struct {
@@ -658,33 +658,33 @@ type EgressNetworkPolicy_InternetAccessPolicy_LogOnlyMode struct {
 
 // Users can specify accessible storage destinations..
 type EgressNetworkPolicy_InternetAccessPolicy_StorageDestination struct {
+	AllowedPaths        []string                                                                           `json:"allowed_paths,omitempty"`
+	AzureContainer      *string                                                                            `json:"azure_container,omitempty"`
+	AzureDnsZone        *string                                                                            `json:"azure_dns_zone,omitempty"`
+	AzureStorageAccount *string                                                                            `json:"azure_storage_account,omitempty"`
+	AzureStorageService *string                                                                            `json:"azure_storage_service,omitempty"`
 	BucketName          *string                                                                            `json:"bucket_name,omitempty"`
 	Region              *string                                                                            `json:"region,omitempty"`
 	Type                EgressNetworkPolicy_InternetAccessPolicy_StorageDestination_StorageDestinationType `json:"type,omitempty"`
-	AzureStorageAccount *string                                                                            `json:"azure_storage_account,omitempty"`
-	AllowedPaths        []string                                                                           `json:"allowed_paths,omitempty"`
-	AzureStorageService *string                                                                            `json:"azure_storage_service,omitempty"`
-	AzureDnsZone        *string                                                                            `json:"azure_dns_zone,omitempty"`
-	AzureContainer      *string                                                                            `json:"azure_container,omitempty"`
 }
 
 type JarAnalysisVersionReview struct {
+	// Review comment
+	Comment *string `json:"comment,omitempty"`
 	// Etag identifying the jar analysis version, with its value being a hash of an
 	// internally-generated UUID
 	Etag *string `json:"etag,omitempty"`
 	// Review outcome
 	ReviewState CleanRoomJarAnalysisReview_JarAnalysisReviewState `json:"review_state,omitempty"`
-	// Review comment
-	Comment *string `json:"comment,omitempty"`
 }
 
 type ListCleanRoomAssetRevisionsRequest struct {
+	// Asset type. Only NOTEBOOK_FILE is supported.
+	AssetType CleanRoomAsset_AssetType `json:"asset_type,omitempty"`
 	// Name of the clean room.
 	CleanRoomName *string `json:"clean_room_name,omitempty"`
 	// Name of the asset.
 	Name *string `json:"name,omitempty"`
-	// Asset type. Only NOTEBOOK_FILE is supported.
-	AssetType CleanRoomAsset_AssetType `json:"asset_type,omitempty"`
 	// Maximum number of asset revisions to return. Defaults to 10.
 	PageSize *int `json:"page_size,omitempty"`
 	// Opaque pagination token to go to next page based on the previous query.
@@ -692,8 +692,8 @@ type ListCleanRoomAssetRevisionsRequest struct {
 }
 
 type ListCleanRoomAssetRevisionsResponse struct {
-	Revisions     []CleanRoomAsset `json:"revisions,omitempty"`
 	NextPageToken *string          `json:"next_page_token,omitempty"`
+	Revisions     []CleanRoomAsset `json:"revisions,omitempty"`
 }
 
 type ListCleanRoomAssetsRequest struct {
@@ -721,11 +721,11 @@ type ListCleanRoomAutoApprovalRulesRequest struct {
 }
 
 type ListCleanRoomAutoApprovalRulesResponse struct {
-	Rules []CleanRoomAutoApprovalRule `json:"rules,omitempty"`
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. page_token should be set to this value for the next request (for
 	// the next page of results).
-	NextPageToken *string `json:"next_page_token,omitempty"`
+	NextPageToken *string                     `json:"next_page_token,omitempty"`
+	Rules         []CleanRoomAutoApprovalRule `json:"rules,omitempty"`
 }
 
 type ListCleanRoomNotebookTaskRunsRequest struct {
@@ -741,12 +741,12 @@ type ListCleanRoomNotebookTaskRunsRequest struct {
 }
 
 type ListCleanRoomNotebookTaskRunsResponse struct {
-	// Name of the clean room.
-	Runs []CleanRoomNotebookTaskRun `json:"runs,omitempty"`
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. page_token should be set to this value for the next request (for
 	// the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// Name of the clean room.
+	Runs []CleanRoomNotebookTaskRun `json:"runs,omitempty"`
 }
 
 type ListCleanRoomTaskRunsRequest struct {
@@ -754,21 +754,21 @@ type ListCleanRoomTaskRunsRequest struct {
 	CleanRoomName *string `json:"clean_room_name,omitempty"`
 	// Executable name.
 	Name *string `json:"name,omitempty"`
-	// Filter by the type of Clean Room task.
-	TaskType CleanRoomTaskType `json:"task_type,omitempty"`
 	// The maximum number of task runs to return. Maximum value of 100.
 	PageSize *int `json:"page_size,omitempty"`
 	// Opaque pagination token to go to next page based on previous query.
 	PageToken *string `json:"page_token,omitempty"`
+	// Filter by the type of Clean Room task.
+	TaskType CleanRoomTaskType `json:"task_type,omitempty"`
 }
 
 type ListCleanRoomTaskRunsResponse struct {
-	// Task runs in the clean room.
-	Runs []CleanRoomTaskRun `json:"runs,omitempty"`
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. page_token should be set to this value for the next request (for
 	// the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// Task runs in the clean room.
+	Runs []CleanRoomTaskRun `json:"runs,omitempty"`
 }
 
 type ListCleanRoomsRequest struct {
@@ -788,12 +788,12 @@ type ListCleanRoomsResponse struct {
 }
 
 type NotebookVersionReview struct {
+	// Review comment
+	Comment *string `json:"comment,omitempty"`
 	// Etag identifying the notebook version
 	Etag *string `json:"etag,omitempty"`
 	// Review outcome
 	ReviewState CleanRoomNotebookReview_NotebookReviewState `json:"review_state,omitempty"`
-	// Review comment
-	Comment *string `json:"comment,omitempty"`
 }
 
 type PartitionSpecification_Partition struct {
@@ -804,16 +804,16 @@ type PartitionSpecification_Partition struct {
 type PartitionSpecification_Partition_PartitionValue struct {
 	// The name of the partition column.
 	Name *string `json:"name,omitempty"`
-	// The value of the partition column. When this value is not set, it means
-	// `null` value. When this field is set, field `recipient_property_key` can not
-	// be set.
-	Value *string `json:"value,omitempty"`
+	// The operator to apply for the value.
+	Op PartitionSpecification_Partition_PartitionValue_PartitionValueOp `json:"op,omitempty"`
 	// The key of a Delta Sharing recipient's property. For example
 	// "databricks-account-id". When this field is set, field `value` can not be
 	// set.
 	RecipientPropertyKey *string `json:"recipient_property_key,omitempty"`
-	// The operator to apply for the value.
-	Op PartitionSpecification_Partition_PartitionValue_PartitionValueOp `json:"op,omitempty"`
+	// The value of the partition column. When this value is not set, it means
+	// `null` value. When this field is set, field `recipient_property_key` can not
+	// be set.
+	Value *string `json:"value,omitempty"`
 }
 
 // A positional argument passed to a row filter or column mask function.
@@ -824,11 +824,11 @@ type PolicyFunctionArgument struct {
 }
 
 type UpdateCleanRoomAssetRequest struct {
-	// Name of the clean room.
-	CleanRoomName *string `json:"clean_room_name,omitempty"`
 	// The asset to update. The asset's `name` and `asset_type` fields are used to
 	// identify the asset to update.
 	Asset *CleanRoomAsset `json:"asset,omitempty"`
+	// Name of the clean room.
+	CleanRoomName *string `json:"clean_room_name,omitempty"`
 }
 
 type UpdateCleanRoomAutoApprovalRuleRequest struct {
@@ -838,9 +838,9 @@ type UpdateCleanRoomAutoApprovalRuleRequest struct {
 }
 
 type UpdateCleanRoomRequest struct {
-	// Name of the clean room.
-	Name      *string    `json:"name,omitempty"`
 	CleanRoom *CleanRoom `json:"clean_room,omitempty"`
+	// Name of the clean room.
+	Name *string `json:"name,omitempty"`
 }
 
 // CleanRoomToSDK converts the mirror to the sdk-go type.

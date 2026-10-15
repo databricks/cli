@@ -26,24 +26,24 @@ const (
 )
 
 type CreateTokenRequest struct {
+	// Whether to enable autoscoping for this token. When true, the token will
+	// automatically collect inferred API path scopes as it is used.
+	AutoscopeEnabled *bool `json:"autoscope_enabled,omitempty"`
+	// Optional description to attach to the token.
+	Comment *string `json:"comment,omitempty"`
 	// The lifetime of the token, in seconds.
 	//
 	// If the lifetime is not specified, this token remains valid for 2 years.
 	LifetimeSeconds *int64 `json:"lifetime_seconds,omitempty"`
-	// Optional description to attach to the token.
-	Comment *string `json:"comment,omitempty"`
 	// Optional scopes of the token.
 	Scopes []string `json:"scopes,omitempty"`
-	// Whether to enable autoscoping for this token. When true, the token will
-	// automatically collect inferred API path scopes as it is used.
-	AutoscopeEnabled *bool `json:"autoscope_enabled,omitempty"`
 }
 
 type CreateTokenResponse struct {
-	// The value of the new token.
-	TokenValue *string `json:"token_value,omitempty"`
 	// The information for the new token.
 	TokenInfo *PublicTokenInfo `json:"token_info,omitempty"`
+	// The value of the new token.
+	TokenValue *string `json:"token_value,omitempty"`
 }
 
 type ListTokensResponse struct {
@@ -52,24 +52,24 @@ type ListTokensResponse struct {
 }
 
 type PublicTokenInfo struct {
-	// The ID of this token.
-	TokenId *string `json:"token_id,omitempty"`
+	// Output only. The autoscope state of this token.
+	AutoscopeState AutoscopeState `json:"autoscope_state,omitempty"`
+	// Output only. Scopes inferred from offline backfill processing.
+	BackfillScopes []string `json:"backfill_scopes,omitempty"`
+	// Comment the token was created with, if applicable.
+	Comment *string `json:"comment,omitempty"`
 	// Server time (in epoch milliseconds) when the token was created.
 	CreationTime *int64 `json:"creation_time,omitempty"`
 	// Server time (in epoch milliseconds) when the token will expire, or -1 if not
 	// applicable.
 	ExpiryTime *int64 `json:"expiry_time,omitempty"`
-	// Comment the token was created with, if applicable.
-	Comment *string `json:"comment,omitempty"`
-	// Scope of the token was created with, if applicable.
-	Scopes []string `json:"scopes,omitempty"`
-	// Output only. The autoscope state of this token.
-	AutoscopeState AutoscopeState `json:"autoscope_state,omitempty"`
 	// Output only. Inferred API path scopes collected for this token when autoscope
 	// is enabled.
 	InferredScopes []string `json:"inferred_scopes,omitempty"`
-	// Output only. Scopes inferred from offline backfill processing.
-	BackfillScopes []string `json:"backfill_scopes,omitempty"`
+	// Scope of the token was created with, if applicable.
+	Scopes []string `json:"scopes,omitempty"`
+	// The ID of this token.
+	TokenId *string `json:"token_id,omitempty"`
 }
 
 type RevokeTokenRequest struct {
@@ -80,9 +80,9 @@ type RevokeTokenRequest struct {
 // For the list of supported token scopes, see
 // https://docs.databricks.com/api/workspace/api/scopes..
 type UpdateTokenRequest struct {
+	Token *PublicTokenInfo `json:"token,omitempty"`
 	// The SHA-256 hash of the token to be updated.
-	TokenId *string          `json:"token_id,omitempty"`
-	Token   *PublicTokenInfo `json:"token,omitempty"`
+	TokenId *string `json:"token_id,omitempty"`
 	// A list of field name under token, For example, {"update_mask":
 	// "comment,scopes"}
 	UpdateMask *string `json:"update_mask,omitempty"`

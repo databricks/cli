@@ -25,12 +25,12 @@ const (
 type ArtifactAllowlistInfo struct {
 	// A list of allowed artifact match patterns.
 	ArtifactMatchers []ArtifactMatcher `json:"artifact_matchers,omitempty"`
-	// Unique identifier of parent metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Username of the user who set the artifact allowlist.
-	CreatedBy *string `json:"created_by,omitempty"`
 	// Time at which this artifact allowlist was set, in epoch milliseconds.
 	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of the user who set the artifact allowlist.
+	CreatedBy *string `json:"created_by,omitempty"`
+	// Unique identifier of parent metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
 }
 
 type ArtifactMatcher struct {
@@ -41,16 +41,16 @@ type ArtifactMatcher struct {
 }
 
 type SetArtifactAllowlistRequest struct {
-	// The artifact type of the allowlist.
-	ArtifactType ArtifactType `json:"artifact_type,omitempty"`
 	// A list of allowed artifact match patterns.
 	ArtifactMatchers []ArtifactMatcher `json:"artifact_matchers,omitempty"`
-	// Unique identifier of parent metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Username of the user who set the artifact allowlist.
-	CreatedBy *string `json:"created_by,omitempty"`
+	// The artifact type of the allowlist.
+	ArtifactType ArtifactType `json:"artifact_type,omitempty"`
 	// Time at which this artifact allowlist was set, in epoch milliseconds.
 	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of the user who set the artifact allowlist.
+	CreatedBy *string `json:"created_by,omitempty"`
+	// Unique identifier of parent metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
 }
 
 // ArtifactAllowlistInfoToSDK converts the mirror to the sdk-go type.

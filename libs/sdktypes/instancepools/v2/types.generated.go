@@ -42,18 +42,47 @@ const (
 )
 
 type CreateInstancePoolRequest struct {
+	// Attributes related to instance pools running on Amazon Web Services. If not
+	// specified at pool creation, a set of default values will be used.
+	AwsAttributes *InstancePoolAwsAttributes `json:"aws_attributes,omitempty"`
+	// Attributes related to instance pools running on Azure. If not specified at
+	// pool creation, a set of default values will be used.
+	AzureAttributes *InstancePoolAzureAttributes `json:"azure_attributes,omitempty"`
+	// Additional tags for pool resources. <Databricks> will tag all pool resources
+	// (e.g., AWS instances and EBS volumes) with these tags in addition to
+	// `default_tags`. Notes:
+	//
+	// - Currently, <Databricks> allows at most 45 custom tags
+	CustomTags map[string]string `json:"custom_tags,omitempty"`
+	// Defines the specification of the disks that will be attached to all spark
+	// containers.
+	DiskSpec *DiskSpec `json:"disk_spec,omitempty"`
+	// Autoscaling Local Storage: when enabled, this instances in this pool will
+	// dynamically acquire additional disk space when its Spark workers are running
+	// low on disk space. In AWS, this feature requires specific AWS permissions to
+	// function correctly - refer to the User Guide for more details.
+	EnableElasticDisk *bool `json:"enable_elastic_disk,omitempty"`
+	// Attributes related to instance pools running on Google Cloud Platform. If not
+	// specified at pool creation, a set of default values will be used.
+	GcpAttributes *InstancePoolGcpAttributes `json:"gcp_attributes,omitempty"`
+	// Automatically terminates the extra instances in the pool cache after they are
+	// inactive for this time in minutes if min_idle_instances requirement is
+	// already met. If not set, the extra pool instances will be automatically
+	// terminated after a default timeout. If specified, the threshold must be
+	// between 0 and 10000 minutes. Users can also set this value to 0 to instantly
+	// remove idle instances from the cache if min cache size could still hold.
+	IdleInstanceAutoterminationMinutes *int `json:"idle_instance_autotermination_minutes,omitempty"`
 	// Pool name requested by the user. Pool name must be unique. Length must be
 	// between 1 and 100 characters.
 	InstancePoolName *string `json:"instance_pool_name,omitempty"`
-	// Minimum number of idle instances to keep in the instance pool
-	MinIdleInstances *int `json:"min_idle_instances,omitempty"`
 	// Maximum number of outstanding instances to keep in the pool, including both
 	// instances used by clusters and idle instances. Clusters that require further
 	// instance provisioning will fail during upsize requests.
 	MaxCapacity *int `json:"max_capacity,omitempty"`
-	// Attributes related to instance pools running on Amazon Web Services. If not
-	// specified at pool creation, a set of default values will be used.
-	AwsAttributes *InstancePoolAwsAttributes `json:"aws_attributes,omitempty"`
+	// Minimum number of idle instances to keep in the instance pool
+	MinIdleInstances *int `json:"min_idle_instances,omitempty"`
+	// Flexible node type configuration for the pool.
+	NodeTypeFlexibility *NodeTypeFlexibility `json:"node_type_flexibility,omitempty"`
 	// This field encodes, through a single value, the resources available to each
 	// of the Spark nodes in this cluster. For example, the Spark nodes can be
 	// provisioned and optimized for memory or compute intensive workloads. A list
@@ -62,27 +91,6 @@ type CreateInstancePoolRequest struct {
 	//
 	// [clusters/listNodeTypes]: https://docs.databricks.com/api/workspace/clusters/listnodetypes
 	NodeTypeId *string `json:"node_type_id,omitempty"`
-	// Additional tags for pool resources. <Databricks> will tag all pool resources
-	// (e.g., AWS instances and EBS volumes) with these tags in addition to
-	// `default_tags`. Notes:
-	//
-	// - Currently, <Databricks> allows at most 45 custom tags
-	CustomTags map[string]string `json:"custom_tags,omitempty"`
-	// Automatically terminates the extra instances in the pool cache after they are
-	// inactive for this time in minutes if min_idle_instances requirement is
-	// already met. If not set, the extra pool instances will be automatically
-	// terminated after a default timeout. If specified, the threshold must be
-	// between 0 and 10000 minutes. Users can also set this value to 0 to instantly
-	// remove idle instances from the cache if min cache size could still hold.
-	IdleInstanceAutoterminationMinutes *int `json:"idle_instance_autotermination_minutes,omitempty"`
-	// Autoscaling Local Storage: when enabled, this instances in this pool will
-	// dynamically acquire additional disk space when its Spark workers are running
-	// low on disk space. In AWS, this feature requires specific AWS permissions to
-	// function correctly - refer to the User Guide for more details.
-	EnableElasticDisk *bool `json:"enable_elastic_disk,omitempty"`
-	// Defines the specification of the disks that will be attached to all spark
-	// containers.
-	DiskSpec *DiskSpec `json:"disk_spec,omitempty"`
 	// Custom Docker Image BYOC
 	PreloadedDockerImages []DockerImage `json:"preloaded_docker_images,omitempty"`
 	// A list containing at most one preloaded Spark image version for the pool.
@@ -92,14 +100,6 @@ type CreateInstancePoolRequest struct {
 	//
 	// [clusters/sparkVersions]: https://docs.databricks.com/api/workspace/clusters/sparkversions
 	PreloadedSparkVersions []string `json:"preloaded_spark_versions,omitempty"`
-	// Attributes related to instance pools running on Azure. If not specified at
-	// pool creation, a set of default values will be used.
-	AzureAttributes *InstancePoolAzureAttributes `json:"azure_attributes,omitempty"`
-	// Attributes related to instance pools running on Google Cloud Platform. If not
-	// specified at pool creation, a set of default values will be used.
-	GcpAttributes *InstancePoolGcpAttributes `json:"gcp_attributes,omitempty"`
-	// Flexible node type configuration for the pool.
-	NodeTypeFlexibility *NodeTypeFlexibility `json:"node_type_flexibility,omitempty"`
 	// If set, what the configurable throughput (in Mb/s) for the remote disk is.
 	// Currently only supported for GCP HYPERDISK_BALANCED types.
 	RemoteDiskThroughput *int `json:"remote_disk_throughput,omitempty"`
@@ -123,8 +123,6 @@ type DeleteInstancePoolRequest struct {
 // launch 2 disks, 100 GiB each, then <Databricks> will launch a total of 6
 // disks, 100 GiB each, for this cluster..
 type DiskSpec struct {
-	// The type of disks that will be launched with this cluster.
-	DiskType *DiskType `json:"disk_type,omitempty"`
 	// The number of disks launched for each instance: - This feature is only
 	// enabled for supported node types. - Users can choose up to the limit of the
 	// disks supported by the node type. - For node types with no OS disk, at least
@@ -141,6 +139,7 @@ type DiskSpec struct {
 	// Disks will be mounted at: - For AWS: `/ebs0`, `/ebs1`, and etc. - For Azure:
 	// `/remote_volume0`, `/remote_volume1`, and etc.
 	DiskCount *int `json:"disk_count,omitempty"`
+	DiskIops  *int `json:"disk_iops,omitempty"`
 	// The size of each disk (in GiB) launched for each instance. Values must fall
 	// into the supported range for a particular instance type.
 	//
@@ -150,44 +149,74 @@ type DiskSpec struct {
 	// For Azure: - Premium LRS (SSD): 1 - 1023 GiB - Standard LRS (HDD): 1- 1023
 	// GiB
 	DiskSize       *int `json:"disk_size,omitempty"`
-	DiskIops       *int `json:"disk_iops,omitempty"`
 	DiskThroughput *int `json:"disk_throughput,omitempty"`
+	// The type of disks that will be launched with this cluster.
+	DiskType *DiskType `json:"disk_type,omitempty"`
 }
 
 // Describes the disk type..
 type DiskType struct {
-	EbsVolumeType       EbsVolumeType       `json:"ebs_volume_type,omitempty"`
 	AzureDiskVolumeType AzureDiskVolumeType `json:"azure_disk_volume_type,omitempty"`
+	EbsVolumeType       EbsVolumeType       `json:"ebs_volume_type,omitempty"`
 }
 
 type DockerBasicAuth struct {
-	// Name of the user
-	Username *string `json:"username,omitempty"`
 	// Password of the user
 	Password *string `json:"password,omitempty"`
+	// Name of the user
+	Username *string `json:"username,omitempty"`
 }
 
 type DockerImage struct {
-	// URL of the docker image.
-	Url       *string          `json:"url,omitempty"`
 	BasicAuth *DockerBasicAuth `json:"basic_auth,omitempty"`
+	// URL of the docker image.
+	Url *string `json:"url,omitempty"`
 }
 
 type EditInstancePoolRequest struct {
+	// Attributes related to instance pools running on Amazon Web Services. If not
+	// specified at pool creation, a set of default values will be used.
+	AwsAttributes *InstancePoolAwsAttributes `json:"aws_attributes,omitempty"`
+	// Attributes related to instance pools running on Azure. If not specified at
+	// pool creation, a set of default values will be used.
+	AzureAttributes *InstancePoolAzureAttributes `json:"azure_attributes,omitempty"`
+	// Additional tags for pool resources. <Databricks> will tag all pool resources
+	// (e.g., AWS instances and EBS volumes) with these tags in addition to
+	// `default_tags`. Notes:
+	//
+	// - Currently, <Databricks> allows at most 45 custom tags
+	CustomTags map[string]string `json:"custom_tags,omitempty"`
+	// Defines the specification of the disks that will be attached to all spark
+	// containers.
+	DiskSpec *DiskSpec `json:"disk_spec,omitempty"`
+	// Autoscaling Local Storage: when enabled, this instances in this pool will
+	// dynamically acquire additional disk space when its Spark workers are running
+	// low on disk space. In AWS, this feature requires specific AWS permissions to
+	// function correctly - refer to the User Guide for more details.
+	EnableElasticDisk *bool `json:"enable_elastic_disk,omitempty"`
+	// Attributes related to instance pools running on Google Cloud Platform. If not
+	// specified at pool creation, a set of default values will be used.
+	GcpAttributes *InstancePoolGcpAttributes `json:"gcp_attributes,omitempty"`
+	// Automatically terminates the extra instances in the pool cache after they are
+	// inactive for this time in minutes if min_idle_instances requirement is
+	// already met. If not set, the extra pool instances will be automatically
+	// terminated after a default timeout. If specified, the threshold must be
+	// between 0 and 10000 minutes. Users can also set this value to 0 to instantly
+	// remove idle instances from the cache if min cache size could still hold.
+	IdleInstanceAutoterminationMinutes *int `json:"idle_instance_autotermination_minutes,omitempty"`
 	// Instance pool ID
 	InstancePoolId *string `json:"instance_pool_id,omitempty"`
 	// Pool name requested by the user. Pool name must be unique. Length must be
 	// between 1 and 100 characters.
 	InstancePoolName *string `json:"instance_pool_name,omitempty"`
-	// Minimum number of idle instances to keep in the instance pool
-	MinIdleInstances *int `json:"min_idle_instances,omitempty"`
 	// Maximum number of outstanding instances to keep in the pool, including both
 	// instances used by clusters and idle instances. Clusters that require further
 	// instance provisioning will fail during upsize requests.
 	MaxCapacity *int `json:"max_capacity,omitempty"`
-	// Attributes related to instance pools running on Amazon Web Services. If not
-	// specified at pool creation, a set of default values will be used.
-	AwsAttributes *InstancePoolAwsAttributes `json:"aws_attributes,omitempty"`
+	// Minimum number of idle instances to keep in the instance pool
+	MinIdleInstances *int `json:"min_idle_instances,omitempty"`
+	// Flexible node type configuration for the pool.
+	NodeTypeFlexibility *NodeTypeFlexibility `json:"node_type_flexibility,omitempty"`
 	// This field encodes, through a single value, the resources available to each
 	// of the Spark nodes in this cluster. For example, the Spark nodes can be
 	// provisioned and optimized for memory or compute intensive workloads. A list
@@ -196,27 +225,6 @@ type EditInstancePoolRequest struct {
 	//
 	// [clusters/listNodeTypes]: https://docs.databricks.com/api/workspace/clusters/listnodetypes
 	NodeTypeId *string `json:"node_type_id,omitempty"`
-	// Additional tags for pool resources. <Databricks> will tag all pool resources
-	// (e.g., AWS instances and EBS volumes) with these tags in addition to
-	// `default_tags`. Notes:
-	//
-	// - Currently, <Databricks> allows at most 45 custom tags
-	CustomTags map[string]string `json:"custom_tags,omitempty"`
-	// Automatically terminates the extra instances in the pool cache after they are
-	// inactive for this time in minutes if min_idle_instances requirement is
-	// already met. If not set, the extra pool instances will be automatically
-	// terminated after a default timeout. If specified, the threshold must be
-	// between 0 and 10000 minutes. Users can also set this value to 0 to instantly
-	// remove idle instances from the cache if min cache size could still hold.
-	IdleInstanceAutoterminationMinutes *int `json:"idle_instance_autotermination_minutes,omitempty"`
-	// Autoscaling Local Storage: when enabled, this instances in this pool will
-	// dynamically acquire additional disk space when its Spark workers are running
-	// low on disk space. In AWS, this feature requires specific AWS permissions to
-	// function correctly - refer to the User Guide for more details.
-	EnableElasticDisk *bool `json:"enable_elastic_disk,omitempty"`
-	// Defines the specification of the disks that will be attached to all spark
-	// containers.
-	DiskSpec *DiskSpec `json:"disk_spec,omitempty"`
 	// Custom Docker Image BYOC
 	PreloadedDockerImages []DockerImage `json:"preloaded_docker_images,omitempty"`
 	// A list containing at most one preloaded Spark image version for the pool.
@@ -226,14 +234,6 @@ type EditInstancePoolRequest struct {
 	//
 	// [clusters/sparkVersions]: https://docs.databricks.com/api/workspace/clusters/sparkversions
 	PreloadedSparkVersions []string `json:"preloaded_spark_versions,omitempty"`
-	// Attributes related to instance pools running on Azure. If not specified at
-	// pool creation, a set of default values will be used.
-	AzureAttributes *InstancePoolAzureAttributes `json:"azure_attributes,omitempty"`
-	// Attributes related to instance pools running on Google Cloud Platform. If not
-	// specified at pool creation, a set of default values will be used.
-	GcpAttributes *InstancePoolGcpAttributes `json:"gcp_attributes,omitempty"`
-	// Flexible node type configuration for the pool.
-	NodeTypeFlexibility *NodeTypeFlexibility `json:"node_type_flexibility,omitempty"`
 	// If set, what the configurable throughput (in Mb/s) for the remote disk is.
 	// Currently only supported for GCP HYPERDISK_BALANCED types.
 	RemoteDiskThroughput *int `json:"remote_disk_throughput,omitempty"`
@@ -248,12 +248,18 @@ type GetInstancePoolRequest struct {
 }
 
 type GetInstancePoolResponse struct {
-	// Usage statistics about the instance pool.
-	Stats *InstancePoolStats `json:"stats,omitempty"`
-	// Status of failed pending instances in the pool.
-	Status *InstancePoolStatus `json:"status,omitempty"`
-	// Canonical unique identifier for the pool.
-	InstancePoolId *string `json:"instance_pool_id,omitempty"`
+	// Attributes related to instance pools running on Amazon Web Services. If not
+	// specified at pool creation, a set of default values will be used.
+	AwsAttributes *InstancePoolAwsAttributes `json:"aws_attributes,omitempty"`
+	// Attributes related to instance pools running on Azure. If not specified at
+	// pool creation, a set of default values will be used.
+	AzureAttributes *InstancePoolAzureAttributes `json:"azure_attributes,omitempty"`
+	// Additional tags for pool resources. <Databricks> will tag all pool resources
+	// (e.g., AWS instances and EBS volumes) with these tags in addition to
+	// `default_tags`. Notes:
+	//
+	// - Currently, <Databricks> allows at most 45 custom tags
+	CustomTags map[string]string `json:"custom_tags,omitempty"`
 	// Tags that are added by <Databricks> regardless of any ``custom_tags``,
 	// including:
 	//
@@ -265,20 +271,37 @@ type GetInstancePoolResponse struct {
 	//
 	// - InstancePoolId: <id_of_pool>
 	DefaultTags map[string]string `json:"default_tags,omitempty"`
-	// Current state of the instance pool.
-	State InstancePoolState `json:"state,omitempty"`
+	// Defines the specification of the disks that will be attached to all spark
+	// containers.
+	DiskSpec *DiskSpec `json:"disk_spec,omitempty"`
+	// Autoscaling Local Storage: when enabled, this instances in this pool will
+	// dynamically acquire additional disk space when its Spark workers are running
+	// low on disk space. In AWS, this feature requires specific AWS permissions to
+	// function correctly - refer to the User Guide for more details.
+	EnableElasticDisk *bool `json:"enable_elastic_disk,omitempty"`
+	// Attributes related to instance pools running on Google Cloud Platform. If not
+	// specified at pool creation, a set of default values will be used.
+	GcpAttributes *InstancePoolGcpAttributes `json:"gcp_attributes,omitempty"`
+	// Automatically terminates the extra instances in the pool cache after they are
+	// inactive for this time in minutes if min_idle_instances requirement is
+	// already met. If not set, the extra pool instances will be automatically
+	// terminated after a default timeout. If specified, the threshold must be
+	// between 0 and 10000 minutes. Users can also set this value to 0 to instantly
+	// remove idle instances from the cache if min cache size could still hold.
+	IdleInstanceAutoterminationMinutes *int `json:"idle_instance_autotermination_minutes,omitempty"`
+	// Canonical unique identifier for the pool.
+	InstancePoolId *string `json:"instance_pool_id,omitempty"`
 	// Pool name requested by the user. Pool name must be unique. Length must be
 	// between 1 and 100 characters.
 	InstancePoolName *string `json:"instance_pool_name,omitempty"`
-	// Minimum number of idle instances to keep in the instance pool
-	MinIdleInstances *int `json:"min_idle_instances,omitempty"`
 	// Maximum number of outstanding instances to keep in the pool, including both
 	// instances used by clusters and idle instances. Clusters that require further
 	// instance provisioning will fail during upsize requests.
 	MaxCapacity *int `json:"max_capacity,omitempty"`
-	// Attributes related to instance pools running on Amazon Web Services. If not
-	// specified at pool creation, a set of default values will be used.
-	AwsAttributes *InstancePoolAwsAttributes `json:"aws_attributes,omitempty"`
+	// Minimum number of idle instances to keep in the instance pool
+	MinIdleInstances *int `json:"min_idle_instances,omitempty"`
+	// Flexible node type configuration for the pool.
+	NodeTypeFlexibility *NodeTypeFlexibility `json:"node_type_flexibility,omitempty"`
 	// This field encodes, through a single value, the resources available to each
 	// of the Spark nodes in this cluster. For example, the Spark nodes can be
 	// provisioned and optimized for memory or compute intensive workloads. A list
@@ -287,27 +310,6 @@ type GetInstancePoolResponse struct {
 	//
 	// [clusters/listNodeTypes]: https://docs.databricks.com/api/workspace/clusters/listnodetypes
 	NodeTypeId *string `json:"node_type_id,omitempty"`
-	// Additional tags for pool resources. <Databricks> will tag all pool resources
-	// (e.g., AWS instances and EBS volumes) with these tags in addition to
-	// `default_tags`. Notes:
-	//
-	// - Currently, <Databricks> allows at most 45 custom tags
-	CustomTags map[string]string `json:"custom_tags,omitempty"`
-	// Automatically terminates the extra instances in the pool cache after they are
-	// inactive for this time in minutes if min_idle_instances requirement is
-	// already met. If not set, the extra pool instances will be automatically
-	// terminated after a default timeout. If specified, the threshold must be
-	// between 0 and 10000 minutes. Users can also set this value to 0 to instantly
-	// remove idle instances from the cache if min cache size could still hold.
-	IdleInstanceAutoterminationMinutes *int `json:"idle_instance_autotermination_minutes,omitempty"`
-	// Autoscaling Local Storage: when enabled, this instances in this pool will
-	// dynamically acquire additional disk space when its Spark workers are running
-	// low on disk space. In AWS, this feature requires specific AWS permissions to
-	// function correctly - refer to the User Guide for more details.
-	EnableElasticDisk *bool `json:"enable_elastic_disk,omitempty"`
-	// Defines the specification of the disks that will be attached to all spark
-	// containers.
-	DiskSpec *DiskSpec `json:"disk_spec,omitempty"`
 	// Custom Docker Image BYOC
 	PreloadedDockerImages []DockerImage `json:"preloaded_docker_images,omitempty"`
 	// A list containing at most one preloaded Spark image version for the pool.
@@ -317,29 +319,33 @@ type GetInstancePoolResponse struct {
 	//
 	// [clusters/sparkVersions]: https://docs.databricks.com/api/workspace/clusters/sparkversions
 	PreloadedSparkVersions []string `json:"preloaded_spark_versions,omitempty"`
-	// Attributes related to instance pools running on Azure. If not specified at
-	// pool creation, a set of default values will be used.
-	AzureAttributes *InstancePoolAzureAttributes `json:"azure_attributes,omitempty"`
-	// Attributes related to instance pools running on Google Cloud Platform. If not
-	// specified at pool creation, a set of default values will be used.
-	GcpAttributes *InstancePoolGcpAttributes `json:"gcp_attributes,omitempty"`
-	// Flexible node type configuration for the pool.
-	NodeTypeFlexibility *NodeTypeFlexibility `json:"node_type_flexibility,omitempty"`
 	// If set, what the configurable throughput (in Mb/s) for the remote disk is.
 	// Currently only supported for GCP HYPERDISK_BALANCED types.
 	RemoteDiskThroughput *int `json:"remote_disk_throughput,omitempty"`
+	// Current state of the instance pool.
+	State InstancePoolState `json:"state,omitempty"`
+	// Usage statistics about the instance pool.
+	Stats *InstancePoolStats `json:"stats,omitempty"`
+	// Status of failed pending instances in the pool.
+	Status *InstancePoolStatus `json:"status,omitempty"`
 	// If set, what the total initial volume size (in GB) of the remote disks should
 	// be. Currently only supported for GCP HYPERDISK_BALANCED types.
 	TotalInitialRemoteDiskSize *int `json:"total_initial_remote_disk_size,omitempty"`
 }
 
 type InstancePoolAndStats struct {
-	// Usage statistics about the instance pool.
-	Stats *InstancePoolStats `json:"stats,omitempty"`
-	// Status of failed pending instances in the pool.
-	Status *InstancePoolStatus `json:"status,omitempty"`
-	// Canonical unique identifier for the pool.
-	InstancePoolId *string `json:"instance_pool_id,omitempty"`
+	// Attributes related to instance pools running on Amazon Web Services. If not
+	// specified at pool creation, a set of default values will be used.
+	AwsAttributes *InstancePoolAwsAttributes `json:"aws_attributes,omitempty"`
+	// Attributes related to instance pools running on Azure. If not specified at
+	// pool creation, a set of default values will be used.
+	AzureAttributes *InstancePoolAzureAttributes `json:"azure_attributes,omitempty"`
+	// Additional tags for pool resources. <Databricks> will tag all pool resources
+	// (e.g., AWS instances and EBS volumes) with these tags in addition to
+	// `default_tags`. Notes:
+	//
+	// - Currently, <Databricks> allows at most 45 custom tags
+	CustomTags map[string]string `json:"custom_tags,omitempty"`
 	// Tags that are added by <Databricks> regardless of any ``custom_tags``,
 	// including:
 	//
@@ -351,20 +357,37 @@ type InstancePoolAndStats struct {
 	//
 	// - InstancePoolId: <id_of_pool>
 	DefaultTags map[string]string `json:"default_tags,omitempty"`
-	// Current state of the instance pool.
-	State InstancePoolState `json:"state,omitempty"`
+	// Defines the specification of the disks that will be attached to all spark
+	// containers.
+	DiskSpec *DiskSpec `json:"disk_spec,omitempty"`
+	// Autoscaling Local Storage: when enabled, this instances in this pool will
+	// dynamically acquire additional disk space when its Spark workers are running
+	// low on disk space. In AWS, this feature requires specific AWS permissions to
+	// function correctly - refer to the User Guide for more details.
+	EnableElasticDisk *bool `json:"enable_elastic_disk,omitempty"`
+	// Attributes related to instance pools running on Google Cloud Platform. If not
+	// specified at pool creation, a set of default values will be used.
+	GcpAttributes *InstancePoolGcpAttributes `json:"gcp_attributes,omitempty"`
+	// Automatically terminates the extra instances in the pool cache after they are
+	// inactive for this time in minutes if min_idle_instances requirement is
+	// already met. If not set, the extra pool instances will be automatically
+	// terminated after a default timeout. If specified, the threshold must be
+	// between 0 and 10000 minutes. Users can also set this value to 0 to instantly
+	// remove idle instances from the cache if min cache size could still hold.
+	IdleInstanceAutoterminationMinutes *int `json:"idle_instance_autotermination_minutes,omitempty"`
+	// Canonical unique identifier for the pool.
+	InstancePoolId *string `json:"instance_pool_id,omitempty"`
 	// Pool name requested by the user. Pool name must be unique. Length must be
 	// between 1 and 100 characters.
 	InstancePoolName *string `json:"instance_pool_name,omitempty"`
-	// Minimum number of idle instances to keep in the instance pool
-	MinIdleInstances *int `json:"min_idle_instances,omitempty"`
 	// Maximum number of outstanding instances to keep in the pool, including both
 	// instances used by clusters and idle instances. Clusters that require further
 	// instance provisioning will fail during upsize requests.
 	MaxCapacity *int `json:"max_capacity,omitempty"`
-	// Attributes related to instance pools running on Amazon Web Services. If not
-	// specified at pool creation, a set of default values will be used.
-	AwsAttributes *InstancePoolAwsAttributes `json:"aws_attributes,omitempty"`
+	// Minimum number of idle instances to keep in the instance pool
+	MinIdleInstances *int `json:"min_idle_instances,omitempty"`
+	// Flexible node type configuration for the pool.
+	NodeTypeFlexibility *NodeTypeFlexibility `json:"node_type_flexibility,omitempty"`
 	// This field encodes, through a single value, the resources available to each
 	// of the Spark nodes in this cluster. For example, the Spark nodes can be
 	// provisioned and optimized for memory or compute intensive workloads. A list
@@ -373,27 +396,6 @@ type InstancePoolAndStats struct {
 	//
 	// [clusters/listNodeTypes]: https://docs.databricks.com/api/workspace/clusters/listnodetypes
 	NodeTypeId *string `json:"node_type_id,omitempty"`
-	// Additional tags for pool resources. <Databricks> will tag all pool resources
-	// (e.g., AWS instances and EBS volumes) with these tags in addition to
-	// `default_tags`. Notes:
-	//
-	// - Currently, <Databricks> allows at most 45 custom tags
-	CustomTags map[string]string `json:"custom_tags,omitempty"`
-	// Automatically terminates the extra instances in the pool cache after they are
-	// inactive for this time in minutes if min_idle_instances requirement is
-	// already met. If not set, the extra pool instances will be automatically
-	// terminated after a default timeout. If specified, the threshold must be
-	// between 0 and 10000 minutes. Users can also set this value to 0 to instantly
-	// remove idle instances from the cache if min cache size could still hold.
-	IdleInstanceAutoterminationMinutes *int `json:"idle_instance_autotermination_minutes,omitempty"`
-	// Autoscaling Local Storage: when enabled, this instances in this pool will
-	// dynamically acquire additional disk space when its Spark workers are running
-	// low on disk space. In AWS, this feature requires specific AWS permissions to
-	// function correctly - refer to the User Guide for more details.
-	EnableElasticDisk *bool `json:"enable_elastic_disk,omitempty"`
-	// Defines the specification of the disks that will be attached to all spark
-	// containers.
-	DiskSpec *DiskSpec `json:"disk_spec,omitempty"`
 	// Custom Docker Image BYOC
 	PreloadedDockerImages []DockerImage `json:"preloaded_docker_images,omitempty"`
 	// A list containing at most one preloaded Spark image version for the pool.
@@ -403,17 +405,15 @@ type InstancePoolAndStats struct {
 	//
 	// [clusters/sparkVersions]: https://docs.databricks.com/api/workspace/clusters/sparkversions
 	PreloadedSparkVersions []string `json:"preloaded_spark_versions,omitempty"`
-	// Attributes related to instance pools running on Azure. If not specified at
-	// pool creation, a set of default values will be used.
-	AzureAttributes *InstancePoolAzureAttributes `json:"azure_attributes,omitempty"`
-	// Attributes related to instance pools running on Google Cloud Platform. If not
-	// specified at pool creation, a set of default values will be used.
-	GcpAttributes *InstancePoolGcpAttributes `json:"gcp_attributes,omitempty"`
-	// Flexible node type configuration for the pool.
-	NodeTypeFlexibility *NodeTypeFlexibility `json:"node_type_flexibility,omitempty"`
 	// If set, what the configurable throughput (in Mb/s) for the remote disk is.
 	// Currently only supported for GCP HYPERDISK_BALANCED types.
 	RemoteDiskThroughput *int `json:"remote_disk_throughput,omitempty"`
+	// Current state of the instance pool.
+	State InstancePoolState `json:"state,omitempty"`
+	// Usage statistics about the instance pool.
+	Stats *InstancePoolStats `json:"stats,omitempty"`
+	// Status of failed pending instances in the pool.
+	Status *InstancePoolStatus `json:"status,omitempty"`
 	// If set, what the total initial volume size (in GB) of the remote disks should
 	// be. Currently only supported for GCP HYPERDISK_BALANCED types.
 	TotalInitialRemoteDiskSize *int `json:"total_initial_remote_disk_size,omitempty"`
@@ -429,6 +429,30 @@ type InstancePoolAwsAttributes struct {
 	// You can change this value on an existing pool. New clusters use the updated
 	// availability, and existing clusters keep the availability they launched with.
 	Availability AwsAvailability `json:"availability,omitempty"`
+	// All AWS instances belonging to the instance pool will have this instance
+	// profile. If omitted, instances will initially be launched with the
+	// workspace's default instance profile. If defined, clusters that use the pool
+	// will inherit the instance profile, and must not specify their own instance
+	// profile on cluster creation or update. If the pool does not specify an
+	// instance profile, clusters using the pool may specify any instance profile.
+	// The instance profile must have previously been added to the <Databricks>
+	// environment by an account administrator.
+	//
+	// This feature may only be available to certain customer plans.
+	InstanceProfileArn *string `json:"instance_profile_arn,omitempty"`
+	// Calculates the bid price for AWS spot instances, as a percentage of the
+	// corresponding instance type's on-demand price. For example, if this field is
+	// set to 50, and the cluster needs a new `r3.xlarge` spot instance, then the
+	// bid price is half of the price of on-demand `r3.xlarge` instances. Similarly,
+	// if this field is set to 200, the bid price is twice the price of on-demand
+	// `r3.xlarge` instances. If not specified, the default value is 100. When spot
+	// instances are requested for this cluster, only spot instances whose bid price
+	// percentage matches this field will be considered. Note that, for safety, we
+	// enforce this field to be no more than 10000.
+	//
+	// You can change this value on an existing pool. New clusters use the updated
+	// bid price, and existing clusters keep the bid price they launched with.
+	SpotBidPricePercent *int `json:"spot_bid_price_percent,omitempty"`
 	// Identifier for the availability zone/datacenter in which the cluster resides.
 	// This string will be of a form like "us-west-2a". The provided availability
 	// zone must be in the same region as the <Databricks> deployment. For example,
@@ -446,30 +470,6 @@ type InstancePoolAwsAttributes struct {
 	// You can change the zone on an existing pool. New clusters use the updated
 	// zone, and existing clusters keep the zone they launched with.
 	ZoneId *string `json:"zone_id,omitempty"`
-	// Calculates the bid price for AWS spot instances, as a percentage of the
-	// corresponding instance type's on-demand price. For example, if this field is
-	// set to 50, and the cluster needs a new `r3.xlarge` spot instance, then the
-	// bid price is half of the price of on-demand `r3.xlarge` instances. Similarly,
-	// if this field is set to 200, the bid price is twice the price of on-demand
-	// `r3.xlarge` instances. If not specified, the default value is 100. When spot
-	// instances are requested for this cluster, only spot instances whose bid price
-	// percentage matches this field will be considered. Note that, for safety, we
-	// enforce this field to be no more than 10000.
-	//
-	// You can change this value on an existing pool. New clusters use the updated
-	// bid price, and existing clusters keep the bid price they launched with.
-	SpotBidPricePercent *int `json:"spot_bid_price_percent,omitempty"`
-	// All AWS instances belonging to the instance pool will have this instance
-	// profile. If omitted, instances will initially be launched with the
-	// workspace's default instance profile. If defined, clusters that use the pool
-	// will inherit the instance profile, and must not specify their own instance
-	// profile on cluster creation or update. If the pool does not specify an
-	// instance profile, clusters using the pool may specify any instance profile.
-	// The instance profile must have previously been added to the <Databricks>
-	// environment by an account administrator.
-	//
-	// This feature may only be available to certain customer plans.
-	InstanceProfileArn *string `json:"instance_profile_arn,omitempty"`
 }
 
 // Attributes set during instance pool creation which are related to Azure..
@@ -481,16 +481,6 @@ type InstancePoolAzureAttributes struct {
 	// You can change this value on an existing pool. New clusters use the updated
 	// availability, and existing clusters keep the availability they launched with.
 	Availability AzureAvailability `json:"availability,omitempty"`
-	// With variable pricing, you have option to set a max price, in US dollars
-	// (USD) For example, the value 2 would be a max price of $2.00 USD per hour. If
-	// you set the max price to be -1, the VM won't be evicted based on price. The
-	// price for the VM will be the current price for spot or the price for a
-	// standard VM, which ever is less, as long as there is capacity and quota
-	// available.
-	//
-	// You can change this value on an existing pool. New clusters use the updated
-	// max price, and existing clusters keep the max price they launched with.
-	SpotBidMaxPrice *float64 `json:"spot_bid_max_price,omitempty"`
 	// The Azure capacity reservation group resource ID to use for launching VMs in
 	// this pool. When specified, VMs will be launched using the provided capacity
 	// reservation.
@@ -509,6 +499,16 @@ type InstancePoolAzureAttributes struct {
 	// Format:
 	// `/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/capacityReservationGroups/{capacityReservationGroupName}`
 	CapacityReservationGroup *string `json:"capacity_reservation_group,omitempty"`
+	// With variable pricing, you have option to set a max price, in US dollars
+	// (USD) For example, the value 2 would be a max price of $2.00 USD per hour. If
+	// you set the max price to be -1, the VM won't be evicted based on price. The
+	// price for the VM will be the current price for spot or the price for a
+	// standard VM, which ever is less, as long as there is capacity and quota
+	// available.
+	//
+	// You can change this value on an existing pool. New clusters use the updated
+	// max price, and existing clusters keep the max price they launched with.
+	SpotBidMaxPrice *float64 `json:"spot_bid_max_price,omitempty"`
 }
 
 // Attributes set during instance pool creation which are related to GCP..
@@ -552,14 +552,14 @@ type InstancePoolGcpAttributes struct {
 }
 
 type InstancePoolStats struct {
-	// Number of active instances in the pool that are part of a cluster.
-	UsedCount *int `json:"used_count,omitempty"`
 	// Number of active instances in the pool that are NOT part of a cluster.
 	IdleCount *int `json:"idle_count,omitempty"`
-	// Number of pending instances in the pool that are part of a cluster.
-	PendingUsedCount *int `json:"pending_used_count,omitempty"`
 	// Number of pending instances in the pool that are NOT part of a cluster.
 	PendingIdleCount *int `json:"pending_idle_count,omitempty"`
+	// Number of pending instances in the pool that are part of a cluster.
+	PendingUsedCount *int `json:"pending_used_count,omitempty"`
+	// Number of active instances in the pool that are part of a cluster.
+	UsedCount *int `json:"used_count,omitempty"`
 }
 
 type InstancePoolStatus struct {

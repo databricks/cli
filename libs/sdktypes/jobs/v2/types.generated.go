@@ -326,10 +326,10 @@ const (
 )
 
 type AccessControlRequest struct {
-	UserName             *string                            `json:"user_name,omitempty"`
 	GroupName            *string                            `json:"group_name,omitempty"`
-	ServicePrincipalName *string                            `json:"service_principal_name,omitempty"`
 	PermissionLevel      AccessControlRequest_JobPermission `json:"permission_level,omitempty"`
+	ServicePrincipalName *string                            `json:"service_principal_name,omitempty"`
+	UserName             *string                            `json:"user_name,omitempty"`
 }
 
 // A storage location in Adls Gen2.
@@ -347,34 +347,26 @@ type Adlsgen2Info struct {
 // run-submit request and are intentionally NOT duplicated here. Users compose
 // `ai_runtime_task` with the standard Jobs/DABs task wrapper to get those..
 type AiRuntimeTask struct {
-	// MLflow experiment name for this run. If an experiment with this name already
-	// exists under the calling user, the run is appended to it; otherwise a new
-	// experiment is created. To target a specific MLflow storage location (for
-	// example, when running as a service principal), set
-	// `mlflow_experiment_directory`.
-	Experiment *string `json:"experiment,omitempty"`
+	// Workspace or UC volume path of the code-source archive, unpacked on each node
+	// and exposed through `$CODE_SOURCE`. Set by first-party tooling; not for
+	// direct callers.
+	CodeSourcePath *string `json:"code_source_path,omitempty"`
 	// Deployment specs for this task. Exactly one deployment is currently supported
 	// (a single entry where every node runs the same command); this is a
 	// current-Preview constraint. Role-split workloads (driver + worker, parameter
 	// server, separate eval node, etc.) with multiple entries are the eventual
 	// intent but not yet supported.
 	Deployments []DeploymentSpec `json:"deployments,omitempty"`
-	// Workspace or UC volume path of the code-source archive, unpacked on each node
-	// and exposed through `$CODE_SOURCE`. Set by first-party tooling; not for
-	// direct callers.
-	CodeSourcePath *string `json:"code_source_path,omitempty"`
-	// Optional display name for the MLflow run created under `experiment`. If
-	// omitted, MLflow generates a default name.
-	MlflowRun *string `json:"mlflow_run,omitempty"`
-	// Optional workspace directory under which the MLflow experiment named in
-	// `experiment` is created. Must start with `/Workspace`. Set this when running
-	// as a service principal that has no default user directory; for regular users
-	// the experiment defaults to the user's home directory.
-	MlflowExperimentDirectory *string `json:"mlflow_experiment_directory,omitempty"`
 	// Optional Docker image URL for a custom container image. When set, the task
 	// runs on the specified container image instead of the default <Databricks>
 	// client image. Format: `{organization}/{repository}:{tag}`
 	DockerImageUrl *string `json:"docker_image_url,omitempty"`
+	// MLflow experiment name for this run. If an experiment with this name already
+	// exists under the calling user, the run is appended to it; otherwise a new
+	// experiment is created. To target a specific MLflow storage location (for
+	// example, when running as a service principal), set
+	// `mlflow_experiment_directory`.
+	Experiment *string `json:"experiment,omitempty"`
 	// Optional root location for MLflow artifacts logged by the run. If this field
 	// isn't specified the default artifact location will be in dbfs i.e.
 	// `dbfs:/databricks/mlflow-tracking/<experiment_id>/...` If dbfs access is
@@ -382,6 +374,14 @@ type AiRuntimeTask struct {
 	// `dbfs:/Volumes/<catalog>/<schema>/<volume>/...` The location should be unique
 	// for each experiment.
 	MlflowArtifactLocation *string `json:"mlflow_artifact_location,omitempty"`
+	// Optional workspace directory under which the MLflow experiment named in
+	// `experiment` is created. Must start with `/Workspace`. Set this when running
+	// as a service principal that has no default user directory; for regular users
+	// the experiment defaults to the user's home directory.
+	MlflowExperimentDirectory *string `json:"mlflow_experiment_directory,omitempty"`
+	// Optional display name for the MLflow run created under `experiment`. If
+	// omitted, MLflow generates a default name.
+	MlflowRun *string `json:"mlflow_run,omitempty"`
 	// Scheduling priority class for the workload. May only be set together with a
 	// pre-provisioned capacity reservation (a deployment's
 	// `compute.provisioned_capacity_id`); it is rejected on a workload that runs on
@@ -414,15 +414,6 @@ type AiRuntimeTaskOutput struct {
 type AlertTask struct {
 	// The alert_id is the canonical identifier of the alert.
 	AlertId *string `json:"alert_id,omitempty"`
-	// The warehouse_id identifies the warehouse settings used by the alert task.
-	WarehouseId *string `json:"warehouse_id,omitempty"`
-	// The workspace_path is the path to the alert file in the workspace. The path:
-	// * must start with "/Workspace" * must be a normalized path. User has to
-	// select only one of alert_id or workspace_path to identify the alert.
-	WorkspacePath *string `json:"workspace_path,omitempty"`
-	// The subscribers receive alert evaluation result notifications after the alert
-	// task is completed. The number of subscriptions is limited to 100.
-	Subscribers []AlertTaskSubscriber `json:"subscribers,omitempty"`
 	// Per-run parameter overrides, keyed by parameter name, applied onto the
 	// alert's stored query parameters before the query is executed. Only scalar
 	// values are supported. Values may reference job parameters with
@@ -431,6 +422,15 @@ type AlertTask struct {
 	// 10000 characters when serialized as JSON; keys must be 1-100 characters and
 	// contain only letters, digits, underscores, dashes, and periods.
 	Parameters map[string]string `json:"parameters,omitempty"`
+	// The subscribers receive alert evaluation result notifications after the alert
+	// task is completed. The number of subscriptions is limited to 100.
+	Subscribers []AlertTaskSubscriber `json:"subscribers,omitempty"`
+	// The warehouse_id identifies the warehouse settings used by the alert task.
+	WarehouseId *string `json:"warehouse_id,omitempty"`
+	// The workspace_path is the path to the alert file in the workspace. The path:
+	// * must start with "/Workspace" * must be a normalized path. User has to
+	// select only one of alert_id or workspace_path to identify the alert.
+	WorkspacePath *string `json:"workspace_path,omitempty"`
 }
 
 type AlertTaskOutput struct {
@@ -441,65 +441,25 @@ type AlertTaskOutput struct {
 // can be either a user (via email) or a notification destination (via
 // destination_id)..
 type AlertTaskSubscriber struct {
-	UserName      *string `json:"user_name,omitempty"`
 	DestinationId *string `json:"destination_id,omitempty"`
+	UserName      *string `json:"user_name,omitempty"`
 }
 
 type AutoScale struct {
-	// The minimum number of workers to which the cluster can scale down when
-	// underutilized. It is also the initial number of workers the cluster will have
-	// after creation.
-	MinWorkers *int `json:"min_workers,omitempty"`
 	// The maximum number of workers to which the cluster can scale up when
 	// overloaded. Note that `max_workers` must be strictly greater than
 	// `min_workers`.
 	MaxWorkers *int `json:"max_workers,omitempty"`
+	// The minimum number of workers to which the cluster can scale down when
+	// underutilized. It is also the initial number of workers the cluster will have
+	// after creation.
+	MinWorkers *int `json:"min_workers,omitempty"`
 }
 
 // Attributes set during cluster creation which are related to Amazon Web
 // Services..
 type AwsAttributes struct {
-	// The first `first_on_demand` nodes of the cluster will be placed on on-demand
-	// instances. If this value is greater than 0, the cluster driver node in
-	// particular will be placed on an on-demand instance. If this value is greater
-	// than or equal to the current cluster size, all nodes will be placed on
-	// on-demand instances. If this value is less than the current cluster size,
-	// `first_on_demand` nodes will be placed on on-demand instances and the
-	// remainder will be placed on `availability` instances. Note that this value
-	// does not affect cluster size and cannot currently be mutated over the
-	// lifetime of a cluster.
-	FirstOnDemand *int            `json:"first_on_demand,omitempty"`
-	Availability  AwsAvailability `json:"availability,omitempty"`
-	// Identifier for the availability zone/datacenter in which the cluster resides.
-	// This string will be of a form like "us-west-2a". The provided availability
-	// zone must be in the same region as the <Databricks> deployment. For example,
-	// "us-west-2a" is not a valid zone id if the <Databricks> deployment resides in
-	// the "us-east-1" region. This is an optional field at cluster creation, and if
-	// not specified, the zone "auto" will be used. If the zone specified is "auto",
-	// will try to place cluster in a zone with high availability, and will retry
-	// placement in a different AZ if there is not enough capacity. The list of
-	// available zones as well as the default value can be found by using the `List
-	// Zones` method.
-	ZoneId *string `json:"zone_id,omitempty"`
-	// Nodes for this cluster will only be placed on AWS instances with this
-	// instance profile. If ommitted, nodes will be placed on instances without an
-	// IAM instance profile. The instance profile must have previously been added to
-	// the <Databricks> environment by an account administrator.
-	//
-	// This feature may only be available to certain customer plans.
-	InstanceProfileArn *string `json:"instance_profile_arn,omitempty"`
-	// The bid price for AWS spot instances, as a percentage of the corresponding
-	// instance type's on-demand price. For example, if this field is set to 50, and
-	// the cluster needs a new `r3.xlarge` spot instance, then the bid price is half
-	// of the price of on-demand `r3.xlarge` instances. Similarly, if this field is
-	// set to 200, the bid price is twice the price of on-demand `r3.xlarge`
-	// instances. If not specified, the default value is 100. When spot instances
-	// are requested for this cluster, only spot instances whose bid price
-	// percentage matches this field will be considered. Note that, for safety, we
-	// enforce this field to be no more than 10000.
-	SpotBidPricePercent *int `json:"spot_bid_price_percent,omitempty"`
-	// The type of EBS volumes that will be launched with this cluster.
-	EbsVolumeType EbsVolumeType `json:"ebs_volume_type,omitempty"`
+	Availability AwsAvailability `json:"availability,omitempty"`
 	// The number of volumes launched for each instance. Users can choose up to 10
 	// volumes. This feature is only enabled for supported node types. Legacy node
 	// types cannot specify custom EBS volumes. For node types with no instance
@@ -517,43 +477,65 @@ type AwsAttributes struct {
 	// Please note that if EBS volumes are specified, then the Spark configuration
 	// `spark.local.dir` will be overridden.
 	EbsVolumeCount *int `json:"ebs_volume_count,omitempty"`
+	// If using gp3 volumes, what IOPS to use for the disk. If this is not set, the
+	// maximum performance of a gp2 volume with the same volume size will be used.
+	EbsVolumeIops *int `json:"ebs_volume_iops,omitempty"`
 	// The size of each EBS volume (in GiB) launched for each instance. For general
 	// purpose SSD, this value must be within the range 100 - 4096. For throughput
 	// optimized HDD, this value must be within the range 500 - 4096.
 	EbsVolumeSize *int `json:"ebs_volume_size,omitempty"`
-	// If using gp3 volumes, what IOPS to use for the disk. If this is not set, the
-	// maximum performance of a gp2 volume with the same volume size will be used.
-	EbsVolumeIops *int `json:"ebs_volume_iops,omitempty"`
 	// If using gp3 volumes, what throughput to use for the disk. If this is not
 	// set, the maximum performance of a gp2 volume with the same volume size will
 	// be used.
 	EbsVolumeThroughput *int `json:"ebs_volume_throughput,omitempty"`
-}
-
-// Attributes set during cluster creation which are related to Microsoft Azure..
-type AzureAttributes struct {
-	// Defines values necessary to configure and run Azure Log Analytics agent
-	LogAnalyticsInfo *LogAnalyticsInfo `json:"log_analytics_info,omitempty"`
+	// The type of EBS volumes that will be launched with this cluster.
+	EbsVolumeType EbsVolumeType `json:"ebs_volume_type,omitempty"`
 	// The first `first_on_demand` nodes of the cluster will be placed on on-demand
-	// instances. This value should be greater than 0, to make sure the cluster
-	// driver node is placed on an on-demand instance. If this value is greater than
-	// or equal to the current cluster size, all nodes will be placed on on-demand
-	// instances. If this value is less than the current cluster size,
+	// instances. If this value is greater than 0, the cluster driver node in
+	// particular will be placed on an on-demand instance. If this value is greater
+	// than or equal to the current cluster size, all nodes will be placed on
+	// on-demand instances. If this value is less than the current cluster size,
 	// `first_on_demand` nodes will be placed on on-demand instances and the
 	// remainder will be placed on `availability` instances. Note that this value
 	// does not affect cluster size and cannot currently be mutated over the
 	// lifetime of a cluster.
 	FirstOnDemand *int `json:"first_on_demand,omitempty"`
+	// Nodes for this cluster will only be placed on AWS instances with this
+	// instance profile. If ommitted, nodes will be placed on instances without an
+	// IAM instance profile. The instance profile must have previously been added to
+	// the <Databricks> environment by an account administrator.
+	//
+	// This feature may only be available to certain customer plans.
+	InstanceProfileArn *string `json:"instance_profile_arn,omitempty"`
+	// The bid price for AWS spot instances, as a percentage of the corresponding
+	// instance type's on-demand price. For example, if this field is set to 50, and
+	// the cluster needs a new `r3.xlarge` spot instance, then the bid price is half
+	// of the price of on-demand `r3.xlarge` instances. Similarly, if this field is
+	// set to 200, the bid price is twice the price of on-demand `r3.xlarge`
+	// instances. If not specified, the default value is 100. When spot instances
+	// are requested for this cluster, only spot instances whose bid price
+	// percentage matches this field will be considered. Note that, for safety, we
+	// enforce this field to be no more than 10000.
+	SpotBidPricePercent *int `json:"spot_bid_price_percent,omitempty"`
+	// Identifier for the availability zone/datacenter in which the cluster resides.
+	// This string will be of a form like "us-west-2a". The provided availability
+	// zone must be in the same region as the <Databricks> deployment. For example,
+	// "us-west-2a" is not a valid zone id if the <Databricks> deployment resides in
+	// the "us-east-1" region. This is an optional field at cluster creation, and if
+	// not specified, the zone "auto" will be used. If the zone specified is "auto",
+	// will try to place cluster in a zone with high availability, and will retry
+	// placement in a different AZ if there is not enough capacity. The list of
+	// available zones as well as the default value can be found by using the `List
+	// Zones` method.
+	ZoneId *string `json:"zone_id,omitempty"`
+}
+
+// Attributes set during cluster creation which are related to Microsoft Azure..
+type AzureAttributes struct {
 	// Availability type used for all subsequent nodes past the `first_on_demand`
 	// ones. Note: If `first_on_demand` is zero, this availability type will be used
 	// for the entire cluster.
 	Availability AzureAvailability `json:"availability,omitempty"`
-	// The max bid price to be used for Azure spot instances. The Max price for the
-	// bid cannot be higher than the on-demand price of the instance. If not
-	// specified, the default value is -1, which specifies that the instance cannot
-	// be evicted on the basis of price, and only on the basis of availability.
-	// Further, the value should > 0 or -1.
-	SpotBidMaxPrice *float64 `json:"spot_bid_max_price,omitempty"`
 	// The Azure capacity reservation group resource ID to use for launching VMs.
 	// When specified, VMs will be launched using the provided capacity reservation.
 	//
@@ -568,14 +550,47 @@ type AzureAttributes struct {
 	// Format:
 	// `/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/capacityReservationGroups/{capacityReservationGroupName}`
 	CapacityReservationGroup *string `json:"capacity_reservation_group,omitempty"`
+	// The first `first_on_demand` nodes of the cluster will be placed on on-demand
+	// instances. This value should be greater than 0, to make sure the cluster
+	// driver node is placed on an on-demand instance. If this value is greater than
+	// or equal to the current cluster size, all nodes will be placed on on-demand
+	// instances. If this value is less than the current cluster size,
+	// `first_on_demand` nodes will be placed on on-demand instances and the
+	// remainder will be placed on `availability` instances. Note that this value
+	// does not affect cluster size and cannot currently be mutated over the
+	// lifetime of a cluster.
+	FirstOnDemand *int `json:"first_on_demand,omitempty"`
+	// Defines values necessary to configure and run Azure Log Analytics agent
+	LogAnalyticsInfo *LogAnalyticsInfo `json:"log_analytics_info,omitempty"`
+	// The max bid price to be used for Azure spot instances. The Max price for the
+	// bid cannot be higher than the on-demand price of the instance. If not
+	// specified, the default value is -1, which specifies that the instance cannot
+	// be evicted on the basis of price, and only on the basis of availability.
+	// Further, the value should > 0 or -1.
+	SpotBidMaxPrice *float64 `json:"spot_bid_max_price,omitempty"`
 }
 
 type BaseJob struct {
-	// The canonical identifier for this job.
-	JobId *int64 `json:"job_id,omitempty"`
+	// The time at which this job was created in epoch milliseconds (milliseconds
+	// since 1/1/1970 UTC).
+	CreatedTime *int64 `json:"created_time,omitempty"`
 	// The creator user name. This field won’t be included in the response if the
 	// user has already been deleted.
 	CreatorUserName *string `json:"creator_user_name,omitempty"`
+	// The id of the budget policy used by this job for cost attribution purposes.
+	// This may be set through (in order of precedence): 1. Budget admins through
+	// the account or workspace console 2. Jobs UI in the job details page and Jobs
+	// API using `budget_policy_id` 3. Inferred default based on accessible budget
+	// policies of the run_as identity on job creation or modification.
+	EffectiveBudgetPolicyId *string `json:"effective_budget_policy_id,omitempty"`
+	// The id of the usage policy used by this job for cost attribution purposes.
+	EffectiveUsagePolicyId *string `json:"effective_usage_policy_id,omitempty"`
+	// Indicates if the job has more array properties (`tasks`, `job_clusters`) that
+	// are not shown. They can be accessed via :method:jobs/get endpoint. It is only
+	// relevant for API 2.2 :method:jobs/list requests with `expand_tasks=true`.
+	HasMore *bool `json:"has_more,omitempty"`
+	// The canonical identifier for this job.
+	JobId *int64 `json:"job_id,omitempty"`
 	// The email of an active workspace user or the application ID of a service
 	// principal that the job runs as. This value can be changed by setting the
 	// `run_as` field when creating or updating a job.
@@ -587,76 +602,17 @@ type BaseJob struct {
 	// Settings for this job and all of its runs. These settings can be updated
 	// using the `resetJob` method.
 	Settings *JobSettings `json:"settings,omitempty"`
-	// The time at which this job was created in epoch milliseconds (milliseconds
-	// since 1/1/1970 UTC).
-	CreatedTime *int64 `json:"created_time,omitempty"`
-	// State of the trigger associated with the job.
-	TriggerState *TriggerState `json:"trigger_state,omitempty"`
-	// Indicates if the job has more array properties (`tasks`, `job_clusters`) that
-	// are not shown. They can be accessed via :method:jobs/get endpoint. It is only
-	// relevant for API 2.2 :method:jobs/list requests with `expand_tasks=true`.
-	HasMore *bool `json:"has_more,omitempty"`
-	// The id of the budget policy used by this job for cost attribution purposes.
-	// This may be set through (in order of precedence): 1. Budget admins through
-	// the account or workspace console 2. Jobs UI in the job details page and Jobs
-	// API using `budget_policy_id` 3. Inferred default based on accessible budget
-	// policies of the run_as identity on job creation or modification.
-	EffectiveBudgetPolicyId *string `json:"effective_budget_policy_id,omitempty"`
-	// The id of the usage policy used by this job for cost attribution purposes.
-	EffectiveUsagePolicyId *string `json:"effective_usage_policy_id,omitempty"`
 	// Per-trigger runtime information for the multi-trigger surface. Same length
 	// and order as `JobSettings.triggers`; `trigger_details[i]` corresponds to
 	// `triggers[i]`. Sub-fields (`state`, `history`) are populated independently
 	// based on the `GetJob.include_trigger_state` / `include_trigger_history`
 	// flags.
 	TriggerDetails []TriggerDetails `json:"trigger_details,omitempty"`
+	// State of the trigger associated with the job.
+	TriggerState *TriggerState `json:"trigger_state,omitempty"`
 }
 
 type BaseRun struct {
-	// The canonical identifier of the job that contains this run.
-	JobId *int64 `json:"job_id,omitempty"`
-	// The canonical identifier of the run. This ID is unique across all runs of all
-	// jobs.
-	RunId *int64 `json:"run_id,omitempty"`
-	// The creator user name. This field won’t be included in the response if the
-	// user has already been deleted.
-	CreatorUserName *string `json:"creator_user_name,omitempty"`
-	// A unique identifier for this job run. This is set to the same value as
-	// `run_id`.
-	NumberInJob *int64 `json:"number_in_job,omitempty"`
-	// If this run is a retry of a prior run attempt, this field contains the run_id
-	// of the original attempt; otherwise, it is the same as the run_id.
-	OriginalAttemptRunId *int64 `json:"original_attempt_run_id,omitempty"`
-	// Deprecated. Please use the `status` field instead.
-	State *RunState `json:"state,omitempty"`
-	// The cron schedule that triggered this run if it was triggered by the periodic
-	// scheduler.
-	Schedule *CronSchedule `json:"schedule,omitempty"`
-	// A snapshot of the job’s cluster specification when this run was created.
-	ClusterSpec *ClusterSpec `json:"cluster_spec,omitempty"`
-	// The cluster used for this run. If the run is specified to use a new cluster,
-	// this field is set once the Jobs service has requested a cluster for the run.
-	ClusterInstance *ClusterInstance `json:"cluster_instance,omitempty"`
-	// Job-level parameters used in the run
-	JobParameters []Run_JobLevelParameters `json:"job_parameters,omitempty"`
-	// The parameters used for this run.
-	OverridingParameters *RunParameters  `json:"overriding_parameters,omitempty"`
-	Trigger              TriggerType     `json:"trigger,omitempty"`
-	TriggerInfo          *RunTriggerInfo `json:"trigger_info,omitempty"`
-	// An optional name for the run. The maximum length is 4096 bytes in UTF-8
-	// encoding.
-	RunName *string `json:"run_name,omitempty"`
-	// The URL to the detail page of the run.
-	RunPageUrl *string `json:"run_page_url,omitempty"`
-	RunType    RunType `json:"run_type,omitempty"`
-	// The list of tasks performed by the run. Each task has its own `run_id` which
-	// you can use to call `JobsGetOutput` to retrieve the run results. If more than
-	// 100 tasks are available, you can paginate through them using
-	// :method:jobs/getrun. Use the `next_page_token` field at the object root to
-	// determine if more results are available.
-	Tasks []RunTask `json:"tasks,omitempty"`
-	// Description of the run
-	Description *string `json:"description,omitempty"`
 	// The sequence number of this run attempt for a triggered job run. The initial
 	// attempt of a run has an attempt_number of 0. If the initial run attempt
 	// fails, and the job has a retry policy (`max_retries` > 0), subsequent runs
@@ -665,34 +621,26 @@ type BaseRun struct {
 	// succeed, and the maximum `attempt_number` is the same as the `max_retries`
 	// value for the job.
 	AttemptNumber *int `json:"attempt_number,omitempty"`
-	// A list of job cluster specifications that can be shared and reused by tasks
-	// of this job. Libraries cannot be declared in a shared job cluster. You must
-	// declare dependent libraries in task settings. If more than 100 job clusters
-	// are available, you can paginate through them using :method:jobs/getrun.
-	JobClusters []JobCluster `json:"job_clusters,omitempty"`
-	// An optional specification for a remote Git repository containing the source
-	// code used by tasks. Version-controlled source code is supported by notebook,
-	// dbt, Python script, and SQL File tasks.
-	//
-	// If `git_source` is set, these tasks retrieve the file from the remote
-	// repository by default. However, this behavior can be overridden by setting
-	// `source` to `WORKSPACE` on the task.
-	//
-	// Note: dbt and SQL File tasks support only version-controlled sources. If dbt
-	// or SQL File tasks are used, `git_source` must be defined on the job.
-	GitSource *GitSource `json:"git_source,omitempty"`
-	// The repair history of the run.
-	RepairHistory []Repair   `json:"repair_history,omitempty"`
-	Status        *RunStatus `json:"status,omitempty"`
-	// ID of the job run that this run belongs to. For legacy and single-task job
-	// runs the field is populated with the job run ID. For task runs, the field is
-	// populated with the ID of the job run that the task run belongs to.
-	JobRunId *int64 `json:"job_run_id,omitempty"`
-	// Indicates if the run has more array properties (`tasks`, `job_clusters`) that
-	// are not shown. They can be accessed via :method:jobs/getrun endpoint. It is
-	// only relevant for API 2.2 :method:jobs/listruns requests with
-	// `expand_tasks=true`.
-	HasMore *bool `json:"has_more,omitempty"`
+	// The time in milliseconds it took to terminate the cluster and clean up any
+	// associated artifacts. The duration of a task run is the sum of the
+	// `setup_duration`, `execution_duration`, and the `cleanup_duration`. The
+	// `cleanup_duration` field is set to 0 for multitask job runs. The total
+	// duration of a multitask job run is the value of the `run_duration` field.
+	CleanupDuration *int64 `json:"cleanup_duration,omitempty"`
+	// The cluster used for this run. If the run is specified to use a new cluster,
+	// this field is set once the Jobs service has requested a cluster for the run.
+	ClusterInstance *ClusterInstance `json:"cluster_instance,omitempty"`
+	// A snapshot of the job’s cluster specification when this run was created.
+	ClusterSpec *ClusterSpec `json:"cluster_spec,omitempty"`
+	// The creator user name. This field won’t be included in the response if the
+	// user has already been deleted.
+	CreatorUserName *string `json:"creator_user_name,omitempty"`
+	// ID of the deployment that produced the job when this run was created. Used to
+	// look up deployment metadata from the Deployment Metadata service. Only set
+	// for job runs of jobs with a `BUNDLE` deployment.
+	DeploymentId *string `json:"deployment_id,omitempty"`
+	// Description of the run
+	Description *string `json:"description,omitempty"`
 	// The actual performance target used by the serverless run during execution.
 	// This can differ from the client-set performance target on the request
 	// depending on whether the performance mode is supported by the job type.
@@ -705,24 +653,77 @@ type BaseRun struct {
 	EffectivePerformanceTarget PerformanceTarget_PerformanceTarget `json:"effective_performance_target,omitempty"`
 	// The id of the usage policy used by this run for cost attribution purposes.
 	EffectiveUsagePolicyId *string `json:"effective_usage_policy_id,omitempty"`
+	// The time at which this run ended in epoch milliseconds (milliseconds since
+	// 1/1/1970 UTC). This field is set to 0 if the job is still running.
+	EndTime *int64 `json:"end_time,omitempty"`
 	// Snapshot of `JobSettings.environment_variables` as it was at run launch —
 	// the full list of named environment-variable entries the job defined. To find
 	// which entry a given task ran with, look at
 	// `RunTaskSettings.environment_variables_key`.
 	EnvironmentVariables []JobEnvironmentVariables `json:"environment_variables,omitempty"`
-	// ID of the deployment that produced the job when this run was created. Used to
-	// look up deployment metadata from the Deployment Metadata service. Only set
-	// for job runs of jobs with a `BUNDLE` deployment.
-	DeploymentId *string `json:"deployment_id,omitempty"`
-	// ID of the deployment version that produced the job when this run was created.
-	// Identifies a specific snapshot of the deployment in the Deployment Metadata
-	// service. Only set for job runs of jobs with a `BUNDLE` deployment.
-	VersionId *string `json:"version_id,omitempty"`
-	// The time at which this run was started in epoch milliseconds (milliseconds
-	// since 1/1/1970 UTC). This may not be the time when the job task starts
-	// executing, for example, if the job is scheduled to run on a new cluster, this
-	// is the time the cluster creation call is issued.
-	StartTime *int64 `json:"start_time,omitempty"`
+	// The time in milliseconds it took to execute the commands in the JAR or
+	// notebook until they completed, failed, timed out, were cancelled, or
+	// encountered an unexpected error. The duration of a task run is the sum of the
+	// `setup_duration`, `execution_duration`, and the `cleanup_duration`. The
+	// `execution_duration` field is set to 0 for multitask job runs. The total
+	// duration of a multitask job run is the value of the `run_duration` field.
+	ExecutionDuration *int64 `json:"execution_duration,omitempty"`
+	// An optional specification for a remote Git repository containing the source
+	// code used by tasks. Version-controlled source code is supported by notebook,
+	// dbt, Python script, and SQL File tasks.
+	//
+	// If `git_source` is set, these tasks retrieve the file from the remote
+	// repository by default. However, this behavior can be overridden by setting
+	// `source` to `WORKSPACE` on the task.
+	//
+	// Note: dbt and SQL File tasks support only version-controlled sources. If dbt
+	// or SQL File tasks are used, `git_source` must be defined on the job.
+	GitSource *GitSource `json:"git_source,omitempty"`
+	// Indicates if the run has more array properties (`tasks`, `job_clusters`) that
+	// are not shown. They can be accessed via :method:jobs/getrun endpoint. It is
+	// only relevant for API 2.2 :method:jobs/listruns requests with
+	// `expand_tasks=true`.
+	HasMore *bool `json:"has_more,omitempty"`
+	// A list of job cluster specifications that can be shared and reused by tasks
+	// of this job. Libraries cannot be declared in a shared job cluster. You must
+	// declare dependent libraries in task settings. If more than 100 job clusters
+	// are available, you can paginate through them using :method:jobs/getrun.
+	JobClusters []JobCluster `json:"job_clusters,omitempty"`
+	// The canonical identifier of the job that contains this run.
+	JobId *int64 `json:"job_id,omitempty"`
+	// Job-level parameters used in the run
+	JobParameters []Run_JobLevelParameters `json:"job_parameters,omitempty"`
+	// ID of the job run that this run belongs to. For legacy and single-task job
+	// runs the field is populated with the job run ID. For task runs, the field is
+	// populated with the ID of the job run that the task run belongs to.
+	JobRunId *int64 `json:"job_run_id,omitempty"`
+	// A unique identifier for this job run. This is set to the same value as
+	// `run_id`.
+	NumberInJob *int64 `json:"number_in_job,omitempty"`
+	// If this run is a retry of a prior run attempt, this field contains the run_id
+	// of the original attempt; otherwise, it is the same as the run_id.
+	OriginalAttemptRunId *int64 `json:"original_attempt_run_id,omitempty"`
+	// The parameters used for this run.
+	OverridingParameters *RunParameters `json:"overriding_parameters,omitempty"`
+	// The time in milliseconds that the run has spent in the queue.
+	QueueDuration *int64 `json:"queue_duration,omitempty"`
+	// The repair history of the run.
+	RepairHistory []Repair `json:"repair_history,omitempty"`
+	// The time in milliseconds it took the job run and all of its repairs to
+	// finish.
+	RunDuration *int64 `json:"run_duration,omitempty"`
+	// The canonical identifier of the run. This ID is unique across all runs of all
+	// jobs.
+	RunId *int64 `json:"run_id,omitempty"`
+	// An optional name for the run. The maximum length is 4096 bytes in UTF-8
+	// encoding.
+	RunName *string `json:"run_name,omitempty"`
+	// The URL to the detail page of the run.
+	RunPageUrl *string `json:"run_page_url,omitempty"`
+	RunType    RunType `json:"run_type,omitempty"`
+	// The cron schedule that triggered this run if it was triggered by the periodic
+	// scheduler.
+	Schedule *CronSchedule `json:"schedule,omitempty"`
 	// The time in milliseconds it took to set up the cluster. For runs that run on
 	// new clusters this is the cluster creation time, for runs that run on existing
 	// clusters this time should be very short. The duration of a task run is the
@@ -731,35 +732,34 @@ type BaseRun struct {
 	// runs. The total duration of a multitask job run is the value of the
 	// `run_duration` field.
 	SetupDuration *int64 `json:"setup_duration,omitempty"`
-	// The time in milliseconds it took to execute the commands in the JAR or
-	// notebook until they completed, failed, timed out, were cancelled, or
-	// encountered an unexpected error. The duration of a task run is the sum of the
-	// `setup_duration`, `execution_duration`, and the `cleanup_duration`. The
-	// `execution_duration` field is set to 0 for multitask job runs. The total
-	// duration of a multitask job run is the value of the `run_duration` field.
-	ExecutionDuration *int64 `json:"execution_duration,omitempty"`
-	// The time in milliseconds it took to terminate the cluster and clean up any
-	// associated artifacts. The duration of a task run is the sum of the
-	// `setup_duration`, `execution_duration`, and the `cleanup_duration`. The
-	// `cleanup_duration` field is set to 0 for multitask job runs. The total
-	// duration of a multitask job run is the value of the `run_duration` field.
-	CleanupDuration *int64 `json:"cleanup_duration,omitempty"`
-	// The time at which this run ended in epoch milliseconds (milliseconds since
-	// 1/1/1970 UTC). This field is set to 0 if the job is still running.
-	EndTime *int64 `json:"end_time,omitempty"`
-	// The time in milliseconds it took the job run and all of its repairs to
-	// finish.
-	RunDuration *int64 `json:"run_duration,omitempty"`
-	// The time in milliseconds that the run has spent in the queue.
-	QueueDuration *int64 `json:"queue_duration,omitempty"`
+	// The time at which this run was started in epoch milliseconds (milliseconds
+	// since 1/1/1970 UTC). This may not be the time when the job task starts
+	// executing, for example, if the job is scheduled to run on a new cluster, this
+	// is the time the cluster creation call is issued.
+	StartTime *int64 `json:"start_time,omitempty"`
+	// Deprecated. Please use the `status` field instead.
+	State  *RunState  `json:"state,omitempty"`
+	Status *RunStatus `json:"status,omitempty"`
+	// The list of tasks performed by the run. Each task has its own `run_id` which
+	// you can use to call `JobsGetOutput` to retrieve the run results. If more than
+	// 100 tasks are available, you can paginate through them using
+	// :method:jobs/getrun. Use the `next_page_token` field at the object root to
+	// determine if more results are available.
+	Tasks       []RunTask       `json:"tasks,omitempty"`
+	Trigger     TriggerType     `json:"trigger,omitempty"`
+	TriggerInfo *RunTriggerInfo `json:"trigger_info,omitempty"`
+	// ID of the deployment version that produced the job when this run was created.
+	// Identifies a specific snapshot of the deployment in the Deployment Metadata
+	// service. Only set for job runs of jobs with a `BUNDLE` deployment.
+	VersionId *string `json:"version_id,omitempty"`
 }
 
 type CancelAllRunsRequest struct {
-	// The canonical identifier of the job to cancel all runs of.
-	JobId *int64 `json:"job_id,omitempty"`
 	// Optional boolean parameter to cancel all queued runs. If no job_id is
 	// provided, all queued runs in the workspace are canceled.
 	AllQueuedRuns *bool `json:"all_queued_runs,omitempty"`
+	// The canonical identifier of the job to cancel all runs of.
+	JobId *int64 `json:"job_id,omitempty"`
 }
 
 type CancelRunRequest struct {
@@ -784,14 +784,14 @@ type CleanRoomTaskRunState struct {
 type CleanRoomsNotebookTask struct {
 	// The clean room that the notebook belongs to.
 	CleanRoomName *string `json:"clean_room_name,omitempty"`
-	// Name of the notebook being run.
-	NotebookName *string `json:"notebook_name,omitempty"`
 	// Checksum to validate the freshness of the notebook resource (i.e. the
 	// notebook being run is the latest version). It can be fetched by calling the
 	// :method:cleanroomassets/get API.
 	Etag *string `json:"etag,omitempty"`
 	// Base parameters to be used for the clean room notebook job.
 	NotebookBaseParameters map[string]string `json:"notebook_base_parameters,omitempty"`
+	// Name of the notebook being run.
+	NotebookName *string `json:"notebook_name,omitempty"`
 }
 
 type CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutput struct {
@@ -831,49 +831,60 @@ type ClusterLogConf struct {
 }
 
 type ClusterSpec struct {
-	ExistingClusterId *string                 `json:"existing_cluster_id,omitempty"`
-	NewCluster        *ClusterSpec_NewCluster `json:"new_cluster,omitempty"`
-	JobClusterKey     *string                 `json:"job_cluster_key,omitempty"`
+	ExistingClusterId *string `json:"existing_cluster_id,omitempty"`
+	JobClusterKey     *string `json:"job_cluster_key,omitempty"`
 	// An optional list of libraries to be installed on the cluster. The default
 	// value is an empty list.
-	Libraries []Library `json:"libraries,omitempty"`
+	Libraries  []Library               `json:"libraries,omitempty"`
+	NewCluster *ClusterSpec_NewCluster `json:"new_cluster,omitempty"`
 }
 
 type ClusterSpec_NewCluster struct {
-	ApplyPolicyDefaultValues *bool `json:"apply_policy_default_values,omitempty"`
-	// Cluster name requested by the user. This doesn't have to be unique. If not
-	// specified at creation, the cluster name will be an empty string. For job
-	// clusters, the cluster name is automatically set based on the job and job run
-	// IDs.
-	ClusterName *string `json:"cluster_name,omitempty"`
-	// The Spark version of the cluster, e.g. `3.3.x-scala2.11`. A list of available
-	// Spark versions can be retrieved by using the [clusters/sparkVersions] API
-	// call.
-	//
-	// [clusters/sparkVersions]: https://docs.databricks.com/api/workspace/clusters/sparkversions
-	SparkVersion *string `json:"spark_version,omitempty"`
-	// An object containing a set of optional, user-specified Spark configuration
-	// key-value pairs. Users can also pass in a string of extra JVM options to the
-	// driver and the executors via `spark.driver.extraJavaOptions` and
-	// `spark.executor.extraJavaOptions` respectively.
-	SparkConf map[string]string `json:"spark_conf,omitempty"`
+	ApplyPolicyDefaultValues *bool      `json:"apply_policy_default_values,omitempty"`
+	Autoscale                *AutoScale `json:"autoscale,omitempty"`
+	// Automatically terminates the cluster after it is inactive for this time in
+	// minutes. If not set, this cluster will not be automatically terminated. If
+	// specified, the threshold must be between 10 and 10000 minutes. Users can also
+	// set this value to 0 to explicitly disable automatic termination.
+	AutoterminationMinutes *int `json:"autotermination_minutes,omitempty"`
 	// Attributes related to clusters running on Amazon Web Services. If not
 	// specified at cluster creation, a set of default values will be used.
 	AwsAttributes *AwsAttributes `json:"aws_attributes,omitempty"`
 	// Attributes related to clusters running on Microsoft Azure. If not specified
 	// at cluster creation, a set of default values will be used.
 	AzureAttributes *AzureAttributes `json:"azure_attributes,omitempty"`
-	// Attributes related to clusters running on Google Cloud Platform. If not
-	// specified at cluster creation, a set of default values will be used.
-	GcpAttributes *GcpAttributes `json:"gcp_attributes,omitempty"`
-	// This field encodes, through a single value, the resources available to each
-	// of the Spark nodes in this cluster. For example, the Spark nodes can be
-	// provisioned and optimized for memory or compute intensive workloads. A list
-	// of available node types can be retrieved by using the
-	// [clusters/listNodeTypes] API call.
+	// The configuration for delivering spark logs to a long-term storage
+	// destination. Three kinds of destinations (DBFS, S3 and Unity Catalog volumes)
+	// are supported. Only one destination can be specified for one cluster. If the
+	// conf is given, the logs will be delivered to the destination every `5 mins`.
+	// The destination of driver logs is `$destination/$clusterId/driver`, while the
+	// destination of executor logs is `$destination/$clusterId/executor`.
+	ClusterLogConf *ClusterLogConf `json:"cluster_log_conf,omitempty"`
+	// Cluster name requested by the user. This doesn't have to be unique. If not
+	// specified at creation, the cluster name will be an empty string. For job
+	// clusters, the cluster name is automatically set based on the job and job run
+	// IDs.
+	ClusterName *string `json:"cluster_name,omitempty"`
+	// Additional tags for cluster resources. <Databricks> will tag all cluster
+	// resources (e.g., AWS instances and EBS volumes) with these tags in addition
+	// to `default_tags`. Notes:
 	//
-	// [clusters/listNodeTypes]: https://docs.databricks.com/api/workspace/clusters/listnodetypes
-	NodeTypeId *string `json:"node_type_id,omitempty"`
+	// - Currently, <Databricks> allows at most 45 custom tags
+	//
+	// - Clusters can only reuse cloud resources if the resources' tags are a subset
+	// of the cluster tags
+	CustomTags       map[string]string `json:"custom_tags,omitempty"`
+	DataSecurityMode DataSecurityMode  `json:"data_security_mode,omitempty"`
+	// Controls dependency configuration for the cluster.
+	DependencyMode DependencyMode `json:"dependency_mode,omitempty"`
+	// Custom docker image BYOC
+	DockerImage *DockerImage `json:"docker_image,omitempty"`
+	// The optional ID of the instance pool for the driver of the cluster belongs.
+	// The pool cluster uses the instance pool with id (instance_pool_id) if the
+	// driver pool is not assigned.
+	DriverInstancePoolId *string `json:"driver_instance_pool_id,omitempty"`
+	// Flexible node type configuration for the driver node.
+	DriverNodeTypeFlexibility *NodeTypeFlexibility `json:"driver_node_type_flexibility,omitempty"`
 	// The node type of the Spark driver. Note that this field is optional; if
 	// unset, the driver node type will be set as the same value as `node_type_id`
 	// defined above.
@@ -883,30 +894,58 @@ type ClusterSpec_NewCluster struct {
 	// virtual_cluster_size are specified, driver_node_type_id and node_type_id take
 	// precedence.
 	DriverNodeTypeId *string `json:"driver_node_type_id,omitempty"`
-	// Flexible node type configuration for worker nodes.
-	WorkerNodeTypeFlexibility *NodeTypeFlexibility `json:"worker_node_type_flexibility,omitempty"`
-	// Flexible node type configuration for the driver node.
-	DriverNodeTypeFlexibility *NodeTypeFlexibility `json:"driver_node_type_flexibility,omitempty"`
-	// SSH public key contents that will be added to each Spark node in this
-	// cluster. The corresponding private keys can be used to login with the user
-	// name `ubuntu` on port `2200`. Up to 10 keys can be specified.
-	SshPublicKeys []string `json:"ssh_public_keys,omitempty"`
-	// Additional tags for cluster resources. <Databricks> will tag all cluster
-	// resources (e.g., AWS instances and EBS volumes) with these tags in addition
-	// to `default_tags`. Notes:
+	// Autoscaling Local Storage: when enabled, this cluster will dynamically
+	// acquire additional disk space when its Spark workers are running low on disk
+	// space.
+	EnableElasticDisk *bool `json:"enable_elastic_disk,omitempty"`
+	// Whether to enable LUKS on cluster VMs' local disks
+	EnableLocalDiskEncryption *bool `json:"enable_local_disk_encryption,omitempty"`
+	// Attributes related to clusters running on Google Cloud Platform. If not
+	// specified at cluster creation, a set of default values will be used.
+	GcpAttributes *GcpAttributes `json:"gcp_attributes,omitempty"`
+	// The configuration for storing init scripts. Any number of destinations can be
+	// specified. The scripts are executed sequentially in the order provided. If
+	// `cluster_log_conf` is specified, init script logs are sent to
+	// `<destination>/<cluster-ID>/init_scripts`.
+	InitScripts []InitScriptInfo `json:"init_scripts,omitempty"`
+	// The optional ID of the instance pool to which the cluster belongs.
+	InstancePoolId *string `json:"instance_pool_id,omitempty"`
+	// This field can only be used when `kind = CLASSIC_PREVIEW`.
 	//
-	// - Currently, <Databricks> allows at most 45 custom tags
+	// When set to true, <Databricks> will automatically set single node related
+	// `custom_tags`, `spark_conf`, and `num_workers`
+	IsSingleNode *bool       `json:"is_single_node,omitempty"`
+	Kind         ComputeKind `json:"kind,omitempty"`
+	// This field encodes, through a single value, the resources available to each
+	// of the Spark nodes in this cluster. For example, the Spark nodes can be
+	// provisioned and optimized for memory or compute intensive workloads. A list
+	// of available node types can be retrieved by using the
+	// [clusters/listNodeTypes] API call.
 	//
-	// - Clusters can only reuse cloud resources if the resources' tags are a subset
-	// of the cluster tags
-	CustomTags map[string]string `json:"custom_tags,omitempty"`
-	// The configuration for delivering spark logs to a long-term storage
-	// destination. Three kinds of destinations (DBFS, S3 and Unity Catalog volumes)
-	// are supported. Only one destination can be specified for one cluster. If the
-	// conf is given, the logs will be delivered to the destination every `5 mins`.
-	// The destination of driver logs is `$destination/$clusterId/driver`, while the
-	// destination of executor logs is `$destination/$clusterId/executor`.
-	ClusterLogConf *ClusterLogConf `json:"cluster_log_conf,omitempty"`
+	// [clusters/listNodeTypes]: https://docs.databricks.com/api/workspace/clusters/listnodetypes
+	NodeTypeId *string `json:"node_type_id,omitempty"`
+	NumWorkers *int    `json:"num_workers,omitempty"`
+	// The ID of the cluster policy used to create the cluster if applicable.
+	PolicyId *string `json:"policy_id,omitempty"`
+	// If set, what the configurable throughput (in Mb/s) for the remote disk is.
+	// Currently only supported for GCP HYPERDISK_BALANCED disks.
+	RemoteDiskThroughput *int `json:"remote_disk_throughput,omitempty"`
+	// Determines the cluster's runtime engine, either standard or Photon.
+	//
+	// This field is not compatible with legacy `spark_version` values that contain
+	// `-photon-`. Remove `-photon-` from the `spark_version` and set
+	// `runtime_engine` to `PHOTON`.
+	//
+	// If left unspecified, the runtime engine defaults to standard unless the
+	// spark_version contains -photon-, in which case Photon will be used.
+	RuntimeEngine RuntimeEngine `json:"runtime_engine,omitempty"`
+	// Single user name if data_security_mode is `SINGLE_USER`
+	SingleUserName *string `json:"single_user_name,omitempty"`
+	// An object containing a set of optional, user-specified Spark configuration
+	// key-value pairs. Users can also pass in a string of extra JVM options to the
+	// driver and the executors via `spark.driver.extraJavaOptions` and
+	// `spark.executor.extraJavaOptions` respectively.
+	SparkConf map[string]string `json:"spark_conf,omitempty"`
 	// An object containing a set of optional, user-specified environment variable
 	// key-value pairs. Please note that key-value pair of the form (X,Y) will be
 	// exported as is (i.e., `export X='Y'`) while launching the driver and workers.
@@ -920,66 +959,27 @@ type ClusterSpec_NewCluster struct {
 	// "SPARK_LOCAL_DIRS": "/local_disk0"}` or `{"SPARK_DAEMON_JAVA_OPTS":
 	// "$SPARK_DAEMON_JAVA_OPTS -Dspark.shuffle.service.enabled=true"}`
 	SparkEnvVars map[string]string `json:"spark_env_vars,omitempty"`
-	// Automatically terminates the cluster after it is inactive for this time in
-	// minutes. If not set, this cluster will not be automatically terminated. If
-	// specified, the threshold must be between 10 and 10000 minutes. Users can also
-	// set this value to 0 to explicitly disable automatic termination.
-	AutoterminationMinutes *int `json:"autotermination_minutes,omitempty"`
-	// Autoscaling Local Storage: when enabled, this cluster will dynamically
-	// acquire additional disk space when its Spark workers are running low on disk
-	// space.
-	EnableElasticDisk *bool `json:"enable_elastic_disk,omitempty"`
-	// The configuration for storing init scripts. Any number of destinations can be
-	// specified. The scripts are executed sequentially in the order provided. If
-	// `cluster_log_conf` is specified, init script logs are sent to
-	// `<destination>/<cluster-ID>/init_scripts`.
-	InitScripts []InitScriptInfo `json:"init_scripts,omitempty"`
-	// Custom docker image BYOC
-	DockerImage *DockerImage `json:"docker_image,omitempty"`
-	// The optional ID of the instance pool to which the cluster belongs.
-	InstancePoolId *string `json:"instance_pool_id,omitempty"`
-	// Single user name if data_security_mode is `SINGLE_USER`
-	SingleUserName *string `json:"single_user_name,omitempty"`
-	// The ID of the cluster policy used to create the cluster if applicable.
-	PolicyId *string `json:"policy_id,omitempty"`
-	// Whether to enable LUKS on cluster VMs' local disks
-	EnableLocalDiskEncryption *bool `json:"enable_local_disk_encryption,omitempty"`
-	// The optional ID of the instance pool for the driver of the cluster belongs.
-	// The pool cluster uses the instance pool with id (instance_pool_id) if the
-	// driver pool is not assigned.
-	DriverInstancePoolId *string          `json:"driver_instance_pool_id,omitempty"`
-	WorkloadType         *WorkloadType    `json:"workload_type,omitempty"`
-	DataSecurityMode     DataSecurityMode `json:"data_security_mode,omitempty"`
-	// Determines the cluster's runtime engine, either standard or Photon.
+	// The Spark version of the cluster, e.g. `3.3.x-scala2.11`. A list of available
+	// Spark versions can be retrieved by using the [clusters/sparkVersions] API
+	// call.
 	//
-	// This field is not compatible with legacy `spark_version` values that contain
-	// `-photon-`. Remove `-photon-` from the `spark_version` and set
-	// `runtime_engine` to `PHOTON`.
-	//
-	// If left unspecified, the runtime engine defaults to standard unless the
-	// spark_version contains -photon-, in which case Photon will be used.
-	RuntimeEngine RuntimeEngine `json:"runtime_engine,omitempty"`
-	Kind          ComputeKind   `json:"kind,omitempty"`
+	// [clusters/sparkVersions]: https://docs.databricks.com/api/workspace/clusters/sparkversions
+	SparkVersion *string `json:"spark_version,omitempty"`
+	// SSH public key contents that will be added to each Spark node in this
+	// cluster. The corresponding private keys can be used to login with the user
+	// name `ubuntu` on port `2200`. Up to 10 keys can be specified.
+	SshPublicKeys []string `json:"ssh_public_keys,omitempty"`
+	// If set, what the total initial volume size (in GB) of the remote disks should
+	// be. Supported for GCP.
+	TotalInitialRemoteDiskSize *int `json:"total_initial_remote_disk_size,omitempty"`
 	// This field can only be used when `kind = CLASSIC_PREVIEW`.
 	//
 	// `effective_spark_version` is determined by `spark_version` (DBR release),
 	// this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.
 	UseMlRuntime *bool `json:"use_ml_runtime,omitempty"`
-	// This field can only be used when `kind = CLASSIC_PREVIEW`.
-	//
-	// When set to true, <Databricks> will automatically set single node related
-	// `custom_tags`, `spark_conf`, and `num_workers`
-	IsSingleNode *bool `json:"is_single_node,omitempty"`
-	// If set, what the configurable throughput (in Mb/s) for the remote disk is.
-	// Currently only supported for GCP HYPERDISK_BALANCED disks.
-	RemoteDiskThroughput *int `json:"remote_disk_throughput,omitempty"`
-	// If set, what the total initial volume size (in GB) of the remote disks should
-	// be. Supported for GCP.
-	TotalInitialRemoteDiskSize *int `json:"total_initial_remote_disk_size,omitempty"`
-	// Controls dependency configuration for the cluster.
-	DependencyMode DependencyMode `json:"dependency_mode,omitempty"`
-	NumWorkers     *int           `json:"num_workers,omitempty"`
-	Autoscale      *AutoScale     `json:"autoscale,omitempty"`
+	// Flexible node type configuration for worker nodes.
+	WorkerNodeTypeFlexibility *NodeTypeFlexibility `json:"worker_node_type_flexibility,omitempty"`
+	WorkloadType              *WorkloadType        `json:"workload_type,omitempty"`
 }
 
 type Compute struct {
@@ -988,26 +988,26 @@ type Compute struct {
 }
 
 type ComputeConfig struct {
-	// Number of GPUs.
-	NumGpus *int `json:"num_gpus,omitempty"`
 	// IDof the GPU pool to use.
 	GpuNodePoolId *string `json:"gpu_node_pool_id,omitempty"`
 	// GPU type.
 	GpuType *string `json:"gpu_type,omitempty"`
+	// Number of GPUs.
+	NumGpus *int `json:"num_gpus,omitempty"`
 }
 
 // ComputeSpec: compute configuration — accelerator type and total accelerator
 // count across all nodes..
 type ComputeSpec struct {
-	// Hardware accelerator type (for example, `GPU_1xA10` or `GPU_8xH100`). The
-	// number of accelerators per node is encoded in the enum value — `GPU_8xH100`
-	// means 8 H100 GPUs per node.
-	AcceleratorType ComputeSpec_AcceleratorType `json:"accelerator_type,omitempty"`
 	// Total number of accelerators across all nodes. Must be a positive multiple of
 	// the per-node accelerator count encoded in `accelerator_type`. For example,
 	// `GPU_8xH100` with `accelerator_count: 16` allocates 2 nodes (8 GPUs per
 	// node).
 	AcceleratorCount *int `json:"accelerator_count,omitempty"`
+	// Hardware accelerator type (for example, `GPU_1xA10` or `GPU_8xH100`). The
+	// number of accelerators per node is encoded in the enum value — `GPU_8xH100`
+	// means 8 H100 GPUs per node.
+	AcceleratorType ComputeSpec_AcceleratorType `json:"accelerator_type,omitempty"`
 	// Optional ID of a pre-provisioned accelerator capacity reservation to run this
 	// AI Runtime workload on. When set, the workload is scheduled onto the
 	// referenced reserved capacity instead of the on-demand capacity shared among
@@ -1016,6 +1016,9 @@ type ComputeSpec struct {
 }
 
 type ConditionTask struct {
+	// The left operand of the condition task. Can be either a string value or a job
+	// state or parameter reference.
+	Left *string `json:"left,omitempty"`
 	// * `EQUAL_TO`, `NOT_EQUAL` operators perform string comparison of their
 	// operands. This means that `“12.0” == “12”` will evaluate to `false`.
 	// * `GREATER_THAN`, `GREATER_THAN_OR_EQUAL`, `LESS_THAN`, `LESS_THAN_OR_EQUAL`
@@ -1027,76 +1030,51 @@ type ConditionTask struct {
 	// `EQUAL_TO`, `NOT_EQUAL`. If a task value was set to a boolean value, it will
 	// be serialized to `“true”` or `“false”` for the comparison.
 	Op ConditionTask_ConditionTaskOperator `json:"op,omitempty"`
-	// The left operand of the condition task. Can be either a string value or a job
-	// state or parameter reference.
-	Left *string `json:"left,omitempty"`
-	// The right operand of the condition task. Can be either a string value or a
-	// job state or parameter reference.
-	Right *string `json:"right,omitempty"`
 	// The condition expression evaluation result. Filled in if the task was
 	// successfully completed. Can be `"true"` or `"false"`
 	Outcome *string `json:"outcome,omitempty"`
+	// The right operand of the condition task. Can be either a string value or a
+	// job state or parameter reference.
+	Right *string `json:"right,omitempty"`
 }
 
 type ContinuousSettings struct {
+	// Defines when platform-initiated maintenance may run for this job. If
+	// unspecified, maintenance may run at any time.
+	MaintenanceWindow *MaintenanceWindow `json:"maintenance_window,omitempty"`
 	// Indicate whether the continuous execution of the job is paused or not.
 	// Defaults to UNPAUSED.
 	PauseStatus SchedulePauseStatus `json:"pause_status,omitempty"`
 	// Indicate whether the continuous job is applying task level retries or not.
 	// Defaults to NEVER.
 	TaskRetryMode TaskRetryMode `json:"task_retry_mode,omitempty"`
-	// Defines when platform-initiated maintenance may run for this job. If
-	// unspecified, maintenance may run at any time.
-	MaintenanceWindow *MaintenanceWindow `json:"maintenance_window,omitempty"`
 }
 
 // Continuous trigger. Stripped-down counterpart to `ContinuousSettings`:
 // `pause_status` is owned by the enclosing `TriggerConfiguration` and
 // intentionally omitted here..
 type ContinuousTriggerConfiguration struct {
-	// Whether the continuous job applies task-level retries. Defaults to NEVER.
-	TaskRetryMode TaskRetryMode `json:"task_retry_mode,omitempty"`
 	// Defines when platform-initiated maintenance may run for this trigger. If
 	// unspecified, maintenance may run at any time.
 	MaintenanceWindow *MaintenanceWindow `json:"maintenance_window,omitempty"`
+	// Whether the continuous job applies task-level retries. Defaults to NEVER.
+	TaskRetryMode TaskRetryMode `json:"task_retry_mode,omitempty"`
 }
 
 type ContinuousTriggerState struct {
 	ConsecutiveFailures *int   `json:"consecutive_failures,omitempty"`
-	NextAttemptMs       *int64 `json:"next_attempt_ms,omitempty"`
 	IsBackingOff        *bool  `json:"is_backing_off,omitempty"`
+	NextAttemptMs       *int64 `json:"next_attempt_ms,omitempty"`
 }
 
 type CreateJobRequest struct {
 	// List of permissions to set on the job.
 	AccessControlList []AccessControlRequest `json:"access_control_list,omitempty"`
-	// An optional name for the job. The maximum length is 4096 bytes in UTF-8
-	// encoding.
-	Name *string `json:"name,omitempty"`
-	// An optional description for the job. The maximum length is 27700 characters
-	// in UTF-8 encoding.
-	Description *string `json:"description,omitempty"`
-	// An optional set of email addresses that is notified when runs of this job
-	// begin or complete as well as when this job is deleted.
-	EmailNotifications *JobEmailNotifications `json:"email_notifications,omitempty"`
-	// A collection of system notification IDs to notify when runs of this job begin
-	// or complete.
-	WebhookNotifications *WebhookNotifications `json:"webhook_notifications,omitempty"`
-	// Optional notification settings that are used when sending notifications to
-	// each of the `email_notifications` and `webhook_notifications` for this job.
-	NotificationSettings *NotificationSettings `json:"notification_settings,omitempty"`
-	// An optional timeout applied to each run of this job. A value of `0` means no
-	// timeout.
-	TimeoutSeconds *int             `json:"timeout_seconds,omitempty"`
-	Health         *JobsHealthRules `json:"health,omitempty"`
-	// An optional periodic schedule for this job. The default behavior is that the
-	// job only runs when triggered by clicking “Run Now” in the Jobs UI or
-	// sending an API request to `runNow`.
-	Schedule *CronSchedule `json:"schedule,omitempty"`
-	// A configuration to trigger a run when certain conditions are met. The default
-	// behavior is that the job runs only when triggered by clicking “Run Now”
-	// in the Jobs UI or sending an API request to `runNow`.
-	Trigger *TriggerSettings `json:"trigger,omitempty"`
+	// The id of the user specified budget policy to use for this job. If not
+	// specified, a default budget policy may be applied when creating or modifying
+	// the job. See `effective_budget_policy_id` for the budget policy used by this
+	// workload.
+	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
 	// An optional continuous property for this job. The continuous property will
 	// ensure that there is always one run executing. Only one of `schedule` and
 	// `continuous` can be used.
@@ -1104,6 +1082,56 @@ type CreateJobRequest struct {
 	// Pipelines started by a continuous job also run continuously, regardless of
 	// their own pipeline mode setting.
 	Continuous *ContinuousSettings `json:"continuous,omitempty"`
+	// Deployment information for jobs managed by external sources.
+	Deployment *JobDeployment `json:"deployment,omitempty"`
+	// An optional description for the job. The maximum length is 27700 characters
+	// in UTF-8 encoding.
+	Description *string `json:"description,omitempty"`
+	// An option to disable auto optimization in serverless
+	DisableAutoOptimization *bool `json:"disable_auto_optimization,omitempty"`
+	// Edit mode of the job.
+	//
+	// * `UI_LOCKED`: The job is in a locked UI state and cannot be modified. *
+	// `EDITABLE`: The job is in an editable state and can be modified.
+	EditMode JobEditMode `json:"edit_mode,omitempty"`
+	// An optional set of email addresses that is notified when runs of this job
+	// begin or complete as well as when this job is deleted.
+	EmailNotifications *JobEmailNotifications `json:"email_notifications,omitempty"`
+	// Named environment-variable entries that tasks can reference by key from
+	// `TaskSettings.environment_variables_key`. Each entry's `spec` holds inline
+	// `variables` and optional `.env` `files`. Maximum 10 entries per job. A task
+	// can reference at most one entry from this list.
+	EnvironmentVariables []JobEnvironmentVariables `json:"environment_variables,omitempty"`
+	// A list of task execution environment specifications that can be referenced by
+	// tasks that use serverless compute or a compute resource that uses
+	// Environments mode. For notebook tasks that use serverless compute or a
+	// compute resource that uses Environments mode, if the environment_key is not
+	// specified, the notebook environment will be used if present. If a jobs
+	// environment is specified, it will override the notebook environment. For
+	// other tasks that use serverless compute or a compute resource that uses
+	// Environments mode, the task environment is required to be specified using
+	// environment_key in the task settings.
+	Environments []JobEnvironment `json:"environments,omitempty"`
+	// Used to tell what is the format of the job. This field is ignored in
+	// Create/Update/Reset calls. When using the Jobs API 2.1 this value is always
+	// set to `"MULTI_TASK"`.
+	Format Format `json:"format,omitempty"`
+	// An optional specification for a remote Git repository containing the source
+	// code used by tasks. Version-controlled source code is supported by notebook,
+	// dbt, Python script, and SQL File tasks.
+	//
+	// If `git_source` is set, these tasks retrieve the file from the remote
+	// repository by default. However, this behavior can be overridden by setting
+	// `source` to `WORKSPACE` on the task.
+	//
+	// Note: dbt and SQL File tasks support only version-controlled sources. If dbt
+	// or SQL File tasks are used, `git_source` must be defined on the job.
+	GitSource *GitSource       `json:"git_source,omitempty"`
+	Health    *JobsHealthRules `json:"health,omitempty"`
+	// A list of job cluster specifications that can be shared and reused by tasks
+	// of this job. Libraries cannot be declared in a shared job cluster. You must
+	// declare dependent libraries in task settings.
+	JobClusters []JobCluster `json:"job_clusters,omitempty"`
 	// An optional maximum allowed number of concurrent runs of the job. Set this
 	// value if you want to be able to execute multiple runs of the same job
 	// concurrently. This is useful for example if you trigger your job on a
@@ -1116,72 +1144,26 @@ type CreateJobRequest struct {
 	// value cannot exceed 1000. Setting this value to `0` causes all new runs to be
 	// skipped.
 	MaxConcurrentRuns *int `json:"max_concurrent_runs,omitempty"`
-	// A list of task specifications to be executed by this job. It supports up to
-	// 1000 elements in write endpoints (:method:jobs/create, :method:jobs/reset,
-	// :method:jobs/update, :method:jobs/submit). Read endpoints return only 100
-	// tasks. If more than 100 tasks are available, you can paginate through them
-	// using :method:jobs/get. Use the `next_page_token` field at the object root to
-	// determine if more results are available.
-	Tasks []TaskSettings `json:"tasks,omitempty"`
-	// A list of job cluster specifications that can be shared and reused by tasks
-	// of this job. Libraries cannot be declared in a shared job cluster. You must
-	// declare dependent libraries in task settings.
-	JobClusters []JobCluster `json:"job_clusters,omitempty"`
-	// An optional specification for a remote Git repository containing the source
-	// code used by tasks. Version-controlled source code is supported by notebook,
-	// dbt, Python script, and SQL File tasks.
-	//
-	// If `git_source` is set, these tasks retrieve the file from the remote
-	// repository by default. However, this behavior can be overridden by setting
-	// `source` to `WORKSPACE` on the task.
-	//
-	// Note: dbt and SQL File tasks support only version-controlled sources. If dbt
-	// or SQL File tasks are used, `git_source` must be defined on the job.
-	GitSource *GitSource `json:"git_source,omitempty"`
-	// A map of tags associated with the job. These are forwarded to the cluster as
-	// cluster tags for jobs clusters, and are subject to the same limitations as
-	// cluster tags. A maximum of 25 tags can be added to the job.
-	Tags map[string]string `json:"tags,omitempty"`
-	// Used to tell what is the format of the job. This field is ignored in
-	// Create/Update/Reset calls. When using the Jobs API 2.1 this value is always
-	// set to `"MULTI_TASK"`.
-	Format Format `json:"format,omitempty"`
-	// The queue settings of the job.
-	Queue *QueueSettings `json:"queue,omitempty"`
+	// An optional maximum number of times to retry an unsuccessful run. A run is
+	// considered to be unsuccessful if it completes with the `FAILED` result_state
+	// or `INTERNAL_ERROR` `life_cycle_state`. The value `-1` means to retry
+	// indefinitely and the value `0` means to never retry.
+	MaxRetries *int `json:"max_retries,omitempty"`
+	// An optional minimal interval in milliseconds between the start of the failed
+	// run and the subsequent retry run. The default behavior is that unsuccessful
+	// runs are immediately retried.
+	MinRetryIntervalMillis *int `json:"min_retry_interval_millis,omitempty"`
+	// An optional name for the job. The maximum length is 4096 bytes in UTF-8
+	// encoding.
+	Name *string `json:"name,omitempty"`
+	// Optional notification settings that are used when sending notifications to
+	// each of the `email_notifications` and `webhook_notifications` for this job.
+	NotificationSettings *NotificationSettings `json:"notification_settings,omitempty"`
 	// Job-level parameter definitions
 	Parameters []JobLevelParameter `json:"parameters,omitempty"`
-	// The user or service principal that the job runs as, if specified in the
-	// request. This field indicates the explicit configuration of `run_as` for the
-	// job. To find the value in all cases, explicit or implicit, use
-	// `run_as_user_name`.
-	RunAs *JobRunAs `json:"run_as,omitempty"`
-	// Edit mode of the job.
-	//
-	// * `UI_LOCKED`: The job is in a locked UI state and cannot be modified. *
-	// `EDITABLE`: The job is in an editable state and can be modified.
-	EditMode JobEditMode `json:"edit_mode,omitempty"`
-	// Deployment information for jobs managed by external sources.
-	Deployment *JobDeployment `json:"deployment,omitempty"`
-	// A list of task execution environment specifications that can be referenced by
-	// tasks that use serverless compute or a compute resource that uses
-	// Environments mode. For notebook tasks that use serverless compute or a
-	// compute resource that uses Environments mode, if the environment_key is not
-	// specified, the notebook environment will be used if present. If a jobs
-	// environment is specified, it will override the notebook environment. For
-	// other tasks that use serverless compute or a compute resource that uses
-	// Environments mode, the task environment is required to be specified using
-	// environment_key in the task settings.
-	Environments []JobEnvironment `json:"environments,omitempty"`
-	// The id of the user specified budget policy to use for this job. If not
-	// specified, a default budget policy may be applied when creating or modifying
-	// the job. See `effective_budget_policy_id` for the budget policy used by this
-	// workload.
-	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
-	// The id of the user specified usage policy to use for this job. If not
-	// specified, a default usage policy may be applied when creating or modifying
-	// the job. See `effective_usage_policy_id` for the usage policy used by this
-	// workload.
-	UsagePolicyId *string `json:"usage_policy_id,omitempty"`
+	// Path of the job parent folder in workspace file tree. If absent, the job
+	// doesn't have a workspace object.
+	ParentPath *string `json:"parent_path,omitempty"`
 	// The performance mode on a serverless job. This field determines the level of
 	// compute performance or cost-efficiency for the run. The performance target
 	// does not apply to tasks that run on Serverless GPU compute.
@@ -1192,33 +1174,51 @@ type CreateJobRequest struct {
 	// Enables lower job costs by optimizing compute for your selected target
 	// duration time. Must provide a duration target.
 	PerformanceTarget PerformanceTarget_PerformanceTarget `json:"performance_target,omitempty"`
-	// Path of the job parent folder in workspace file tree. If absent, the job
-	// doesn't have a workspace object.
-	ParentPath *string `json:"parent_path,omitempty"`
+	// The queue settings of the job.
+	Queue *QueueSettings `json:"queue,omitempty"`
+	// An optional policy to specify whether to retry a job when it times out. The
+	// default behavior is to not retry on timeout.
+	RetryOnTimeout *bool `json:"retry_on_timeout,omitempty"`
+	// The user or service principal that the job runs as, if specified in the
+	// request. This field indicates the explicit configuration of `run_as` for the
+	// job. To find the value in all cases, explicit or implicit, use
+	// `run_as_user_name`.
+	RunAs *JobRunAs `json:"run_as,omitempty"`
+	// An optional periodic schedule for this job. The default behavior is that the
+	// job only runs when triggered by clicking “Run Now” in the Jobs UI or
+	// sending an API request to `runNow`.
+	Schedule *CronSchedule `json:"schedule,omitempty"`
+	// A map of tags associated with the job. These are forwarded to the cluster as
+	// cluster tags for jobs clusters, and are subject to the same limitations as
+	// cluster tags. A maximum of 25 tags can be added to the job.
+	Tags map[string]string `json:"tags,omitempty"`
+	// A list of task specifications to be executed by this job. It supports up to
+	// 1000 elements in write endpoints (:method:jobs/create, :method:jobs/reset,
+	// :method:jobs/update, :method:jobs/submit). Read endpoints return only 100
+	// tasks. If more than 100 tasks are available, you can paginate through them
+	// using :method:jobs/get. Use the `next_page_token` field at the object root to
+	// determine if more results are available.
+	Tasks []TaskSettings `json:"tasks,omitempty"`
+	// An optional timeout applied to each run of this job. A value of `0` means no
+	// timeout.
+	TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
+	// A configuration to trigger a run when certain conditions are met. The default
+	// behavior is that the job runs only when triggered by clicking “Run Now”
+	// in the Jobs UI or sending an API request to `runNow`.
+	Trigger *TriggerSettings `json:"trigger,omitempty"`
 	// List of triggers attached to this job. A run starts when any active trigger
 	// evaluates to true. Cannot be set in the same request as the legacy
 	// `schedule`, `trigger`, or `continuous` fields. Gated behind the "Multiple
 	// Triggers" feature preview.
 	Triggers []TriggerConfiguration `json:"triggers,omitempty"`
-	// Named environment-variable entries that tasks can reference by key from
-	// `TaskSettings.environment_variables_key`. Each entry's `spec` holds inline
-	// `variables` and optional `.env` `files`. Maximum 10 entries per job. A task
-	// can reference at most one entry from this list.
-	EnvironmentVariables []JobEnvironmentVariables `json:"environment_variables,omitempty"`
-	// An optional maximum number of times to retry an unsuccessful run. A run is
-	// considered to be unsuccessful if it completes with the `FAILED` result_state
-	// or `INTERNAL_ERROR` `life_cycle_state`. The value `-1` means to retry
-	// indefinitely and the value `0` means to never retry.
-	MaxRetries *int `json:"max_retries,omitempty"`
-	// An optional minimal interval in milliseconds between the start of the failed
-	// run and the subsequent retry run. The default behavior is that unsuccessful
-	// runs are immediately retried.
-	MinRetryIntervalMillis *int `json:"min_retry_interval_millis,omitempty"`
-	// An optional policy to specify whether to retry a job when it times out. The
-	// default behavior is to not retry on timeout.
-	RetryOnTimeout *bool `json:"retry_on_timeout,omitempty"`
-	// An option to disable auto optimization in serverless
-	DisableAutoOptimization *bool `json:"disable_auto_optimization,omitempty"`
+	// The id of the user specified usage policy to use for this job. If not
+	// specified, a default usage policy may be applied when creating or modifying
+	// the job. See `effective_usage_policy_id` for the usage policy used by this
+	// workload.
+	UsagePolicyId *string `json:"usage_policy_id,omitempty"`
+	// A collection of system notification IDs to notify when runs of this job begin
+	// or complete.
+	WebhookNotifications *WebhookNotifications `json:"webhook_notifications,omitempty"`
 }
 
 // Job was created successfully.
@@ -1228,22 +1228,22 @@ type CreateJobResponse struct {
 }
 
 type CronSchedule struct {
+	// Indicate whether this schedule is paused or not.
+	PauseStatus SchedulePauseStatus `json:"pause_status,omitempty"`
 	// A Cron expression using Quartz syntax that describes the schedule for a job.
 	// See [Cron Trigger] for details. This field is required.
 	//
 	// [Cron Trigger]: http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html
 	QuartzCronExpression *string `json:"quartz_cron_expression,omitempty"`
+	// SQL condition that must be satisfied before a scheduled run is triggered. The
+	// condition is evaluated after the cron expression fires and must return a
+	// truthy result for the run to proceed.
+	SqlCondition *SqlConditionConfiguration `json:"sql_condition,omitempty"`
 	// A Java timezone ID. The schedule for a job is resolved with respect to this
 	// timezone. See [Java TimeZone] for details. This field is required.
 	//
 	// [Java TimeZone]: https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html
 	TimezoneId *string `json:"timezone_id,omitempty"`
-	// Indicate whether this schedule is paused or not.
-	PauseStatus SchedulePauseStatus `json:"pause_status,omitempty"`
-	// SQL condition that must be satisfied before a scheduled run is triggered. The
-	// condition is evaluated after the cron expression fires and must return a
-	// truthy result for the run to proceed.
-	SqlCondition *SqlConditionConfiguration `json:"sql_condition,omitempty"`
 }
 
 // Cron schedule trigger. Stripped-down counterpart to `CronSchedule`:
@@ -1269,11 +1269,6 @@ type DashboardPageSnapshot struct {
 
 // Configures the Lakeview Dashboard job task type..
 type DashboardTask struct {
-	// Optional: subscription configuration for sending the dashboard snapshot.
-	Subscription *Subscription `json:"subscription,omitempty"`
-	// Optional: The warehouse id to execute the dashboard with for the schedule. If
-	// not specified, the default warehouse of the dashboard will be used.
-	WarehouseId *string `json:"warehouse_id,omitempty"`
 	// The identifier of the dashboard to refresh.
 	DashboardId *string `json:"dashboard_id,omitempty"`
 	// Dashboard task parameters. Used to apply dashboard filter values during
@@ -1287,6 +1282,11 @@ type DashboardTask struct {
 	// provide a JSON object with `start` and `end` (e.g.
 	// `"{\"start\":\"1\",\"end\":\"10\"}"`)
 	Filters map[string]string `json:"filters,omitempty"`
+	// Optional: subscription configuration for sending the dashboard snapshot.
+	Subscription *Subscription `json:"subscription,omitempty"`
+	// Optional: The warehouse id to execute the dashboard with for the schedule. If
+	// not specified, the default warehouse of the dashboard will be used.
+	WarehouseId *string `json:"warehouse_id,omitempty"`
 }
 
 type DashboardTaskOutput struct {
@@ -1305,96 +1305,92 @@ type DbfsStorageInfo struct {
 type DbtCloudJobRunStep struct {
 	// Orders the steps in the job
 	Index *int `json:"index,omitempty"`
+	// Output of the step
+	Logs *string `json:"logs,omitempty"`
 	// Name of the step in the job
 	Name *string `json:"name,omitempty"`
 	// State of the step
 	Status DbtPlatformRunStatus `json:"status,omitempty"`
-	// Output of the step
-	Logs *string `json:"logs,omitempty"`
 }
 
 // Deprecated in favor of DbtPlatformTask.
 type DbtCloudTask struct {
-	// Id of the dbt Cloud job to be triggered
-	DbtCloudJobId *int64 `json:"dbt_cloud_job_id,omitempty"`
 	// The resource name of the UC connection that authenticates the dbt Cloud for
 	// this task
 	ConnectionResourceName *string `json:"connection_resource_name,omitempty"`
+	// Id of the dbt Cloud job to be triggered
+	DbtCloudJobId *int64 `json:"dbt_cloud_job_id,omitempty"`
 }
 
 // Deprecated in favor of DbtPlatformTaskOutput.
 type DbtCloudTaskOutput struct {
 	// Id of the job run in dbt Cloud
 	DbtCloudJobRunId *int64 `json:"dbt_cloud_job_run_id,omitempty"`
-	// Url where full run details can be viewed
-	DbtCloudJobRunUrl *string `json:"dbt_cloud_job_run_url,omitempty"`
 	// Steps of the job run as received from dbt Cloud
 	DbtCloudJobRunOutput []DbtCloudJobRunStep `json:"dbt_cloud_job_run_output,omitempty"`
+	// Url where full run details can be viewed
+	DbtCloudJobRunUrl *string `json:"dbt_cloud_job_run_url,omitempty"`
 }
 
 // Format of response retrieved from dbt platform, for inclusion in output.
 type DbtPlatformJobRunStep struct {
 	// Orders the steps in the job
 	Index *int `json:"index,omitempty"`
-	// Name of the step in the job
-	Name *string `json:"name,omitempty"`
-	// State of the step
-	Status DbtPlatformRunStatus `json:"status,omitempty"`
 	// Output of the step
 	Logs *string `json:"logs,omitempty"`
-	// Whether the name of the job has been truncated. If true, the name has been
-	// truncated to 100 characters.
-	NameTruncated *bool `json:"name_truncated,omitempty"`
 	// Whether the logs of this step have been truncated. If true, the logs has been
 	// truncated to 10000 characters.
 	LogsTruncated *bool `json:"logs_truncated,omitempty"`
+	// Name of the step in the job
+	Name *string `json:"name,omitempty"`
+	// Whether the name of the job has been truncated. If true, the name has been
+	// truncated to 100 characters.
+	NameTruncated *bool `json:"name_truncated,omitempty"`
+	// State of the step
+	Status DbtPlatformRunStatus `json:"status,omitempty"`
 }
 
 type DbtPlatformTask struct {
-	// Id of the dbt platform job to be triggered. Specified as a string for maximum
-	// compatibility with clients.
-	DbtPlatformJobId *string `json:"dbt_platform_job_id,omitempty"`
 	// The resource name of the UC connection that authenticates the dbt platform
 	// for this task
 	ConnectionResourceName *string `json:"connection_resource_name,omitempty"`
+	// Id of the dbt platform job to be triggered. Specified as a string for maximum
+	// compatibility with clients.
+	DbtPlatformJobId *string `json:"dbt_platform_job_id,omitempty"`
 }
 
 type DbtPlatformTaskOutput struct {
 	// Id of the job run in dbt platform. Specified as a string for maximum
 	// compatibility with clients.
 	DbtPlatformJobRunId *string `json:"dbt_platform_job_run_id,omitempty"`
-	// Url where full run details can be viewed
-	DbtPlatformJobRunUrl *string `json:"dbt_platform_job_run_url,omitempty"`
 	// Steps of the job run as received from dbt platform
 	DbtPlatformJobRunOutput []DbtPlatformJobRunStep `json:"dbt_platform_job_run_output,omitempty"`
+	// Url where full run details can be viewed
+	DbtPlatformJobRunUrl *string `json:"dbt_platform_job_run_url,omitempty"`
 	// Whether the number of steps in the output has been truncated. If true, the
 	// output will contain the first 20 steps of the output.
 	StepsTruncated *bool `json:"steps_truncated,omitempty"`
 }
 
 type DbtTask struct {
-	// Path to the project directory. Optional for Git sourced tasks, in which case
-	// if no value is provided, the root of the Git repository is used.
-	ProjectDirectory *string `json:"project_directory,omitempty"`
-	// A list of dbt commands to execute. All commands must start with `dbt`. This
-	// parameter must not be empty. A maximum of up to 10 commands can be provided.
-	Commands []string `json:"commands,omitempty"`
-	// Optional schema to write to. This parameter is only used when a warehouse_id
-	// is also provided. If not provided, the `default` schema is used.
-	Schema *string `json:"schema,omitempty"`
-	// ID of the SQL warehouse to connect to. If provided, we automatically generate
-	// and provide the profile and connection details to dbt. It can be overridden
-	// on a per-command basis by using the `--profiles-dir` command line argument.
-	WarehouseId *string `json:"warehouse_id,omitempty"`
-	// Optional (relative) path to the profiles directory. Can only be specified if
-	// no warehouse_id is specified. If no warehouse_id is specified and this folder
-	// is unset, the root directory is used.
-	ProfilesDirectory *string `json:"profiles_directory,omitempty"`
 	// Optional name of the catalog to use. The value is the top level in the
 	// 3-level namespace of Unity Catalog (catalog / schema / relation). The catalog
 	// value can only be specified if a warehouse_id is specified. Requires
 	// dbt-databricks >= 1.1.1.
 	Catalog *string `json:"catalog,omitempty"`
+	// A list of dbt commands to execute. All commands must start with `dbt`. This
+	// parameter must not be empty. A maximum of up to 10 commands can be provided.
+	Commands []string `json:"commands,omitempty"`
+	// Optional (relative) path to the profiles directory. Can only be specified if
+	// no warehouse_id is specified. If no warehouse_id is specified and this folder
+	// is unset, the root directory is used.
+	ProfilesDirectory *string `json:"profiles_directory,omitempty"`
+	// Path to the project directory. Optional for Git sourced tasks, in which case
+	// if no value is provided, the root of the Git repository is used.
+	ProjectDirectory *string `json:"project_directory,omitempty"`
+	// Optional schema to write to. This parameter is only used when a warehouse_id
+	// is also provided. If not provided, the `default` schema is used.
+	Schema *string `json:"schema,omitempty"`
 	// Optional location type of the project directory. When set to `WORKSPACE`, the
 	// project will be retrieved from the local <Databricks> workspace. When set to
 	// `GIT`, the project will be retrieved from a Git repository defined in
@@ -1404,16 +1400,20 @@ type DbtTask struct {
 	// * `WORKSPACE`: Project is located in <Databricks> workspace. * `GIT`: Project
 	// is located in cloud Git provider.
 	Source Source `json:"source,omitempty"`
+	// ID of the SQL warehouse to connect to. If provided, we automatically generate
+	// and provide the profile and connection details to dbt. It can be overridden
+	// on a per-command basis by using the `--profiles-dir` command line argument.
+	WarehouseId *string `json:"warehouse_id,omitempty"`
 }
 
 type DbtTask_DbtTaskOutput struct {
+	// An optional map of headers to send when retrieving the artifact from the
+	// `artifacts_link`.
+	ArtifactsHeaders map[string]string `json:"artifacts_headers,omitempty"`
 	// A pre-signed URL to download the (compressed) dbt artifacts. This link is
 	// valid for a limited time (30 minutes). This information is only available
 	// after the run has finished.
 	ArtifactsLink *string `json:"artifacts_link,omitempty"`
-	// An optional map of headers to send when retrieving the artifact from the
-	// `artifacts_link`.
-	ArtifactsHeaders map[string]string `json:"artifacts_headers,omitempty"`
 }
 
 type DeleteJobRequest struct {
@@ -1455,16 +1455,16 @@ type DeploymentSpec struct {
 }
 
 type DockerBasicAuth struct {
-	// Name of the user
-	Username *string `json:"username,omitempty"`
 	// Password of the user
 	Password *string `json:"password,omitempty"`
+	// Name of the user
+	Username *string `json:"username,omitempty"`
 }
 
 type DockerImage struct {
-	// URL of the docker image.
-	Url       *string          `json:"url,omitempty"`
 	BasicAuth *DockerBasicAuth `json:"basic_auth,omitempty"`
+	// URL of the docker image.
+	Url *string `json:"url,omitempty"`
 }
 
 type EnforcePolicyComplianceForJob struct {
@@ -1497,16 +1497,16 @@ type EnforcePolicyComplianceResponse_JobClusterSettingsChange struct {
 	// The field where this change would be made, prepended with the job cluster
 	// key.
 	Field *string `json:"field,omitempty"`
-	// The previous value of this field before enforcing policy compliance (either a
-	// number, a boolean, or a string) converted to a string. This is intended to be
-	// read by a human. The type of the field can be retrieved by reading the
-	// settings field in the API response.
-	PreviousValue *string `json:"previous_value,omitempty"`
 	// The new value of this field after enforcing policy compliance (either a
 	// number, a boolean, or a string) converted to a string. This is intended to be
 	// read by a human. The typed new value of this field can be retrieved by
 	// reading the settings field in the API response.
 	NewValue *string `json:"new_value,omitempty"`
+	// The previous value of this field before enforcing policy compliance (either a
+	// number, a boolean, or a string) converted to a string. This is intended to be
+	// read by a human. The type of the field can be retrieved by reading the
+	// settings field in the API response.
+	PreviousValue *string `json:"previous_value,omitempty"`
 }
 
 // The environment entity used to preserve serverless environment side panel,
@@ -1514,14 +1514,6 @@ type EnforcePolicyComplianceResponse_JobClusterSettingsChange struct {
 // and serverless pipelines. In this minimal environment spec, only pip and java
 // dependencies are supported..
 type Environment struct {
-	// Use `environment_version` instead.
-	Client *string `json:"client,omitempty"`
-	// List of pip dependencies, as supported by the version of pip in this
-	// environment. Each dependency is a valid pip requirements file line per
-	// https://pip.pypa.io/en/stable/reference/requirements-file-format/. Allowed
-	// dependencies include a requirement specifier, an archive URL, a local project
-	// path (such as WSFS or UC Volumes in <Databricks>), or a VCS project URL.
-	Dependencies []string `json:"dependencies,omitempty"`
 	// The base environment this environment is built on top of. A base environment
 	// defines the environment version and a list of dependencies for serverless
 	// compute. The value can be a file path to a custom `env.yaml` file (e.g.,
@@ -1535,6 +1527,14 @@ type Environment struct {
 	// environments](:method:Environments/ListWorkspaceBaseEnvironments) API. For
 	// more information, see
 	BaseEnvironment *string `json:"base_environment,omitempty"`
+	// Use `environment_version` instead.
+	Client *string `json:"client,omitempty"`
+	// List of pip dependencies, as supported by the version of pip in this
+	// environment. Each dependency is a valid pip requirements file line per
+	// https://pip.pypa.io/en/stable/reference/requirements-file-format/. Allowed
+	// dependencies include a requirement specifier, an archive URL, a local project
+	// path (such as WSFS or UC Volumes in <Databricks>), or a VCS project URL.
+	Dependencies []string `json:"dependencies,omitempty"`
 	// Either `environment_version` or `base_environment` needs to be provided.
 	// Environment version used by the environment. Each version comes with a
 	// specific Python version and a set of Python packages. The version is a
@@ -1564,13 +1564,13 @@ type ExportRunResponse struct {
 }
 
 type FileArrivalTriggerConfiguration struct {
-	// URL to be monitored for file arrivals. The path must point to the root or a
-	// subpath of the external location.
-	Url *string `json:"url,omitempty"`
 	// If set, the trigger starts a run only after the specified amount of time
 	// passed since the last time the trigger fired. The minimum allowed value is 60
 	// seconds
 	MinTimeBetweenTriggersSeconds *int `json:"min_time_between_triggers_seconds,omitempty"`
+	// URL to be monitored for file arrivals. The path must point to the root or a
+	// subpath of the external location.
+	Url *string `json:"url,omitempty"`
 	// If set, the trigger starts a run only after no file activity has occurred for
 	// the specified amount of time. This makes it possible to wait for a batch of
 	// incoming files to arrive before triggering a run. The minimum allowed value
@@ -1584,13 +1584,13 @@ type FileArrivalTriggerState struct {
 }
 
 type ForEachTask struct {
-	// Array for task to iterate on. This can be a JSON string or a reference to an
-	// array parameter.
-	Inputs *string `json:"inputs,omitempty"`
 	// An optional maximum allowed number of concurrent runs of the task. Set this
 	// value if you want to be able to execute multiple runs of the task
 	// concurrently.
 	Concurrency *int `json:"concurrency,omitempty"`
+	// Array for task to iterate on. This can be a JSON string or a reference to an
+	// array parameter.
+	Inputs *string `json:"inputs,omitempty"`
 	// Configuration for the task that will be run for each element in the array
 	Task *TaskSettings `json:"task,omitempty"`
 }
@@ -1598,34 +1598,15 @@ type ForEachTask struct {
 // Attributes set during cluster creation which are related to GCP..
 type GcpAttributes struct {
 	// This field determines whether the spark executors will be scheduled to run on
-	// preemptible VMs (when set to true) versus standard compute engine VMs (when
-	// set to false; default). Note: Soon to be deprecated, use the 'availability'
-	// field instead.
-	UsePreemptibleExecutors *bool `json:"use_preemptible_executors,omitempty"`
-	// If provided, the cluster will impersonate the google service account when
-	// accessing gcloud services (like GCS). The google service account must have
-	// previously been added to the <Databricks> environment by an account
-	// administrator.
-	GoogleServiceAccount *string `json:"google_service_account,omitempty"`
-	// Boot disk size in GB
-	BootDiskSize *int `json:"boot_disk_size,omitempty"`
-	// This field determines whether the spark executors will be scheduled to run on
 	// preemptible VMs, on-demand VMs, or preemptible VMs with a fallback to
 	// on-demand VMs if the former is unavailable.
 	Availability GcpAvailability `json:"availability,omitempty"`
-	// Identifier for the availability zone in which the cluster resides. This can
-	// be one of the following: - "HA" => High availability, spread nodes across
-	// availability zones for a <Databricks> deployment region [default]. - "AUTO"
-	// => <Databricks> picks an availability zone to schedule the cluster on. - A
-	// GCP availability zone => Pick One of the available zones for (machine type +
-	// region) from https://cloud.google.com/compute/docs/regions-zones.
-	ZoneId *string `json:"zone_id,omitempty"`
-	// If provided, each node (workers and driver) in the cluster will have this
-	// number of local SSDs attached. Each local SSD is 375GB in size. Refer to [GCP
-	// documentation] for the supported number of local SSDs for each instance type.
-	//
-	// [GCP documentation]: https://cloud.google.com/compute/docs/disks/local-ssd#choose_number_local_ssds
-	LocalSsdCount *int `json:"local_ssd_count,omitempty"`
+	// Boot disk size in GB
+	BootDiskSize *int `json:"boot_disk_size,omitempty"`
+	// The confidential computing technology for this cluster's instances. Currently
+	// only SEV_SNP is supported, and only on N2D instance types. When not set, no
+	// confidential computing is applied.
+	ConfidentialComputeType ConfidentialComputeType `json:"confidential_compute_type,omitempty"`
 	// The first `first_on_demand` nodes of the cluster will be placed on on-demand
 	// instances. This value should be greater than 0, to make sure the cluster
 	// driver node is placed on an on-demand instance. If this value is greater than
@@ -1636,10 +1617,29 @@ type GcpAttributes struct {
 	// does not affect cluster size and cannot currently be mutated over the
 	// lifetime of a cluster.
 	FirstOnDemand *int `json:"first_on_demand,omitempty"`
-	// The confidential computing technology for this cluster's instances. Currently
-	// only SEV_SNP is supported, and only on N2D instance types. When not set, no
-	// confidential computing is applied.
-	ConfidentialComputeType ConfidentialComputeType `json:"confidential_compute_type,omitempty"`
+	// If provided, the cluster will impersonate the google service account when
+	// accessing gcloud services (like GCS). The google service account must have
+	// previously been added to the <Databricks> environment by an account
+	// administrator.
+	GoogleServiceAccount *string `json:"google_service_account,omitempty"`
+	// If provided, each node (workers and driver) in the cluster will have this
+	// number of local SSDs attached. Each local SSD is 375GB in size. Refer to [GCP
+	// documentation] for the supported number of local SSDs for each instance type.
+	//
+	// [GCP documentation]: https://cloud.google.com/compute/docs/disks/local-ssd#choose_number_local_ssds
+	LocalSsdCount *int `json:"local_ssd_count,omitempty"`
+	// This field determines whether the spark executors will be scheduled to run on
+	// preemptible VMs (when set to true) versus standard compute engine VMs (when
+	// set to false; default). Note: Soon to be deprecated, use the 'availability'
+	// field instead.
+	UsePreemptibleExecutors *bool `json:"use_preemptible_executors,omitempty"`
+	// Identifier for the availability zone in which the cluster resides. This can
+	// be one of the following: - "HA" => High availability, spread nodes across
+	// availability zones for a <Databricks> deployment region [default]. - "AUTO"
+	// => <Databricks> picks an availability zone to schedule the cluster on. - A
+	// GCP availability zone => Pick One of the available zones for (machine type +
+	// region) from https://cloud.google.com/compute/docs/regions-zones.
+	ZoneId *string `json:"zone_id,omitempty"`
 }
 
 // A storage location in Google Cloud Platform's GCS.
@@ -1654,11 +1654,15 @@ type GcsStorageInfo struct {
 // pywheel backwards compatibility and will be removed once the pywheel →
 // databricks-cli migration completes (post- PuPr)..
 type GenAiComputeTask struct {
-	// Runtime image
-	DlRuntimeImage *string        `json:"dl_runtime_image,omitempty"`
-	Compute        *ComputeConfig `json:"compute,omitempty"`
 	// Command launcher to run the actual script, e.g. bash, python etc.
-	Command *string `json:"command,omitempty"`
+	Command *string        `json:"command,omitempty"`
+	Compute *ComputeConfig `json:"compute,omitempty"`
+	// Runtime image
+	DlRuntimeImage *string `json:"dl_runtime_image,omitempty"`
+	// Optional string containing the name of the MLflow experiment to log the run
+	// to. If name is not found, backend will create the mlflow experiment using the
+	// name.
+	MlflowExperimentName *string `json:"mlflow_experiment_name,omitempty"`
 	// Optional location type of the training script. When set to `WORKSPACE`, the
 	// script will be retrieved from the local <Databricks> workspace. When set to
 	// `GIT`, the script will be retrieved from a Git repository defined in
@@ -1672,26 +1676,22 @@ type GenAiComputeTask struct {
 	// begin with `/`. For files stored in a remote repository, the path must be
 	// relative. This field is required.
 	TrainingScriptPath *string `json:"training_script_path,omitempty"`
-	// Optional path to a YAML file containing model parameters passed to the
-	// training script.
-	YamlParametersFilePath *string `json:"yaml_parameters_file_path,omitempty"`
 	// Optional string containing model parameters passed to the training script in
 	// yaml format. If present, then the content in yaml_parameters_file_path will
 	// be ignored.
 	YamlParameters *string `json:"yaml_parameters,omitempty"`
-	// Optional string containing the name of the MLflow experiment to log the run
-	// to. If name is not found, backend will create the mlflow experiment using the
-	// name.
-	MlflowExperimentName *string `json:"mlflow_experiment_name,omitempty"`
+	// Optional path to a YAML file containing model parameters passed to the
+	// training script.
+	YamlParametersFilePath *string `json:"yaml_parameters_file_path,omitempty"`
 }
 
 // Retrieves information about a single job..
 type GetJobRequest struct {
+	// Flag that indicates that trigger state should be included in the response.
+	IncludeTriggerState *bool `json:"include_trigger_state,omitempty"`
 	// The canonical identifier of the job to retrieve information about. This field
 	// is required.
 	JobId *int64 `json:"job_id,omitempty"`
-	// Flag that indicates that trigger state should be included in the response.
-	IncludeTriggerState *bool `json:"include_trigger_state,omitempty"`
 	// Use `next_page_token` returned from the previous GetJob response to request
 	// the next page of the job's array properties.
 	PageToken *string `json:"page_token,omitempty"`
@@ -1699,13 +1699,28 @@ type GetJobRequest struct {
 
 // Job was retrieved successfully..
 type GetJobResponse struct {
-	// A token that can be used to list the next page of array properties.
-	NextPageToken *string `json:"next_page_token,omitempty"`
-	// The canonical identifier for this job.
-	JobId *int64 `json:"job_id,omitempty"`
+	// The time at which this job was created in epoch milliseconds (milliseconds
+	// since 1/1/1970 UTC).
+	CreatedTime *int64 `json:"created_time,omitempty"`
 	// The creator user name. This field won’t be included in the response if the
 	// user has already been deleted.
 	CreatorUserName *string `json:"creator_user_name,omitempty"`
+	// The id of the budget policy used by this job for cost attribution purposes.
+	// This may be set through (in order of precedence): 1. Budget admins through
+	// the account or workspace console 2. Jobs UI in the job details page and Jobs
+	// API using `budget_policy_id` 3. Inferred default based on accessible budget
+	// policies of the run_as identity on job creation or modification.
+	EffectiveBudgetPolicyId *string `json:"effective_budget_policy_id,omitempty"`
+	// The id of the usage policy used by this job for cost attribution purposes.
+	EffectiveUsagePolicyId *string `json:"effective_usage_policy_id,omitempty"`
+	// Indicates if the job has more array properties (`tasks`, `job_clusters`) that
+	// are not shown. They can be accessed via :method:jobs/get endpoint. It is only
+	// relevant for API 2.2 :method:jobs/list requests with `expand_tasks=true`.
+	HasMore *bool `json:"has_more,omitempty"`
+	// The canonical identifier for this job.
+	JobId *int64 `json:"job_id,omitempty"`
+	// A token that can be used to list the next page of array properties.
+	NextPageToken *string `json:"next_page_token,omitempty"`
 	// The email of an active workspace user or the application ID of a service
 	// principal that the job runs as. This value can be changed by setting the
 	// `run_as` field when creating or updating a job.
@@ -1717,29 +1732,14 @@ type GetJobResponse struct {
 	// Settings for this job and all of its runs. These settings can be updated
 	// using the `resetJob` method.
 	Settings *JobSettings `json:"settings,omitempty"`
-	// The time at which this job was created in epoch milliseconds (milliseconds
-	// since 1/1/1970 UTC).
-	CreatedTime *int64 `json:"created_time,omitempty"`
-	// State of the trigger associated with the job.
-	TriggerState *TriggerState `json:"trigger_state,omitempty"`
-	// Indicates if the job has more array properties (`tasks`, `job_clusters`) that
-	// are not shown. They can be accessed via :method:jobs/get endpoint. It is only
-	// relevant for API 2.2 :method:jobs/list requests with `expand_tasks=true`.
-	HasMore *bool `json:"has_more,omitempty"`
-	// The id of the budget policy used by this job for cost attribution purposes.
-	// This may be set through (in order of precedence): 1. Budget admins through
-	// the account or workspace console 2. Jobs UI in the job details page and Jobs
-	// API using `budget_policy_id` 3. Inferred default based on accessible budget
-	// policies of the run_as identity on job creation or modification.
-	EffectiveBudgetPolicyId *string `json:"effective_budget_policy_id,omitempty"`
-	// The id of the usage policy used by this job for cost attribution purposes.
-	EffectiveUsagePolicyId *string `json:"effective_usage_policy_id,omitempty"`
 	// Per-trigger runtime information for the multi-trigger surface. Same length
 	// and order as `JobSettings.triggers`; `trigger_details[i]` corresponds to
 	// `triggers[i]`. Sub-fields (`state`, `history`) are populated independently
 	// based on the `GetJob.include_trigger_state` / `include_trigger_history`
 	// flags.
 	TriggerDetails []TriggerDetails `json:"trigger_details,omitempty"`
+	// State of the trigger associated with the job.
+	TriggerState *TriggerState `json:"trigger_state,omitempty"`
 }
 
 type GetPolicyComplianceForJobRequest struct {
@@ -1769,22 +1769,20 @@ type GetRunOutputRequest struct {
 
 // Run output was retrieved successfully..
 type GetRunOutputResponse struct {
-	// All details of the run except for its output.
-	Metadata *Run `json:"metadata,omitempty"`
-	// An error message indicating why a task failed or why output is not available.
-	// The message is unstructured, and its exact format is subject to change.
-	Error                    *string                                              `json:"error,omitempty"`
-	Info                     *string                                              `json:"info,omitempty"`
-	NotebookOutput           *NotebookTask_NotebookOutput                         `json:"notebook_output,omitempty"`
-	SqlOutput                *SqlTask_SqlOutput                                   `json:"sql_output,omitempty"`
-	DbtOutput                *DbtTask_DbtTaskOutput                               `json:"dbt_output,omitempty"`
-	RunJobOutput             *RunJobTask_RunJobTaskOutput                         `json:"run_job_output,omitempty"`
+	AiRuntimeTaskOutput      *AiRuntimeTaskOutput                                 `json:"ai_runtime_task_output,omitempty"`
+	AlertOutput              *AlertTaskOutput                                     `json:"alert_output,omitempty"`
 	CleanRoomsNotebookOutput *CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutput `json:"clean_rooms_notebook_output,omitempty"`
 	DashboardOutput          *DashboardTaskOutput                                 `json:"dashboard_output,omitempty"`
 	DbtCloudOutput           *DbtCloudTaskOutput                                  `json:"dbt_cloud_output,omitempty"`
+	DbtOutput                *DbtTask_DbtTaskOutput                               `json:"dbt_output,omitempty"`
 	DbtPlatformOutput        *DbtPlatformTaskOutput                               `json:"dbt_platform_output,omitempty"`
-	AlertOutput              *AlertTaskOutput                                     `json:"alert_output,omitempty"`
-	AiRuntimeTaskOutput      *AiRuntimeTaskOutput                                 `json:"ai_runtime_task_output,omitempty"`
+	// An error message indicating why a task failed or why output is not available.
+	// The message is unstructured, and its exact format is subject to change.
+	Error *string `json:"error,omitempty"`
+	// If there was an error executing the run, this field contains any available
+	// stack traces.
+	ErrorTrace *string `json:"error_trace,omitempty"`
+	Info       *string `json:"info,omitempty"`
 	// The output from tasks that write to standard streams (stdout/stderr) such as
 	// spark_jar_task, spark_python_task, python_wheel_task.
 	//
@@ -1794,15 +1792,14 @@ type GetRunOutputResponse struct {
 	Logs *string `json:"logs,omitempty"`
 	// Whether the logs are truncated.
 	LogsTruncated *bool `json:"logs_truncated,omitempty"`
-	// If there was an error executing the run, this field contains any available
-	// stack traces.
-	ErrorTrace *string `json:"error_trace,omitempty"`
+	// All details of the run except for its output.
+	Metadata       *Run                         `json:"metadata,omitempty"`
+	NotebookOutput *NotebookTask_NotebookOutput `json:"notebook_output,omitempty"`
+	RunJobOutput   *RunJobTask_RunJobTaskOutput `json:"run_job_output,omitempty"`
+	SqlOutput      *SqlTask_SqlOutput           `json:"sql_output,omitempty"`
 }
 
 type GetRunRequest struct {
-	// The canonical identifier of the run for which to retrieve the metadata. This
-	// field is required.
-	RunId *int64 `json:"run_id,omitempty"`
 	// Whether to include the repair history in the response.
 	IncludeHistory *bool `json:"include_history,omitempty"`
 	// Whether to include resolved parameter values in the response.
@@ -1810,56 +1807,13 @@ type GetRunRequest struct {
 	// Use `next_page_token` returned from the previous GetRun response to request
 	// the next page of the run's array properties.
 	PageToken *string `json:"page_token,omitempty"`
+	// The canonical identifier of the run for which to retrieve the metadata. This
+	// field is required.
+	RunId *int64 `json:"run_id,omitempty"`
 }
 
 // Run was retrieved successfully.
 type GetRunResponse struct {
-	// A token that can be used to list the next page of array properties.
-	NextPageToken *string `json:"next_page_token,omitempty"`
-	// The canonical identifier of the job that contains this run.
-	JobId *int64 `json:"job_id,omitempty"`
-	// The canonical identifier of the run. This ID is unique across all runs of all
-	// jobs.
-	RunId *int64 `json:"run_id,omitempty"`
-	// The creator user name. This field won’t be included in the response if the
-	// user has already been deleted.
-	CreatorUserName *string `json:"creator_user_name,omitempty"`
-	// A unique identifier for this job run. This is set to the same value as
-	// `run_id`.
-	NumberInJob *int64 `json:"number_in_job,omitempty"`
-	// If this run is a retry of a prior run attempt, this field contains the run_id
-	// of the original attempt; otherwise, it is the same as the run_id.
-	OriginalAttemptRunId *int64 `json:"original_attempt_run_id,omitempty"`
-	// Deprecated. Please use the `status` field instead.
-	State *RunState `json:"state,omitempty"`
-	// The cron schedule that triggered this run if it was triggered by the periodic
-	// scheduler.
-	Schedule *CronSchedule `json:"schedule,omitempty"`
-	// A snapshot of the job’s cluster specification when this run was created.
-	ClusterSpec *ClusterSpec `json:"cluster_spec,omitempty"`
-	// The cluster used for this run. If the run is specified to use a new cluster,
-	// this field is set once the Jobs service has requested a cluster for the run.
-	ClusterInstance *ClusterInstance `json:"cluster_instance,omitempty"`
-	// Job-level parameters used in the run
-	JobParameters []Run_JobLevelParameters `json:"job_parameters,omitempty"`
-	// The parameters used for this run.
-	OverridingParameters *RunParameters  `json:"overriding_parameters,omitempty"`
-	Trigger              TriggerType     `json:"trigger,omitempty"`
-	TriggerInfo          *RunTriggerInfo `json:"trigger_info,omitempty"`
-	// An optional name for the run. The maximum length is 4096 bytes in UTF-8
-	// encoding.
-	RunName *string `json:"run_name,omitempty"`
-	// The URL to the detail page of the run.
-	RunPageUrl *string `json:"run_page_url,omitempty"`
-	RunType    RunType `json:"run_type,omitempty"`
-	// The list of tasks performed by the run. Each task has its own `run_id` which
-	// you can use to call `JobsGetOutput` to retrieve the run results. If more than
-	// 100 tasks are available, you can paginate through them using
-	// :method:jobs/getrun. Use the `next_page_token` field at the object root to
-	// determine if more results are available.
-	Tasks []RunTask `json:"tasks,omitempty"`
-	// Description of the run
-	Description *string `json:"description,omitempty"`
 	// The sequence number of this run attempt for a triggered job run. The initial
 	// attempt of a run has an attempt_number of 0. If the initial run attempt
 	// fails, and the job has a retry policy (`max_retries` > 0), subsequent runs
@@ -1868,34 +1822,26 @@ type GetRunResponse struct {
 	// succeed, and the maximum `attempt_number` is the same as the `max_retries`
 	// value for the job.
 	AttemptNumber *int `json:"attempt_number,omitempty"`
-	// A list of job cluster specifications that can be shared and reused by tasks
-	// of this job. Libraries cannot be declared in a shared job cluster. You must
-	// declare dependent libraries in task settings. If more than 100 job clusters
-	// are available, you can paginate through them using :method:jobs/getrun.
-	JobClusters []JobCluster `json:"job_clusters,omitempty"`
-	// An optional specification for a remote Git repository containing the source
-	// code used by tasks. Version-controlled source code is supported by notebook,
-	// dbt, Python script, and SQL File tasks.
-	//
-	// If `git_source` is set, these tasks retrieve the file from the remote
-	// repository by default. However, this behavior can be overridden by setting
-	// `source` to `WORKSPACE` on the task.
-	//
-	// Note: dbt and SQL File tasks support only version-controlled sources. If dbt
-	// or SQL File tasks are used, `git_source` must be defined on the job.
-	GitSource *GitSource `json:"git_source,omitempty"`
-	// The repair history of the run.
-	RepairHistory []Repair   `json:"repair_history,omitempty"`
-	Status        *RunStatus `json:"status,omitempty"`
-	// ID of the job run that this run belongs to. For legacy and single-task job
-	// runs the field is populated with the job run ID. For task runs, the field is
-	// populated with the ID of the job run that the task run belongs to.
-	JobRunId *int64 `json:"job_run_id,omitempty"`
-	// Indicates if the run has more array properties (`tasks`, `job_clusters`) that
-	// are not shown. They can be accessed via :method:jobs/getrun endpoint. It is
-	// only relevant for API 2.2 :method:jobs/listruns requests with
-	// `expand_tasks=true`.
-	HasMore *bool `json:"has_more,omitempty"`
+	// The time in milliseconds it took to terminate the cluster and clean up any
+	// associated artifacts. The duration of a task run is the sum of the
+	// `setup_duration`, `execution_duration`, and the `cleanup_duration`. The
+	// `cleanup_duration` field is set to 0 for multitask job runs. The total
+	// duration of a multitask job run is the value of the `run_duration` field.
+	CleanupDuration *int64 `json:"cleanup_duration,omitempty"`
+	// The cluster used for this run. If the run is specified to use a new cluster,
+	// this field is set once the Jobs service has requested a cluster for the run.
+	ClusterInstance *ClusterInstance `json:"cluster_instance,omitempty"`
+	// A snapshot of the job’s cluster specification when this run was created.
+	ClusterSpec *ClusterSpec `json:"cluster_spec,omitempty"`
+	// The creator user name. This field won’t be included in the response if the
+	// user has already been deleted.
+	CreatorUserName *string `json:"creator_user_name,omitempty"`
+	// ID of the deployment that produced the job when this run was created. Used to
+	// look up deployment metadata from the Deployment Metadata service. Only set
+	// for job runs of jobs with a `BUNDLE` deployment.
+	DeploymentId *string `json:"deployment_id,omitempty"`
+	// Description of the run
+	Description *string `json:"description,omitempty"`
 	// The actual performance target used by the serverless run during execution.
 	// This can differ from the client-set performance target on the request
 	// depending on whether the performance mode is supported by the job type.
@@ -1908,24 +1854,79 @@ type GetRunResponse struct {
 	EffectivePerformanceTarget PerformanceTarget_PerformanceTarget `json:"effective_performance_target,omitempty"`
 	// The id of the usage policy used by this run for cost attribution purposes.
 	EffectiveUsagePolicyId *string `json:"effective_usage_policy_id,omitempty"`
+	// The time at which this run ended in epoch milliseconds (milliseconds since
+	// 1/1/1970 UTC). This field is set to 0 if the job is still running.
+	EndTime *int64 `json:"end_time,omitempty"`
 	// Snapshot of `JobSettings.environment_variables` as it was at run launch —
 	// the full list of named environment-variable entries the job defined. To find
 	// which entry a given task ran with, look at
 	// `RunTaskSettings.environment_variables_key`.
 	EnvironmentVariables []JobEnvironmentVariables `json:"environment_variables,omitempty"`
-	// ID of the deployment that produced the job when this run was created. Used to
-	// look up deployment metadata from the Deployment Metadata service. Only set
-	// for job runs of jobs with a `BUNDLE` deployment.
-	DeploymentId *string `json:"deployment_id,omitempty"`
-	// ID of the deployment version that produced the job when this run was created.
-	// Identifies a specific snapshot of the deployment in the Deployment Metadata
-	// service. Only set for job runs of jobs with a `BUNDLE` deployment.
-	VersionId *string `json:"version_id,omitempty"`
-	// The time at which this run was started in epoch milliseconds (milliseconds
-	// since 1/1/1970 UTC). This may not be the time when the job task starts
-	// executing, for example, if the job is scheduled to run on a new cluster, this
-	// is the time the cluster creation call is issued.
-	StartTime *int64 `json:"start_time,omitempty"`
+	// The time in milliseconds it took to execute the commands in the JAR or
+	// notebook until they completed, failed, timed out, were cancelled, or
+	// encountered an unexpected error. The duration of a task run is the sum of the
+	// `setup_duration`, `execution_duration`, and the `cleanup_duration`. The
+	// `execution_duration` field is set to 0 for multitask job runs. The total
+	// duration of a multitask job run is the value of the `run_duration` field.
+	ExecutionDuration *int64 `json:"execution_duration,omitempty"`
+	// An optional specification for a remote Git repository containing the source
+	// code used by tasks. Version-controlled source code is supported by notebook,
+	// dbt, Python script, and SQL File tasks.
+	//
+	// If `git_source` is set, these tasks retrieve the file from the remote
+	// repository by default. However, this behavior can be overridden by setting
+	// `source` to `WORKSPACE` on the task.
+	//
+	// Note: dbt and SQL File tasks support only version-controlled sources. If dbt
+	// or SQL File tasks are used, `git_source` must be defined on the job.
+	GitSource *GitSource `json:"git_source,omitempty"`
+	// Indicates if the run has more array properties (`tasks`, `job_clusters`) that
+	// are not shown. They can be accessed via :method:jobs/getrun endpoint. It is
+	// only relevant for API 2.2 :method:jobs/listruns requests with
+	// `expand_tasks=true`.
+	HasMore *bool `json:"has_more,omitempty"`
+	// A list of job cluster specifications that can be shared and reused by tasks
+	// of this job. Libraries cannot be declared in a shared job cluster. You must
+	// declare dependent libraries in task settings. If more than 100 job clusters
+	// are available, you can paginate through them using :method:jobs/getrun.
+	JobClusters []JobCluster `json:"job_clusters,omitempty"`
+	// The canonical identifier of the job that contains this run.
+	JobId *int64 `json:"job_id,omitempty"`
+	// Job-level parameters used in the run
+	JobParameters []Run_JobLevelParameters `json:"job_parameters,omitempty"`
+	// ID of the job run that this run belongs to. For legacy and single-task job
+	// runs the field is populated with the job run ID. For task runs, the field is
+	// populated with the ID of the job run that the task run belongs to.
+	JobRunId *int64 `json:"job_run_id,omitempty"`
+	// A token that can be used to list the next page of array properties.
+	NextPageToken *string `json:"next_page_token,omitempty"`
+	// A unique identifier for this job run. This is set to the same value as
+	// `run_id`.
+	NumberInJob *int64 `json:"number_in_job,omitempty"`
+	// If this run is a retry of a prior run attempt, this field contains the run_id
+	// of the original attempt; otherwise, it is the same as the run_id.
+	OriginalAttemptRunId *int64 `json:"original_attempt_run_id,omitempty"`
+	// The parameters used for this run.
+	OverridingParameters *RunParameters `json:"overriding_parameters,omitempty"`
+	// The time in milliseconds that the run has spent in the queue.
+	QueueDuration *int64 `json:"queue_duration,omitempty"`
+	// The repair history of the run.
+	RepairHistory []Repair `json:"repair_history,omitempty"`
+	// The time in milliseconds it took the job run and all of its repairs to
+	// finish.
+	RunDuration *int64 `json:"run_duration,omitempty"`
+	// The canonical identifier of the run. This ID is unique across all runs of all
+	// jobs.
+	RunId *int64 `json:"run_id,omitempty"`
+	// An optional name for the run. The maximum length is 4096 bytes in UTF-8
+	// encoding.
+	RunName *string `json:"run_name,omitempty"`
+	// The URL to the detail page of the run.
+	RunPageUrl *string `json:"run_page_url,omitempty"`
+	RunType    RunType `json:"run_type,omitempty"`
+	// The cron schedule that triggered this run if it was triggered by the periodic
+	// scheduler.
+	Schedule *CronSchedule `json:"schedule,omitempty"`
 	// The time in milliseconds it took to set up the cluster. For runs that run on
 	// new clusters this is the cluster creation time, for runs that run on existing
 	// clusters this time should be very short. The duration of a task run is the
@@ -1934,27 +1935,26 @@ type GetRunResponse struct {
 	// runs. The total duration of a multitask job run is the value of the
 	// `run_duration` field.
 	SetupDuration *int64 `json:"setup_duration,omitempty"`
-	// The time in milliseconds it took to execute the commands in the JAR or
-	// notebook until they completed, failed, timed out, were cancelled, or
-	// encountered an unexpected error. The duration of a task run is the sum of the
-	// `setup_duration`, `execution_duration`, and the `cleanup_duration`. The
-	// `execution_duration` field is set to 0 for multitask job runs. The total
-	// duration of a multitask job run is the value of the `run_duration` field.
-	ExecutionDuration *int64 `json:"execution_duration,omitempty"`
-	// The time in milliseconds it took to terminate the cluster and clean up any
-	// associated artifacts. The duration of a task run is the sum of the
-	// `setup_duration`, `execution_duration`, and the `cleanup_duration`. The
-	// `cleanup_duration` field is set to 0 for multitask job runs. The total
-	// duration of a multitask job run is the value of the `run_duration` field.
-	CleanupDuration *int64 `json:"cleanup_duration,omitempty"`
-	// The time at which this run ended in epoch milliseconds (milliseconds since
-	// 1/1/1970 UTC). This field is set to 0 if the job is still running.
-	EndTime *int64 `json:"end_time,omitempty"`
-	// The time in milliseconds it took the job run and all of its repairs to
-	// finish.
-	RunDuration *int64 `json:"run_duration,omitempty"`
-	// The time in milliseconds that the run has spent in the queue.
-	QueueDuration *int64 `json:"queue_duration,omitempty"`
+	// The time at which this run was started in epoch milliseconds (milliseconds
+	// since 1/1/1970 UTC). This may not be the time when the job task starts
+	// executing, for example, if the job is scheduled to run on a new cluster, this
+	// is the time the cluster creation call is issued.
+	StartTime *int64 `json:"start_time,omitempty"`
+	// Deprecated. Please use the `status` field instead.
+	State  *RunState  `json:"state,omitempty"`
+	Status *RunStatus `json:"status,omitempty"`
+	// The list of tasks performed by the run. Each task has its own `run_id` which
+	// you can use to call `JobsGetOutput` to retrieve the run results. If more than
+	// 100 tasks are available, you can paginate through them using
+	// :method:jobs/getrun. Use the `next_page_token` field at the object root to
+	// determine if more results are available.
+	Tasks       []RunTask       `json:"tasks,omitempty"`
+	Trigger     TriggerType     `json:"trigger,omitempty"`
+	TriggerInfo *RunTriggerInfo `json:"trigger_info,omitempty"`
+	// ID of the deployment version that produced the job when this run was created.
+	// Identifies a specific snapshot of the deployment in the Deployment Metadata
+	// service. Only set for job runs of jobs with a `BUNDLE` deployment.
+	VersionId *string `json:"version_id,omitempty"`
 }
 
 // Read-only state of the remote repository at the time the job was run. This
@@ -1977,15 +1977,15 @@ type GitMetadataSnapshot struct {
 // Note: dbt and SQL File tasks support only version-controlled sources. If dbt
 // or SQL File tasks are used, `git_source` must be defined on the job..
 type GitSource struct {
-	// URL of the repository to be cloned by this job.
-	GitUrl *string `json:"git_url,omitempty"`
+	GitBranch *string `json:"git_branch,omitempty"`
+	GitCommit *string `json:"git_commit,omitempty"`
 	// Unique identifier of the service used to host the Git repository. The value
 	// is case insensitive.
 	GitProvider *string              `json:"git_provider,omitempty"`
-	GitBranch   *string              `json:"git_branch,omitempty"`
-	GitTag      *string              `json:"git_tag,omitempty"`
-	GitCommit   *string              `json:"git_commit,omitempty"`
 	GitSnapshot *GitMetadataSnapshot `json:"git_snapshot,omitempty"`
+	GitTag      *string              `json:"git_tag,omitempty"`
+	// URL of the repository to be cloned by this job.
+	GitUrl *string `json:"git_url,omitempty"`
 	// The source of the job specification in the remote repository when the job is
 	// source controlled.
 	JobSource      *JobSource      `json:"job_source,omitempty"`
@@ -1994,13 +1994,13 @@ type GitSource struct {
 
 // Config for an individual init script.
 type InitScriptInfo struct {
+	Abfss     *Adlsgen2Info         `json:"abfss,omitempty"`
 	Dbfs      *DbfsStorageInfo      `json:"dbfs,omitempty"`
-	S3        *S3StorageInfo        `json:"s3,omitempty"`
 	File      *LocalFileInfo        `json:"file,omitempty"`
 	Gcs       *GcsStorageInfo       `json:"gcs,omitempty"`
-	Abfss     *Adlsgen2Info         `json:"abfss,omitempty"`
-	Workspace *WorkspaceStorageInfo `json:"workspace,omitempty"`
+	S3        *S3StorageInfo        `json:"s3,omitempty"`
 	Volumes   *VolumesStorageInfo   `json:"volumes,omitempty"`
+	Workspace *WorkspaceStorageInfo `json:"workspace,omitempty"`
 }
 
 type JobCluster struct {
@@ -2017,6 +2017,9 @@ type JobCluster struct {
 }
 
 type JobDeployment struct {
+	// ID of the deployment that manages this job. Only set when `kind` is `BUNDLE`.
+	// Used to look up deployment metadata from the Deployment Metadata service.
+	DeploymentId *string `json:"deployment_id,omitempty"`
 	// The kind of deployment that manages the job.
 	//
 	// * `BUNDLE`: The job is managed by Databricks Asset Bundle. *
@@ -2024,9 +2027,6 @@ type JobDeployment struct {
 	Kind JobDeployment_DeploymentKind `json:"kind,omitempty"`
 	// Path of the file that contains deployment metadata.
 	MetadataFilePath *string `json:"metadata_file_path,omitempty"`
-	// ID of the deployment that manages this job. Only set when `kind` is `BUNDLE`.
-	// Used to look up deployment metadata from the Deployment Metadata service.
-	DeploymentId *string `json:"deployment_id,omitempty"`
 	// ID of the version of the deployment that produced this job. Only set when
 	// `kind` is `BUNDLE`. Identifies a specific snapshot of the deployment in the
 	// Deployment Metadata service.
@@ -2034,27 +2034,31 @@ type JobDeployment struct {
 }
 
 type JobEmailNotifications struct {
-	// A list of email addresses to be notified when a run begins. If not specified
-	// on job creation, reset, or update, the list is empty, and notifications are
-	// not sent.
-	OnStart []string `json:"on_start,omitempty"`
-	// A list of email addresses to be notified when a run successfully completes. A
-	// run is considered to have completed successfully if it ends with a
-	// `TERMINATED` `life_cycle_state` and a `SUCCESS` result_state. If not
-	// specified on job creation, reset, or update, the list is empty, and
-	// notifications are not sent.
-	OnSuccess []string `json:"on_success,omitempty"`
+	// If true, do not send email to recipients specified in `on_failure` if the run
+	// is skipped. This field is `deprecated`. Please use the
+	// `notification_settings.no_alert_for_skipped_runs` field.
+	NoAlertForSkippedRuns *bool `json:"no_alert_for_skipped_runs,omitempty"`
+	// A list of email addresses to be notified when the duration of a run exceeds
+	// the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health`
+	// field. If no rule for the `RUN_DURATION_SECONDS` metric is specified in the
+	// `health` field for the job, notifications are not sent.
+	OnDurationWarningThresholdExceeded []string `json:"on_duration_warning_threshold_exceeded,omitempty"`
 	// A list of email addresses to be notified when a run unsuccessfully completes.
 	// A run is considered to have completed unsuccessfully if it ends with an
 	// `INTERNAL_ERROR` `life_cycle_state` or a `FAILED`, or `TIMED_OUT`
 	// result_state. If this is not specified on job creation, reset, or update the
 	// list is empty, and notifications are not sent.
 	OnFailure []string `json:"on_failure,omitempty"`
-	// A list of email addresses to be notified when the duration of a run exceeds
-	// the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health`
-	// field. If no rule for the `RUN_DURATION_SECONDS` metric is specified in the
-	// `health` field for the job, notifications are not sent.
-	OnDurationWarningThresholdExceeded []string `json:"on_duration_warning_threshold_exceeded,omitempty"`
+	// A list of email addresses to notify when platform-initiated maintenance
+	// completes for a continuous job.
+	OnMaintenanceComplete []string `json:"on_maintenance_complete,omitempty"`
+	// A list of email addresses to notify when platform-initiated maintenance
+	// starts for a continuous job.
+	OnMaintenanceStart []string `json:"on_maintenance_start,omitempty"`
+	// A list of email addresses to be notified when a run begins. If not specified
+	// on job creation, reset, or update, the list is empty, and notifications are
+	// not sent.
+	OnStart []string `json:"on_start,omitempty"`
 	// A list of email addresses to notify when any streaming backlog thresholds are
 	// exceeded for any stream. Streaming backlog thresholds can be set in the
 	// `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`,
@@ -2063,16 +2067,12 @@ type JobEmailNotifications struct {
 	// these metrics. If the issue persists, notifications are resent every 30
 	// minutes.
 	OnStreamingBacklogExceeded []string `json:"on_streaming_backlog_exceeded,omitempty"`
-	// A list of email addresses to notify when platform-initiated maintenance
-	// starts for a continuous job.
-	OnMaintenanceStart []string `json:"on_maintenance_start,omitempty"`
-	// A list of email addresses to notify when platform-initiated maintenance
-	// completes for a continuous job.
-	OnMaintenanceComplete []string `json:"on_maintenance_complete,omitempty"`
-	// If true, do not send email to recipients specified in `on_failure` if the run
-	// is skipped. This field is `deprecated`. Please use the
-	// `notification_settings.no_alert_for_skipped_runs` field.
-	NoAlertForSkippedRuns *bool `json:"no_alert_for_skipped_runs,omitempty"`
+	// A list of email addresses to be notified when a run successfully completes. A
+	// run is considered to have completed successfully if it ends with a
+	// `TERMINATED` `life_cycle_state` and a `SUCCESS` result_state. If not
+	// specified on job creation, reset, or update, the list is empty, and
+	// notifications are not sent.
+	OnSuccess []string `json:"on_success,omitempty"`
 }
 
 type JobEnvironment struct {
@@ -2098,14 +2098,6 @@ type JobEnvironmentVariables struct {
 // variable entry. Runtime environment variables override inline `variables`,
 // which override values from `files`, on duplicate keys..
 type JobEnvironmentVariablesSpec struct {
-	// Environment variables specified directly as key/value pairs. Maximum 20
-	// entries.
-	//
-	// Each key must be 1 to 256 characters and match `^[A-Za-z_][A-Za-z0-9_]*$`: it
-	// must start with an ASCII letter or underscore and contain only ASCII letters,
-	// digits, and underscores. Each value can be any Unicode string of up to 512
-	// characters, including an empty string.
-	Variables map[string]string `json:"variables,omitempty"`
 	// Workspace (`/Workspace/...`) or UC Volumes (`/Volumes/...`) paths to `.env`
 	// files. Maximum 5 files. Files are read, parsed, and merged at task execution
 	// time, not at job creation or update API call time.
@@ -2125,14 +2117,22 @@ type JobEnvironmentVariablesSpec struct {
 	// On a duplicate key, the later file wins; `variables` override values from any
 	// file.
 	Files []string `json:"files,omitempty"`
+	// Environment variables specified directly as key/value pairs. Maximum 20
+	// entries.
+	//
+	// Each key must be 1 to 256 characters and match `^[A-Za-z_][A-Za-z0-9_]*$`: it
+	// must start with an ASCII letter or underscore and contain only ASCII letters,
+	// digits, and underscores. Each value can be any Unicode string of up to 512
+	// characters, including an empty string.
+	Variables map[string]string `json:"variables,omitempty"`
 }
 
 type JobLevelParameter struct {
+	// Default value of the parameter.
+	Default *string `json:"default,omitempty"`
 	// The name of the defined parameter. May only contain alphanumeric characters,
 	// `_`, `-`, and `.`
 	Name *string `json:"name,omitempty"`
-	// Default value of the parameter.
-	Default *string `json:"default,omitempty"`
 }
 
 // Write-only setting. Specifies the user, service principal, or group that the
@@ -2141,39 +2141,17 @@ type JobLevelParameter struct {
 // One of `user_name`, `service_principal_name`, or `group_name` should be
 // specified. If not, an error is thrown..
 type JobRunAs struct {
-	UserName             *string `json:"user_name,omitempty"`
-	ServicePrincipalName *string `json:"service_principal_name,omitempty"`
 	GroupName            *string `json:"group_name,omitempty"`
+	ServicePrincipalName *string `json:"service_principal_name,omitempty"`
+	UserName             *string `json:"user_name,omitempty"`
 }
 
 type JobSettings struct {
-	// An optional name for the job. The maximum length is 4096 bytes in UTF-8
-	// encoding.
-	Name *string `json:"name,omitempty"`
-	// An optional description for the job. The maximum length is 27700 characters
-	// in UTF-8 encoding.
-	Description *string `json:"description,omitempty"`
-	// An optional set of email addresses that is notified when runs of this job
-	// begin or complete as well as when this job is deleted.
-	EmailNotifications *JobEmailNotifications `json:"email_notifications,omitempty"`
-	// A collection of system notification IDs to notify when runs of this job begin
-	// or complete.
-	WebhookNotifications *WebhookNotifications `json:"webhook_notifications,omitempty"`
-	// Optional notification settings that are used when sending notifications to
-	// each of the `email_notifications` and `webhook_notifications` for this job.
-	NotificationSettings *NotificationSettings `json:"notification_settings,omitempty"`
-	// An optional timeout applied to each run of this job. A value of `0` means no
-	// timeout.
-	TimeoutSeconds *int             `json:"timeout_seconds,omitempty"`
-	Health         *JobsHealthRules `json:"health,omitempty"`
-	// An optional periodic schedule for this job. The default behavior is that the
-	// job only runs when triggered by clicking “Run Now” in the Jobs UI or
-	// sending an API request to `runNow`.
-	Schedule *CronSchedule `json:"schedule,omitempty"`
-	// A configuration to trigger a run when certain conditions are met. The default
-	// behavior is that the job runs only when triggered by clicking “Run Now”
-	// in the Jobs UI or sending an API request to `runNow`.
-	Trigger *TriggerSettings `json:"trigger,omitempty"`
+	// The id of the user specified budget policy to use for this job. If not
+	// specified, a default budget policy may be applied when creating or modifying
+	// the job. See `effective_budget_policy_id` for the budget policy used by this
+	// workload.
+	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
 	// An optional continuous property for this job. The continuous property will
 	// ensure that there is always one run executing. Only one of `schedule` and
 	// `continuous` can be used.
@@ -2181,6 +2159,56 @@ type JobSettings struct {
 	// Pipelines started by a continuous job also run continuously, regardless of
 	// their own pipeline mode setting.
 	Continuous *ContinuousSettings `json:"continuous,omitempty"`
+	// Deployment information for jobs managed by external sources.
+	Deployment *JobDeployment `json:"deployment,omitempty"`
+	// An optional description for the job. The maximum length is 27700 characters
+	// in UTF-8 encoding.
+	Description *string `json:"description,omitempty"`
+	// An option to disable auto optimization in serverless
+	DisableAutoOptimization *bool `json:"disable_auto_optimization,omitempty"`
+	// Edit mode of the job.
+	//
+	// * `UI_LOCKED`: The job is in a locked UI state and cannot be modified. *
+	// `EDITABLE`: The job is in an editable state and can be modified.
+	EditMode JobEditMode `json:"edit_mode,omitempty"`
+	// An optional set of email addresses that is notified when runs of this job
+	// begin or complete as well as when this job is deleted.
+	EmailNotifications *JobEmailNotifications `json:"email_notifications,omitempty"`
+	// Named environment-variable entries that tasks can reference by key from
+	// `TaskSettings.environment_variables_key`. Each entry's `spec` holds inline
+	// `variables` and optional `.env` `files`. Maximum 10 entries per job. A task
+	// can reference at most one entry from this list.
+	EnvironmentVariables []JobEnvironmentVariables `json:"environment_variables,omitempty"`
+	// A list of task execution environment specifications that can be referenced by
+	// tasks that use serverless compute or a compute resource that uses
+	// Environments mode. For notebook tasks that use serverless compute or a
+	// compute resource that uses Environments mode, if the environment_key is not
+	// specified, the notebook environment will be used if present. If a jobs
+	// environment is specified, it will override the notebook environment. For
+	// other tasks that use serverless compute or a compute resource that uses
+	// Environments mode, the task environment is required to be specified using
+	// environment_key in the task settings.
+	Environments []JobEnvironment `json:"environments,omitempty"`
+	// Used to tell what is the format of the job. This field is ignored in
+	// Create/Update/Reset calls. When using the Jobs API 2.1 this value is always
+	// set to `"MULTI_TASK"`.
+	Format Format `json:"format,omitempty"`
+	// An optional specification for a remote Git repository containing the source
+	// code used by tasks. Version-controlled source code is supported by notebook,
+	// dbt, Python script, and SQL File tasks.
+	//
+	// If `git_source` is set, these tasks retrieve the file from the remote
+	// repository by default. However, this behavior can be overridden by setting
+	// `source` to `WORKSPACE` on the task.
+	//
+	// Note: dbt and SQL File tasks support only version-controlled sources. If dbt
+	// or SQL File tasks are used, `git_source` must be defined on the job.
+	GitSource *GitSource       `json:"git_source,omitempty"`
+	Health    *JobsHealthRules `json:"health,omitempty"`
+	// A list of job cluster specifications that can be shared and reused by tasks
+	// of this job. Libraries cannot be declared in a shared job cluster. You must
+	// declare dependent libraries in task settings.
+	JobClusters []JobCluster `json:"job_clusters,omitempty"`
 	// An optional maximum allowed number of concurrent runs of the job. Set this
 	// value if you want to be able to execute multiple runs of the same job
 	// concurrently. This is useful for example if you trigger your job on a
@@ -2193,72 +2221,26 @@ type JobSettings struct {
 	// value cannot exceed 1000. Setting this value to `0` causes all new runs to be
 	// skipped.
 	MaxConcurrentRuns *int `json:"max_concurrent_runs,omitempty"`
-	// A list of task specifications to be executed by this job. It supports up to
-	// 1000 elements in write endpoints (:method:jobs/create, :method:jobs/reset,
-	// :method:jobs/update, :method:jobs/submit). Read endpoints return only 100
-	// tasks. If more than 100 tasks are available, you can paginate through them
-	// using :method:jobs/get. Use the `next_page_token` field at the object root to
-	// determine if more results are available.
-	Tasks []TaskSettings `json:"tasks,omitempty"`
-	// A list of job cluster specifications that can be shared and reused by tasks
-	// of this job. Libraries cannot be declared in a shared job cluster. You must
-	// declare dependent libraries in task settings.
-	JobClusters []JobCluster `json:"job_clusters,omitempty"`
-	// An optional specification for a remote Git repository containing the source
-	// code used by tasks. Version-controlled source code is supported by notebook,
-	// dbt, Python script, and SQL File tasks.
-	//
-	// If `git_source` is set, these tasks retrieve the file from the remote
-	// repository by default. However, this behavior can be overridden by setting
-	// `source` to `WORKSPACE` on the task.
-	//
-	// Note: dbt and SQL File tasks support only version-controlled sources. If dbt
-	// or SQL File tasks are used, `git_source` must be defined on the job.
-	GitSource *GitSource `json:"git_source,omitempty"`
-	// A map of tags associated with the job. These are forwarded to the cluster as
-	// cluster tags for jobs clusters, and are subject to the same limitations as
-	// cluster tags. A maximum of 25 tags can be added to the job.
-	Tags map[string]string `json:"tags,omitempty"`
-	// Used to tell what is the format of the job. This field is ignored in
-	// Create/Update/Reset calls. When using the Jobs API 2.1 this value is always
-	// set to `"MULTI_TASK"`.
-	Format Format `json:"format,omitempty"`
-	// The queue settings of the job.
-	Queue *QueueSettings `json:"queue,omitempty"`
+	// An optional maximum number of times to retry an unsuccessful run. A run is
+	// considered to be unsuccessful if it completes with the `FAILED` result_state
+	// or `INTERNAL_ERROR` `life_cycle_state`. The value `-1` means to retry
+	// indefinitely and the value `0` means to never retry.
+	MaxRetries *int `json:"max_retries,omitempty"`
+	// An optional minimal interval in milliseconds between the start of the failed
+	// run and the subsequent retry run. The default behavior is that unsuccessful
+	// runs are immediately retried.
+	MinRetryIntervalMillis *int `json:"min_retry_interval_millis,omitempty"`
+	// An optional name for the job. The maximum length is 4096 bytes in UTF-8
+	// encoding.
+	Name *string `json:"name,omitempty"`
+	// Optional notification settings that are used when sending notifications to
+	// each of the `email_notifications` and `webhook_notifications` for this job.
+	NotificationSettings *NotificationSettings `json:"notification_settings,omitempty"`
 	// Job-level parameter definitions
 	Parameters []JobLevelParameter `json:"parameters,omitempty"`
-	// The user or service principal that the job runs as, if specified in the
-	// request. This field indicates the explicit configuration of `run_as` for the
-	// job. To find the value in all cases, explicit or implicit, use
-	// `run_as_user_name`.
-	RunAs *JobRunAs `json:"run_as,omitempty"`
-	// Edit mode of the job.
-	//
-	// * `UI_LOCKED`: The job is in a locked UI state and cannot be modified. *
-	// `EDITABLE`: The job is in an editable state and can be modified.
-	EditMode JobEditMode `json:"edit_mode,omitempty"`
-	// Deployment information for jobs managed by external sources.
-	Deployment *JobDeployment `json:"deployment,omitempty"`
-	// A list of task execution environment specifications that can be referenced by
-	// tasks that use serverless compute or a compute resource that uses
-	// Environments mode. For notebook tasks that use serverless compute or a
-	// compute resource that uses Environments mode, if the environment_key is not
-	// specified, the notebook environment will be used if present. If a jobs
-	// environment is specified, it will override the notebook environment. For
-	// other tasks that use serverless compute or a compute resource that uses
-	// Environments mode, the task environment is required to be specified using
-	// environment_key in the task settings.
-	Environments []JobEnvironment `json:"environments,omitempty"`
-	// The id of the user specified budget policy to use for this job. If not
-	// specified, a default budget policy may be applied when creating or modifying
-	// the job. See `effective_budget_policy_id` for the budget policy used by this
-	// workload.
-	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
-	// The id of the user specified usage policy to use for this job. If not
-	// specified, a default usage policy may be applied when creating or modifying
-	// the job. See `effective_usage_policy_id` for the usage policy used by this
-	// workload.
-	UsagePolicyId *string `json:"usage_policy_id,omitempty"`
+	// Path of the job parent folder in workspace file tree. If absent, the job
+	// doesn't have a workspace object.
+	ParentPath *string `json:"parent_path,omitempty"`
 	// The performance mode on a serverless job. This field determines the level of
 	// compute performance or cost-efficiency for the run. The performance target
 	// does not apply to tasks that run on Serverless GPU compute.
@@ -2269,41 +2251,56 @@ type JobSettings struct {
 	// Enables lower job costs by optimizing compute for your selected target
 	// duration time. Must provide a duration target.
 	PerformanceTarget PerformanceTarget_PerformanceTarget `json:"performance_target,omitempty"`
-	// Path of the job parent folder in workspace file tree. If absent, the job
-	// doesn't have a workspace object.
-	ParentPath *string `json:"parent_path,omitempty"`
+	// The queue settings of the job.
+	Queue *QueueSettings `json:"queue,omitempty"`
+	// An optional policy to specify whether to retry a job when it times out. The
+	// default behavior is to not retry on timeout.
+	RetryOnTimeout *bool `json:"retry_on_timeout,omitempty"`
+	// The user or service principal that the job runs as, if specified in the
+	// request. This field indicates the explicit configuration of `run_as` for the
+	// job. To find the value in all cases, explicit or implicit, use
+	// `run_as_user_name`.
+	RunAs *JobRunAs `json:"run_as,omitempty"`
+	// An optional periodic schedule for this job. The default behavior is that the
+	// job only runs when triggered by clicking “Run Now” in the Jobs UI or
+	// sending an API request to `runNow`.
+	Schedule *CronSchedule `json:"schedule,omitempty"`
+	// A map of tags associated with the job. These are forwarded to the cluster as
+	// cluster tags for jobs clusters, and are subject to the same limitations as
+	// cluster tags. A maximum of 25 tags can be added to the job.
+	Tags map[string]string `json:"tags,omitempty"`
+	// A list of task specifications to be executed by this job. It supports up to
+	// 1000 elements in write endpoints (:method:jobs/create, :method:jobs/reset,
+	// :method:jobs/update, :method:jobs/submit). Read endpoints return only 100
+	// tasks. If more than 100 tasks are available, you can paginate through them
+	// using :method:jobs/get. Use the `next_page_token` field at the object root to
+	// determine if more results are available.
+	Tasks []TaskSettings `json:"tasks,omitempty"`
+	// An optional timeout applied to each run of this job. A value of `0` means no
+	// timeout.
+	TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
+	// A configuration to trigger a run when certain conditions are met. The default
+	// behavior is that the job runs only when triggered by clicking “Run Now”
+	// in the Jobs UI or sending an API request to `runNow`.
+	Trigger *TriggerSettings `json:"trigger,omitempty"`
 	// List of triggers attached to this job. A run starts when any active trigger
 	// evaluates to true. Cannot be set in the same request as the legacy
 	// `schedule`, `trigger`, or `continuous` fields. Gated behind the "Multiple
 	// Triggers" feature preview.
 	Triggers []TriggerConfiguration `json:"triggers,omitempty"`
-	// Named environment-variable entries that tasks can reference by key from
-	// `TaskSettings.environment_variables_key`. Each entry's `spec` holds inline
-	// `variables` and optional `.env` `files`. Maximum 10 entries per job. A task
-	// can reference at most one entry from this list.
-	EnvironmentVariables []JobEnvironmentVariables `json:"environment_variables,omitempty"`
-	// An optional maximum number of times to retry an unsuccessful run. A run is
-	// considered to be unsuccessful if it completes with the `FAILED` result_state
-	// or `INTERNAL_ERROR` `life_cycle_state`. The value `-1` means to retry
-	// indefinitely and the value `0` means to never retry.
-	MaxRetries *int `json:"max_retries,omitempty"`
-	// An optional minimal interval in milliseconds between the start of the failed
-	// run and the subsequent retry run. The default behavior is that unsuccessful
-	// runs are immediately retried.
-	MinRetryIntervalMillis *int `json:"min_retry_interval_millis,omitempty"`
-	// An optional policy to specify whether to retry a job when it times out. The
-	// default behavior is to not retry on timeout.
-	RetryOnTimeout *bool `json:"retry_on_timeout,omitempty"`
-	// An option to disable auto optimization in serverless
-	DisableAutoOptimization *bool `json:"disable_auto_optimization,omitempty"`
+	// The id of the user specified usage policy to use for this job. If not
+	// specified, a default usage policy may be applied when creating or modifying
+	// the job. See `effective_usage_policy_id` for the usage policy used by this
+	// workload.
+	UsagePolicyId *string `json:"usage_policy_id,omitempty"`
+	// A collection of system notification IDs to notify when runs of this job begin
+	// or complete.
+	WebhookNotifications *WebhookNotifications `json:"webhook_notifications,omitempty"`
 }
 
 // The source of the job specification in the remote repository when the job is
 // source controlled..
 type JobSource struct {
-	// Path of the job YAML file that contains the job specification.
-	JobConfigPath       *string `json:"job_config_path,omitempty"`
-	ImportFromGitBranch *string `json:"import_from_git_branch,omitempty"`
 	// Dirty state indicates the job is not fully synced with the job specification
 	// in the remote repository.
 	//
@@ -2312,7 +2309,10 @@ type JobSource struct {
 	// the job fully synced. * `DISCONNECTED`: The job is temporary disconnected
 	// from the remote job specification and is allowed for live edit. Import the
 	// remote job specification again from UI to make the job fully synced.
-	DirtyState JobSource_DirtyState `json:"dirty_state,omitempty"`
+	DirtyState          JobSource_DirtyState `json:"dirty_state,omitempty"`
+	ImportFromGitBranch *string              `json:"import_from_git_branch,omitempty"`
+	// Path of the job YAML file that contains the job specification.
+	JobConfigPath *string `json:"job_config_path,omitempty"`
 }
 
 type JobsHealthRule struct {
@@ -2329,32 +2329,32 @@ type JobsHealthRules struct {
 }
 
 type Library struct {
-	Jar          *string            `json:"jar,omitempty"`
-	Egg          *string            `json:"egg,omitempty"`
-	Pypi         *PythonPyPiLibrary `json:"pypi,omitempty"`
-	Maven        *MavenLibrary      `json:"maven,omitempty"`
 	Cran         *RCranLibrary      `json:"cran,omitempty"`
-	Whl          *string            `json:"whl,omitempty"`
+	Egg          *string            `json:"egg,omitempty"`
+	Jar          *string            `json:"jar,omitempty"`
+	Maven        *MavenLibrary      `json:"maven,omitempty"`
+	Pypi         *PythonPyPiLibrary `json:"pypi,omitempty"`
 	Requirements *string            `json:"requirements,omitempty"`
+	Whl          *string            `json:"whl,omitempty"`
 }
 
 type ListJobComplianceForPolicy struct {
-	// Canonical unique identifier for the cluster policy.
-	PolicyId *string `json:"policy_id,omitempty"`
-	// A page token that can be used to navigate to the next page or previous page
-	// as returned by `next_page_token` or `prev_page_token`.
-	PageToken *string `json:"page_token,omitempty"`
 	// Use this field to specify the maximum number of results to be returned by the
 	// server. The server may further constrain the maximum number of results
 	// returned in a single page.
 	PageSize *int `json:"page_size,omitempty"`
+	// A page token that can be used to navigate to the next page or previous page
+	// as returned by `next_page_token` or `prev_page_token`.
+	PageToken *string `json:"page_token,omitempty"`
+	// Canonical unique identifier for the cluster policy.
+	PolicyId *string `json:"policy_id,omitempty"`
 }
 
 type ListJobComplianceForPolicy_JobCompliance struct {
-	// Canonical unique identifier for a job.
-	JobId *int64 `json:"job_id,omitempty"`
 	// Whether this job is in compliance with the latest version of its policy.
 	IsCompliant *bool `json:"is_compliant,omitempty"`
+	// Canonical unique identifier for a job.
+	JobId *int64 `json:"job_id,omitempty"`
 	// An object containing key-value mappings representing the first 200 policy
 	// validation errors. The keys indicate the path where the policy validation
 	// error is occurring. An identifier for the job cluster is prepended to the
@@ -2378,19 +2378,19 @@ type ListJobComplianceResponse struct {
 
 // Lists all jobs..
 type ListJobsRequest struct {
-	// The offset of the first job to return, relative to the most recently created
-	// job. Deprecated since June 2023. Use `page_token` to iterate through the
-	// pages instead.
-	Offset *int `json:"offset,omitempty"`
-	// The number of jobs to return. This value must be greater than 0 and less or
-	// equal to 100. The default value is 20.
-	Limit *int `json:"limit,omitempty"`
 	// Whether to include task and cluster details in the response. Note that only
 	// the first 100 elements will be shown. Use :method:jobs/get to paginate
 	// through all tasks and clusters.
 	ExpandTasks *bool `json:"expand_tasks,omitempty"`
+	// The number of jobs to return. This value must be greater than 0 and less or
+	// equal to 100. The default value is 20.
+	Limit *int `json:"limit,omitempty"`
 	// A filter on the list based on the exact (case insensitive) job name.
 	Name *string `json:"name,omitempty"`
+	// The offset of the first job to return, relative to the most recently created
+	// job. Deprecated since June 2023. Use `page_token` to iterate through the
+	// pages instead.
+	Offset *int `json:"offset,omitempty"`
 	// Use `next_page_token` or `prev_page_token` returned from the previous request
 	// to list the next or previous page of jobs respectively.
 	PageToken *string `json:"page_token,omitempty"`
@@ -2398,11 +2398,11 @@ type ListJobsRequest struct {
 
 // List of jobs was retrieved successfully..
 type ListJobsResponse struct {
-	// The list of jobs. Only included in the response if there are jobs to list.
-	Jobs []BaseJob `json:"jobs,omitempty"`
 	// If true, additional jobs matching the provided filter are available for
 	// listing.
 	HasMore *bool `json:"has_more,omitempty"`
+	// The list of jobs. Only included in the response if there are jobs to list.
+	Jobs []BaseJob `json:"jobs,omitempty"`
 	// A token that can be used to list the next page of jobs (if applicable).
 	NextPageToken *string `json:"next_page_token,omitempty"`
 	// A token that can be used to list the previous page of jobs (if applicable).
@@ -2411,26 +2411,29 @@ type ListJobsResponse struct {
 
 // Lists runs from most recently started to least..
 type ListRunsRequest struct {
-	// The job for which to list runs. If omitted, the Jobs service lists runs from
-	// all jobs.
-	JobId         *int64 `json:"job_id,omitempty"`
-	ActiveOnly    *bool  `json:"active_only,omitempty"`
-	CompletedOnly *bool  `json:"completed_only,omitempty"`
-	// The offset of the first run to return, relative to the most recent run.
-	// Deprecated since June 2023. Use `page_token` to iterate through the pages
-	// instead.
-	Offset *int `json:"offset,omitempty"`
-	// The number of runs to return. This value must be greater than 0 and less than
-	// 25. The default value is 20. If a request specifies a limit of 0, the service
-	// instead uses the maximum limit.
-	Limit *int `json:"limit,omitempty"`
-	// The type of runs to return. For a description of run types, see
-	// :method:jobs/getRun.
-	RunType RunType `json:"run_type,omitempty"`
+	ActiveOnly    *bool `json:"active_only,omitempty"`
+	CompletedOnly *bool `json:"completed_only,omitempty"`
 	// Whether to include task and cluster details in the response. Note that only
 	// the first 100 elements will be shown. Use :method:jobs/getrun to paginate
 	// through all tasks and clusters.
 	ExpandTasks *bool `json:"expand_tasks,omitempty"`
+	// The job for which to list runs. If omitted, the Jobs service lists runs from
+	// all jobs.
+	JobId *int64 `json:"job_id,omitempty"`
+	// The number of runs to return. This value must be greater than 0 and less than
+	// 25. The default value is 20. If a request specifies a limit of 0, the service
+	// instead uses the maximum limit.
+	Limit *int `json:"limit,omitempty"`
+	// The offset of the first run to return, relative to the most recent run.
+	// Deprecated since June 2023. Use `page_token` to iterate through the pages
+	// instead.
+	Offset *int `json:"offset,omitempty"`
+	// Use `next_page_token` or `prev_page_token` returned from the previous request
+	// to list the next or previous page of runs respectively.
+	PageToken *string `json:"page_token,omitempty"`
+	// The type of runs to return. For a description of run types, see
+	// :method:jobs/getRun.
+	RunType RunType `json:"run_type,omitempty"`
 	// Show runs that started _at or after_ this value. The value must be a UTC
 	// timestamp in milliseconds. Can be combined with _start_time_to_ to filter by
 	// a time range.
@@ -2439,16 +2442,10 @@ type ListRunsRequest struct {
 	// timestamp in milliseconds. Can be combined with _start_time_from_ to filter
 	// by a time range.
 	StartTimeTo *int64 `json:"start_time_to,omitempty"`
-	// Use `next_page_token` or `prev_page_token` returned from the previous request
-	// to list the next or previous page of runs respectively.
-	PageToken *string `json:"page_token,omitempty"`
 }
 
 // List of runs was retrieved successfully..
 type ListRunsResponse struct {
-	// A list of runs, from most recently started to least. Only included in the
-	// response if there are runs to list.
-	Runs []BaseRun `json:"runs,omitempty"`
 	// If true, additional runs matching the provided filter are available for
 	// listing.
 	HasMore *bool `json:"has_more,omitempty"`
@@ -2456,6 +2453,9 @@ type ListRunsResponse struct {
 	NextPageToken *string `json:"next_page_token,omitempty"`
 	// A token that can be used to list the previous page of runs (if applicable).
 	PrevPageToken *string `json:"prev_page_token,omitempty"`
+	// A list of runs, from most recently started to least. Only included in the
+	// response if there are runs to list.
+	Runs []BaseRun `json:"runs,omitempty"`
 }
 
 type LocalFileInfo struct {
@@ -2464,20 +2464,20 @@ type LocalFileInfo struct {
 }
 
 type LogAnalyticsInfo struct {
-	LogAnalyticsWorkspaceId *string `json:"log_analytics_workspace_id,omitempty"`
 	LogAnalyticsPrimaryKey  *string `json:"log_analytics_primary_key,omitempty"`
+	LogAnalyticsWorkspaceId *string `json:"log_analytics_workspace_id,omitempty"`
 }
 
 // A recurring weekly time window during which platform-initiated maintenance is
 // allowed to run for a continuous job..
 type MaintenanceWindow struct {
+	// The day of week on which maintenance is allowed to happen. This field is
+	// required.
+	DayOfWeek DayOfWeek `json:"day_of_week,omitempty"`
 	// An integer between 0 and 23 denoting the start hour for the maintenance
 	// window in the 24-hour day. Platform-initiated maintenance is triggered only
 	// within a one-hour window starting at this hour. This field is required.
 	StartHour *int `json:"start_hour,omitempty"`
-	// The day of week on which maintenance is allowed to happen. This field is
-	// required.
-	DayOfWeek DayOfWeek `json:"day_of_week,omitempty"`
 	// A Java timezone ID. The maintenance window is resolved with respect to this
 	// timezone. See [Java TimeZone] for details. This field is required.
 	//
@@ -2488,22 +2488,18 @@ type MaintenanceWindow struct {
 type MavenLibrary struct {
 	// Gradle-style maven coordinates. For example: "org.jsoup:jsoup:1.7.2".
 	Coordinates *string `json:"coordinates,omitempty"`
-	// Maven repo to install the Maven package from. If omitted, both Maven Central
-	// Repository and Spark Packages are searched.
-	Repo *string `json:"repo,omitempty"`
 	// List of dependences to exclude. For example: `["slf4j:slf4j",
 	// "*:hadoop-client"]`.
 	//
 	// Maven dependency exclusions:
 	// https://maven.apache.org/guides/introduction/introduction-to-optional-and-excludes-dependencies.html.
 	Exclusions []string `json:"exclusions,omitempty"`
+	// Maven repo to install the Maven package from. If omitted, both Maven Central
+	// Repository and Spark Packages are searched.
+	Repo *string `json:"repo,omitempty"`
 }
 
 type ModelTriggerConfiguration struct {
-	// Name of the securable to monitor ("mycatalog.myschema.mymodel" in the case of
-	// model-level triggers, "mycatalog.myschema" in the case of schema-level
-	// triggers) or empty in the case of metastore-level triggers.
-	SecurableName *string `json:"securable_name,omitempty"`
 	// Aliases of the model versions to monitor. Can only be used in conjunction
 	// with condition MODEL_ALIAS_SET.
 	Aliases []string `json:"aliases,omitempty"`
@@ -2513,6 +2509,10 @@ type ModelTriggerConfiguration struct {
 	// passed since the last time the trigger fired. The minimum allowed value is 60
 	// seconds.
 	MinTimeBetweenTriggersSeconds *int `json:"min_time_between_triggers_seconds,omitempty"`
+	// Name of the securable to monitor ("mycatalog.myschema.mymodel" in the case of
+	// model-level triggers, "mycatalog.myschema" in the case of schema-level
+	// triggers) or empty in the case of metastore-level triggers.
+	SecurableName *string `json:"securable_name,omitempty"`
 	// If set, the trigger starts a run only after no model updates have occurred
 	// for the specified time and can be used to wait for a series of model updates
 	// before triggering a run. The minimum allowed value is 60 seconds.
@@ -2536,11 +2536,6 @@ type NodeTypeFlexibility struct {
 }
 
 type NotebookTask struct {
-	// The path of the notebook to be run in the <Databricks> workspace or remote
-	// repository. For notebooks stored in the <Databricks> workspace, the path must
-	// be absolute and begin with a slash. For notebooks stored in a remote
-	// repository, the path must be relative. This field is required.
-	NotebookPath *string `json:"notebook_path,omitempty"`
 	// Base parameters to be used for each run of this job. If the run is initiated
 	// by a call to :method:jobs/run Now with parameters specified, the two
 	// parameters maps are merged. If the same key is specified in `base_parameters`
@@ -2557,6 +2552,11 @@ type NotebookTask struct {
 	//
 	// The JSON representation of this field cannot exceed 1MB.
 	BaseParameters map[string]string `json:"base_parameters,omitempty"`
+	// The path of the notebook to be run in the <Databricks> workspace or remote
+	// repository. For notebooks stored in the <Databricks> workspace, the path must
+	// be absolute and begin with a slash. For notebooks stored in a remote
+	// repository, the path must be relative. This field is required.
+	NotebookPath *string `json:"notebook_path,omitempty"`
 	// Optional location type of the notebook. When set to `WORKSPACE`, the notebook
 	// will be retrieved from the local <Databricks> workspace. When set to `GIT`,
 	// the notebook will be retrieved from a Git repository defined in `git_source`.
@@ -2584,26 +2584,26 @@ type NotebookTask_NotebookOutput struct {
 }
 
 type NotificationSettings struct {
-	// If true, do not send notifications to recipients specified in `on_failure` if
-	// the run is skipped.
-	NoAlertForSkippedRuns *bool `json:"no_alert_for_skipped_runs,omitempty"`
-	// If true, do not send notifications to recipients specified in `on_failure` if
-	// the run is canceled.
-	NoAlertForCanceledRuns *bool `json:"no_alert_for_canceled_runs,omitempty"`
 	// If true, do not send notifications to recipients specified in `on_start` for
 	// the retried runs and do not send notifications to recipients specified in
 	// `on_failure` until the last retry of the run.
 	AlertOnLastAttempt *bool `json:"alert_on_last_attempt,omitempty"`
+	// If true, do not send notifications to recipients specified in `on_failure` if
+	// the run is canceled.
+	NoAlertForCanceledRuns *bool `json:"no_alert_for_canceled_runs,omitempty"`
+	// If true, do not send notifications to recipients specified in `on_failure` if
+	// the run is skipped.
+	NoAlertForSkippedRuns *bool `json:"no_alert_for_skipped_runs,omitempty"`
 }
 
 // Stores the catalog name, schema name, and the output schema expiration time
 // for the clean room run..
 type OutputSchemaInfo struct {
 	CatalogName *string `json:"catalog_name,omitempty"`
-	SchemaName  *string `json:"schema_name,omitempty"`
 	// The expiration time for the output schema as a Unix timestamp in
 	// milliseconds.
-	ExpirationTime *int64 `json:"expiration_time,omitempty"`
+	ExpirationTime *int64  `json:"expiration_time,omitempty"`
+	SchemaName     *string `json:"schema_name,omitempty"`
 }
 
 // Per-trigger runtime state for the multi-trigger surface. Mirrors
@@ -2611,16 +2611,16 @@ type OutputSchemaInfo struct {
 // one variant matching the corresponding trigger's type. Variants with no
 // runtime state today (`schedule`, `model`) are emitted as empty messages..
 type PerTriggerState struct {
-	Periodic    *PeriodicTriggerState    `json:"periodic,omitempty"`
-	Schedule    *ScheduleTriggerState    `json:"schedule,omitempty"`
 	Continuous  *ContinuousTriggerState  `json:"continuous,omitempty"`
 	FileArrival *FileArrivalTriggerState `json:"file_arrival,omitempty"`
-	TableUpdate *TableTriggerState       `json:"table_update,omitempty"`
 	Model       *ModelTriggerState       `json:"model,omitempty"`
+	// Whether this trigger is paused or not. Mirrors the configured pause_status.
+	PauseStatus SchedulePauseStatus   `json:"pause_status,omitempty"`
+	Periodic    *PeriodicTriggerState `json:"periodic,omitempty"`
+	Schedule    *ScheduleTriggerState `json:"schedule,omitempty"`
 	// State for SQL condition evaluation, can coexist with other trigger states.
 	SqlCondition *SqlConditionState `json:"sql_condition,omitempty"`
-	// Whether this trigger is paused or not. Mirrors the configured pause_status.
-	PauseStatus SchedulePauseStatus `json:"pause_status,omitempty"`
+	TableUpdate  *TableTriggerState `json:"table_update,omitempty"`
 }
 
 type PeriodicTriggerConfiguration struct {
@@ -2637,56 +2637,56 @@ type PeriodicTriggerState struct {
 type PipelineParameters struct {
 	// If true, triggers a full refresh on the spark declarative pipeline.
 	FullRefresh *bool `json:"full_refresh,omitempty"`
-	// A list of tables to update without fullRefresh.
-	RefreshSelection []string `json:"refresh_selection,omitempty"`
 	// A list of tables to update with fullRefresh.
 	FullRefreshSelection []string `json:"full_refresh_selection,omitempty"`
-	// A list of streaming flows to reset checkpoints without clearing data.
-	ResetCheckpointSelection []string `json:"reset_checkpoint_selection,omitempty"`
 	// Flow names to selectively refresh. These are unioned with other selective
 	// refresh options (refresh_selection, full_refresh_selection) to determine the
 	// final set of flows to refresh.
 	RefreshFlowSelection []string `json:"refresh_flow_selection,omitempty"`
+	// A list of tables to update without fullRefresh.
+	RefreshSelection []string `json:"refresh_selection,omitempty"`
+	// A list of streaming flows to reset checkpoints without clearing data.
+	ResetCheckpointSelection []string `json:"reset_checkpoint_selection,omitempty"`
 }
 
 type PipelineTask struct {
-	// The full name of the pipeline task to execute.
-	PipelineId *string `json:"pipeline_id,omitempty"`
+	// If true, triggers a full refresh on the spark declarative pipeline.
+	FullRefresh *bool `json:"full_refresh,omitempty"`
+	// A list of tables to update with fullRefresh.
+	FullRefreshSelection []string `json:"full_refresh_selection,omitempty"`
 	// Key/value-map of parameters passed to the pipeline execution. Limited to 10k
 	// characters in total.
 	PipelineTaskParameters map[string]string `json:"parameters,omitempty"`
-	// If true, triggers a full refresh on the spark declarative pipeline.
-	FullRefresh *bool `json:"full_refresh,omitempty"`
-	// A list of tables to update without fullRefresh.
-	RefreshSelection []string `json:"refresh_selection,omitempty"`
-	// A list of tables to update with fullRefresh.
-	FullRefreshSelection []string `json:"full_refresh_selection,omitempty"`
-	// A list of streaming flows to reset checkpoints without clearing data.
-	ResetCheckpointSelection []string `json:"reset_checkpoint_selection,omitempty"`
+	// The full name of the pipeline task to execute.
+	PipelineId *string `json:"pipeline_id,omitempty"`
 	// Flow names to selectively refresh. These are unioned with other selective
 	// refresh options (refresh_selection, full_refresh_selection) to determine the
 	// final set of flows to refresh.
 	RefreshFlowSelection []string `json:"refresh_flow_selection,omitempty"`
+	// A list of tables to update without fullRefresh.
+	RefreshSelection []string `json:"refresh_selection,omitempty"`
+	// A list of streaming flows to reset checkpoints without clearing data.
+	ResetCheckpointSelection []string `json:"reset_checkpoint_selection,omitempty"`
 }
 
 type PowerBiModel struct {
-	// The name of the Power BI workspace of the model
-	WorkspaceName *string `json:"workspace_name,omitempty"`
-	// The name of the Power BI model
-	ModelName *string `json:"model_name,omitempty"`
-	// The default storage mode of the Power BI model
-	StorageMode StorageMode `json:"storage_mode,omitempty"`
 	// How the published Power BI model authenticates to <Databricks>
 	AuthenticationMethod AuthenticationMethod `json:"authentication_method,omitempty"`
+	// The name of the Power BI model
+	ModelName *string `json:"model_name,omitempty"`
 	// Whether to overwrite existing Power BI models
 	OverwriteExisting *bool `json:"overwrite_existing,omitempty"`
+	// The default storage mode of the Power BI model
+	StorageMode StorageMode `json:"storage_mode,omitempty"`
+	// The name of the Power BI workspace of the model
+	WorkspaceName *string `json:"workspace_name,omitempty"`
 }
 
 type PowerBiTable struct {
-	// The table name in <Databricks>
-	Name *string `json:"name,omitempty"`
 	// The catalog name in <Databricks>
 	Catalog *string `json:"catalog,omitempty"`
+	// The table name in <Databricks>
+	Name *string `json:"name,omitempty"`
 	// The schema name in <Databricks>
 	Schema *string `json:"schema,omitempty"`
 	// The Power BI storage mode of the table
@@ -2694,26 +2694,26 @@ type PowerBiTable struct {
 }
 
 type PowerBiTask struct {
+	// The resource name of the UC connection to authenticate from <Databricks> to
+	// Power BI
+	ConnectionResourceName *string `json:"connection_resource_name,omitempty"`
+	// The semantic model to update
+	PowerBiModel *PowerBiModel `json:"power_bi_model,omitempty"`
+	// Whether the model should be refreshed after the update
+	RefreshAfterUpdate *bool `json:"refresh_after_update,omitempty"`
 	// The tables to be exported to Power BI
 	Tables []PowerBiTable `json:"tables,omitempty"`
 	// The SQL warehouse ID to use as the Power BI data source
 	WarehouseId *string `json:"warehouse_id,omitempty"`
-	// The semantic model to update
-	PowerBiModel *PowerBiModel `json:"power_bi_model,omitempty"`
-	// The resource name of the UC connection to authenticate from <Databricks> to
-	// Power BI
-	ConnectionResourceName *string `json:"connection_resource_name,omitempty"`
-	// Whether the model should be refreshed after the update
-	RefreshAfterUpdate *bool `json:"refresh_after_update,omitempty"`
 }
 
 type PythonOperatorTask struct {
-	// An ordered list of task parameters. TODO(JOBS-30885): Add limits for
-	// parameters.
-	Parameters []PythonOperatorTask_Parameter `json:"parameters,omitempty"`
 	// Fully qualified name of the main class or function. For example,
 	// `my_project.my_function` or `my_project.MyOperator`.
 	Main *string `json:"main,omitempty"`
+	// An ordered list of task parameters. TODO(JOBS-30885): Add limits for
+	// parameters.
+	Parameters []PythonOperatorTask_Parameter `json:"parameters,omitempty"`
 }
 
 type PythonOperatorTask_Parameter struct {
@@ -2732,19 +2732,19 @@ type PythonPyPiLibrary struct {
 }
 
 type PythonWheelTask struct {
-	// Name of the package to execute
-	PackageName *string `json:"package_name,omitempty"`
 	// Named entry point to use, if it does not exist in the metadata of the package
 	// it executes the function from the package directly using
 	// `$packageName.$entryPoint()`
 	EntryPoint *string `json:"entry_point,omitempty"`
-	// Command-line parameters passed to Python wheel task. Leave it empty if
-	// `named_parameters` is not null.
-	Parameters []string `json:"parameters,omitempty"`
 	// Command-line parameters passed to Python wheel task in the form of
 	// `["--name=task", "--data=dbfs:/path/to/data.json"]`. Leave it empty if
 	// `parameters` is not null.
 	NamedParameters map[string]string `json:"named_parameters,omitempty"`
+	// Name of the package to execute
+	PackageName *string `json:"package_name,omitempty"`
+	// Command-line parameters passed to Python wheel task. Leave it empty if
+	// `named_parameters` is not null.
+	Parameters []string `json:"parameters,omitempty"`
 }
 
 type QueueDetails struct {
@@ -2768,21 +2768,6 @@ type RCranLibrary struct {
 }
 
 type Repair struct {
-	// The repair history item type. Indicates whether a run is the original run or
-	// a repair run.
-	Type RepairType `json:"type,omitempty"`
-	// The start time of the (repaired) run.
-	StartTime *int64 `json:"start_time,omitempty"`
-	// The end time of the (repaired) run.
-	EndTime *int64 `json:"end_time,omitempty"`
-	// Deprecated. Please use the `status` field instead.
-	State *RunState `json:"state,omitempty"`
-	// The ID of the repair. Only returned for the items that represent a repair in
-	// `repair_history`.
-	Id *int64 `json:"id,omitempty"`
-	// The run IDs of the task runs that ran as part of this repair history item.
-	TaskRunIds []int64    `json:"task_run_ids,omitempty"`
-	Status     *RunStatus `json:"status,omitempty"`
 	// The actual performance target used by the serverless run during execution.
 	// This can differ from the client-set performance target on the request
 	// depending on whether the performance mode is supported by the job type.
@@ -2793,38 +2778,31 @@ type Repair struct {
 	// Enables lower job costs by optimizing compute for your selected target
 	// duration time. Must provide a duration target.
 	EffectivePerformanceTarget PerformanceTarget_PerformanceTarget `json:"effective_performance_target,omitempty"`
+	// The end time of the (repaired) run.
+	EndTime *int64 `json:"end_time,omitempty"`
+	// The ID of the repair. Only returned for the items that represent a repair in
+	// `repair_history`.
+	Id *int64 `json:"id,omitempty"`
+	// The start time of the (repaired) run.
+	StartTime *int64 `json:"start_time,omitempty"`
+	// Deprecated. Please use the `status` field instead.
+	State  *RunState  `json:"state,omitempty"`
+	Status *RunStatus `json:"status,omitempty"`
+	// The run IDs of the task runs that ran as part of this repair history item.
+	TaskRunIds []int64 `json:"task_run_ids,omitempty"`
+	// The repair history item type. Indicates whether a run is the original run or
+	// a repair run.
+	Type RepairType `json:"type,omitempty"`
 }
 
 type RepairRunRequest struct {
-	// The job run ID of the run to repair. The run must not be in progress.
-	RunId *int64 `json:"run_id,omitempty"`
-	// The ID of the latest repair. This parameter is not required when repairing a
-	// run for the first time, but must be provided on subsequent requests to repair
-	// the same run.
-	LatestRepairId *int64 `json:"latest_repair_id,omitempty"`
-	// The task keys of the task runs to repair.
-	RerunTasks []string `json:"rerun_tasks,omitempty"`
-	// Job-level parameters used in the run. for example `"param": "overriding_val"`
-	JobParameters map[string]string `json:"job_parameters,omitempty"`
-	// If true, repair all failed tasks. Only one of `rerun_tasks` or
-	// `rerun_all_failed_tasks` can be used.
-	RerunAllFailedTasks *bool `json:"rerun_all_failed_tasks,omitempty"`
-	// If true, repair all tasks that depend on the tasks in `rerun_tasks`, even if
-	// they were previously successful. Can be also used in combination with
-	// `rerun_all_failed_tasks`.
-	RerunDependentTasks *bool `json:"rerun_dependent_tasks,omitempty"`
-	// The performance mode on a serverless job. The performance target determines
-	// the level of compute performance or cost-efficiency for the run. This field
-	// overrides the performance target defined on the job level.
+	// An array of commands to execute for jobs with the dbt task, for example
+	// `"dbt_commands": ["dbt deps", "dbt seed", "dbt deps", "dbt seed", "dbt run"]`
 	//
-	// * `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times
-	// through rapid scaling and optimized cluster performance. * `STANDARD`:
-	// Enables cost-efficient execution of serverless workloads. * `COST_OPTIMIZED`:
-	// Enables lower job costs by optimizing compute for your selected target
-	// duration time. Must provide a duration target.
-	PerformanceTarget PerformanceTarget_PerformanceTarget `json:"performance_target,omitempty"`
-	// Controls whether the pipeline should perform a full refresh
-	PipelineParams *PipelineParameters `json:"pipeline_params,omitempty"`
+	// ⚠ **Deprecation note** Use [job
+	// parameters](/jobs/job-parameters.html#job-parameter-pushdown) to pass
+	// information down to tasks.
+	DbtCommands []string `json:"dbt_commands,omitempty"`
 	// A list of parameters for jobs with Spark JAR tasks, for example
 	// `"jar_params": ["john doe", "35"]`. The parameters are used to invoke the
 	// main function of the main class specified in the Spark JAR task. If not
@@ -2837,6 +2815,12 @@ type RepairRunRequest struct {
 	// parameters](/jobs/job-parameters.html#job-parameter-pushdown) to pass
 	// information down to tasks.
 	JarParams []string `json:"jar_params,omitempty"`
+	// Job-level parameters used in the run. for example `"param": "overriding_val"`
+	JobParameters map[string]string `json:"job_parameters,omitempty"`
+	// The ID of the latest repair. This parameter is not required when repairing a
+	// run for the first time, but must be provided on subsequent requests to repair
+	// the same run.
+	LatestRepairId *int64 `json:"latest_repair_id,omitempty"`
 	// A map from keys to values for jobs with notebook task, for example
 	// `"notebook_params": {"name": "john doe", "age": "35"}`. The map is passed to
 	// the notebook and is accessible through the
@@ -2855,6 +2839,19 @@ type RepairRunRequest struct {
 	// `{"notebook_params":{"name":"john doe","age":"35"}}`) cannot exceed 10,000
 	// bytes.
 	NotebookParams map[string]string `json:"notebook_params,omitempty"`
+	// The performance mode on a serverless job. The performance target determines
+	// the level of compute performance or cost-efficiency for the run. This field
+	// overrides the performance target defined on the job level.
+	//
+	// * `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times
+	// through rapid scaling and optimized cluster performance. * `STANDARD`:
+	// Enables cost-efficient execution of serverless workloads. * `COST_OPTIMIZED`:
+	// Enables lower job costs by optimizing compute for your selected target
+	// duration time. Must provide a duration target.
+	PerformanceTarget PerformanceTarget_PerformanceTarget `json:"performance_target,omitempty"`
+	// Controls whether the pipeline should perform a full refresh
+	PipelineParams    *PipelineParameters `json:"pipeline_params,omitempty"`
+	PythonNamedParams map[string]string   `json:"python_named_params,omitempty"`
 	// A list of parameters for jobs with Python tasks, for example
 	// `"python_params": ["john doe", "35"]`. The parameters are passed to Python
 	// file as command-line parameters. If specified upon `run-now`, it would
@@ -2872,6 +2869,17 @@ type RepairRunRequest struct {
 	// non-ASCII characters returns an error. Examples of invalid, non-ASCII
 	// characters are Chinese, Japanese kanjis, and emojis.
 	PythonParams []string `json:"python_params,omitempty"`
+	// If true, repair all failed tasks. Only one of `rerun_tasks` or
+	// `rerun_all_failed_tasks` can be used.
+	RerunAllFailedTasks *bool `json:"rerun_all_failed_tasks,omitempty"`
+	// If true, repair all tasks that depend on the tasks in `rerun_tasks`, even if
+	// they were previously successful. Can be also used in combination with
+	// `rerun_all_failed_tasks`.
+	RerunDependentTasks *bool `json:"rerun_dependent_tasks,omitempty"`
+	// The task keys of the task runs to repair.
+	RerunTasks []string `json:"rerun_tasks,omitempty"`
+	// The job run ID of the run to repair. The run must not be in progress.
+	RunId *int64 `json:"run_id,omitempty"`
 	// A list of parameters for jobs with spark submit task, for example
 	// `"spark_submit_params": ["--class", "org.apache.spark.examples.SparkPi"]`.
 	// The parameters are passed to spark-submit script as command-line parameters.
@@ -2888,8 +2896,7 @@ type RepairRunRequest struct {
 	// These parameters accept only Latin characters (ASCII character set). Using
 	// non-ASCII characters returns an error. Examples of invalid, non-ASCII
 	// characters are Chinese, Japanese kanjis, and emojis.
-	SparkSubmitParams []string          `json:"spark_submit_params,omitempty"`
-	PythonNamedParams map[string]string `json:"python_named_params,omitempty"`
+	SparkSubmitParams []string `json:"spark_submit_params,omitempty"`
 	// A map from keys to values for jobs with SQL task, for example `"sql_params":
 	// {"name": "john doe", "age": "35"}`. The SQL alert task does not support
 	// custom parameters.
@@ -2898,13 +2905,6 @@ type RepairRunRequest struct {
 	// parameters](/jobs/job-parameters.html#job-parameter-pushdown) to pass
 	// information down to tasks.
 	SqlParams map[string]string `json:"sql_params,omitempty"`
-	// An array of commands to execute for jobs with the dbt task, for example
-	// `"dbt_commands": ["dbt deps", "dbt seed", "dbt deps", "dbt seed", "dbt run"]`
-	//
-	// ⚠ **Deprecation note** Use [job
-	// parameters](/jobs/job-parameters.html#job-parameter-pushdown) to pass
-	// information down to tasks.
-	DbtCommands []string `json:"dbt_commands,omitempty"`
 }
 
 // Run repair was initiated..
@@ -2926,18 +2926,18 @@ type ResetJobRequest struct {
 }
 
 type ResolvedValues struct {
+	AiRuntimeTask   *ResolvedValues_AiRuntimeTaskResolvedValues   `json:"ai_runtime_task,omitempty"`
+	ConditionTask   *ResolvedValues_ConditionTaskResolvedValues   `json:"condition_task,omitempty"`
+	DbtTask         *ResolvedValues_DbtTaskResolvedValues         `json:"dbt_task,omitempty"`
 	NotebookTask    *ResolvedValues_NotebookTaskResolvedValues    `json:"notebook_task,omitempty"`
+	PipelineTask    *ResolvedValues_PipelineTaskResolvedValues    `json:"pipeline_task,omitempty"`
+	PythonWheelTask *ResolvedValues_PythonWheelTaskResolvedValues `json:"python_wheel_task,omitempty"`
+	RunJobTask      *ResolvedValues_RunJobTaskResolvedValues      `json:"run_job_task,omitempty"`
+	SimulationTask  *ResolvedValues_SimulationTaskResolvedValues  `json:"simulation_task,omitempty"`
 	SparkJarTask    *ResolvedValues_SparkJarTaskResolvedValues    `json:"spark_jar_task,omitempty"`
 	SparkPythonTask *ResolvedValues_SparkPythonTaskResolvedValues `json:"spark_python_task,omitempty"`
 	SparkSubmitTask *ResolvedValues_SparkSubmitTaskResolvedValues `json:"spark_submit_task,omitempty"`
-	PythonWheelTask *ResolvedValues_PythonWheelTaskResolvedValues `json:"python_wheel_task,omitempty"`
-	DbtTask         *ResolvedValues_DbtTaskResolvedValues         `json:"dbt_task,omitempty"`
 	SqlTask         *ResolvedValues_SqlTaskResolvedValues         `json:"sql_task,omitempty"`
-	RunJobTask      *ResolvedValues_RunJobTaskResolvedValues      `json:"run_job_task,omitempty"`
-	ConditionTask   *ResolvedValues_ConditionTaskResolvedValues   `json:"condition_task,omitempty"`
-	SimulationTask  *ResolvedValues_SimulationTaskResolvedValues  `json:"simulation_task,omitempty"`
-	PipelineTask    *ResolvedValues_PipelineTaskResolvedValues    `json:"pipeline_task,omitempty"`
-	AiRuntimeTask   *ResolvedValues_AiRuntimeTaskResolvedValues   `json:"ai_runtime_task,omitempty"`
 }
 
 // Resolved values for an AiRuntimeTask after dynamic-value substitution, so
@@ -2965,13 +2965,13 @@ type ResolvedValues_PipelineTaskResolvedValues struct {
 }
 
 type ResolvedValues_PythonWheelTaskResolvedValues struct {
-	Parameters      []string          `json:"parameters,omitempty"`
 	NamedParameters map[string]string `json:"named_parameters,omitempty"`
+	Parameters      []string          `json:"parameters,omitempty"`
 }
 
 type ResolvedValues_RunJobTaskResolvedValues struct {
-	Parameters    map[string]string `json:"parameters,omitempty"`
 	JobParameters map[string]string `json:"job_parameters,omitempty"`
+	Parameters    map[string]string `json:"parameters,omitempty"`
 }
 
 type ResolvedValues_SimulationTaskResolvedValues struct {
@@ -2993,50 +2993,6 @@ type ResolvedValues_SqlTaskResolvedValues struct {
 }
 
 type Run struct {
-	// The canonical identifier of the job that contains this run.
-	JobId *int64 `json:"job_id,omitempty"`
-	// The canonical identifier of the run. This ID is unique across all runs of all
-	// jobs.
-	RunId *int64 `json:"run_id,omitempty"`
-	// The creator user name. This field won’t be included in the response if the
-	// user has already been deleted.
-	CreatorUserName *string `json:"creator_user_name,omitempty"`
-	// A unique identifier for this job run. This is set to the same value as
-	// `run_id`.
-	NumberInJob *int64 `json:"number_in_job,omitempty"`
-	// If this run is a retry of a prior run attempt, this field contains the run_id
-	// of the original attempt; otherwise, it is the same as the run_id.
-	OriginalAttemptRunId *int64 `json:"original_attempt_run_id,omitempty"`
-	// Deprecated. Please use the `status` field instead.
-	State *RunState `json:"state,omitempty"`
-	// The cron schedule that triggered this run if it was triggered by the periodic
-	// scheduler.
-	Schedule *CronSchedule `json:"schedule,omitempty"`
-	// A snapshot of the job’s cluster specification when this run was created.
-	ClusterSpec *ClusterSpec `json:"cluster_spec,omitempty"`
-	// The cluster used for this run. If the run is specified to use a new cluster,
-	// this field is set once the Jobs service has requested a cluster for the run.
-	ClusterInstance *ClusterInstance `json:"cluster_instance,omitempty"`
-	// Job-level parameters used in the run
-	JobParameters []Run_JobLevelParameters `json:"job_parameters,omitempty"`
-	// The parameters used for this run.
-	OverridingParameters *RunParameters  `json:"overriding_parameters,omitempty"`
-	Trigger              TriggerType     `json:"trigger,omitempty"`
-	TriggerInfo          *RunTriggerInfo `json:"trigger_info,omitempty"`
-	// An optional name for the run. The maximum length is 4096 bytes in UTF-8
-	// encoding.
-	RunName *string `json:"run_name,omitempty"`
-	// The URL to the detail page of the run.
-	RunPageUrl *string `json:"run_page_url,omitempty"`
-	RunType    RunType `json:"run_type,omitempty"`
-	// The list of tasks performed by the run. Each task has its own `run_id` which
-	// you can use to call `JobsGetOutput` to retrieve the run results. If more than
-	// 100 tasks are available, you can paginate through them using
-	// :method:jobs/getrun. Use the `next_page_token` field at the object root to
-	// determine if more results are available.
-	Tasks []RunTask `json:"tasks,omitempty"`
-	// Description of the run
-	Description *string `json:"description,omitempty"`
 	// The sequence number of this run attempt for a triggered job run. The initial
 	// attempt of a run has an attempt_number of 0. If the initial run attempt
 	// fails, and the job has a retry policy (`max_retries` > 0), subsequent runs
@@ -3045,34 +3001,26 @@ type Run struct {
 	// succeed, and the maximum `attempt_number` is the same as the `max_retries`
 	// value for the job.
 	AttemptNumber *int `json:"attempt_number,omitempty"`
-	// A list of job cluster specifications that can be shared and reused by tasks
-	// of this job. Libraries cannot be declared in a shared job cluster. You must
-	// declare dependent libraries in task settings. If more than 100 job clusters
-	// are available, you can paginate through them using :method:jobs/getrun.
-	JobClusters []JobCluster `json:"job_clusters,omitempty"`
-	// An optional specification for a remote Git repository containing the source
-	// code used by tasks. Version-controlled source code is supported by notebook,
-	// dbt, Python script, and SQL File tasks.
-	//
-	// If `git_source` is set, these tasks retrieve the file from the remote
-	// repository by default. However, this behavior can be overridden by setting
-	// `source` to `WORKSPACE` on the task.
-	//
-	// Note: dbt and SQL File tasks support only version-controlled sources. If dbt
-	// or SQL File tasks are used, `git_source` must be defined on the job.
-	GitSource *GitSource `json:"git_source,omitempty"`
-	// The repair history of the run.
-	RepairHistory []Repair   `json:"repair_history,omitempty"`
-	Status        *RunStatus `json:"status,omitempty"`
-	// ID of the job run that this run belongs to. For legacy and single-task job
-	// runs the field is populated with the job run ID. For task runs, the field is
-	// populated with the ID of the job run that the task run belongs to.
-	JobRunId *int64 `json:"job_run_id,omitempty"`
-	// Indicates if the run has more array properties (`tasks`, `job_clusters`) that
-	// are not shown. They can be accessed via :method:jobs/getrun endpoint. It is
-	// only relevant for API 2.2 :method:jobs/listruns requests with
-	// `expand_tasks=true`.
-	HasMore *bool `json:"has_more,omitempty"`
+	// The time in milliseconds it took to terminate the cluster and clean up any
+	// associated artifacts. The duration of a task run is the sum of the
+	// `setup_duration`, `execution_duration`, and the `cleanup_duration`. The
+	// `cleanup_duration` field is set to 0 for multitask job runs. The total
+	// duration of a multitask job run is the value of the `run_duration` field.
+	CleanupDuration *int64 `json:"cleanup_duration,omitempty"`
+	// The cluster used for this run. If the run is specified to use a new cluster,
+	// this field is set once the Jobs service has requested a cluster for the run.
+	ClusterInstance *ClusterInstance `json:"cluster_instance,omitempty"`
+	// A snapshot of the job’s cluster specification when this run was created.
+	ClusterSpec *ClusterSpec `json:"cluster_spec,omitempty"`
+	// The creator user name. This field won’t be included in the response if the
+	// user has already been deleted.
+	CreatorUserName *string `json:"creator_user_name,omitempty"`
+	// ID of the deployment that produced the job when this run was created. Used to
+	// look up deployment metadata from the Deployment Metadata service. Only set
+	// for job runs of jobs with a `BUNDLE` deployment.
+	DeploymentId *string `json:"deployment_id,omitempty"`
+	// Description of the run
+	Description *string `json:"description,omitempty"`
 	// The actual performance target used by the serverless run during execution.
 	// This can differ from the client-set performance target on the request
 	// depending on whether the performance mode is supported by the job type.
@@ -3085,24 +3033,77 @@ type Run struct {
 	EffectivePerformanceTarget PerformanceTarget_PerformanceTarget `json:"effective_performance_target,omitempty"`
 	// The id of the usage policy used by this run for cost attribution purposes.
 	EffectiveUsagePolicyId *string `json:"effective_usage_policy_id,omitempty"`
+	// The time at which this run ended in epoch milliseconds (milliseconds since
+	// 1/1/1970 UTC). This field is set to 0 if the job is still running.
+	EndTime *int64 `json:"end_time,omitempty"`
 	// Snapshot of `JobSettings.environment_variables` as it was at run launch —
 	// the full list of named environment-variable entries the job defined. To find
 	// which entry a given task ran with, look at
 	// `RunTaskSettings.environment_variables_key`.
 	EnvironmentVariables []JobEnvironmentVariables `json:"environment_variables,omitempty"`
-	// ID of the deployment that produced the job when this run was created. Used to
-	// look up deployment metadata from the Deployment Metadata service. Only set
-	// for job runs of jobs with a `BUNDLE` deployment.
-	DeploymentId *string `json:"deployment_id,omitempty"`
-	// ID of the deployment version that produced the job when this run was created.
-	// Identifies a specific snapshot of the deployment in the Deployment Metadata
-	// service. Only set for job runs of jobs with a `BUNDLE` deployment.
-	VersionId *string `json:"version_id,omitempty"`
-	// The time at which this run was started in epoch milliseconds (milliseconds
-	// since 1/1/1970 UTC). This may not be the time when the job task starts
-	// executing, for example, if the job is scheduled to run on a new cluster, this
-	// is the time the cluster creation call is issued.
-	StartTime *int64 `json:"start_time,omitempty"`
+	// The time in milliseconds it took to execute the commands in the JAR or
+	// notebook until they completed, failed, timed out, were cancelled, or
+	// encountered an unexpected error. The duration of a task run is the sum of the
+	// `setup_duration`, `execution_duration`, and the `cleanup_duration`. The
+	// `execution_duration` field is set to 0 for multitask job runs. The total
+	// duration of a multitask job run is the value of the `run_duration` field.
+	ExecutionDuration *int64 `json:"execution_duration,omitempty"`
+	// An optional specification for a remote Git repository containing the source
+	// code used by tasks. Version-controlled source code is supported by notebook,
+	// dbt, Python script, and SQL File tasks.
+	//
+	// If `git_source` is set, these tasks retrieve the file from the remote
+	// repository by default. However, this behavior can be overridden by setting
+	// `source` to `WORKSPACE` on the task.
+	//
+	// Note: dbt and SQL File tasks support only version-controlled sources. If dbt
+	// or SQL File tasks are used, `git_source` must be defined on the job.
+	GitSource *GitSource `json:"git_source,omitempty"`
+	// Indicates if the run has more array properties (`tasks`, `job_clusters`) that
+	// are not shown. They can be accessed via :method:jobs/getrun endpoint. It is
+	// only relevant for API 2.2 :method:jobs/listruns requests with
+	// `expand_tasks=true`.
+	HasMore *bool `json:"has_more,omitempty"`
+	// A list of job cluster specifications that can be shared and reused by tasks
+	// of this job. Libraries cannot be declared in a shared job cluster. You must
+	// declare dependent libraries in task settings. If more than 100 job clusters
+	// are available, you can paginate through them using :method:jobs/getrun.
+	JobClusters []JobCluster `json:"job_clusters,omitempty"`
+	// The canonical identifier of the job that contains this run.
+	JobId *int64 `json:"job_id,omitempty"`
+	// Job-level parameters used in the run
+	JobParameters []Run_JobLevelParameters `json:"job_parameters,omitempty"`
+	// ID of the job run that this run belongs to. For legacy and single-task job
+	// runs the field is populated with the job run ID. For task runs, the field is
+	// populated with the ID of the job run that the task run belongs to.
+	JobRunId *int64 `json:"job_run_id,omitempty"`
+	// A unique identifier for this job run. This is set to the same value as
+	// `run_id`.
+	NumberInJob *int64 `json:"number_in_job,omitempty"`
+	// If this run is a retry of a prior run attempt, this field contains the run_id
+	// of the original attempt; otherwise, it is the same as the run_id.
+	OriginalAttemptRunId *int64 `json:"original_attempt_run_id,omitempty"`
+	// The parameters used for this run.
+	OverridingParameters *RunParameters `json:"overriding_parameters,omitempty"`
+	// The time in milliseconds that the run has spent in the queue.
+	QueueDuration *int64 `json:"queue_duration,omitempty"`
+	// The repair history of the run.
+	RepairHistory []Repair `json:"repair_history,omitempty"`
+	// The time in milliseconds it took the job run and all of its repairs to
+	// finish.
+	RunDuration *int64 `json:"run_duration,omitempty"`
+	// The canonical identifier of the run. This ID is unique across all runs of all
+	// jobs.
+	RunId *int64 `json:"run_id,omitempty"`
+	// An optional name for the run. The maximum length is 4096 bytes in UTF-8
+	// encoding.
+	RunName *string `json:"run_name,omitempty"`
+	// The URL to the detail page of the run.
+	RunPageUrl *string `json:"run_page_url,omitempty"`
+	RunType    RunType `json:"run_type,omitempty"`
+	// The cron schedule that triggered this run if it was triggered by the periodic
+	// scheduler.
+	Schedule *CronSchedule `json:"schedule,omitempty"`
 	// The time in milliseconds it took to set up the cluster. For runs that run on
 	// new clusters this is the cluster creation time, for runs that run on existing
 	// clusters this time should be very short. The duration of a task run is the
@@ -3111,45 +3112,45 @@ type Run struct {
 	// runs. The total duration of a multitask job run is the value of the
 	// `run_duration` field.
 	SetupDuration *int64 `json:"setup_duration,omitempty"`
-	// The time in milliseconds it took to execute the commands in the JAR or
-	// notebook until they completed, failed, timed out, were cancelled, or
-	// encountered an unexpected error. The duration of a task run is the sum of the
-	// `setup_duration`, `execution_duration`, and the `cleanup_duration`. The
-	// `execution_duration` field is set to 0 for multitask job runs. The total
-	// duration of a multitask job run is the value of the `run_duration` field.
-	ExecutionDuration *int64 `json:"execution_duration,omitempty"`
-	// The time in milliseconds it took to terminate the cluster and clean up any
-	// associated artifacts. The duration of a task run is the sum of the
-	// `setup_duration`, `execution_duration`, and the `cleanup_duration`. The
-	// `cleanup_duration` field is set to 0 for multitask job runs. The total
-	// duration of a multitask job run is the value of the `run_duration` field.
-	CleanupDuration *int64 `json:"cleanup_duration,omitempty"`
-	// The time at which this run ended in epoch milliseconds (milliseconds since
-	// 1/1/1970 UTC). This field is set to 0 if the job is still running.
-	EndTime *int64 `json:"end_time,omitempty"`
-	// The time in milliseconds it took the job run and all of its repairs to
-	// finish.
-	RunDuration *int64 `json:"run_duration,omitempty"`
-	// The time in milliseconds that the run has spent in the queue.
-	QueueDuration *int64 `json:"queue_duration,omitempty"`
+	// The time at which this run was started in epoch milliseconds (milliseconds
+	// since 1/1/1970 UTC). This may not be the time when the job task starts
+	// executing, for example, if the job is scheduled to run on a new cluster, this
+	// is the time the cluster creation call is issued.
+	StartTime *int64 `json:"start_time,omitempty"`
+	// Deprecated. Please use the `status` field instead.
+	State  *RunState  `json:"state,omitempty"`
+	Status *RunStatus `json:"status,omitempty"`
+	// The list of tasks performed by the run. Each task has its own `run_id` which
+	// you can use to call `JobsGetOutput` to retrieve the run results. If more than
+	// 100 tasks are available, you can paginate through them using
+	// :method:jobs/getrun. Use the `next_page_token` field at the object root to
+	// determine if more results are available.
+	Tasks       []RunTask       `json:"tasks,omitempty"`
+	Trigger     TriggerType     `json:"trigger,omitempty"`
+	TriggerInfo *RunTriggerInfo `json:"trigger_info,omitempty"`
+	// ID of the deployment version that produced the job when this run was created.
+	// Identifies a specific snapshot of the deployment in the Deployment Metadata
+	// service. Only set for job runs of jobs with a `BUNDLE` deployment.
+	VersionId *string `json:"version_id,omitempty"`
 }
 
 type Run_JobLevelParameters struct {
-	// The name of the parameter
-	Name *string `json:"name,omitempty"`
 	// The optional default value of the parameter
 	Default *string `json:"default,omitempty"`
+	// The name of the parameter
+	Name *string `json:"name,omitempty"`
 	// The value used in the run
 	Value *string `json:"value,omitempty"`
 }
 
 type RunJobTask struct {
-	// ID of the job to trigger.
-	JobId *int64 `json:"job_id,omitempty"`
-	// Job-level parameters used to trigger the job.
-	JobParameters map[string]string `json:"job_parameters,omitempty"`
-	// Controls whether the pipeline should perform a full refresh
-	PipelineParams *PipelineParameters `json:"pipeline_params,omitempty"`
+	// An array of commands to execute for jobs with the dbt task, for example
+	// `"dbt_commands": ["dbt deps", "dbt seed", "dbt deps", "dbt seed", "dbt run"]`
+	//
+	// ⚠ **Deprecation note** Use [job
+	// parameters](/jobs/job-parameters.html#job-parameter-pushdown) to pass
+	// information down to tasks.
+	DbtCommands []string `json:"dbt_commands,omitempty"`
 	// A list of parameters for jobs with Spark JAR tasks, for example
 	// `"jar_params": ["john doe", "35"]`. The parameters are used to invoke the
 	// main function of the main class specified in the Spark JAR task. If not
@@ -3162,6 +3163,10 @@ type RunJobTask struct {
 	// parameters](/jobs/job-parameters.html#job-parameter-pushdown) to pass
 	// information down to tasks.
 	JarParams []string `json:"jar_params,omitempty"`
+	// ID of the job to trigger.
+	JobId *int64 `json:"job_id,omitempty"`
+	// Job-level parameters used to trigger the job.
+	JobParameters map[string]string `json:"job_parameters,omitempty"`
 	// A map from keys to values for jobs with notebook task, for example
 	// `"notebook_params": {"name": "john doe", "age": "35"}`. The map is passed to
 	// the notebook and is accessible through the
@@ -3180,6 +3185,9 @@ type RunJobTask struct {
 	// `{"notebook_params":{"name":"john doe","age":"35"}}`) cannot exceed 10,000
 	// bytes.
 	NotebookParams map[string]string `json:"notebook_params,omitempty"`
+	// Controls whether the pipeline should perform a full refresh
+	PipelineParams    *PipelineParameters `json:"pipeline_params,omitempty"`
+	PythonNamedParams map[string]string   `json:"python_named_params,omitempty"`
 	// A list of parameters for jobs with Python tasks, for example
 	// `"python_params": ["john doe", "35"]`. The parameters are passed to Python
 	// file as command-line parameters. If specified upon `run-now`, it would
@@ -3213,8 +3221,7 @@ type RunJobTask struct {
 	// These parameters accept only Latin characters (ASCII character set). Using
 	// non-ASCII characters returns an error. Examples of invalid, non-ASCII
 	// characters are Chinese, Japanese kanjis, and emojis.
-	SparkSubmitParams []string          `json:"spark_submit_params,omitempty"`
-	PythonNamedParams map[string]string `json:"python_named_params,omitempty"`
+	SparkSubmitParams []string `json:"spark_submit_params,omitempty"`
 	// A map from keys to values for jobs with SQL task, for example `"sql_params":
 	// {"name": "john doe", "age": "35"}`. The SQL alert task does not support
 	// custom parameters.
@@ -3223,13 +3230,6 @@ type RunJobTask struct {
 	// parameters](/jobs/job-parameters.html#job-parameter-pushdown) to pass
 	// information down to tasks.
 	SqlParams map[string]string `json:"sql_params,omitempty"`
-	// An array of commands to execute for jobs with the dbt task, for example
-	// `"dbt_commands": ["dbt deps", "dbt seed", "dbt deps", "dbt seed", "dbt run"]`
-	//
-	// ⚠ **Deprecation note** Use [job
-	// parameters](/jobs/job-parameters.html#job-parameter-pushdown) to pass
-	// information down to tasks.
-	DbtCommands []string `json:"dbt_commands,omitempty"`
 }
 
 type RunJobTask_RunJobTaskOutput struct {
@@ -3238,10 +3238,13 @@ type RunJobTask_RunJobTaskOutput struct {
 }
 
 type RunNowRequest struct {
-	// The ID of the job to be executed
-	JobId *int64 `json:"job_id,omitempty"`
-	// Job-level parameters used in the run. for example `"param": "overriding_val"`
-	JobParameters map[string]string `json:"job_parameters,omitempty"`
+	// An array of commands to execute for jobs with the dbt task, for example
+	// `"dbt_commands": ["dbt deps", "dbt seed", "dbt deps", "dbt seed", "dbt run"]`
+	//
+	// ⚠ **Deprecation note** Use [job
+	// parameters](/jobs/job-parameters.html#job-parameter-pushdown) to pass
+	// information down to tasks.
+	DbtCommands []string `json:"dbt_commands,omitempty"`
 	// An optional token to guarantee the idempotency of job run requests. If a run
 	// with the provided token already exists, the request does not create a new run
 	// but returns the ID of the existing run instead. If a run with the provided
@@ -3253,8 +3256,40 @@ type RunNowRequest struct {
 	//
 	// This token must have at most 64 characters.
 	IdempotencyToken *string `json:"idempotency_token,omitempty"`
-	// The queue settings of the run.
-	Queue *QueueSettings `json:"queue,omitempty"`
+	// A list of parameters for jobs with Spark JAR tasks, for example
+	// `"jar_params": ["john doe", "35"]`. The parameters are used to invoke the
+	// main function of the main class specified in the Spark JAR task. If not
+	// specified upon `run-now`, it defaults to an empty list. jar_params cannot be
+	// specified in conjunction with notebook_params. The JSON representation of
+	// this field (for example `{"jar_params":["john doe","35"]}`) cannot exceed
+	// 10,000 bytes.
+	//
+	// ⚠ **Deprecation note** Use [job
+	// parameters](/jobs/job-parameters.html#job-parameter-pushdown) to pass
+	// information down to tasks.
+	JarParams []string `json:"jar_params,omitempty"`
+	// The ID of the job to be executed
+	JobId *int64 `json:"job_id,omitempty"`
+	// Job-level parameters used in the run. for example `"param": "overriding_val"`
+	JobParameters map[string]string `json:"job_parameters,omitempty"`
+	// A map from keys to values for jobs with notebook task, for example
+	// `"notebook_params": {"name": "john doe", "age": "35"}`. The map is passed to
+	// the notebook and is accessible through the
+	// [dbutils.widgets.get](/dev-tools/databricks-utils.html) function.
+	//
+	// If not specified upon `run-now`, the triggered run uses the job’s base
+	// parameters.
+	//
+	// notebook_params cannot be specified in conjunction with jar_params.
+	//
+	// ⚠ **Deprecation note** Use [job
+	// parameters](/jobs/job-parameters.html#job-parameter-pushdown) to pass
+	// information down to tasks.
+	//
+	// The JSON representation of this field (for example
+	// `{"notebook_params":{"name":"john doe","age":"35"}}`) cannot exceed 10,000
+	// bytes.
+	NotebookParams map[string]string `json:"notebook_params,omitempty"`
 	// A list of task keys to run inside of the job. If this field is not provided,
 	// all tasks in the job will be run.
 	//
@@ -3275,37 +3310,8 @@ type RunNowRequest struct {
 	// duration time. Must provide a duration target.
 	PerformanceTarget PerformanceTarget_PerformanceTarget `json:"performance_target,omitempty"`
 	// Controls whether the pipeline should perform a full refresh
-	PipelineParams *PipelineParameters `json:"pipeline_params,omitempty"`
-	// A list of parameters for jobs with Spark JAR tasks, for example
-	// `"jar_params": ["john doe", "35"]`. The parameters are used to invoke the
-	// main function of the main class specified in the Spark JAR task. If not
-	// specified upon `run-now`, it defaults to an empty list. jar_params cannot be
-	// specified in conjunction with notebook_params. The JSON representation of
-	// this field (for example `{"jar_params":["john doe","35"]}`) cannot exceed
-	// 10,000 bytes.
-	//
-	// ⚠ **Deprecation note** Use [job
-	// parameters](/jobs/job-parameters.html#job-parameter-pushdown) to pass
-	// information down to tasks.
-	JarParams []string `json:"jar_params,omitempty"`
-	// A map from keys to values for jobs with notebook task, for example
-	// `"notebook_params": {"name": "john doe", "age": "35"}`. The map is passed to
-	// the notebook and is accessible through the
-	// [dbutils.widgets.get](/dev-tools/databricks-utils.html) function.
-	//
-	// If not specified upon `run-now`, the triggered run uses the job’s base
-	// parameters.
-	//
-	// notebook_params cannot be specified in conjunction with jar_params.
-	//
-	// ⚠ **Deprecation note** Use [job
-	// parameters](/jobs/job-parameters.html#job-parameter-pushdown) to pass
-	// information down to tasks.
-	//
-	// The JSON representation of this field (for example
-	// `{"notebook_params":{"name":"john doe","age":"35"}}`) cannot exceed 10,000
-	// bytes.
-	NotebookParams map[string]string `json:"notebook_params,omitempty"`
+	PipelineParams    *PipelineParameters `json:"pipeline_params,omitempty"`
+	PythonNamedParams map[string]string   `json:"python_named_params,omitempty"`
 	// A list of parameters for jobs with Python tasks, for example
 	// `"python_params": ["john doe", "35"]`. The parameters are passed to Python
 	// file as command-line parameters. If specified upon `run-now`, it would
@@ -3323,6 +3329,8 @@ type RunNowRequest struct {
 	// non-ASCII characters returns an error. Examples of invalid, non-ASCII
 	// characters are Chinese, Japanese kanjis, and emojis.
 	PythonParams []string `json:"python_params,omitempty"`
+	// The queue settings of the run.
+	Queue *QueueSettings `json:"queue,omitempty"`
 	// A list of parameters for jobs with spark submit task, for example
 	// `"spark_submit_params": ["--class", "org.apache.spark.examples.SparkPi"]`.
 	// The parameters are passed to spark-submit script as command-line parameters.
@@ -3339,8 +3347,7 @@ type RunNowRequest struct {
 	// These parameters accept only Latin characters (ASCII character set). Using
 	// non-ASCII characters returns an error. Examples of invalid, non-ASCII
 	// characters are Chinese, Japanese kanjis, and emojis.
-	SparkSubmitParams []string          `json:"spark_submit_params,omitempty"`
-	PythonNamedParams map[string]string `json:"python_named_params,omitempty"`
+	SparkSubmitParams []string `json:"spark_submit_params,omitempty"`
 	// A map from keys to values for jobs with SQL task, for example `"sql_params":
 	// {"name": "john doe", "age": "35"}`. The SQL alert task does not support
 	// custom parameters.
@@ -3349,27 +3356,25 @@ type RunNowRequest struct {
 	// parameters](/jobs/job-parameters.html#job-parameter-pushdown) to pass
 	// information down to tasks.
 	SqlParams map[string]string `json:"sql_params,omitempty"`
-	// An array of commands to execute for jobs with the dbt task, for example
-	// `"dbt_commands": ["dbt deps", "dbt seed", "dbt deps", "dbt seed", "dbt run"]`
-	//
-	// ⚠ **Deprecation note** Use [job
-	// parameters](/jobs/job-parameters.html#job-parameter-pushdown) to pass
-	// information down to tasks.
-	DbtCommands []string `json:"dbt_commands,omitempty"`
 }
 
 // Run was started successfully..
 type RunNowResponse struct {
-	// The globally unique ID of the newly triggered run.
-	RunId *int64 `json:"run_id,omitempty"`
 	// A unique identifier for this job run. This is set to the same value as
 	// `run_id`.
 	NumberInJob *int64 `json:"number_in_job,omitempty"`
+	// The globally unique ID of the newly triggered run.
+	RunId *int64 `json:"run_id,omitempty"`
 }
 
 type RunParameters struct {
-	// Controls whether the pipeline should perform a full refresh
-	PipelineParams *PipelineParameters `json:"pipeline_params,omitempty"`
+	// An array of commands to execute for jobs with the dbt task, for example
+	// `"dbt_commands": ["dbt deps", "dbt seed", "dbt deps", "dbt seed", "dbt run"]`
+	//
+	// ⚠ **Deprecation note** Use [job
+	// parameters](/jobs/job-parameters.html#job-parameter-pushdown) to pass
+	// information down to tasks.
+	DbtCommands []string `json:"dbt_commands,omitempty"`
 	// A list of parameters for jobs with Spark JAR tasks, for example
 	// `"jar_params": ["john doe", "35"]`. The parameters are used to invoke the
 	// main function of the main class specified in the Spark JAR task. If not
@@ -3400,6 +3405,9 @@ type RunParameters struct {
 	// `{"notebook_params":{"name":"john doe","age":"35"}}`) cannot exceed 10,000
 	// bytes.
 	NotebookParams map[string]string `json:"notebook_params,omitempty"`
+	// Controls whether the pipeline should perform a full refresh
+	PipelineParams    *PipelineParameters `json:"pipeline_params,omitempty"`
+	PythonNamedParams map[string]string   `json:"python_named_params,omitempty"`
 	// A list of parameters for jobs with Python tasks, for example
 	// `"python_params": ["john doe", "35"]`. The parameters are passed to Python
 	// file as command-line parameters. If specified upon `run-now`, it would
@@ -3433,8 +3441,7 @@ type RunParameters struct {
 	// These parameters accept only Latin characters (ASCII character set). Using
 	// non-ASCII characters returns an error. Examples of invalid, non-ASCII
 	// characters are Chinese, Japanese kanjis, and emojis.
-	SparkSubmitParams []string          `json:"spark_submit_params,omitempty"`
-	PythonNamedParams map[string]string `json:"python_named_params,omitempty"`
+	SparkSubmitParams []string `json:"spark_submit_params,omitempty"`
 	// A map from keys to values for jobs with SQL task, for example `"sql_params":
 	// {"name": "john doe", "age": "35"}`. The SQL alert task does not support
 	// custom parameters.
@@ -3443,13 +3450,6 @@ type RunParameters struct {
 	// parameters](/jobs/job-parameters.html#job-parameter-pushdown) to pass
 	// information down to tasks.
 	SqlParams map[string]string `json:"sql_params,omitempty"`
-	// An array of commands to execute for jobs with the dbt task, for example
-	// `"dbt_commands": ["dbt deps", "dbt seed", "dbt deps", "dbt seed", "dbt run"]`
-	//
-	// ⚠ **Deprecation note** Use [job
-	// parameters](/jobs/job-parameters.html#job-parameter-pushdown) to pass
-	// information down to tasks.
-	DbtCommands []string `json:"dbt_commands,omitempty"`
 }
 
 // The current state of the run..
@@ -3458,6 +3458,8 @@ type RunState struct {
 	// available in the response. Note: Additional states might be introduced in
 	// future releases.
 	LifeCycleState RunLifeCycleState_RunLifeCycleState `json:"life_cycle_state,omitempty"`
+	// The reason indicating why the run was queued.
+	QueueReason *string `json:"queue_reason,omitempty"`
 	// A value indicating the run's result. This field is only available for
 	// terminal lifecycle states. Note: Additional states might be introduced in
 	// future releases.
@@ -3468,30 +3470,22 @@ type RunState struct {
 	// A value indicating whether a run was canceled manually by a user or by the
 	// scheduler because the run timed out.
 	UserCancelledOrTimedout *bool `json:"user_cancelled_or_timedout,omitempty"`
-	// The reason indicating why the run was queued.
-	QueueReason *string `json:"queue_reason,omitempty"`
 }
 
 // The current status of the run.
 type RunStatus struct {
-	State RunLifecycleStateV2_State `json:"state,omitempty"`
+	// If the run was queued, details about the reason for queuing the run.
+	QueueDetails *QueueDetails             `json:"queue_details,omitempty"`
+	State        RunLifecycleStateV2_State `json:"state,omitempty"`
 	// If the run is in a TERMINATING or TERMINATED state, details about the reason
 	// for terminating the run.
 	TerminationDetails *TerminationDetails `json:"termination_details,omitempty"`
-	// If the run was queued, details about the reason for queuing the run.
-	QueueDetails *QueueDetails `json:"queue_details,omitempty"`
 }
 
 // Used when outputting a child run, in GetRun or ListRuns..
 type RunTask struct {
-	// The ID of the task run.
-	RunId *int64 `json:"run_id,omitempty"`
-	// Deprecated. Please use the `status` field instead.
-	State      *RunState `json:"state,omitempty"`
-	RunPageUrl *string   `json:"run_page_url,omitempty"`
-	// The cluster used for this run. If the run is specified to use a new cluster,
-	// this field is set once the Jobs service has requested a cluster for the run.
-	ClusterInstance *ClusterInstance `json:"cluster_instance,omitempty"`
+	AiRuntimeTask *AiRuntimeTask `json:"ai_runtime_task,omitempty"`
+	AlertTask     *AlertTask     `json:"alert_task,omitempty"`
 	// The sequence number of this run attempt for a triggered job run. The initial
 	// attempt of a run has an attempt_number of 0. If the initial run attempt
 	// fails, and the job has a retry policy (`max_retries` > 0), subsequent runs
@@ -3499,18 +3493,36 @@ type RunTask struct {
 	// and an incrementing `attempt_number`. Runs are retried only until they
 	// succeed, and the maximum `attempt_number` is the same as the `max_retries`
 	// value for the job.
-	AttemptNumber *int `json:"attempt_number,omitempty"`
-	// An optional specification for a remote Git repository containing the source
-	// code used by tasks. Version-controlled source code is supported by notebook,
-	// dbt, Python script, and SQL File tasks. If `git_source` is set, these tasks
-	// retrieve the file from the remote repository by default. However, this
-	// behavior can be overridden by setting `source` to `WORKSPACE` on the task.
-	// Note: dbt and SQL File tasks support only version-controlled sources. If dbt
-	// or SQL File tasks are used, `git_source` must be defined on the job.
-	GitSource *GitSource `json:"git_source,omitempty"`
-	// Parameter values including resolved references
-	ResolvedValues *ResolvedValues `json:"resolved_values,omitempty"`
-	Status         *RunStatus      `json:"status,omitempty"`
+	AttemptNumber          *int                    `json:"attempt_number,omitempty"`
+	CleanRoomsNotebookTask *CleanRoomsNotebookTask `json:"clean_rooms_notebook_task,omitempty"`
+	// The time in milliseconds it took to terminate the cluster and clean up any
+	// associated artifacts. The duration of a task run is the sum of the
+	// `setup_duration`, `execution_duration`, and the `cleanup_duration`. The
+	// `cleanup_duration` field is set to 0 for multitask job runs. The total
+	// duration of a multitask job run is the value of the `run_duration` field.
+	CleanupDuration *int64 `json:"cleanup_duration,omitempty"`
+	// The cluster used for this run. If the run is specified to use a new cluster,
+	// this field is set once the Jobs service has requested a cluster for the run.
+	ClusterInstance *ClusterInstance `json:"cluster_instance,omitempty"`
+	// Task level compute configuration.
+	Compute         *Compute         `json:"compute,omitempty"`
+	ConditionTask   *ConditionTask   `json:"condition_task,omitempty"`
+	DashboardTask   *DashboardTask   `json:"dashboard_task,omitempty"`
+	DbtCloudTask    *DbtCloudTask    `json:"dbt_cloud_task,omitempty"`
+	DbtPlatformTask *DbtPlatformTask `json:"dbt_platform_task,omitempty"`
+	DbtTask         *DbtTask         `json:"dbt_task,omitempty"`
+	// An optional array of objects specifying the dependency graph of the task. All
+	// tasks specified in this field must complete successfully before executing
+	// this task. The key is `task_key`, and the value is the name assigned to the
+	// dependent task.
+	DependsOn []TaskDependency `json:"depends_on,omitempty"`
+	// An optional description for this task.
+	Description *string `json:"description,omitempty"`
+	// An option to disable auto optimization in serverless
+	DisableAutoOptimization *bool `json:"disable_auto_optimization,omitempty"`
+	// An optional flag to disable the task. If set to true, the task will not run
+	// even if it is part of a job.
+	Disabled *bool `json:"disabled,omitempty"`
 	// The actual performance target used by the serverless run during execution.
 	// This can differ from the client-set performance target on the request
 	// depending on whether the performance mode is supported by the job type.
@@ -3521,73 +3533,39 @@ type RunTask struct {
 	// Enables lower job costs by optimizing compute for your selected target
 	// duration time. Must provide a duration target.
 	EffectivePerformanceTarget PerformanceTarget_PerformanceTarget `json:"effective_performance_target,omitempty"`
-	// A unique name for the task. This field is used to refer to this task from
-	// other tasks. This field is required and must be unique within its parent job.
-	// On Update or Reset, this field is used to reference the tasks to be updated
-	// or reset.
-	TaskKey *string `json:"task_key,omitempty"`
-	// An optional description for this task.
-	Description *string `json:"description,omitempty"`
-	// An optional array of objects specifying the dependency graph of the task. All
-	// tasks specified in this field must complete successfully before executing
-	// this task. The key is `task_key`, and the value is the name assigned to the
-	// dependent task.
-	DependsOn []TaskDependency `json:"depends_on,omitempty"`
-	// An optional value indicating the condition that determines whether the task
-	// should be run once its dependencies have been completed. When omitted,
-	// defaults to `ALL_SUCCESS`. See :method:jobs/create for a list of possible
-	// values.
-	RunIf TaskDependencyType `json:"run_if,omitempty"`
-	// An optional timeout applied to each run of this job task. A value of `0`
-	// means no timeout.
-	TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
 	// An optional set of email addresses notified when the task run begins or
 	// completes. The default behavior is to not send any emails.
 	EmailNotifications *JobEmailNotifications `json:"email_notifications,omitempty"`
-	Health             *JobsHealthRules       `json:"health,omitempty"`
-	// Optional notification settings that are used when sending notifications to
-	// each of the `email_notifications` and `webhook_notifications` for this task
-	// run.
-	NotificationSettings *NotificationSettings `json:"notification_settings,omitempty"`
-	// A collection of system notification IDs to notify when the run begins or
-	// completes. The default behavior is to not send any system notifications. Task
-	// webhooks respect the task notification settings.
-	WebhookNotifications *WebhookNotifications `json:"webhook_notifications,omitempty"`
-	EnvironmentKey       *string               `json:"environment_key,omitempty"`
-	// An optional flag to disable the task. If set to true, the task will not run
-	// even if it is part of a job.
-	Disabled *bool `json:"disabled,omitempty"`
-	// Task level compute configuration.
-	Compute *Compute `json:"compute,omitempty"`
+	// The time at which this run ended in epoch milliseconds (milliseconds since
+	// 1/1/1970 UTC). This field is set to 0 if the job is still running.
+	EndTime        *int64  `json:"end_time,omitempty"`
+	EnvironmentKey *string `json:"environment_key,omitempty"`
 	// Reference to a `JobEnvironmentVariables` entry defined in
 	// `RunSettings.environment_variables` for one-time runs or preserved in
 	// `Run.environment_variables` for run snapshots. The selected entry's variables
 	// are applied to this task at execution time. This field supports serverless
 	// tasks using environment version 5 or later.
-	EnvironmentVariablesKey *string                 `json:"environment_variables_key,omitempty"`
-	NotebookTask            *NotebookTask           `json:"notebook_task,omitempty"`
-	SparkJarTask            *SparkJarTask           `json:"spark_jar_task,omitempty"`
-	SparkPythonTask         *SparkPythonTask        `json:"spark_python_task,omitempty"`
-	SparkSubmitTask         *SparkSubmitTask        `json:"spark_submit_task,omitempty"`
-	PipelineTask            *PipelineTask           `json:"pipeline_task,omitempty"`
-	PythonWheelTask         *PythonWheelTask        `json:"python_wheel_task,omitempty"`
-	DbtTask                 *DbtTask                `json:"dbt_task,omitempty"`
-	SqlTask                 *SqlTask                `json:"sql_task,omitempty"`
-	RunJobTask              *RunJobTask             `json:"run_job_task,omitempty"`
-	ConditionTask           *ConditionTask          `json:"condition_task,omitempty"`
-	ForEachTask             *ForEachTask            `json:"for_each_task,omitempty"`
-	CleanRoomsNotebookTask  *CleanRoomsNotebookTask `json:"clean_rooms_notebook_task,omitempty"`
-	GenAiComputeTask        *GenAiComputeTask       `json:"gen_ai_compute_task,omitempty"`
-	AlertTask               *AlertTask              `json:"alert_task,omitempty"`
-	PowerBiTask             *PowerBiTask            `json:"power_bi_task,omitempty"`
-	DashboardTask           *DashboardTask          `json:"dashboard_task,omitempty"`
-	DbtCloudTask            *DbtCloudTask           `json:"dbt_cloud_task,omitempty"`
-	DbtPlatformTask         *DbtPlatformTask        `json:"dbt_platform_task,omitempty"`
-	PythonOperatorTask      *PythonOperatorTask     `json:"python_operator_task,omitempty"`
-	AiRuntimeTask           *AiRuntimeTask          `json:"ai_runtime_task,omitempty"`
-	ExistingClusterId       *string                 `json:"existing_cluster_id,omitempty"`
-	NewCluster              *ClusterSpec_NewCluster `json:"new_cluster,omitempty"`
-	JobClusterKey           *string                 `json:"job_cluster_key,omitempty"`
+	EnvironmentVariablesKey *string `json:"environment_variables_key,omitempty"`
+	// The time in milliseconds it took to execute the commands in the JAR or
+	// notebook until they completed, failed, timed out, were cancelled, or
+	// encountered an unexpected error. The duration of a task run is the sum of the
+	// `setup_duration`, `execution_duration`, and the `cleanup_duration`. The
+	// `execution_duration` field is set to 0 for multitask job runs. The total
+	// duration of a multitask job run is the value of the `run_duration` field.
+	ExecutionDuration *int64            `json:"execution_duration,omitempty"`
+	ExistingClusterId *string           `json:"existing_cluster_id,omitempty"`
+	ForEachTask       *ForEachTask      `json:"for_each_task,omitempty"`
+	GenAiComputeTask  *GenAiComputeTask `json:"gen_ai_compute_task,omitempty"`
+	// An optional specification for a remote Git repository containing the source
+	// code used by tasks. Version-controlled source code is supported by notebook,
+	// dbt, Python script, and SQL File tasks. If `git_source` is set, these tasks
+	// retrieve the file from the remote repository by default. However, this
+	// behavior can be overridden by setting `source` to `WORKSPACE` on the task.
+	// Note: dbt and SQL File tasks support only version-controlled sources. If dbt
+	// or SQL File tasks are used, `git_source` must be defined on the job.
+	GitSource     *GitSource       `json:"git_source,omitempty"`
+	Health        *JobsHealthRules `json:"health,omitempty"`
+	JobClusterKey *string          `json:"job_cluster_key,omitempty"`
 	// An optional list of libraries to be installed on the cluster. The default
 	// value is an empty list.
 	Libraries []Library `json:"libraries,omitempty"`
@@ -3599,17 +3577,36 @@ type RunTask struct {
 	// An optional minimal interval in milliseconds between the start of the failed
 	// run and the subsequent retry run. The default behavior is that unsuccessful
 	// runs are immediately retried.
-	MinRetryIntervalMillis *int `json:"min_retry_interval_millis,omitempty"`
+	MinRetryIntervalMillis *int                    `json:"min_retry_interval_millis,omitempty"`
+	NewCluster             *ClusterSpec_NewCluster `json:"new_cluster,omitempty"`
+	NotebookTask           *NotebookTask           `json:"notebook_task,omitempty"`
+	// Optional notification settings that are used when sending notifications to
+	// each of the `email_notifications` and `webhook_notifications` for this task
+	// run.
+	NotificationSettings *NotificationSettings `json:"notification_settings,omitempty"`
+	PipelineTask         *PipelineTask         `json:"pipeline_task,omitempty"`
+	PowerBiTask          *PowerBiTask          `json:"power_bi_task,omitempty"`
+	PythonOperatorTask   *PythonOperatorTask   `json:"python_operator_task,omitempty"`
+	PythonWheelTask      *PythonWheelTask      `json:"python_wheel_task,omitempty"`
+	// The time in milliseconds that the run has spent in the queue.
+	QueueDuration *int64 `json:"queue_duration,omitempty"`
+	// Parameter values including resolved references
+	ResolvedValues *ResolvedValues `json:"resolved_values,omitempty"`
 	// An optional policy to specify whether to retry a job when it times out. The
 	// default behavior is to not retry on timeout.
 	RetryOnTimeout *bool `json:"retry_on_timeout,omitempty"`
-	// An option to disable auto optimization in serverless
-	DisableAutoOptimization *bool `json:"disable_auto_optimization,omitempty"`
-	// The time at which this run was started in epoch milliseconds (milliseconds
-	// since 1/1/1970 UTC). This may not be the time when the job task starts
-	// executing, for example, if the job is scheduled to run on a new cluster, this
-	// is the time the cluster creation call is issued.
-	StartTime *int64 `json:"start_time,omitempty"`
+	// The time in milliseconds it took the job run and all of its repairs to
+	// finish.
+	RunDuration *int64 `json:"run_duration,omitempty"`
+	// The ID of the task run.
+	RunId *int64 `json:"run_id,omitempty"`
+	// An optional value indicating the condition that determines whether the task
+	// should be run once its dependencies have been completed. When omitted,
+	// defaults to `ALL_SUCCESS`. See :method:jobs/create for a list of possible
+	// values.
+	RunIf      TaskDependencyType `json:"run_if,omitempty"`
+	RunJobTask *RunJobTask        `json:"run_job_task,omitempty"`
+	RunPageUrl *string            `json:"run_page_url,omitempty"`
 	// The time in milliseconds it took to set up the cluster. For runs that run on
 	// new clusters this is the cluster creation time, for runs that run on existing
 	// clusters this time should be very short. The duration of a task run is the
@@ -3617,98 +3614,71 @@ type RunTask struct {
 	// `cleanup_duration`. The `setup_duration` field is set to 0 for multitask job
 	// runs. The total duration of a multitask job run is the value of the
 	// `run_duration` field.
-	SetupDuration *int64 `json:"setup_duration,omitempty"`
-	// The time in milliseconds it took to execute the commands in the JAR or
-	// notebook until they completed, failed, timed out, were cancelled, or
-	// encountered an unexpected error. The duration of a task run is the sum of the
-	// `setup_duration`, `execution_duration`, and the `cleanup_duration`. The
-	// `execution_duration` field is set to 0 for multitask job runs. The total
-	// duration of a multitask job run is the value of the `run_duration` field.
-	ExecutionDuration *int64 `json:"execution_duration,omitempty"`
-	// The time in milliseconds it took to terminate the cluster and clean up any
-	// associated artifacts. The duration of a task run is the sum of the
-	// `setup_duration`, `execution_duration`, and the `cleanup_duration`. The
-	// `cleanup_duration` field is set to 0 for multitask job runs. The total
-	// duration of a multitask job run is the value of the `run_duration` field.
-	CleanupDuration *int64 `json:"cleanup_duration,omitempty"`
-	// The time at which this run ended in epoch milliseconds (milliseconds since
-	// 1/1/1970 UTC). This field is set to 0 if the job is still running.
-	EndTime *int64 `json:"end_time,omitempty"`
-	// The time in milliseconds it took the job run and all of its repairs to
-	// finish.
-	RunDuration *int64 `json:"run_duration,omitempty"`
-	// The time in milliseconds that the run has spent in the queue.
-	QueueDuration *int64 `json:"queue_duration,omitempty"`
-}
-
-type RunTaskSettings struct {
+	SetupDuration   *int64           `json:"setup_duration,omitempty"`
+	SparkJarTask    *SparkJarTask    `json:"spark_jar_task,omitempty"`
+	SparkPythonTask *SparkPythonTask `json:"spark_python_task,omitempty"`
+	SparkSubmitTask *SparkSubmitTask `json:"spark_submit_task,omitempty"`
+	SqlTask         *SqlTask         `json:"sql_task,omitempty"`
+	// The time at which this run was started in epoch milliseconds (milliseconds
+	// since 1/1/1970 UTC). This may not be the time when the job task starts
+	// executing, for example, if the job is scheduled to run on a new cluster, this
+	// is the time the cluster creation call is issued.
+	StartTime *int64 `json:"start_time,omitempty"`
+	// Deprecated. Please use the `status` field instead.
+	State  *RunState  `json:"state,omitempty"`
+	Status *RunStatus `json:"status,omitempty"`
 	// A unique name for the task. This field is used to refer to this task from
 	// other tasks. This field is required and must be unique within its parent job.
 	// On Update or Reset, this field is used to reference the tasks to be updated
 	// or reset.
 	TaskKey *string `json:"task_key,omitempty"`
-	// An optional description for this task.
-	Description *string `json:"description,omitempty"`
+	// An optional timeout applied to each run of this job task. A value of `0`
+	// means no timeout.
+	TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
+	// A collection of system notification IDs to notify when the run begins or
+	// completes. The default behavior is to not send any system notifications. Task
+	// webhooks respect the task notification settings.
+	WebhookNotifications *WebhookNotifications `json:"webhook_notifications,omitempty"`
+}
+
+type RunTaskSettings struct {
+	AiRuntimeTask          *AiRuntimeTask          `json:"ai_runtime_task,omitempty"`
+	AlertTask              *AlertTask              `json:"alert_task,omitempty"`
+	CleanRoomsNotebookTask *CleanRoomsNotebookTask `json:"clean_rooms_notebook_task,omitempty"`
+	// Task level compute configuration.
+	Compute         *Compute         `json:"compute,omitempty"`
+	ConditionTask   *ConditionTask   `json:"condition_task,omitempty"`
+	DashboardTask   *DashboardTask   `json:"dashboard_task,omitempty"`
+	DbtCloudTask    *DbtCloudTask    `json:"dbt_cloud_task,omitempty"`
+	DbtPlatformTask *DbtPlatformTask `json:"dbt_platform_task,omitempty"`
+	DbtTask         *DbtTask         `json:"dbt_task,omitempty"`
 	// An optional array of objects specifying the dependency graph of the task. All
 	// tasks specified in this field must complete successfully before executing
 	// this task. The key is `task_key`, and the value is the name assigned to the
 	// dependent task.
 	DependsOn []TaskDependency `json:"depends_on,omitempty"`
-	// An optional value indicating the condition that determines whether the task
-	// should be run once its dependencies have been completed. When omitted,
-	// defaults to `ALL_SUCCESS`. See :method:jobs/create for a list of possible
-	// values.
-	RunIf TaskDependencyType `json:"run_if,omitempty"`
-	// An optional timeout applied to each run of this job task. A value of `0`
-	// means no timeout.
-	TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
-	// An optional set of email addresses notified when the task run begins or
-	// completes. The default behavior is to not send any emails.
-	EmailNotifications *JobEmailNotifications `json:"email_notifications,omitempty"`
-	Health             *JobsHealthRules       `json:"health,omitempty"`
-	// Optional notification settings that are used when sending notifications to
-	// each of the `email_notifications` and `webhook_notifications` for this task
-	// run.
-	NotificationSettings *NotificationSettings `json:"notification_settings,omitempty"`
-	// A collection of system notification IDs to notify when the run begins or
-	// completes. The default behavior is to not send any system notifications. Task
-	// webhooks respect the task notification settings.
-	WebhookNotifications *WebhookNotifications `json:"webhook_notifications,omitempty"`
-	EnvironmentKey       *string               `json:"environment_key,omitempty"`
+	// An optional description for this task.
+	Description *string `json:"description,omitempty"`
+	// An option to disable auto optimization in serverless
+	DisableAutoOptimization *bool `json:"disable_auto_optimization,omitempty"`
 	// An optional flag to disable the task. If set to true, the task will not run
 	// even if it is part of a job.
 	Disabled *bool `json:"disabled,omitempty"`
-	// Task level compute configuration.
-	Compute *Compute `json:"compute,omitempty"`
+	// An optional set of email addresses notified when the task run begins or
+	// completes. The default behavior is to not send any emails.
+	EmailNotifications *JobEmailNotifications `json:"email_notifications,omitempty"`
+	EnvironmentKey     *string                `json:"environment_key,omitempty"`
 	// Reference to a `JobEnvironmentVariables` entry defined in
 	// `RunSettings.environment_variables` for one-time runs or preserved in
 	// `Run.environment_variables` for run snapshots. The selected entry's variables
 	// are applied to this task at execution time. This field supports serverless
 	// tasks using environment version 5 or later.
-	EnvironmentVariablesKey *string                 `json:"environment_variables_key,omitempty"`
-	NotebookTask            *NotebookTask           `json:"notebook_task,omitempty"`
-	SparkJarTask            *SparkJarTask           `json:"spark_jar_task,omitempty"`
-	SparkPythonTask         *SparkPythonTask        `json:"spark_python_task,omitempty"`
-	SparkSubmitTask         *SparkSubmitTask        `json:"spark_submit_task,omitempty"`
-	PipelineTask            *PipelineTask           `json:"pipeline_task,omitempty"`
-	PythonWheelTask         *PythonWheelTask        `json:"python_wheel_task,omitempty"`
-	DbtTask                 *DbtTask                `json:"dbt_task,omitempty"`
-	SqlTask                 *SqlTask                `json:"sql_task,omitempty"`
-	RunJobTask              *RunJobTask             `json:"run_job_task,omitempty"`
-	ConditionTask           *ConditionTask          `json:"condition_task,omitempty"`
-	ForEachTask             *ForEachTask            `json:"for_each_task,omitempty"`
-	CleanRoomsNotebookTask  *CleanRoomsNotebookTask `json:"clean_rooms_notebook_task,omitempty"`
-	GenAiComputeTask        *GenAiComputeTask       `json:"gen_ai_compute_task,omitempty"`
-	AlertTask               *AlertTask              `json:"alert_task,omitempty"`
-	PowerBiTask             *PowerBiTask            `json:"power_bi_task,omitempty"`
-	DashboardTask           *DashboardTask          `json:"dashboard_task,omitempty"`
-	DbtCloudTask            *DbtCloudTask           `json:"dbt_cloud_task,omitempty"`
-	DbtPlatformTask         *DbtPlatformTask        `json:"dbt_platform_task,omitempty"`
-	PythonOperatorTask      *PythonOperatorTask     `json:"python_operator_task,omitempty"`
-	AiRuntimeTask           *AiRuntimeTask          `json:"ai_runtime_task,omitempty"`
-	ExistingClusterId       *string                 `json:"existing_cluster_id,omitempty"`
-	NewCluster              *ClusterSpec_NewCluster `json:"new_cluster,omitempty"`
-	JobClusterKey           *string                 `json:"job_cluster_key,omitempty"`
+	EnvironmentVariablesKey *string           `json:"environment_variables_key,omitempty"`
+	ExistingClusterId       *string           `json:"existing_cluster_id,omitempty"`
+	ForEachTask             *ForEachTask      `json:"for_each_task,omitempty"`
+	GenAiComputeTask        *GenAiComputeTask `json:"gen_ai_compute_task,omitempty"`
+	Health                  *JobsHealthRules  `json:"health,omitempty"`
+	JobClusterKey           *string           `json:"job_cluster_key,omitempty"`
 	// An optional list of libraries to be installed on the cluster. The default
 	// value is an empty list.
 	Libraries []Library `json:"libraries,omitempty"`
@@ -3720,43 +3690,54 @@ type RunTaskSettings struct {
 	// An optional minimal interval in milliseconds between the start of the failed
 	// run and the subsequent retry run. The default behavior is that unsuccessful
 	// runs are immediately retried.
-	MinRetryIntervalMillis *int `json:"min_retry_interval_millis,omitempty"`
+	MinRetryIntervalMillis *int                    `json:"min_retry_interval_millis,omitempty"`
+	NewCluster             *ClusterSpec_NewCluster `json:"new_cluster,omitempty"`
+	NotebookTask           *NotebookTask           `json:"notebook_task,omitempty"`
+	// Optional notification settings that are used when sending notifications to
+	// each of the `email_notifications` and `webhook_notifications` for this task
+	// run.
+	NotificationSettings *NotificationSettings `json:"notification_settings,omitempty"`
+	PipelineTask         *PipelineTask         `json:"pipeline_task,omitempty"`
+	PowerBiTask          *PowerBiTask          `json:"power_bi_task,omitempty"`
+	PythonOperatorTask   *PythonOperatorTask   `json:"python_operator_task,omitempty"`
+	PythonWheelTask      *PythonWheelTask      `json:"python_wheel_task,omitempty"`
 	// An optional policy to specify whether to retry a job when it times out. The
 	// default behavior is to not retry on timeout.
 	RetryOnTimeout *bool `json:"retry_on_timeout,omitempty"`
-	// An option to disable auto optimization in serverless
-	DisableAutoOptimization *bool `json:"disable_auto_optimization,omitempty"`
+	// An optional value indicating the condition that determines whether the task
+	// should be run once its dependencies have been completed. When omitted,
+	// defaults to `ALL_SUCCESS`. See :method:jobs/create for a list of possible
+	// values.
+	RunIf           TaskDependencyType `json:"run_if,omitempty"`
+	RunJobTask      *RunJobTask        `json:"run_job_task,omitempty"`
+	SparkJarTask    *SparkJarTask      `json:"spark_jar_task,omitempty"`
+	SparkPythonTask *SparkPythonTask   `json:"spark_python_task,omitempty"`
+	SparkSubmitTask *SparkSubmitTask   `json:"spark_submit_task,omitempty"`
+	SqlTask         *SqlTask           `json:"sql_task,omitempty"`
+	// A unique name for the task. This field is used to refer to this task from
+	// other tasks. This field is required and must be unique within its parent job.
+	// On Update or Reset, this field is used to reference the tasks to be updated
+	// or reset.
+	TaskKey *string `json:"task_key,omitempty"`
+	// An optional timeout applied to each run of this job task. A value of `0`
+	// means no timeout.
+	TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
+	// A collection of system notification IDs to notify when the run begins or
+	// completes. The default behavior is to not send any system notifications. Task
+	// webhooks respect the task notification settings.
+	WebhookNotifications *WebhookNotifications `json:"webhook_notifications,omitempty"`
 }
 
 // Additional details about what triggered the run.
 type RunTriggerInfo struct {
-	// SQL condition evaluation details for this run
-	SqlCondition *SqlConditionRunInfoDetails `json:"sql_condition,omitempty"`
 	// The run id of the Run Job task run
 	RunId *int64 `json:"run_id,omitempty"`
+	// SQL condition evaluation details for this run
+	SqlCondition *SqlConditionRunInfoDetails `json:"sql_condition,omitempty"`
 }
 
 // A storage location in Amazon S3.
 type S3StorageInfo struct {
-	// S3 destination, e.g. `s3://my-bucket/some-prefix` Note that logs will be
-	// delivered using cluster iam role, please make sure you set cluster iam role
-	// and the role has write access to the destination. Please also note that you
-	// cannot use AWS keys to deliver logs.
-	Destination *string `json:"destination,omitempty"`
-	// S3 region, e.g. `us-west-2`. Either region or endpoint needs to be set. If
-	// both are set, endpoint will be used.
-	Region *string `json:"region,omitempty"`
-	// S3 endpoint, e.g. `https://s3-us-west-2.amazonaws.com`. Either region or
-	// endpoint needs to be set. If both are set, endpoint will be used.
-	Endpoint *string `json:"endpoint,omitempty"`
-	// (Optional) Flag to enable server side encryption, `false` by default.
-	EnableEncryption *bool `json:"enable_encryption,omitempty"`
-	// (Optional) The encryption type, it could be `sse-s3` or `sse-kms`. It will be
-	// used only when encryption is enabled and the default type is `sse-s3`.
-	EncryptionType *string `json:"encryption_type,omitempty"`
-	// (Optional) Kms key which will be used if encryption is enabled and encryption
-	// type is set to `sse-kms`.
-	KmsKey *string `json:"kms_key,omitempty"`
 	// (Optional) Set canned access control list for the logs, e.g.
 	// `bucket-owner-full-control`. If `canned_cal` is set, please make sure the
 	// cluster iam role has `s3:PutObjectAcl` permission on the destination bucket
@@ -3766,6 +3747,25 @@ type S3StorageInfo struct {
 	// you are using cross account role for writing data, you may want to set
 	// `bucket-owner-full-control` to make bucket owner able to read the logs.
 	CannedAcl *string `json:"canned_acl,omitempty"`
+	// S3 destination, e.g. `s3://my-bucket/some-prefix` Note that logs will be
+	// delivered using cluster iam role, please make sure you set cluster iam role
+	// and the role has write access to the destination. Please also note that you
+	// cannot use AWS keys to deliver logs.
+	Destination *string `json:"destination,omitempty"`
+	// (Optional) Flag to enable server side encryption, `false` by default.
+	EnableEncryption *bool `json:"enable_encryption,omitempty"`
+	// (Optional) The encryption type, it could be `sse-s3` or `sse-kms`. It will be
+	// used only when encryption is enabled and the default type is `sse-s3`.
+	EncryptionType *string `json:"encryption_type,omitempty"`
+	// S3 endpoint, e.g. `https://s3-us-west-2.amazonaws.com`. Either region or
+	// endpoint needs to be set. If both are set, endpoint will be used.
+	Endpoint *string `json:"endpoint,omitempty"`
+	// (Optional) Kms key which will be used if encryption is enabled and encryption
+	// type is set to `sse-kms`.
+	KmsKey *string `json:"kms_key,omitempty"`
+	// S3 region, e.g. `us-west-2`. Either region or endpoint needs to be set. If
+	// both are set, endpoint will be used.
+	Region *string `json:"region,omitempty"`
 }
 
 // Runtime state for a schedule trigger. Currently empty because schedule
@@ -3797,17 +3797,17 @@ type SparkJarTask struct {
 }
 
 type SparkPythonTask struct {
+	// Command line parameters passed to the Python file.
+	//
+	// Use [Task parameter variables](/jobs.html#parameter-variables) to set
+	// parameters containing information about job runs.
+	Parameters []string `json:"parameters,omitempty"`
 	// The Python file to be executed. Cloud file URIs (such as dbfs:/, s3:/,
 	// adls:/, gcs:/) and workspace paths are supported. For python files stored in
 	// the <Databricks> workspace, the path must be absolute and begin with `/`. For
 	// files stored in a remote repository, the path must be relative. This field is
 	// required.
 	PythonFile *string `json:"python_file,omitempty"`
-	// Command line parameters passed to the Python file.
-	//
-	// Use [Task parameter variables](/jobs.html#parameter-variables) to set
-	// parameters containing information about job runs.
-	Parameters []string `json:"parameters,omitempty"`
 	// Optional location type of the Python file. When set to `WORKSPACE` or not
 	// specified, the file will be retrieved from the local <Databricks> workspace
 	// or cloud location (if the `python_file` has a URI format). When set to `GIT`,
@@ -3836,9 +3836,6 @@ type SparseCheckout struct {
 type SqlConditionConfiguration struct {
 	// The ID of the SQL query to evaluate as the trigger condition.
 	SqlQueryId *string `json:"sql_query_id,omitempty"`
-	// The canonical identifier of the SQL warehouse to run the condition query
-	// against.
-	WarehouseId *string `json:"warehouse_id,omitempty"`
 	// Determines how the SQL query result is interpreted to decide whether the
 	// condition fires. Must be set to a recognized value when provided. When unset
 	// on an existing serialized configuration, the server preserves the original
@@ -3846,43 +3843,46 @@ type SqlConditionConfiguration struct {
 	// should set this explicitly — explicit
 	// `SQL_CONDITION_TRIGGER_MODE_UNSPECIFIED` is rejected at validation.
 	TriggerMode SqlConditionTriggerMode `json:"trigger_mode,omitempty"`
+	// The canonical identifier of the SQL warehouse to run the condition query
+	// against.
+	WarehouseId *string `json:"warehouse_id,omitempty"`
 }
 
 // SQL condition evaluation details captured at the time the run was triggered.
 type SqlConditionRunInfoDetails struct {
-	// The SQL statement ID of the condition evaluation, set when the condition is
-	// evaluated by running a single SQL statement (the RESULT_VALUE_CHANGES trigger
-	// mode). The UI uses it to link to the query execution details.
-	ConditionEvaluationSqlStatementId *string `json:"condition_evaluation_sql_statement_id,omitempty"`
 	// Whether the last condition evaluation was satisfied (query returned truthy
 	// result).
 	ConditionEvaluationSatisfied *bool `json:"condition_evaluation_satisfied,omitempty"`
 	// The ID of the SQL session, used by the UI to track session context. Set for
 	// the QUERY_RETURNS_ROWS trigger mode.
 	ConditionEvaluationSqlSessionId *string `json:"condition_evaluation_sql_session_id,omitempty"`
+	// The SQL statement ID of the condition evaluation, set when the condition is
+	// evaluated by running a single SQL statement (the RESULT_VALUE_CHANGES trigger
+	// mode). The UI uses it to link to the query execution details.
+	ConditionEvaluationSqlStatementId *string `json:"condition_evaluation_sql_statement_id,omitempty"`
 }
 
 type SqlConditionState struct {
-	// The SEA statement ID of the SQL statement executed for the latest condition
-	// evaluation. Populated for RESULT_VALUE_CHANGES, which executes the query
-	// through the SQL execution API.
-	LatestConditionEvaluationSqlStatementId *string `json:"latest_condition_evaluation_sql_statement_id,omitempty"`
 	// Whether the last condition evaluation was satisfied (query returned truthy
 	// result).
 	LatestConditionEvaluationSatisfied *bool `json:"latest_condition_evaluation_satisfied,omitempty"`
 	// The ID of the SQL session, used by UI to track session context. Populated for
 	// QUERY_RETURNS_ROWS, which executes the query through Redash.
 	LatestConditionEvaluationSqlSessionId *string `json:"latest_condition_evaluation_sql_session_id,omitempty"`
+	// The SEA statement ID of the SQL statement executed for the latest condition
+	// evaluation. Populated for RESULT_VALUE_CHANGES, which executes the query
+	// through the SQL execution API.
+	LatestConditionEvaluationSqlStatementId *string `json:"latest_condition_evaluation_sql_statement_id,omitempty"`
 }
 
 type SqlTask struct {
+	Alert     *SqlTaskAlert     `json:"alert,omitempty"`
+	Dashboard *SqlTaskDashboard `json:"dashboard,omitempty"`
+	File      *SqlTaskFile      `json:"file,omitempty"`
 	// Parameters to be used for each run of this job. The SQL alert task does not
 	// support custom parameters.
 	Parameters map[string]string `json:"parameters,omitempty"`
 	Query      *SqlTaskQuery     `json:"query,omitempty"`
-	Dashboard  *SqlTaskDashboard `json:"dashboard,omitempty"`
-	Alert      *SqlTaskAlert     `json:"alert,omitempty"`
-	File       *SqlTaskFile      `json:"file,omitempty"`
 	// The canonical identifier of the SQL warehouse. Recommended to use with
 	// serverless or pro SQL warehouses. Classic SQL warehouses are only supported
 	// for SQL alert, dashboard and query tasks and are limited to scheduled
@@ -3891,46 +3891,46 @@ type SqlTask struct {
 }
 
 type SqlTask_SqlAlertOutput struct {
+	AlertState SqlAlertState_SqlAlertState `json:"alert_state,omitempty"`
+	// The link to find the output results.
+	OutputLink *string `json:"output_link,omitempty"`
 	// The text of the SQL query. Can Run permission of the SQL query associated
 	// with the SQL alert is required to view this field.
 	QueryText *string `json:"query_text,omitempty"`
 	// Information about SQL statements executed in the run.
 	SqlStatements []SqlTask_SqlStatementOutput `json:"sql_statements,omitempty"`
-	// The link to find the output results.
-	OutputLink *string `json:"output_link,omitempty"`
-	// The canonical identifier of the SQL warehouse.
-	WarehouseId *string                     `json:"warehouse_id,omitempty"`
-	AlertState  SqlAlertState_SqlAlertState `json:"alert_state,omitempty"`
-}
-
-type SqlTask_SqlDashboardOutput struct {
-	// Widgets executed in the run. Only SQL query based widgets are listed.
-	Widgets []SqlTask_SqlDashboardWidgetOutput `json:"widgets,omitempty"`
 	// The canonical identifier of the SQL warehouse.
 	WarehouseId *string `json:"warehouse_id,omitempty"`
 }
 
+type SqlTask_SqlDashboardOutput struct {
+	// The canonical identifier of the SQL warehouse.
+	WarehouseId *string `json:"warehouse_id,omitempty"`
+	// Widgets executed in the run. Only SQL query based widgets are listed.
+	Widgets []SqlTask_SqlDashboardWidgetOutput `json:"widgets,omitempty"`
+}
+
 type SqlTask_SqlDashboardWidgetOutput struct {
+	// Time (in epoch milliseconds) when execution of the SQL widget ends.
+	EndTime *int64 `json:"end_time,omitempty"`
+	// The information about the error when execution fails.
+	Error *SqlTask_SqlOutputError `json:"error,omitempty"`
+	// The link to find the output results.
+	OutputLink *string `json:"output_link,omitempty"`
+	// Time (in epoch milliseconds) when execution of the SQL widget starts.
+	StartTime *int64 `json:"start_time,omitempty"`
+	// The execution status of the SQL widget.
+	Status SqlTask_SqlTaskQueryStatus `json:"status,omitempty"`
 	// The canonical identifier of the SQL widget.
 	WidgetId *string `json:"widget_id,omitempty"`
 	// The title of the SQL widget.
 	WidgetTitle *string `json:"widget_title,omitempty"`
-	// The link to find the output results.
-	OutputLink *string `json:"output_link,omitempty"`
-	// The execution status of the SQL widget.
-	Status SqlTask_SqlTaskQueryStatus `json:"status,omitempty"`
-	// The information about the error when execution fails.
-	Error *SqlTask_SqlOutputError `json:"error,omitempty"`
-	// Time (in epoch milliseconds) when execution of the SQL widget starts.
-	StartTime *int64 `json:"start_time,omitempty"`
-	// Time (in epoch milliseconds) when execution of the SQL widget ends.
-	EndTime *int64 `json:"end_time,omitempty"`
 }
 
 type SqlTask_SqlOutput struct {
-	QueryOutput     *SqlTask_SqlQueryOutput     `json:"query_output,omitempty"`
-	DashboardOutput *SqlTask_SqlDashboardOutput `json:"dashboard_output,omitempty"`
 	AlertOutput     *SqlTask_SqlAlertOutput     `json:"alert_output,omitempty"`
+	DashboardOutput *SqlTask_SqlDashboardOutput `json:"dashboard_output,omitempty"`
+	QueryOutput     *SqlTask_SqlQueryOutput     `json:"query_output,omitempty"`
 }
 
 type SqlTask_SqlOutputError struct {
@@ -3939,14 +3939,14 @@ type SqlTask_SqlOutputError struct {
 }
 
 type SqlTask_SqlQueryOutput struct {
-	// The text of the SQL query. Can Run permission of the SQL query is required to
-	// view this field.
-	QueryText  *string `json:"query_text,omitempty"`
 	EndpointId *string `json:"endpoint_id,omitempty"`
-	// Information about SQL statements executed in the run.
-	SqlStatements []SqlTask_SqlStatementOutput `json:"sql_statements,omitempty"`
 	// The link to find the output results.
 	OutputLink *string `json:"output_link,omitempty"`
+	// The text of the SQL query. Can Run permission of the SQL query is required to
+	// view this field.
+	QueryText *string `json:"query_text,omitempty"`
+	// Information about SQL statements executed in the run.
+	SqlStatements []SqlTask_SqlStatementOutput `json:"sql_statements,omitempty"`
 	// The canonical identifier of the SQL warehouse.
 	WarehouseId *string `json:"warehouse_id,omitempty"`
 }
@@ -3959,22 +3959,22 @@ type SqlTask_SqlStatementOutput struct {
 type SqlTaskAlert struct {
 	// The canonical identifier of the SQL alert.
 	AlertId *string `json:"alert_id,omitempty"`
-	// If specified, alert notifications are sent to subscribers.
-	Subscriptions []SqlTaskSubscription `json:"subscriptions,omitempty"`
 	// If true, the alert notifications are not sent to subscribers.
 	PauseSubscriptions *bool `json:"pause_subscriptions,omitempty"`
+	// If specified, alert notifications are sent to subscribers.
+	Subscriptions []SqlTaskSubscription `json:"subscriptions,omitempty"`
 }
 
 type SqlTaskDashboard struct {
-	// The canonical identifier of the SQL dashboard.
-	DashboardId *string `json:"dashboard_id,omitempty"`
-	// If specified, dashboard snapshots are sent to subscriptions.
-	Subscriptions []SqlTaskSubscription `json:"subscriptions,omitempty"`
 	// Subject of the email sent to subscribers of this task.
 	CustomSubject *string `json:"custom_subject,omitempty"`
+	// The canonical identifier of the SQL dashboard.
+	DashboardId *string `json:"dashboard_id,omitempty"`
 	// If true, the dashboard snapshot is not taken, and emails are not sent to
 	// subscribers.
 	PauseSubscriptions *bool `json:"pause_subscriptions,omitempty"`
+	// If specified, dashboard snapshots are sent to subscriptions.
+	Subscriptions []SqlTaskSubscription `json:"subscriptions,omitempty"`
 }
 
 type SqlTaskFile struct {
@@ -3997,36 +3997,27 @@ type SqlTaskQuery struct {
 }
 
 type SqlTaskSubscription struct {
-	UserName      *string `json:"user_name,omitempty"`
 	DestinationId *string `json:"destination_id,omitempty"`
+	UserName      *string `json:"user_name,omitempty"`
 }
 
 type SubmitRunRequest struct {
 	// List of permissions to set on the job.
 	AccessControlList []AccessControlRequest `json:"access_control_list,omitempty"`
-	// The queue settings of the one-time run.
-	Queue *QueueSettings `json:"queue,omitempty"`
-	// Specifies the user or service principal that the job runs as. If not
-	// specified, the job runs as the user who submits the request.
-	RunAs *JobRunAs `json:"run_as,omitempty"`
-	// An optional name for the run. The default value is `Untitled`.
-	RunName *string `json:"run_name,omitempty"`
-	// An optional timeout applied to each run of this job. A value of `0` means no
-	// timeout.
-	TimeoutSeconds *int             `json:"timeout_seconds,omitempty"`
-	Health         *JobsHealthRules `json:"health,omitempty"`
-	// An optional token that can be used to guarantee the idempotency of job run
-	// requests. If a run with the provided token already exists, the request does
-	// not create a new run but returns the ID of the existing run instead. If a run
-	// with the provided token is deleted, an error is returned.
-	//
-	// If you specify the idempotency token, upon failure you can retry until the
-	// request succeeds. <Databricks> guarantees that exactly one run is launched
-	// with that idempotency token.
-	//
-	// This token must have at most 64 characters.
-	IdempotencyToken *string           `json:"idempotency_token,omitempty"`
-	Tasks            []RunTaskSettings `json:"tasks,omitempty"`
+	// The user specified id of the budget policy to use for this one-time run. If
+	// not specified, the run will be not be attributed to any budget policy.
+	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
+	// An optional set of email addresses notified when the run begins or completes.
+	EmailNotifications *JobEmailNotifications `json:"email_notifications,omitempty"`
+	// Named environment-variable entries that tasks of this one-time run can
+	// reference by key from `RunTaskSettings.environment_variables_key`. Each
+	// entry's `spec` holds inline `variables` and optional `.env` `files`. Handled
+	// identically to `JobSettings.environment_variables`. Maximum 10 entries.
+	// Entries are independent of one another — there is no cross-entry merging.
+	EnvironmentVariables []JobEnvironmentVariables `json:"environment_variables,omitempty"`
+	// A list of task execution environment specifications that can be referenced by
+	// tasks of this run.
+	Environments []JobEnvironment `json:"environments,omitempty"`
 	// An optional specification for a remote Git repository containing the source
 	// code used by tasks. Version-controlled source code is supported by notebook,
 	// dbt, Python script, and SQL File tasks.
@@ -4037,31 +4028,22 @@ type SubmitRunRequest struct {
 	//
 	// Note: dbt and SQL File tasks support only version-controlled sources. If dbt
 	// or SQL File tasks are used, `git_source` must be defined on the job.
-	GitSource *GitSource `json:"git_source,omitempty"`
-	// A collection of system notification IDs to notify when the run begins or
-	// completes.
-	WebhookNotifications *WebhookNotifications `json:"webhook_notifications,omitempty"`
-	// An optional set of email addresses notified when the run begins or completes.
-	EmailNotifications *JobEmailNotifications `json:"email_notifications,omitempty"`
+	GitSource *GitSource       `json:"git_source,omitempty"`
+	Health    *JobsHealthRules `json:"health,omitempty"`
+	// An optional token that can be used to guarantee the idempotency of job run
+	// requests. If a run with the provided token already exists, the request does
+	// not create a new run but returns the ID of the existing run instead. If a run
+	// with the provided token is deleted, an error is returned.
+	//
+	// If you specify the idempotency token, upon failure you can retry until the
+	// request succeeds. <Databricks> guarantees that exactly one run is launched
+	// with that idempotency token.
+	//
+	// This token must have at most 64 characters.
+	IdempotencyToken *string `json:"idempotency_token,omitempty"`
 	// Optional notification settings that are used when sending notifications to
 	// each of the `email_notifications` and `webhook_notifications` for this run.
 	NotificationSettings *NotificationSettings `json:"notification_settings,omitempty"`
-	// A list of task execution environment specifications that can be referenced by
-	// tasks of this run.
-	Environments []JobEnvironment `json:"environments,omitempty"`
-	// The user specified id of the budget policy to use for this one-time run. If
-	// not specified, the run will be not be attributed to any budget policy.
-	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
-	// The user specified id of the usage policy to use for this one-time run. If
-	// not specified, a default usage policy may be applied when creating or
-	// modifying the job.
-	UsagePolicyId *string `json:"usage_policy_id,omitempty"`
-	// Named environment-variable entries that tasks of this one-time run can
-	// reference by key from `RunTaskSettings.environment_variables_key`. Each
-	// entry's `spec` holds inline `variables` and optional `.env` `files`. Handled
-	// identically to `JobSettings.environment_variables`. Maximum 10 entries.
-	// Entries are independent of one another — there is no cross-entry merging.
-	EnvironmentVariables []JobEnvironmentVariables `json:"environment_variables,omitempty"`
 	// The performance mode on a serverless one-time run. This field determines the
 	// level of compute performance or cost-efficiency for the run. The performance
 	// target does not apply to tasks that run on Serverless GPU compute.
@@ -4072,6 +4054,24 @@ type SubmitRunRequest struct {
 	// Enables lower job costs by optimizing compute for your selected target
 	// duration time. Must provide a duration target.
 	PerformanceTarget PerformanceTarget_PerformanceTarget `json:"performance_target,omitempty"`
+	// The queue settings of the one-time run.
+	Queue *QueueSettings `json:"queue,omitempty"`
+	// Specifies the user or service principal that the job runs as. If not
+	// specified, the job runs as the user who submits the request.
+	RunAs *JobRunAs `json:"run_as,omitempty"`
+	// An optional name for the run. The default value is `Untitled`.
+	RunName *string           `json:"run_name,omitempty"`
+	Tasks   []RunTaskSettings `json:"tasks,omitempty"`
+	// An optional timeout applied to each run of this job. A value of `0` means no
+	// timeout.
+	TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
+	// The user specified id of the usage policy to use for this one-time run. If
+	// not specified, a default usage policy may be applied when creating or
+	// modifying the job.
+	UsagePolicyId *string `json:"usage_policy_id,omitempty"`
+	// A collection of system notification IDs to notify when the run begins or
+	// completes.
+	WebhookNotifications *WebhookNotifications `json:"webhook_notifications,omitempty"`
 }
 
 // Run was created and started successfully..
@@ -4081,42 +4081,42 @@ type SubmitRunResponse struct {
 }
 
 type Subscription struct {
-	// The list of subscribers to send the snapshot of the dashboard to.
-	Subscribers []Subscription_Subscriber `json:"subscribers,omitempty"`
-	// When true, the subscription will not send emails.
-	Paused *bool `json:"paused,omitempty"`
 	// Optional: Allows users to specify a custom subject line on the email sent to
 	// subscribers.
 	CustomSubject *string `json:"custom_subject,omitempty"`
+	// When true, the subscription will not send emails.
+	Paused *bool `json:"paused,omitempty"`
+	// The list of subscribers to send the snapshot of the dashboard to.
+	Subscribers []Subscription_Subscriber `json:"subscribers,omitempty"`
 }
 
 type Subscription_Subscriber struct {
-	UserName      *string `json:"user_name,omitempty"`
 	DestinationId *string `json:"destination_id,omitempty"`
+	UserName      *string `json:"user_name,omitempty"`
 }
 
 type TableState struct {
-	// Full table name of the table to monitor, e.g. `mycatalog.myschema.mytable`
-	TableName *string `json:"table_name,omitempty"`
 	// Whether or not the table has seen updates since either the creation of the
 	// trigger or the last successful evaluation of the trigger
 	HasSeenUpdates *bool `json:"has_seen_updates,omitempty"`
+	// Full table name of the table to monitor, e.g. `mycatalog.myschema.mytable`
+	TableName *string `json:"table_name,omitempty"`
 }
 
 type TableTriggerConfiguration struct {
-	// A list of tables to monitor for changes. The table name must be in the format
-	// `catalog_name.schema_name.table_name`.
-	TableNames []string `json:"table_names,omitempty"`
+	// The table(s) condition based on which to trigger a job run.
+	Condition TableTriggerConfiguration_Condition `json:"condition,omitempty"`
 	// If set, the trigger starts a run only after the specified amount of time has
 	// passed since the last time the trigger fired. The minimum allowed value is 60
 	// seconds.
 	MinTimeBetweenTriggersSeconds *int `json:"min_time_between_triggers_seconds,omitempty"`
+	// A list of tables to monitor for changes. The table name must be in the format
+	// `catalog_name.schema_name.table_name`.
+	TableNames []string `json:"table_names,omitempty"`
 	// If set, the trigger starts a run only after no table updates have occurred
 	// for the specified time and can be used to wait for a series of table updates
 	// before triggering a run. The minimum allowed value is 60 seconds.
 	WaitAfterLastChangeSeconds *int `json:"wait_after_last_change_seconds,omitempty"`
-	// The table(s) condition based on which to trigger a job run.
-	Condition TableTriggerConfiguration_Condition `json:"condition,omitempty"`
 }
 
 type TableTriggerState struct {
@@ -4126,85 +4126,51 @@ type TableTriggerState struct {
 }
 
 type TaskDependency struct {
-	// The name of the task this task depends on.
-	TaskKey *string `json:"task_key,omitempty"`
 	// Can only be specified on condition task dependencies. The outcome of the
 	// dependent task that must be met for this task to run.
 	Outcome *string `json:"outcome,omitempty"`
+	// The name of the task this task depends on.
+	TaskKey *string `json:"task_key,omitempty"`
 }
 
 type TaskSettings struct {
-	// A unique name for the task. This field is used to refer to this task from
-	// other tasks. This field is required and must be unique within its parent job.
-	// On Update or Reset, this field is used to reference the tasks to be updated
-	// or reset.
-	TaskKey *string `json:"task_key,omitempty"`
+	AiRuntimeTask          *AiRuntimeTask          `json:"ai_runtime_task,omitempty"`
+	AlertTask              *AlertTask              `json:"alert_task,omitempty"`
+	CleanRoomsNotebookTask *CleanRoomsNotebookTask `json:"clean_rooms_notebook_task,omitempty"`
+	// Task level compute configuration.
+	Compute         *Compute         `json:"compute,omitempty"`
+	ConditionTask   *ConditionTask   `json:"condition_task,omitempty"`
+	DashboardTask   *DashboardTask   `json:"dashboard_task,omitempty"`
+	DbtCloudTask    *DbtCloudTask    `json:"dbt_cloud_task,omitempty"`
+	DbtPlatformTask *DbtPlatformTask `json:"dbt_platform_task,omitempty"`
+	DbtTask         *DbtTask         `json:"dbt_task,omitempty"`
 	// An optional array of objects specifying the dependency graph of the task. All
 	// tasks specified in this field must complete before executing this task. The
 	// task will run only if the `run_if` condition is true. The key is `task_key`,
 	// and the value is the name assigned to the dependent task.
 	DependsOn []TaskDependency `json:"depends_on,omitempty"`
-	// An optional value specifying the condition determining whether the task is
-	// run once its dependencies have been completed.
-	//
-	// * `ALL_SUCCESS`: All dependencies have executed and succeeded *
-	// `AT_LEAST_ONE_SUCCESS`: At least one dependency has succeeded *
-	// `NONE_FAILED`: None of the dependencies have failed and at least one was
-	// executed * `ALL_DONE`: All dependencies have been completed *
-	// `AT_LEAST_ONE_FAILED`: At least one dependency failed * `ALL_FAILED`: ALl
-	// dependencies have failed
-	RunIf TaskDependencyType `json:"run_if,omitempty"`
-	// An optional timeout applied to each run of this job task. A value of `0`
-	// means no timeout.
-	TimeoutSeconds *int             `json:"timeout_seconds,omitempty"`
-	Health         *JobsHealthRules `json:"health,omitempty"`
+	// An optional description for this task.
+	Description *string `json:"description,omitempty"`
+	// An option to disable auto optimization in serverless
+	DisableAutoOptimization *bool `json:"disable_auto_optimization,omitempty"`
+	// An optional flag to disable the task. If set to true, the task will not run
+	// even if it is part of a job.
+	Disabled *bool `json:"disabled,omitempty"`
 	// An optional set of email addresses that is notified when runs of this task
 	// begin or complete as well as when this task is deleted. The default behavior
 	// is to not send any emails.
 	EmailNotifications *JobEmailNotifications `json:"email_notifications,omitempty"`
-	// Optional notification settings that are used when sending notifications to
-	// each of the `email_notifications` and `webhook_notifications` for this task.
-	NotificationSettings *NotificationSettings `json:"notification_settings,omitempty"`
-	// A collection of system notification IDs to notify when runs of this task
-	// begin or complete. The default behavior is to not send any system
-	// notifications.
-	WebhookNotifications *WebhookNotifications `json:"webhook_notifications,omitempty"`
-	// An optional description for this task.
-	Description    *string `json:"description,omitempty"`
-	EnvironmentKey *string `json:"environment_key,omitempty"`
-	// An optional flag to disable the task. If set to true, the task will not run
-	// even if it is part of a job.
-	Disabled *bool `json:"disabled,omitempty"`
-	// Task level compute configuration.
-	Compute *Compute `json:"compute,omitempty"`
+	EnvironmentKey     *string                `json:"environment_key,omitempty"`
 	// Reference to a `JobEnvironmentVariables` entry defined in
 	// `JobSettings.environment_variables`. The selected entry's variables are
 	// applied to this task at execution time. This field supports serverless tasks
 	// using environment version 5 or later.
-	EnvironmentVariablesKey *string                 `json:"environment_variables_key,omitempty"`
-	NotebookTask            *NotebookTask           `json:"notebook_task,omitempty"`
-	SparkJarTask            *SparkJarTask           `json:"spark_jar_task,omitempty"`
-	SparkPythonTask         *SparkPythonTask        `json:"spark_python_task,omitempty"`
-	SparkSubmitTask         *SparkSubmitTask        `json:"spark_submit_task,omitempty"`
-	PipelineTask            *PipelineTask           `json:"pipeline_task,omitempty"`
-	PythonWheelTask         *PythonWheelTask        `json:"python_wheel_task,omitempty"`
-	DbtTask                 *DbtTask                `json:"dbt_task,omitempty"`
-	SqlTask                 *SqlTask                `json:"sql_task,omitempty"`
-	RunJobTask              *RunJobTask             `json:"run_job_task,omitempty"`
-	ConditionTask           *ConditionTask          `json:"condition_task,omitempty"`
-	ForEachTask             *ForEachTask            `json:"for_each_task,omitempty"`
-	CleanRoomsNotebookTask  *CleanRoomsNotebookTask `json:"clean_rooms_notebook_task,omitempty"`
-	GenAiComputeTask        *GenAiComputeTask       `json:"gen_ai_compute_task,omitempty"`
-	AlertTask               *AlertTask              `json:"alert_task,omitempty"`
-	PowerBiTask             *PowerBiTask            `json:"power_bi_task,omitempty"`
-	DashboardTask           *DashboardTask          `json:"dashboard_task,omitempty"`
-	DbtCloudTask            *DbtCloudTask           `json:"dbt_cloud_task,omitempty"`
-	DbtPlatformTask         *DbtPlatformTask        `json:"dbt_platform_task,omitempty"`
-	PythonOperatorTask      *PythonOperatorTask     `json:"python_operator_task,omitempty"`
-	AiRuntimeTask           *AiRuntimeTask          `json:"ai_runtime_task,omitempty"`
-	ExistingClusterId       *string                 `json:"existing_cluster_id,omitempty"`
-	NewCluster              *ClusterSpec_NewCluster `json:"new_cluster,omitempty"`
-	JobClusterKey           *string                 `json:"job_cluster_key,omitempty"`
+	EnvironmentVariablesKey *string           `json:"environment_variables_key,omitempty"`
+	ExistingClusterId       *string           `json:"existing_cluster_id,omitempty"`
+	ForEachTask             *ForEachTask      `json:"for_each_task,omitempty"`
+	GenAiComputeTask        *GenAiComputeTask `json:"gen_ai_compute_task,omitempty"`
+	Health                  *JobsHealthRules  `json:"health,omitempty"`
+	JobClusterKey           *string           `json:"job_cluster_key,omitempty"`
 	// An optional list of libraries to be installed on the cluster. The default
 	// value is an empty list.
 	Libraries []Library `json:"libraries,omitempty"`
@@ -4216,20 +4182,54 @@ type TaskSettings struct {
 	// An optional minimal interval in milliseconds between the start of the failed
 	// run and the subsequent retry run. The default behavior is that unsuccessful
 	// runs are immediately retried.
-	MinRetryIntervalMillis *int `json:"min_retry_interval_millis,omitempty"`
+	MinRetryIntervalMillis *int                    `json:"min_retry_interval_millis,omitempty"`
+	NewCluster             *ClusterSpec_NewCluster `json:"new_cluster,omitempty"`
+	NotebookTask           *NotebookTask           `json:"notebook_task,omitempty"`
+	// Optional notification settings that are used when sending notifications to
+	// each of the `email_notifications` and `webhook_notifications` for this task.
+	NotificationSettings *NotificationSettings `json:"notification_settings,omitempty"`
+	PipelineTask         *PipelineTask         `json:"pipeline_task,omitempty"`
+	PowerBiTask          *PowerBiTask          `json:"power_bi_task,omitempty"`
+	PythonOperatorTask   *PythonOperatorTask   `json:"python_operator_task,omitempty"`
+	PythonWheelTask      *PythonWheelTask      `json:"python_wheel_task,omitempty"`
 	// An optional policy to specify whether to retry a job when it times out. The
 	// default behavior is to not retry on timeout.
 	RetryOnTimeout *bool `json:"retry_on_timeout,omitempty"`
-	// An option to disable auto optimization in serverless
-	DisableAutoOptimization *bool `json:"disable_auto_optimization,omitempty"`
+	// An optional value specifying the condition determining whether the task is
+	// run once its dependencies have been completed.
+	//
+	// * `ALL_SUCCESS`: All dependencies have executed and succeeded *
+	// `AT_LEAST_ONE_SUCCESS`: At least one dependency has succeeded *
+	// `NONE_FAILED`: None of the dependencies have failed and at least one was
+	// executed * `ALL_DONE`: All dependencies have been completed *
+	// `AT_LEAST_ONE_FAILED`: At least one dependency failed * `ALL_FAILED`: ALl
+	// dependencies have failed
+	RunIf           TaskDependencyType `json:"run_if,omitempty"`
+	RunJobTask      *RunJobTask        `json:"run_job_task,omitempty"`
+	SparkJarTask    *SparkJarTask      `json:"spark_jar_task,omitempty"`
+	SparkPythonTask *SparkPythonTask   `json:"spark_python_task,omitempty"`
+	SparkSubmitTask *SparkSubmitTask   `json:"spark_submit_task,omitempty"`
+	SqlTask         *SqlTask           `json:"sql_task,omitempty"`
+	// A unique name for the task. This field is used to refer to this task from
+	// other tasks. This field is required and must be unique within its parent job.
+	// On Update or Reset, this field is used to reference the tasks to be updated
+	// or reset.
+	TaskKey *string `json:"task_key,omitempty"`
+	// An optional timeout applied to each run of this job task. A value of `0`
+	// means no timeout.
+	TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
+	// A collection of system notification IDs to notify when runs of this task
+	// begin or complete. The default behavior is to not send any system
+	// notifications.
+	WebhookNotifications *WebhookNotifications `json:"webhook_notifications,omitempty"`
 }
 
 type TerminationDetails struct {
 	Code TerminationCode_Code `json:"code,omitempty"`
-	Type TerminationType_Type `json:"type,omitempty"`
 	// A descriptive message with the termination details. This field is
 	// unstructured and the format might change.
-	Message *string `json:"message,omitempty"`
+	Message *string              `json:"message,omitempty"`
+	Type    TerminationType_Type `json:"type,omitempty"`
 }
 
 // A single trigger attached to a job via `JobSettings.triggers`. Exactly one of
@@ -4239,6 +4239,12 @@ type TerminationDetails struct {
 // that codegen, validation, and JSON serialization across SDKs and Terraform
 // behave consistently..
 type TriggerConfiguration struct {
+	// Continuous trigger configuration.
+	Continuous *ContinuousTriggerConfiguration `json:"continuous,omitempty"`
+	// File arrival trigger configuration.
+	FileArrival *FileArrivalTriggerConfiguration `json:"file_arrival,omitempty"`
+	// Model trigger configuration.
+	Model *ModelTriggerConfiguration `json:"model,omitempty"`
 	// Whether this trigger is paused. Defaults to UNPAUSED when unset; the server
 	// always returns an explicit value on read.
 	PauseStatus SchedulePauseStatus `json:"pause_status,omitempty"`
@@ -4247,16 +4253,10 @@ type TriggerConfiguration struct {
 	Periodic *PeriodicTriggerConfiguration `json:"periodic,omitempty"`
 	// Cron schedule trigger configuration.
 	Schedule *CronTriggerConfiguration `json:"schedule,omitempty"`
-	// Continuous trigger configuration.
-	Continuous *ContinuousTriggerConfiguration `json:"continuous,omitempty"`
-	// File arrival trigger configuration.
-	FileArrival *FileArrivalTriggerConfiguration `json:"file_arrival,omitempty"`
-	// Table update trigger configuration.
-	TableUpdate *TableTriggerConfiguration `json:"table_update,omitempty"`
-	// Model trigger configuration.
-	Model *ModelTriggerConfiguration `json:"model,omitempty"`
 	// Optional SQL condition that gates whether this trigger fires.
 	SqlCondition *SqlConditionConfiguration `json:"sql_condition,omitempty"`
+	// Table update trigger configuration.
+	TableUpdate *TableTriggerConfiguration `json:"table_update,omitempty"`
 }
 
 // Per-trigger runtime details returned by `GetJob`. Same length and order as
@@ -4264,58 +4264,62 @@ type TriggerConfiguration struct {
 // corresponding `GetJob.include_trigger_state` / `include_trigger_history`
 // flags..
 type TriggerDetails struct {
-	// Current runtime state. Populated when `GetJob.include_trigger_state` is set.
-	State *PerTriggerState `json:"state,omitempty"`
 	// Recent evaluation history. Populated when `GetJob.include_trigger_history` is
 	// set.
 	History *TriggerHistory `json:"history,omitempty"`
+	// Current runtime state. Populated when `GetJob.include_trigger_state` is set.
+	State *PerTriggerState `json:"state,omitempty"`
 }
 
 type TriggerEvaluation struct {
-	// Timestamp at which the trigger was evaluated.
-	Timestamp *int64 `json:"timestamp,omitempty"`
 	// Human-readable description of the trigger evaluation result. Explains why the
 	// trigger evaluation triggered or did not trigger a run, or failed.
 	Description *string `json:"description,omitempty"`
 	// The ID of the run that was triggered by the trigger evaluation. Only returned
 	// if a run was triggered.
 	RunId *int64 `json:"run_id,omitempty"`
+	// Timestamp at which the trigger was evaluated.
+	Timestamp *int64 `json:"timestamp,omitempty"`
 }
 
 type TriggerHistory struct {
-	// The last time the run was triggered due to a file arrival.
-	LastTriggered *TriggerEvaluation `json:"last_triggered,omitempty"`
-	// The last time the trigger was evaluated but did not trigger a run.
-	LastNotTriggered *TriggerEvaluation `json:"last_not_triggered,omitempty"`
 	// The last time the trigger failed to evaluate.
 	LastFailed *TriggerEvaluation `json:"last_failed,omitempty"`
+	// The last time the trigger was evaluated but did not trigger a run.
+	LastNotTriggered *TriggerEvaluation `json:"last_not_triggered,omitempty"`
+	// The last time the run was triggered due to a file arrival.
+	LastTriggered *TriggerEvaluation `json:"last_triggered,omitempty"`
 }
 
 type TriggerSettings struct {
-	// Whether this trigger is paused or not.
-	PauseStatus SchedulePauseStatus              `json:"pause_status,omitempty"`
 	FileArrival *FileArrivalTriggerConfiguration `json:"file_arrival,omitempty"`
-	Periodic    *PeriodicTriggerConfiguration    `json:"periodic,omitempty"`
-	TableUpdate *TableTriggerConfiguration       `json:"table_update,omitempty"`
 	Model       *ModelTriggerConfiguration       `json:"model,omitempty"`
+	// Whether this trigger is paused or not.
+	PauseStatus SchedulePauseStatus           `json:"pause_status,omitempty"`
+	Periodic    *PeriodicTriggerConfiguration `json:"periodic,omitempty"`
 	// SQL condition that must be satisfied for the trigger to fire. Can be used in
 	// combination with other trigger types and runs *after* other trigger types
 	// conditions are evaluated.
 	SqlCondition *SqlConditionConfiguration `json:"sql_condition,omitempty"`
+	TableUpdate  *TableTriggerConfiguration `json:"table_update,omitempty"`
 }
 
 type TriggerState struct {
-	Table       *TableTriggerState       `json:"table,omitempty"`
 	FileArrival *FileArrivalTriggerState `json:"file_arrival,omitempty"`
-	// State for SQL condition evaluation, can coexist with other trigger states.
-	SqlCondition *SqlConditionState `json:"sql_condition,omitempty"`
 	// Whether this trigger is paused or not. For continuous schedules, it can
 	// differ from the configured pause_status whenever a paused continuous job is
 	// kickstarted by an operation other than an update, such as a run-now.
 	PauseStatus SchedulePauseStatus `json:"pause_status,omitempty"`
+	// State for SQL condition evaluation, can coexist with other trigger states.
+	SqlCondition *SqlConditionState `json:"sql_condition,omitempty"`
+	Table        *TableTriggerState `json:"table,omitempty"`
 }
 
 type UpdateJobRequest struct {
+	// Remove top-level fields in the job settings. Removing nested fields is not
+	// supported, except for tasks and job clusters (`tasks/task_1`). This field is
+	// optional.
+	FieldsToRemove []string `json:"fields_to_remove,omitempty"`
 	// The canonical identifier of the job to update. This field is required.
 	JobId *int64 `json:"job_id,omitempty"`
 	// The new settings for the job.
@@ -4330,10 +4334,6 @@ type UpdateJobRequest struct {
 	// Changes to the field `JobSettings.timeout_seconds` are applied to active
 	// runs. Changes to other fields are applied to future runs only.
 	NewSettings *JobSettings `json:"new_settings,omitempty"`
-	// Remove top-level fields in the job settings. Removing nested fields is not
-	// supported, except for tasks and job clusters (`tasks/task_1`). This field is
-	// optional.
-	FieldsToRemove []string `json:"fields_to_remove,omitempty"`
 }
 
 type ViewItem struct {
@@ -4359,21 +4359,25 @@ type Webhook struct {
 }
 
 type WebhookNotifications struct {
-	// An optional list of system notification IDs to call when the run starts. A
-	// maximum of 3 destinations can be specified for the `on_start` property.
-	OnStart []Webhook `json:"on_start,omitempty"`
-	// An optional list of system notification IDs to call when the run completes
-	// successfully. A maximum of 3 destinations can be specified for the
-	// `on_success` property.
-	OnSuccess []Webhook `json:"on_success,omitempty"`
-	// An optional list of system notification IDs to call when the run fails. A
-	// maximum of 3 destinations can be specified for the `on_failure` property.
-	OnFailure []Webhook `json:"on_failure,omitempty"`
 	// An optional list of system notification IDs to call when the duration of a
 	// run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in
 	// the `health` field. A maximum of 3 destinations can be specified for the
 	// `on_duration_warning_threshold_exceeded` property.
 	OnDurationWarningThresholdExceeded []Webhook `json:"on_duration_warning_threshold_exceeded,omitempty"`
+	// An optional list of system notification IDs to call when the run fails. A
+	// maximum of 3 destinations can be specified for the `on_failure` property.
+	OnFailure []Webhook `json:"on_failure,omitempty"`
+	// An optional list of system notification IDs to call when platform-initiated
+	// maintenance completes for a continuous job. A maximum of 3 destinations can
+	// be specified for the `on_maintenance_complete` property.
+	OnMaintenanceComplete []Webhook `json:"on_maintenance_complete,omitempty"`
+	// An optional list of system notification IDs to call when platform-initiated
+	// maintenance starts for a continuous job. A maximum of 3 destinations can be
+	// specified for the `on_maintenance_start` property.
+	OnMaintenanceStart []Webhook `json:"on_maintenance_start,omitempty"`
+	// An optional list of system notification IDs to call when the run starts. A
+	// maximum of 3 destinations can be specified for the `on_start` property.
+	OnStart []Webhook `json:"on_start,omitempty"`
 	// An optional list of system notification IDs to call when any streaming
 	// backlog thresholds are exceeded for any stream. Streaming backlog thresholds
 	// can be set in the `health` field using the following metrics:
@@ -4383,14 +4387,10 @@ type WebhookNotifications struct {
 	// notifications are resent every 30 minutes. A maximum of 3 destinations can be
 	// specified for the `on_streaming_backlog_exceeded` property.
 	OnStreamingBacklogExceeded []Webhook `json:"on_streaming_backlog_exceeded,omitempty"`
-	// An optional list of system notification IDs to call when platform-initiated
-	// maintenance starts for a continuous job. A maximum of 3 destinations can be
-	// specified for the `on_maintenance_start` property.
-	OnMaintenanceStart []Webhook `json:"on_maintenance_start,omitempty"`
-	// An optional list of system notification IDs to call when platform-initiated
-	// maintenance completes for a continuous job. A maximum of 3 destinations can
-	// be specified for the `on_maintenance_complete` property.
-	OnMaintenanceComplete []Webhook `json:"on_maintenance_complete,omitempty"`
+	// An optional list of system notification IDs to call when the run completes
+	// successfully. A maximum of 3 destinations can be specified for the
+	// `on_success` property.
+	OnSuccess []Webhook `json:"on_success,omitempty"`
 }
 
 type WidgetErrorDetail struct {
@@ -4404,10 +4404,10 @@ type WorkloadType struct {
 }
 
 type WorkloadType_ClientsTypes struct {
-	// With notebooks set, this cluster can be used for notebooks
-	Notebooks *bool `json:"notebooks,omitempty"`
 	// With jobs set, the cluster can be used for jobs
 	Jobs *bool `json:"jobs,omitempty"`
+	// With notebooks set, this cluster can be used for notebooks
+	Notebooks *bool `json:"notebooks,omitempty"`
 }
 
 // A storage location in Workspace Filesystem (WSFS).

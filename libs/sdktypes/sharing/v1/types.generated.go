@@ -76,132 +76,132 @@ const (
 )
 
 type CreateFederationPolicyRequest struct {
+	// Name of the policy. This is the name of the policy to be created.
+	Policy *FederationPolicy `json:"policy,omitempty"`
 	// Name of the recipient. This is the name of the recipient for which the policy
 	// is being created.
 	RecipientName *string `json:"recipient_name,omitempty"`
-	// Name of the policy. This is the name of the policy to be created.
-	Policy *FederationPolicy `json:"policy,omitempty"`
 }
 
 type CreateProviderRequest struct {
-	// The name of the Provider.
-	Name               *string                        `json:"name,omitempty"`
 	AuthenticationType DeltaSharingAuthenticationType `json:"authentication_type,omitempty"`
-	// This field is required when the __authentication_type__ is **TOKEN**,
-	// **OAUTH_CLIENT_CREDENTIALS** or not provided.
-	RecipientProfileStr *string `json:"recipient_profile_str,omitempty"`
+	// Cloud vendor of the provider's UC metastore. This field is only present when
+	// the __authentication_type__ is **DATABRICKS**.
+	Cloud *string `json:"cloud,omitempty"`
 	// Description about the provider.
 	Comment *string `json:"comment,omitempty"`
+	// Time at which this Provider was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of Provider creator.
+	CreatedBy *string `json:"created_by,omitempty"`
+	// The global UC metastore id of the data provider. This field is only present
+	// when the __authentication_type__ is **DATABRICKS**. The identifier is of
+	// format __cloud__:__region__:__metastore-uuid__.
+	DataProviderGlobalMetastoreId *string `json:"data_provider_global_metastore_id,omitempty"`
+	// UUID of the provider's UC metastore. This field is only present when the
+	// __authentication_type__ is **DATABRICKS**.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// The name of the Provider.
+	Name *string `json:"name,omitempty"`
 	// Username of Provider owner.
 	Owner *string `json:"owner,omitempty"`
 	// The recipient profile. This field is only present when the
 	// authentication_type is `TOKEN` or `OAUTH_CLIENT_CREDENTIALS`.
 	RecipientProfile *RecipientProfile `json:"recipient_profile,omitempty"`
-	// Time at which this Provider was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of Provider creator.
-	CreatedBy *string `json:"created_by,omitempty"`
+	// This field is required when the __authentication_type__ is **TOKEN**,
+	// **OAUTH_CLIENT_CREDENTIALS** or not provided.
+	RecipientProfileStr *string `json:"recipient_profile_str,omitempty"`
+	// Cloud region of the provider's UC metastore. This field is only present when
+	// the __authentication_type__ is **DATABRICKS**.
+	Region *string `json:"region,omitempty"`
 	// Time at which this Provider was created, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of user who last modified Provider.
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Cloud vendor of the provider's UC metastore. This field is only present when
-	// the __authentication_type__ is **DATABRICKS**.
-	Cloud *string `json:"cloud,omitempty"`
-	// Cloud region of the provider's UC metastore. This field is only present when
-	// the __authentication_type__ is **DATABRICKS**.
-	Region *string `json:"region,omitempty"`
-	// UUID of the provider's UC metastore. This field is only present when the
-	// __authentication_type__ is **DATABRICKS**.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// The global UC metastore id of the data provider. This field is only present
-	// when the __authentication_type__ is **DATABRICKS**. The identifier is of
-	// format __cloud__:__region__:__metastore-uuid__.
-	DataProviderGlobalMetastoreId *string `json:"data_provider_global_metastore_id,omitempty"`
 }
 
 type CreateRecipientRequest struct {
-	// Name of Recipient.
-	Name               *string                        `json:"name,omitempty"`
+	// A boolean status field showing whether the Recipient's activation URL has
+	// been exercised or not.
+	Activated *bool `json:"activated,omitempty"`
+	// Full activation url to retrieve the access token. It will be empty if the
+	// token is already retrieved.
+	ActivationUrl      *string                        `json:"activation_url,omitempty"`
 	AuthenticationType DeltaSharingAuthenticationType `json:"authentication_type,omitempty"`
-	// The one-time sharing code provided by the data recipient. This field is only
+	// Cloud vendor of the recipient's Unity Catalog Metastore. This field is only
 	// present when the __authentication_type__ is **DATABRICKS**.
-	SharingCode *string `json:"sharing_code,omitempty"`
+	Cloud *string `json:"cloud,omitempty"`
+	// Description about the recipient.
+	Comment *string `json:"comment,omitempty"`
+	// Time at which this recipient was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of recipient creator.
+	CreatedBy *string `json:"created_by,omitempty"`
 	// The global Unity Catalog metastore id provided by the data recipient. This
 	// field is only present when the __authentication_type__ is **DATABRICKS**. The
 	// identifier is of format __cloud__:__region__:__metastore-uuid__.
 	DataRecipientGlobalMetastoreId *string `json:"data_recipient_global_metastore_id,omitempty"`
-	// Username of the recipient owner.
-	Owner *string `json:"owner,omitempty"`
-	// Description about the recipient.
-	Comment *string `json:"comment,omitempty"`
+	// Expiration timestamp of the token, in epoch milliseconds.
+	ExpirationTime *int64 `json:"expiration_time,omitempty"`
+	// [Create,Update:IGN] common - id of the recipient
+	Id *string `json:"id,omitempty"`
 	// IP Access List
 	IpAccessList *IpAccessList `json:"ip_access_list,omitempty"`
+	// Unique identifier of recipient's Unity Catalog Metastore. This field is only
+	// present when the __authentication_type__ is **DATABRICKS**.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// Name of Recipient.
+	Name *string `json:"name,omitempty"`
+	// Username of the recipient owner.
+	Owner *string `json:"owner,omitempty"`
 	// Recipient properties as map of string key-value pairs. When provided in
 	// update request, the specified properties will override the existing
 	// properties. To add and remove properties, one would need to perform a
 	// read-modify-write.
 	PropertiesKvpairs *PropertiesKvPairs `json:"properties_kvpairs,omitempty"`
-	// Expiration timestamp of the token, in epoch milliseconds.
-	ExpirationTime *int64 `json:"expiration_time,omitempty"`
-	// Full activation url to retrieve the access token. It will be empty if the
-	// token is already retrieved.
-	ActivationUrl *string `json:"activation_url,omitempty"`
-	// A boolean status field showing whether the Recipient's activation URL has
-	// been exercised or not.
-	Activated *bool `json:"activated,omitempty"`
-	// Time at which this recipient was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of recipient creator.
-	CreatedBy *string `json:"created_by,omitempty"`
+	// Cloud region of the recipient's Unity Catalog Metastore. This field is only
+	// present when the __authentication_type__ is **DATABRICKS**.
+	Region *string `json:"region,omitempty"`
+	// The one-time sharing code provided by the data recipient. This field is only
+	// present when the __authentication_type__ is **DATABRICKS**.
+	SharingCode *string `json:"sharing_code,omitempty"`
 	// This field is only present when the __authentication_type__ is **TOKEN**.
 	Tokens []RecipientTokenInfo `json:"tokens,omitempty"`
 	// Time at which the recipient was updated, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of recipient updater.
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Cloud vendor of the recipient's Unity Catalog Metastore. This field is only
-	// present when the __authentication_type__ is **DATABRICKS**.
-	Cloud *string `json:"cloud,omitempty"`
-	// Cloud region of the recipient's Unity Catalog Metastore. This field is only
-	// present when the __authentication_type__ is **DATABRICKS**.
-	Region *string `json:"region,omitempty"`
-	// Unique identifier of recipient's Unity Catalog Metastore. This field is only
-	// present when the __authentication_type__ is **DATABRICKS**.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// [Create,Update:IGN] common - id of the recipient
-	Id *string `json:"id,omitempty"`
 }
 
 type CreateShareRequest struct {
-	// Name of the share.
-	Name *string `json:"name,omitempty"`
-	// Username of current owner of share.
-	Owner *string `json:"owner,omitempty"`
 	// User-provided free-form text description.
 	Comment *string `json:"comment,omitempty"`
-	// Storage root URL for the share.
-	StorageRoot *string `json:"storage_root,omitempty"`
-	// Configuration for share replication.
-	ReplicationConfig *ReplicationConfig `json:"replication_config,omitempty"`
-	// A list of shared data objects within the share.
-	Objects []SharedDataObject `json:"objects,omitempty"`
 	// Time at which this share was created, in epoch milliseconds.
 	CreatedAt *int64 `json:"created_at,omitempty"`
 	// Username of share creator.
 	CreatedBy *string `json:"created_by,omitempty"`
+	// Name of the share.
+	Name *string `json:"name,omitempty"`
+	// A list of shared data objects within the share.
+	Objects []SharedDataObject `json:"objects,omitempty"`
+	// Username of current owner of share.
+	Owner *string `json:"owner,omitempty"`
+	// Configuration for share replication.
+	ReplicationConfig *ReplicationConfig `json:"replication_config,omitempty"`
+	// Storage Location URL (full path) for the share.
+	StorageLocation *string `json:"storage_location,omitempty"`
+	// Storage root URL for the share.
+	StorageRoot *string `json:"storage_root,omitempty"`
 	// Time at which this share was updated, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of share updater.
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Storage Location URL (full path) for the share.
-	StorageLocation *string `json:"storage_location,omitempty"`
 }
 
 // Represents a UC dependency..
 type Dependency struct {
-	Table    *TableDependency    `json:"table,omitempty"`
 	Function *FunctionDependency `json:"function,omitempty"`
+	Table    *TableDependency    `json:"table,omitempty"`
 }
 
 // Represents a list of dependencies..
@@ -211,69 +211,79 @@ type DependencyList struct {
 }
 
 type FederationPolicy struct {
+	// Description of the policy. This is a user-provided description.
+	Comment *string `json:"comment,omitempty"`
+	// System-generated timestamp indicating when the policy was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
+	// Unique, immutable system-generated identifier for the federation policy.
+	Id *string `json:"id,omitempty"`
 	// Name of the federation policy. A recipient can have multiple policies with
 	// different names. The name must contain only lowercase alphanumeric
 	// characters, numbers, and hyphens.
 	Name       *string               `json:"name,omitempty"`
 	OidcPolicy *OidcFederationPolicy `json:"oidc_policy,omitempty"`
-	// System-generated timestamp indicating when the policy was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	// Description of the policy. This is a user-provided description.
-	Comment *string `json:"comment,omitempty"`
 	// System-generated timestamp indicating when the policy was last updated.
 	UpdateTime *types.Time `json:"update_time,omitempty"`
-	// Unique, immutable system-generated identifier for the federation policy.
-	Id *string `json:"id,omitempty"`
 }
 
 type Function struct {
+	// The aliass of registered model.
+	Aliases []RegisteredModelAlias `json:"aliases,omitempty"`
+	// The comment of the function.
+	Comment *string `json:"comment,omitempty"`
+	// The data type of the function.
+	DataType ColumnTypeName `json:"data_type,omitempty"`
+	// The dependency list of the function.
+	DependencyList *DependencyList `json:"dependency_list,omitempty"`
+	// The full data type of the function.
+	FullDataType *string `json:"full_data_type,omitempty"`
+	// The id of the function.
+	Id *string `json:"id,omitempty"`
+	// The function parameter information.
+	InputParams *FunctionParameterInfos `json:"input_params,omitempty"`
 	// The name of the function.
 	Name *string `json:"name,omitempty"`
+	// The properties of the function.
+	Properties *string `json:"properties,omitempty"`
+	// The routine definition of the function.
+	RoutineDefinition *string `json:"routine_definition,omitempty"`
 	// The name of the schema that the function belongs to.
 	Schema *string `json:"schema,omitempty"`
+	// The securable kind of the function.
+	SecurableKind SharedSecurableKind `json:"securable_kind,omitempty"`
 	// The name of the share that the function belongs to.
 	Share *string `json:"share,omitempty"`
 	// The id of the share that the function belongs to.
 	ShareId *string `json:"share_id,omitempty"`
-	// The id of the function.
-	Id *string `json:"id,omitempty"`
 	// The storage location of the function.
 	StorageLocation *string `json:"storage_location,omitempty"`
-	// The comment of the function.
-	Comment *string `json:"comment,omitempty"`
-	// The aliass of registered model.
-	Aliases []RegisteredModelAlias `json:"aliases,omitempty"`
 	// The tags of the function.
 	Tags []TagKeyValue `json:"tags,omitempty"`
-	// The securable kind of the function.
-	SecurableKind SharedSecurableKind `json:"securable_kind,omitempty"`
-	// The full data type of the function.
-	FullDataType *string `json:"full_data_type,omitempty"`
-	// The data type of the function.
-	DataType ColumnTypeName `json:"data_type,omitempty"`
-	// The routine definition of the function.
-	RoutineDefinition *string `json:"routine_definition,omitempty"`
-	// The function parameter information.
-	InputParams *FunctionParameterInfos `json:"input_params,omitempty"`
-	// The dependency list of the function.
-	DependencyList *DependencyList `json:"dependency_list,omitempty"`
-	// The properties of the function.
-	Properties *string `json:"properties,omitempty"`
 }
 
 // A Function in UC as a dependency..
 type FunctionDependency struct {
-	SchemaName   *string `json:"schema_name,omitempty"`
 	FunctionName *string `json:"function_name,omitempty"`
+	SchemaName   *string `json:"schema_name,omitempty"`
 }
 
 // Represents a parameter of a function. The same message is used for both input
 // and output columns..
 type FunctionParameterInfo struct {
+	// The comment of the parameter.
+	Comment *string `json:"comment,omitempty"`
 	// The name of the parameter.
 	Name *string `json:"name,omitempty"`
-	// The type of the parameter in text format.
-	TypeText *string `json:"type_text,omitempty"`
+	// The default value of the parameter.
+	ParameterDefault *string `json:"parameter_default,omitempty"`
+	// The mode of the function parameter.
+	ParameterMode FunctionParameterMode `json:"parameter_mode,omitempty"`
+	// The type of the function parameter.
+	ParameterType FunctionParameterType `json:"parameter_type,omitempty"`
+	// The position of the parameter.
+	Position *int `json:"position,omitempty"`
+	// The interval type of the parameter type.
+	TypeIntervalType *string `json:"type_interval_type,omitempty"`
 	// The type of the parameter in JSON format.
 	TypeJson *string `json:"type_json,omitempty"`
 	// The type of the parameter in Enum format.
@@ -282,18 +292,8 @@ type FunctionParameterInfo struct {
 	TypePrecision *int `json:"type_precision,omitempty"`
 	// The scale of the parameter type.
 	TypeScale *int `json:"type_scale,omitempty"`
-	// The interval type of the parameter type.
-	TypeIntervalType *string `json:"type_interval_type,omitempty"`
-	// The position of the parameter.
-	Position *int `json:"position,omitempty"`
-	// The mode of the function parameter.
-	ParameterMode FunctionParameterMode `json:"parameter_mode,omitempty"`
-	// The type of the function parameter.
-	ParameterType FunctionParameterType `json:"parameter_type,omitempty"`
-	// The default value of the parameter.
-	ParameterDefault *string `json:"parameter_default,omitempty"`
-	// The comment of the parameter.
-	Comment *string `json:"comment,omitempty"`
+	// The type of the parameter in text format.
+	TypeText *string `json:"type_text,omitempty"`
 }
 
 type FunctionParameterInfos struct {
@@ -302,12 +302,12 @@ type FunctionParameterInfos struct {
 }
 
 type GetRecipientSharePermissionsResponse struct {
-	// An array of data share permissions for a recipient.
-	PermissionsOut []ShareToPrivilegeAssignment `json:"permissions_out,omitempty"`
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. __page_token__ should be set to this value for the next request
 	// (for the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// An array of data share permissions for a recipient.
+	PermissionsOut []ShareToPrivilegeAssignment `json:"permissions_out,omitempty"`
 }
 
 type GetSharePermissionsResponse struct {
@@ -320,10 +320,10 @@ type GetSharePermissionsResponse struct {
 }
 
 type GetShareRequest struct {
-	// The name of the share.
-	Name *string `json:"name,omitempty"`
 	// Query for data to include in the share.
 	IncludeSharedData *bool `json:"include_shared_data,omitempty"`
+	// The name of the share.
+	Name *string `json:"name,omitempty"`
 }
 
 type IpAccessList struct {
@@ -332,53 +332,51 @@ type IpAccessList struct {
 }
 
 type ListFederationPoliciesRequest struct {
+	MaxResults *int    `json:"max_results,omitempty"`
+	PageToken  *string `json:"page_token,omitempty"`
 	// Name of the recipient. This is the name of the recipient for which the
 	// policies are being listed.
 	RecipientName *string `json:"recipient_name,omitempty"`
-	MaxResults    *int    `json:"max_results,omitempty"`
-	PageToken     *string `json:"page_token,omitempty"`
 }
 
 type ListFederationPoliciesResponse struct {
-	Policies      []FederationPolicy `json:"policies,omitempty"`
 	NextPageToken *string            `json:"next_page_token,omitempty"`
+	Policies      []FederationPolicy `json:"policies,omitempty"`
 }
 
 // Request to fetch the list of assets of a share that is shared with the
 // recipient..
 type ListProviderShareAssetsRequest struct {
+	// Maximum number of functions to return.
+	FunctionMaxResults *int `json:"function_max_results,omitempty"`
+	// Maximum number of notebooks to return.
+	NotebookMaxResults *int `json:"notebook_max_results,omitempty"`
 	// The name of the provider who owns the share.
 	ProviderNameArg *string `json:"provider_name_arg,omitempty"`
 	// The name of the share.
 	ShareNameArg *string `json:"share_name_arg,omitempty"`
 	// Maximum number of tables to return.
 	TableMaxResults *int `json:"table_max_results,omitempty"`
-	// Maximum number of functions to return.
-	FunctionMaxResults *int `json:"function_max_results,omitempty"`
 	// Maximum number of volumes to return.
 	VolumeMaxResults *int `json:"volume_max_results,omitempty"`
-	// Maximum number of notebooks to return.
-	NotebookMaxResults *int `json:"notebook_max_results,omitempty"`
 }
 
 // Response to ListProviderShareAssets, which contains the list of assets of a
 // share..
 type ListProviderShareAssetsResponse struct {
-	// The list of tables in the share.
-	Tables []Table `json:"tables,omitempty"`
 	// The list of functions in the share.
 	Functions []Function `json:"functions,omitempty"`
 	// The list of notebooks in the share.
 	Notebooks []NotebookFile `json:"notebooks,omitempty"`
-	// The list of volumes in the share.
-	Volumes []Volume `json:"volumes,omitempty"`
 	// The metadata of the share.
 	Share *Share `json:"share,omitempty"`
+	// The list of tables in the share.
+	Tables []Table `json:"tables,omitempty"`
+	// The list of volumes in the share.
+	Volumes []Volume `json:"volumes,omitempty"`
 }
 
 type ListProviderSharesRequest struct {
-	// Name of the provider in which to list shares.
-	ProviderNameArg *string `json:"provider_name_arg,omitempty"`
 	// Maximum number of shares to return. - when set to 0, the page length is set
 	// to a server configured value (recommended); - when set to a value greater
 	// than 0, the page length is the minimum of this value and a server configured
@@ -390,15 +388,17 @@ type ListProviderSharesRequest struct {
 	MaxResults *int `json:"max_results,omitempty"`
 	// Opaque pagination token to go to next page based on previous query.
 	PageToken *string `json:"page_token,omitempty"`
+	// Name of the provider in which to list shares.
+	ProviderNameArg *string `json:"provider_name_arg,omitempty"`
 }
 
 type ListProviderSharesResponse struct {
-	// An array of provider shares.
-	Shares []ProviderShare `json:"shares,omitempty"`
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. __page_token__ should be set to this value for the next request
 	// (for the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// An array of provider shares.
+	Shares []ProviderShare `json:"shares,omitempty"`
 }
 
 type ListProvidersRequest struct {
@@ -420,17 +420,15 @@ type ListProvidersRequest struct {
 }
 
 type ListProvidersResponse struct {
-	// An array of provider information objects.
-	Providers []ProviderInfo `json:"providers,omitempty"`
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. __page_token__ should be set to this value for the next request
 	// (for the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// An array of provider information objects.
+	Providers []ProviderInfo `json:"providers,omitempty"`
 }
 
 type ListRecipientSharePermissionsRequest struct {
-	// The name of the Recipient.
-	Name *string `json:"name,omitempty"`
 	// Maximum number of permissions to return. - when set to 0, the page length is
 	// set to a server configured value (recommended); - when set to a value greater
 	// than 0, the page length is the minimum of this value and a server configured
@@ -441,6 +439,8 @@ type ListRecipientSharePermissionsRequest struct {
 	// permissions can be fetched is when the next_page_token is unset from the
 	// response.
 	MaxResults *int `json:"max_results,omitempty"`
+	// The name of the Recipient.
+	Name *string `json:"name,omitempty"`
 	// Opaque pagination token to go to next page based on previous query.
 	PageToken *string `json:"page_token,omitempty"`
 }
@@ -464,17 +464,15 @@ type ListRecipientsRequest struct {
 }
 
 type ListRecipientsResponse struct {
-	// An array of recipient information objects.
-	Recipients []RecipientInfo `json:"recipients,omitempty"`
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. __page_token__ should be set to this value for the next request
 	// (for the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// An array of recipient information objects.
+	Recipients []RecipientInfo `json:"recipients,omitempty"`
 }
 
 type ListSharePermissionsRequest struct {
-	// The name of the share.
-	Name *string `json:"name,omitempty"`
 	// Maximum number of permissions to return. - when set to 0, the page length is
 	// set to a server configured value (recommended); - when set to a value greater
 	// than 0, the page length is the minimum of this value and a server configured
@@ -485,6 +483,8 @@ type ListSharePermissionsRequest struct {
 	// permissions can be fetched is when the next_page_token is unset from the
 	// response.
 	MaxResults *int `json:"max_results,omitempty"`
+	// The name of the share.
+	Name *string `json:"name,omitempty"`
 	// Opaque pagination token to go to next page based on previous query.
 	PageToken *string `json:"page_token,omitempty"`
 }
@@ -504,25 +504,25 @@ type ListSharesRequest struct {
 }
 
 type ListSharesResponse struct {
-	// An array of data share information objects.
-	Shares []ShareInfo `json:"shares,omitempty"`
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. __page_token__ should be set to this value for the next request
 	// (for the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// An array of data share information objects.
+	Shares []ShareInfo `json:"shares,omitempty"`
 }
 
 type NotebookFile struct {
+	// The comment of the notebook file.
+	Comment *string `json:"comment,omitempty"`
+	// The id of the notebook file.
+	Id *string `json:"id,omitempty"`
 	// Name of the notebook file.
 	Name *string `json:"name,omitempty"`
 	// The name of the share that the notebook file belongs to.
 	Share *string `json:"share,omitempty"`
 	// The id of the share that the notebook file belongs to.
 	ShareId *string `json:"share_id,omitempty"`
-	// The id of the notebook file.
-	Id *string `json:"id,omitempty"`
-	// The comment of the notebook file.
-	Comment *string `json:"comment,omitempty"`
 	// The tags of the notebook file.
 	Tags []TagKeyValue `json:"tags,omitempty"`
 }
@@ -532,9 +532,23 @@ type NotebookFile struct {
 // https://docs.databricks.com/en/delta-sharing/create-recipient-oidc-fed for
 // more details..
 type OidcFederationPolicy struct {
+	// The allowed token audiences, as specified in the 'aud' claim of federated
+	// tokens. The audience identifier is intended to represent the recipient of the
+	// token. Can be any non-empty string value. As long as the audience in the
+	// token matches at least one audience in the policy,
+	Audiences []string `json:"audiences,omitempty"`
 	// The required token issuer, as specified in the 'iss' claim of federated
 	// tokens.
 	Issuer *string `json:"issuer,omitempty"`
+	// The required token subject, as specified in the subject claim of federated
+	// tokens. The subject claim identifies the identity of the user or machine
+	// accessing the resource. Examples for Entra ID (AAD): - U2M flow (group
+	// access): If the subject claim is `groups`, this must be the Object ID of the
+	// group in Entra ID. - U2M flow (user access): If the subject claim is `oid`,
+	// this must be the Object ID of the user in Entra ID. - M2M flow (OAuth App
+	// access): If the subject claim is `azp`, this must be the client ID of the
+	// OAuth app registered in Entra ID.
+	Subject *string `json:"subject,omitempty"`
 	// The claim that contains the subject of the token. Depending on the identity
 	// provider and the use case (U2M or M2M), this can vary: - For Entra ID (AAD):
 	// * U2M flow (group access): Use `groups`. * U2M flow (user access): Use `oid`.
@@ -545,20 +559,6 @@ type OidcFederationPolicy struct {
 	// `azp`: Client ID of the OAuth app. - `groups`: Object ID of the group. -
 	// `sub`: Subject identifier for other use cases.
 	SubjectClaim *string `json:"subject_claim,omitempty"`
-	// The required token subject, as specified in the subject claim of federated
-	// tokens. The subject claim identifies the identity of the user or machine
-	// accessing the resource. Examples for Entra ID (AAD): - U2M flow (group
-	// access): If the subject claim is `groups`, this must be the Object ID of the
-	// group in Entra ID. - U2M flow (user access): If the subject claim is `oid`,
-	// this must be the Object ID of the user in Entra ID. - M2M flow (OAuth App
-	// access): If the subject claim is `azp`, this must be the client ID of the
-	// OAuth app registered in Entra ID.
-	Subject *string `json:"subject,omitempty"`
-	// The allowed token audiences, as specified in the 'aud' claim of federated
-	// tokens. The audience identifier is intended to represent the recipient of the
-	// token. Can be any non-empty string value. As long as the audience in the
-	// token matches at least one audience in the policy,
-	Audiences []string `json:"audiences,omitempty"`
 }
 
 type PartitionSpecification_Partition struct {
@@ -569,24 +569,24 @@ type PartitionSpecification_Partition struct {
 type PartitionSpecification_Partition_PartitionValue struct {
 	// The name of the partition column.
 	Name *string `json:"name,omitempty"`
-	// The value of the partition column. When this value is not set, it means
-	// `null` value. When this field is set, field `recipient_property_key` can not
-	// be set.
-	Value *string `json:"value,omitempty"`
+	// The operator to apply for the value.
+	Op PartitionSpecification_Partition_PartitionValue_PartitionValueOp `json:"op,omitempty"`
 	// The key of a Delta Sharing recipient's property. For example
 	// "databricks-account-id". When this field is set, field `value` can not be
 	// set.
 	RecipientPropertyKey *string `json:"recipient_property_key,omitempty"`
-	// The operator to apply for the value.
-	Op PartitionSpecification_Partition_PartitionValue_PartitionValueOp `json:"op,omitempty"`
+	// The value of the partition column. When this value is not set, it means
+	// `null` value. When this field is set, field `recipient_property_key` can not
+	// be set.
+	Value *string `json:"value,omitempty"`
 }
 
 type PermissionsChange struct {
+	// The set of privileges to add.
+	Add []string `json:"add,omitempty"`
 	// The principal whose privileges we are changing. Only one of principal or
 	// principal_id should be specified, never both at the same time.
 	Principal *string `json:"principal,omitempty"`
-	// The set of privileges to add.
-	Add []string `json:"add,omitempty"`
 	// The set of privileges to remove.
 	Remove []string `json:"remove,omitempty"`
 }
@@ -607,40 +607,40 @@ type PropertiesKvPairs struct {
 }
 
 type ProviderInfo struct {
-	// The name of the Provider.
-	Name               *string                        `json:"name,omitempty"`
 	AuthenticationType DeltaSharingAuthenticationType `json:"authentication_type,omitempty"`
-	// This field is required when the __authentication_type__ is **TOKEN**,
-	// **OAUTH_CLIENT_CREDENTIALS** or not provided.
-	RecipientProfileStr *string `json:"recipient_profile_str,omitempty"`
+	// Cloud vendor of the provider's UC metastore. This field is only present when
+	// the __authentication_type__ is **DATABRICKS**.
+	Cloud *string `json:"cloud,omitempty"`
 	// Description about the provider.
 	Comment *string `json:"comment,omitempty"`
+	// Time at which this Provider was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of Provider creator.
+	CreatedBy *string `json:"created_by,omitempty"`
+	// The global UC metastore id of the data provider. This field is only present
+	// when the __authentication_type__ is **DATABRICKS**. The identifier is of
+	// format __cloud__:__region__:__metastore-uuid__.
+	DataProviderGlobalMetastoreId *string `json:"data_provider_global_metastore_id,omitempty"`
+	// UUID of the provider's UC metastore. This field is only present when the
+	// __authentication_type__ is **DATABRICKS**.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// The name of the Provider.
+	Name *string `json:"name,omitempty"`
 	// Username of Provider owner.
 	Owner *string `json:"owner,omitempty"`
 	// The recipient profile. This field is only present when the
 	// authentication_type is `TOKEN` or `OAUTH_CLIENT_CREDENTIALS`.
 	RecipientProfile *RecipientProfile `json:"recipient_profile,omitempty"`
-	// Time at which this Provider was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of Provider creator.
-	CreatedBy *string `json:"created_by,omitempty"`
+	// This field is required when the __authentication_type__ is **TOKEN**,
+	// **OAUTH_CLIENT_CREDENTIALS** or not provided.
+	RecipientProfileStr *string `json:"recipient_profile_str,omitempty"`
+	// Cloud region of the provider's UC metastore. This field is only present when
+	// the __authentication_type__ is **DATABRICKS**.
+	Region *string `json:"region,omitempty"`
 	// Time at which this Provider was created, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of user who last modified Provider.
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Cloud vendor of the provider's UC metastore. This field is only present when
-	// the __authentication_type__ is **DATABRICKS**.
-	Cloud *string `json:"cloud,omitempty"`
-	// Cloud region of the provider's UC metastore. This field is only present when
-	// the __authentication_type__ is **DATABRICKS**.
-	Region *string `json:"region,omitempty"`
-	// UUID of the provider's UC metastore. This field is only present when the
-	// __authentication_type__ is **DATABRICKS**.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// The global UC metastore id of the data provider. This field is only present
-	// when the __authentication_type__ is **DATABRICKS**. The identifier is of
-	// format __cloud__:__region__:__metastore-uuid__.
-	DataProviderGlobalMetastoreId *string `json:"data_provider_global_metastore_id,omitempty"`
 }
 
 type ProviderShare struct {
@@ -649,79 +649,79 @@ type ProviderShare struct {
 }
 
 type RecipientInfo struct {
-	// Name of Recipient.
-	Name               *string                        `json:"name,omitempty"`
+	// A boolean status field showing whether the Recipient's activation URL has
+	// been exercised or not.
+	Activated *bool `json:"activated,omitempty"`
+	// Full activation url to retrieve the access token. It will be empty if the
+	// token is already retrieved.
+	ActivationUrl      *string                        `json:"activation_url,omitempty"`
 	AuthenticationType DeltaSharingAuthenticationType `json:"authentication_type,omitempty"`
-	// The one-time sharing code provided by the data recipient. This field is only
+	// Cloud vendor of the recipient's Unity Catalog Metastore. This field is only
 	// present when the __authentication_type__ is **DATABRICKS**.
-	SharingCode *string `json:"sharing_code,omitempty"`
+	Cloud *string `json:"cloud,omitempty"`
+	// Description about the recipient.
+	Comment *string `json:"comment,omitempty"`
+	// Time at which this recipient was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of recipient creator.
+	CreatedBy *string `json:"created_by,omitempty"`
 	// The global Unity Catalog metastore id provided by the data recipient. This
 	// field is only present when the __authentication_type__ is **DATABRICKS**. The
 	// identifier is of format __cloud__:__region__:__metastore-uuid__.
 	DataRecipientGlobalMetastoreId *string `json:"data_recipient_global_metastore_id,omitempty"`
-	// Username of the recipient owner.
-	Owner *string `json:"owner,omitempty"`
-	// Description about the recipient.
-	Comment *string `json:"comment,omitempty"`
+	// Expiration timestamp of the token, in epoch milliseconds.
+	ExpirationTime *int64 `json:"expiration_time,omitempty"`
+	// [Create,Update:IGN] common - id of the recipient
+	Id *string `json:"id,omitempty"`
 	// IP Access List
 	IpAccessList *IpAccessList `json:"ip_access_list,omitempty"`
+	// Unique identifier of recipient's Unity Catalog Metastore. This field is only
+	// present when the __authentication_type__ is **DATABRICKS**.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// Name of Recipient.
+	Name *string `json:"name,omitempty"`
+	// Username of the recipient owner.
+	Owner *string `json:"owner,omitempty"`
 	// Recipient properties as map of string key-value pairs. When provided in
 	// update request, the specified properties will override the existing
 	// properties. To add and remove properties, one would need to perform a
 	// read-modify-write.
 	PropertiesKvpairs *PropertiesKvPairs `json:"properties_kvpairs,omitempty"`
-	// Expiration timestamp of the token, in epoch milliseconds.
-	ExpirationTime *int64 `json:"expiration_time,omitempty"`
-	// Full activation url to retrieve the access token. It will be empty if the
-	// token is already retrieved.
-	ActivationUrl *string `json:"activation_url,omitempty"`
-	// A boolean status field showing whether the Recipient's activation URL has
-	// been exercised or not.
-	Activated *bool `json:"activated,omitempty"`
-	// Time at which this recipient was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of recipient creator.
-	CreatedBy *string `json:"created_by,omitempty"`
+	// Cloud region of the recipient's Unity Catalog Metastore. This field is only
+	// present when the __authentication_type__ is **DATABRICKS**.
+	Region *string `json:"region,omitempty"`
+	// The one-time sharing code provided by the data recipient. This field is only
+	// present when the __authentication_type__ is **DATABRICKS**.
+	SharingCode *string `json:"sharing_code,omitempty"`
 	// This field is only present when the __authentication_type__ is **TOKEN**.
 	Tokens []RecipientTokenInfo `json:"tokens,omitempty"`
 	// Time at which the recipient was updated, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of recipient updater.
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Cloud vendor of the recipient's Unity Catalog Metastore. This field is only
-	// present when the __authentication_type__ is **DATABRICKS**.
-	Cloud *string `json:"cloud,omitempty"`
-	// Cloud region of the recipient's Unity Catalog Metastore. This field is only
-	// present when the __authentication_type__ is **DATABRICKS**.
-	Region *string `json:"region,omitempty"`
-	// Unique identifier of recipient's Unity Catalog Metastore. This field is only
-	// present when the __authentication_type__ is **DATABRICKS**.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// [Create,Update:IGN] common - id of the recipient
-	Id *string `json:"id,omitempty"`
 }
 
 type RecipientProfile struct {
-	// The version number of the recipient's credentials on a share.
-	ShareCredentialsVersion *int `json:"share_credentials_version,omitempty"`
-	// The endpoint for the share to be used by the recipient.
-	Endpoint *string `json:"endpoint,omitempty"`
 	// The token used to authorize the recipient.
 	BearerToken *string `json:"bearer_token,omitempty"`
+	// The endpoint for the share to be used by the recipient.
+	Endpoint *string `json:"endpoint,omitempty"`
+	// The version number of the recipient's credentials on a share.
+	ShareCredentialsVersion *int `json:"share_credentials_version,omitempty"`
 }
 
 type RecipientTokenInfo struct {
-	// Unique ID of the recipient token.
-	Id *string `json:"id,omitempty"`
+	// Full activation URL to retrieve the access token. It will be empty if the
+	// token is already retrieved.
+	ActivationUrl *string `json:"activation_url,omitempty"`
 	// Time at which this recipient token was created, in epoch milliseconds.
 	CreatedAt *int64 `json:"created_at,omitempty"`
 	// Username of recipient token creator.
 	CreatedBy *string `json:"created_by,omitempty"`
-	// Full activation URL to retrieve the access token. It will be empty if the
-	// token is already retrieved.
-	ActivationUrl *string `json:"activation_url,omitempty"`
 	// Expiration timestamp of the token in epoch milliseconds.
 	ExpirationTime *int64 `json:"expiration_time,omitempty"`
+	// Unique ID of the recipient token.
+	Id *string `json:"id,omitempty"`
 	// Time at which this recipient token was updated, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of recipient token updater.
@@ -744,76 +744,87 @@ type ReplicationConfig struct {
 }
 
 type RetrieveTokenResponse struct {
-	// These field names must follow the delta sharing protocol.
-	ShareCredentialsVersion *int `json:"shareCredentialsVersion,omitempty"`
 	// The token used to authorize the recipient.
 	BearerToken *string `json:"bearerToken,omitempty"`
 	// The endpoint for the share to be used by the recipient.
 	Endpoint *string `json:"endpoint,omitempty"`
 	// Expiration timestamp of the token in epoch milliseconds.
 	ExpirationTime *string `json:"expirationTime,omitempty"`
+	// These field names must follow the delta sharing protocol.
+	ShareCredentialsVersion *int `json:"shareCredentialsVersion,omitempty"`
 }
 
 type RotateRecipientTokenRequest struct {
-	// The name of the Recipient.
-	Name *string `json:"name,omitempty"`
 	// The expiration time of the bearer token in ISO 8601 format. This will set the
 	// expiration_time of existing token only to a smaller timestamp, it cannot
 	// extend the expiration_time. Use 0 to expire the existing token immediately,
 	// negative number will return an error.
 	ExistingTokenExpireInSeconds *int64 `json:"existing_token_expire_in_seconds,omitempty"`
+	// The name of the Recipient.
+	Name *string `json:"name,omitempty"`
 }
 
 type Share struct {
-	Name *string `json:"name,omitempty"`
 	Id   *string `json:"id,omitempty"`
+	Name *string `json:"name,omitempty"`
 }
 
 type ShareInfo struct {
-	// Name of the share.
-	Name *string `json:"name,omitempty"`
-	// Username of current owner of share.
-	Owner *string `json:"owner,omitempty"`
 	// User-provided free-form text description.
 	Comment *string `json:"comment,omitempty"`
-	// Storage root URL for the share.
-	StorageRoot *string `json:"storage_root,omitempty"`
-	// Configuration for share replication.
-	ReplicationConfig *ReplicationConfig `json:"replication_config,omitempty"`
-	// A list of shared data objects within the share.
-	Objects []SharedDataObject `json:"objects,omitempty"`
 	// Time at which this share was created, in epoch milliseconds.
 	CreatedAt *int64 `json:"created_at,omitempty"`
 	// Username of share creator.
 	CreatedBy *string `json:"created_by,omitempty"`
+	// Name of the share.
+	Name *string `json:"name,omitempty"`
+	// A list of shared data objects within the share.
+	Objects []SharedDataObject `json:"objects,omitempty"`
+	// Username of current owner of share.
+	Owner *string `json:"owner,omitempty"`
+	// Configuration for share replication.
+	ReplicationConfig *ReplicationConfig `json:"replication_config,omitempty"`
+	// Storage Location URL (full path) for the share.
+	StorageLocation *string `json:"storage_location,omitempty"`
+	// Storage root URL for the share.
+	StorageRoot *string `json:"storage_root,omitempty"`
 	// Time at which this share was updated, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of share updater.
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Storage Location URL (full path) for the share.
-	StorageLocation *string `json:"storage_location,omitempty"`
 }
 
 type ShareToPrivilegeAssignment struct {
-	// The share name.
-	ShareName *string `json:"share_name,omitempty"`
 	// The privileges assigned to the principal.
 	PrivilegeAssignments []PrivilegeAssignment `json:"privilege_assignments,omitempty"`
+	// The share name.
+	ShareName *string `json:"share_name,omitempty"`
 }
 
 type SharedDataObject struct {
-	// A fully qualified name that uniquely identifies a data object. For example, a
-	// table's fully qualified name is in the format of
-	// `<catalog>.<schema>.<table>`,
-	Name *string `json:"name,omitempty"`
-	// The type of the data object.
-	DataObjectType *string `json:"data_object_type,omitempty"`
 	// The time when this data object is added to the share, in epoch milliseconds.
 	AddedAt *int64 `json:"added_at,omitempty"`
 	// Username of the sharer.
 	AddedBy *string `json:"added_by,omitempty"`
+	// Whether to enable cdf or indicate if cdf is enabled on the shared object.
+	CdfEnabled *bool `json:"cdf_enabled,omitempty"`
 	// A user-provided comment when adding the data object to the share.
 	Comment *string `json:"comment,omitempty"`
+	// The content of the notebook file when the data object type is NOTEBOOK_FILE.
+	// This should be base64 encoded. Required for adding a NOTEBOOK_FILE, optional
+	// for updating, ignored for other types.
+	Content *string `json:"content,omitempty"`
+	// The type of the data object.
+	DataObjectType *string `json:"data_object_type,omitempty"`
+	// Whether to enable or disable sharing of data history. If not specified, the
+	// default is **DISABLED**.
+	HistoryDataSharingStatus SharedDataObject_HistoryDataSharingStatus_Enum `json:"history_data_sharing_status,omitempty"`
+	// A fully qualified name that uniquely identifies a data object. For example, a
+	// table's fully qualified name is in the format of
+	// `<catalog>.<schema>.<table>`,
+	Name *string `json:"name,omitempty"`
+	// Array of partitions for the shared data.
+	Partitions []PartitionSpecification_Partition `json:"partitions,omitempty"`
 	// A user-provided alias name for table-like data objects within the share.
 	//
 	// Use this field for table-like objects (for example: TABLE, VIEW,
@@ -838,11 +849,6 @@ type SharedDataObject struct {
 	// "catalog.analytics_schema.customer_view" (3 parts not allowed) - Invalid:
 	// "analytics-schema.customer-view" (hyphens not allowed)
 	SharedAs *string `json:"shared_as,omitempty"`
-	// Whether to enable cdf or indicate if cdf is enabled on the shared object.
-	CdfEnabled *bool `json:"cdf_enabled,omitempty"`
-	// Whether to enable or disable sharing of data history. If not specified, the
-	// default is **DISABLED**.
-	HistoryDataSharingStatus SharedDataObject_HistoryDataSharingStatus_Enum `json:"history_data_sharing_status,omitempty"`
 	// The start version associated with the object. This allows data providers to
 	// control the lowest object version that is accessible by clients. If
 	// specified, clients can query snapshots or changes for versions >=
@@ -853,10 +859,6 @@ type SharedDataObject struct {
 	StartVersion *int64 `json:"start_version,omitempty"`
 	// One of: **ACTIVE**, **PERMISSION_DENIED**.
 	Status SharedDataObject_Status_Enum `json:"status,omitempty"`
-	// The content of the notebook file when the data object type is NOTEBOOK_FILE.
-	// This should be base64 encoded. Required for adding a NOTEBOOK_FILE, optional
-	// for updating, ignored for other types.
-	Content *string `json:"content,omitempty"`
 	// A user-provided alias name for non-table data objects within the share.
 	//
 	// Use this field for non-table objects (for example: VOLUME, MODEL,
@@ -885,11 +887,17 @@ type SharedDataObject struct {
 	// "catalog.data_schema.training_data" (3 parts not allowed for volumes) -
 	// Invalid: "data-schema.training-data" (hyphens not allowed)
 	StringSharedAs *string `json:"string_shared_as,omitempty"`
-	// Array of partitions for the shared data.
-	Partitions []PartitionSpecification_Partition `json:"partitions,omitempty"`
 }
 
 type Table struct {
+	// The comment of the table.
+	Comment *string `json:"comment,omitempty"`
+	// The id of the table.
+	Id *string `json:"id,omitempty"`
+	// The catalog and schema of the materialized table
+	MaterializationNamespace *string `json:"materialization_namespace,omitempty"`
+	// The name of a materialized table.
+	MaterializedTableName *string `json:"materialized_table_name,omitempty"`
 	// The name of the table.
 	Name *string `json:"name,omitempty"`
 	// The name of the schema that the table belongs to.
@@ -898,16 +906,8 @@ type Table struct {
 	Share *string `json:"share,omitempty"`
 	// The id of the share that the table belongs to.
 	ShareId *string `json:"share_id,omitempty"`
-	// The id of the table.
-	Id *string `json:"id,omitempty"`
-	// The comment of the table.
-	Comment *string `json:"comment,omitempty"`
 	// The Tags of the table.
 	Tags []TagKeyValue `json:"tags,omitempty"`
-	// The name of a materialized table.
-	MaterializedTableName *string `json:"materialized_table_name,omitempty"`
-	// The catalog and schema of the materialized table
-	MaterializationNamespace *string `json:"materialization_namespace,omitempty"`
 }
 
 // A Table in UC as a dependency..
@@ -924,111 +924,111 @@ type TagKeyValue struct {
 }
 
 type UpdateProviderRequest struct {
+	AuthenticationType DeltaSharingAuthenticationType `json:"authentication_type,omitempty"`
+	// Cloud vendor of the provider's UC metastore. This field is only present when
+	// the __authentication_type__ is **DATABRICKS**.
+	Cloud *string `json:"cloud,omitempty"`
+	// Description about the provider.
+	Comment *string `json:"comment,omitempty"`
+	// Time at which this Provider was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of Provider creator.
+	CreatedBy *string `json:"created_by,omitempty"`
+	// The global UC metastore id of the data provider. This field is only present
+	// when the __authentication_type__ is **DATABRICKS**. The identifier is of
+	// format __cloud__:__region__:__metastore-uuid__.
+	DataProviderGlobalMetastoreId *string `json:"data_provider_global_metastore_id,omitempty"`
+	// UUID of the provider's UC metastore. This field is only present when the
+	// __authentication_type__ is **DATABRICKS**.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// The name of the Provider.
+	Name *string `json:"name,omitempty"`
 	// Name of the provider.
 	NameArg *string `json:"name_arg,omitempty"`
 	// New name for the provider.
 	NewName *string `json:"new_name,omitempty"`
-	// The name of the Provider.
-	Name               *string                        `json:"name,omitempty"`
-	AuthenticationType DeltaSharingAuthenticationType `json:"authentication_type,omitempty"`
-	// This field is required when the __authentication_type__ is **TOKEN**,
-	// **OAUTH_CLIENT_CREDENTIALS** or not provided.
-	RecipientProfileStr *string `json:"recipient_profile_str,omitempty"`
-	// Description about the provider.
-	Comment *string `json:"comment,omitempty"`
 	// Username of Provider owner.
 	Owner *string `json:"owner,omitempty"`
 	// The recipient profile. This field is only present when the
 	// authentication_type is `TOKEN` or `OAUTH_CLIENT_CREDENTIALS`.
 	RecipientProfile *RecipientProfile `json:"recipient_profile,omitempty"`
-	// Time at which this Provider was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of Provider creator.
-	CreatedBy *string `json:"created_by,omitempty"`
+	// This field is required when the __authentication_type__ is **TOKEN**,
+	// **OAUTH_CLIENT_CREDENTIALS** or not provided.
+	RecipientProfileStr *string `json:"recipient_profile_str,omitempty"`
+	// Cloud region of the provider's UC metastore. This field is only present when
+	// the __authentication_type__ is **DATABRICKS**.
+	Region *string `json:"region,omitempty"`
 	// Time at which this Provider was created, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of user who last modified Provider.
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Cloud vendor of the provider's UC metastore. This field is only present when
-	// the __authentication_type__ is **DATABRICKS**.
-	Cloud *string `json:"cloud,omitempty"`
-	// Cloud region of the provider's UC metastore. This field is only present when
-	// the __authentication_type__ is **DATABRICKS**.
-	Region *string `json:"region,omitempty"`
-	// UUID of the provider's UC metastore. This field is only present when the
-	// __authentication_type__ is **DATABRICKS**.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// The global UC metastore id of the data provider. This field is only present
-	// when the __authentication_type__ is **DATABRICKS**. The identifier is of
-	// format __cloud__:__region__:__metastore-uuid__.
-	DataProviderGlobalMetastoreId *string `json:"data_provider_global_metastore_id,omitempty"`
 }
 
 type UpdateRecipientRequest struct {
-	// Name of the recipient.
-	NameArg *string `json:"name_arg,omitempty"`
-	// New name for the recipient. .
-	NewName *string `json:"new_name,omitempty"`
-	// Name of Recipient.
-	Name               *string                        `json:"name,omitempty"`
+	// A boolean status field showing whether the Recipient's activation URL has
+	// been exercised or not.
+	Activated *bool `json:"activated,omitempty"`
+	// Full activation url to retrieve the access token. It will be empty if the
+	// token is already retrieved.
+	ActivationUrl      *string                        `json:"activation_url,omitempty"`
 	AuthenticationType DeltaSharingAuthenticationType `json:"authentication_type,omitempty"`
-	// The one-time sharing code provided by the data recipient. This field is only
+	// Cloud vendor of the recipient's Unity Catalog Metastore. This field is only
 	// present when the __authentication_type__ is **DATABRICKS**.
-	SharingCode *string `json:"sharing_code,omitempty"`
+	Cloud *string `json:"cloud,omitempty"`
+	// Description about the recipient.
+	Comment *string `json:"comment,omitempty"`
+	// Time at which this recipient was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of recipient creator.
+	CreatedBy *string `json:"created_by,omitempty"`
 	// The global Unity Catalog metastore id provided by the data recipient. This
 	// field is only present when the __authentication_type__ is **DATABRICKS**. The
 	// identifier is of format __cloud__:__region__:__metastore-uuid__.
 	DataRecipientGlobalMetastoreId *string `json:"data_recipient_global_metastore_id,omitempty"`
-	// Username of the recipient owner.
-	Owner *string `json:"owner,omitempty"`
-	// Description about the recipient.
-	Comment *string `json:"comment,omitempty"`
+	// Expiration timestamp of the token, in epoch milliseconds.
+	ExpirationTime *int64 `json:"expiration_time,omitempty"`
+	// [Create,Update:IGN] common - id of the recipient
+	Id *string `json:"id,omitempty"`
 	// IP Access List
 	IpAccessList *IpAccessList `json:"ip_access_list,omitempty"`
+	// Unique identifier of recipient's Unity Catalog Metastore. This field is only
+	// present when the __authentication_type__ is **DATABRICKS**.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// Name of Recipient.
+	Name *string `json:"name,omitempty"`
+	// Name of the recipient.
+	NameArg *string `json:"name_arg,omitempty"`
+	// New name for the recipient. .
+	NewName *string `json:"new_name,omitempty"`
+	// Username of the recipient owner.
+	Owner *string `json:"owner,omitempty"`
 	// Recipient properties as map of string key-value pairs. When provided in
 	// update request, the specified properties will override the existing
 	// properties. To add and remove properties, one would need to perform a
 	// read-modify-write.
 	PropertiesKvpairs *PropertiesKvPairs `json:"properties_kvpairs,omitempty"`
-	// Expiration timestamp of the token, in epoch milliseconds.
-	ExpirationTime *int64 `json:"expiration_time,omitempty"`
-	// Full activation url to retrieve the access token. It will be empty if the
-	// token is already retrieved.
-	ActivationUrl *string `json:"activation_url,omitempty"`
-	// A boolean status field showing whether the Recipient's activation URL has
-	// been exercised or not.
-	Activated *bool `json:"activated,omitempty"`
-	// Time at which this recipient was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of recipient creator.
-	CreatedBy *string `json:"created_by,omitempty"`
+	// Cloud region of the recipient's Unity Catalog Metastore. This field is only
+	// present when the __authentication_type__ is **DATABRICKS**.
+	Region *string `json:"region,omitempty"`
+	// The one-time sharing code provided by the data recipient. This field is only
+	// present when the __authentication_type__ is **DATABRICKS**.
+	SharingCode *string `json:"sharing_code,omitempty"`
 	// This field is only present when the __authentication_type__ is **TOKEN**.
 	Tokens []RecipientTokenInfo `json:"tokens,omitempty"`
 	// Time at which the recipient was updated, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of recipient updater.
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Cloud vendor of the recipient's Unity Catalog Metastore. This field is only
-	// present when the __authentication_type__ is **DATABRICKS**.
-	Cloud *string `json:"cloud,omitempty"`
-	// Cloud region of the recipient's Unity Catalog Metastore. This field is only
-	// present when the __authentication_type__ is **DATABRICKS**.
-	Region *string `json:"region,omitempty"`
-	// Unique identifier of recipient's Unity Catalog Metastore. This field is only
-	// present when the __authentication_type__ is **DATABRICKS**.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// [Create,Update:IGN] common - id of the recipient
-	Id *string `json:"id,omitempty"`
 }
 
 type UpdateSharePermissionsRequest struct {
+	// Array of permissions change objects.
+	Changes []PermissionsChange `json:"changes,omitempty"`
 	// The name of the share.
 	Name *string `json:"name,omitempty"`
 	// Optional. Whether to return the latest permissions list of the share in the
 	// response.
 	OmitPermissionsList *bool `json:"omit_permissions_list,omitempty"`
-	// Array of permissions change objects.
-	Changes []PermissionsChange `json:"changes,omitempty"`
 }
 
 type UpdateSharePermissionsResponse struct {
@@ -1037,34 +1037,34 @@ type UpdateSharePermissionsResponse struct {
 }
 
 type UpdateShareRequest struct {
-	// The name of the share.
-	NameArg *string `json:"name_arg,omitempty"`
-	// New name for the share.
-	NewName *string `json:"new_name,omitempty"`
-	// Array of shared data object updates.
-	Updates []UpdateShareRequest_SharedDataObjectUpdate `json:"updates,omitempty"`
-	// Name of the share.
-	Name *string `json:"name,omitempty"`
-	// Username of current owner of share.
-	Owner *string `json:"owner,omitempty"`
 	// User-provided free-form text description.
 	Comment *string `json:"comment,omitempty"`
-	// Storage root URL for the share.
-	StorageRoot *string `json:"storage_root,omitempty"`
-	// Configuration for share replication.
-	ReplicationConfig *ReplicationConfig `json:"replication_config,omitempty"`
-	// A list of shared data objects within the share.
-	Objects []SharedDataObject `json:"objects,omitempty"`
 	// Time at which this share was created, in epoch milliseconds.
 	CreatedAt *int64 `json:"created_at,omitempty"`
 	// Username of share creator.
 	CreatedBy *string `json:"created_by,omitempty"`
+	// Name of the share.
+	Name *string `json:"name,omitempty"`
+	// The name of the share.
+	NameArg *string `json:"name_arg,omitempty"`
+	// New name for the share.
+	NewName *string `json:"new_name,omitempty"`
+	// A list of shared data objects within the share.
+	Objects []SharedDataObject `json:"objects,omitempty"`
+	// Username of current owner of share.
+	Owner *string `json:"owner,omitempty"`
+	// Configuration for share replication.
+	ReplicationConfig *ReplicationConfig `json:"replication_config,omitempty"`
+	// Storage Location URL (full path) for the share.
+	StorageLocation *string `json:"storage_location,omitempty"`
+	// Storage root URL for the share.
+	StorageRoot *string `json:"storage_root,omitempty"`
 	// Time at which this share was updated, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of share updater.
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Storage Location URL (full path) for the share.
-	StorageLocation *string `json:"storage_location,omitempty"`
+	// Array of shared data object updates.
+	Updates []UpdateShareRequest_SharedDataObjectUpdate `json:"updates,omitempty"`
 }
 
 type UpdateShareRequest_SharedDataObjectUpdate struct {
@@ -1076,20 +1076,20 @@ type UpdateShareRequest_SharedDataObjectUpdate struct {
 }
 
 type Volume struct {
-	// The name of the volume.
-	Name *string `json:"name,omitempty"`
+	// The comment of the volume.
+	Comment *string `json:"comment,omitempty"`
 	// This id maps to the shared_volume_id in database Recipient needs
 	// shared_volume_id for recon to check if this volume is already in recipient's
 	// DB or not.
 	Id *string `json:"id,omitempty"`
+	// The name of the volume.
+	Name *string `json:"name,omitempty"`
 	// The name of the schema that the volume belongs to.
 	Schema *string `json:"schema,omitempty"`
 	// The name of the share that the volume belongs to.
 	Share *string `json:"share,omitempty"`
 	// / The id of the share that the volume belongs to.
 	ShareId *string `json:"share_id,omitempty"`
-	// The comment of the volume.
-	Comment *string `json:"comment,omitempty"`
 	// The tags of the volume.
 	Tags []TagKeyValue `json:"tags,omitempty"`
 }

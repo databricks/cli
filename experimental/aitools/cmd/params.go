@@ -11,8 +11,8 @@ import (
 // parseParams converts --param flag values into SDK parameter list items for
 // the Databricks SQL Statement Execution API. Each input is either
 // "name=value" (defaults to STRING server-side) or "name:TYPE=value" (typed,
-// e.g. "since:DATE=2026-01-01"). An empty value becomes NULL on the wire
-// because StatementParameterListItem.Value uses omitempty.
+// e.g. "since:DATE=2026-01-01"). An empty value is left unset, which the API
+// treats as NULL.
 //
 // The Databricks API only supports named markers (`:name`), not positional
 // `?`, and parameter names must be unique within a statement.

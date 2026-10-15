@@ -53,10 +53,10 @@ func TestParseParams(t *testing.T) {
 			},
 		},
 		{
-			name: "empty value becomes NULL on the wire via omitempty",
+			name: "empty value becomes NULL on the wire as an unset value",
 			in:   []string{"opt="},
 			want: []sql.StatementParameter{
-				{Name: new("opt"), Value: new("")},
+				{Name: new("opt")},
 			},
 		},
 		{

@@ -9,104 +9,104 @@ import (
 )
 
 type CreateRepoRequest struct {
-	// URL of the Git repository to be linked.
-	Url *string `json:"url,omitempty"`
+	// Git credential ID to use when cloning the repository. The Git credential must
+	// be configured for the current user.
+	GitCredentialId *int64 `json:"git_credential_id,omitempty"`
+	// Desired path for the repo in the workspace. Almost any path in the workspace
+	// can be chosen. If repo is created in `/Repos`, path must be in the format
+	// `/Repos/{folder}/{repo-name}`.
+	Path *string `json:"path,omitempty"`
 	// Git provider. This field is case-insensitive. The available Git providers are
 	// `gitHub`, `bitbucketCloud`, `gitLab`, `azureDevOpsServices` (Azure DevOps
 	// Services, including Microsoft Entra ID authentication), `gitHubEnterprise`,
 	// `bitbucketServer` (Bitbucket Data Center), `gitLabEnterpriseEdition` (GitLab
 	// Self-Managed), and `awsCodeCommit`.
 	Provider *string `json:"provider,omitempty"`
-	// Desired path for the repo in the workspace. Almost any path in the workspace
-	// can be chosen. If repo is created in `/Repos`, path must be in the format
-	// `/Repos/{folder}/{repo-name}`.
-	Path *string `json:"path,omitempty"`
 	// If specified, the repo will be created with sparse checkout enabled. You
 	// cannot enable/disable sparse checkout after the repo is created.
 	SparseCheckout *SparseCheckout `json:"sparse_checkout,omitempty"`
-	// Git credential ID to use when cloning the repository. The Git credential must
-	// be configured for the current user.
-	GitCredentialId *int64 `json:"git_credential_id,omitempty"`
+	// URL of the Git repository to be linked.
+	Url *string `json:"url,omitempty"`
 }
 
 type CreateRepoResponse struct {
-	// ID of the Git folder (repo) object in the workspace.
-	Id *int64 `json:"id,omitempty"`
-	// Path of the Git folder (repo) in the workspace.
-	Path *string `json:"path,omitempty"`
-	// URL of the linked Git repository.
-	Url *string `json:"url,omitempty"`
-	// Git provider of the linked Git repository, e.g. `gitHub`,
-	// `azureDevOpsServices`, `bitbucketServer` (Bitbucket Data Center),
-	// `gitLabEnterpriseEdition` (GitLab Self-Managed), or `awsCodeCommit`.
-	Provider *string `json:"provider,omitempty"`
 	// Branch that the Git folder (repo) is checked out to.
 	Branch *string `json:"branch,omitempty"`
 	// SHA-1 hash representing the commit ID of the current HEAD of the Git folder
 	// (repo).
 	HeadCommitId *string `json:"head_commit_id,omitempty"`
-	// Sparse checkout settings for the Git folder (repo).
-	SparseCheckout *SparseCheckout `json:"sparse_checkout,omitempty"`
-}
-
-type GetRepoResponse struct {
 	// ID of the Git folder (repo) object in the workspace.
 	Id *int64 `json:"id,omitempty"`
 	// Path of the Git folder (repo) in the workspace.
 	Path *string `json:"path,omitempty"`
-	// URL of the linked Git repository.
-	Url *string `json:"url,omitempty"`
 	// Git provider of the linked Git repository, e.g. `gitHub`,
 	// `azureDevOpsServices`, `bitbucketServer` (Bitbucket Data Center),
 	// `gitLabEnterpriseEdition` (GitLab Self-Managed), or `awsCodeCommit`.
 	Provider *string `json:"provider,omitempty"`
-	// Branch that the local version of the repo is checked out to.
-	Branch *string `json:"branch,omitempty"`
-	// SHA-1 hash representing the commit ID of the current HEAD of the repo.
-	HeadCommitId *string `json:"head_commit_id,omitempty"`
 	// Sparse checkout settings for the Git folder (repo).
 	SparseCheckout *SparseCheckout `json:"sparse_checkout,omitempty"`
+	// URL of the linked Git repository.
+	Url *string `json:"url,omitempty"`
+}
+
+type GetRepoResponse struct {
+	// Branch that the local version of the repo is checked out to.
+	Branch *string `json:"branch,omitempty"`
 	// Whether the Git CLI is enabled for this Git folder (repo). When true, Git
 	// commands can be run directly against this Git folder using the Git CLI.
 	GitCliEnabled *bool `json:"git_cli_enabled,omitempty"`
+	// SHA-1 hash representing the commit ID of the current HEAD of the repo.
+	HeadCommitId *string `json:"head_commit_id,omitempty"`
+	// ID of the Git folder (repo) object in the workspace.
+	Id *int64 `json:"id,omitempty"`
+	// Path of the Git folder (repo) in the workspace.
+	Path *string `json:"path,omitempty"`
+	// Git provider of the linked Git repository, e.g. `gitHub`,
+	// `azureDevOpsServices`, `bitbucketServer` (Bitbucket Data Center),
+	// `gitLabEnterpriseEdition` (GitLab Self-Managed), or `awsCodeCommit`.
+	Provider *string `json:"provider,omitempty"`
+	// Sparse checkout settings for the Git folder (repo).
+	SparseCheckout *SparseCheckout `json:"sparse_checkout,omitempty"`
+	// URL of the linked Git repository.
+	Url *string `json:"url,omitempty"`
 }
 
 type ListReposRequest struct {
+	// Token used to get the next page of results. If not specified, returns the
+	// first page of results as well as a next page token if there are more results.
+	NextPageToken *string `json:"next_page_token,omitempty"`
 	// Filters repos that have paths starting with the given path prefix. If not
 	// provided or when provided an effectively empty prefix (`/` or `/Workspace`)
 	// Git folders (repos) from `/Workspace/Repos` will be served.
 	PathPrefix *string `json:"path_prefix,omitempty"`
-	// Token used to get the next page of results. If not specified, returns the
-	// first page of results as well as a next page token if there are more results.
-	NextPageToken *string `json:"next_page_token,omitempty"`
 }
 
 type ListReposResponse struct {
-	// List of Git folders (repos).
-	Repos []RepoInfo `json:"repos,omitempty"`
 	// Token that can be specified as a query parameter to the `GET /repos` endpoint
 	// to retrieve the next page of results.
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// List of Git folders (repos).
+	Repos []RepoInfo `json:"repos,omitempty"`
 }
 
 // Git folder (repo) information..
 type RepoInfo struct {
-	// Id of the git folder (repo) in the Workspace.
-	Id *int64 `json:"id,omitempty"`
-	// Root path of the git folder (repo) in the Workspace.
-	Path *string `json:"path,omitempty"`
-	// URL of the remote git repository.
-	Url *string `json:"url,omitempty"`
-	// Git provider of the remote git repository, e.g. `gitHub`,
-	// `azureDevOpsServices`, `bitbucketServer` (Bitbucket Data Center),
-	// `gitLabEnterpriseEdition` (GitLab Self-Managed), or `awsCodeCommit`.
-	Provider *string `json:"provider,omitempty"`
 	// Name of the current git branch of the git folder (repo).
 	Branch *string `json:"branch,omitempty"`
 	// Current git commit id of the git folder (repo).
 	HeadCommitId *string `json:"head_commit_id,omitempty"`
+	// Id of the git folder (repo) in the Workspace.
+	Id *int64 `json:"id,omitempty"`
+	// Root path of the git folder (repo) in the Workspace.
+	Path *string `json:"path,omitempty"`
+	// Git provider of the remote git repository, e.g. `gitHub`,
+	// `azureDevOpsServices`, `bitbucketServer` (Bitbucket Data Center),
+	// `gitLabEnterpriseEdition` (GitLab Self-Managed), or `awsCodeCommit`.
+	Provider *string `json:"provider,omitempty"`
 	// Sparse checkout config for the git folder (repo).
 	SparseCheckout *SparseCheckout `json:"sparse_checkout,omitempty"`
+	// URL of the remote git repository.
+	Url *string `json:"url,omitempty"`
 }
 
 // Sparse checkout configuration, it contains options like cone patterns..
@@ -126,17 +126,8 @@ type SparseCheckoutUpdate struct {
 }
 
 type UpdateRepoRequest struct {
-	// ID of the Git folder (repo) object in the workspace.
-	Id *int64 `json:"id,omitempty"`
 	// Branch that the local version of the repo is checked out to.
 	Branch *string `json:"branch,omitempty"`
-	// Tag that the local version of the repo is checked out to. Updating the repo
-	// to a tag puts the repo in a detached HEAD state. Before committing new
-	// changes, you must update the repo to a branch instead of the detached HEAD.
-	Tag *string `json:"tag,omitempty"`
-	// If specified, update the sparse checkout settings. The update will fail if
-	// sparse checkout is not enabled for the repo.
-	SparseCheckout *SparseCheckoutUpdate `json:"sparse_checkout,omitempty"`
 	// WARNING: DESTRUCTIVE AND IRREVERSIBLE. If true, permanently deletes ALL
 	// uncommitted changes in the Git folder — staged, unstaged, and untracked
 	// files — before updating. Lost data CANNOT be recovered.
@@ -153,6 +144,15 @@ type UpdateRepoRequest struct {
 	// Git credential ID to use for this update operation. The Git credential must
 	// be configured for the current user.
 	GitCredentialId *int64 `json:"git_credential_id,omitempty"`
+	// ID of the Git folder (repo) object in the workspace.
+	Id *int64 `json:"id,omitempty"`
+	// If specified, update the sparse checkout settings. The update will fail if
+	// sparse checkout is not enabled for the repo.
+	SparseCheckout *SparseCheckoutUpdate `json:"sparse_checkout,omitempty"`
+	// Tag that the local version of the repo is checked out to. Updating the repo
+	// to a tag puts the repo in a detached HEAD state. Before committing new
+	// changes, you must update the repo to a branch instead of the detached HEAD.
+	Tag *string `json:"tag,omitempty"`
 }
 
 // CreateRepoRequestToSDK converts the mirror to the sdk-go type.

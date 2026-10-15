@@ -26,39 +26,39 @@ type ConnectionDependency struct {
 }
 
 type CreateRegisteredModelRequest struct {
-	// The name of the registered model
-	Name *string `json:"name,omitempty"`
-	// The name of the catalog where the schema and the registered model reside
-	CatalogName *string `json:"catalog_name,omitempty"`
-	// The name of the schema where the registered model resides
-	SchemaName *string `json:"schema_name,omitempty"`
-	// The identifier of the user who owns the registered model
-	Owner *string `json:"owner,omitempty"`
-	// The comment attached to the registered model
-	Comment *string `json:"comment,omitempty"`
-	// The storage location on the cloud under which model version data files are
-	// stored
-	StorageLocation *string `json:"storage_location,omitempty"`
-	// The unique identifier of the metastore
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// The three-level (fully qualified) name of the registered model
-	FullName *string `json:"full_name,omitempty"`
-	// Creation timestamp of the registered model in milliseconds since the Unix
-	// epoch
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// The identifier of the user who created the registered model
-	CreatedBy *string `json:"created_by,omitempty"`
-	// Last-update timestamp of the registered model in milliseconds since the Unix
-	// epoch
-	UpdatedAt *int64 `json:"updated_at,omitempty"`
-	// The identifier of the user who updated the registered model last time
-	UpdatedBy *string `json:"updated_by,omitempty"`
 	// List of aliases associated with the registered model
 	Aliases []RegisteredModelAliasInfo `json:"aliases,omitempty"`
 	// Indicates whether the principal is limited to retrieving metadata for the
 	// associated object through the BROWSE privilege when include_browse is enabled
 	// in the request.
 	BrowseOnly *bool `json:"browse_only,omitempty"`
+	// The name of the catalog where the schema and the registered model reside
+	CatalogName *string `json:"catalog_name,omitempty"`
+	// The comment attached to the registered model
+	Comment *string `json:"comment,omitempty"`
+	// Creation timestamp of the registered model in milliseconds since the Unix
+	// epoch
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// The identifier of the user who created the registered model
+	CreatedBy *string `json:"created_by,omitempty"`
+	// The three-level (fully qualified) name of the registered model
+	FullName *string `json:"full_name,omitempty"`
+	// The unique identifier of the metastore
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// The name of the registered model
+	Name *string `json:"name,omitempty"`
+	// The identifier of the user who owns the registered model
+	Owner *string `json:"owner,omitempty"`
+	// The name of the schema where the registered model resides
+	SchemaName *string `json:"schema_name,omitempty"`
+	// The storage location on the cloud under which model version data files are
+	// stored
+	StorageLocation *string `json:"storage_location,omitempty"`
+	// Last-update timestamp of the registered model in milliseconds since the Unix
+	// epoch
+	UpdatedAt *int64 `json:"updated_at,omitempty"`
+	// The identifier of the user who updated the registered model last time
+	UpdatedBy *string `json:"updated_by,omitempty"`
 }
 
 // A credential that is dependent on a SQL object..
@@ -71,10 +71,10 @@ type CredentialDependency struct {
 // __table__, __function__, __connection__, __credential__, __volume__, or
 // __secret__..
 type Dependency struct {
-	Table      *TableDependency      `json:"table,omitempty"`
-	Function   *FunctionDependency   `json:"function,omitempty"`
 	Connection *ConnectionDependency `json:"connection,omitempty"`
 	Credential *CredentialDependency `json:"credential,omitempty"`
+	Function   *FunctionDependency   `json:"function,omitempty"`
+	Table      *TableDependency      `json:"table,omitempty"`
 }
 
 // A list of dependencies..
@@ -91,10 +91,10 @@ type FunctionDependency struct {
 }
 
 type GetModelVersionByAliasRequest struct {
-	// The three-level (fully qualified) name of the registered model
-	FullNameArg *string `json:"full_name_arg,omitempty"`
 	// The name of the alias
 	AliasArg *string `json:"alias_arg,omitempty"`
+	// The three-level (fully qualified) name of the registered model
+	FullNameArg *string `json:"full_name_arg,omitempty"`
 	// Whether to include aliases associated with the model version in the response
 	IncludeAliases *bool `json:"include_aliases,omitempty"`
 }
@@ -102,13 +102,13 @@ type GetModelVersionByAliasRequest struct {
 type GetModelVersionRequest struct {
 	// The three-level (fully qualified) name of the model version
 	FullNameArg *string `json:"full_name_arg,omitempty"`
-	// The integer version number of the model version
-	VersionArg *int64 `json:"version_arg,omitempty"`
 	// Whether to include aliases associated with the model version in the response
 	IncludeAliases *bool `json:"include_aliases,omitempty"`
 	// Whether to include model versions in the response for which the principal can
 	// only access selective metadata for
 	IncludeBrowse *bool `json:"include_browse,omitempty"`
+	// The integer version number of the model version
+	VersionArg *int64 `json:"version_arg,omitempty"`
 }
 
 type GetRegisteredModelRequest struct {
@@ -125,6 +125,9 @@ type ListModelVersionsRequest struct {
 	// The full three-level name of the registered model under which to list model
 	// versions
 	FullNameArg *string `json:"full_name_arg,omitempty"`
+	// Whether to include model versions in the response for which the principal can
+	// only access selective metadata for
+	IncludeBrowse *bool `json:"include_browse,omitempty"`
 	// Maximum number of model versions to return. If not set, the page length is
 	// set to a server configured value (100, as of 1/3/2024). - when set to a value
 	// greater than 0, the page length is the minimum of this value and a server
@@ -134,9 +137,6 @@ type ListModelVersionsRequest struct {
 	MaxResults *int64 `json:"max_results,omitempty"`
 	// Opaque pagination token to go to next page based on previous query.
 	PageToken *string `json:"page_token,omitempty"`
-	// Whether to include model versions in the response for which the principal can
-	// only access selective metadata for
-	IncludeBrowse *bool `json:"include_browse,omitempty"`
 }
 
 type ListModelVersionsResponse struct {
@@ -151,9 +151,6 @@ type ListRegisteredModelsRequest struct {
 	// The identifier of the catalog under which to list registered models. If
 	// specified, schema_name must be specified.
 	CatalogName *string `json:"catalog_name,omitempty"`
-	// The identifier of the schema under which to list registered models. If
-	// specified, catalog_name must be specified.
-	SchemaName *string `json:"schema_name,omitempty"`
 	// Whether to include registered models in the response for which the principal
 	// can only access selective metadata for
 	IncludeBrowse *bool `json:"include_browse,omitempty"`
@@ -173,120 +170,123 @@ type ListRegisteredModelsRequest struct {
 	MaxResults *int64 `json:"max_results,omitempty"`
 	// Opaque token to send for the next page of results (pagination).
 	PageToken *string `json:"page_token,omitempty"`
+	// The identifier of the schema under which to list registered models. If
+	// specified, catalog_name must be specified.
+	SchemaName *string `json:"schema_name,omitempty"`
 }
 
 type ListRegisteredModelsResponse struct {
-	RegisteredModels []RegisteredModelInfo `json:"registered_models,omitempty"`
 	// Opaque token for pagination. Omitted if there are no more results. page_token
 	// should be set to this value for fetching the next page.
-	NextPageToken *string `json:"next_page_token,omitempty"`
+	NextPageToken    *string               `json:"next_page_token,omitempty"`
+	RegisteredModels []RegisteredModelInfo `json:"registered_models,omitempty"`
 }
 
 type ModelVersionInfo struct {
+	// List of aliases associated with the model version
+	Aliases []RegisteredModelAliasInfo `json:"aliases,omitempty"`
+	// The name of the catalog containing the model version
+	CatalogName *string `json:"catalog_name,omitempty"`
+	// The comment attached to the model version
+	Comment   *string `json:"comment,omitempty"`
+	CreatedAt *int64  `json:"created_at,omitempty"`
+	// The identifier of the user who created the model version
+	CreatedBy *string `json:"created_by,omitempty"`
+	// The unique identifier of the model version
+	Id *string `json:"id,omitempty"`
+	// The unique identifier of the metastore containing the model version
+	MetastoreId *string `json:"metastore_id,omitempty"`
 	// The name of the parent registered model of the model version, relative to
 	// parent schema
 	ModelName *string `json:"model_name,omitempty"`
-	// The name of the catalog containing the model version
-	CatalogName *string `json:"catalog_name,omitempty"`
-	// The name of the schema containing the model version, relative to parent
-	// catalog
-	SchemaName *string `json:"schema_name,omitempty"`
-	// URI indicating the location of the source artifacts (files) for the model
-	// version
-	Source *string `json:"source,omitempty"`
-	// The comment attached to the model version
-	Comment *string `json:"comment,omitempty"`
+	// Model version dependencies, for feature-store packaged models
+	ModelVersionDependencies *DependencyList `json:"model_version_dependencies,omitempty"`
 	// MLflow run ID used when creating the model version, if ``source`` was
 	// generated by an experiment run stored in an MLflow tracking server
 	RunId *string `json:"run_id,omitempty"`
 	// ID of the <Databricks> workspace containing the MLflow run that generated
 	// this model version, if applicable
 	RunWorkspaceId *int64 `json:"run_workspace_id,omitempty"`
-	// Model version dependencies, for feature-store packaged models
-	ModelVersionDependencies *DependencyList `json:"model_version_dependencies,omitempty"`
+	// The name of the schema containing the model version, relative to parent
+	// catalog
+	SchemaName *string `json:"schema_name,omitempty"`
+	// URI indicating the location of the source artifacts (files) for the model
+	// version
+	Source *string `json:"source,omitempty"`
 	// Current status of the model version. Newly created model versions start in
 	// PENDING_REGISTRATION status, then move to READY status once the model version
 	// files are uploaded and the model version is finalized. Only model versions in
 	// READY status can be loaded for inference or served.
 	Status ModelVersionStatus `json:"status,omitempty"`
-	// Integer model version number, used to reference the model version in API
-	// requests.
-	Version *int64 `json:"version,omitempty"`
 	// The storage location on the cloud under which model version data files are
 	// stored
 	StorageLocation *string `json:"storage_location,omitempty"`
-	// The unique identifier of the metastore containing the model version
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	CreatedAt   *int64  `json:"created_at,omitempty"`
-	// The identifier of the user who created the model version
-	CreatedBy *string `json:"created_by,omitempty"`
-	UpdatedAt *int64  `json:"updated_at,omitempty"`
+	UpdatedAt       *int64  `json:"updated_at,omitempty"`
 	// The identifier of the user who updated the model version last time
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// The unique identifier of the model version
-	Id *string `json:"id,omitempty"`
-	// List of aliases associated with the model version
-	Aliases []RegisteredModelAliasInfo `json:"aliases,omitempty"`
+	// Integer model version number, used to reference the model version in API
+	// requests.
+	Version *int64 `json:"version,omitempty"`
 }
 
 type RegisteredModelAliasInfo struct {
 	// Name of the alias, e.g. 'champion' or 'latest_stable'
 	AliasName *string `json:"alias_name,omitempty"`
-	// Integer version number of the model version to which this alias points.
-	VersionNum *int64 `json:"version_num,omitempty"`
+	// The name of the catalog containing the model version
+	CatalogName *string `json:"catalog_name,omitempty"`
 	// The unique identifier of the alias
 	Id *string `json:"id,omitempty"`
 	// The name of the parent registered model of the model version, relative to
 	// parent schema
 	ModelName *string `json:"model_name,omitempty"`
-	// The name of the catalog containing the model version
-	CatalogName *string `json:"catalog_name,omitempty"`
 	// The name of the schema containing the model version, relative to parent
 	// catalog
 	SchemaName *string `json:"schema_name,omitempty"`
+	// Integer version number of the model version to which this alias points.
+	VersionNum *int64 `json:"version_num,omitempty"`
 }
 
 type RegisteredModelInfo struct {
-	// The name of the registered model
-	Name *string `json:"name,omitempty"`
-	// The name of the catalog where the schema and the registered model reside
-	CatalogName *string `json:"catalog_name,omitempty"`
-	// The name of the schema where the registered model resides
-	SchemaName *string `json:"schema_name,omitempty"`
-	// The identifier of the user who owns the registered model
-	Owner *string `json:"owner,omitempty"`
-	// The comment attached to the registered model
-	Comment *string `json:"comment,omitempty"`
-	// The storage location on the cloud under which model version data files are
-	// stored
-	StorageLocation *string `json:"storage_location,omitempty"`
-	// The unique identifier of the metastore
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// The three-level (fully qualified) name of the registered model
-	FullName *string `json:"full_name,omitempty"`
-	// Creation timestamp of the registered model in milliseconds since the Unix
-	// epoch
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// The identifier of the user who created the registered model
-	CreatedBy *string `json:"created_by,omitempty"`
-	// Last-update timestamp of the registered model in milliseconds since the Unix
-	// epoch
-	UpdatedAt *int64 `json:"updated_at,omitempty"`
-	// The identifier of the user who updated the registered model last time
-	UpdatedBy *string `json:"updated_by,omitempty"`
 	// List of aliases associated with the registered model
 	Aliases []RegisteredModelAliasInfo `json:"aliases,omitempty"`
 	// Indicates whether the principal is limited to retrieving metadata for the
 	// associated object through the BROWSE privilege when include_browse is enabled
 	// in the request.
 	BrowseOnly *bool `json:"browse_only,omitempty"`
+	// The name of the catalog where the schema and the registered model reside
+	CatalogName *string `json:"catalog_name,omitempty"`
+	// The comment attached to the registered model
+	Comment *string `json:"comment,omitempty"`
+	// Creation timestamp of the registered model in milliseconds since the Unix
+	// epoch
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// The identifier of the user who created the registered model
+	CreatedBy *string `json:"created_by,omitempty"`
+	// The three-level (fully qualified) name of the registered model
+	FullName *string `json:"full_name,omitempty"`
+	// The unique identifier of the metastore
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// The name of the registered model
+	Name *string `json:"name,omitempty"`
+	// The identifier of the user who owns the registered model
+	Owner *string `json:"owner,omitempty"`
+	// The name of the schema where the registered model resides
+	SchemaName *string `json:"schema_name,omitempty"`
+	// The storage location on the cloud under which model version data files are
+	// stored
+	StorageLocation *string `json:"storage_location,omitempty"`
+	// Last-update timestamp of the registered model in milliseconds since the Unix
+	// epoch
+	UpdatedAt *int64 `json:"updated_at,omitempty"`
+	// The identifier of the user who updated the registered model last time
+	UpdatedBy *string `json:"updated_by,omitempty"`
 }
 
 type SetRegisteredModelAliasRequest struct {
-	// The three-level (fully qualified) name of the registered model
-	FullNameArg *string `json:"full_name_arg,omitempty"`
 	// The name of the alias
 	AliasArg *string `json:"alias_arg,omitempty"`
+	// The three-level (fully qualified) name of the registered model
+	FullNameArg *string `json:"full_name_arg,omitempty"`
 	// The version number of the model version to which the alias points
 	VersionNum *int64 `json:"version_num,omitempty"`
 }
@@ -299,94 +299,94 @@ type TableDependency struct {
 }
 
 type UpdateModelVersionRequest struct {
+	// List of aliases associated with the model version
+	Aliases []RegisteredModelAliasInfo `json:"aliases,omitempty"`
+	// The name of the catalog containing the model version
+	CatalogName *string `json:"catalog_name,omitempty"`
+	// The comment attached to the model version
+	Comment   *string `json:"comment,omitempty"`
+	CreatedAt *int64  `json:"created_at,omitempty"`
+	// The identifier of the user who created the model version
+	CreatedBy *string `json:"created_by,omitempty"`
 	// The three-level (fully qualified) name of the model version
 	FullNameArg *string `json:"full_name_arg,omitempty"`
-	// The integer version number of the model version
-	VersionArg *int64 `json:"version_arg,omitempty"`
+	// The unique identifier of the model version
+	Id *string `json:"id,omitempty"`
+	// The unique identifier of the metastore containing the model version
+	MetastoreId *string `json:"metastore_id,omitempty"`
 	// The name of the parent registered model of the model version, relative to
 	// parent schema
 	ModelName *string `json:"model_name,omitempty"`
-	// The name of the catalog containing the model version
-	CatalogName *string `json:"catalog_name,omitempty"`
-	// The name of the schema containing the model version, relative to parent
-	// catalog
-	SchemaName *string `json:"schema_name,omitempty"`
-	// URI indicating the location of the source artifacts (files) for the model
-	// version
-	Source *string `json:"source,omitempty"`
-	// The comment attached to the model version
-	Comment *string `json:"comment,omitempty"`
+	// Model version dependencies, for feature-store packaged models
+	ModelVersionDependencies *DependencyList `json:"model_version_dependencies,omitempty"`
 	// MLflow run ID used when creating the model version, if ``source`` was
 	// generated by an experiment run stored in an MLflow tracking server
 	RunId *string `json:"run_id,omitempty"`
 	// ID of the <Databricks> workspace containing the MLflow run that generated
 	// this model version, if applicable
 	RunWorkspaceId *int64 `json:"run_workspace_id,omitempty"`
-	// Model version dependencies, for feature-store packaged models
-	ModelVersionDependencies *DependencyList `json:"model_version_dependencies,omitempty"`
+	// The name of the schema containing the model version, relative to parent
+	// catalog
+	SchemaName *string `json:"schema_name,omitempty"`
+	// URI indicating the location of the source artifacts (files) for the model
+	// version
+	Source *string `json:"source,omitempty"`
 	// Current status of the model version. Newly created model versions start in
 	// PENDING_REGISTRATION status, then move to READY status once the model version
 	// files are uploaded and the model version is finalized. Only model versions in
 	// READY status can be loaded for inference or served.
 	Status ModelVersionStatus `json:"status,omitempty"`
+	// The storage location on the cloud under which model version data files are
+	// stored
+	StorageLocation *string `json:"storage_location,omitempty"`
+	UpdatedAt       *int64  `json:"updated_at,omitempty"`
+	// The identifier of the user who updated the model version last time
+	UpdatedBy *string `json:"updated_by,omitempty"`
 	// Integer model version number, used to reference the model version in API
 	// requests.
 	Version *int64 `json:"version,omitempty"`
-	// The storage location on the cloud under which model version data files are
-	// stored
-	StorageLocation *string `json:"storage_location,omitempty"`
-	// The unique identifier of the metastore containing the model version
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	CreatedAt   *int64  `json:"created_at,omitempty"`
-	// The identifier of the user who created the model version
-	CreatedBy *string `json:"created_by,omitempty"`
-	UpdatedAt *int64  `json:"updated_at,omitempty"`
-	// The identifier of the user who updated the model version last time
-	UpdatedBy *string `json:"updated_by,omitempty"`
-	// The unique identifier of the model version
-	Id *string `json:"id,omitempty"`
-	// List of aliases associated with the model version
-	Aliases []RegisteredModelAliasInfo `json:"aliases,omitempty"`
+	// The integer version number of the model version
+	VersionArg *int64 `json:"version_arg,omitempty"`
 }
 
 type UpdateRegisteredModelRequest struct {
-	// The three-level (fully qualified) name of the registered model
-	FullNameArg *string `json:"full_name_arg,omitempty"`
-	// New name for the registered model.
-	NewName *string `json:"new_name,omitempty"`
-	// The name of the registered model
-	Name *string `json:"name,omitempty"`
-	// The name of the catalog where the schema and the registered model reside
-	CatalogName *string `json:"catalog_name,omitempty"`
-	// The name of the schema where the registered model resides
-	SchemaName *string `json:"schema_name,omitempty"`
-	// The identifier of the user who owns the registered model
-	Owner *string `json:"owner,omitempty"`
-	// The comment attached to the registered model
-	Comment *string `json:"comment,omitempty"`
-	// The storage location on the cloud under which model version data files are
-	// stored
-	StorageLocation *string `json:"storage_location,omitempty"`
-	// The unique identifier of the metastore
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// The three-level (fully qualified) name of the registered model
-	FullName *string `json:"full_name,omitempty"`
-	// Creation timestamp of the registered model in milliseconds since the Unix
-	// epoch
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// The identifier of the user who created the registered model
-	CreatedBy *string `json:"created_by,omitempty"`
-	// Last-update timestamp of the registered model in milliseconds since the Unix
-	// epoch
-	UpdatedAt *int64 `json:"updated_at,omitempty"`
-	// The identifier of the user who updated the registered model last time
-	UpdatedBy *string `json:"updated_by,omitempty"`
 	// List of aliases associated with the registered model
 	Aliases []RegisteredModelAliasInfo `json:"aliases,omitempty"`
 	// Indicates whether the principal is limited to retrieving metadata for the
 	// associated object through the BROWSE privilege when include_browse is enabled
 	// in the request.
 	BrowseOnly *bool `json:"browse_only,omitempty"`
+	// The name of the catalog where the schema and the registered model reside
+	CatalogName *string `json:"catalog_name,omitempty"`
+	// The comment attached to the registered model
+	Comment *string `json:"comment,omitempty"`
+	// Creation timestamp of the registered model in milliseconds since the Unix
+	// epoch
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// The identifier of the user who created the registered model
+	CreatedBy *string `json:"created_by,omitempty"`
+	// The three-level (fully qualified) name of the registered model
+	FullName *string `json:"full_name,omitempty"`
+	// The three-level (fully qualified) name of the registered model
+	FullNameArg *string `json:"full_name_arg,omitempty"`
+	// The unique identifier of the metastore
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// The name of the registered model
+	Name *string `json:"name,omitempty"`
+	// New name for the registered model.
+	NewName *string `json:"new_name,omitempty"`
+	// The identifier of the user who owns the registered model
+	Owner *string `json:"owner,omitempty"`
+	// The name of the schema where the registered model resides
+	SchemaName *string `json:"schema_name,omitempty"`
+	// The storage location on the cloud under which model version data files are
+	// stored
+	StorageLocation *string `json:"storage_location,omitempty"`
+	// Last-update timestamp of the registered model in milliseconds since the Unix
+	// epoch
+	UpdatedAt *int64 `json:"updated_at,omitempty"`
+	// The identifier of the user who updated the registered model last time
+	UpdatedBy *string `json:"updated_by,omitempty"`
 }
 
 // ConnectionDependencyToSDK converts the mirror to the sdk-go type.

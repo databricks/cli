@@ -9,10 +9,10 @@ import (
 )
 
 type AddBlockRequest struct {
-	// The handle on an open stream.
-	Handle *int64 `json:"handle,omitempty"`
 	// The base64-encoded data to append to the stream. This has a limit of 1 MB.
 	Data []byte `json:"data,omitempty"`
+	// The handle on an open stream.
+	Handle *int64 `json:"handle,omitempty"`
 }
 
 type CloseRequest struct {
@@ -21,10 +21,10 @@ type CloseRequest struct {
 }
 
 type CreateRequest struct {
-	// The path of the new file. The path should be the absolute DBFS path.
-	Path *string `json:"path,omitempty"`
 	// The flag that specifies whether to overwrite existing file/files.
 	Overwrite *bool `json:"overwrite,omitempty"`
+	// The path of the new file. The path should be the absolute DBFS path.
+	Path *string `json:"path,omitempty"`
 }
 
 type CreateResponse struct {
@@ -57,14 +57,14 @@ type DirectoryEntry struct {
 
 // Stores the attributes of a file or directory..
 type FileInfo struct {
-	// The absolute path of the file or directory.
-	Path *string `json:"path,omitempty"`
-	// True if the path is a directory.
-	IsDir *bool `json:"is_dir,omitempty"`
 	// The length of the file in bytes. Set to 0 for directories.
 	FileSize *int64 `json:"file_size,omitempty"`
+	// True if the path is a directory.
+	IsDir *bool `json:"is_dir,omitempty"`
 	// Last modification time of given file in milliseconds since epoch.
 	ModificationTime *int64 `json:"modification_time,omitempty"`
+	// The absolute path of the file or directory.
+	Path *string `json:"path,omitempty"`
 }
 
 type GetStatusRequest struct {
@@ -73,14 +73,14 @@ type GetStatusRequest struct {
 }
 
 type GetStatusResponse struct {
-	// The absolute path of the file or directory.
-	Path *string `json:"path,omitempty"`
-	// True if the path is a directory.
-	IsDir *bool `json:"is_dir,omitempty"`
 	// The length of the file in bytes. Set to 0 for directories.
 	FileSize *int64 `json:"file_size,omitempty"`
+	// True if the path is a directory.
+	IsDir *bool `json:"is_dir,omitempty"`
 	// Last modification time of given file in milliseconds since epoch.
 	ModificationTime *int64 `json:"modification_time,omitempty"`
+	// The absolute path of the file or directory.
+	Path *string `json:"path,omitempty"`
 }
 
 // List directory contents.
@@ -132,31 +132,31 @@ type MkDirsRequest struct {
 }
 
 type MoveRequest struct {
-	// The source path of the file or directory. The path should be the absolute
-	// DBFS path.
-	SourcePath *string `json:"source_path,omitempty"`
 	// The destination path of the file or directory. The path should be the
 	// absolute DBFS path.
 	DestinationPath *string `json:"destination_path,omitempty"`
+	// The source path of the file or directory. The path should be the absolute
+	// DBFS path.
+	SourcePath *string `json:"source_path,omitempty"`
 }
 
 type PutRequest struct {
-	// The path of the new file. The path should be the absolute DBFS path.
-	Path *string `json:"path,omitempty"`
 	// This parameter might be absent, and instead a posted file will be used.
 	Contents []byte `json:"contents,omitempty"`
 	// The flag that specifies whether to overwrite existing file/files.
 	Overwrite *bool `json:"overwrite,omitempty"`
+	// The path of the new file. The path should be the absolute DBFS path.
+	Path *string `json:"path,omitempty"`
 }
 
 type ReadRequest struct {
-	// The path of the file to read. The path should be the absolute DBFS path.
-	Path *string `json:"path,omitempty"`
-	// The offset to read from in bytes.
-	Offset *int64 `json:"offset,omitempty"`
 	// The number of bytes to read starting from the offset. This has a limit of 1
 	// MB, and a default value of 0.5 MB.
 	Length *int64 `json:"length,omitempty"`
+	// The offset to read from in bytes.
+	Offset *int64 `json:"offset,omitempty"`
+	// The path of the file to read. The path should be the absolute DBFS path.
+	Path *string `json:"path,omitempty"`
 }
 
 type ReadResponse struct {

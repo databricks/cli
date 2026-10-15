@@ -28,19 +28,19 @@ const (
 )
 
 type ChatMessage struct {
-	// The role of the message. One of [system, user, assistant].
-	Role ChatMessageRole `json:"role,omitempty"`
 	// The content of the message.
 	Content *string `json:"content,omitempty"`
+	// The role of the message. One of [system, user, assistant].
+	Role ChatMessageRole `json:"role,omitempty"`
 }
 
 type DataframeSplitInput struct {
-	// Index array for the dataframe
-	Index []int `json:"index,omitempty"`
 	// Columns array for the dataframe
 	Columns []json.RawMessage `json:"columns,omitempty"`
 	// Data array for the dataframe
 	Data []json.RawMessage `json:"data,omitempty"`
+	// Index array for the dataframe
+	Index []int `json:"index,omitempty"`
 }
 
 type EmbeddingsV1ResponseEmbeddingElement struct {
@@ -53,15 +53,48 @@ type EmbeddingsV1ResponseEmbeddingElement struct {
 }
 
 type ExternalModelUsageElement struct {
-	// The number of tokens in the prompt.
-	PromptTokens *int `json:"prompt_tokens,omitempty"`
 	// The number of tokens in the chat/completions response.
 	CompletionTokens *int `json:"completion_tokens,omitempty"`
+	// The number of tokens in the prompt.
+	PromptTokens *int `json:"prompt_tokens,omitempty"`
 	// The total number of tokens in the prompt and response.
 	TotalTokens *int `json:"total_tokens,omitempty"`
 }
 
 type QueryEndpointRequest struct {
+	// Optional user-provided request identifier that will be recorded in the
+	// inference table and the usage tracking table.
+	ClientRequestId *string `json:"client_request_id,omitempty"`
+	// Pandas Dataframe input in the records orientation.
+	DataframeRecords []json.RawMessage `json:"dataframe_records,omitempty"`
+	// Pandas Dataframe input in the split orientation.
+	DataframeSplit *DataframeSplitInput `json:"dataframe_split,omitempty"`
+	// The extra parameters field used ONLY for __completions, chat,__ and
+	// __embeddings external & foundation model__ serving endpoints. This is a map
+	// of strings and should only be used with other external/foundation model query
+	// fields.
+	ExtraParams map[string]string `json:"extra_params,omitempty"`
+	// The input string (or array of strings) field used ONLY for __embeddings
+	// external & foundation model__ serving endpoints and is the only field (along
+	// with extra_params if needed) used by embeddings queries.
+	Input json.RawMessage `json:"input,omitempty"`
+	// Tensor-based input in columnar format.
+	Inputs json.RawMessage `json:"inputs,omitempty"`
+	// Tensor-based input in row format.
+	Instances []json.RawMessage `json:"instances,omitempty"`
+	// The max tokens field used ONLY for __completions__ and __chat external &
+	// foundation model__ serving endpoints. This is an integer and should only be
+	// used with other chat/completions query fields.
+	MaxTokens *int `json:"max_tokens,omitempty"`
+	// The messages field used ONLY for __chat external & foundation model__ serving
+	// endpoints. This is an array of ChatMessage objects and should only be used
+	// with other chat query fields.
+	Messages []ChatMessage `json:"messages,omitempty"`
+	// The n (number of candidates) field used ONLY for __completions__ and __chat
+	// external & foundation model__ serving endpoints. This is an integer between 1
+	// and 5 with a default of 1 and should only be used with other chat/completions
+	// query fields.
+	N *int `json:"n,omitempty"`
 	// The name of the serving endpoint. This field is required and is provided via
 	// the path parameter.
 	Name *string `json:"name,omitempty"`
@@ -69,52 +102,19 @@ type QueryEndpointRequest struct {
 	// external & foundation model__ serving endpoints and should only be used with
 	// other completions query fields.
 	Prompt json.RawMessage `json:"prompt,omitempty"`
-	// The input string (or array of strings) field used ONLY for __embeddings
-	// external & foundation model__ serving endpoints and is the only field (along
-	// with extra_params if needed) used by embeddings queries.
-	Input json.RawMessage `json:"input,omitempty"`
-	// The messages field used ONLY for __chat external & foundation model__ serving
-	// endpoints. This is an array of ChatMessage objects and should only be used
-	// with other chat query fields.
-	Messages []ChatMessage `json:"messages,omitempty"`
+	// The stop sequences field used ONLY for __completions__ and __chat external &
+	// foundation model__ serving endpoints. This is a list of strings and should
+	// only be used with other chat/completions query fields.
+	Stop []string `json:"stop,omitempty"`
+	// The stream field used ONLY for __completions__ and __chat external &
+	// foundation model__ serving endpoints. This is a boolean defaulting to false
+	// and should only be used with other chat/completions query fields.
+	Stream *bool `json:"stream,omitempty"`
 	// The temperature field used ONLY for __completions__ and __chat external &
 	// foundation model__ serving endpoints. This is a float between 0.0 and 2.0
 	// with a default of 1.0 and should only be used with other chat/completions
 	// query fields.
 	Temperature *float64 `json:"temperature,omitempty"`
-	// The stop sequences field used ONLY for __completions__ and __chat external &
-	// foundation model__ serving endpoints. This is a list of strings and should
-	// only be used with other chat/completions query fields.
-	Stop []string `json:"stop,omitempty"`
-	// The max tokens field used ONLY for __completions__ and __chat external &
-	// foundation model__ serving endpoints. This is an integer and should only be
-	// used with other chat/completions query fields.
-	MaxTokens *int `json:"max_tokens,omitempty"`
-	// The n (number of candidates) field used ONLY for __completions__ and __chat
-	// external & foundation model__ serving endpoints. This is an integer between 1
-	// and 5 with a default of 1 and should only be used with other chat/completions
-	// query fields.
-	N *int `json:"n,omitempty"`
-	// The stream field used ONLY for __completions__ and __chat external &
-	// foundation model__ serving endpoints. This is a boolean defaulting to false
-	// and should only be used with other chat/completions query fields.
-	Stream *bool `json:"stream,omitempty"`
-	// The extra parameters field used ONLY for __completions, chat,__ and
-	// __embeddings external & foundation model__ serving endpoints. This is a map
-	// of strings and should only be used with other external/foundation model query
-	// fields.
-	ExtraParams map[string]string `json:"extra_params,omitempty"`
-	// Pandas Dataframe input in the records orientation.
-	DataframeRecords []json.RawMessage `json:"dataframe_records,omitempty"`
-	// Pandas Dataframe input in the split orientation.
-	DataframeSplit *DataframeSplitInput `json:"dataframe_split,omitempty"`
-	// Tensor-based input in row format.
-	Instances []json.RawMessage `json:"instances,omitempty"`
-	// Tensor-based input in columnar format.
-	Inputs json.RawMessage `json:"inputs,omitempty"`
-	// Optional user-provided request identifier that will be recorded in the
-	// inference table and the usage tracking table.
-	ClientRequestId *string `json:"client_request_id,omitempty"`
 	// Optional user-provided context that will be recorded in the usage tracking
 	// table.
 	UsageContext map[string]string `json:"usage_context,omitempty"`
@@ -124,42 +124,42 @@ type QueryEndpointResponse struct {
 	// The list of choices returned by the __chat or completions external/foundation
 	// model__ serving endpoint.
 	Choices []V1ResponseChoiceElement `json:"choices,omitempty"`
+	// The timestamp in seconds when the query was created in Unix time returned by
+	// a __completions or chat external/foundation model__ serving endpoint.
+	Created *int64 `json:"created,omitempty"`
 	// The list of the embeddings returned by the __embeddings external/foundation
 	// model__ serving endpoint.
 	Data []EmbeddingsV1ResponseEmbeddingElement `json:"data,omitempty"`
+	// The ID of the query that may be returned by a __completions or chat
+	// external/foundation model__ serving endpoint.
+	Id *string `json:"id,omitempty"`
 	// The name of the __external/foundation model__ used for querying. This is the
 	// name of the model that was specified in the endpoint config.
 	Model *string `json:"model,omitempty"`
+	// The type of object returned by the __external/foundation model__ serving
+	// endpoint, one of [text_completion, chat.completion, list (of embeddings)].
+	Object QueryEndpointResponseObject `json:"object,omitempty"`
+	// The outputs of the feature serving endpoint.
+	Outputs []json.RawMessage `json:"outputs,omitempty"`
+	// The predictions returned by the serving endpoint.
+	Predictions []json.RawMessage `json:"predictions,omitempty"`
 	// The usage object that may be returned by the __external/foundation model__
 	// serving endpoint. This contains information about the number of tokens used
 	// in the prompt and response.
 	Usage *ExternalModelUsageElement `json:"usage,omitempty"`
-	// The ID of the query that may be returned by a __completions or chat
-	// external/foundation model__ serving endpoint.
-	Id *string `json:"id,omitempty"`
-	// The timestamp in seconds when the query was created in Unix time returned by
-	// a __completions or chat external/foundation model__ serving endpoint.
-	Created *int64 `json:"created,omitempty"`
-	// The type of object returned by the __external/foundation model__ serving
-	// endpoint, one of [text_completion, chat.completion, list (of embeddings)].
-	Object QueryEndpointResponseObject `json:"object,omitempty"`
-	// The predictions returned by the serving endpoint.
-	Predictions []json.RawMessage `json:"predictions,omitempty"`
-	// The outputs of the feature serving endpoint.
-	Outputs []json.RawMessage `json:"outputs,omitempty"`
 }
 
 type V1ResponseChoiceElement struct {
-	// The text response from the __completions__ endpoint.
-	Text *string `json:"text,omitempty"`
-	// The message response from the __chat__ endpoint.
-	Message *ChatMessage `json:"message,omitempty"`
-	// The index of the choice in the __chat or completions__ response.
-	Index *int `json:"index,omitempty"`
 	// The finish reason returned by the endpoint.
 	FinishReason *string `json:"finishReason,omitempty"`
+	// The index of the choice in the __chat or completions__ response.
+	Index *int `json:"index,omitempty"`
 	// The logprobs returned only by the __completions__ endpoint.
 	Logprobs *int `json:"logprobs,omitempty"`
+	// The message response from the __chat__ endpoint.
+	Message *ChatMessage `json:"message,omitempty"`
+	// The text response from the __completions__ endpoint.
+	Text *string `json:"text,omitempty"`
 }
 
 // ChatMessageToSDK converts the mirror to the sdk-go type.

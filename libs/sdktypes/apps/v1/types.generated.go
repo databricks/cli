@@ -248,87 +248,106 @@ const (
 
 // Databricks Error that is returned by all Databricks APIs..
 type ApiError struct {
+	Details    []json.RawMessage `json:"details,omitempty"`
 	ErrorCode  ErrorCode         `json:"error_code,omitempty"`
 	Message    *string           `json:"message,omitempty"`
 	StackTrace *string           `json:"stack_trace,omitempty"`
-	Details    []json.RawMessage `json:"details,omitempty"`
 }
 
 type App struct {
-	// The name of the app. The name must contain only lowercase alphanumeric
-	// characters and hyphens. It must be unique within the workspace.
-	Name *string `json:"name,omitempty"`
-	// The description of the app.
-	Description   *string            `json:"description,omitempty"`
-	ComputeStatus *ComputeStatus     `json:"compute_status,omitempty"`
-	AppStatus     *ApplicationStatus `json:"app_status,omitempty"`
-	// The URL of the app once it is deployed.
-	Url *string `json:"url,omitempty"`
 	// The active deployment of the app. A deployment is considered active when it
 	// has been deployed to the app compute.
-	ActiveDeployment *AppDeployment `json:"active_deployment,omitempty"`
+	ActiveDeployment *AppDeployment     `json:"active_deployment,omitempty"`
+	AppStatus        *ApplicationStatus `json:"app_status,omitempty"`
+	BudgetPolicyId   *string            `json:"budget_policy_id,omitempty"`
+	// Maximum number of app instances the app is configured to run. Must be set
+	// together with `compute_min_instances`.
+	ComputeMaxInstances *int `json:"compute_max_instances,omitempty"`
+	// Minimum number of app instances the app is configured to run. Must be set
+	// together with `compute_max_instances`.
+	ComputeMinInstances *int           `json:"compute_min_instances,omitempty"`
+	ComputeSize         ComputeSize    `json:"compute_size,omitempty"`
+	ComputeStatus       *ComputeStatus `json:"compute_status,omitempty"`
 	// The creation time of the app. Formatted timestamp in ISO 6801.
 	CreateTime *types.Time `json:"create_time,omitempty"`
 	// The email of the user that created the app.
 	Creator *string `json:"creator,omitempty"`
-	// The update time of the app. Formatted timestamp in ISO 6801.
-	UpdateTime *types.Time `json:"update_time,omitempty"`
-	// The email of the user that last updated the app.
-	Updater *string `json:"updater,omitempty"`
-	// The pending deployment of the app. A deployment is considered pending when it
-	// is being prepared for deployment to the app compute.
-	PendingDeployment *AppDeployment `json:"pending_deployment,omitempty"`
-	// Resources for the app.
-	Resources            []AppResource `json:"resources,omitempty"`
-	ServicePrincipalId   *int64        `json:"service_principal_id,omitempty"`
-	ServicePrincipalName *string       `json:"service_principal_name,omitempty"`
-	// The default workspace file system path of the source code from which app
-	// deployment are created. This field tracks the workspace source code path of
-	// the last active deployment.
-	DefaultSourceCodePath *string `json:"default_source_code_path,omitempty"`
 	// The Git source of the app's most recent active deployment, including the
 	// repository configuration and the resolved reference. Populated by the system
 	// after a Git-based deployment and used as the default reference when automatic
 	// deployments are enabled.
-	DefaultGitSource         *GitSource `json:"default_git_source,omitempty"`
-	BudgetPolicyId           *string    `json:"budget_policy_id,omitempty"`
-	EffectiveBudgetPolicyId  *string    `json:"effective_budget_policy_id,omitempty"`
-	ServicePrincipalClientId *string    `json:"service_principal_client_id,omitempty"`
-	UserApiScopes            []string   `json:"user_api_scopes,omitempty"`
-	// The unique identifier of the app.
-	Id *string `json:"id,omitempty"`
+	DefaultGitSource *GitSource `json:"default_git_source,omitempty"`
+	// The default workspace file system path of the source code from which app
+	// deployment are created. This field tracks the workspace source code path of
+	// the last active deployment.
+	DefaultSourceCodePath *string `json:"default_source_code_path,omitempty"`
+	// The description of the app.
+	Description             *string `json:"description,omitempty"`
+	EffectiveBudgetPolicyId *string `json:"effective_budget_policy_id,omitempty"`
+	EffectiveUsagePolicyId  *string `json:"effective_usage_policy_id,omitempty"`
 	// The effective api scopes granted to the user access token.
-	EffectiveUserApiScopes []string    `json:"effective_user_api_scopes,omitempty"`
-	Oauth2AppIntegrationId *string     `json:"oauth2_app_integration_id,omitempty"`
-	Oauth2AppClientId      *string     `json:"oauth2_app_client_id,omitempty"`
-	ComputeSize            ComputeSize `json:"compute_size,omitempty"`
-	UsagePolicyId          *string     `json:"usage_policy_id,omitempty"`
-	EffectiveUsagePolicyId *string     `json:"effective_usage_policy_id,omitempty"`
-	// Minimum number of app instances the app is configured to run. Must be set
-	// together with `compute_max_instances`.
-	ComputeMinInstances *int `json:"compute_min_instances,omitempty"`
-	// Maximum number of app instances the app is configured to run. Must be set
-	// together with `compute_min_instances`.
-	ComputeMaxInstances *int `json:"compute_max_instances,omitempty"`
-	// Git repository configuration for app deployments. When specified, deployments
-	// can reference code from this repository by providing only the git reference
-	// (branch, tag, or commit).
-	GitRepository               *GitRepository               `json:"git_repository,omitempty"`
-	TelemetryExportDestinations []TelemetryExportDestination `json:"telemetry_export_destinations,omitempty"`
-	// The URL of the thumbnail image for the app.
-	ThumbnailUrl *string `json:"thumbnail_url,omitempty"`
-	// Name of the space this app belongs to.
-	Space          *string    `json:"space,omitempty"`
-	SourceCodePath *string    `json:"source_code_path,omitempty"`
-	GitSource      *GitSource `json:"git_source,omitempty"`
+	EffectiveUserApiScopes []string `json:"effective_user_api_scopes,omitempty"`
 	// Forward the user's access token to the app. Requires stopping and starting
 	// app compute to take effect.
 	ForwardUserAccessToken *bool `json:"forward_user_access_token,omitempty"`
+	// Git repository configuration for app deployments. When specified, deployments
+	// can reference code from this repository by providing only the git reference
+	// (branch, tag, or commit).
+	GitRepository *GitRepository `json:"git_repository,omitempty"`
+	GitSource     *GitSource     `json:"git_source,omitempty"`
+	// The unique identifier of the app.
+	Id *string `json:"id,omitempty"`
+	// The name of the app. The name must contain only lowercase alphanumeric
+	// characters and hyphens. It must be unique within the workspace.
+	Name                   *string `json:"name,omitempty"`
+	Oauth2AppClientId      *string `json:"oauth2_app_client_id,omitempty"`
+	Oauth2AppIntegrationId *string `json:"oauth2_app_integration_id,omitempty"`
+	// The pending deployment of the app. A deployment is considered pending when it
+	// is being prepared for deployment to the app compute.
+	PendingDeployment *AppDeployment `json:"pending_deployment,omitempty"`
+	// Resources for the app.
+	Resources                []AppResource `json:"resources,omitempty"`
+	ServicePrincipalClientId *string       `json:"service_principal_client_id,omitempty"`
+	ServicePrincipalId       *int64        `json:"service_principal_id,omitempty"`
+	ServicePrincipalName     *string       `json:"service_principal_name,omitempty"`
+	SourceCodePath           *string       `json:"source_code_path,omitempty"`
+	// Name of the space this app belongs to.
+	Space                       *string                      `json:"space,omitempty"`
+	TelemetryExportDestinations []TelemetryExportDestination `json:"telemetry_export_destinations,omitempty"`
+	// The URL of the thumbnail image for the app.
+	ThumbnailUrl *string `json:"thumbnail_url,omitempty"`
+	// The update time of the app. Formatted timestamp in ISO 6801.
+	UpdateTime *types.Time `json:"update_time,omitempty"`
+	// The email of the user that last updated the app.
+	Updater *string `json:"updater,omitempty"`
+	// The URL of the app once it is deployed.
+	Url           *string  `json:"url,omitempty"`
+	UsagePolicyId *string  `json:"usage_policy_id,omitempty"`
+	UserApiScopes []string `json:"user_api_scopes,omitempty"`
 }
 
 type AppDeployment struct {
+	// The command with which to run the app. This will override the command
+	// specified in the app.yaml file.
+	Command []string `json:"command,omitempty"`
+	// The creation time of the deployment. Formatted timestamp in ISO 6801.
+	CreateTime *types.Time `json:"create_time,omitempty"`
+	// The email of the user creates the deployment.
+	Creator *string `json:"creator,omitempty"`
+	// The deployment artifacts for an app.
+	DeploymentArtifacts *AppDeploymentArtifacts `json:"deployment_artifacts,omitempty"`
 	// The unique id of the deployment.
 	DeploymentId *string `json:"deployment_id,omitempty"`
+	// The environment variables to set in the app runtime environment. This will
+	// override the environment variables specified in the app.yaml file.
+	EnvVars []EnvVar `json:"env_vars,omitempty"`
+	// Git repository to use as the source for the app deployment.
+	GitSource *GitSource `json:"git_source,omitempty"`
+	// Deploy-time health check for the app. Verifies the app is responding to HTTP
+	// requests before considering the deployment successful.
+	HealthCheck *AppHealthCheck `json:"health_check,omitempty"`
+	// The mode of which the deployment will manage the source code.
+	Mode AppDeployment_Mode `json:"mode,omitempty"`
 	// The workspace file system path of the source code used to create the app
 	// deployment. This is different from `deployment_artifacts.source_code_path`,
 	// which is the path used by the deployed app. The former refers to the original
@@ -336,29 +355,10 @@ type AppDeployment struct {
 	// whereas the latter provides a system generated stable snapshotted source code
 	// path used by the deployment.
 	SourceCodePath *string `json:"source_code_path,omitempty"`
-	// Git repository to use as the source for the app deployment.
-	GitSource *GitSource `json:"git_source,omitempty"`
-	// The mode of which the deployment will manage the source code.
-	Mode AppDeployment_Mode `json:"mode,omitempty"`
-	// The deployment artifacts for an app.
-	DeploymentArtifacts *AppDeploymentArtifacts `json:"deployment_artifacts,omitempty"`
 	// Status and status message of the deployment
 	Status *AppDeploymentStatus `json:"status,omitempty"`
-	// The creation time of the deployment. Formatted timestamp in ISO 6801.
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	// The email of the user creates the deployment.
-	Creator *string `json:"creator,omitempty"`
 	// The update time of the deployment. Formatted timestamp in ISO 6801.
 	UpdateTime *types.Time `json:"update_time,omitempty"`
-	// The command with which to run the app. This will override the command
-	// specified in the app.yaml file.
-	Command []string `json:"command,omitempty"`
-	// The environment variables to set in the app runtime environment. This will
-	// override the environment variables specified in the app.yaml file.
-	EnvVars []EnvVar `json:"env_vars,omitempty"`
-	// Deploy-time health check for the app. Verifies the app is responding to HTTP
-	// requests before considering the deployment successful.
-	HealthCheck *AppHealthCheck `json:"health_check,omitempty"`
 }
 
 type AppDeploymentArtifacts struct {
@@ -368,10 +368,10 @@ type AppDeploymentArtifacts struct {
 }
 
 type AppDeploymentStatus struct {
-	// State of the deployment.
-	State AppDeployment_State `json:"state,omitempty"`
 	// Message corresponding with the deployment state.
 	Message *string `json:"message,omitempty"`
+	// State of the deployment.
+	State AppDeployment_State `json:"state,omitempty"`
 }
 
 // Deploy-time HTTP health check configuration for an app deployment..
@@ -385,13 +385,13 @@ type AppHealthCheck struct {
 
 // App manifest definition.
 type AppManifest struct {
+	// Description of the app defined by manifest author / publisher
+	Description *string `json:"description,omitempty"`
+	// Name of the app defined by manifest author / publisher
+	Name          *string                       `json:"name,omitempty"`
+	ResourceSpecs []AppManifest_AppResourceSpec `json:"resource_specs,omitempty"`
 	// The manifest schema version, for now only 1 is allowed
 	Version *int `json:"version,omitempty"`
-	// Name of the app defined by manifest author / publisher
-	Name *string `json:"name,omitempty"`
-	// Description of the app defined by manifest author / publisher
-	Description   *string                       `json:"description,omitempty"`
-	ResourceSpecs []AppManifest_AppResourceSpec `json:"resource_specs,omitempty"`
 }
 
 type AppManifest_AppResourceExperimentSpec struct {
@@ -419,16 +419,16 @@ type AppManifest_AppResourceServingEndpointSpec struct {
 // AppResource related fields are copied from app.proto but excludes resource
 // identifiers (e.g. name, id, key, scope, etc.).
 type AppManifest_AppResourceSpec struct {
-	// Name of the App Resource.
-	Name *string `json:"name,omitempty"`
 	// Description of the App Resource.
-	Description         *string                                     `json:"description,omitempty"`
+	Description    *string                                `json:"description,omitempty"`
+	ExperimentSpec *AppManifest_AppResourceExperimentSpec `json:"experiment_spec,omitempty"`
+	JobSpec        *AppManifest_AppResourceJobSpec        `json:"job_spec,omitempty"`
+	// Name of the App Resource.
+	Name                *string                                     `json:"name,omitempty"`
 	SecretSpec          *AppManifest_AppResourceSecretSpec          `json:"secret_spec,omitempty"`
-	SqlWarehouseSpec    *AppManifest_AppResourceSqlWarehouseSpec    `json:"sql_warehouse_spec,omitempty"`
 	ServingEndpointSpec *AppManifest_AppResourceServingEndpointSpec `json:"serving_endpoint_spec,omitempty"`
-	JobSpec             *AppManifest_AppResourceJobSpec             `json:"job_spec,omitempty"`
+	SqlWarehouseSpec    *AppManifest_AppResourceSqlWarehouseSpec    `json:"sql_warehouse_spec,omitempty"`
 	UcSecurableSpec     *AppManifest_AppResourceUcSecurableSpec     `json:"uc_securable_spec,omitempty"`
-	ExperimentSpec      *AppManifest_AppResourceExperimentSpec      `json:"experiment_spec,omitempty"`
 }
 
 type AppManifest_AppResourceSqlWarehouseSpec struct {
@@ -438,25 +438,25 @@ type AppManifest_AppResourceSqlWarehouseSpec struct {
 }
 
 type AppManifest_AppResourceUcSecurableSpec struct {
-	SecurableType AppManifest_AppResourceUcSecurableSpec_UcSecurableType       `json:"securable_type,omitempty"`
 	Permission    AppManifest_AppResourceUcSecurableSpec_UcSecurablePermission `json:"permission,omitempty"`
+	SecurableType AppManifest_AppResourceUcSecurableSpec_UcSecurableType       `json:"securable_type,omitempty"`
 }
 
 type AppResource struct {
-	// Name of the App Resource.
-	Name *string `json:"name,omitempty"`
+	App      *AppResourceApp      `json:"app,omitempty"`
+	Database *AppResourceDatabase `json:"database,omitempty"`
 	// Description of the App Resource.
-	Description     *string                     `json:"description,omitempty"`
-	Secret          *AppResourceSecret          `json:"secret,omitempty"`
-	SqlWarehouse    *AppResourceSqlWarehouse    `json:"sql_warehouse,omitempty"`
-	ServingEndpoint *AppResourceServingEndpoint `json:"serving_endpoint,omitempty"`
-	Job             *AppResourceJob             `json:"job,omitempty"`
-	UcSecurable     *AppResourceUcSecurable     `json:"uc_securable,omitempty"`
-	Database        *AppResourceDatabase        `json:"database,omitempty"`
-	GenieSpace      *AppResourceGenieSpace      `json:"genie_space,omitempty"`
-	Experiment      *AppResourceExperiment      `json:"experiment,omitempty"`
-	App             *AppResourceApp             `json:"app,omitempty"`
+	Description *string                `json:"description,omitempty"`
+	Experiment  *AppResourceExperiment `json:"experiment,omitempty"`
+	GenieSpace  *AppResourceGenieSpace `json:"genie_space,omitempty"`
+	Job         *AppResourceJob        `json:"job,omitempty"`
+	// Name of the App Resource.
+	Name            *string                     `json:"name,omitempty"`
 	Postgres        *AppResourcePostgres        `json:"postgres,omitempty"`
+	Secret          *AppResourceSecret          `json:"secret,omitempty"`
+	ServingEndpoint *AppResourceServingEndpoint `json:"serving_endpoint,omitempty"`
+	SqlWarehouse    *AppResourceSqlWarehouse    `json:"sql_warehouse,omitempty"`
+	UcSecurable     *AppResourceUcSecurable     `json:"uc_securable,omitempty"`
 }
 
 type AppResourceApp struct {
@@ -465,8 +465,8 @@ type AppResourceApp struct {
 }
 
 type AppResourceDatabase struct {
-	InstanceName *string                                `json:"instance_name,omitempty"`
 	DatabaseName *string                                `json:"database_name,omitempty"`
+	InstanceName *string                                `json:"instance_name,omitempty"`
 	Permission   AppResourceDatabase_DatabasePermission `json:"permission,omitempty"`
 }
 
@@ -477,8 +477,8 @@ type AppResourceExperiment struct {
 
 type AppResourceGenieSpace struct {
 	Name       *string                                    `json:"name,omitempty"`
-	SpaceId    *string                                    `json:"space_id,omitempty"`
 	Permission AppResourceGenieSpace_GenieSpacePermission `json:"permission,omitempty"`
+	SpaceId    *string                                    `json:"space_id,omitempty"`
 }
 
 type AppResourceJob struct {
@@ -496,13 +496,13 @@ type AppResourcePostgres struct {
 }
 
 type AppResourceSecret struct {
-	// Scope of the secret to grant permission on.
-	Scope *string `json:"scope,omitempty"`
 	// Key of the secret to grant permission on.
 	Key *string `json:"key,omitempty"`
 	// Permission to grant on the secret scope. For secrets, only one permission is
 	// allowed. Permission must be one of: "READ", "WRITE", "MANAGE".
 	Permission AppResourceSecret_SecretPermission `json:"permission,omitempty"`
+	// Scope of the secret to grant permission on.
+	Scope *string `json:"scope,omitempty"`
 }
 
 type AppResourceServingEndpoint struct {
@@ -522,12 +522,12 @@ type AppResourceSqlWarehouse struct {
 }
 
 type AppResourceUcSecurable struct {
-	SecurableFullName *string                                      `json:"securable_full_name,omitempty"`
-	SecurableType     AppResourceUcSecurable_UcSecurableType       `json:"securable_type,omitempty"`
 	Permission        AppResourceUcSecurable_UcSecurablePermission `json:"permission,omitempty"`
+	SecurableFullName *string                                      `json:"securable_full_name,omitempty"`
 	// The securable kind from Unity Catalog. See
 	// https://docs.databricks.com/api/workspace/tables/get#securable_kind_manifest-securable_kind.
-	SecurableKind *string `json:"securable_kind,omitempty"`
+	SecurableKind *string                                `json:"securable_kind,omitempty"`
+	SecurableType AppResourceUcSecurable_UcSecurableType `json:"securable_type,omitempty"`
 }
 
 // The thumbnail for an app..
@@ -537,61 +537,61 @@ type AppThumbnail struct {
 }
 
 type AppUpdate struct {
-	Status         *AppUpdate_UpdateStatus `json:"status,omitempty"`
-	Description    *string                 `json:"description,omitempty"`
-	BudgetPolicyId *string                 `json:"budget_policy_id,omitempty"`
-	Resources      []AppResource           `json:"resources,omitempty"`
-	UserApiScopes  []string                `json:"user_api_scopes,omitempty"`
-	ComputeSize    ComputeSize             `json:"compute_size,omitempty"`
-	UsagePolicyId  *string                 `json:"usage_policy_id,omitempty"`
-	// Minimum number of app instances the app is configured to run. Must be set
-	// together with `compute_max_instances`.
-	ComputeMinInstances *int `json:"compute_min_instances,omitempty"`
+	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
 	// Maximum number of app instances the app is configured to run. Must be set
 	// together with `compute_min_instances`.
-	ComputeMaxInstances         *int                         `json:"compute_max_instances,omitempty"`
-	GitRepository               *GitRepository               `json:"git_repository,omitempty"`
-	TelemetryExportDestinations []TelemetryExportDestination `json:"telemetry_export_destinations,omitempty"`
+	ComputeMaxInstances *int `json:"compute_max_instances,omitempty"`
+	// Minimum number of app instances the app is configured to run. Must be set
+	// together with `compute_max_instances`.
+	ComputeMinInstances *int        `json:"compute_min_instances,omitempty"`
+	ComputeSize         ComputeSize `json:"compute_size,omitempty"`
+	Description         *string     `json:"description,omitempty"`
 	// Forward the user's access token to the app. Requires stopping and starting
 	// app compute to take effect.
-	ForwardUserAccessToken *bool `json:"forward_user_access_token,omitempty"`
+	ForwardUserAccessToken      *bool                        `json:"forward_user_access_token,omitempty"`
+	GitRepository               *GitRepository               `json:"git_repository,omitempty"`
+	Resources                   []AppResource                `json:"resources,omitempty"`
+	Status                      *AppUpdate_UpdateStatus      `json:"status,omitempty"`
+	TelemetryExportDestinations []TelemetryExportDestination `json:"telemetry_export_destinations,omitempty"`
+	UsagePolicyId               *string                      `json:"usage_policy_id,omitempty"`
+	UserApiScopes               []string                     `json:"user_api_scopes,omitempty"`
 }
 
 type AppUpdate_UpdateStatus struct {
-	State   AppUpdate_UpdateStatus_UpdateState `json:"state,omitempty"`
 	Message *string                            `json:"message,omitempty"`
+	State   AppUpdate_UpdateStatus_UpdateState `json:"state,omitempty"`
 }
 
 type ApplicationStatus struct {
-	// State of the application.
-	State ApplicationStatus_ApplicationState `json:"state,omitempty"`
 	// Application status message
 	Message *string `json:"message,omitempty"`
 	// The number of app instances whose application process is running.
 	RunningInstances *int `json:"running_instances,omitempty"`
+	// State of the application.
+	State ApplicationStatus_ApplicationState `json:"state,omitempty"`
 }
 
 type AsyncUpdateAppRequest struct {
 	App        *App    `json:"app,omitempty"`
-	UpdateMask *string `json:"update_mask,omitempty"`
 	AppName    *string `json:"app_name,omitempty"`
+	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
 type ComputeStatus struct {
-	// State of the app compute.
-	State ComputeStatus_ComputeState `json:"state,omitempty"`
-	// Compute status message
-	Message *string `json:"message,omitempty"`
 	// The number of active compute instances currently used and billed for this
 	// application.
 	ActiveInstances *int `json:"active_instances,omitempty"`
+	// Compute status message
+	Message *string `json:"message,omitempty"`
+	// State of the app compute.
+	State ComputeStatus_ComputeState `json:"state,omitempty"`
 }
 
 type CreateAppDeploymentRequest struct {
-	// The name of the app.
-	AppName *string `json:"app_name,omitempty"`
 	// The app deployment configuration.
 	AppDeployment *AppDeployment `json:"app_deployment,omitempty"`
+	// The name of the app.
+	AppName *string `json:"app_name,omitempty"`
 }
 
 type CreateAppRequest struct {
@@ -609,22 +609,22 @@ type CreateSpaceRequest struct {
 }
 
 type CustomTemplate struct {
+	Creator *string `json:"creator,omitempty"`
+	// The description of the template.
+	Description *string `json:"description,omitempty"`
+	// The Git provider of the template.
+	GitProvider *string `json:"git_provider,omitempty"`
+	// The Git repository URL that the template resides in.
+	GitRepo *string `json:"git_repo,omitempty"`
+	// The manifest of the template. It defines fields and default values when
+	// installing the template.
+	Manifest *AppManifest `json:"manifest,omitempty"`
 	// The name of the template. It must contain only alphanumeric characters,
 	// hyphens, underscores, and whitespaces. It must be unique within the
 	// workspace.
 	Name *string `json:"name,omitempty"`
-	// The description of the template.
-	Description *string `json:"description,omitempty"`
-	// The Git repository URL that the template resides in.
-	GitRepo *string `json:"git_repo,omitempty"`
 	// The path to the template within the Git repository.
 	Path *string `json:"path,omitempty"`
-	// The manifest of the template. It defines fields and default values when
-	// installing the template.
-	Manifest *AppManifest `json:"manifest,omitempty"`
-	// The Git provider of the template.
-	GitProvider *string `json:"git_provider,omitempty"`
-	Creator     *string `json:"creator,omitempty"`
 }
 
 type EnvVar struct {
@@ -636,48 +636,48 @@ type EnvVar struct {
 
 // Git repository configuration specifying the location of the repository..
 type GitRepository struct {
-	// URL of the Git repository.
-	Url *string `json:"url,omitempty"`
-	// Git provider. Case insensitive. Supported values: gitHub, gitHubEnterprise,
-	// bitbucketCloud, bitbucketServer, azureDevOpsServices, gitLab,
-	// gitLabEnterpriseEdition, awsCodeCommit.
-	Provider *string `json:"provider,omitempty"`
 	// When true, automatically deploys the app on push events to the branch
 	// configured in the app's deployment_source.git_source.
 	AutoDeploy *bool `json:"auto_deploy,omitempty"`
 	// ID of a personal access token Git credential owned by the caller, used to
 	// grant the app's service principal access to this repository.
 	CallerCredentialId *int64 `json:"caller_credential_id,omitempty"`
+	// Git provider. Case insensitive. Supported values: gitHub, gitHubEnterprise,
+	// bitbucketCloud, bitbucketServer, azureDevOpsServices, gitLab,
+	// gitLabEnterpriseEdition, awsCodeCommit.
+	Provider *string `json:"provider,omitempty"`
+	// URL of the Git repository.
+	Url *string `json:"url,omitempty"`
 }
 
 // Complete git source specification including repository location and
 // reference..
 type GitSource struct {
+	Branch *string `json:"branch,omitempty"`
+	Commit *string `json:"commit,omitempty"`
 	// Git repository configuration. Populated from the app's git_repository
 	// configuration.
 	GitRepository *GitRepository `json:"git_repository,omitempty"`
-	Branch        *string        `json:"branch,omitempty"`
-	Tag           *string        `json:"tag,omitempty"`
-	Commit        *string        `json:"commit,omitempty"`
-	// Relative path to the app source code within the Git repository. If not
-	// specified, the root of the repository is used.
-	SourceCodePath *string `json:"source_code_path,omitempty"`
 	// The resolved commit SHA that was actually used for the deployment. This is
 	// populated by the system after resolving the reference (branch, tag, or
 	// commit). If commit is specified directly, this will match commit. If a branch
 	// or tag is specified, this contains the commit SHA that the branch or tag
 	// pointed to at deployment time.
 	ResolvedCommit *string `json:"resolved_commit,omitempty"`
+	// Relative path to the app source code within the Git repository. If not
+	// specified, the root of the repository is used.
+	SourceCodePath *string `json:"source_code_path,omitempty"`
+	Tag            *string `json:"tag,omitempty"`
 }
 
 type ListAppDeploymentsRequest struct {
 	// The name of the app.
 	AppName *string `json:"app_name,omitempty"`
+	// Upper bound for items returned.
+	PageSize *int `json:"page_size,omitempty"`
 	// Pagination token to go to the next page of apps. Requests first page if
 	// absent.
 	PageToken *string `json:"page_token,omitempty"`
-	// Upper bound for items returned.
-	PageSize *int `json:"page_size,omitempty"`
 }
 
 type ListAppDeploymentsResponse struct {
@@ -689,11 +689,11 @@ type ListAppDeploymentsResponse struct {
 
 // Request to list all apps deployed in the workspace.
 type ListAppsRequest struct {
+	// Upper bound for items returned.
+	PageSize *int `json:"page_size,omitempty"`
 	// Pagination token to go to the next page of apps. Requests first page if
 	// absent.
 	PageToken *string `json:"page_token,omitempty"`
-	// Upper bound for items returned.
-	PageSize *int `json:"page_size,omitempty"`
 	// Filter apps by app space name. When specified, only apps belonging to this
 	// space are returned.
 	Space *string `json:"space,omitempty"`
@@ -706,113 +706,113 @@ type ListAppsResponse struct {
 }
 
 type ListCustomTemplatesRequest struct {
+	// Upper bound for items returned.
+	PageSize *int `json:"page_size,omitempty"`
 	// Pagination token to go to the next page of custom templates. Requests first
 	// page if absent.
 	PageToken *string `json:"page_token,omitempty"`
-	// Upper bound for items returned.
-	PageSize *int `json:"page_size,omitempty"`
 }
 
 type ListCustomTemplatesResponse struct {
-	Templates []CustomTemplate `json:"templates,omitempty"`
 	// Pagination token to request the next page of custom templates.
-	NextPageToken *string `json:"next_page_token,omitempty"`
+	NextPageToken *string          `json:"next_page_token,omitempty"`
+	Templates     []CustomTemplate `json:"templates,omitempty"`
 }
 
 type ListSpacesRequest struct {
+	// Upper bound for items returned.
+	PageSize *int `json:"page_size,omitempty"`
 	// Pagination token to go to the next page of app spaces. Requests first page if
 	// absent.
 	PageToken *string `json:"page_token,omitempty"`
-	// Upper bound for items returned.
-	PageSize *int `json:"page_size,omitempty"`
 }
 
 type ListSpacesResponse struct {
-	Spaces []Space `json:"spaces,omitempty"`
 	// Pagination token to request the next page of app spaces.
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	Spaces        []Space `json:"spaces,omitempty"`
 }
 
 // This resource represents a long-running operation that is the result of a
 // network API call..
 type Operation struct {
-	// The server-assigned name, which is only unique within the same service that
-	// originally returns it. If you use the default HTTP mapping, the `name` should
-	// be a resource name ending with `operations/{unique_id}`.
-	Name *string `json:"name,omitempty"`
+	// If the value is `false`, it means the operation is still in progress. If
+	// `true`, the operation is completed, and either `error` or `response` is
+	// available.
+	Done  *bool     `json:"done,omitempty"`
+	Error *ApiError `json:"error,omitempty"`
 	// Service-specific metadata associated with the operation. It typically
 	// contains progress information and common metadata such as create time. Some
 	// services might not provide such metadata.
 	Metadata json.RawMessage `json:"metadata,omitempty"`
-	// If the value is `false`, it means the operation is still in progress. If
-	// `true`, the operation is completed, and either `error` or `response` is
-	// available.
-	Done     *bool           `json:"done,omitempty"`
-	Error    *ApiError       `json:"error,omitempty"`
+	// The server-assigned name, which is only unique within the same service that
+	// originally returns it. If you use the default HTTP mapping, the `name` should
+	// be a resource name ending with `operations/{unique_id}`.
+	Name     *string         `json:"name,omitempty"`
 	Response json.RawMessage `json:"response,omitempty"`
 }
 
 type Space struct {
-	// The name of the app space. The name must contain only lowercase alphanumeric
-	// characters and hyphens. It must be unique within the workspace.
-	Name *string `json:"name,omitempty"`
-	// The description of the app space.
-	Description *string `json:"description,omitempty"`
-	// The status of the app space.
-	Status *SpaceStatus `json:"status,omitempty"`
-	// The unique identifier of the app space.
-	Id *string `json:"id,omitempty"`
-	// The creation time of the app space. Formatted timestamp in ISO 6801.
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	// The email of the user that created the app space.
-	Creator *string `json:"creator,omitempty"`
-	// The update time of the app space. Formatted timestamp in ISO 6801.
-	UpdateTime *types.Time `json:"update_time,omitempty"`
-	// The email of the user that last updated the app space.
-	Updater *string `json:"updater,omitempty"`
-	// Resources for the app space. Resources configured at the space level are
-	// available to all apps in the space.
-	Resources []AppResource `json:"resources,omitempty"`
-	// OAuth scopes for apps in the space.
-	UserApiScopes []string `json:"user_api_scopes,omitempty"`
-	// The effective api scopes granted to the user access token.
-	EffectiveUserApiScopes []string `json:"effective_user_api_scopes,omitempty"`
-	// The service principal ID for the app space.
-	ServicePrincipalId *int64 `json:"service_principal_id,omitempty"`
-	// The service principal name for the app space.
-	ServicePrincipalName *string `json:"service_principal_name,omitempty"`
-	// The service principal client ID for the app space.
-	ServicePrincipalClientId *string `json:"service_principal_client_id,omitempty"`
-	// The usage policy ID for managing cost at the space level.
-	UsagePolicyId *string `json:"usage_policy_id,omitempty"`
-	// The effective usage policy ID used by apps in the space.
-	EffectiveUsagePolicyId *string `json:"effective_usage_policy_id,omitempty"`
 	// The group whose permissions users assume via Role Authorization for apps in
 	// this space. When set, user tokens assume the role of this group instead of
 	// doing regular obo token downscoping. Set only at space creation.
 	AssumeGroupId *string `json:"assume_group_id,omitempty"`
+	// The creation time of the app space. Formatted timestamp in ISO 6801.
+	CreateTime *types.Time `json:"create_time,omitempty"`
+	// The email of the user that created the app space.
+	Creator *string `json:"creator,omitempty"`
+	// The description of the app space.
+	Description *string `json:"description,omitempty"`
+	// The effective usage policy ID used by apps in the space.
+	EffectiveUsagePolicyId *string `json:"effective_usage_policy_id,omitempty"`
+	// The effective api scopes granted to the user access token.
+	EffectiveUserApiScopes []string `json:"effective_user_api_scopes,omitempty"`
+	// The unique identifier of the app space.
+	Id *string `json:"id,omitempty"`
+	// The name of the app space. The name must contain only lowercase alphanumeric
+	// characters and hyphens. It must be unique within the workspace.
+	Name *string `json:"name,omitempty"`
+	// Resources for the app space. Resources configured at the space level are
+	// available to all apps in the space.
+	Resources []AppResource `json:"resources,omitempty"`
+	// The service principal client ID for the app space.
+	ServicePrincipalClientId *string `json:"service_principal_client_id,omitempty"`
+	// The service principal ID for the app space.
+	ServicePrincipalId *int64 `json:"service_principal_id,omitempty"`
+	// The service principal name for the app space.
+	ServicePrincipalName *string `json:"service_principal_name,omitempty"`
+	// The status of the app space.
+	Status *SpaceStatus `json:"status,omitempty"`
+	// The update time of the app space. Formatted timestamp in ISO 6801.
+	UpdateTime *types.Time `json:"update_time,omitempty"`
+	// The email of the user that last updated the app space.
+	Updater *string `json:"updater,omitempty"`
+	// The usage policy ID for managing cost at the space level.
+	UsagePolicyId *string `json:"usage_policy_id,omitempty"`
+	// OAuth scopes for apps in the space.
+	UserApiScopes []string `json:"user_api_scopes,omitempty"`
 }
 
 type SpaceStatus struct {
-	// The state of the app space.
-	State SpaceStatus_SpaceState `json:"state,omitempty"`
 	// Message providing context about the current state.
 	Message *string `json:"message,omitempty"`
+	// The state of the app space.
+	State SpaceStatus_SpaceState `json:"state,omitempty"`
 }
 
 // Tracks app space update information..
 type SpaceUpdate struct {
-	Status        *SpaceUpdateStatus `json:"status,omitempty"`
 	Description   *string            `json:"description,omitempty"`
 	Resources     []AppResource      `json:"resources,omitempty"`
-	UserApiScopes []string           `json:"user_api_scopes,omitempty"`
+	Status        *SpaceUpdateStatus `json:"status,omitempty"`
 	UsagePolicyId *string            `json:"usage_policy_id,omitempty"`
+	UserApiScopes []string           `json:"user_api_scopes,omitempty"`
 }
 
 // Status of an app space update operation.
 type SpaceUpdateStatus struct {
-	State   SpaceUpdateState `json:"state,omitempty"`
 	Message *string          `json:"message,omitempty"`
+	State   SpaceUpdateState `json:"state,omitempty"`
 }
 
 type StartAppRequest struct {
@@ -845,10 +845,10 @@ type UpdateAppRequest struct {
 }
 
 type UpdateAppThumbnailRequest struct {
-	// The name of the app.
-	Name *string `json:"name,omitempty"`
 	// The app thumbnail to set.
 	AppThumbnail *AppThumbnail `json:"app_thumbnail,omitempty"`
+	// The name of the app.
+	Name *string `json:"name,omitempty"`
 }
 
 type UpdateCustomTemplateRequest struct {

@@ -24,12 +24,12 @@ type AccountsCreateMetastoreAssignmentRequest struct {
 	// account ID from the [Accounts Console]
 	//
 	// [Accounts Console]: https://docs.databricks.com/administration-guide/account-settings/usage.html
-	AccountId *string `json:"account_id,omitempty"`
+	AccountId           *string              `json:"account_id,omitempty"`
+	MetastoreAssignment *MetastoreAssignment `json:"metastore_assignment,omitempty"`
+	// Unity Catalog metastore ID
+	MetastoreId *string `json:"metastore_id,omitempty"`
 	// Workspace ID.
 	WorkspaceId *int64 `json:"workspace_id,omitempty"`
-	// Unity Catalog metastore ID
-	MetastoreId         *string              `json:"metastore_id,omitempty"`
-	MetastoreAssignment *MetastoreAssignment `json:"metastore_assignment,omitempty"`
 }
 
 // Properties of the new metastore..
@@ -53,10 +53,10 @@ type AccountsDeleteMetastoreRequest struct {
 	//
 	// [Accounts Console]: https://docs.databricks.com/administration-guide/account-settings/usage.html
 	AccountId *string `json:"account_id,omitempty"`
-	// Unity Catalog metastore ID
-	MetastoreId *string `json:"metastore_id,omitempty"`
 	// Force deletion even if the metastore is not empty. Default is false.
 	Force *bool `json:"force,omitempty"`
+	// Unity Catalog metastore ID
+	MetastoreId *string `json:"metastore_id,omitempty"`
 }
 
 // The workspace metastore assignment was successfully returned..
@@ -86,12 +86,12 @@ type AccountsUpdateMetastoreAssignmentRequest struct {
 	// account ID from the [Accounts Console]
 	//
 	// [Accounts Console]: https://docs.databricks.com/administration-guide/account-settings/usage.html
-	AccountId *string `json:"account_id,omitempty"`
+	AccountId           *string              `json:"account_id,omitempty"`
+	MetastoreAssignment *MetastoreAssignment `json:"metastore_assignment,omitempty"`
+	// Unity Catalog metastore ID
+	MetastoreId *string `json:"metastore_id,omitempty"`
 	// Workspace ID.
 	WorkspaceId *int64 `json:"workspace_id,omitempty"`
-	// Unity Catalog metastore ID
-	MetastoreId         *string              `json:"metastore_id,omitempty"`
-	MetastoreAssignment *MetastoreAssignment `json:"metastore_assignment,omitempty"`
 }
 
 // Properties of the metastore to change..
@@ -113,21 +113,31 @@ type AccountsUpdateMetastoreResponse struct {
 }
 
 type CreateAccountsMetastore struct {
-	// The user-specified name of the metastore.
-	Name *string `json:"name,omitempty"`
-	// The storage root URL for metastore
-	StorageRoot *string `json:"storage_root,omitempty"`
+	// Cloud vendor of the metastore home shard (e.g., `aws`, `azure`, `gcp`).
+	Cloud *string `json:"cloud,omitempty"`
+	// Time at which this metastore was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of metastore creator.
+	CreatedBy *string `json:"created_by,omitempty"`
 	// Unique identifier of the metastore's (Default) Data Access Configuration.
 	DefaultDataAccessConfigId *string `json:"default_data_access_config_id,omitempty"`
-	// UUID of storage credential to access the metastore storage_root.
-	StorageRootCredentialId *string `json:"storage_root_credential_id,omitempty"`
-	// The scope of Delta Sharing enabled for the metastore.
-	DeltaSharingScope DeltaSharingScope_Enum `json:"delta_sharing_scope,omitempty"`
-	// The lifetime of delta sharing recipient token in seconds.
-	DeltaSharingRecipientTokenLifetimeInSeconds *int64 `json:"delta_sharing_recipient_token_lifetime_in_seconds,omitempty"`
 	// The organization name of a Delta Sharing entity, to be used in
 	// Databricks-to-Databricks Delta Sharing as the official name.
 	DeltaSharingOrganizationName *string `json:"delta_sharing_organization_name,omitempty"`
+	// The lifetime of delta sharing recipient token in seconds.
+	DeltaSharingRecipientTokenLifetimeInSeconds *int64 `json:"delta_sharing_recipient_token_lifetime_in_seconds,omitempty"`
+	// The scope of Delta Sharing enabled for the metastore.
+	DeltaSharingScope DeltaSharingScope_Enum `json:"delta_sharing_scope,omitempty"`
+	// Whether to allow non-DBR clients to directly access entities under the
+	// metastore.
+	ExternalAccessEnabled *bool `json:"external_access_enabled,omitempty"`
+	// Globally unique metastore ID across clouds and regions, of the form
+	// `cloud:region:metastore_id`.
+	GlobalMetastoreId *string `json:"global_metastore_id,omitempty"`
+	// Unique identifier of metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// The user-specified name of the metastore.
+	Name *string `json:"name,omitempty"`
 	// The owner of the metastore.
 	Owner *string `json:"owner,omitempty"`
 	// Privilege model version of the metastore, of the form `major.minor` (e.g.,
@@ -135,55 +145,55 @@ type CreateAccountsMetastore struct {
 	PrivilegeModelVersion *string `json:"privilege_model_version,omitempty"`
 	// Cloud region which the metastore serves (e.g., `us-west-2`, `westus`).
 	Region *string `json:"region,omitempty"`
-	// Unique identifier of metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Time at which this metastore was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of metastore creator.
-	CreatedBy *string `json:"created_by,omitempty"`
+	// The storage root URL for metastore
+	StorageRoot *string `json:"storage_root,omitempty"`
+	// UUID of storage credential to access the metastore storage_root.
+	StorageRootCredentialId *string `json:"storage_root_credential_id,omitempty"`
+	// Name of the storage credential to access the metastore storage_root.
+	StorageRootCredentialName *string `json:"storage_root_credential_name,omitempty"`
 	// Time at which the metastore was last modified, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of user who last modified the metastore.
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Name of the storage credential to access the metastore storage_root.
-	StorageRootCredentialName *string `json:"storage_root_credential_name,omitempty"`
-	// Cloud vendor of the metastore home shard (e.g., `aws`, `azure`, `gcp`).
-	Cloud *string `json:"cloud,omitempty"`
-	// Globally unique metastore ID across clouds and regions, of the form
-	// `cloud:region:metastore_id`.
-	GlobalMetastoreId *string `json:"global_metastore_id,omitempty"`
-	// Whether to allow non-DBR clients to directly access entities under the
-	// metastore.
-	ExternalAccessEnabled *bool `json:"external_access_enabled,omitempty"`
 }
 
 type CreateMetastoreAssignmentRequest struct {
-	// A workspace ID.
-	WorkspaceId *int64 `json:"workspace_id,omitempty"`
-	// The unique ID of the metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
 	// The name of the default catalog in the metastore. This field is deprecated.
 	// Please use "Default Namespace API" to configure the default catalog for a
 	// <Databricks> workspace.
 	DefaultCatalogName *string `json:"default_catalog_name,omitempty"`
+	// The unique ID of the metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// A workspace ID.
+	WorkspaceId *int64 `json:"workspace_id,omitempty"`
 }
 
 type CreateMetastoreRequest struct {
-	// The user-specified name of the metastore.
-	Name *string `json:"name,omitempty"`
-	// The storage root URL for metastore
-	StorageRoot *string `json:"storage_root,omitempty"`
+	// Cloud vendor of the metastore home shard (e.g., `aws`, `azure`, `gcp`).
+	Cloud *string `json:"cloud,omitempty"`
+	// Time at which this metastore was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of metastore creator.
+	CreatedBy *string `json:"created_by,omitempty"`
 	// Unique identifier of the metastore's (Default) Data Access Configuration.
 	DefaultDataAccessConfigId *string `json:"default_data_access_config_id,omitempty"`
-	// UUID of storage credential to access the metastore storage_root.
-	StorageRootCredentialId *string `json:"storage_root_credential_id,omitempty"`
-	// The scope of Delta Sharing enabled for the metastore.
-	DeltaSharingScope DeltaSharingScope_Enum `json:"delta_sharing_scope,omitempty"`
-	// The lifetime of delta sharing recipient token in seconds.
-	DeltaSharingRecipientTokenLifetimeInSeconds *int64 `json:"delta_sharing_recipient_token_lifetime_in_seconds,omitempty"`
 	// The organization name of a Delta Sharing entity, to be used in
 	// Databricks-to-Databricks Delta Sharing as the official name.
 	DeltaSharingOrganizationName *string `json:"delta_sharing_organization_name,omitempty"`
+	// The lifetime of delta sharing recipient token in seconds.
+	DeltaSharingRecipientTokenLifetimeInSeconds *int64 `json:"delta_sharing_recipient_token_lifetime_in_seconds,omitempty"`
+	// The scope of Delta Sharing enabled for the metastore.
+	DeltaSharingScope DeltaSharingScope_Enum `json:"delta_sharing_scope,omitempty"`
+	// Whether to allow non-DBR clients to directly access entities under the
+	// metastore.
+	ExternalAccessEnabled *bool `json:"external_access_enabled,omitempty"`
+	// Globally unique metastore ID across clouds and regions, of the form
+	// `cloud:region:metastore_id`.
+	GlobalMetastoreId *string `json:"global_metastore_id,omitempty"`
+	// Unique identifier of metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// The user-specified name of the metastore.
+	Name *string `json:"name,omitempty"`
 	// The owner of the metastore.
 	Owner *string `json:"owner,omitempty"`
 	// Privilege model version of the metastore, of the form `major.minor` (e.g.,
@@ -191,85 +201,75 @@ type CreateMetastoreRequest struct {
 	PrivilegeModelVersion *string `json:"privilege_model_version,omitempty"`
 	// Cloud region which the metastore serves (e.g., `us-west-2`, `westus`).
 	Region *string `json:"region,omitempty"`
-	// Unique identifier of metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Time at which this metastore was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of metastore creator.
-	CreatedBy *string `json:"created_by,omitempty"`
+	// The storage root URL for metastore
+	StorageRoot *string `json:"storage_root,omitempty"`
+	// UUID of storage credential to access the metastore storage_root.
+	StorageRootCredentialId *string `json:"storage_root_credential_id,omitempty"`
+	// Name of the storage credential to access the metastore storage_root.
+	StorageRootCredentialName *string `json:"storage_root_credential_name,omitempty"`
 	// Time at which the metastore was last modified, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of user who last modified the metastore.
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Name of the storage credential to access the metastore storage_root.
-	StorageRootCredentialName *string `json:"storage_root_credential_name,omitempty"`
-	// Cloud vendor of the metastore home shard (e.g., `aws`, `azure`, `gcp`).
-	Cloud *string `json:"cloud,omitempty"`
-	// Globally unique metastore ID across clouds and regions, of the form
-	// `cloud:region:metastore_id`.
-	GlobalMetastoreId *string `json:"global_metastore_id,omitempty"`
-	// Whether to allow non-DBR clients to directly access entities under the
-	// metastore.
-	ExternalAccessEnabled *bool `json:"external_access_enabled,omitempty"`
 }
 
 type DeleteMetastoreAssignmentRequest struct {
-	// A workspace ID.
-	WorkspaceId *int64 `json:"workspace_id,omitempty"`
 	// Query for the ID of the metastore to delete.
 	MetastoreId *string `json:"metastore_id,omitempty"`
+	// A workspace ID.
+	WorkspaceId *int64 `json:"workspace_id,omitempty"`
 }
 
 type DeleteMetastoreRequest struct {
-	// Unique ID of the metastore.
-	Id *string `json:"id,omitempty"`
 	// Force deletion even if the metastore is not empty. Default is false.
 	Force *bool `json:"force,omitempty"`
+	// Unique ID of the metastore.
+	Id *string `json:"id,omitempty"`
 }
 
 type GetMetastoreSummaryResponse struct {
-	// Unique identifier of metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// The user-specified name of the metastore.
-	Name *string `json:"name,omitempty"`
-	// Unique identifier of the metastore's (Default) Data Access Configuration.
-	DefaultDataAccessConfigId *string `json:"default_data_access_config_id,omitempty"`
-	// UUID of storage credential to access the metastore storage_root.
-	StorageRootCredentialId *string `json:"storage_root_credential_id,omitempty"`
 	// Cloud vendor of the metastore home shard (e.g., `aws`, `azure`, `gcp`).
 	Cloud *string `json:"cloud,omitempty"`
-	// Cloud region which the metastore serves (e.g., `us-west-2`, `westus`).
-	Region *string `json:"region,omitempty"`
-	// Globally unique metastore ID across clouds and regions, of the form
-	// `cloud:region:metastore_id`.
-	GlobalMetastoreId *string `json:"global_metastore_id,omitempty"`
-	// Name of the storage credential to access the metastore storage_root.
-	StorageRootCredentialName *string `json:"storage_root_credential_name,omitempty"`
-	// Privilege model version of the metastore, of the form `major.minor` (e.g.,
-	// `1.0`).
-	PrivilegeModelVersion *string `json:"privilege_model_version,omitempty"`
-	// The scope of Delta Sharing enabled for the metastore.
-	DeltaSharingScope DeltaSharingScope_Enum `json:"delta_sharing_scope,omitempty"`
-	// The lifetime of delta sharing recipient token in seconds.
-	DeltaSharingRecipientTokenLifetimeInSeconds *int64 `json:"delta_sharing_recipient_token_lifetime_in_seconds,omitempty"`
-	// The organization name of a Delta Sharing entity, to be used in
-	// Databricks-to-Databricks Delta Sharing as the official name.
-	DeltaSharingOrganizationName *string `json:"delta_sharing_organization_name,omitempty"`
-	// The storage root URL for metastore
-	StorageRoot *string `json:"storage_root,omitempty"`
-	// The owner of the metastore.
-	Owner *string `json:"owner,omitempty"`
 	// Time at which this metastore was created, in epoch milliseconds.
 	CreatedAt *int64 `json:"created_at,omitempty"`
 	// Username of metastore creator.
 	CreatedBy *string `json:"created_by,omitempty"`
+	// Unique identifier of the metastore's (Default) Data Access Configuration.
+	DefaultDataAccessConfigId *string `json:"default_data_access_config_id,omitempty"`
+	// The organization name of a Delta Sharing entity, to be used in
+	// Databricks-to-Databricks Delta Sharing as the official name.
+	DeltaSharingOrganizationName *string `json:"delta_sharing_organization_name,omitempty"`
+	// The lifetime of delta sharing recipient token in seconds.
+	DeltaSharingRecipientTokenLifetimeInSeconds *int64 `json:"delta_sharing_recipient_token_lifetime_in_seconds,omitempty"`
+	// The scope of Delta Sharing enabled for the metastore.
+	DeltaSharingScope DeltaSharingScope_Enum `json:"delta_sharing_scope,omitempty"`
+	// Whether to allow non-DBR clients to directly access entities under the
+	// metastore.
+	ExternalAccessEnabled *bool `json:"external_access_enabled,omitempty"`
+	// Globally unique metastore ID across clouds and regions, of the form
+	// `cloud:region:metastore_id`.
+	GlobalMetastoreId *string `json:"global_metastore_id,omitempty"`
+	// Unique identifier of metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// The user-specified name of the metastore.
+	Name *string `json:"name,omitempty"`
+	// The owner of the metastore.
+	Owner *string `json:"owner,omitempty"`
+	// Privilege model version of the metastore, of the form `major.minor` (e.g.,
+	// `1.0`).
+	PrivilegeModelVersion *string `json:"privilege_model_version,omitempty"`
+	// Cloud region which the metastore serves (e.g., `us-west-2`, `westus`).
+	Region *string `json:"region,omitempty"`
+	// The storage root URL for metastore
+	StorageRoot *string `json:"storage_root,omitempty"`
+	// UUID of storage credential to access the metastore storage_root.
+	StorageRootCredentialId *string `json:"storage_root_credential_id,omitempty"`
+	// Name of the storage credential to access the metastore storage_root.
+	StorageRootCredentialName *string `json:"storage_root_credential_name,omitempty"`
 	// Time at which the metastore was last modified, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of user who last modified the metastore.
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Whether to allow non-DBR clients to directly access entities under the
-	// metastore.
-	ExternalAccessEnabled *bool `json:"external_access_enabled,omitempty"`
 }
 
 type ListMetastoresRequest struct {
@@ -297,32 +297,42 @@ type ListMetastoresResponse struct {
 }
 
 type MetastoreAssignment struct {
-	// The unique ID of the <Databricks> workspace.
-	WorkspaceId *int64 `json:"workspace_id,omitempty"`
-	// The unique ID of the metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
 	// The name of the default catalog in the metastore. This field is deprecated.
 	// Please use "Default Namespace API" to configure the default catalog for a
 	// <Databricks> workspace.
 	DefaultCatalogName *string `json:"default_catalog_name,omitempty"`
+	// The unique ID of the metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// The unique ID of the <Databricks> workspace.
+	WorkspaceId *int64 `json:"workspace_id,omitempty"`
 }
 
 type MetastoreInfo struct {
-	// The user-specified name of the metastore.
-	Name *string `json:"name,omitempty"`
-	// The storage root URL for metastore
-	StorageRoot *string `json:"storage_root,omitempty"`
+	// Cloud vendor of the metastore home shard (e.g., `aws`, `azure`, `gcp`).
+	Cloud *string `json:"cloud,omitempty"`
+	// Time at which this metastore was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of metastore creator.
+	CreatedBy *string `json:"created_by,omitempty"`
 	// Unique identifier of the metastore's (Default) Data Access Configuration.
 	DefaultDataAccessConfigId *string `json:"default_data_access_config_id,omitempty"`
-	// UUID of storage credential to access the metastore storage_root.
-	StorageRootCredentialId *string `json:"storage_root_credential_id,omitempty"`
-	// The scope of Delta Sharing enabled for the metastore.
-	DeltaSharingScope DeltaSharingScope_Enum `json:"delta_sharing_scope,omitempty"`
-	// The lifetime of delta sharing recipient token in seconds.
-	DeltaSharingRecipientTokenLifetimeInSeconds *int64 `json:"delta_sharing_recipient_token_lifetime_in_seconds,omitempty"`
 	// The organization name of a Delta Sharing entity, to be used in
 	// Databricks-to-Databricks Delta Sharing as the official name.
 	DeltaSharingOrganizationName *string `json:"delta_sharing_organization_name,omitempty"`
+	// The lifetime of delta sharing recipient token in seconds.
+	DeltaSharingRecipientTokenLifetimeInSeconds *int64 `json:"delta_sharing_recipient_token_lifetime_in_seconds,omitempty"`
+	// The scope of Delta Sharing enabled for the metastore.
+	DeltaSharingScope DeltaSharingScope_Enum `json:"delta_sharing_scope,omitempty"`
+	// Whether to allow non-DBR clients to directly access entities under the
+	// metastore.
+	ExternalAccessEnabled *bool `json:"external_access_enabled,omitempty"`
+	// Globally unique metastore ID across clouds and regions, of the form
+	// `cloud:region:metastore_id`.
+	GlobalMetastoreId *string `json:"global_metastore_id,omitempty"`
+	// Unique identifier of metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// The user-specified name of the metastore.
+	Name *string `json:"name,omitempty"`
 	// The owner of the metastore.
 	Owner *string `json:"owner,omitempty"`
 	// Privilege model version of the metastore, of the form `major.minor` (e.g.,
@@ -330,44 +340,44 @@ type MetastoreInfo struct {
 	PrivilegeModelVersion *string `json:"privilege_model_version,omitempty"`
 	// Cloud region which the metastore serves (e.g., `us-west-2`, `westus`).
 	Region *string `json:"region,omitempty"`
-	// Unique identifier of metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Time at which this metastore was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of metastore creator.
-	CreatedBy *string `json:"created_by,omitempty"`
+	// The storage root URL for metastore
+	StorageRoot *string `json:"storage_root,omitempty"`
+	// UUID of storage credential to access the metastore storage_root.
+	StorageRootCredentialId *string `json:"storage_root_credential_id,omitempty"`
+	// Name of the storage credential to access the metastore storage_root.
+	StorageRootCredentialName *string `json:"storage_root_credential_name,omitempty"`
 	// Time at which the metastore was last modified, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of user who last modified the metastore.
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Name of the storage credential to access the metastore storage_root.
-	StorageRootCredentialName *string `json:"storage_root_credential_name,omitempty"`
-	// Cloud vendor of the metastore home shard (e.g., `aws`, `azure`, `gcp`).
-	Cloud *string `json:"cloud,omitempty"`
-	// Globally unique metastore ID across clouds and regions, of the form
-	// `cloud:region:metastore_id`.
-	GlobalMetastoreId *string `json:"global_metastore_id,omitempty"`
-	// Whether to allow non-DBR clients to directly access entities under the
-	// metastore.
-	ExternalAccessEnabled *bool `json:"external_access_enabled,omitempty"`
 }
 
 type UpdateAccountsMetastore struct {
-	// The user-specified name of the metastore.
-	Name *string `json:"name,omitempty"`
-	// The storage root URL for metastore
-	StorageRoot *string `json:"storage_root,omitempty"`
+	// Cloud vendor of the metastore home shard (e.g., `aws`, `azure`, `gcp`).
+	Cloud *string `json:"cloud,omitempty"`
+	// Time at which this metastore was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of metastore creator.
+	CreatedBy *string `json:"created_by,omitempty"`
 	// Unique identifier of the metastore's (Default) Data Access Configuration.
 	DefaultDataAccessConfigId *string `json:"default_data_access_config_id,omitempty"`
-	// UUID of storage credential to access the metastore storage_root.
-	StorageRootCredentialId *string `json:"storage_root_credential_id,omitempty"`
-	// The scope of Delta Sharing enabled for the metastore.
-	DeltaSharingScope DeltaSharingScope_Enum `json:"delta_sharing_scope,omitempty"`
-	// The lifetime of delta sharing recipient token in seconds.
-	DeltaSharingRecipientTokenLifetimeInSeconds *int64 `json:"delta_sharing_recipient_token_lifetime_in_seconds,omitempty"`
 	// The organization name of a Delta Sharing entity, to be used in
 	// Databricks-to-Databricks Delta Sharing as the official name.
 	DeltaSharingOrganizationName *string `json:"delta_sharing_organization_name,omitempty"`
+	// The lifetime of delta sharing recipient token in seconds.
+	DeltaSharingRecipientTokenLifetimeInSeconds *int64 `json:"delta_sharing_recipient_token_lifetime_in_seconds,omitempty"`
+	// The scope of Delta Sharing enabled for the metastore.
+	DeltaSharingScope DeltaSharingScope_Enum `json:"delta_sharing_scope,omitempty"`
+	// Whether to allow non-DBR clients to directly access entities under the
+	// metastore.
+	ExternalAccessEnabled *bool `json:"external_access_enabled,omitempty"`
+	// Globally unique metastore ID across clouds and regions, of the form
+	// `cloud:region:metastore_id`.
+	GlobalMetastoreId *string `json:"global_metastore_id,omitempty"`
+	// Unique identifier of metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// The user-specified name of the metastore.
+	Name *string `json:"name,omitempty"`
 	// The owner of the metastore.
 	Owner *string `json:"owner,omitempty"`
 	// Privilege model version of the metastore, of the form `major.minor` (e.g.,
@@ -375,59 +385,59 @@ type UpdateAccountsMetastore struct {
 	PrivilegeModelVersion *string `json:"privilege_model_version,omitempty"`
 	// Cloud region which the metastore serves (e.g., `us-west-2`, `westus`).
 	Region *string `json:"region,omitempty"`
-	// Unique identifier of metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Time at which this metastore was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of metastore creator.
-	CreatedBy *string `json:"created_by,omitempty"`
+	// The storage root URL for metastore
+	StorageRoot *string `json:"storage_root,omitempty"`
+	// UUID of storage credential to access the metastore storage_root.
+	StorageRootCredentialId *string `json:"storage_root_credential_id,omitempty"`
+	// Name of the storage credential to access the metastore storage_root.
+	StorageRootCredentialName *string `json:"storage_root_credential_name,omitempty"`
 	// Time at which the metastore was last modified, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of user who last modified the metastore.
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Name of the storage credential to access the metastore storage_root.
-	StorageRootCredentialName *string `json:"storage_root_credential_name,omitempty"`
-	// Cloud vendor of the metastore home shard (e.g., `aws`, `azure`, `gcp`).
-	Cloud *string `json:"cloud,omitempty"`
-	// Globally unique metastore ID across clouds and regions, of the form
-	// `cloud:region:metastore_id`.
-	GlobalMetastoreId *string `json:"global_metastore_id,omitempty"`
-	// Whether to allow non-DBR clients to directly access entities under the
-	// metastore.
-	ExternalAccessEnabled *bool `json:"external_access_enabled,omitempty"`
 }
 
 type UpdateMetastoreAssignmentRequest struct {
-	// A workspace ID.
-	WorkspaceId *int64 `json:"workspace_id,omitempty"`
-	// The unique ID of the metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
 	// The name of the default catalog in the metastore. This field is deprecated.
 	// Please use "Default Namespace API" to configure the default catalog for a
 	// <Databricks> workspace.
 	DefaultCatalogName *string `json:"default_catalog_name,omitempty"`
+	// The unique ID of the metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// A workspace ID.
+	WorkspaceId *int64 `json:"workspace_id,omitempty"`
 }
 
 type UpdateMetastoreRequest struct {
-	// Unique ID of the metastore.
-	Id *string `json:"id,omitempty"`
-	// New name for the metastore.
-	NewName *string `json:"new_name,omitempty"`
-	// The user-specified name of the metastore.
-	Name *string `json:"name,omitempty"`
-	// The storage root URL for metastore
-	StorageRoot *string `json:"storage_root,omitempty"`
+	// Cloud vendor of the metastore home shard (e.g., `aws`, `azure`, `gcp`).
+	Cloud *string `json:"cloud,omitempty"`
+	// Time at which this metastore was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of metastore creator.
+	CreatedBy *string `json:"created_by,omitempty"`
 	// Unique identifier of the metastore's (Default) Data Access Configuration.
 	DefaultDataAccessConfigId *string `json:"default_data_access_config_id,omitempty"`
-	// UUID of storage credential to access the metastore storage_root.
-	StorageRootCredentialId *string `json:"storage_root_credential_id,omitempty"`
-	// The scope of Delta Sharing enabled for the metastore.
-	DeltaSharingScope DeltaSharingScope_Enum `json:"delta_sharing_scope,omitempty"`
-	// The lifetime of delta sharing recipient token in seconds.
-	DeltaSharingRecipientTokenLifetimeInSeconds *int64 `json:"delta_sharing_recipient_token_lifetime_in_seconds,omitempty"`
 	// The organization name of a Delta Sharing entity, to be used in
 	// Databricks-to-Databricks Delta Sharing as the official name.
 	DeltaSharingOrganizationName *string `json:"delta_sharing_organization_name,omitempty"`
+	// The lifetime of delta sharing recipient token in seconds.
+	DeltaSharingRecipientTokenLifetimeInSeconds *int64 `json:"delta_sharing_recipient_token_lifetime_in_seconds,omitempty"`
+	// The scope of Delta Sharing enabled for the metastore.
+	DeltaSharingScope DeltaSharingScope_Enum `json:"delta_sharing_scope,omitempty"`
+	// Whether to allow non-DBR clients to directly access entities under the
+	// metastore.
+	ExternalAccessEnabled *bool `json:"external_access_enabled,omitempty"`
+	// Globally unique metastore ID across clouds and regions, of the form
+	// `cloud:region:metastore_id`.
+	GlobalMetastoreId *string `json:"global_metastore_id,omitempty"`
+	// Unique ID of the metastore.
+	Id *string `json:"id,omitempty"`
+	// Unique identifier of metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// The user-specified name of the metastore.
+	Name *string `json:"name,omitempty"`
+	// New name for the metastore.
+	NewName *string `json:"new_name,omitempty"`
 	// The owner of the metastore.
 	Owner *string `json:"owner,omitempty"`
 	// Privilege model version of the metastore, of the form `major.minor` (e.g.,
@@ -435,26 +445,16 @@ type UpdateMetastoreRequest struct {
 	PrivilegeModelVersion *string `json:"privilege_model_version,omitempty"`
 	// Cloud region which the metastore serves (e.g., `us-west-2`, `westus`).
 	Region *string `json:"region,omitempty"`
-	// Unique identifier of metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Time at which this metastore was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of metastore creator.
-	CreatedBy *string `json:"created_by,omitempty"`
+	// The storage root URL for metastore
+	StorageRoot *string `json:"storage_root,omitempty"`
+	// UUID of storage credential to access the metastore storage_root.
+	StorageRootCredentialId *string `json:"storage_root_credential_id,omitempty"`
+	// Name of the storage credential to access the metastore storage_root.
+	StorageRootCredentialName *string `json:"storage_root_credential_name,omitempty"`
 	// Time at which the metastore was last modified, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of user who last modified the metastore.
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Name of the storage credential to access the metastore storage_root.
-	StorageRootCredentialName *string `json:"storage_root_credential_name,omitempty"`
-	// Cloud vendor of the metastore home shard (e.g., `aws`, `azure`, `gcp`).
-	Cloud *string `json:"cloud,omitempty"`
-	// Globally unique metastore ID across clouds and regions, of the form
-	// `cloud:region:metastore_id`.
-	GlobalMetastoreId *string `json:"global_metastore_id,omitempty"`
-	// Whether to allow non-DBR clients to directly access entities under the
-	// metastore.
-	ExternalAccessEnabled *bool `json:"external_access_enabled,omitempty"`
 }
 
 // AccountsCreateMetastoreAssignmentRequestToSDK converts the mirror to the sdk-go type.

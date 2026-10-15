@@ -52,47 +52,47 @@ const (
 )
 
 type CreateQueryRequest struct {
-	Query *CreateQueryRequestQuery `json:"query,omitempty"`
 	// If true, automatically resolve query display name conflicts. Otherwise, fail
 	// the request if the query's display name conflicts with an existing query's
 	// display name.
-	AutoResolveDisplayName *bool `json:"auto_resolve_display_name,omitempty"`
+	AutoResolveDisplayName *bool                    `json:"auto_resolve_display_name,omitempty"`
+	Query                  *CreateQueryRequestQuery `json:"query,omitempty"`
 }
 
 type CreateQueryRequestQuery struct {
-	// Display name of the query that appears in list views, widget headings, and on
-	// the query page.
-	DisplayName *string `json:"display_name,omitempty"`
-	// General description that conveys additional information about this query such
-	// as usage notes.
-	Description *string `json:"description,omitempty"`
-	// ID of the SQL warehouse attached to the query.
-	WarehouseId *string `json:"warehouse_id,omitempty"`
-	// Text of the query to be run.
-	QueryText *string `json:"query_text,omitempty"`
-	// Sets the "Run as" role for the object.
-	RunAsMode RunAsMode `json:"run_as_mode,omitempty"`
-	// Workspace path of the workspace folder containing the object.
-	ParentPath *string  `json:"parent_path,omitempty"`
-	Tags       []string `json:"tags,omitempty"`
-	// List of query parameter definitions.
-	Parameters []QueryParameter `json:"parameters,omitempty"`
 	// Whether to apply a 1000 row limit to the query result.
 	ApplyAutoLimit *bool `json:"apply_auto_limit,omitempty"`
 	// Name of the catalog where this query will be executed.
 	Catalog *string `json:"catalog,omitempty"`
+	// General description that conveys additional information about this query such
+	// as usage notes.
+	Description *string `json:"description,omitempty"`
+	// Display name of the query that appears in list views, widget headings, and on
+	// the query page.
+	DisplayName *string `json:"display_name,omitempty"`
+	// List of query parameter definitions.
+	Parameters []QueryParameter `json:"parameters,omitempty"`
+	// Workspace path of the workspace folder containing the object.
+	ParentPath *string `json:"parent_path,omitempty"`
+	// Text of the query to be run.
+	QueryText *string `json:"query_text,omitempty"`
+	// Sets the "Run as" role for the object.
+	RunAsMode RunAsMode `json:"run_as_mode,omitempty"`
 	// Name of the schema where this query will be executed.
-	Schema *string `json:"schema,omitempty"`
+	Schema *string  `json:"schema,omitempty"`
+	Tags   []string `json:"tags,omitempty"`
+	// ID of the SQL warehouse attached to the query.
+	WarehouseId *string `json:"warehouse_id,omitempty"`
 }
 
 type DateRange struct {
-	Start *string `json:"start,omitempty"`
 	End   *string `json:"end,omitempty"`
+	Start *string `json:"start,omitempty"`
 }
 
 type DateRangeValue struct {
-	DynamicDateRangeValue DateRangeValue_DynamicDateRange `json:"dynamic_date_range_value,omitempty"`
 	DateRangeValue        *DateRange                      `json:"date_range_value,omitempty"`
+	DynamicDateRangeValue DateRangeValue_DynamicDateRange `json:"dynamic_date_range_value,omitempty"`
 	// Date-time precision to format the value into when the query is run. Defaults
 	// to DAY_PRECISION (YYYY-MM-DD).
 	Precision      DatePrecision `json:"precision,omitempty"`
@@ -100,77 +100,77 @@ type DateRangeValue struct {
 }
 
 type DateValue struct {
-	DynamicDateValue DateValue_DynamicDate `json:"dynamic_date_value,omitempty"`
 	DateValue        *string               `json:"date_value,omitempty"`
+	DynamicDateValue DateValue_DynamicDate `json:"dynamic_date_value,omitempty"`
 	// Date-time precision to format the value into when the query is run. Defaults
 	// to DAY_PRECISION (YYYY-MM-DD).
 	Precision DatePrecision `json:"precision,omitempty"`
 }
 
 type EnumValue struct {
-	// List of selected query parameter values.
-	Values []string `json:"values,omitempty"`
 	// List of valid query parameter values, newline delimited.
 	EnumOptions *string `json:"enum_options,omitempty"`
 	// If specified, allows multiple values to be selected for this parameter.
 	MultiValuesOptions *MultiValuesOptions `json:"multi_values_options,omitempty"`
+	// List of selected query parameter values.
+	Values []string `json:"values,omitempty"`
 }
 
 type ListQueriesRequest struct {
-	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
+	PageToken *string `json:"page_token,omitempty"`
 }
 
 type ListQueriesResponse struct {
-	Results       []ListQueryObjectsResponseQuery `json:"results,omitempty"`
 	NextPageToken *string                         `json:"next_page_token,omitempty"`
+	Results       []ListQueryObjectsResponseQuery `json:"results,omitempty"`
 }
 
 type ListQueryObjectsResponseQuery struct {
-	// UUID identifying the query.
-	Id *string `json:"id,omitempty"`
-	// Display name of the query that appears in list views, widget headings, and on
-	// the query page.
-	DisplayName *string `json:"display_name,omitempty"`
-	// General description that conveys additional information about this query such
-	// as usage notes.
-	Description *string `json:"description,omitempty"`
-	// Username of the user that owns the query.
-	OwnerUserName *string `json:"owner_user_name,omitempty"`
-	// ID of the SQL warehouse attached to the query.
-	WarehouseId *string `json:"warehouse_id,omitempty"`
-	// Text of the query to be run.
-	QueryText *string `json:"query_text,omitempty"`
-	// Sets the "Run as" role for the object.
-	RunAsMode RunAsMode `json:"run_as_mode,omitempty"`
-	// Indicates whether the query is trashed.
-	LifecycleState LifecycleState `json:"lifecycle_state,omitempty"`
-	// Username of the user who last saved changes to this query.
-	LastModifierUserName *string  `json:"last_modifier_user_name,omitempty"`
-	Tags                 []string `json:"tags,omitempty"`
-	// Timestamp when this query was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	// Timestamp when this query was last updated.
-	UpdateTime *types.Time `json:"update_time,omitempty"`
-	// List of query parameter definitions.
-	Parameters []QueryParameter `json:"parameters,omitempty"`
 	// Whether to apply a 1000 row limit to the query result.
 	ApplyAutoLimit *bool `json:"apply_auto_limit,omitempty"`
 	// Name of the catalog where this query will be executed.
 	Catalog *string `json:"catalog,omitempty"`
+	// Timestamp when this query was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
+	// General description that conveys additional information about this query such
+	// as usage notes.
+	Description *string `json:"description,omitempty"`
+	// Display name of the query that appears in list views, widget headings, and on
+	// the query page.
+	DisplayName *string `json:"display_name,omitempty"`
+	// UUID identifying the query.
+	Id *string `json:"id,omitempty"`
+	// Username of the user who last saved changes to this query.
+	LastModifierUserName *string `json:"last_modifier_user_name,omitempty"`
+	// Indicates whether the query is trashed.
+	LifecycleState LifecycleState `json:"lifecycle_state,omitempty"`
+	// Username of the user that owns the query.
+	OwnerUserName *string `json:"owner_user_name,omitempty"`
+	// List of query parameter definitions.
+	Parameters []QueryParameter `json:"parameters,omitempty"`
+	// Text of the query to be run.
+	QueryText *string `json:"query_text,omitempty"`
+	// Sets the "Run as" role for the object.
+	RunAsMode RunAsMode `json:"run_as_mode,omitempty"`
 	// Name of the schema where this query will be executed.
-	Schema *string `json:"schema,omitempty"`
+	Schema *string  `json:"schema,omitempty"`
+	Tags   []string `json:"tags,omitempty"`
+	// Timestamp when this query was last updated.
+	UpdateTime *types.Time `json:"update_time,omitempty"`
+	// ID of the SQL warehouse attached to the query.
+	WarehouseId *string `json:"warehouse_id,omitempty"`
 }
 
 type ListVisualizationsForQueryRequest struct {
 	Id        *string `json:"id,omitempty"`
-	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
+	PageToken *string `json:"page_token,omitempty"`
 }
 
 type ListVisualizationsForQueryResponse struct {
-	Results       []Visualization `json:"results,omitempty"`
 	NextPageToken *string         `json:"next_page_token,omitempty"`
+	Results       []Visualization `json:"results,omitempty"`
 }
 
 type MultiValuesOptions struct {
@@ -187,64 +187,64 @@ type NumericValue struct {
 }
 
 type Query struct {
-	// UUID identifying the query.
-	Id *string `json:"id,omitempty"`
-	// Display name of the query that appears in list views, widget headings, and on
-	// the query page.
-	DisplayName *string `json:"display_name,omitempty"`
-	// General description that conveys additional information about this query such
-	// as usage notes.
-	Description *string `json:"description,omitempty"`
-	// Username of the user that owns the query.
-	OwnerUserName *string `json:"owner_user_name,omitempty"`
-	// ID of the SQL warehouse attached to the query.
-	WarehouseId *string `json:"warehouse_id,omitempty"`
-	// Text of the query to be run.
-	QueryText *string `json:"query_text,omitempty"`
-	// Sets the "Run as" role for the object.
-	RunAsMode RunAsMode `json:"run_as_mode,omitempty"`
-	// Indicates whether the query is trashed.
-	LifecycleState LifecycleState `json:"lifecycle_state,omitempty"`
-	// Username of the user who last saved changes to this query.
-	LastModifierUserName *string `json:"last_modifier_user_name,omitempty"`
-	// Workspace path of the workspace folder containing the object.
-	ParentPath *string  `json:"parent_path,omitempty"`
-	Tags       []string `json:"tags,omitempty"`
-	// Timestamp when this query was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	// Timestamp when this query was last updated.
-	UpdateTime *types.Time `json:"update_time,omitempty"`
-	// List of query parameter definitions.
-	Parameters []QueryParameter `json:"parameters,omitempty"`
 	// Whether to apply a 1000 row limit to the query result.
 	ApplyAutoLimit *bool `json:"apply_auto_limit,omitempty"`
 	// Name of the catalog where this query will be executed.
 	Catalog *string `json:"catalog,omitempty"`
+	// Timestamp when this query was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
+	// General description that conveys additional information about this query such
+	// as usage notes.
+	Description *string `json:"description,omitempty"`
+	// Display name of the query that appears in list views, widget headings, and on
+	// the query page.
+	DisplayName *string `json:"display_name,omitempty"`
+	// UUID identifying the query.
+	Id *string `json:"id,omitempty"`
+	// Username of the user who last saved changes to this query.
+	LastModifierUserName *string `json:"last_modifier_user_name,omitempty"`
+	// Indicates whether the query is trashed.
+	LifecycleState LifecycleState `json:"lifecycle_state,omitempty"`
+	// Username of the user that owns the query.
+	OwnerUserName *string `json:"owner_user_name,omitempty"`
+	// List of query parameter definitions.
+	Parameters []QueryParameter `json:"parameters,omitempty"`
+	// Workspace path of the workspace folder containing the object.
+	ParentPath *string `json:"parent_path,omitempty"`
+	// Text of the query to be run.
+	QueryText *string `json:"query_text,omitempty"`
+	// Sets the "Run as" role for the object.
+	RunAsMode RunAsMode `json:"run_as_mode,omitempty"`
 	// Name of the schema where this query will be executed.
-	Schema *string `json:"schema,omitempty"`
+	Schema *string  `json:"schema,omitempty"`
+	Tags   []string `json:"tags,omitempty"`
+	// Timestamp when this query was last updated.
+	UpdateTime *types.Time `json:"update_time,omitempty"`
+	// ID of the SQL warehouse attached to the query.
+	WarehouseId *string `json:"warehouse_id,omitempty"`
 }
 
 type QueryBackedValue struct {
-	// List of selected query parameter values.
-	Values []string `json:"values,omitempty"`
-	// UUID of the query that provides the parameter values.
-	QueryId *string `json:"query_id,omitempty"`
 	// If specified, allows multiple values to be selected for this parameter.
 	MultiValuesOptions *MultiValuesOptions `json:"multi_values_options,omitempty"`
+	// UUID of the query that provides the parameter values.
+	QueryId *string `json:"query_id,omitempty"`
+	// List of selected query parameter values.
+	Values []string `json:"values,omitempty"`
 }
 
 type QueryParameter struct {
-	// Text displayed in the user-facing parameter widget in the UI.
-	Title *string `json:"title,omitempty"`
+	DateRangeValue *DateRangeValue `json:"date_range_value,omitempty"`
+	DateValue      *DateValue      `json:"date_value,omitempty"`
+	EnumValue      *EnumValue      `json:"enum_value,omitempty"`
 	// Literal parameter marker that appears between double curly braces in the
 	// query text.
 	Name             *string           `json:"name,omitempty"`
-	TextValue        *TextValue        `json:"text_value,omitempty"`
 	NumericValue     *NumericValue     `json:"numeric_value,omitempty"`
-	EnumValue        *EnumValue        `json:"enum_value,omitempty"`
-	DateValue        *DateValue        `json:"date_value,omitempty"`
-	DateRangeValue   *DateRangeValue   `json:"date_range_value,omitempty"`
 	QueryBackedValue *QueryBackedValue `json:"query_backed_value,omitempty"`
+	TextValue        *TextValue        `json:"text_value,omitempty"`
+	// Text displayed in the user-facing parameter widget in the UI.
+	Title *string `json:"title,omitempty"`
 }
 
 type TextValue struct {
@@ -252,62 +252,62 @@ type TextValue struct {
 }
 
 type UpdateQueryRequest struct {
-	Query      *UpdateQueryRequestQuery `json:"query,omitempty"`
-	UpdateMask *string                  `json:"update_mask,omitempty"`
-	Id         *string                  `json:"id,omitempty"`
 	// If true, automatically resolve alert display name conflicts. Otherwise, fail
 	// the request if the alert's display name conflicts with an existing alert's
 	// display name.
-	AutoResolveDisplayName *bool `json:"auto_resolve_display_name,omitempty"`
+	AutoResolveDisplayName *bool                    `json:"auto_resolve_display_name,omitempty"`
+	Id                     *string                  `json:"id,omitempty"`
+	Query                  *UpdateQueryRequestQuery `json:"query,omitempty"`
+	UpdateMask             *string                  `json:"update_mask,omitempty"`
 }
 
 type UpdateQueryRequestQuery struct {
-	// Display name of the query that appears in list views, widget headings, and on
-	// the query page.
-	DisplayName *string `json:"display_name,omitempty"`
-	// General description that conveys additional information about this query such
-	// as usage notes.
-	Description *string `json:"description,omitempty"`
-	// Username of the user that owns the query.
-	OwnerUserName *string `json:"owner_user_name,omitempty"`
-	// ID of the SQL warehouse attached to the query.
-	WarehouseId *string `json:"warehouse_id,omitempty"`
-	// Text of the query to be run.
-	QueryText *string `json:"query_text,omitempty"`
-	// Sets the "Run as" role for the object.
-	RunAsMode RunAsMode `json:"run_as_mode,omitempty"`
-	Tags      []string  `json:"tags,omitempty"`
-	// List of query parameter definitions.
-	Parameters []QueryParameter `json:"parameters,omitempty"`
 	// Whether to apply a 1000 row limit to the query result.
 	ApplyAutoLimit *bool `json:"apply_auto_limit,omitempty"`
 	// Name of the catalog where this query will be executed.
 	Catalog *string `json:"catalog,omitempty"`
+	// General description that conveys additional information about this query such
+	// as usage notes.
+	Description *string `json:"description,omitempty"`
+	// Display name of the query that appears in list views, widget headings, and on
+	// the query page.
+	DisplayName *string `json:"display_name,omitempty"`
+	// Username of the user that owns the query.
+	OwnerUserName *string `json:"owner_user_name,omitempty"`
+	// List of query parameter definitions.
+	Parameters []QueryParameter `json:"parameters,omitempty"`
+	// Text of the query to be run.
+	QueryText *string `json:"query_text,omitempty"`
+	// Sets the "Run as" role for the object.
+	RunAsMode RunAsMode `json:"run_as_mode,omitempty"`
 	// Name of the schema where this query will be executed.
-	Schema *string `json:"schema,omitempty"`
+	Schema *string  `json:"schema,omitempty"`
+	Tags   []string `json:"tags,omitempty"`
+	// ID of the SQL warehouse attached to the query.
+	WarehouseId *string `json:"warehouse_id,omitempty"`
 }
 
 type Visualization struct {
-	// UUID identifying the visualization.
-	Id *string `json:"id,omitempty"`
-	// The display name of the visualization.
-	DisplayName *string `json:"display_name,omitempty"`
-	// The type of visualization: counter, table, funnel, and so on.
-	Type *string `json:"type,omitempty"`
 	// The timestamp indicating when the visualization was created.
 	CreateTime *types.Time `json:"create_time,omitempty"`
-	// The timestamp indicating when the visualization was updated.
-	UpdateTime *types.Time `json:"update_time,omitempty"`
-	// The visualization query plan varies widely from one visualization type to the
-	// next and is unsupported. Databricks does not recommend modifying the
-	// visualization query plan directly.
-	SerializedQueryPlan *string `json:"serialized_query_plan,omitempty"`
+	// The display name of the visualization.
+	DisplayName *string `json:"display_name,omitempty"`
+	// UUID identifying the visualization.
+	Id *string `json:"id,omitempty"`
+	// UUID of the query that the visualization is attached to.
+	QueryId *string `json:"query_id,omitempty"`
 	// The visualization options varies widely from one visualization type to the
 	// next and is unsupported. Databricks does not recommend modifying
 	// visualization options directly.
 	SerializedOptions *string `json:"serialized_options,omitempty"`
-	// UUID of the query that the visualization is attached to.
-	QueryId *string `json:"query_id,omitempty"`
+	// The visualization query plan varies widely from one visualization type to the
+	// next and is unsupported. Databricks does not recommend modifying the
+	// visualization query plan directly.
+	SerializedQueryPlan *string `json:"serialized_query_plan,omitempty"`
+	// The type of visualization: counter, table, funnel, and so on.
+	Type *string `json:"type,omitempty"`
+	// The timestamp indicating when the visualization was updated.
+	UpdateTime *types.Time `json:"update_time,omitempty"`
 }
 
 // CreateQueryRequestToSDK converts the mirror to the sdk-go type.

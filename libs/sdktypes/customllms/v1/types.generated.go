@@ -28,41 +28,41 @@ type CancelCustomLlmOptimizationRunRequest struct {
 }
 
 type CreateCustomLlmRequest struct {
-	// Name of the custom LLM. Only alphanumeric characters and dashes allowed.
-	Name *string `json:"name,omitempty"`
-	// Instructions for the custom LLM to follow
-	Instructions *string `json:"instructions,omitempty"`
-	// Datasets used for training and evaluating the model, not for inference.
-	// Currently, only 1 dataset is accepted.
-	Datasets []Dataset `json:"datasets,omitempty"`
-	// Guidelines for the custom LLM to adhere to
-	Guidelines []string `json:"guidelines,omitempty"`
 	// This will soon be deprecated!! Optional: UC path for agent artifacts. If you
 	// are using a dataset that you only have read permissions, please provide a
 	// destination path where you have write permissions. Please provide this in
 	// catalog.schema format.
 	AgentArtifactPath *string `json:"agent_artifact_path,omitempty"`
-}
-
-type CustomLlm struct {
-	Id *string `json:"id,omitempty"`
-	// Name of the custom LLM
-	Name *string `json:"name,omitempty"`
-	// Name of the endpoint that will be used to serve the custom LLM
-	EndpointName *string `json:"endpoint_name,omitempty"`
-	// Instructions for the custom LLM to follow
-	Instructions *string `json:"instructions,omitempty"`
-	// Datasets used for training and evaluating the model, not for inference
+	// Datasets used for training and evaluating the model, not for inference.
+	// Currently, only 1 dataset is accepted.
 	Datasets []Dataset `json:"datasets,omitempty"`
 	// Guidelines for the custom LLM to adhere to
 	Guidelines []string `json:"guidelines,omitempty"`
-	// If optimization is kicked off, tracks the state of the custom LLM
-	OptimizationState State `json:"optimization_state,omitempty"`
+	// Instructions for the custom LLM to follow
+	Instructions *string `json:"instructions,omitempty"`
+	// Name of the custom LLM. Only alphanumeric characters and dashes allowed.
+	Name *string `json:"name,omitempty"`
+}
+
+type CustomLlm struct {
+	AgentArtifactPath *string `json:"agent_artifact_path,omitempty"`
+	// Creation timestamp of the custom LLM
+	CreationTime *types.Time `json:"creation_time,omitempty"`
 	// Creator of the custom LLM
 	Creator *string `json:"creator,omitempty"`
-	// Creation timestamp of the custom LLM
-	CreationTime      *types.Time `json:"creation_time,omitempty"`
-	AgentArtifactPath *string     `json:"agent_artifact_path,omitempty"`
+	// Datasets used for training and evaluating the model, not for inference
+	Datasets []Dataset `json:"datasets,omitempty"`
+	// Name of the endpoint that will be used to serve the custom LLM
+	EndpointName *string `json:"endpoint_name,omitempty"`
+	// Guidelines for the custom LLM to adhere to
+	Guidelines []string `json:"guidelines,omitempty"`
+	Id         *string  `json:"id,omitempty"`
+	// Instructions for the custom LLM to follow
+	Instructions *string `json:"instructions,omitempty"`
+	// Name of the custom LLM
+	Name *string `json:"name,omitempty"`
+	// If optimization is kicked off, tracks the state of the custom LLM
+	OptimizationState State `json:"optimization_state,omitempty"`
 }
 
 type Dataset struct {
@@ -75,19 +75,19 @@ type StartCustomLlmOptimizationRunRequest struct {
 }
 
 type Table struct {
-	// Full UC table path in catalog.schema.table_name format
-	TablePath *string `json:"table_path,omitempty"`
 	// Name of the request column
 	RequestCol *string `json:"request_col,omitempty"`
 	// Optional: Name of the response column if the data is labeled
 	ResponseCol *string `json:"response_col,omitempty"`
+	// Full UC table path in catalog.schema.table_name format
+	TablePath *string `json:"table_path,omitempty"`
 }
 
 type UpdateCustomLlmRequest struct {
-	// The id of the custom llm
-	Id *string `json:"id,omitempty"`
 	// The CustomLlm containing the fields which should be updated.
 	CustomLlm *CustomLlm `json:"custom_llm,omitempty"`
+	// The id of the custom llm
+	Id *string `json:"id,omitempty"`
 	// The list of the CustomLlm fields to update. These should correspond to the
 	// values (or lack thereof) present in `custom_llm`.
 	UpdateMask *string `json:"update_mask,omitempty"`

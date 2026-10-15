@@ -65,47 +65,47 @@ const (
 
 // Request to create a new MCP service..
 type CreateMcpServiceRequest struct {
-	// Name of the parent schema. Format: `schemas/{catalog}.{schema}`. Each `{...}`
-	// component is capped at 255 characters individually.
-	Parent *string `json:"parent,omitempty"`
-	// Name for the MCP service, e.g. "my_mcp_service".
-	McpServiceId *string `json:"mcp_service_id,omitempty"`
 	// The MCP service to create. Do not set `name`; the server derives it from
 	// `parent` and `mcp_service_id`. `source_connection` is required.
 	McpService *McpService `json:"mcp_service,omitempty"`
+	// Name for the MCP service, e.g. "my_mcp_service".
+	McpServiceId *string `json:"mcp_service_id,omitempty"`
+	// Name of the parent schema. Format: `schemas/{catalog}.{schema}`. Each `{...}`
+	// component is capped at 255 characters individually.
+	Parent *string `json:"parent,omitempty"`
 }
 
 // Request to log the caller in to an MCP service: create their user credential,
 // or re-authenticate it if one already exists..
 type CreateMcpServiceUserMappedCredentialRequest struct {
+	Login *McpServiceUserMappedCredentialLogin `json:"login,omitempty"`
 	// Resource name of the MCP service. Format:
 	// `mcp-services/{catalog}.{schema}.{mcp_service}`.
-	Name  *string                              `json:"name,omitempty"`
-	Login *McpServiceUserMappedCredentialLogin `json:"login,omitempty"`
+	Name *string `json:"name,omitempty"`
 }
 
 // Request to create a new model provider service..
 type CreateModelProviderServiceRequest struct {
-	// Name of the parent schema. Format: `schemas/{catalog}.{schema}`. Each `{...}`
-	// component is capped at 255 characters individually.
-	Parent *string `json:"parent,omitempty"`
-	// Name for the model provider service, e.g. "openai_prod".
-	ModelProviderServiceId *string `json:"model_provider_service_id,omitempty"`
 	// The model provider service to create. Do not set `name`; the server derives
 	// it from `parent` and `model_provider_service_id`.
 	ModelProviderService *ModelProviderService `json:"model_provider_service,omitempty"`
+	// Name for the model provider service, e.g. "openai_prod".
+	ModelProviderServiceId *string `json:"model_provider_service_id,omitempty"`
+	// Name of the parent schema. Format: `schemas/{catalog}.{schema}`. Each `{...}`
+	// component is capped at 255 characters individually.
+	Parent *string `json:"parent,omitempty"`
 }
 
 // Request to create a new model service..
 type CreateModelServiceRequest struct {
-	// Name of the parent schema. Format: `schemas/{catalog}.{schema}`. Each `{...}`
-	// component is capped at 255 characters individually.
-	Parent *string `json:"parent,omitempty"`
-	// Name for the model service, e.g. "my_model_service".
-	ModelServiceId *string `json:"model_service_id,omitempty"`
 	// The model service to create. Do not set `name`; the server derives it from
 	// `parent` and `model_service_id`.
 	ModelService *ModelService `json:"model_service,omitempty"`
+	// Name for the model service, e.g. "my_model_service".
+	ModelServiceId *string `json:"model_service_id,omitempty"`
+	// Name of the parent schema. Format: `schemas/{catalog}.{schema}`. Each `{...}`
+	// component is capped at 255 characters individually.
+	Parent *string `json:"parent,omitempty"`
 }
 
 // Request to create a new skill..
@@ -113,100 +113,100 @@ type CreateSkillRequest struct {
 	// Name of the parent schema. Format: `schemas/{catalog}.{schema}`. Each `{...}`
 	// component is capped at 255 characters individually.
 	Parent *string `json:"parent,omitempty"`
-	// Name for the skill, e.g. "basic-math". The server normalizes this identifier
-	// to lowercase. It is independent of the bundle name read from SKILL.md.
-	SkillId *string `json:"skill_id,omitempty"`
 	// The skill to create. `comment` is the only accepted client input and may be
 	// omitted. Do not set `name`; the server derives it from `parent` and
 	// `skill_id`.
 	Skill *Skill `json:"skill,omitempty"`
+	// Name for the skill, e.g. "basic-math". The server normalizes this identifier
+	// to lowercase. It is independent of the bundle name read from SKILL.md.
+	SkillId *string `json:"skill_id,omitempty"`
 }
 
 // Request to delete an MCP service..
 type DeleteMcpServiceRequest struct {
+	// Optimistic concurrency token from the most recent read. When set, the delete
+	// succeeds only if the resource has not changed. Leave unset for an
+	// unconditional delete. For REST requests, URL-encode the base64 string
+	// returned by the API when setting the `etag` query parameter.
+	Etag []byte `json:"etag,omitempty"`
 	// Resource name of the MCP service. Format:
 	// `mcp-services/{catalog}.{schema}.{mcp_service}`. Each `{...}` component is
 	// capped at 255 characters individually.
 	Name *string `json:"name,omitempty"`
-	// Optimistic concurrency token from the most recent read. When set, the delete
-	// succeeds only if the resource has not changed. Leave unset for an
-	// unconditional delete. For REST requests, URL-encode the base64 string
-	// returned by the API when setting the `etag` query parameter.
-	Etag []byte `json:"etag,omitempty"`
 }
 
 // Request to delete a model provider service..
 type DeleteModelProviderServiceRequest struct {
+	// Optimistic concurrency token from the most recent read. When set, the delete
+	// succeeds only if the resource has not changed. Leave unset for an
+	// unconditional delete. For REST requests, URL-encode the base64 string
+	// returned by the API when setting the `etag` query parameter.
+	Etag []byte `json:"etag,omitempty"`
 	// Resource name of the model provider service. Format:
 	// `model-provider-services/{catalog}.{schema}.{model_provider_service}`. Each
 	// `{...}` component is capped at 255 characters individually.
 	Name *string `json:"name,omitempty"`
-	// Optimistic concurrency token from the most recent read. When set, the delete
-	// succeeds only if the resource has not changed. Leave unset for an
-	// unconditional delete. For REST requests, URL-encode the base64 string
-	// returned by the API when setting the `etag` query parameter.
-	Etag []byte `json:"etag,omitempty"`
 }
 
 // Request to delete a model service..
 type DeleteModelServiceRequest struct {
+	// Optimistic concurrency token from the most recent read. When set, the delete
+	// succeeds only if the resource has not changed. Leave unset for an
+	// unconditional delete. For REST requests, URL-encode the base64 string
+	// returned by the API when setting the `etag` query parameter.
+	Etag []byte `json:"etag,omitempty"`
 	// Resource name of the model service. Format:
 	// `model-services/{catalog}.{schema}.{model_service}`. Each `{...}` component
 	// is capped at 255 characters individually.
 	Name *string `json:"name,omitempty"`
-	// Optimistic concurrency token from the most recent read. When set, the delete
-	// succeeds only if the resource has not changed. Leave unset for an
-	// unconditional delete. For REST requests, URL-encode the base64 string
-	// returned by the API when setting the `etag` query parameter.
-	Etag []byte `json:"etag,omitempty"`
 }
 
 // Request to delete a skill..
 type DeleteSkillRequest struct {
-	// Full resource name of the skill. Format: `skills/{catalog}.{schema}.{skill}`.
-	// Each `{...}` component is capped at 255 characters individually.
-	Name *string `json:"name,omitempty"`
 	// Optimistic concurrency token from the most recent read. When set, the delete
 	// succeeds only if the resource has not changed. Leave unset for an
 	// unconditional delete. For REST requests, URL-encode the base64 string
 	// returned by the API when setting the `etag` query parameter.
 	Etag []byte `json:"etag,omitempty"`
+	// Full resource name of the skill. Format: `skills/{catalog}.{schema}.{skill}`.
+	// Each `{...}` component is capped at 255 characters individually.
+	Name *string `json:"name,omitempty"`
 }
 
 // Configuration for logging request and response payloads to a Unity Catalog
 // inference table. When this configuration is present, payload logging is
 // enabled by default..
 type InferenceTableConfig struct {
+	// Whether the referenced inference table has been deleted. The configuration
+	// remains visible so you can identify the broken dependency. Payload logging
+	// cannot continue until the table is restored or the configuration is updated.
+	IsDeleted *bool `json:"is_deleted,omitempty"`
 	// Parent Unity Catalog schema where the inference table is created, in the form
 	// `schemas/{catalog}.{schema}`. Required when configuring an inference table.
 	// After the inference table is created, this field cannot be changed.
 	Parent *string `json:"parent,omitempty"`
+	// Resolved UC table for payload logs. Format:
+	// `tables/{catalog}.{schema}.{table}`.
+	Table *string `json:"table,omitempty"`
 	// Prefix used to form the inference table's registered name. AI Gateway appends
 	// `_payload`; for example, `table_name_prefix = "orders"` creates
 	// `orders_payload`. If unset, the prefix defaults to the service name. Read
 	// `table` from the response for the resulting resource name. After the
 	// inference table is created, this field cannot be changed.
 	TableNamePrefix *string `json:"table_name_prefix,omitempty"`
-	// Resolved UC table for payload logs. Format:
-	// `tables/{catalog}.{schema}.{table}`.
-	Table *string `json:"table,omitempty"`
-	// Whether the referenced inference table has been deleted. The configuration
-	// remains visible so you can identify the broken dependency. Payload logging
-	// cannot continue until the table is restored or the configuration is updated.
-	IsDeleted *bool `json:"is_deleted,omitempty"`
 }
 
 // Request to list MCP services. Accepts `parent`, `page_size`, `page_token`,
 // and `view`..
 type ListMcpServicesRequest struct {
-	// Parent schema to list within, in the form `schemas/{catalog}.{schema}`.
-	// Required. Each `{...}` component is capped at 255 characters individually.
-	Parent *string `json:"parent,omitempty"`
 	// Maximum number of MCP services to return. Defaults to 100 when unset or 0;
 	// the maximum is 200. Use `page_token` to retrieve additional pages.
 	PageSize *int `json:"page_size,omitempty"`
 	// Opaque pagination token from the previous response.
 	PageToken *string `json:"page_token,omitempty"`
+	// Parent schema to list within, in the form `schemas/{catalog}.{schema}`.
+	// Required. Each `{...}` component is capped at 255 characters individually.
+	Parent *string `json:"parent,omitempty"`
 	// Fields to return for each service. `FULL` includes source-connection details
 	// and rate-limit principal names. `BASIC` omits the source connection and omits
 	// principal names from rate limits. Defaults to `BASIC` when unset.
@@ -225,14 +225,14 @@ type ListMcpServicesResponse struct {
 // Request to list model provider services. Accepts `parent`, `page_size`,
 // `page_token`, and `view`..
 type ListModelProviderServicesRequest struct {
-	// Parent schema to list within, in the form `schemas/{catalog}.{schema}`.
-	// Required. Each `{...}` component is capped at 255 characters individually.
-	Parent *string `json:"parent,omitempty"`
 	// Maximum number of provider services to return. Defaults to 100 when unset or
 	// 0; the maximum is 200. Use `page_token` to retrieve additional pages.
 	PageSize *int `json:"page_size,omitempty"`
 	// Opaque pagination token from the previous response.
 	PageToken *string `json:"page_token,omitempty"`
+	// Parent schema to list within, in the form `schemas/{catalog}.{schema}`.
+	// Required. Each `{...}` component is capped at 255 characters individually.
+	Parent *string `json:"parent,omitempty"`
 	// Fields to return for each service. `FULL` includes resolved
 	// service-credential and inference-table details and rate-limit principal
 	// names. `BASIC` omits those details and principal names from rate limits.
@@ -251,14 +251,14 @@ type ListModelProviderServicesResponse struct {
 
 // Request to list model services..
 type ListModelServicesRequest struct {
-	// Parent schema to list within, in the form `schemas/{catalog}.{schema}`.
-	// Required. Each `{...}` component is capped at 255 characters individually.
-	Parent *string `json:"parent,omitempty"`
 	// Maximum number of model services to return. Defaults to 100 when unset or 0;
 	// the maximum is 200. Use `page_token` to retrieve additional pages.
 	PageSize *int `json:"page_size,omitempty"`
 	// Opaque pagination token from the previous response.
 	PageToken *string `json:"page_token,omitempty"`
+	// Parent schema to list within, in the form `schemas/{catalog}.{schema}`.
+	// Required. Each `{...}` component is capped at 255 characters individually.
+	Parent *string `json:"parent,omitempty"`
 	// Fields to return for each service. `FULL` includes destinations,
 	// inference-table details, and rate-limit principal names. `BASIC` omits
 	// destinations and inference-table details and omits principal names from rate
@@ -278,65 +278,64 @@ type ListModelServicesResponse struct {
 // Request to list skills. Accepts `parent`, `page_size`, and `page_token`. v1
 // supports schema-level listing only..
 type ListSkillsRequest struct {
-	// Name of the parent schema. Format: `schemas/{catalog}.{schema}`. Each `{...}`
-	// component is capped at 255 characters individually. Required: skill listing
-	// is schema-scoped, so `parent` must be set; an unset or empty `parent` is
-	// rejected with INVALID_PARAMETER_VALUE.
-	Parent *string `json:"parent,omitempty"`
 	// Maximum number of skills to return. Defaults to 100 when unset or 0; the
 	// maximum is 200. Use `page_token` to retrieve additional pages.
 	PageSize *int `json:"page_size,omitempty"`
 	// Opaque pagination token from a previous request.
 	PageToken *string `json:"page_token,omitempty"`
+	// Name of the parent schema. Format: `schemas/{catalog}.{schema}`. Each `{...}`
+	// component is capped at 255 characters individually. Required: skill listing
+	// is schema-scoped, so `parent` must be set; an unset or empty `parent` is
+	// rejected with INVALID_PARAMETER_VALUE.
+	Parent *string `json:"parent,omitempty"`
 }
 
 // Response for listing skills..
 type ListSkillsResponse struct {
-	// The list of skills.
-	Skills []Skill `json:"skills,omitempty"`
 	// Pagination token for retrieving the next page of results.
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// The list of skills.
+	Skills []Skill `json:"skills,omitempty"`
 }
 
 // A Unity Catalog securable that registers an MCP server through a Unity
 // Catalog connection and exposes its tools for discovery, authorization, and
 // invocation..
 type McpService struct {
-	// Resource name of the MCP service. Format:
-	// `mcp-services/{catalog}.{schema}.{mcp_service}`. Each `{...}` component is
-	// capped at 255 characters individually. Server-derived on Create from `parent`
-	// + `mcp_service_id`; required and immutable on Update/Get/Delete.
-	Name *string `json:"name,omitempty"`
-	// Owner of the MCP service.
-	EffectiveOwner *string `json:"effective_owner,omitempty"`
-	// Metastore hosting the MCP service.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Time the MCP service was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	// Creator identity.
-	CreatedBy *string `json:"created_by,omitempty"`
-	// Time the MCP service was last modified.
-	UpdateTime *types.Time `json:"update_time,omitempty"`
-	// Identity of the last updater.
-	UpdatedBy *string `json:"updated_by,omitempty"`
 	// User-provided description.
 	Comment *string `json:"comment,omitempty"`
 	// Connection, tool selectors, and rate limits. Required on Create. On Update,
 	// provide this field when `update_mask` contains `config` or one of its
 	// subpaths.
 	Config *McpServiceConfig `json:"config,omitempty"`
+	// Time the MCP service was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
+	// Creator identity.
+	CreatedBy *string `json:"created_by,omitempty"`
+	// Owner of the MCP service.
+	EffectiveOwner *string `json:"effective_owner,omitempty"`
 	// Optimistic concurrency token returned on every read. To make an Update or
 	// Delete conditional, pass the last-read value in that request's `etag` field.
 	// In REST responses, this value is a base64 string; URL-encode it when setting
 	// the `etag` query parameter.
 	Etag []byte `json:"etag,omitempty"`
+	// Metastore hosting the MCP service.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// Resource name of the MCP service. Format:
+	// `mcp-services/{catalog}.{schema}.{mcp_service}`. Each `{...}` component is
+	// capped at 255 characters individually. Server-derived on Create from `parent`
+	// + `mcp_service_id`; required and immutable on Update/Get/Delete.
+	Name *string `json:"name,omitempty"`
+	// Time the MCP service was last modified.
+	UpdateTime *types.Time `json:"update_time,omitempty"`
+	// Identity of the last updater.
+	UpdatedBy *string `json:"updated_by,omitempty"`
 }
 
 // Operational configuration for an MCP service. Groups the source reference,
 // tool selectors, and rate limits -- the fields that configure how the MCP
 // service behaves at invocation time..
 type McpServiceConfig struct {
-	SourceConnection *McpServiceConfig_SourceConnection `json:"source_connection,omitempty"`
 	// Tool names or prefix patterns to expose from the MCP server. Use exact tool
 	// names or prefix patterns such as `read_*`. An empty list exposes all tools.
 	// At most 1,024 selectors are allowed, and each selector can contain at most
@@ -345,7 +344,8 @@ type McpServiceConfig struct {
 	// Rate limits for tool invocations. Supported scopes are user, group, service
 	// principal, the service as a whole, and each user by default. Request and
 	// token limits are supported. Empty when no rate limit is configured.
-	RateLimits []RateLimit `json:"rate_limits,omitempty"`
+	RateLimits       []RateLimit                        `json:"rate_limits,omitempty"`
+	SourceConnection *McpServiceConfig_SourceConnection `json:"source_connection,omitempty"`
 }
 
 // Unity Catalog connection that points to the MCP server. On Create, provide
@@ -354,13 +354,13 @@ type McpServiceConfig struct {
 // the resolved connection metadata. If the connection is deleted, its reference
 // remains visible so you can identify the broken dependency..
 type McpServiceConfig_SourceConnection struct {
-	// Resource name of the Unity Catalog connection used to access the MCP server,
-	// in the form `connections/{catalog}.{schema}.{connection}`.
-	Name *string `json:"name,omitempty"`
 	// Whether the referenced connection has been deleted. The MCP service keeps the
 	// reference so callers can identify the broken dependency; tool invocation
 	// fails until the source connection is updated.
 	IsDeleted *bool `json:"is_deleted,omitempty"`
+	// Resource name of the Unity Catalog connection used to access the MCP server,
+	// in the form `connections/{catalog}.{schema}.{connection}`.
+	Name *string `json:"name,omitempty"`
 	// Options needed to build the U2M authorize request, returned as a flat map.
 	// When set, it includes: `authorization_endpoint` (OAuth authorize URL),
 	// `token_endpoint` (token-exchange URL), `oauth_scope` (space-separated scopes
@@ -398,35 +398,35 @@ type McpServiceUserMappedCredentialLogin struct {
 // model service can route across multiple model provider services for traffic
 // splitting or failover..
 type ModelProviderService struct {
+	// User-provided description.
+	Comment *string `json:"comment,omitempty"`
+	// Provider authentication, exposed models, request-forwarding controls, rate
+	// limits, and payload logging. Required on Create. On Update, it is required
+	// only when `config` or one of its subpaths appears in `update_mask`.
+	Config *ModelProviderServiceConfig `json:"config,omitempty"`
+	// Time the provider service was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
+	// Creator identity.
+	CreatedBy *string `json:"created_by,omitempty"`
+	// Owner of the model provider service.
+	EffectiveOwner *string `json:"effective_owner,omitempty"`
+	// Optimistic concurrency token returned on every read. To make an Update or
+	// Delete conditional, pass the last-read value in that request's `etag` field.
+	// In REST responses, this value is a base64 string; URL-encode it when setting
+	// the `etag` query parameter.
+	Etag []byte `json:"etag,omitempty"`
+	// Metastore hosting the provider service.
+	MetastoreId *string `json:"metastore_id,omitempty"`
 	// Resource name of the provider service. Format:
 	// `model-provider-services/{catalog}.{schema}.{model_provider_service}`. Each
 	// `{...}` component is capped at 255 characters individually. Server-derived on
 	// Create from `parent` + `model_provider_service_id`; required and immutable on
 	// Update/Get/Delete.
 	Name *string `json:"name,omitempty"`
-	// Owner of the model provider service.
-	EffectiveOwner *string `json:"effective_owner,omitempty"`
-	// Metastore hosting the provider service.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Time the provider service was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	// Creator identity.
-	CreatedBy *string `json:"created_by,omitempty"`
 	// Time the provider service was last modified.
 	UpdateTime *types.Time `json:"update_time,omitempty"`
 	// Identity of the last updater.
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// User-provided description.
-	Comment *string `json:"comment,omitempty"`
-	// Optimistic concurrency token returned on every read. To make an Update or
-	// Delete conditional, pass the last-read value in that request's `etag` field.
-	// In REST responses, this value is a base64 string; URL-encode it when setting
-	// the `etag` query parameter.
-	Etag []byte `json:"etag,omitempty"`
-	// Provider authentication, exposed models, request-forwarding controls, rate
-	// limits, and payload logging. Required on Create. On Update, it is required
-	// only when `config` or one of its subpaths appears in `update_mask`.
-	Config *ModelProviderServiceConfig `json:"config,omitempty"`
 }
 
 // Behavioral configuration for a ModelProviderService: provider authentication
@@ -435,29 +435,15 @@ type ModelProviderService struct {
 // parameters, and unmanaged subpaths cross the trust boundary to the upstream
 // provider..
 type ModelProviderServiceConfig struct {
-	// External model provider. Required on Create and immutable thereafter. Set the
-	// matching provider-specific configuration, such as `openai`, `azure_openai`,
-	// or `amazon_bedrock`.
-	ProviderType     ModelProviderServiceConfig_ExternalModelProviderType       `json:"provider_type,omitempty"`
-	Openai           *ModelProviderServiceConfig_OpenAiProviderConfig           `json:"openai,omitempty"`
-	AzureOpenai      *ModelProviderServiceConfig_AzureOpenAiProviderConfig      `json:"azure_openai,omitempty"`
-	Anthropic        *ModelProviderServiceConfig_AnthropicProviderConfig        `json:"anthropic,omitempty"`
-	AmazonBedrock    *ModelProviderServiceConfig_AmazonBedrockProviderConfig    `json:"amazon_bedrock,omitempty"`
-	Custom           *ModelProviderServiceConfig_CustomProviderConfig           `json:"custom,omitempty"`
-	MicrosoftFoundry *ModelProviderServiceConfig_MicrosoftFoundryProviderConfig `json:"microsoft_foundry,omitempty"`
-	GeminiEnterprise *ModelProviderServiceConfig_GeminiEnterpriseProviderConfig `json:"gemini_enterprise,omitempty"`
-	BedrockMantle    *ModelProviderServiceConfig_AmazonBedrockProviderConfig    `json:"bedrock_mantle,omitempty"`
 	// When true, accepts any model exposed by the upstream provider; `targets` is
 	// not required and does not restrict routability. When false, only models
 	// listed in `targets` are routable. Defaults to false.
-	AllowAllTargets *bool `json:"allow_all_targets,omitempty"`
-	// Models and provider-native API types exposed by this provider service. Each
-	// entry must include at least one `native_api_types` value. When
-	// `allow_all_targets` is false, at least one entry is required and model
-	// service destinations can reference only listed models. When
-	// `allow_all_targets` is true, any upstream model is routable; entries in this
-	// list provide API-type metadata without restricting other models.
-	Targets []ModelProviderServiceConfig_ModelTargetConfig `json:"targets,omitempty"`
+	AllowAllTargets *bool                                                   `json:"allow_all_targets,omitempty"`
+	AmazonBedrock   *ModelProviderServiceConfig_AmazonBedrockProviderConfig `json:"amazon_bedrock,omitempty"`
+	Anthropic       *ModelProviderServiceConfig_AnthropicProviderConfig     `json:"anthropic,omitempty"`
+	AzureOpenai     *ModelProviderServiceConfig_AzureOpenAiProviderConfig   `json:"azure_openai,omitempty"`
+	BedrockMantle   *ModelProviderServiceConfig_AmazonBedrockProviderConfig `json:"bedrock_mantle,omitempty"`
+	Custom          *ModelProviderServiceConfig_CustomProviderConfig        `json:"custom,omitempty"`
 	// Whether to forward incoming HTTP headers to the upstream provider. Defaults
 	// to false and is configured for the entire provider service, not per request.
 	// Upstream authentication is configured separately in the provider-specific
@@ -474,17 +460,31 @@ type ModelProviderServiceConfig struct {
 	// through the provider service. AI Gateway cannot evaluate Service Policies on
 	// opaque unmanaged requests, so unmanaged requests are rejected whenever
 	// Service Policies are attached to this securable.
-	ForwardUnmanagedPaths *bool `json:"forward_unmanaged_paths,omitempty"`
-	// Rate limits for requests sent directly to this provider service. Requests
-	// routed through a model service use that model service's rate limits instead.
-	RateLimits []RateLimit `json:"rate_limits,omitempty"`
+	ForwardUnmanagedPaths *bool                                                      `json:"forward_unmanaged_paths,omitempty"`
+	GeminiEnterprise      *ModelProviderServiceConfig_GeminiEnterpriseProviderConfig `json:"gemini_enterprise,omitempty"`
 	// Payload logging configuration for requests sent directly to this provider
 	// service. Requests routed through a model service are captured by that model
 	// service's inference table instead.
-	InferenceTable *InferenceTableConfig `json:"inference_table,omitempty"`
+	InferenceTable   *InferenceTableConfig                                      `json:"inference_table,omitempty"`
+	MicrosoftFoundry *ModelProviderServiceConfig_MicrosoftFoundryProviderConfig `json:"microsoft_foundry,omitempty"`
+	Openai           *ModelProviderServiceConfig_OpenAiProviderConfig           `json:"openai,omitempty"`
 	// Pricing configuration for this provider service. An explicitly empty
 	// configuration is retained on Create and Update and applies no adjustment.
 	Pricing *ModelProviderServiceConfig_ProviderPricingConfig `json:"pricing,omitempty"`
+	// External model provider. Required on Create and immutable thereafter. Set the
+	// matching provider-specific configuration, such as `openai`, `azure_openai`,
+	// or `amazon_bedrock`.
+	ProviderType ModelProviderServiceConfig_ExternalModelProviderType `json:"provider_type,omitempty"`
+	// Rate limits for requests sent directly to this provider service. Requests
+	// routed through a model service use that model service's rate limits instead.
+	RateLimits []RateLimit `json:"rate_limits,omitempty"`
+	// Models and provider-native API types exposed by this provider service. Each
+	// entry must include at least one `native_api_types` value. When
+	// `allow_all_targets` is false, at least one entry is required and model
+	// service destinations can reference only listed models. When
+	// `allow_all_targets` is true, any upstream model is routable; entries in this
+	// list provide API-type metadata without restricting other models.
+	Targets []ModelProviderServiceConfig_ModelTargetConfig `json:"targets,omitempty"`
 }
 
 // Amazon Bedrock provider configuration..
@@ -502,11 +502,11 @@ type ModelProviderServiceConfig_AmazonBedrockProviderConfig struct {
 // referenced by name, not held on this message. Setting more than one mode is
 // rejected..
 type ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig struct {
+	AwsAccessKey *ModelProviderServiceConfig_AwsAccessKey `json:"aws_access_key,omitempty"`
 	// AWS region where the Bedrock endpoint is hosted (e.g., `us-east-1`). Required
 	// on Create.
 	Region            *string                                       `json:"region,omitempty"`
 	ServiceCredential *ModelProviderServiceConfig_ServiceCredential `json:"service_credential,omitempty"`
-	AwsAccessKey      *ModelProviderServiceConfig_AwsAccessKey      `json:"aws_access_key,omitempty"`
 }
 
 // Anthropic provider configuration. Exactly one of `direct` or `relayed` must
@@ -554,12 +554,12 @@ type ModelProviderServiceConfig_AzureOpenAiProviderConfig struct {
 // Unity Catalog and is referenced by name, not held on this message. Only
 // supported on Azure-hosted workspaces. Setting more than one mode is rejected..
 type ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig struct {
+	ApiKey *ModelProviderServiceConfig_ProviderSecret `json:"api_key,omitempty"`
 	// Full Azure OpenAI endpoint base URL, e.g.
 	// `https://myresource.openai.azure.com`. Required on Create.
 	BaseUrl               *string                                           `json:"base_url,omitempty"`
-	ApiKey                *ModelProviderServiceConfig_ProviderSecret        `json:"api_key,omitempty"`
-	ServiceCredential     *ModelProviderServiceConfig_ServiceCredential     `json:"service_credential,omitempty"`
 	EntraServicePrincipal *ModelProviderServiceConfig_EntraServicePrincipal `json:"entra_service_principal,omitempty"`
+	ServiceCredential     *ModelProviderServiceConfig_ServiceCredential     `json:"service_credential,omitempty"`
 }
 
 // Header-based API-key authentication for a custom provider: the secret is
@@ -585,10 +585,10 @@ type ModelProviderServiceConfig_CustomProviderConfig struct {
 // secret as an `Authorization` bearer token, or `header_auth` to forward it
 // under a caller-chosen HTTP header..
 type ModelProviderServiceConfig_CustomProviderDirectConfig struct {
+	ApiKey *ModelProviderServiceConfig_ProviderSecret `json:"api_key,omitempty"`
 	// Endpoint URL of the OpenAI-compatible service (e.g.,
 	// `https://api.example.com/v1`). Required on Create.
 	BaseUrl    *string                                                    `json:"base_url,omitempty"`
-	ApiKey     *ModelProviderServiceConfig_ProviderSecret                 `json:"api_key,omitempty"`
 	HeaderAuth *ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuth `json:"header_auth,omitempty"`
 }
 
@@ -597,11 +597,11 @@ type ModelProviderServiceConfig_CustomProviderDirectConfig struct {
 // it. AI Gateway exchanges these credentials for an Entra bearer token for
 // requests to Azure OpenAI or Microsoft Foundry..
 type ModelProviderServiceConfig_EntraServicePrincipal struct {
-	// Entra ID (Azure AD) tenant ID. Required on Create.
-	TenantId *string `json:"tenant_id,omitempty"`
 	// Entra ID client (application) ID. Required on Create.
 	ClientId     *string                                    `json:"client_id,omitempty"`
 	ClientSecret *ModelProviderServiceConfig_ProviderSecret `json:"client_secret,omitempty"`
+	// Entra ID (Azure AD) tenant ID. Required on Create.
+	TenantId *string `json:"tenant_id,omitempty"`
 }
 
 // Gemini Enterprise provider configuration..
@@ -612,13 +612,13 @@ type ModelProviderServiceConfig_GeminiEnterpriseProviderConfig struct {
 // Direct Gemini Enterprise provider configuration. An API key is required when
 // creating the service..
 type ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig struct {
-	ApiKey            *ModelProviderServiceConfig_ProviderSecret    `json:"api_key,omitempty"`
-	ServiceCredential *ModelProviderServiceConfig_ServiceCredential `json:"service_credential,omitempty"`
+	ApiKey *ModelProviderServiceConfig_ProviderSecret `json:"api_key,omitempty"`
 	// GCP project ID hosting the Gemini Enterprise endpoint. Required on Create.
 	ProjectId *string `json:"project_id,omitempty"`
 	// GCP region of the Gemini Enterprise endpoint (e.g., `us-central1`). Required
 	// on Create.
-	Region *string `json:"region,omitempty"`
+	Region            *string                                       `json:"region,omitempty"`
+	ServiceCredential *ModelProviderServiceConfig_ServiceCredential `json:"service_credential,omitempty"`
 }
 
 // Microsoft Foundry provider configuration..
@@ -640,16 +640,22 @@ type ModelProviderServiceConfig_MicrosoftFoundryProviderConfig struct {
 // not held on this message. Only supported on Azure-hosted workspaces. Setting
 // more than one mode is rejected..
 type ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig struct {
+	ApiKey *ModelProviderServiceConfig_ProviderSecret `json:"api_key,omitempty"`
 	// Microsoft Foundry endpoint URL. Required on Create.
 	BaseUrl               *string                                           `json:"base_url,omitempty"`
-	ApiKey                *ModelProviderServiceConfig_ProviderSecret        `json:"api_key,omitempty"`
-	ServiceCredential     *ModelProviderServiceConfig_ServiceCredential     `json:"service_credential,omitempty"`
 	EntraServicePrincipal *ModelProviderServiceConfig_EntraServicePrincipal `json:"entra_service_principal,omitempty"`
+	ServiceCredential     *ModelProviderServiceConfig_ServiceCredential     `json:"service_credential,omitempty"`
 }
 
 // Model target configuration shared by model provider service targets and
 // external model destinations on model services..
 type ModelProviderServiceConfig_ModelTargetConfig struct {
+	// Relative path appended to a custom provider's `base_url` for this model, such
+	// as `serve/openai/chat`. Nonempty values are only supported for custom model
+	// provider service targets; other provider types reject them. Model service
+	// destinations do not support this field. Do not include URI templates,
+	// queries, or fragments. When empty, `base_url` is used unchanged.
+	EndpointRoute *string `json:"endpoint_route,omitempty"`
 	// Provider-side model identifier, such as `gpt-5` or `claude-opus-4-7`. This
 	// identifies a model at the upstream provider; it is not a Unity Catalog model
 	// resource.
@@ -661,12 +667,6 @@ type ModelProviderServiceConfig_ModelTargetConfig struct {
 	// selected types for translation. At most 64 entries of 256 characters each are
 	// allowed.
 	NativeApiTypes []string `json:"native_api_types,omitempty"`
-	// Relative path appended to a custom provider's `base_url` for this model, such
-	// as `serve/openai/chat`. Nonempty values are only supported for custom model
-	// provider service targets; other provider types reject them. Model service
-	// destinations do not support this field. Do not include URI templates,
-	// queries, or fragments. When empty, `base_url` is used unchanged.
-	EndpointRoute *string `json:"endpoint_route,omitempty"`
 }
 
 // OpenAI provider configuration..
@@ -677,12 +677,12 @@ type ModelProviderServiceConfig_OpenAiProviderConfig struct {
 // Direct (inline-credentials) form of the OpenAI provider config..
 type ModelProviderServiceConfig_OpenAiProviderDirectConfig struct {
 	ApiKey *ModelProviderServiceConfig_ProviderSecret `json:"api_key,omitempty"`
-	// Optional OpenAI organization ID. When set, the platform forwards it as the
-	// `OpenAI-Organization` header.
-	Organization *string `json:"organization,omitempty"`
 	// Optional custom base URL. Defaults to `https://api.openai.com/v1`. Use for
 	// OpenAI-API-compatible third-party endpoints or in-network proxies.
 	BaseUrl *string `json:"base_url,omitempty"`
+	// Optional OpenAI organization ID. When set, the platform forwards it as the
+	// `OpenAI-Organization` header.
+	Organization *string `json:"organization,omitempty"`
 }
 
 // Pricing adjustments applied to this provider service's external-model spend
@@ -727,73 +727,73 @@ type ModelProviderServiceConfig_ServiceCredential struct {
 // or an external model reached through a model provider service. Applies
 // centralized access control, rate limits, and auditing to its traffic..
 type ModelService struct {
-	// Resource name of the model service. Format:
-	// `model-services/{catalog}.{schema}.{model_service}`. Each `{...}` component
-	// is capped at 255 characters individually. Server-derived on Create from
-	// `parent` + `model_service_id`; required and immutable on Update/Get/Delete.
-	Name *string `json:"name,omitempty"`
-	// Owner of the model service.
-	EffectiveOwner *string `json:"effective_owner,omitempty"`
-	// Metastore hosting the model service.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Time the model service was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	// Creator identity.
-	CreatedBy *string `json:"created_by,omitempty"`
-	// Time the model service was last modified.
-	UpdateTime *types.Time `json:"update_time,omitempty"`
-	// Identity of the last updater.
-	UpdatedBy *string `json:"updated_by,omitempty"`
 	// User-provided description.
 	Comment *string `json:"comment,omitempty"`
 	// Destinations, routing, rate limits, and payload logging configuration.
 	// Required on Create. On Update, provide this field when `update_mask` contains
 	// `config` or one of its subpaths.
 	Config *ModelServiceConfig `json:"config,omitempty"`
+	// Time the model service was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
+	// Creator identity.
+	CreatedBy *string `json:"created_by,omitempty"`
+	// Owner of the model service.
+	EffectiveOwner *string `json:"effective_owner,omitempty"`
 	// Optimistic concurrency token returned on every read. To make an Update or
 	// Delete conditional, pass the last-read value in that request's `etag` field.
 	// In REST responses, this value is a base64 string; URL-encode it when setting
 	// the `etag` query parameter.
 	Etag []byte `json:"etag,omitempty"`
+	// Metastore hosting the model service.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// Resource name of the model service. Format:
+	// `model-services/{catalog}.{schema}.{model_service}`. Each `{...}` component
+	// is capped at 255 characters individually. Server-derived on Create from
+	// `parent` + `model_service_id`; required and immutable on Update/Get/Delete.
+	Name *string `json:"name,omitempty"`
 	// API types supported across this service's destinations, such as
 	// `openai/v1/chat/completions`, `openai/v1/embeddings`, and
 	// `mlflow/v1/chat/completions`. Derived from the backing models and providers
 	// at read time.
 	SupportedApiTypes []string `json:"supported_api_types,omitempty"`
+	// Time the model service was last modified.
+	UpdateTime *types.Time `json:"update_time,omitempty"`
+	// Identity of the last updater.
+	UpdatedBy *string `json:"updated_by,omitempty"`
 }
 
 // Operational configuration wrapped around the ModelService resource..
 type ModelServiceConfig struct {
-	// Routing configuration: destinations and fallback.
-	Routing *ModelServiceConfig_RoutingConfig `json:"routing,omitempty"`
-	// Rate limits applied to requests routed through this model service.
-	RateLimits []RateLimit `json:"rate_limits,omitempty"`
 	// Inference table configuration for payload logging.
 	InferenceTable *InferenceTableConfig `json:"inference_table,omitempty"`
+	// Rate limits applied to requests routed through this model service.
+	RateLimits []RateLimit `json:"rate_limits,omitempty"`
+	// Routing configuration: destinations and fallback.
+	Routing *ModelServiceConfig_RoutingConfig `json:"routing,omitempty"`
 }
 
 // A destination the model service can route traffic to. Exactly one of the
 // per-type configs inside `type_config` must be set, and it must match
 // `destination_type`..
 type ModelServiceConfig_DestinationConfig struct {
-	// User-facing label for this destination, used in routing references.
-	Name *string `json:"name,omitempty"`
 	// Backing-model category. Provide the matching type-specific configuration and
 	// leave the other type-specific configurations unset.
-	DestinationType ModelServiceConfig_DestinationConfig_DestinationType `json:"destination_type,omitempty"`
-	// Percentage of primary traffic sent to this destination, from 0 to 100.
-	// Required when there is more than one primary destination, in which case the
-	// primary percentages must sum to 100; a single primary destination receives
-	// all traffic. Fallback destinations are ordered and do not use this field.
-	TrafficPercentage           *int                                            `json:"traffic_percentage,omitempty"`
-	PayPerTokenConfig           *ModelServiceConfig_PayPerTokenConfig           `json:"pay_per_token_config,omitempty"`
-	ProvisionedThroughputConfig *ModelServiceConfig_ProvisionedThroughputConfig `json:"provisioned_throughput_config,omitempty"`
-	ExternalModelConfig         *ModelServiceConfig_ExternalModelConfig         `json:"external_model_config,omitempty"`
+	DestinationType     ModelServiceConfig_DestinationConfig_DestinationType `json:"destination_type,omitempty"`
+	ExternalModelConfig *ModelServiceConfig_ExternalModelConfig              `json:"external_model_config,omitempty"`
 	// Whether the destination's backing model or model provider service has been
 	// deleted. The destination remains visible so you can identify the broken
 	// dependency. Requests cannot use this destination until the backing resource
 	// is restored or the destination is replaced.
 	IsDeleted *bool `json:"is_deleted,omitempty"`
+	// User-facing label for this destination, used in routing references.
+	Name                        *string                                         `json:"name,omitempty"`
+	PayPerTokenConfig           *ModelServiceConfig_PayPerTokenConfig           `json:"pay_per_token_config,omitempty"`
+	ProvisionedThroughputConfig *ModelServiceConfig_ProvisionedThroughputConfig `json:"provisioned_throughput_config,omitempty"`
+	// Percentage of primary traffic sent to this destination, from 0 to 100.
+	// Required when there is more than one primary destination, in which case the
+	// primary percentages must sum to 100; a single primary destination receives
+	// all traffic. Fallback destinations are ordered and do not use this field.
+	TrafficPercentage *int `json:"traffic_percentage,omitempty"`
 }
 
 // Configuration for an external-foundation-model destination. Provider auth and
@@ -835,6 +835,10 @@ type ModelServiceConfig_PayPerTokenConfig struct {
 // sizing (provisioned throughput, burst scaling, model version) is owned by the
 // Model Serving endpoint itself, not by this message..
 type ModelServiceConfig_ProvisionedThroughputConfig struct {
+	// UC model FQN of the model served by the backing endpoint (e.g.,
+	// `system.ai.databricks-claude-opus-4-6`). Resolved from Model Serving at
+	// Create/Update time.
+	Model *string `json:"model,omitempty"`
 	// Name of the backing Model Serving endpoint serving the provisioned-
 	// throughput foundation model, in the form `serving-endpoints/{name}`. The same
 	// Unity Catalog model can be served on multiple Model Serving endpoints with
@@ -842,10 +846,6 @@ type ModelServiceConfig_ProvisionedThroughputConfig struct {
 	// endpoint to which this destination routes. The endpoint must exist at create
 	// time.
 	ModelServingEndpoint *string `json:"model_serving_endpoint,omitempty"`
-	// UC model FQN of the model served by the backing endpoint (e.g.,
-	// `system.ai.databricks-claude-opus-4-6`). Resolved from Model Serving at
-	// Create/Update time.
-	Model *string `json:"model,omitempty"`
 }
 
 // Routing configuration for a model service, nesting destinations and fallback
@@ -875,12 +875,12 @@ type RateLimit struct {
 	// Scope of the rate limit. Depending on this value, the limit applies to a
 	// principal, the service as a whole, or each user by default.
 	Key RateLimit_RateLimitKey `json:"key,omitempty"`
-	// Renewal period.
-	RenewalPeriod RateLimit_RateLimitRenewalPeriod `json:"renewal_period,omitempty"`
 	// Principal this limit applies to: user email, group name, or service principal
 	// application ID. Required when `key` applies to a user, group, or service
 	// principal; otherwise it must be unset.
 	Principal *string `json:"principal,omitempty"`
+	// Renewal period.
+	RenewalPeriod RateLimit_RateLimitRenewalPeriod `json:"renewal_period,omitempty"`
 	// Maximum requests allowed in one renewal period. Leave unset for no request
 	// limit. Set to `0` to deny all requests.
 	Requests *int64 `json:"requests,omitempty"`
@@ -893,38 +893,10 @@ type RateLimit struct {
 // transfer bundle bytes through the Files API. FinalizeSkill reads the uploaded
 // SKILL.md and projects its frontmatter onto the Skill metadata..
 type Skill struct {
-	// Resource name of the skill. Format: `skills/{catalog}.{schema}.{skill}`. Each
-	// `{...}` component is capped at 255 characters individually. Server-derived on
-	// Create from `parent` + `skill_id`; required and immutable on
-	// Update/Get/Delete.
-	Name *string `json:"name,omitempty"`
 	// Name from the most recently successfully finalized SKILL.md. It may differ
 	// from the final component of the Skill resource name. Unset until
 	// FinalizeSkill succeeds.
 	BundleName *string `json:"bundle_name,omitempty"`
-	// Description from the most recently successfully finalized SKILL.md. Unset
-	// until FinalizeSkill succeeds.
-	Description *string `json:"description,omitempty"`
-	// Optimistic concurrency token returned on every read. To make an Update or
-	// Delete conditional, pass the last-read value in that request's `etag` field.
-	// In REST responses, this value is a base64 string; URL-encode it when setting
-	// the `etag` query parameter.
-	Etag []byte `json:"etag,omitempty"`
-	// Time the skill was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	// Time of the most recent Skill metadata mutation. Uploading bundle files alone
-	// does not change this value.
-	UpdateTime *types.Time `json:"update_time,omitempty"`
-	// Time of the most recent successful FinalizeSkill. Unset until one succeeds.
-	FinalizeTime *types.Time `json:"finalize_time,omitempty"`
-	// Creator identity.
-	CreatedBy *string `json:"created_by,omitempty"`
-	// Identity of the last updater.
-	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Owner of the skill.
-	EffectiveOwner *string `json:"effective_owner,omitempty"`
-	// Metastore hosting the skill.
-	MetastoreId *string `json:"metastore_id,omitempty"`
 	// User-provided comment for the skill. Free-text, user-editable via UpdateSkill
 	// (listed in its `update_mask`). DISTINCT from `description`, which is the
 	// server-parsed, OUTPUT_ONLY SKILL.md frontmatter value: `comment` is the
@@ -932,10 +904,43 @@ type Skill struct {
 	// `comment` is in the update mask, omitting it clears the field, while an
 	// explicitly empty string is retained.
 	Comment *string `json:"comment,omitempty"`
+	// Time the skill was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
+	// Creator identity.
+	CreatedBy *string `json:"created_by,omitempty"`
+	// Description from the most recently successfully finalized SKILL.md. Unset
+	// until FinalizeSkill succeeds.
+	Description *string `json:"description,omitempty"`
+	// Owner of the skill.
+	EffectiveOwner *string `json:"effective_owner,omitempty"`
+	// Optimistic concurrency token returned on every read. To make an Update or
+	// Delete conditional, pass the last-read value in that request's `etag` field.
+	// In REST responses, this value is a base64 string; URL-encode it when setting
+	// the `etag` query parameter.
+	Etag []byte `json:"etag,omitempty"`
+	// Time of the most recent successful FinalizeSkill. Unset until one succeeds.
+	FinalizeTime *types.Time `json:"finalize_time,omitempty"`
+	// Metastore hosting the skill.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// Resource name of the skill. Format: `skills/{catalog}.{schema}.{skill}`. Each
+	// `{...}` component is capped at 255 characters individually. Server-derived on
+	// Create from `parent` + `skill_id`; required and immutable on
+	// Update/Get/Delete.
+	Name *string `json:"name,omitempty"`
+	// Time of the most recent Skill metadata mutation. Uploading bundle files alone
+	// does not change this value.
+	UpdateTime *types.Time `json:"update_time,omitempty"`
+	// Identity of the last updater.
+	UpdatedBy *string `json:"updated_by,omitempty"`
 }
 
 // Request to update an MCP service. `name` cannot appear in `update_mask`..
 type UpdateMcpServiceRequest struct {
+	// Optimistic concurrency token from the most recent read. When set, the update
+	// succeeds only if the resource has not changed. Leave unset for an
+	// unconditional update. For REST requests, URL-encode the base64 string
+	// returned by the API when setting the `etag` query parameter.
+	Etag []byte `json:"etag,omitempty"`
 	// The MCP service with the updated field values. `name` identifies the resource
 	// (`mcp-services/{catalog}.{schema}.{mcp_service}`); only fields listed in
 	// `update_mask` are applied.
@@ -946,16 +951,16 @@ type UpdateMcpServiceRequest struct {
 	// `comment`, `config.source_connection.name`, `config.include_tool_selectors`,
 	// or `config.rate_limits`.
 	UpdateMask *string `json:"update_mask,omitempty"`
-	// Optimistic concurrency token from the most recent read. When set, the update
-	// succeeds only if the resource has not changed. Leave unset for an
-	// unconditional update. For REST requests, URL-encode the base64 string
-	// returned by the API when setting the `etag` query parameter.
-	Etag []byte `json:"etag,omitempty"`
 }
 
 // Request to update a model provider service. `name` and `config.provider_type`
 // cannot appear in `update_mask`..
 type UpdateModelProviderServiceRequest struct {
+	// Optimistic concurrency token from the most recent read. When set, the update
+	// succeeds only if the resource has not changed. Leave unset for an
+	// unconditional update. For REST requests, URL-encode the base64 string
+	// returned by the API when setting the `etag` query parameter.
+	Etag []byte `json:"etag,omitempty"`
 	// The model provider service with the updated field values. `name` identifies
 	// the resource
 	// (`model-provider-services/{catalog}.{schema}.{model_provider_service}`); only
@@ -976,16 +981,16 @@ type UpdateModelProviderServiceRequest struct {
 	// authentication material preserves the existing authentication binding;
 	// input-only plaintext does not need to be read back and re-sent.
 	UpdateMask *string `json:"update_mask,omitempty"`
-	// Optimistic concurrency token from the most recent read. When set, the update
-	// succeeds only if the resource has not changed. Leave unset for an
-	// unconditional update. For REST requests, URL-encode the base64 string
-	// returned by the API when setting the `etag` query parameter.
-	Etag []byte `json:"etag,omitempty"`
 }
 
 // Request to update a model service. `name` cannot appear in `update_mask`; the
 // model service name is immutable..
 type UpdateModelServiceRequest struct {
+	// Optimistic concurrency token from the most recent read. When set, the update
+	// succeeds only if the resource has not changed. Leave unset for an
+	// unconditional update. For REST requests, URL-encode the base64 string
+	// returned by the API when setting the `etag` query parameter.
+	Etag []byte `json:"etag,omitempty"`
 	// The model service with the updated field values. `name` identifies the
 	// resource (`model-services/{catalog}.{schema}.{model_service}`); only fields
 	// listed in `update_mask` are applied.
@@ -998,16 +1003,16 @@ type UpdateModelServiceRequest struct {
 	// `config.inference_table`. Intermediate paths such as `config.routing` and
 	// `config.routing.fallback` are not supported.
 	UpdateMask *string `json:"update_mask,omitempty"`
-	// Optimistic concurrency token from the most recent read. When set, the update
-	// succeeds only if the resource has not changed. Leave unset for an
-	// unconditional update. For REST requests, URL-encode the base64 string
-	// returned by the API when setting the `etag` query parameter.
-	Etag []byte `json:"etag,omitempty"`
 }
 
 // Request to update a skill. `name` cannot appear in `update_mask`; the skill
 // name is immutable..
 type UpdateSkillRequest struct {
+	// Optimistic concurrency token from the most recent read. When set, the update
+	// succeeds only if the resource has not changed. Leave unset for an
+	// unconditional update. For REST requests, URL-encode the base64 string
+	// returned by the API when setting the `etag` query parameter.
+	Etag []byte `json:"etag,omitempty"`
 	// The skill with the updated field values. `name` identifies the resource
 	// (`skills/{catalog}.{schema}.{skill}`); only fields listed in `update_mask`
 	// are applied.
@@ -1015,11 +1020,6 @@ type UpdateSkillRequest struct {
 	// Fields to update; validated against `skill`. REQUIRED, matching the sibling
 	// Update RPCs. `comment` is the only mutable field.
 	UpdateMask *string `json:"update_mask,omitempty"`
-	// Optimistic concurrency token from the most recent read. When set, the update
-	// succeeds only if the resource has not changed. Leave unset for an
-	// unconditional update. For REST requests, URL-encode the base64 string
-	// returned by the API when setting the `etag` query parameter.
-	Etag []byte `json:"etag,omitempty"`
 }
 
 // CreateMcpServiceRequestToSDK converts the mirror to the sdk-go type.

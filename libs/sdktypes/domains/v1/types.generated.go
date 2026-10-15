@@ -99,20 +99,24 @@ type CreateDomainRequest struct {
 }
 
 type DeleteDomainRequest struct {
-	// Full resource name of the domain to delete. Format: `domains/{domain_id}`
-	Name *string `json:"name,omitempty"`
 	// When false (default), DeleteDomain is rejected with FAILED_PRECONDITION if
 	// the domain still has Glossary pages. When true, those pages are deleted first
 	// and then the domain is removed.
 	Force *bool `json:"force,omitempty"`
+	// Full resource name of the domain to delete. Format: `domains/{domain_id}`
+	Name *string `json:"name,omitempty"`
 }
 
 type Domain struct {
+	// Principal IDs of the business owners (users, groups, or service principals).
+	BusinessOwnerIds []int64 `json:"business_owner_ids,omitempty"`
+	// Timestamp when the domain was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
+	// Full description (max 4096 chars)
+	Description *string `json:"description,omitempty"`
 	// Unique identifier for the domain. If omitted at Create, the server generates
 	// one.
 	DomainId *string `json:"domain_id,omitempty"`
-	// Governed tag key associated with this domain.
-	TagKey *string `json:"tag_key,omitempty"`
 	// Whether to mark the domain as a draft. If omitted on Create, the server
 	// applies a default; the resolved value is returned in `effective_draft`.
 	Draft *bool `json:"draft,omitempty"`
@@ -120,33 +124,29 @@ type Domain struct {
 	EffectiveDraft *bool `json:"effective_draft,omitempty"`
 	// Icon to display for the domain.
 	Icon *DomainIcon `json:"icon,omitempty"`
-	// Short description (max 280 chars)
-	Subtitle *string `json:"subtitle,omitempty"`
-	// Full description (max 4096 chars)
-	Description *string `json:"description,omitempty"`
-	// Timestamp when the domain was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	// Principal IDs of the technical owners (users, groups, or service principals).
-	TechnicalOwnerIds []int64 `json:"technical_owner_ids,omitempty"`
-	// Principal IDs of the business owners (users, groups, or service principals).
-	BusinessOwnerIds []int64 `json:"business_owner_ids,omitempty"`
-	// Domain ID of the parent. If absent, this is a top-level domain. If present,
-	// this domain is a subdomain of the specified parent.
-	ParentDomainId *string `json:"parent_domain_id,omitempty"`
 	// Full resource name of the domain. The primary identifier for this resource.
 	// Format: `domains/{domain_id}` Identifies the domain on get, update, and
 	// delete. Not an input on create — to choose the id, set
 	// `CreateDomainRequest.domain_id`.
 	Name *string `json:"name,omitempty"`
+	// Domain ID of the parent. If absent, this is a top-level domain. If present,
+	// this domain is a subdomain of the specified parent.
+	ParentDomainId *string `json:"parent_domain_id,omitempty"`
+	// Short description (max 280 chars)
+	Subtitle *string `json:"subtitle,omitempty"`
+	// Governed tag key associated with this domain.
+	TagKey *string `json:"tag_key,omitempty"`
+	// Principal IDs of the technical owners (users, groups, or service principals).
+	TechnicalOwnerIds []int64 `json:"technical_owner_ids,omitempty"`
 	// Timestamp when the domain was last updated.
 	UpdateTime *types.Time `json:"update_time,omitempty"`
 }
 
 // Icon configuration for a domain..
 type DomainIcon struct {
-	Name DomainIcon_Name `json:"name,omitempty"`
 	// Hex color code with # prefix (e.g., "#FF5733").
-	Color *string `json:"color,omitempty"`
+	Color *string         `json:"color,omitempty"`
+	Name  DomainIcon_Name `json:"name,omitempty"`
 }
 
 type ListDomainsRequest struct {

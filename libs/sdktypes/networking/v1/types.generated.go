@@ -128,29 +128,27 @@ const (
 
 // Definition of an IP Access list.
 type AccountIpAccessList struct {
-	// Universally unique identifier (UUID) of the IP access list.
-	ListId *string `json:"list_id,omitempty"`
-	// Label for the IP access list. This **cannot** be empty.
-	Label       *string  `json:"label,omitempty"`
-	IpAddresses []string `json:"ip_addresses,omitempty"`
 	// Total number of IP or CIDR values.
-	AddressCount *int                                     `json:"address_count,omitempty"`
-	ListType     AccountIpAccessListType_IpAccessListType `json:"list_type,omitempty"`
+	AddressCount *int `json:"address_count,omitempty"`
 	// Creation timestamp in milliseconds.
 	CreatedAt *int64 `json:"created_at,omitempty"`
 	// The ID of the user that created this list.
 	CreatedBy *int64 `json:"created_by,omitempty"`
+	// Specifies whether this IP access list is enabled.
+	Enabled     *bool    `json:"enabled,omitempty"`
+	IpAddresses []string `json:"ip_addresses,omitempty"`
+	// Label for the IP access list. This **cannot** be empty.
+	Label *string `json:"label,omitempty"`
+	// Universally unique identifier (UUID) of the IP access list.
+	ListId   *string                                  `json:"list_id,omitempty"`
+	ListType AccountIpAccessListType_IpAccessListType `json:"list_type,omitempty"`
 	// Update timestamp in milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// The ID of the user that last updated this list.
 	UpdatedBy *int64 `json:"updated_by,omitempty"`
-	// Specifies whether this IP access list is enabled.
-	Enabled *bool `json:"enabled,omitempty"`
 }
 
 type AccountNetworkPolicy struct {
-	// The unique identifier for the network policy.
-	NetworkPolicyId *string `json:"network_policy_id,omitempty"`
 	// The associated account ID for this Network Policy object.
 	AccountId *string `json:"account_id,omitempty"`
 	// The network policies applying for egress traffic.
@@ -161,16 +159,18 @@ type AccountNetworkPolicy struct {
 	// request is allowed by the ingress policy. When this field is set, the policy
 	// will be evaluated and emit logs only without blocking requests.
 	IngressDryRun *IngressNetworkPolicy `json:"ingress_dry_run,omitempty"`
+	// The unique identifier for the network policy.
+	NetworkPolicyId *string `json:"network_policy_id,omitempty"`
 }
 
 type AwsVpcEndpointInfo struct {
+	// The AWS account ID in which this VPC endpoint lives.
+	AwsAccountId *string `json:"aws_account_id,omitempty"`
+	// The ID of the Databricks VPC endpoint service that this endpoint connects to.
+	AwsEndpointServiceId *string `json:"aws_endpoint_service_id,omitempty"`
 	// The ID of the underlying VPC endpoint in AWS. Provided by the customer when
 	// registering an existing AWS VPC endpoint.
 	AwsVpcEndpointId *string `json:"aws_vpc_endpoint_id,omitempty"`
-	// The ID of the Databricks VPC endpoint service that this endpoint connects to.
-	AwsEndpointServiceId *string `json:"aws_endpoint_service_id,omitempty"`
-	// The AWS account ID in which this VPC endpoint lives.
-	AwsAccountId *string `json:"aws_account_id,omitempty"`
 }
 
 type AzurePrivateEndpointInfo struct {
@@ -189,9 +189,9 @@ type AzurePrivateEndpointInfo struct {
 // Details required to configure a block list or allow list..
 type CreateAccountIpAccessListRequest struct {
 	AccountId   *string                                  `json:"account_id,omitempty"`
+	IpAddresses []string                                 `json:"ip_addresses,omitempty"`
 	Label       *string                                  `json:"label,omitempty"`
 	ListType    AccountIpAccessListType_IpAccessListType `json:"list_type,omitempty"`
-	IpAddresses []string                                 `json:"ip_addresses,omitempty"`
 }
 
 // An IP access list was successfully created..
@@ -200,18 +200,18 @@ type CreateAccountIpAccessListResponse struct {
 }
 
 type CreateEndpointRequest struct {
+	Endpoint *Endpoint `json:"endpoint,omitempty"`
 	// The parent resource name of the account under which the endpoint is created.
 	// Format: `accounts/{account_id}`.
-	Parent   *string   `json:"parent,omitempty"`
-	Endpoint *Endpoint `json:"endpoint,omitempty"`
+	Parent *string `json:"parent,omitempty"`
 }
 
 // Details required to configure a block list or allow list..
 type CreateIpAccessListRequest struct {
+	IpAddresses []string `json:"ip_addresses,omitempty"`
 	// Label for the IP access list. This **cannot** be empty.
-	Label       *string          `json:"label,omitempty"`
-	ListType    IpAccessListType `json:"list_type,omitempty"`
-	IpAddresses []string         `json:"ip_addresses,omitempty"`
+	Label    *string          `json:"label,omitempty"`
+	ListType IpAccessListType `json:"list_type,omitempty"`
 }
 
 // An IP access list was successfully created..
@@ -221,12 +221,12 @@ type CreateIpAccessListResponse struct {
 
 // Properties of the new private endpoint rule..
 type CreateNccPrivateEndpointRuleRequest struct {
-	// Your Network Connectivity Configuration ID.
-	NetworkConnectivityConfigId *string `json:"network_connectivity_config_id,omitempty"`
 	// Your <Databricks> account ID. You can find your account ID in your
 	// <Databricks> accounts console.
-	AccountId           *string                    `json:"account_id,omitempty"`
-	PrivateEndpointRule *CreatePrivateEndpointRule `json:"private_endpoint_rule,omitempty"`
+	AccountId *string `json:"account_id,omitempty"`
+	// Your Network Connectivity Configuration ID.
+	NetworkConnectivityConfigId *string                    `json:"network_connectivity_config_id,omitempty"`
+	PrivateEndpointRule         *CreatePrivateEndpointRule `json:"private_endpoint_rule,omitempty"`
 }
 
 // Properties of the new network connectivity configuration..
@@ -239,26 +239,26 @@ type CreateNetworkConnectivityConfigRequest struct {
 
 // Properties of the new network connectivity configuration..
 type CreateNetworkConnectivityConfiguration struct {
-	// <Databricks> network connectivity configuration ID.
-	NetworkConnectivityConfigId *string `json:"network_connectivity_config_id,omitempty"`
 	// Your <Databricks> account ID. You can find your account ID in your
 	// <Databricks> accounts console.
 	AccountId *string `json:"account_id,omitempty"`
+	// Time in epoch milliseconds when this object was created.
+	CreationTime *int64 `json:"creation_time,omitempty"`
+	// The network connectivity rules that apply to network traffic from your
+	// serverless compute resources.
+	EgressConfig *CustomerFacingNetworkConnectivityConfigEgressConfig `json:"egress_config,omitempty"`
 	// The name of the network connectivity configuration. The name can contain
 	// alphanumeric characters, hyphens, and underscores. The length must be between
 	// 3 and 30 characters. The name must match the regular expression
 	// ^[0-9a-zA-Z-_]{3,30}$
 	Name *string `json:"name,omitempty"`
+	// <Databricks> network connectivity configuration ID.
+	NetworkConnectivityConfigId *string `json:"network_connectivity_config_id,omitempty"`
 	// The region for the network connectivity configuration. Only workspaces in the
 	// same region can be attached to the network connectivity configuration.
 	Region *string `json:"region,omitempty"`
-	// The network connectivity rules that apply to network traffic from your
-	// serverless compute resources.
-	EgressConfig *CustomerFacingNetworkConnectivityConfigEgressConfig `json:"egress_config,omitempty"`
 	// Time in epoch milliseconds when this object was updated.
 	UpdatedTime *int64 `json:"updated_time,omitempty"`
-	// Time in epoch milliseconds when this object was created.
-	CreationTime *int64 `json:"creation_time,omitempty"`
 }
 
 type CreateNetworkPolicyRequest struct {
@@ -270,41 +270,24 @@ type CreateNetworkPolicyRequest struct {
 }
 
 type CreateNetworkRequest struct {
-	AccountId *string `json:"account_id,omitempty"`
+	AccountId      *string         `json:"account_id,omitempty"`
+	GcpNetworkInfo *GcpNetworkInfo `json:"gcp_network_info,omitempty"`
 	// The human-readable name of the network configuration.
 	NetworkName *string `json:"network_name,omitempty"`
+	// IDs of one to five security groups associated with this network. Security
+	// group IDs **cannot** be used in multiple network configurations.
+	SecurityGroupIds []string `json:"security_group_ids,omitempty"`
+	// IDs of at least two subnets associated with this network. Subnet IDs
+	// **cannot** be used in multiple network configurations.
+	SubnetIds    []string             `json:"subnet_ids,omitempty"`
+	VpcEndpoints *NetworkVpcEndpoints `json:"vpc_endpoints,omitempty"`
 	// The ID of the VPC associated with this network configuration. VPC IDs can be
 	// used in multiple networks.
 	VpcId *string `json:"vpc_id,omitempty"`
-	// IDs of at least two subnets associated with this network. Subnet IDs
-	// **cannot** be used in multiple network configurations.
-	SubnetIds []string `json:"subnet_ids,omitempty"`
-	// IDs of one to five security groups associated with this network. Security
-	// group IDs **cannot** be used in multiple network configurations.
-	SecurityGroupIds []string             `json:"security_group_ids,omitempty"`
-	VpcEndpoints     *NetworkVpcEndpoints `json:"vpc_endpoints,omitempty"`
-	GcpNetworkInfo   *GcpNetworkInfo      `json:"gcp_network_info,omitempty"`
 }
 
 type CreatePrivateAccessSettingsRequest struct {
 	AccountId *string `json:"account_id,omitempty"`
-	// The human-readable name of the private access settings object.
-	PrivateAccessSettingsName *string `json:"private_access_settings_name,omitempty"`
-	// The AWS region for workspaces attached to this private access settings
-	// object.
-	Region *string `json:"region,omitempty"`
-	// Determines if the workspace can be accessed over public internet. For fully
-	// private workspaces, you can optionally specify false, but only if you
-	// implement both the front-end and the back-end PrivateLink connections.
-	// Otherwise, specify true, which means that public access is enabled.
-	PublicAccessEnabled *bool `json:"public_access_enabled,omitempty"`
-	// The private access level controls which VPC endpoints can connect to the UI
-	// or API of any workspace that attaches this private access settings object.
-	// `ACCOUNT` level access (the default) allows only VPC endpoints that are
-	// registered in your <Databricks> account connect to your workspace. `ENDPOINT`
-	// level access allows only specified VPC endpoints connect to your workspace.
-	// For details, see allowed_vpc_endpoint_ids.
-	PrivateAccessLevel PrivateAccessLevel `json:"private_access_level,omitempty"`
 	// An array of Databricks VPC endpoint IDs. This is the <Databricks> ID returned
 	// when registering the VPC endpoint configuration in your <Databricks> account.
 	// This is not the ID of the VPC endpoint in AWS. Only used when
@@ -315,16 +298,31 @@ type CreatePrivateAccessSettingsRequest struct {
 	// PrivateLink connections. To control how your workspace is accessed via public
 	// internet, see IP access lists.
 	AllowedVpcEndpointIds []string `json:"allowed_vpc_endpoint_ids,omitempty"`
+	// The private access level controls which VPC endpoints can connect to the UI
+	// or API of any workspace that attaches this private access settings object.
+	// `ACCOUNT` level access (the default) allows only VPC endpoints that are
+	// registered in your <Databricks> account connect to your workspace. `ENDPOINT`
+	// level access allows only specified VPC endpoints connect to your workspace.
+	// For details, see allowed_vpc_endpoint_ids.
+	PrivateAccessLevel PrivateAccessLevel `json:"private_access_level,omitempty"`
+	// The human-readable name of the private access settings object.
+	PrivateAccessSettingsName *string `json:"private_access_settings_name,omitempty"`
+	// Determines if the workspace can be accessed over public internet. For fully
+	// private workspaces, you can optionally specify false, but only if you
+	// implement both the front-end and the back-end PrivateLink connections.
+	// Otherwise, specify true, which means that public access is enabled.
+	PublicAccessEnabled *bool `json:"public_access_enabled,omitempty"`
+	// The AWS region for workspaces attached to this private access settings
+	// object.
+	Region *string `json:"region,omitempty"`
 }
 
 // Properties of the new private endpoint rule. Note that you must approve the
 // endpoint in Azure portal after initialization..
 type CreatePrivateEndpointRule struct {
-	// The ID of a private endpoint rule.
-	RuleId *string `json:"rule_id,omitempty"`
-	// The ID of a network connectivity configuration, which is the parent resource
-	// of this private endpoint rule object.
-	NetworkConnectivityConfigId *string `json:"network_connectivity_config_id,omitempty"`
+	// <Databricks> account ID. You can find your account ID from the Accounts
+	// Console.
+	AccountId *string `json:"account_id,omitempty"`
 	// The current status of this private endpoint. The private endpoint rules are
 	// effective only if the connection state is ESTABLISHED. Remember that you must
 	// approve new endpoints on your resources in the Cloud console before they take
@@ -339,36 +337,39 @@ type CreatePrivateEndpointRule struct {
 	// transition to PENDING. - CREATE_FAILED: The endpoint creation failed. You can
 	// check the error_message field for more details.
 	ConnectionState NccPrivateEndpointRule_PrivateLinkConnectionState `json:"connection_state,omitempty"`
+	// Time in epoch milliseconds when this object was created.
+	CreationTime *int64 `json:"creation_time,omitempty"`
+	// Whether this private endpoint is deactivated.
+	Deactivated *bool `json:"deactivated,omitempty"`
+	// Time in epoch milliseconds when this object was deactivated.
+	DeactivatedAt *int64 `json:"deactivated_at,omitempty"`
 	// Only used by private endpoints to customer-managed private endpoint services.
 	//
 	// Domain names of target private link service. When updating this field, the
 	// full list of target domain_names must be specified.
 	DomainNames []string `json:"domain_names,omitempty"`
-	// Time in epoch milliseconds when this object was created.
-	CreationTime *int64 `json:"creation_time,omitempty"`
-	// Time in epoch milliseconds when this object was updated.
-	UpdatedTime *int64 `json:"updated_time,omitempty"`
-	// Whether this private endpoint is deactivated.
-	Deactivated *bool `json:"deactivated,omitempty"`
-	// Time in epoch milliseconds when this object was deactivated.
-	DeactivatedAt *int64  `json:"deactivated_at,omitempty"`
-	ErrorMessage  *string `json:"error_message,omitempty"`
-	// The Azure resource ID of the target resource.
-	ResourceId *string `json:"resource_id,omitempty"`
+	// Update this field to activate/deactivate this private endpoint to allow
+	// egress access from serverless compute resources. Only honored for first-party
+	// services on each cloud (e.g. AWS S3).
+	Enabled *bool `json:"enabled,omitempty"`
+	// The name of the Azure private endpoint resource.
+	EndpointName *string `json:"endpoint_name,omitempty"`
+	// The full target AWS endpoint service name that connects to the destination
+	// resources of the private endpoint.
+	EndpointService *string      `json:"endpoint_service,omitempty"`
+	ErrorMessage    *string      `json:"error_message,omitempty"`
+	GcpEndpoint     *GcpEndpoint `json:"gcp_endpoint,omitempty"`
 	// Not used by customer-managed private endpoint services.
 	//
 	// The sub-resource type (group ID) of the target resource. Note that to connect
 	// to workspace root storage (root DBFS), you need two endpoints, one for blob
 	// and one for dfs.
 	GroupId *string `json:"group_id,omitempty"`
-	// The name of the Azure private endpoint resource.
-	EndpointName *string `json:"endpoint_name,omitempty"`
-	// <Databricks> account ID. You can find your account ID from the Accounts
-	// Console.
-	AccountId *string `json:"account_id,omitempty"`
-	// The full target AWS endpoint service name that connects to the destination
-	// resources of the private endpoint.
-	EndpointService *string `json:"endpoint_service,omitempty"`
+	// The ID of a network connectivity configuration, which is the parent resource
+	// of this private endpoint rule object.
+	NetworkConnectivityConfigId *string `json:"network_connectivity_config_id,omitempty"`
+	// The Azure resource ID of the target resource.
+	ResourceId *string `json:"resource_id,omitempty"`
 	// Only used by private endpoints towards AWS S3 service.
 	//
 	// The globally unique S3 bucket names that will be accessed via the VPC
@@ -376,25 +377,24 @@ type CreatePrivateEndpointRule struct {
 	// service. When updating this field, we perform full update on this field.
 	// Please ensure a full list of desired resource_names is provided.
 	ResourceNames []string `json:"resource_names,omitempty"`
+	// The ID of a private endpoint rule.
+	RuleId *string `json:"rule_id,omitempty"`
+	// Time in epoch milliseconds when this object was updated.
+	UpdatedTime *int64 `json:"updated_time,omitempty"`
 	// The AWS VPC endpoint ID. You can use this ID to identify the VPC endpoint
 	// created by <Databricks>.
 	VpcEndpointId *string `json:"vpc_endpoint_id,omitempty"`
-	// Update this field to activate/deactivate this private endpoint to allow
-	// egress access from serverless compute resources. Only honored for first-party
-	// services on each cloud (e.g. AWS S3).
-	Enabled     *bool        `json:"enabled,omitempty"`
-	GcpEndpoint *GcpEndpoint `json:"gcp_endpoint,omitempty"`
 }
 
 type CreateVpcEndpointRequest struct {
 	AccountId *string `json:"account_id,omitempty"`
-	// The human-readable name of the storage configuration.
-	VpcEndpointName *string `json:"vpc_endpoint_name,omitempty"`
-	// The region in which this VPC endpoint object exists.
-	Region *string `json:"region,omitempty"`
 	// The ID of the VPC endpoint object in AWS.
 	AwsVpcEndpointId   *string             `json:"aws_vpc_endpoint_id,omitempty"`
 	GcpVpcEndpointInfo *GcpVpcEndpointInfo `json:"gcp_vpc_endpoint_info,omitempty"`
+	// The region in which this VPC endpoint object exists.
+	Region *string `json:"region,omitempty"`
+	// The human-readable name of the storage configuration.
+	VpcEndpointName *string `json:"vpc_endpoint_name,omitempty"`
 }
 
 type CustomerFacingNetworkConnectivityConfigEgressConfig struct {
@@ -410,10 +410,10 @@ type CustomerFacingNetworkConnectivityConfigEgressConfig struct {
 // Target rule controls the egress rules that are dedicated to specific
 // resources..
 type CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRule struct {
-	AzurePrivateEndpointRules []NetworkConnectivityConfigAzurePrivateEndpointRule `json:"azure_private_endpoint_rules,omitempty"`
 	// AWS private endpoint rule controls the AWS private endpoint based egress
 	// rules.
-	AwsPrivateEndpointRules []NetworkConnectivityConfigAwsPrivateEndpointRule `json:"aws_private_endpoint_rules,omitempty"`
+	AwsPrivateEndpointRules   []NetworkConnectivityConfigAwsPrivateEndpointRule   `json:"aws_private_endpoint_rules,omitempty"`
+	AzurePrivateEndpointRules []NetworkConnectivityConfigAzurePrivateEndpointRule `json:"azure_private_endpoint_rules,omitempty"`
 }
 
 // The network policies applying for egress traffic..
@@ -423,26 +423,26 @@ type EgressNetworkPolicy struct {
 }
 
 type EgressNetworkPolicy_NetworkAccessPolicy struct {
-	// The restriction mode that controls how serverless workloads can access the
-	// internet.
-	RestrictionMode EgressNetworkPolicy_NetworkAccessPolicy_RestrictionMode `json:"restriction_mode,omitempty"`
+	// List of <Databricks> workspace destinations that serverless workloads are
+	// allowed to access when in RESTRICTED_ACCESS mode.
+	AllowedDatabricksDestinations []EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestination `json:"allowed_databricks_destinations,omitempty"`
 	// List of internet destinations that serverless workloads are allowed to access
 	// when in RESTRICTED_ACCESS mode.
 	AllowedInternetDestinations []EgressNetworkPolicy_NetworkAccessPolicy_InternetDestination `json:"allowed_internet_destinations,omitempty"`
 	// List of storage destinations that serverless workloads are allowed to access
 	// when in RESTRICTED_ACCESS mode.
 	AllowedStorageDestinations []EgressNetworkPolicy_NetworkAccessPolicy_StorageDestination `json:"allowed_storage_destinations,omitempty"`
-	// Optional. When policy_enforcement is not provided, we default to
-	// ENFORCE_MODE_ALL_SERVICES
-	PolicyEnforcement *EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcement `json:"policy_enforcement,omitempty"`
 	// List of internet destinations that serverless workloads are blocked from
 	// accessing. These destinations are enforced when restriction mode is
 	// RESTRICTED_ACCESS or DRY_RUN. Currently supports DNS_NAME type only; IP_RANGE
 	// support is planned.
 	BlockedInternetDestinations []EgressNetworkPolicy_NetworkAccessPolicy_InternetDestination `json:"blocked_internet_destinations,omitempty"`
-	// List of <Databricks> workspace destinations that serverless workloads are
-	// allowed to access when in RESTRICTED_ACCESS mode.
-	AllowedDatabricksDestinations []EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestination `json:"allowed_databricks_destinations,omitempty"`
+	// Optional. When policy_enforcement is not provided, we default to
+	// ENFORCE_MODE_ALL_SERVICES
+	PolicyEnforcement *EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcement `json:"policy_enforcement,omitempty"`
+	// The restriction mode that controls how serverless workloads can access the
+	// internet.
+	RestrictionMode EgressNetworkPolicy_NetworkAccessPolicy_RestrictionMode `json:"restriction_mode,omitempty"`
 }
 
 type EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestination struct {
@@ -462,78 +462,72 @@ type EgressNetworkPolicy_NetworkAccessPolicy_InternetDestination struct {
 }
 
 type EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcement struct {
-	// The mode of policy enforcement. ENFORCED blocks traffic that violates policy,
-	// while DRY_RUN only logs violations without blocking. When not specified,
-	// defaults to ENFORCED.
-	EnforcementMode EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcement_EnforcementMode `json:"enforcement_mode,omitempty"`
 	// When empty, it means dry run for all products. When non-empty, it means dry
 	// run for specific products and for the other products, they will run in
 	// enforced mode.
 	DryRunModeProductFilter []EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcement_DryRunModeProductFilter `json:"dry_run_mode_product_filter,omitempty"`
+	// The mode of policy enforcement. ENFORCED blocks traffic that violates policy,
+	// while DRY_RUN only logs violations without blocking. When not specified,
+	// defaults to ENFORCED.
+	EnforcementMode EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcement_EnforcementMode `json:"enforcement_mode,omitempty"`
 }
 
 // Users can specify accessible storage destinations..
 type EgressNetworkPolicy_NetworkAccessPolicy_StorageDestination struct {
-	BucketName *string `json:"bucket_name,omitempty"`
-	Region     *string `json:"region,omitempty"`
-	// The type of storage destination.
-	StorageDestinationType EgressNetworkPolicy_NetworkAccessPolicy_StorageDestination_StorageDestinationType `json:"storage_destination_type,omitempty"`
 	// The Azure storage account name.
 	AzureStorageAccount *string `json:"azure_storage_account,omitempty"`
 	// The Azure storage service type (blob, dfs, etc.).
 	AzureStorageService *string `json:"azure_storage_service,omitempty"`
+	BucketName          *string `json:"bucket_name,omitempty"`
+	Region              *string `json:"region,omitempty"`
+	// The type of storage destination.
+	StorageDestinationType EgressNetworkPolicy_NetworkAccessPolicy_StorageDestination_StorageDestinationType `json:"storage_destination_type,omitempty"`
 }
 
 // Endpoint represents a cloud networking resource in a user's cloud account and
 // binds it to the <Databricks> account..
 type Endpoint struct {
-	// The resource name of the endpoint, which uniquely identifies the endpoint.
-	Name *string `json:"name,omitempty"`
-	// The unique identifier for this endpoint under the account. This field is a
-	// UUID generated by <Databricks>.
-	EndpointId *string `json:"endpoint_id,omitempty"`
 	// The Databricks Account in which the endpoint object exists.
-	AccountId *string `json:"account_id,omitempty"`
+	AccountId                *string                   `json:"account_id,omitempty"`
+	AwsVpcEndpointInfo       *AwsVpcEndpointInfo       `json:"aws_vpc_endpoint_info,omitempty"`
+	AzurePrivateEndpointInfo *AzurePrivateEndpointInfo `json:"azure_private_endpoint_info,omitempty"`
+	// The timestamp when the endpoint was created. The timestamp is in RFC 3339
+	// format in UTC timezone.
+	CreateTime *types.Time `json:"create_time,omitempty"`
 	// The human-readable display name of this endpoint. The input should conform to
 	// RFC-1034, which restricts to letters, numbers, and hyphens, with the first
 	// character a letter, the last a letter or a number, and a 63 character
 	// maximum.
 	DisplayName *string `json:"display_name,omitempty"`
-	// The use case that determines the type of network connectivity this endpoint
-	// provides. This field is automatically determined based on the endpoint
-	// configuration and cloud-specific settings.
-	UseCase EndpointUseCase_EndpointUseCase `json:"use_case,omitempty"`
+	// The unique identifier for this endpoint under the account. This field is a
+	// UUID generated by <Databricks>.
+	EndpointId         *string             `json:"endpoint_id,omitempty"`
+	GcpPscEndpointInfo *GcpPscEndpointInfo `json:"gcp_psc_endpoint_info,omitempty"`
+	// The resource name of the endpoint, which uniquely identifies the endpoint.
+	Name *string `json:"name,omitempty"`
 	// The cloud provider region where this endpoint is located.
 	Region *string `json:"region,omitempty"`
 	// The state of the endpoint. The endpoint can only be used if the state is
 	// `APPROVED`.
-	State                    EndpointState             `json:"state,omitempty"`
-	AzurePrivateEndpointInfo *AzurePrivateEndpointInfo `json:"azure_private_endpoint_info,omitempty"`
-	AwsVpcEndpointInfo       *AwsVpcEndpointInfo       `json:"aws_vpc_endpoint_info,omitempty"`
-	GcpPscEndpointInfo       *GcpPscEndpointInfo       `json:"gcp_psc_endpoint_info,omitempty"`
-	// The timestamp when the endpoint was created. The timestamp is in RFC 3339
-	// format in UTC timezone.
-	CreateTime *types.Time `json:"create_time,omitempty"`
+	State EndpointState `json:"state,omitempty"`
+	// The use case that determines the type of network connectivity this endpoint
+	// provides. This field is automatically determined based on the endpoint
+	// configuration and cloud-specific settings.
+	UseCase EndpointUseCase_EndpointUseCase `json:"use_case,omitempty"`
 }
 
 type GcpEndpoint struct {
-	// Output only. The URI of the created PSC endpoint.
-	PscEndpointUri     *string             `json:"psc_endpoint_uri,omitempty"`
-	ServiceAttachment  *string             `json:"service_attachment,omitempty"`
-	GoogleApiEndpoints *GoogleApiEndpoints `json:"google_api_endpoints,omitempty"`
 	AllVpcScServices   *bool               `json:"all_vpc_sc_services,omitempty"`
+	GoogleApiEndpoints *GoogleApiEndpoints `json:"google_api_endpoints,omitempty"`
+	// Output only. The URI of the created PSC endpoint.
+	PscEndpointUri    *string `json:"psc_endpoint_uri,omitempty"`
+	ServiceAttachment *string `json:"service_attachment,omitempty"`
 }
 
 type GcpNetworkInfo struct {
 	// The GCP project ID for network resources. This project is where the VPC and
 	// subnet resides.
 	NetworkProjectId *string `json:"network_project_id,omitempty"`
-	// The customer-provided VPC ID.
-	VpcId *string `json:"vpc_id,omitempty"`
-	// The customer-provided Subnet ID that will be available to Clusters in
-	// Workspaces using this Network.
-	SubnetId     *string `json:"subnet_id,omitempty"`
-	SubnetRegion *string `json:"subnet_region,omitempty"`
 	// Name of the secondary range within the subnet that will be used by GKE as Pod
 	// IP range. This is BYO VPC specific. DB VPC uses
 	// network.getGcpManagedNetworkConfig.getGkeClusterPodIpRange
@@ -541,31 +535,37 @@ type GcpNetworkInfo struct {
 	// Name of the secondary range within the subnet that will be used by GKE as
 	// Service IP range.
 	ServiceIpRangeName *string `json:"service_ip_range_name,omitempty"`
+	// The customer-provided Subnet ID that will be available to Clusters in
+	// Workspaces using this Network.
+	SubnetId     *string `json:"subnet_id,omitempty"`
+	SubnetRegion *string `json:"subnet_region,omitempty"`
+	// The customer-provided VPC ID.
+	VpcId *string `json:"vpc_id,omitempty"`
 }
 
 type GcpPscEndpointInfo struct {
-	// The ID of the underlying Private Service Connect connection in the GCP
-	// consumer project, assigned by GCP when the PSC connection is created.
-	PscConnectionId *string `json:"psc_connection_id,omitempty"`
-	// The GCP consumer project ID in which this PSC endpoint is created. Provided
-	// by the customer when registering an existing PSC endpoint.
-	ProjectId *string `json:"project_id,omitempty"`
-	// The name of this PSC connection in the GCP consumer project. Provided by the
-	// customer when registering an existing PSC endpoint.
-	PscEndpoint *string `json:"psc_endpoint,omitempty"`
 	// The GCP region of the PSC connection endpoint. Provided by the customer when
 	// registering an existing PSC endpoint. GCP supports only same-region PSC, so
 	// this must match the workspace region.
 	EndpointRegion *string `json:"endpoint_region,omitempty"`
+	// The GCP consumer project ID in which this PSC endpoint is created. Provided
+	// by the customer when registering an existing PSC endpoint.
+	ProjectId *string `json:"project_id,omitempty"`
+	// The ID of the underlying Private Service Connect connection in the GCP
+	// consumer project, assigned by GCP when the PSC connection is created.
+	PscConnectionId *string `json:"psc_connection_id,omitempty"`
+	// The name of this PSC connection in the GCP consumer project. Provided by the
+	// customer when registering an existing PSC endpoint.
+	PscEndpoint *string `json:"psc_endpoint,omitempty"`
 	// The ID of the <Databricks> service attachment this PSC endpoint connects to.
 	ServiceAttachmentId *string `json:"service_attachment_id,omitempty"`
 }
 
 type GcpVpcEndpointInfo struct {
-	PscConnectionId     *string `json:"psc_connection_id,omitempty"`
-	ProjectId           *string `json:"project_id,omitempty"`
-	PscEndpointName     *string `json:"psc_endpoint_name,omitempty"`
 	EndpointRegion      *string `json:"endpoint_region,omitempty"`
+	ProjectId           *string `json:"project_id,omitempty"`
+	PscConnectionId     *string `json:"psc_connection_id,omitempty"`
+	PscEndpointName     *string `json:"psc_endpoint_name,omitempty"`
 	ServiceAttachmentId *string `json:"service_attachment_id,omitempty"`
 }
 
@@ -588,23 +588,23 @@ type GoogleApiEndpoints struct {
 
 // The network policies applying for ingress traffic..
 type IngressNetworkPolicy struct {
+	CrossWorkspaceAccess *IngressNetworkPolicy_CrossWorkspaceAccess `json:"cross_workspace_access,omitempty"`
+	// The network policy restrictions for private access. Configures how requests
+	// arriving over private connectivity are governed.
+	PrivateAccess *IngressNetworkPolicy_PrivateAccess `json:"private_access,omitempty"`
 	// The network policy restrictions for public access to the workspace.
 	// Configures how public internet traffic is allowed or denied access.
 	PublicAccess *IngressNetworkPolicy_PublicAccess `json:"public_access,omitempty"`
-	// The network policy restrictions for private access. Configures how requests
-	// arriving over private connectivity are governed.
-	PrivateAccess        *IngressNetworkPolicy_PrivateAccess        `json:"private_access,omitempty"`
-	CrossWorkspaceAccess *IngressNetworkPolicy_CrossWorkspaceAccess `json:"cross_workspace_access,omitempty"`
 }
 
 // Matches account-level Databricks API endpoints for an ingress network policy
 // rule..
 type IngressNetworkPolicy_AccountApiDestination struct {
-	// The API scopes to match. Use "all-apis" to match any account-level API.
-	Scopes []string `json:"scopes,omitempty"`
 	// Qualifies the breadth of API access for the listed scopes. See
 	// ApiScopeQualifier.
 	ScopeQualifier IngressNetworkPolicy_ApiScopeQualifier `json:"scope_qualifier,omitempty"`
+	// The API scopes to match. Use "all-apis" to match any account-level API.
+	Scopes []string `json:"scopes,omitempty"`
 }
 
 type IngressNetworkPolicy_AccountDatabricksOneDestination struct {
@@ -624,44 +624,44 @@ type IngressNetworkPolicy_AppsRuntimeDestination struct {
 }
 
 type IngressNetworkPolicy_Authentication struct {
-	IdentityType IngressNetworkPolicy_Authentication_IdentityType `json:"identity_type,omitempty"`
 	// Valid only when IdentityType is IDENTITY_TYPE_SELECTED_IDENTITIES.
-	Identities []IngressNetworkPolicy_AuthenticationIdentity `json:"identities,omitempty"`
+	Identities   []IngressNetworkPolicy_AuthenticationIdentity    `json:"identities,omitempty"`
+	IdentityType IngressNetworkPolicy_Authentication_IdentityType `json:"identity_type,omitempty"`
 }
 
 type IngressNetworkPolicy_AuthenticationIdentity struct {
-	PrincipalType IngressNetworkPolicy_AuthenticationIdentity_PrincipalType `json:"principal_type,omitempty"`
 	PrincipalId   *int64                                                    `json:"principal_id,omitempty"`
+	PrincipalType IngressNetworkPolicy_AuthenticationIdentity_PrincipalType `json:"principal_type,omitempty"`
 }
 
 type IngressNetworkPolicy_CrossWorkspaceAccess struct {
-	// The restriction mode for cross-workspace access.
-	RestrictionMode IngressNetworkPolicy_CrossWorkspaceAccess_RestrictionMode `json:"restriction_mode,omitempty"`
-	// Deny rules are evaluated first. A request matching any deny rule is denied,
-	// regardless of allow rules. Only applies when restriction_mode is
-	// RESTRICTED_ACCESS.
-	DenyRules []IngressNetworkPolicy_CrossWorkspaceIngressRule `json:"deny_rules,omitempty"`
 	// Allow rules are evaluated after deny rules. A request matching any allow rule
 	// is allowed; a request matching no rule is denied by default. Only applies
 	// when restriction_mode is RESTRICTED_ACCESS.
 	AllowRules []IngressNetworkPolicy_CrossWorkspaceIngressRule `json:"allow_rules,omitempty"`
+	// Deny rules are evaluated first. A request matching any deny rule is denied,
+	// regardless of allow rules. Only applies when restriction_mode is
+	// RESTRICTED_ACCESS.
+	DenyRules []IngressNetworkPolicy_CrossWorkspaceIngressRule `json:"deny_rules,omitempty"`
+	// The restriction mode for cross-workspace access.
+	RestrictionMode IngressNetworkPolicy_CrossWorkspaceAccess_RestrictionMode `json:"restriction_mode,omitempty"`
 }
 
 // An ingress rule is enforced when a request satisfies all specified attributes
 // — including request origin, destination, and authentication..
 type IngressNetworkPolicy_CrossWorkspaceIngressRule struct {
+	// The authenticated identity the request must match. When unset, the rule
+	// matches all users and service principals.
+	Authentication *IngressNetworkPolicy_Authentication `json:"authentication,omitempty"`
+	// The destination the request must match — the resource being accessed, for
+	// example the workspace UI or workspace APIs. See RequestDestination.
+	Destination *IngressNetworkPolicy_RequestDestination `json:"destination,omitempty"`
+	// The label for this ingress rule.
+	Label *string `json:"label,omitempty"`
 	// The origin the request must match — the source workspace the request comes
 	// from, either specific source workspaces or any source workspace in any
 	// account. See CrossWorkspaceRequestOrigin.
 	Origin *IngressNetworkPolicy_CrossWorkspaceRequestOrigin `json:"origin,omitempty"`
-	// The destination the request must match — the resource being accessed, for
-	// example the workspace UI or workspace APIs. See RequestDestination.
-	Destination *IngressNetworkPolicy_RequestDestination `json:"destination,omitempty"`
-	// The authenticated identity the request must match. When unset, the rule
-	// matches all users and service principals.
-	Authentication *IngressNetworkPolicy_Authentication `json:"authentication,omitempty"`
-	// The label for this ingress rule.
-	Label *string `json:"label,omitempty"`
 }
 
 type IngressNetworkPolicy_CrossWorkspaceRequestOrigin struct {
@@ -688,98 +688,98 @@ type IngressNetworkPolicy_LakebaseRuntimeDestination struct {
 // Configures how requests arriving over private connectivity, such as
 // registered endpoints, are allowed or denied access..
 type IngressNetworkPolicy_PrivateAccess struct {
-	// The restriction mode for private access.
-	RestrictionMode IngressNetworkPolicy_PrivateAccess_RestrictionMode `json:"restriction_mode,omitempty"`
-	// Deny rules are evaluated first. A request matching any deny rule is denied,
-	// regardless of allow rules. Only applies when restriction_mode is
-	// RESTRICTED_ACCESS.
-	DenyRules []IngressNetworkPolicy_PrivateIngressRule `json:"deny_rules,omitempty"`
 	// Allow rules are evaluated after deny rules. A request matching any allow rule
 	// is allowed; a request matching no rule is denied by default. Only applies
 	// when restriction_mode is RESTRICTED_ACCESS.
 	AllowRules []IngressNetworkPolicy_PrivateIngressRule `json:"allow_rules,omitempty"`
+	// Deny rules are evaluated first. A request matching any deny rule is denied,
+	// regardless of allow rules. Only applies when restriction_mode is
+	// RESTRICTED_ACCESS.
+	DenyRules []IngressNetworkPolicy_PrivateIngressRule `json:"deny_rules,omitempty"`
+	// The restriction mode for private access.
+	RestrictionMode IngressNetworkPolicy_PrivateAccess_RestrictionMode `json:"restriction_mode,omitempty"`
 }
 
 // An ingress rule is enforced when a request satisfies all specified attributes
 // — including request origin, destination, and authentication..
 type IngressNetworkPolicy_PrivateIngressRule struct {
-	// The origin the request must match — the private connectivity the request
-	// arrives through, for example a specific set of registered endpoints or any
-	// endpoint registered to the account. See PrivateRequestOrigin.
-	Origin *IngressNetworkPolicy_PrivateRequestOrigin `json:"origin,omitempty"`
-	// The destination the request must match — the resource being accessed, for
-	// example the workspace UI, workspace APIs, or account-level APIs. See
-	// RequestDestination.
-	Destination *IngressNetworkPolicy_RequestDestination `json:"destination,omitempty"`
 	// The authenticated identity the request must match. When unset, the rule
 	// matches all users and service principals. On the account-level network
 	// policy, scoping to specific identities is not currently supported, so this
 	// field must be unset (the rule matches all users and service principals).
 	Authentication *IngressNetworkPolicy_Authentication `json:"authentication,omitempty"`
+	// The destination the request must match — the resource being accessed, for
+	// example the workspace UI, workspace APIs, or account-level APIs. See
+	// RequestDestination.
+	Destination *IngressNetworkPolicy_RequestDestination `json:"destination,omitempty"`
 	// The label for this ingress rule.
 	Label *string `json:"label,omitempty"`
+	// The origin the request must match — the private connectivity the request
+	// arrives through, for example a specific set of registered endpoints or any
+	// endpoint registered to the account. See PrivateRequestOrigin.
+	Origin *IngressNetworkPolicy_PrivateRequestOrigin `json:"origin,omitempty"`
 }
 
 // The origin of a private access request, identified by the endpoint through
 // which the request arrives..
 type IngressNetworkPolicy_PrivateRequestOrigin struct {
-	Endpoints                 *IngressNetworkPolicy_Endpoints `json:"endpoints,omitempty"`
+	AllPrivateAccess          *bool                           `json:"all_private_access,omitempty"`
 	AllRegisteredEndpoints    *bool                           `json:"all_registered_endpoints,omitempty"`
 	AzureWorkspacePrivateLink *bool                           `json:"azure_workspace_private_link,omitempty"`
-	AllPrivateAccess          *bool                           `json:"all_private_access,omitempty"`
+	Endpoints                 *IngressNetworkPolicy_Endpoints `json:"endpoints,omitempty"`
 }
 
 type IngressNetworkPolicy_PublicAccess struct {
-	RestrictionMode IngressNetworkPolicy_PublicAccess_RestrictionMode `json:"restriction_mode,omitempty"`
-	DenyRules       []IngressNetworkPolicy_PublicIngressRule          `json:"deny_rules,omitempty"`
 	AllowRules      []IngressNetworkPolicy_PublicIngressRule          `json:"allow_rules,omitempty"`
+	DenyRules       []IngressNetworkPolicy_PublicIngressRule          `json:"deny_rules,omitempty"`
+	RestrictionMode IngressNetworkPolicy_PublicAccess_RestrictionMode `json:"restriction_mode,omitempty"`
 }
 
 // An ingress rule is enforced when a request satisfies all specified attributes
 // — including request origin, destination, and authentication..
 type IngressNetworkPolicy_PublicIngressRule struct {
-	Origin         *IngressNetworkPolicy_PublicRequestOrigin `json:"origin,omitempty"`
-	Destination    *IngressNetworkPolicy_RequestDestination  `json:"destination,omitempty"`
-	Authentication *IngressNetworkPolicy_Authentication      `json:"authentication,omitempty"`
+	Authentication *IngressNetworkPolicy_Authentication     `json:"authentication,omitempty"`
+	Destination    *IngressNetworkPolicy_RequestDestination `json:"destination,omitempty"`
 	// The label for this ingress rule.
-	Label *string `json:"label,omitempty"`
+	Label  *string                                   `json:"label,omitempty"`
+	Origin *IngressNetworkPolicy_PublicRequestOrigin `json:"origin,omitempty"`
 }
 
 type IngressNetworkPolicy_PublicRequestOrigin struct {
 	AllIpRanges      *bool                          `json:"all_ip_ranges,omitempty"`
-	IncludedIpRanges *IngressNetworkPolicy_IpRanges `json:"included_ip_ranges,omitempty"`
 	ExcludedIpRanges *IngressNetworkPolicy_IpRanges `json:"excluded_ip_ranges,omitempty"`
+	IncludedIpRanges *IngressNetworkPolicy_IpRanges `json:"included_ip_ranges,omitempty"`
 }
 
 type IngressNetworkPolicy_RequestDestination struct {
-	// When true, match all destinations, no other destination fields can be set.
-	// When not set or false, at least one specific destination must be provided.
-	AllDestinations *bool                                            `json:"all_destinations,omitempty"`
-	WorkspaceUi     *IngressNetworkPolicy_WorkspaceUiDestination     `json:"workspace_ui,omitempty"`
-	WorkspaceApi    *IngressNetworkPolicy_WorkspaceApiDestination    `json:"workspace_api,omitempty"`
-	AppsRuntime     *IngressNetworkPolicy_AppsRuntimeDestination     `json:"apps_runtime,omitempty"`
-	LakebaseRuntime *IngressNetworkPolicy_LakebaseRuntimeDestination `json:"lakebase_runtime,omitempty"`
-	// Matches requests to the account console UI. Can only be used in the
-	// account-level network policy.
-	AccountUi *IngressNetworkPolicy_AccountUiDestination `json:"account_ui,omitempty"`
 	// Matches requests to account-level APIs. Can only be used in the account-level
 	// network policy.
 	AccountApi *IngressNetworkPolicy_AccountApiDestination `json:"account_api,omitempty"`
 	// Account DatabricksOne destination is not supported.
 	AccountDatabricksOne *IngressNetworkPolicy_AccountDatabricksOneDestination `json:"account_databricks_one,omitempty"`
+	// Matches requests to the account console UI. Can only be used in the
+	// account-level network policy.
+	AccountUi *IngressNetworkPolicy_AccountUiDestination `json:"account_ui,omitempty"`
+	// When true, match all destinations, no other destination fields can be set.
+	// When not set or false, at least one specific destination must be provided.
+	AllDestinations *bool                                            `json:"all_destinations,omitempty"`
+	AppsRuntime     *IngressNetworkPolicy_AppsRuntimeDestination     `json:"apps_runtime,omitempty"`
+	LakebaseRuntime *IngressNetworkPolicy_LakebaseRuntimeDestination `json:"lakebase_runtime,omitempty"`
+	WorkspaceApi    *IngressNetworkPolicy_WorkspaceApiDestination    `json:"workspace_api,omitempty"`
+	WorkspaceUi     *IngressNetworkPolicy_WorkspaceUiDestination     `json:"workspace_ui,omitempty"`
 }
 
 // Matches workspace-level Databricks API endpoints for an ingress network
 // policy rule..
 type IngressNetworkPolicy_WorkspaceApiDestination struct {
-	Scopes []string `json:"scopes,omitempty"`
-	// Qualifies the breadth of API access for the listed scopes. See
-	// ApiScopeQualifier.
-	ScopeQualifier IngressNetworkPolicy_ApiScopeQualifier `json:"scope_qualifier,omitempty"`
 	// Inverse of `scopes`: matches every API scope EXCEPT those listed here ("allow
 	// all except"). Mutually exclusive with `scopes` — a single destination may
 	// set at most one of the two.
 	ExcludedScopes []string `json:"excluded_scopes,omitempty"`
+	// Qualifies the breadth of API access for the listed scopes. See
+	// ApiScopeQualifier.
+	ScopeQualifier IngressNetworkPolicy_ApiScopeQualifier `json:"scope_qualifier,omitempty"`
+	Scopes         []string                               `json:"scopes,omitempty"`
 }
 
 type IngressNetworkPolicy_WorkspaceIdList struct {
@@ -793,24 +793,24 @@ type IngressNetworkPolicy_WorkspaceUiDestination struct {
 
 // Definition of an IP Access list.
 type IpAccessList struct {
-	// Universally unique identifier (UUID) of the IP access list.
-	ListId *string `json:"list_id,omitempty"`
-	// Label for the IP access list. This **cannot** be empty.
-	Label       *string  `json:"label,omitempty"`
-	IpAddresses []string `json:"ip_addresses,omitempty"`
 	// Total number of IP or CIDR values.
-	AddressCount *int             `json:"address_count,omitempty"`
-	ListType     IpAccessListType `json:"list_type,omitempty"`
+	AddressCount *int `json:"address_count,omitempty"`
 	// Creation timestamp in milliseconds.
 	CreatedAt *int64 `json:"created_at,omitempty"`
 	// User ID of the user who created this list.
 	CreatedBy *int64 `json:"created_by,omitempty"`
+	// Specifies whether this IP access list is enabled.
+	Enabled     *bool    `json:"enabled,omitempty"`
+	IpAddresses []string `json:"ip_addresses,omitempty"`
+	// Label for the IP access list. This **cannot** be empty.
+	Label *string `json:"label,omitempty"`
+	// Universally unique identifier (UUID) of the IP access list.
+	ListId   *string          `json:"list_id,omitempty"`
+	ListType IpAccessListType `json:"list_type,omitempty"`
 	// Update timestamp in milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// User ID of the user who updated this list.
 	UpdatedBy *int64 `json:"updated_by,omitempty"`
-	// Specifies whether this IP access list is enabled.
-	Enabled *bool `json:"enabled,omitempty"`
 }
 
 // IP access lists were successfully returned..
@@ -819,11 +819,11 @@ type ListAccountIpAccessListsResponse struct {
 }
 
 type ListEndpointsRequest struct {
+	PageSize  *int    `json:"page_size,omitempty"`
+	PageToken *string `json:"page_token,omitempty"`
 	// The parent resource name of the account to list endpoints for. Format:
 	// `accounts/{account_id}`.
-	Parent    *string `json:"parent,omitempty"`
-	PageToken *string `json:"page_token,omitempty"`
-	PageSize  *int    `json:"page_size,omitempty"`
+	Parent *string `json:"parent,omitempty"`
 }
 
 type ListEndpointsResponse struct {
@@ -890,11 +890,9 @@ type ListNetworkPoliciesResponse struct {
 // Properties of the new private endpoint rule. Note that you must approve the
 // endpoint in Azure portal after initialization..
 type NccPrivateEndpointRule struct {
-	// The ID of a private endpoint rule.
-	RuleId *string `json:"rule_id,omitempty"`
-	// The ID of a network connectivity configuration, which is the parent resource
-	// of this private endpoint rule object.
-	NetworkConnectivityConfigId *string `json:"network_connectivity_config_id,omitempty"`
+	// <Databricks> account ID. You can find your account ID from the Accounts
+	// Console.
+	AccountId *string `json:"account_id,omitempty"`
 	// The current status of this private endpoint. The private endpoint rules are
 	// effective only if the connection state is ESTABLISHED. Remember that you must
 	// approve new endpoints on your resources in the Cloud console before they take
@@ -909,36 +907,39 @@ type NccPrivateEndpointRule struct {
 	// transition to PENDING. - CREATE_FAILED: The endpoint creation failed. You can
 	// check the error_message field for more details.
 	ConnectionState NccPrivateEndpointRule_PrivateLinkConnectionState `json:"connection_state,omitempty"`
+	// Time in epoch milliseconds when this object was created.
+	CreationTime *int64 `json:"creation_time,omitempty"`
+	// Whether this private endpoint is deactivated.
+	Deactivated *bool `json:"deactivated,omitempty"`
+	// Time in epoch milliseconds when this object was deactivated.
+	DeactivatedAt *int64 `json:"deactivated_at,omitempty"`
 	// Only used by private endpoints to customer-managed private endpoint services.
 	//
 	// Domain names of target private link service. When updating this field, the
 	// full list of target domain_names must be specified.
 	DomainNames []string `json:"domain_names,omitempty"`
-	// Time in epoch milliseconds when this object was created.
-	CreationTime *int64 `json:"creation_time,omitempty"`
-	// Time in epoch milliseconds when this object was updated.
-	UpdatedTime *int64 `json:"updated_time,omitempty"`
-	// Whether this private endpoint is deactivated.
-	Deactivated *bool `json:"deactivated,omitempty"`
-	// Time in epoch milliseconds when this object was deactivated.
-	DeactivatedAt *int64  `json:"deactivated_at,omitempty"`
-	ErrorMessage  *string `json:"error_message,omitempty"`
-	// The Azure resource ID of the target resource.
-	ResourceId *string `json:"resource_id,omitempty"`
+	// Update this field to activate/deactivate this private endpoint to allow
+	// egress access from serverless compute resources. Only honored for first-party
+	// services on each cloud (e.g. AWS S3).
+	Enabled *bool `json:"enabled,omitempty"`
+	// The name of the Azure private endpoint resource.
+	EndpointName *string `json:"endpoint_name,omitempty"`
+	// The full target AWS endpoint service name that connects to the destination
+	// resources of the private endpoint.
+	EndpointService *string      `json:"endpoint_service,omitempty"`
+	ErrorMessage    *string      `json:"error_message,omitempty"`
+	GcpEndpoint     *GcpEndpoint `json:"gcp_endpoint,omitempty"`
 	// Not used by customer-managed private endpoint services.
 	//
 	// The sub-resource type (group ID) of the target resource. Note that to connect
 	// to workspace root storage (root DBFS), you need two endpoints, one for blob
 	// and one for dfs.
 	GroupId *string `json:"group_id,omitempty"`
-	// The name of the Azure private endpoint resource.
-	EndpointName *string `json:"endpoint_name,omitempty"`
-	// <Databricks> account ID. You can find your account ID from the Accounts
-	// Console.
-	AccountId *string `json:"account_id,omitempty"`
-	// The full target AWS endpoint service name that connects to the destination
-	// resources of the private endpoint.
-	EndpointService *string `json:"endpoint_service,omitempty"`
+	// The ID of a network connectivity configuration, which is the parent resource
+	// of this private endpoint rule object.
+	NetworkConnectivityConfigId *string `json:"network_connectivity_config_id,omitempty"`
+	// The Azure resource ID of the target resource.
+	ResourceId *string `json:"resource_id,omitempty"`
 	// Only used by private endpoints towards AWS S3 service.
 	//
 	// The globally unique S3 bucket names that will be accessed via the VPC
@@ -946,101 +947,75 @@ type NccPrivateEndpointRule struct {
 	// service. When updating this field, we perform full update on this field.
 	// Please ensure a full list of desired resource_names is provided.
 	ResourceNames []string `json:"resource_names,omitempty"`
+	// The ID of a private endpoint rule.
+	RuleId *string `json:"rule_id,omitempty"`
+	// Time in epoch milliseconds when this object was updated.
+	UpdatedTime *int64 `json:"updated_time,omitempty"`
 	// The AWS VPC endpoint ID. You can use this ID to identify the VPC endpoint
 	// created by <Databricks>.
 	VpcEndpointId *string `json:"vpc_endpoint_id,omitempty"`
-	// Update this field to activate/deactivate this private endpoint to allow
-	// egress access from serverless compute resources. Only honored for first-party
-	// services on each cloud (e.g. AWS S3).
-	Enabled     *bool        `json:"enabled,omitempty"`
-	GcpEndpoint *GcpEndpoint `json:"gcp_endpoint,omitempty"`
 }
 
 type Network struct {
-	// The <Databricks> network configuration ID.
-	NetworkId *string `json:"network_id,omitempty"`
 	// The <Databricks> account ID associated with this network configuration.
 	AccountId *string `json:"account_id,omitempty"`
-	// Workspace ID associated with this network configuration.
-	WorkspaceId *int64 `json:"workspace_id,omitempty"`
-	// The ID of the VPC associated with this network configuration. VPC IDs can be
-	// used in multiple networks.
-	VpcId *string `json:"vpc_id,omitempty"`
-	// IDs of at least two subnets associated with this network. Subnet IDs
-	// **cannot** be used in multiple network configurations.
-	SubnetIds []string `json:"subnet_ids,omitempty"`
-	// IDs of one to five security groups associated with this network. Security
-	// group IDs **cannot** be used in multiple network configurations.
-	SecurityGroupIds []string  `json:"security_group_ids,omitempty"`
-	VpcStatus        VpcStatus `json:"vpc_status,omitempty"`
-	// Array of error messages about the network configuration.
-	ErrorMessages []NetworkHealth `json:"error_messages,omitempty"`
-	// The human-readable name of the network configuration.
-	NetworkName *string `json:"network_name,omitempty"`
 	// Time in epoch milliseconds when the network was created.
 	CreationTime *int64 `json:"creation_time,omitempty"`
+	// Array of error messages about the network configuration.
+	ErrorMessages  []NetworkHealth `json:"error_messages,omitempty"`
+	GcpNetworkInfo *GcpNetworkInfo `json:"gcp_network_info,omitempty"`
+	// The <Databricks> network configuration ID.
+	NetworkId *string `json:"network_id,omitempty"`
+	// The human-readable name of the network configuration.
+	NetworkName *string `json:"network_name,omitempty"`
+	// IDs of one to five security groups associated with this network. Security
+	// group IDs **cannot** be used in multiple network configurations.
+	SecurityGroupIds []string `json:"security_group_ids,omitempty"`
+	// IDs of at least two subnets associated with this network. Subnet IDs
+	// **cannot** be used in multiple network configurations.
+	SubnetIds    []string             `json:"subnet_ids,omitempty"`
+	VpcEndpoints *NetworkVpcEndpoints `json:"vpc_endpoints,omitempty"`
+	// The ID of the VPC associated with this network configuration. VPC IDs can be
+	// used in multiple networks.
+	VpcId     *string   `json:"vpc_id,omitempty"`
+	VpcStatus VpcStatus `json:"vpc_status,omitempty"`
 	// Array of warning messages about the network configuration.
-	WarningMessages []NetworkWarning     `json:"warning_messages,omitempty"`
-	VpcEndpoints    *NetworkVpcEndpoints `json:"vpc_endpoints,omitempty"`
-	GcpNetworkInfo  *GcpNetworkInfo      `json:"gcp_network_info,omitempty"`
+	WarningMessages []NetworkWarning `json:"warning_messages,omitempty"`
+	// Workspace ID associated with this network configuration.
+	WorkspaceId *int64 `json:"workspace_id,omitempty"`
 }
 
 // Properties of the new network connectivity configuration..
 type NetworkConnectivityConfig struct {
-	// <Databricks> network connectivity configuration ID.
-	NetworkConnectivityConfigId *string `json:"network_connectivity_config_id,omitempty"`
 	// Your <Databricks> account ID. You can find your account ID in your
 	// <Databricks> accounts console.
 	AccountId *string `json:"account_id,omitempty"`
+	// Time in epoch milliseconds when this object was created.
+	CreationTime *int64 `json:"creation_time,omitempty"`
+	// The network connectivity rules that apply to network traffic from your
+	// serverless compute resources.
+	EgressConfig *CustomerFacingNetworkConnectivityConfigEgressConfig `json:"egress_config,omitempty"`
 	// The name of the network connectivity configuration. The name can contain
 	// alphanumeric characters, hyphens, and underscores. The length must be between
 	// 3 and 30 characters. The name must match the regular expression
 	// ^[0-9a-zA-Z-_]{3,30}$
 	Name *string `json:"name,omitempty"`
+	// <Databricks> network connectivity configuration ID.
+	NetworkConnectivityConfigId *string `json:"network_connectivity_config_id,omitempty"`
 	// The region for the network connectivity configuration. Only workspaces in the
 	// same region can be attached to the network connectivity configuration.
 	Region *string `json:"region,omitempty"`
-	// The network connectivity rules that apply to network traffic from your
-	// serverless compute resources.
-	EgressConfig *CustomerFacingNetworkConnectivityConfigEgressConfig `json:"egress_config,omitempty"`
 	// Time in epoch milliseconds when this object was updated.
 	UpdatedTime *int64 `json:"updated_time,omitempty"`
-	// Time in epoch milliseconds when this object was created.
-	CreationTime *int64 `json:"creation_time,omitempty"`
 }
 
 // Properties of the new private endpoint rule. Note that for private endpoints
 // towards a VPC endpoint service behind a customer-managed NLB, you must
 // approve the endpoint in AWS console after initialization..
 type NetworkConnectivityConfigAwsPrivateEndpointRule struct {
-	// The ID of a private endpoint rule.
-	RuleId *string `json:"rule_id,omitempty"`
-	// The ID of a network connectivity configuration, which is the parent resource
-	// of this private endpoint rule object.
-	NetworkConnectivityConfigId *string `json:"network_connectivity_config_id,omitempty"`
 	// <Databricks> account ID. You can find your account ID from the Accounts
 	// Console.
 	AccountId *string `json:"account_id,omitempty"`
-	// The full target AWS endpoint service name that connects to the destination
-	// resources of the private endpoint.
-	EndpointService *string `json:"endpoint_service,omitempty"`
-	// Only used by private endpoints towards a VPC endpoint service for
-	// customer-managed VPC endpoint service.
-	//
-	// The target AWS resource FQDNs accessible via the VPC endpoint service. When
-	// updating this field, we perform full update on this field. Please ensure a
-	// full list of desired domain_names is provided.
-	DomainNames []string `json:"domain_names,omitempty"`
-	// Only used by private endpoints towards AWS S3 service.
-	//
-	// The globally unique S3 bucket names that will be accessed via the VPC
-	// endpoint. The bucket names must be in the same region as the NCC/endpoint
-	// service. When updating this field, we perform full update on this field.
-	// Please ensure a full list of desired resource_names is provided.
-	ResourceNames []string `json:"resource_names,omitempty"`
-	// The AWS VPC endpoint ID. You can use this ID to identify VPC endpoint created
-	// by <Databricks>.
-	VpcEndpointId *string `json:"vpc_endpoint_id,omitempty"`
 	// The current status of this private endpoint. The private endpoint rules are
 	// effective only if the connection state is ESTABLISHED. Remember that you must
 	// approve new endpoints on your resources in the AWS console before they take
@@ -1054,38 +1029,48 @@ type NetworkConnectivityConfigAwsPrivateEndpointRule struct {
 	ConnectionState NetworkConnectivityConfigAwsPrivateEndpointRule_PrivateLinkConnectionState `json:"connection_state,omitempty"`
 	// Time in epoch milliseconds when this object was created.
 	CreationTime *int64 `json:"creation_time,omitempty"`
-	// Time in epoch milliseconds when this object was updated.
-	UpdatedTime *int64 `json:"updated_time,omitempty"`
 	// Whether this private endpoint is deactivated.
 	Deactivated *bool `json:"deactivated,omitempty"`
 	// Time in epoch milliseconds when this object was deactivated.
 	DeactivatedAt *int64 `json:"deactivated_at,omitempty"`
+	// Only used by private endpoints towards a VPC endpoint service for
+	// customer-managed VPC endpoint service.
+	//
+	// The target AWS resource FQDNs accessible via the VPC endpoint service. When
+	// updating this field, we perform full update on this field. Please ensure a
+	// full list of desired domain_names is provided.
+	DomainNames []string `json:"domain_names,omitempty"`
 	// Only used by private endpoints towards an AWS S3 service.
 	//
 	// Update this field to activate/deactivate this private endpoint to allow
 	// egress access from serverless compute resources.
-	Enabled      *bool   `json:"enabled,omitempty"`
-	ErrorMessage *string `json:"error_message,omitempty"`
+	Enabled *bool `json:"enabled,omitempty"`
+	// The full target AWS endpoint service name that connects to the destination
+	// resources of the private endpoint.
+	EndpointService *string `json:"endpoint_service,omitempty"`
+	ErrorMessage    *string `json:"error_message,omitempty"`
+	// The ID of a network connectivity configuration, which is the parent resource
+	// of this private endpoint rule object.
+	NetworkConnectivityConfigId *string `json:"network_connectivity_config_id,omitempty"`
+	// Only used by private endpoints towards AWS S3 service.
+	//
+	// The globally unique S3 bucket names that will be accessed via the VPC
+	// endpoint. The bucket names must be in the same region as the NCC/endpoint
+	// service. When updating this field, we perform full update on this field.
+	// Please ensure a full list of desired resource_names is provided.
+	ResourceNames []string `json:"resource_names,omitempty"`
+	// The ID of a private endpoint rule.
+	RuleId *string `json:"rule_id,omitempty"`
+	// Time in epoch milliseconds when this object was updated.
+	UpdatedTime *int64 `json:"updated_time,omitempty"`
+	// The AWS VPC endpoint ID. You can use this ID to identify VPC endpoint created
+	// by <Databricks>.
+	VpcEndpointId *string `json:"vpc_endpoint_id,omitempty"`
 }
 
 // Properties of the new private endpoint rule. Note that you must approve the
 // endpoint in Azure portal after initialization..
 type NetworkConnectivityConfigAzurePrivateEndpointRule struct {
-	// The ID of a private endpoint rule.
-	RuleId *string `json:"rule_id,omitempty"`
-	// The ID of a network connectivity configuration, which is the parent resource
-	// of this private endpoint rule object.
-	NetworkConnectivityConfigId *string `json:"network_connectivity_config_id,omitempty"`
-	// The Azure resource ID of the target resource.
-	ResourceId *string `json:"resource_id,omitempty"`
-	// Only used by private endpoints to Azure first-party services.
-	//
-	// The sub-resource type (group ID) of the target resource. Note that to connect
-	// to workspace root storage (root DBFS), you need two endpoints, one for blob
-	// and one for dfs.
-	GroupId *string `json:"group_id,omitempty"`
-	// The name of the Azure private endpoint resource.
-	EndpointName *string `json:"endpoint_name,omitempty"`
 	// The current status of this private endpoint. The private endpoint rules are
 	// effective only if the connection state is ESTABLISHED. Remember that you must
 	// approve new endpoints on your resources in the Azure portal before they take
@@ -1100,8 +1085,6 @@ type NetworkConnectivityConfigAzurePrivateEndpointRule struct {
 	ConnectionState NetworkConnectivityConfigAzurePrivateEndpointRule_PrivateLinkConnectionState `json:"connection_state,omitempty"`
 	// Time in epoch milliseconds when this object was created.
 	CreationTime *int64 `json:"creation_time,omitempty"`
-	// Time in epoch milliseconds when this object was updated.
-	UpdatedTime *int64 `json:"updated_time,omitempty"`
 	// Whether this private endpoint is deactivated.
 	Deactivated *bool `json:"deactivated,omitempty"`
 	// Time in epoch milliseconds when this object was deactivated.
@@ -1110,14 +1093,31 @@ type NetworkConnectivityConfigAzurePrivateEndpointRule struct {
 	//
 	// Domain names of target private link service. When updating this field, the
 	// full list of target domain_names must be specified.
-	DomainNames  []string `json:"domain_names,omitempty"`
-	ErrorMessage *string  `json:"error_message,omitempty"`
+	DomainNames []string `json:"domain_names,omitempty"`
+	// The name of the Azure private endpoint resource.
+	EndpointName *string `json:"endpoint_name,omitempty"`
+	ErrorMessage *string `json:"error_message,omitempty"`
+	// Only used by private endpoints to Azure first-party services.
+	//
+	// The sub-resource type (group ID) of the target resource. Note that to connect
+	// to workspace root storage (root DBFS), you need two endpoints, one for blob
+	// and one for dfs.
+	GroupId *string `json:"group_id,omitempty"`
+	// The ID of a network connectivity configuration, which is the parent resource
+	// of this private endpoint rule object.
+	NetworkConnectivityConfigId *string `json:"network_connectivity_config_id,omitempty"`
+	// The Azure resource ID of the target resource.
+	ResourceId *string `json:"resource_id,omitempty"`
+	// The ID of a private endpoint rule.
+	RuleId *string `json:"rule_id,omitempty"`
+	// Time in epoch milliseconds when this object was updated.
+	UpdatedTime *int64 `json:"updated_time,omitempty"`
 }
 
 // Default rules don't have specific targets..
 type NetworkConnectivityConfigEgressConfig_DefaultRule struct {
-	AzureServiceEndpointRule *NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRule `json:"azure_service_endpoint_rule,omitempty"`
 	AwsStableIpRule          *NetworkConnectivityConfigEgressConfig_DefaultRule_AwsStableIpRule          `json:"aws_stable_ip_rule,omitempty"`
+	AzureServiceEndpointRule *NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRule `json:"azure_service_endpoint_rule,omitempty"`
 }
 
 // The stable AWS IP CIDR blocks. You can use these to configure the firewall of
@@ -1132,58 +1132,39 @@ type NetworkConnectivityConfigEgressConfig_DefaultRule_AwsStableIpRule struct {
 // Azure resources to allow traffic from your <Databricks> serverless compute
 // resources..
 type NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRule struct {
+	// The list of subnets from which <Databricks> network traffic originates when
+	// accessing your Azure resources.
+	Subnets []string `json:"subnets,omitempty"`
 	// The Azure region in which this service endpoint rule applies..
 	TargetRegion *string `json:"target_region,omitempty"`
 	// The Azure services to which this service endpoint rule applies to.
 	TargetServices []EgressResourceType `json:"target_services,omitempty"`
-	// The list of subnets from which <Databricks> network traffic originates when
-	// accessing your Azure resources.
-	Subnets []string `json:"subnets,omitempty"`
 }
 
 type NetworkHealth struct {
-	ErrorType *string `json:"error_type,omitempty"`
 	// Details of the error.
 	ErrorMessage *string `json:"error_message,omitempty"`
+	ErrorType    *string `json:"error_type,omitempty"`
 }
 
 type NetworkVpcEndpoints struct {
-	// The VPC endpoint ID used by this network to access the Databricks REST API.
-	RestApi []string `json:"rest_api,omitempty"`
 	// The VPC endpoint ID used by this network to access the <Databricks> secure
 	// cluster connectivity relay.
 	DataplaneRelay []string `json:"dataplane_relay,omitempty"`
+	// The VPC endpoint ID used by this network to access the Databricks REST API.
+	RestApi []string `json:"rest_api,omitempty"`
 }
 
 type NetworkWarning struct {
-	WarningType *string `json:"warning_type,omitempty"`
 	// Details of the warning.
 	WarningMessage *string `json:"warning_message,omitempty"`
+	WarningType    *string `json:"warning_type,omitempty"`
 }
 
 // *.
 type PrivateAccessSettings struct {
-	// <Databricks> private access settings ID.
-	PrivateAccessSettingsId *string `json:"private_access_settings_id,omitempty"`
 	// The <Databricks> account ID that hosts the private access settings.
 	AccountId *string `json:"account_id,omitempty"`
-	// The human-readable name of the private access settings object.
-	PrivateAccessSettingsName *string `json:"private_access_settings_name,omitempty"`
-	// The AWS region for workspaces attached to this private access settings
-	// object.
-	Region *string `json:"region,omitempty"`
-	// Determines if the workspace can be accessed over public internet. For fully
-	// private workspaces, you can optionally specify false, but only if you
-	// implement both the front-end and the back-end PrivateLink connections.
-	// Otherwise, specify true, which means that public access is enabled.
-	PublicAccessEnabled *bool `json:"public_access_enabled,omitempty"`
-	// The private access level controls which VPC endpoints can connect to the UI
-	// or API of any workspace that attaches this private access settings object.
-	// `ACCOUNT` level access (the default) allows only VPC endpoints that are
-	// registered in your <Databricks> account connect to your workspace. `ENDPOINT`
-	// level access allows only specified VPC endpoints connect to your workspace.
-	// For details, see allowed_vpc_endpoint_ids.
-	PrivateAccessLevel PrivateAccessLevel `json:"private_access_level,omitempty"`
 	// An array of Databricks VPC endpoint IDs. This is the <Databricks> ID that is
 	// returned when registering the VPC endpoint configuration in your <Databricks>
 	// account. This is not the ID of the VPC endpoint in AWS. Only used when
@@ -1194,19 +1175,38 @@ type PrivateAccessSettings struct {
 	// connections. To control how your workspace is accessed via public internet,
 	// see IP access lists.
 	AllowedVpcEndpointIds []string `json:"allowed_vpc_endpoint_ids,omitempty"`
+	// The private access level controls which VPC endpoints can connect to the UI
+	// or API of any workspace that attaches this private access settings object.
+	// `ACCOUNT` level access (the default) allows only VPC endpoints that are
+	// registered in your <Databricks> account connect to your workspace. `ENDPOINT`
+	// level access allows only specified VPC endpoints connect to your workspace.
+	// For details, see allowed_vpc_endpoint_ids.
+	PrivateAccessLevel PrivateAccessLevel `json:"private_access_level,omitempty"`
+	// <Databricks> private access settings ID.
+	PrivateAccessSettingsId *string `json:"private_access_settings_id,omitempty"`
+	// The human-readable name of the private access settings object.
+	PrivateAccessSettingsName *string `json:"private_access_settings_name,omitempty"`
+	// Determines if the workspace can be accessed over public internet. For fully
+	// private workspaces, you can optionally specify false, but only if you
+	// implement both the front-end and the back-end PrivateLink connections.
+	// Otherwise, specify true, which means that public access is enabled.
+	PublicAccessEnabled *bool `json:"public_access_enabled,omitempty"`
+	// The AWS region for workspaces attached to this private access settings
+	// object.
+	Region *string `json:"region,omitempty"`
 }
 
 // Details required to replace an IP access list..
 type ReplaceAccountIpAccessListRequest struct {
 	AccountId *string `json:"account_id,omitempty"`
-	// The ID for the corresponding IP access list
-	ListId *string `json:"list_id,omitempty"`
-	// Label for the IP access list. This **cannot** be empty.
-	Label       *string                                  `json:"label,omitempty"`
-	ListType    AccountIpAccessListType_IpAccessListType `json:"list_type,omitempty"`
-	IpAddresses []string                                 `json:"ip_addresses,omitempty"`
 	// Specifies whether this IP access list is enabled.
-	Enabled *bool `json:"enabled,omitempty"`
+	Enabled     *bool    `json:"enabled,omitempty"`
+	IpAddresses []string `json:"ip_addresses,omitempty"`
+	// Label for the IP access list. This **cannot** be empty.
+	Label *string `json:"label,omitempty"`
+	// The ID for the corresponding IP access list
+	ListId   *string                                  `json:"list_id,omitempty"`
+	ListType AccountIpAccessListType_IpAccessListType `json:"list_type,omitempty"`
 }
 
 // The IP access list was successfully replaced..
@@ -1216,14 +1216,14 @@ type ReplaceAccountIpAccessListResponse struct {
 
 // Details required to replace an IP access list..
 type ReplaceIpAccessListRequest struct {
-	// The ID for the corresponding IP access list
-	ListId *string `json:"list_id,omitempty"`
-	// Label for the IP access list. This **cannot** be empty.
-	Label       *string          `json:"label,omitempty"`
-	ListType    IpAccessListType `json:"list_type,omitempty"`
-	IpAddresses []string         `json:"ip_addresses,omitempty"`
 	// Specifies whether this IP access list is enabled.
-	Enabled *bool `json:"enabled,omitempty"`
+	Enabled     *bool    `json:"enabled,omitempty"`
+	IpAddresses []string `json:"ip_addresses,omitempty"`
+	// Label for the IP access list. This **cannot** be empty.
+	Label *string `json:"label,omitempty"`
+	// The ID for the corresponding IP access list
+	ListId   *string          `json:"list_id,omitempty"`
+	ListType IpAccessListType `json:"list_type,omitempty"`
 }
 
 // The IP access list was successfully replaced..
@@ -1234,14 +1234,14 @@ type ReplaceIpAccessListResponse struct {
 // Details required to update an IP access list..
 type UpdateAccountIpAccessListRequest struct {
 	AccountId *string `json:"account_id,omitempty"`
-	// The ID for the corresponding IP access list
-	ListId *string `json:"list_id,omitempty"`
-	// Label for the IP access list. This **cannot** be empty.
-	Label       *string                                  `json:"label,omitempty"`
-	ListType    AccountIpAccessListType_IpAccessListType `json:"list_type,omitempty"`
-	IpAddresses []string                                 `json:"ip_addresses,omitempty"`
 	// Specifies whether this IP access list is enabled.
-	Enabled *bool `json:"enabled,omitempty"`
+	Enabled     *bool    `json:"enabled,omitempty"`
+	IpAddresses []string `json:"ip_addresses,omitempty"`
+	// Label for the IP access list. This **cannot** be empty.
+	Label *string `json:"label,omitempty"`
+	// The ID for the corresponding IP access list
+	ListId   *string                                  `json:"list_id,omitempty"`
+	ListType AccountIpAccessListType_IpAccessListType `json:"list_type,omitempty"`
 }
 
 // The IP access list was successfully updated..
@@ -1251,14 +1251,14 @@ type UpdateAccountIpAccessListResponse struct {
 
 // Details required to update an IP access list..
 type UpdateIpAccessListRequest struct {
-	// The ID for the corresponding IP access list
-	ListId *string `json:"list_id,omitempty"`
-	// Label for the IP access list. This **cannot** be empty.
-	Label       *string          `json:"label,omitempty"`
-	ListType    IpAccessListType `json:"list_type,omitempty"`
-	IpAddresses []string         `json:"ip_addresses,omitempty"`
 	// Specifies whether this IP access list is enabled.
-	Enabled *bool `json:"enabled,omitempty"`
+	Enabled     *bool    `json:"enabled,omitempty"`
+	IpAddresses []string `json:"ip_addresses,omitempty"`
+	// Label for the IP access list. This **cannot** be empty.
+	Label *string `json:"label,omitempty"`
+	// The ID for the corresponding IP access list
+	ListId   *string          `json:"list_id,omitempty"`
+	ListType IpAccessListType `json:"list_type,omitempty"`
 }
 
 // The IP access list was successfully updated..
@@ -1268,26 +1268,26 @@ type UpdateIpAccessListResponse struct {
 
 // Your Network Connectivity Configuration ID..
 type UpdateNccPrivateEndpointRuleRequest struct {
-	// The ID of a network connectivity configuration, which is the parent resource
-	// of this private endpoint rule object.
-	NetworkConnectivityConfigId *string `json:"network_connectivity_config_id,omitempty"`
 	// Your <Databricks> account ID. You can find your account ID in your
 	// <Databricks> accounts console.
 	AccountId *string `json:"account_id,omitempty"`
+	// The ID of a network connectivity configuration, which is the parent resource
+	// of this private endpoint rule object.
+	NetworkConnectivityConfigId *string                    `json:"network_connectivity_config_id,omitempty"`
+	PrivateEndpointRule         *UpdatePrivateEndpointRule `json:"private_endpoint_rule,omitempty"`
 	// Your private endpoint rule ID.
-	PrivateEndpointRuleId *string                    `json:"private_endpoint_rule_id,omitempty"`
-	PrivateEndpointRule   *UpdatePrivateEndpointRule `json:"private_endpoint_rule,omitempty"`
-	UpdateMask            *string                    `json:"update_mask,omitempty"`
+	PrivateEndpointRuleId *string `json:"private_endpoint_rule_id,omitempty"`
+	UpdateMask            *string `json:"update_mask,omitempty"`
 }
 
 type UpdateNetworkPolicyRequest struct {
-	// The unique identifier for the network policy.
-	NetworkPolicyId *string `json:"network_policy_id,omitempty"`
 	// Your <Databricks> account ID. You can find your account ID in your
 	// <Databricks> accounts console.
 	AccountId *string `json:"account_id,omitempty"`
 	// Updated network policy configuration details.
 	NetworkPolicy *AccountNetworkPolicy `json:"network_policy,omitempty"`
+	// The unique identifier for the network policy.
+	NetworkPolicyId *string `json:"network_policy_id,omitempty"`
 }
 
 type UpdatePrivateAccessSettingsRequest struct {
@@ -1298,11 +1298,9 @@ type UpdatePrivateAccessSettingsRequest struct {
 // Properties of the new private endpoint rule. Note that you must approve the
 // endpoint in Azure portal after initialization..
 type UpdatePrivateEndpointRule struct {
-	// The ID of a private endpoint rule.
-	RuleId *string `json:"rule_id,omitempty"`
-	// The ID of a network connectivity configuration, which is the parent resource
-	// of this private endpoint rule object.
-	NetworkConnectivityConfigId *string `json:"network_connectivity_config_id,omitempty"`
+	// <Databricks> account ID. You can find your account ID from the Accounts
+	// Console.
+	AccountId *string `json:"account_id,omitempty"`
 	// The current status of this private endpoint. The private endpoint rules are
 	// effective only if the connection state is ESTABLISHED. Remember that you must
 	// approve new endpoints on your resources in the Cloud console before they take
@@ -1317,36 +1315,39 @@ type UpdatePrivateEndpointRule struct {
 	// transition to PENDING. - CREATE_FAILED: The endpoint creation failed. You can
 	// check the error_message field for more details.
 	ConnectionState NccPrivateEndpointRule_PrivateLinkConnectionState `json:"connection_state,omitempty"`
+	// Time in epoch milliseconds when this object was created.
+	CreationTime *int64 `json:"creation_time,omitempty"`
+	// Whether this private endpoint is deactivated.
+	Deactivated *bool `json:"deactivated,omitempty"`
+	// Time in epoch milliseconds when this object was deactivated.
+	DeactivatedAt *int64 `json:"deactivated_at,omitempty"`
 	// Only used by private endpoints to customer-managed private endpoint services.
 	//
 	// Domain names of target private link service. When updating this field, the
 	// full list of target domain_names must be specified.
 	DomainNames []string `json:"domain_names,omitempty"`
-	// Time in epoch milliseconds when this object was created.
-	CreationTime *int64 `json:"creation_time,omitempty"`
-	// Time in epoch milliseconds when this object was updated.
-	UpdatedTime *int64 `json:"updated_time,omitempty"`
-	// Whether this private endpoint is deactivated.
-	Deactivated *bool `json:"deactivated,omitempty"`
-	// Time in epoch milliseconds when this object was deactivated.
-	DeactivatedAt *int64  `json:"deactivated_at,omitempty"`
-	ErrorMessage  *string `json:"error_message,omitempty"`
-	// The Azure resource ID of the target resource.
-	ResourceId *string `json:"resource_id,omitempty"`
+	// Update this field to activate/deactivate this private endpoint to allow
+	// egress access from serverless compute resources. Only honored for first-party
+	// services on each cloud (e.g. AWS S3).
+	Enabled *bool `json:"enabled,omitempty"`
+	// The name of the Azure private endpoint resource.
+	EndpointName *string `json:"endpoint_name,omitempty"`
+	// The full target AWS endpoint service name that connects to the destination
+	// resources of the private endpoint.
+	EndpointService *string      `json:"endpoint_service,omitempty"`
+	ErrorMessage    *string      `json:"error_message,omitempty"`
+	GcpEndpoint     *GcpEndpoint `json:"gcp_endpoint,omitempty"`
 	// Not used by customer-managed private endpoint services.
 	//
 	// The sub-resource type (group ID) of the target resource. Note that to connect
 	// to workspace root storage (root DBFS), you need two endpoints, one for blob
 	// and one for dfs.
 	GroupId *string `json:"group_id,omitempty"`
-	// The name of the Azure private endpoint resource.
-	EndpointName *string `json:"endpoint_name,omitempty"`
-	// <Databricks> account ID. You can find your account ID from the Accounts
-	// Console.
-	AccountId *string `json:"account_id,omitempty"`
-	// The full target AWS endpoint service name that connects to the destination
-	// resources of the private endpoint.
-	EndpointService *string `json:"endpoint_service,omitempty"`
+	// The ID of a network connectivity configuration, which is the parent resource
+	// of this private endpoint rule object.
+	NetworkConnectivityConfigId *string `json:"network_connectivity_config_id,omitempty"`
+	// The Azure resource ID of the target resource.
+	ResourceId *string `json:"resource_id,omitempty"`
 	// Only used by private endpoints towards AWS S3 service.
 	//
 	// The globally unique S3 bucket names that will be accessed via the VPC
@@ -1354,14 +1355,13 @@ type UpdatePrivateEndpointRule struct {
 	// service. When updating this field, we perform full update on this field.
 	// Please ensure a full list of desired resource_names is provided.
 	ResourceNames []string `json:"resource_names,omitempty"`
+	// The ID of a private endpoint rule.
+	RuleId *string `json:"rule_id,omitempty"`
+	// Time in epoch milliseconds when this object was updated.
+	UpdatedTime *int64 `json:"updated_time,omitempty"`
 	// The AWS VPC endpoint ID. You can use this ID to identify the VPC endpoint
 	// created by <Databricks>.
 	VpcEndpointId *string `json:"vpc_endpoint_id,omitempty"`
-	// Update this field to activate/deactivate this private endpoint to allow
-	// egress access from serverless compute resources. Only honored for first-party
-	// services on each cloud (e.g. AWS S3).
-	Enabled     *bool        `json:"enabled,omitempty"`
-	GcpEndpoint *GcpEndpoint `json:"gcp_endpoint,omitempty"`
 }
 
 type UpdateWorkspaceNetworkOptionRequest struct {
@@ -1376,16 +1376,10 @@ type UpdateWorkspaceNetworkOptionRequest struct {
 
 // *.
 type VpcEndpoint struct {
-	// Databricks VPC endpoint ID. This is the <Databricks>-specific name of the VPC
-	// endpoint. Do not confuse this with the `aws_vpc_endpoint_id`, which is the ID
-	// within AWS of the VPC endpoint.
-	VpcEndpointId *string `json:"vpc_endpoint_id,omitempty"`
 	// The <Databricks> account ID that hosts the VPC endpoint configuration.
 	AccountId *string `json:"account_id,omitempty"`
-	// The human-readable name of the storage configuration.
-	VpcEndpointName *string `json:"vpc_endpoint_name,omitempty"`
-	// The ID of the VPC endpoint object in AWS.
-	AwsVpcEndpointId *string `json:"aws_vpc_endpoint_id,omitempty"`
+	// The AWS Account in which the VPC endpoint object exists.
+	AwsAccountId *string `json:"aws_account_id,omitempty"`
 	// The ID of the <Databricks> [endpoint service] that this VPC endpoint is
 	// connected to. For a list of endpoint service IDs for each supported AWS
 	// region, see the [Databricks PrivateLink documentation].
@@ -1393,6 +1387,17 @@ type VpcEndpoint struct {
 	// [Databricks PrivateLink documentation]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html
 	// [endpoint service]: https://docs.aws.amazon.com/vpc/latest/privatelink/endpoint-service.html
 	AwsEndpointServiceId *string `json:"aws_endpoint_service_id,omitempty"`
+	// The ID of the VPC endpoint object in AWS.
+	AwsVpcEndpointId   *string             `json:"aws_vpc_endpoint_id,omitempty"`
+	GcpVpcEndpointInfo *GcpVpcEndpointInfo `json:"gcp_vpc_endpoint_info,omitempty"`
+	// The AWS region in which this VPC endpoint object exists.
+	Region *string `json:"region,omitempty"`
+	// The current state (such as `available` or `rejected`) of the VPC endpoint.
+	// Derived from AWS. For the full set of values, see [AWS DescribeVpcEndpoint
+	// documentation].
+	//
+	// [AWS DescribeVpcEndpoint documentation]: https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-vpc-endpoints.html
+	State *string `json:"state,omitempty"`
 	// This enumeration represents the type of Databricks VPC endpoint service that
 	// was used when creating this VPC endpoint. If the VPC endpoint connects to the
 	// <Databricks> control plane for either the front-end connection or the
@@ -1400,17 +1405,12 @@ type VpcEndpoint struct {
 	// endpoint connects to the <Databricks> workspace for the back-end secure
 	// cluster connectivity relay, the value is DATAPLANE_RELAY_ACCESS.
 	UseCase VpcEndpointUseCase `json:"use_case,omitempty"`
-	// The AWS region in which this VPC endpoint object exists.
-	Region *string `json:"region,omitempty"`
-	// The AWS Account in which the VPC endpoint object exists.
-	AwsAccountId *string `json:"aws_account_id,omitempty"`
-	// The current state (such as `available` or `rejected`) of the VPC endpoint.
-	// Derived from AWS. For the full set of values, see [AWS DescribeVpcEndpoint
-	// documentation].
-	//
-	// [AWS DescribeVpcEndpoint documentation]: https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-vpc-endpoints.html
-	State              *string             `json:"state,omitempty"`
-	GcpVpcEndpointInfo *GcpVpcEndpointInfo `json:"gcp_vpc_endpoint_info,omitempty"`
+	// Databricks VPC endpoint ID. This is the <Databricks>-specific name of the VPC
+	// endpoint. Do not confuse this with the `aws_vpc_endpoint_id`, which is the ID
+	// within AWS of the VPC endpoint.
+	VpcEndpointId *string `json:"vpc_endpoint_id,omitempty"`
+	// The human-readable name of the storage configuration.
+	VpcEndpointName *string `json:"vpc_endpoint_name,omitempty"`
 }
 
 type WorkspaceNetworkOption struct {

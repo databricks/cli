@@ -197,40 +197,46 @@ const (
 
 // Databricks Error that is returned by all Databricks APIs..
 type ApiError struct {
+	Details    []json.RawMessage `json:"details,omitempty"`
 	ErrorCode  ErrorCode         `json:"error_code,omitempty"`
 	Message    *string           `json:"message,omitempty"`
 	StackTrace *string           `json:"stack_trace,omitempty"`
-	Details    []json.RawMessage `json:"details,omitempty"`
 }
 
 type Branch struct {
+	// The part of the name, chosen by the user when the resource was created.
+	BranchId *string `json:"branch_id,omitempty"`
+	// A timestamp indicating when the branch was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
 	// Output only. The full resource path of the branch. Format:
 	// projects/{project_id}/branches/{branch_id}
 	Name *string `json:"name,omitempty"`
-	// System-generated unique ID for the branch.
-	Uid *string `json:"uid,omitempty"`
 	// The project containing this branch (API resource hierarchy). Format:
 	// projects/{project_id}
 	//
 	// Note: This field indicates where the branch exists in the resource hierarchy.
 	// For point-in-time branching from another branch, see `status.source_branch`.
 	Parent *string `json:"parent,omitempty"`
-	// A timestamp indicating when the branch was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	// A timestamp indicating when the branch was last updated.
-	UpdateTime *types.Time `json:"update_time,omitempty"`
 	// The spec contains the branch configuration.
 	Spec *BranchSpec `json:"spec,omitempty"`
 	// The current status of a Branch.
 	Status *BranchStatus `json:"status,omitempty"`
-	// The part of the name, chosen by the user when the resource was created.
-	BranchId *string `json:"branch_id,omitempty"`
+	// System-generated unique ID for the branch.
+	Uid *string `json:"uid,omitempty"`
+	// A timestamp indicating when the branch was last updated.
+	UpdateTime *types.Time `json:"update_time,omitempty"`
 }
 
 type BranchOperationMetadata struct {
 }
 
 type BranchSpec struct {
+	ExpireTime *types.Time `json:"expire_time,omitempty"`
+	// When set to true, protects the branch from deletion and reset. Associated
+	// compute endpoints and the project cannot be deleted while the branch is
+	// protected.
+	IsProtected *bool `json:"is_protected,omitempty"`
+	NoExpiry    *bool `json:"no_expiry,omitempty"`
 	// The name of the source branch from which this branch was created (data
 	// lineage for point-in-time recovery). If not specified, defaults to the
 	// project's default branch. Format: projects/{project_id}/branches/{branch_id}
@@ -240,22 +246,37 @@ type BranchSpec struct {
 	SourceBranchLsn *string `json:"source_branch_lsn,omitempty"`
 	// The point in time on the source branch from which this branch was created.
 	SourceBranchTime *types.Time `json:"source_branch_time,omitempty"`
-	// When set to true, protects the branch from deletion and reset. Associated
-	// compute endpoints and the project cannot be deleted while the branch is
-	// protected.
-	IsProtected *bool           `json:"is_protected,omitempty"`
-	ExpireTime  *types.Time     `json:"expire_time,omitempty"`
-	Ttl         *types.Duration `json:"ttl,omitempty"`
-	NoExpiry    *bool           `json:"no_expiry,omitempty"`
 	// The snapshot this branch was created from. When set, the branch's data comes
 	// from the snapshot rather than a source branch, so source_branch,
 	// source_branch_lsn, and source_branch_time must be empty. The snapshot must be
 	// AVAILABLE and belong to this branch's project. Format:
 	// projects/{project_id}/snapshots/{snapshot_id}
-	SourceSnapshot *string `json:"source_snapshot,omitempty"`
+	SourceSnapshot *string         `json:"source_snapshot,omitempty"`
+	Ttl            *types.Duration `json:"ttl,omitempty"`
 }
 
 type BranchStatus struct {
+	// Part of the resource name.
+	BranchId *string `json:"branch_id,omitempty"`
+	// The branch's state, indicating if it is initializing, ready for use, or
+	// archived.
+	CurrentState BranchStatus_State `json:"current_state,omitempty"`
+	// Whether the branch is the project's default branch.
+	Default *bool `json:"default,omitempty"`
+	// A timestamp indicating when the branch was deleted. Empty if the branch is
+	// not deleted.
+	DeleteTime *types.Time `json:"delete_time,omitempty"`
+	// Absolute expiration time for the branch. Empty if expiration is disabled.
+	ExpireTime *types.Time `json:"expire_time,omitempty"`
+	// Whether the branch is protected.
+	IsProtected *bool `json:"is_protected,omitempty"`
+	// The logical size of the branch.
+	LogicalSizeBytes *int64 `json:"logical_size_bytes,omitempty"`
+	// The pending state of the branch, if a state transition is in progress.
+	PendingState BranchStatus_State `json:"pending_state,omitempty"`
+	// A timestamp indicating when the branch is scheduled to be purged. Empty if
+	// the branch is not deleted, otherwise set to a timestamp in the future.
+	PurgeTime *types.Time `json:"purge_time,omitempty"`
 	// The name of the source branch from which this branch was created. Format:
 	// projects/{project_id}/branches/{branch_id}
 	SourceBranch *string `json:"source_branch,omitempty"`
@@ -264,56 +285,46 @@ type BranchStatus struct {
 	SourceBranchLsn *string `json:"source_branch_lsn,omitempty"`
 	// The point in time on the source branch from which this branch was created.
 	SourceBranchTime *types.Time `json:"source_branch_time,omitempty"`
-	// Whether the branch is the project's default branch.
-	Default *bool `json:"default,omitempty"`
-	// Whether the branch is protected.
-	IsProtected *bool `json:"is_protected,omitempty"`
-	// The branch's state, indicating if it is initializing, ready for use, or
-	// archived.
-	CurrentState BranchStatus_State `json:"current_state,omitempty"`
-	// The pending state of the branch, if a state transition is in progress.
-	PendingState BranchStatus_State `json:"pending_state,omitempty"`
-	// A timestamp indicating when the `current_state` began.
-	StateChangeTime *types.Time `json:"state_change_time,omitempty"`
-	// The logical size of the branch.
-	LogicalSizeBytes *int64 `json:"logical_size_bytes,omitempty"`
-	// Absolute expiration time for the branch. Empty if expiration is disabled.
-	ExpireTime *types.Time `json:"expire_time,omitempty"`
-	// Part of the resource name.
-	BranchId *string `json:"branch_id,omitempty"`
-	// A timestamp indicating when the branch was deleted. Empty if the branch is
-	// not deleted.
-	DeleteTime *types.Time `json:"delete_time,omitempty"`
-	// A timestamp indicating when the branch is scheduled to be purged. Empty if
-	// the branch is not deleted, otherwise set to a timestamp in the future.
-	PurgeTime *types.Time `json:"purge_time,omitempty"`
 	// The snapshot this branch was restored from. Set only for branches created by
 	// restoring a snapshot; unset for all other branches. Format:
 	// projects/{project_id}/snapshots/{snapshot_id}
 	SourceSnapshot *string `json:"source_snapshot,omitempty"`
+	// A timestamp indicating when the `current_state` began.
+	StateChangeTime *types.Time `json:"state_change_time,omitempty"`
 }
 
 type Catalog struct {
+	// The part of the name, chosen by the user when the resource was created.
+	CatalogId *string `json:"catalog_id,omitempty"`
+	// A timestamp indicating when the catalog was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
 	// Output only. The full resource path of the catalog.
 	//
 	// Format: "catalogs/{catalog_id}".
 	Name *string `json:"name,omitempty"`
-	// System-generated unique identifier for the catalog.
-	Uid *string `json:"uid,omitempty"`
 	// The desired state of the Catalog.
 	Spec *Catalog_CatalogSpec `json:"spec,omitempty"`
 	// The observed state of the Catalog.
 	Status *Catalog_CatalogStatus `json:"status,omitempty"`
-	// A timestamp indicating when the catalog was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
+	// System-generated unique identifier for the catalog.
+	Uid *string `json:"uid,omitempty"`
 	// A timestamp indicating when the catalog was last updated.
 	UpdateTime *types.Time `json:"update_time,omitempty"`
-	// The part of the name, chosen by the user when the resource was created.
-	CatalogId *string `json:"catalog_id,omitempty"`
 }
 
 // The desired state of the Catalog..
 type Catalog_CatalogSpec struct {
+	// The resource path of the branch associated with the catalog.
+	//
+	// Format: projects/{project_id}/branches/{branch_id}.
+	Branch *string `json:"branch,omitempty"`
+	// If set to true, the specified postgres_database is created on behalf of the
+	// calling user if it does not already exist. In this case, the calling user has
+	// a role created for them in Postgres if they do not already have one.
+	//
+	// Defaults to false, meaning that the request fails if the specified
+	// postgres_database does not already exist.
+	CreateDatabaseIfMissing *bool `json:"create_database_if_missing,omitempty"`
 	// The name of the Postgres database inside the specified Lakebase project and
 	// branch to be associated with the UC catalog. This database must already
 	// exist, unless create_database_if_missing is set to true on creation.
@@ -332,31 +343,20 @@ type Catalog_CatalogSpec struct {
 	// was registered in the Catalog drops the fact of registration of the database.
 	// So the user should avoid doing so.
 	PostgresDatabase *string `json:"postgres_database,omitempty"`
-	// If set to true, the specified postgres_database is created on behalf of the
-	// calling user if it does not already exist. In this case, the calling user has
-	// a role created for them in Postgres if they do not already have one.
-	//
-	// Defaults to false, meaning that the request fails if the specified
-	// postgres_database does not already exist.
-	CreateDatabaseIfMissing *bool `json:"create_database_if_missing,omitempty"`
-	// The resource path of the branch associated with the catalog.
-	//
-	// Format: projects/{project_id}/branches/{branch_id}.
-	Branch *string `json:"branch,omitempty"`
 }
 
 // The observed state of the Catalog..
 type Catalog_CatalogStatus struct {
+	// The resource path of the branch associated with the catalog.
+	//
+	// Format: projects/{project_id}/branches/{branch_id}.
+	Branch *string `json:"branch,omitempty"`
 	// The name of the Postgres database associated with the catalog.
 	PostgresDatabase *string `json:"postgres_database,omitempty"`
 	// The resource path of the project associated with the catalog.
 	//
 	// Format: projects/{project_id}.
 	Project *string `json:"project,omitempty"`
-	// The resource path of the branch associated with the catalog.
-	//
-	// Format: projects/{project_id}/branches/{branch_id}.
-	Branch *string `json:"branch,omitempty"`
 }
 
 type CatalogOperationMetadata struct {
@@ -366,23 +366,23 @@ type CatalogOperationMetadata struct {
 // database, replicating that schema's tables into a Unity Catalog schema.
 // Immutable once created..
 type CdfConfig struct {
-	// Output only. The full resource name of the CdfConfig. Format:
-	// projects/{project}/branches/{branch}/databases/{database}/cdf-configs/{cdf_config}
-	Name *string `json:"name,omitempty"`
 	// The Unity Catalog catalog that replicated tables are written into. Set at
 	// creation; the CdfConfig is immutable.
 	Catalog *string `json:"catalog,omitempty"`
-	// The Unity Catalog schema that replicated tables are written into. Set at
-	// creation; the CdfConfig is immutable.
-	Schema *string `json:"schema,omitempty"`
-	// When the CdfConfig was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
 	// The user-specified id; equals the final segment of `name`. Defaults to the
 	// Postgres schema name for configs without an explicit id.
 	CdfConfigId *string `json:"cdf_config_id,omitempty"`
+	// When the CdfConfig was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
+	// Output only. The full resource name of the CdfConfig. Format:
+	// projects/{project}/branches/{branch}/databases/{database}/cdf-configs/{cdf_config}
+	Name *string `json:"name,omitempty"`
 	// The Postgres schema this CdfConfig replicates from. Unique within the parent
 	// database. Set at creation; the CdfConfig is immutable.
 	PostgresSchema *string `json:"postgres_schema,omitempty"`
+	// The Unity Catalog schema that replicated tables are written into. Set at
+	// creation; the CdfConfig is immutable.
+	Schema *string `json:"schema,omitempty"`
 }
 
 // Metadata for CdfConfig long-running operations. Intentionally empty today;
@@ -394,55 +394,52 @@ type CdfConfigOperationMetadata struct {
 // a CdfConfig. One status exists per replicated table. It is created
 // automatically and cannot be modified..
 type CdfStatus struct {
+	// The high-watermark Log Sequence Number (LSN) committed to Delta Lake.
+	CommittedLsn *string `json:"committed_lsn,omitempty"`
+	// When replication for this table was first established.
+	CreateTime *types.Time `json:"create_time,omitempty"`
+	// The last time changes for this table were written to Delta Lake.
+	LastSyncTime *types.Time `json:"last_sync_time,omitempty"`
 	// Output only. The full resource name of the CdfStatus. Format:
 	// projects/{project}/branches/{branch}/databases/{database}/cdf-configs/{cdf_config}/cdf-statuses/{cdf_status}
 	// The {cdf_status} segment is the Postgres table name.
 	Name *string `json:"name,omitempty"`
 	// The Postgres table being replicated.
 	PostgresTable *string `json:"postgres_table,omitempty"`
-	// The Unity Catalog table receiving replicated data.
-	UcTable *string `json:"uc_table,omitempty"`
 	// The current replication state of this table.
 	State CdfState `json:"state,omitempty"`
-	// The high-watermark Log Sequence Number (LSN) committed to Delta Lake.
-	CommittedLsn *string `json:"committed_lsn,omitempty"`
-	// The last time changes for this table were written to Delta Lake.
-	LastSyncTime *types.Time `json:"last_sync_time,omitempty"`
-	// When replication for this table was first established.
-	CreateTime *types.Time `json:"create_time,omitempty"`
 	// Human-readable detail for the current state (e.g. the skip/error reason).
 	// Empty for healthy states.
 	StatusDetail *string `json:"status_detail,omitempty"`
+	// The Unity Catalog table receiving replicated data.
+	UcTable *string `json:"uc_table,omitempty"`
 }
 
 type CreateBranchRequest struct {
-	// The Project where this Branch will be created. Format: projects/{project_id}
-	Parent *string `json:"parent,omitempty"`
+	// The Branch to create.
+	Branch *Branch `json:"branch,omitempty"`
 	// The ID to use for the Branch. This becomes the final component of the
 	// branch's resource name. The ID is required and must be 1-63 characters long,
 	// start with a lowercase letter, and contain only lowercase letters, numbers,
 	// and hyphens. For example, `development` becomes
 	// `projects/my-app/branches/development`.
 	BranchId *string `json:"branch_id,omitempty"`
-	// The Branch to create.
-	Branch *Branch `json:"branch,omitempty"`
+	// The Project where this Branch will be created. Format: projects/{project_id}
+	Parent *string `json:"parent,omitempty"`
 	// If true, update the branch if it already exists instead of returning an
 	// error.
 	ReplaceExisting *bool `json:"replace_existing,omitempty"`
 }
 
 type CreateCatalogRequest struct {
+	Catalog *Catalog `json:"catalog,omitempty"`
 	// The ID in the Unity Catalog. It becomes the full resource name, for example
 	// "my_catalog" becomes "catalogs/my_catalog".
-	CatalogId *string  `json:"catalog_id,omitempty"`
-	Catalog   *Catalog `json:"catalog,omitempty"`
+	CatalogId *string `json:"catalog_id,omitempty"`
 }
 
 // Request to create a Lakebase CDF configuration (CdfConfig)..
 type CreateCdfConfigRequest struct {
-	// The parent database under which to create the CdfConfig. Format:
-	// projects/{project}/branches/{branch}/databases/{database}
-	Parent *string `json:"parent,omitempty"`
 	// The CdfConfig to create. The catalog, schema, and postgres_schema fields are
 	// required; service_principal is optional. All other fields are output only and
 	// ignored on input.
@@ -451,21 +448,23 @@ type CreateCdfConfigRequest struct {
 	// resource name. Must match the pattern `[a-z][a-z0-9_]{0,62}`. Defaults to the
 	// Postgres schema name when omitted.
 	CdfConfigId *string `json:"cdf_config_id,omitempty"`
+	// The parent database under which to create the CdfConfig. Format:
+	// projects/{project}/branches/{branch}/databases/{database}
+	Parent *string `json:"parent,omitempty"`
 }
 
 // Enable Data API for a database..
 type CreateDataApiRequest struct {
+	// The Data API configuration to create.
+	DataApi *DataApi `json:"data_api,omitempty"`
 	// Parent database:
 	// projects/{project_id}/branches/{branch_id}/databases/{database_id}
 	Parent *string `json:"parent,omitempty"`
-	// The Data API configuration to create.
-	DataApi *DataApi `json:"data_api,omitempty"`
 }
 
 type CreateDatabaseRequest struct {
-	// The Branch where this Database will be created. Format:
-	// projects/{project_id}/branches/{branch_id}
-	Parent *string `json:"parent,omitempty"`
+	// The desired specification of a Database.
+	Database *Database `json:"database,omitempty"`
 	// The ID to use for the Database, which will become the final component of the
 	// database's resource name. This ID becomes the database name in postgres.
 	//
@@ -475,54 +474,45 @@ type CreateDatabaseRequest struct {
 	// If database_id is not specified in the request, it is generated
 	// automatically.
 	DatabaseId *string `json:"database_id,omitempty"`
-	// The desired specification of a Database.
-	Database *Database `json:"database,omitempty"`
+	// The Branch where this Database will be created. Format:
+	// projects/{project_id}/branches/{branch_id}
+	Parent *string `json:"parent,omitempty"`
 	// If true, update the database if it already exists instead of returning an
 	// error.
 	ReplaceExisting *bool `json:"replace_existing,omitempty"`
 }
 
 type CreateEndpointRequest struct {
-	// The Branch where this Endpoint will be created. Format:
-	// projects/{project_id}/branches/{branch_id}
-	Parent *string `json:"parent,omitempty"`
+	// The Endpoint to create.
+	Endpoint *Endpoint `json:"endpoint,omitempty"`
 	// The ID to use for the Endpoint. This becomes the final component of the
 	// endpoint's resource name. The ID is required and must be 1-63 characters
 	// long, start with a lowercase letter, and contain only lowercase letters,
 	// numbers, and hyphens. For example, `primary` becomes
 	// `projects/my-app/branches/development/endpoints/primary`.
 	EndpointId *string `json:"endpoint_id,omitempty"`
-	// The Endpoint to create.
-	Endpoint *Endpoint `json:"endpoint,omitempty"`
+	// The Branch where this Endpoint will be created. Format:
+	// projects/{project_id}/branches/{branch_id}
+	Parent *string `json:"parent,omitempty"`
 	// If true, update the endpoint if it already exists instead of returning an
 	// error.
 	ReplaceExisting *bool `json:"replace_existing,omitempty"`
 }
 
 type CreateProjectRequest struct {
+	// The Project to create.
+	Project *Project `json:"project,omitempty"`
 	// The ID to use for the Project. This becomes the final component of the
 	// project's resource name. The ID is required and must be 1-63 characters long,
 	// start with a lowercase letter, and contain only lowercase letters, numbers,
 	// and hyphens. For example, `my-app` becomes `projects/my-app`.
 	ProjectId *string `json:"project_id,omitempty"`
-	// The Project to create.
-	Project *Project `json:"project,omitempty"`
 }
 
 type CreateRoleRequest struct {
 	// The Branch where this Role is created. Format:
 	// projects/{project_id}/branches/{branch_id}
 	Parent *string `json:"parent,omitempty"`
-	// The ID to use for the Role, which will become the final component of the
-	// role's resource name. This ID becomes the role in Postgres.
-	//
-	// This value should be 4-63 characters, and valid characters are lowercase
-	// letters, numbers, and hyphens, as defined by RFC 1123.
-	//
-	// If role_id is not specified in the request, it is generated automatically.
-	RoleId *string `json:"role_id,omitempty"`
-	// The desired specification of a Role.
-	Role *Role `json:"role,omitempty"`
 	// If true, update the role if it already exists instead of returning an error.
 	//
 	// When the role already exists, the provided `role` spec fully replaces the
@@ -531,6 +521,16 @@ type CreateRoleRequest struct {
 	// including `DATABRICKS_SUPERUSER`. Always send the complete desired list of
 	// memberships when using this field.
 	ReplaceExisting *bool `json:"replace_existing,omitempty"`
+	// The desired specification of a Role.
+	Role *Role `json:"role,omitempty"`
+	// The ID to use for the Role, which will become the final component of the
+	// role's resource name. This ID becomes the role in Postgres.
+	//
+	// This value should be 4-63 characters, and valid characters are lowercase
+	// letters, numbers, and hyphens, as defined by RFC 1123.
+	//
+	// If role_id is not specified in the request, it is generated automatically.
+	RoleId *string `json:"role_id,omitempty"`
 }
 
 type CreateSnapshotRequest struct {
@@ -546,6 +546,7 @@ type CreateSnapshotRequest struct {
 // Establish a synchronisation to the Postgres database for Reverse ETL for the
 // source table selected from the Unity Catalog..
 type CreateSyncedTableRequest struct {
+	SyncedTable *SyncedTable `json:"synced_table,omitempty"`
 	// The ID to use for the Synced Table. This becomes the final component of the
 	// SyncedTable's resource name. ID is required and is the synced table name,
 	// containing (catalog, schema, table) tuple. Elements of the tuple are the UC
@@ -558,8 +559,7 @@ type CreateSyncedTableRequest struct {
 	// 1. An online VIEW virtual table in the Unity Catalog accessible via the
 	// Lakehouse Federation. 2. Postgres table named "{table}" in schema "{schema}"
 	// in the connected Postgres database
-	SyncedTableId *string      `json:"synced_table_id,omitempty"`
-	SyncedTable   *SyncedTable `json:"synced_table,omitempty"`
+	SyncedTableId *string `json:"synced_table_id,omitempty"`
 }
 
 // Take a snapshot once per day, at the configured hour..
@@ -571,20 +571,20 @@ type DailySchedule struct {
 // DataApi represents the Data API (PostgREST) configuration for a Database. At
 // most one DataApi per database. Create enables Data API, Delete disables it..
 type DataApi struct {
+	// A timestamp indicating when the Data API was first enabled.
+	CreateTime *types.Time `json:"create_time,omitempty"`
 	// Resource name:
 	// projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api
 	Name *string `json:"name,omitempty"`
 	// The database containing this Data API configuration. Format:
 	// projects/{project_id}/branches/{branch_id}/databases/{database_id}
 	Parent *string `json:"parent,omitempty"`
-	// A timestamp indicating when the Data API was first enabled.
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	// A timestamp indicating when the Data API configuration was last updated.
-	UpdateTime *types.Time `json:"update_time,omitempty"`
 	// The desired Data API configuration.
 	Spec *DataApi_DataApiSpec `json:"spec,omitempty"`
 	// The observed Data API state (read-only).
 	Status *DataApi_DataApiStatus `json:"status,omitempty"`
+	// A timestamp indicating when the Data API configuration was last updated.
+	UpdateTime *types.Time `json:"update_time,omitempty"`
 }
 
 // Desired PostgREST configuration (input)..
@@ -602,10 +602,10 @@ type DataApi_DataApiSpec struct {
 	// PostgreSQL schema name (1-63 chars, [a-zA-Z_][a-zA-Z0-9_$]*). Maximum 100
 	// entries. Default: ["public"].
 	DbSchemas []string `json:"db_schemas,omitempty"`
-	// JSON path to the role claim in JWT tokens (e.g., ".sub"). Default: ".sub".
-	JwtRoleClaimKey *string `json:"jwt_role_claim_key,omitempty"`
 	// Maximum lifetime for cached JWT tokens. Zero duration disables caching.
 	JwtCacheMaxLifetime *types.Duration `json:"jwt_cache_max_lifetime,omitempty"`
+	// JSON path to the role claim in JWT tokens (e.g., ".sub"). Default: ".sub".
+	JwtRoleClaimKey *string `json:"jwt_role_claim_key,omitempty"`
 	// OpenAPI documentation mode for the Data API endpoint.
 	OpenapiMode OpenApiMode `json:"openapi_mode,omitempty"`
 	// Allowed origins for CORS requests. Each entry should be a valid origin URL,
@@ -617,6 +617,9 @@ type DataApi_DataApiSpec struct {
 
 // Observed state (output-only)..
 type DataApi_DataApiStatus struct {
+	// Schemas available in the database (for reference when configuring
+	// db_schemas).
+	AvailableSchemas []string `json:"available_schemas,omitempty"`
 	// Actual aggregate function setting read from the database.
 	DbAggregatesEnabled *bool `json:"db_aggregates_enabled,omitempty"`
 	// Actual extra search path schemas read from the database.
@@ -625,10 +628,10 @@ type DataApi_DataApiStatus struct {
 	DbMaxRows *int `json:"db_max_rows,omitempty"`
 	// Actual exposed schemas read from the database.
 	DbSchemas []string `json:"db_schemas,omitempty"`
-	// Actual JWT role claim key read from the database.
-	JwtRoleClaimKey *string `json:"jwt_role_claim_key,omitempty"`
 	// Actual JWT cache max lifetime read from the database.
 	JwtCacheMaxLifetime *types.Duration `json:"jwt_cache_max_lifetime,omitempty"`
+	// Actual JWT role claim key read from the database.
+	JwtRoleClaimKey *string `json:"jwt_role_claim_key,omitempty"`
 	// Actual OpenAPI mode read from the database.
 	OpenapiMode OpenApiMode `json:"openapi_mode,omitempty"`
 	// Actual CORS allowed origins read from the database.
@@ -637,9 +640,6 @@ type DataApi_DataApiStatus struct {
 	ServerTimingEnabled *bool `json:"server_timing_enabled,omitempty"`
 	// Data API endpoint URL.
 	Url *string `json:"url,omitempty"`
-	// Schemas available in the database (for reference when configuring
-	// db_schemas).
-	AvailableSchemas []string `json:"available_schemas,omitempty"`
 }
 
 type DataApiOperationMetadata struct {
@@ -647,32 +647,25 @@ type DataApiOperationMetadata struct {
 
 // Database represents a Postgres database within a Branch..
 type Database struct {
+	// A timestamp indicating when the database was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
+	// The part of the name, chosen by the user when the resource was created.
+	DatabaseId *string `json:"database_id,omitempty"`
 	// The resource name of the database. Format:
 	// projects/{project_id}/branches/{branch_id}/databases/{database_id}
 	Name *string `json:"name,omitempty"`
 	// The branch containing this database. Format:
 	// projects/{project_id}/branches/{branch_id}
 	Parent *string `json:"parent,omitempty"`
-	// A timestamp indicating when the database was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	// A timestamp indicating when the database was last updated.
-	UpdateTime *types.Time `json:"update_time,omitempty"`
 	// The desired state of the Database.
 	Spec *Database_DatabaseSpec `json:"spec,omitempty"`
 	// The observed state of the Database.
 	Status *Database_DatabaseStatus `json:"status,omitempty"`
-	// The part of the name, chosen by the user when the resource was created.
-	DatabaseId *string `json:"database_id,omitempty"`
+	// A timestamp indicating when the database was last updated.
+	UpdateTime *types.Time `json:"update_time,omitempty"`
 }
 
 type Database_DatabaseSpec struct {
-	// The name of the role that owns the database. Format:
-	// projects/{project_id}/branches/{branch_id}/roles/{role_id}
-	//
-	// To change the owner, pass valid existing Role name when updating the Database
-	//
-	// A database always has an owner.
-	Role *string `json:"role,omitempty"`
 	// The name of the Postgres database.
 	//
 	// This expects a valid Postgres identifier as specified in the link below.
@@ -681,23 +674,30 @@ type Database_DatabaseSpec struct {
 	//
 	// To rename, pass a valid postgres identifier when updating the Database.
 	PostgresDatabase *string `json:"postgres_database,omitempty"`
+	// The name of the role that owns the database. Format:
+	// projects/{project_id}/branches/{branch_id}/roles/{role_id}
+	//
+	// To change the owner, pass valid existing Role name when updating the Database
+	//
+	// A database always has an owner.
+	Role *string `json:"role,omitempty"`
 }
 
 type Database_DatabaseStatus struct {
+	// Part of the resource name.
+	DatabaseId *string `json:"database_id,omitempty"`
+	// The name of the Postgres database.
+	PostgresDatabase *string `json:"postgres_database,omitempty"`
 	// The name of the role that owns the database. Format:
 	// projects/{project_id}/branches/{branch_id}/roles/{role_id}
 	Role *string `json:"role,omitempty"`
-	// The name of the Postgres database.
-	PostgresDatabase *string `json:"postgres_database,omitempty"`
-	// Part of the resource name.
-	DatabaseId *string `json:"database_id,omitempty"`
 }
 
 type DatabaseCredential struct {
-	// The OAuth token that can be used as a password when connecting to a database.
-	Token *string `json:"token,omitempty"`
 	// Timestamp in UTC of when this credential expires.
 	ExpireTime *types.Time `json:"expire_time,omitempty"`
+	// The OAuth token that can be used as a password when connecting to a database.
+	Token *string `json:"token,omitempty"`
 }
 
 type DatabaseOperationMetadata struct {
@@ -713,13 +713,13 @@ type DeleteBranchRequest struct {
 
 // Request to delete a Lakebase CDF configuration (CdfConfig)..
 type DeleteCdfConfigRequest struct {
-	// The resource name of the CdfConfig to delete. Format:
-	// projects/{project}/branches/{branch}/databases/{database}/cdf-configs/{cdf_config}
-	Name *string `json:"name,omitempty"`
 	// When true, also drops the replicated Delta tables in Unity Catalog. When
 	// false (the default), the replicated tables are preserved at their last synced
 	// state.
 	Force *bool `json:"force,omitempty"`
+	// The resource name of the CdfConfig to delete. Format:
+	// projects/{project}/branches/{branch}/databases/{database}/cdf-configs/{cdf_config}
+	Name *string `json:"name,omitempty"`
 }
 
 type DeleteProjectRequest struct {
@@ -744,62 +744,62 @@ type DeleteRoleRequest struct {
 }
 
 type DeltaTableSyncInfo struct {
-	// The Delta Lake commit version that was last successfully synced.
-	DeltaCommitVersion *int64 `json:"delta_commit_version,omitempty"`
 	// The timestamp when the above Delta version was committed in the source Delta
 	// table. Note: This is the Delta commit time, not the time the data was written
 	// to the synced table.
 	DeltaCommitTime *types.Time `json:"delta_commit_time,omitempty"`
+	// The Delta Lake commit version that was last successfully synced.
+	DeltaCommitVersion *int64 `json:"delta_commit_version,omitempty"`
 }
 
 type Endpoint struct {
+	// A timestamp indicating when the compute endpoint was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
+	// The part of the name, chosen by the user when the resource was created.
+	EndpointId *string `json:"endpoint_id,omitempty"`
 	// Output only. The full resource path of the endpoint. Format:
 	// projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}
 	Name *string `json:"name,omitempty"`
-	// System-generated unique ID for the endpoint.
-	Uid *string `json:"uid,omitempty"`
 	// The branch containing this endpoint (API resource hierarchy). Format:
 	// projects/{project_id}/branches/{branch_id}
 	Parent *string `json:"parent,omitempty"`
-	// A timestamp indicating when the compute endpoint was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	// A timestamp indicating when the compute endpoint was last updated.
-	UpdateTime *types.Time `json:"update_time,omitempty"`
 	// The spec contains the compute endpoint configuration, including autoscaling
 	// limits, suspend timeout, and disabled state.
 	Spec *EndpointSpec `json:"spec,omitempty"`
 	// Current operational status of the compute endpoint.
 	Status *EndpointStatus `json:"status,omitempty"`
-	// The part of the name, chosen by the user when the resource was created.
-	EndpointId *string `json:"endpoint_id,omitempty"`
+	// System-generated unique ID for the endpoint.
+	Uid *string `json:"uid,omitempty"`
+	// A timestamp indicating when the compute endpoint was last updated.
+	UpdateTime *types.Time `json:"update_time,omitempty"`
 }
 
 type EndpointGroupSpec struct {
-	// The minimum number of computes in the endpoint group. Currently, this must be
-	// equal to max. This must be greater than or equal to 1.
-	Min *int `json:"min,omitempty"`
-	// The maximum number of computes in the endpoint group. Currently, this must be
-	// equal to min. Set to 1 for single compute endpoints, to disable HA. To
-	// manually suspend all computes in an endpoint group, set disabled to true on
-	// the EndpointSpec.
-	Max *int `json:"max,omitempty"`
 	// Whether to allow read-only connections to read-write endpoints. Only relevant
 	// for read-write endpoints where size.max > 1.
 	EnableReadableSecondaries *bool `json:"enable_readable_secondaries,omitempty"`
-}
-
-type EndpointGroupStatus struct {
-	// The minimum number of computes in the endpoint group. Currently, this must be
-	// equal to max. This must be greater than or equal to 1.
-	Min *int `json:"min,omitempty"`
 	// The maximum number of computes in the endpoint group. Currently, this must be
 	// equal to min. Set to 1 for single compute endpoints, to disable HA. To
 	// manually suspend all computes in an endpoint group, set disabled to true on
 	// the EndpointSpec.
 	Max *int `json:"max,omitempty"`
+	// The minimum number of computes in the endpoint group. Currently, this must be
+	// equal to max. This must be greater than or equal to 1.
+	Min *int `json:"min,omitempty"`
+}
+
+type EndpointGroupStatus struct {
 	// Whether read-only connections to read-write endpoints are allowed. Only
 	// relevant if read replicas are configured by specifying size.max > 1.
 	EnableReadableSecondaries *bool `json:"enable_readable_secondaries,omitempty"`
+	// The maximum number of computes in the endpoint group. Currently, this must be
+	// equal to min. Set to 1 for single compute endpoints, to disable HA. To
+	// manually suspend all computes in an endpoint group, set disabled to true on
+	// the EndpointSpec.
+	Max *int `json:"max,omitempty"`
+	// The minimum number of computes in the endpoint group. Currently, this must be
+	// equal to max. This must be greater than or equal to 1.
+	Min *int `json:"min,omitempty"`
 }
 
 // Encapsulates various hostnames (r/w or r/o, pooled or not) for an endpoint..
@@ -814,13 +814,13 @@ type EndpointHosts struct {
 	// endpoint is a group with greater than 1 computes configured, and has readable
 	// secondaries enabled.
 	ReadOnlyHost *string `json:"read_only_host,omitempty"`
-	// The read-write hostname of the compute endpoint, with pooling. This attribute
-	// is only defined for read-write endpoints.
-	ReadWritePooledHost *string `json:"read_write_pooled_host,omitempty"`
 	// The read-only hostname of the compute endpoint, with pooling. This attribute
 	// is always defined for read-only endpoints, and may be defined for read-write
 	// endpoints if configured with read replicas and allow read-only connections.
 	ReadOnlyPooledHost *string `json:"read_only_pooled_host,omitempty"`
+	// The read-write hostname of the compute endpoint, with pooling. This attribute
+	// is only defined for read-write endpoints.
+	ReadWritePooledHost *string `json:"read_write_pooled_host,omitempty"`
 }
 
 type EndpointOperationMetadata struct {
@@ -833,52 +833,52 @@ type EndpointSettings struct {
 }
 
 type EndpointSpec struct {
-	// The endpoint type. A branch can only have one READ_WRITE endpoint.
-	EndpointType EndpointType `json:"endpoint_type,omitempty"`
-	// The minimum number of Compute Units. Minimum value is 0.5.
-	AutoscalingLimitMinCu *float64 `json:"autoscaling_limit_min_cu,omitempty"`
 	// The maximum number of Compute Units. The maximum value is 64. The difference
 	// between the minimum and maximum Compute Units (max - min) must not exceed 16.
 	AutoscalingLimitMaxCu *float64 `json:"autoscaling_limit_max_cu,omitempty"`
-	// Whether to restrict connections to the compute endpoint. Enabling this option
-	// schedules a suspend compute operation. A disabled compute endpoint cannot be
-	// enabled by a connection or console action.
-	Disabled               *bool             `json:"disabled,omitempty"`
-	SuspendTimeoutDuration *types.Duration   `json:"suspend_timeout_duration,omitempty"`
-	NoSuspension           *bool             `json:"no_suspension,omitempty"`
-	Settings               *EndpointSettings `json:"settings,omitempty"`
-	// Settings for optional HA configuration of the endpoint. If unspecified, the
-	// endpoint defaults to non HA settings, with a single compute backing the
-	// endpoint (and no readable secondaries for Read/Write endpoints).
-	Group *EndpointGroupSpec `json:"group,omitempty"`
-}
-
-type EndpointStatus struct {
-	// The endpoint type. A branch can only have one READ_WRITE endpoint.
-	EndpointType EndpointType `json:"endpoint_type,omitempty"`
-	// Contains host information for connecting to the endpoint.
-	Hosts *EndpointHosts `json:"hosts,omitempty"`
-	// A timestamp indicating when the compute endpoint was last active.
-	LastActiveTime *types.Time `json:"last_active_time,omitempty"`
-	// The minimum number of Compute Units.
+	// The minimum number of Compute Units. Minimum value is 0.5.
 	AutoscalingLimitMinCu *float64 `json:"autoscaling_limit_min_cu,omitempty"`
-	// The maximum number of Compute Units. The maximum value is 64. The difference
-	// between the minimum and maximum Compute Units (max - min) must not exceed 16.
-	AutoscalingLimitMaxCu *float64             `json:"autoscaling_limit_max_cu,omitempty"`
-	CurrentState          EndpointStatus_State `json:"current_state,omitempty"`
-	PendingState          EndpointStatus_State `json:"pending_state,omitempty"`
 	// Whether to restrict connections to the compute endpoint. Enabling this option
 	// schedules a suspend compute operation. A disabled compute endpoint cannot be
 	// enabled by a connection or console action.
 	Disabled *bool `json:"disabled,omitempty"`
-	// Duration of inactivity after which the compute endpoint is automatically
-	// suspended.
-	SuspendTimeoutDuration *types.Duration   `json:"suspend_timeout_duration,omitempty"`
-	Settings               *EndpointSettings `json:"settings,omitempty"`
-	// Details on the HA configuration of the endpoint.
-	Group *EndpointGroupStatus `json:"group,omitempty"`
+	// The endpoint type. A branch can only have one READ_WRITE endpoint.
+	EndpointType EndpointType `json:"endpoint_type,omitempty"`
+	// Settings for optional HA configuration of the endpoint. If unspecified, the
+	// endpoint defaults to non HA settings, with a single compute backing the
+	// endpoint (and no readable secondaries for Read/Write endpoints).
+	Group                  *EndpointGroupSpec `json:"group,omitempty"`
+	NoSuspension           *bool              `json:"no_suspension,omitempty"`
+	Settings               *EndpointSettings  `json:"settings,omitempty"`
+	SuspendTimeoutDuration *types.Duration    `json:"suspend_timeout_duration,omitempty"`
+}
+
+type EndpointStatus struct {
+	// The maximum number of Compute Units. The maximum value is 64. The difference
+	// between the minimum and maximum Compute Units (max - min) must not exceed 16.
+	AutoscalingLimitMaxCu *float64 `json:"autoscaling_limit_max_cu,omitempty"`
+	// The minimum number of Compute Units.
+	AutoscalingLimitMinCu *float64             `json:"autoscaling_limit_min_cu,omitempty"`
+	CurrentState          EndpointStatus_State `json:"current_state,omitempty"`
+	// Whether to restrict connections to the compute endpoint. Enabling this option
+	// schedules a suspend compute operation. A disabled compute endpoint cannot be
+	// enabled by a connection or console action.
+	Disabled *bool `json:"disabled,omitempty"`
 	// Part of the resource name.
 	EndpointId *string `json:"endpoint_id,omitempty"`
+	// The endpoint type. A branch can only have one READ_WRITE endpoint.
+	EndpointType EndpointType `json:"endpoint_type,omitempty"`
+	// Details on the HA configuration of the endpoint.
+	Group *EndpointGroupStatus `json:"group,omitempty"`
+	// Contains host information for connecting to the endpoint.
+	Hosts *EndpointHosts `json:"hosts,omitempty"`
+	// A timestamp indicating when the compute endpoint was last active.
+	LastActiveTime *types.Time          `json:"last_active_time,omitempty"`
+	PendingState   EndpointStatus_State `json:"pending_state,omitempty"`
+	Settings       *EndpointSettings    `json:"settings,omitempty"`
+	// Duration of inactivity after which the compute endpoint is automatically
+	// suspended.
+	SuspendTimeoutDuration *types.Duration `json:"suspend_timeout_duration,omitempty"`
 }
 
 type GenerateDatabaseCredentialRequest struct {
@@ -888,8 +888,8 @@ type GenerateDatabaseCredentialRequest struct {
 	// The endpoint resource name for which this credential will be generated.
 	// Format: projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}
 	Endpoint   *string         `json:"endpoint,omitempty"`
-	Ttl        *types.Duration `json:"ttl,omitempty"`
 	ExpireTime *types.Time     `json:"expire_time,omitempty"`
+	Ttl        *types.Duration `json:"ttl,omitempty"`
 }
 
 // Configuration for the initial default branch created during project creation..
@@ -901,24 +901,24 @@ type InitialBranchSpec struct {
 // Configuration for the initial Read/Write endpoint created during project
 // creation..
 type InitialEndpointSpec struct {
-	// Settings for HA configuration of the endpoint.
-	Group *EndpointGroupSpec `json:"group,omitempty"`
+	// The maximum number of Compute Units for the initial endpoint.
+	AutoscalingLimitMaxCu *float64 `json:"autoscaling_limit_max_cu,omitempty"`
 	// The minimum number of Compute Units for the initial endpoint.
 	AutoscalingLimitMinCu *float64 `json:"autoscaling_limit_min_cu,omitempty"`
-	// The maximum number of Compute Units for the initial endpoint.
-	AutoscalingLimitMaxCu  *float64        `json:"autoscaling_limit_max_cu,omitempty"`
-	SuspendTimeoutDuration *types.Duration `json:"suspend_timeout_duration,omitempty"`
-	NoSuspension           *bool           `json:"no_suspension,omitempty"`
+	// Settings for HA configuration of the endpoint.
+	Group                  *EndpointGroupSpec `json:"group,omitempty"`
+	NoSuspension           *bool              `json:"no_suspension,omitempty"`
+	SuspendTimeoutDuration *types.Duration    `json:"suspend_timeout_duration,omitempty"`
 }
 
 type ListBranchesRequest struct {
+	// Upper bound for items returned. Cannot be negative.
+	PageSize *int `json:"page_size,omitempty"`
+	// Page token from a previous response. If not provided, returns the first page.
+	PageToken *string `json:"page_token,omitempty"`
 	// The Project that owns this collection of branches. Format:
 	// projects/{project_id}
 	Parent *string `json:"parent,omitempty"`
-	// Page token from a previous response. If not provided, returns the first page.
-	PageToken *string `json:"page_token,omitempty"`
-	// Upper bound for items returned. Cannot be negative.
-	PageSize *int `json:"page_size,omitempty"`
 	// Whether to include soft-deleted branches in the response. When true, deleted
 	// branches are included alongside active branches. Purged branches are never
 	// returned.
@@ -935,14 +935,14 @@ type ListBranchesResponse struct {
 // Request to list the Lakebase CDF configurations (CdfConfigs) under a
 // database..
 type ListCdfConfigsRequest struct {
-	// The parent database to list CdfConfigs for. Format:
-	// projects/{project}/branches/{branch}/databases/{database}
-	Parent *string `json:"parent,omitempty"`
 	// Maximum number of CdfConfigs to return.
 	PageSize *int `json:"page_size,omitempty"`
 	// Pagination token returned by a previous ListCdfConfigs call. Empty on the
 	// first page.
 	PageToken *string `json:"page_token,omitempty"`
+	// The parent database to list CdfConfigs for. Format:
+	// projects/{project}/branches/{branch}/databases/{database}
+	Parent *string `json:"parent,omitempty"`
 }
 
 // Response to a ListCdfConfigs request, containing a page of CdfConfigs and a
@@ -957,14 +957,14 @@ type ListCdfConfigsResponse struct {
 // Request to list the statuses of all tables replicated under a Lakebase CDF
 // configuration (CdfConfig)..
 type ListCdfStatusesRequest struct {
-	// The parent CdfConfig to list CdfStatuses for. Format:
-	// projects/{project}/branches/{branch}/databases/{database}/cdf-configs/{cdf_config}
-	Parent *string `json:"parent,omitempty"`
 	// Maximum number of CdfStatuses to return.
 	PageSize *int `json:"page_size,omitempty"`
 	// Pagination token returned by a previous ListCdfStatuses call. Empty on the
 	// first page.
 	PageToken *string `json:"page_token,omitempty"`
+	// The parent CdfConfig to list CdfStatuses for. Format:
+	// projects/{project}/branches/{branch}/databases/{database}/cdf-configs/{cdf_config}
+	Parent *string `json:"parent,omitempty"`
 }
 
 // Response to a ListCdfStatuses request, containing a page of replicated table
@@ -978,14 +978,14 @@ type ListCdfStatusesResponse struct {
 
 // List Databases..
 type ListDatabasesRequest struct {
-	// The Branch that owns this collection of databases. Format:
-	// projects/{project_id}/branches/{branch_id}
-	Parent *string `json:"parent,omitempty"`
+	// Upper bound for items returned.
+	PageSize *int `json:"page_size,omitempty"`
 	// Pagination token to go to the next page of Databases. Requests first page if
 	// absent.
 	PageToken *string `json:"page_token,omitempty"`
-	// Upper bound for items returned.
-	PageSize *int `json:"page_size,omitempty"`
+	// The Branch that owns this collection of databases. Format:
+	// projects/{project_id}/branches/{branch_id}
+	Parent *string `json:"parent,omitempty"`
 }
 
 type ListDatabasesResponse struct {
@@ -996,13 +996,13 @@ type ListDatabasesResponse struct {
 }
 
 type ListEndpointsRequest struct {
+	// Upper bound for items returned. Cannot be negative.
+	PageSize *int `json:"page_size,omitempty"`
+	// Page token from a previous response. If not provided, returns the first page.
+	PageToken *string `json:"page_token,omitempty"`
 	// The Branch that owns this collection of endpoints. Format:
 	// projects/{project_id}/branches/{branch_id}
 	Parent *string `json:"parent,omitempty"`
-	// Page token from a previous response. If not provided, returns the first page.
-	PageToken *string `json:"page_token,omitempty"`
-	// Upper bound for items returned. Cannot be negative.
-	PageSize *int `json:"page_size,omitempty"`
 }
 
 type ListEndpointsResponse struct {
@@ -1013,10 +1013,10 @@ type ListEndpointsResponse struct {
 }
 
 type ListProjectsRequest struct {
-	// Page token from a previous response. If not provided, returns the first page.
-	PageToken *string `json:"page_token,omitempty"`
 	// Upper bound for items returned. Cannot be negative. The maximum value is 100.
 	PageSize *int `json:"page_size,omitempty"`
+	// Page token from a previous response. If not provided, returns the first page.
+	PageToken *string `json:"page_token,omitempty"`
 	// Whether to include soft-deleted projects in the response. When true,
 	// soft-deleted projects are included alongside active projects. Hard-deleted
 	// and already-purged projects are never returned.
@@ -1024,43 +1024,43 @@ type ListProjectsRequest struct {
 }
 
 type ListProjectsResponse struct {
-	// List of all projects in the workspace that the user has permission to access.
-	Projects []Project `json:"projects,omitempty"`
 	// Token to request the next page of projects.
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// List of all projects in the workspace that the user has permission to access.
+	Projects []Project `json:"projects,omitempty"`
 }
 
 type ListRolesRequest struct {
+	// Upper bound for items returned. Cannot be negative.
+	PageSize *int `json:"page_size,omitempty"`
+	// Page token from a previous response. If not provided, returns the first page.
+	PageToken *string `json:"page_token,omitempty"`
 	// The Branch that owns this collection of roles. Format:
 	// projects/{project_id}/branches/{branch_id}
 	Parent *string `json:"parent,omitempty"`
-	// Page token from a previous response. If not provided, returns the first page.
-	PageToken *string `json:"page_token,omitempty"`
-	// Upper bound for items returned. Cannot be negative.
-	PageSize *int `json:"page_size,omitempty"`
 }
 
 type ListRolesResponse struct {
-	// List of Postgres roles in the branch.
-	Roles []Role `json:"roles,omitempty"`
 	// Token to request the next page of Postgres roles.
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// List of Postgres roles in the branch.
+	Roles []Role `json:"roles,omitempty"`
 }
 
 type ListSnapshotsRequest struct {
-	// The project that owns the snapshots. Format: projects/{project_id}
-	Parent *string `json:"parent,omitempty"`
-	// Page token from a previous response; omit for the first page.
-	PageToken *string `json:"page_token,omitempty"`
 	// Maximum number of snapshots to return per page.
 	PageSize *int `json:"page_size,omitempty"`
+	// Page token from a previous response; omit for the first page.
+	PageToken *string `json:"page_token,omitempty"`
+	// The project that owns the snapshots. Format: projects/{project_id}
+	Parent *string `json:"parent,omitempty"`
 }
 
 type ListSnapshotsResponse struct {
-	// The snapshots in the project.
-	Snapshots []Snapshot `json:"snapshots,omitempty"`
 	// Token to retrieve the next page; empty if there are no more pages.
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// The snapshots in the project.
+	Snapshots []Snapshot `json:"snapshots,omitempty"`
 }
 
 // Take a snapshot once per month, on the configured day at the configured hour..
@@ -1074,6 +1074,12 @@ type MonthlySchedule struct {
 }
 
 type NewPipelineSpec struct {
+	// Budget policy to set on the newly created pipeline.
+	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
+	// Release channel of the underlying pipeline's runtime. Some source table
+	// configurations (e.g., read-time CDF) require PREVIEW. Defaults to CURRENT if
+	// not specified.
+	PipelineChannel NewPipelineSpec_PipelineChannel `json:"pipeline_channel,omitempty"`
 	// UC catalog for the pipeline to store intermediate files (checkpoints, event
 	// logs etc). This needs to be a standard catalog where the user has permissions
 	// to create Delta tables.
@@ -1082,49 +1088,37 @@ type NewPipelineSpec struct {
 	// logs etc). This needs to be in the standard catalog where the user has
 	// permissions to create Delta tables.
 	StorageSchema *string `json:"storage_schema,omitempty"`
-	// Budget policy to set on the newly created pipeline.
-	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
-	// Release channel of the underlying pipeline's runtime. Some source table
-	// configurations (e.g., read-time CDF) require PREVIEW. Defaults to CURRENT if
-	// not specified.
-	PipelineChannel NewPipelineSpec_PipelineChannel `json:"pipeline_channel,omitempty"`
 }
 
 // This resource represents a long-running operation that is the result of a
 // network API call..
 type Operation struct {
-	// The server-assigned name, which is only unique within the same service that
-	// originally returns it. If you use the default HTTP mapping, the `name` should
-	// be a resource name ending with `operations/{unique_id}`.
-	Name *string `json:"name,omitempty"`
+	// If the value is `false`, it means the operation is still in progress. If
+	// `true`, the operation is completed, and either `error` or `response` is
+	// available.
+	Done  *bool     `json:"done,omitempty"`
+	Error *ApiError `json:"error,omitempty"`
 	// Service-specific metadata associated with the operation. It typically
 	// contains progress information and common metadata such as create time. Some
 	// services might not provide such metadata.
 	Metadata json.RawMessage `json:"metadata,omitempty"`
-	// If the value is `false`, it means the operation is still in progress. If
-	// `true`, the operation is completed, and either `error` or `response` is
-	// available.
-	Done     *bool           `json:"done,omitempty"`
-	Error    *ApiError       `json:"error,omitempty"`
+	// The server-assigned name, which is only unique within the same service that
+	// originally returns it. If you use the default HTTP mapping, the `name` should
+	// be a resource name ending with `operations/{unique_id}`.
+	Name     *string         `json:"name,omitempty"`
 	Response json.RawMessage `json:"response,omitempty"`
 }
 
 type Project struct {
-	// Output only. The full resource path of the project. Format:
-	// projects/{project_id}
-	Name *string `json:"name,omitempty"`
-	// System-generated unique ID for the project.
-	Uid *string `json:"uid,omitempty"`
 	// A timestamp indicating when the project was created.
 	CreateTime *types.Time `json:"create_time,omitempty"`
-	// A timestamp indicating when the project was last updated.
-	UpdateTime *types.Time `json:"update_time,omitempty"`
-	// The spec contains the project configuration, including display_name,
-	// pg_version (Postgres version), history_retention_duration, and
-	// default_endpoint_settings.
-	Spec *ProjectSpec `json:"spec,omitempty"`
-	// The current status of a Project.
-	Status *ProjectStatus `json:"status,omitempty"`
+	// A timestamp indicating when the project was soft-deleted. Empty if the
+	// project is not deleted, otherwise set to a timestamp in the past.
+	DeleteTime *types.Time `json:"delete_time,omitempty"`
+	// Configuration for the initial default branch created as part of project
+	// creation. Allows overriding branch protection. These settings only apply at
+	// creation time and do not affect resources created after project creation.
+	InitialBranchSpec *InitialBranchSpec `json:"initial_branch_spec,omitempty"`
 	// Configuration settings for the initial Read/Write endpoint created inside the
 	// initial branch for a newly created project. If omitted, the initial endpoint
 	// created will have default settings, without high availability configured.
@@ -1132,19 +1126,25 @@ type Project struct {
 	// Use spec.default_endpoint_settings to configure default settings for
 	// endpoints created after project creation.
 	InitialEndpointSpec *InitialEndpointSpec `json:"initial_endpoint_spec,omitempty"`
-	// A timestamp indicating when the project was soft-deleted. Empty if the
-	// project is not deleted, otherwise set to a timestamp in the past.
-	DeleteTime *types.Time `json:"delete_time,omitempty"`
+	// Output only. The full resource path of the project. Format:
+	// projects/{project_id}
+	Name *string `json:"name,omitempty"`
+	// The part of the name, chosen by the user when the resource was created.
+	ProjectId *string `json:"project_id,omitempty"`
 	// A timestamp indicating when the project is scheduled for permanent deletion.
 	// Empty if the project is not deleted, otherwise set to a timestamp in the
 	// future.
 	PurgeTime *types.Time `json:"purge_time,omitempty"`
-	// Configuration for the initial default branch created as part of project
-	// creation. Allows overriding branch protection. These settings only apply at
-	// creation time and do not affect resources created after project creation.
-	InitialBranchSpec *InitialBranchSpec `json:"initial_branch_spec,omitempty"`
-	// The part of the name, chosen by the user when the resource was created.
-	ProjectId *string `json:"project_id,omitempty"`
+	// The spec contains the project configuration, including display_name,
+	// pg_version (Postgres version), history_retention_duration, and
+	// default_endpoint_settings.
+	Spec *ProjectSpec `json:"spec,omitempty"`
+	// The current status of a Project.
+	Status *ProjectStatus `json:"status,omitempty"`
+	// System-generated unique ID for the project.
+	Uid *string `json:"uid,omitempty"`
+	// A timestamp indicating when the project was last updated.
+	UpdateTime *types.Time `json:"update_time,omitempty"`
 }
 
 type ProjectCustomTag struct {
@@ -1156,30 +1156,20 @@ type ProjectCustomTag struct {
 
 // A collection of settings for a compute endpoint..
 type ProjectDefaultEndpointSettings struct {
+	// The maximum number of Compute Units. Minimum value is 0.5.
+	AutoscalingLimitMaxCu *float64 `json:"autoscaling_limit_max_cu,omitempty"`
 	// The minimum number of Compute Units. Minimum value is 0.5.
 	AutoscalingLimitMinCu *float64 `json:"autoscaling_limit_min_cu,omitempty"`
-	// The maximum number of Compute Units. Minimum value is 0.5.
-	AutoscalingLimitMaxCu  *float64        `json:"autoscaling_limit_max_cu,omitempty"`
-	SuspendTimeoutDuration *types.Duration `json:"suspend_timeout_duration,omitempty"`
-	NoSuspension           *bool           `json:"no_suspension,omitempty"`
+	NoSuspension          *bool    `json:"no_suspension,omitempty"`
 	// A raw representation of Postgres settings.
-	PgSettings map[string]string `json:"pg_settings,omitempty"`
+	PgSettings             map[string]string `json:"pg_settings,omitempty"`
+	SuspendTimeoutDuration *types.Duration   `json:"suspend_timeout_duration,omitempty"`
 }
 
 type ProjectOperationMetadata struct {
 }
 
 type ProjectSpec struct {
-	// Human-readable project name. Length should be between 1 and 256 characters.
-	DisplayName *string `json:"display_name,omitempty"`
-	// The major Postgres version number. The set of supported versions may vary;
-	// consult the API documentation for currently accepted values.
-	PgVersion *int `json:"pg_version,omitempty"`
-	// The number of seconds to retain the shared history for point in time recovery
-	// for all branches in this project. Value should be between 172800s (2 days)
-	// and 3024000s (35 days).
-	HistoryRetentionDuration *types.Duration                 `json:"history_retention_duration,omitempty"`
-	DefaultEndpointSettings  *ProjectDefaultEndpointSettings `json:"default_endpoint_settings,omitempty"`
 	// The desired budget policy to associate with the project. See
 	// status.budget_policy_id for the policy that is actually applied to the
 	// project.
@@ -1191,42 +1181,52 @@ type ProjectSpec struct {
 	// tags, omit this field from the update_mask (or use wildcard "*" which
 	// auto-excludes empty tags).
 	CustomTags []ProjectCustomTag `json:"custom_tags,omitempty"`
+	// The full resource path for the default branch of the project Format:
+	// projects/{project_id}/branches/{branch_id}
+	DefaultBranch           *string                         `json:"default_branch,omitempty"`
+	DefaultEndpointSettings *ProjectDefaultEndpointSettings `json:"default_endpoint_settings,omitempty"`
+	// Human-readable project name. Length should be between 1 and 256 characters.
+	DisplayName *string `json:"display_name,omitempty"`
 	// Whether to enable PG native password login on all endpoints in this project.
 	// Defaults to false.
 	EnablePgNativeLogin *bool `json:"enable_pg_native_login,omitempty"`
-	// The full resource path for the default branch of the project Format:
-	// projects/{project_id}/branches/{branch_id}
-	DefaultBranch *string `json:"default_branch,omitempty"`
+	// The number of seconds to retain the shared history for point in time recovery
+	// for all branches in this project. Value should be between 172800s (2 days)
+	// and 3024000s (35 days).
+	HistoryRetentionDuration *types.Duration `json:"history_retention_duration,omitempty"`
+	// The major Postgres version number. The set of supported versions may vary;
+	// consult the API documentation for currently accepted values.
+	PgVersion *int `json:"pg_version,omitempty"`
 }
 
 type ProjectStatus struct {
+	// The logical size limit for a branch.
+	BranchLogicalSizeLimitBytes *int64 `json:"branch_logical_size_limit_bytes,omitempty"`
+	// The budget policy that is applied to the project.
+	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
+	// The most recent time when any endpoint of this project was active.
+	ComputeLastActiveTime *types.Time `json:"compute_last_active_time,omitempty"`
+	// The effective custom tags associated with the project.
+	CustomTags []ProjectCustomTag `json:"custom_tags,omitempty"`
+	// The full resource path of the default branch of the project
+	DefaultBranch *string `json:"default_branch,omitempty"`
+	// The effective default endpoint settings.
+	DefaultEndpointSettings *ProjectDefaultEndpointSettings `json:"default_endpoint_settings,omitempty"`
 	// The effective human-readable project name.
 	DisplayName *string `json:"display_name,omitempty"`
-	// The effective major Postgres version number.
-	PgVersion *int `json:"pg_version,omitempty"`
+	// Whether to enable PG native password login on all endpoints in this project.
+	EnablePgNativeLogin *bool `json:"enable_pg_native_login,omitempty"`
 	// The effective number of seconds to retain the shared history for point in
 	// time recovery.
 	HistoryRetentionDuration *types.Duration `json:"history_retention_duration,omitempty"`
-	// The effective default endpoint settings.
-	DefaultEndpointSettings *ProjectDefaultEndpointSettings `json:"default_endpoint_settings,omitempty"`
-	// The logical size limit for a branch.
-	BranchLogicalSizeLimitBytes *int64 `json:"branch_logical_size_limit_bytes,omitempty"`
-	// The current space occupied by the project in storage.
-	SyntheticStorageSizeBytes *int64 `json:"synthetic_storage_size_bytes,omitempty"`
-	// The most recent time when any endpoint of this project was active.
-	ComputeLastActiveTime *types.Time `json:"compute_last_active_time,omitempty"`
-	// The budget policy that is applied to the project.
-	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
-	// The effective custom tags associated with the project.
-	CustomTags []ProjectCustomTag `json:"custom_tags,omitempty"`
 	// The email of the project owner.
 	Owner *string `json:"owner,omitempty"`
-	// Whether to enable PG native password login on all endpoints in this project.
-	EnablePgNativeLogin *bool `json:"enable_pg_native_login,omitempty"`
-	// The full resource path of the default branch of the project
-	DefaultBranch *string `json:"default_branch,omitempty"`
+	// The effective major Postgres version number.
+	PgVersion *int `json:"pg_version,omitempty"`
 	// Part of the resource name.
 	ProjectId *string `json:"project_id,omitempty"`
+	// The current space occupied by the project in storage.
+	SyntheticStorageSizeBytes *int64 `json:"synthetic_storage_size_bytes,omitempty"`
 }
 
 type RequestedClaims struct {
@@ -1254,22 +1254,22 @@ type RevealRolePasswordResponse struct {
 
 // Role represents a Postgres role within a Branch..
 type Role struct {
+	CreateTime *types.Time `json:"create_time,omitempty"`
 	// Output only. The full resource path of the role. Format:
 	// projects/{project_id}/branches/{branch_id}/roles/{role_id}
 	Name *string `json:"name,omitempty"`
 	// The Branch where this Role exists. Format:
 	// projects/{project_id}/branches/{branch_id}
-	Parent     *string     `json:"parent,omitempty"`
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	UpdateTime *types.Time `json:"update_time,omitempty"`
+	Parent *string `json:"parent,omitempty"`
+	// The part of the name, chosen by the user when the resource was created.
+	RoleId *string `json:"role_id,omitempty"`
 	// The spec contains the role configuration, including identity type,
 	// authentication method, and role attributes.
 	Spec *Role_RoleSpec `json:"spec,omitempty"`
 	// Current status of the role, including its identity type, authentication
 	// method, and role attributes.
-	Status *Role_RoleStatus `json:"status,omitempty"`
-	// The part of the name, chosen by the user when the resource was created.
-	RoleId *string `json:"role_id,omitempty"`
+	Status     *Role_RoleStatus `json:"status,omitempty"`
+	UpdateTime *types.Time      `json:"update_time,omitempty"`
 }
 
 // Attributes that can be granted to a Postgres role. We are only implementing a
@@ -1278,20 +1278,12 @@ type Role struct {
 // Postgres keyword naming e.g. CREATEDB, BYPASSRLS, etc. which is why they
 // don't include typical underscores between words..
 type Role_Attributes struct {
+	Bypassrls  *bool `json:"bypassrls,omitempty"`
 	Createdb   *bool `json:"createdb,omitempty"`
 	Createrole *bool `json:"createrole,omitempty"`
-	Bypassrls  *bool `json:"bypassrls,omitempty"`
 }
 
 type Role_RoleSpec struct {
-	// An enum value for a standard role that this role is a member of.
-	MembershipRoles []Role_MembershipRole `json:"membership_roles,omitempty"`
-	// The type of role. When specifying a managed-identity, the chosen role_id must
-	// be a valid:
-	//
-	// * application ID for SERVICE_PRINCIPAL * user email for USER * group name for
-	// GROUP
-	IdentityType Role_IdentityType `json:"identity_type,omitempty"`
 	// The desired API-exposed Postgres role attribute to associate with the role.
 	// Optional.
 	Attributes *Role_Attributes `json:"attributes,omitempty"`
@@ -1316,6 +1308,14 @@ type Role_RoleSpec struct {
 	// NOTE: for the <Databricks> identity type GROUP, LAKEBASE_OAUTH_V1 is the
 	// default auth method (group can login as well).
 	AuthMethod Role_AuthMethod `json:"auth_method,omitempty"`
+	// The type of role. When specifying a managed-identity, the chosen role_id must
+	// be a valid:
+	//
+	// * application ID for SERVICE_PRINCIPAL * user email for USER * group name for
+	// GROUP
+	IdentityType Role_IdentityType `json:"identity_type,omitempty"`
+	// An enum value for a standard role that this role is a member of.
+	MembershipRoles []Role_MembershipRole `json:"membership_roles,omitempty"`
 	// The name of the Postgres role.
 	//
 	// This expects a valid Postgres identifier as specified in the link below.
@@ -1332,13 +1332,13 @@ type Role_RoleSpec struct {
 }
 
 type Role_RoleStatus struct {
-	// An enum value for a standard role that this role is a member of.
-	MembershipRoles []Role_MembershipRole `json:"membership_roles,omitempty"`
-	// The type of the role.
-	IdentityType Role_IdentityType `json:"identity_type,omitempty"`
 	// The PG role attributes associated with the role.
 	Attributes *Role_Attributes `json:"attributes,omitempty"`
 	AuthMethod Role_AuthMethod  `json:"auth_method,omitempty"`
+	// The type of the role.
+	IdentityType Role_IdentityType `json:"identity_type,omitempty"`
+	// An enum value for a standard role that this role is a member of.
+	MembershipRoles []Role_MembershipRole `json:"membership_roles,omitempty"`
 	// The name of the Postgres role.
 	PostgresRole *string `json:"postgres_role,omitempty"`
 	// Part of the resource name.
@@ -1351,30 +1351,30 @@ type RoleOperationMetadata struct {
 // One cadence at which automatic snapshots are taken..
 type ScheduleCadence struct {
 	DailySchedule   *DailySchedule   `json:"daily_schedule,omitempty"`
-	WeeklySchedule  *WeeklySchedule  `json:"weekly_schedule,omitempty"`
 	MonthlySchedule *MonthlySchedule `json:"monthly_schedule,omitempty"`
 	// How long snapshots from this cadence are kept before automatic deletion. Must
 	// be at least 1 hour. Applied when a snapshot is taken; not retroactive, so
 	// changing it affects only later snapshots.
-	Retention *types.Duration `json:"retention,omitempty"`
+	Retention      *types.Duration `json:"retention,omitempty"`
+	WeeklySchedule *WeeklySchedule `json:"weekly_schedule,omitempty"`
 }
 
 // An immutable, point-in-time copy of a branch's data within a project. It
 // remains available after the source branch is deleted..
 type Snapshot struct {
+	// When the snapshot was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
 	// The resource name of the snapshot. Format:
 	// projects/{project_id}/snapshots/{snapshot_id}
 	Name *string `json:"name,omitempty"`
-	// Unique system-generated ID for the snapshot.
-	Uid *string `json:"uid,omitempty"`
-	// When the snapshot was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
+	// The user-chosen ID; the final segment of `name`.
+	SnapshotId *string `json:"snapshot_id,omitempty"`
 	// Client-provided configuration of the snapshot.
 	Spec *SnapshotSpec `json:"spec,omitempty"`
 	// Server-observed state of the snapshot.
 	Status *SnapshotStatus `json:"status,omitempty"`
-	// The user-chosen ID; the final segment of `name`.
-	SnapshotId *string `json:"snapshot_id,omitempty"`
+	// Unique system-generated ID for the snapshot.
+	Uid *string `json:"uid,omitempty"`
 }
 
 // Metadata for the long-running snapshot Create and Delete operations..
@@ -1402,31 +1402,32 @@ type SnapshotScheduleOperationMetadata struct {
 
 // Client-provided configuration of the snapshot..
 type SnapshotSpec struct {
+	ExpireTime *types.Time `json:"expire_time,omitempty"`
+	NoExpiry   *bool       `json:"no_expiry,omitempty"`
 	// The source branch to snapshot. Format:
 	// projects/{project_id}/branches/{branch_id}
 	SourceBranch     *string         `json:"source_branch,omitempty"`
 	SourceBranchLsn  *string         `json:"source_branch_lsn,omitempty"`
 	SourceBranchTime *types.Time     `json:"source_branch_time,omitempty"`
-	ExpireTime       *types.Time     `json:"expire_time,omitempty"`
 	Ttl              *types.Duration `json:"ttl,omitempty"`
-	NoExpiry         *bool           `json:"no_expiry,omitempty"`
 }
 
 // Server-observed state of a snapshot..
 type SnapshotStatus struct {
-	// The source branch the snapshot was taken from. Format:
-	// projects/{project_id}/branches/{branch_id}
-	SourceBranch *string     `json:"source_branch,omitempty"`
-	ExpireTime   *types.Time `json:"expire_time,omitempty"`
-	NoExpiry     *bool       `json:"no_expiry,omitempty"`
-	// Full logical size of the snapshot, in bytes.
-	FullSizeBytes *int64 `json:"full_size_bytes,omitempty"`
 	// Incremental storage size in bytes since the previous snapshot. Unset when the
 	// snapshot is not billed on incremental usage.
-	DiffSizeBytes *int64 `json:"diff_size_bytes,omitempty"`
+	DiffSizeBytes *int64      `json:"diff_size_bytes,omitempty"`
+	ExpireTime    *types.Time `json:"expire_time,omitempty"`
+	// Full logical size of the snapshot, in bytes.
+	FullSizeBytes *int64 `json:"full_size_bytes,omitempty"`
+	NoExpiry      *bool  `json:"no_expiry,omitempty"`
+	// The source branch the snapshot was taken from. Format:
+	// projects/{project_id}/branches/{branch_id}
+	SourceBranch *string `json:"source_branch,omitempty"`
 }
 
 type SyncedTable struct {
+	CreateTime *types.Time `json:"create_time,omitempty"`
 	// Output only. The Full resource name of the synced table in Postgres where
 	// (catalog, schema, table) are the UC entity names.
 	//
@@ -1435,20 +1436,47 @@ type SyncedTable struct {
 	// For the corresponding source table in the Unity catalog look for the
 	// "source_table_full_name" attribute.
 	Name *string `json:"name,omitempty"`
-	// The Unity Catalog table ID for this synced table.
-	Uid *string `json:"uid,omitempty"`
 	// Configuration details of the synced table, such as the source table,
 	// scheduling policy, etc. This attribute is specified at creation time and most
 	// fields are returned as is on subsequent queries.
 	Spec *SyncedTable_SyncedTableSpec `json:"spec,omitempty"`
 	// Synced Table data synchronization status.
-	Status     *SyncedTable_SyncedTableStatus `json:"status,omitempty"`
-	CreateTime *types.Time                    `json:"create_time,omitempty"`
+	Status *SyncedTable_SyncedTableStatus `json:"status,omitempty"`
 	// The part of the name, chosen by the user when the resource was created.
 	SyncedTableId *string `json:"synced_table_id,omitempty"`
+	// The Unity Catalog table ID for this synced table.
+	Uid *string `json:"uid,omitempty"`
 }
 
 type SyncedTable_SyncedTableSpec struct {
+	// When true, enables accelerated sync mode for the initial data load. This
+	// significantly improves performance for large tables. Requires workspace-level
+	// enablement through Lakebase Accelerated Sync preview.
+	AcceleratedSync *bool `json:"accelerated_sync,omitempty"`
+	// The full resource name the branch associated with the table.
+	//
+	// Format: "projects/{project_id}/branches/{branch_id}".
+	Branch *string `json:"branch,omitempty"`
+	// If true, the synced table's logical database and schema resources in PG will
+	// be created if they do not already exist. The request will fail if this is
+	// false and the database/schema do not exist.
+	//
+	// Defaults to true if omitted.
+	CreateDatabaseObjectsIfMissing *bool `json:"create_database_objects_if_missing,omitempty"`
+	// ID of an existing pipeline to bin-pack this synced table into. At most one of
+	// existing_pipeline_id and new_pipeline_spec should be defined.
+	//
+	// The pipeline used for the synced table is returned via the top level
+	// pipeline_id attribute.
+	ExistingPipelineId *string `json:"existing_pipeline_id,omitempty"`
+	// Extra PostgreSQL-only columns to add to the synced table.
+	ExtraColumns []SyncedTable_SyncedTableSpec_ExtraColumn `json:"extra_columns,omitempty"`
+	// Specification for creating a new pipeline. At most one of
+	// existing_pipeline_id and new_pipeline_spec should be defined.
+	//
+	// The pipeline used for the synced table is returned via the top level
+	// pipeline_id attribute.
+	NewPipelineSpec *NewPipelineSpec `json:"new_pipeline_spec,omitempty"`
 	// The Postgres database name where the synced table will be created in.
 	//
 	// If this synced table is created inside a Lakebase Catalog, this attribute can
@@ -1459,10 +1487,8 @@ type SyncedTable_SyncedTableSpec struct {
 	// A value must be specified when creating a synced table inside a Standard
 	// Catalog.
 	PostgresDatabase *string `json:"postgres_database,omitempty"`
-	// The full resource name the branch associated with the table.
-	//
-	// Format: "projects/{project_id}/branches/{branch_id}".
-	Branch *string `json:"branch,omitempty"`
+	// Primary Key columns to be used for data insert/update in the destination.
+	PrimaryKeyColumns []string `json:"primary_key_columns,omitempty"`
 	// Scheduling policy of the underlying pipeline.
 	SchedulingPolicy SyncedTable_SyncedTableSpec_SyncedTableSchedulingPolicy `json:"scheduling_policy,omitempty"`
 	// Three-part (catalog, schema, table) name of the source Delta table.
@@ -1472,38 +1498,12 @@ type SyncedTable_SyncedTableSpec struct {
 	// * synced_table_id used at the creation of the SyncedTable * "name" consisting
 	// of "synced_tables/" prefix and the full name of the destination table.
 	SourceTableFullName *string `json:"source_table_full_name,omitempty"`
-	// Primary Key columns to be used for data insert/update in the destination.
-	PrimaryKeyColumns []string `json:"primary_key_columns,omitempty"`
 	// Time series key to deduplicate (tie-break) rows with the same primary key.
 	TimeseriesKey *string `json:"timeseries_key,omitempty"`
-	// ID of an existing pipeline to bin-pack this synced table into. At most one of
-	// existing_pipeline_id and new_pipeline_spec should be defined.
-	//
-	// The pipeline used for the synced table is returned via the top level
-	// pipeline_id attribute.
-	ExistingPipelineId *string `json:"existing_pipeline_id,omitempty"`
-	// If true, the synced table's logical database and schema resources in PG will
-	// be created if they do not already exist. The request will fail if this is
-	// false and the database/schema do not exist.
-	//
-	// Defaults to true if omitted.
-	CreateDatabaseObjectsIfMissing *bool `json:"create_database_objects_if_missing,omitempty"`
-	// Specification for creating a new pipeline. At most one of
-	// existing_pipeline_id and new_pipeline_spec should be defined.
-	//
-	// The pipeline used for the synced table is returned via the top level
-	// pipeline_id attribute.
-	NewPipelineSpec *NewPipelineSpec `json:"new_pipeline_spec,omitempty"`
-	// When true, enables accelerated sync mode for the initial data load. This
-	// significantly improves performance for large tables. Requires workspace-level
-	// enablement through Lakebase Accelerated Sync preview.
-	AcceleratedSync *bool `json:"accelerated_sync,omitempty"`
 	// Override the default Delta->PG type mapping for specific columns. A
 	// TypeOverride with PG_SPECIFIC_TYPE_UNSPECIFIED is rejected; a valid pg_type
 	// must be set.
 	TypeOverrides []SyncedTable_SyncedTableSpec_TypeOverride `json:"type_overrides,omitempty"`
-	// Extra PostgreSQL-only columns to add to the synced table.
-	ExtraColumns []SyncedTable_SyncedTableSpec_ExtraColumn `json:"extra_columns,omitempty"`
 }
 
 // An extra PostgreSQL column to add to the synced table..
@@ -1511,11 +1511,11 @@ type SyncedTable_SyncedTableSpec_ExtraColumn struct {
 	// Name of the column.
 	ColumnName *string `json:"column_name,omitempty"`
 	// PostgreSQL type of the column, for example "tsvector" or "vector(1024)".
-	ColumnType  *string                                             `json:"column_type,omitempty"`
-	Maintenance SyncedTable_SyncedTableSpec_ExtraColumn_Maintenance `json:"maintenance,omitempty"`
+	ColumnType *string `json:"column_type,omitempty"`
 	// SQL expression used to compute the column's value, for example
 	// "to_tsvector('english', content)".
-	Compute *string `json:"compute,omitempty"`
+	Compute     *string                                             `json:"compute,omitempty"`
+	Maintenance SyncedTable_SyncedTableSpec_ExtraColumn_Maintenance `json:"maintenance,omitempty"`
 }
 
 // Overrides the default Delta-to-PostgreSQL type mapping for a single column..
@@ -1530,30 +1530,30 @@ type SyncedTable_SyncedTableSpec_TypeOverride struct {
 }
 
 type SyncedTable_SyncedTableStatus struct {
-	// A text description of the current state of the synced table.
-	Message *string `json:"message,omitempty"`
 	// The state of the synced table.
 	DetailedState SyncedTableState `json:"detailed_state,omitempty"`
-	// Summary of the last successful synchronization from source to destination.
-	LastSync            *SyncedTablePosition         `json:"last_sync,omitempty"`
-	OngoingSyncProgress *SyncedTablePipelineProgress `json:"ongoing_sync_progress,omitempty"`
-	// The current phase of the data synchronization pipeline.
-	ProvisioningPhase ProvisioningPhase `json:"provisioning_phase,omitempty"`
 	// The last source table Delta version that was successfully synced to the
 	// synced table.
 	LastProcessedCommitVersion *int64 `json:"last_processed_commit_version,omitempty"`
+	// Summary of the last successful synchronization from source to destination.
+	LastSync *SyncedTablePosition `json:"last_sync,omitempty"`
 	// The end timestamp of the last time any data was synchronized from the source
 	// table to the synced table. This is when the data is available in the synced
 	// table.
 	LastSyncTime *types.Time `json:"last_sync_time,omitempty"`
+	// A text description of the current state of the synced table.
+	Message             *string                      `json:"message,omitempty"`
+	OngoingSyncProgress *SyncedTablePipelineProgress `json:"ongoing_sync_progress,omitempty"`
 	// ID of the associated pipeline.
 	PipelineId *string `json:"pipeline_id,omitempty"`
-	// The provisioning state of the synced table entity in Unity Catalog.
-	UnityCatalogProvisioningState ProvisioningInfo_State `json:"unity_catalog_provisioning_state,omitempty"`
 	// The full resource name of the project associated with the table.
 	//
 	// Format: "projects/{project_id}".
 	Project *string `json:"project,omitempty"`
+	// The current phase of the data synchronization pipeline.
+	ProvisioningPhase ProvisioningPhase `json:"provisioning_phase,omitempty"`
+	// The provisioning state of the synced table entity in Unity Catalog.
+	UnityCatalogProvisioningState ProvisioningInfo_State `json:"unity_catalog_provisioning_state,omitempty"`
 }
 
 // Metadata for SyncedTable long-running operations..
@@ -1562,30 +1562,30 @@ type SyncedTableOperationMetadata struct {
 
 // Progress information of the Synced Table data synchronization pipeline..
 type SyncedTablePipelineProgress struct {
+	// The estimated time remaining to complete this update in seconds.
+	EstimatedCompletionTimeSeconds *float64 `json:"estimated_completion_time_seconds,omitempty"`
 	// The source table Delta version that was last processed by the pipeline. The
 	// pipeline may not have completely processed this version yet.
 	LatestVersionCurrentlyProcessing *int64 `json:"latest_version_currently_processing,omitempty"`
+	// The completion ratio of this update. This is a number between 0 and 1.
+	SyncProgressCompletion *float64 `json:"sync_progress_completion,omitempty"`
 	// The number of rows that have been synced in this update.
 	SyncedRowCount *int64 `json:"synced_row_count,omitempty"`
 	// The total number of rows that need to be synced in this update. This number
 	// may be an estimate.
 	TotalRowCount *int64 `json:"total_row_count,omitempty"`
-	// The completion ratio of this update. This is a number between 0 and 1.
-	SyncProgressCompletion *float64 `json:"sync_progress_completion,omitempty"`
-	// The estimated time remaining to complete this update in seconds.
-	EstimatedCompletionTimeSeconds *float64 `json:"estimated_completion_time_seconds,omitempty"`
 }
 
 type SyncedTablePosition struct {
+	DeltaTableSyncInfo *DeltaTableSyncInfo `json:"delta_table_sync_info,omitempty"`
+	// The end timestamp of the most recent successful synchronization. This is the
+	// time when the data is available in the synced table.
+	SyncEndTime *types.Time `json:"sync_end_time,omitempty"`
 	// The starting timestamp of the most recent successful synchronization from the
 	// source table to the destination (synced) table. Note this is the starting
 	// timestamp of the sync operation, not the end time. E.g., for a batch, this is
 	// the time when the sync operation started.
 	SyncStartTime *types.Time `json:"sync_start_time,omitempty"`
-	// The end timestamp of the most recent successful synchronization. This is the
-	// time when the data is available in the synced table.
-	SyncEndTime        *types.Time         `json:"sync_end_time,omitempty"`
-	DeltaTableSyncInfo *DeltaTableSyncInfo `json:"delta_table_sync_info,omitempty"`
 }
 
 type UndeleteBranchRequest struct {

@@ -54,14 +54,14 @@ type ClearSessionItemsRequest struct {
 
 // Request to create a managed memory entry..
 type CreateManagedMemoryEntryRequest struct {
-	// Managed memory store that will contain the entry, in the form
-	// `memory-stores/{managed_memory_store_id}`.
-	Parent *string `json:"parent,omitempty"`
 	// The managed memory entry to create.
 	ManagedMemoryEntry *ManagedMemoryEntry `json:"managed_memory_entry,omitempty"`
 	// Optional caller-selected managed memory entry ID. The service generates an ID
 	// when omitted.
 	ManagedMemoryEntryId *string `json:"managed_memory_entry_id,omitempty"`
+	// Managed memory store that will contain the entry, in the form
+	// `memory-stores/{managed_memory_store_id}`.
+	Parent *string `json:"parent,omitempty"`
 }
 
 // Request to create a managed memory store..
@@ -76,6 +76,9 @@ type CreateManagedMemoryStoreRequest struct {
 
 // Request to create a session..
 type CreateSessionRequest struct {
+	// Resource name of the containing session store, in the form
+	// `session-stores/{session_store_id}`.
+	Parent *string `json:"parent,omitempty"`
 	// The session to create. `actor_id` is required. A session with
 	// `parent_session_id` is a child and must use its parent's `actor_id`.
 	// Independent forks are created only through `ForkSession`.
@@ -84,9 +87,6 @@ type CreateSessionRequest struct {
 	// field is omitted. The ID must be unique; a collision returns
 	// `ALREADY_EXISTS`.
 	SessionId *string `json:"session_id,omitempty"`
-	// Resource name of the containing session store, in the form
-	// `session-stores/{session_store_id}`.
-	Parent *string `json:"parent,omitempty"`
 }
 
 // Request to create a session store..
@@ -101,41 +101,33 @@ type CreateSessionStoreRequest struct {
 
 // Request to synchronously extract memories from a single session..
 type ExtractMemoriesRequest struct {
-	// Managed memory store the extracted entries are written to, in the form
-	// `memory-stores/{managed_memory_store_id}`.
-	MemoryStore *string `json:"memory_store,omitempty"`
-	// Session store containing the session, in the form
-	// `session-stores/{session_store_id}`.
-	SessionStore *string `json:"session_store,omitempty"`
-	// Identifier of the session whose transcript is distilled into memories.
-	SessionId *string `json:"session_id,omitempty"`
-	// Instructions steering what is extracted from the session.
-	Instructions *string `json:"instructions,omitempty"`
 	// When true, extract and return the entries without writing them to the memory
 	// store. Defaults to false, which persists the extracted entries and returns
 	// them.
 	DryRun *bool `json:"dry_run,omitempty"`
+	// Instructions steering what is extracted from the session.
+	Instructions *string `json:"instructions,omitempty"`
+	// Managed memory store the extracted entries are written to, in the form
+	// `memory-stores/{managed_memory_store_id}`.
+	MemoryStore *string `json:"memory_store,omitempty"`
+	// Identifier of the session whose transcript is distilled into memories.
+	SessionId *string `json:"session_id,omitempty"`
+	// Session store containing the session, in the form
+	// `session-stores/{session_store_id}`.
+	SessionStore *string `json:"session_store,omitempty"`
 }
 
 // Result of a single-session memory extraction..
 type ExtractMemoriesResponse struct {
+	// The memory entries written by this extraction.
+	Entries []ManagedMemoryEntry `json:"entries,omitempty"`
 	// Correlation identifier for this extraction, for logging and tracing. Not a
 	// fetchable resource.
 	Name *string `json:"name,omitempty"`
-	// The memory entries written by this extraction.
-	Entries []ManagedMemoryEntry `json:"entries,omitempty"`
 }
 
 // Request to fork a session..
 type ForkSessionRequest struct {
-	// ID of the session to copy.
-	SourceSessionId *string `json:"source_session_id,omitempty"`
-	// Optional last item ID to copy through, inclusively. When omitted, the fork
-	// atomically copies all items committed before the fork operation begins.
-	UpToItemId *string `json:"up_to_item_id,omitempty"`
-	// Optional unique ID for the forked session. A collision returns
-	// `ALREADY_EXISTS`.
-	SessionId *string `json:"session_id,omitempty"`
 	// Opaque caller-provided identifier for the application actor associated with
 	// the forked session.
 	ActorId *string `json:"actor_id,omitempty"`
@@ -144,6 +136,14 @@ type ForkSessionRequest struct {
 	// Resource name of the containing session store, in the form
 	// `session-stores/{session_store_id}`.
 	Parent *string `json:"parent,omitempty"`
+	// Optional unique ID for the forked session. A collision returns
+	// `ALREADY_EXISTS`.
+	SessionId *string `json:"session_id,omitempty"`
+	// ID of the session to copy.
+	SourceSessionId *string `json:"source_session_id,omitempty"`
+	// Optional last item ID to copy through, inclusively. When omitted, the fork
+	// atomically copies all items committed before the fork operation begins.
+	UpToItemId *string `json:"up_to_item_id,omitempty"`
 }
 
 // Response from forking a session..
@@ -164,16 +164,16 @@ type GetManagedMemoryEntryRequest struct {
 // Request to list managed memory entries for one actor, optionally restricted
 // by session and path prefix, or matched by exact path regardless of session..
 type ListManagedMemoryEntriesRequest struct {
-	// Managed memory store whose entries are listed, in the form
-	// `memory-stores/{managed_memory_store_id}`.
-	Parent *string `json:"parent,omitempty"`
+	// Customer-provided identifier for the actor whose entries are listed.
+	ActorId *string `json:"actor_id,omitempty"`
 	// Maximum number of entries to return. The service may return fewer entries
 	// than requested. Defaults to 10; must be between 1 and 100.
 	PageSize *int `json:"page_size,omitempty"`
 	// Opaque pagination token from a previous ListManagedMemoryEntries response.
 	PageToken *string `json:"page_token,omitempty"`
-	// Customer-provided identifier for the actor whose entries are listed.
-	ActorId *string `json:"actor_id,omitempty"`
+	// Managed memory store whose entries are listed, in the form
+	// `memory-stores/{managed_memory_store_id}`.
+	Parent *string `json:"parent,omitempty"`
 	// Optional path prefix used to restrict entries within the actor partition.
 	PathPrefix *string `json:"path_prefix,omitempty"`
 	// Optional session identifier. When set, only entries with this exact
@@ -214,15 +214,15 @@ type ListManagedMemoryStoresResponse struct {
 
 // Request to list items in a session..
 type ListSessionItemsRequest struct {
-	// Maximum number of items to return. Defaults to 10; must be between 1 and 100.
-	PageSize *int `json:"page_size,omitempty"`
-	// Token returned by a previous list request.
-	PageToken *string `json:"page_token,omitempty"`
 	// Sort order. Supported values are `create_time asc` and `create_time desc`.
 	// The default is `create_time desc`, which returns the most recently appended
 	// items first. Equal timestamps are resolved by committed append order in the
 	// requested direction.
 	OrderBy *string `json:"order_by,omitempty"`
+	// Maximum number of items to return. Defaults to 10; must be between 1 and 100.
+	PageSize *int `json:"page_size,omitempty"`
+	// Token returned by a previous list request.
+	PageToken *string `json:"page_token,omitempty"`
 	// Resource name of the containing session, in the form
 	// `session-stores/{session_store_id}/sessions/{session_id}`.
 	Parent *string `json:"parent,omitempty"`
@@ -230,10 +230,10 @@ type ListSessionItemsRequest struct {
 
 // Response containing a page of session items..
 type ListSessionItemsResponse struct {
-	// Session items in the requested page.
-	SessionItems []SessionItem `json:"session_items,omitempty"`
 	// Token to retrieve the next page.
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// Session items in the requested page.
+	SessionItems []SessionItem `json:"session_items,omitempty"`
 }
 
 // Request to list session stores..
@@ -247,19 +247,14 @@ type ListSessionStoresRequest struct {
 
 // Response containing a page of session stores..
 type ListSessionStoresResponse struct {
-	// Session stores in the requested page.
-	SessionStores []SessionStore `json:"session_stores,omitempty"`
 	// Token to retrieve the next page.
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// Session stores in the requested page.
+	SessionStores []SessionStore `json:"session_stores,omitempty"`
 }
 
 // Request to list sessions..
 type ListSessionsRequest struct {
-	// Maximum number of sessions to return. Defaults to 10; must be between 1 and
-	// 100.
-	PageSize *int `json:"page_size,omitempty"`
-	// Token returned by a previous list request.
-	PageToken *string `json:"page_token,omitempty"`
 	// Filter expression. Supported fields include `actor_id` and `metadata`; for
 	// example, `actor_id = "support-customer-123"`.
 	Filter *string `json:"filter,omitempty"`
@@ -269,6 +264,11 @@ type ListSessionsRequest struct {
 	// gains activity, so a session updated between page requests may be repeated or
 	// skipped. To enumerate every session exactly once, order by `create_time`.
 	OrderBy *string `json:"order_by,omitempty"`
+	// Maximum number of sessions to return. Defaults to 10; must be between 1 and
+	// 100.
+	PageSize *int `json:"page_size,omitempty"`
+	// Token returned by a previous list request.
+	PageToken *string `json:"page_token,omitempty"`
 	// Resource name of the containing session store, in the form
 	// `session-stores/{session_store_id}`.
 	Parent *string `json:"parent,omitempty"`
@@ -276,36 +276,36 @@ type ListSessionsRequest struct {
 
 // Response containing a page of sessions..
 type ListSessionsResponse struct {
-	// Sessions in the requested page.
-	Sessions []Session `json:"sessions,omitempty"`
 	// Token to retrieve the next page.
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// Sessions in the requested page.
+	Sessions []Session `json:"sessions,omitempty"`
 }
 
 // A workspace-scoped entry in a managed memory store..
 type ManagedMemoryEntry struct {
-	// Resource name in the form
-	// `memory-stores/{managed_memory_store_id}/entries/{managed_memory_entry_id}`.
-	Name *string `json:"name,omitempty"`
 	// Customer-provided identifier for the actor whose memory this entry
 	// represents.
 	ActorId *string `json:"actor_id,omitempty"`
-	// Optional identifier for the session associated with this memory entry. When
-	// omitted, the entry applies across the actor's sessions.
-	SessionId *string `json:"session_id,omitempty"`
+	// Optional free-form memory content.
+	Content *string `json:"content,omitempty"`
+	// Time when the entry was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
+	// Human-readable description of the memory entry.
+	Description *string `json:"description,omitempty"`
+	// Resource name in the form
+	// `memory-stores/{managed_memory_store_id}/entries/{managed_memory_entry_id}`.
+	Name *string `json:"name,omitempty"`
 	// Absolute, case-sensitive path identifying the entry within its actor and
 	// optional session. Paths must begin with `/` and must not contain empty, `.`
 	// or `..` segments.
 	Path *string `json:"path,omitempty"`
-	// Optional free-form memory content.
-	Content *string `json:"content,omitempty"`
-	// Human-readable description of the memory entry.
-	Description *string `json:"description,omitempty"`
+	// Optional identifier for the session associated with this memory entry. When
+	// omitted, the entry applies across the actor's sessions.
+	SessionId *string `json:"session_id,omitempty"`
 	// Which writer created this entry. Caller sets this on Create; immutable after
 	// creation.
 	SourceType ManagedMemoryEntrySourceType `json:"source_type,omitempty"`
-	// Time when the entry was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
 	// Time when the entry was last updated.
 	UpdateTime *types.Time `json:"update_time,omitempty"`
 }
@@ -320,30 +320,30 @@ type ManagedMemoryEntrySearchResult struct {
 
 // A workspace-scoped managed memory store backed by service-managed storage..
 type ManagedMemoryStore struct {
-	// Resource name in the form `memory-stores/{managed_memory_store_id}`.
-	Name *string `json:"name,omitempty"`
-	// Deprecated compatibility alias for the caller-provided managed memory store
-	// ID. Canonical clients provide the ID through
-	// `CreateMemoryStoreRequest.managed_memory_store_id` and use `name` as the
-	// resource identifier.
-	DisplayName *string `json:"display_name,omitempty"`
-	// Workspace that owns the memory store.
-	WorkspaceId *int64 `json:"workspace_id,omitempty"`
-	// Service-managed storage backing this memory store.
-	StorageBackend *StorageBackend `json:"storage_backend,omitempty"`
-	// Deprecated alias for `creator_user_id`. This identifies the original creator,
-	// not a transferable owner. Use `creator_user_id` instead.
-	OwnerUserId *string `json:"owner_user_id,omitempty"`
+	// Time when the store was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
 	// Workspace-local user ID of the authenticated principal that created the
 	// store. This is immutable server-set attribution and does not grant access;
 	// authorization is evaluated from the authenticated request context.
 	CreatorUserId *string `json:"creator_user_id,omitempty"`
 	// Human-readable description of the memory store.
 	Description *string `json:"description,omitempty"`
-	// Time when the store was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
+	// Deprecated compatibility alias for the caller-provided managed memory store
+	// ID. Canonical clients provide the ID through
+	// `CreateMemoryStoreRequest.managed_memory_store_id` and use `name` as the
+	// resource identifier.
+	DisplayName *string `json:"display_name,omitempty"`
+	// Resource name in the form `memory-stores/{managed_memory_store_id}`.
+	Name *string `json:"name,omitempty"`
+	// Deprecated alias for `creator_user_id`. This identifies the original creator,
+	// not a transferable owner. Use `creator_user_id` instead.
+	OwnerUserId *string `json:"owner_user_id,omitempty"`
+	// Service-managed storage backing this memory store.
+	StorageBackend *StorageBackend `json:"storage_backend,omitempty"`
 	// Time when the store was last updated.
 	UpdateTime *types.Time `json:"update_time,omitempty"`
+	// Workspace that owns the memory store.
+	WorkspaceId *int64 `json:"workspace_id,omitempty"`
 }
 
 // Request to pop an item from a session..
@@ -362,13 +362,8 @@ type PopSessionItemResponse struct {
 // Request to search managed memory entries by text query for one actor. Search
 // returns a relevance-ranked top-N result set and does not currently paginate..
 type SearchManagedMemoryEntriesRequest struct {
-	// Managed memory store whose entries are searched, in the form
-	// `memory-stores/{managed_memory_store_id}`.
-	Parent *string `json:"parent,omitempty"`
 	// Customer-provided identifier for the actor whose entries are searched.
 	ActorId *string `json:"actor_id,omitempty"`
-	// Free-form search query.
-	Query *string `json:"query,omitempty"`
 	// Deprecated alias for `page_size`. When both fields are set, their values must
 	// match.
 	Limit *int `json:"limit,omitempty"`
@@ -378,14 +373,19 @@ type SearchManagedMemoryEntriesRequest struct {
 	// Reserved for pagination compatibility. The server currently ignores this
 	// field because Search returns a ranked top-N result set.
 	PageToken *string `json:"page_token,omitempty"`
-	// Optional session identifier. When set, only entries with this exact
-	// `session_id` are searched. Omitted-session (cross-session) entries are not
-	// included.
-	SessionId *string `json:"session_id,omitempty"`
+	// Managed memory store whose entries are searched, in the form
+	// `memory-stores/{managed_memory_store_id}`.
+	Parent *string `json:"parent,omitempty"`
 	// Optional absolute, case-sensitive path prefix used to restrict searched
 	// entries within the actor partition. The prefix must begin with `/` and must
 	// not contain empty, `.` or `..` segments.
 	PathPrefix *string `json:"path_prefix,omitempty"`
+	// Free-form search query.
+	Query *string `json:"query,omitempty"`
+	// Optional session identifier. When set, only entries with this exact
+	// `session_id` are searched. Omitted-session (cross-session) entries are not
+	// included.
+	SessionId *string `json:"session_id,omitempty"`
 	// Controls whether each returned entry includes memory content. Search scores
 	// are always returned. Defaults to `FULL`.
 	View ManagedMemoryEntryView `json:"view,omitempty"`
@@ -406,9 +406,6 @@ type SearchManagedMemoryEntriesResponse struct {
 
 // A durable logical interaction stored within a Session Store..
 type Session struct {
-	// Unique session ID. The service generates a UUID unless the caller supplies
-	// `CreateSessionRequest.session_id`.
-	SessionId *string `json:"session_id,omitempty"`
 	// Opaque caller-provided identifier for the application actor associated with
 	// the session.
 	//
@@ -417,63 +414,66 @@ type Session struct {
 	// `actor_id` when storing memories associated with this actor. Every session
 	// must set it. A child session must use the same value as its parent.
 	ActorId *string `json:"actor_id,omitempty"`
+	// Time when the session was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
+	// Time when the session's item history was last mutated.
+	LastActivityTime *types.Time `json:"last_activity_time,omitempty"`
+	// Mutable caller-defined string labels.
+	Metadata map[string]string `json:"metadata,omitempty"`
+	// Resource name in the form
+	// `session-stores/{session_store_id}/sessions/{session_id}`.
+	Name *string `json:"name,omitempty"`
 	// Immediate parent session ID. Set only at creation for child sessions,
 	// immutable thereafter, and restricted to the same store.
 	ParentSessionId *string `json:"parent_session_id,omitempty"`
 	// Top-level session ID in the spawn tree. This equals `session_id` for a root
 	// or fork and is inherited transitively by child sessions.
 	RootSessionId *string `json:"root_session_id,omitempty"`
-	// Mutable caller-defined string labels.
-	Metadata map[string]string `json:"metadata,omitempty"`
-	// Time when the session was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
+	// Unique session ID. The service generates a UUID unless the caller supplies
+	// `CreateSessionRequest.session_id`.
+	SessionId *string `json:"session_id,omitempty"`
 	// Time when session resource fields last changed.
 	UpdateTime *types.Time `json:"update_time,omitempty"`
-	// Time when the session's item history was last mutated.
-	LastActivityTime *types.Time `json:"last_activity_time,omitempty"`
-	// Resource name in the form
-	// `session-stores/{session_store_id}/sessions/{session_id}`.
-	Name *string `json:"name,omitempty"`
 }
 
 // A transcript entry in a session's history..
 type SessionItem struct {
-	// Stable service-generated item ID.
-	ItemId *string `json:"item_id,omitempty"`
-	// Complete SDK-native, JSON-compatible item. The service stores and returns
-	// this value without interpreting provider-specific fields such as `type`,
-	// `role`, or `content`.
-	Data json.RawMessage `json:"data,omitempty"`
 	// Server-assigned time when the append commits. Values are nondecreasing within
 	// a session. Item listing orders by this timestamp; equal timestamps are
 	// resolved by committed append order.
 	CreateTime *types.Time `json:"create_time,omitempty"`
+	// Complete SDK-native, JSON-compatible item. The service stores and returns
+	// this value without interpreting provider-specific fields such as `type`,
+	// `role`, or `content`.
+	Data json.RawMessage `json:"data,omitempty"`
+	// Stable service-generated item ID.
+	ItemId *string `json:"item_id,omitempty"`
 }
 
 // A workspace-scoped session store..
 type SessionStore struct {
+	// Time when the store was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
 	// Workspace-local user ID of the authenticated principal that created the
 	// store. This is immutable server-set attribution and does not grant access;
 	// authorization is evaluated from the authenticated request context.
 	CreatorUserId *string `json:"creator_user_id,omitempty"`
-	// Time when the store was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	// Time when the store was last updated.
-	UpdateTime *types.Time `json:"update_time,omitempty"`
 	// Human-readable description of the session store.
 	Description *string `json:"description,omitempty"`
 	// Mutable caller-defined string labels.
 	Metadata map[string]string `json:"metadata,omitempty"`
 	// Resource name in the form `session-stores/{session_store_id}`.
 	Name *string `json:"name,omitempty"`
+	// Time when the store was last updated.
+	UpdateTime *types.Time `json:"update_time,omitempty"`
 }
 
 // Service-managed storage backing a managed memory store..
 type StorageBackend struct {
-	// Type of the storage backend.
-	BackendType StorageBackendType `json:"backend_type,omitempty"`
 	// Backend-specific identifier. For Lakebase, this is the project ID.
 	BackendId *string `json:"backend_id,omitempty"`
+	// Type of the storage backend.
+	BackendType StorageBackendType `json:"backend_type,omitempty"`
 }
 
 // Request to update a managed memory entry..

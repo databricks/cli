@@ -166,33 +166,33 @@ const (
 
 // An aggregation function applied over a time window..
 type AggregationFunction struct {
-	Avg                 *AvgFunction                 `json:"avg,omitempty"`
-	CountFunction       *CountFunction               `json:"count_function,omitempty"`
-	Sum                 *SumFunction                 `json:"sum,omitempty"`
-	Min                 *MinFunction                 `json:"min,omitempty"`
-	Max                 *MaxFunction                 `json:"max,omitempty"`
-	First               *FirstFunction               `json:"first,omitempty"`
-	Last                *LastFunction                `json:"last,omitempty"`
 	ApproxCountDistinct *ApproxCountDistinctFunction `json:"approx_count_distinct,omitempty"`
 	ApproxPercentile    *ApproxPercentileFunction    `json:"approx_percentile,omitempty"`
+	Avg                 *AvgFunction                 `json:"avg,omitempty"`
+	CountFunction       *CountFunction               `json:"count_function,omitempty"`
+	First               *FirstFunction               `json:"first,omitempty"`
+	FirstDistinct       *FirstDistinctFunction       `json:"first_distinct,omitempty"`
+	FirstN              *FirstNFunction              `json:"first_n,omitempty"`
+	Last                *LastFunction                `json:"last,omitempty"`
+	LastDistinct        *LastDistinctFunction        `json:"last_distinct,omitempty"`
+	LastN               *LastNFunction               `json:"last_n,omitempty"`
+	Max                 *MaxFunction                 `json:"max,omitempty"`
+	Min                 *MinFunction                 `json:"min,omitempty"`
 	StddevPop           *StddevPopFunction           `json:"stddev_pop,omitempty"`
 	StddevSamp          *StddevSampFunction          `json:"stddev_samp,omitempty"`
-	VarPop              *VarPopFunction              `json:"var_pop,omitempty"`
-	VarSamp             *VarSampFunction             `json:"var_samp,omitempty"`
-	FirstN              *FirstNFunction              `json:"first_n,omitempty"`
-	LastN               *LastNFunction               `json:"last_n,omitempty"`
-	FirstDistinct       *FirstDistinctFunction       `json:"first_distinct,omitempty"`
-	LastDistinct        *LastDistinctFunction        `json:"last_distinct,omitempty"`
+	Sum                 *SumFunction                 `json:"sum,omitempty"`
 	// The time window over which the aggregation is computed.
-	TimeWindow *TimeWindow `json:"time_window,omitempty"`
+	TimeWindow *TimeWindow      `json:"time_window,omitempty"`
+	VarPop     *VarPopFunction  `json:"var_pop,omitempty"`
+	VarSamp    *VarSampFunction `json:"var_samp,omitempty"`
 }
 
 // Databricks Error that is returned by all Databricks APIs..
 type ApiError struct {
+	Details    []json.RawMessage `json:"details,omitempty"`
 	ErrorCode  ErrorCode         `json:"error_code,omitempty"`
 	Message    *string           `json:"message,omitempty"`
 	StackTrace *string           `json:"stack_trace,omitempty"`
-	Details    []json.RawMessage `json:"details,omitempty"`
 }
 
 // Computes the approximate count of distinct values..
@@ -206,17 +206,17 @@ type ApproxCountDistinctFunction struct {
 
 // Computes the approximate percentile of values..
 type ApproxPercentileFunction struct {
+	// The accuracy parameter (higher is more accurate but slower).
+	Accuracy *int64 `json:"accuracy,omitempty"`
 	// The input column from which the approximate percentile is computed.
 	Input *string `json:"input,omitempty"`
 	// The percentile value to compute (between 0 and 1).
 	Percentile *float64 `json:"percentile,omitempty"`
-	// The accuracy parameter (higher is more accurate but slower).
-	Accuracy *int64 `json:"accuracy,omitempty"`
 }
 
 type AuthConfig struct {
-	UcServiceCredentialName *string     `json:"uc_service_credential_name,omitempty"`
 	MtlsConfig              *MtlsConfig `json:"mtls_config,omitempty"`
+	UcServiceCredentialName *string     `json:"uc_service_credential_name,omitempty"`
 }
 
 // Computes the average of values..
@@ -230,10 +230,14 @@ type AvgFunction struct {
 }
 
 type BackfillFeaturesRequest struct {
-	// Full names of the features to backfill.
-	FeatureFullNames []string `json:"feature_full_names,omitempty"`
 	// Output ranges to backfill.
 	BackfillRanges []BackfillRange `json:"backfill_ranges,omitempty"`
+	// The budget policy ID, in UUID format, used to attribute the serverless
+	// compute cost of this backfill. If not specified, a default budget policy may
+	// be applied.
+	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
+	// Full names of the features to backfill.
+	FeatureFullNames []string `json:"feature_full_names,omitempty"`
 	// Idempotency token for the request.
 	RequestId *string `json:"request_id,omitempty"`
 	// Custom tags to associate with this backfill. They are applied to the backfill
@@ -244,10 +248,6 @@ type BackfillFeaturesRequest struct {
 	// Unity Catalog tagging API. A maximum of 25 tags is supported; keys and values
 	// are subject to the same limitations as Databricks resource tags.
 	Tags map[string]string `json:"tags,omitempty"`
-	// The budget policy ID, in UUID format, used to attribute the serverless
-	// compute cost of this backfill. If not specified, a default budget policy may
-	// be applied.
-	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
 }
 
 // Result of a completed backfill..
@@ -256,26 +256,26 @@ type BackfillFeaturesResponse struct {
 
 // Progress and configuration for a backfill..
 type BackfillOperationMetadata struct {
-	// Full names of the features targeted by the backfill.
-	FeatureFullNames []string `json:"feature_full_names,omitempty"`
 	// Output ranges targeted by the backfill.
 	BackfillRanges []BackfillRange `json:"backfill_ranges,omitempty"`
+	// Full names of the features targeted by the backfill.
+	FeatureFullNames []string `json:"feature_full_names,omitempty"`
 	// Current state of the backfill.
 	State BackfillOperationMetadata_State `json:"state,omitempty"`
 }
 
 // A time range for a backfill..
 type BackfillRange struct {
+	// End of the backfill range, exclusive. If unset, defaults to the current time.
+	EndTime *types.Time `json:"end_time,omitempty"`
 	// Start of the backfill range, inclusive. If unset, defaults to the earliest
 	// source timestamp of the feature.
 	StartTime *types.Time `json:"start_time,omitempty"`
-	// End of the backfill range, exclusive. If unset, defaults to the current time.
-	EndTime *types.Time `json:"end_time,omitempty"`
 }
 
 type BackfillSource struct {
-	DeltaTableSource *DeltaTableSource `json:"delta_table_source,omitempty"`
 	DeltaTableName   *string           `json:"delta_table_name,omitempty"`
+	DeltaTableSource *DeltaTableSource `json:"delta_table_source,omitempty"`
 }
 
 type BatchCreateMaterializedFeaturesRequest struct {
@@ -307,10 +307,10 @@ type ColumnSelection struct {
 }
 
 type ContinuousWindow struct {
-	// The duration of the continuous window (must be positive).
-	WindowDuration *types.Duration `json:"window_duration,omitempty"`
 	// The offset of the continuous window (must be non-positive).
 	Offset *types.Duration `json:"offset,omitempty"`
+	// The duration of the continuous window (must be positive).
+	WindowDuration *types.Duration `json:"window_duration,omitempty"`
 }
 
 // Computes the count of values..
@@ -374,36 +374,36 @@ type CustomUdf struct {
 // set..
 type DataSource struct {
 	DeltaTableSource  *DeltaTableSource  `json:"delta_table_source,omitempty"`
-	KafkaSource       *KafkaSource       `json:"kafka_source,omitempty"`
-	RequestSource     *RequestSource     `json:"request_source,omitempty"`
-	StreamSource      *StreamSource      `json:"stream_source,omitempty"`
 	FeatureViewSource *FeatureViewSource `json:"feature_view_source,omitempty"`
+	KafkaSource       *KafkaSource       `json:"kafka_source,omitempty"`
 	// Completeness timing for this Feature's use of the source. This configuration
 	// is part of the Feature definition; it does not modify the underlying table or
 	// stream.
-	Lateness *SourceLateness `json:"lateness,omitempty"`
+	Lateness      *SourceLateness `json:"lateness,omitempty"`
+	RequestSource *RequestSource  `json:"request_source,omitempty"`
+	StreamSource  *StreamSource   `json:"stream_source,omitempty"`
 }
 
 type DeltaTableSource struct {
-	// The full three-part (catalog, schema, table) name of the Delta table.
-	FullName         *string  `json:"full_name,omitempty"`
-	EntityColumns    []string `json:"entity_columns,omitempty"`
-	TimeseriesColumn *string  `json:"timeseries_column,omitempty"`
+	// Schema of the resulting dataframe after transformations, in Spark StructType
+	// JSON format (from df.schema.json()). Required if transformation_sql is
+	// specified. Example:
+	// {"type":"struct","fields":[{"name":"col_a","type":"integer","nullable":true,"metadata":{}},{"name":"col_c","type":"integer","nullable":true,"metadata":{}}]}
+	DataframeSchema *string  `json:"dataframe_schema,omitempty"`
+	EntityColumns   []string `json:"entity_columns,omitempty"`
 	// Single WHERE clause to filter delta table before applying transformations.
 	// Will be row-wise evaluated, so should only include conditionals and
 	// projections.
 	FilterCondition *string `json:"filter_condition,omitempty"`
+	// The full three-part (catalog, schema, table) name of the Delta table.
+	FullName         *string `json:"full_name,omitempty"`
+	TimeseriesColumn *string `json:"timeseries_column,omitempty"`
 	// A single SQL SELECT expression applied after filter_condition. Should
 	// contains all the columns needed (eg. "SELECT *, col_a + col_b AS col_c FROM
 	// x.y.z WHERE col_a > 0" would have `transformation_sql` "*, col_a + col_b AS
 	// col_c") If transformation_sql is not provided, all columns of the delta table
 	// are present in the DataSource dataframe.
 	TransformationSql *string `json:"transformation_sql,omitempty"`
-	// Schema of the resulting dataframe after transformations, in Spark StructType
-	// JSON format (from df.schema.json()). Required if transformation_sql is
-	// specified. Example:
-	// {"type":"struct","fields":[{"name":"col_a","type":"integer","nullable":true,"metadata":{}},{"name":"col_c","type":"integer","nullable":true,"metadata":{}}]}
-	DataframeSchema *string `json:"dataframe_schema,omitempty"`
 }
 
 // Direct connection configs for mTLS, as Kafka Connections do not support mTLS
@@ -419,13 +419,13 @@ type DirectMtlsConfig struct {
 // a schema registry. To resolve schemas from a registry instead, use
 // SchemaRegistryConfig..
 type DirectSchemas struct {
+	// Schema for the message key. This is only used for Kafka streams. For Kafka,
+	// at least one of payload_schema or key_schema must be specified.
+	KeySchema *SchemaConfig `json:"key_schema,omitempty"`
 	// Schema for the message payload. For Kafka, this is the value schema. Unless
 	// the platform supports another schema (e.g. keys for Kafka), this must be
 	// specified.
 	PayloadSchema *SchemaConfig `json:"payload_schema,omitempty"`
-	// Schema for the message key. This is only used for Kafka streams. For Kafka,
-	// at least one of payload_schema or key_schema must be specified.
-	KeySchema *SchemaConfig `json:"key_schema,omitempty"`
 }
 
 type EntityColumn struct {
@@ -440,17 +440,24 @@ type EntityColumn struct {
 }
 
 type Feature struct {
+	// Name of parent catalog.
+	CatalogName *string `json:"catalog_name,omitempty"`
+	// Time at which this feature was created.
+	CreatedAt *types.Time `json:"created_at,omitempty"`
+	// Username of the feature creator.
+	CreatedBy *string `json:"created_by,omitempty"`
+	// The description of the feature.
+	Description *string `json:"description,omitempty"`
+	// The entity columns for the feature, used as aggregation keys and for
+	// query-time lookup. Optional since entities are not set for RequestSource
+	// features or on-demand calculated features.
+	Entities        []EntityColumn `json:"entities,omitempty"`
+	FilterCondition *string        `json:"filter_condition,omitempty"`
 	// The full three-part name (catalog, schema, name) of the feature.
 	FullName *string `json:"full_name,omitempty"`
-	// The data source of the feature.
-	Source *DataSource `json:"source,omitempty"`
-	Inputs []string    `json:"inputs,omitempty"`
 	// The function by which the feature is computed.
-	Function   *Function   `json:"function,omitempty"`
-	TimeWindow *TimeWindow `json:"time_window,omitempty"`
-	// The description of the feature.
-	Description     *string `json:"description,omitempty"`
-	FilterCondition *string `json:"filter_condition,omitempty"`
+	Function *Function `json:"function,omitempty"`
+	Inputs   []string  `json:"inputs,omitempty"`
 	// Lineage context information for this feature. WARNING: This field is
 	// primarily intended for internal use by <Databricks> systems and is
 	// automatically populated when features are created through <Databricks>
@@ -459,25 +466,18 @@ type Feature struct {
 	// field will be set by feature-engineering client and should be left unset by
 	// SDK and terraform users.
 	LineageContext *LineageContext `json:"lineage_context,omitempty"`
-	// The entity columns for the feature, used as aggregation keys and for
-	// query-time lookup. Optional since entities are not set for RequestSource
-	// features or on-demand calculated features.
-	Entities []EntityColumn `json:"entities,omitempty"`
+	// Name of the feature, extracted from the full three-part name
+	// (catalog.schema.name).
+	Name *string `json:"name,omitempty"`
+	// Name of parent schema relative to its parent catalog.
+	SchemaName *string `json:"schema_name,omitempty"`
+	// The data source of the feature.
+	Source     *DataSource `json:"source,omitempty"`
+	TimeWindow *TimeWindow `json:"time_window,omitempty"`
 	// Column recording time, used for point-in-time joins, backfills, and
 	// aggregations. Optional since a timeseries column is not set for RequestSource
 	// features or on-demand calculated features.
 	TimeseriesColumn *TimeseriesColumn `json:"timeseries_column,omitempty"`
-	// Name of parent catalog.
-	CatalogName *string `json:"catalog_name,omitempty"`
-	// Name of parent schema relative to its parent catalog.
-	SchemaName *string `json:"schema_name,omitempty"`
-	// Name of the feature, extracted from the full three-part name
-	// (catalog.schema.name).
-	Name *string `json:"name,omitempty"`
-	// Time at which this feature was created.
-	CreatedAt *types.Time `json:"created_at,omitempty"`
-	// Username of the feature creator.
-	CreatedBy *string `json:"created_by,omitempty"`
 }
 
 // A reference to one registered upstream Feature. A message rather than a bare
@@ -498,10 +498,10 @@ type FeatureViewSource struct {
 // its scalar data type. Does not support nested or complex types (arrays, maps,
 // structs)..
 type FieldDefinition struct {
-	// The name of the field.
-	Name *string `json:"name,omitempty"`
 	// The scalar data type of the field.
 	DataType ScalarDataType `json:"data_type,omitempty"`
+	// The name of the field.
+	Name *string `json:"name,omitempty"`
 }
 
 // Returns the first N distinct values, ordered by the feature's timeseries
@@ -535,11 +535,11 @@ type FlatSchema struct {
 }
 
 type Function struct {
-	FunctionType        FunctionFunctionType     `json:"function_type,omitempty"`
-	ExtraParameters     []FunctionExtraParameter `json:"extra_parameters,omitempty"`
 	AggregationFunction *AggregationFunction     `json:"aggregation_function,omitempty"`
 	ColumnSelection     *ColumnSelection         `json:"column_selection,omitempty"`
 	CustomUdf           *CustomUdf               `json:"custom_udf,omitempty"`
+	ExtraParameters     []FunctionExtraParameter `json:"extra_parameters,omitempty"`
+	FunctionType        FunctionFunctionType     `json:"function_type,omitempty"`
 }
 
 type FunctionExtraParameter struct {
@@ -552,12 +552,9 @@ type FunctionExtraParameter struct {
 // Configuration for the <Databricks>-managed ingestion pipeline. Groups the
 // ingestion destination (required) and optional backfill source..
 type IngestionConfig struct {
-	// Destination for the <Databricks>-managed Delta table that holds an offline
-	// copy of the streaming data for querying and training. This table contains
-	// both 1) forward-filled data from the Stream and 2) backfilled data from the
-	// BackfillSource (if provided). This table is created and managed by
-	// <Databricks> and is deleted when the Stream is deleted.
-	IngestionDestination *IngestionDestination `json:"ingestion_destination,omitempty"`
+	// The ID of the Databricks Job that performs the historical backfill of the
+	// ingestion Delta table.
+	BackfillJobId *int64 `json:"backfill_job_id,omitempty"`
 	// A user-provided source for backfilling data. Historical data is used when
 	// creating a training set from streaming features linked to this Stream. The
 	// backfill data stored in this location will be copied into the ingestion table
@@ -565,18 +562,25 @@ type IngestionConfig struct {
 	// exactly that of the key and payload schemas specified for this Stream, except
 	// that it may omit any columns listed in excluded_columns.
 	BackfillSource *BackfillSource `json:"backfill_source,omitempty"`
+	// The ID of the budget policy used to attribute the serverless compute cost of
+	// this stream's managed ingestion. If not specified, a default budget policy
+	// may be applied.
+	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
 	// Column paths used to identify duplicate rows during ingestion; only one row
 	// per distinct combination of these values is kept. Use dot notation for nested
 	// fields (e.g. `value.user_id`). Empty list means every column is compared.
 	DeduplicationColumns []string `json:"deduplication_columns,omitempty"`
+	// Destination for the <Databricks>-managed Delta table that holds an offline
+	// copy of the streaming data for querying and training. This table contains
+	// both 1) forward-filled data from the Stream and 2) backfilled data from the
+	// BackfillSource (if provided). This table is created and managed by
+	// <Databricks> and is deleted when the Stream is deleted.
+	IngestionDestination *IngestionDestination `json:"ingestion_destination,omitempty"`
+	// The ID of the Databricks Job that performs the forward-fill ingestion.
+	IngestionJobId *int64 `json:"ingestion_job_id,omitempty"`
 	// The ID of the SDP pipeline that continuously copies new events from the
 	// streaming source into the ingestion Delta table.
 	IngestionPipelineId *string `json:"ingestion_pipeline_id,omitempty"`
-	// The ID of the Databricks Job that performs the forward-fill ingestion.
-	IngestionJobId *int64 `json:"ingestion_job_id,omitempty"`
-	// The ID of the Databricks Job that performs the historical backfill of the
-	// ingestion Delta table.
-	BackfillJobId *int64 `json:"backfill_job_id,omitempty"`
 	// Custom tags to associate with this stream's managed ingestion. They are
 	// applied to the ingestion pipeline and its forward-fill and backfill jobs, and
 	// forwarded to the underlying compute as cluster tags, so ingestion cost can be
@@ -586,10 +590,6 @@ type IngestionConfig struct {
 	// supported; keys and values are subject to the same limitations as cluster
 	// tags.
 	Tags map[string]string `json:"tags,omitempty"`
-	// The ID of the budget policy used to attribute the serverless compute cost of
-	// this stream's managed ingestion. If not specified, a default budget policy
-	// may be applied.
-	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
 }
 
 // Destination for the <Databricks>-managed Delta table that holds an offline
@@ -600,10 +600,10 @@ type IngestionDestination struct {
 
 // Binds a single UC function parameter to a source column..
 type InputBinding struct {
-	// Name of the UC function parameter.
-	Parameter *string `json:"parameter,omitempty"`
 	// Source column whose value is passed for this parameter at execution time.
 	Column *string `json:"column,omitempty"`
+	// Name of the UC function parameter.
+	Parameter *string `json:"parameter,omitempty"`
 }
 
 type JobContext struct {
@@ -614,50 +614,48 @@ type JobContext struct {
 }
 
 type KafkaConfig struct {
-	// Name that uniquely identifies this Kafka config within the metastore. This
-	// will be the identifier used from the Feature object to reference these
-	// configs for a feature. Can be distinct from topic name.
-	Name *string `json:"name,omitempty"`
-	// A comma-separated list of host/port pairs pointing to Kafka cluster.
-	BootstrapServers *string `json:"bootstrap_servers,omitempty"`
-	// Options to configure which Kafka topics to pull data from.
-	SubscriptionMode *SubscriptionMode `json:"subscription_mode,omitempty"`
 	// Authentication configuration for connection to topics.
 	AuthConfig *AuthConfig `json:"auth_config,omitempty"`
-	// Schema configuration for extracting message keys from topics. At least one of
-	// key_schema and value_schema must be provided.
-	KeySchema *SchemaConfig `json:"key_schema,omitempty"`
-	// Schema configuration for extracting message values from topics. At least one
-	// of key_schema and value_schema must be provided.
-	ValueSchema *SchemaConfig `json:"value_schema,omitempty"`
-	// Catch-all for miscellaneous options. Keys should be source options or Kafka
-	// consumer options (kafka.*)
-	ExtraOptions map[string]string `json:"extra_options,omitempty"`
 	// A user-provided and managed source for backfilling data. Historical data is
 	// used when creating a training set from streaming features linked to this
 	// Kafka config. In the future, a separate table will be maintained by
 	// <Databricks> for forward filling data. The schema for this source must match
 	// exactly that of the key and value schemas specified for this Kafka config.
 	BackfillSource *BackfillSource `json:"backfill_source,omitempty"`
+	// A comma-separated list of host/port pairs pointing to Kafka cluster.
+	BootstrapServers *string `json:"bootstrap_servers,omitempty"`
+	// Catch-all for miscellaneous options. Keys should be source options or Kafka
+	// consumer options (kafka.*)
+	ExtraOptions map[string]string `json:"extra_options,omitempty"`
 	// Configuration for ingesting Kafka data into a <Databricks>-managed Delta
 	// table.
 	IngestionConfig *IngestionConfig `json:"ingestion_config,omitempty"`
+	// Schema configuration for extracting message keys from topics. At least one of
+	// key_schema and value_schema must be provided.
+	KeySchema *SchemaConfig `json:"key_schema,omitempty"`
+	// Name that uniquely identifies this Kafka config within the metastore. This
+	// will be the identifier used from the Feature object to reference these
+	// configs for a feature. Can be distinct from topic name.
+	Name *string `json:"name,omitempty"`
+	// Options to configure which Kafka topics to pull data from.
+	SubscriptionMode *SubscriptionMode `json:"subscription_mode,omitempty"`
+	// Schema configuration for extracting message values from topics. At least one
+	// of key_schema and value_schema must be provided.
+	ValueSchema *SchemaConfig `json:"value_schema,omitempty"`
 }
 
 type KafkaSource struct {
-	// Name of the Kafka source, used to identify it. This is used to look up the
-	// corresponding KafkaConfig object. Can be distinct from topic name.
-	Name                       *string            `json:"name,omitempty"`
-	EntityColumnIdentifiers    []ColumnIdentifier `json:"entity_column_identifiers,omitempty"`
-	TimeseriesColumnIdentifier *ColumnIdentifier  `json:"timeseries_column_identifier,omitempty"`
+	EntityColumnIdentifiers []ColumnIdentifier `json:"entity_column_identifiers,omitempty"`
 	// The filter condition applied to the source data before aggregation.
 	FilterCondition *string `json:"filter_condition,omitempty"`
+	// Name of the Kafka source, used to identify it. This is used to look up the
+	// corresponding KafkaConfig object. Can be distinct from topic name.
+	Name                       *string           `json:"name,omitempty"`
+	TimeseriesColumnIdentifier *ColumnIdentifier `json:"timeseries_column_identifier,omitempty"`
 }
 
 // Kafka-specific configuration for a Stream..
 type KafkaStreamConfig struct {
-	// Options to configure which Kafka topics to pull data from.
-	SubscriptionMode *KafkaSubscriptionMode `json:"subscription_mode,omitempty"`
 	// Optional Kafka source or consumer options, validated against a server-side
 	// allowlist at request time. Allowed keys: - `maxOffsetsPerTrigger` -
 	// `startingOffsets` - `includeHeaders` - `kafka.request.timeout.ms` -
@@ -667,6 +665,8 @@ type KafkaStreamConfig struct {
 	// and connection details belong on the parent Stream's `connection_config`, not
 	// here.
 	ExtraOptions map[string]string `json:"extra_options,omitempty"`
+	// Options to configure which Kafka topics to pull data from.
+	SubscriptionMode *KafkaSubscriptionMode `json:"subscription_mode,omitempty"`
 }
 
 // Subscription mode for Kafka topic selection, matching standard Spark
@@ -682,8 +682,6 @@ type KafkaSubscriptionMode struct {
 // Amazon Kinesis
 // (https://docs.databricks.com/aws/en/connect/streaming/kinesis)..
 type KinesisStreamConfig struct {
-	StreamNames *StreamNameList `json:"stream_names,omitempty"`
-	StreamArns  *StreamArnList  `json:"stream_arns,omitempty"`
 	// Optional Kinesis source options, validated against a server-side allowlist at
 	// request time. Allowed keys: - `consumerMode` - `consumerNamePrefix` -
 	// `maxFetchRate` - `minFetchPeriod` - `maxFetchDuration` - `maxRecordsPerFetch`
@@ -693,6 +691,8 @@ type KinesisStreamConfig struct {
 	// and connection details belong on the parent Stream's `connection_config`, not
 	// here.
 	ExtraOptions map[string]string `json:"extra_options,omitempty"`
+	StreamArns   *StreamArnList    `json:"stream_arns,omitempty"`
+	StreamNames  *StreamNameList   `json:"stream_names,omitempty"`
 }
 
 // Returns the last N distinct values, ordered by the feature's timeseries
@@ -722,21 +722,21 @@ type LastNFunction struct {
 // allow us to track lineage, which currently uses caller entity information for
 // use across the Lineage Client and Observability in Lumberjack..
 type LineageContext struct {
-	// The notebook ID where this API was invoked.
-	NotebookId *int64 `json:"notebook_id,omitempty"`
 	// Job context information including job ID and run ID.
 	JobContext *JobContext `json:"job_context,omitempty"`
+	// The notebook ID where this API was invoked.
+	NotebookId *int64 `json:"notebook_id,omitempty"`
 }
 
 // Request to list features. Listing is always scoped to a single catalog and
 // schema; catalog_name and schema_name are required..
 type ListFeaturesRequest struct {
-	// Pagination token to go to the next page based on a previous query.
-	PageToken *string `json:"page_token,omitempty"`
-	// The maximum number of results to return.
-	PageSize *int `json:"page_size,omitempty"`
 	// Name of parent catalog for features of interest.
 	CatalogName *string `json:"catalog_name,omitempty"`
+	// The maximum number of results to return.
+	PageSize *int `json:"page_size,omitempty"`
+	// Pagination token to go to the next page based on a previous query.
+	PageToken *string `json:"page_token,omitempty"`
 	// Name of parent schema relative to its parent catalog.
 	SchemaName *string `json:"schema_name,omitempty"`
 }
@@ -749,10 +749,10 @@ type ListFeaturesResponse struct {
 }
 
 type ListKafkaConfigsRequest struct {
-	// Pagination token to go to the next page based on a previous query.
-	PageToken *string `json:"page_token,omitempty"`
 	// The maximum number of results to return.
 	PageSize *int `json:"page_size,omitempty"`
+	// Pagination token to go to the next page based on a previous query.
+	PageToken *string `json:"page_token,omitempty"`
 }
 
 type ListKafkaConfigsResponse struct {
@@ -766,11 +766,11 @@ type ListMaterializedFeaturesRequest struct {
 	// Filter by feature name. If specified, only materialized features materialized
 	// from this feature will be returned.
 	FeatureName *string `json:"feature_name,omitempty"`
-	// Pagination token to go to the next page based on a previous query.
-	PageToken *string `json:"page_token,omitempty"`
 	// The maximum number of results to return. Defaults to 100 if not specified.
 	// Cannot be greater than 1000.
 	PageSize *int `json:"page_size,omitempty"`
+	// Pagination token to go to the next page based on a previous query.
+	PageToken *string `json:"page_token,omitempty"`
 }
 
 type ListMaterializedFeaturesResponse struct {
@@ -789,12 +789,12 @@ type ListMaterializedFeaturesResponse struct {
 // should paginate until next_page_token is empty to retrieve all accessible
 // streams.
 type ListStreamsRequest struct {
-	// Two-part name (catalog.schema) of the parent under which to list Streams.
-	Parent *string `json:"parent,omitempty"`
 	// The maximum number of results to return.
 	PageSize *int `json:"page_size,omitempty"`
 	// Pagination token to go to the next page based on a previous query.
 	PageToken *string `json:"page_token,omitempty"`
+	// Two-part name (catalog.schema) of the parent under which to list Streams.
+	Parent *string `json:"parent,omitempty"`
 }
 
 // Response to a ListStreamsRequest.
@@ -806,20 +806,20 @@ type ListStreamsRequest struct {
 // should paginate until next_page_token is empty to retrieve all accessible
 // streams..
 type ListStreamsResponse struct {
-	// List of Streams.
-	Streams []Stream `json:"streams,omitempty"`
 	// Pagination token to request the next page of results for this query.
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// List of Streams.
+	Streams []Stream `json:"streams,omitempty"`
 }
 
 // Recipients to notify when a materialization run fails..
 type MaterializationFailureNotification struct {
-	// Email addresses to notify.
-	EmailAddresses []string `json:"email_addresses,omitempty"`
 	// IDs of the notification destinations (for example Slack, Microsoft Teams,
 	// PagerDuty, or a generic webhook) to notify. Not supported for streaming
 	// materialized features.
 	DestinationIds []string `json:"destination_ids,omitempty"`
+	// Email addresses to notify.
+	EmailAddresses []string `json:"email_addresses,omitempty"`
 	// If true, notify only when the final attempt of a run fails. If false or
 	// unset, notify on every failed attempt, including attempts that will be
 	// retried.
@@ -838,50 +838,65 @@ type MaterializationFailureNotification struct {
 // Notifications for the jobs and pipelines that materialize a feature, one
 // field per trigger..
 type MaterializationNotifications struct {
-	// Who to notify when a run succeeds.
-	OnSuccess *MaterializationSuccessNotification `json:"on_success,omitempty"`
 	// Who to notify when a run fails, and on which attempts.
 	OnFailure *MaterializationFailureNotification `json:"on_failure,omitempty"`
+	// Who to notify when a run succeeds.
+	OnSuccess *MaterializationSuccessNotification `json:"on_success,omitempty"`
 }
 
 // Recipients to notify when a materialization run succeeds..
 type MaterializationSuccessNotification struct {
-	// Email addresses to notify.
-	EmailAddresses []string `json:"email_addresses,omitempty"`
 	// IDs of the notification destinations (for example Slack, Microsoft Teams,
 	// PagerDuty, or a generic webhook) to notify. Not supported for streaming
 	// materialized features.
 	DestinationIds []string `json:"destination_ids,omitempty"`
+	// Email addresses to notify.
+	EmailAddresses []string `json:"email_addresses,omitempty"`
 }
 
 // A materialized feature represents a feature that is continuously computed and
 // stored..
 type MaterializedFeature struct {
-	// Server-assigned unique identifier for the materialized feature.
-	MaterializedFeatureId *string `json:"materialized_feature_id,omitempty"`
+	// The ID of the budget policy used to attribute the serverless compute cost of
+	// this materialization. If not specified, a default budget policy may be
+	// applied.
+	BudgetPolicyId      *string       `json:"budget_policy_id,omitempty"`
+	CronSchedule        *string       `json:"cron_schedule,omitempty"`
+	CronScheduleTrigger *CronSchedule `json:"cron_schedule_trigger,omitempty"`
 	// The full name of the feature in Unity Catalog.
-	FeatureName        *string             `json:"feature_name,omitempty"`
-	OfflineStoreConfig *OfflineStoreConfig `json:"offline_store_config,omitempty"`
-	OnlineStoreConfig  *OnlineStoreConfig  `json:"online_store_config,omitempty"`
-	// The fully qualified Unity Catalog path to the table containing the
-	// materialized feature (Delta table or Lakebase table). Output only.
-	TableName *string `json:"table_name,omitempty"`
-	// The schedule state of the materialization pipeline. Hidden from GraphQL:
-	// being deprecated, so not exposed to Catalog Explorer.
-	PipelineScheduleState MaterializedFeature_PipelineScheduleState `json:"pipeline_schedule_state,omitempty"`
+	FeatureName *string `json:"feature_name,omitempty"`
+	// True if this is an online materialized feature. False if it is an offline
+	// materialized feature.
+	IsOnline *bool `json:"is_online,omitempty"`
+	// The ID of the job that materializes the feature. This is present for both
+	// batch and streaming features.
+	JobId *int64 `json:"job_id,omitempty"`
 	// The timestamp when the pipeline last ran and updated the materialized feature
 	// values. If the pipeline has not run yet, this field will be null.
 	LastMaterializationTime *types.Time `json:"last_materialization_time,omitempty"`
-	CronSchedule            *string     `json:"cron_schedule,omitempty"`
-	// True if this is an online materialized feature. False if it is an offline
-	// materialized feature.
-	IsOnline            *bool          `json:"is_online,omitempty"`
-	CronScheduleTrigger *CronSchedule  `json:"cron_schedule_trigger,omitempty"`
-	TableTrigger        *TableTrigger  `json:"table_trigger,omitempty"`
-	StreamingMode       *StreamingMode `json:"streaming_mode,omitempty"`
 	// Name of the latest backfill operation on this materialized feature. Format:
 	// operations/{operation_id}.
 	LatestBackfillOperation *string `json:"latest_backfill_operation,omitempty"`
+	// Server-assigned unique identifier for the materialized feature.
+	MaterializedFeatureId *string `json:"materialized_feature_id,omitempty"`
+	// Notification configuration around the materialization job or pipeline
+	// lifecycle. They are applied to every job and pipeline that materializes this
+	// feature. Features which are materialized in the same pipeline will share the
+	// same notification.
+	Notifications      *MaterializationNotifications `json:"notifications,omitempty"`
+	OfflineStoreConfig *OfflineStoreConfig           `json:"offline_store_config,omitempty"`
+	OnlineStoreConfig  *OnlineStoreConfig            `json:"online_store_config,omitempty"`
+	// The ID of the pipeline that materializes this feature. This is only present
+	// for streaming features.
+	PipelineId *string `json:"pipeline_id,omitempty"`
+	// The schedule state of the materialization pipeline. Hidden from GraphQL:
+	// being deprecated, so not exposed to Catalog Explorer.
+	PipelineScheduleState MaterializedFeature_PipelineScheduleState `json:"pipeline_schedule_state,omitempty"`
+	StreamingMode         *StreamingMode                            `json:"streaming_mode,omitempty"`
+	// The fully qualified Unity Catalog path to the table containing the
+	// materialized feature (Delta table or Lakebase table). Output only.
+	TableName    *string       `json:"table_name,omitempty"`
+	TableTrigger *TableTrigger `json:"table_trigger,omitempty"`
 	// Custom tags to associate with this materialization. They are applied to the
 	// materialization job (for batch features) or pipeline (for streaming features)
 	// and forwarded to the underlying compute as cluster tags, so materialization
@@ -891,21 +906,6 @@ type MaterializedFeature struct {
 	// Catalog tagging API. A maximum of 25 tags is supported; keys and values are
 	// subject to the same limitations as cluster tags.
 	Tags map[string]string `json:"tags,omitempty"`
-	// The ID of the budget policy used to attribute the serverless compute cost of
-	// this materialization. If not specified, a default budget policy may be
-	// applied.
-	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
-	// The ID of the pipeline that materializes this feature. This is only present
-	// for streaming features.
-	PipelineId *string `json:"pipeline_id,omitempty"`
-	// The ID of the job that materializes the feature. This is present for both
-	// batch and streaming features.
-	JobId *int64 `json:"job_id,omitempty"`
-	// Notification configuration around the materialization job or pipeline
-	// lifecycle. They are applied to every job and pipeline that materializes this
-	// feature. Features which are materialized in the same pipeline will share the
-	// same notification.
-	Notifications *MaterializationNotifications `json:"notifications,omitempty"`
 }
 
 // Computes the maximum value..
@@ -926,24 +926,6 @@ type MinFunction struct {
 // <Databricks> secret scopes. This matches the SSL setup pattern documented at
 // https://docs.databricks.com/en/connect/streaming/kafka/authentication#use-ssl-to-connect-databricks-to-kafka..
 type MtlsConfig struct {
-	// Unity Catalog volume path to the JKS keystore file containing the client
-	// certificate and private key. e.g.
-	// "/Volumes/<catalog>/<schema>/<volume>/client.jks". The materialization
-	// compute must have read permission on this volume.
-	KeystoreLocation *string `json:"keystore_location,omitempty"`
-	// Secret-scope reference for the JKS keystore password.
-	KeystorePasswordRef *SecretScopeReference `json:"keystore_password_ref,omitempty"`
-	// Secret-scope reference for the private key password. Often the same value as
-	// the keystore password (keytool's default), but provided as a separate field
-	// because Apache Kafka requires it as a distinct option
-	// (kafka.ssl.key.password).
-	KeyPasswordRef *SecretScopeReference `json:"key_password_ref,omitempty"`
-	// Unity Catalog volume path to the JKS truststore file containing the CA
-	// certificate(s) trusted to verify the Kafka broker's server certificate. e.g.
-	// "/Volumes/<catalog>/<schema>/<volume>/truststore.jks".
-	TruststoreLocation *string `json:"truststore_location,omitempty"`
-	// Secret-scope reference for the JKS truststore password.
-	TruststorePasswordRef *SecretScopeReference `json:"truststore_password_ref,omitempty"`
 	// Set to true only when the broker certificate's SAN intentionally does not
 	// match the connection endpoint — for example when reaching the cluster
 	// through a PrivateLink endpoint whose DNS name is not in the broker
@@ -954,6 +936,24 @@ type MtlsConfig struct {
 	// See the Apache Kafka SSL security guide for background on this check:
 	// https://kafka.apache.org/42/security/encryption-and-authentication-using-ssl/#host-name-verification
 	DisableHostnameVerification *bool `json:"disable_hostname_verification,omitempty"`
+	// Secret-scope reference for the private key password. Often the same value as
+	// the keystore password (keytool's default), but provided as a separate field
+	// because Apache Kafka requires it as a distinct option
+	// (kafka.ssl.key.password).
+	KeyPasswordRef *SecretScopeReference `json:"key_password_ref,omitempty"`
+	// Unity Catalog volume path to the JKS keystore file containing the client
+	// certificate and private key. e.g.
+	// "/Volumes/<catalog>/<schema>/<volume>/client.jks". The materialization
+	// compute must have read permission on this volume.
+	KeystoreLocation *string `json:"keystore_location,omitempty"`
+	// Secret-scope reference for the JKS keystore password.
+	KeystorePasswordRef *SecretScopeReference `json:"keystore_password_ref,omitempty"`
+	// Unity Catalog volume path to the JKS truststore file containing the CA
+	// certificate(s) trusted to verify the Kafka broker's server certificate. e.g.
+	// "/Volumes/<catalog>/<schema>/<volume>/truststore.jks".
+	TruststoreLocation *string `json:"truststore_location,omitempty"`
+	// Secret-scope reference for the JKS truststore password.
+	TruststorePasswordRef *SecretScopeReference `json:"truststore_password_ref,omitempty"`
 }
 
 // Configuration for offline store destination..
@@ -973,6 +973,8 @@ type OnlineStoreConfig struct {
 	// logical database name. Quoting is handled by the backend where needed, do not
 	// pre-quote it.
 	CatalogName *string `json:"catalog_name,omitempty"`
+	// The name of the target online store.
+	OnlineStoreName *string `json:"online_store_name,omitempty"`
 	// The Unity Catalog schema name. This name is also used as the Lakebase schema
 	// name under the database. Quoting is handled by the backend where needed, do
 	// not pre-quote it.
@@ -980,26 +982,24 @@ type OnlineStoreConfig struct {
 	// Prefix for Unity Catalog table name. The materialized feature will be stored
 	// in a Lakebase table with this prefix and a generated postfix.
 	TableNamePrefix *string `json:"table_name_prefix,omitempty"`
-	// The name of the target online store.
-	OnlineStoreName *string `json:"online_store_name,omitempty"`
 }
 
 // This resource represents a long-running operation that is the result of a
 // network API call..
 type Operation struct {
-	// The server-assigned name, which is only unique within the same service that
-	// originally returns it. If you use the default HTTP mapping, the `name` should
-	// be a resource name ending with `operations/{unique_id}`.
-	Name *string `json:"name,omitempty"`
+	// If the value is `false`, it means the operation is still in progress. If
+	// `true`, the operation is completed, and either `error` or `response` is
+	// available.
+	Done  *bool     `json:"done,omitempty"`
+	Error *ApiError `json:"error,omitempty"`
 	// Service-specific metadata associated with the operation. It typically
 	// contains progress information and common metadata such as create time. Some
 	// services might not provide such metadata.
 	Metadata json.RawMessage `json:"metadata,omitempty"`
-	// If the value is `false`, it means the operation is still in progress. If
-	// `true`, the operation is completed, and either `error` or `response` is
-	// available.
-	Done     *bool           `json:"done,omitempty"`
-	Error    *ApiError       `json:"error,omitempty"`
+	// The server-assigned name, which is only unique within the same service that
+	// originally returns it. If you use the default HTTP mapping, the `name` should
+	// be a resource name ending with `operations/{unique_id}`.
+	Name     *string         `json:"name,omitempty"`
 	Response json.RawMessage `json:"response,omitempty"`
 }
 
@@ -1007,43 +1007,47 @@ type Operation struct {
 // describes the Kafka payload. A .proto file may declare multiple messages;
 // message_name disambiguates..
 type ProtoSchemaSpec struct {
-	// The raw .proto file text (proto2 and proto3 syntax supported, see
-	// https://protobuf.dev/programming-guides/proto3/ and
-	// https://protobuf.dev/programming-guides/proto2/).
-	SchemaText *string `json:"schema_text,omitempty"`
 	// The fully-qualified name of the message within schema_text that describes the
 	// Kafka payload (e.g. "Event" or "com.example.Event" if schema_text declares a
 	// package). Identifies which message is used to decode each Kafka record — a
 	// .proto file may declare multiple messages but only one represents the
 	// payload. Must not be empty.
 	MessageName *string `json:"message_name,omitempty"`
+	// The raw .proto file text (proto2 and proto3 syntax supported, see
+	// https://protobuf.dev/programming-guides/proto3/ and
+	// https://protobuf.dev/programming-guides/proto2/).
+	SchemaText *string `json:"schema_text,omitempty"`
 }
 
 // Progress and configuration for a feature entity purge..
 type PurgeFeatureEntitiesMetadata struct {
-	// Fully qualified names of the features targeted by the purge.
-	Features []string `json:"features,omitempty"`
+	// Time at which the purge operation was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
 	// Fully qualified name of the Unity Catalog Delta table containing the entity
 	// keys to purge.
 	EntitiesTable *string `json:"entities_table,omitempty"`
 	// Version of the entities table used by the purge.
 	EntitiesTableVersion *string `json:"entities_table_version,omitempty"`
-	// Time at which the purge operation was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	// Current state of the purge operation.
-	State PurgeFeatureEntitiesMetadata_State `json:"state,omitempty"`
+	// Fully qualified names of the features targeted by the purge.
+	Features []string `json:"features,omitempty"`
 	// ID of the job that executes this purge.
 	JobId *int64 `json:"job_id,omitempty"`
+	// Current state of the purge operation.
+	State PurgeFeatureEntitiesMetadata_State `json:"state,omitempty"`
 }
 
 // Request to purge materialized feature values for entities listed in a Unity
 // Catalog Delta table..
 type PurgeFeatureEntitiesRequest struct {
+	// The budget policy ID, in UUID format, used to attribute the serverless
+	// compute cost of this purge. If not specified, a default budget policy may be
+	// applied.
+	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
+	EntitiesTable  *string `json:"entities_table,omitempty"`
 	// Fully qualified names of the features to purge. At least one nonempty feature
 	// name is required. A request may contain at most 10000 features; submit
 	// additional features in separate requests. Duplicate features are rejected.
-	Features      []string `json:"features,omitempty"`
-	EntitiesTable *string  `json:"entities_table,omitempty"`
+	Features []string `json:"features,omitempty"`
 	// Optional UUID4 idempotency token for the request.
 	RequestId *string `json:"request_id,omitempty"`
 	// Custom tags to associate with this purge. They are applied to the purge job
@@ -1054,54 +1058,50 @@ type PurgeFeatureEntitiesRequest struct {
 	// Catalog tagging API. A maximum of 25 tags is supported; keys and values are
 	// subject to the same limitations as Databricks resource tags.
 	Tags map[string]string `json:"tags,omitempty"`
-	// The budget policy ID, in UUID format, used to attribute the serverless
-	// compute cost of this purge. If not specified, a default budget policy may be
-	// applied.
-	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
 }
 
 // Result of a completed feature entity purge..
 type PurgeFeatureEntitiesResponse struct {
+	// Operation-level error, if the purge failed outside an individual feature
+	// target.
+	Error *ApiError `json:"error,omitempty"`
 	// Metadata about the purge operation.
 	Metadata *PurgeFeatureEntitiesMetadata `json:"metadata,omitempty"`
 	// Per-feature purge results.
 	Results []PurgeFeatureEntitiesResult `json:"results,omitempty"`
 	// State of the purge operation.
 	State PurgeFeatureEntitiesMetadata_State `json:"state,omitempty"`
-	// Operation-level error, if the purge failed outside an individual feature
-	// target.
-	Error *ApiError `json:"error,omitempty"`
 }
 
 // Result of purging one feature..
 type PurgeFeatureEntitiesResult struct {
+	// Error encountered while purging this feature, if any.
+	Error *ApiError `json:"error,omitempty"`
 	// Fully qualified name of the feature that was purged.
 	Feature *string `json:"feature,omitempty"`
 	// State of the offline purge for this feature.
 	OfflineState PurgeFeatureEntitiesResult_State `json:"offline_state,omitempty"`
 	// State of the online purge for this feature.
 	OnlineState PurgeFeatureEntitiesResult_State `json:"online_state,omitempty"`
-	// Error encountered while purging this feature, if any.
-	Error *ApiError `json:"error,omitempty"`
 }
 
 // A request-time data source whose value is provided at inference time: offline
 // batch scoring or online serving endpoint.
 type RequestSource struct {
-	FlatSchema      *FlatSchema `json:"flat_schema,omitempty"`
 	DataframeSchema *string     `json:"dataframe_schema,omitempty"`
+	FlatSchema      *FlatSchema `json:"flat_schema,omitempty"`
 }
 
 // A rolling time window with an optional non-negative delay..
 type RollingWindow struct {
-	// The duration of the rolling window. Must be positive when set; absent means
-	// lifetime (aggregate over the entity's entire history).
-	WindowDuration *types.Duration `json:"window_duration,omitempty"`
 	// Non-negative analytic lag that evaluates the window this far in the past. Use
 	// this for timing variations unrelated to source lateness, such as a 30-day
 	// count as of one week ago. If unset, the analytic lag is zero. It composes
 	// with source.lateness when both are set.
 	Delay *types.Duration `json:"delay,omitempty"`
+	// The duration of the rolling window. Must be positive when set; absent means
+	// lifetime (aggregate over the entity's entire history).
+	WindowDuration *types.Duration `json:"window_duration,omitempty"`
 }
 
 // A sawtooth window served via the hybrid batch + streaming path. The batch
@@ -1111,19 +1111,19 @@ type RollingWindow struct {
 // control plane can explicitly identify hybrid (sawtooth) features rather than
 // inferring hybrid behavior from window_duration..
 type SawtoothWindow struct {
+	// Delay is not currently supported for Sawtooth windows.
+	Delay *types.Duration `json:"delay,omitempty"`
 	// The duration of the window. Must be positive and span more than two days when
 	// set, so that both the batch (N-1 day) and stale-path (N-2 day) partial
 	// aggregates are well defined. The duration need not be a whole number of days
 	// (e.g. 3 days 15 minutes is allowed). Absent means lifetime (aggregate over
 	// the entity's entire history).
 	WindowDuration *types.Duration `json:"window_duration,omitempty"`
-	// Delay is not currently supported for Sawtooth windows.
-	Delay *types.Duration `json:"delay,omitempty"`
 }
 
 type SchemaConfig struct {
-	JsonSchema  *string          `json:"json_schema,omitempty"`
 	AvroSchema  *string          `json:"avro_schema,omitempty"`
+	JsonSchema  *string          `json:"json_schema,omitempty"`
 	ProtoSchema *ProtoSchemaSpec `json:"proto_schema,omitempty"`
 }
 
@@ -1152,34 +1152,28 @@ type SchemaLocator_ConfluentSchema struct {
 // Configuration for resolving a Stream's schema from an external schema
 // registry (e.g. Confluent)..
 type SchemaRegistryConfig struct {
-	// A Schema Registry UC Connection object.
-	UcConnection *string `json:"uc_connection,omitempty"`
 	// Reference to the schema registry API secret in a <Databricks> secret scope.
 	// Set this only if required for authentication for the schema registry.
 	ApiSecretRef *SecretScopeReference `json:"api_secret_ref,omitempty"`
-	// Schema locator for the message payload. For Kafka this is the value. At least
-	// one of payload_schema_locator or key_schema_locator must be set.
-	PayloadSchemaLocator *SchemaLocator `json:"payload_schema_locator,omitempty"`
 	// Schema locator for the message key. Only used for Kafka streams. At least one
 	// of payload_schema_locator or key_schema_locator must be set.
 	KeySchemaLocator *SchemaLocator `json:"key_schema_locator,omitempty"`
+	// Schema locator for the message payload. For Kafka this is the value. At least
+	// one of payload_schema_locator or key_schema_locator must be set.
+	PayloadSchemaLocator *SchemaLocator `json:"payload_schema_locator,omitempty"`
+	// A Schema Registry UC Connection object.
+	UcConnection *string `json:"uc_connection,omitempty"`
 }
 
 // Reference to an entry in a <Databricks> secret scope..
 type SecretScopeReference struct {
-	// The <Databricks> secret scope name.
-	Scope *string `json:"scope,omitempty"`
 	// The key within the scope.
 	Key *string `json:"key,omitempty"`
+	// The <Databricks> secret scope name.
+	Scope *string `json:"scope,omitempty"`
 }
 
 type SlidingWindow struct {
-	// The duration of the sliding window. Must be positive when set; absent means
-	// lifetime (aggregate over the entity's entire history).
-	WindowDuration *types.Duration `json:"window_duration,omitempty"`
-	// The slide duration (interval by which windows advance, must be positive and
-	// less than duration).
-	SlideDuration *types.Duration `json:"slide_duration,omitempty"`
 	// Non-negative analytic lag that evaluates the window this far in the past. Use
 	// this for timing variations unrelated to source lateness, such as a 30-day
 	// count as of one week ago. If unset, the analytic lag is zero. It composes
@@ -1190,6 +1184,12 @@ type SlidingWindow struct {
 	// New York in standard time) instead of midnight UTC. If unset, the offset is
 	// zero. Must be shorter than slide_duration (and therefore window_duration).
 	Offset *types.Duration `json:"offset,omitempty"`
+	// The slide duration (interval by which windows advance, must be positive and
+	// less than duration).
+	SlideDuration *types.Duration `json:"slide_duration,omitempty"`
+	// The duration of the sliding window. Must be positive when set; absent means
+	// lifetime (aggregate over the entity's entire history).
+	WindowDuration *types.Duration `json:"window_duration,omitempty"`
 }
 
 // Configures when event-time data from this source is considered complete for a
@@ -1223,25 +1223,18 @@ type StddevSampFunction struct {
 // source. The source_config field determines the streaming platform source
 // (e.g. Kafka, Kinesis)..
 type Stream struct {
-	// Full three-part (catalog.schema.stream) name of the stream.
-	Name *string `json:"name,omitempty"`
-	// User-provided description.
-	Description *string `json:"description,omitempty"`
-	// Source-specific configuration. Determines the streaming platform source.
-	SourceConfig *StreamSourceConfig `json:"source_config,omitempty"`
+	// Indicates whether the principal is limited to retrieving metadata for the
+	// associated object through the BROWSE privilege when include_browse is enabled
+	// in the request.
+	BrowseOnly *bool `json:"browse_only,omitempty"`
 	// Specifies how to connect and authenticate to the stream platform.
 	ConnectionConfig *StreamConnectionConfig `json:"connection_config,omitempty"`
-	// Schema definitions for the stream, provided either directly on the Stream or
-	// resolved from an external schema registry through a UC Connection.
-	SchemaConfig *StreamSchemaConfig `json:"schema_config,omitempty"`
-	// Configuration for streaming data ingestion: the managed table storing an
-	// offline copy of forward fill data and optional historical backfill.
-	IngestionConfig *IngestionConfig `json:"ingestion_config,omitempty"`
-	// Optional SQL predicate to filter which record types from a streaming channel
-	// (e.g. a topic for Kafka) belong to this Stream. Events that do not match are
-	// not written to the ingestion table and are not used in materialization.
-	// Example: "value.event_type = 'transaction'".
-	RecordTypeFilter *string `json:"record_type_filter,omitempty"`
+	// Time at which this Stream was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
+	// Username of the Stream creator.
+	CreatedBy *string `json:"created_by,omitempty"`
+	// User-provided description.
+	Description *string `json:"description,omitempty"`
 	// Column paths (dot notation, e.g. "value.email" for Kafka) to drop. A path may
 	// reference a struct, in which case all of its nested fields are dropped (e.g.
 	// "value.address" drops "value.address.city" and "value.address.zip"). These
@@ -1251,18 +1244,25 @@ type Stream struct {
 	// schema. With a schema registry, a column can be excluded before it exists. A
 	// column cannot also be a deduplication column in the ingestion_config.
 	ExcludedColumns []string `json:"excluded_columns,omitempty"`
-	// Time at which this Stream was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	// Username of the Stream creator.
-	CreatedBy *string `json:"created_by,omitempty"`
+	// Configuration for streaming data ingestion: the managed table storing an
+	// offline copy of forward fill data and optional historical backfill.
+	IngestionConfig *IngestionConfig `json:"ingestion_config,omitempty"`
+	// Full three-part (catalog.schema.stream) name of the stream.
+	Name *string `json:"name,omitempty"`
+	// Optional SQL predicate to filter which record types from a streaming channel
+	// (e.g. a topic for Kafka) belong to this Stream. Events that do not match are
+	// not written to the ingestion table and are not used in materialization.
+	// Example: "value.event_type = 'transaction'".
+	RecordTypeFilter *string `json:"record_type_filter,omitempty"`
+	// Schema definitions for the stream, provided either directly on the Stream or
+	// resolved from an external schema registry through a UC Connection.
+	SchemaConfig *StreamSchemaConfig `json:"schema_config,omitempty"`
+	// Source-specific configuration. Determines the streaming platform source.
+	SourceConfig *StreamSourceConfig `json:"source_config,omitempty"`
 	// Time at which this Stream was last modified.
 	UpdateTime *types.Time `json:"update_time,omitempty"`
 	// Username of user who last modified the Stream.
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Indicates whether the principal is limited to retrieving metadata for the
-	// associated object through the BROWSE privilege when include_browse is enabled
-	// in the request.
-	BrowseOnly *bool `json:"browse_only,omitempty"`
 }
 
 // A list of Kinesis stream ARNs to read from..
@@ -1274,8 +1274,8 @@ type StreamArnList struct {
 
 // Specifies how to connect and authenticate to the stream platform..
 type StreamConnectionConfig struct {
-	UcConnectionName *string           `json:"uc_connection_name,omitempty"`
 	DirectMtlsConfig *DirectMtlsConfig `json:"direct_mtls_config,omitempty"`
+	UcConnectionName *string           `json:"uc_connection_name,omitempty"`
 }
 
 // A list of Kinesis stream names to read from..
@@ -1293,17 +1293,17 @@ type StreamSchemaConfig struct {
 
 // A Stream entity used as a data source for a feature..
 type StreamSource struct {
-	// Three-part full name of the Stream (catalog.schema.stream).
-	FullName *string `json:"full_name,omitempty"`
-	// The filter condition applied to the source data before aggregation.
-	FilterCondition *string `json:"filter_condition,omitempty"`
-	// The pipeline runs these SQL statements immediately after conversion into the
-	// schema specified on the Stream object.
-	TransformationSql *string `json:"transformation_sql,omitempty"`
 	// Schema of the resulting dataframe after transformations, in Spark StructType
 	// JSON format (from df.schema.json()). Any subsequent functions operate against
 	// this dataframe.
 	DataframeSchema *string `json:"dataframe_schema,omitempty"`
+	// The filter condition applied to the source data before aggregation.
+	FilterCondition *string `json:"filter_condition,omitempty"`
+	// Three-part full name of the Stream (catalog.schema.stream).
+	FullName *string `json:"full_name,omitempty"`
+	// The pipeline runs these SQL statements immediately after conversion into the
+	// schema specified on the Stream object.
+	TransformationSql *string `json:"transformation_sql,omitempty"`
 }
 
 // Source-specific configuration. Determines the streaming platform source..
@@ -1314,11 +1314,11 @@ type StreamSourceConfig struct {
 
 // The streaming mode configuration for a streaming materialization pipeline..
 type StreamingMode struct {
-	// The type of streaming mode used by the materialization pipeline.
-	Mode StreamingMode_StreamingModeType `json:"mode,omitempty"`
 	// The desired data freshness for feature materialization, expressed as a
 	// duration string (e.g. "1 minute").
 	FreshnessTarget *string `json:"freshness_target,omitempty"`
+	// The type of streaming mode used by the materialization pipeline.
+	Mode StreamingMode_StreamingModeType `json:"mode,omitempty"`
 	// Number of shuffle partitions for streaming materialization of this feature.
 	// Higher values process high-throughput features with more parallelism at
 	// higher compute cost. Materialized features which are computed together will
@@ -1349,10 +1349,9 @@ type TableTrigger struct {
 
 type TimeWindow struct {
 	Continuous *ContinuousWindow `json:"continuous,omitempty"`
-	Tumbling   *TumblingWindow   `json:"tumbling,omitempty"`
-	Sliding    *SlidingWindow    `json:"sliding,omitempty"`
 	Rolling    *RollingWindow    `json:"rolling,omitempty"`
 	Sawtooth   *SawtoothWindow   `json:"sawtooth,omitempty"`
+	Sliding    *SlidingWindow    `json:"sliding,omitempty"`
 	// Earliest event-time boundary at which the Feature may emit an output. This
 	// gates outputs, not the historical inputs read by a window. For example, a
 	// 365-day window with start_time=2026-01-01 begins emitting partial-window
@@ -1362,7 +1361,8 @@ type TimeWindow struct {
 	// a full window can be formed. If unset, lifetime sliding windows and rolling
 	// windows emit as soon as eligible source data exists. Not currently supported
 	// for sawtooth windows or for Features with a stream source.
-	StartTime *types.Time `json:"start_time,omitempty"`
+	StartTime *types.Time     `json:"start_time,omitempty"`
+	Tumbling  *TumblingWindow `json:"tumbling,omitempty"`
 }
 
 type TimeseriesColumn struct {
@@ -1377,9 +1377,6 @@ type TimeseriesColumn struct {
 }
 
 type TumblingWindow struct {
-	// The duration of each tumbling window (non-overlapping, fixed-duration
-	// windows).
-	WindowDuration *types.Duration `json:"window_duration,omitempty"`
 	// Non-negative analytic lag that evaluates the window this far in the past. Use
 	// this for timing variations unrelated to source lateness, such as a 30-day
 	// count as of one week ago. If unset, the analytic lag is zero. It composes
@@ -1390,6 +1387,9 @@ type TumblingWindow struct {
 	// New York in standard time) instead of midnight UTC. If unset, the offset is
 	// zero. Must be shorter than window_duration.
 	Offset *types.Duration `json:"offset,omitempty"`
+	// The duration of each tumbling window (non-overlapping, fixed-duration
+	// windows).
+	WindowDuration *types.Duration `json:"window_duration,omitempty"`
 }
 
 type UpdateFeatureRequest struct {

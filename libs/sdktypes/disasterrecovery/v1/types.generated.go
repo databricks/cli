@@ -30,15 +30,15 @@ const (
 
 // Request to create a new failover group..
 type CreateFailoverGroupRequest struct {
-	// The parent resource. Format: accounts/{account_id}.
-	Parent *string `json:"parent,omitempty"`
 	// The failover group to create.
 	FailoverGroup *FailoverGroup `json:"failover_group,omitempty"`
-	// When true, validates the request without creating the failover group.
-	ValidateOnly *bool `json:"validate_only,omitempty"`
 	// Client-provided identifier for the failover group. Used to construct the
 	// resource name as {parent}/failover-groups/{failover_group_id}.
 	FailoverGroupId *string `json:"failover_group_id,omitempty"`
+	// The parent resource. Format: accounts/{account_id}.
+	Parent *string `json:"parent,omitempty"`
+	// When true, validates the request without creating the failover group.
+	ValidateOnly *bool `json:"validate_only,omitempty"`
 }
 
 // Request to create a new stable URL for failover-aware workspace access..
@@ -47,25 +47,30 @@ type CreateStableUrlRequest struct {
 	Parent *string `json:"parent,omitempty"`
 	// The stable URL to create.
 	StableUrl *StableUrl `json:"stable_url,omitempty"`
-	// When true, validates the request without creating the stable URL.
-	ValidateOnly *bool `json:"validate_only,omitempty"`
 	// Client-provided identifier for the stable URL. Used to construct the resource
 	// name as {parent}/stable-urls/{stable_url_id}.
 	StableUrlId *string `json:"stable_url_id,omitempty"`
+	// When true, validates the request without creating the stable URL.
+	ValidateOnly *bool `json:"validate_only,omitempty"`
 }
 
 // Request to delete a failover group..
 type DeleteFailoverGroupRequest struct {
-	// The fully qualified resource name of the failover group to delete. Format:
-	// accounts/{account_id}/failover-groups/{failover_group_id}.
-	Name *string `json:"name,omitempty"`
 	// Opaque version string for optimistic locking. If provided, must match the
 	// current etag. If omitted, the delete proceeds without an etag check.
 	Etag *string `json:"etag,omitempty"`
+	// The fully qualified resource name of the failover group to delete. Format:
+	// accounts/{account_id}/failover-groups/{failover_group_id}.
+	Name *string `json:"name,omitempty"`
 }
 
 // Request to failover a failover group to a new primary region..
 type FailoverFailoverGroupRequest struct {
+	// Opaque version string for optimistic locking. If provided, must match the
+	// current etag. If omitted, the failover proceeds regardless of current state.
+	Etag *string `json:"etag,omitempty"`
+	// The type of failover to perform.
+	FailoverType FailoverFailoverGroupRequest_FailoverType `json:"failover_type,omitempty"`
 	// The fully qualified resource name of the failover group to failover. Format:
 	// accounts/{account_id}/failover-groups/{failover_group_id}.
 	Name *string `json:"name,omitempty"`
@@ -73,48 +78,41 @@ type FailoverFailoverGroupRequest struct {
 	// different from the current effective_primary_region. Serves as an idempotency
 	// check.
 	TargetPrimaryRegion *string `json:"target_primary_region,omitempty"`
-	// Opaque version string for optimistic locking. If provided, must match the
-	// current etag. If omitted, the failover proceeds regardless of current state.
-	Etag *string `json:"etag,omitempty"`
-	// The type of failover to perform.
-	FailoverType FailoverFailoverGroupRequest_FailoverType `json:"failover_type,omitempty"`
 }
 
 // A failover group manages disaster recovery across workspace sets,
 // coordinating Unity Catalog and workspace assets replication..
 type FailoverGroup struct {
-	// Fully qualified resource name in the format
-	// accounts/{account_id}/failover-groups/{failover_group_id}.
-	Name *string `json:"name,omitempty"`
+	// Time at which this failover group was created.
+	CreateTime *types.Time `json:"create_time,omitempty"`
 	// Current effective primary region. Replication flows FROM workspaces in this
 	// region. Changes after a successful failover.
 	EffectivePrimaryRegion *string `json:"effective_primary_region,omitempty"`
-	// List of all regions participating in this failover group.
-	Regions []string `json:"regions,omitempty"`
-	// Workspace sets, each containing workspaces that replicate to each other.
-	WorkspaceSets []WorkspaceSet `json:"workspace_sets,omitempty"`
-	// Unity Catalog replication configuration.
-	UnityCatalogAssets *UcReplicationConfig `json:"unity_catalog_assets,omitempty"`
-	// Aggregate state of the failover group.
-	State FailoverGroup_State `json:"state,omitempty"`
 	// Opaque version string for optimistic locking. Server-generated and returned
 	// in responses.
 	Etag *string `json:"etag,omitempty"`
-	// Time at which this failover group was created.
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	// Time at which this failover group was last modified.
-	UpdateTime *types.Time `json:"update_time,omitempty"`
-	// The latest point in time to which data has been replicated.
-	ReplicationPoint *types.Time `json:"replication_point,omitempty"`
 	// Initial primary region. Used only in Create requests to set the starting
 	// primary region. Not returned in responses.
 	InitialPrimaryRegion *string `json:"initial_primary_region,omitempty"`
+	// Fully qualified resource name in the format
+	// accounts/{account_id}/failover-groups/{failover_group_id}.
+	Name *string `json:"name,omitempty"`
+	// List of all regions participating in this failover group.
+	Regions []string `json:"regions,omitempty"`
+	// The latest point in time to which data has been replicated.
+	ReplicationPoint *types.Time `json:"replication_point,omitempty"`
+	// Aggregate state of the failover group.
+	State FailoverGroup_State `json:"state,omitempty"`
+	// Unity Catalog replication configuration.
+	UnityCatalogAssets *UcReplicationConfig `json:"unity_catalog_assets,omitempty"`
+	// Time at which this failover group was last modified.
+	UpdateTime *types.Time `json:"update_time,omitempty"`
+	// Workspace sets, each containing workspaces that replicate to each other.
+	WorkspaceSets []WorkspaceSet `json:"workspace_sets,omitempty"`
 }
 
 // Request to list failover groups for an account..
 type ListFailoverGroupsRequest struct {
-	// The parent resource. Format: accounts/{account_id}.
-	Parent *string `json:"parent,omitempty"`
 	// Maximum number of failover groups to return per page: - when set to a value
 	// greater than 0, the page length is the minimum of this value and a server
 	// configured value; - when set to 0 or unset, the page length is set to a
@@ -124,6 +122,8 @@ type ListFailoverGroupsRequest struct {
 	// Page token received from a previous ListFailoverGroups call. Provide this to
 	// retrieve the subsequent page.
 	PageToken *string `json:"page_token,omitempty"`
+	// The parent resource. Format: accounts/{account_id}.
+	Parent *string `json:"parent,omitempty"`
 }
 
 // Response for listing failover groups..
@@ -137,8 +137,6 @@ type ListFailoverGroupsResponse struct {
 
 // Request to list stable URLs for an account..
 type ListStableUrlsRequest struct {
-	// The parent resource. Format: accounts/{account_id}.
-	Parent *string `json:"parent,omitempty"`
 	// Maximum number of stable URLs to return per page: - when set to a value
 	// greater than 0, the page length is the minimum of this value and a server
 	// configured value; - when set to 0 or unset, the page length is set to a
@@ -148,15 +146,17 @@ type ListStableUrlsRequest struct {
 	// Page token received from a previous ListStableUrls call. Provide this to
 	// retrieve the subsequent page.
 	PageToken *string `json:"page_token,omitempty"`
+	// The parent resource. Format: accounts/{account_id}.
+	Parent *string `json:"parent,omitempty"`
 }
 
 // Response for listing stable URLs..
 type ListStableUrlsResponse struct {
-	// The stable URLs for this account.
-	StableUrls []StableUrl `json:"stable_urls,omitempty"`
 	// A token that can be sent as page_token to retrieve the next page. If omitted,
 	// there are no subsequent pages.
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// The stable URLs for this account.
+	StableUrls []StableUrl `json:"stable_urls,omitempty"`
 }
 
 // A location mapping identified by a name, with URIs per region. The system
@@ -180,22 +180,6 @@ type LocationMappingEntry struct {
 // A stable URL provides a failover-aware endpoint for accessing a workspace.
 // Its lifecycle is independent of any failover group..
 type StableUrl struct {
-	// Fully qualified resource name. Format:
-	// accounts/{account_id}/stable-urls/{stable_url_id}.
-	Name *string `json:"name,omitempty"`
-	// The stable URL endpoint. Generated on creation and immutable thereafter. For
-	// non-Private-Link workspaces this is `https://<spog_host>/?w=<connection_id>`.
-	// For Private-Link workspaces this is the per-connection hostname.
-	Url *string `json:"url,omitempty"`
-	// The workspace this stable URL is initially bound to. Used only in Create
-	// requests to associate the stable URL with a workspace. Not returned in
-	// responses.
-	InitialWorkspaceId *string `json:"initial_workspace_id,omitempty"`
-	// Fully qualified resource name of the FailoverGroup this stable URL is
-	// currently linked to, in the format
-	// `accounts/{account_id}/failover-groups/{failover_group_id}`. Empty when the
-	// stable URL is not attached to any failover group.
-	FailoverGroupName *string `json:"failover_group_name,omitempty"`
 	// The workspace this stable URL currently routes to. Set to
 	// `initial_workspace_id` at creation, advanced to the failover group's primary
 	// while attached (including across a failover), and preserved when the stable
@@ -203,11 +187,27 @@ type StableUrl struct {
 	// stable URL points: after a failover followed by a detach it reflects the
 	// post-failover primary, not `initial_workspace_id`.
 	EffectiveWorkspaceId *string `json:"effective_workspace_id,omitempty"`
+	// Fully qualified resource name of the FailoverGroup this stable URL is
+	// currently linked to, in the format
+	// `accounts/{account_id}/failover-groups/{failover_group_id}`. Empty when the
+	// stable URL is not attached to any failover group.
+	FailoverGroupName *string `json:"failover_group_name,omitempty"`
+	// The workspace this stable URL is initially bound to. Used only in Create
+	// requests to associate the stable URL with a workspace. Not returned in
+	// responses.
+	InitialWorkspaceId *string `json:"initial_workspace_id,omitempty"`
+	// Fully qualified resource name. Format:
+	// accounts/{account_id}/stable-urls/{stable_url_id}.
+	Name *string `json:"name,omitempty"`
 	// The stable workspace ID for this stable URL. Generated on creation and
 	// immutable thereafter; identifies the URL across failovers and is the same
 	// value embedded in the `url` (as the `w=` query parameter for SPOG URLs, or in
 	// the `conn-<id>` hostname for Private-Link URLs).
 	StableWorkspaceId *string `json:"stable_workspace_id,omitempty"`
+	// The stable URL endpoint. Generated on creation and immutable thereafter. For
+	// non-Private-Link workspaces this is `https://<spog_host>/?w=<connection_id>`.
+	// For Private-Link workspaces this is the per-connection hostname.
+	Url *string `json:"url,omitempty"`
 }
 
 // A Unity Catalog catalog to replicate..
@@ -218,36 +218,33 @@ type UcCatalog struct {
 
 // Unity Catalog replication configuration (top-level, not per-set)..
 type UcReplicationConfig struct {
-	// Location mappings - storage URI per region for each location.
-	LocationMappings []LocationMapping `json:"location_mappings,omitempty"`
 	// UC catalogs to replicate.
 	Catalogs []UcCatalog `json:"catalogs,omitempty"`
 	// The workspace set whose workspaces will be used for data replication of all
 	// UC catalogs' underlying storage.
 	DataReplicationWorkspaceSet *string `json:"data_replication_workspace_set,omitempty"`
+	// Location mappings - storage URI per region for each location.
+	LocationMappings []LocationMapping `json:"location_mappings,omitempty"`
 }
 
 // Request to update a failover group..
 type UpdateFailoverGroupRequest struct {
-	// The failover group with updated fields. The name field identifies the
-	// resource and is populated from the URL path.
-	FailoverGroup *FailoverGroup `json:"failover_group,omitempty"`
-	// Comma-separated list of fields to update.
-	UpdateMask *string `json:"update_mask,omitempty"`
 	// Optional opaque version string for optimistic locking, obtained from a prior
 	// read of the failover group. If provided, the update is rejected unless it
 	// matches the failover group's current etag. If omitted, the update proceeds
 	// without an optimistic-lock check.
 	Etag *string `json:"etag,omitempty"`
+	// The failover group with updated fields. The name field identifies the
+	// resource and is populated from the URL path.
+	FailoverGroup *FailoverGroup `json:"failover_group,omitempty"`
+	// Comma-separated list of fields to update.
+	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
 // A set of workspaces that replicate to each other across regions..
 type WorkspaceSet struct {
 	// Resource name for this workspace set.
 	Name *string `json:"name,omitempty"`
-	// Workspace IDs in this set. The system derives and validates regions. All
-	// workspaces must be in the Mission Critical tier.
-	WorkspaceIds []string `json:"workspace_ids,omitempty"`
 	// Whether to enable control plane DR (notebooks, jobs, clusters, etc.) for this
 	// set. Defaults to false.
 	ReplicateWorkspaceAssets *bool `json:"replicate_workspace_assets,omitempty"`
@@ -255,6 +252,9 @@ type WorkspaceSet struct {
 	// accounts/{account_id}/stable-urls/{stable_url_id}. The referenced stable URLs
 	// must already exist (via CreateStableUrl).
 	StableUrlNames []string `json:"stable_url_names,omitempty"`
+	// Workspace IDs in this set. The system derives and validates regions. All
+	// workspaces must be in the Mission Critical tier.
+	WorkspaceIds []string `json:"workspace_ids,omitempty"`
 }
 
 // CreateFailoverGroupRequestToSDK converts the mirror to the sdk-go type.

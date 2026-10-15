@@ -13,80 +13,84 @@ import (
 
 type CreateAccountFederationPolicyRequest struct {
 	// The account id for the federation policy.
-	AccountId *string `json:"account_id,omitempty"`
-	// The service principal id for the federation policy.
-	ServicePrincipalId *int64 `json:"service_principal_id,omitempty"`
+	AccountId *string           `json:"account_id,omitempty"`
+	Policy    *FederationPolicy `json:"policy,omitempty"`
 	// The identifier for the federation policy. The identifier must contain only
 	// lowercase alphanumeric characters, numbers, hyphens, and slashes. If
 	// unspecified, the id will be assigned by <Databricks>.
-	PolicyId *string           `json:"policy_id,omitempty"`
-	Policy   *FederationPolicy `json:"policy,omitempty"`
+	PolicyId *string `json:"policy_id,omitempty"`
+	// The service principal id for the federation policy.
+	ServicePrincipalId *int64 `json:"service_principal_id,omitempty"`
 }
 
 type CreateServicePrincipalFederationPolicyRequest struct {
 	// The account id for the federation policy.
-	AccountId *string `json:"account_id,omitempty"`
-	// The service principal id for the federation policy.
-	ServicePrincipalId *int64 `json:"service_principal_id,omitempty"`
+	AccountId *string           `json:"account_id,omitempty"`
+	Policy    *FederationPolicy `json:"policy,omitempty"`
 	// The identifier for the federation policy. The identifier must contain only
 	// lowercase alphanumeric characters, numbers, hyphens, and slashes. If
 	// unspecified, the id will be assigned by <Databricks>.
-	PolicyId *string           `json:"policy_id,omitempty"`
-	Policy   *FederationPolicy `json:"policy,omitempty"`
+	PolicyId *string `json:"policy_id,omitempty"`
+	// The service principal id for the federation policy.
+	ServicePrincipalId *int64 `json:"service_principal_id,omitempty"`
 }
 
 type CreateServicePrincipalSecretRequest struct {
 	// The account ID.
 	AccountId *string `json:"account_id,omitempty"`
-	// The service principal ID.
-	ServicePrincipal *string `json:"service_principal,omitempty"`
 	// The lifetime of the secret in seconds. If this parameter is not provided, the
 	// secret will have a default lifetime of 730 days (63072000s).
 	Lifetime *types.Duration `json:"lifetime,omitempty"`
 	// OAuth API scopes to bind to the secret; a minted token cannot exceed them.
 	// Empty = unrestricted (all-apis). E.g. all-apis, sql, iam.groups:read.
 	Scopes []string `json:"scopes,omitempty"`
+	// The service principal ID.
+	ServicePrincipal *string `json:"service_principal,omitempty"`
 }
 
 type CreateServicePrincipalSecretResponse struct {
+	// UTC time when the secret was created
+	CreateTime *string `json:"create_time,omitempty"`
+	// UTC time when the secret will expire. If the field is not present, the secret
+	// does not expire.
+	ExpireTime *types.Time `json:"expire_time,omitempty"`
 	// ID of the secret
 	Id *string `json:"id,omitempty"`
+	// OAuth API scopes bound to this secret. Empty = unrestricted (all-apis).
+	Scopes []string `json:"scopes,omitempty"`
 	// Secret Value
 	Secret *string `json:"secret,omitempty"`
 	// Secret Hash
 	SecretHash *string `json:"secret_hash,omitempty"`
-	// UTC time when the secret was created
-	CreateTime *string `json:"create_time,omitempty"`
-	// UTC time when the secret was updated
-	UpdateTime *string `json:"update_time,omitempty"`
 	// Status of the secret
 	Status *string `json:"status,omitempty"`
-	// UTC time when the secret will expire. If the field is not present, the secret
-	// does not expire.
-	ExpireTime *types.Time `json:"expire_time,omitempty"`
-	// OAuth API scopes bound to this secret. Empty = unrestricted (all-apis).
-	Scopes []string `json:"scopes,omitempty"`
+	// UTC time when the secret was updated
+	UpdateTime *string `json:"update_time,omitempty"`
 }
 
 type DeleteAccountFederationPolicyRequest struct {
 	// The account id for the federation policy.
 	AccountId *string `json:"account_id,omitempty"`
-	// The service principal id for the federation policy.
-	ServicePrincipalId *int64 `json:"service_principal_id,omitempty"`
 	// The identifier for the federation policy.
 	PolicyId *string `json:"policy_id,omitempty"`
+	// The service principal id for the federation policy.
+	ServicePrincipalId *int64 `json:"service_principal_id,omitempty"`
 }
 
 type DeleteServicePrincipalSecretRequest struct {
 	// The account ID.
 	AccountId *string `json:"account_id,omitempty"`
-	// The service principal ID.
-	ServicePrincipal *string `json:"service_principal,omitempty"`
 	// The secret ID.
 	SecretId *string `json:"secret_id,omitempty"`
+	// The service principal ID.
+	ServicePrincipal *string `json:"service_principal,omitempty"`
 }
 
 type FederationPolicy struct {
+	// Creation time of the federation policy.
+	CreateTime *types.Time `json:"create_time,omitempty"`
+	// Description of the federation policy.
+	Description *string `json:"description,omitempty"`
 	// Resource name for the federation policy. Example values include
 	// `accounts/<account-id>/federationPolicies/my-federation-policy` for Account
 	// Federation Policies, and
@@ -94,60 +98,55 @@ type FederationPolicy struct {
 	// for Service Principal Federation Policies. Typically an output parameter,
 	// which does not need to be specified in create or update requests. If
 	// specified in a request, must match the value in the request URL.
-	Name *string `json:"name,omitempty"`
-	// Description of the federation policy.
-	Description *string               `json:"description,omitempty"`
-	OidcPolicy  *OidcFederationPolicy `json:"oidc_policy,omitempty"`
-	// Creation time of the federation policy.
-	CreateTime *types.Time `json:"create_time,omitempty"`
-	// Last update time of the federation policy.
-	UpdateTime *types.Time `json:"update_time,omitempty"`
-	// Unique, immutable id of the federation policy.
-	Uid *string `json:"uid,omitempty"`
+	Name       *string               `json:"name,omitempty"`
+	OidcPolicy *OidcFederationPolicy `json:"oidc_policy,omitempty"`
+	// The ID of the federation policy. Output only.
+	PolicyId *string `json:"policy_id,omitempty"`
 	// The service principal ID that this federation policy applies to. Output only.
 	// Only set for service principal federation policies.
 	ServicePrincipalId *int64 `json:"service_principal_id,omitempty"`
-	// The ID of the federation policy. Output only.
-	PolicyId *string `json:"policy_id,omitempty"`
+	// Unique, immutable id of the federation policy.
+	Uid *string `json:"uid,omitempty"`
+	// Last update time of the federation policy.
+	UpdateTime *types.Time `json:"update_time,omitempty"`
 }
 
 type GetAccountFederationPolicyRequest struct {
 	// The account id for the federation policy.
 	AccountId *string `json:"account_id,omitempty"`
-	// The service principal id for the federation policy.
-	ServicePrincipalId *int64 `json:"service_principal_id,omitempty"`
 	// The identifier for the federation policy.
 	PolicyId *string `json:"policy_id,omitempty"`
+	// The service principal id for the federation policy.
+	ServicePrincipalId *int64 `json:"service_principal_id,omitempty"`
 }
 
 type ListAccountFederationPoliciesRequest struct {
 	// The account id for the federation policy.
 	AccountId *string `json:"account_id,omitempty"`
+	PageSize  *int    `json:"page_size,omitempty"`
+	PageToken *string `json:"page_token,omitempty"`
 	// The service principal id for the federation policy.
-	ServicePrincipalId *int64  `json:"service_principal_id,omitempty"`
-	PageSize           *int    `json:"page_size,omitempty"`
-	PageToken          *string `json:"page_token,omitempty"`
+	ServicePrincipalId *int64 `json:"service_principal_id,omitempty"`
 }
 
 type ListFederationPoliciesResponse struct {
-	Policies      []FederationPolicy `json:"policies,omitempty"`
 	NextPageToken *string            `json:"next_page_token,omitempty"`
+	Policies      []FederationPolicy `json:"policies,omitempty"`
 }
 
 type ListServicePrincipalFederationPoliciesRequest struct {
 	// The account id for the federation policy.
 	AccountId *string `json:"account_id,omitempty"`
+	PageSize  *int    `json:"page_size,omitempty"`
+	PageToken *string `json:"page_token,omitempty"`
 	// The service principal id for the federation policy.
-	ServicePrincipalId *int64  `json:"service_principal_id,omitempty"`
-	PageSize           *int    `json:"page_size,omitempty"`
-	PageToken          *string `json:"page_token,omitempty"`
+	ServicePrincipalId *int64 `json:"service_principal_id,omitempty"`
 }
 
 type ListServicePrincipalSecretsRequest struct {
 	// The account ID.
 	AccountId *string `json:"account_id,omitempty"`
-	// The service principal ID.
-	ServicePrincipal *string `json:"service_principal,omitempty"`
+	PageSize  *int    `json:"page_size,omitempty"`
 	// An opaque page token which was the `next_page_token` in the response of the
 	// previous request to list the secrets for this service principal. Provide this
 	// token to retrieve the next page of secret entries. When providing a
@@ -157,42 +156,29 @@ type ListServicePrincipalSecretsRequest struct {
 	// no `next_page_token`. Note that the number of entries returned must not be
 	// used to determine when the listing is complete.
 	PageToken *string `json:"page_token,omitempty"`
-	PageSize  *int    `json:"page_size,omitempty"`
+	// The service principal ID.
+	ServicePrincipal *string `json:"service_principal,omitempty"`
 }
 
 type ListServicePrincipalSecretsResponse struct {
-	// List of the secrets
-	Secrets []ServicePrincipalSecret `json:"secrets,omitempty"`
 	// A token, which can be sent as `page_token` to retrieve the next page.
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// List of the secrets
+	Secrets []ServicePrincipalSecret `json:"secrets,omitempty"`
 }
 
 // Specifies the policy to use for validating OIDC claims in your federated
 // tokens..
 type OidcFederationPolicy struct {
-	// The required token issuer, as specified in the 'iss' claim of federated
-	// tokens.
-	Issuer *string `json:"issuer,omitempty"`
-	// The required token subject, as specified in the subject claim of federated
-	// tokens. Must be specified for service principal federation policies. Must not
-	// be specified for account federation policies.
-	Subject *string `json:"subject,omitempty"`
 	// The allowed token audiences, as specified in the 'aud' claim of federated
 	// tokens. The audience identifier is intended to represent the recipient of the
 	// token. Can be any non-empty string value. As long as the audience in the
 	// token matches at least one audience in the policy, the token is considered a
 	// match. If audiences is unspecified, defaults to your <Databricks> account id.
 	Audiences []string `json:"audiences,omitempty"`
-	// The claim that contains the subject of the token. If unspecified, the default
-	// value is 'sub'.
-	SubjectClaim *string `json:"subject_claim,omitempty"`
-	// URL of the public keys used to validate the signature of federated tokens, in
-	// JWKS format. Most use cases should not need to specify this field. If
-	// jwks_uri and jwks_json are both unspecified (recommended), <Databricks>
-	// automatically fetches the public keys from your issuer’s well known
-	// endpoint. Databricks strongly recommends relying on your issuer’s well
-	// known endpoint for discovering public keys.
-	JwksUri *string `json:"jwks_uri,omitempty"`
+	// The required token issuer, as specified in the 'iss' claim of federated
+	// tokens.
+	Issuer *string `json:"issuer,omitempty"`
 	// The public keys used to validate the signature of federated tokens, in JWKS
 	// format. Most use cases should not need to specify this field. If jwks_uri and
 	// jwks_json are both unspecified (recommended), <Databricks> automatically
@@ -200,36 +186,50 @@ type OidcFederationPolicy struct {
 	// strongly recommends relying on your issuer’s well known endpoint for
 	// discovering public keys.
 	JwksJson *string `json:"jwks_json,omitempty"`
+	// URL of the public keys used to validate the signature of federated tokens, in
+	// JWKS format. Most use cases should not need to specify this field. If
+	// jwks_uri and jwks_json are both unspecified (recommended), <Databricks>
+	// automatically fetches the public keys from your issuer’s well known
+	// endpoint. Databricks strongly recommends relying on your issuer’s well
+	// known endpoint for discovering public keys.
+	JwksUri *string `json:"jwks_uri,omitempty"`
+	// The required token subject, as specified in the subject claim of federated
+	// tokens. Must be specified for service principal federation policies. Must not
+	// be specified for account federation policies.
+	Subject *string `json:"subject,omitempty"`
+	// The claim that contains the subject of the token. If unspecified, the default
+	// value is 'sub'.
+	SubjectClaim *string `json:"subject_claim,omitempty"`
 }
 
 type ServicePrincipalSecret struct {
+	// UTC time when the secret was created
+	CreateTime *string `json:"create_time,omitempty"`
+	// UTC time when the secret will expire. If the field is not present, the secret
+	// does not expire.
+	ExpireTime *types.Time `json:"expire_time,omitempty"`
 	// ID of the secret
 	Id *string `json:"id,omitempty"`
+	// OAuth API scopes bound to this secret. Empty = unrestricted (all-apis).
+	Scopes []string `json:"scopes,omitempty"`
 	// Secret Value
 	Secret *string `json:"secret,omitempty"`
 	// Secret Hash
 	SecretHash *string `json:"secret_hash,omitempty"`
-	// UTC time when the secret was created
-	CreateTime *string `json:"create_time,omitempty"`
-	// UTC time when the secret was updated
-	UpdateTime *string `json:"update_time,omitempty"`
 	// Status of the secret
 	Status *string `json:"status,omitempty"`
-	// UTC time when the secret will expire. If the field is not present, the secret
-	// does not expire.
-	ExpireTime *types.Time `json:"expire_time,omitempty"`
-	// OAuth API scopes bound to this secret. Empty = unrestricted (all-apis).
-	Scopes []string `json:"scopes,omitempty"`
+	// UTC time when the secret was updated
+	UpdateTime *string `json:"update_time,omitempty"`
 }
 
 type UpdateAccountFederationPolicyRequest struct {
 	// The account id for the federation policy.
-	AccountId *string `json:"account_id,omitempty"`
+	AccountId *string           `json:"account_id,omitempty"`
+	Policy    *FederationPolicy `json:"policy,omitempty"`
+	// The identifier for the federation policy.
+	PolicyId *string `json:"policy_id,omitempty"`
 	// The service principal id for the federation policy.
 	ServicePrincipalId *int64 `json:"service_principal_id,omitempty"`
-	// The identifier for the federation policy.
-	PolicyId *string           `json:"policy_id,omitempty"`
-	Policy   *FederationPolicy `json:"policy,omitempty"`
 	// The field mask specifies which fields of the policy to update. To specify
 	// multiple fields in the field mask, use comma as the separator (no space). The
 	// special value '*' indicates that all fields should be updated (full
@@ -241,12 +241,12 @@ type UpdateAccountFederationPolicyRequest struct {
 
 type UpdateServicePrincipalFederationPolicyRequest struct {
 	// The account id for the federation policy.
-	AccountId *string `json:"account_id,omitempty"`
+	AccountId *string           `json:"account_id,omitempty"`
+	Policy    *FederationPolicy `json:"policy,omitempty"`
+	// The identifier for the federation policy.
+	PolicyId *string `json:"policy_id,omitempty"`
 	// The service principal id for the federation policy.
 	ServicePrincipalId *int64 `json:"service_principal_id,omitempty"`
-	// The identifier for the federation policy.
-	PolicyId *string           `json:"policy_id,omitempty"`
-	Policy   *FederationPolicy `json:"policy,omitempty"`
 	// The field mask specifies which fields of the policy to update. To specify
 	// multiple fields in the field mask, use comma as the separator (no space). The
 	// special value '*' indicates that all fields should be updated (full

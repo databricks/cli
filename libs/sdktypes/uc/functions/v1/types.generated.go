@@ -69,18 +69,49 @@ type ConnectionDependency struct {
 }
 
 type CreateFunction struct {
-	// Name of function, relative to parent schema.
-	Name *string `json:"name,omitempty"`
+	// Indicates whether the principal is limited to retrieving metadata for the
+	// associated object through the BROWSE privilege when include_browse is enabled
+	// in the request.
+	BrowseOnly *bool `json:"browse_only,omitempty"`
 	// Name of parent Catalog.
 	CatalogName *string `json:"catalog_name,omitempty"`
-	// Name of parent Schema relative to its parent Catalog.
-	SchemaName *string `json:"schema_name,omitempty"`
-	// Function input parameters.
-	InputParams *FunctionParameterInfos `json:"input_params,omitempty"`
+	// User-provided free-form text description.
+	Comment *string `json:"comment,omitempty"`
+	// Time at which this function was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of function creator.
+	CreatedBy *string `json:"created_by,omitempty"`
 	// Scalar function return data type.
 	DataType ColumnTypeName `json:"data_type,omitempty"`
+	// External function language.
+	ExternalLanguage *string `json:"external_language,omitempty"`
+	// External function name.
+	ExternalName *string `json:"external_name,omitempty"`
 	// Pretty printed function data type.
 	FullDataType *string `json:"full_data_type,omitempty"`
+	// Full name of Function, in form of
+	// **catalog_name**.**schema_name**.**function_name**
+	FullName *string `json:"full_name,omitempty"`
+	// Id of Function, relative to parent schema.
+	FunctionId *string `json:"function_id,omitempty"`
+	// Function input parameters.
+	InputParams *FunctionParameterInfos `json:"input_params,omitempty"`
+	// Whether the function is deterministic.
+	IsDeterministic *bool `json:"is_deterministic,omitempty"`
+	// Function null call.
+	IsNullCall *bool `json:"is_null_call,omitempty"`
+	// Unique identifier of parent metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// Name of function, relative to parent schema.
+	Name *string `json:"name,omitempty"`
+	// Username of current owner of the function.
+	Owner *string `json:"owner,omitempty"`
+	// Function parameter style. **S** is the value for SQL.
+	ParameterStyle FunctionInfo_ParameterStyle `json:"parameter_style,omitempty"`
+	// JSON-serialized key-value pair map, encoded (escaped) as a string.
+	Properties *string `json:"properties,omitempty"`
+	// Table function return parameters.
+	ReturnParams *FunctionParameterInfos `json:"return_params,omitempty"`
 	// Function language. When **EXTERNAL** is used, the language of the routine
 	// function should be specified in the **external_language** field, and the
 	// **return_params** of the function cannot be used (as **TABLE** return type is
@@ -88,54 +119,23 @@ type CreateFunction struct {
 	RoutineBody FunctionInfo_RoutineBody `json:"routine_body,omitempty"`
 	// Function body.
 	RoutineDefinition *string `json:"routine_definition,omitempty"`
-	// Function parameter style. **S** is the value for SQL.
-	ParameterStyle FunctionInfo_ParameterStyle `json:"parameter_style,omitempty"`
-	// Whether the function is deterministic.
-	IsDeterministic *bool `json:"is_deterministic,omitempty"`
-	// Function SQL data access.
-	SqlDataAccess FunctionInfo_SqlDataAccess `json:"sql_data_access,omitempty"`
-	// Function null call.
-	IsNullCall *bool `json:"is_null_call,omitempty"`
+	// Function dependencies. For external UDFs, dependencies may contain only
+	// credential, secret, or volume objects.
+	RoutineDependencies *DependencyList `json:"routine_dependencies,omitempty"`
+	// Name of parent Schema relative to its parent Catalog.
+	SchemaName *string `json:"schema_name,omitempty"`
 	// Function security type.
 	SecurityType FunctionInfo_SecurityType `json:"security_type,omitempty"`
 	// Specific name of the function; Reserved for future use.
 	SpecificName *string `json:"specific_name,omitempty"`
-	// Table function return parameters.
-	ReturnParams *FunctionParameterInfos `json:"return_params,omitempty"`
-	// External function name.
-	ExternalName *string `json:"external_name,omitempty"`
-	// External function language.
-	ExternalLanguage *string `json:"external_language,omitempty"`
+	// Function SQL data access.
+	SqlDataAccess FunctionInfo_SqlDataAccess `json:"sql_data_access,omitempty"`
 	// List of schemes whose objects can be referenced without qualification.
 	SqlPath *string `json:"sql_path,omitempty"`
-	// Username of current owner of the function.
-	Owner *string `json:"owner,omitempty"`
-	// User-provided free-form text description.
-	Comment *string `json:"comment,omitempty"`
-	// JSON-serialized key-value pair map, encoded (escaped) as a string.
-	Properties *string `json:"properties,omitempty"`
-	// Function dependencies. For external UDFs, dependencies may contain only
-	// credential, secret, or volume objects.
-	RoutineDependencies *DependencyList `json:"routine_dependencies,omitempty"`
-	// Unique identifier of parent metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Full name of Function, in form of
-	// **catalog_name**.**schema_name**.**function_name**
-	FullName *string `json:"full_name,omitempty"`
-	// Time at which this function was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of function creator.
-	CreatedBy *string `json:"created_by,omitempty"`
 	// Time at which this function was last modified, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of user who last modified the function.
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Id of Function, relative to parent schema.
-	FunctionId *string `json:"function_id,omitempty"`
-	// Indicates whether the principal is limited to retrieving metadata for the
-	// associated object through the BROWSE privilege when include_browse is enabled
-	// in the request.
-	BrowseOnly *bool `json:"browse_only,omitempty"`
 }
 
 type CreateFunctionRequest struct {
@@ -150,21 +150,21 @@ type CredentialDependency struct {
 }
 
 type DeleteFunctionRequest struct {
+	// Force deletion even if the function is notempty.
+	Force *bool `json:"force,omitempty"`
 	// The fully-qualified name of the function (of the form
 	// __catalog_name__.__schema_name__.__function__name__) .
 	FullNameArg *string `json:"full_name_arg,omitempty"`
-	// Force deletion even if the function is notempty.
-	Force *bool `json:"force,omitempty"`
 }
 
 // A dependency of a SQL object. One of the following fields must be defined:
 // __table__, __function__, __connection__, __credential__, __volume__, or
 // __secret__..
 type Dependency struct {
-	Table      *TableDependency      `json:"table,omitempty"`
-	Function   *FunctionDependency   `json:"function,omitempty"`
 	Connection *ConnectionDependency `json:"connection,omitempty"`
 	Credential *CredentialDependency `json:"credential,omitempty"`
+	Function   *FunctionDependency   `json:"function,omitempty"`
+	Table      *TableDependency      `json:"table,omitempty"`
 }
 
 // A list of dependencies..
@@ -181,18 +181,49 @@ type FunctionDependency struct {
 }
 
 type FunctionInfo struct {
-	// Name of function, relative to parent schema.
-	Name *string `json:"name,omitempty"`
+	// Indicates whether the principal is limited to retrieving metadata for the
+	// associated object through the BROWSE privilege when include_browse is enabled
+	// in the request.
+	BrowseOnly *bool `json:"browse_only,omitempty"`
 	// Name of parent Catalog.
 	CatalogName *string `json:"catalog_name,omitempty"`
-	// Name of parent Schema relative to its parent Catalog.
-	SchemaName *string `json:"schema_name,omitempty"`
-	// Function input parameters.
-	InputParams *FunctionParameterInfos `json:"input_params,omitempty"`
+	// User-provided free-form text description.
+	Comment *string `json:"comment,omitempty"`
+	// Time at which this function was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of function creator.
+	CreatedBy *string `json:"created_by,omitempty"`
 	// Scalar function return data type.
 	DataType ColumnTypeName `json:"data_type,omitempty"`
+	// External function language.
+	ExternalLanguage *string `json:"external_language,omitempty"`
+	// External function name.
+	ExternalName *string `json:"external_name,omitempty"`
 	// Pretty printed function data type.
 	FullDataType *string `json:"full_data_type,omitempty"`
+	// Full name of Function, in form of
+	// **catalog_name**.**schema_name**.**function_name**
+	FullName *string `json:"full_name,omitempty"`
+	// Id of Function, relative to parent schema.
+	FunctionId *string `json:"function_id,omitempty"`
+	// Function input parameters.
+	InputParams *FunctionParameterInfos `json:"input_params,omitempty"`
+	// Whether the function is deterministic.
+	IsDeterministic *bool `json:"is_deterministic,omitempty"`
+	// Function null call.
+	IsNullCall *bool `json:"is_null_call,omitempty"`
+	// Unique identifier of parent metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// Name of function, relative to parent schema.
+	Name *string `json:"name,omitempty"`
+	// Username of current owner of the function.
+	Owner *string `json:"owner,omitempty"`
+	// Function parameter style. **S** is the value for SQL.
+	ParameterStyle FunctionInfo_ParameterStyle `json:"parameter_style,omitempty"`
+	// JSON-serialized key-value pair map, encoded (escaped) as a string.
+	Properties *string `json:"properties,omitempty"`
+	// Table function return parameters.
+	ReturnParams *FunctionParameterInfos `json:"return_params,omitempty"`
 	// Function language. When **EXTERNAL** is used, the language of the routine
 	// function should be specified in the **external_language** field, and the
 	// **return_params** of the function cannot be used (as **TABLE** return type is
@@ -200,61 +231,40 @@ type FunctionInfo struct {
 	RoutineBody FunctionInfo_RoutineBody `json:"routine_body,omitempty"`
 	// Function body.
 	RoutineDefinition *string `json:"routine_definition,omitempty"`
-	// Function parameter style. **S** is the value for SQL.
-	ParameterStyle FunctionInfo_ParameterStyle `json:"parameter_style,omitempty"`
-	// Whether the function is deterministic.
-	IsDeterministic *bool `json:"is_deterministic,omitempty"`
-	// Function SQL data access.
-	SqlDataAccess FunctionInfo_SqlDataAccess `json:"sql_data_access,omitempty"`
-	// Function null call.
-	IsNullCall *bool `json:"is_null_call,omitempty"`
+	// Function dependencies. For external UDFs, dependencies may contain only
+	// credential, secret, or volume objects.
+	RoutineDependencies *DependencyList `json:"routine_dependencies,omitempty"`
+	// Name of parent Schema relative to its parent Catalog.
+	SchemaName *string `json:"schema_name,omitempty"`
 	// Function security type.
 	SecurityType FunctionInfo_SecurityType `json:"security_type,omitempty"`
 	// Specific name of the function; Reserved for future use.
 	SpecificName *string `json:"specific_name,omitempty"`
-	// Table function return parameters.
-	ReturnParams *FunctionParameterInfos `json:"return_params,omitempty"`
-	// External function name.
-	ExternalName *string `json:"external_name,omitempty"`
-	// External function language.
-	ExternalLanguage *string `json:"external_language,omitempty"`
+	// Function SQL data access.
+	SqlDataAccess FunctionInfo_SqlDataAccess `json:"sql_data_access,omitempty"`
 	// List of schemes whose objects can be referenced without qualification.
 	SqlPath *string `json:"sql_path,omitempty"`
-	// Username of current owner of the function.
-	Owner *string `json:"owner,omitempty"`
-	// User-provided free-form text description.
-	Comment *string `json:"comment,omitempty"`
-	// JSON-serialized key-value pair map, encoded (escaped) as a string.
-	Properties *string `json:"properties,omitempty"`
-	// Function dependencies. For external UDFs, dependencies may contain only
-	// credential, secret, or volume objects.
-	RoutineDependencies *DependencyList `json:"routine_dependencies,omitempty"`
-	// Unique identifier of parent metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Full name of Function, in form of
-	// **catalog_name**.**schema_name**.**function_name**
-	FullName *string `json:"full_name,omitempty"`
-	// Time at which this function was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of function creator.
-	CreatedBy *string `json:"created_by,omitempty"`
 	// Time at which this function was last modified, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of user who last modified the function.
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Id of Function, relative to parent schema.
-	FunctionId *string `json:"function_id,omitempty"`
-	// Indicates whether the principal is limited to retrieving metadata for the
-	// associated object through the BROWSE privilege when include_browse is enabled
-	// in the request.
-	BrowseOnly *bool `json:"browse_only,omitempty"`
 }
 
 type FunctionParameterInfo struct {
+	// User-provided free-form text description.
+	Comment *string `json:"comment,omitempty"`
 	// Name of Parameter.
 	Name *string `json:"name,omitempty"`
-	// Full data type spec, SQL/catalogString text.
-	TypeText *string `json:"type_text,omitempty"`
+	// Default value of the parameter.
+	ParameterDefault *string `json:"parameter_default,omitempty"`
+	// Function parameter mode.
+	ParameterMode FunctionParameterMode `json:"parameter_mode,omitempty"`
+	// Function parameter type.
+	ParameterType FunctionParameterType `json:"parameter_type,omitempty"`
+	// Ordinal position of column (starting at position 0).
+	Position *int `json:"position,omitempty"`
+	// Format of IntervalType.
+	TypeIntervalType *string `json:"type_interval_type,omitempty"`
 	// Full data type spec, JSON-serialized.
 	TypeJson *string `json:"type_json,omitempty"`
 	// Name of type (INT, STRUCT, MAP, etc.)
@@ -263,18 +273,8 @@ type FunctionParameterInfo struct {
 	TypePrecision *int `json:"type_precision,omitempty"`
 	// Digits to right of decimal; Required on Create for DecimalTypes.
 	TypeScale *int `json:"type_scale,omitempty"`
-	// Format of IntervalType.
-	TypeIntervalType *string `json:"type_interval_type,omitempty"`
-	// Ordinal position of column (starting at position 0).
-	Position *int `json:"position,omitempty"`
-	// Function parameter mode.
-	ParameterMode FunctionParameterMode `json:"parameter_mode,omitempty"`
-	// Function parameter type.
-	ParameterType FunctionParameterType `json:"parameter_type,omitempty"`
-	// Default value of the parameter.
-	ParameterDefault *string `json:"parameter_default,omitempty"`
-	// User-provided free-form text description.
-	Comment *string `json:"comment,omitempty"`
+	// Full data type spec, SQL/catalogString text.
+	TypeText *string `json:"type_text,omitempty"`
 }
 
 type FunctionParameterInfos struct {
@@ -293,8 +293,6 @@ type GetFunctionRequest struct {
 type ListFunctionsRequest struct {
 	// Name of parent catalog for functions of interest.
 	CatalogName *string `json:"catalog_name,omitempty"`
-	// Parent schema of functions.
-	SchemaName *string `json:"schema_name,omitempty"`
 	// Whether to include functions in the response for which the principal can only
 	// access selective metadata for
 	IncludeBrowse *bool `json:"include_browse,omitempty"`
@@ -306,6 +304,8 @@ type ListFunctionsRequest struct {
 	MaxResults *int `json:"max_results,omitempty"`
 	// Opaque pagination token to go to next page based on previous query.
 	PageToken *string `json:"page_token,omitempty"`
+	// Parent schema of functions.
+	SchemaName *string `json:"schema_name,omitempty"`
 }
 
 type ListFunctionsResponse struct {
@@ -325,21 +325,52 @@ type TableDependency struct {
 }
 
 type UpdateFunctionRequest struct {
+	// Indicates whether the principal is limited to retrieving metadata for the
+	// associated object through the BROWSE privilege when include_browse is enabled
+	// in the request.
+	BrowseOnly *bool `json:"browse_only,omitempty"`
+	// Name of parent Catalog.
+	CatalogName *string `json:"catalog_name,omitempty"`
+	// User-provided free-form text description.
+	Comment *string `json:"comment,omitempty"`
+	// Time at which this function was created, in epoch milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// Username of function creator.
+	CreatedBy *string `json:"created_by,omitempty"`
+	// Scalar function return data type.
+	DataType ColumnTypeName `json:"data_type,omitempty"`
+	// External function language.
+	ExternalLanguage *string `json:"external_language,omitempty"`
+	// External function name.
+	ExternalName *string `json:"external_name,omitempty"`
+	// Pretty printed function data type.
+	FullDataType *string `json:"full_data_type,omitempty"`
+	// Full name of Function, in form of
+	// **catalog_name**.**schema_name**.**function_name**
+	FullName *string `json:"full_name,omitempty"`
 	// The fully-qualified name of the function (of the form
 	// __catalog_name__.__schema_name__.__function__name__).
 	FullNameArg *string `json:"full_name_arg,omitempty"`
-	// Name of function, relative to parent schema.
-	Name *string `json:"name,omitempty"`
-	// Name of parent Catalog.
-	CatalogName *string `json:"catalog_name,omitempty"`
-	// Name of parent Schema relative to its parent Catalog.
-	SchemaName *string `json:"schema_name,omitempty"`
+	// Id of Function, relative to parent schema.
+	FunctionId *string `json:"function_id,omitempty"`
 	// Function input parameters.
 	InputParams *FunctionParameterInfos `json:"input_params,omitempty"`
-	// Scalar function return data type.
-	DataType ColumnTypeName `json:"data_type,omitempty"`
-	// Pretty printed function data type.
-	FullDataType *string `json:"full_data_type,omitempty"`
+	// Whether the function is deterministic.
+	IsDeterministic *bool `json:"is_deterministic,omitempty"`
+	// Function null call.
+	IsNullCall *bool `json:"is_null_call,omitempty"`
+	// Unique identifier of parent metastore.
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// Name of function, relative to parent schema.
+	Name *string `json:"name,omitempty"`
+	// Username of current owner of the function.
+	Owner *string `json:"owner,omitempty"`
+	// Function parameter style. **S** is the value for SQL.
+	ParameterStyle FunctionInfo_ParameterStyle `json:"parameter_style,omitempty"`
+	// JSON-serialized key-value pair map, encoded (escaped) as a string.
+	Properties *string `json:"properties,omitempty"`
+	// Table function return parameters.
+	ReturnParams *FunctionParameterInfos `json:"return_params,omitempty"`
 	// Function language. When **EXTERNAL** is used, the language of the routine
 	// function should be specified in the **external_language** field, and the
 	// **return_params** of the function cannot be used (as **TABLE** return type is
@@ -347,54 +378,23 @@ type UpdateFunctionRequest struct {
 	RoutineBody FunctionInfo_RoutineBody `json:"routine_body,omitempty"`
 	// Function body.
 	RoutineDefinition *string `json:"routine_definition,omitempty"`
-	// Function parameter style. **S** is the value for SQL.
-	ParameterStyle FunctionInfo_ParameterStyle `json:"parameter_style,omitempty"`
-	// Whether the function is deterministic.
-	IsDeterministic *bool `json:"is_deterministic,omitempty"`
-	// Function SQL data access.
-	SqlDataAccess FunctionInfo_SqlDataAccess `json:"sql_data_access,omitempty"`
-	// Function null call.
-	IsNullCall *bool `json:"is_null_call,omitempty"`
+	// Function dependencies. For external UDFs, dependencies may contain only
+	// credential, secret, or volume objects.
+	RoutineDependencies *DependencyList `json:"routine_dependencies,omitempty"`
+	// Name of parent Schema relative to its parent Catalog.
+	SchemaName *string `json:"schema_name,omitempty"`
 	// Function security type.
 	SecurityType FunctionInfo_SecurityType `json:"security_type,omitempty"`
 	// Specific name of the function; Reserved for future use.
 	SpecificName *string `json:"specific_name,omitempty"`
-	// Table function return parameters.
-	ReturnParams *FunctionParameterInfos `json:"return_params,omitempty"`
-	// External function name.
-	ExternalName *string `json:"external_name,omitempty"`
-	// External function language.
-	ExternalLanguage *string `json:"external_language,omitempty"`
+	// Function SQL data access.
+	SqlDataAccess FunctionInfo_SqlDataAccess `json:"sql_data_access,omitempty"`
 	// List of schemes whose objects can be referenced without qualification.
 	SqlPath *string `json:"sql_path,omitempty"`
-	// Username of current owner of the function.
-	Owner *string `json:"owner,omitempty"`
-	// User-provided free-form text description.
-	Comment *string `json:"comment,omitempty"`
-	// JSON-serialized key-value pair map, encoded (escaped) as a string.
-	Properties *string `json:"properties,omitempty"`
-	// Function dependencies. For external UDFs, dependencies may contain only
-	// credential, secret, or volume objects.
-	RoutineDependencies *DependencyList `json:"routine_dependencies,omitempty"`
-	// Unique identifier of parent metastore.
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	// Full name of Function, in form of
-	// **catalog_name**.**schema_name**.**function_name**
-	FullName *string `json:"full_name,omitempty"`
-	// Time at which this function was created, in epoch milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// Username of function creator.
-	CreatedBy *string `json:"created_by,omitempty"`
 	// Time at which this function was last modified, in epoch milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 	// Username of user who last modified the function.
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// Id of Function, relative to parent schema.
-	FunctionId *string `json:"function_id,omitempty"`
-	// Indicates whether the principal is limited to retrieving metadata for the
-	// associated object through the BROWSE privilege when include_browse is enabled
-	// in the request.
-	BrowseOnly *bool `json:"browse_only,omitempty"`
 }
 
 // ConnectionDependencyToSDK converts the mirror to the sdk-go type.

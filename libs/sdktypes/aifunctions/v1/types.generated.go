@@ -10,19 +10,19 @@ import (
 
 // ai_classify.
 type AiClassifyOptions struct {
-	// Natural-language guidance that steers how the text is classified (up to
-	// 20,000 characters).
-	Instructions *string `json:"instructions,omitempty"`
-	// The function version to invoke. Defaults to the latest version. Supported
-	// versions: ["2.1"].
-	Version *string `json:"version,omitempty"`
-	// When true, allows more than one label to be returned per input.
-	Multilabel *bool `json:"multilabel,omitempty"`
 	// When true, includes a per-label confidence score in the response.
 	EnableConfidenceScores *bool `json:"enable_confidence_scores,omitempty"`
 	// When true, includes a rationale explaining each classification in the
 	// response.
 	EnableRationales *bool `json:"enable_rationales,omitempty"`
+	// Natural-language guidance that steers how the text is classified (up to
+	// 20,000 characters).
+	Instructions *string `json:"instructions,omitempty"`
+	// When true, allows more than one label to be returned per input.
+	Multilabel *bool `json:"multilabel,omitempty"`
+	// The function version to invoke. Defaults to the latest version. Supported
+	// versions: ["2.1"].
+	Version *string `json:"version,omitempty"`
 }
 
 type AiClassifyRequest struct {
@@ -39,14 +39,14 @@ type AiClassifyRequest struct {
 }
 
 type AiClassifyResponse struct {
+	// Additional metadata returned by AI Classify.
+	Metadata *AiClassifyResponseMetadata `json:"metadata,omitempty"`
 	// The function result as a JSON value. An array of per-label objects: one
 	// element in single-label mode (the default), or multiple elements when
 	// `multilabel` is true. When `enable_confidence_scores` and `enable_rationales`
 	// are true, `confidence_score` and `rationale` are included in each response
 	// value, respectively.
 	Response json.RawMessage `json:"response,omitempty"`
-	// Additional metadata returned by AI Classify.
-	Metadata *AiClassifyResponseMetadata `json:"metadata,omitempty"`
 }
 
 type AiClassifyResponseMetadata struct {
@@ -62,11 +62,8 @@ type AiDecideOptions struct {
 }
 
 type AiDecideRequest struct {
-	// A string, JSON object, or array containing the content, related context, and
-	// examples needed to answer the provided questions. For example, provide a
-	// support message, a conversation, or records describing the current state of
-	// an application. All questions receive this same state.
-	State json.RawMessage `json:"state,omitempty"`
+	// Function options. Omitted fields fall back to their documented defaults.
+	Options *AiDecideOptions `json:"options,omitempty"`
 	// A JSON object mapping question IDs to their definitions. Each ID must contain
 	// non-whitespace text; its answer is returned with the same ID in
 	// `response.answers`.
@@ -116,11 +113,16 @@ type AiDecideRequest struct {
 	// ticket?", "criteria": [ "Routine: can wait a few days", "Time-sensitive:
 	// needs attention today", "Critical: needs immediate action" ] } } ```
 	Questions json.RawMessage `json:"questions,omitempty"`
-	// Function options. Omitted fields fall back to their documented defaults.
-	Options *AiDecideOptions `json:"options,omitempty"`
+	// A string, JSON object, or array containing the content, related context, and
+	// examples needed to answer the provided questions. For example, provide a
+	// support message, a conversation, or records describing the current state of
+	// an application. All questions receive this same state.
+	State json.RawMessage `json:"state,omitempty"`
 }
 
 type AiDecideResponse struct {
+	// Metadata identifying the function API version used for this request.
+	Metadata *AiDecideResponseMetadata `json:"metadata,omitempty"`
 	// A JSON object containing an `answers` map with one answer for each question,
 	// keyed by the same IDs as `questions`.
 	//
@@ -154,8 +156,6 @@ type AiDecideResponse struct {
 	// can wait a few days", "1": "Time-sensitive: needs attention today", "2":
 	// "Critical: needs immediate action" }, "confidence": 0.85 } } } ```
 	Response json.RawMessage `json:"response,omitempty"`
-	// Metadata identifying the function API version used for this request.
-	Metadata *AiDecideResponseMetadata `json:"metadata,omitempty"`
 }
 
 type AiDecideResponseMetadata struct {
@@ -175,6 +175,9 @@ type AiExtractBbox struct {
 // span (STRING input) citations, bbox for bbox (parsed-document input)
 // citations..
 type AiExtractCitation struct {
+	// Bounding boxes locating the citation on the source pages; set for bbox
+	// citations.
+	Bbox []AiExtractBbox `json:"bbox,omitempty"`
 	// Integer matching a citation_ids entry on an extracted field.
 	Id *int64 `json:"id,omitempty"`
 	// Inclusive 0-based character offset into the input string; set for span
@@ -183,23 +186,10 @@ type AiExtractCitation struct {
 	// Exclusive 0-based character offset into the input string; set for span
 	// citations.
 	Stop *int64 `json:"stop,omitempty"`
-	// Bounding boxes locating the citation on the source pages; set for bbox
-	// citations.
-	Bbox []AiExtractBbox `json:"bbox,omitempty"`
 }
 
 // ai_extract.
 type AiExtractOptions struct {
-	// Natural-language guidance that steers how data is extracted (up to 20,000
-	// characters).
-	Instructions *string `json:"instructions,omitempty"`
-	// The function version to invoke. Defaults to the latest version. Supported
-	// versions: ["2.1"].
-	Version *string `json:"version,omitempty"`
-	// Extraction mode. Supported modes: "precision" — more powerful extraction
-	// for complex schemas, long documents, and reasoning-heavy extractions.
-	// Defaults to none (standard extraction).
-	Mode *string `json:"mode,omitempty"`
 	// When true, includes citation metadata locating each extracted value in the
 	// source. Depending on the type of input, citations can be one of two types:
 	//
@@ -219,12 +209,24 @@ type AiExtractOptions struct {
 	EnableCitations *bool `json:"enable_citations,omitempty"`
 	// When true, includes a per-field confidence score in the response.
 	EnableConfidenceScores *bool `json:"enable_confidence_scores,omitempty"`
+	// Natural-language guidance that steers how data is extracted (up to 20,000
+	// characters).
+	Instructions *string `json:"instructions,omitempty"`
+	// Extraction mode. Supported modes: "precision" — more powerful extraction
+	// for complex schemas, long documents, and reasoning-heavy extractions.
+	// Defaults to none (standard extraction).
+	Mode *string `json:"mode,omitempty"`
+	// The function version to invoke. Defaults to the latest version. Supported
+	// versions: ["2.1"].
+	Version *string `json:"version,omitempty"`
 }
 
 type AiExtractRequest struct {
 	// The text to extract from. It accepts a plain string or the response object of
 	// [ai_parse_document](:method:AiFunctions/AiParseDocument).
 	Content json.RawMessage `json:"content,omitempty"`
+	// Function options. Omitted fields fall back to their documented defaults.
+	Options *AiExtractOptions `json:"options,omitempty"`
 	// The extraction schema defining the fields to extract. Either a JSON array of
 	// field names, assumed to be strings (e.g. ["company", "valuation"]), or a JSON
 	// object mapping each field to its type/description/nullability (e.g.
@@ -232,48 +234,44 @@ type AiExtractRequest struct {
 	// up to 256 fields, 12 levels of nesting, and 500 enum values. Supported field
 	// types are string, integer, number, boolean, and enum.
 	Schema json.RawMessage `json:"schema,omitempty"`
-	// Function options. Omitted fields fall back to their documented defaults.
-	Options *AiExtractOptions `json:"options,omitempty"`
 }
 
 type AiExtractResponse struct {
+	// Additional metadata returned by AI Extract.
+	Metadata *AiExtractResponseMetadata `json:"metadata,omitempty"`
 	// The function result as a JSON value. When `enable_confidence_scores` and
 	// `enable_citations` are true, `confidence` and `citation_ids` are included in
 	// each response field, respectively.
 	Response json.RawMessage `json:"response,omitempty"`
-	// Additional metadata returned by AI Extract.
-	Metadata *AiExtractResponseMetadata `json:"metadata,omitempty"`
 }
 
 type AiExtractResponseMetadata struct {
-	// The resolved function version.
-	Version *string `json:"version,omitempty"`
-	// The resolved extraction mode; present when a non-default mode was used.
-	Mode *string `json:"mode,omitempty"`
 	// How the source was chunked for citation offsets (span for text input, bbox
 	// for parsed-document input); present when citations are enabled.
 	ChunkType *string `json:"chunk_type,omitempty"`
 	// Citation objects locating each result in the source; present when citations
 	// are enabled.
 	Citations []AiExtractCitation `json:"citations,omitempty"`
+	// The resolved extraction mode; present when a non-default mode was used.
+	Mode *string `json:"mode,omitempty"`
+	// The resolved function version.
+	Version *string `json:"version,omitempty"`
 }
 
 // Metadata about the source file; present only for file-path input..
 type AiParseDocumentFileMetadata struct {
-	// Unity Catalog volume path of the source file.
-	FilePath *string `json:"file_path,omitempty"`
-	// Base name of the source file.
-	FileName *string `json:"file_name,omitempty"`
-	// Size of the source file in bytes.
-	FileSize *int64 `json:"file_size,omitempty"`
 	// Last-modified timestamp of the source file, as an HTTP date string.
 	FileModificationTime *string `json:"file_modification_time,omitempty"`
+	// Base name of the source file.
+	FileName *string `json:"file_name,omitempty"`
+	// Unity Catalog volume path of the source file.
+	FilePath *string `json:"file_path,omitempty"`
+	// Size of the source file in bytes.
+	FileSize *int64 `json:"file_size,omitempty"`
 }
 
 // ai_parse_document.
 type AiParseDocumentOptions struct {
-	// The ai_parse_document output schema version. Supported value: "2.0".
-	Version *string `json:"version,omitempty"`
 	// Element types for which an AI-generated description is produced. Use "*"
 	// (default) to generate descriptions for all supported element types, "figure"
 	// to generate them for figures only, or "" (empty string) to generate none.
@@ -285,6 +283,8 @@ type AiParseDocumentOptions struct {
 	// Pages to parse (1-indexed), as a comma-separated list of page numbers or
 	// ranges (e.g. "1,3,5-10").
 	PageRange *string `json:"page_range,omitempty"`
+	// The ai_parse_document output schema version. Supported value: "2.0".
+	Version *string `json:"version,omitempty"`
 }
 
 // A single page that failed to parse while the overall request succeeded..
@@ -319,12 +319,12 @@ type AiParseDocumentResponse struct {
 }
 
 type AiParseDocumentResponseMetadata struct {
+	// Describes the source file; present only for file-path input.
+	FileMetadata *AiParseDocumentFileMetadata `json:"file_metadata,omitempty"`
 	// Unique identifier for the parse request.
 	Id *string `json:"id,omitempty"`
 	// The resolved function version.
 	Version *string `json:"version,omitempty"`
-	// Describes the source file; present only for file-path input.
-	FileMetadata *AiParseDocumentFileMetadata `json:"file_metadata,omitempty"`
 }
 
 // AiClassifyOptionsToSDK converts the mirror to the sdk-go type.

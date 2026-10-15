@@ -23,12 +23,37 @@ const (
 )
 
 type CreateVolumeRequest struct {
-	// The name of the volume
-	Name *string `json:"name,omitempty"`
+	// The AWS access point to use when accesing s3 for this external location.
+	AccessPoint *string `json:"access_point,omitempty"`
+	// Indicates whether the principal is limited to retrieving metadata for the
+	// associated object through the BROWSE privilege when include_browse is enabled
+	// in the request.
+	BrowseOnly *bool `json:"browse_only,omitempty"`
 	// The name of the catalog where the schema and the volume are
 	CatalogName *string `json:"catalog_name,omitempty"`
+	// The comment attached to the volume
+	Comment   *string `json:"comment,omitempty"`
+	CreatedAt *int64  `json:"created_at,omitempty"`
+	// The identifier of the user who created the volume
+	CreatedBy         *string            `json:"created_by,omitempty"`
+	EncryptionDetails *EncryptionDetails `json:"encryption_details,omitempty"`
+	// The three-level (fully qualified) name of the volume
+	FullName *string `json:"full_name,omitempty"`
+	// The unique identifier of the metastore
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// The name of the volume
+	Name *string `json:"name,omitempty"`
+	// The identifier of the user who owns the volume
+	Owner *string `json:"owner,omitempty"`
 	// The name of the schema where the volume is
 	SchemaName *string `json:"schema_name,omitempty"`
+	// The storage location on the cloud
+	StorageLocation *string `json:"storage_location,omitempty"`
+	UpdatedAt       *int64  `json:"updated_at,omitempty"`
+	// The identifier of the user who updated the volume last time
+	UpdatedBy *string `json:"updated_by,omitempty"`
+	// The unique identifier of the volume
+	VolumeId *string `json:"volume_id,omitempty"`
 	// The type of the volume. An external volume is located in the specified
 	// external location. A managed volume is located in the default location which
 	// is specified by the parent schema, or the parent catalog, or the Metastore.
@@ -36,31 +61,6 @@ type CreateVolumeRequest struct {
 	//
 	// [Learn more]: https://docs.databricks.com/aws/en/volumes/managed-vs-external
 	VolumeType VolumeType `json:"volume_type,omitempty"`
-	// The storage location on the cloud
-	StorageLocation *string `json:"storage_location,omitempty"`
-	// The identifier of the user who owns the volume
-	Owner *string `json:"owner,omitempty"`
-	// The comment attached to the volume
-	Comment *string `json:"comment,omitempty"`
-	// The three-level (fully qualified) name of the volume
-	FullName *string `json:"full_name,omitempty"`
-	// The unique identifier of the volume
-	VolumeId *string `json:"volume_id,omitempty"`
-	// The unique identifier of the metastore
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	CreatedAt   *int64  `json:"created_at,omitempty"`
-	// The identifier of the user who created the volume
-	CreatedBy *string `json:"created_by,omitempty"`
-	UpdatedAt *int64  `json:"updated_at,omitempty"`
-	// The identifier of the user who updated the volume last time
-	UpdatedBy *string `json:"updated_by,omitempty"`
-	// The AWS access point to use when accesing s3 for this external location.
-	AccessPoint       *string            `json:"access_point,omitempty"`
-	EncryptionDetails *EncryptionDetails `json:"encryption_details,omitempty"`
-	// Indicates whether the principal is limited to retrieving metadata for the
-	// associated object through the BROWSE privilege when include_browse is enabled
-	// in the request.
-	BrowseOnly *bool `json:"browse_only,omitempty"`
 }
 
 // Encryption options that apply to clients connecting to cloud storage..
@@ -79,8 +79,6 @@ type GetVolumeRequest struct {
 type ListVolumesRequest struct {
 	// The identifier of the catalog
 	CatalogName *string `json:"catalog_name,omitempty"`
-	// The identifier of the schema
-	SchemaName *string `json:"schema_name,omitempty"`
 	// Whether to include volumes in the response for which the principal can only
 	// access selective metadata for
 	IncludeBrowse *bool `json:"include_browse,omitempty"`
@@ -100,14 +98,16 @@ type ListVolumesRequest struct {
 	// Opaque token returned by a previous request. It must be included in the
 	// request to retrieve the next page of results (pagination).
 	PageToken *string `json:"page_token,omitempty"`
+	// The identifier of the schema
+	SchemaName *string `json:"schema_name,omitempty"`
 }
 
 type ListVolumesResponse struct {
-	Volumes []VolumeInfo `json:"volumes,omitempty"`
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. __page_token__ should be set to this value for the next request
 	// to retrieve the next page of results.
-	NextPageToken *string `json:"next_page_token,omitempty"`
+	NextPageToken *string      `json:"next_page_token,omitempty"`
+	Volumes       []VolumeInfo `json:"volumes,omitempty"`
 }
 
 // Server-Side Encryption properties for clients communicating with AWS s3..
@@ -121,16 +121,41 @@ type SseEncryptionDetails struct {
 }
 
 type UpdateVolumeRequest struct {
-	// The three-level (fully qualified) name of the volume
-	FullNameArg *string `json:"full_name_arg,omitempty"`
-	// New name for the volume.
-	NewName *string `json:"new_name,omitempty"`
-	// The name of the volume
-	Name *string `json:"name,omitempty"`
+	// The AWS access point to use when accesing s3 for this external location.
+	AccessPoint *string `json:"access_point,omitempty"`
+	// Indicates whether the principal is limited to retrieving metadata for the
+	// associated object through the BROWSE privilege when include_browse is enabled
+	// in the request.
+	BrowseOnly *bool `json:"browse_only,omitempty"`
 	// The name of the catalog where the schema and the volume are
 	CatalogName *string `json:"catalog_name,omitempty"`
+	// The comment attached to the volume
+	Comment   *string `json:"comment,omitempty"`
+	CreatedAt *int64  `json:"created_at,omitempty"`
+	// The identifier of the user who created the volume
+	CreatedBy         *string            `json:"created_by,omitempty"`
+	EncryptionDetails *EncryptionDetails `json:"encryption_details,omitempty"`
+	// The three-level (fully qualified) name of the volume
+	FullName *string `json:"full_name,omitempty"`
+	// The three-level (fully qualified) name of the volume
+	FullNameArg *string `json:"full_name_arg,omitempty"`
+	// The unique identifier of the metastore
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// The name of the volume
+	Name *string `json:"name,omitempty"`
+	// New name for the volume.
+	NewName *string `json:"new_name,omitempty"`
+	// The identifier of the user who owns the volume
+	Owner *string `json:"owner,omitempty"`
 	// The name of the schema where the volume is
 	SchemaName *string `json:"schema_name,omitempty"`
+	// The storage location on the cloud
+	StorageLocation *string `json:"storage_location,omitempty"`
+	UpdatedAt       *int64  `json:"updated_at,omitempty"`
+	// The identifier of the user who updated the volume last time
+	UpdatedBy *string `json:"updated_by,omitempty"`
+	// The unique identifier of the volume
+	VolumeId *string `json:"volume_id,omitempty"`
 	// The type of the volume. An external volume is located in the specified
 	// external location. A managed volume is located in the default location which
 	// is specified by the parent schema, or the parent catalog, or the Metastore.
@@ -138,40 +163,40 @@ type UpdateVolumeRequest struct {
 	//
 	// [Learn more]: https://docs.databricks.com/aws/en/volumes/managed-vs-external
 	VolumeType VolumeType `json:"volume_type,omitempty"`
-	// The storage location on the cloud
-	StorageLocation *string `json:"storage_location,omitempty"`
-	// The identifier of the user who owns the volume
-	Owner *string `json:"owner,omitempty"`
-	// The comment attached to the volume
-	Comment *string `json:"comment,omitempty"`
-	// The three-level (fully qualified) name of the volume
-	FullName *string `json:"full_name,omitempty"`
-	// The unique identifier of the volume
-	VolumeId *string `json:"volume_id,omitempty"`
-	// The unique identifier of the metastore
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	CreatedAt   *int64  `json:"created_at,omitempty"`
-	// The identifier of the user who created the volume
-	CreatedBy *string `json:"created_by,omitempty"`
-	UpdatedAt *int64  `json:"updated_at,omitempty"`
-	// The identifier of the user who updated the volume last time
-	UpdatedBy *string `json:"updated_by,omitempty"`
-	// The AWS access point to use when accesing s3 for this external location.
-	AccessPoint       *string            `json:"access_point,omitempty"`
-	EncryptionDetails *EncryptionDetails `json:"encryption_details,omitempty"`
-	// Indicates whether the principal is limited to retrieving metadata for the
-	// associated object through the BROWSE privilege when include_browse is enabled
-	// in the request.
-	BrowseOnly *bool `json:"browse_only,omitempty"`
 }
 
 type VolumeInfo struct {
-	// The name of the volume
-	Name *string `json:"name,omitempty"`
+	// The AWS access point to use when accesing s3 for this external location.
+	AccessPoint *string `json:"access_point,omitempty"`
+	// Indicates whether the principal is limited to retrieving metadata for the
+	// associated object through the BROWSE privilege when include_browse is enabled
+	// in the request.
+	BrowseOnly *bool `json:"browse_only,omitempty"`
 	// The name of the catalog where the schema and the volume are
 	CatalogName *string `json:"catalog_name,omitempty"`
+	// The comment attached to the volume
+	Comment   *string `json:"comment,omitempty"`
+	CreatedAt *int64  `json:"created_at,omitempty"`
+	// The identifier of the user who created the volume
+	CreatedBy         *string            `json:"created_by,omitempty"`
+	EncryptionDetails *EncryptionDetails `json:"encryption_details,omitempty"`
+	// The three-level (fully qualified) name of the volume
+	FullName *string `json:"full_name,omitempty"`
+	// The unique identifier of the metastore
+	MetastoreId *string `json:"metastore_id,omitempty"`
+	// The name of the volume
+	Name *string `json:"name,omitempty"`
+	// The identifier of the user who owns the volume
+	Owner *string `json:"owner,omitempty"`
 	// The name of the schema where the volume is
 	SchemaName *string `json:"schema_name,omitempty"`
+	// The storage location on the cloud
+	StorageLocation *string `json:"storage_location,omitempty"`
+	UpdatedAt       *int64  `json:"updated_at,omitempty"`
+	// The identifier of the user who updated the volume last time
+	UpdatedBy *string `json:"updated_by,omitempty"`
+	// The unique identifier of the volume
+	VolumeId *string `json:"volume_id,omitempty"`
 	// The type of the volume. An external volume is located in the specified
 	// external location. A managed volume is located in the default location which
 	// is specified by the parent schema, or the parent catalog, or the Metastore.
@@ -179,31 +204,6 @@ type VolumeInfo struct {
 	//
 	// [Learn more]: https://docs.databricks.com/aws/en/volumes/managed-vs-external
 	VolumeType VolumeType `json:"volume_type,omitempty"`
-	// The storage location on the cloud
-	StorageLocation *string `json:"storage_location,omitempty"`
-	// The identifier of the user who owns the volume
-	Owner *string `json:"owner,omitempty"`
-	// The comment attached to the volume
-	Comment *string `json:"comment,omitempty"`
-	// The three-level (fully qualified) name of the volume
-	FullName *string `json:"full_name,omitempty"`
-	// The unique identifier of the volume
-	VolumeId *string `json:"volume_id,omitempty"`
-	// The unique identifier of the metastore
-	MetastoreId *string `json:"metastore_id,omitempty"`
-	CreatedAt   *int64  `json:"created_at,omitempty"`
-	// The identifier of the user who created the volume
-	CreatedBy *string `json:"created_by,omitempty"`
-	UpdatedAt *int64  `json:"updated_at,omitempty"`
-	// The identifier of the user who updated the volume last time
-	UpdatedBy *string `json:"updated_by,omitempty"`
-	// The AWS access point to use when accesing s3 for this external location.
-	AccessPoint       *string            `json:"access_point,omitempty"`
-	EncryptionDetails *EncryptionDetails `json:"encryption_details,omitempty"`
-	// Indicates whether the principal is limited to retrieving metadata for the
-	// associated object through the BROWSE privilege when include_browse is enabled
-	// in the request.
-	BrowseOnly *bool `json:"browse_only,omitempty"`
 }
 
 // CreateVolumeRequestToSDK converts the mirror to the sdk-go type.

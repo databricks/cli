@@ -56,16 +56,16 @@ type CreateExternalLineageRelationshipRequest struct {
 }
 
 type CreateRequestExternalLineage struct {
+	// List of column relationships between source and target objects.
+	Columns []ColumnRelationship `json:"columns,omitempty"`
 	// Unique identifier of the external lineage relationship.
 	Id *string `json:"id,omitempty"`
+	// Key-value properties associated with the external lineage relationship.
+	Properties map[string]string `json:"properties,omitempty"`
 	// Source object of the external lineage relationship.
 	Source *ExternalLineageRelationshipObject `json:"source,omitempty"`
 	// Target object of the external lineage relationship.
 	Target *ExternalLineageRelationshipObject `json:"target,omitempty"`
-	// List of column relationships between source and target objects.
-	Columns []ColumnRelationship `json:"columns,omitempty"`
-	// Key-value properties associated with the external lineage relationship.
-	Properties map[string]string `json:"properties,omitempty"`
 }
 
 type DeleteExternalLineageRelationshipRequest struct {
@@ -73,43 +73,43 @@ type DeleteExternalLineageRelationshipRequest struct {
 }
 
 type DeleteRequestExternalLineage struct {
+	// List of column relationships between source and target objects.
+	Columns []ColumnRelationship `json:"columns,omitempty"`
 	// Unique identifier of the external lineage relationship.
 	Id *string `json:"id,omitempty"`
+	// Key-value properties associated with the external lineage relationship.
+	Properties map[string]string `json:"properties,omitempty"`
 	// Source object of the external lineage relationship.
 	Source *ExternalLineageRelationshipObject `json:"source,omitempty"`
 	// Target object of the external lineage relationship.
 	Target *ExternalLineageRelationshipObject `json:"target,omitempty"`
-	// List of column relationships between source and target objects.
-	Columns []ColumnRelationship `json:"columns,omitempty"`
-	// Key-value properties associated with the external lineage relationship.
-	Properties map[string]string `json:"properties,omitempty"`
 }
 
 // Lineage response containing lineage information of a data asset..
 type ExternalLineageInfo struct {
-	// Information about the table involved in the lineage relationship.
-	TableInfo *LineageTableInfo `json:"table_info,omitempty"`
+	// Information about the edge metadata of the external lineage relationship.
+	ExternalLineageInfo *ExternalLineageRelationship `json:"external_lineage_info,omitempty"`
+	// Information about external metadata involved in the lineage relationship.
+	ExternalMetadataInfo *LineageExternalMetadataInfo `json:"external_metadata_info,omitempty"`
 	// Information about the file involved in the lineage relationship.
 	FileInfo *LineageFileInfo `json:"file_info,omitempty"`
 	// Information about the model version involved in the lineage relationship.
 	ModelInfo *LineageModelVersionInfo `json:"model_info,omitempty"`
-	// Information about external metadata involved in the lineage relationship.
-	ExternalMetadataInfo *LineageExternalMetadataInfo `json:"external_metadata_info,omitempty"`
-	// Information about the edge metadata of the external lineage relationship.
-	ExternalLineageInfo *ExternalLineageRelationship `json:"external_lineage_info,omitempty"`
+	// Information about the table involved in the lineage relationship.
+	TableInfo *LineageTableInfo `json:"table_info,omitempty"`
 }
 
 type ExternalLineageRelationship struct {
+	// List of column relationships between source and target objects.
+	Columns []ColumnRelationship `json:"columns,omitempty"`
 	// Unique identifier of the external lineage relationship.
 	Id *string `json:"id,omitempty"`
+	// Key-value properties associated with the external lineage relationship.
+	Properties map[string]string `json:"properties,omitempty"`
 	// Source object of the external lineage relationship.
 	Source *ExternalLineageRelationshipObject `json:"source,omitempty"`
 	// Target object of the external lineage relationship.
 	Target *ExternalLineageRelationshipObject `json:"target,omitempty"`
-	// List of column relationships between source and target objects.
-	Columns []ColumnRelationship `json:"columns,omitempty"`
-	// Key-value properties associated with the external lineage relationship.
-	Properties map[string]string `json:"properties,omitempty"`
 }
 
 type ExternalLineageRelationshipExternalMetadata struct {
@@ -122,10 +122,10 @@ type ExternalLineageRelationshipModelVersion struct {
 }
 
 type ExternalLineageRelationshipObject struct {
-	Table            *ExternalLineageRelationshipTable            `json:"table,omitempty"`
-	Path             *ExternalLineageRelationshipPath             `json:"path,omitempty"`
-	ModelVersion     *ExternalLineageRelationshipModelVersion     `json:"model_version,omitempty"`
 	ExternalMetadata *ExternalLineageRelationshipExternalMetadata `json:"external_metadata,omitempty"`
+	ModelVersion     *ExternalLineageRelationshipModelVersion     `json:"model_version,omitempty"`
+	Path             *ExternalLineageRelationshipPath             `json:"path,omitempty"`
+	Table            *ExternalLineageRelationshipTable            `json:"table,omitempty"`
 }
 
 type ExternalLineageRelationshipPath struct {
@@ -138,60 +138,60 @@ type ExternalLineageRelationshipTable struct {
 
 // Represents the external metadata object in the lineage event..
 type LineageExternalMetadataInfo struct {
-	// Name of the external metadata object.
-	Name *string `json:"name,omitempty"`
-	// Type of external system.
-	SystemType SystemType `json:"system_type,omitempty"`
 	// Type of entity represented by the external metadata object.
 	EntityType *string `json:"entity_type,omitempty"`
 	// Timestamp of the lineage event.
 	EventTime *types.Time `json:"event_time,omitempty"`
+	// Name of the external metadata object.
+	Name *string `json:"name,omitempty"`
+	// Type of external system.
+	SystemType SystemType `json:"system_type,omitempty"`
 }
 
 // Represents the path information in the lineage event..
 type LineageFileInfo struct {
+	// Timestamp of the lineage event.
+	EventTime *types.Time `json:"event_time,omitempty"`
 	// URL of the path.
 	Path *string `json:"path,omitempty"`
 	// The full name of the securable on the path.
 	SecurableName *string `json:"securable_name,omitempty"`
-	// The storage location associated with securable on the path.
-	StorageLocation *string `json:"storage_location,omitempty"`
 	// The securable type of the securable on the path.
 	SecurableType *string `json:"securable_type,omitempty"`
-	// Timestamp of the lineage event.
-	EventTime *types.Time `json:"event_time,omitempty"`
+	// The storage location associated with securable on the path.
+	StorageLocation *string `json:"storage_location,omitempty"`
 }
 
 // Represents the model version information in the lineage event..
 type LineageModelVersionInfo struct {
+	// Timestamp of the lineage event.
+	EventTime *types.Time `json:"event_time,omitempty"`
 	// Name of the model.
 	ModelName *string `json:"model_name,omitempty"`
 	// Version number of the model.
 	Version *int64 `json:"version,omitempty"`
-	// Timestamp of the lineage event.
-	EventTime *types.Time `json:"event_time,omitempty"`
 }
 
 // Represents the table information in the lineage event..
 type LineageTableInfo struct {
-	// Name of Table.
-	Name *string `json:"name,omitempty"`
 	// Name of Catalog.
 	CatalogName *string `json:"catalog_name,omitempty"`
-	// Name of Schema.
-	SchemaName *string `json:"schema_name,omitempty"`
 	// Timestamp of the lineage event.
 	EventTime *types.Time `json:"event_time,omitempty"`
+	// Name of Table.
+	Name *string `json:"name,omitempty"`
+	// Name of Schema.
+	SchemaName *string `json:"schema_name,omitempty"`
 }
 
 type ListExternalLineageRelationshipsRequest struct {
+	// The lineage direction to filter on.
+	LineageDirection Direction_LineageDirection `json:"lineage_direction,omitempty"`
 	// The object to query external lineage relationships for. Since this field is a
 	// query parameter, please flatten the nested fields. For example, if the object
 	// is a table, the query parameter should look like:
 	// `object_info.table.name=main.sales.customers`
 	ObjectInfo *ExternalLineageRelationshipObject `json:"object_info,omitempty"`
-	// The lineage direction to filter on.
-	LineageDirection Direction_LineageDirection `json:"lineage_direction,omitempty"`
 	// Specifies the maximum number of external lineage relationships to return in a
 	// single response. The value must be less than or equal to 1000.
 	PageSize *int `json:"page_size,omitempty"`
@@ -210,16 +210,16 @@ type UpdateExternalLineageRelationshipRequest struct {
 }
 
 type UpdateRequestExternalLineage struct {
+	// List of column relationships between source and target objects.
+	Columns []ColumnRelationship `json:"columns,omitempty"`
 	// Unique identifier of the external lineage relationship.
 	Id *string `json:"id,omitempty"`
+	// Key-value properties associated with the external lineage relationship.
+	Properties map[string]string `json:"properties,omitempty"`
 	// Source object of the external lineage relationship.
 	Source *ExternalLineageRelationshipObject `json:"source,omitempty"`
 	// Target object of the external lineage relationship.
 	Target *ExternalLineageRelationshipObject `json:"target,omitempty"`
-	// List of column relationships between source and target objects.
-	Columns []ColumnRelationship `json:"columns,omitempty"`
-	// Key-value properties associated with the external lineage relationship.
-	Properties map[string]string `json:"properties,omitempty"`
 }
 
 // ColumnRelationshipToSDK converts the mirror to the sdk-go type.

@@ -24,53 +24,53 @@ const (
 )
 
 type Config struct {
-	Slack              *SlackConfig              `json:"slack,omitempty"`
-	Email              *EmailConfig              `json:"email,omitempty"`
-	GenericWebhook     *GenericWebhookConfig     `json:"generic_webhook,omitempty"`
-	Pagerduty          *PagerdutyConfig          `json:"pagerduty,omitempty"`
-	MicrosoftTeams     *MicrosoftTeamsConfig     `json:"microsoft_teams,omitempty"`
 	DatabricksAppSlack *DatabricksAppSlackConfig `json:"databricks_app_slack,omitempty"`
 	DatabricksAppTeams *DatabricksAppTeamsConfig `json:"databricks_app_teams,omitempty"`
+	Email              *EmailConfig              `json:"email,omitempty"`
+	GenericWebhook     *GenericWebhookConfig     `json:"generic_webhook,omitempty"`
+	MicrosoftTeams     *MicrosoftTeamsConfig     `json:"microsoft_teams,omitempty"`
+	Pagerduty          *PagerdutyConfig          `json:"pagerduty,omitempty"`
+	Slack              *SlackConfig              `json:"slack,omitempty"`
 }
 
 type CreateNotificationDestinationRequest struct {
-	// The display name for the notification destination.
-	DisplayName *string `json:"display_name,omitempty"`
 	// The configuration for the notification destination. Must wrap EXACTLY one of
 	// the nested configs.
 	Config *Config `json:"config,omitempty"`
+	// The display name for the notification destination.
+	DisplayName *string `json:"display_name,omitempty"`
 }
 
 // Slack channel reached through the Databricks app. The app must already be
 // installed in the Slack workspace and connected to this Databricks workspace..
 type DatabricksAppSlackConfig struct {
-	// [Input-Only] Slack workspace (team) ID the Databricks app is installed in.
-	TeamId *string `json:"team_id,omitempty"`
-	// [Output-Only] Whether team ID is set.
-	TeamIdSet *bool `json:"team_id_set,omitempty"`
 	// [Input-Only] Slack channel ID notifications are posted to.
 	ChannelId *string `json:"channel_id,omitempty"`
 	// [Output-Only] Whether channel ID is set.
 	ChannelIdSet *bool `json:"channel_id_set,omitempty"`
+	// [Input-Only] Slack workspace (team) ID the Databricks app is installed in.
+	TeamId *string `json:"team_id,omitempty"`
+	// [Output-Only] Whether team ID is set.
+	TeamIdSet *bool `json:"team_id_set,omitempty"`
 }
 
 // Microsoft Teams channel reached through the Databricks app. The app must
 // already be installed in the Microsoft 365 tenant and connected to this
 // Databricks workspace..
 type DatabricksAppTeamsConfig struct {
+	// [Input-Only] Teams channel ID notifications are posted to.
+	ChannelId *string `json:"channel_id,omitempty"`
+	// [Output-Only] Whether channel ID is set.
+	ChannelIdSet *bool `json:"channel_id_set,omitempty"`
+	// [Input-Only] Microsoft Entra group ID of the team that owns the channel.
+	TeamId *string `json:"team_id,omitempty"`
+	// [Output-Only] Whether team ID is set.
+	TeamIdSet *bool `json:"team_id_set,omitempty"`
 	// [Input-Only] Microsoft Entra tenant ID of the Microsoft 365 tenant the app is
 	// installed in.
 	TenantId *string `json:"tenant_id,omitempty"`
 	// [Output-Only] Whether tenant ID is set.
 	TenantIdSet *bool `json:"tenant_id_set,omitempty"`
-	// [Input-Only] Microsoft Entra group ID of the team that owns the channel.
-	TeamId *string `json:"team_id,omitempty"`
-	// [Output-Only] Whether team ID is set.
-	TeamIdSet *bool `json:"team_id_set,omitempty"`
-	// [Input-Only] Teams channel ID notifications are posted to.
-	ChannelId *string `json:"channel_id,omitempty"`
-	// [Output-Only] Whether channel ID is set.
-	ChannelIdSet *bool `json:"channel_id_set,omitempty"`
 }
 
 type EmailConfig struct {
@@ -79,6 +79,10 @@ type EmailConfig struct {
 }
 
 type GenericWebhookConfig struct {
+	// [Input-Only][Optional] Password for webhook.
+	Password *string `json:"password,omitempty"`
+	// [Output-Only] Whether password is set.
+	PasswordSet *bool `json:"password_set,omitempty"`
 	// [Input-Only] URL for webhook.
 	Url *string `json:"url,omitempty"`
 	// [Output-Only] Whether URL is set.
@@ -87,41 +91,33 @@ type GenericWebhookConfig struct {
 	Username *string `json:"username,omitempty"`
 	// [Output-Only] Whether username is set.
 	UsernameSet *bool `json:"username_set,omitempty"`
-	// [Input-Only][Optional] Password for webhook.
-	Password *string `json:"password,omitempty"`
-	// [Output-Only] Whether password is set.
-	PasswordSet *bool `json:"password_set,omitempty"`
 }
 
 type ListNotificationDestinationsRequest struct {
-	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int64  `json:"page_size,omitempty"`
+	PageToken *string `json:"page_token,omitempty"`
 }
 
 type ListNotificationDestinationsResponse struct {
-	Results []ListNotificationDestinationsResult `json:"results,omitempty"`
 	// Page token for next of results.
-	NextPageToken *string `json:"next_page_token,omitempty"`
+	NextPageToken *string                              `json:"next_page_token,omitempty"`
+	Results       []ListNotificationDestinationsResult `json:"results,omitempty"`
 }
 
 type ListNotificationDestinationsResult struct {
-	// UUID identifying notification destination.
-	Id *string `json:"id,omitempty"`
-	// The display name for the notification destination.
-	DisplayName *string `json:"display_name,omitempty"`
-	// [Output-only] The type of the notification destination. The type can not be
-	// changed once set.
-	DestinationType DestinationType `json:"destination_type,omitempty"`
 	// The configuration for the notification destination. Will be exactly one of
 	// the nested configs. Only returns for users with workspace admin permissions.
 	Config *Config `json:"config,omitempty"`
+	// [Output-only] The type of the notification destination. The type can not be
+	// changed once set.
+	DestinationType DestinationType `json:"destination_type,omitempty"`
+	// The display name for the notification destination.
+	DisplayName *string `json:"display_name,omitempty"`
+	// UUID identifying notification destination.
+	Id *string `json:"id,omitempty"`
 }
 
 type MicrosoftTeamsConfig struct {
-	// [Input-Only] URL for Microsoft Teams webhook.
-	Url *string `json:"url,omitempty"`
-	// [Output-Only] Whether URL is set.
-	UrlSet *bool `json:"url_set,omitempty"`
 	// [Input-Only] App ID for Microsoft Teams App.
 	AppId *string `json:"app_id,omitempty"`
 	// [Output-Only] Whether App ID is set.
@@ -138,19 +134,23 @@ type MicrosoftTeamsConfig struct {
 	TenantId *string `json:"tenant_id,omitempty"`
 	// [Output-Only] Whether Tenant ID is set.
 	TenantIdSet *bool `json:"tenant_id_set,omitempty"`
+	// [Input-Only] URL for Microsoft Teams webhook.
+	Url *string `json:"url,omitempty"`
+	// [Output-Only] Whether URL is set.
+	UrlSet *bool `json:"url_set,omitempty"`
 }
 
 type NotificationDestination struct {
-	// UUID identifying notification destination.
-	Id *string `json:"id,omitempty"`
-	// The display name for the notification destination.
-	DisplayName *string `json:"display_name,omitempty"`
-	// [Output-only] The type of the notification destination. The type can not be
-	// changed once set.
-	DestinationType DestinationType `json:"destination_type,omitempty"`
 	// The configuration for the notification destination. Will be exactly one of
 	// the nested configs. Only returns for users with workspace admin permissions.
 	Config *Config `json:"config,omitempty"`
+	// [Output-only] The type of the notification destination. The type can not be
+	// changed once set.
+	DestinationType DestinationType `json:"destination_type,omitempty"`
+	// The display name for the notification destination.
+	DisplayName *string `json:"display_name,omitempty"`
+	// UUID identifying notification destination.
+	Id *string `json:"id,omitempty"`
 }
 
 type PagerdutyConfig struct {
@@ -161,28 +161,28 @@ type PagerdutyConfig struct {
 }
 
 type SlackConfig struct {
-	// [Input-Only] URL for Slack destination.
-	Url *string `json:"url,omitempty"`
-	// [Output-Only] Whether URL is set.
-	UrlSet *bool `json:"url_set,omitempty"`
-	// [Input-Only] OAuth token for Slack authentication.
-	OauthToken *string `json:"oauth_token,omitempty"`
-	// [Output-Only] Whether OAuth token is set.
-	OauthTokenSet *bool `json:"oauth_token_set,omitempty"`
 	// [Input-Only] Slack channel ID for notifications.
 	ChannelId *string `json:"channel_id,omitempty"`
 	// [Output-Only] Whether channel ID is set.
 	ChannelIdSet *bool `json:"channel_id_set,omitempty"`
+	// [Input-Only] OAuth token for Slack authentication.
+	OauthToken *string `json:"oauth_token,omitempty"`
+	// [Output-Only] Whether OAuth token is set.
+	OauthTokenSet *bool `json:"oauth_token_set,omitempty"`
+	// [Input-Only] URL for Slack destination.
+	Url *string `json:"url,omitempty"`
+	// [Output-Only] Whether URL is set.
+	UrlSet *bool `json:"url_set,omitempty"`
 }
 
 type UpdateNotificationDestinationRequest struct {
-	// UUID identifying notification destination.
-	Id *string `json:"id,omitempty"`
-	// The display name for the notification destination.
-	DisplayName *string `json:"display_name,omitempty"`
 	// The configuration for the notification destination. Must wrap EXACTLY one of
 	// the nested configs.
 	Config *Config `json:"config,omitempty"`
+	// The display name for the notification destination.
+	DisplayName *string `json:"display_name,omitempty"`
+	// UUID identifying notification destination.
+	Id *string `json:"id,omitempty"`
 }
 
 // ConfigToSDK converts the mirror to the sdk-go type.

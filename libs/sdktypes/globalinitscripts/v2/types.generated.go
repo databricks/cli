@@ -9,10 +9,10 @@ import (
 )
 
 type CreateGlobalInitScriptRequest struct {
+	// Specifies whether the script is enabled. The script runs only if enabled.
+	Enabled *bool `json:"enabled,omitempty"`
 	// The name of the script
 	Name *string `json:"name,omitempty"`
-	// The Base64-encoded content of the script.
-	Script []byte `json:"script,omitempty"`
 	// The position of a global init script, where 0 represents the first script to
 	// run, 1 is the second script to run, in ascending order.
 	//
@@ -25,8 +25,8 @@ type CreateGlobalInitScriptRequest struct {
 	// succeeds, but the original script at that position and all later scripts have
 	// their positions incremented by 1.
 	Position *int `json:"position,omitempty"`
-	// Specifies whether the script is enabled. The script runs only if enabled.
-	Enabled *bool `json:"enabled,omitempty"`
+	// The Base64-encoded content of the script.
+	Script []byte `json:"script,omitempty"`
 }
 
 type CreateGlobalInitScriptResponse struct {
@@ -35,25 +35,25 @@ type CreateGlobalInitScriptResponse struct {
 }
 
 type GlobalInitScriptDetails struct {
-	// The global init script ID.
-	ScriptId *string `json:"script_id,omitempty"`
+	// Time when the script was created, represented as a Unix timestamp in
+	// milliseconds.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+	// The username of the user who created the script.
+	CreatedBy *string `json:"created_by,omitempty"`
+	// Specifies whether the script is enabled. The script runs only if enabled.
+	Enabled *bool `json:"enabled,omitempty"`
 	// The name of the script
 	Name *string `json:"name,omitempty"`
 	// The position of a script, where 0 represents the first script to run, 1 is
 	// the second script to run, in ascending order.
 	Position *int `json:"position,omitempty"`
-	// Specifies whether the script is enabled. The script runs only if enabled.
-	Enabled *bool `json:"enabled,omitempty"`
-	// The username of the user who created the script.
-	CreatedBy *string `json:"created_by,omitempty"`
-	// Time when the script was created, represented as a Unix timestamp in
-	// milliseconds.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-	// The username of the user who last updated the script
-	UpdatedBy *string `json:"updated_by,omitempty"`
+	// The global init script ID.
+	ScriptId *string `json:"script_id,omitempty"`
 	// Time when the script was updated, represented as a Unix timestamp in
 	// milliseconds.
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
+	// The username of the user who last updated the script
+	UpdatedBy *string `json:"updated_by,omitempty"`
 }
 
 type ListGlobalInitScriptsResponse struct {
@@ -61,12 +61,10 @@ type ListGlobalInitScriptsResponse struct {
 }
 
 type UpdateGlobalInitScriptRequest struct {
-	// The ID of the global init script.
-	ScriptId *string `json:"script_id,omitempty"`
+	// Specifies whether the script is enabled. The script runs only if enabled.
+	Enabled *bool `json:"enabled,omitempty"`
 	// The name of the script
 	Name *string `json:"name,omitempty"`
-	// The Base64-encoded content of the script.
-	Script []byte `json:"script,omitempty"`
 	// The position of a script, where 0 represents the first script to run, 1 is
 	// the second script to run, in ascending order. To move the script to run
 	// first, set its position to 0.
@@ -80,8 +78,10 @@ type UpdateGlobalInitScriptRequest struct {
 	// succeeds, but the original script at that position and all later scripts have
 	// their positions incremented by 1.
 	Position *int `json:"position,omitempty"`
-	// Specifies whether the script is enabled. The script runs only if enabled.
-	Enabled *bool `json:"enabled,omitempty"`
+	// The Base64-encoded content of the script.
+	Script []byte `json:"script,omitempty"`
+	// The ID of the global init script.
+	ScriptId *string `json:"script_id,omitempty"`
 }
 
 // CreateGlobalInitScriptRequestToSDK converts the mirror to the sdk-go type.

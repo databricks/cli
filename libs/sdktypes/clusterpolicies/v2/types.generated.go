@@ -23,9 +23,6 @@ const (
 )
 
 type CreatePolicyRequest struct {
-	// Cluster Policy name requested by the user. This has to be unique. Length must
-	// be between 1 and 100 characters.
-	Name *string `json:"name,omitempty"`
 	// Policy definition document expressed in [Databricks Cluster Policy Definition
 	// Language].
 	//
@@ -33,12 +30,15 @@ type CreatePolicyRequest struct {
 	Definition *string `json:"definition,omitempty"`
 	// Additional human-readable description of the cluster policy.
 	Description *string `json:"description,omitempty"`
-	// ID of the policy family. The cluster policy's policy definition inherits the
-	// policy family's policy definition.
-	//
-	// Cannot be used with `definition`. Use `policy_family_definition_overrides`
-	// instead to customize the policy definition.
-	PolicyFamilyId *string `json:"policy_family_id,omitempty"`
+	// A list of libraries to be installed on the next cluster restart that uses
+	// this policy. The maximum number of libraries is 500.
+	Libraries []Library `json:"libraries,omitempty"`
+	// Max number of clusters per user that can be active using this policy. If not
+	// present, there is no max limit.
+	MaxClustersPerUser *int64 `json:"max_clusters_per_user,omitempty"`
+	// Cluster Policy name requested by the user. This has to be unique. Length must
+	// be between 1 and 100 characters.
+	Name *string `json:"name,omitempty"`
 	// Policy definition JSON document expressed in [Databricks Policy Definition
 	// Language]. The JSON document must be passed as a string and cannot be
 	// embedded in the requests.
@@ -49,12 +49,12 @@ type CreatePolicyRequest struct {
 	//
 	// [Databricks Policy Definition Language]: https://docs.databricks.com/administration-guide/clusters/policy-definition.html
 	PolicyFamilyDefinitionOverrides *string `json:"policy_family_definition_overrides,omitempty"`
-	// Max number of clusters per user that can be active using this policy. If not
-	// present, there is no max limit.
-	MaxClustersPerUser *int64 `json:"max_clusters_per_user,omitempty"`
-	// A list of libraries to be installed on the next cluster restart that uses
-	// this policy. The maximum number of libraries is 500.
-	Libraries []Library `json:"libraries,omitempty"`
+	// ID of the policy family. The cluster policy's policy definition inherits the
+	// policy family's policy definition.
+	//
+	// Cannot be used with `definition`. Use `policy_family_definition_overrides`
+	// instead to customize the policy definition.
+	PolicyFamilyId *string `json:"policy_family_id,omitempty"`
 }
 
 type CreatePolicyResponse struct {
@@ -68,11 +68,6 @@ type DeletePolicyRequest struct {
 }
 
 type EditPolicyRequest struct {
-	// The ID of the policy to update.
-	PolicyId *string `json:"policy_id,omitempty"`
-	// Cluster Policy name requested by the user. This has to be unique. Length must
-	// be between 1 and 100 characters.
-	Name *string `json:"name,omitempty"`
 	// Policy definition document expressed in [Databricks Cluster Policy Definition
 	// Language].
 	//
@@ -80,12 +75,15 @@ type EditPolicyRequest struct {
 	Definition *string `json:"definition,omitempty"`
 	// Additional human-readable description of the cluster policy.
 	Description *string `json:"description,omitempty"`
-	// ID of the policy family. The cluster policy's policy definition inherits the
-	// policy family's policy definition.
-	//
-	// Cannot be used with `definition`. Use `policy_family_definition_overrides`
-	// instead to customize the policy definition.
-	PolicyFamilyId *string `json:"policy_family_id,omitempty"`
+	// A list of libraries to be installed on the next cluster restart that uses
+	// this policy. The maximum number of libraries is 500.
+	Libraries []Library `json:"libraries,omitempty"`
+	// Max number of clusters per user that can be active using this policy. If not
+	// present, there is no max limit.
+	MaxClustersPerUser *int64 `json:"max_clusters_per_user,omitempty"`
+	// Cluster Policy name requested by the user. This has to be unique. Length must
+	// be between 1 and 100 characters.
+	Name *string `json:"name,omitempty"`
 	// Policy definition JSON document expressed in [Databricks Policy Definition
 	// Language]. The JSON document must be passed as a string and cannot be
 	// embedded in the requests.
@@ -96,12 +94,14 @@ type EditPolicyRequest struct {
 	//
 	// [Databricks Policy Definition Language]: https://docs.databricks.com/administration-guide/clusters/policy-definition.html
 	PolicyFamilyDefinitionOverrides *string `json:"policy_family_definition_overrides,omitempty"`
-	// Max number of clusters per user that can be active using this policy. If not
-	// present, there is no max limit.
-	MaxClustersPerUser *int64 `json:"max_clusters_per_user,omitempty"`
-	// A list of libraries to be installed on the next cluster restart that uses
-	// this policy. The maximum number of libraries is 500.
-	Libraries []Library `json:"libraries,omitempty"`
+	// ID of the policy family. The cluster policy's policy definition inherits the
+	// policy family's policy definition.
+	//
+	// Cannot be used with `definition`. Use `policy_family_definition_overrides`
+	// instead to customize the policy definition.
+	PolicyFamilyId *string `json:"policy_family_id,omitempty"`
+	// The ID of the policy to update.
+	PolicyId *string `json:"policy_id,omitempty"`
 }
 
 type GetPolicyRequest struct {
@@ -110,23 +110,23 @@ type GetPolicyRequest struct {
 }
 
 type Library struct {
-	Jar          *string            `json:"jar,omitempty"`
-	Egg          *string            `json:"egg,omitempty"`
-	Pypi         *PythonPyPiLibrary `json:"pypi,omitempty"`
-	Maven        *MavenLibrary      `json:"maven,omitempty"`
 	Cran         *RCranLibrary      `json:"cran,omitempty"`
-	Whl          *string            `json:"whl,omitempty"`
+	Egg          *string            `json:"egg,omitempty"`
+	Jar          *string            `json:"jar,omitempty"`
+	Maven        *MavenLibrary      `json:"maven,omitempty"`
+	Pypi         *PythonPyPiLibrary `json:"pypi,omitempty"`
 	Requirements *string            `json:"requirements,omitempty"`
+	Whl          *string            `json:"whl,omitempty"`
 }
 
 type ListPoliciesRequest struct {
-	// The order in which the policies get listed. * `DESC` - Sort result list in
-	// descending order. * `ASC` - Sort result list in ascending order.
-	SortOrder ListOrder `json:"sort_order,omitempty"`
 	// The cluster policy attribute to sort by. * `POLICY_CREATION_TIME` - Sort
 	// result list by policy creation time. * `POLICY_NAME` - Sort result list by
 	// policy name.
 	SortColumn PolicySortColumn `json:"sort_column,omitempty"`
+	// The order in which the policies get listed. * `DESC` - Sort result list in
+	// descending order. * `ASC` - Sort result list in ascending order.
+	SortOrder ListOrder `json:"sort_order,omitempty"`
 }
 
 type ListPoliciesResponse struct {
@@ -137,34 +137,25 @@ type ListPoliciesResponse struct {
 type MavenLibrary struct {
 	// Gradle-style maven coordinates. For example: "org.jsoup:jsoup:1.7.2".
 	Coordinates *string `json:"coordinates,omitempty"`
-	// Maven repo to install the Maven package from. If omitted, both Maven Central
-	// Repository and Spark Packages are searched.
-	Repo *string `json:"repo,omitempty"`
 	// List of dependences to exclude. For example: `["slf4j:slf4j",
 	// "*:hadoop-client"]`.
 	//
 	// Maven dependency exclusions:
 	// https://maven.apache.org/guides/introduction/introduction-to-optional-and-excludes-dependencies.html.
 	Exclusions []string `json:"exclusions,omitempty"`
+	// Maven repo to install the Maven package from. If omitted, both Maven Central
+	// Repository and Spark Packages are searched.
+	Repo *string `json:"repo,omitempty"`
 }
 
 // Describes a Cluster Policy entity..
 type Policy struct {
-	// Canonical unique identifier for the Cluster Policy.
-	PolicyId *string `json:"policy_id,omitempty"`
-	// Creator user name. The field won't be included in the response if the user
-	// has already been deleted.
-	CreatorUserName *string `json:"creator_user_name,omitempty"`
 	// Creation time. The timestamp (in millisecond) when this Cluster Policy was
 	// created.
 	CreatedAtTimestamp *int64 `json:"created_at_timestamp,omitempty"`
-	// If true, policy is a default policy created and managed by <Databricks>.
-	// Default policies cannot be deleted, and their policy families cannot be
-	// changed.
-	IsDefault *bool `json:"is_default,omitempty"`
-	// Cluster Policy name requested by the user. This has to be unique. Length must
-	// be between 1 and 100 characters.
-	Name *string `json:"name,omitempty"`
+	// Creator user name. The field won't be included in the response if the user
+	// has already been deleted.
+	CreatorUserName *string `json:"creator_user_name,omitempty"`
 	// Policy definition document expressed in [Databricks Cluster Policy Definition
 	// Language].
 	//
@@ -172,12 +163,19 @@ type Policy struct {
 	Definition *string `json:"definition,omitempty"`
 	// Additional human-readable description of the cluster policy.
 	Description *string `json:"description,omitempty"`
-	// ID of the policy family. The cluster policy's policy definition inherits the
-	// policy family's policy definition.
-	//
-	// Cannot be used with `definition`. Use `policy_family_definition_overrides`
-	// instead to customize the policy definition.
-	PolicyFamilyId *string `json:"policy_family_id,omitempty"`
+	// If true, policy is a default policy created and managed by <Databricks>.
+	// Default policies cannot be deleted, and their policy families cannot be
+	// changed.
+	IsDefault *bool `json:"is_default,omitempty"`
+	// A list of libraries to be installed on the next cluster restart that uses
+	// this policy. The maximum number of libraries is 500.
+	Libraries []Library `json:"libraries,omitempty"`
+	// Max number of clusters per user that can be active using this policy. If not
+	// present, there is no max limit.
+	MaxClustersPerUser *int64 `json:"max_clusters_per_user,omitempty"`
+	// Cluster Policy name requested by the user. This has to be unique. Length must
+	// be between 1 and 100 characters.
+	Name *string `json:"name,omitempty"`
 	// Policy definition JSON document expressed in [Databricks Policy Definition
 	// Language]. The JSON document must be passed as a string and cannot be
 	// embedded in the requests.
@@ -188,12 +186,14 @@ type Policy struct {
 	//
 	// [Databricks Policy Definition Language]: https://docs.databricks.com/administration-guide/clusters/policy-definition.html
 	PolicyFamilyDefinitionOverrides *string `json:"policy_family_definition_overrides,omitempty"`
-	// Max number of clusters per user that can be active using this policy. If not
-	// present, there is no max limit.
-	MaxClustersPerUser *int64 `json:"max_clusters_per_user,omitempty"`
-	// A list of libraries to be installed on the next cluster restart that uses
-	// this policy. The maximum number of libraries is 500.
-	Libraries []Library `json:"libraries,omitempty"`
+	// ID of the policy family. The cluster policy's policy definition inherits the
+	// policy family's policy definition.
+	//
+	// Cannot be used with `definition`. Use `policy_family_definition_overrides`
+	// instead to customize the policy definition.
+	PolicyFamilyId *string `json:"policy_family_id,omitempty"`
+	// Canonical unique identifier for the Cluster Policy.
+	PolicyId *string `json:"policy_id,omitempty"`
 }
 
 type PythonPyPiLibrary struct {

@@ -71,52 +71,52 @@ const (
 // comments, this contains the comment details. For transition requests, this
 // contains the transition request details..
 type Activity struct {
-	// Creation time of the object, as a Unix timestamp in milliseconds.
-	CreationTimestamp *int64 `json:"creation_timestamp,omitempty"`
-	// The username of the user that created the object.
-	UserId       *string      `json:"user_id,omitempty"`
 	ActivityType ActivityType `json:"activity_type,omitempty"`
+	// Array of actions on the activity allowed for the current viewer.
+	AvailableActions []ActivityAction `json:"available_actions,omitempty"`
 	// User-provided comment associated with the activity, comment, or transition
 	// request.
 	Comment *string `json:"comment,omitempty"`
-	// Time of the object at last update, as a Unix timestamp in milliseconds.
-	LastUpdatedTimestamp *int64 `json:"last_updated_timestamp,omitempty"`
+	// Creation time of the object, as a Unix timestamp in milliseconds.
+	CreationTimestamp *int64 `json:"creation_timestamp,omitempty"`
 	// Source stage of the transition (if the activity is stage transition related).
 	// Valid values are: * `None`: The initial stage of a model version. *
 	// `Staging`: Staging or pre-production stage. * `Production`: Production stage.
 	// * `Archived`: Archived stage.
 	FromStage *string `json:"from_stage,omitempty"`
-	// Target stage of the transition (if the activity is stage transition related).
-	// Valid values are: * `None`: The initial stage of a model version. *
-	// `Staging`: Staging or pre-production stage. * `Production`: Production stage.
-	// * `Archived`: Archived stage.
-	ToStage *string `json:"to_stage,omitempty"`
+	// Unique identifier for the object.
+	Id *string `json:"id,omitempty"`
+	// Time of the object at last update, as a Unix timestamp in milliseconds.
+	LastUpdatedTimestamp *int64 `json:"last_updated_timestamp,omitempty"`
 	// Comment made by system, for example explaining an activity of type
 	// `SYSTEM_TRANSITION`. It usually describes a side effect, such as a version
 	// being archived as part of another version's stage transition, and may not be
 	// returned for some activity types.
 	SystemComment *string `json:"system_comment,omitempty"`
-	// Array of actions on the activity allowed for the current viewer.
-	AvailableActions []ActivityAction `json:"available_actions,omitempty"`
-	// Unique identifier for the object.
-	Id *string `json:"id,omitempty"`
+	// Target stage of the transition (if the activity is stage transition related).
+	// Valid values are: * `None`: The initial stage of a model version. *
+	// `Staging`: Staging or pre-production stage. * `Production`: Production stage.
+	// * `Archived`: Archived stage.
+	ToStage *string `json:"to_stage,omitempty"`
+	// The username of the user that created the object.
+	UserId *string `json:"user_id,omitempty"`
 }
 
 // Details required to identify and approve a model version stage transition
 // request..
 type ApproveTransitionRequest struct {
-	// Name of the model.
-	Name *string `json:"name,omitempty"`
-	// Version of the model.
-	Version *string `json:"version,omitempty"`
-	// Target stage of the transition. Valid values are: * `None`: The initial stage
-	// of a model version. * `Staging`: Staging or pre-production stage. *
-	// `Production`: Production stage. * `Archived`: Archived stage.
-	Stage *string `json:"stage,omitempty"`
 	// Specifies whether to archive all current model versions in the target stage.
 	ArchiveExistingVersions *bool `json:"archive_existing_versions,omitempty"`
 	// User-provided comment on the action.
 	Comment *string `json:"comment,omitempty"`
+	// Name of the model.
+	Name *string `json:"name,omitempty"`
+	// Target stage of the transition. Valid values are: * `None`: The initial stage
+	// of a model version. * `Staging`: Staging or pre-production stage. *
+	// `Production`: Production stage. * `Archived`: Archived stage.
+	Stage *string `json:"stage,omitempty"`
+	// Version of the model.
+	Version *string `json:"version,omitempty"`
 }
 
 type ApproveTransitionResponse struct {
@@ -128,45 +128,45 @@ type ApproveTransitionResponse struct {
 // comments, this contains the comment details. For transition requests, this
 // contains the transition request details..
 type CommentObject struct {
-	// Creation time of the object, as a Unix timestamp in milliseconds.
-	CreationTimestamp *int64 `json:"creation_timestamp,omitempty"`
-	// The username of the user that created the object.
-	UserId       *string      `json:"user_id,omitempty"`
 	ActivityType ActivityType `json:"activity_type,omitempty"`
+	// Array of actions on the activity allowed for the current viewer.
+	AvailableActions []ActivityAction `json:"available_actions,omitempty"`
 	// User-provided comment associated with the activity, comment, or transition
 	// request.
 	Comment *string `json:"comment,omitempty"`
-	// Time of the object at last update, as a Unix timestamp in milliseconds.
-	LastUpdatedTimestamp *int64 `json:"last_updated_timestamp,omitempty"`
+	// Creation time of the object, as a Unix timestamp in milliseconds.
+	CreationTimestamp *int64 `json:"creation_timestamp,omitempty"`
 	// Source stage of the transition (if the activity is stage transition related).
 	// Valid values are: * `None`: The initial stage of a model version. *
 	// `Staging`: Staging or pre-production stage. * `Production`: Production stage.
 	// * `Archived`: Archived stage.
 	FromStage *string `json:"from_stage,omitempty"`
-	// Target stage of the transition (if the activity is stage transition related).
-	// Valid values are: * `None`: The initial stage of a model version. *
-	// `Staging`: Staging or pre-production stage. * `Production`: Production stage.
-	// * `Archived`: Archived stage.
-	ToStage *string `json:"to_stage,omitempty"`
+	// Unique identifier for the object.
+	Id *string `json:"id,omitempty"`
+	// Time of the object at last update, as a Unix timestamp in milliseconds.
+	LastUpdatedTimestamp *int64 `json:"last_updated_timestamp,omitempty"`
 	// Comment made by system, for example explaining an activity of type
 	// `SYSTEM_TRANSITION`. It usually describes a side effect, such as a version
 	// being archived as part of another version's stage transition, and may not be
 	// returned for some activity types.
 	SystemComment *string `json:"system_comment,omitempty"`
-	// Array of actions on the activity allowed for the current viewer.
-	AvailableActions []ActivityAction `json:"available_actions,omitempty"`
-	// Unique identifier for the object.
-	Id *string `json:"id,omitempty"`
+	// Target stage of the transition (if the activity is stage transition related).
+	// Valid values are: * `None`: The initial stage of a model version. *
+	// `Staging`: Staging or pre-production stage. * `Production`: Production stage.
+	// * `Archived`: Archived stage.
+	ToStage *string `json:"to_stage,omitempty"`
+	// The username of the user that created the object.
+	UserId *string `json:"user_id,omitempty"`
 }
 
 // Details required to create a comment on a model version..
 type CreateCommentRequest struct {
+	// User-provided comment on the action.
+	Comment *string `json:"comment,omitempty"`
 	// Name of the model.
 	Name *string `json:"name,omitempty"`
 	// Version of the model.
 	Version *string `json:"version,omitempty"`
-	// User-provided comment on the action.
-	Comment *string `json:"comment,omitempty"`
 }
 
 type CreateCommentResponse struct {
@@ -175,20 +175,20 @@ type CreateCommentResponse struct {
 }
 
 type CreateModelVersionRequest struct {
+	// Optional description for model version.
+	Description *string `json:"description,omitempty"`
 	// Register model under this name
 	Name *string `json:"name,omitempty"`
-	// URI indicating the location of the model artifacts.
-	Source *string `json:"source,omitempty"`
 	// MLflow run ID for correlation, if `source` was generated by an experiment run
 	// in MLflow tracking server
 	RunId *string `json:"run_id,omitempty"`
-	// Additional metadata for model version.
-	Tags []ModelVersionTag `json:"tags,omitempty"`
 	// MLflow run link - this is the exact link of the run that generated this model
 	// version, potentially hosted at another instance of MLflow.
 	RunLink *string `json:"run_link,omitempty"`
-	// Optional description for model version.
-	Description *string `json:"description,omitempty"`
+	// URI indicating the location of the model artifacts.
+	Source *string `json:"source,omitempty"`
+	// Additional metadata for model version.
+	Tags []ModelVersionTag `json:"tags,omitempty"`
 }
 
 type CreateModelVersionResponse struct {
@@ -197,12 +197,12 @@ type CreateModelVersionResponse struct {
 }
 
 type CreateRegisteredModelRequest struct {
+	// Optional description for registered model.
+	Description *string `json:"description,omitempty"`
 	// Register models under this name
 	Name *string `json:"name,omitempty"`
 	// Additional metadata for registered model.
 	Tags []RegisteredModelTag `json:"tags,omitempty"`
-	// Optional description for registered model.
-	Description *string `json:"description,omitempty"`
 }
 
 type CreateRegisteredModelResponse struct {
@@ -211,10 +211,8 @@ type CreateRegisteredModelResponse struct {
 
 // Details required to create a registry webhook..
 type CreateRegistryWebhookRequest struct {
-	// If model name is not specified, a registry-wide webhook is created that
-	// listens for the specified events across all versions of all registered
-	// models.
-	ModelName *string `json:"model_name,omitempty"`
+	// User-specified description for the webhook.
+	Description *string `json:"description,omitempty"`
 	// Events that can trigger a registry webhook: * `MODEL_VERSION_CREATED`: A new
 	// model version was created for the associated model. *
 	// `MODEL_VERSION_TRANSITIONED_STAGE`: A model version’s stage was changed. *
@@ -233,18 +231,20 @@ type CreateRegistryWebhookRequest struct {
 	// be transitioned to production. * `TRANSITION_REQUEST_TO_ARCHIVED_CREATED`: A
 	// user requested a model version be archived.
 	Events []RegistryWebhookEvent `json:"events,omitempty"`
-	// User-specified description for the webhook.
-	Description *string `json:"description,omitempty"`
+	// External HTTPS URL called on event trigger (by using a POST request).
+	HttpUrlSpec *HttpUrlSpec `json:"http_url_spec,omitempty"`
+	// ID of the job that the webhook runs.
+	JobSpec *JobSpec `json:"job_spec,omitempty"`
+	// If model name is not specified, a registry-wide webhook is created that
+	// listens for the specified events across all versions of all registered
+	// models.
+	ModelName *string `json:"model_name,omitempty"`
 	// Enable or disable triggering the webhook, or put the webhook into test mode.
 	// The default is `ACTIVE`: * `ACTIVE`: Webhook is triggered when an associated
 	// event happens. * `DISABLED`: Webhook is not triggered. * `TEST_MODE`: Webhook
 	// can be triggered through the test endpoint, but is not triggered on a real
 	// event.
 	Status RegistryWebhookStatus `json:"status,omitempty"`
-	// External HTTPS URL called on event trigger (by using a POST request).
-	HttpUrlSpec *HttpUrlSpec `json:"http_url_spec,omitempty"`
-	// ID of the job that the webhook runs.
-	JobSpec *JobSpec `json:"job_spec,omitempty"`
 }
 
 type CreateRegistryWebhookResponse struct {
@@ -253,16 +253,16 @@ type CreateRegistryWebhookResponse struct {
 
 // Details required to create a model version stage transition request..
 type CreateTransitionRequest struct {
+	// User-provided comment on the action.
+	Comment *string `json:"comment,omitempty"`
 	// Name of the model.
 	Name *string `json:"name,omitempty"`
-	// Version of the model.
-	Version *string `json:"version,omitempty"`
 	// Target stage of the transition. Valid values are: * `None`: The initial stage
 	// of a model version. * `Staging`: Staging or pre-production stage. *
 	// `Production`: Production stage. * `Archived`: Archived stage.
 	Stage *string `json:"stage,omitempty"`
-	// User-provided comment on the action.
-	Comment *string `json:"comment,omitempty"`
+	// Version of the model.
+	Version *string `json:"version,omitempty"`
 }
 
 type CreateTransitionResponse struct {
@@ -283,13 +283,13 @@ type DeleteModelVersionRequest struct {
 }
 
 type DeleteModelVersionTagRequest struct {
+	// Name of the tag. The name must be an exact match; wild-card deletion is not
+	// supported. Maximum size is 250 bytes.
+	Key *string `json:"key,omitempty"`
 	// Name of the registered model that the tag was logged under.
 	Name *string `json:"name,omitempty"`
 	// Model version number that the tag was logged under.
 	Version *string `json:"version,omitempty"`
-	// Name of the tag. The name must be an exact match; wild-card deletion is not
-	// supported. Maximum size is 250 bytes.
-	Key *string `json:"key,omitempty"`
 }
 
 type DeleteRegisteredModelRequest struct {
@@ -298,11 +298,11 @@ type DeleteRegisteredModelRequest struct {
 }
 
 type DeleteRegisteredModelTagRequest struct {
-	// Name of the registered model that the tag was logged under.
-	Name *string `json:"name,omitempty"`
 	// Name of the tag. The name must be an exact match; wild-card deletion is not
 	// supported. Maximum size is 250 bytes.
 	Key *string `json:"key,omitempty"`
+	// Name of the registered model that the tag was logged under.
+	Name *string `json:"name,omitempty"`
 }
 
 // .. note:: Experimental: This entity may change or be removed in a future
@@ -313,20 +313,20 @@ type DeleteRegistryWebhookRequest struct {
 }
 
 type DeleteTransitionRequest struct {
-	// Name of the model.
-	Name *string `json:"name,omitempty"`
-	// Version of the model.
-	Version *string `json:"version,omitempty"`
-	// Target stage of the transition request. Valid values are: * `None`: The
-	// initial stage of a model version. * `Staging`: Staging or pre-production
-	// stage. * `Production`: Production stage. * `Archived`: Archived stage.
-	Stage *string `json:"stage,omitempty"`
+	// User-provided comment on the action.
+	Comment *string `json:"comment,omitempty"`
 	// Username of the user who created this request. Of the transition requests
 	// matching the specified details, only the one transition created by this user
 	// will be deleted.
 	Creator *string `json:"creator,omitempty"`
-	// User-provided comment on the action.
-	Comment *string `json:"comment,omitempty"`
+	// Name of the model.
+	Name *string `json:"name,omitempty"`
+	// Target stage of the transition request. Valid values are: * `None`: The
+	// initial stage of a model version. * `Staging`: Staging or pre-production
+	// stage. * `Production`: Production stage. * `Archived`: Archived stage.
+	Stage *string `json:"stage,omitempty"`
+	// Version of the model.
+	Version *string `json:"version,omitempty"`
 }
 
 type DeleteTransitionResponse struct {
@@ -379,8 +379,10 @@ type GetRegisteredModelDatabricksResponse struct {
 }
 
 type HttpUrlSpec struct {
-	// External HTTPS URL called on event trigger (by using a POST request).
-	Url *string `json:"url,omitempty"`
+	// Value of the authorization header that should be sent in the request sent by
+	// the wehbook. It should be of the form `"<auth type> <credentials>"`. If set
+	// to an empty string, no authorization header will be included in the request.
+	Authorization *string `json:"authorization,omitempty"`
 	// Enable/disable SSL certificate validation. Default is true. For self-signed
 	// certificates, this field must be false AND the destination server must
 	// disable certificate validation as well. For security purposes, it is
@@ -393,31 +395,29 @@ type HttpUrlSpec struct {
 	// will be sent in the header as: { "X-Databricks-Signature": $encoded_payload
 	// }.
 	Secret *string `json:"secret,omitempty"`
-	// Value of the authorization header that should be sent in the request sent by
-	// the wehbook. It should be of the form `"<auth type> <credentials>"`. If set
-	// to an empty string, no authorization header will be included in the request.
-	Authorization *string `json:"authorization,omitempty"`
+	// External HTTPS URL called on event trigger (by using a POST request).
+	Url *string `json:"url,omitempty"`
 }
 
 type JobSpec struct {
+	// The personal access token used to authorize webhook's job runs.
+	AccessToken *string `json:"access_token,omitempty"`
 	// ID of the job that the webhook runs.
 	JobId *string `json:"job_id,omitempty"`
 	// URL of the workspace containing the job that this webhook runs. If not
 	// specified, the job’s workspace URL is assumed to be the same as the
 	// workspace where the webhook is created.
 	WorkspaceUrl *string `json:"workspace_url,omitempty"`
-	// The personal access token used to authorize webhook's job runs.
-	AccessToken *string `json:"access_token,omitempty"`
 }
 
 // Feature for model version..
 type LinkedFeature struct {
-	// Feature table name
-	FeatureTableName *string `json:"feature_table_name,omitempty"`
 	// Feature name
 	FeatureName *string `json:"feature_name,omitempty"`
 	// Feature table id
 	FeatureTableId *string `json:"feature_table_id,omitempty"`
+	// Feature table name
+	FeatureTableName *string `json:"feature_table_name,omitempty"`
 }
 
 type ListLatestVersionsRequest struct {
@@ -435,15 +435,12 @@ type ListRegisteredModelsRequest struct {
 }
 
 type ListRegisteredModelsResponse struct {
-	RegisteredModels []RegisteredModel `json:"registered_models,omitempty"`
 	// Pagination token to request next page of models for the same query.
-	NextPageToken *string `json:"next_page_token,omitempty"`
+	NextPageToken    *string           `json:"next_page_token,omitempty"`
+	RegisteredModels []RegisteredModel `json:"registered_models,omitempty"`
 }
 
 type ListRegistryWebhooksRequest struct {
-	// Registered model name If not specified, all webhooks associated with the
-	// specified events are listed, regardless of their associated model.
-	ModelName *string `json:"model_name,omitempty"`
 	// Events that trigger the webhook. * `MODEL_VERSION_CREATED`: A new model
 	// version was created for the associated model. *
 	// `MODEL_VERSION_TRANSITIONED_STAGE`: A model version’s stage was changed. *
@@ -464,17 +461,20 @@ type ListRegistryWebhooksRequest struct {
 	// webhook with one or more of the specified trigger events is included in the
 	// output. If `events` is not specified, webhooks of all event types are
 	// included in the output.
-	Events []RegistryWebhookEvent `json:"events,omitempty"`
+	Events     []RegistryWebhookEvent `json:"events,omitempty"`
+	MaxResults *int64                 `json:"max_results,omitempty"`
+	// Registered model name If not specified, all webhooks associated with the
+	// specified events are listed, regardless of their associated model.
+	ModelName *string `json:"model_name,omitempty"`
 	// Token indicating the page of artifact results to fetch
-	PageToken  *string `json:"page_token,omitempty"`
-	MaxResults *int64  `json:"max_results,omitempty"`
+	PageToken *string `json:"page_token,omitempty"`
 }
 
 type ListRegistryWebhooksResponse struct {
-	// Array of registry webhooks.
-	Webhooks []RegistryWebhook `json:"webhooks,omitempty"`
 	// Token that can be used to retrieve the next page of artifact results
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// Array of registry webhooks.
+	Webhooks []RegistryWebhook `json:"webhooks,omitempty"`
 }
 
 type ListTransitionRequest struct {
@@ -490,75 +490,75 @@ type ListTransitionResponse struct {
 }
 
 type ModelVersion struct {
-	// Unique name of the model
-	Name *string `json:"name,omitempty"`
-	// Model's version number.
-	Version *string `json:"version,omitempty"`
 	// Timestamp recorded when this `model_version` was created.
 	CreationTimestamp *int64 `json:"creation_timestamp,omitempty"`
-	// Timestamp recorded when metadata for this `model_version` was last updated.
-	LastUpdatedTimestamp *int64 `json:"last_updated_timestamp,omitempty"`
-	// User that created this `model_version`.
-	UserId *string `json:"user_id,omitempty"`
 	// Current stage for this `model_version`.
 	CurrentStage *string `json:"current_stage,omitempty"`
 	// Description of this `model_version`.
 	Description *string `json:"description,omitempty"`
-	// URI indicating the location of the source model artifacts, used when creating
-	// `model_version`
-	Source *string `json:"source,omitempty"`
+	// Timestamp recorded when metadata for this `model_version` was last updated.
+	LastUpdatedTimestamp *int64 `json:"last_updated_timestamp,omitempty"`
+	// Unique name of the model
+	Name *string `json:"name,omitempty"`
 	// MLflow run ID used when creating `model_version`, if `source` was generated
 	// by an experiment run stored in MLflow tracking server.
 	RunId *string `json:"run_id,omitempty"`
+	// Run Link: Direct link to the run that generated this version
+	RunLink *string `json:"run_link,omitempty"`
+	// URI indicating the location of the source model artifacts, used when creating
+	// `model_version`
+	Source *string `json:"source,omitempty"`
 	// Current status of `model_version`
 	Status ModelVersionStatus `json:"status,omitempty"`
 	// Details on current `status`, if it is pending or failed.
 	StatusMessage *string `json:"status_message,omitempty"`
 	// Tags: Additional metadata key-value pairs for this `model_version`.
 	Tags []ModelVersionTag `json:"tags,omitempty"`
-	// Run Link: Direct link to the run that generated this version
-	RunLink *string `json:"run_link,omitempty"`
+	// User that created this `model_version`.
+	UserId *string `json:"user_id,omitempty"`
+	// Model's version number.
+	Version *string `json:"version,omitempty"`
 }
 
 type ModelVersionDatabricks struct {
-	// Name of the model.
-	Name *string `json:"name,omitempty"`
-	// Version of the model.
-	Version *string `json:"version,omitempty"`
 	// Creation time of the object, as a Unix timestamp in milliseconds.
-	CreationTimestamp *int64 `json:"creation_timestamp,omitempty"`
-	// Time of the object at last update, as a Unix timestamp in milliseconds.
-	LastUpdatedTimestamp *int64 `json:"last_updated_timestamp,omitempty"`
-	// The username of the user that created the object.
-	UserId       *string `json:"user_id,omitempty"`
-	CurrentStage *string `json:"current_stage,omitempty"`
+	CreationTimestamp *int64  `json:"creation_timestamp,omitempty"`
+	CurrentStage      *string `json:"current_stage,omitempty"`
 	// User-specified description for the object.
 	Description *string `json:"description,omitempty"`
-	// URI that indicates the location of the source model artifacts. This is used
-	// when creating the model version.
-	Source *string `json:"source,omitempty"`
-	// Unique identifier for the MLflow tracking run associated with the source
-	// model artifacts.
-	RunId  *string            `json:"run_id,omitempty"`
-	Status ModelVersionStatus `json:"status,omitempty"`
-	// Details on the current status, for example why registration failed.
-	StatusMessage *string `json:"status_message,omitempty"`
-	// Open requests for this `model_versions`. Gap in sequence number is
-	// intentional and is done in order to match field sequence numbers of
-	// `ModelVersion` proto message
-	OpenRequests    []Activity      `json:"open_requests,omitempty"`
-	PermissionLevel PermissionLevel `json:"permission_level,omitempty"`
-	// Array of tags that are associated with the model version.
-	Tags []ModelVersionTag `json:"tags,omitempty"`
-	// URL of the run associated with the model artifacts. This field is set at
-	// model version creation time only for model versions whose source run is from
-	// a tracking server that is different from the registry server.
-	RunLink *string `json:"run_link,omitempty"`
 	// Email Subscription Status: This is the subscription status of the user to the
 	// model version Users get subscribed by interacting with the model version.
 	EmailSubscriptionStatus RegistryEmailSubscriptionType `json:"email_subscription_status,omitempty"`
 	// Feature lineage of `model_version`.
 	FeatureList *FeatureList `json:"feature_list,omitempty"`
+	// Time of the object at last update, as a Unix timestamp in milliseconds.
+	LastUpdatedTimestamp *int64 `json:"last_updated_timestamp,omitempty"`
+	// Name of the model.
+	Name *string `json:"name,omitempty"`
+	// Open requests for this `model_versions`. Gap in sequence number is
+	// intentional and is done in order to match field sequence numbers of
+	// `ModelVersion` proto message
+	OpenRequests    []Activity      `json:"open_requests,omitempty"`
+	PermissionLevel PermissionLevel `json:"permission_level,omitempty"`
+	// Unique identifier for the MLflow tracking run associated with the source
+	// model artifacts.
+	RunId *string `json:"run_id,omitempty"`
+	// URL of the run associated with the model artifacts. This field is set at
+	// model version creation time only for model versions whose source run is from
+	// a tracking server that is different from the registry server.
+	RunLink *string `json:"run_link,omitempty"`
+	// URI that indicates the location of the source model artifacts. This is used
+	// when creating the model version.
+	Source *string            `json:"source,omitempty"`
+	Status ModelVersionStatus `json:"status,omitempty"`
+	// Details on the current status, for example why registration failed.
+	StatusMessage *string `json:"status_message,omitempty"`
+	// Array of tags that are associated with the model version.
+	Tags []ModelVersionTag `json:"tags,omitempty"`
+	// The username of the user that created the object.
+	UserId *string `json:"user_id,omitempty"`
+	// Version of the model.
+	Version *string `json:"version,omitempty"`
 }
 
 type ModelVersionTag struct {
@@ -569,43 +569,43 @@ type ModelVersionTag struct {
 }
 
 type RegisteredModel struct {
-	// Unique name for the model.
-	Name *string `json:"name,omitempty"`
 	// Timestamp recorded when this `registered_model` was created.
 	CreationTimestamp *int64 `json:"creation_timestamp,omitempty"`
+	// Description of this `registered_model`.
+	Description *string `json:"description,omitempty"`
 	// Timestamp recorded when metadata for this `registered_model` was last
 	// updated.
 	LastUpdatedTimestamp *int64 `json:"last_updated_timestamp,omitempty"`
-	// User that created this `registered_model`
-	UserId *string `json:"user_id,omitempty"`
-	// Description of this `registered_model`.
-	Description *string `json:"description,omitempty"`
 	// Collection of latest model versions for each stage. Only contains models with
 	// current `READY` status.
 	LatestVersions []ModelVersion `json:"latest_versions,omitempty"`
+	// Unique name for the model.
+	Name *string `json:"name,omitempty"`
 	// Tags: Additional metadata key-value pairs for this `registered_model`.
 	Tags []RegisteredModelTag `json:"tags,omitempty"`
+	// User that created this `registered_model`
+	UserId *string `json:"user_id,omitempty"`
 }
 
 type RegisteredModelDatabricks struct {
-	// Name of the model.
-	Name *string `json:"name,omitempty"`
 	// Creation time of the object, as a Unix timestamp in milliseconds.
 	CreationTimestamp *int64 `json:"creation_timestamp,omitempty"`
-	// Last update time of the object, as a Unix timestamp in milliseconds.
-	LastUpdatedTimestamp *int64 `json:"last_updated_timestamp,omitempty"`
-	// The username of the user that created the object.
-	UserId *string `json:"user_id,omitempty"`
 	// User-specified description for the object.
 	Description *string `json:"description,omitempty"`
-	// Array of model versions, each the latest version for its stage.
-	LatestVersions []ModelVersion `json:"latest_versions,omitempty"`
 	// Unique identifier for the object.
 	Id *string `json:"id,omitempty"`
+	// Last update time of the object, as a Unix timestamp in milliseconds.
+	LastUpdatedTimestamp *int64 `json:"last_updated_timestamp,omitempty"`
+	// Array of model versions, each the latest version for its stage.
+	LatestVersions []ModelVersion `json:"latest_versions,omitempty"`
+	// Name of the model.
+	Name *string `json:"name,omitempty"`
 	// Permission level granted for the requesting user on this registered model
 	PermissionLevel PermissionLevel `json:"permission_level,omitempty"`
 	// Array of tags associated with the model.
 	Tags []RegisteredModelTag `json:"tags,omitempty"`
+	// The username of the user that created the object.
+	UserId *string `json:"user_id,omitempty"`
 }
 
 // Tag for a registered model.
@@ -617,8 +617,10 @@ type RegisteredModelTag struct {
 }
 
 type RegistryWebhook struct {
-	// Webhook ID
-	Id *string `json:"id,omitempty"`
+	// Creation time of the object, as a Unix timestamp in milliseconds.
+	CreationTimestamp *int64 `json:"creation_timestamp,omitempty"`
+	// User-specified description for the webhook.
+	Description *string `json:"description,omitempty"`
 	// Events that can trigger a registry webhook: * `MODEL_VERSION_CREATED`: A new
 	// model version was created for the associated model. *
 	// `MODEL_VERSION_TRANSITIONED_STAGE`: A model version’s stage was changed. *
@@ -636,33 +638,31 @@ type RegistryWebhook struct {
 	// `TRANSITION_REQUEST_TO_PRODUCTION_CREATED`: A user requested a model version
 	// be transitioned to production. * `TRANSITION_REQUEST_TO_ARCHIVED_CREATED`: A
 	// user requested a model version be archived.
-	Events []RegistryWebhookEvent `json:"events,omitempty"`
-	// Creation time of the object, as a Unix timestamp in milliseconds.
-	CreationTimestamp *int64 `json:"creation_timestamp,omitempty"`
+	Events      []RegistryWebhookEvent `json:"events,omitempty"`
+	HttpUrlSpec *HttpUrlSpec           `json:"http_url_spec,omitempty"`
+	// Webhook ID
+	Id      *string  `json:"id,omitempty"`
+	JobSpec *JobSpec `json:"job_spec,omitempty"`
 	// Time of the object at last update, as a Unix timestamp in milliseconds.
 	LastUpdatedTimestamp *int64 `json:"last_updated_timestamp,omitempty"`
-	// User-specified description for the webhook.
-	Description *string               `json:"description,omitempty"`
-	Status      RegistryWebhookStatus `json:"status,omitempty"`
-	HttpUrlSpec *HttpUrlSpec          `json:"http_url_spec,omitempty"`
-	JobSpec     *JobSpec              `json:"job_spec,omitempty"`
 	// Name of the model whose events would trigger this webhook.
-	ModelName *string `json:"model_name,omitempty"`
+	ModelName *string               `json:"model_name,omitempty"`
+	Status    RegistryWebhookStatus `json:"status,omitempty"`
 }
 
 // Details required to identify and reject a model version stage transition
 // request..
 type RejectTransitionRequest struct {
+	// User-provided comment on the action.
+	Comment *string `json:"comment,omitempty"`
 	// Name of the model.
 	Name *string `json:"name,omitempty"`
-	// Version of the model.
-	Version *string `json:"version,omitempty"`
 	// Target stage of the transition. Valid values are: * `None`: The initial stage
 	// of a model version. * `Staging`: Staging or pre-production stage. *
 	// `Production`: Production stage. * `Archived`: Archived stage.
 	Stage *string `json:"stage,omitempty"`
-	// User-provided comment on the action.
-	Comment *string `json:"comment,omitempty"`
+	// Version of the model.
+	Version *string `json:"version,omitempty"`
 }
 
 type RejectTransitionResponse struct {
@@ -719,36 +719,36 @@ type SearchRegisteredModelsRequest struct {
 }
 
 type SearchRegisteredModelsResponse struct {
-	// Registered Models that match the search criteria.
-	RegisteredModels []RegisteredModel `json:"registered_models,omitempty"`
 	// Pagination token to request the next page of models.
 	NextPageToken *string `json:"next_page_token,omitempty"`
+	// Registered Models that match the search criteria.
+	RegisteredModels []RegisteredModel `json:"registered_models,omitempty"`
 }
 
 type SetModelVersionTagRequest struct {
-	// Unique name of the model.
-	Name *string `json:"name,omitempty"`
-	// Model version number.
-	Version *string `json:"version,omitempty"`
 	// Name of the tag. Maximum size depends on storage backend. If a tag with this
 	// name already exists, its preexisting value will be replaced by the specified
 	// `value`. All storage backends are guaranteed to support key values up to 250
 	// bytes in size.
 	Key *string `json:"key,omitempty"`
+	// Unique name of the model.
+	Name *string `json:"name,omitempty"`
 	// String value of the tag being logged. Maximum size depends on storage
 	// backend. All storage backends are guaranteed to support key values up to 5000
 	// bytes in size.
 	Value *string `json:"value,omitempty"`
+	// Model version number.
+	Version *string `json:"version,omitempty"`
 }
 
 type SetRegisteredModelTagRequest struct {
-	// Unique name of the model.
-	Name *string `json:"name,omitempty"`
 	// Name of the tag. Maximum size depends on storage backend. If a tag with this
 	// name already exists, its preexisting value will be replaced by the specified
 	// `value`. All storage backends are guaranteed to support key values up to 250
 	// bytes in size.
 	Key *string `json:"key,omitempty"`
+	// Unique name of the model.
+	Name *string `json:"name,omitempty"`
 	// String value of the tag being logged. Maximum size depends on storage
 	// backend. All storage backends are guaranteed to support key values up to 5000
 	// bytes in size.
@@ -757,35 +757,35 @@ type SetRegisteredModelTagRequest struct {
 
 // Details required to test a registry webhook..
 type TestRegistryWebhookRequest struct {
-	// Webhook ID
-	Id *string `json:"id,omitempty"`
 	// If `event` is specified, the test trigger uses the specified event. If
 	// `event` is not specified, the test trigger uses a randomly chosen event
 	// associated with the webhook.
 	Event RegistryWebhookEvent `json:"event,omitempty"`
+	// Webhook ID
+	Id *string `json:"id,omitempty"`
 }
 
 type TestRegistryWebhookResponse struct {
-	// Status code returned by the webhook URL
-	StatusCode *int `json:"status_code,omitempty"`
 	// Body of the response from the webhook URL
 	Body *string `json:"body,omitempty"`
+	// Status code returned by the webhook URL
+	StatusCode *int `json:"status_code,omitempty"`
 }
 
 // Details required to transition a model version's stage..
 type TransitionModelVersionStageDatabricksRequest struct {
-	// Name of the model.
-	Name *string `json:"name,omitempty"`
-	// Version of the model.
-	Version *string `json:"version,omitempty"`
-	// Target stage of the transition. Valid values are: * `None`: The initial stage
-	// of a model version. * `Staging`: Staging or pre-production stage. *
-	// `Production`: Production stage. * `Archived`: Archived stage.
-	Stage *string `json:"stage,omitempty"`
 	// Specifies whether to archive all current model versions in the target stage.
 	ArchiveExistingVersions *bool `json:"archive_existing_versions,omitempty"`
 	// User-provided comment on the action.
 	Comment *string `json:"comment,omitempty"`
+	// Name of the model.
+	Name *string `json:"name,omitempty"`
+	// Target stage of the transition. Valid values are: * `None`: The initial stage
+	// of a model version. * `Staging`: Staging or pre-production stage. *
+	// `Production`: Production stage. * `Archived`: Archived stage.
+	Stage *string `json:"stage,omitempty"`
+	// Version of the model.
+	Version *string `json:"version,omitempty"`
 }
 
 type TransitionModelVersionStageDatabricksResponse struct {
@@ -797,43 +797,43 @@ type TransitionModelVersionStageDatabricksResponse struct {
 // comments, this contains the comment details. For transition requests, this
 // contains the transition request details..
 type TransitionRequest struct {
-	// Creation time of the object, as a Unix timestamp in milliseconds.
-	CreationTimestamp *int64 `json:"creation_timestamp,omitempty"`
-	// The username of the user that created the object.
-	UserId       *string      `json:"user_id,omitempty"`
 	ActivityType ActivityType `json:"activity_type,omitempty"`
+	// Array of actions on the activity allowed for the current viewer.
+	AvailableActions []ActivityAction `json:"available_actions,omitempty"`
 	// User-provided comment associated with the activity, comment, or transition
 	// request.
 	Comment *string `json:"comment,omitempty"`
-	// Time of the object at last update, as a Unix timestamp in milliseconds.
-	LastUpdatedTimestamp *int64 `json:"last_updated_timestamp,omitempty"`
+	// Creation time of the object, as a Unix timestamp in milliseconds.
+	CreationTimestamp *int64 `json:"creation_timestamp,omitempty"`
 	// Source stage of the transition (if the activity is stage transition related).
 	// Valid values are: * `None`: The initial stage of a model version. *
 	// `Staging`: Staging or pre-production stage. * `Production`: Production stage.
 	// * `Archived`: Archived stage.
 	FromStage *string `json:"from_stage,omitempty"`
-	// Target stage of the transition (if the activity is stage transition related).
-	// Valid values are: * `None`: The initial stage of a model version. *
-	// `Staging`: Staging or pre-production stage. * `Production`: Production stage.
-	// * `Archived`: Archived stage.
-	ToStage *string `json:"to_stage,omitempty"`
+	// Unique identifier for the object.
+	Id *string `json:"id,omitempty"`
+	// Time of the object at last update, as a Unix timestamp in milliseconds.
+	LastUpdatedTimestamp *int64 `json:"last_updated_timestamp,omitempty"`
 	// Comment made by system, for example explaining an activity of type
 	// `SYSTEM_TRANSITION`. It usually describes a side effect, such as a version
 	// being archived as part of another version's stage transition, and may not be
 	// returned for some activity types.
 	SystemComment *string `json:"system_comment,omitempty"`
-	// Array of actions on the activity allowed for the current viewer.
-	AvailableActions []ActivityAction `json:"available_actions,omitempty"`
-	// Unique identifier for the object.
-	Id *string `json:"id,omitempty"`
+	// Target stage of the transition (if the activity is stage transition related).
+	// Valid values are: * `None`: The initial stage of a model version. *
+	// `Staging`: Staging or pre-production stage. * `Production`: Production stage.
+	// * `Archived`: Archived stage.
+	ToStage *string `json:"to_stage,omitempty"`
+	// The username of the user that created the object.
+	UserId *string `json:"user_id,omitempty"`
 }
 
 // Details required to edit a comment on a model version..
 type UpdateCommentRequest struct {
-	// Unique identifier of an activity
-	Id *string `json:"id,omitempty"`
 	// User-provided comment on the action.
 	Comment *string `json:"comment,omitempty"`
+	// Unique identifier of an activity
+	Id *string `json:"id,omitempty"`
 }
 
 type UpdateCommentResponse struct {
@@ -842,12 +842,12 @@ type UpdateCommentResponse struct {
 }
 
 type UpdateModelVersionRequest struct {
+	// If provided, updates the description for this `registered_model`.
+	Description *string `json:"description,omitempty"`
 	// Name of the registered model
 	Name *string `json:"name,omitempty"`
 	// Model version number
 	Version *string `json:"version,omitempty"`
-	// If provided, updates the description for this `registered_model`.
-	Description *string `json:"description,omitempty"`
 }
 
 type UpdateModelVersionResponse struct {
@@ -856,10 +856,10 @@ type UpdateModelVersionResponse struct {
 }
 
 type UpdateRegisteredModelRequest struct {
-	// Registered model unique name identifier.
-	Name *string `json:"name,omitempty"`
 	// If provided, updates the description for this `registered_model`.
 	Description *string `json:"description,omitempty"`
+	// Registered model unique name identifier.
+	Name *string `json:"name,omitempty"`
 }
 
 type UpdateRegisteredModelResponse struct {
@@ -870,8 +870,8 @@ type UpdateRegisteredModelResponse struct {
 // be updated should be specified, and both `http_url_spec` and `job_spec`
 // should not be specified in the same request..
 type UpdateRegistryWebhookRequest struct {
-	// Webhook ID
-	Id *string `json:"id,omitempty"`
+	// User-specified description for the webhook.
+	Description *string `json:"description,omitempty"`
 	// Events that can trigger a registry webhook: * `MODEL_VERSION_CREATED`: A new
 	// model version was created for the associated model. *
 	// `MODEL_VERSION_TRANSITIONED_STAGE`: A model version’s stage was changed. *
@@ -889,12 +889,12 @@ type UpdateRegistryWebhookRequest struct {
 	// `TRANSITION_REQUEST_TO_PRODUCTION_CREATED`: A user requested a model version
 	// be transitioned to production. * `TRANSITION_REQUEST_TO_ARCHIVED_CREATED`: A
 	// user requested a model version be archived.
-	Events []RegistryWebhookEvent `json:"events,omitempty"`
-	// User-specified description for the webhook.
-	Description *string               `json:"description,omitempty"`
-	Status      RegistryWebhookStatus `json:"status,omitempty"`
-	HttpUrlSpec *HttpUrlSpec          `json:"http_url_spec,omitempty"`
-	JobSpec     *JobSpec              `json:"job_spec,omitempty"`
+	Events      []RegistryWebhookEvent `json:"events,omitempty"`
+	HttpUrlSpec *HttpUrlSpec           `json:"http_url_spec,omitempty"`
+	// Webhook ID
+	Id      *string               `json:"id,omitempty"`
+	JobSpec *JobSpec              `json:"job_spec,omitempty"`
+	Status  RegistryWebhookStatus `json:"status,omitempty"`
 }
 
 type UpdateRegistryWebhookResponse struct {

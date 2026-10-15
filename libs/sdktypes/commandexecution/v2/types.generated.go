@@ -64,24 +64,24 @@ type DestroyContextRequest struct {
 type ExecuteCommandRequest struct {
 	// Running cluster id
 	ClusterId *string `json:"clusterId,omitempty"`
+	// Executable code
+	Command *string `json:"command,omitempty"`
 	// Running context id
 	ContextId *string  `json:"contextId,omitempty"`
 	Language  Language `json:"language,omitempty"`
-	// Executable code
-	Command *string `json:"command,omitempty"`
 }
 
 // Request to get the status of a previously submitted command..
 type GetCommandStatusRequest struct {
 	ClusterId *string `json:"clusterId,omitempty"`
-	ContextId *string `json:"contextId,omitempty"`
 	CommandId *string `json:"commandId,omitempty"`
+	ContextId *string `json:"contextId,omitempty"`
 }
 
 type GetCommandStatusResponse struct {
 	Id      *string       `json:"id,omitempty"`
-	Status  CommandStatus `json:"status,omitempty"`
 	Results *Results      `json:"results,omitempty"`
+	Status  CommandStatus `json:"status,omitempty"`
 }
 
 // Request to retrieve the status of an execution context..

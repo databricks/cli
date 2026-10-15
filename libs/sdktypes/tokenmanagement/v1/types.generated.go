@@ -26,12 +26,10 @@ const (
 )
 
 type AdminTokenInfo struct {
-	// ID of the token.
-	TokenId *string `json:"token_id,omitempty"`
-	// Timestamp when the token was created.
-	CreationTime *int64 `json:"creation_time,omitempty"`
-	// Timestamp when the token expires.
-	ExpiryTime *int64 `json:"expiry_time,omitempty"`
+	// Output only. The autoscope state of this token.
+	AutoscopeState AutoscopeState `json:"autoscope_state,omitempty"`
+	// Output only. Scopes inferred from offline backfill processing.
+	BackfillScopes []string `json:"backfill_scopes,omitempty"`
 	// Comment that describes the purpose of the token, specified by the token
 	// creator.
 	Comment *string `json:"comment,omitempty"`
@@ -39,42 +37,44 @@ type AdminTokenInfo struct {
 	CreatedById *int64 `json:"created_by_id,omitempty"`
 	// Username of the user that created the token.
 	CreatedByUsername *string `json:"created_by_username,omitempty"`
-	// User ID of the user that owns the token.
-	OwnerId *int64 `json:"owner_id,omitempty"`
-	// If applicable, the ID of the workspace that the token was created in.
-	WorkspaceId *int64 `json:"workspace_id,omitempty"`
-	// Approximate timestamp for the day the token was last used. Accurate up to 1
-	// day.
-	LastUsedDay *int64 `json:"last_used_day,omitempty"`
-	// Scope of the token was created with, if applicable.
-	Scopes []string `json:"scopes,omitempty"`
-	// Output only. The autoscope state of this token.
-	AutoscopeState AutoscopeState `json:"autoscope_state,omitempty"`
+	// Timestamp when the token was created.
+	CreationTime *int64 `json:"creation_time,omitempty"`
+	// Timestamp when the token expires.
+	ExpiryTime *int64 `json:"expiry_time,omitempty"`
 	// Output only. Inferred API path scopes collected for this token when autoscope
 	// is enabled.
 	InferredScopes []string `json:"inferred_scopes,omitempty"`
-	// Output only. Scopes inferred from offline backfill processing.
-	BackfillScopes []string `json:"backfill_scopes,omitempty"`
+	// Approximate timestamp for the day the token was last used. Accurate up to 1
+	// day.
+	LastUsedDay *int64 `json:"last_used_day,omitempty"`
+	// User ID of the user that owns the token.
+	OwnerId *int64 `json:"owner_id,omitempty"`
+	// Scope of the token was created with, if applicable.
+	Scopes []string `json:"scopes,omitempty"`
+	// ID of the token.
+	TokenId *string `json:"token_id,omitempty"`
+	// If applicable, the ID of the workspace that the token was created in.
+	WorkspaceId *int64 `json:"workspace_id,omitempty"`
 }
 
 // Configuration details for creating on-behalf tokens..
 type CreateOnBehalfOfTokenRequest struct {
 	// Application ID of the service principal.
 	ApplicationId *string `json:"application_id,omitempty"`
-	// The number of seconds before the token expires.
-	LifetimeSeconds *int64 `json:"lifetime_seconds,omitempty"`
-	// Comment that describes the purpose of the token.
-	Comment *string  `json:"comment,omitempty"`
-	Scopes  []string `json:"scopes,omitempty"`
 	// Whether to enable autoscoping for this token.
 	AutoscopeEnabled *bool `json:"autoscope_enabled,omitempty"`
+	// Comment that describes the purpose of the token.
+	Comment *string `json:"comment,omitempty"`
+	// The number of seconds before the token expires.
+	LifetimeSeconds *int64   `json:"lifetime_seconds,omitempty"`
+	Scopes          []string `json:"scopes,omitempty"`
 }
 
 // An on-behalf token was successfully created for the service principal..
 type CreateOnBehalfOfTokenResponse struct {
+	TokenInfo *AdminTokenInfo `json:"token_info,omitempty"`
 	// Value of the token.
-	TokenValue *string         `json:"token_value,omitempty"`
-	TokenInfo  *AdminTokenInfo `json:"token_info,omitempty"`
+	TokenValue *string `json:"token_value,omitempty"`
 }
 
 // Token with specified Token ID was successfully returned..

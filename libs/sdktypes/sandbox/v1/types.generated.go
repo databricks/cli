@@ -30,19 +30,19 @@ const (
 
 // A single command execution..
 type Command struct {
-	// Stable identifier for this command.
-	CommandId *string `json:"command_id,omitempty"`
-	// The program that was executed.
-	Cmd *string `json:"cmd,omitempty"`
 	// Arguments passed to the program.
 	Args []string `json:"args,omitempty"`
-	// PID of the spawned process. Absent if the process failed to start.
-	Pid *int64 `json:"pid,omitempty"`
-	// Whether the command has finished executing.
-	Finished *bool `json:"finished,omitempty"`
+	// The program that was executed.
+	Cmd *string `json:"cmd,omitempty"`
+	// Stable identifier for this command.
+	CommandId *string `json:"command_id,omitempty"`
 	// Process exit code. Only present when finished is true and the process exited
 	// normally (not killed by signal or failed to start).
 	ExitCode *int `json:"exit_code,omitempty"`
+	// Whether the command has finished executing.
+	Finished *bool `json:"finished,omitempty"`
+	// PID of the spawned process. Absent if the process failed to start.
+	Pid *int64 `json:"pid,omitempty"`
 }
 
 type ComputeSpec struct {
@@ -67,13 +67,10 @@ type EnvironmentSpec struct {
 
 // Request to run a command in the given sandbox and wait for it to finish..
 type ExecuteCommandSyncRequest struct {
-	// Resource name of the sandbox to run the command in, in the form
-	// `sandboxes/{sandbox_id}`. Bound from the URL path.
-	Name *string `json:"name,omitempty"`
-	// Executable or command to run (e.g. `/bin/echo`, `python3`).
-	Cmd *string `json:"cmd,omitempty"`
 	// Arguments passed to `cmd`.
 	Args []string `json:"args,omitempty"`
+	// Executable or command to run (e.g. `/bin/echo`, `python3`).
+	Cmd *string `json:"cmd,omitempty"`
 	// Extra environment variables for the command's process, merged over the
 	// sandbox's default environment.
 	Envs map[string]string `json:"envs,omitempty"`
@@ -82,25 +79,28 @@ type ExecuteCommandSyncRequest struct {
 	// a default when unset and clamps to an upper bound; negative or otherwise
 	// invalid durations are rejected with `INVALID_ARGUMENT`.
 	ExecutionTimeout *types.Duration `json:"execution_timeout,omitempty"`
+	// Resource name of the sandbox to run the command in, in the form
+	// `sandboxes/{sandbox_id}`. Bound from the URL path.
+	Name *string `json:"name,omitempty"`
 }
 
 // Result of a completed unary command execution: captured output, exit code,
 // and terminal status..
 type ExecuteCommandSyncResponse struct {
+	// Daemon-generated identifier for this command execution, for correlation (for
+	// example in `ListCommands`).
+	CommandId *string `json:"command_id,omitempty"`
 	// Process exit code. Unset when the process was terminated by a signal (e.g. on
 	// `TIMED_OUT`) or never started (`FAILED`) rather than exiting normally.
 	ExitCode *int `json:"exit_code,omitempty"`
 	// Terminal status of the command execution. Always set on a successful
 	// response; never `EXECUTE_COMMAND_STATUS_UNSPECIFIED`.
 	Status ExecuteCommandStatus `json:"status,omitempty"`
+	// Captured standard error, with the same UTF-8 semantics as `stdout`.
+	Stderr *string `json:"stderr,omitempty"`
 	// Captured standard output as UTF-8 text. Invalid UTF-8 bytes are replaced with
 	// the Unicode replacement character (U+FFFD).
 	Stdout *string `json:"stdout,omitempty"`
-	// Captured standard error, with the same UTF-8 semantics as `stdout`.
-	Stderr *string `json:"stderr,omitempty"`
-	// Daemon-generated identifier for this command execution, for correlation (for
-	// example in `ListCommands`).
-	CommandId *string `json:"command_id,omitempty"`
 	// True when `stdout` / `stderr` were truncated because the captured output
 	// exceeded the server's per-response size cap. The dropped output is not
 	// included in this response and is not recoverable through this unary API.
@@ -129,33 +129,33 @@ type ListCommandsResponse struct {
 
 // A request to list Sandboxes..
 type ListSandboxesRequest struct {
-	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
+	PageToken *string `json:"page_token,omitempty"`
 }
 
 // A list of Sandboxes..
 type ListSandboxesResponse struct {
-	Sandboxes     []Sandbox `json:"sandboxes,omitempty"`
 	NextPageToken *string   `json:"next_page_token,omitempty"`
+	Sandboxes     []Sandbox `json:"sandboxes,omitempty"`
 }
 
 // A Sandbox resource representing an execution environment..
 type Sandbox struct {
+	// Output only. The creation time of the sandbox.
+	CreateTime *types.Time `json:"create_time,omitempty"`
+	// Human-readable display label for the sandbox. At most 256 characters.
+	DisplayName *string `json:"display_name,omitempty"`
+	// The sandbox resource name, in the form `sandboxes/{sandbox_id}`. Derived from
+	// `sandbox_id`; any value supplied in a create or update request body is
+	// ignored.
+	Name *string `json:"name,omitempty"`
 	// The desired configuration of the sandbox, supplied by the caller at creation
 	// time.
 	Spec *SandboxSpec `json:"spec,omitempty"`
 	// The observed runtime state of the sandbox, populated by the server.
 	Status *SandboxStatus `json:"status,omitempty"`
-	// The sandbox resource name, in the form `sandboxes/{sandbox_id}`. Derived from
-	// `sandbox_id`; any value supplied in a create or update request body is
-	// ignored.
-	Name *string `json:"name,omitempty"`
-	// Output only. The creation time of the sandbox.
-	CreateTime *types.Time `json:"create_time,omitempty"`
 	// Output only. The last update time of the sandbox metadata and spec.
 	UpdateTime *types.Time `json:"update_time,omitempty"`
-	// Human-readable display label for the sandbox. At most 256 characters.
-	DisplayName *string `json:"display_name,omitempty"`
 }
 
 type SandboxSpec struct {

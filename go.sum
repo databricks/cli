@@ -75,8 +75,6 @@ github.com/databricks/sdk-go/alerts v0.4.0 h1:ZO2NaUWU/m7SYCOVUaA4oA2AiOUt3DPlu+
 github.com/databricks/sdk-go/alerts v0.4.0/go.mod h1:THC3QqAaXwe7xb0GVC+fxOuocWPm2FShRtj51YaB6YY=
 github.com/databricks/sdk-go/apps v0.6.0 h1:qwrFnTpI7DIhwupz4jMZcvaY9DttrD3jnL1BWLqzAxo=
 github.com/databricks/sdk-go/apps v0.6.0/go.mod h1:RhQ8eCL9uvGoBgcId7t+dXbnUtNkL/rgibhdeNWpylM=
-github.com/databricks/sdk-go/auth v0.0.1-dev.8 h1:iMOsshXRZvOrOUVZdcAc4MWQ64mqcenf9Nl803OA8Lc=
-github.com/databricks/sdk-go/auth v0.0.1-dev.8/go.mod h1:YliptECFkvwuHLoHiKRqo9Drx5RVM9u5J40UDmEq0iQ=
 github.com/databricks/sdk-go/auth v0.2.0 h1:543fVMvJ6pVxBymfjGGkkmfiHDbUqX7y9lZseEcE4tQ=
 github.com/databricks/sdk-go/auth v0.2.0/go.mod h1:eNJdFzBAfu1y32a3wPcTnjaUkjhS9VfyCNblKFPIPEo=
 github.com/databricks/sdk-go/authentication v0.3.0 h1:pEfHy0/ni0BZFc6ew09/NcSowFKCCEYiVGuKsaZAF1Q=
@@ -95,8 +93,6 @@ github.com/databricks/sdk-go/clusters v0.3.0 h1:wH4ZGhNX28/LRhC7CLAgnBnFBqGTSUVq
 github.com/databricks/sdk-go/clusters v0.3.0/go.mod h1:uAhTcUG5Ja/XxTW7e15XvIe5PM1VGJf5Feb/Bt8PTyI=
 github.com/databricks/sdk-go/commandexecution v0.3.0 h1:nujddu+H3gP6ZMmTjzyczVNwIUcgADLLvdd165EiVZo=
 github.com/databricks/sdk-go/commandexecution v0.3.0/go.mod h1:9NVkpkyhqEVwj16rCYWMZyhf5/bLwXN0l1g/ZQaj8Ys=
-github.com/databricks/sdk-go/core v0.0.1-dev.8 h1:xUjpesiEAFvFtrMlV16+20Wx65VoE/ptr5KTFRFrFwQ=
-github.com/databricks/sdk-go/core v0.0.1-dev.8/go.mod h1:7Ckau34bOsaZhHJE6r7ORNa+/kO33jIs6DfrJL6UbsM=
 github.com/databricks/sdk-go/core v0.1.0 h1:ZolzW/KVIJy1xXQ0zTsu/QYsEB4vQAEApbbq4D3RGHc=
 github.com/databricks/sdk-go/core v0.1.0/go.mod h1:7Ckau34bOsaZhHJE6r7ORNa+/kO33jIs6DfrJL6UbsM=
 github.com/databricks/sdk-go/customllms v0.3.0 h1:U8lQQEJki7QbUB11RCPYWDWdObbvgeBRE8Gfw7hPOcU=
@@ -119,8 +115,6 @@ github.com/databricks/sdk-go/features v0.9.0 h1:OcfkFsWR7Ooq8wS0qaaT5hs4F9ygl58n
 github.com/databricks/sdk-go/features v0.9.0/go.mod h1:f0G1b3C3kldjARBfaDorQaXqLH5H9h09Z++2vZnIp0Q=
 github.com/databricks/sdk-go/featurestore v0.3.0 h1:BIE2Buxeinp/MTV721EdJ6QrVPh2UDwbEBCHn3ubQV8=
 github.com/databricks/sdk-go/featurestore v0.3.0/go.mod h1:i5bd4nqSwZUclbX9IR5VWCIA6pbU5kkHCURkf9JBED8=
-github.com/databricks/sdk-go/files v0.0.1-dev.10 h1:huvKmRLqdYD4gImdpvv5VeACqoH0t25Uy+j3dbI7CIs=
-github.com/databricks/sdk-go/files v0.0.1-dev.10/go.mod h1:a7NleaunwaJzS685rZMLpEUcS5x9A1ydsxrYdqQjq2Q=
 github.com/databricks/sdk-go/files v0.3.0 h1:fAQEIEGbwGkRfcgwuSgC3sXD94mD4Y9Mv2yEQyzV0mQ=
 github.com/databricks/sdk-go/files v0.3.0/go.mod h1:ji3JavhhCfFdHRxppdgxHst5Vjx8pfbYmP1oUxK3X10=
 github.com/databricks/sdk-go/forecasting v0.3.0 h1:l1WNX2OcT5h58zjacxeRfYfjo5CFdvORTOZc+Xy0EoU=
@@ -139,8 +133,6 @@ github.com/databricks/sdk-go/jobs v0.4.0 h1:m1S5fhE3WzxAaSSbVkcaCQ+B3tRx6cT+/Tx6
 github.com/databricks/sdk-go/jobs v0.4.0/go.mod h1:ecN+Qe+o92ucWZnvhyYVHHLjmRXEpOvGq6wqxzhJOns=
 github.com/databricks/sdk-go/keyconfigurations v0.3.0 h1:KVHcc660fk0oZyXrsYtF8IFmHKUxIpclB5ei4OiXFZc=
 github.com/databricks/sdk-go/keyconfigurations v0.3.0/go.mod h1:v8SByYiL5/5PFsy1JAv+Cyz0lpDsS6bs8RsusNfTTU0=
-github.com/databricks/sdk-go/knowledge v0.1.0 h1:dOwbiGWnkCi35vLpomu01uf0lAXTZsUFgkNVIoRE/5c=
-github.com/databricks/sdk-go/knowledge v0.1.0/go.mod h1:9NXvXnOIlzXLNbLvq3nSOQdES7hqwHGY9EkuTTUJ108=
 github.com/databricks/sdk-go/knowledgeassistants v0.3.0 h1:rre7B7RtmZ7W+axzs6Ruxoyd/Pm8wKn7mYZGNM/brU0=
 github.com/databricks/sdk-go/knowledgeassistants v0.3.0/go.mod h1:3hOGN9xDP6A9/O8bAi39M2Gx3vd8EodbPT4+Zn4G8SI=
 github.com/databricks/sdk-go/lakeview v0.3.0 h1:6U8tEcLvAVJQeQUTfeJIcZaWOzMm55GXrRe1urfh+WY=
@@ -161,8 +153,6 @@ github.com/databricks/sdk-go/notificationdestinations v0.3.0 h1:uHbPDhwiYnGiHiR+
 github.com/databricks/sdk-go/notificationdestinations v0.3.0/go.mod h1:J4jEVGsx0qRlMix9BJMLEqXvNGVq2RJErlPPO7zrY1w=
 github.com/databricks/sdk-go/oauth v0.3.0 h1:4fHNeM6fyuWcaevg1HVcLemWtywxfh16vR1qMgCvZ9I=
 github.com/databricks/sdk-go/oauth v0.3.0/go.mod h1:yCaQBW09Aw6IFod2OvyRL/HW+Cl+s/mY/sBkMXQRZqI=
-github.com/databricks/sdk-go/options v0.0.1-dev.9 h1:lFwZKjUr2nsrYKUTICO+UsT12jKVus9ARvJkabWNwyA=
-github.com/databricks/sdk-go/options v0.0.1-dev.9/go.mod h1:c74TPXhjRn3Zitpc9/brPEdvKS7lLURtlWjVOw4m2k4=
 github.com/databricks/sdk-go/options v0.3.0 h1:9Gr76jyel9t+cr1vK/7+WjusAVgcJbsfERjRPe11GBg=
 github.com/databricks/sdk-go/options v0.3.0/go.mod h1:ntPpJ7v48ryM431YlP3W6FjmdgMn1n/tVoPj8BocNXg=
 github.com/databricks/sdk-go/pipelines v0.5.0 h1:vjMhsl6ZY6FZD+e41/Q3C/ebvqm5LSF7fpCU/JAcOoc=

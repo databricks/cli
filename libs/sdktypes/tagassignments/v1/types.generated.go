@@ -14,12 +14,12 @@ type CreateTagAssignmentRequest struct {
 }
 
 type ListTagAssignmentsRequest struct {
-	// The type of entity to which the tag is assigned. Allowed values are apps,
-	// dashboards, geniespaces, notebooks
-	EntityType *string `json:"entity_type,omitempty"`
 	// The identifier of the entity to which the tag is assigned. For apps, the
 	// entity_id is the app name
 	EntityId *string `json:"entity_id,omitempty"`
+	// The type of entity to which the tag is assigned. Allowed values are apps,
+	// dashboards, geniespaces, notebooks
+	EntityType *string `json:"entity_type,omitempty"`
 	// Optional. Maximum number of tag assignments to return in a single page
 	PageSize *int `json:"page_size,omitempty"`
 	// Pagination token to go to the next page of tag assignments. Requests first
@@ -28,18 +28,18 @@ type ListTagAssignmentsRequest struct {
 }
 
 type ListTagAssignmentsResponse struct {
-	TagAssignments []TagAssignment `json:"tag_assignments,omitempty"`
 	// Pagination token to request the next page of tag assignments
-	NextPageToken *string `json:"next_page_token,omitempty"`
+	NextPageToken  *string         `json:"next_page_token,omitempty"`
+	TagAssignments []TagAssignment `json:"tag_assignments,omitempty"`
 }
 
 type TagAssignment struct {
-	// The type of entity to which the tag is assigned. Allowed values are apps,
-	// dashboards, geniespaces, notebooks
-	EntityType *string `json:"entity_type,omitempty"`
 	// The identifier of the entity to which the tag is assigned. For apps, the
 	// entity_id is the app name
 	EntityId *string `json:"entity_id,omitempty"`
+	// The type of entity to which the tag is assigned. Allowed values are apps,
+	// dashboards, geniespaces, notebooks
+	EntityType *string `json:"entity_type,omitempty"`
 	// The key of the tag. The characters , . : / - = and leading/trailing spaces
 	// are not allowed
 	TagKey *string `json:"tag_key,omitempty"`

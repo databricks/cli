@@ -83,9 +83,9 @@ type CreateDatabaseInstanceRequest struct {
 }
 
 type CreateDatabaseInstanceRoleRequest struct {
-	InstanceName         *string               `json:"instance_name,omitempty"`
-	DatabaseInstanceRole *DatabaseInstanceRole `json:"database_instance_role,omitempty"`
 	DatabaseInstanceName *string               `json:"database_instance_name,omitempty"`
+	DatabaseInstanceRole *DatabaseInstanceRole `json:"database_instance_role,omitempty"`
+	InstanceName         *string               `json:"instance_name,omitempty"`
 }
 
 type CreateDatabaseTableRequest struct {
@@ -104,111 +104,111 @@ type CustomTag struct {
 }
 
 type DatabaseCatalog struct {
-	// The name of the catalog in UC.
-	Name *string `json:"name,omitempty"`
+	CreateDatabaseIfNotExists *bool `json:"create_database_if_not_exists,omitempty"`
 	// The name of the DatabaseInstance housing the database.
 	DatabaseInstanceName *string `json:"database_instance_name,omitempty"`
 	// The name of the database (in an instance) associated with the catalog.
-	DatabaseName              *string `json:"database_name,omitempty"`
-	Uid                       *string `json:"uid,omitempty"`
-	CreateDatabaseIfNotExists *bool   `json:"create_database_if_not_exists,omitempty"`
+	DatabaseName *string `json:"database_name,omitempty"`
+	// The name of the catalog in UC.
+	Name *string `json:"name,omitempty"`
+	Uid  *string `json:"uid,omitempty"`
 }
 
 type DatabaseCredential struct {
-	Token          *string     `json:"token,omitempty"`
 	ExpirationTime *types.Time `json:"expiration_time,omitempty"`
+	Token          *string     `json:"token,omitempty"`
 }
 
 // A DatabaseInstance represents a logical Postgres instance, comprised of both
 // compute and storage..
 type DatabaseInstance struct {
-	// An immutable UUID identifier for the instance.
-	Uid *string `json:"uid,omitempty"`
-	// The name of the instance. This is the unique identifier for the instance.
-	Name *string `json:"name,omitempty"`
-	// The email of the creator of the instance.
-	Creator *string `json:"creator,omitempty"`
-	// The DNS endpoint to connect to the instance for read+write access.
-	ReadWriteDns *string `json:"read_write_dns,omitempty"`
-	// The timestamp when the instance was created.
-	CreationTime *types.Time `json:"creation_time,omitempty"`
-	// The current state of the instance.
-	State DatabaseInstance_State `json:"state,omitempty"`
-	// The version of Postgres running on the instance.
-	PgVersion *string `json:"pg_version,omitempty"`
 	// The sku of the instance. Valid values are "CU_1", "CU_2", "CU_4", "CU_8".
 	Capacity *string `json:"capacity,omitempty"`
+	// The refs of the child instances. This is only available if the instance is
+	// parent instance.
+	ChildInstanceRefs []DatabaseInstanceRef `json:"child_instance_refs,omitempty"`
+	// The timestamp when the instance was created.
+	CreationTime *types.Time `json:"creation_time,omitempty"`
+	// The email of the creator of the instance.
+	Creator *string `json:"creator,omitempty"`
+	// Custom tags associated with the instance. This field is only included on
+	// create and update responses.
+	CustomTags []CustomTag `json:"custom_tags,omitempty"`
 	// Deprecated. The sku of the instance; this field will always match the value
 	// of capacity. This is an output only field that contains the value computed
 	// from the input field combined with server side defaults. Use the field
 	// without the effective_ prefix to set the value.
 	EffectiveCapacity *string `json:"effective_capacity,omitempty"`
-	// Whether to stop the instance. An input only param, see effective_stopped for
-	// the output.
-	Stopped *bool `json:"stopped,omitempty"`
-	// Whether the instance is stopped. This is an output only field that contains
-	// the value computed from the input field combined with server side defaults.
-	// Use the field without the effective_ prefix to set the value.
-	EffectiveStopped *bool `json:"effective_stopped,omitempty"`
-	// The number of nodes in the instance, composed of 1 primary and 0 or more
-	// secondaries. Defaults to 1 primary and 0 secondaries. This field is input
-	// only, see effective_node_count for the output.
-	NodeCount *int `json:"node_count,omitempty"`
+	// The recorded custom tags associated with the instance. This is an output only
+	// field that contains the value computed from the input field combined with
+	// server side defaults. Use the field without the effective_ prefix to set the
+	// value.
+	EffectiveCustomTags []CustomTag `json:"effective_custom_tags,omitempty"`
+	// Whether the instance has PG native password login enabled. This is an output
+	// only field that contains the value computed from the input field combined
+	// with server side defaults. Use the field without the effective_ prefix to set
+	// the value.
+	EffectiveEnablePgNativeLogin *bool `json:"effective_enable_pg_native_login,omitempty"`
+	// Whether secondaries serving read-only traffic are enabled. Defaults to false.
+	// This is an output only field that contains the value computed from the input
+	// field combined with server side defaults. Use the field without the
+	// effective_ prefix to set the value.
+	EffectiveEnableReadableSecondaries *bool `json:"effective_enable_readable_secondaries,omitempty"`
 	// The number of nodes in the instance, composed of 1 primary and 0 or more
 	// secondaries. Defaults to 1 primary and 0 secondaries. This is an output only
 	// field that contains the value computed from the input field combined with
 	// server side defaults. Use the field without the effective_ prefix to set the
 	// value.
 	EffectiveNodeCount *int `json:"effective_node_count,omitempty"`
-	// Whether to enable secondaries to serve read-only traffic. Defaults to false.
-	EnableReadableSecondaries *bool `json:"enable_readable_secondaries,omitempty"`
-	// Whether secondaries serving read-only traffic are enabled. Defaults to false.
-	// This is an output only field that contains the value computed from the input
-	// field combined with server side defaults. Use the field without the
-	// effective_ prefix to set the value.
-	EffectiveEnableReadableSecondaries *bool `json:"effective_enable_readable_secondaries,omitempty"`
-	// The DNS endpoint to connect to the instance for read only access. This is
-	// only available if enable_readable_secondaries is true.
-	ReadOnlyDns *string `json:"read_only_dns,omitempty"`
-	// The retention window for the instance. This is the time window in days for
-	// which the historical data is retained. The default value is 7 days. Valid
-	// values are 2 to 35 days.
-	RetentionWindowInDays *int `json:"retention_window_in_days,omitempty"`
 	// The retention window for the instance. This is the time window in days for
 	// which the historical data is retained. This is an output only field that
 	// contains the value computed from the input field combined with server side
 	// defaults. Use the field without the effective_ prefix to set the value.
 	EffectiveRetentionWindowInDays *int `json:"effective_retention_window_in_days,omitempty"`
+	// Whether the instance is stopped. This is an output only field that contains
+	// the value computed from the input field combined with server side defaults.
+	// Use the field without the effective_ prefix to set the value.
+	EffectiveStopped *bool `json:"effective_stopped,omitempty"`
+	// The policy that is applied to the instance. This is an output only field that
+	// contains the value computed from the input field combined with server side
+	// defaults. Use the field without the effective_ prefix to set the value.
+	EffectiveUsagePolicyId *string `json:"effective_usage_policy_id,omitempty"`
+	// Whether to enable PG native password login on the instance. Defaults to
+	// false.
+	EnablePgNativeLogin *bool `json:"enable_pg_native_login,omitempty"`
+	// Whether to enable secondaries to serve read-only traffic. Defaults to false.
+	EnableReadableSecondaries *bool `json:"enable_readable_secondaries,omitempty"`
+	// The name of the instance. This is the unique identifier for the instance.
+	Name *string `json:"name,omitempty"`
+	// The number of nodes in the instance, composed of 1 primary and 0 or more
+	// secondaries. Defaults to 1 primary and 0 secondaries. This field is input
+	// only, see effective_node_count for the output.
+	NodeCount *int `json:"node_count,omitempty"`
 	// The ref of the parent instance. This is only available if the instance is
 	// child instance. Input: For specifying the parent instance to create a child
 	// instance. Optional. Output: Only populated if provided as input to create a
 	// child instance.
 	ParentInstanceRef *DatabaseInstanceRef `json:"parent_instance_ref,omitempty"`
-	// The refs of the child instances. This is only available if the instance is
-	// parent instance.
-	ChildInstanceRefs []DatabaseInstanceRef `json:"child_instance_refs,omitempty"`
-	// Whether to enable PG native password login on the instance. Defaults to
-	// false.
-	EnablePgNativeLogin *bool `json:"enable_pg_native_login,omitempty"`
-	// Whether the instance has PG native password login enabled. This is an output
-	// only field that contains the value computed from the input field combined
-	// with server side defaults. Use the field without the effective_ prefix to set
-	// the value.
-	EffectiveEnablePgNativeLogin *bool `json:"effective_enable_pg_native_login,omitempty"`
+	// The version of Postgres running on the instance.
+	PgVersion *string `json:"pg_version,omitempty"`
+	// The DNS endpoint to connect to the instance for read only access. This is
+	// only available if enable_readable_secondaries is true.
+	ReadOnlyDns *string `json:"read_only_dns,omitempty"`
+	// The DNS endpoint to connect to the instance for read+write access.
+	ReadWriteDns *string `json:"read_write_dns,omitempty"`
+	// The retention window for the instance. This is the time window in days for
+	// which the historical data is retained. The default value is 7 days. Valid
+	// values are 2 to 35 days.
+	RetentionWindowInDays *int `json:"retention_window_in_days,omitempty"`
+	// The current state of the instance.
+	State DatabaseInstance_State `json:"state,omitempty"`
+	// Whether to stop the instance. An input only param, see effective_stopped for
+	// the output.
+	Stopped *bool `json:"stopped,omitempty"`
+	// An immutable UUID identifier for the instance.
+	Uid *string `json:"uid,omitempty"`
 	// The desired usage policy to associate with the instance.
 	UsagePolicyId *string `json:"usage_policy_id,omitempty"`
-	// The policy that is applied to the instance. This is an output only field that
-	// contains the value computed from the input field combined with server side
-	// defaults. Use the field without the effective_ prefix to set the value.
-	EffectiveUsagePolicyId *string `json:"effective_usage_policy_id,omitempty"`
-	// Custom tags associated with the instance. This field is only included on
-	// create and update responses.
-	CustomTags []CustomTag `json:"custom_tags,omitempty"`
-	// The recorded custom tags associated with the instance. This is an output only
-	// field that contains the value computed from the input field combined with
-	// server side defaults. Use the field without the effective_ prefix to set the
-	// value.
-	EffectiveCustomTags []CustomTag `json:"effective_custom_tags,omitempty"`
 }
 
 // DatabaseInstanceRef is a reference to a database instance. It is used in the
@@ -219,22 +219,6 @@ type DatabaseInstance struct {
 // the parent. If both lsn and branch_time are specified, the lsn will be used
 // to create the child instance..
 type DatabaseInstanceRef struct {
-	// Id of the ref database instance.
-	Uid *string `json:"uid,omitempty"`
-	// Name of the ref database instance.
-	Name *string `json:"name,omitempty"`
-	// User-specified WAL LSN of the ref database instance.
-	//
-	// Input: For specifying the WAL LSN to create a child instance. Optional.
-	// Output: Only populated if provided as input to create a child instance.
-	Lsn *string `json:"lsn,omitempty"`
-	// For a parent ref instance, this is the LSN on the parent instance from which
-	// the instance was created. For a child ref instance, this is the LSN on the
-	// instance from which the child instance was created. This is an output only
-	// field that contains the value computed from the input field combined with
-	// server side defaults. Use the field without the effective_ prefix to set the
-	// value.
-	EffectiveLsn *string `json:"effective_lsn,omitempty"`
 	// Branch time of the ref database instance. For a parent ref instance, this is
 	// the point in time on the parent instance from which the instance was created.
 	// For a child ref instance, this is the point in time on the instance from
@@ -242,17 +226,26 @@ type DatabaseInstanceRef struct {
 	// to create a child instance. Optional. Output: Only populated if provided as
 	// input to create a child instance.
 	BranchTime *types.Time `json:"branch_time,omitempty"`
+	// For a parent ref instance, this is the LSN on the parent instance from which
+	// the instance was created. For a child ref instance, this is the LSN on the
+	// instance from which the child instance was created. This is an output only
+	// field that contains the value computed from the input field combined with
+	// server side defaults. Use the field without the effective_ prefix to set the
+	// value.
+	EffectiveLsn *string `json:"effective_lsn,omitempty"`
+	// User-specified WAL LSN of the ref database instance.
+	//
+	// Input: For specifying the WAL LSN to create a child instance. Optional.
+	// Output: Only populated if provided as input to create a child instance.
+	Lsn *string `json:"lsn,omitempty"`
+	// Name of the ref database instance.
+	Name *string `json:"name,omitempty"`
+	// Id of the ref database instance.
+	Uid *string `json:"uid,omitempty"`
 }
 
 // A DatabaseInstanceRole represents a Postgres role in a database instance..
 type DatabaseInstanceRole struct {
-	// The name of the role. This is the unique identifier for the role in an
-	// instance.
-	Name *string `json:"name,omitempty"`
-	// The type of the role.
-	IdentityType DatabaseInstanceRole_IdentityType `json:"identity_type,omitempty"`
-	// An enum value for a standard role that this role is a member of.
-	MembershipRole DatabaseInstanceRole_MembershipRole `json:"membership_role,omitempty"`
 	// The desired API-exposed Postgres role attribute to associate with the role.
 	// Optional.
 	Attributes *DatabaseInstanceRole_Attributes `json:"attributes,omitempty"`
@@ -260,7 +253,14 @@ type DatabaseInstanceRole struct {
 	// that contains the value computed from the input field combined with server
 	// side defaults. Use the field without the effective_ prefix to set the value.
 	EffectiveAttributes *DatabaseInstanceRole_Attributes `json:"effective_attributes,omitempty"`
-	InstanceName        *string                          `json:"instance_name,omitempty"`
+	// The type of the role.
+	IdentityType DatabaseInstanceRole_IdentityType `json:"identity_type,omitempty"`
+	InstanceName *string                           `json:"instance_name,omitempty"`
+	// An enum value for a standard role that this role is a member of.
+	MembershipRole DatabaseInstanceRole_MembershipRole `json:"membership_role,omitempty"`
+	// The name of the role. This is the unique identifier for the role in an
+	// instance.
+	Name *string `json:"name,omitempty"`
 }
 
 // Attributes that can be granted to a Postgres role. We are only implementing a
@@ -271,14 +271,12 @@ type DatabaseInstanceRole struct {
 // this a nested object/struct representation since these are knobs from an
 // external spec..
 type DatabaseInstanceRole_Attributes struct {
+	Bypassrls  *bool `json:"bypassrls,omitempty"`
 	Createdb   *bool `json:"createdb,omitempty"`
 	Createrole *bool `json:"createrole,omitempty"`
-	Bypassrls  *bool `json:"bypassrls,omitempty"`
 }
 
 type DatabaseTable struct {
-	// Full three-part (catalog, schema, table) name of the table.
-	Name *string `json:"name,omitempty"`
 	// Name of the target database instance. This is required when creating database
 	// tables in standard catalogs. This is optional when creating database tables
 	// in registered catalogs. If this field is specified when creating database
@@ -294,27 +292,29 @@ type DatabaseTable struct {
 	// Registration of database tables via /database/tables is currently only
 	// supported in standard catalogs.
 	LogicalDatabaseName *string `json:"logical_database_name,omitempty"`
+	// Full three-part (catalog, schema, table) name of the table.
+	Name *string `json:"name,omitempty"`
 }
 
 type DeleteDatabaseInstanceRequest struct {
-	// Name of the instance to delete.
-	Name *string `json:"name,omitempty"`
 	// By default, an instance cannot be deleted if it has descendant instances
 	// created via PITR. If this flag is specified as true, all descendent instances
 	// will be deleted as well.
 	Force *bool `json:"force,omitempty"`
+	// Name of the instance to delete.
+	Name *string `json:"name,omitempty"`
 	// Deprecated. Omitting the field or setting it to true will result in the field
 	// being hard deleted. Setting a value of false will throw a bad request.
 	Purge *bool `json:"purge,omitempty"`
 }
 
 type DeleteDatabaseInstanceRoleRequest struct {
+	// This is the AIP standard name for the equivalent of Postgres' `IF EXISTS`
+	// option
+	AllowMissing    *bool   `json:"allow_missing,omitempty"`
 	InstanceName    *string `json:"instance_name,omitempty"`
 	Name            *string `json:"name,omitempty"`
 	ReassignOwnedTo *string `json:"reassign_owned_to,omitempty"`
-	// This is the AIP standard name for the equivalent of Postgres' `IF EXISTS`
-	// option
-	AllowMissing *bool `json:"allow_missing,omitempty"`
 }
 
 type DeleteSyncedDatabaseTableRequest struct {
@@ -325,12 +325,12 @@ type DeleteSyncedDatabaseTableRequest struct {
 }
 
 type DeltaTableSyncInfo struct {
-	// The Delta Lake commit version that was last successfully synced.
-	DeltaCommitVersion *int64 `json:"delta_commit_version,omitempty"`
 	// The timestamp when the above Delta version was committed in the source Delta
 	// table. Note: This is the Delta commit time, not the time the data was written
 	// to the synced table.
 	DeltaCommitTimestamp *types.Time `json:"delta_commit_timestamp,omitempty"`
+	// The Delta Lake commit version that was last successfully synced.
+	DeltaCommitVersion *int64 `json:"delta_commit_version,omitempty"`
 }
 
 type FindDatabaseInstanceByUidRequest struct {
@@ -340,10 +340,6 @@ type FindDatabaseInstanceByUidRequest struct {
 
 // Generates a credential that can be used to access database instances.
 type GenerateDatabaseCredentialRequest struct {
-	RequestId *string `json:"request_id,omitempty"`
-	// Instances to request a credential for. At least one of instance_names or
-	// claims must be specified.
-	InstanceNames []string `json:"instance_names,omitempty"`
 	// A set of UC permissions to add to the credential. We verify that the caller
 	// has the necessary permissions in UC and include a reference in the token.
 	// Postgres uses that token to give the connecting user additional grants to the
@@ -351,16 +347,20 @@ type GenerateDatabaseCredentialRequest struct {
 	// to be something that have a Postgres counterpart. For example, a synced table
 	// or a table in a UC database catalog.
 	Claims []RequestedClaims `json:"claims,omitempty"`
+	// Instances to request a credential for. At least one of instance_names or
+	// claims must be specified.
+	InstanceNames []string `json:"instance_names,omitempty"`
+	RequestId     *string  `json:"request_id,omitempty"`
 }
 
 type ListDatabaseCatalogsRequest struct {
 	// Name of the instance to get database catalogs for.
 	InstanceName *string `json:"instance_name,omitempty"`
+	// Upper bound for items returned.
+	PageSize *int `json:"page_size,omitempty"`
 	// Pagination token to go to the next page of synced database tables. Requests
 	// first page if absent.
 	PageToken *string `json:"page_token,omitempty"`
-	// Upper bound for items returned.
-	PageSize *int `json:"page_size,omitempty"`
 }
 
 type ListDatabaseCatalogsResponse struct {
@@ -371,11 +371,11 @@ type ListDatabaseCatalogsResponse struct {
 
 type ListDatabaseInstanceRolesRequest struct {
 	InstanceName *string `json:"instance_name,omitempty"`
+	// Upper bound for items returned.
+	PageSize *int `json:"page_size,omitempty"`
 	// Pagination token to go to the next page of Database Instances. Requests first
 	// page if absent.
 	PageToken *string `json:"page_token,omitempty"`
-	// Upper bound for items returned.
-	PageSize *int `json:"page_size,omitempty"`
 }
 
 type ListDatabaseInstanceRolesResponse struct {
@@ -386,11 +386,11 @@ type ListDatabaseInstanceRolesResponse struct {
 }
 
 type ListDatabaseInstancesRequest struct {
+	// Upper bound for items returned. The maximum value is 100.
+	PageSize *int `json:"page_size,omitempty"`
 	// Pagination token to go to the next page of Database Instances. Requests first
 	// page if absent.
 	PageToken *string `json:"page_token,omitempty"`
-	// Upper bound for items returned. The maximum value is 100.
-	PageSize *int `json:"page_size,omitempty"`
 }
 
 type ListDatabaseInstancesResponse struct {
@@ -403,23 +403,25 @@ type ListDatabaseInstancesResponse struct {
 type ListSyncedDatabaseTablesRequest struct {
 	// Name of the instance to get synced tables for.
 	InstanceName *string `json:"instance_name,omitempty"`
+	// Upper bound for items returned.
+	PageSize *int `json:"page_size,omitempty"`
 	// Pagination token to go to the next page of synced database tables. Requests
 	// first page if absent.
 	PageToken *string `json:"page_token,omitempty"`
-	// Upper bound for items returned.
-	PageSize *int `json:"page_size,omitempty"`
 }
 
 type ListSyncedDatabaseTablesResponse struct {
-	SyncedTables []SyncedDatabaseTable `json:"synced_tables,omitempty"`
 	// Pagination token to request the next page of synced tables.
-	NextPageToken *string `json:"next_page_token,omitempty"`
+	NextPageToken *string               `json:"next_page_token,omitempty"`
+	SyncedTables  []SyncedDatabaseTable `json:"synced_tables,omitempty"`
 }
 
 // Custom fields that user can set for pipeline while creating
 // SyncedDatabaseTable. Note that other fields of pipeline are still inferred by
 // table def internally.
 type NewPipelineSpec struct {
+	// Budget policy to set on the newly created pipeline.
+	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
 	// This field needs to be specified if the destination catalog is a managed
 	// postgres catalog.
 	//
@@ -434,8 +436,6 @@ type NewPipelineSpec struct {
 	// logs etc). This needs to be in the standard catalog where the user has
 	// permissions to create Delta tables.
 	StorageSchema *string `json:"storage_schema,omitempty"`
-	// Budget policy to set on the newly created pipeline.
-	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
 }
 
 type RequestedClaims struct {
@@ -444,13 +444,13 @@ type RequestedClaims struct {
 }
 
 type RequestedResource struct {
-	UnspecifiedResourceName *string `json:"unspecified_resource_name,omitempty"`
 	TableName               *string `json:"table_name,omitempty"`
+	UnspecifiedResourceName *string `json:"unspecified_resource_name,omitempty"`
 }
 
 type SyncedDatabaseTable struct {
-	// Full three-part (catalog, schema, table) name of the table.
-	Name *string `json:"name,omitempty"`
+	// Synced Table data synchronization status
+	DataSynchronizationStatus *SyncedTableStatus `json:"data_synchronization_status,omitempty"`
 	// Name of the target database instance. This is required when creating synced
 	// database tables in standard catalogs. This is optional when creating synced
 	// database tables in registered catalogs. If this field is specified when
@@ -464,6 +464,11 @@ type SyncedDatabaseTable struct {
 	// that contains the value computed from the input field combined with server
 	// side defaults. Use the field without the effective_ prefix to set the value.
 	EffectiveDatabaseInstanceName *string `json:"effective_database_instance_name,omitempty"`
+	// The name of the logical database that this table is registered to. This is an
+	// output only field that contains the value computed from the input field
+	// combined with server side defaults. Use the field without the effective_
+	// prefix to set the value.
+	EffectiveLogicalDatabaseName *string `json:"effective_logical_database_name,omitempty"`
 	// Target Postgres database object (logical database) name for this table.
 	//
 	// When creating a synced table in a registered Postgres catalog, the target
@@ -476,24 +481,21 @@ type SyncedDatabaseTable struct {
 	// postgres database. Note that this has implications for the
 	// `create_database_objects_is_missing` field in `spec`.
 	LogicalDatabaseName *string `json:"logical_database_name,omitempty"`
-	// The name of the logical database that this table is registered to. This is an
-	// output only field that contains the value computed from the input field
-	// combined with server side defaults. Use the field without the effective_
-	// prefix to set the value.
-	EffectiveLogicalDatabaseName *string          `json:"effective_logical_database_name,omitempty"`
-	Spec                         *SyncedTableSpec `json:"spec,omitempty"`
+	// Full three-part (catalog, schema, table) name of the table.
+	Name *string          `json:"name,omitempty"`
+	Spec *SyncedTableSpec `json:"spec,omitempty"`
 	// The provisioning state of the synced table entity in Unity Catalog. This is
 	// distinct from the state of the data synchronization pipeline (i.e. the table
 	// may be in "ACTIVE" but the pipeline may be in "PROVISIONING" as it runs
 	// asynchronously).
 	UnityCatalogProvisioningState ProvisioningInfo_State `json:"unity_catalog_provisioning_state,omitempty"`
-	// Synced Table data synchronization status
-	DataSynchronizationStatus *SyncedTableStatus `json:"data_synchronization_status,omitempty"`
 }
 
 // Detailed status of a synced table. Shown if the synced table is in the
 // SYNCED_CONTINUOUS_UPDATE or the SYNCED_UPDATING_PIPELINE_RESOURCES state..
 type SyncedTableContinuousUpdateStatus struct {
+	// Progress of the initial data synchronization.
+	InitialPipelineSyncProgress *SyncedTablePipelineProgress `json:"initial_pipeline_sync_progress,omitempty"`
 	// The last source table Delta version that was successfully synced to the
 	// synced table.
 	LastProcessedCommitVersion *int64 `json:"last_processed_commit_version,omitempty"`
@@ -501,8 +503,6 @@ type SyncedTableContinuousUpdateStatus struct {
 	// table to the synced table. This is when the data is available in the synced
 	// table.
 	Timestamp *types.Time `json:"timestamp,omitempty"`
-	// Progress of the initial data synchronization.
-	InitialPipelineSyncProgress *SyncedTablePipelineProgress `json:"initial_pipeline_sync_progress,omitempty"`
 }
 
 // Detailed status of a synced table. Shown if the synced table is in the
@@ -521,32 +521,32 @@ type SyncedTableFailedStatus struct {
 
 // Progress information of the Synced Table data synchronization pipeline..
 type SyncedTablePipelineProgress struct {
+	// The estimated time remaining to complete this update in seconds.
+	EstimatedCompletionTimeSeconds *float64 `json:"estimated_completion_time_seconds,omitempty"`
 	// The source table Delta version that was last processed by the pipeline. The
 	// pipeline may not have completely processed this version yet.
 	LatestVersionCurrentlyProcessing *int64 `json:"latest_version_currently_processing,omitempty"`
+	// The current phase of the data synchronization pipeline.
+	ProvisioningPhase ProvisioningPhase `json:"provisioning_phase,omitempty"`
+	// The completion ratio of this update. This is a number between 0 and 1.
+	SyncProgressCompletion *float64 `json:"sync_progress_completion,omitempty"`
 	// The number of rows that have been synced in this update.
 	SyncedRowCount *int64 `json:"synced_row_count,omitempty"`
 	// The total number of rows that need to be synced in this update. This number
 	// may be an estimate.
 	TotalRowCount *int64 `json:"total_row_count,omitempty"`
-	// The completion ratio of this update. This is a number between 0 and 1.
-	SyncProgressCompletion *float64 `json:"sync_progress_completion,omitempty"`
-	// The estimated time remaining to complete this update in seconds.
-	EstimatedCompletionTimeSeconds *float64 `json:"estimated_completion_time_seconds,omitempty"`
-	// The current phase of the data synchronization pipeline.
-	ProvisioningPhase ProvisioningPhase `json:"provisioning_phase,omitempty"`
 }
 
 type SyncedTablePosition struct {
+	DeltaTableSyncInfo *DeltaTableSyncInfo `json:"delta_table_sync_info,omitempty"`
+	// The end timestamp of the most recent successful synchronization. This is the
+	// time when the data is available in the synced table.
+	SyncEndTimestamp *types.Time `json:"sync_end_timestamp,omitempty"`
 	// The starting timestamp of the most recent successful synchronization from the
 	// source table to the destination (synced) table. Note this is the starting
 	// timestamp of the sync operation, not the end time. E.g., for a batch, this is
 	// the time when the sync operation started.
 	SyncStartTimestamp *types.Time `json:"sync_start_timestamp,omitempty"`
-	// The end timestamp of the most recent successful synchronization. This is the
-	// time when the data is available in the synced table.
-	SyncEndTimestamp   *types.Time         `json:"sync_end_timestamp,omitempty"`
-	DeltaTableSyncInfo *DeltaTableSyncInfo `json:"delta_table_sync_info,omitempty"`
 }
 
 // Detailed status of a synced table. Shown if the synced table is in the
@@ -559,14 +559,13 @@ type SyncedTableProvisioningStatus struct {
 
 // Specification of a synced database table..
 type SyncedTableSpec struct {
-	// Scheduling policy of the underlying pipeline.
-	SchedulingPolicy SyncedTableSchedulingPolicy `json:"scheduling_policy,omitempty"`
-	// Three-part (catalog, schema, table) name of the source Delta table.
-	SourceTableFullName *string `json:"source_table_full_name,omitempty"`
-	// Primary Key columns to be used for data insert/update in the destination.
-	PrimaryKeyColumns []string `json:"primary_key_columns,omitempty"`
-	// Time series key to deduplicate (tie-break) rows with the same primary key.
-	TimeseriesKey *string `json:"timeseries_key,omitempty"`
+	// When true, enables accelerated sync mode for the initial data load. This
+	// significantly improves performance for large tables. Requires workspace-level
+	// enablement.
+	AcceleratedSync *bool `json:"accelerated_sync,omitempty"`
+	// If true, the synced table's logical database and schema resources in PG will
+	// be created if they do not already exist.
+	CreateDatabaseObjectsIfMissing *bool `json:"create_database_objects_if_missing,omitempty"`
 	// At most one of existing_pipeline_id and new_pipeline_spec should be defined.
 	//
 	// If existing_pipeline_id is defined, the synced table will be bin packed into
@@ -574,9 +573,6 @@ type SyncedTableSpec struct {
 	// allows sharing existing compute. In this case, the scheduling_policy of this
 	// synced table must match the scheduling policy of the existing pipeline.
 	ExistingPipelineId *string `json:"existing_pipeline_id,omitempty"`
-	// If true, the synced table's logical database and schema resources in PG will
-	// be created if they do not already exist.
-	CreateDatabaseObjectsIfMissing *bool `json:"create_database_objects_if_missing,omitempty"`
 	// At most one of existing_pipeline_id and new_pipeline_spec should be defined.
 	//
 	// If new_pipeline_spec is defined, a new pipeline is created for this synced
@@ -586,10 +582,14 @@ type SyncedTableSpec struct {
 	// requires write permissions, whereas the source table only requires read
 	// permissions.
 	NewPipelineSpec *NewPipelineSpec `json:"new_pipeline_spec,omitempty"`
-	// When true, enables accelerated sync mode for the initial data load. This
-	// significantly improves performance for large tables. Requires workspace-level
-	// enablement.
-	AcceleratedSync *bool `json:"accelerated_sync,omitempty"`
+	// Primary Key columns to be used for data insert/update in the destination.
+	PrimaryKeyColumns []string `json:"primary_key_columns,omitempty"`
+	// Scheduling policy of the underlying pipeline.
+	SchedulingPolicy SyncedTableSchedulingPolicy `json:"scheduling_policy,omitempty"`
+	// Three-part (catalog, schema, table) name of the source Delta table.
+	SourceTableFullName *string `json:"source_table_full_name,omitempty"`
+	// Time series key to deduplicate (tie-break) rows with the same primary key.
+	TimeseriesKey *string `json:"timeseries_key,omitempty"`
 	// Override the default Delta->PG type mapping for specific columns. A
 	// TypeOverride with PG_SPECIFIC_TYPE_UNSPECIFIED is rejected; a valid pg_type
 	// must be set.
@@ -609,18 +609,10 @@ type SyncedTableSpec_TypeOverride struct {
 
 // Status of a synced table..
 type SyncedTableStatus struct {
-	// The state of the synced table.
-	DetailedState SyncedTableState `json:"detailed_state,omitempty"`
-	// A text description of the current state of the synced table.
-	Message                *string                            `json:"message,omitempty"`
-	ProvisioningStatus     *SyncedTableProvisioningStatus     `json:"provisioning_status,omitempty"`
 	ContinuousUpdateStatus *SyncedTableContinuousUpdateStatus `json:"continuous_update_status,omitempty"`
-	TriggeredUpdateStatus  *SyncedTableTriggeredUpdateStatus  `json:"triggered_update_status,omitempty"`
-	FailedStatus           *SyncedTableFailedStatus           `json:"failed_status,omitempty"`
-	// ID of the associated pipeline. The pipeline ID may have been provided by the
-	// client (in the case of bin packing), or generated by the server (when
-	// creating a new pipeline).
-	PipelineId *string `json:"pipeline_id,omitempty"`
+	// The state of the synced table.
+	DetailedState SyncedTableState         `json:"detailed_state,omitempty"`
+	FailedStatus  *SyncedTableFailedStatus `json:"failed_status,omitempty"`
 	// Summary of the last successful synchronization from source to destination.
 	//
 	// Will always be present if there has been a successful sync. Even if the most
@@ -633,6 +625,14 @@ type SyncedTableStatus struct {
 	// This top-level field is a convenience for consumers who want easy access to
 	// last sync information without having to traverse detailed_status.
 	LastSync *SyncedTablePosition `json:"last_sync,omitempty"`
+	// A text description of the current state of the synced table.
+	Message *string `json:"message,omitempty"`
+	// ID of the associated pipeline. The pipeline ID may have been provided by the
+	// client (in the case of bin packing), or generated by the server (when
+	// creating a new pipeline).
+	PipelineId            *string                           `json:"pipeline_id,omitempty"`
+	ProvisioningStatus    *SyncedTableProvisioningStatus    `json:"provisioning_status,omitempty"`
+	TriggeredUpdateStatus *SyncedTableTriggeredUpdateStatus `json:"triggered_update_status,omitempty"`
 }
 
 // Detailed status of a synced table. Shown if the synced table is in the
