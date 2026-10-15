@@ -1047,6 +1047,10 @@ func AddDefaultHandlers(server *Server) {
 	// user, /logs is a best-effort error tail, /ssh hijacks the connection for a
 	// websocket (so it's raw, not a JSON response).
 	server.Handle("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/metadata", func(req Request) any {
+		defer req.Workspace.LockUnlock()()
+		if req.Vars["cluster_id"] == sshTunnelClusterID && req.Workspace.portForwardingToServerlessDisabled() {
+			return Response{StatusCode: 403, Body: sshTunnelFeatureDisabledBody}
+		}
 		return Response{Body: sshTunnelRemoteUser()}
 	})
 
@@ -1064,6 +1068,10 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.HandleRaw("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/ssh", server.sshTunnelHandler)
+
+	server.Handle("PATCH", "/api/2.1/settings/{name}", func(req Request) any {
+		return req.Workspace.WorkspaceSettingPatch(req)
+	})
 
 	// Secrets ACLs:
 	server.Handle("GET", "/api/2.0/secrets/acls/get", func(req Request) any {

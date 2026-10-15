@@ -1,0 +1,16 @@
+Cloud = false
+
+# Record requests so we can assert that the CLI cancels the run it submitted.
+RecordRequests = true
+
+# Stand-in release archives staged by the script; not golden output.
+Ignore = [
+  "releases",
+]
+
+# The rest of acceptance/ssh only runs on Linux; nothing here needs another OS.
+GOOS.linux = true
+GOOS.darwin = false
+GOOS.windows = false
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

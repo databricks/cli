@@ -693,6 +693,11 @@ const (
 	sshTunnelBootstrapNotebook  = "ssh-server-bootstrap"
 	sshTunnelServerPort         = 7772
 	sshTunnelClusterID          = "1234-567890-serverless"
+
+	// sshTunnelFeatureDisabledBody is the driver proxy's refusal while port forwarding to
+	// serverless compute is disabled: a JSON string, not the usual error object.
+	sshTunnelFeatureDisabledBody = `"FEATURE_DISABLED: An administrator has disabled port forwarding to serverless compute ` +
+		"for this workspace, which includes the SSH tunnel used by `databricks ssh connect`\""
 )
 
 // writeSSHTunnelMetadata publishes the metadata.json a real tunnel server would
