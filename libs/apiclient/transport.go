@@ -2,6 +2,7 @@ package apiclient
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"crypto/tls"
 	"errors"
@@ -105,6 +106,10 @@ func (t *transport) retry(ctx context.Context, req *http.Request) (*http.Respons
 
 const defaultRetryTimeout = 5 * time.Minute
 
+// defaultDebugTruncateBytes is the previous SDK's default for how much of each
+// request and response body value is logged at debug level.
+const defaultDebugTruncateBytes = 96
+
 type maxAttemptsKey struct{}
 
 // WithMaxAttempts caps how many times requests made with ctx are sent when
@@ -207,7 +212,7 @@ func (t *transport) sendLogged(ctx context.Context, req *http.Request) (*http.Re
 		RequestBody:              reqBody,
 		ResponseBody:             respBody,
 		DebugHeaders:             t.cfg.DebugHeaders,
-		DebugTruncateBytes:       t.cfg.DebugTruncateBytes,
+		DebugTruncateBytes:       cmp.Or(t.cfg.DebugTruncateBytes, defaultDebugTruncateBytes),
 		DebugAuthorizationHeader: true,
 	}.String())
 	return resp, err

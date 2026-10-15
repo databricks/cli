@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -54,7 +53,7 @@ func errorBodyFromText(resp *http.Response, body []byte) ([]byte, bool) {
 	case htmlMessageRegex.Match(body):
 		message = strings.Trim(string(htmlMessageRegex.FindSubmatch(body)[1]), " .")
 		errorCode = "UNKNOWN"
-		if _, status, ok := strings.Cut(resp.Status, " "); ok && strings.TrimSpace(status) != "" && status != strconv.Itoa(resp.StatusCode) {
+		if _, status, ok := strings.Cut(resp.Status, " "); ok && strings.TrimSpace(status) != "" {
 			errorCode = strings.ReplaceAll(strings.ToUpper(strings.Trim(status, " .")), " ", "_")
 		}
 	default:

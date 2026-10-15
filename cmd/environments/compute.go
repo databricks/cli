@@ -147,7 +147,7 @@ func (c sdkCompute) resolveTaskCompute(ctx context.Context, settings *jobs.JobSe
 	// version lives on that environment's spec and is used directly.
 	if utils.Deref(task.EnvironmentKey) != "" {
 		for _, e := range settings.Environments {
-			if e.EnvironmentKey == task.EnvironmentKey {
+			if utils.Deref(e.EnvironmentKey) == utils.Deref(task.EnvironmentKey) {
 				v := environmentVersion(e)
 				if v == "" {
 					return "", false, "", fmt.Errorf("task %q of job %s binds environment %q, which records no environment version", taskKey, jobID, utils.Deref(task.EnvironmentKey))
@@ -167,7 +167,7 @@ func (c sdkCompute) resolveTaskCompute(ctx context.Context, settings *jobs.JobSe
 	// Spark version from the job's job_clusters (the common classic-task shape).
 	if utils.Deref(task.JobClusterKey) != "" {
 		for _, jc := range settings.JobClusters {
-			if jc.JobClusterKey == task.JobClusterKey {
+			if utils.Deref(jc.JobClusterKey) == utils.Deref(task.JobClusterKey) {
 				if jc.NewCluster == nil || utils.Deref(jc.NewCluster.SparkVersion) == "" {
 					return "", false, "", fmt.Errorf("task %q of job %s uses job cluster %q, which has no spark_version", taskKey, jobID, utils.Deref(task.JobClusterKey))
 				}

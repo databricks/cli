@@ -2,7 +2,7 @@
 >>> [CLI] apps create my-app --no-compute --no-wait
 {
   "active_deployment": {
-    "deployment_id": "deploy-8792058104515037840",
+    "deployment_id": "deploy-8792058509553461501",
     "source_code_path": "/Workspace/Users/[USERNAME]/my-app",
     "status": {
       "message": "Deployment succeeded",

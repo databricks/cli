@@ -18,45 +18,45 @@ HH:MM:SS Debug: POST /telemetry-ext
 > {
 >   "items": null,
 >   "protoLogs": [
->     "... (N more bytes)",
->     "... (N more bytes)"
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)",
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)"
 >   ],
 >   "uploadTime": [UNIX_TIME_MILLIS][0]
 > }
 < HTTP/1.1 501 Not Implemented
 < {
-<   "error_code": "... (N more bytes)",
-<   "message": "... (N more bytes)"
+<   "error_code": "ERROR_CODE",
+<   "message": "Endpoint not implemented."
 < } pid=PID sdk=true
 HH:MM:SS Info: Attempt 1 failed due to a server side error. Retrying status code: 501 pid=PID
 HH:MM:SS Debug: POST /telemetry-ext
 > {
 >   "items": null,
 >   "protoLogs": [
->     "... (N more bytes)",
->     "... (N more bytes)"
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)",
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)"
 >   ],
 >   "uploadTime": [UNIX_TIME_MILLIS][1]
 > }
 < HTTP/1.1 501 Not Implemented
 < {
-<   "error_code": "... (N more bytes)",
-<   "message": "... (N more bytes)"
+<   "error_code": "ERROR_CODE",
+<   "message": "Endpoint not implemented."
 < } pid=PID sdk=true
 HH:MM:SS Info: Attempt 2 failed due to a server side error. Retrying status code: 501 pid=PID
 HH:MM:SS Debug: POST /telemetry-ext
 > {
 >   "items": null,
 >   "protoLogs": [
->     "... (N more bytes)",
->     "... (N more bytes)"
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)",
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)"
 >   ],
 >   "uploadTime": [UNIX_TIME_MILLIS][2]
 > }
 < HTTP/1.1 501 Not Implemented
 < {
-<   "error_code": "... (N more bytes)",
-<   "message": "... (N more bytes)"
+<   "error_code": "ERROR_CODE",
+<   "message": "Endpoint not implemented."
 < } pid=PID sdk=true
 HH:MM:SS Info: Attempt 3 failed due to a server side error. Retrying status code: 501 pid=PID
 HH:MM:SS Info: telemetry upload failed: failed to upload telemetry logs after three attempts pid=PID

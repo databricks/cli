@@ -1,9 +1,8 @@
 
 >>> [CLI] environments setup-local --job-task 12345.fanout --dry-run
-✗ Setup failed while resolving your compute target.
-
-  resolving job task 12345.fanout: task "fanout" of job 12345 references environment "default", which the job does not define
-
-Re-run with --debug for details, or --output json for a structured report.
-
-Exit code: 1
+Plan: [TEST_TMP_DIR]/pyproject.toml
+  changed region: requires-python
+  changed region: tool.uv.constraint-dependencies
+  changed region: databricks-connect
+  changed region: tool.databricks.environment
+Check complete. No files were modified.

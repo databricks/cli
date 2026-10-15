@@ -22,22 +22,24 @@ Pipeline configurations for this update:
 
 === Stopping pipeline
 >>> [CLI] pipelines stop
-Error: accepts 1 arg(s), received 0
+Stopping my_pipeline...
+my_pipeline has been stopped.
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/stop",
+  "body": {
+    "pipeline_id": "[UUID]"
+  }
+}
 
-Usage:
-  databricks pipelines stop [KEY|PIPELINE_ID] [flags]
-
-Flags:
-  -h, --help               help for stop
-      --no-wait            do not wait to reach IDLE state
-      --timeout duration   maximum amount of time to reach IDLE state (default 20m0s)
-
-Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
-      --var strings      set values for variables defined in project config. Example: --var="foo=bar"
-
-
-Exit code: 1
+=== Stopping pipeline with KEY, expect same output as without KEY
+>>> [CLI] pipelines stop my_pipeline
+Stopping my_pipeline...
+my_pipeline has been stopped.
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/stop",
+  "body": {
+    "pipeline_id": "[UUID]"
+  }
+}
