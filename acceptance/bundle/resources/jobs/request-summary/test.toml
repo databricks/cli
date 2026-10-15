@@ -1,0 +1,2 @@
+# Deployment history adds its own lookups; this test pins down the plain state reads.
+EnvMatrix.DMS = []

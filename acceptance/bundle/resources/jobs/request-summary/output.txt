@@ -1,0 +1,90 @@
+
+>>> [CLI] bundle plan
+create jobs.foo
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> print_requests
+GET /.well-known/databricks-config
+GET /api/2.0/preview/scim/v2/Me
+GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deployment.json return_export_info=true
+GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/resources.json return_export_info=true
+GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/terraform.tfstate return_export_info=true
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/request-summary/default/files...
+Created jobs.foo
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests
+GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock
+GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock
+GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/files
+GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/files
+GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock return_export_info=true
+GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock return_export_info=true
+GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock return_export_info=true
+GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deployment.json return_export_info=true
+GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/resources.json return_export_info=true
+GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/terraform.tfstate return_export_info=true
+POST /api/2.0/workspace/delete
+POST /api/2.0/workspace/delete
+POST /api/2.0/workspace/import
+POST /api/2.0/workspace/import
+POST /api/2.0/workspace/import
+POST /api/2.0/workspace/import
+POST /api/2.0/workspace/import
+POST /api/2.0/workspace/import
+POST /api/2.0/workspace/mkdirs
+POST /api/2.0/workspace/mkdirs
+POST /api/2.0/workspace/mkdirs
+POST /api/2.2/jobs/create
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/request-summary/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_requests
+GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock
+GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock
+GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deployment.json
+GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/resources.json
+GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/files
+GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock return_export_info=true
+GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock return_export_info=true
+GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock return_export_info=true
+GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deployment.json return_export_info=true
+GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/resources.json return_export_info=true
+GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/terraform.tfstate return_export_info=true
+GET /api/2.2/jobs/get job_id=[FOO_ID]
+POST /api/2.0/workspace/delete
+POST /api/2.0/workspace/delete
+POST /api/2.0/workspace/import
+POST /api/2.0/workspace/import
+POST /api/2.0/workspace/import
+POST /api/2.0/workspace/import
+POST /api/2.0/workspace/mkdirs
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/request-summary/default
+
+Destroy: 1 deleted
+
+>>> print_requests
+GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock
+GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/resources.json
+GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default
+GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock return_export_info=true
+GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock return_export_info=true
+GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/resources.json return_export_info=true
+GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/terraform.tfstate return_export_info=true
+GET /api/2.2/jobs/get job_id=[FOO_ID]
+POST /api/2.0/workspace/delete
+POST /api/2.0/workspace/delete
+POST /api/2.0/workspace/import
+POST /api/2.2/jobs/delete

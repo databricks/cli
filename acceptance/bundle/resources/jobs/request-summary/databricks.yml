@@ -1,0 +1,7 @@
+bundle:
+  name: request-summary
+
+resources:
+  jobs:
+    foo:
+      name: foo
