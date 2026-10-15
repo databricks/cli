@@ -49,6 +49,9 @@ const (
 	// host used by the discovery login flow. Intended for testing and
 	// development against non-production environments.
 	discoveryHostEnvVar = "DATABRICKS_DISCOVERY_HOST"
+	// deviceCodeEnvVar enables the experimental device code login flow
+	// (--use-device-code) while it is a proof of concept.
+	deviceCodeEnvVar = "DATABRICKS_CLI_DEVICE_CODE"
 )
 
 // discoveryErr wraps an error (or creates a new one) and appends the
@@ -151,6 +154,7 @@ a new profile is created.
 	var scopes string
 	var clientID string
 	var resources []string
+	var useDeviceCode bool
 	cmd.Flags().DurationVar(&loginTimeout, "timeout", defaultTimeout,
 		"Timeout for completing login challenge in the browser")
 	cmd.Flags().BoolVar(&configureCluster, "configure-cluster", false,
@@ -165,6 +169,10 @@ a new profile is created.
 		"OAuth client ID to use for U2M authentication")
 	cmd.Flags().StringArrayVar(&resources, "resource", nil,
 		"RFC 8707 resource indicator to scope the login to (repeatable). Requires --host.")
+	cmd.Flags().BoolVar(&useDeviceCode, "use-device-code", false,
+		"Log in with a device code, using a browser on another device (experimental)")
+	// Hidden while device code login is an experimental proof of concept.
+	cmd.Flags().MarkHidden("use-device-code")
 
 	cmd.PreRunE = profileHostConflictCheck
 
@@ -194,6 +202,20 @@ a new profile is created.
 			} else {
 				authArguments.Host = resolvedHost
 				args = nil
+			}
+		}
+
+		// Check a known host before the keyring probe and any prompt, so that
+		// an unsupported host or workspace fails right away. A host that is
+		// only known later is checked as soon as it is known.
+		if useDeviceCode {
+			if err := validateDeviceCodeLogin(ctx, cmd); err != nil {
+				return err
+			}
+			if authArguments.Host != "" {
+				if err := validateDeviceCodeHost(ctx, authArguments); err != nil {
+					return err
+				}
 			}
 		}
 
@@ -239,7 +261,17 @@ a new profile is created.
 					return err
 				}
 				authArguments.Host = host
+				if useDeviceCode {
+					if err := validateDeviceCodeHost(ctx, authArguments); err != nil {
+						return err
+					}
+				}
 			case profilePickerCreateNew:
+				// A new profile without a host uses the discovery login,
+				// which device code login does not support.
+				if useDeviceCode {
+					return errDeviceCodeNeedsHost
+				}
 				// Fall through to the profile name prompt below.
 			}
 		}
@@ -284,11 +316,19 @@ a new profile is created.
 		}
 		if len(resources) == 0 {
 			resources = u2mResourcesFromProfile(existingProfile)
+			// Device code login cannot scope the token to these resources, so
+			// the profile would claim a scoping its token does not have.
+			if useDeviceCode && len(resources) > 0 {
+				return fmt.Errorf("--use-device-code cannot be used with profile %s because its login is scoped to resources. Log in without --use-device-code", profileName)
+			}
 		}
 
 		// If no host is available from any source, use the discovery flow
 		// via login.databricks.com.
 		if shouldUseDiscovery(authArguments.Host, args, existingProfile) {
+			if useDeviceCode {
+				return errDeviceCodeNeedsHost
+			}
 			if err := validateDiscoveryFlagCompatibility(cmd); err != nil {
 				return err
 			}
@@ -303,6 +343,17 @@ a new profile is created.
 				tokenStore:      tokenStore,
 				mode:            mode,
 			})
+		}
+
+		// Without a host from the flags or the picker, the host comes from the
+		// profile. Check it before setHostAndAccountId, which prompts for an
+		// account ID for account hosts.
+		if useDeviceCode && authArguments.Host == "" && existingProfile != nil {
+			profileArguments := *authArguments
+			profileArguments.Host = existingProfile.Host
+			if err := validateDeviceCodeHost(ctx, &profileArguments); err != nil {
+				return err
+			}
 		}
 
 		err = setHostAndAccountId(ctx, existingProfile, authArguments, args)
@@ -350,7 +401,12 @@ a new profile is created.
 		}
 		defer persistentAuth.Close()
 
-		token, err := persistentAuth.Challenge()
+		var token *oauth2.Token
+		if useDeviceCode {
+			token, err = persistentAuth.DeviceCodeChallenge(promptForConfirmationCode)
+		} else {
+			token, err = persistentAuth.Challenge()
+		}
 		if err != nil {
 			return err
 		}
