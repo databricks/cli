@@ -1,7 +1,5 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
-assert_dms_unsupported internal_immutable_snapshots
-
 cleanup() {
     trace $CLI bundle destroy --auto-approve
 }

@@ -1,36 +1,43 @@
 
-=== DMS records the requested snapshot path but rejects unsupported immutable snapshots
-DMS rejected unsupported immutable snapshots
+=== Deploying with an immutable folder records the resolved snapshot path as the deployment's file_path
+>>> [CLI] bundle deploy
+Created internal_immutable_snapshots.immutable
+Created jobs.foo
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> MSYS_NO_PATHCONV=1 [CLI] api get /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
 {
   "workspace_info": {
     "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-immutable-folder-[UNIQUE_NAME]/default",
     "file_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/files"
-  },
-  "last_version_id": ""
+  }
 }
 
 === A new snapshot moves file_path, which is then updated on the deployment
-DMS rejected unsupported immutable snapshots
+>>> [CLI] bundle deploy
+Recreated internal_immutable_snapshots.immutable
+Updated jobs.foo
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 1 changed, 1 deleted, 0 unchanged
 
 >>> MSYS_NO_PATHCONV=1 [CLI] api get /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
 {
   "workspace_info": {
     "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-immutable-folder-[UNIQUE_NAME]/default",
     "file_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/files"
-  },
-  "last_version_id": ""
+  }
 }
 
 === An unchanged snapshot keeps the recorded file_path
-DMS rejected unsupported immutable snapshots
+>>> [CLI] bundle deploy
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
 >>> MSYS_NO_PATHCONV=1 [CLI] api get /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
 {
   "workspace_info": {
     "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-immutable-folder-[UNIQUE_NAME]/default",
     "file_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/files"
-  },
-  "last_version_id": ""
+  }
 }

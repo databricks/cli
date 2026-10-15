@@ -50,6 +50,7 @@ var dmsResourceTypes = []string{
 	"external_locations",
 	"genie_spaces",
 	"instance_pools",
+	"internal_immutable_snapshots",
 	"job_runs",
 	"jobs",
 	"model_serving_endpoints",
