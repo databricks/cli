@@ -125,7 +125,7 @@ func keepaliveTestDialer(serverURL string, onNetConn func(*pausableConn)) create
 				return wrapped, nil
 			},
 		}
-		conn, _, err := dialer.DialContext(ctx, fmt.Sprintf("%s?id=%s", wsURL, dial.ConnID), nil) // nolint:bodyclose
+		conn, _, err := dialer.DialContext(ctx, fmt.Sprintf("%s?id=%s", wsURL, dial.ConnID), nil) //nolint:bodyclose
 		if err != nil {
 			return nil, err
 		}
@@ -264,7 +264,7 @@ func TestKeepalivePingFailureDoesNotHangTheSession(t *testing.T) {
 	// Write from a goroutine: src is an unbuffered pipe the sending loop drains, so if the session
 	// has already ended (nothing draining it) the write blocks forever — doing it concurrently
 	// leaves the select below free to fail fast instead of wedging the whole package on the write.
-	go func() { srcWriter.Write([]byte("keystroke")) }() // nolint:errcheck
+	go func() { srcWriter.Write([]byte("keystroke")) }() //nolint:errcheck
 
 	select {
 	case err := <-done:

@@ -338,7 +338,7 @@ func TestWalkTypeSameDepthCollisionIsVisitedTwice(t *testing.T) {
 		ID string `json:"id,omitempty"`
 	}
 	type EmbedB struct {
-		ID string `json:"id,omitempty"` //nolint:govet // repeated tag is the point
+		ID string `json:"id,omitempty"`
 	}
 	type Root struct {
 		EmbedA

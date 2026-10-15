@@ -14,7 +14,6 @@ type resolveServicePrincipal struct {
 }
 
 func (l resolveServicePrincipal) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
-	//nolint:staticcheck // this API is deprecated but we still need use it as there is no replacement yet.
 	it := w.ServicePrincipalsV2.List(ctx, iam.ListServicePrincipalsRequest{
 		Filter: fmt.Sprintf("displayName eq '%s'", l.name),
 	})

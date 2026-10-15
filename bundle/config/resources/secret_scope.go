@@ -37,7 +37,7 @@ type SecretScopePermission struct {
 	GroupName            string `json:"group_name,omitempty"`
 }
 
-type SecretScope struct { //nolint:recvcheck // pointer receiver needed for UnmarshalJSON, value for other methods
+type SecretScope struct {
 	BaseResource
 	ID string `json:"id,omitempty" bundle:"readonly"`
 

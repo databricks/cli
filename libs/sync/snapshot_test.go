@@ -272,7 +272,7 @@ func TestErrorWhenIdenticalRemoteName(t *testing.T) {
 	pythonFoo.Overwrite(t, "# Databricks notebook source\nprint(\"def\")")
 	files, err = fileSet.Files()
 	assert.NoError(t, err)
-	change, err = state.diff(ctx, files)
+	_, err = state.diff(ctx, files)
 	assert.ErrorContains(t, err, "both foo and foo.py point to the same remote file location foo. Please remove one of them from your local project")
 }
 

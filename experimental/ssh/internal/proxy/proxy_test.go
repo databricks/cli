@@ -138,7 +138,7 @@ func setupTestServer(ctx context.Context, t *testing.T) *TestProxy {
 }
 
 func createTestWebsocketConnection(url string) (*websocket.Conn, error) {
-	conn, _, err := websocket.DefaultDialer.Dial(url, nil) // nolint:bodyclose
+	conn, _, err := websocket.DefaultDialer.Dial(url, nil) //nolint:bodyclose
 	return conn, err
 }
 
@@ -242,8 +242,8 @@ func TestConnectionHandover(t *testing.T) {
 
 	go func() {
 		for i := range TOTAL_MESSAGE_COUNT {
-			client.Input.Write(createTestMessage("client", i)) // nolint:errcheck
-			server.Input.Write(createTestMessage("server", i)) // nolint:errcheck
+			client.Input.Write(createTestMessage("client", i)) //nolint:errcheck
+			server.Input.Write(createTestMessage("server", i)) //nolint:errcheck
 			if i > 0 && i%MESSAGES_PER_CHUNK == 0 && i < TOTAL_MESSAGE_COUNT-1 {
 				handoverChan <- struct{}{}
 			}

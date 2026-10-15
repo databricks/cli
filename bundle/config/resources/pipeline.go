@@ -13,8 +13,8 @@ import (
 
 type Pipeline struct {
 	BaseResource
-	pipelines.CreatePipeline        //nolint:govet // CreatePipeline.Id and our depth-0 ID field both carry json:"id"; the depth-0 field wins
-	ID                       string `json:"id,omitempty" bundle:"readonly"`
+	pipelines.CreatePipeline
+	ID string `json:"id,omitempty" bundle:"readonly"`
 
 	Permissions []PipelinePermission `json:"permissions,omitempty"`
 

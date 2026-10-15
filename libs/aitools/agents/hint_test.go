@@ -34,7 +34,7 @@ func clearAgentEnv(t *testing.T) {
 	for _, v := range agentEnvVars {
 		if orig, ok := os.LookupEnv(v); ok {
 			t.Cleanup(func() { os.Setenv(v, orig) }) //nolint:usetesting // restoring, not setting fresh
-			os.Unsetenv(v)                           //nolint:usetesting // t.Setenv cannot unset
+			os.Unsetenv(v)
 		}
 	}
 }

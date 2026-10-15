@@ -56,7 +56,7 @@ func runResumableClientTo(t *testing.T, url string, dst io.Writer) (io.WriteClos
 		if dial.Reattach {
 			u += "&reattach=1"
 		}
-		conn, resp, err := websocket.DefaultDialer.DialContext(ctx, u, nil) // nolint:bodyclose
+		conn, resp, err := websocket.DefaultDialer.DialContext(ctx, u, nil)
 		if resp != nil {
 			resp.Body.Close()
 		}
@@ -81,7 +81,7 @@ func runPlainClientTo(t *testing.T, url string, dst io.Writer) (io.WriteCloser, 
 	ctx := cmdio.MockDiscard(t.Context())
 	wsURL := "ws" + url[4:]
 	createConn := func(ctx context.Context, dial DialRequest) (*websocket.Conn, error) {
-		conn, _, err := websocket.DefaultDialer.DialContext(ctx, wsURL+"?id="+dial.ConnID, nil) // nolint:bodyclose
+		conn, _, err := websocket.DefaultDialer.DialContext(ctx, wsURL+"?id="+dial.ConnID, nil) //nolint:bodyclose
 		return conn, err
 	}
 	src, srcWriter := io.Pipe()
