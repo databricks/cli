@@ -58,7 +58,7 @@ func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
 			Summary:  "target with 'mode: development' cannot set trigger pause status to UNPAUSED by default",
 			Paths:    structpath.NewPathSlice("presets", "trigger_pause_status"),
 			// Only the effective location; the automatic lookup would also add overridden ones.
-			Locations: []diag.Location{b.Config.GetLocation("presets.trigger_pause_status")},
+			Locations: []diag.Location{b.Config.NearestLocation(structpath.NewPath(nil, "presets", "trigger_pause_status"))},
 		})
 	}
 
@@ -82,7 +82,7 @@ func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
 			Summary:  "prefix should contain the current username or ${workspace.current_user.short_name} to ensure uniqueness when using 'mode: development'",
 			Paths:    structpath.NewPathSlice("presets", "name_prefix"),
 			// Only the effective location; the automatic lookup would also add overridden ones.
-			Locations: []diag.Location{b.Config.GetLocation("presets.name_prefix")},
+			Locations: []diag.Location{b.Config.NearestLocation(structpath.NewPath(nil, "presets", "name_prefix"))},
 		})
 	}
 	return diags

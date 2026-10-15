@@ -355,7 +355,7 @@ func validatePauseStatus(b *bundle.Bundle) diag.Diagnostics {
 		Severity: diag.Error,
 		Paths:    structpath.NewPathSlice("presets", "trigger_pause_status"),
 		// Only the effective location; the automatic lookup would also add overridden ones.
-		Locations: []diag.Location{b.Config.GetLocation("presets.trigger_pause_status")},
+		Locations: []diag.Location{b.Config.NearestLocation(structpath.NewPath(nil, "presets", "trigger_pause_status"))},
 	}}
 }
 
