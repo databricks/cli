@@ -65,6 +65,11 @@ per target environment.`,
 		ctx := logdiag.InitContext(cmd.Context())
 		cmd.SetContext(ctx)
 
+		_, err := ensureGenerateBundle(cmd, nil)
+		if err != nil {
+			return err
+		}
+
 		b := root.MustConfigureBundle(cmd)
 		if b == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted

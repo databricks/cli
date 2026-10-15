@@ -18,6 +18,7 @@ import (
 // ensureGenerateBundle configures a bundle for generation. If no bundle exists and
 // --init-bare is set, it materializes a bare template first. If no bundle exists
 // and --init-bare is not set, it returns an error unless requireExistingErr is nil.
+// It validates that incompatible flags are not combined with --init-bare.
 func ensureGenerateBundle(cmd *cobra.Command, requireExistingErr error) (*bundleContext, error) {
 	ctx := initGenerateContext(cmd)
 	b := root.TryConfigureBundle(cmd)
@@ -25,7 +26,20 @@ func ensureGenerateBundle(cmd *cobra.Command, requireExistingErr error) (*bundle
 		return nil, root.ErrAlreadyPrinted
 	}
 
-	if b != nil {
+	bundleExists := b != nil
+
+	// Get --init-bare flag value
+	initBare, err := cmd.Flags().GetBool("init-bare")
+	if err != nil {
+		return nil, err
+	}
+
+	// Validate flag combinations before any materializationhappens
+	if err := validateFlagsForInitBare(cmd, initBare, bundleExists); err != nil {
+		return nil, err
+	}
+
+	if bundleExists {
 		return &bundleContext{hadExistingBundle: true}, nil
 	}
 
@@ -33,10 +47,6 @@ func ensureGenerateBundle(cmd *cobra.Command, requireExistingErr error) (*bundle
 		return nil, requireExistingErr
 	}
 
-	initBare, err := cmd.Flags().GetBool("init-bare")
-	if err != nil {
-		return nil, err
-	}
 	if !initBare {
 		return nil, errors.New("no databricks.yml found in this directory or any parent. Run `databricks bundle init default-bare` first or re-run this command with --init-bare")
 	}
@@ -117,4 +127,28 @@ func initGenerateContext(cmd *cobra.Command) context.Context {
 // bundleContext tracks whether a bundle existed before generate was run.
 type bundleContext struct {
 	hadExistingBundle bool
+}
+
+// validateFlagsForInitBare checks for incompatible flag combinations when --init-bare is used
+// without an existing bundle. These flags require an existing bundle to work properly:
+//   - --bind: requires deployment state to bind resources
+//   - dashboard --resource / --watch: require reading from bundle resources
+func validateFlagsForInitBare(cmd *cobra.Command, initBare bool, bundleExists bool) error {
+	if initBare && !bundleExists {
+		// Check for --bind flag
+		if bind, err := cmd.Flags().GetBool("bind"); err == nil && bind {
+			return errors.New("--bind is incompatible with --init-bare (no existing bundle to bind to)")
+		}
+
+		// Check for dashboard --resource flag
+		if resource, err := cmd.Flags().GetString("resource"); err == nil && resource != "" {
+			return errors.New("--resource is incompatible with --init-bare; use --existing-path or --existing-id instead")
+		}
+
+		// Check for dashboard --watch flag
+		if watch, err := cmd.Flags().GetBool("watch"); err == nil && watch {
+			return errors.New("--watch is incompatible with --init-bare (no existing bundle resources to watch)")
+		}
+	}
+	return nil
 }
