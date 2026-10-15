@@ -1,0 +1,1 @@
+* Keep waiting through a transient `Stopped` status during `databricks sandbox start` and `databricks sandbox ssh`, retrying start requests at a throttled interval until the sandbox is running or the wait times out. ([#7010](https://github.com/databricks/cli/pull/7010))
