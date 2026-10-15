@@ -1,0 +1,6 @@
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code
+Error: device code login is not enabled for this workspace
+
+>>> musterr [CLI] auth login --profile ws --use-device-code
+Error: device code login is not enabled for this workspace

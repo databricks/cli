@@ -1,0 +1,4 @@
+sethome "./home"
+export DATABRICKS_CLI_DEVICE_CODE=true
+
+trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code --client-id custom-client-id

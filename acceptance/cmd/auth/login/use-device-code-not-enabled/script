@@ -1,0 +1,12 @@
+sethome "./home"
+export DATABRICKS_CLI_DEVICE_CODE=true
+
+trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code
+
+# The check also applies to a host that comes from a profile.
+cat > ./home/.databrickscfg << EOF
+[ws]
+host = $DATABRICKS_HOST
+auth_type = databricks-cli
+EOF
+trace musterr $CLI auth login --profile ws --use-device-code

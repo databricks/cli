@@ -1,0 +1,14 @@
+Ignore = [
+    "home"
+]
+
+# Workspaces that are not enrolled in the device code preview do not advertise
+# a device_authorization_endpoint in their OIDC discovery document.
+[[Server]]
+Pattern = "GET /oidc/.well-known/oauth-authorization-server"
+Response.Body = '''
+{
+    "authorization_endpoint": "https://workspace.test/oidc/v1/authorize",
+    "token_endpoint": "https://workspace.test/oidc/v1/token"
+}
+'''
