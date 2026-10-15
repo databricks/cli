@@ -13,8 +13,8 @@ import (
 )
 
 var (
-	pathBudgetPolicyId = structpath.MustParsePath("budget_policy_id")
-	pathTargetQps      = structpath.MustParsePath("target_qps")
+	pathBudgetPolicyId = structpath.NewPath(nil, "budget_policy_id")
+	pathTargetQps      = structpath.NewPath(nil, "target_qps")
 )
 
 // VectorSearchEndpointRemote is remote state for a vector search endpoint. It embeds API response

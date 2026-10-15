@@ -45,7 +45,7 @@ resources:
 	assert.Equal(t, "${resources.jobs.other.id}", maxRuns)
 
 	// Locations are kept.
-	assert.Equal(t, b.Config.GetLocations("resources.jobs.my_job.description"), uninterpolatedConfig.GetLocations("resources.jobs.my_job.description"))
+	assert.Equal(t, b.Config.NearestLocations(structpath.NewPath(nil, "resources", "jobs", "my_job", "description")), uninterpolatedConfig.NearestLocations(structpath.NewPath(nil, "resources", "jobs", "my_job", "description")))
 
 	afterJSON, err := json.Marshal(b.Config.View().AsAny())
 	require.NoError(t, err)

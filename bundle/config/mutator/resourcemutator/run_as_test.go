@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -383,7 +384,7 @@ func TestRunAsIdentities(t *testing.T) {
 			diags = bundle.Apply(t.Context(), b, SetRunAs())
 			if tc.wantError {
 				require.ErrorContains(t, diags.Error(), "run_as section must specify exactly one non-empty identity: user_name, service_principal_name, or group_name")
-				assert.Equal(t, []diag.Location{r.GetLocation("run_as")}, diags[0].Locations)
+				assert.Equal(t, []diag.Location{r.NearestLocation(structpath.NewPath(nil, "run_as"))}, diags[0].Locations)
 			} else {
 				require.NoError(t, diags.Error())
 			}

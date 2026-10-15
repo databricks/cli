@@ -12,12 +12,12 @@ type artifactRewritePattern struct {
 
 func artifactRewritePatterns() []artifactRewritePattern {
 	// Base pattern to match all artifacts.
-	base := "artifacts.*"
+	base := structpath.NewPattern(nil, "artifacts", structpath.AnyKey)
 
 	// Compile list of configuration paths to rewrite.
 	return []artifactRewritePattern{
 		{
-			pattern: structpath.MustParsePattern(base + ".path"),
+			pattern: structpath.NewPattern(base, "path"),
 			mode:    TranslateModeLocalAbsoluteDirectory,
 		},
 	}

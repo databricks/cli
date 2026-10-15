@@ -9,7 +9,7 @@ import (
 // them relative to the bundle root. Not used by TranslatePaths: hashing still
 // needs a local glob, not a workspace path.
 func VisitJobRunPaths(root structvar.View, fn VisitFunc) error {
-	pattern := structpath.MustParsePattern("resources.job_runs.*.lifecycle.triggers[*].on_file_change")
+	pattern := structpath.NewPattern(nil, "resources", "job_runs", structpath.AnyKey, "lifecycle", "triggers", structpath.AnyIndex, "on_file_change")
 
 	return structvar.ForEach(root, pattern, func(path *structpath.PathNode, value structvar.View) error {
 		return fn(path, TranslateModeLocalRelative, value)

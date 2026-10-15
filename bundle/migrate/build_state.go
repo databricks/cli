@@ -59,9 +59,9 @@ func BuildStateFromTF(
 	rootView := configRoot.View()
 
 	patterns := []*structpath.PatternNode{
-		structpath.MustParsePattern("resources.*.*"),
-		structpath.MustParsePattern("resources.*.*.permissions"),
-		structpath.MustParsePattern("resources.*.*.grants"),
+		structpath.NewPattern(nil, "resources", structpath.AnyKey, structpath.AnyKey),
+		structpath.NewPattern(nil, "resources", structpath.AnyKey, structpath.AnyKey, "permissions"),
+		structpath.NewPattern(nil, "resources", structpath.AnyKey, structpath.AnyKey, "grants"),
 	}
 	for _, pat := range patterns {
 		err := structvar.ForEach(

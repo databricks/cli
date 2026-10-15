@@ -93,7 +93,7 @@ func expandSequence[T any](ctx context.Context, b *bundle.Bundle, p *structpath.
 		ip := structpath.NewIndex(p, i)
 		expanded, relocate, d := fn(ctx, b, ip, item)
 		diags = diags.Extend(d)
-		locs := b.Config.LocationsAt(ip)
+		locs := b.Config.ExactLocations(ip)
 		for _, e := range expanded {
 			output = append(output, e)
 			sources = append(sources, []int{i})
@@ -139,7 +139,7 @@ func expandLibraries(ctx context.Context, lv structvar.View, p *structpath.PathN
 
 		matches, err := findMatches(ctx, b, path)
 		if err != nil {
-			return nil, "", diag.Diagnostics{matchError(structpath.NewStringKey(ip, libType), b.Config.LocationsAt(ip), err.Error())}
+			return nil, "", diag.Diagnostics{matchError(structpath.NewStringKey(ip, libType), b.Config.ExactLocations(ip), err.Error())}
 		}
 
 		var output []compute.Library
@@ -165,7 +165,7 @@ func expandEnvironmentDeps(ctx context.Context, lv structvar.View, p *structpath
 
 		matches, err := findMatches(ctx, b, path)
 		if err != nil {
-			return nil, "", diag.Diagnostics{matchError(ip, b.Config.LocationsAt(ip), err.Error())}
+			return nil, "", diag.Diagnostics{matchError(ip, b.Config.ExactLocations(ip), err.Error())}
 		}
 
 		var output []string
@@ -182,13 +182,13 @@ type expandPattern struct {
 }
 
 var (
-	taskLibrariesPattern              = structpath.MustParsePattern("resources.jobs.*.tasks[*].libraries")
-	forEachTaskLibrariesPattern       = structpath.MustParsePattern("resources.jobs.*.tasks[*].for_each_task.task.libraries")
-	aiRuntimeCodeSourcePattern        = structpath.MustParsePattern("resources.jobs.*.tasks[*].ai_runtime_task.code_source_path")
-	forEachAiRuntimeCodeSourcePattern = structpath.MustParsePattern("resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.code_source_path")
-	envDepsPattern                    = structpath.MustParsePattern("resources.jobs.*.environments[*].spec.dependencies")
-	pipelineEnvDepsPattern            = structpath.MustParsePattern("resources.pipelines.*.environment.dependencies")
-	clusterLibrariesPattern           = structpath.MustParsePattern("resources.clusters.*.libraries")
+	taskLibrariesPattern              = structpath.NewPattern(nil, "resources", "jobs", structpath.AnyKey, "tasks", structpath.AnyIndex, "libraries")
+	forEachTaskLibrariesPattern       = structpath.NewPattern(nil, "resources", "jobs", structpath.AnyKey, "tasks", structpath.AnyIndex, "for_each_task", "task", "libraries")
+	aiRuntimeCodeSourcePattern        = structpath.NewPattern(nil, "resources", "jobs", structpath.AnyKey, "tasks", structpath.AnyIndex, "ai_runtime_task", "code_source_path")
+	forEachAiRuntimeCodeSourcePattern = structpath.NewPattern(nil, "resources", "jobs", structpath.AnyKey, "tasks", structpath.AnyIndex, "for_each_task", "task", "ai_runtime_task", "code_source_path")
+	envDepsPattern                    = structpath.NewPattern(nil, "resources", "jobs", structpath.AnyKey, "environments", structpath.AnyIndex, "spec", "dependencies")
+	pipelineEnvDepsPattern            = structpath.NewPattern(nil, "resources", "pipelines", structpath.AnyKey, "environment", "dependencies")
+	clusterLibrariesPattern           = structpath.NewPattern(nil, "resources", "clusters", structpath.AnyKey, "libraries")
 )
 
 func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
