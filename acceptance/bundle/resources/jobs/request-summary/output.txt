@@ -7,9 +7,9 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 >>> print_requests
 GET /.well-known/databricks-config
 GET /api/2.0/preview/scim/v2/Me
-GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deployment.json return_export_info=true
-GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/resources.json return_export_info=true
-GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/terraform.tfstate return_export_info=true
+GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deployment.json
+GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/resources.json
+GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/terraform.tfstate
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/request-summary/default/files...
@@ -20,14 +20,14 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> print_requests
 GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock
 GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock
+GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deployment.json
+GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/resources.json
+GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/terraform.tfstate
 GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/files
 GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/files
 GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock return_export_info=true
 GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock return_export_info=true
 GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock return_export_info=true
-GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deployment.json return_export_info=true
-GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/resources.json return_export_info=true
-GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/terraform.tfstate return_export_info=true
 POST /api/2.0/workspace/delete
 POST /api/2.0/workspace/delete
 POST /api/2.0/workspace/import
@@ -51,13 +51,11 @@ GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNA
 GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock
 GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deployment.json
 GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/resources.json
+GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/terraform.tfstate
 GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/files
 GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock return_export_info=true
 GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock return_export_info=true
 GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock return_export_info=true
-GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deployment.json return_export_info=true
-GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/resources.json return_export_info=true
-GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/terraform.tfstate return_export_info=true
 GET /api/2.2/jobs/get job_id=[FOO_ID]
 POST /api/2.0/workspace/delete
 POST /api/2.0/workspace/delete
@@ -78,11 +76,10 @@ Destroy: 1 deleted
 >>> print_requests
 GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock
 GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/resources.json
+GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/terraform.tfstate
 GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default
 GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock return_export_info=true
 GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock return_export_info=true
-GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/resources.json return_export_info=true
-GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/terraform.tfstate return_export_info=true
 GET /api/2.2/jobs/get job_id=[FOO_ID]
 POST /api/2.0/workspace/delete
 POST /api/2.0/workspace/delete
