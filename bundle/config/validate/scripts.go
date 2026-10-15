@@ -70,14 +70,14 @@ func validateScriptContent(b *bundle.Bundle, key, content string, p *structpath.
 		Severity: diag.Error,
 		Summary:  fmt.Sprintf("Found %s in script %s.content. Interpolation syntax ${...} is not supported in script content", first, key),
 		Detail: `The ${...} syntax is not allowed in script content. To use a bundle value,
-	declare an environment variable in the script's "env:" section and reference it
-	from "content" with $NAME:
+declare an environment variable in the script's "env:" section and reference it
+from "content" with $NAME:
 
-	  scripts:
-	    ` + key + `:
-	      env:
-	        MY_VAR: ${var.foo}
-	      content: echo "$MY_VAR"`,
+  scripts:
+    ` + key + `:
+      env:
+        MY_VAR: ${var.foo}
+      content: echo "$MY_VAR"`,
 		Paths: []*structpath.PathNode{p},
 	}}
 }
