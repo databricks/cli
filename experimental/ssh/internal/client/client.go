@@ -355,7 +355,9 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		cmdio.LogString(ctx, fmt.Sprintf("Connecting to %s...", sessionID))
 	}
 
-	if opts.IsServerlessMode() {
+	// Skipped when reconnecting with --metadata (the ProxyCommand child): the server is already
+	// running, so there is no compute left to spare, and every IDE reconnect would repeat the read.
+	if opts.IsServerlessMode() && opts.ServerMetadata == "" {
 		if err := checkPortForwardingToServerless(ctx, client); err != nil {
 			return err
 		}
@@ -710,9 +712,16 @@ func metadataResponseError(statusCode int, body []byte) error {
 // (PortForwardingToServerlessGate in data-plane-router) also depends on an enforcement flag and a port
 // allow-list that the CLI cannot see, and the setting is not readable through the public API in every
 // environment. A read that fails therefore lets the connection go ahead, and the proxy's own 403
-// (errDriverProxyForbidden) remains the backstop.
+// (errDriverProxyForbidden) remains the backstop. The read goes through a client with retries turned
+// off, so a throttled or unavailable settings service cannot hold up the connection for the SDK's
+// retry budget.
 func checkPortForwardingToServerless(ctx context.Context, client *databricks.WorkspaceClient) error {
-	setting, err := client.WorkspaceSettingsV2.GetPublicWorkspaceSetting(ctx, settingsv2.GetPublicWorkspaceSettingRequest{
+	apiClient, err := newProbeAPIClient(client.Config)
+	if err != nil {
+		log.Debugf(ctx, "Could not build a client to read the %s setting, continuing: %v", portFwdServerlessSetting, err)
+		return nil
+	}
+	setting, err := settingsv2.NewWorkspaceSettingsV2(apiClient).GetPublicWorkspaceSetting(ctx, settingsv2.GetPublicWorkspaceSettingRequest{
 		Name: portFwdServerlessSetting,
 	})
 	if err != nil {
