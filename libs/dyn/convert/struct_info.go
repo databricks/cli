@@ -2,6 +2,7 @@ package convert
 
 import (
 	"reflect"
+	"strings"
 	"sync"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -26,6 +27,10 @@ type structInfo struct {
 
 	// Maps JSON-name of the field to Golang struct name
 	GolangNames map[string]string
+
+	// Tracks fields of API types whose explicitly set zero value is kept on a
+	// round trip through the typed representation (see [keepsExplicitZero]).
+	KeepExplicitZero map[string]bool
 }
 
 // structInfoCache caches type information.
@@ -56,6 +61,8 @@ func buildStructInfo(typ reflect.Type) structInfo {
 		Fields:      make(map[string][]int),
 		ForceEmpty:  make(map[string]bool),
 		GolangNames: make(map[string]string),
+
+		KeepExplicitZero: make(map[string]bool),
 	}
 
 	// Queue holds the indexes of the structs to visit.
@@ -112,6 +119,9 @@ func buildStructInfo(typ reflect.Type) structInfo {
 				out.ForceEmpty[name] = true
 			}
 			out.GolangNames[name] = sf.Name
+			if keepsExplicitZero(styp) {
+				out.KeepExplicitZero[name] = true
+			}
 
 		}
 	}
@@ -160,3 +170,13 @@ func fieldByIndex(v reflect.Value, index []int) reflect.Value {
 
 // Type of [dyn.Value].
 var configValueType = reflect.TypeFor[dyn.Value]()
+
+// keepsExplicitZero reports whether fields declared by typ keep an explicitly
+// set zero value (e.g. `parent_path: ""`). This holds for API types: the
+// sdk-go mirrors and the bundle resource types built on them. The previous SDK
+// tracked such values in ForceSendFields; CLI-only types never did.
+func keepsExplicitZero(typ reflect.Type) bool {
+	pkg := typ.PkgPath()
+	return strings.HasPrefix(pkg, "github.com/databricks/cli/libs/sdktypes/") ||
+		pkg == "github.com/databricks/cli/bundle/config/resources"
+}

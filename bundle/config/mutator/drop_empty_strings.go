@@ -47,8 +47,8 @@ func (m *dropEmptyStrings) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 		if err != nil {
 			return root, err
 		}
-		for _, p := range keep {
-			root, err = dyn.SetByPath(root, p, dyn.V(""))
+		for _, kv := range keep {
+			root, err = dyn.SetByPath(root, kv.path, kv.value)
 			if err != nil {
 				return root, err
 			}
@@ -75,7 +75,7 @@ func (m *dropEmptyStrings) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 // sent, as opposed to an optional field left empty. The sdk-go based resource
 // types mark every field omitempty, so required fields come from the generated
 // validation metadata instead of struct tags.
-func requiredEmptyStrings(root dyn.Value) ([]dyn.Path, error) {
+func requiredEmptyStrings(root dyn.Value) ([]pathValue, error) {
 	trie := &dyn.TrieNode{}
 	for k := range generated.RequiredFields {
 		pattern, err := dyn.NewPatternFromString(k)
@@ -86,18 +86,24 @@ func requiredEmptyStrings(root dyn.Value) ([]dyn.Path, error) {
 			return nil, err
 		}
 	}
-	var paths []dyn.Path
+	var out []pathValue
 	err := dyn.WalkReadOnly(root, func(p dyn.Path, v dyn.Value) error {
 		pattern, ok := trie.SearchPath(p)
 		if !ok {
 			return nil
 		}
 		for _, field := range generated.RequiredFields[pattern.String()] {
-			if s, ok := v.Get(field).AsString(); ok && s == "" {
-				paths = append(paths, p.Append(dyn.Key(field)))
+			fv := v.Get(field)
+			if s, ok := fv.AsString(); ok && s == "" {
+				out = append(out, pathValue{p.Append(dyn.Key(field)), fv})
 			}
 		}
 		return nil
 	})
-	return paths, err
+	return out, err
+}
+
+type pathValue struct {
+	path  dyn.Path
+	value dyn.Value
 }

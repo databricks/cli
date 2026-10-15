@@ -138,7 +138,7 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 			if v.Kind() != reflect.Struct && v.IsZero() && nv.IsZero() && !info.ForceEmpty[k] {
 				// A zero scalar that was explicitly set in the reference (e.g. `name: ""`)
 				// is kept, so that typed round trips do not drop it.
-				if !ok || !isZeroScalar(refv) {
+				if !ok || !info.KeepExplicitZero[k] || !isZeroScalar(refv) {
 					continue
 				}
 				nv = refv
