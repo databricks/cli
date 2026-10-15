@@ -6,7 +6,7 @@ import (
 )
 
 func VisitGenieSpacePaths(root structvar.View, fn VisitFunc) error {
-	pattern := structpath.MustParsePattern("resources.genie_spaces.*.file_path")
+	pattern := structpath.NewPattern(nil, "resources", "genie_spaces", structpath.AnyKey, "file_path")
 
 	return structvar.ForEach(root, pattern, func(path *structpath.PathNode, value structvar.View) error {
 		return fn(path, TranslateModeLocalRelative, value)

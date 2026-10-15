@@ -32,7 +32,7 @@ func (c configureClusterPolicyDefinition) Apply(_ context.Context, b *bundle.Bun
 		return nil
 	}
 
-	pattern := structpath.MustParsePattern("resources.cluster_policies.*")
+	pattern := structpath.NewPattern(nil, "resources", "cluster_policies", structpath.AnyKey)
 
 	err := structvar.ForEach(b.Config.View(), pattern, func(p *structpath.PathNode, v structvar.View) error {
 		for _, field := range jsonPolicyFields {

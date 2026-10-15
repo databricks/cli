@@ -11,7 +11,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structvar"
 )
 
-var resourcesPrefix = structpath.MustParsePath("resources")
+var resourcesPrefix = structpath.NewPath(nil, "resources")
 
 // ResolveConfigAgainstState resolves ${resources.*} references within the resource at
 // target so its runner ("bundle run") sees concrete values rather than references. For a

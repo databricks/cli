@@ -26,11 +26,11 @@ func (m *populateLocations) Name() string {
 
 // locationPatterns are the paths for which locations are recorded.
 var locationPatterns = []*structpath.PatternNode{
-	structpath.MustParsePattern("*"),                         // Top level fields
-	structpath.MustParsePattern("resources.*"),               // Resource groups ("resources.jobs")
-	structpath.MustParsePattern("resources.*.*"),             // Resources for all types ("resources.jobs.my_job")
-	structpath.MustParsePattern("resources.jobs.*.tasks"),    // Job tasks ("resources.jobs.my_job.tasks")
-	structpath.MustParsePattern("resources.jobs.*.tasks[*]"), // Job task items ("resources.jobs.my_job.tasks[2]")
+	structpath.NewPattern(nil, structpath.AnyKey),                                                    // Top level fields
+	structpath.NewPattern(nil, "resources", structpath.AnyKey),                                       // Resource groups ("resources.jobs")
+	structpath.NewPattern(nil, "resources", structpath.AnyKey, structpath.AnyKey),                    // Resources for all types ("resources.jobs.my_job")
+	structpath.NewPattern(nil, "resources", "jobs", structpath.AnyKey, "tasks"),                      // Job tasks ("resources.jobs.my_job.tasks")
+	structpath.NewPattern(nil, "resources", "jobs", structpath.AnyKey, "tasks", structpath.AnyIndex), // Job task items ("resources.jobs.my_job.tasks[2]")
 }
 
 // pathString returns the path with keys separated by dots, whatever characters they contain.

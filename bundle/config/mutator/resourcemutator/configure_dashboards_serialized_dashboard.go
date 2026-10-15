@@ -34,7 +34,7 @@ func (c configureDashboardSerializedDashboard) Apply(_ context.Context, b *bundl
 		return nil
 	}
 
-	pattern := structpath.MustParsePattern("resources.dashboards.*")
+	pattern := structpath.NewPattern(nil, "resources", "dashboards", structpath.AnyKey)
 
 	// Configure serialized_dashboard field for all dashboards.
 	err := structvar.ForEach(b.Config.View(), pattern, func(p *structpath.PathNode, v structvar.View) error {

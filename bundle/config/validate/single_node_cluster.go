@@ -128,15 +128,15 @@ func (m *singleNodeCluster) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 
 	patterns := []*structpath.PatternNode{
 		// Interactive clusters
-		structpath.MustParsePattern("resources.clusters.*"),
+		structpath.NewPattern(nil, "resources", "clusters", structpath.AnyKey),
 		// Job clusters
-		structpath.MustParsePattern("resources.jobs.*.job_clusters[*].new_cluster"),
+		structpath.NewPattern(nil, "resources", "jobs", structpath.AnyKey, "job_clusters", structpath.AnyIndex, "new_cluster"),
 		// Job task clusters
-		structpath.MustParsePattern("resources.jobs.*.tasks[*].new_cluster"),
+		structpath.NewPattern(nil, "resources", "jobs", structpath.AnyKey, "tasks", structpath.AnyIndex, "new_cluster"),
 		// Job for each task clusters
-		structpath.MustParsePattern("resources.jobs.*.tasks[*].for_each_task.task.new_cluster"),
+		structpath.NewPattern(nil, "resources", "jobs", structpath.AnyKey, "tasks", structpath.AnyIndex, "for_each_task", "task", "new_cluster"),
 		// Pipeline clusters
-		structpath.MustParsePattern("resources.pipelines.*.clusters[*]"),
+		structpath.NewPattern(nil, "resources", "pipelines", structpath.AnyKey, "clusters", structpath.AnyIndex),
 	}
 
 	root := b.Config.View()

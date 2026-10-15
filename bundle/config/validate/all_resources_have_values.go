@@ -41,7 +41,7 @@ func (m *allResourcesHaveValues) Apply(ctx context.Context, b *bundle.Bundle) di
 			diags = append(diags, diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   fmt.Sprintf("%s %s is not defined", rType, rName),
-				Locations: b.Config.LocationsAt(p),
+				Locations: b.Config.ExactLocations(p),
 				Paths:     []*structpath.PathNode{p},
 			})
 		}

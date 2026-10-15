@@ -351,8 +351,11 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 						// on it belongs in that same block.
 						filePath = block.file
 					} else {
-						resourceLocation := b.Config.DefinitionLocation(resourceKey)
-						filePath = resourceLocation.File
+						resourcePath, err := structpath.ParsePath(resourceKey)
+						if err != nil {
+							return nil, 0, fmt.Errorf("failed to parse resource key %s: %w", resourceKey, err)
+						}
+						filePath = b.Config.ExactLocation(resourcePath).File
 					}
 					if filePath == "" {
 						return nil, 0, fmt.Errorf("failed to find location for resource %s for a field %s", resourceKey, fieldPath)

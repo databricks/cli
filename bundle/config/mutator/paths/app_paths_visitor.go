@@ -6,7 +6,7 @@ import (
 )
 
 func VisitAppPaths(root structvar.View, fn VisitFunc) error {
-	pattern := structpath.MustParsePattern("resources.apps.*.source_code_path")
+	pattern := structpath.NewPattern(nil, "resources", "apps", structpath.AnyKey, "source_code_path")
 
 	return structvar.ForEach(root, pattern, func(path *structpath.PathNode, value structvar.View) error {
 		return fn(path, TranslateModeDirectory, value)

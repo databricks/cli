@@ -46,7 +46,7 @@ func (e expandGlobs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	base := structpath.NewPath(nil, "artifacts", e.name, "files")
 
 	// Pattern to match the source key in the files sequence.
-	pattern := structpath.NewPatternStringKey(structpath.NewPatternBracketStar(structpath.NewPatternStringKey(structpath.NewPatternStringKey(structpath.NewPatternStringKey(nil, "artifacts"), e.name), "files")), "source")
+	pattern := structpath.NewPattern(nil, "artifacts", e.name, "files", structpath.AnyIndex, "source")
 
 	artifact := b.Config.Artifacts[e.name]
 	if artifact == nil {

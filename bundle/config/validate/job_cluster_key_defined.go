@@ -60,7 +60,7 @@ func checkJobClusterKey(b *bundle.Bundle, jobClusterKeys map[string]bool, jobClu
 		// Show only the location where the job_cluster_key is defined.
 		// Other associated locations are not relevant since they are
 		// overridden during merging.
-		Locations: b.Config.GetLocationsOf(path),
+		Locations: b.Config.NearestLocations(path),
 		Paths:     []*structpath.PathNode{path},
 	}}
 }

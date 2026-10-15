@@ -31,7 +31,7 @@ func (c configureGenieSpaceSerializedSpace) Apply(_ context.Context, b *bundle.B
 		return nil
 	}
 
-	pattern := structpath.MustParsePattern("resources.genie_spaces.*")
+	pattern := structpath.NewPattern(nil, "resources", "genie_spaces", structpath.AnyKey)
 
 	err := structvar.ForEach(b.Config.View(), pattern, func(p *structpath.PathNode, v structvar.View) error {
 		filePath, hasFilePath := v.Get(filePathFieldName).AsString()

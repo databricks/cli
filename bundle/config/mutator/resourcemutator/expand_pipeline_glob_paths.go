@@ -76,7 +76,7 @@ func (m *expandPipelineGlobPaths) expandLibrary(ctx context.Context, dir string,
 }
 
 func (m *expandPipelineGlobPaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	p := structpath.MustParsePattern("resources.pipelines.*.libraries")
+	p := structpath.NewPattern(nil, "resources", "pipelines", structpath.AnyKey, "libraries")
 
 	// Visit each pipeline's "libraries" field and expand any glob patterns.
 	err := structvar.ForEach(b.Config.View(), p, func(path *structpath.PathNode, value structvar.View) error {

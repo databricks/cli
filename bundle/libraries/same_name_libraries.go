@@ -14,14 +14,14 @@ import (
 type checkForSameNameLibraries struct{}
 
 var patterns = []*structpath.PatternNode{
-	structpath.MustParsePattern(taskLibrariesPattern.String() + "[*].whl"),
-	structpath.MustParsePattern(taskLibrariesPattern.String() + "[*].jar"),
-	structpath.MustParsePattern(forEachTaskLibrariesPattern.String() + "[*].whl"),
-	structpath.MustParsePattern(forEachTaskLibrariesPattern.String() + "[*].jar"),
-	structpath.MustParsePattern(clusterLibrariesPattern.String() + "[*].whl"),
-	structpath.MustParsePattern(clusterLibrariesPattern.String() + "[*].jar"),
-	structpath.MustParsePattern(envDepsPattern.String() + "[*]"),
-	structpath.MustParsePattern(pipelineEnvDepsPattern.String() + "[*]"),
+	structpath.NewPattern(taskLibrariesPattern, structpath.AnyIndex, "whl"),
+	structpath.NewPattern(taskLibrariesPattern, structpath.AnyIndex, "jar"),
+	structpath.NewPattern(forEachTaskLibrariesPattern, structpath.AnyIndex, "whl"),
+	structpath.NewPattern(forEachTaskLibrariesPattern, structpath.AnyIndex, "jar"),
+	structpath.NewPattern(clusterLibrariesPattern, structpath.AnyIndex, "whl"),
+	structpath.NewPattern(clusterLibrariesPattern, structpath.AnyIndex, "jar"),
+	structpath.NewPattern(envDepsPattern, structpath.AnyIndex),
+	structpath.NewPattern(pipelineEnvDepsPattern, structpath.AnyIndex),
 }
 
 type libData struct {

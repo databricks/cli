@@ -29,11 +29,11 @@ var skipPrefixes = []string{
 
 func (m *prependWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	patterns := []*structpath.PatternNode{
-		structpath.MustParsePattern("workspace.root_path"),
-		structpath.MustParsePattern("workspace.file_path"),
-		structpath.MustParsePattern("workspace.artifact_path"),
-		structpath.MustParsePattern("workspace.state_path"),
-		structpath.MustParsePattern("workspace.resource_path"),
+		structpath.NewPattern(nil, "workspace", "root_path"),
+		structpath.NewPattern(nil, "workspace", "file_path"),
+		structpath.NewPattern(nil, "workspace", "artifact_path"),
+		structpath.NewPattern(nil, "workspace", "state_path"),
+		structpath.NewPattern(nil, "workspace", "resource_path"),
 	}
 
 	for _, pattern := range patterns {

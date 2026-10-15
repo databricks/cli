@@ -2,10 +2,10 @@ package resourcemutator
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -50,9 +50,9 @@ func (a *applyDefaultTaskSource) Apply(ctx context.Context, b *bundle.Bundle) di
 
 		for i := range job.Tasks {
 			task := &job.Tasks[i]
-			taskPath := fmt.Sprintf("resources.jobs.%s.tasks[%d]", name, i)
+			taskPath := structpath.NewPath(nil, "resources", "jobs", name, "tasks", i)
 			if task.ForEachTask != nil {
-				setGitTaskSource(b, taskPath+".for_each_task.task", &task.ForEachTask.Task)
+				setGitTaskSource(b, structpath.NewPath(taskPath, "for_each_task", "task"), &task.ForEachTask.Task)
 			}
 			setGitTaskSource(b, taskPath, task)
 		}
@@ -64,32 +64,32 @@ func (a *applyDefaultTaskSource) Apply(ctx context.Context, b *bundle.Bundle) di
 // supports the field, unless the user already set it.
 // The task types are the ones that support the `source` field:
 // https://docs.databricks.com/api/workspace/jobs/create
-func setGitTaskSource(b *bundle.Bundle, taskPath string, task *jobs.Task) {
+func setGitTaskSource(b *bundle.Bundle, taskPath *structpath.PathNode, task *jobs.Task) {
 	type taskSource struct {
-		key    string
+		path   []any
 		source *jobs.Source
 	}
 	var sources []taskSource
 	if task.DbtTask != nil {
-		sources = append(sources, taskSource{"dbt_task", &task.DbtTask.Source})
+		sources = append(sources, taskSource{[]any{"dbt_task", "source"}, &task.DbtTask.Source})
 	}
 	if task.GenAiComputeTask != nil {
-		sources = append(sources, taskSource{"gen_ai_compute_task", &task.GenAiComputeTask.Source})
+		sources = append(sources, taskSource{[]any{"gen_ai_compute_task", "source"}, &task.GenAiComputeTask.Source})
 	}
 	if task.NotebookTask != nil {
-		sources = append(sources, taskSource{"notebook_task", &task.NotebookTask.Source})
+		sources = append(sources, taskSource{[]any{"notebook_task", "source"}, &task.NotebookTask.Source})
 	}
 	if task.SparkPythonTask != nil {
-		sources = append(sources, taskSource{"spark_python_task", &task.SparkPythonTask.Source})
+		sources = append(sources, taskSource{[]any{"spark_python_task", "source"}, &task.SparkPythonTask.Source})
 	}
 	if task.SqlTask != nil && task.SqlTask.File != nil {
-		sources = append(sources, taskSource{"sql_task.file", &task.SqlTask.File.Source})
+		sources = append(sources, taskSource{[]any{"sql_task", "file", "source"}, &task.SqlTask.File.Source})
 	}
 	for _, s := range sources {
 		// An explicit `source: ""` is set by the user, although the typed value is
 		// empty; not every task type has ForceSendFields to record it, but it is
 		// defined in the configuration.
-		if *s.source != "" || b.Config.DefinitionLocation(taskPath+"."+s.key+".source").File != "" {
+		if *s.source != "" || b.Config.ExactLocation(structpath.NewPath(taskPath, s.path...)).File != "" {
 			continue
 		}
 		*s.source = jobs.SourceGit

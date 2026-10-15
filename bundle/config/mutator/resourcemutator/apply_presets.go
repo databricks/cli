@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -352,7 +353,7 @@ func validatePauseStatus(b *bundle.Bundle) diag.Diagnostics {
 	return diag.Diagnostics{{
 		Summary:   "Invalid value for trigger_pause_status, should be PAUSED or UNPAUSED",
 		Severity:  diag.Error,
-		Locations: []diag.Location{b.Config.GetLocation("presets.trigger_pause_status")},
+		Locations: []diag.Location{b.Config.NearestLocation(structpath.NewPath(nil, "presets", "trigger_pause_status"))},
 	}}
 }
 

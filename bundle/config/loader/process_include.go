@@ -43,7 +43,7 @@ func validateSingleResourceDefined(configRoot structvar.View, ext, typ string) d
 	// Gather all resources defined in the resources block.
 	err := structvar.ForEach(
 		configRoot,
-		structpath.MustParsePattern("resources.*.*"),
+		structpath.NewPattern(nil, "resources", structpath.AnyKey, structpath.AnyKey),
 		func(np *structpath.PathNode, v structvar.View) error {
 			// The key for the resource, e.g. "my_job" for jobs.my_job.
 			k := np.KeyAt(2)
@@ -60,7 +60,7 @@ func validateSingleResourceDefined(configRoot structvar.View, ext, typ string) d
 	// Gather all resources defined in a target block.
 	err = structvar.ForEach(
 		configRoot,
-		structpath.MustParsePattern("targets.*.resources.*.*"),
+		structpath.NewPattern(nil, "targets", structpath.AnyKey, "resources", structpath.AnyKey, structpath.AnyKey),
 		func(np *structpath.PathNode, v structvar.View) error {
 			// The key for the resource, e.g. "my_job" for jobs.my_job.
 			k := np.KeyAt(4)
@@ -182,7 +182,7 @@ func (m *processInclude) load() (*config.Root, diag.Diagnostics) {
 			Summary:  "Include section is defined outside root file",
 			Detail: `An include section is defined in a file that is not databricks.yml.
 Only includes defined in databricks.yml are applied.`,
-			Locations: this.GetLocations("include"),
+			Locations: this.NearestLocations(structpath.NewPath(nil, "include")),
 			Paths:     structpath.NewPathSlice("include"),
 		})
 	}

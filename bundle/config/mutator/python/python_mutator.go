@@ -197,7 +197,7 @@ func applyBackwardsCompatibilityFixes(b *bundle.Bundle) error {
 	}
 
 	// if 'experimental.python' section exists, nothing to do
-	experimentalPythonPath := structpath.MustParsePath("experimental.python")
+	experimentalPythonPath := structpath.NewPath(nil, "experimental", "python")
 	if root.Lookup(experimentalPythonPath).IsValid() {
 		return nil
 	}

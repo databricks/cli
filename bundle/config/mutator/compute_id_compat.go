@@ -38,7 +38,7 @@ func (m *computeIdToClusterId) Apply(ctx context.Context, b *bundle.Bundle) diag
 	diags = diags.Extend(rewriteComputeIdToClusterId(b, bundlePath, view.Get("bundle")))
 
 	// Check if the "compute_id" key is set in any target overrides.
-	err := structvar.ForEach(view, structpath.MustParsePattern("targets.*"), func(p *structpath.PathNode, v structvar.View) error {
+	err := structvar.ForEach(view, structpath.NewPattern(nil, "targets", structpath.AnyKey), func(p *structpath.PathNode, v structvar.View) error {
 		diags = diags.Extend(rewriteComputeIdToClusterId(b, p, v))
 		return nil
 	})

@@ -203,7 +203,7 @@ func (r *Root) Merge(others ...*Root) error {
 	return nil
 }
 
-var bundleGitPath = structpath.MustParsePath("bundle.git")
+var bundleGitPath = structpath.NewPath(nil, "bundle", "git")
 
 func (r *Root) MergeTargetOverrides(name string) error {
 	targetPath := structpath.NewPath(nil, "targets", name)
@@ -281,14 +281,14 @@ func (r *Root) MergeTargetOverrides(name string) error {
 
 	// Merge `mode`. This field must be overwritten if set, not merged.
 	if v := target.Get("mode"); v.IsValid() {
-		if err := r.Assign(structpath.MustParsePath("bundle.mode"), v); err != nil {
+		if err := r.Assign(structpath.NewPath(nil, "bundle", "mode"), v); err != nil {
 			return err
 		}
 	}
 
 	// Merge `cluster_id`. This field must be overwritten if set, not merged.
 	if v := target.Get("cluster_id"); v.IsValid() {
-		if err := r.Assign(structpath.MustParsePath("bundle.cluster_id"), v); err != nil {
+		if err := r.Assign(structpath.NewPath(nil, "bundle", "cluster_id"), v); err != nil {
 			return err
 		}
 	}
@@ -551,57 +551,31 @@ func (r *Root) UpdateSequence(path *structpath.PathNode, sources [][]int) {
 	r.store(sv)
 }
 
-// LocationsAt returns all locations of the configuration value at the specified path.
-func (r Root) LocationsAt(path *structpath.PathNode) []diag.Location {
-	return r.locations.At(path)
-}
-
-// Best effort to get the location of configuration value at the specified path.
-// This function is useful to annotate error messages with the location, because
-// we don't want to fail with a different error message if we cannot retrieve the location.
-func (r Root) GetLocation(path string) diag.Location {
-	locs := r.GetLocations(path)
-	if len(locs) == 0 {
-		return diag.Location{}
-	}
-	return locs[0]
-}
-
-// Get all locations of the configuration value at the specified path. We need both
-// this function and it's singular version (GetLocation) because some diagnostics just need
-// the primary location and some need all locations associated with a configuration value.
-// A value without locations (e.g. set by a mutator) gets those of its closest ancestor
-// that has some; use [Root.DefinitionLocation] to find where a value is defined.
-func (r Root) GetLocations(path string) []diag.Location {
-	p, err := structpath.ParsePath(path)
-	if err != nil {
-		return nil
-	}
-	return r.GetLocationsOf(p)
-}
-
-// GetLocationsOf is [Root.GetLocations] for a path node.
-func (r Root) GetLocationsOf(path *structpath.PathNode) []diag.Location {
+// NearestLocations returns the locations of the configuration value at path or, if it
+// has none (e.g. it was set by a mutator), those of its closest ancestor that has some.
+// Use it to point diagnostics at the most specific place there is; use
+// [Root.ExactLocations] to find where a value is written.
+func (r Root) NearestLocations(path *structpath.PathNode) []diag.Location {
 	return r.locations.Nearest(path)
 }
 
-// GetLocationOf is [Root.GetLocation] for a path node.
-func (r Root) GetLocationOf(path *structpath.PathNode) diag.Location {
-	locs := r.GetLocationsOf(path)
-	if len(locs) == 0 {
-		return diag.Location{}
-	}
-	return locs[0]
+// NearestLocation returns the primary location of [Root.NearestLocations].
+func (r Root) NearestLocation(path *structpath.PathNode) diag.Location {
+	return firstLocation(r.NearestLocations(path))
 }
 
-// DefinitionLocation returns the primary location the value at path is defined at,
-// or an empty location if it has none (e.g. it was set by a mutator).
-func (r Root) DefinitionLocation(path string) diag.Location {
-	p, err := structpath.ParsePath(path)
-	if err != nil {
-		return diag.Location{}
-	}
-	locs := r.locations.At(p)
+// ExactLocations returns the locations the configuration value at path is written at,
+// or none if it was set by a mutator.
+func (r Root) ExactLocations(path *structpath.PathNode) []diag.Location {
+	return r.locations.Exact(path)
+}
+
+// ExactLocation returns the primary location of [Root.ExactLocations].
+func (r Root) ExactLocation(path *structpath.PathNode) diag.Location {
+	return firstLocation(r.ExactLocations(path))
+}
+
+func firstLocation(locs []diag.Location) diag.Location {
 	if len(locs) == 0 {
 		return diag.Location{}
 	}

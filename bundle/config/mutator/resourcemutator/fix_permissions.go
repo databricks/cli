@@ -192,7 +192,7 @@ func (m *fixPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	}
 	currentUser := b.Config.Workspace.CurrentUser.UserName
 
-	err := structvar.ForEach(b.Config.View(), structpath.MustParsePattern("resources.*.*.permissions"), func(p *structpath.PathNode, v structvar.View) error {
+	err := structvar.ForEach(b.Config.View(), structpath.NewPattern(nil, "resources", structpath.AnyKey, structpath.AnyKey, "permissions"), func(p *structpath.PathNode, v structvar.View) error {
 		// Extract resource type from path: resources.<resource_type>.<resource_name>.permissions
 		resourceType := p.KeyAt(1)
 		if ignoredResources[resourceType] || v.Kind() != structvar.KindSequence {

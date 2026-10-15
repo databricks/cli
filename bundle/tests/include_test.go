@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -32,7 +33,7 @@ func TestIncludeWithGlob(t *testing.T) {
 
 	job := b.Config.Resources.Jobs["my_job"]
 	assert.Equal(t, "1", job.ID)
-	l := b.Config.GetLocation("resources.jobs.my_job")
+	l := b.Config.NearestLocation(structpath.NewPath(nil, "resources", "jobs", "my_job"))
 	assert.Equal(t, "include_with_glob/job.yml", filepath.ToSlash(l.File))
 }
 
@@ -52,11 +53,11 @@ func TestIncludeForMultipleMatches(t *testing.T) {
 
 	first := b.Config.Resources.Jobs["my_first_job"]
 	assert.Equal(t, "1", first.ID)
-	fl := b.Config.GetLocation("resources.jobs.my_first_job")
+	fl := b.Config.NearestLocation(structpath.NewPath(nil, "resources", "jobs", "my_first_job"))
 	assert.Equal(t, "include_multiple/my_first_job/resource.yml", filepath.ToSlash(fl.File))
 
 	second := b.Config.Resources.Jobs["my_second_job"]
 	assert.Equal(t, "2", second.ID)
-	sl := b.Config.GetLocation("resources.jobs.my_second_job")
+	sl := b.Config.NearestLocation(structpath.NewPath(nil, "resources", "jobs", "my_second_job"))
 	assert.Equal(t, "include_multiple/my_second_job/resource.yml", filepath.ToSlash(sl.File))
 }
