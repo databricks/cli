@@ -1,15 +1,8 @@
-Cloud = false # Temporary disable cloud tests until the API is fully available
-
-# immutable_folder only works with the direct engine.
+Cloud = true
 
 Ignore = [
-    "dist",
-    "build",
     "databricks.yml",
     ".databricks",
-    ".venv",
-    "*.pyc",
-    "src/*.egg-info",
 ]
 
 [[Repls]]

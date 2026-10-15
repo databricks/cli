@@ -26,7 +26,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] jobs get [MY_JOB_ID]
 {
   "name": "[dev [USERNAME]] my job",
-  "python_file": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/files/src/main.py"
+  "python_file": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/files/src/main.py"
 }
 
 >>> [CLI] bundle destroy -t dev --auto-approve
