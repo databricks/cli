@@ -35,6 +35,22 @@ def parse_apitypes(generated_path, override_path):
     return result
 
 
+# Maps the sdk-go based type names used in out.fields.txt (e.g.
+# "modelserving.ServedEntityInput") to the cli.json schema names they mirror.
+LEGACY_NAMES_PATH = Path(__file__).resolve().parents[2] / "internal" / "sdkmeta" / "legacy.json"
+
+
+def load_legacy_names(path=LEGACY_NAMES_PATH):
+    names = json.loads(path.read_text())["names"]
+    out = {}
+    for full_name, legacy in names.items():
+        pkg_path, _, type_name = full_name.rpartition(".")
+        segments = [seg for seg in pkg_path.split("/") if not re.fullmatch(r"v\d+", seg)]
+        short = f"{segments[-1]}.{type_name}"
+        out.setdefault(short, legacy)
+    return out
+
+
 def parse_out_fields(path):
     """Parse out.fields.txt to extract STATE field names per resource and array element types."""
     state_fields = {}
@@ -61,6 +77,7 @@ def parse_out_fields(path):
         if rest.endswith("[*]"):
             base_path = rest[:-3]
             elem_type = field_type.lstrip("*")
+            elem_type = LEGACY_NAMES.get(elem_type, elem_type)
             array_element_types[(resource, base_path)] = elem_type
 
         state_fields.setdefault(resource, set()).add(rest)
@@ -208,6 +225,9 @@ def write_files(outdir, resource_behaviors):
             path.unlink()
 
     print(f"wrote {len(written)} files to {outdir}", file=sys.stderr)
+
+
+LEGACY_NAMES = load_legacy_names()
 
 
 def main():
