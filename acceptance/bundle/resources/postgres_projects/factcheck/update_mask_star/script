@@ -32,7 +32,9 @@ errcode trace $CLI postgres update-project "$name" '*' --json '{"spec":{"display
 trace print_requests.py //postgres/projects --method PATCH
 
 title "Set default_endpoint_settings to a non-default value (leaf mask)"
-$CLI postgres update-project "$name" 'spec.default_endpoint_settings.autoscaling_limit_min_cu,spec.default_endpoint_settings.autoscaling_limit_max_cu,spec.default_endpoint_settings.suspension' --json '{"spec":{"default_endpoint_settings":{"autoscaling_limit_min_cu":0.5,"autoscaling_limit_max_cu":4,"suspend_timeout_duration":"300s"}}}' &> LOG.setup
+# Raw API call: the mask names the oneof group (suspension), which the API requires
+# and sdk-go's typed field mask rejects.
+$CLI api patch "/api/2.0/postgres/$name?update_mask=spec.default_endpoint_settings.autoscaling_limit_min_cu,spec.default_endpoint_settings.autoscaling_limit_max_cu,spec.default_endpoint_settings.suspension" --json '{"spec":{"default_endpoint_settings":{"autoscaling_limit_min_cu":0.5,"autoscaling_limit_max_cu":4,"suspend_timeout_duration":"300s"}}}' &> LOG.setup
 trace $CLI postgres get-project "$name" | project_fields
 trace print_requests.py //postgres/projects --method PATCH
 
