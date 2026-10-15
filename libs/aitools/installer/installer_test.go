@@ -3,10 +3,13 @@ package installer
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
 	"log/slog"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"sync"
@@ -1055,6 +1058,49 @@ func TestGetSkillsRefDefaultsToLatest(t *testing.T) {
 	assert.False(t, explicit, "tracking latest is not an explicit pin")
 }
 
+func TestGetSkillsRefDefaultManifest(t *testing.T) {
+	tests := []struct {
+		version  string
+		wantRef  string
+		explicit bool
+	}{
+		{version: "0.299.2", wantRef: "v0.1.5", explicit: true},
+		{version: "1.0.0", wantRef: "v0.2.10", explicit: true},
+		{version: "1.19.9", wantRef: "v0.2.10", explicit: true},
+		{version: "1.20.0", wantRef: "v0.2.30", explicit: true},
+		{version: "1.21.0", wantRef: "v0.2.30", explicit: true},
+		{version: "1.21.9", wantRef: "v0.2.30", explicit: true},
+		{version: "1.22.0", wantRef: "v9.9.9"},
+		{version: "1.23.0", wantRef: "v9.9.9"},
+		{version: "0.0.0-dev+test", wantRef: "v9.9.9"},
+	}
+	for _, tc := range tests {
+		for _, offline := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/offline=%t", tc.version, offline), func(t *testing.T) {
+				t.Setenv("DATABRICKS_SKILLS_REF", "")
+				setBuildVersion(t, tc.version)
+				cacheDir := t.TempDir()
+				t.Setenv("DATABRICKS_CACHE_DIR", cacheDir)
+				require.NoError(t, os.WriteFile(filepath.Join(cacheDir, "compat-manifest.json"), build.CLICompatManifestJSON, 0o600))
+				wantRef := tc.wantRef
+				var latestErr error
+				if offline {
+					latestErr = errors.New("network down")
+					if !tc.explicit {
+						wantRef = "v0.2.30"
+					}
+				}
+				stubLatestSkillsReleaseRef(t, "v9.9.9", latestErr)
+
+				ref, explicit, err := GetSkillsRef(t.Context())
+				require.NoError(t, err)
+				assert.Equal(t, wantRef, ref)
+				assert.Equal(t, tc.explicit, explicit)
+			})
+		}
+	}
+}
+
 func TestGetSkillsRefLatestReleaseFallsBackToEmbeddedPin(t *testing.T) {
 	t.Setenv("DATABRICKS_SKILLS_REF", "")
 	withCachedCompat(t, skillsLatestSentinel)
@@ -1064,6 +1110,51 @@ func TestGetSkillsRefLatestReleaseFallsBackToEmbeddedPin(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "v0.2.30", ref)
 	assert.False(t, explicit, "an embedded fallback is not a user pin")
+}
+
+func TestFetchSkillsManifestWithFallback(t *testing.T) {
+	const (
+		missingRef  = "v9.9.9"
+		fallbackRef = "v0.2.30"
+	)
+	tests := []struct {
+		name          string
+		status        int
+		allowFallback bool
+		wantRef       string
+		wantErr       bool
+	}{
+		{name: "latest manifest missing", status: http.StatusNotFound, allowFallback: true, wantRef: fallbackRef},
+		{name: "explicit pin missing", status: http.StatusNotFound, wantRef: missingRef, wantErr: true},
+		{name: "server error", status: http.StatusInternalServerError, allowFallback: true, wantRef: missingRef, wantErr: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			setBuildVersion(t, "1.22.0")
+			body, err := json.Marshal(testManifest())
+			require.NoError(t, err)
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/"+fallbackRef+"/manifest.json" {
+					w.WriteHeader(tc.status)
+					return
+				}
+				_, _ = w.Write(body)
+			}))
+			defer srv.Close()
+			t.Setenv("DATABRICKS_SKILLS_BASE_URL", srv.URL)
+
+			manifest, ref, err := FetchSkillsManifestWithFallback(
+				cmdio.MockDiscard(t.Context()), &GitHubManifestSource{}, missingRef, tc.allowFallback,
+			)
+			assert.Equal(t, tc.wantRef, ref)
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, "1", manifest.Version)
+		})
+	}
 }
 
 func TestGetSkillsRefEnvEscapeHatch(t *testing.T) {

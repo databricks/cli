@@ -306,6 +306,12 @@ func TestResolveEmbeddedAppKitVersion(t *testing.T) {
 	assert.True(t, semver.IsValid("v"+v), "embedded resolved version should be valid semver")
 }
 
+func TestResolveEmbeddedAgentSkillsVersion(t *testing.T) {
+	v, err := ResolveEmbeddedAgentSkillsVersion()
+	require.NoError(t, err)
+	assert.True(t, semver.IsValid("v"+v), "embedded skills fallback must be a concrete version")
+}
+
 // --- Embedded manifest validation (replaces AppKit TS validator) ---
 
 func TestEmbeddedManifest_IsWellFormed(t *testing.T) {
@@ -324,6 +330,15 @@ func TestEmbeddedManifest_IsWellFormed(t *testing.T) {
 	slices.SortFunc(keys, func(a, b string) int {
 		return semver.Compare("v"+a, "v"+b)
 	})
+
+	assert.Equal(t, AgentSkillsLatest, m[keys[len(keys)-1]].AgentSkills,
+		"the newest CLI range must track the latest skills release")
+	for k, entry := range m {
+		if entry.AgentSkills == AgentSkillsLatest {
+			assert.True(t, semver.IsValid("v"+entry.AgentSkillsFallback),
+				"entry %q must retain a concrete embedded skills fallback", k)
+		}
+	}
 
 	// Keys must be in ascending semver order.
 	for i := 1; i < len(keys); i++ {
@@ -410,6 +425,36 @@ func TestParseManifest_InvalidSkillsSemver(t *testing.T) {
 	_, err := parseManifest([]byte(data))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid skills version")
+}
+
+func TestParseManifest_SkillsFallback(t *testing.T) {
+	tests := []struct {
+		name     string
+		fallback string
+		wantErr  bool
+	}{
+		{name: "omitted for older manifests"},
+		{name: "concrete version", fallback: "0.2.27"},
+		{name: "latest is not a concrete fallback", fallback: AgentSkillsLatest, wantErr: true},
+		{name: "invalid version", fallback: "invalid", wantErr: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			data, err := json.Marshal(Manifest{
+				"1.20.0": {AppKit: "0.84.0", AgentSkills: AgentSkillsLatest, AgentSkillsFallback: tc.fallback},
+			})
+			require.NoError(t, err)
+
+			m, err := parseManifest(data)
+			if tc.wantErr {
+				require.ErrorContains(t, err, "invalid skills fallback version")
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, AgentSkillsLatest, m["1.20.0"].AgentSkills)
+			assert.Equal(t, tc.fallback, m["1.20.0"].AgentSkillsFallback)
+		})
+	}
 }
 
 func TestParseManifest_InvalidKey(t *testing.T) {

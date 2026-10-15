@@ -56,6 +56,9 @@ const (
 type Entry struct {
 	AppKit      string `json:"appkit"`
 	AgentSkills string `json:"skills"`
+
+	// Preserve a concrete embedded fallback without pinning runtime installs.
+	AgentSkillsFallback string `json:"skills_fallback,omitempty"`
 }
 
 // Manifest is the compatibility manifest: a map of CLI version strings to entries.
@@ -174,6 +177,9 @@ func ResolveEmbeddedAgentSkillsVersion() (string, error) {
 	entry, err := Resolve(m, build.GetInfo().Version)
 	if err != nil {
 		return "", fmt.Errorf("embedded manifest resolve: %w", err)
+	}
+	if entry.AgentSkills == AgentSkillsLatest {
+		return entry.AgentSkillsFallback, nil
 	}
 	return entry.AgentSkills, nil
 }
@@ -420,6 +426,9 @@ func parseManifest(data []byte) (Manifest, error) {
 		}
 		if entry.AgentSkills != AgentSkillsLatest && !semver.IsValid("v"+entry.AgentSkills) {
 			return nil, fmt.Errorf("manifest entry %q has invalid skills version %q", k, entry.AgentSkills)
+		}
+		if entry.AgentSkillsFallback != "" && !semver.IsValid("v"+entry.AgentSkillsFallback) {
+			return nil, fmt.Errorf("manifest entry %q has invalid skills fallback version %q", k, entry.AgentSkillsFallback)
 		}
 	}
 	return m, nil
