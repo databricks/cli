@@ -1,7 +1,6 @@
 
 >>> [CLI] bundle validate -o json
-Error: path src/main.py is defined relative to the [TEST_TMP_DIR] directory ([TEST_TMP_DIR]/.databricks/bundle/default/variable-overrides.json:6:37). Please update the path to be relative to the file where it is defined or use earlier version of CLI (0.261.0 or earlier).
-  in .databricks/bundle/default/variable-overrides.json:6:37
+Error: file .databricks/bundle/default/src/main.py not found
 
 
 Exit code: 1
@@ -14,7 +13,7 @@ Exit code: 1
       }
     ],
     "spark_python_task": {
-      "python_file": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/src/main.py"
+      "python_file": ".databricks/bundle/default/src/main.py"
     },
     "task_key": "main"
   }
