@@ -134,7 +134,7 @@ type Term[T any] struct {
 // it.
 func NewPrompt(t *testing.T, opts cmdio.PromptOptions) *Term[string] {
 	t.Helper()
-	return run(t, func(ctx context.Context) (string, error) {
+	return Run(t, func(ctx context.Context) (string, error) {
 		return cmdio.RunPrompt(ctx, opts)
 	})
 }
@@ -142,7 +142,7 @@ func NewPrompt(t *testing.T, opts cmdio.PromptOptions) *Term[string] {
 // NewSecret runs [cmdio.Secret] in a goroutine and returns a harness for it.
 func NewSecret(t *testing.T, label string) *Term[string] {
 	t.Helper()
-	return run(t, func(ctx context.Context) (string, error) {
+	return Run(t, func(ctx context.Context) (string, error) {
 		return cmdio.Secret(ctx, label)
 	})
 }
@@ -151,7 +151,7 @@ func NewSecret(t *testing.T, label string) *Term[string] {
 // it.
 func NewSelect(t *testing.T, opts cmdio.SelectOptions) *Term[int] {
 	t.Helper()
-	return run(t, func(ctx context.Context) (int, error) {
+	return Run(t, func(ctx context.Context) (int, error) {
 		return cmdio.RunSelect(ctx, opts)
 	})
 }
@@ -160,12 +160,14 @@ func NewSelect(t *testing.T, opts cmdio.SelectOptions) *Term[int] {
 // harness for it.
 func NewSelectOrdered(t *testing.T, items []cmdio.Tuple, label string) *Term[string] {
 	t.Helper()
-	return run(t, func(ctx context.Context) (string, error) {
+	return Run(t, func(ctx context.Context) (string, error) {
 		return cmdio.SelectOrdered(ctx, items, label)
 	})
 }
 
-func run[T any](t *testing.T, fn func(ctx context.Context) (T, error)) *Term[T] {
+// Run drives an interactive command through the same terminal harness as the prompts.
+func Run[T any](t *testing.T, fn func(ctx context.Context) (T, error)) *Term[T] {
+	t.Helper()
 	inR, inW, err := os.Pipe()
 	require.NoError(t, err, "open input pipe")
 	tt := &Term[T]{

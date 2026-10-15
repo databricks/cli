@@ -882,12 +882,6 @@ func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthAr
 		return "", nil
 	}
 
-	const maxWorkspaces = 50
-	if len(workspaces) > maxWorkspaces {
-		cmdio.LogString(ctx, fmt.Sprintf("Account has %d workspaces. Showing first %d. Use --workspace-id to specify directly.", len(workspaces), maxWorkspaces))
-		workspaces = workspaces[:maxWorkspaces]
-	}
-
 	if len(workspaces) == 1 {
 		wsID := strconv.FormatInt(workspaces[0].WorkspaceId, 10)
 		cmdio.LogString(ctx, fmt.Sprintf("Auto-selected workspace %q (%s)", workspaces[0].WorkspaceName, wsID))
@@ -907,11 +901,39 @@ func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthAr
 		Id:   "",
 	})
 
-	selected, err := cmdio.SelectOrdered(ctx, items, "Select a workspace")
+	idx, err := cmdio.RunSelect(ctx, cmdio.SelectOptions{
+		Label:             "Select a workspace",
+		Items:             items,
+		HideSelected:      true,
+		StartInSearchMode: true,
+		Searcher:          newWorkspaceSearcher(items),
+		Active:            `{{.Name | bold}}{{if .Id}} ({{.Id | faint}}){{end}}`,
+		Inactive:          `{{.Name}}{{if .Id}} ({{.Id | faint}}){{end}}`,
+	})
 	if err != nil {
 		return "", err
 	}
-	return selected, nil
+	return items[idx].Id, nil
+}
+
+// newWorkspaceSearcher gives exact workspace IDs precedence over substring matches.
+func newWorkspaceSearcher(items []cmdio.Tuple) func(string, int) bool {
+	ids := make(map[string]struct{}, len(items))
+	names := make([]string, len(items))
+	for idx, item := range items {
+		names[idx] = strings.ToLower(item.Name)
+		if item.Id != "" {
+			ids[item.Id] = struct{}{}
+		}
+	}
+	return func(input string, idx int) bool {
+		input = strings.TrimSpace(input)
+		if _, exact := ids[input]; exact {
+			return items[idx].Id == input
+		}
+		return strings.Contains(names[idx], strings.ToLower(input)) ||
+			(items[idx].Id != "" && strings.Contains(items[idx].Id, input))
+	}
 }
 
 // promptForWorkspaceID asks the user to manually enter a workspace ID.
