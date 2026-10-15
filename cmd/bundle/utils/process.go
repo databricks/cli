@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"time"
 
@@ -104,6 +105,23 @@ type ProcessOptions struct {
 func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, error) {
 	b, _, err := ProcessBundleRet(cmd, opts)
 	return b, err
+}
+
+// validateSelectedResources rejects a --select selector that names no resource in
+// config or state. Deletion targets live only in state, so it must run after the
+// state is open; ResolveSelectors collapses the config/state key overlap.
+func validateSelectedResources(ctx context.Context, b *bundle.Bundle) error {
+	var keys []string
+	for _, group := range b.Config.Resources.AllResources() {
+		for name := range group.Resources {
+			keys = append(keys, "resources."+group.Description.PluralName+"."+name)
+		}
+	}
+	for key := range b.DeploymentBundle.ExportState(ctx) {
+		keys = append(keys, key)
+	}
+	_, err := deployplan.ResolveSelectors(slices.Values(keys), b.Select)
+	return err
 }
 
 func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle, stateDesc *statemgmt.StateDesc, retErr error) {
@@ -457,6 +475,33 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			}
 
 			if err := direct.ValidatePlanAgainstState(&b.DeploymentBundle.StateDB, plan); err != nil {
+				logdiag.LogError(ctx, err)
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+
+			// Warn when --select is passed alongside a plan that was either not
+			// pre-filtered, or was pre-filtered with different selectors. In both cases
+			// the current --select has no effect: the plan's resource set is fixed.
+			if len(b.Select) > 0 {
+				currentSorted := slices.Clone(b.Select)
+				slices.Sort(currentSorted)
+				planSorted := slices.Clone(plan.Selectors)
+				slices.Sort(planSorted)
+				if !plan.WasFiltered || !slices.Equal(currentSorted, planSorted) {
+					log.Warnf(ctx, "--select is ignored when --plan is used; re-run bundle plan --select to produce a pre-filtered plan")
+				}
+			}
+		}
+
+		// Reject an unknown --select before PreDeployChecks and the predeploy script
+		// (and well before deploy uploads anything). Deletion targets live only in state,
+		// so this is the earliest point a selector can be checked. Note: for a valid
+		// deletion target whose live dependent makes it unsafe to delete, the predeploy
+		// script still runs before FilterToSelected (in RunPlan) catches the conflict;
+		// that case requires the plan to detect it. Skipped for a saved plan (plan != nil);
+		// for a fresh plan, FilterToSelected re-validates and filters it.
+		if (opts.Deploy || opts.PreDeployChecks) && plan == nil && len(b.Select) > 0 {
+			if err := validateSelectedResources(ctx, b); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
