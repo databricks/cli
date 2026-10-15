@@ -14,7 +14,7 @@ type Types struct {
 	unexportedFieldNoTag string //nolint
 
 	IntField  int
-	BoolField bool `json:bool_field` // nolint (bad syntax)
+	BoolField bool `json:bool_field` //nolint:govet // bad syntax
 	AnyField  any
 
 	ValidFieldPtr           *string `json:"valid_field_ptr"`

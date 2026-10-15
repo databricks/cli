@@ -34,6 +34,8 @@ linters:
     - asciicheck
     - reassign
     - modernize
+    - nolintlint
+    - wastedassign
   settings:
     modernize:
       # omitzero changes JSON wire format for nested structs (unlike omitempty),
@@ -133,7 +135,6 @@ linters:
         - name: error-return
         - name: errorf
         - name: unconditional-recursion
-        - name: use-waitgroup-go
     gocritic:
       disable-all: true
       enabled-checks:
@@ -171,8 +172,6 @@ linters:
     generated: lax
     presets:
       - comments
-      - common-false-positives
-      - legacy
       - std-error-handling
     rules:
       - path-except: bundle/direct/dresources|bundle/config/mutator/load_dbalert_files.go

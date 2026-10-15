@@ -45,7 +45,7 @@ func createTestClient(t *testing.T, serverURL string, requestHandoverTick func()
 	wsURL := "ws" + serverURL[4:]
 	createConn := func(ctx context.Context, dial DialRequest) (*websocket.Conn, error) {
 		url := fmt.Sprintf("%s?id=%s", wsURL, dial.ConnID)
-		conn, _, err := websocket.DefaultDialer.Dial(url, nil) // nolint:bodyclose
+		conn, _, err := websocket.DefaultDialer.Dial(url, nil) //nolint:bodyclose
 		return conn, err
 	}
 	return createTestClientWithDialer(t, createConn, requestHandoverTick, keepaliveInterval, false, errChan)
@@ -277,7 +277,7 @@ func TestHandoverDialFailureKeepsSessionAlive(t *testing.T) {
 			return nil, errors.New("simulated transient dial failure")
 		}
 		url := fmt.Sprintf("%s?id=%s", wsURL, dial.ConnID)
-		conn, _, err := websocket.DefaultDialer.Dial(url, nil) // nolint:bodyclose
+		conn, _, err := websocket.DefaultDialer.Dial(url, nil) //nolint:bodyclose
 		return conn, err
 	}
 
@@ -339,7 +339,7 @@ func TestHandoverDialCanceledKeepsHandingOver(t *testing.T) {
 			return nil, context.Canceled
 		}
 		url := fmt.Sprintf("%s?id=%s", wsURL, dial.ConnID)
-		conn, _, err := websocket.DefaultDialer.Dial(url, nil) // nolint:bodyclose
+		conn, _, err := websocket.DefaultDialer.Dial(url, nil) //nolint:bodyclose
 		return conn, err
 	}
 
@@ -429,7 +429,7 @@ func TestSessionEndDuringHandover(t *testing.T) {
 			handoverDialed := make(chan struct{}, 1)
 			createConn := func(ctx context.Context, dial DialRequest) (*websocket.Conn, error) {
 				isHandover := dials.Add(1) > 1
-				conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil) // nolint:bodyclose
+				conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil) //nolint:bodyclose
 				// Only a successful dial leaves the handover in progress.
 				if isHandover && err == nil {
 					select {
@@ -496,7 +496,7 @@ func TestClientExitsWhenServerCommandFails(t *testing.T) {
 
 	wsURL := "ws" + server.URL[4:]
 	createConn := func(ctx context.Context, dial DialRequest) (*websocket.Conn, error) {
-		conn, _, err := websocket.DefaultDialer.Dial(fmt.Sprintf("%s?id=%s", wsURL, dial.ConnID), nil) // nolint:bodyclose
+		conn, _, err := websocket.DefaultDialer.Dial(fmt.Sprintf("%s?id=%s", wsURL, dial.ConnID), nil) //nolint:bodyclose
 		return conn, err
 	}
 	// Source is never closed by the test; only the server-side close must drive the client to exit.
@@ -544,7 +544,7 @@ func TestClientTimesOutWhenServerSendsNothing(t *testing.T) {
 
 	wsURL := "ws" + server.URL[4:]
 	createConn := func(ctx context.Context, dial DialRequest) (*websocket.Conn, error) {
-		conn, _, err := websocket.DefaultDialer.Dial(fmt.Sprintf("%s?id=%s", wsURL, dial.ConnID), nil) // nolint:bodyclose
+		conn, _, err := websocket.DefaultDialer.Dial(fmt.Sprintf("%s?id=%s", wsURL, dial.ConnID), nil) //nolint:bodyclose
 		return conn, err
 	}
 	src, _ := io.Pipe()

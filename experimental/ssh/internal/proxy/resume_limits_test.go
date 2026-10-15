@@ -111,7 +111,7 @@ func TestServerReleasesASessionWhenTheClientStopsAcknowledging(t *testing.T) {
 	defer server.Close()
 
 	wsURL := "ws" + server.URL[4:]
-	conn, _, err := websocket.DefaultDialer.Dial(wsURL+"?id=no-acks&resume_version=2&delivered=0", nil) // nolint:bodyclose
+	conn, _, err := websocket.DefaultDialer.Dial(wsURL+"?id=no-acks&resume_version=2&delivered=0", nil) //nolint:bodyclose
 	require.NoError(t, err)
 	defer conn.Close()
 
@@ -185,14 +185,14 @@ func TestAbandonedSessionsHoldTheirClientSlots(t *testing.T) {
 	defer server.Close()
 
 	wsURL := "ws" + server.URL[4:]
-	conn, _, err := websocket.DefaultDialer.Dial(wsURL+"?id=first&resume_version=2&delivered=0", nil) // nolint:bodyclose
+	conn, _, err := websocket.DefaultDialer.Dial(wsURL+"?id=first&resume_version=2&delivered=0", nil) //nolint:bodyclose
 	require.NoError(t, err)
 	require.NoError(t, conn.WriteMessage(websocket.BinaryMessage, []byte("hello\n")))
 	_, _, err = conn.ReadMessage()
 	require.NoError(t, err)
 	dropWebsocket(t, conn)
 
-	_, resp, err := websocket.DefaultDialer.Dial(wsURL+"?id=second&resume_version=2&delivered=0", nil) // nolint:bodyclose
+	_, resp, err := websocket.DefaultDialer.Dial(wsURL+"?id=second&resume_version=2&delivered=0", nil)
 	if resp != nil {
 		defer resp.Body.Close()
 	}

@@ -106,7 +106,7 @@ func TestServerReleasesASessionThatIsNeverReattached(t *testing.T) {
 	defer server.Close()
 
 	wsURL := "ws" + server.URL[4:]
-	conn, _, err := websocket.DefaultDialer.Dial(wsURL+"?id=abandoned&resume_version=2&delivered=0", nil) // nolint:bodyclose
+	conn, _, err := websocket.DefaultDialer.Dial(wsURL+"?id=abandoned&resume_version=2&delivered=0", nil) //nolint:bodyclose
 	require.NoError(t, err)
 
 	require.NoError(t, conn.WriteMessage(websocket.BinaryMessage, []byte("hello\n")))
@@ -132,7 +132,7 @@ func TestReattachToAnUnknownSessionIsRefused(t *testing.T) {
 	defer server.Close()
 
 	wsURL := "ws" + server.URL[4:]
-	_, resp, err := websocket.DefaultDialer.Dial(wsURL+"?id=never-existed&resume_version=2&delivered=0&reattach=1", nil) // nolint:bodyclose
+	_, resp, err := websocket.DefaultDialer.Dial(wsURL+"?id=never-existed&resume_version=2&delivered=0&reattach=1", nil)
 	require.Error(t, err)
 	require.NotNil(t, resp)
 	defer resp.Body.Close()
@@ -150,7 +150,7 @@ func TestReattachReplaysFromTheOffsetTheClientReports(t *testing.T) {
 	wsURL := "ws" + server.URL[4:]
 	const sessionID = "replay-session"
 
-	conn, _, err := websocket.DefaultDialer.Dial(wsURL+"?id="+sessionID+"&resume_version=2&delivered=0", nil) // nolint:bodyclose
+	conn, _, err := websocket.DefaultDialer.Dial(wsURL+"?id="+sessionID+"&resume_version=2&delivered=0", nil) //nolint:bodyclose
 	require.NoError(t, err)
 
 	const payload = "hello\n"
@@ -168,7 +168,7 @@ func TestReattachReplaysFromTheOffsetTheClientReports(t *testing.T) {
 	require.NoError(t, tcpConn.Close())
 
 	// Reattach claiming to have delivered nothing, so the replay covers the whole echo.
-	resumed, _, err := websocket.DefaultDialer.Dial(wsURL+"?id="+sessionID+"&resume_version=2&delivered=0&reattach=1", nil) // nolint:bodyclose
+	resumed, _, err := websocket.DefaultDialer.Dial(wsURL+"?id="+sessionID+"&resume_version=2&delivered=0&reattach=1", nil) //nolint:bodyclose
 	require.NoError(t, err)
 	defer resumed.Close()
 
@@ -192,7 +192,7 @@ func TestReattachWithoutADeliveredOffsetIsRejected(t *testing.T) {
 	defer server.Close()
 
 	wsURL := "ws" + server.URL[4:]
-	_, resp, err := websocket.DefaultDialer.Dial(wsURL+"?id=some-session&reattach=1", nil) // nolint:bodyclose
+	_, resp, err := websocket.DefaultDialer.Dial(wsURL+"?id=some-session&reattach=1", nil)
 	require.Error(t, err)
 	require.NotNil(t, resp)
 	defer resp.Body.Close()

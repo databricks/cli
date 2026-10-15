@@ -91,7 +91,7 @@ Please run this command before deploying to ensure configuration quality.`,
 		// In strict mode, treat warnings as errors.
 		numWarnings := logdiag.NumWarnings(ctx)
 		if err == nil && strict && numWarnings > 0 {
-			prefix := ""
+			var prefix string
 			if numWarnings == 1 {
 				prefix = "1 warning was found"
 			} else {

@@ -91,7 +91,7 @@ func createResumableTestClient(t *testing.T, serverURL string, errChan chan erro
 				url += "&reattach=1"
 			}
 		}
-		conn, _, err := websocket.DefaultDialer.Dial(url, nil) // nolint:bodyclose
+		conn, _, err := websocket.DefaultDialer.Dial(url, nil) //nolint:bodyclose
 		return conn, err
 	}
 	return createTestClientWithDialer(t, createConn, nil, time.Hour, true, errChan)

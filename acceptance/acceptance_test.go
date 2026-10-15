@@ -275,12 +275,12 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 		"VSCODE_AGENT",
 		"WINDSURF_AGENT",
 	} {
-		os.Unsetenv(v) //nolint:usetesting // t.Setenv cannot unset
+		os.Unsetenv(v)
 	}
 
 	// environments setup-local follows uv's UV_PROJECT_ENVIRONMENT, so a value
 	// from the host shell would move the venv the localenv tests expect.
-	os.Unsetenv("UV_PROJECT_ENVIRONMENT") //nolint:usetesting // t.Setenv cannot unset
+	os.Unsetenv("UV_PROJECT_ENVIRONMENT")
 
 	if !requirePrerequisites(t) {
 		// Don't run the suite against a stale toolchain; the failed subtest
@@ -345,7 +345,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	// build below inherits os.Environ(), so setting it here is enough.
 	t.Setenv("GOFIPS140", readGOFIPS140(t, cwd))
 
-	execPath := ""
+	var execPath string
 	cliVersion := ""
 
 	if inprocessMode {

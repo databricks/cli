@@ -123,7 +123,7 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 	cfg, isAccount, err := fn(cmd, args)
 	ctx := cmd.Context()
 	if err != nil {
-		return errorAuthStatus(ctx, cmd, cfg, showSensitive, err), nil //nolint:nilerr // error is returned in the authStatus struct
+		return errorAuthStatus(ctx, cmd, cfg, showSensitive, err), nil
 	}
 
 	if isAccount {

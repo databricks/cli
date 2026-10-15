@@ -79,7 +79,7 @@ func TestServerEOFDuringHandoverIsACleanExit(t *testing.T) {
 	go func() {
 		clientDone <- RunClientProxy(ctx, clientInput, clientOutput, func() <-chan time.Time { return ticks }, time.Hour, false,
 			func(dialCtx context.Context, _ DialRequest) (*websocket.Conn, error) {
-				conn, _, err := websocket.DefaultDialer.DialContext(dialCtx, "ws"+server.URL[4:], nil) // nolint:bodyclose
+				conn, _, err := websocket.DefaultDialer.DialContext(dialCtx, "ws"+server.URL[4:], nil) //nolint:bodyclose
 				return conn, err
 			})
 	}()
@@ -171,7 +171,7 @@ func TestClientEOFDuringHandoverReleasesServer(t *testing.T) {
 	go func() {
 		clientDone <- RunClientProxy(ctx, clientSource, clientOutput, func() <-chan time.Time { return ticks }, time.Hour, true,
 			func(dialCtx context.Context, _ DialRequest) (*websocket.Conn, error) {
-				conn, _, err := websocket.DefaultDialer.DialContext(dialCtx, "ws"+server.URL[4:], nil) // nolint:bodyclose
+				conn, _, err := websocket.DefaultDialer.DialContext(dialCtx, "ws"+server.URL[4:], nil) //nolint:bodyclose
 				// Hold the client's receiving loop right after it acknowledges the server's
 				// handover close on the first connection, until the client's teardown has started.
 				if err == nil && dials.Add(1) == 1 {
