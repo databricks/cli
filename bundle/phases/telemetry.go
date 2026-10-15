@@ -236,7 +236,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	b.Metrics.SetBoolValue(metrics.DeploymentHistoryEnabled, b.DeploymentBundle.StateDB.IsDeploymentMetadataService())
 
 	resourcesCount := int64(0)
-	err := structvar.ForEach(b.Config.View(), structpath.MustParsePattern("resources.*.*"), func(p *structpath.PathNode, v structvar.View) error {
+	err := structvar.ForEach(b.Config.View(), structpath.NewPattern(nil, "resources", structpath.AnyKey, structpath.AnyKey), func(p *structpath.PathNode, v structvar.View) error {
 		resourcesCount++
 		return nil
 	})

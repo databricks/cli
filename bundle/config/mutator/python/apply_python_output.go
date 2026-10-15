@@ -34,7 +34,7 @@ func applyPythonOutput(root, output structvar.View) (*structvar.OverridePlan, ap
 }
 
 func createOverrideVisitor(leftRoot, rightRoot structvar.View) (applyPythonOutputResult, structvar.OverrideVisitor) {
-	resourcesPath := structpath.MustParsePath("resources")
+	resourcesPath := structpath.NewPath(nil, "resources")
 	deleted := resourcemutator.NewResourceKeySet()
 	updated := resourcemutator.NewResourceKeySet()
 	added := resourcemutator.NewResourceKeySet()
@@ -59,7 +59,7 @@ func createOverrideVisitor(leftRoot, rightRoot structvar.View) (applyPythonOutpu
 				// rightRoot: {"bundle": ...}
 
 				return deleted.AddPattern(
-					structpath.MustParsePattern("resources.*.*"),
+					structpath.NewPattern(nil, "resources", structpath.AnyKey, structpath.AnyKey),
 					leftRoot,
 				)
 			} else if np.Len() == 2 {
@@ -70,7 +70,7 @@ func createOverrideVisitor(leftRoot, rightRoot structvar.View) (applyPythonOutpu
 				// rightRoot: {"resources": { "jobs": ...}}},
 
 				return deleted.AddPattern(
-					structpath.NewPatternDotStar(structpath.NewPatternStringKey(structpath.MustParsePattern("resources"), np.KeyAt(1))),
+					structpath.NewPattern(nil, "resources", np.KeyAt(1), structpath.AnyKey),
 					leftRoot,
 				)
 			} else if np.Len() == 3 {
@@ -102,7 +102,7 @@ func createOverrideVisitor(leftRoot, rightRoot structvar.View) (applyPythonOutpu
 				// rightRoot: {"bundle": ..., "resources": {...} }
 
 				return added.AddPattern(
-					structpath.MustParsePattern("resources.*.*"),
+					structpath.NewPattern(nil, "resources", structpath.AnyKey, structpath.AnyKey),
 					rightRoot,
 				)
 			} else if np.Len() == 2 {
@@ -113,7 +113,7 @@ func createOverrideVisitor(leftRoot, rightRoot structvar.View) (applyPythonOutpu
 				// rightRoot: {"resources": { "jobs": {...} }}
 
 				return added.AddPattern(
-					structpath.NewPatternDotStar(structpath.NewPatternStringKey(structpath.MustParsePattern("resources"), np.KeyAt(1))),
+					structpath.NewPattern(nil, "resources", np.KeyAt(1), structpath.AnyKey),
 					rightRoot,
 				)
 			} else if np.Len() == 3 {
@@ -149,7 +149,7 @@ func createOverrideVisitor(leftRoot, rightRoot structvar.View) (applyPythonOutpu
 				// rightRoot: {"bundle": ..., "resources": {...} }
 
 				return added.AddPattern(
-					structpath.MustParsePattern("resources.*.*"),
+					structpath.NewPattern(nil, "resources", structpath.AnyKey, structpath.AnyKey),
 					rightRoot,
 				)
 			} else if np.Len() == 2 {
@@ -160,7 +160,7 @@ func createOverrideVisitor(leftRoot, rightRoot structvar.View) (applyPythonOutpu
 				// rightRoot: {"resources": { "jobs": {...} }}
 
 				return added.AddPattern(
-					structpath.NewPatternDotStar(structpath.NewPatternStringKey(structpath.MustParsePattern("resources"), np.KeyAt(1))),
+					structpath.NewPattern(nil, "resources", np.KeyAt(1), structpath.AnyKey),
 					rightRoot,
 				)
 			} else if np.Len() == 3 {
