@@ -19,7 +19,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 )
 
@@ -29,7 +29,7 @@ func main() {
 		os.Exit(2)
 	}
 	pkgs := os.Args[2:]
-	sort.Strings(pkgs)
+	slices.Sort(pkgs)
 
 	var imports, entries bytes.Buffer
 	for _, pkg := range pkgs {
@@ -90,6 +90,6 @@ func wrappers(pkg string) ([]string, error) {
 			names = append(names, id.Name)
 		}
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 	return names, nil
 }

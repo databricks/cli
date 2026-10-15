@@ -265,7 +265,6 @@ func fillStruct(v reflect.Value, depth int, shadowed map[string]bool) {
 		names[name] = true
 	}
 	for sf := range t.Fields() {
-		sf := sf
 		if sf.IsExported() && !structaccess.IsFlattenedEmbed(sf) {
 			names[jsonFieldName(sf)] = true
 		}

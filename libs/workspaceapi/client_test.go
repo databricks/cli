@@ -18,13 +18,13 @@ func TestUploadSendsMultipart(t *testing.T) {
 		assert.Equal(t, "/api/2.0/workspace/import", r.URL.Path)
 		assert.Equal(t, "123", r.Header.Get("X-Databricks-Workspace-Id"))
 		assert.Equal(t, "Bearer token", r.Header.Get("Authorization"))
-		require.NoError(t, r.ParseMultipartForm(1<<20))
+		assert.NoError(t, r.ParseMultipartForm(1<<20))
 		fields = map[string]string{}
 		for k, v := range r.MultipartForm.Value {
 			fields[k] = v[0]
 		}
 		f, _, err := r.FormFile("content")
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		data, _ := io.ReadAll(f)
 		fields["content"] = string(data)
 	}))

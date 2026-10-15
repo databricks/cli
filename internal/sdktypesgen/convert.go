@@ -5,7 +5,6 @@ import (
 	"go/ast"
 	"go/types"
 	"slices"
-	"sort"
 	"strings"
 )
 
@@ -293,7 +292,7 @@ func generateConverters(m *model, mirrorFields map[string][][2]string, jsonNames
 	for n := range mirrorFields {
 		names = append(names, n)
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 	for _, n := range names {
 		g.generate(n)
 	}

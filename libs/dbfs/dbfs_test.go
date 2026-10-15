@@ -2,7 +2,6 @@ package dbfs
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -67,7 +66,7 @@ func TestWriteReadRoundTrip(t *testing.T) {
 	fake := &fakeDBFS{files: map[string][]byte{}, handles: map[int64]string{}}
 	srv := httptest.NewServer(fake)
 	t.Cleanup(srv.Close)
-	ctx := context.Background()
+	ctx := t.Context()
 	c, err := sdkclients.New(ctx, &config.Config{Host: srv.URL, Token: "t", Loaders: []config.Loader{config.ConfigAttributes}})
 	require.NoError(t, err)
 

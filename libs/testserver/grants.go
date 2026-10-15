@@ -118,7 +118,7 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 			privileges = append(privileges, priv)
 		}
 		slices.SortFunc(privileges, func(a, b string) int {
-			return strings.Compare(string(a), string(b))
+			return strings.Compare(a, b)
 		})
 
 		assignments = append(assignments, grants.PrivilegeAssignment{

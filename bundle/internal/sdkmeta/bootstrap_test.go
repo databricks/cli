@@ -5,7 +5,6 @@ import (
 	"os"
 	"reflect"
 	"slices"
-	"sort"
 	"strings"
 	"testing"
 
@@ -31,9 +30,11 @@ func TestBootstrap(t *testing.T) {
 			if !ok {
 				continue
 			}
-			p := k
+			var p string
 			if prefix != "" {
 				p = prefix + "/" + k
+			} else {
+				p = k
 			}
 			_, isSchema := vm["type"]
 			_, hasOneOf := vm["oneOf"]
@@ -53,7 +54,7 @@ func TestBootstrap(t *testing.T) {
 		return s
 	}
 	// resolve follows a $ref through slice/ and map/ wrappers to a type def name.
-	var resolve func(ref string) string = func(ref string) string {
+	resolve := func(ref string) string {
 		name := strings.TrimPrefix(ref, "#/$defs/")
 		for strings.HasPrefix(name, "slice/") || strings.HasPrefix(name, "map/") {
 			name = name[strings.Index(name, "/")+1:]
@@ -151,7 +152,7 @@ func TestBootstrap(t *testing.T) {
 	// API requires it, and bundle validation used to check it.
 	required["catalog.CreateVolumeRequestContent"] = append(required["catalog.CreateVolumeRequestContent"], "volume_type")
 	for k := range required {
-		sort.Strings(required[k])
+		slices.Sort(required[k])
 		required[k] = slices.Compact(required[k])
 	}
 	out, err := json.MarshalIndent(legacyFile{Names: names, Required: required, FieldRefs: fieldRefs}, "", "  ")

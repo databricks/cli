@@ -6,7 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"strings"
 	"time"
 
@@ -78,8 +78,7 @@ var (
 func backoff(attempt int) time.Duration {
 	wait := min(time.Duration(attempt)*time.Second, maxWait)
 	// add some random jitter
-	rand.Seed(time.Now().UnixNano())
-	jitter := rand.Intn(int(maxJitter)-int(minJitter)+1) + int(minJitter)
+	jitter := rand.IntN(int(maxJitter)-int(minJitter)+1) + int(minJitter)
 	wait += time.Duration(jitter)
 	return wait
 }

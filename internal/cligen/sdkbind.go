@@ -11,6 +11,7 @@ package main
 // generated mirrors, matching methods by their normalized HTTP path.
 
 import (
+	"cmp"
 	_ "embed"
 	"encoding/json"
 	"fmt"
@@ -23,7 +24,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -187,11 +188,11 @@ func loadSdkIndex(repoRoot string) (*sdkIndex, error) {
 	}
 	for k := range idx.byPath {
 		ms := idx.byPath[k]
-		sort.Slice(ms, func(i, j int) bool {
-			if ms[i].Pkg.Rel != ms[j].Pkg.Rel {
-				return ms[i].Pkg.Rel < ms[j].Pkg.Rel
+		slices.SortFunc(ms, func(a, b *SdkMethod) int {
+			if a.Pkg.Rel != b.Pkg.Rel {
+				return cmp.Compare(a.Pkg.Rel, b.Pkg.Rel)
 			}
-			return ms[i].Name < ms[j].Name
+			return cmp.Compare(a.Name, b.Name)
 		})
 	}
 	return idx, nil
@@ -289,6 +290,7 @@ func (p *SdkPackage) loadMethods(dir string) error {
 			waiters[strings.TrimPrefix(recv, "*")+"."+fd.Name.Name] = fd
 		}
 	}
+	var impl *ast.FuncDecl
 	for name, fd := range all {
 		if !ast.IsExported(name) {
 			continue
@@ -330,7 +332,7 @@ func (p *SdkPackage) loadMethods(dir string) error {
 			m.Kind = "resp"
 			m.Result = strings.TrimPrefix(first, "*")
 		}
-		impl := fd
+		impl = fd
 		ast.Inspect(fd.Body, func(n ast.Node) bool {
 			call, ok := n.(*ast.CallExpr)
 			if !ok {
@@ -628,6 +630,7 @@ func (idx *sdkIndex) match(svc *ServiceJSON, m *MethodJSON) (*SdkMethod, map[int
 // debugBindings prints the binding of every method to stderr when
 // CLIGEN_DEBUG is set.
 func debugf(format string, args ...any) {
+	//nolint:forbidigo
 	if os.Getenv("CLIGEN_DEBUG") != "" {
 		fmt.Fprintf(os.Stderr, format, args...)
 	}

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -251,7 +251,7 @@ func (b *MethodBind) NoWaitCall() string {
 		for name := range b.sdk.queryFields {
 			names = append(names, name)
 		}
-		sort.Strings(names)
+		slices.Sort(names)
 		var parts []string
 		for _, name := range names {
 			parts = append(parts, fmt.Sprintf("%q: %s.%s", name, b.reqVar, b.sdk.queryFields[name]))
@@ -319,7 +319,7 @@ func (b *MethodBind) pollMethod() *SdkMethod {
 	for name := range b.pkg.methods {
 		names = append(names, name)
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 	for _, name := range names {
 		m := b.pkg.methods[name]
 		if m.Request == b.sdk.pollRequest && m.Kind == "resp" && m.Result == b.sdk.Result && b.pkg.structs[m.Result] != nil {
@@ -860,7 +860,7 @@ func (b *MethodBind) pathConstsOn(v string) string {
 	for k := range b.pathConsts {
 		keys = append(keys, k)
 	}
-	sort.Ints(keys)
+	slices.Sort(keys)
 	var sb strings.Builder
 	for _, k := range keys {
 		if k >= len(b.sdk.pathFields) || b.sdk.pathFields[k] == "" {
@@ -984,7 +984,7 @@ func (s *ServiceJSON) BindImports() []string {
 			}
 		}
 	}
-	sort.Strings(out)
+	slices.Sort(out)
 	return out
 }
 

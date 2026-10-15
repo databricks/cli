@@ -40,6 +40,8 @@ func (*ResourceModelServingEndpoint) PrepareState(input *resources.ModelServingE
 // AutoCaptureConfig is the legacy inference-table API; the recommended replacement
 // is AI Gateway inference tables. Bundles still expose it, so the conversion has to
 // keep working until users have migrated.
+//
+//nolint:staticcheck
 func autoCaptureConfigOutputToInput(output *modelserving.AutoCaptureConfig) *modelserving.AutoCaptureConfig {
 	if output == nil {
 		return nil

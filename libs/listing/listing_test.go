@@ -51,13 +51,13 @@ func TestIterator(t *testing.T) {
 		}
 		iterator := makeIterator(rrs)
 
-		for i := 1; iterator.HasNext(context.Background()); i++ {
-			item, err := iterator.Next(context.Background())
+		for i := 1; iterator.HasNext(t.Context()); i++ {
+			item, err := iterator.Next(t.Context())
 			assert.NoError(t, err)
 			assert.Equal(t, i, item)
 		}
 
-		_, err := iterator.Next(context.Background())
+		_, err := iterator.Next(t.Context())
 		assert.ErrorIs(t, err, listing.ErrNoMoreItems)
 	})
 
@@ -71,7 +71,7 @@ func TestIterator(t *testing.T) {
 			nil,
 		)
 
-		_, err := iterator.Next(context.Background())
+		_, err := iterator.Next(t.Context())
 		assert.ErrorIs(t, err, expectedErr)
 	})
 
@@ -85,13 +85,13 @@ func TestIterator(t *testing.T) {
 			nil,
 		)
 
-		b := iterator.HasNext(context.Background())
+		b := iterator.HasNext(t.Context())
 		assert.True(t, b)
 		// Error from HasNext is stored and returned on call to Next
-		_, err := iterator.Next(context.Background())
+		_, err := iterator.Next(t.Context())
 		assert.ErrorIs(t, err, expectedErr)
 		// Error is cached
-		_, err2 := iterator.Next(context.Background())
+		_, err2 := iterator.Next(t.Context())
 		assert.Equal(t, err, err2)
 	})
 
@@ -104,12 +104,12 @@ func TestIterator(t *testing.T) {
 		iterator := makeIterator(rrs)
 
 		for i := 1; i <= 4; i++ {
-			item, err := iterator.Next(context.Background())
+			item, err := iterator.Next(t.Context())
 			assert.NoError(t, err)
 			assert.Equal(t, i, item)
 		}
 
-		_, err := iterator.Next(context.Background())
+		_, err := iterator.Next(t.Context())
 		assert.ErrorIs(t, err, listing.ErrNoMoreItems)
 	})
 
@@ -122,12 +122,12 @@ func TestIterator(t *testing.T) {
 		iterator := makeIterator(rrs)
 
 		for i := 1; i <= 4; i++ {
-			item, err := iterator.Next(context.Background())
+			item, err := iterator.Next(t.Context())
 			assert.NoError(t, err)
 			assert.Equal(t, i, item)
 		}
 
-		_, err := iterator.Next(context.Background())
+		_, err := iterator.Next(t.Context())
 		assert.ErrorIs(t, err, listing.ErrNoMoreItems)
 	})
 
@@ -139,7 +139,7 @@ func TestIterator(t *testing.T) {
 		}
 		iterator := makeIterator(rrs)
 
-		items, err := listing.ToSlice(context.Background(), iterator)
+		items, err := listing.ToSlice(t.Context(), iterator)
 		assert.NoError(t, err)
 		assert.Equal(t, []int{1, 2, 3, 4, 5, 6}, items)
 	})
@@ -152,7 +152,7 @@ func TestIterator(t *testing.T) {
 		}
 		iterator := makeIterator(rrs)
 
-		items, err := listing.ToSliceN(context.Background(), iterator, 3)
+		items, err := listing.ToSliceN(t.Context(), iterator, 3)
 		assert.NoError(t, err)
 		assert.Equal(t, []int{1, 2, 3}, items)
 	})
@@ -170,12 +170,12 @@ func TestDedupeIterator(t *testing.T) {
 			iterator, func(a int) int { return a })
 
 		for i := 1; i <= 6; i++ {
-			item, err := dedupeIterator.Next(context.Background())
+			item, err := dedupeIterator.Next(t.Context())
 			assert.NoError(t, err)
 			assert.Equal(t, i, item)
 		}
 
-		_, err := dedupeIterator.Next(context.Background())
+		_, err := dedupeIterator.Next(t.Context())
 		assert.ErrorIs(t, err, listing.ErrNoMoreItems)
 	})
 
@@ -190,9 +190,9 @@ func TestDedupeIterator(t *testing.T) {
 			iterator, func(a int) int { return a })
 
 		var values []int
-		for dedupeIterator.HasNext(context.Background()) {
-			assert.True(t, dedupeIterator.HasNext(context.Background()))
-			v, err := dedupeIterator.Next(context.Background())
+		for dedupeIterator.HasNext(t.Context()) {
+			assert.True(t, dedupeIterator.HasNext(t.Context()))
+			v, err := dedupeIterator.Next(t.Context())
 			values = append(values, v)
 			assert.NoError(t, err)
 		}
@@ -210,8 +210,8 @@ func TestDedupeIterator(t *testing.T) {
 		)
 		dedupeIterator := listing.NewDedupeIterator[int, int](
 			iterator, func(a int) int { return a })
-		assert.True(t, dedupeIterator.HasNext(context.Background()))
-		_, err := dedupeIterator.Next(context.Background())
+		assert.True(t, dedupeIterator.HasNext(t.Context()))
+		_, err := dedupeIterator.Next(t.Context())
 		assert.ErrorIs(t, err, expectedErr)
 	})
 }
@@ -221,21 +221,21 @@ func TestSliceIterator(t *testing.T) {
 		iterator := listing.SliceIterator[int]([]int{1, 2, 3, 4, 5})
 
 		for i := 1; i <= 5; i++ {
-			assert.True(t, iterator.HasNext(context.Background()))
-			item, err := iterator.Next(context.Background())
+			assert.True(t, iterator.HasNext(t.Context()))
+			item, err := iterator.Next(t.Context())
 			assert.NoError(t, err)
 			assert.Equal(t, i, item)
 		}
 
-		assert.False(t, iterator.HasNext(context.Background()))
-		_, err := iterator.Next(context.Background())
+		assert.False(t, iterator.HasNext(t.Context()))
+		_, err := iterator.Next(t.Context())
 		assert.ErrorIs(t, err, listing.ErrNoMoreItems)
 	})
 
 	t.Run("ToSlice returns all items", func(t *testing.T) {
 		iterator := listing.SliceIterator[int]([]int{1, 2, 3, 4, 5})
 
-		items, err := listing.ToSlice[int](context.Background(), &iterator)
+		items, err := listing.ToSlice[int](t.Context(), &iterator)
 		assert.NoError(t, err)
 		assert.Equal(t, []int{1, 2, 3, 4, 5}, items)
 	})
@@ -243,7 +243,7 @@ func TestSliceIterator(t *testing.T) {
 	t.Run("ToSliceN returns the first N items", func(t *testing.T) {
 		iterator := listing.SliceIterator[int]([]int{1, 2, 3, 4, 5})
 
-		items, err := listing.ToSliceN[int](context.Background(), &iterator, 3)
+		items, err := listing.ToSliceN[int](t.Context(), &iterator, 3)
 		assert.NoError(t, err)
 		assert.Equal(t, []int{1, 2, 3}, items)
 	})
@@ -259,7 +259,7 @@ func TestLimitIterator(t *testing.T) {
 		iterator := makeIterator(rrs)
 		limited := listing.NewLimitIterator[int](iterator, 3)
 
-		items, err := listing.ToSlice(context.Background(), limited)
+		items, err := listing.ToSlice(t.Context(), limited)
 		assert.NoError(t, err)
 		assert.Equal(t, []int{1, 2, 3}, items)
 	})
@@ -272,7 +272,7 @@ func TestLimitIterator(t *testing.T) {
 		iterator := makeIterator(rrs)
 		limited := listing.NewLimitIterator[int](iterator, 100)
 
-		items, err := listing.ToSlice(context.Background(), limited)
+		items, err := listing.ToSlice(t.Context(), limited)
 		assert.NoError(t, err)
 		assert.Equal(t, []int{1, 2, 3, 4}, items)
 	})
@@ -285,7 +285,7 @@ func TestLimitIterator(t *testing.T) {
 		iterator := makeIterator(rrs)
 		limited := listing.NewLimitIterator[int](iterator, 1)
 
-		items, err := listing.ToSlice(context.Background(), limited)
+		items, err := listing.ToSlice(t.Context(), limited)
 		assert.NoError(t, err)
 		assert.Equal(t, []int{1}, items)
 	})
@@ -298,7 +298,7 @@ func TestLimitIterator(t *testing.T) {
 		iterator := makeIterator(rrs)
 		limited := listing.NewLimitIterator[int](iterator, 0)
 
-		items, err := listing.ToSlice(context.Background(), limited)
+		items, err := listing.ToSlice(t.Context(), limited)
 		assert.NoError(t, err)
 		assert.Equal(t, []int{1, 2, 3, 4}, items)
 	})
@@ -311,7 +311,7 @@ func TestLimitIterator(t *testing.T) {
 		iterator := makeIterator(rrs)
 		limited := listing.NewLimitIterator[int](iterator, -5)
 
-		items, err := listing.ToSlice(context.Background(), limited)
+		items, err := listing.ToSlice(t.Context(), limited)
 		assert.NoError(t, err)
 		assert.Equal(t, []int{1, 2, 3, 4}, items)
 	})
@@ -320,15 +320,15 @@ func TestLimitIterator(t *testing.T) {
 		iterator := listing.SliceIterator[int]([]int{1, 2, 3, 4, 5})
 		limited := listing.NewLimitIterator[int](&iterator, 2)
 
-		item1, err := limited.Next(context.Background())
+		item1, err := limited.Next(t.Context())
 		assert.NoError(t, err)
 		assert.Equal(t, 1, item1)
 
-		item2, err := limited.Next(context.Background())
+		item2, err := limited.Next(t.Context())
 		assert.NoError(t, err)
 		assert.Equal(t, 2, item2)
 
-		_, err = limited.Next(context.Background())
+		_, err = limited.Next(t.Context())
 		assert.ErrorIs(t, err, listing.ErrNoMoreItems)
 	})
 
@@ -343,8 +343,8 @@ func TestLimitIterator(t *testing.T) {
 		)
 		limited := listing.NewLimitIterator[int](iterator, 5)
 
-		assert.True(t, limited.HasNext(context.Background()))
-		_, err := limited.Next(context.Background())
+		assert.True(t, limited.HasNext(t.Context()))
+		_, err := limited.Next(t.Context())
 		assert.ErrorIs(t, err, expectedErr)
 	})
 
@@ -358,8 +358,8 @@ func TestLimitIterator(t *testing.T) {
 		limited := listing.NewLimitIterator[int](iterator, 4)
 
 		var values []int
-		for limited.HasNext(context.Background()) {
-			v, err := limited.Next(context.Background())
+		for limited.HasNext(t.Context()) {
+			v, err := limited.Next(t.Context())
 			assert.NoError(t, err)
 			values = append(values, v)
 		}
@@ -370,10 +370,10 @@ func TestLimitIterator(t *testing.T) {
 		iterator := listing.SliceIterator[int]([]int{1, 2, 3})
 		limited := listing.NewLimitIterator[int](&iterator, 2)
 
-		assert.True(t, limited.HasNext(context.Background()))
-		assert.True(t, limited.HasNext(context.Background()))
+		assert.True(t, limited.HasNext(t.Context()))
+		assert.True(t, limited.HasNext(t.Context()))
 
-		v, err := limited.Next(context.Background())
+		v, err := limited.Next(t.Context())
 		assert.NoError(t, err)
 		assert.Equal(t, 1, v)
 	})

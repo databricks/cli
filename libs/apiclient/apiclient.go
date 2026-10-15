@@ -154,8 +154,7 @@ func decodeResponse(body []byte, response any) error {
 		return nil
 	}
 	if err := json.Unmarshal(body, response); err != nil {
-		var syntaxErr *json.SyntaxError
-		if errors.As(err, &syntaxErr) && strings.HasPrefix(string(body), "<") {
+		if syntaxErr, ok := errors.AsType[*json.SyntaxError](err); ok && syntaxErr != nil && strings.HasPrefix(string(body), "<") {
 			return ErrHTMLContent
 		}
 		return fmt.Errorf("failed to unmarshal response body: %w", err)
@@ -232,9 +231,11 @@ func derefValue(v any) (any, bool) {
 
 func flatten(query url.Values, prefix string, m map[string]any) {
 	for k, v := range m {
-		key := k
+		var key string
 		if prefix != "" {
 			key = prefix + "." + k
+		} else {
+			key = k
 		}
 		switch x := v.(type) {
 		case nil:

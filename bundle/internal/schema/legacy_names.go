@@ -232,9 +232,11 @@ func jsonschemaTypePath(t reflect.Type) string {
 
 func flattenDefinitions(prefix string, m map[string]any, out map[string]jsonschema.Schema) {
 	for k, v := range m {
-		p := k
+		var p string
 		if prefix != "" {
 			p = prefix + "/" + k
+		} else {
+			p = k
 		}
 		switch x := v.(type) {
 		case jsonschema.Schema:

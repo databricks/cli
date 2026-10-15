@@ -15,7 +15,6 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/sdkclients"
-	"github.com/databricks/databricks-sdk-go/config"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/credentials"
 	sdkauth "github.com/databricks/databricks-sdk-go/config/experimental/auth"
@@ -60,7 +59,7 @@ func validationTestWorkspaceClient(t *testing.T, host string) *sdkclients.Client
 
 func validationTestWorkspaceClientWithTransport(t *testing.T, transport validationRoundTripFunc) *sdkclients.Clients {
 	t.Helper()
-	w, err := sdkclients.New(t.Context(), &config.Config{
+	w, err := sdkclients.New(t.Context(), &sdkconfig.Config{
 		Host:          "https://example.test",
 		Token:         "token",
 		HTTPTransport: transport,
@@ -225,7 +224,7 @@ func TestPreflightValidationOAuthRefreshUsesDeadline(t *testing.T) {
 			Expiry:      time.Now().Add(-time.Hour),
 		}),
 	)
-	w, err := sdkclients.New(t.Context(), &config.Config{
+	w, err := sdkclients.New(t.Context(), &sdkconfig.Config{
 		Host:        "https://example.test",
 		Credentials: validationOAuthCredentials{tokenSource: tokenSource},
 		HTTPTransport: validationRoundTripFunc(func(*http.Request) (*http.Response, error) {
@@ -274,7 +273,7 @@ func TestPreflightValidationM2MOAuthRejectionBlocks(t *testing.T) {
 			}))
 			t.Cleanup(srv.Close)
 
-			w, err := sdkclients.New(t.Context(), &config.Config{
+			w, err := sdkclients.New(t.Context(), &sdkconfig.Config{
 				Host:         srv.URL,
 				ClientID:     "client-id",
 				ClientSecret: "client-secret",

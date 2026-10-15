@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -31,10 +32,10 @@ var errNodeOutOfRange = errors.New("invalid --node")
 func resolveNodeCount(run *jobs.GetRunResponse) (int, error) {
 	accelType, count := jobCompute(run)
 	if accelType == "" {
-		return 0, fmt.Errorf("run %d has no AI runtime compute config", run.RunId)
+		return 0, fmt.Errorf("run %d has no AI runtime compute config", utils.Deref(run.RunId))
 	}
 	if count <= 0 {
-		return 0, fmt.Errorf("run %d reports %d accelerators", run.RunId, count)
+		return 0, fmt.Errorf("run %d reports %d accelerators", utils.Deref(run.RunId), count)
 	}
 	g, err := parseGPUType(accelType)
 	if err != nil {

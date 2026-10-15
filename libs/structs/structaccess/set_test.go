@@ -496,26 +496,6 @@ func TestSet(t *testing.T) {
 	}
 }
 
-// testSet sets a value and gets it back, asserting they're equal (roundtrip)
-func testSet(t *testing.T, obj any, path string, value any) {
-	t.Helper()
-	err := structaccess.SetByString(obj, path, value)
-	require.NoError(t, err, "SetByString(%T, %q, %#v)", obj, path, value)
-	got, err := structaccess.GetByString(obj, path)
-	require.NoError(t, err, "GetByString(%T, %q)", obj, path)
-	require.Equal(t, value, got, "SetByString(%T, %q, %#v) then GetByString should return same value", obj, path, value)
-}
-
-// testSetGet sets a value and gets it back, allowing different expected get value
-func testSetGet(t *testing.T, obj any, path string, setValue, expectedGetValue any) {
-	t.Helper()
-	err := structaccess.SetByString(obj, path, setValue)
-	require.NoError(t, err, "SetByString(%#v, %q, %#v)", obj, path, setValue)
-	got, err := structaccess.GetByString(obj, path)
-	require.NoError(t, err, "GetByString(%#v, %q)", obj, path)
-	require.Equal(t, expectedGetValue, got, "SetByString(%#v, %q, %#v) then GetByString should return %#v", obj, path, setValue, expectedGetValue)
-}
-
 func TestSet_EmbedTag(t *testing.T) {
 	type Item struct {
 		Name  string `json:"name"`

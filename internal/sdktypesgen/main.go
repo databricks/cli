@@ -27,7 +27,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 )
@@ -193,7 +192,6 @@ func generate(outRoot, pkg string) error {
 	}
 
 	var decls []ast.Decl
-	var mirrorNames []string
 	for _, d := range wf.Decls {
 		switch d := d.(type) {
 		case *ast.GenDecl:
@@ -206,7 +204,6 @@ func generate(outRoot, pkg string) error {
 					continue
 				}
 				if mn, ok := wireToModel[ts.Name.Name]; ok {
-					mirrorNames = append(mirrorNames, mn)
 					attachDocs(d, ts, mn, m)
 				}
 			}
@@ -268,7 +265,7 @@ func generate(outRoot, pkg string) error {
 	for n := range imports {
 		names = append(names, n)
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 	for _, n := range names {
 		fmt.Fprintf(&buf, "\t%s %q\n", n, imports[n])
 	}

@@ -161,6 +161,7 @@ var testConfig map[string]any = map[string]any{
 	"model_serving_endpoints": &resources.ModelServingEndpoint{
 		Name: new("my-endpoint"),
 		Config: &modelserving.EndpointCoreConfig{
+			//nolint:staticcheck
 			AutoCaptureConfig: &modelserving.AutoCaptureConfig{
 				CatalogName:     new("main"),
 				SchemaName:      new("myschema"),

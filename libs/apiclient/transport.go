@@ -54,6 +54,7 @@ func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		{useragent.MetaHarnessKey, useragent.MetaHarnessProvider()},
 	} {
 		if kv[1] != "" {
+			//nolint:fatcontext
 			ctx = useragent.InContext(ctx, kv[0], kv[1])
 		}
 	}

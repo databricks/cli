@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"slices"
 
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
@@ -315,11 +314,6 @@ func embeddedStructs(v reflect.Value) []reflect.Value {
 		out = append(out, fv)
 	}
 	return out
-}
-
-// containsString checks if a slice contains a specific string
-func containsString(slice []string, str string) bool {
-	return slices.Contains(slice, str)
 }
 
 // isEmptyForOmitEmpty returns true if the value should be omitted by JSON omitempty.
