@@ -8,7 +8,8 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 First snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/files/src/main.py
 
 === Break the glass out of band
->>> [CLI] workspace mkdirs /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/tampered
+>>> [CLI] api post /api/2.0/snapshots:breakGlass --json {"snapshot_content_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot"}
+true
 
 === Deploy without --force fails
 >>> musterr [CLI] bundle deploy

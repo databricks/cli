@@ -166,6 +166,29 @@ func ParseImportForm(req Request) (ImportForm, error) {
 	}
 }
 
+// snapshotStatus is the body the snapshot inspect and break glass APIs answer with.
+func snapshotStatus(contentPath string, dirty bool) map[string]any {
+	return map[string]any{
+		"status": map[string]any{
+			"snapshot_content_path": contentPath,
+			"dirty":                 dirty,
+			"permissions":           []string{"SNAPSHOT_PERMISSION_CAN_BREAK_GLASS"},
+		},
+	}
+}
+
+// snapshotNotFound is how the snapshot inspect and break glass APIs answer for a path that
+// holds no snapshot.
+func snapshotNotFound(contentPath string) Response {
+	return Response{
+		StatusCode: http.StatusNotFound,
+		Body: map[string]string{
+			"error_code": "RESOURCE_DOES_NOT_EXIST",
+			"message":    "Snapshot not found: " + contentPath,
+		},
+	}
+}
+
 func AddDefaultHandlers(server *Server) {
 	server.Handle("GET", "/api/2.0/policies/clusters/list", func(req Request) any {
 		return req.Workspace.ClusterPoliciesList(req)
@@ -943,7 +966,6 @@ func AddDefaultHandlers(server *Server) {
 			}
 		}
 		req.Workspace.WorkspaceMkdirs(workspace.Mkdirs{Path: contentPath})
-		// Record after mkdirs so the snapshot's own creation write is not counted as tampering.
 		req.Workspace.RecordSnapshot(contentPath, relativePath, acl, canManage)
 		return map[string]any{
 			"name":     "workspaces/snapshotOperations/" + relativePath,
@@ -978,21 +1000,26 @@ func AddDefaultHandlers(server *Server) {
 		// A path that holds no snapshot is not inspectable, so the API reports NOT_FOUND
 		// rather than calling it clean.
 		if !ok {
+			return snapshotNotFound(contentPath)
+		}
+		return snapshotStatus(contentPath, dirty)
+	})
+
+	// Breaks the glass on a snapshot: grants write access to its content and marks it dirty.
+	server.Handle("POST", "/api/2.0/snapshots:breakGlass", func(req Request) any {
+		var request struct {
+			SnapshotContentPath string `json:"snapshot_content_path"`
+		}
+		if err := json.Unmarshal(req.Body, &request); err != nil {
 			return Response{
-				StatusCode: http.StatusNotFound,
-				Body: map[string]string{
-					"error_code": "RESOURCE_DOES_NOT_EXIST",
-					"message":    "Snapshot not found: " + contentPath,
-				},
+				Body:       fmt.Sprintf("internal error: %s", err),
+				StatusCode: http.StatusInternalServerError,
 			}
 		}
-		return map[string]any{
-			"status": map[string]any{
-				"snapshot_content_path": contentPath,
-				"dirty":                 dirty,
-				"permissions":           []string{"SNAPSHOT_PERMISSION_CAN_BREAK_GLASS"},
-			},
+		if !req.Workspace.BreakGlassSnapshot(request.SnapshotContentPath) {
+			return snapshotNotFound(request.SnapshotContentPath)
 		}
+		return snapshotStatus(request.SnapshotContentPath, true)
 	})
 
 	// SQL Warehouses:

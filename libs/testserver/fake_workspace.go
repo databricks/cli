@@ -200,9 +200,8 @@ type FakeWorkspace struct {
 	files        map[string]FileEntry
 	repoIdByPath map[string]int64
 
-	// snapshots records immutable-snapshot content paths. A workspace write into a
-	// recorded path flips it dirty; RecordSnapshot resets it when the snapshot is
-	// (re)created by the snapshot API.
+	// snapshots records immutable-snapshot content paths. Breaking the glass on a
+	// recorded path flips it dirty for good, as in the real API.
 	snapshots map[string]*snapshotRecord
 
 	Jobs                  map[int64]jobs.Job
@@ -831,9 +830,7 @@ func (s *FakeWorkspace) FsDeleteFile(filePath string) Response {
 	return Response{}
 }
 
-// RecordSnapshot stores a create-request record for the snapshot at contentPath. It is called
-// after the content directory is materialized, so the snapshot's own creation write is not
-// counted as tampering.
+// RecordSnapshot stores a create-request record for the snapshot at contentPath.
 func (s *FakeWorkspace) RecordSnapshot(contentPath, relPath string, acl, canManage []map[string]any) {
 	defer s.LockUnlock()()
 	s.snapshots[contentPath] = &snapshotRecord{
@@ -863,14 +860,16 @@ func (s *FakeWorkspace) SnapshotInfo(contentPath string) (*snapshotRecord, bool)
 	return rec, ok
 }
 
-// markSnapshotDirty flips any recorded snapshot dirty when targetPath writes at or under its
-// content path. The caller must already hold the lock.
-func (s *FakeWorkspace) markSnapshotDirty(targetPath string) {
-	for contentPath, rec := range s.snapshots {
-		if targetPath == contentPath || strings.HasPrefix(targetPath, contentPath+"/") {
-			rec.Dirty = true
-		}
+// BreakGlassSnapshot marks the snapshot at contentPath dirty. The real API flips the flag when
+// the glass is broken, not when a file changes: until then the content is read-only to callers.
+// ok is false when no snapshot is recorded there.
+func (s *FakeWorkspace) BreakGlassSnapshot(contentPath string) (ok bool) {
+	defer s.LockUnlock()()
+	rec, ok := s.snapshots[contentPath]
+	if ok {
+		rec.Dirty = true
 	}
+	return ok
 }
 
 func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
@@ -886,7 +885,6 @@ func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
 			}
 		}
 	}
-	s.markSnapshotDirty(request.Path)
 }
 
 func (s *FakeWorkspace) WorkspaceExport(path string) []byte {
@@ -923,7 +921,6 @@ func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) Response {
 			}
 		}
 	}
-	s.markSnapshotDirty(path)
 	return Response{}
 }
 
@@ -1126,8 +1123,6 @@ func (s *FakeWorkspace) importFile(filePath string, body []byte, overwrite, dete
 			Data: body,
 		}
 	}
-
-	s.markSnapshotDirty(workspacePath)
 	return Response{}
 }
 
@@ -1184,8 +1179,6 @@ func (s *FakeWorkspace) WorkspaceImportNotebook(filePath string, body []byte, la
 		},
 		Data: body,
 	}
-
-	s.markSnapshotDirty(filePath)
 	return Response{}
 }
 

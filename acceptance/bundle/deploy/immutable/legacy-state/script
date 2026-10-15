@@ -27,5 +27,5 @@ esac
 
 title "The check still applies to a deployment carried over from the older layout"
 CONTENT_PATH="${SNAPSHOT_PATH%/files/src/main.py}"
-trace $CLI workspace mkdirs "$CONTENT_PATH/tampered"
+trace $CLI api post /api/2.0/snapshots:breakGlass --json "{\"snapshot_content_path\": \"$CONTENT_PATH\"}" | jq .status.dirty
 trace musterr $CLI bundle deploy

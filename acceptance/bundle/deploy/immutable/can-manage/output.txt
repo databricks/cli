@@ -7,7 +7,7 @@ If it is not included, CAN_MANAGE permissions are only applied if the present id
 Consider using a adding a top-level permissions section such as the following:
 
   permissions:
-    - user_name: [USERNAME]
+    - service_principal_name: [USERNAME]
       level: CAN_MANAGE
 
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
@@ -20,17 +20,15 @@ Files: 0 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 === Check can_manage_principals sent to the snapshot create API
->>> [CLI] api get /api/2.0/snapshots/info?relative_path=[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]
-{
-  "can_manage_principals": [
-    {
-      "user_name": "[USERNAME]"
-    },
-    {
-      "user_name": "external-manager@databricks.com"
-    }
-  ]
-}
+>>> print_requests.py //api/2.0/snapshots
+[
+  {
+    "service_principal_name": "[USERNAME]"
+  },
+  {
+    "user_name": "deco-test-user@databricks.com"
+  }
+]
 
 >>> [CLI] bundle destroy --auto-approve
 Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
@@ -39,7 +37,7 @@ If it is not included, CAN_MANAGE permissions are only applied if the present id
 Consider using a adding a top-level permissions section such as the following:
 
   permissions:
-    - user_name: [USERNAME]
+    - service_principal_name: [USERNAME]
       level: CAN_MANAGE
 
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.

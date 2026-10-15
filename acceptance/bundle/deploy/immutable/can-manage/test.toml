@@ -1,0 +1,10 @@
+# The snapshot create request carries can_manage_principals, which the test reads back from the
+# recorded request.
+RecordRequests = true
+
+# The deploying identity is sent as a can_manage principal, keyed by its kind. Cloud tests deploy
+# as a service principal, so do the same locally to get the same output.
+IsServicePrincipal = true
+
+# The current user on GCP is a user and not a SP, so the deploying identity is sent as user_name.
+CloudEnvs.gcp = false
