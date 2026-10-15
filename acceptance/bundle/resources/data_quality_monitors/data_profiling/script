@@ -1,0 +1,21 @@
+trace $CLI bundle deploy
+trace print_requests.py //data-quality
+
+title "Verify deployment, including server-computed fields"
+trace $CLI data-quality get-monitor table 11111111-2222-3333-4444-555555555555 | jq '.data_profiling_config | {assets_dir, schedule, status, monitor_version}'
+
+title "Server-computed fields do not show up as drift"
+trace $CLI bundle plan
+
+title "Update the schedule (should update in place)"
+trace update_file.py databricks.yml '0 0 12 * * ?' '0 0 6 * * ?'
+trace $CLI bundle deploy
+trace print_requests.py //data-quality
+
+title "Change assets_dir (ignored by the update API, should plan a recreate)"
+trace update_file.py databricks.yml assets1 assets2
+trace $CLI bundle plan
+
+trace $CLI bundle destroy --auto-approve
+
+rm -f out.requests.txt

@@ -1,0 +1,101 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created data_quality_monitors.schema_monitor
+Created schemas.myschema
+Files: 1 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //data-quality
+{
+  "method": "POST",
+  "path": "/api/data-quality/v1/monitors",
+  "body": {
+    "anomaly_detection_config": {
+      "excluded_table_full_names": [
+        "main.myschema.table1"
+      ]
+    },
+    "object_id": "[UUID]",
+    "object_type": "schema"
+  }
+}
+
+=== Summary shows the composite id
+>>> [CLI] bundle summary -o json
+{
+  "id": "schema,[UUID]",
+  "object_type": "schema"
+}
+
+=== Verify deployment
+>>> [CLI] data-quality get-monitor schema [UUID]
+{
+  "excluded_table_full_names": [
+    "main.myschema.table1"
+  ]
+}
+
+=== A second plan has no changes
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== Update the config (should update in place, not recreate)
+>>> update_file.py databricks.yml main.myschema.table1 main.myschema.table2
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated data_quality_monitors.schema_monitor
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py //data-quality
+{
+  "method": "PATCH",
+  "path": "/api/data-quality/v1/monitors/schema/[UUID]",
+  "q": {
+    "update_mask": "anomaly_detection_config,data_profiling_config"
+  },
+  "body": {
+    "anomaly_detection_config": {
+      "excluded_table_full_names": [
+        "main.myschema.table2"
+      ]
+    },
+    "object_id": "[UUID]",
+    "object_type": "schema"
+  }
+}
+
+>>> [CLI] data-quality get-monitor schema [UUID]
+{
+  "excluded_table_full_names": [
+    "main.myschema.table2"
+  ]
+}
+
+=== Change an identity field (should plan a recreate)
+>>> update_file.py databricks.yml ${resources.schemas.myschema.schema_id} [UUID]
+
+>>> [CLI] bundle plan
+recreate data_quality_monitors.schema_monitor
+
+Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.data_quality_monitors.schema_monitor
+  delete resources.schemas.myschema
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.myschema
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 2 deleted
+
+>>> print_requests.py //data-quality
+{
+  "method": "DELETE",
+  "path": "/api/data-quality/v1/monitors/schema/[UUID]"
+}

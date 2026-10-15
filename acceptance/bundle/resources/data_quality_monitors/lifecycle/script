@@ -1,0 +1,16 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+title "A second plan has no changes"
+trace $CLI bundle plan
+
+title "Add an exclusion (should update in place)"
+trace update_file.py databricks.yml 'anomaly_detection_config: {}' 'anomaly_detection_config: {excluded_table_full_names: [main.dqm_'$UNIQUE_NAME'.excluded]}'
+trace $CLI bundle deploy
+trace $CLI bundle plan

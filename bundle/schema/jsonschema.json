@@ -834,6 +834,50 @@
                   }
                 ]
               },
+              "resources.DataQualityMonitor": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "description": "Monitor for the data quality of unity catalog entities such as schema or table.",
+                    "properties": {
+                      "anomaly_detection_config": {
+                        "description": "[Public Preview] Anomaly Detection Configuration, applicable to `schema` object types.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.AnomalyDetectionConfig",
+                        "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      },
+                      "data_profiling_config": {
+                        "description": "[Public Preview] Data Profiling Configuration, applicable to `table` object types. Exactly one `Analysis Configuration`\nmust be present.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.DataProfilingConfig",
+                        "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      },
+                      "lifecycle": {
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "object_id": {
+                        "description": "[Public Preview] The UUID of the request object. It is `schema_id` for `schema`, and `table_id` for `table`.\n\nFind the `schema_id` from either:\n1. The [schema_id](https://docs.databricks.com/api/workspace/schemas/get#schema_id) of the `Schemas` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `schema` \u003e go to the `Details` tab \u003e the `Schema ID` field.\n\nFind the `table_id` from either:\n1. The [table_id](https://docs.databricks.com/api/workspace/tables/get#table_id) of the `Tables` resource.\n2. In [Catalog Explorer](https://docs.databricks.com/aws/en/catalog-explorer/) \u003e select the `table` \u003e go to the `Details` tab \u003e the `Table ID` field.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      },
+                      "object_type": {
+                        "description": "[Public Preview] The type of the monitored object. Can be one of the following: `schema` or `table`.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "object_id",
+                      "object_type"
+                    ],
+                    "markdownDescription": "The data_quality_monitor resource allows you to define a [data quality monitor](https://docs.databricks.com/api/workspace/dataquality/createmonitor) on a Unity Catalog schema (anomaly detection) or table (data profiling). It supersedes the `quality_monitor` resource. For information about data quality monitoring, see [link](https://docs.databricks.com/data-governance/unity-catalog/data-quality-monitoring/index.html)."
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.DatabaseCatalog": {
                 "oneOf": [
                   {
@@ -4025,6 +4069,11 @@
                       "description": "The dashboard definitions for the bundle, where each key is the name of the dashboard.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Dashboard",
                       "markdownDescription": "The dashboard definitions for the bundle, where each key is the name of the dashboard. See [dashboards](https://docs.databricks.com/dev-tools/bundles/resources.html#dashboards)."
+                    },
+                    "data_quality_monitors": {
+                      "description": "The data quality monitor definitions for the bundle, where each key is the name of the data quality monitor.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.DataQualityMonitor",
+                      "markdownDescription": "The data quality monitor definitions for the bundle, where each key is the name of the data quality monitor. See [data_quality_monitors](https://docs.databricks.com/dev-tools/bundles/resources.html#data_quality_monitors)."
                     },
                     "database_catalogs": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.DatabaseCatalog"
@@ -9057,6 +9106,438 @@
                   "type": "object",
                   "description": "Detailed status of a synced table. Shown if the synced table is in the SYNCED_TRIGGERED_UPDATE\nor the SYNCED_NO_PENDING_UPDATE state.",
                   "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "dataquality.AggregationGranularity": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The granularity for aggregating data into time windows based on their timestamp.",
+                  "enum": [
+                    "AGGREGATION_GRANULARITY_5_MINUTES",
+                    "AGGREGATION_GRANULARITY_30_MINUTES",
+                    "AGGREGATION_GRANULARITY_1_HOUR",
+                    "AGGREGATION_GRANULARITY_1_DAY",
+                    "AGGREGATION_GRANULARITY_1_WEEK",
+                    "AGGREGATION_GRANULARITY_2_WEEKS",
+                    "AGGREGATION_GRANULARITY_3_WEEKS",
+                    "AGGREGATION_GRANULARITY_4_WEEKS",
+                    "AGGREGATION_GRANULARITY_1_MONTH",
+                    "AGGREGATION_GRANULARITY_1_YEAR"
+                  ],
+                  "enumDescriptions": [
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "dataquality.AnomalyDetectionConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Anomaly Detection Configurations.",
+                  "properties": {
+                    "excluded_table_full_names": {
+                      "description": "[Beta] List of fully qualified table names to exclude from anomaly detection.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "dataquality.CronSchedule": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "The data quality monitoring workflow cron schedule.",
+                  "properties": {
+                    "quartz_cron_expression": {
+                      "description": "[Public Preview] The expression that determines when to run the monitor. See [examples](https://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html).",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    },
+                    "timezone_id": {
+                      "description": "[Public Preview] A Java timezone id. The schedule for a job will be resolved with respect to this timezone.\nSee `Java TimeZone \u003chttp://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html\u003e`_ for details.\nThe timezone id (e.g., ``America/Los_Angeles``) in which to evaluate the quartz expression.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "quartz_cron_expression",
+                    "timezone_id"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "dataquality.CronSchedulePauseStatus": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The data quality monitoring workflow cron schedule pause status.",
+                  "enum": [
+                    "CRON_SCHEDULE_PAUSE_STATUS_UNPAUSED",
+                    "CRON_SCHEDULE_PAUSE_STATUS_PAUSED"
+                  ],
+                  "enumDescriptions": [
+                    "[Public Preview]",
+                    "[Public Preview]"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "dataquality.DataProfilingConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Data Profiling Configurations.",
+                  "properties": {
+                    "assets_dir": {
+                      "description": "[Public Preview] Field for specifying the absolute path to a custom directory to store data-monitoring\nassets. Normally prepopulated to a default user location via UI and Python APIs.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    },
+                    "baseline_table_name": {
+                      "description": "[Public Preview] Baseline table name.\nBaseline data is used to compute drift from the data in the monitored `table_name`.\nThe baseline table and the monitored table shall have the same schema.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    },
+                    "custom_metrics": {
+                      "description": "[Public Preview] Custom metrics.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/dataquality.DataProfilingCustomMetric",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    },
+                    "inference_log": {
+                      "description": "[Public Preview] `Analysis Configuration` for monitoring inference log tables.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.InferenceLogConfig",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    },
+                    "notification_settings": {
+                      "description": "[Public Preview] Field for specifying notification settings.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.NotificationSettings",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    },
+                    "output_schema_id": {
+                      "description": "[Public Preview] ID of the schema where output tables are created.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    },
+                    "schedule": {
+                      "description": "[Public Preview] The cron schedule.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.CronSchedule",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    },
+                    "skip_builtin_dashboard": {
+                      "description": "[Public Preview] Whether to skip creating a default dashboard summarizing data quality metrics.",
+                      "$ref": "#/$defs/bool",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    },
+                    "slicing_exprs": {
+                      "description": "[Public Preview] List of column expressions to slice data with for targeted analysis. The data is grouped by\neach expression independently, resulting in a separate slice for each predicate and its\ncomplements. For example `slicing_exprs=[“col_1”, “col_2 \u003e 10”]` will generate the following\nslices: two slices for `col_2 \u003e 10` (True and False), and one slice per unique value in\n`col1`. For high-cardinality columns, only the top 100 unique values by frequency will\ngenerate slices.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    },
+                    "snapshot": {
+                      "description": "[Public Preview] `Analysis Configuration` for monitoring snapshot tables.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.SnapshotConfig",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    },
+                    "time_series": {
+                      "description": "[Public Preview] `Analysis Configuration` for monitoring time series tables.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.TimeSeriesConfig",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    },
+                    "warehouse_id": {
+                      "description": "[Public Preview] Optional argument to specify the warehouse for dashboard creation. If not specified, the first running\nwarehouse will be used.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "output_schema_id"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "dataquality.DataProfilingCustomMetric": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Custom metric definition.",
+                  "properties": {
+                    "definition": {
+                      "description": "[Public Preview] Jinja template for a SQL expression that specifies how to compute the metric. See [create metric definition](https://docs.databricks.com/en/lakehouse-monitoring/custom-metrics.html#create-definition).",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    },
+                    "input_columns": {
+                      "description": "[Public Preview] A list of column names in the input table the metric should be computed for.\nCan use ``\":table\"`` to indicate that the metric needs information from multiple columns.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    },
+                    "name": {
+                      "description": "[Public Preview] Name of the metric in the output tables.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    },
+                    "output_data_type": {
+                      "description": "[Public Preview] The output type of the custom metric.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    },
+                    "type": {
+                      "description": "[Public Preview] The type of the custom metric.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.DataProfilingCustomMetricType",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "definition",
+                    "input_columns",
+                    "name",
+                    "output_data_type",
+                    "type"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "dataquality.DataProfilingCustomMetricType": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The custom metric type.",
+                  "enum": [
+                    "DATA_PROFILING_CUSTOM_METRIC_TYPE_AGGREGATE",
+                    "DATA_PROFILING_CUSTOM_METRIC_TYPE_DERIVED",
+                    "DATA_PROFILING_CUSTOM_METRIC_TYPE_DRIFT"
+                  ],
+                  "enumDescriptions": [
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "dataquality.DataProfilingStatus": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The status of the data profiling monitor.",
+                  "enum": [
+                    "DATA_PROFILING_STATUS_ACTIVE",
+                    "DATA_PROFILING_STATUS_PENDING",
+                    "DATA_PROFILING_STATUS_DELETE_PENDING",
+                    "DATA_PROFILING_STATUS_ERROR",
+                    "DATA_PROFILING_STATUS_FAILED"
+                  ],
+                  "enumDescriptions": [
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "dataquality.InferenceLogConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Inference log configuration.",
+                  "properties": {
+                    "granularities": {
+                      "description": "[Public Preview] List of granularities to use when aggregating data into time windows based on their timestamp.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/dataquality.AggregationGranularity",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    },
+                    "label_column": {
+                      "description": "[Public Preview] Column for the label.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    },
+                    "model_id_column": {
+                      "description": "[Public Preview] Column for the model identifier.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    },
+                    "prediction_column": {
+                      "description": "[Public Preview] Column for the prediction.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    },
+                    "problem_type": {
+                      "description": "[Public Preview] Problem type the model aims to solve.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.InferenceProblemType",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    },
+                    "timestamp_column": {
+                      "description": "[Public Preview] Column for the timestamp.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "granularities",
+                    "model_id_column",
+                    "prediction_column",
+                    "problem_type",
+                    "timestamp_column"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "dataquality.InferenceProblemType": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Inference problem type the model aims to solve.",
+                  "enum": [
+                    "INFERENCE_PROBLEM_TYPE_CLASSIFICATION",
+                    "INFERENCE_PROBLEM_TYPE_REGRESSION"
+                  ],
+                  "enumDescriptions": [
+                    "[Public Preview]",
+                    "[Public Preview]"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "dataquality.NotificationDestination": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Destination of the data quality monitoring notification.",
+                  "properties": {
+                    "email_addresses": {
+                      "description": "[Public Preview] The list of email addresses to send the notification to. A maximum of 5 email addresses is supported.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "dataquality.NotificationSettings": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Settings for sending notifications on the data quality monitoring.",
+                  "properties": {
+                    "on_failure": {
+                      "description": "[Public Preview] Destinations to send notifications on failure/timeout.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.NotificationDestination",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "dataquality.SnapshotConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Snapshot analysis configuration.",
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "dataquality.TimeSeriesConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Time series analysis configuration.",
+                  "properties": {
+                    "granularities": {
+                      "description": "[Public Preview] List of granularities to use when aggregating data into time windows based on their timestamp.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/dataquality.AggregationGranularity",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    },
+                    "timestamp_column": {
+                      "description": "[Public Preview] Column for the timestamp.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "granularities",
+                    "timestamp_column"
+                  ]
                 },
                 {
                   "type": "string",
@@ -18230,6 +18711,20 @@
                     }
                   ]
                 },
+                "resources.DataQualityMonitor": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DataQualityMonitor"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.DatabaseCatalog": {
                   "oneOf": [
                     {
@@ -19233,6 +19728,34 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableSpecTypeOverride"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "dataquality.AggregationGranularity": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.AggregationGranularity"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "dataquality.DataProfilingCustomMetric": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.DataProfilingCustomMetric"
                     }
                   },
                   {

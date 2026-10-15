@@ -12,6 +12,8 @@ clusters: compute.ClusterSpec
 
 dashboards: dashboards.Dashboard
 
+data_quality_monitors: dataquality.Monitor
+
 database_catalogs: database.DatabaseCatalog
 
 database_instances: database.DatabaseInstance

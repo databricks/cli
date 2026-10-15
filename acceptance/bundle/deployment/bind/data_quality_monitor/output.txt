@@ -1,0 +1,32 @@
+
+>>> [CLI] bundle deployment bind monitor1 table,[UUID] --auto-approve
+Successfully bound data_quality_monitor with an id 'table,[UUID]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+>>> [CLI] bundle summary
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  Data quality monitors:
+    monitor1:
+      Name: table,[UUID]
+
+=== A malformed id is rejected
+>>> musterr [CLI] bundle deployment bind monitor1 [UUID] --auto-approve
+Error: failed to fetch the resource, err: invalid data quality monitor id "[UUID]" (want <object_type>,<object_id>)
+
+>>> [CLI] bundle deployment unbind monitor1
+
+>>> [CLI] bundle summary
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  Data quality monitors:
+    monitor1:
+      Name: table,[UUID]

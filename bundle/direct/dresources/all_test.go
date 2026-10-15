@@ -25,6 +25,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/databricks-sdk-go/service/dataquality"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -235,6 +236,16 @@ var testConfig map[string]any = map[string]any{
 		TableName:        "main.myschema.mytable",
 		AssetsDir:        "/Workspace/Users/user@example.com/assets",
 		OutputSchemaName: "main.myschema",
+	},
+
+	"data_quality_monitors": &resources.DataQualityMonitor{
+		ObjectType: "table",
+		ObjectId:   "11111111-2222-3333-4444-555555555555",
+		DataProfilingConfig: &dataquality.DataProfilingConfig{
+			AssetsDir:      "/Workspace/Users/user@example.com/assets",
+			OutputSchemaId: "66666666-7777-8888-9999-000000000000",
+			Snapshot:       &dataquality.SnapshotConfig{},
+		},
 	},
 
 	"dashboards": &resources.Dashboard{
