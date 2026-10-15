@@ -14,6 +14,7 @@ import (
 	"time"
 
 	authcmd "github.com/databricks/cli/cmd/auth"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
@@ -155,15 +156,13 @@ func TestPromptForWorkspaceSelectionNoResults(t *testing.T) {
 	args, requests := newWorkspaceListServer(t, http.StatusOK, []provisioning.Workspace{
 		{WorkspaceId: 111, WorkspaceName: "Alpha"},
 		{WorkspaceId: 222, WorkspaceName: "Beta"},
+		{WorkspaceId: 333},
 	})
 	tm := termtest.Run(t, func(ctx context.Context) (string, error) {
 		return authcmd.PromptForWorkspaceSelection(ctx, args, oauth2.StaticTokenSource(&oauth2.Token{AccessToken: workspaceTestToken}))
 	})
 	tm.WaitFor(workspacePickerLabel)
-	assert.Contains(t, tm.Snapshot(), "Alpha (111)")
-	assert.Contains(t, tm.Snapshot(), "Beta (222)")
-	assert.Contains(t, tm.Snapshot(), workspaceSkipLabel)
-	assert.NotContains(t, tm.Snapshot(), workspaceSkipLabel+" ()")
+	tm.Golden("01-initial")
 
 	tm.Type("999999")
 	tm.WaitFor("No results")
@@ -240,6 +239,9 @@ func TestPromptForWorkspaceSelectionListError(t *testing.T) {
 // newWorkspaceListServer exercises the SDK's actual list decoding without a live account.
 func newWorkspaceListServer(t *testing.T, status int, workspaces []provisioning.Workspace) (*auth.AuthArguments, *atomic.Int32) {
 	t.Helper()
+	// The SDK client reads DATABRICKS_* variables and ~/.databrickscfg, so a
+	// developer's DATABRICKS_CONFIG_PROFILE would otherwise break client setup.
+	testutil.CleanupEnvironment(t)
 	body, err := json.Marshal(workspaces)
 	require.NoError(t, err)
 	if status != http.StatusOK {

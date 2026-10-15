@@ -902,13 +902,13 @@ func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthAr
 	})
 
 	idx, err := cmdio.RunSelect(ctx, cmdio.SelectOptions{
-		Label:             "Select a workspace",
+		Label:             "Select a workspace (search by name or ID)",
 		Items:             items,
 		HideSelected:      true,
 		StartInSearchMode: true,
 		Searcher:          newWorkspaceSearcher(items),
-		Active:            `{{.Name | bold}}{{if .Id}} ({{.Id | faint}}){{end}}`,
-		Inactive:          `{{.Name}}{{if .Id}} ({{.Id | faint}}){{end}}`,
+		Active:            `▸ {{if .Name}}{{.Name | bold}}{{if .Id}} ({{.Id | faint}}){{end}}{{else}}{{.Id | bold}}{{end}}`,
+		Inactive:          `  {{if .Name}}{{.Name}}{{if .Id}} ({{.Id | faint}}){{end}}{{else}}{{.Id}}{{end}}`,
 	})
 	if err != nil {
 		return "", err
@@ -931,8 +931,7 @@ func newWorkspaceSearcher(items []cmdio.Tuple) func(string, int) bool {
 		if _, exact := ids[input]; exact {
 			return items[idx].Id == input
 		}
-		return strings.Contains(names[idx], strings.ToLower(input)) ||
-			(items[idx].Id != "" && strings.Contains(items[idx].Id, input))
+		return strings.Contains(names[idx], strings.ToLower(input)) || strings.Contains(items[idx].Id, input)
 	}
 }
 
