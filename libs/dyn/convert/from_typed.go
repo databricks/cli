@@ -136,7 +136,12 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 		if ok || nv.Kind() != dyn.KindNil {
 			// If v isZero, it could be because it's a variable reference; so we check that nv is zero as well
 			if v.Kind() != reflect.Struct && v.IsZero() && nv.IsZero() && !info.ForceEmpty[k] {
-				continue
+				// A zero scalar that was explicitly set in the reference (e.g. `name: ""`)
+				// is kept, so that typed round trips do not drop it.
+				if !ok || !isZeroScalar(refv) {
+					continue
+				}
+				nv = refv
 			}
 
 			out.SetLoc(k, refloc, nv)
@@ -345,4 +350,13 @@ func fromTypedFloat(src reflect.Value, ref dyn.Value, options ...fromTypedOption
 	}
 
 	return dyn.InvalidValue, fmt.Errorf("cannot convert float field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
+}
+
+func isZeroScalar(v dyn.Value) bool {
+	switch v.Kind() {
+	case dyn.KindString, dyn.KindBool, dyn.KindInt, dyn.KindFloat:
+		return v.IsZero()
+	default:
+		return false
+	}
 }

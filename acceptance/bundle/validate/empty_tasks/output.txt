@@ -12,7 +12,8 @@
     "name": "job with empty tasks",
     "queue": {
       "enabled": true
-    }
+    },
+    "tasks": null
   },
   "valid": {
     "deployment": {

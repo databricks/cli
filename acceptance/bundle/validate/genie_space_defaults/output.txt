@@ -5,7 +5,7 @@
   },
   "empty_string": {
     "title": "empty-string",
-    "parent_path": "/Workspace/foo/bar"
+    "parent_path": "/Workspace"
   },
   "non_empty_string": {
     "title": "non-empty-string",

@@ -264,5 +264,5 @@ func TestBuildAppDeploymentRejectsValueAndValueFrom(t *testing.T) {
 	}
 
 	_, err := appdeploy.BuildDeployment("/path/to/app", config, nil)
-	require.ErrorContains(t, err, "multiple oneof members set")
+	require.ErrorContains(t, err, "only one of value, value_from can be set")
 }

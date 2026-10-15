@@ -79,17 +79,6 @@ func makePostgresBranchRemote(resp *sdkpostgres.Branch) (*PostgresBranchRemote, 
 	if branch.Spec != nil {
 		spec = *branch.Spec
 	}
-	// Ensure that missing optional bool fields are represented as false pointers
-	// rather than nil, so they serialize in JSON as false instead of being omitted.
-	// This matches the old SDK's behavior where value fields always appeared in JSON.
-	if spec.IsProtected == nil {
-		falseVal := false
-		spec.IsProtected = &falseVal
-	}
-	if spec.NoExpiry == nil {
-		falseVal := false
-		spec.NoExpiry = &falseVal
-	}
 	return &PostgresBranchRemote{
 		BranchSpec: spec,
 		BranchId:   utils.Deref(branch.BranchId),

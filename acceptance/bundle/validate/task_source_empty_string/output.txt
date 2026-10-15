@@ -3,8 +3,7 @@
 [
   {
     "notebook_task": {
-      "notebook_path": "./notebook",
-      "source": "GIT"
+      "notebook_path": "./notebook"
     },
     "task_key": "main"
   }

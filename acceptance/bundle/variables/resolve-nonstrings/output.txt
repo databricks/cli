@@ -1,7 +1,3 @@
-Warning: required field "task_key" is not set
-  at resources.jobs.job1.tasks[0]
-  in databricks.yml:18:11
-
 {
   "variables": {
     "max_workers": {
@@ -47,7 +43,8 @@ Warning: required field "task_key" is not set
             "azure_attributes": {
               "spot_bid_max_price": 0.5
             }
-          }
+          },
+          "task_key": ""
         }
       ]
     }

@@ -8,7 +8,7 @@ Warning: Variable interpolation is not supported for fields that configure authe
 Interpolation is not supported for the field workspace.host. Please set
 the DATABRICKS_HOST environment variable if you wish to configure this field at runtime.
 
-Error: parse "https://${var.host}": invalid character "{" in host name
+Error: failed during request visitor: parse "https://${var.host}": invalid character "{" in host name
 
 {
   "bundle": {
@@ -42,7 +42,7 @@ Warning: Variable interpolation is not supported for fields that configure authe
 Interpolation is not supported for the field workspace.host. Please set
 the DATABRICKS_HOST environment variable if you wish to configure this field at runtime.
 
-Error: parse "https://${var.host}": invalid character "{" in host name
+Error: failed during request visitor: parse "https://${var.host}": invalid character "{" in host name
 
 Name: host
 Target: default
@@ -62,7 +62,7 @@ Warning: Variable interpolation is not supported for fields that configure authe
 Interpolation is not supported for the field workspace.host. Please set
 the DATABRICKS_HOST environment variable if you wish to configure this field at runtime.
 
-Error: parse "https://${var.host}": invalid character "{" in host name
+Error: failed during request visitor: parse "https://${var.host}": invalid character "{" in host name
 
 
 Exit code: 1
