@@ -1078,7 +1078,7 @@ func newStop() *cobra.Command {
 	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
+		check := root.MaximumNArgs(1)
 		return check(cmd, args)
 	}
 

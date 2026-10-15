@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle deploy
-Error: Failed to acquire deployment lock: failed to upload /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock: databricks-api error: Internal error
+Error: Failed to acquire deployment lock: failed to upload /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock: Internal error
 Error: failed to upload /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock: Internal error (500 INTERNAL_ERROR)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.0/workspace/import

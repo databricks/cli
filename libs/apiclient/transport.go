@@ -143,6 +143,10 @@ func (t *transport) send(ctx context.Context, req *http.Request) (*http.Response
 		}
 		return nil, err
 	}
+	if err := normalizeErrorBody(resp); err != nil {
+		ticker.Cancel()
+		return nil, err
+	}
 	if resp.Body != nil {
 		resp.Body = tickingReadCloser{rc: resp.Body, t: ticker, cancelOnClose: true}
 	} else {
