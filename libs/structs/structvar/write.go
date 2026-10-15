@@ -226,7 +226,7 @@ func (sv *StructVar) SetReference(path *structpath.PathNode, ref string) error {
 	if isText {
 		return sv.Set(path, ref)
 	}
-	locs := sv.Locations.At(path)
+	locs := sv.Locations.Exact(path)
 	// withoutRefs returns a fresh map unless there is nothing to filter.
 	refs := withoutRefs(sv.Refs, path)
 	if len(refs) == 0 {

@@ -25,7 +25,7 @@ func (v *validateEngine) Name() string {
 
 func (v *validateEngine) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
-	tf := b.Config.View().Lookup(structpath.MustParsePath("bundle.terraform"))
+	tf := b.Config.View().Lookup(structpath.NewPath(nil, "bundle", "terraform"))
 	if tf.IsValid() {
 		diags = diags.Append(diag.Diagnostic{
 			Severity:  diag.Warning,
@@ -40,7 +40,7 @@ func (v *validateEngine) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 		return diags
 	}
 
-	loc := b.Config.GetLocation("bundle.engine")
+	loc := b.Config.NearestLocation(structpath.NewPath(nil, "bundle", "engine"))
 
 	parsed, ok := engine.Parse(string(configEngine))
 	if !ok {

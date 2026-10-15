@@ -71,9 +71,9 @@ func (l *Locations) Get() []diag.Location {
 	return slices.Clone(l.locs)
 }
 
-// At returns the locations of the value at path. Values without recorded locations
+// Exact returns the locations of the value at path. Values without recorded locations
 // (e.g. set by code) have none.
-func (l *Locations) At(path *structpath.PathNode) []diag.Location {
+func (l *Locations) Exact(path *structpath.PathNode) []diag.Location {
 	return l.lookup(components(path)).Get()
 }
 

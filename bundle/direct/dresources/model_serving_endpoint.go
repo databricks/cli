@@ -15,11 +15,11 @@ import (
 
 // Precalculated paths for HasChange checks
 var (
-	pathTags               = structpath.MustParsePath("tags")
-	pathAiGateway          = structpath.MustParsePath("ai_gateway")
-	pathConfig             = structpath.MustParsePath("config")
-	pathEmailNotifications = structpath.MustParsePath("email_notifications")
-	pathTelemetryConfig    = structpath.MustParsePath("telemetry_config")
+	pathTags               = structpath.NewPath(nil, "tags")
+	pathAiGateway          = structpath.NewPath(nil, "ai_gateway")
+	pathConfig             = structpath.NewPath(nil, "config")
+	pathEmailNotifications = structpath.NewPath(nil, "email_notifications")
+	pathTelemetryConfig    = structpath.NewPath(nil, "telemetry_config")
 )
 
 type ResourceModelServingEndpoint struct {

@@ -48,7 +48,7 @@ func (m *rewriteSyncPaths) makeRelativeTo(root string, v structvar.View) (string
 
 func (m *rewriteSyncPaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	rewrite := func(field string, toSlash bool) error {
-		pattern := structpath.MustParsePattern("sync." + field + "[*]")
+		pattern := structpath.NewPattern(nil, "sync", field, structpath.AnyIndex)
 		return structvar.ForEach(b.Config.View(), pattern, func(p *structpath.PathNode, v structvar.View) error {
 			path, err := m.makeRelativeTo(b.BundleRootPath, v)
 			if err != nil {
