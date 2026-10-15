@@ -675,7 +675,7 @@ func getEnvFilters(t *testing.T) []string {
 	}
 
 	filters := strings.Split(envFilterValue, ",")
-	outFilters := make([]string, len(filters))
+	outFilters := make([]string, 0, len(filters))
 
 	for _, filter := range filters {
 		items := strings.Split(filter, "=")
