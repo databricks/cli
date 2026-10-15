@@ -1,5 +1,9 @@
 
 >>> musterr [CLI] bundle deploy
+Warning: required field "name" is not set
+  at resources.models.mymodel
+  in databricks.yml:7:7
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/model-empty-name-[UNIQUE_NAME]/default/files...
 Error: cannot create resources.models.mymodel: Got an invalid name ''. Registered Model names cannot be empty strings. (400 INVALID_PARAMETER_VALUE)
 

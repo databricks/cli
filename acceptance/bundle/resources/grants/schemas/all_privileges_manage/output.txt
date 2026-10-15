@@ -11,13 +11,15 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "method": "PATCH",
   "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_all_priv_manage_[UNIQUE_NAME]",
   "body": {
+    "securable_type": "schema",
+    "securable_full_name": "main.schema_all_priv_manage_[UNIQUE_NAME]",
     "changes": [
       {
+        "principal": "[USERNAME]",
         "add": [
           "ALL_PRIVILEGES",
           "MANAGE"
-        ],
-        "principal": "[USERNAME]"
+        ]
       }
     ]
   }

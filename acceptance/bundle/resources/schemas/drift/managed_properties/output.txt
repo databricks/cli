@@ -37,5 +37,5 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 >>> print_requests.py //unity
 json.method = "POST";
 json.path = "/api/2.1/unity-catalog/schemas";
-json.body.catalog_name = "main";
 json.body.name = "schema_managed_defaults";
+json.body.catalog_name = "main";

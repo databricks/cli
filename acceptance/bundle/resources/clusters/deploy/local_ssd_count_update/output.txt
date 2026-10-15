@@ -29,8 +29,8 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 === gcp_attributes sent on update (empty means the change was NOT applied):
 {
   "availability": "PREEMPTIBLE_GCP",
-  "local_ssd_count": 0,
-  "zone_id": "auto"
+  "zone_id": "auto",
+  "local_ssd_count": 0
 }
 
 === Deploy 3: no config change, should converge to a no-op

@@ -12,44 +12,44 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.1/clusters/create",
   "body": {
-    "autotermination_minutes": 60,
-    "aws_attributes": {},
+    "num_workers": 2,
     "cluster_name": "test-cluster-1",
-    "instance_pool_id": "ip-1234567890",
-    "num_workers": 2,
+    "spark_version": "13.3.x-scala2.12",
     "spark_conf": {
       "spark.executor.memory": "2g"
     },
-    "spark_version": "13.3.x-scala2.12"
+    "aws_attributes": {},
+    "autotermination_minutes": 60,
+    "instance_pool_id": "ip-1234567890"
   }
 }
 {
   "method": "POST",
   "path": "/api/2.1/clusters/create",
   "body": {
-    "autotermination_minutes": 60,
-    "azure_attributes": {},
+    "num_workers": 2,
     "cluster_name": "test-cluster-2",
-    "instance_pool_id": "ip-1234567890",
-    "num_workers": 2,
+    "spark_version": "13.3.x-scala2.12",
     "spark_conf": {
       "spark.executor.memory": "2g"
     },
-    "spark_version": "13.3.x-scala2.12"
+    "azure_attributes": {},
+    "autotermination_minutes": 60,
+    "instance_pool_id": "ip-1234567890"
   }
 }
 {
   "method": "POST",
   "path": "/api/2.1/clusters/create",
   "body": {
-    "autotermination_minutes": 60,
-    "cluster_name": "test-cluster-3",
-    "gcp_attributes": {},
-    "instance_pool_id": "ip-1234567890",
     "num_workers": 2,
+    "cluster_name": "test-cluster-3",
+    "spark_version": "13.3.x-scala2.12",
     "spark_conf": {
       "spark.executor.memory": "2g"
     },
-    "spark_version": "13.3.x-scala2.12"
+    "gcp_attributes": {},
+    "autotermination_minutes": 60,
+    "instance_pool_id": "ip-1234567890"
   }
 }

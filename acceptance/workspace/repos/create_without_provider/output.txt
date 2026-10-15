@@ -14,8 +14,8 @@
   "method": "POST",
   "path": "/api/2.0/repos",
   "body": {
-    "path": "/Repos/me@databricks.com/test-repo",
+    "url": "https://github.com/databricks/databricks-empty-ide-project.git",
     "provider": "gitHub",
-    "url": "https://github.com/databricks/databricks-empty-ide-project.git"
+    "path": "/Repos/me@databricks.com/test-repo"
   }
 }

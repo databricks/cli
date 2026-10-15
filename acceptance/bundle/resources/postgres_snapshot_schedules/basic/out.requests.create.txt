@@ -9,6 +9,7 @@
     "update_mask": "schedule"
   },
   "body": {
+    "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production/snapshot-schedule",
     "schedule": [
       {
         "daily_schedule": {

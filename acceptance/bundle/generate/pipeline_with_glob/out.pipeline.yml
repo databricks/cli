@@ -1,7 +1,0 @@
-resources:
-  pipelines:
-    out:
-      name: generate-pipeline
-      libraries:
-        - glob:
-            include: /Workspace/Users/[USERNAME]/src/*.py

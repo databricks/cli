@@ -32,8 +32,6 @@
         }
       },
       "remote_state": {
-        "created_time": [UNIX_TIME_MILLIS][0],
-        "creator_user_name": "[USERNAME]",
         "deployment": {
           "kind": "BUNDLE",
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -42,15 +40,17 @@
         "edit_mode": "UI_LOCKED",
         "email_notifications": {},
         "format": "MULTI_TASK",
-        "job_id": [BAR_ID],
         "max_concurrent_runs": 1,
         "name": "job bar",
         "queue": {
           "enabled": true
         },
-        "run_as_user_name": "[USERNAME]",
         "timeout_seconds": 0,
-        "webhook_notifications": {}
+        "webhook_notifications": {},
+        "created_time": [UNIX_TIME_MILLIS][0],
+        "creator_user_name": "[USERNAME]",
+        "job_id": [BAR_ID],
+        "run_as_user_name": "[USERNAME]"
       },
       "changes": {
         "description": {
@@ -92,20 +92,20 @@
       },
       "remote_state": {
         "channel": "CURRENT",
-        "creator_user_name": "[USERNAME]",
         "deployment": {
           "kind": "BUNDLE",
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
         },
         "edition": "ADVANCED",
-        "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
         "id": "[FOO_ID]",
-        "last_modified": [UNIX_TIME_MILLIS][1],
         "name": "pipeline foo",
+        "storage": "dbfs:/my-storage",
+        "creator_user_name": "[USERNAME]",
+        "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
+        "last_modified": [UNIX_TIME_MILLIS][1],
         "pipeline_id": "[FOO_ID]",
         "run_as_user_name": "[USERNAME]",
-        "state": "IDLE",
-        "storage": "dbfs:/my-storage"
+        "state": "IDLE"
       },
       "changes": {
         "storage": {

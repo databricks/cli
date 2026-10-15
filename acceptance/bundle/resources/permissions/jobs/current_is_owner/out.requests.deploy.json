@@ -2,10 +2,12 @@
   "method": "PUT",
   "path": "/api/2.0/permissions/jobs/[FOO_ID]",
   "body": {
+    "request_object_type": "jobs",
+    "request_object_id": "[FOO_ID]",
     "access_control_list": [
       {
-        "permission_level": "IS_OWNER",
-        "user_name": "[USERNAME]"
+        "user_name": "[USERNAME]",
+        "permission_level": "IS_OWNER"
       }
     ]
   }

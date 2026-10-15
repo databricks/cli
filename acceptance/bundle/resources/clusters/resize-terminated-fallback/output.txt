@@ -39,12 +39,12 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.1/clusters/edit",
   "body": {
-    "autotermination_minutes": 60,
     "cluster_id": "[CLUSTER_ID]",
-    "cluster_name": "test-cluster-[UNIQUE_NAME]",
-    "instance_pool_id": "[TEST_INSTANCE_POOL_ID]",
     "num_workers": 3,
-    "spark_version": "13.3.x-snapshot-scala2.12"
+    "cluster_name": "test-cluster-[UNIQUE_NAME]",
+    "spark_version": "13.3.x-snapshot-scala2.12",
+    "autotermination_minutes": 60,
+    "instance_pool_id": "[TEST_INSTANCE_POOL_ID]"
   }
 }
 

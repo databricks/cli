@@ -42,25 +42,25 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/pipelines",
   "body": {
+    "name": "pfoo",
+    "edition": "ADVANCED",
     "channel": "CURRENT",
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edition": "ADVANCED",
-    "name": "pfoo"
+    }
   }
 }
 {
   "method": "POST",
   "path": "/api/2.0/pipelines",
   "body": {
+    "name": "pbar",
+    "edition": "ADVANCED",
     "channel": "CURRENT",
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edition": "ADVANCED",
-    "name": "pbar"
+    }
   }
 }

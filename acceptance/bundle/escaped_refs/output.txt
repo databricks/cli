@@ -20,39 +20,39 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
     "name": "test-job-[UNIQUE_NAME]",
-    "parameters": [
-      {
-        "default": "{{job.id}}",
-        "name": "batch_id"
-      },
-      {
-        "default": "{{job.start_time.iso_date}}",
-        "name": "business_date"
-      }
-    ],
-    "queue": {
-      "enabled": true
-    },
+    "max_concurrent_runs": 1,
     "tasks": [
       {
+        "task_key": "run_generic_ingestion",
         "notebook_task": {
+          "notebook_path": "/Shared/notebook",
           "base_parameters": {
             "generic_config": "{\"source\": {\"path\": \"landing/${p_folder}/${source_file}_*.csv\"}, \"schema\": {\"columns\": [{\"name\": \"w_batch_id\", \"expression\": \"${batch_id}\"}, {\"name\": \"w_business_dt\", \"expression\": \"cast('${business_date[0..9]}' as date)\"}]}, \"target\": {\"table\": \"main.${p_env_stg}.${target_table}\"}}",
             "parameters_list": "[{\"source_file\": \"TableA\", \"target_table\": \"table_a\", \"p_env_stg\": \"stg_example\", \"p_folder\": \"foldera\"}, {\"source_file\": \"TableB\", \"target_table\": \"table_b\", \"p_env_stg\": \"stg_example\", \"p_folder\": \"folderb\"}]"
           },
-          "notebook_path": "/Shared/notebook",
           "source": "WORKSPACE"
-        },
-        "task_key": "run_generic_ingestion"
+        }
       }
-    ]
+    ],
+    "format": "MULTI_TASK",
+    "queue": {
+      "enabled": true
+    },
+    "parameters": [
+      {
+        "name": "batch_id",
+        "default": "{{job.id}}"
+      },
+      {
+        "name": "business_date",
+        "default": "{{job.start_time.iso_date}}"
+      }
+    ],
+    "edit_mode": "UI_LOCKED",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/metadata.json"
+    }
   }
 }

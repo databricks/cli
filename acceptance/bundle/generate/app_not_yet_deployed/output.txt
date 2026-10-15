@@ -1,15 +1,24 @@
 
 >>> [CLI] apps create my-app --no-compute --no-wait
 {
+  "active_deployment": {
+    "deployment_id": "deploy-8792053817103268065",
+    "source_code_path": "/Workspace/Users/[USERNAME]/my-app",
+    "status": {
+      "message": "Deployment succeeded",
+      "state": "SUCCEEDED"
+    }
+  },
   "app_status": {
-    "message": "App status is unavailable.",
-    "state": "UNAVAILABLE"
+    "message": "Application is running.",
+    "state": "RUNNING"
   },
   "compute_size": "MEDIUM",
   "compute_status": {
-    "message": "App compute is stopped.",
-    "state": "STOPPED"
+    "message": "App compute is active.",
+    "state": "ACTIVE"
   },
+  "default_source_code_path": "/Workspace/Users/[USERNAME]/my-app",
   "forward_user_access_token": true,
   "id": "1000",
   "name": "my-app",
@@ -21,12 +30,6 @@
 
 >>> [CLI] bundle generate app --existing-app-name my-app --config-dir . --key out
 Loading app 'my-app' configuration
-App configuration successfully saved to out.app.yml
-Warning: Generated configuration is not included in the bundle
+Error: Path (/Workspace/Users/[USERNAME]/my-app) doesn't exist.
 
-The file out.app.yml is not matched by any pattern in the 'include' section of databricks.yml,
-so it will not be deployed. Add a matching entry to the 'include' section, for example:
-
-include:
-  - *.yml
-
+Exit code: 1

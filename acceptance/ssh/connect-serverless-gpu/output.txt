@@ -4,22 +4,18 @@
   "method": "POST",
   "path": "/api/2.2/jobs/runs/submit",
   "body": {
-    "environments": [
-      {
-        "environment_key": "ssh_tunnel_serverless",
-        "spec": {
-          "environment_version": "4"
-        }
-      }
-    ],
     "run_name": "ssh-server-bootstrap-serverless-gpu-test",
+    "timeout_seconds": 86400,
     "tasks": [
       {
+        "task_key": "start_ssh_server",
+        "timeout_seconds": 86400,
+        "environment_key": "ssh_tunnel_serverless",
         "compute": {
           "hardware_accelerator": "GPU_1xA10"
         },
-        "environment_key": "ssh_tunnel_serverless",
         "notebook_task": {
+          "notebook_path": "/Workspace/Users/[USERNAME]/.databricks/ssh-tunnel/[CLI_VERSION]/serverless-gpu-test/ssh-server-bootstrap",
           "base_parameters": {
             "authorizedKeySecretName": "client-public-key",
             "keepDetachedProcesses": "false",
@@ -30,13 +26,17 @@
             "shutdownDelay": "10m0s",
             "usagePolicyId": "",
             "version": "[CLI_VERSION]"
-          },
-          "notebook_path": "/Workspace/Users/[USERNAME]/.databricks/ssh-tunnel/[CLI_VERSION]/serverless-gpu-test/ssh-server-bootstrap"
-        },
-        "task_key": "start_ssh_server",
-        "timeout_seconds": 86400
+          }
+        }
       }
     ],
-    "timeout_seconds": 86400
+    "environments": [
+      {
+        "environment_key": "ssh_tunnel_serverless",
+        "spec": {
+          "environment_version": "4"
+        }
+      }
+    ]
   }
 }

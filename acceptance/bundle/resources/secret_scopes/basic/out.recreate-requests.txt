@@ -17,8 +17,8 @@
   "method": "POST",
   "path": "/api/2.0/secrets/acls/put",
   "body": {
-    "permission": "WRITE",
+    "scope": "test-scope-[UNIQUE_NAME]-2",
     "principal": "deco-test-user@databricks.com",
-    "scope": "test-scope-[UNIQUE_NAME]-2"
+    "permission": "WRITE"
   }
 }

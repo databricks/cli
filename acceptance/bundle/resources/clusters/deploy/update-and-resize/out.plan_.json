@@ -49,15 +49,15 @@
         "cluster_name": "test-cluster-[UNIQUE_NAME]",
         "enable_elastic_disk": false,
         "instance_pool_id": "[TEST_INSTANCE_POOL_ID]",
-        "lifecycle": {
-          "started": true
-        },
         "num_workers": 2,
         "spark_conf": {
           "spark.executor.memory": "2g"
         },
         "spark_version": "13.3.x-snapshot-scala2.12",
-        "state": "RUNNING"
+        "state": "RUNNING",
+        "lifecycle": {
+          "started": true
+        }
       },
       "changes": {
         "aws_attributes": {
@@ -121,15 +121,15 @@
         "cluster_name": "test-cluster-[UNIQUE_NAME]",
         "enable_elastic_disk": false,
         "instance_pool_id": "[TEST_INSTANCE_POOL_ID]",
-        "lifecycle": {
-          "started": true
-        },
         "num_workers": 3,
         "spark_conf": {
           "spark.executor.memory": "2g"
         },
         "spark_version": "13.3.x-snapshot-scala2.12",
-        "state": "RUNNING"
+        "state": "RUNNING",
+        "lifecycle": {
+          "started": true
+        }
       },
       "changes": {
         "aws_attributes": {
@@ -193,15 +193,15 @@
         "cluster_name": "test-cluster-[UNIQUE_NAME]",
         "enable_elastic_disk": false,
         "instance_pool_id": "[TEST_INSTANCE_POOL_ID]",
-        "lifecycle": {
-          "started": true
-        },
         "num_workers": 4,
         "spark_conf": {
           "spark.executor.memory": "2g"
         },
         "spark_version": "13.3.x-snapshot-scala2.12",
-        "state": "RUNNING"
+        "state": "RUNNING",
+        "lifecycle": {
+          "started": true
+        }
       },
       "changes": {
         "aws_attributes": {

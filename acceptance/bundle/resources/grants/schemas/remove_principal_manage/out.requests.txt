@@ -2,12 +2,14 @@
   "method": "PATCH",
   "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_manage_[UNIQUE_NAME]",
   "body": {
+    "securable_type": "schema",
+    "securable_full_name": "main.schema_remove_principal_manage_[UNIQUE_NAME]",
     "changes": [
       {
+        "principal": "[USERNAME]",
         "add": [
           "CREATE_TABLE"
         ],
-        "principal": "[USERNAME]",
         "remove": [
           "ALL_PRIVILEGES"
         ]

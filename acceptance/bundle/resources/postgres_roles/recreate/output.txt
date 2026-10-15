@@ -51,8 +51,8 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
   "body": {
     "spec": {
       "display_name": "Test Project for Role",
-      "history_retention_duration": "604800s",
-      "pg_version": 16
+      "pg_version": 16,
+      "history_retention_duration": "604800s"
     }
   }
 }

@@ -2,16 +2,18 @@
   "method": "PATCH",
   "path": "/api/2.0/lakeview/dashboards/[DASHBOARD_ID]",
   "body": {
+    "dashboard_id": "[DASHBOARD_ID]",
     "display_name": "Inline Dash",
-    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-serialized-inline-[UNIQUE_NAME]/default/resources",
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
     "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Page One\",\"name\":\"page1\"}]}",
-    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-serialized-inline-[UNIQUE_NAME]/default/resources"
   }
 }
 {
   "method": "POST",
   "path": "/api/2.0/lakeview/dashboards/[DASHBOARD_ID]/published",
   "body": {
+    "dashboard_id": "[DASHBOARD_ID]",
     "embed_credentials": false,
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }

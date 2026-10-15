@@ -19,8 +19,8 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/policies/clusters/create",
   "body": {
-    "definition": "{\n  \"spark_version\": {\n    \"type\": \"fixed\",\n    \"value\": \"13.3.x-scala2.12\"\n  }\n}",
-    "name": "my_policy-[UNIQUE_NAME]"
+    "name": "my_policy-[UNIQUE_NAME]",
+    "definition": "{\n  \"spark_version\": {\n    \"type\": \"fixed\",\n    \"value\": \"13.3.x-scala2.12\"\n  }\n}"
   }
 }
 

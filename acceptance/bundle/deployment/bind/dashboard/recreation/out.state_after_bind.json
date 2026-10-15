@@ -8,12 +8,12 @@
    "__id__": "[DASHBOARD_ID]",
    "state": {
     "display_name": "test dashboard [UNIQUE_NAME]",
-    "embed_credentials": true,
     "etag": [ETAG],
     "parent_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/resources",
-    "published": true,
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
     "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Page One\",\"name\":\"02724bf2\"}]}",
-    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+    "embed_credentials": true,
+    "published": true
    }
   }
  }

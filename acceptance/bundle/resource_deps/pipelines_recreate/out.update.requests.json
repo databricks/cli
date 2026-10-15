@@ -6,14 +6,14 @@
   "method": "POST",
   "path": "/api/2.0/pipelines",
   "body": {
+    "name": "pipeline foo",
+    "storage": "dbfs:/my-new-storage",
+    "edition": "ADVANCED",
     "channel": "CURRENT",
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edition": "ADVANCED",
-    "name": "pipeline foo",
-    "storage": "dbfs:/my-new-storage"
+    }
   }
 }
 {
@@ -22,17 +22,17 @@
   "body": {
     "job_id": [BAR_ID],
     "new_settings": {
+      "name": "job bar",
+      "description": "depends on foo id [FOO_ID_2]",
+      "max_concurrent_runs": 1,
+      "format": "MULTI_TASK",
+      "queue": {
+        "enabled": true
+      },
+      "edit_mode": "UI_LOCKED",
       "deployment": {
         "kind": "BUNDLE",
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-      },
-      "description": "depends on foo id [FOO_ID_2]",
-      "edit_mode": "UI_LOCKED",
-      "format": "MULTI_TASK",
-      "max_concurrent_runs": 1,
-      "name": "job bar",
-      "queue": {
-        "enabled": true
       }
     }
   }

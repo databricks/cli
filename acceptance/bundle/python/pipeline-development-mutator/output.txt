@@ -50,6 +50,7 @@ Update ID: [UUID]
   "method": "POST",
   "path": "/api/2.0/pipelines/[UUID]/updates",
   "body": {
+    "pipeline_id": "[UUID]",
     "development": true
   }
 }

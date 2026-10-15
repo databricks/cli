@@ -16,13 +16,8 @@
   "method": "PUT",
   "path": "/api/2.0/pipelines/[NEW_PIPELINE_ID]",
   "body": {
-    "catalog": "main",
-    "channel": "CURRENT",
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/state/metadata.json"
-    },
-    "edition": "ADVANCED",
+    "pipeline_id": "[NEW_PIPELINE_ID]",
+    "name": "test-pipeline",
     "libraries": [
       {
         "notebook": {
@@ -30,6 +25,12 @@
         }
       }
     ],
-    "name": "test-pipeline"
+    "edition": "ADVANCED",
+    "channel": "CURRENT",
+    "catalog": "main",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/state/metadata.json"
+    }
   }
 }

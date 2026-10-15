@@ -6,6 +6,8 @@
       "action": "create",
       "new_state": {
         "value": {
+          "parent": "schemas/main.myschema",
+          "model_provider_service_id": "myservice",
           "comment": "mycomment",
           "config": {
             "custom": {
@@ -25,9 +27,7 @@
                 ]
               }
             ]
-          },
-          "model_provider_service_id": "myservice",
-          "parent": "schemas/main.myschema"
+          }
         }
       }
     },

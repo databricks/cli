@@ -36,17 +36,17 @@
   "method": "POST",
   "path": "/api/2.0/secrets/acls/put",
   "body": {
-    "permission": "WRITE",
+    "scope": "test-scope-[UNIQUE_NAME]-1",
     "principal": "deco-test-user@databricks.com",
-    "scope": "test-scope-[UNIQUE_NAME]-1"
+    "permission": "WRITE"
   }
 }
 {
   "method": "POST",
   "path": "/api/2.0/secrets/put",
   "body": {
-    "key": "my-key",
     "scope": "test-scope-[UNIQUE_NAME]-1",
+    "key": "my-key",
     "string_value": "my-secret-value"
   }
 }
@@ -82,8 +82,8 @@
   "method": "POST",
   "path": "/api/2.0/secrets/put",
   "body": {
-    "key": "another-key",
     "scope": "test-scope-[UNIQUE_NAME]-2",
+    "key": "another-key",
     "string_value": "another-secret-value"
   }
 }

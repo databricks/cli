@@ -6,10 +6,10 @@
       "action": "create",
       "new_state": {
         "value": {
-          "parent_path": "/Workspace/Users/[USERNAME]",
-          "serialized_space": "{}",
           "title": "Permissions Test Space",
-          "warehouse_id": "test-warehouse-id"
+          "warehouse_id": "test-warehouse-id",
+          "parent_path": "/Workspace/Users/[USERNAME]",
+          "serialized_space": "{}"
         }
       }
     },

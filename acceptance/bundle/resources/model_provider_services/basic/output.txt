@@ -29,7 +29,7 @@
 
 === Verify it does not exist yet
 >>> musterr [CLI] ai-gateway get-model-provider-service model-provider-services/main.myschema.myservice
-Error: Resource catalog.ModelProviderService not found: main.myschema.myservice
+Error: Resource aigateway.ModelProviderService not found: main.myschema.myservice
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -48,15 +48,15 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "body": {
     "comment": "COMMENT1",
     "config": {
+      "provider_type": "EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM",
       "custom": {
         "direct": {
+          "base_url": "https://api.example.com/v1",
           "api_key": {
             "plaintext": "dummy-api-key"
-          },
-          "base_url": "https://api.example.com/v1"
+          }
         }
       },
-      "provider_type": "EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM",
       "targets": [
         {
           "model": "gpt-4o",
@@ -100,17 +100,18 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
     "update_mask": "*"
   },
   "body": {
+    "name": "model-provider-services/main.myschema.myservice",
     "comment": "COMMENT2",
     "config": {
+      "provider_type": "EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM",
       "custom": {
         "direct": {
+          "base_url": "https://api.example.com/v1",
           "api_key": {
             "plaintext": "dummy-api-key"
-          },
-          "base_url": "https://api.example.com/v1"
+          }
         }
       },
-      "provider_type": "EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM",
       "targets": [
         {
           "model": "gpt-4o",

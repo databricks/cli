@@ -17,22 +17,19 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
     "action": "skip",
     "reason": "spec:input_only",
     "old": true,
-    "new": true,
-    "remote": false
+    "new": true
   },
   "config.served_entities[0].external_model.openai_config.openai_api_key_plaintext": {
     "action": "skip",
     "reason": "spec:input_only",
     "old": "sk-test-plaintext-key",
-    "new": "sk-test-plaintext-key",
-    "remote": ""
+    "new": "sk-test-plaintext-key"
   },
   "config.served_entities[1].external_model.custom_provider_config.api_key_auth.value_plaintext": {
     "action": "skip",
     "reason": "spec:input_only",
     "old": "custom-plaintext-key",
-    "new": "custom-plaintext-key",
-    "remote": ""
+    "new": "custom-plaintext-key"
   },
   "description": {
     "action": "skip",
@@ -57,34 +54,35 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
   "method": "POST",
   "path": "/api/2.0/serving-endpoints",
   "body": {
+    "name": "test-endpoint",
     "config": {
       "served_entities": [
         {
-          "burst_scaling_enabled": true,
+          "name": "prod",
           "external_model": {
+            "provider": "openai",
             "name": "gpt-4o-mini",
+            "task": "llm/v1/chat",
             "openai_config": {
               "openai_api_key_plaintext": "sk-test-plaintext-key"
-            },
-            "provider": "openai",
-            "task": "llm/v1/chat"
+            }
           },
-          "name": "prod"
+          "burst_scaling_enabled": true
         },
         {
+          "name": "prod-custom",
           "external_model": {
+            "provider": "custom",
+            "name": "my-custom-model",
+            "task": "llm/v1/chat",
             "custom_provider_config": {
+              "custom_provider_url": "https://custom-provider.example",
               "api_key_auth": {
                 "key": "Authorization",
                 "value_plaintext": "custom-plaintext-key"
-              },
-              "custom_provider_url": "https://custom-provider.example"
-            },
-            "name": "my-custom-model",
-            "provider": "custom",
-            "task": "llm/v1/chat"
-          },
-          "name": "prod-custom"
+              }
+            }
+          }
         }
       ],
       "traffic_config": {
@@ -95,7 +93,6 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
           }
         ]
       }
-    },
-    "name": "test-endpoint"
+    }
   }
 }

@@ -2,14 +2,16 @@
   "method": "PUT",
   "path": "/api/2.0/permissions/dashboards/[FOO_ID]",
   "body": {
+    "request_object_type": "dashboards",
+    "request_object_id": "[FOO_ID]",
     "access_control_list": [
       {
-        "permission_level": "CAN_READ",
-        "user_name": "deco-test-user@databricks.com"
+        "user_name": "deco-test-user@databricks.com",
+        "permission_level": "CAN_READ"
       },
       {
-        "permission_level": "CAN_MANAGE",
-        "service_principal_name": "[USERNAME]"
+        "service_principal_name": "[USERNAME]",
+        "permission_level": "CAN_MANAGE"
       }
     ]
   }

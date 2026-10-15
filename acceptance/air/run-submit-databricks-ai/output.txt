@@ -15,35 +15,35 @@ Stream logs after submission using:
   "method": "POST",
   "path": "/api/2.2/jobs/runs/submit",
   "body": {
+    "run_name": "databricks-ai-v5-smoke",
+    "idempotency_token": "[UUID]",
+    "tasks": [
+      {
+        "task_key": "databricks-ai-v5-smoke",
+        "run_if": "ALL_SUCCESS",
+        "environment_key": "default",
+        "ai_runtime_task": {
+          "experiment": "databricks-ai-v5-smoke",
+          "deployments": [
+            {
+              "command_path": "/Workspace/Users/[USERNAME]/.air/cli_launch/databricks-ai-v5-smoke/databricks-ai-v5-smoke_[RUN_ID]/command.sh",
+              "compute": {
+                "accelerator_type": "GPU_1xA10",
+                "accelerator_count": 1
+              }
+            }
+          ]
+        },
+        "max_retries": 3,
+        "retry_on_timeout": true
+      }
+    ],
     "environments": [
       {
         "environment_key": "default",
         "spec": {
           "base_environment": "workspace-base-environments/databricks_ai_v5"
         }
-      }
-    ],
-    "idempotency_token": "[UUID]",
-    "run_name": "databricks-ai-v5-smoke",
-    "tasks": [
-      {
-        "ai_runtime_task": {
-          "deployments": [
-            {
-              "command_path": "/Workspace/Users/[USERNAME]/.air/cli_launch/databricks-ai-v5-smoke/databricks-ai-v5-smoke_[RUN_ID]/command.sh",
-              "compute": {
-                "accelerator_count": 1,
-                "accelerator_type": "GPU_1xA10"
-              }
-            }
-          ],
-          "experiment": "databricks-ai-v5-smoke"
-        },
-        "environment_key": "default",
-        "max_retries": 3,
-        "retry_on_timeout": true,
-        "run_if": "ALL_SUCCESS",
-        "task_key": "databricks-ai-v5-smoke"
       }
     ]
   }

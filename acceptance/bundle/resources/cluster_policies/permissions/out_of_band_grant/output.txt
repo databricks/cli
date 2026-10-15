@@ -56,6 +56,8 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
   "method": "PUT",
   "path": "/api/2.0/permissions/cluster-policies/[TEST_CLUSTER_POLICY_ID]",
   "body": {
+    "request_object_type": "cluster-policies",
+    "request_object_id": "[TEST_CLUSTER_POLICY_ID]",
     "access_control_list": [
       {
         "group_name": "users",

@@ -10,10 +10,10 @@
     "value": {
       "autoscaling_limit_max_cu": 8,
       "autoscaling_limit_min_cu": 0.5,
-      "endpoint_id": "my-endpoint",
       "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
-      "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
-      "suspend_timeout_duration": "300s"
+      "suspend_timeout_duration": "300s",
+      "endpoint_id": "my-endpoint",
+      "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
     }
   },
   "changes": {
@@ -32,8 +32,7 @@
       "action": "skip",
       "reason": "spec:input_only",
       "old": "ENDPOINT_TYPE_READ_ONLY",
-      "new": "ENDPOINT_TYPE_READ_ONLY",
-      "remote": ""
+      "new": "ENDPOINT_TYPE_READ_ONLY"
     },
     "suspend_timeout_duration": {
       "action": "skip",

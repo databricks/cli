@@ -12,6 +12,5 @@ resources:
             source: WORKSPACE
       git_source:
         git_branch: main
-        git_commit: abcdef
         git_provider: github
         git_url: https://git.databricks.com

@@ -8,9 +8,9 @@
   "action": "create",
   "new_state": {
     "value": {
-      "parent": "${resources.postgres_branches.branch.name}",
       "postgres_role": "app_role",
-      "role_id": "test-role"
+      "role_id": "test-role",
+      "parent": "${resources.postgres_branches.branch.name}"
     },
     "vars": {
       "parent": "${resources.postgres_branches.branch.name}"

@@ -16,6 +16,10 @@ are correctly set in the cluster specification:
     ResourceClass: SingleNode
   
 
+Warning: num_workers is ignored because autoscale is set
+  at resources.jobs.sample_job.job_clusters[1].new_cluster.num_workers
+  in databricks.yml:53:26
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.sample_job
 Files: 3 uploaded, 0 deleted
@@ -26,84 +30,83 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "job_clusters": [
-      {
-        "job_cluster_key": "job_cluster_autoscale",
-        "new_cluster": {
-          "autoscale": {
-            "max_workers": 4,
-            "min_workers": 1
-          },
-          "data_security_mode": "SINGLE_USER",
-          "node_type_id": "[NODE_TYPE_ID]",
-          "spark_version": "16.4.x-scala2.12"
-        }
-      },
-      {
-        "job_cluster_key": "job_cluster_autoscale_num_workers1",
-        "new_cluster": {
-          "autoscale": {
-            "max_workers": 4,
-            "min_workers": 1
-          },
-          "data_security_mode": "SINGLE_USER",
-          "node_type_id": "[NODE_TYPE_ID]",
-          "num_workers": 1,
-          "spark_version": "16.4.x-scala2.14"
-        }
-      },
-      {
-        "job_cluster_key": "job_cluster_num_workers1",
-        "new_cluster": {
-          "data_security_mode": "SINGLE_USER",
-          "node_type_id": "[NODE_TYPE_ID]",
-          "num_workers": 1,
-          "spark_version": "16.4.x-scala2.15"
-        }
-      },
-      {
-        "job_cluster_key": "job_cluster_num_workers0",
-        "new_cluster": {
-          "data_security_mode": "SINGLE_USER",
-          "node_type_id": "[NODE_TYPE_ID]",
-          "num_workers": 0,
-          "spark_version": "16.4.x-scala2.16"
-        }
-      },
-      {
-        "job_cluster_key": "job_cluster_default",
-        "new_cluster": {
-          "num_workers": 0,
-          "spark_version": "16.4.x-scala2.17"
-        }
-      }
-    ],
-    "max_concurrent_runs": 1,
     "name": "sample_job",
-    "queue": {
-      "enabled": true
-    },
-    "tasks": [
-      {
-        "notebook_task": {
-          "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/sample_notebook",
-          "source": "WORKSPACE"
-        },
-        "task_key": "notebook_task"
-      }
-    ],
     "trigger": {
       "pause_status": "UNPAUSED",
       "periodic": {
         "interval": 1,
         "unit": "DAYS"
       }
+    },
+    "max_concurrent_runs": 1,
+    "tasks": [
+      {
+        "task_key": "notebook_task",
+        "notebook_task": {
+          "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/sample_notebook",
+          "source": "WORKSPACE"
+        }
+      }
+    ],
+    "job_clusters": [
+      {
+        "job_cluster_key": "job_cluster_autoscale",
+        "new_cluster": {
+          "spark_version": "16.4.x-scala2.12",
+          "node_type_id": "[NODE_TYPE_ID]",
+          "data_security_mode": "SINGLE_USER",
+          "autoscale": {
+            "min_workers": 1,
+            "max_workers": 4
+          }
+        }
+      },
+      {
+        "job_cluster_key": "job_cluster_autoscale_num_workers1",
+        "new_cluster": {
+          "spark_version": "16.4.x-scala2.14",
+          "node_type_id": "[NODE_TYPE_ID]",
+          "data_security_mode": "SINGLE_USER",
+          "autoscale": {
+            "min_workers": 1,
+            "max_workers": 4
+          }
+        }
+      },
+      {
+        "job_cluster_key": "job_cluster_num_workers1",
+        "new_cluster": {
+          "spark_version": "16.4.x-scala2.15",
+          "node_type_id": "[NODE_TYPE_ID]",
+          "data_security_mode": "SINGLE_USER",
+          "num_workers": 1
+        }
+      },
+      {
+        "job_cluster_key": "job_cluster_num_workers0",
+        "new_cluster": {
+          "spark_version": "16.4.x-scala2.16",
+          "node_type_id": "[NODE_TYPE_ID]",
+          "data_security_mode": "SINGLE_USER",
+          "num_workers": 0
+        }
+      },
+      {
+        "job_cluster_key": "job_cluster_default",
+        "new_cluster": {
+          "spark_version": "16.4.x-scala2.17",
+          "num_workers": 0
+        }
+      }
+    ],
+    "format": "MULTI_TASK",
+    "queue": {
+      "enabled": true
+    },
+    "edit_mode": "UI_LOCKED",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
     }
   }
 }
@@ -124,5 +127,9 @@ are correctly set in the cluster specification:
   custom_tags:
     ResourceClass: SingleNode
   
+
+Warning: num_workers is ignored because autoscale is set
+  at resources.jobs.sample_job.job_clusters[1].new_cluster.num_workers
+  in databricks.yml:53:26
 
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged

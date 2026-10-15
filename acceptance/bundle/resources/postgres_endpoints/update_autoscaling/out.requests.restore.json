@@ -25,10 +25,11 @@
     "update_mask": "spec.autoscaling_limit_max_cu"
   },
   "body": {
+    "name": "[MY_ENDPOINT_ID]",
     "spec": {
-      "autoscaling_limit_max_cu": 8,
-      "autoscaling_limit_min_cu": 0.5,
       "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
+      "autoscaling_limit_min_cu": 0.5,
+      "autoscaling_limit_max_cu": 8,
       "suspend_timeout_duration": "300s"
     }
   }

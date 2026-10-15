@@ -34,8 +34,9 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
   "method": "PATCH",
   "path": "/api/2.1/unity-catalog/volumes/main.test-schema-[UNIQUE_NAME].vol_one",
   "body": {
-    "comment": "",
-    "new_name": "vol_two"
+    "full_name_arg": "main.test-schema-[UNIQUE_NAME].vol_one",
+    "new_name": "vol_two",
+    "comment": ""
   }
 }
 

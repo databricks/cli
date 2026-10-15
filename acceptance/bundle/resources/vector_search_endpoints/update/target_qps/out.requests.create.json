@@ -2,8 +2,8 @@
   "method": "POST",
   "path": "/api/2.0/vector-search/endpoints",
   "body": {
-    "endpoint_type": "STANDARD",
     "name": "vs-endpoint-[UNIQUE_NAME]",
+    "endpoint_type": "STANDARD",
     "target_qps": 1
   }
 }
@@ -11,14 +11,16 @@
   "method": "PUT",
   "path": "/api/2.0/permissions/vector-search-endpoints/[UUID]",
   "body": {
+    "request_object_type": "vector-search-endpoints",
+    "request_object_id": "[UUID]",
     "access_control_list": [
       {
         "group_name": "admins",
         "permission_level": "CAN_USE"
       },
       {
-        "permission_level": "CAN_MANAGE",
-        "user_name": "[USERNAME]"
+        "user_name": "[USERNAME]",
+        "permission_level": "CAN_MANAGE"
       }
     ]
   }

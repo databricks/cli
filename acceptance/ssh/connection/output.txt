@@ -5,10 +5,13 @@
   "path": "/api/2.2/jobs/runs/submit",
   "body": {
     "run_name": "ssh-server-bootstrap-[TEST_DEFAULT_CLUSTER_ID]",
+    "timeout_seconds": 86400,
     "tasks": [
       {
-        "existing_cluster_id": "[TEST_DEFAULT_CLUSTER_ID]",
+        "task_key": "start_ssh_server",
+        "timeout_seconds": 86400,
         "notebook_task": {
+          "notebook_path": "/Workspace/Users/[USERNAME]/.databricks/ssh-tunnel/[CLI_VERSION]/[TEST_DEFAULT_CLUSTER_ID]/ssh-server-bootstrap",
           "base_parameters": {
             "authorizedKeySecretName": "client-public-key",
             "keepDetachedProcesses": "false",
@@ -19,13 +22,10 @@
             "shutdownDelay": "10m0s",
             "usagePolicyId": "",
             "version": "[CLI_VERSION]"
-          },
-          "notebook_path": "/Workspace/Users/[USERNAME]/.databricks/ssh-tunnel/[CLI_VERSION]/[TEST_DEFAULT_CLUSTER_ID]/ssh-server-bootstrap"
+          }
         },
-        "task_key": "start_ssh_server",
-        "timeout_seconds": 86400
+        "existing_cluster_id": "[TEST_DEFAULT_CLUSTER_ID]"
       }
-    ],
-    "timeout_seconds": 86400
+    ]
   }
 }

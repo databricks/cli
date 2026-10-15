@@ -6,12 +6,8 @@
   "method": "POST",
   "path": "/api/2.0/pipelines",
   "body": {
-    "channel": "CURRENT",
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate-[UNIQUE_NAME]/default/state/metadata.json"
-    },
-    "edition": "ADVANCED",
+    "name": "test-pipeline-[UNIQUE_NAME]",
+    "storage": "/Shared/new_storage",
     "libraries": [
       {
         "notebook": {
@@ -19,7 +15,11 @@
         }
       }
     ],
-    "name": "test-pipeline-[UNIQUE_NAME]",
-    "storage": "/Shared/new_storage"
+    "edition": "ADVANCED",
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate-[UNIQUE_NAME]/default/state/metadata.json"
+    }
   }
 }

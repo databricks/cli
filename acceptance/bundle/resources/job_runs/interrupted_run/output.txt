@@ -26,8 +26,8 @@ Exit code: 1
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
-    "idempotency_token": "[UUID]",
-    "job_id": [MY_JOB_ID]
+    "job_id": [MY_JOB_ID],
+    "idempotency_token": "[UUID]"
   }
 }
 
@@ -45,11 +45,11 @@ Exit code: 1
     "job_id": [MY_JOB_ID],
     "run_id": [MY_RUN_ID],
     "run_name": "my-job",
-    "run_page_url": "[DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[WORKSPACE_ID]",
-    "run_type": "JOB_RUN",
     "state": {
       "life_cycle_state": "RUNNING"
-    }
+    },
+    "run_page_url": "[DATABRICKS_URL]/jobs/29065937332224/runs/[MY_RUN_ID]?o=[WORKSPACE_ID]",
+    "run_type": "JOB_RUN"
   },
   "changes": {
     "result_state": {

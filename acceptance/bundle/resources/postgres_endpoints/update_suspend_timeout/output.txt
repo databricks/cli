@@ -36,26 +36,9 @@ Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-suspend-[UNIQUE_NAME]/default/files...
-Updated postgres_endpoints.my_endpoint
+Error: cannot update resources.postgres_endpoints.my_endpoint: updating id=projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/my-endpoint: UpdateEndpointRequest.UpdateMask: invalid field mask path "spec.suspension": field "suspension" does not exist
+
 Files: 0 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
-
->>> print_requests.py --del-body project_id,branch_id,endpoint_id --sort //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
-
->>> [CLI] postgres get-endpoint projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/my-endpoint
-{
-  "endpoint_id": "my-endpoint",
-  "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/my-endpoint",
-  "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
-  "uid": "[ENDPOINT_UID]",
-  "status": {
-    "endpoint_id": "my-endpoint",
-    "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
-    "autoscaling_limit_min_cu": 0.5,
-    "autoscaling_limit_max_cu": 8,
-    "suspend_timeout_duration": "600s"
-  }
-}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -74,3 +57,5 @@ All data stored in them will be permanently lost:
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-suspend-[UNIQUE_NAME]/default
 
 Destroy: 3 deleted
+
+Exit code: 1

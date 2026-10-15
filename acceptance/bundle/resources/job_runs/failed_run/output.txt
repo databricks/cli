@@ -36,13 +36,13 @@ Files: 3 uploaded, 0 deleted
     "result_state": "FAILED",
     "run_id": [MY_RUN_ID],
     "run_name": "test-job-[UNIQUE_NAME]",
-    "run_page_url": "[RUN_URL]",
-    "run_type": "JOB_RUN",
     "state": {
       "life_cycle_state": "INTERNAL_ERROR",
       "result_state": "FAILED",
       "state_message": "Task main failed with message: Workload failed, see run output for details."
-    }
+    },
+    "run_page_url": "[RUN_URL]",
+    "run_type": "JOB_RUN"
   },
   "changes": {
     "result_state": {
@@ -72,16 +72,16 @@ Files: 0 uploaded, 0 deleted
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
-    "idempotency_token": "[UUID]",
-    "job_id": [MY_JOB_ID]
+    "job_id": [MY_JOB_ID],
+    "idempotency_token": "[UUID]"
   }
 }
 {
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
-    "idempotency_token": "[UUID]",
-    "job_id": [MY_JOB_ID]
+    "job_id": [MY_JOB_ID],
+    "idempotency_token": "[UUID]"
   }
 }
 

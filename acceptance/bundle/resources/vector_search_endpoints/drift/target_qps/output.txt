@@ -42,6 +42,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "method": "PATCH",
   "path": "/api/2.0/vector-search/endpoints/vs-endpoint-[UNIQUE_NAME]",
   "body": {
+    "name": "vs-endpoint-[UNIQUE_NAME]",
     "target_qps": 1
   }
 }

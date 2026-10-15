@@ -29,8 +29,8 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 === gcp_attributes sent on update (empty means the change was NOT applied):
 {
-  "availability": "PREEMPTIBLE_GCP",
   "use_preemptible_executors": false,
+  "availability": "PREEMPTIBLE_GCP",
   "zone_id": "auto"
 }
 

@@ -6,15 +6,15 @@
   },
   "body": {
     "spec": {
+      "display_name": "Test Postgres Project",
+      "pg_version": 16,
+      "history_retention_duration": "604800s",
       "default_endpoint_settings": {
-        "autoscaling_limit_max_cu": 4,
         "autoscaling_limit_min_cu": 0.5,
+        "autoscaling_limit_max_cu": 4,
         "suspend_timeout_duration": "300s"
       },
-      "display_name": "Test Postgres Project",
-      "enable_pg_native_login": false,
-      "history_retention_duration": "604800s",
-      "pg_version": 16
+      "enable_pg_native_login": false
     }
   }
 }

@@ -25,6 +25,7 @@
     "update_mask": "spec.attributes.createdb"
   },
   "body": {
+    "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role",
     "spec": {
       "attributes": {
         "createdb": true

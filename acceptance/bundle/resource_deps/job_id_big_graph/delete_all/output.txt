@@ -21,16 +21,16 @@ Resources: 12 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
+    "name": "job chain_bottom",
+    "max_concurrent_runs": 1,
+    "format": "MULTI_TASK",
+    "queue": {
+      "enabled": true
+    },
+    "edit_mode": "UI_LOCKED",
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
-    "name": "job chain_bottom",
-    "queue": {
-      "enabled": true
     }
   }
 }
@@ -38,66 +38,49 @@ Resources: 12 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
     "name": "job chain_mid",
-    "queue": {
-      "enabled": true
-    },
+    "max_concurrent_runs": 1,
     "tasks": [
       {
+        "task_key": "t1",
         "run_job_task": {
           "job_id": [CHAIN_BOTTOM_ID]
-        },
-        "task_key": "t1"
+        }
       }
-    ]
+    ],
+    "format": "MULTI_TASK",
+    "queue": {
+      "enabled": true
+    },
+    "edit_mode": "UI_LOCKED",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    }
   }
 }
 {
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
     "name": "job chain_top",
-    "queue": {
-      "enabled": true
-    },
+    "max_concurrent_runs": 1,
     "tasks": [
       {
+        "task_key": "t1",
         "run_job_task": {
           "job_id": [CHAIN_MID_ID]
-        },
-        "task_key": "t1"
+        }
       }
-    ]
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/create",
-  "body": {
+    ],
+    "format": "MULTI_TASK",
+    "queue": {
+      "enabled": true
+    },
+    "edit_mode": "UI_LOCKED",
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
-    "name": "job diamond_bottom",
-    "queue": {
-      "enabled": true
     }
   }
 }
@@ -105,97 +88,114 @@ Resources: 12 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
+    "name": "job diamond_bottom",
+    "max_concurrent_runs": 1,
+    "format": "MULTI_TASK",
+    "queue": {
+      "enabled": true
+    },
+    "edit_mode": "UI_LOCKED",
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
     "name": "job diamond_left",
+    "max_concurrent_runs": 1,
+    "tasks": [
+      {
+        "task_key": "t1",
+        "run_job_task": {
+          "job_id": [DIAMOND_BOTTOM_ID]
+        }
+      }
+    ],
+    "format": "MULTI_TASK",
     "queue": {
       "enabled": true
     },
-    "tasks": [
-      {
-        "run_job_task": {
-          "job_id": [DIAMOND_BOTTOM_ID]
-        },
-        "task_key": "t1"
-      }
-    ]
+    "edit_mode": "UI_LOCKED",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    }
   }
 }
 {
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
     "name": "job diamond_right",
+    "max_concurrent_runs": 1,
+    "tasks": [
+      {
+        "task_key": "t1",
+        "run_job_task": {
+          "job_id": [DIAMOND_BOTTOM_ID]
+        }
+      }
+    ],
+    "format": "MULTI_TASK",
     "queue": {
       "enabled": true
     },
-    "tasks": [
-      {
-        "run_job_task": {
-          "job_id": [DIAMOND_BOTTOM_ID]
-        },
-        "task_key": "t1"
-      }
-    ]
+    "edit_mode": "UI_LOCKED",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    }
   }
 }
 {
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
     "name": "job diamond_top",
-    "queue": {
-      "enabled": true
-    },
+    "max_concurrent_runs": 1,
     "tasks": [
       {
+        "task_key": "t1",
         "run_job_task": {
           "job_id": [DIAMOND_LEFT_ID]
-        },
-        "task_key": "t1"
+        }
       },
       {
+        "task_key": "t2",
         "run_job_task": {
           "job_id": [DIAMOND_RIGHT_ID]
-        },
-        "task_key": "t2"
+        }
       }
-    ]
+    ],
+    "format": "MULTI_TASK",
+    "queue": {
+      "enabled": true
+    },
+    "edit_mode": "UI_LOCKED",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    }
   }
 }
 {
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
     "name": "job independent1",
+    "max_concurrent_runs": 1,
+    "format": "MULTI_TASK",
     "queue": {
       "enabled": true
+    },
+    "edit_mode": "UI_LOCKED",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
     }
   }
 }
@@ -203,16 +203,16 @@ Resources: 12 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
     "name": "job independent2",
+    "max_concurrent_runs": 1,
+    "format": "MULTI_TASK",
     "queue": {
       "enabled": true
+    },
+    "edit_mode": "UI_LOCKED",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
     }
   }
 }
@@ -220,47 +220,30 @@ Resources: 12 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
     "name": "job multi_child",
-    "queue": {
-      "enabled": true
-    },
+    "max_concurrent_runs": 1,
     "tasks": [
       {
+        "task_key": "t1",
         "run_job_task": {
           "job_id": [MULTI_PARENT1_ID]
-        },
-        "task_key": "t1"
+        }
       },
       {
+        "task_key": "t2",
         "run_job_task": {
           "job_id": [MULTI_PARENT2_ID]
-        },
-        "task_key": "t2"
+        }
       }
-    ]
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/create",
-  "body": {
+    ],
+    "format": "MULTI_TASK",
+    "queue": {
+      "enabled": true
+    },
+    "edit_mode": "UI_LOCKED",
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
-    "name": "job multi_parent1",
-    "queue": {
-      "enabled": true
     }
   }
 }
@@ -268,16 +251,33 @@ Resources: 12 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
+    "name": "job multi_parent1",
+    "max_concurrent_runs": 1,
+    "format": "MULTI_TASK",
+    "queue": {
+      "enabled": true
+    },
+    "edit_mode": "UI_LOCKED",
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
     "name": "job multi_parent2",
+    "max_concurrent_runs": 1,
+    "format": "MULTI_TASK",
     "queue": {
       "enabled": true
+    },
+    "edit_mode": "UI_LOCKED",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
     }
   }
 }

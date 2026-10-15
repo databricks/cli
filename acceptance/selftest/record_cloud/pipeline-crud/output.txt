@@ -11,14 +11,14 @@
   "path": "/api/2.0/pipelines",
   "body": {
     "allow_duplicate_names": true,
+    "name": "test-pipeline-1",
     "libraries": [
       {
         "file": {
           "path": "/whatever.py"
         }
       }
-    ],
-    "name": "test-pipeline-1"
+    ]
   }
 }
 
@@ -40,15 +40,16 @@
   "method": "PUT",
   "path": "/api/2.0/pipelines/[UUID]",
   "body": {
+    "pipeline_id": "[UUID]",
     "allow_duplicate_names": true,
+    "name": "test-pipeline-2",
     "libraries": [
       {
         "file": {
           "path": "/whatever.py"
         }
       }
-    ],
-    "name": "test-pipeline-2"
+    ]
   }
 }
 

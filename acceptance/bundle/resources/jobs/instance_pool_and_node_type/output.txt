@@ -50,20 +50,20 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks [OUTPUT_DIR]/out.requests.txt
 [
   {
-    "new_cluster": {
-      "data_security_mode": "USER_ISOLATION",
-      "instance_pool_id": "$TEST_INSTANCE_POOL_ID",
-      "num_workers": 1,
-      "spark_version": "$DEFAULT_SPARK_VERSION"
-    },
+    "task_key": "TestTask",
     "python_wheel_task": {
-      "entry_point": "run",
       "package_name": "my_test_code",
+      "entry_point": "run",
       "parameters": [
         "one",
         "two"
       ]
     },
-    "task_key": "TestTask"
+    "new_cluster": {
+      "spark_version": "$DEFAULT_SPARK_VERSION",
+      "instance_pool_id": "$TEST_INSTANCE_POOL_ID",
+      "data_security_mode": "USER_ISOLATION",
+      "num_workers": 1
+    }
   }
 ]

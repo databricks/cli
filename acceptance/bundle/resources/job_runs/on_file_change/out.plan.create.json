@@ -13,14 +13,14 @@
       "new_state": {
         "value": {
           "job_id": 0,
+          "result_state": "SUCCESS",
           "lifecycle": {
             "triggers_state": {
               "on_file_change": {
                 "seed.txt": "[FILE_HASH]"
               }
             }
-          },
-          "result_state": "SUCCESS"
+          }
         },
         "vars": {
           "job_id": "${resources.jobs.my_job.id}"

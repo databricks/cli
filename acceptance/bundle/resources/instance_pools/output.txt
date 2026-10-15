@@ -43,11 +43,11 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/instance-pools/create",
   "body": {
-    "idle_instance_autotermination_minutes": 60,
     "instance_pool_name": "my_instance_pool",
-    "max_capacity": 5,
     "min_idle_instances": 0,
-    "node_type_id": "Standard_DS3_v2"
+    "max_capacity": 5,
+    "node_type_id": "Standard_DS3_v2",
+    "idle_instance_autotermination_minutes": 60
   }
 }
 
@@ -78,12 +78,12 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/instance-pools/edit",
   "body": {
-    "idle_instance_autotermination_minutes": 60,
     "instance_pool_id": "[UUID]",
     "instance_pool_name": "my_instance_pool_2",
-    "max_capacity": 5,
     "min_idle_instances": 0,
-    "node_type_id": "Standard_DS3_v2"
+    "max_capacity": 5,
+    "node_type_id": "Standard_DS3_v2",
+    "idle_instance_autotermination_minutes": 60
   }
 }
 

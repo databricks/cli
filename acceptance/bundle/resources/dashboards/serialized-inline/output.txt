@@ -14,15 +14,16 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "path": "/api/2.0/lakeview/dashboards",
   "body": {
     "display_name": "Inline Dash",
-    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/dashboard-serialized-inline-[UNIQUE_NAME]/default/resources",
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
     "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Page 1\",\"name\":\"page1\"}]}",
-    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/dashboard-serialized-inline-[UNIQUE_NAME]/default/resources"
   }
 }
 {
   "method": "POST",
   "path": "/api/2.0/lakeview/dashboards/[INLINE_DASH_ID]/published",
   "body": {
+    "dashboard_id": "[INLINE_DASH_ID]",
     "embed_credentials": false,
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }

@@ -23,8 +23,7 @@
       "action": "skip",
       "reason": "spec:input_only",
       "old": "ENDPOINT_TYPE_READ_ONLY",
-      "new": "ENDPOINT_TYPE_READ_ONLY",
-      "remote": ""
+      "new": "ENDPOINT_TYPE_READ_ONLY"
     },
     "suspend_timeout_duration": {
       "action": "skip",

@@ -2,22 +2,24 @@
   "method": "PUT",
   "path": "/api/2.0/permissions/database-instances/[FOO_ID]",
   "body": {
+    "request_object_type": "database-instances",
+    "request_object_id": "[FOO_ID]",
     "access_control_list": [
       {
-        "permission_level": "CAN_USE",
-        "user_name": "viewer@example.com"
+        "user_name": "viewer@example.com",
+        "permission_level": "CAN_USE"
       },
       {
         "group_name": "data-team",
         "permission_level": "CAN_MANAGE"
       },
       {
-        "permission_level": "CAN_MANAGE",
-        "service_principal_name": "[UUID]"
+        "service_principal_name": "[UUID]",
+        "permission_level": "CAN_MANAGE"
       },
       {
-        "permission_level": "CAN_MANAGE",
-        "user_name": "[USERNAME]"
+        "user_name": "[USERNAME]",
+        "permission_level": "CAN_MANAGE"
       }
     ]
   }

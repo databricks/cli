@@ -7,11 +7,10 @@
       "new_state": {
         "value": {
           "display_name": "test-dashboard-[UNIQUE_NAME]",
-          "embed_credentials": false,
           "parent_path": "/Workspace/Users/[USERNAME]/folder1",
-          "published": true,
+          "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
           "serialized_dashboard": "{\"pages\":[{\"name\":\"page1\",\"displayName\":\"Page 1\"}]}",
-          "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+          "published": true
         }
       }
     },

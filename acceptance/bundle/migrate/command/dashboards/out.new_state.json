@@ -8,12 +8,12 @@
    "__id__": "[DASHBOARD1_ID]",
    "state": {
     "display_name": "my dashboard",
-    "embed_credentials": true,
     "etag": "80611980",
     "parent_path": "/Workspace/Users/[USERNAME]",
-    "published": true,
+    "warehouse_id": "123456",
     "serialized_dashboard": "sha256:[HASH]",
-    "warehouse_id": "123456"
+    "embed_credentials": true,
+    "published": true
    }
   }
  }

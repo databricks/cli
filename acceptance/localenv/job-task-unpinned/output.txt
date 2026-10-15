@@ -1,5 +1,5 @@
 ✗ Setup failed while resolving your compute target.
 
-  resolving job task 12345.transform: task "transform" of job 12345 binds environment "default", which records no environment version
+  resolving job task 12345.transform: task "transform" of job 12345 references environment "default", which the job does not define
 
 Re-run with --debug for details, or --output json for a structured report.

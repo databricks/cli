@@ -10,11 +10,11 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.1/unity-catalog/volumes",
   "body": {
-    "catalog_name": "main",
-    "comment": "COMMENT1",
     "name": "myvolume",
+    "catalog_name": "main",
     "schema_name": "myschema",
-    "volume_type": "MANAGED"
+    "volume_type": "MANAGED",
+    "comment": "COMMENT1"
   }
 }
 
@@ -63,11 +63,11 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.1/unity-catalog/volumes",
   "body": {
-    "catalog_name": "main",
-    "comment": "COMMENT1",
     "name": "myvolume",
+    "catalog_name": "main",
     "schema_name": "mynewschema",
-    "volume_type": "MANAGED"
+    "volume_type": "MANAGED",
+    "comment": "COMMENT1"
   }
 }
 

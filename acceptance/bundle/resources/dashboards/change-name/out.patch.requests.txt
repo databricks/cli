@@ -2,9 +2,10 @@
   "method": "PATCH",
   "path": "/api/2.0/lakeview/dashboards/[DASHBOARD_ID]",
   "body": {
+    "dashboard_id": "[DASHBOARD_ID]",
     "display_name": "dashboard2",
-    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-name-[UNIQUE_NAME]/default/resources",
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
     "serialized_dashboard": "{}\n",
-    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-name-[UNIQUE_NAME]/default/resources"
   }
 }

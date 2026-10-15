@@ -11,16 +11,15 @@
       "attributes": {
         "createdb": false
       },
-      "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
       "postgres_role": "app_role",
-      "role_id": "test-role"
+      "role_id": "test-role",
+      "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
     }
   },
   "remote_state": {
-    "create_time": "[TIMESTAMP]",
-    "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role",
-    "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
     "role_id": "test-role",
+    "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+    "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role",
     "status": {
       "attributes": {
         "bypassrls": false,
@@ -32,6 +31,7 @@
       "postgres_role": "app_role",
       "role_id": "test-role"
     },
+    "create_time": "[TIMESTAMP]",
     "update_time": "[TIMESTAMP]"
   },
   "changes": {

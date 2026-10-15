@@ -11,21 +11,23 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "method": "PATCH",
   "path": "/api/2.1/unity-catalog/permissions/schema/main.myschema",
   "body": {
+    "securable_type": "schema",
+    "securable_full_name": "main.myschema",
     "changes": [
       {
+        "principal": "[USERNAME]",
         "add": [
           "USE_SCHEMA"
         ],
-        "principal": "[USERNAME]",
         "remove": [
           "ALL_PRIVILEGES"
         ]
       },
       {
+        "principal": "extra@example.test",
         "add": [
           "CREATE_TABLE"
         ],
-        "principal": "extra@example.test",
         "remove": [
           "ALL_PRIVILEGES"
         ]
@@ -51,12 +53,14 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
   "method": "PATCH",
   "path": "/api/2.1/unity-catalog/permissions/schema/main.myschema",
   "body": {
+    "securable_type": "schema",
+    "securable_full_name": "main.myschema",
     "changes": [
       {
+        "principal": "[USERNAME]",
         "add": [
           "USE_SCHEMA"
         ],
-        "principal": "[USERNAME]",
         "remove": [
           "ALL_PRIVILEGES"
         ]

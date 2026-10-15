@@ -24,11 +24,11 @@ id
   "method": "POST",
   "path": "/api/2.0/sql/statements",
   "body": {
-    "disposition": "INLINE",
-    "format": "JSON_ARRAY",
-    "on_wait_timeout": "CONTINUE",
     "statement": "SELECT * FROM `main`.`default`.`people` LIMIT 11",
+    "warehouse_id": "wh-test",
+    "format": "JSON_ARRAY",
+    "disposition": "INLINE",
     "wait_timeout": "10s",
-    "warehouse_id": "wh-test"
+    "on_wait_timeout": "CONTINUE"
   }
 }

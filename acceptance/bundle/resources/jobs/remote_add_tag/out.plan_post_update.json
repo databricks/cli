@@ -40,8 +40,6 @@
         }
       },
       "remote_state": {
-        "created_time": [UNIX_TIME_MILLIS],
-        "creator_user_name": "[USERNAME]",
         "deployment": {
           "kind": "BUNDLE",
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -49,13 +47,11 @@
         "edit_mode": "UI_LOCKED",
         "email_notifications": {},
         "format": "MULTI_TASK",
-        "job_id": [FOO_ID],
         "max_concurrent_runs": 1,
         "name": "My Wheel Job",
         "queue": {
           "enabled": true
         },
-        "run_as_user_name": "[USERNAME]",
         "tags": {
           "new_tag": "new_value",
           "tag1": "tag value"
@@ -79,7 +75,11 @@
           }
         ],
         "timeout_seconds": 0,
-        "webhook_notifications": {}
+        "webhook_notifications": {},
+        "created_time": [UNIX_TIME_MILLIS],
+        "creator_user_name": "[USERNAME]",
+        "job_id": [FOO_ID],
+        "run_as_user_name": "[USERNAME]"
       },
       "changes": {
         "email_notifications": {

@@ -2,13 +2,15 @@
   "method": "PATCH",
   "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_grants_[UNIQUE_NAME]",
   "body": {
+    "securable_type": "schema",
+    "securable_full_name": "main.schema_grants_[UNIQUE_NAME]",
     "changes": [
       {
+        "principal": "deco-test-user@databricks.com",
         "add": [
           "CREATE_TABLE",
           "USE_SCHEMA"
         ],
-        "principal": "deco-test-user@databricks.com",
         "remove": [
           "ALL_PRIVILEGES"
         ]

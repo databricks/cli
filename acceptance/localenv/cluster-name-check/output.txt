@@ -1,7 +1,9 @@
 
 >>> [CLI] environments setup-local --cluster-name my-cluster --dry-run
-Plan: [TEST_TMP_DIR]/pyproject.toml
-  changed region: requires-python
-  changed region: tool.uv.constraint-dependencies
-  changed region: databricks-connect
-Check complete. No files were modified.
+✗ Setup failed while resolving your compute target.
+
+  resolving cluster name "my-cluster": no active cluster named "my-cluster"
+
+Re-run with --debug for details, or --output json for a structured report.
+
+Exit code: 1

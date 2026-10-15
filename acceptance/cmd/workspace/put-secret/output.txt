@@ -35,8 +35,8 @@ Error: cannot specify both --bytes-value and --string-value
   "method": "POST",
   "path": "/api/2.0/secrets/put",
   "body": {
-    "key": "string-key",
     "scope": "test-scope",
+    "key": "string-key",
     "string_value": "test-value\nwith-newlines\n"
   }
 }
@@ -44,8 +44,8 @@ Error: cannot specify both --bytes-value and --string-value
   "method": "POST",
   "path": "/api/2.0/secrets/put",
   "body": {
-    "bytes_value": "AQID",
+    "scope": "test-scope",
     "key": "bytes-key",
-    "scope": "test-scope"
+    "bytes_value": "AQID"
   }
 }

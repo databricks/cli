@@ -2,18 +2,19 @@
   "method": "POST",
   "path": "/api/2.0/serving-endpoints",
   "body": {
+    "name": "[ENDPOINT_ID]",
     "config": {
       "served_entities": [
         {
+          "name": "prod",
           "external_model": {
+            "provider": "openai",
             "name": "gpt-4o-mini",
+            "task": "llm/v1/chat",
             "openai_config": {
               "openai_api_key": "{{secrets/test-scope/openai-key}}"
-            },
-            "provider": "openai",
-            "task": "llm/v1/chat"
-          },
-          "name": "prod"
+            }
+          }
         }
       ]
     },
@@ -21,14 +22,14 @@
       "on_update_success": [
         "user1@example.com"
       ]
-    },
-    "name": "[ENDPOINT_ID]"
+    }
   }
 }
 {
   "method": "PATCH",
   "path": "/api/2.0/serving-endpoints/[ENDPOINT_ID]/notifications",
   "body": {
+    "name": "[ENDPOINT_ID]",
     "email_notifications": {
       "on_update_success": [
         "user2@example.com"

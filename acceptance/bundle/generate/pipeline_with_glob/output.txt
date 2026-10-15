@@ -1,9 +1,3 @@
-Pipeline configuration successfully saved to out.pipeline.yml
-Warning: Generated configuration is not included in the bundle
+Error: json: cannot unmarshal number into Go struct field getPipelineResponseWire.pipeline_id of type string
 
-The file out.pipeline.yml is not matched by any pattern in the 'include' section of databricks.yml,
-so it will not be deployed. Add a matching entry to the 'include' section, for example:
-
-include:
-  - *.yml
-
+Exit code: 1
