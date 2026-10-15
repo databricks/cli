@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
@@ -143,28 +145,28 @@ func newCreateEndpoint() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if createEndpointSkipWait {
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current vectorsearch.Endpoint
+			err = api.Do(ctx, "POST", "/api/2.0/vector-search/endpoints", auth.WorkspaceIDHeaders(w.Config), nil, &createEndpointReq, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
+		}
 		wait, err := w.VectorSearch.CreateEndpoint(ctx, *sdkReq)
 		if err != nil {
 			return err
-		}
-		if createEndpointSkipWait {
-			// Render the current state, as of right after the call.
-			current, err := w.VectorSearch.GetEndpoint(ctx, sdkvectorsearch.GetEndpointRequest{Name: new(wait.GetName())})
-			if err != nil {
-				return err
-			}
-			out, err := vectorsearch.EndpointFromSDK(current)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for create-endpoint to complete...")
 		response, err := wait.Wait(ctx, lro.WithTimeout(createEndpointTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := vectorsearch.EndpointFromSDK(response)
@@ -348,7 +350,7 @@ func newGetPermissionLevels() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: endpoint_id
+		getPermissionLevelsReq.RequestObjectId = new(args[0])
 
 		getPermissionLevelsReq.RequestObjectType = new("vector-search-endpoints")
 
@@ -415,7 +417,7 @@ func newGetPermissions() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: endpoint_id
+		getPermissionsReq.RequestObjectId = new(args[0])
 
 		getPermissionsReq.RequestObjectType = new("vector-search-endpoints")
 
@@ -620,11 +622,11 @@ func newRetrieveUserVisibleMetrics() *cobra.Command {
 
 	cmd.Flags().Var(&retrieveUserVisibleMetricsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: end_time
+	flags.JSONStringPtrVar(cmd.Flags(), &retrieveUserVisibleMetricsReq.EndTime, "end-time", `End time for metrics query.`)
 	flags.IntPtrVar(cmd.Flags(), &retrieveUserVisibleMetricsReq.GranularityInSeconds, "granularity-in-seconds", `Granularity in seconds.`)
 	// TODO: array: metrics
 	flags.StringPtrVar(cmd.Flags(), &retrieveUserVisibleMetricsReq.PageToken, "page-token", `Token for pagination.`)
-	// TODO: complex arg: start_time
+	flags.JSONStringPtrVar(cmd.Flags(), &retrieveUserVisibleMetricsReq.StartTime, "start-time", `Start time for metrics query.`)
 
 	cmd.Use = "retrieve-user-visible-metrics NAME"
 	cmd.Short = `Retrieve user-visible metrics for an endpoint.`
@@ -749,7 +751,7 @@ func newSetPermissions() *cobra.Command {
 				}
 			}
 		}
-		_ = args[0] // TODO: field not in sdk-go request: endpoint_id
+		setPermissionsReq.RequestObjectId = new(args[0])
 
 		setPermissionsReq.RequestObjectType = new("vector-search-endpoints")
 
@@ -1019,7 +1021,7 @@ func newUpdatePermissions() *cobra.Command {
 				}
 			}
 		}
-		_ = args[0] // TODO: field not in sdk-go request: endpoint_id
+		updatePermissionsReq.RequestObjectId = new(args[0])
 
 		updatePermissionsReq.RequestObjectType = new("vector-search-endpoints")
 

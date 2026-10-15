@@ -261,7 +261,7 @@ func newList() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, out)
+		return cmdio.Render(ctx, out.PermissionAssignments)
 	}
 
 	// Disable completions since they are not applicable.

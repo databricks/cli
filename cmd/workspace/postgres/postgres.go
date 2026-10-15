@@ -219,7 +219,7 @@ func newCreateBranch() *cobra.Command {
 			// Wait for completion.
 			response, err := wait.Wait(ctx, lro.WithTimeout(createBranchTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -343,7 +343,7 @@ func newCreateCatalog() *cobra.Command {
 			// Wait for completion.
 			response, err := wait.Wait(ctx, lro.WithTimeout(createCatalogTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -493,7 +493,7 @@ Create a change data feed configuration.
 			// Wait for completion.
 			response, err := wait.Wait(ctx, lro.WithTimeout(createCdfConfigTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -618,7 +618,7 @@ func newCreateDataApi() *cobra.Command {
 			// Wait for completion.
 			response, err := wait.Wait(ctx, lro.WithTimeout(createDataApiTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -747,7 +747,7 @@ func newCreateDatabase() *cobra.Command {
 			// Wait for completion.
 			response, err := wait.Wait(ctx, lro.WithTimeout(createDatabaseTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -878,7 +878,7 @@ func newCreateEndpoint() *cobra.Command {
 			// Wait for completion.
 			response, err := wait.Wait(ctx, lro.WithTimeout(createEndpointTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -1007,7 +1007,7 @@ func newCreateProject() *cobra.Command {
 			// Wait for completion.
 			response, err := wait.Wait(ctx, lro.WithTimeout(createProjectTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -1133,7 +1133,7 @@ func newCreateRole() *cobra.Command {
 			// Wait for completion.
 			response, err := wait.Wait(ctx, lro.WithTimeout(createRoleTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -1262,7 +1262,7 @@ Create a Snapshot.
 			// Wait for completion.
 			response, err := wait.Wait(ctx, lro.WithTimeout(createSnapshotTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -1396,7 +1396,7 @@ func newCreateSyncedTable() *cobra.Command {
 			// Wait for completion.
 			response, err := wait.Wait(ctx, lro.WithTimeout(createSyncedTableTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -1502,7 +1502,7 @@ func newDeleteBranch() *cobra.Command {
 			response := struct{}{}
 			err = wait.Wait(ctx, lro.WithTimeout(deleteBranchTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -1599,7 +1599,7 @@ func newDeleteCatalog() *cobra.Command {
 			response := struct{}{}
 			err = wait.Wait(ctx, lro.WithTimeout(deleteCatalogTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -1706,7 +1706,7 @@ Delete a change data feed configuration.
 			response := struct{}{}
 			err = wait.Wait(ctx, lro.WithTimeout(deleteCdfConfigTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -1805,7 +1805,7 @@ func newDeleteDataApi() *cobra.Command {
 			response := struct{}{}
 			err = wait.Wait(ctx, lro.WithTimeout(deleteDataApiTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -1901,7 +1901,7 @@ func newDeleteDatabase() *cobra.Command {
 			response := struct{}{}
 			err = wait.Wait(ctx, lro.WithTimeout(deleteDatabaseTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -1999,7 +1999,7 @@ func newDeleteEndpoint() *cobra.Command {
 			response := struct{}{}
 			err = wait.Wait(ctx, lro.WithTimeout(deleteEndpointTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -2102,7 +2102,7 @@ func newDeleteProject() *cobra.Command {
 			response := struct{}{}
 			err = wait.Wait(ctx, lro.WithTimeout(deleteProjectTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -2205,7 +2205,7 @@ func newDeleteRole() *cobra.Command {
 			response := struct{}{}
 			err = wait.Wait(ctx, lro.WithTimeout(deleteRoleTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -2305,7 +2305,7 @@ Delete a Snapshot.
 			response := struct{}{}
 			err = wait.Wait(ctx, lro.WithTimeout(deleteSnapshotTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -2404,7 +2404,7 @@ func newDeleteSyncedTable() *cobra.Command {
 			response := struct{}{}
 			err = wait.Wait(ctx, lro.WithTimeout(deleteSyncedTableTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -4127,7 +4127,7 @@ func newUndeleteBranch() *cobra.Command {
 			response := struct{}{}
 			err = wait.Wait(ctx, lro.WithTimeout(undeleteBranchTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -4230,7 +4230,7 @@ Undelete a Project.
 			response := struct{}{}
 			err = wait.Wait(ctx, lro.WithTimeout(undeleteProjectTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -4356,7 +4356,7 @@ func newUpdateBranch() *cobra.Command {
 			// Wait for completion.
 			response, err := wait.Wait(ctx, lro.WithTimeout(updateBranchTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -4487,7 +4487,7 @@ func newUpdateDataApi() *cobra.Command {
 			// Wait for completion.
 			response, err := wait.Wait(ctx, lro.WithTimeout(updateDataApiTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -4613,7 +4613,7 @@ func newUpdateDatabase() *cobra.Command {
 			// Wait for completion.
 			response, err := wait.Wait(ctx, lro.WithTimeout(updateDatabaseTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -4742,7 +4742,7 @@ func newUpdateEndpoint() *cobra.Command {
 			// Wait for completion.
 			response, err := wait.Wait(ctx, lro.WithTimeout(updateEndpointTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -4872,7 +4872,7 @@ func newUpdateProject() *cobra.Command {
 			// Wait for completion.
 			response, err := wait.Wait(ctx, lro.WithTimeout(updateProjectTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -5000,7 +5000,7 @@ func newUpdateRole() *cobra.Command {
 			// Wait for completion.
 			response, err := wait.Wait(ctx, lro.WithTimeout(updateRoleTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -5131,7 +5131,7 @@ Update a Snapshot Schedule.
 			// Wait for completion.
 			response, err := wait.Wait(ctx, lro.WithTimeout(updateSnapshotScheduleTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 

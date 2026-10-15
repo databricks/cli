@@ -295,6 +295,7 @@ func newList() *cobra.Command {
 		_ = a
 
 		sdkReq := &sdknetworking.ListNetworkRequest{}
+
 		response, err := a.Networking.ListNetworkPublic(ctx, *sdkReq)
 		if err != nil {
 			return err

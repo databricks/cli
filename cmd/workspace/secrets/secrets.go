@@ -762,7 +762,7 @@ func newListAcls() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, out)
+		return cmdio.Render(ctx, out.Items)
 	}
 
 	// Disable completions since they are not applicable.
@@ -824,6 +824,7 @@ func newListScopes() *cobra.Command {
 		_ = w
 
 		sdkReq := &sdksecrets.ListScopesRequest{}
+
 		response, err := w.Secrets.ListScopes(ctx, *sdkReq)
 		if err != nil {
 			return err
@@ -839,7 +840,7 @@ func newListScopes() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, out)
+		return cmdio.Render(ctx, out.Scopes)
 	}
 
 	// Disable completions since they are not applicable.
@@ -938,7 +939,7 @@ func newListSecrets() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, out)
+		return cmdio.Render(ctx, out.Secrets)
 	}
 
 	// Disable completions since they are not applicable.

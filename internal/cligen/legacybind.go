@@ -27,7 +27,9 @@ type legacyPkg struct {
 	alias, importPath, clientField string
 	methods                        map[string]*legacyMethod
 	structs                        map[string]*MirrorStruct
-	enums                          map[string]bool
+	// allFields are all fields of each struct, including untagged ones.
+	allFields map[string][]*MirrorField
+	enums     map[string]bool
 }
 
 type legacyMethod struct {
@@ -45,6 +47,7 @@ func loadLegacy(repoRoot string) (map[string]*legacyPkg, error) {
 			clientField: lp.clientField,
 			methods:     map[string]*legacyMethod{},
 			structs:     map[string]*MirrorStruct{},
+			allFields:   map[string][]*MirrorField{},
 			enums:       map[string]bool{},
 		}
 		files, err := filepath.Glob(filepath.Join(repoRoot, lp.dir, "*.go"))
@@ -108,11 +111,18 @@ func loadLegacy(repoRoot string) (map[string]*legacyPkg, error) {
 						}
 						ms := &MirrorStruct{byJSON: map[string]*MirrorField{}}
 						for _, fl := range st.Fields.List {
+							for _, n := range fl.Names {
+								p.allFields[ts.Name.Name] = append(p.allFields[ts.Name.Name], &MirrorField{GoName: n.Name, Type: exprString(fl.Type)})
+							}
 							if fl.Tag == nil || len(fl.Names) != 1 {
 								continue
 							}
 							tag, _ := strconv.Unquote(fl.Tag.Value)
 							name, _, _ := strings.Cut(reflect.StructTag(tag).Get("json"), ",")
+							if name == "" || name == "-" {
+								// Query parameters are tagged for the query encoder only.
+								name, _, _ = strings.Cut(reflect.StructTag(tag).Get("url"), ",")
+							}
 							if name == "" || name == "-" {
 								continue
 							}
@@ -165,6 +175,15 @@ func (b *MethodBind) bindLegacy(p *legacyPkg) bool {
 		if body != nil && !f.IsPath && !f.IsQuery {
 			if bmf := body.byJSON[f.Name]; bmf != nil {
 				mf, prefix = bmf, "."+b.bodyGo
+			}
+		}
+		if mf == nil {
+			// Path parameters carry no wire name; the hand-written types keep
+			// the previous SDK's Go field names.
+			for _, rf := range p.allFields[lm.request] {
+				if rf.GoName == f.PascalName() {
+					mf = rf
+				}
 			}
 		}
 		if mf == nil {

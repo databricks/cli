@@ -4,6 +4,7 @@ package quality_monitors
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -103,8 +104,13 @@ func newCancelRefresh() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: table_name
-		_ = args[1] // TODO: field not in sdk-go request: refresh_id
+		cancelRefreshReq.TableName = args[0]
+		var cancelRefreshRefreshIdArg int64
+		_, err = fmt.Sscan(args[1], &cancelRefreshRefreshIdArg)
+		if err != nil {
+			return fmt.Errorf("invalid REFRESH_ID: %s", args[1])
+		}
+		cancelRefreshReq.RefreshId = cancelRefreshRefreshIdArg
 
 		err = w.QualityMonitors.CancelRefresh(ctx, cancelRefreshReq)
 		if err != nil {
@@ -216,7 +222,7 @@ func newCreate() *cobra.Command {
 				}
 			}
 		}
-		_ = args[0] // TODO: field not in sdk-go request: table_name
+		createReq.TableName = args[0]
 		if !cmd.Flags().Changed("json") {
 			createReq.OutputSchemaName = args[1]
 		}
@@ -294,7 +300,7 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: table_name
+		deleteReq.TableName = args[0]
 
 		response, err := w.QualityMonitors.Delete(ctx, deleteReq)
 		if err != nil {
@@ -365,7 +371,7 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: table_name
+		getReq.TableName = args[0]
 
 		response, err := w.QualityMonitors.Get(ctx, getReq)
 		if err != nil {
@@ -435,8 +441,13 @@ func newGetRefresh() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: table_name
-		_ = args[1] // TODO: field not in sdk-go request: refresh_id
+		getRefreshReq.TableName = args[0]
+		var getRefreshRefreshIdArg int64
+		_, err = fmt.Sscan(args[1], &getRefreshRefreshIdArg)
+		if err != nil {
+			return fmt.Errorf("invalid REFRESH_ID: %s", args[1])
+		}
+		getRefreshReq.RefreshId = getRefreshRefreshIdArg
 
 		response, err := w.QualityMonitors.GetRefresh(ctx, getRefreshReq)
 		if err != nil {
@@ -506,7 +517,7 @@ func newListRefreshes() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: table_name
+		listRefreshesReq.TableName = args[0]
 
 		response, err := w.QualityMonitors.ListRefreshes(ctx, listRefreshesReq)
 		if err != nil {
@@ -598,7 +609,7 @@ func newRegenerateDashboard() *cobra.Command {
 				}
 			}
 		}
-		_ = args[0] // TODO: field not in sdk-go request: table_name
+		regenerateDashboardReq.TableName = args[0]
 
 		response, err := w.QualityMonitors.RegenerateDashboard(ctx, regenerateDashboardReq)
 		if err != nil {
@@ -668,7 +679,7 @@ func newRunRefresh() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: table_name
+		runRefreshReq.TableName = args[0]
 
 		response, err := w.QualityMonitors.RunRefresh(ctx, runRefreshReq)
 		if err != nil {
@@ -777,7 +788,7 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		_ = args[0] // TODO: field not in sdk-go request: table_name
+		updateReq.TableName = args[0]
 		if !cmd.Flags().Changed("json") {
 			updateReq.OutputSchemaName = args[1]
 		}

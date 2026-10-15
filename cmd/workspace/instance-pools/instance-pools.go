@@ -494,7 +494,7 @@ func newGetPermissionLevels() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: instance_pool_id
+		getPermissionLevelsReq.RequestObjectId = new(args[0])
 
 		getPermissionLevelsReq.RequestObjectType = new("instance-pools")
 
@@ -561,7 +561,7 @@ func newGetPermissions() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: instance_pool_id
+		getPermissionsReq.RequestObjectId = new(args[0])
 
 		getPermissionsReq.RequestObjectType = new("instance-pools")
 
@@ -627,6 +627,7 @@ func newList() *cobra.Command {
 		_ = w
 
 		sdkReq := &sdkinstancepools.ListInstancePoolsRequest{}
+
 		response, err := w.InstancePools.ListInstancePools(ctx, *sdkReq)
 		if err != nil {
 			return err
@@ -642,7 +643,7 @@ func newList() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, out)
+		return cmdio.Render(ctx, out.InstancePools)
 	}
 
 	// Disable completions since they are not applicable.
@@ -714,7 +715,7 @@ func newSetPermissions() *cobra.Command {
 				}
 			}
 		}
-		_ = args[0] // TODO: field not in sdk-go request: instance_pool_id
+		setPermissionsReq.RequestObjectId = new(args[0])
 
 		setPermissionsReq.RequestObjectType = new("instance-pools")
 
@@ -802,7 +803,7 @@ func newUpdatePermissions() *cobra.Command {
 				}
 			}
 		}
-		_ = args[0] // TODO: field not in sdk-go request: instance_pool_id
+		updatePermissionsReq.RequestObjectId = new(args[0])
 
 		updatePermissionsReq.RequestObjectType = new("instance-pools")
 

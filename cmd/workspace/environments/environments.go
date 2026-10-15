@@ -174,7 +174,7 @@ func newCreateWorkspaceBaseEnvironment() *cobra.Command {
 			// Wait for completion.
 			response, err := wait.Wait(ctx, lro.WithTimeout(createWorkspaceBaseEnvironmentTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -626,7 +626,7 @@ func newRefreshWorkspaceBaseEnvironment() *cobra.Command {
 			// Wait for completion.
 			response, err := wait.Wait(ctx, lro.WithTimeout(refreshWorkspaceBaseEnvironmentTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -867,7 +867,7 @@ func newUpdateWorkspaceBaseEnvironment() *cobra.Command {
 			// Wait for completion.
 			response, err := wait.Wait(ctx, lro.WithTimeout(updateWorkspaceBaseEnvironmentTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 

@@ -55,7 +55,7 @@ type fieldBind struct {
 	// raw: where the value goes ("path", "query", "body").
 }
 
-func (b *MethodBind) IsSdk() bool { return b.Kind == "sdk" }
+func (b *MethodBind) IsSdk() bool    { return b.Kind == "sdk" }
 func (b *MethodBind) IsRaw() bool    { return b.Kind == "raw" }
 func (b *MethodBind) IsLegacy() bool { return b.Kind == "legacy" }
 
@@ -159,7 +159,7 @@ func (b *MethodBind) SdkReq() string {
 		return ""
 	}
 	if !b.HasRequest() {
-		return fmt.Sprintf("sdkReq := &%s.%s{}", b.pkg.SdkAlias, b.sdk.Request)
+		return fmt.Sprintf("sdkReq := &%s.%s{}\n", b.pkg.SdkAlias, b.sdk.Request) + b.pathConstsOn("sdkReq")
 	}
 	if b.direct {
 		return fmt.Sprintf("sdkReq := &%s", b.reqVar)
@@ -209,6 +209,88 @@ func (b *MethodBind) WaiterIDs() string {
 		parts = append(parts, fmt.Sprintf("%q: wait.%s()", snakeName(strings.TrimPrefix(g, "Get")), g))
 	}
 	return strings.Join(parts, ", ")
+}
+
+// HasNoWaitCall reports whether --no-wait can send the request directly and
+// render the API's immediate response, as the previous SDK's waiters exposed
+// it (sdk-go waiters only keep the identifiers).
+func (b *MethodBind) HasNoWaitCall() bool {
+	if b.direct || b.sdk.baseResult == "" || b.pkg.structs[b.sdk.baseResult] == nil || b.sdk.Request == "" {
+		return false
+	}
+	for _, f := range b.sdk.pathFields {
+		if f == "" || strings.Contains(f, ".") {
+			return false
+		}
+	}
+	return true
+}
+
+// NoWaitCall sends the request of a waiter method through libs/apiclient and
+// decodes the immediate response into `current`.
+func (b *MethodBind) NoWaitCall() string {
+	path := strings.ReplaceAll(b.sdk.path, "{}", "%s")
+	var args []string
+	for _, f := range b.sdk.pathFields {
+		args = append(args, fmt.Sprintf("url.PathEscape(fmt.Sprint(utils.Deref(%s.%s)))", b.reqVar, f))
+	}
+	pathExpr := strconv.Quote(b.sdk.path)
+	if len(args) > 0 {
+		pathExpr = fmt.Sprintf("fmt.Sprintf(%q, %s)", path, strings.Join(args, ", "))
+	}
+	body := "nil"
+	if b.sdk.hasBody {
+		body = "&" + b.reqVar
+		if b.sdk.bodyGo != "" {
+			body = b.reqVar + "." + b.sdk.bodyGo
+		}
+	}
+	query := "nil"
+	if len(b.sdk.queryFields) > 0 {
+		var names []string
+		for name := range b.sdk.queryFields {
+			names = append(names, name)
+		}
+		sort.Strings(names)
+		var parts []string
+		for _, name := range names {
+			parts = append(parts, fmt.Sprintf("%q: %s.%s", name, b.reqVar, b.sdk.queryFields[name]))
+		}
+		query = "map[string]any{" + strings.Join(parts, ", ") + "}"
+	}
+	return fmt.Sprintf(`api, err := apiclient.New(%s.Config)
+			if err != nil {
+				return err
+			}
+			var current %s.%s
+			err = api.Do(ctx, %q, %s, %s, %s, %s, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)`, b.client(), b.pkg.MirrorAlias, b.sdk.baseResult, b.sdk.verb, pathExpr, b.RawHeaders(), query, body)
+}
+
+// ListItems is the Go field holding the items of a list response, for list
+// methods that sdk-go does not page through (no ...Iter method). The previous
+// SDK returned these items as a list, which is what the commands render.
+func (b *MethodBind) ListItems() string {
+	if b.method.Pagination == nil || b.sdk.Kind != "resp" || b.sdk.Iter != "" {
+		return ""
+	}
+	st := b.pkg.structs[b.sdk.Result]
+	if st == nil {
+		return ""
+	}
+	field := ""
+	for _, f := range st.Fields {
+		if strings.HasPrefix(f.Type, "[]") && f.Type != "[]byte" {
+			if field != "" {
+				return ""
+			}
+			field = f.GoName
+		}
+	}
+	return field
 }
 
 // PollCall returns the call fetching the current state of a waiter's
@@ -294,7 +376,7 @@ func rawVar(f *FieldJSON, m *MethodJSON) string {
 }
 
 func flagFunc(kind string, ptr bool) string {
-	name := map[string]string{"string": "String", "bool": "Bool", "int": "Int", "int64": "Int64", "float64": "Float64"}[kind]
+	name := map[string]string{"string": "String", "bool": "Bool", "int": "Int", "int64": "Int64", "float64": "Float64", "float32": "Float32"}[kind]
 	if ptr {
 		return "flags." + name + "PtrVar"
 	}
@@ -380,24 +462,33 @@ func (b *MethodBind) FlagDef(f *FieldJSON, name, usage string) string {
 	}
 	t := b.target(f)
 	switch fb.kind {
-	case "string", "bool", "int", "int64", "float64":
+	case "string", "bool", "int", "int64", "float64", "float32":
+		if fb.kind == "string" && f.Entity != nil && len(f.Entity.Enum) > 0 && fb.ptr {
+			return fmt.Sprintf("flags.EnumPtrVar(cmd.Flags(), &%s, %q, %s, %q, %s)", t, name, usage, f.Entity.PascalName, enumValues(f))
+		}
 		if fb.ptr {
 			return fmt.Sprintf("%s(cmd.Flags(), &%s, %q, %s)", flagFunc(fb.kind, true), t, name, usage)
 		}
 		return fmt.Sprintf("cmd.Flags().%s(&%s, %q, %s, %s)", flagFunc(fb.kind, false), t, name, t, usage)
 	case "legacyenum":
 		return fmt.Sprintf("cmd.Flags().Var(&%s, %q, %s)", t, name, usage)
+	case "bytes":
+		return fmt.Sprintf("flags.Base64Var(cmd.Flags(), &%s, %q, %s)", t, name, usage)
+	case "time", "duration":
+		// cli.json describes the field as a plain string; parse it the way the
+		// API's JSON encodes it.
+		return fmt.Sprintf("flags.JSONStringPtrVar(cmd.Flags(), &%s, %q, %s)", t, name, usage)
 	case "enum":
 		typ := f.Entity.PascalName
 		if typ == "" {
 			typ = fb.enumType[strings.Index(fb.enumType, ".")+1:]
 		}
-		if fb.ptr {
-			return "// TODO: optional enum: " + f.Name
-		}
 		vals := ""
 		if f.Entity != nil && len(f.Entity.Enum) > 0 {
 			vals = ", " + enumValues(f)
+		}
+		if fb.ptr {
+			return fmt.Sprintf("flags.EnumPtrVar(cmd.Flags(), &%s, %q, %s, %q%s)", t, name, usage, typ, vals)
 		}
 		return fmt.Sprintf("flags.EnumVar(cmd.Flags(), &%s, %q, %s, %q%s)", t, name, usage, typ, vals)
 	}
@@ -648,15 +739,21 @@ func (b *MethodBind) bindFields() {
 	// Path parameters by position.
 	cliParams := pathParams(b.method.Path)
 	pathGo := map[string]string{}
+	// sdk-go path parameters line up with cli.json ones, except that a
+	// literal segment of the cli.json path may fill an sdk-go parameter
+	// (pathConsts) and the account ID is implicit in sdk-go (field "").
 	j := 0
-	for _, sf := range b.sdk.pathFields {
+	for i, sf := range b.sdk.pathFields {
+		if _, isConst := b.pathConsts[i]; isConst {
+			continue
+		}
 		for j < len(cliParams) && cliParams[j] == "account_id" && sf != "" {
 			j++
 		}
 		if j >= len(cliParams) {
 			break
 		}
-		if _, isConst := b.pathConsts[j]; !isConst && sf != "" {
+		if sf != "" {
 			pathGo[cliParams[j]] = sf
 		}
 		j++
@@ -693,11 +790,13 @@ func (b *MethodBind) bindFields() {
 		fb.ptr = strings.HasPrefix(mf.Type, "*")
 		base := strings.TrimPrefix(mf.Type, "*")
 		switch {
-		case base == "string" || base == "bool" || base == "int" || base == "int64" || base == "float64":
+		case base == "string" || base == "bool" || base == "int" || base == "int64" || base == "float64" || base == "float32":
 			fb.kind = base
 			if f.Entity != nil && f.Entity.IsFieldMask {
 				fb.kind = "fieldmask"
 			}
+		case base == "[]byte":
+			fb.kind = "bytes"
 		case base == "types.Time":
 			fb.kind = "time"
 		case base == "types.Duration":
@@ -747,6 +846,13 @@ func (b *MethodBind) resolveGoPath(req *MirrorStruct, goPath string) (*MirrorFie
 // PathConsts assigns literal path parameter values (e.g. the object type of
 // the typed permission endpoints) to the request.
 func (b *MethodBind) PathConsts() string {
+	if !b.HasRequest() {
+		return ""
+	}
+	return b.pathConstsOn(b.reqVar)
+}
+
+func (b *MethodBind) pathConstsOn(v string) string {
 	if len(b.pathConsts) == 0 {
 		return ""
 	}
@@ -760,7 +866,7 @@ func (b *MethodBind) PathConsts() string {
 		if k >= len(b.sdk.pathFields) || b.sdk.pathFields[k] == "" {
 			continue
 		}
-		fmt.Fprintf(&sb, "%s.%s = new(%q)\n", b.reqVar, b.sdk.pathFields[k], b.pathConsts[k])
+		fmt.Fprintf(&sb, "%s.%s = new(%q)\n", v, b.sdk.pathFields[k], b.pathConsts[k])
 	}
 	return sb.String()
 }

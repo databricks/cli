@@ -295,6 +295,7 @@ func newList() *cobra.Command {
 		_ = w
 
 		sdkReq := &sdkinstanceprofiles.ListInstanceProfilesRequest{}
+
 		response, err := w.InstanceProfiles.ListInstanceProfiles(ctx, *sdkReq)
 		if err != nil {
 			return err
@@ -310,7 +311,7 @@ func newList() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, out)
+		return cmdio.Render(ctx, out.InstanceProfiles)
 	}
 
 	// Disable completions since they are not applicable.

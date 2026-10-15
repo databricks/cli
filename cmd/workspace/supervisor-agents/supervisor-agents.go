@@ -688,7 +688,7 @@ Get supervisor agent permission levels.
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: supervisor_agent_id
+		getPermissionLevelsReq.RequestObjectId = new(args[0])
 
 		getPermissionLevelsReq.RequestObjectType = new("supervisor-agents")
 
@@ -757,7 +757,7 @@ Get supervisor agent permissions.
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: supervisor_agent_id
+		getPermissionsReq.RequestObjectId = new(args[0])
 
 		getPermissionsReq.RequestObjectType = new("supervisor-agents")
 
@@ -1219,7 +1219,7 @@ Set supervisor agent permissions.
 				}
 			}
 		}
-		_ = args[0] // TODO: field not in sdk-go request: supervisor_agent_id
+		setPermissionsReq.RequestObjectId = new(args[0])
 
 		setPermissionsReq.RequestObjectType = new("supervisor-agents")
 
@@ -1418,7 +1418,7 @@ Update supervisor agent permissions.
 				}
 			}
 		}
-		_ = args[0] // TODO: field not in sdk-go request: supervisor_agent_id
+		updatePermissionsReq.RequestObjectId = new(args[0])
 
 		updatePermissionsReq.RequestObjectType = new("supervisor-agents")
 

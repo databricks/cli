@@ -7,10 +7,16 @@ import (
 	"fmt"
 	"time"
 
+	"net/url"
+
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/sdk-go/options/lro"
 	"github.com/spf13/cobra"
 
@@ -234,28 +240,28 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if createSkipWait {
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current modelserving.InferenceEndpointDetailed
+			err = api.Do(ctx, "POST", "/api/2.0/serving-endpoints", auth.WorkspaceIDHeaders(w.Config), nil, &createReq, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
+		}
 		wait, err := w.ServingEndpoints.CreateInferenceEndpoint(ctx, *sdkReq)
 		if err != nil {
 			return err
-		}
-		if createSkipWait {
-			// Render the current state, as of right after the call.
-			current, err := w.ServingEndpoints.GetInferenceEndpoint(ctx, sdkmodelserving.GetInferenceEndpointRequest{Name: new(wait.GetName())})
-			if err != nil {
-				return err
-			}
-			out, err := modelserving.InferenceEndpointDetailedFromSDK(current)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for create to complete...")
 		response, err := wait.Wait(ctx, lro.WithTimeout(createTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := modelserving.InferenceEndpointDetailedFromSDK(response)
@@ -340,28 +346,28 @@ Create a new PT serving endpoint.`
 		if err != nil {
 			return err
 		}
+		if createProvisionedThroughputEndpointSkipWait {
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current modelserving.InferenceEndpointDetailed
+			err = api.Do(ctx, "POST", "/api/2.0/serving-endpoints/pt", auth.WorkspaceIDHeaders(w.Config), nil, &createProvisionedThroughputEndpointReq, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
+		}
 		wait, err := w.ServingEndpoints.CreateProvisionedThroughputInferenceEndpoint(ctx, *sdkReq)
 		if err != nil {
 			return err
-		}
-		if createProvisionedThroughputEndpointSkipWait {
-			// Render the current state, as of right after the call.
-			current, err := w.ServingEndpoints.GetInferenceEndpoint(ctx, sdkmodelserving.GetInferenceEndpointRequest{Name: new(wait.GetName())})
-			if err != nil {
-				return err
-			}
-			out, err := modelserving.InferenceEndpointDetailedFromSDK(current)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for create-provisioned-throughput-endpoint to complete...")
 		response, err := wait.Wait(ctx, lro.WithTimeout(createProvisionedThroughputEndpointTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := modelserving.InferenceEndpointDetailedFromSDK(response)
@@ -669,7 +675,7 @@ func newGetPermissionLevels() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: serving_endpoint_id
+		getPermissionLevelsReq.RequestObjectId = new(args[0])
 
 		getPermissionLevelsReq.RequestObjectType = new("serving-endpoints")
 
@@ -736,7 +742,7 @@ func newGetPermissions() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: serving_endpoint_id
+		getPermissionsReq.RequestObjectId = new(args[0])
 
 		getPermissionsReq.RequestObjectType = new("serving-endpoints")
 
@@ -876,6 +882,7 @@ func newList() *cobra.Command {
 		_ = w
 
 		sdkReq := &sdkmodelserving.ListInferenceEndpointsRequest{}
+
 		response, err := w.ServingEndpoints.ListInferenceEndpoints(ctx, *sdkReq)
 		if err != nil {
 			return err
@@ -891,7 +898,7 @@ func newList() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, out)
+		return cmdio.Render(ctx, out.Endpoints)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1485,7 +1492,7 @@ func newSetPermissions() *cobra.Command {
 				}
 			}
 		}
-		_ = args[0] // TODO: field not in sdk-go request: serving_endpoint_id
+		setPermissionsReq.RequestObjectId = new(args[0])
 
 		setPermissionsReq.RequestObjectType = new("serving-endpoints")
 
@@ -1590,28 +1597,28 @@ func newUpdateConfig() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if updateConfigSkipWait {
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current modelserving.InferenceEndpointDetailed
+			err = api.Do(ctx, "PUT", fmt.Sprintf("/api/2.0/serving-endpoints/%s/config", url.PathEscape(fmt.Sprint(utils.Deref(updateConfigReq.Name)))), auth.WorkspaceIDHeaders(w.Config), nil, &updateConfigReq, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
+		}
 		wait, err := w.ServingEndpoints.PutInferenceEndpointConfig(ctx, *sdkReq)
 		if err != nil {
 			return err
-		}
-		if updateConfigSkipWait {
-			// Render the current state, as of right after the call.
-			current, err := w.ServingEndpoints.GetInferenceEndpoint(ctx, sdkmodelserving.GetInferenceEndpointRequest{Name: new(wait.GetName())})
-			if err != nil {
-				return err
-			}
-			out, err := modelserving.InferenceEndpointDetailedFromSDK(current)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for update-config to complete...")
 		response, err := wait.Wait(ctx, lro.WithTimeout(updateConfigTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := modelserving.InferenceEndpointDetailedFromSDK(response)
@@ -1775,7 +1782,7 @@ func newUpdatePermissions() *cobra.Command {
 				}
 			}
 		}
-		_ = args[0] // TODO: field not in sdk-go request: serving_endpoint_id
+		updatePermissionsReq.RequestObjectId = new(args[0])
 
 		updatePermissionsReq.RequestObjectType = new("serving-endpoints")
 
@@ -1878,28 +1885,28 @@ Update config of a PT serving endpoint.
 		if err != nil {
 			return err
 		}
+		if updateProvisionedThroughputEndpointConfigSkipWait {
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current modelserving.InferenceEndpointDetailed
+			err = api.Do(ctx, "PUT", fmt.Sprintf("/api/2.0/serving-endpoints/pt/%s/config", url.PathEscape(fmt.Sprint(utils.Deref(updateProvisionedThroughputEndpointConfigReq.Name)))), auth.WorkspaceIDHeaders(w.Config), nil, &updateProvisionedThroughputEndpointConfigReq, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
+		}
 		wait, err := w.ServingEndpoints.PutProvisionedThroughputInferenceEndpointConfig(ctx, *sdkReq)
 		if err != nil {
 			return err
-		}
-		if updateProvisionedThroughputEndpointConfigSkipWait {
-			// Render the current state, as of right after the call.
-			current, err := w.ServingEndpoints.GetInferenceEndpoint(ctx, sdkmodelserving.GetInferenceEndpointRequest{Name: new(wait.GetName())})
-			if err != nil {
-				return err
-			}
-			out, err := modelserving.InferenceEndpointDetailedFromSDK(current)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for update-provisioned-throughput-endpoint-config to complete...")
 		response, err := wait.Wait(ctx, lro.WithTimeout(updateProvisionedThroughputEndpointConfigTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := modelserving.InferenceEndpointDetailedFromSDK(response)

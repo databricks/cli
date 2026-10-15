@@ -405,7 +405,7 @@ func newUpdate() *cobra.Command {
 
 	flags.StringPtrVar(cmd.Flags(), &updateReq.Comment, "comment", `User-provided free-form text description.`)
 	flags.Int64PtrVar(cmd.Flags(), &updateReq.CustomMaxRetentionHours, "custom-max-retention-hours", `Custom maximum retention period in hours for the schema.`)
-	flags.StringPtrVar(cmd.Flags(), &updateReq.EnablePredictiveOptimization, "enable-predictive-optimization", `Whether predictive optimization should be enabled for this object and objects under it. Supported values: [DISABLE, ENABLE, INHERIT]`)
+	flags.EnumPtrVar(cmd.Flags(), &updateReq.EnablePredictiveOptimization, "enable-predictive-optimization", `Whether predictive optimization should be enabled for this object and objects under it. Supported values: [DISABLE, ENABLE, INHERIT]`, "EnablePredictiveOptimization", "DISABLE", "ENABLE", "INHERIT")
 	flags.StringPtrVar(cmd.Flags(), &updateReq.NewName, "new-name", `New name for the schema.`)
 	flags.StringPtrVar(cmd.Flags(), &updateReq.Owner, "owner", `Username of current owner of schema.`)
 	// TODO: map via StringToStringVar: properties

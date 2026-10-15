@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
@@ -144,28 +146,28 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if createSkipWait {
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current warehouses.CreateWarehouseResponse
+			err = api.Do(ctx, "POST", "/api/2.0/sql/warehouses", auth.WorkspaceIDHeaders(w.Config), nil, &createReq, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
+		}
 		wait, err := w.Warehouses.CreateWarehouse(ctx, *sdkReq)
 		if err != nil {
 			return err
-		}
-		if createSkipWait {
-			// Render the current state, as of right after the call.
-			current, err := w.Warehouses.GetWarehouse(ctx, sdkwarehouses.GetWarehouseRequest{Id: new(wait.GetId())})
-			if err != nil {
-				return err
-			}
-			out, err := warehouses.GetWarehouseResponseFromSDK(current)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for create to complete...")
 		response, err := wait.Wait(ctx, lro.WithTimeout(createTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := warehouses.GetWarehouseResponseFromSDK(response)
@@ -555,7 +557,7 @@ func newEdit() *cobra.Command {
 		response, err := wait.Wait(ctx, lro.WithTimeout(editTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := warehouses.GetWarehouseResponseFromSDK(response)
@@ -785,7 +787,7 @@ func newGetPermissionLevels() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the sql warehouse for which to get or manage permissions")
 		}
-		_ = args[0] // TODO: field not in sdk-go request: warehouse_id
+		getPermissionLevelsReq.RequestObjectId = new(args[0])
 
 		getPermissionLevelsReq.RequestObjectType = new("warehouses")
 
@@ -864,7 +866,7 @@ func newGetPermissions() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the sql warehouse for which to get or manage permissions")
 		}
-		_ = args[0] // TODO: field not in sdk-go request: warehouse_id
+		getPermissionsReq.RequestObjectId = new(args[0])
 
 		getPermissionsReq.RequestObjectType = new("warehouses")
 
@@ -922,6 +924,7 @@ func newGetWorkspaceWarehouseConfig() *cobra.Command {
 		_ = w
 
 		sdkReq := &sdkwarehouses.GetWorkspaceWarehouseConfigRequest{}
+
 		response, err := w.Warehouses.GetWorkspaceWarehouseConfig(ctx, *sdkReq)
 		if err != nil {
 			return err
@@ -1167,7 +1170,7 @@ func newSetPermissions() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the sql warehouse for which to get or manage permissions")
 		}
-		_ = args[0] // TODO: field not in sdk-go request: warehouse_id
+		setPermissionsReq.RequestObjectId = new(args[0])
 
 		setPermissionsReq.RequestObjectType = new("warehouses")
 
@@ -1369,7 +1372,7 @@ func newStart() *cobra.Command {
 		response, err := wait.Wait(ctx, lro.WithTimeout(startTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := warehouses.GetWarehouseResponseFromSDK(response)
@@ -1473,7 +1476,7 @@ func newStop() *cobra.Command {
 		response, err := wait.Wait(ctx, lro.WithTimeout(stopTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := warehouses.GetWarehouseResponseFromSDK(response)
@@ -1673,7 +1676,7 @@ func newUpdatePermissions() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the sql warehouse for which to get or manage permissions")
 		}
-		_ = args[0] // TODO: field not in sdk-go request: warehouse_id
+		updatePermissionsReq.RequestObjectId = new(args[0])
 
 		updatePermissionsReq.RequestObjectType = new("warehouses")
 

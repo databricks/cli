@@ -298,6 +298,7 @@ func newCurrent() *cobra.Command {
 		_ = w
 
 		sdkReq := &sdkucmetastores.GetCurrentMetastoreAssignmentRequest{}
+
 		response, err := w.Metastores.GetCurrentMetastoreAssignment(ctx, *sdkReq)
 		if err != nil {
 			return err
@@ -566,6 +567,7 @@ func newSummary() *cobra.Command {
 		_ = w
 
 		sdkReq := &sdkucmetastores.GetMetastoreSummaryRequest{}
+
 		response, err := w.Metastores.GetMetastoreSummary(ctx, *sdkReq)
 		if err != nil {
 			return err

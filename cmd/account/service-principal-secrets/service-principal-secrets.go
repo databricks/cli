@@ -74,7 +74,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: lifetime
+	flags.JSONStringPtrVar(cmd.Flags(), &createReq.Lifetime, "lifetime", `The lifetime of the secret in seconds.`)
 
 	cmd.Use = "create SERVICE_PRINCIPAL_ID"
 	cmd.Short = `Create service principal secret.`

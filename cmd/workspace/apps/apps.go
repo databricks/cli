@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"maps"
+	"net/url"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/apiclient"
@@ -16,6 +17,7 @@ import (
 	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/sdk-go/options/lro"
 	"github.com/spf13/cobra"
 
@@ -176,28 +178,28 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if createSkipWait {
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current apps.App
+			err = api.Do(ctx, "POST", "/api/2.0/apps", auth.WorkspaceIDHeaders(w.Config), map[string]any{"no_compute": createReq.NoCompute}, createReq.App, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
+		}
 		wait, err := w.Apps.CreateApp(ctx, *sdkReq)
 		if err != nil {
 			return err
-		}
-		if createSkipWait {
-			// Render the current state, as of right after the call.
-			current, err := w.Apps.GetApp(ctx, sdkapps.GetAppRequest{Name: new(wait.GetName())})
-			if err != nil {
-				return err
-			}
-			out, err := apps.AppFromSDK(current)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for create to complete...")
 		response, err := wait.Wait(ctx, lro.WithTimeout(createTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := apps.AppFromSDK(response)
@@ -336,7 +338,7 @@ func newCreateSpace() *cobra.Command {
 			// Wait for completion.
 			response, err := wait.Wait(ctx, lro.WithTimeout(createSpaceTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -450,28 +452,28 @@ func newCreateUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if createUpdateSkipWait {
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current apps.AppUpdate
+			err = api.Do(ctx, "POST", fmt.Sprintf("/api/2.0/apps/%s/update", url.PathEscape(fmt.Sprint(utils.Deref(createUpdateReq.AppName)))), auth.WorkspaceIDHeaders(w.Config), nil, &createUpdateReq, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
+		}
 		wait, err := w.Apps.AsyncUpdateApp(ctx, *sdkReq)
 		if err != nil {
 			return err
-		}
-		if createUpdateSkipWait {
-			// Render the current state, as of right after the call.
-			current, err := w.Apps.GetAppUpdate(ctx, sdkapps.GetAppUpdateRequest{AppName: new(wait.GetAppName())})
-			if err != nil {
-				return err
-			}
-			out, err := apps.AppUpdateFromSDK(current)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for create-update to complete...")
 		response, err := wait.Wait(ctx, lro.WithTimeout(createUpdateTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := apps.AppUpdateFromSDK(response)
@@ -695,7 +697,7 @@ func newDeleteSpace() *cobra.Command {
 			response := struct{}{}
 			err = wait.Wait(ctx, lro.WithTimeout(deleteSpaceTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -792,28 +794,28 @@ func newDeploy() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if deploySkipWait {
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current apps.AppDeployment
+			err = api.Do(ctx, "POST", fmt.Sprintf("/api/2.0/apps/%s/deployments", url.PathEscape(fmt.Sprint(utils.Deref(deployReq.AppName)))), auth.WorkspaceIDHeaders(w.Config), nil, deployReq.AppDeployment, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
+		}
 		wait, err := w.Apps.CreateAppDeployment(ctx, *sdkReq)
 		if err != nil {
 			return err
-		}
-		if deploySkipWait {
-			// Render the current state, as of right after the call.
-			current, err := w.Apps.GetAppDeployment(ctx, sdkapps.GetAppDeploymentRequest{DeploymentId: new(wait.GetDeploymentId()), AppName: new(wait.GetAppName())})
-			if err != nil {
-				return err
-			}
-			out, err := apps.AppDeploymentFromSDK(current)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for deploy to complete...")
 		response, err := wait.Wait(ctx, lro.WithTimeout(deployTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := apps.AppDeploymentFromSDK(response)
@@ -1003,7 +1005,7 @@ func newGetPermissionLevels() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: app_name
+		getPermissionLevelsReq.RequestObjectId = new(args[0])
 
 		getPermissionLevelsReq.RequestObjectType = new("apps")
 
@@ -1070,7 +1072,7 @@ func newGetPermissions() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: app_name
+		getPermissionsReq.RequestObjectId = new(args[0])
 
 		getPermissionsReq.RequestObjectType = new("apps")
 
@@ -1590,7 +1592,7 @@ func newSetPermissions() *cobra.Command {
 				}
 			}
 		}
-		_ = args[0] // TODO: field not in sdk-go request: app_name
+		setPermissionsReq.RequestObjectId = new(args[0])
 
 		setPermissionsReq.RequestObjectType = new("apps")
 
@@ -1671,28 +1673,28 @@ func newStart() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if startSkipWait {
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current apps.App
+			err = api.Do(ctx, "POST", fmt.Sprintf("/api/2.0/apps/%s/start", url.PathEscape(fmt.Sprint(utils.Deref(startReq.Name)))), auth.WorkspaceIDHeaders(w.Config), nil, &startReq, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
+		}
 		wait, err := w.Apps.StartApp(ctx, *sdkReq)
 		if err != nil {
 			return err
-		}
-		if startSkipWait {
-			// Render the current state, as of right after the call.
-			current, err := w.Apps.GetApp(ctx, sdkapps.GetAppRequest{Name: new(wait.GetName())})
-			if err != nil {
-				return err
-			}
-			out, err := apps.AppFromSDK(current)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for start to complete...")
 		response, err := wait.Wait(ctx, lro.WithTimeout(startTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := apps.AppFromSDK(response)
@@ -1763,28 +1765,28 @@ func newStop() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if stopSkipWait {
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current apps.App
+			err = api.Do(ctx, "POST", fmt.Sprintf("/api/2.0/apps/%s/stop", url.PathEscape(fmt.Sprint(utils.Deref(stopReq.Name)))), auth.WorkspaceIDHeaders(w.Config), nil, &stopReq, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
+		}
 		wait, err := w.Apps.StopApp(ctx, *sdkReq)
 		if err != nil {
 			return err
-		}
-		if stopSkipWait {
-			// Render the current state, as of right after the call.
-			current, err := w.Apps.GetApp(ctx, sdkapps.GetAppRequest{Name: new(wait.GetName())})
-			if err != nil {
-				return err
-			}
-			out, err := apps.AppFromSDK(current)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for stop to complete...")
 		response, err := wait.Wait(ctx, lro.WithTimeout(stopTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := apps.AppFromSDK(response)
@@ -2054,7 +2056,7 @@ func newUpdatePermissions() *cobra.Command {
 				}
 			}
 		}
-		_ = args[0] // TODO: field not in sdk-go request: app_name
+		updatePermissionsReq.RequestObjectId = new(args[0])
 
 		updatePermissionsReq.RequestObjectType = new("apps")
 
@@ -2209,7 +2211,7 @@ func newUpdateSpace() *cobra.Command {
 			// Wait for completion.
 			response, err := wait.Wait(ctx, lro.WithTimeout(updateSpaceTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 

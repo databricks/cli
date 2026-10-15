@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/retries"
+	"github.com/databricks/cli/libs/cmdgen"
+	"github.com/databricks/sdk-go/core/apierr"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -80,66 +80,50 @@ func TestWrapDeploymentError(t *testing.T) {
 			description:   "plain errors should not be wrapped",
 		},
 		{
-			name:          "retries.Err with Halt=false",
-			err:           retries.Continues("still in progress"),
+			name:          "error outside of the wait",
+			err:           errors.New("still in progress"),
 			appName:       "test-app",
 			expectWrapped: false,
 			description:   "transient retries errors should not be wrapped",
 		},
 		{
-			name: "retries.Err with 404 API error (not found)",
-			err: retries.Halt(fmt.Errorf("API error: %w", &apierr.APIError{
-				StatusCode: 404,
-				ErrorCode:  "NOT_FOUND",
-				Message:    "App with name test-app does not exist or is deleted.",
-			})),
+			name:          "wait error with 404 API error (not found)",
+			err:           waitErr(fmt.Errorf("API error: %w", apierr.FromHTTPError(404, nil, []byte(`{"error_code":"NOT_FOUND","message":"App with name test-app does not exist or is deleted."}`)))),
 			appName:       "test-app",
 			expectWrapped: false,
 			description:   "404 not found errors should not be wrapped with logs hint",
 		},
 		{
-			name: "retries.Err with 400 API error (bad request)",
-			err: retries.Halt(fmt.Errorf("API error: %w", &apierr.APIError{
-				StatusCode: 400,
-				ErrorCode:  "BAD_REQUEST",
-				Message:    "Invalid request parameters",
-			})),
+			name:          "wait error with 400 API error (bad request)",
+			err:           waitErr(fmt.Errorf("API error: %w", apierr.FromHTTPError(400, nil, []byte(`{"error_code":"BAD_REQUEST","message":"Invalid request parameters"}`)))),
 			appName:       "test-app",
 			expectWrapped: false,
 			description:   "400 bad request errors should not be wrapped with logs hint",
 		},
 		{
-			name: "retries.Err with 403 API error (forbidden)",
-			err: retries.Halt(fmt.Errorf("API error: %w", &apierr.APIError{
-				StatusCode: 403,
-				ErrorCode:  "FORBIDDEN",
-				Message:    "Access denied",
-			})),
+			name:          "wait error with 403 API error (forbidden)",
+			err:           waitErr(fmt.Errorf("API error: %w", apierr.FromHTTPError(403, nil, []byte(`{"error_code":"FORBIDDEN","message":"Access denied"}`)))),
 			appName:       "test-app",
 			expectWrapped: false,
 			description:   "403 forbidden errors should not be wrapped with logs hint",
 		},
 		{
-			name: "retries.Err with 500 API error (server error)",
-			err: retries.Halt(fmt.Errorf("API error: %w", &apierr.APIError{
-				StatusCode: 500,
-				ErrorCode:  "INTERNAL_ERROR",
-				Message:    "Internal server error",
-			})),
+			name:          "wait error with 500 API error (server error)",
+			err:           waitErr(fmt.Errorf("API error: %w", apierr.FromHTTPError(500, nil, []byte(`{"error_code":"INTERNAL_ERROR","message":"Internal server error"}`)))),
 			appName:       "test-app",
 			expectWrapped: true,
 			description:   "500 server errors during wait should be wrapped with logs hint",
 		},
 		{
-			name:          "retries.Err without API error (deployment failure)",
-			err:           retries.Halt(errors.New("failed to reach SUCCEEDED, got FAILED: Error building app")),
+			name:          "wait error without API error (deployment failure)",
+			err:           waitErr(errors.New("failed to reach SUCCEEDED, got FAILED: Error building app")),
 			appName:       "test-app",
 			expectWrapped: true,
 			description:   "deployment failures should be wrapped with logs hint",
 		},
 		{
-			name:          "retries.Err without API error (timeout)",
-			err:           retries.Halt(errors.New("timeout waiting for deployment")),
+			name:          "wait error without API error (timeout)",
+			err:           waitErr(errors.New("timeout waiting for deployment")),
 			appName:       "test-app",
 			expectWrapped: true,
 			description:   "timeout errors should be wrapped with logs hint",
@@ -165,4 +149,8 @@ func TestWrapDeploymentError(t *testing.T) {
 			}
 		})
 	}
+}
+
+func waitErr(err error) error {
+	return &cmdgen.WaitError{Err: err}
 }

@@ -284,6 +284,7 @@ func newList() *cobra.Command {
 		_ = a
 
 		sdkReq := &sdknetworking.ListPrivateAccessSettingsRequest{}
+
 		response, err := a.Networking.ListPrivateAccessSettingsPublic(ctx, *sdkReq)
 		if err != nil {
 			return err

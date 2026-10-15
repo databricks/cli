@@ -71,3 +71,13 @@ func fieldString(v reflect.Value, path []string) (string, bool) {
 	}
 	return fmt.Sprint(v.Interface()), true
 }
+
+// WaitError marks an error that occurred while waiting for a long-running
+// operation to complete, as opposed to an error of the call starting it.
+type WaitError struct {
+	Err error
+}
+
+func (e *WaitError) Error() string { return e.Err.Error() }
+
+func (e *WaitError) Unwrap() error { return e.Err }

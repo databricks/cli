@@ -818,7 +818,7 @@ Get knowledge assistant permission levels.
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: knowledge_assistant_id
+		getPermissionLevelsReq.RequestObjectId = new(args[0])
 
 		getPermissionLevelsReq.RequestObjectType = new("knowledge-assistants")
 
@@ -887,7 +887,7 @@ Get knowledge assistant permissions.
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: knowledge_assistant_id
+		getPermissionsReq.RequestObjectId = new(args[0])
 
 		getPermissionsReq.RequestObjectType = new("knowledge-assistants")
 
@@ -1215,7 +1215,7 @@ Set knowledge assistant permissions.
 				}
 			}
 		}
-		_ = args[0] // TODO: field not in sdk-go request: knowledge_assistant_id
+		setPermissionsReq.RequestObjectId = new(args[0])
 
 		setPermissionsReq.RequestObjectType = new("knowledge-assistants")
 
@@ -1715,7 +1715,7 @@ Update knowledge assistant permissions.
 				}
 			}
 		}
-		_ = args[0] // TODO: field not in sdk-go request: knowledge_assistant_id
+		updatePermissionsReq.RequestObjectId = new(args[0])
 
 		updatePermissionsReq.RequestObjectType = new("knowledge-assistants")
 

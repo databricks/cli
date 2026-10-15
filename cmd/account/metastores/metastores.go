@@ -296,6 +296,7 @@ func newList() *cobra.Command {
 		_ = a
 
 		sdkReq := &sdkucmetastores.AccountsListMetastoresRequest{}
+
 		response, err := a.Metastores.ListAccountsMetastores(ctx, *sdkReq)
 		if err != nil {
 			return err
@@ -311,7 +312,7 @@ func newList() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, out)
+		return cmdio.Render(ctx, out.Metastores)
 	}
 
 	// Disable completions since they are not applicable.

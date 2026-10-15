@@ -8,7 +8,10 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/sdk-go/options/lro"
@@ -169,28 +172,28 @@ func newCreateExperiment() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if createExperimentSkipWait {
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current forecasting.CreateForecastingExperimentResponse
+			err = api.Do(ctx, "POST", "/api/2.0/automl/create-forecasting-experiment", auth.WorkspaceIDHeaders(w.Config), nil, &createExperimentReq, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
+		}
 		wait, err := w.Forecasting.CreateForecastingExperiment(ctx, *sdkReq)
 		if err != nil {
 			return err
-		}
-		if createExperimentSkipWait {
-			// Render the current state, as of right after the call.
-			current, err := w.Forecasting.GetForecastingExperiment(ctx, sdkforecasting.GetForecastingExperimentRequest{ExperimentId: new(wait.GetExperimentId())})
-			if err != nil {
-				return err
-			}
-			out, err := forecasting.ForecastingExperimentFromSDK(current)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for create-experiment to complete...")
 		response, err := wait.Wait(ctx, lro.WithTimeout(createExperimentTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := forecasting.ForecastingExperimentFromSDK(response)

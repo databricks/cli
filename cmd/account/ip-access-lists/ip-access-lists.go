@@ -344,6 +344,7 @@ func newList() *cobra.Command {
 		_ = a
 
 		sdkReq := &sdknetworking.ListAccountIpAccessListsRequest{}
+
 		response, err := a.Networking.ListAccountIpAccessLists(ctx, *sdkReq)
 		if err != nil {
 			return err
@@ -359,7 +360,7 @@ func newList() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, out)
+		return cmdio.Render(ctx, out.IpAccessLists)
 	}
 
 	// Disable completions since they are not applicable.

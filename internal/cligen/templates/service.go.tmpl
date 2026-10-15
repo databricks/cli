@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"maps"
+	"net/url"
 	"strconv"
 
 	"github.com/databricks/cli/libs/apiclient"
@@ -18,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/cli/cmd/root"
 	sdkcoretypes "github.com/databricks/sdk-go/core/types"
 	"github.com/databricks/sdk-go/options/lro"
@@ -514,17 +516,23 @@ func new{{.PascalName}}() *cobra.Command {
 			{{if .Bind.HasWaitResult}}response, err :={{else}}response := struct{}{}
 			err ={{end}} wait.Wait(ctx, lro.WithTimeout({{.CamelName}}Timeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 			{{template "render-result" .}}
 		}
 		{{- else if eq .Bind.SdkKind "waiter" }}
+		{{- if and (or .Wait .LongRunningOperation) .Bind.HasNoWaitCall }}
+		if {{.CamelName}}SkipWait {
+			{{.Bind.NoWaitCall}}
+		}
+		{{- end }}
 		wait, err := {{.Bind.ClientExpr}}.{{.Bind.SdkMethod}}(ctx{{.Bind.CallArgs}})
 		if err != nil {
 			return err
 		}
 		{{- if or .Wait .LongRunningOperation }}
+		{{- if not .Bind.HasNoWaitCall }}
 		if {{.CamelName}}SkipWait {
 			{{- if .Bind.PollCall }}
 			// Render the current state, as of right after the call.
@@ -543,6 +551,7 @@ func new{{.PascalName}}() *cobra.Command {
 			return nil
 			{{- end }}
 		}
+		{{- end }}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for {{.KebabName}} to complete...")
 		{{if .Bind.HasWaitResult}}response, err :={{else}}response := struct{}{}
@@ -553,7 +562,7 @@ func new{{.PascalName}}() *cobra.Command {
 		err ={{end}} wait.Wait(ctx)
 		{{- end }}
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 		{{template "render-result" .}}
 		{{- else if eq .Bind.SdkKind "op" }}
@@ -564,7 +573,7 @@ func new{{.PascalName}}() *cobra.Command {
 		{{if .Bind.HasWaitResult}}response, err :={{else}}response := struct{}{}
 		err ={{end}} wait.Wait(ctx)
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 		{{template "render-result" .}}
 		{{- else if eq .Bind.SdkKind "iter" }}
@@ -624,7 +633,11 @@ func new{{.PascalName}}() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		{{- if .Bind.ListItems }}
+		return cmdio.Render(ctx, out.{{.Bind.ListItems}})
+		{{- else }}
 		return cmdio.Render(ctx, out)
+		{{- end }}
 	{{- else }}
 		_ = response
 		return nil

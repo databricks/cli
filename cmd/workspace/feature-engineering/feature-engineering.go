@@ -169,7 +169,7 @@ func newBackfillFeatures() *cobra.Command {
 			// Wait for completion.
 			response, err := wait.Wait(ctx, lro.WithTimeout(backfillFeaturesTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 
@@ -1701,7 +1701,7 @@ func newPurgeFeatureEntities() *cobra.Command {
 			// Wait for completion.
 			response, err := wait.Wait(ctx, lro.WithTimeout(purgeFeatureEntitiesTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
 

@@ -84,6 +84,12 @@ type SdkMethod struct {
 	WaiterIDs []string
 	// pollRequest is the request type of the method a waiter polls.
 	pollRequest string
+	// baseResult is the response type of the call that starts a wait.
+	baseResult string
+	// hasBody is set when a JSON body is sent; bodyGo is the request field
+	// sent as the body, or "" for the whole request.
+	hasBody bool
+	bodyGo  string
 
 	verb       string
 	path       string
@@ -339,8 +345,12 @@ func (p *SdkPackage) loadMethods(dir string) error {
 			}
 			return true
 		})
+		if impl != fd && impl.Type.Results.NumFields() == 2 {
+			m.baseResult = strings.TrimPrefix(exprString(impl.Type.Results.List[0].Type), "*")
+		}
 		m.verb, m.path, m.pathFields = httpRoute(impl)
 		m.queryFields = queryRoute(impl)
+		m.hasBody, m.bodyGo = bodyRoute(impl)
 		p.methods[name] = m
 	}
 	for name, m := range p.methods {
@@ -447,6 +457,23 @@ func httpRoute(fd *ast.FuncDecl) (string, string, []string) {
 	return verb, sb.String(), fields
 }
 
+// bodyRoute finds the `json.Marshal(wireReq...)` call of a method body.
+func bodyRoute(fd *ast.FuncDecl) (bool, string) {
+	found, field := false, ""
+	ast.Inspect(fd.Body, func(n ast.Node) bool {
+		call, ok := n.(*ast.CallExpr)
+		if !ok || exprString(call.Fun) != "json.Marshal" || len(call.Args) != 1 {
+			return true
+		}
+		arg := exprString(call.Args[0])
+		if arg == "wireReq" || strings.HasPrefix(arg, "wireReq.") {
+			found, field = true, strings.TrimPrefix(strings.TrimPrefix(arg, "wireReq"), ".")
+		}
+		return true
+	})
+	return found, field
+}
+
 var queryFieldRe = regexp.MustCompile(`^(?:req|wireReq)\.([A-Z][\w.]*)$`)
 
 // queryRoute maps query parameter names to request fields from the
@@ -543,7 +570,7 @@ func pathMatch(sdkPath, cliPath string) (bool, map[int]string) {
 			return false, nil
 		}
 	}
-	return len(consts) == 1, consts
+	return len(consts) > 0, consts
 }
 
 // match finds the sdk-go method for a cli.json method by HTTP verb and path.

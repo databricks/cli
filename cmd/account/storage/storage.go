@@ -280,6 +280,7 @@ func newList() *cobra.Command {
 		_ = a
 
 		sdkReq := &sdkstorageconfigurations.ListStorageConfigurationRequest{}
+
 		response, err := a.StorageConfigurations.ListStorageConfigurationPublic(ctx, *sdkReq)
 		if err != nil {
 			return err

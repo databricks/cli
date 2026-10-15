@@ -320,6 +320,7 @@ func newList() *cobra.Command {
 		_ = w
 
 		sdkReq := &sdkglobalinitscripts.ListGlobalInitScriptsRequest{}
+
 		response, err := w.GlobalInitScripts.ListGlobalInitScripts(ctx, *sdkReq)
 		if err != nil {
 			return err
@@ -335,7 +336,7 @@ func newList() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, out)
+		return cmdio.Render(ctx, out.Scripts)
 	}
 
 	// Disable completions since they are not applicable.

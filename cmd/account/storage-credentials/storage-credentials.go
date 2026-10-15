@@ -341,7 +341,7 @@ func newList() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, out)
+		return cmdio.Render(ctx, out.StorageCredentials)
 	}
 
 	// Disable completions since they are not applicable.

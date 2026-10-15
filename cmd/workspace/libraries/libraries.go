@@ -100,6 +100,7 @@ func newAllClusterStatuses() *cobra.Command {
 		_ = w
 
 		sdkReq := &sdkclusterlibraries.ListAllClusterLibraryStatusesRequest{}
+
 		response, err := w.Libraries.AllClusterStatuses(ctx, *sdkReq)
 		if err != nil {
 			return err
@@ -115,7 +116,7 @@ func newAllClusterStatuses() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, out)
+		return cmdio.Render(ctx, out.Statuses)
 	}
 
 	// Disable completions since they are not applicable.
@@ -204,7 +205,7 @@ func newClusterStatus() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, out)
+		return cmdio.Render(ctx, out.LibraryStatuses)
 	}
 
 	// Disable completions since they are not applicable.

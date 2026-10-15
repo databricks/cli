@@ -264,6 +264,7 @@ func newList() *cobra.Command {
 		_ = w
 
 		sdkReq := &sdktokens.ListTokensRequest{}
+
 		response, err := w.Tokens.ListTokens(ctx, *sdkReq)
 		if err != nil {
 			return err
@@ -279,7 +280,7 @@ func newList() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, out)
+		return cmdio.Render(ctx, out.TokenInfos)
 	}
 
 	// Disable completions since they are not applicable.

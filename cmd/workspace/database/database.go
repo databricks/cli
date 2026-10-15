@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
@@ -262,28 +264,28 @@ Create a Database Instance.
 		if err != nil {
 			return err
 		}
+		if createDatabaseInstanceSkipWait {
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current database.DatabaseInstance
+			err = api.Do(ctx, "POST", "/api/2.0/database/instances", auth.WorkspaceIDHeaders(w.Config), nil, createDatabaseInstanceReq.DatabaseInstance, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
+		}
 		wait, err := w.Database.CreateDatabaseInstance(ctx, *sdkReq)
 		if err != nil {
 			return err
-		}
-		if createDatabaseInstanceSkipWait {
-			// Render the current state, as of right after the call.
-			current, err := w.Database.GetDatabaseInstance(ctx, sdkdatabase.GetDatabaseInstanceRequest{Name: new(wait.GetName())})
-			if err != nil {
-				return err
-			}
-			out, err := database.DatabaseInstanceFromSDK(current)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for create-database-instance to complete...")
 		response, err := wait.Wait(ctx, lro.WithTimeout(createDatabaseInstanceTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := database.DatabaseInstanceFromSDK(response)

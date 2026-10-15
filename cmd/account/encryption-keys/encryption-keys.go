@@ -338,6 +338,7 @@ func newList() *cobra.Command {
 		_ = a
 
 		sdkReq := &sdkkeyconfigurations.ListCustomerManagedKeyRequest{}
+
 		response, err := a.KeyConfigurations.ListCustomerManagedKeyPublic(ctx, *sdkReq)
 		if err != nil {
 			return err

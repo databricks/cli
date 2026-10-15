@@ -131,7 +131,7 @@ func newCompleteVersion() *cobra.Command {
 				}
 			}
 		}
-		_ = args[0] // TODO: field not in sdk-go request: name
+		completeVersionReq.Name = args[0]
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[1], &completeVersionReq.CompletionReason)
 			if err != nil {
@@ -332,8 +332,8 @@ func newCreateVersion() *cobra.Command {
 				}
 			}
 		}
-		_ = args[0] // TODO: field not in sdk-go request: parent
-		_ = args[1] // TODO: field not in sdk-go request: version_id
+		createVersionReq.Parent = args[0]
+		createVersionReq.VersionId = args[1]
 		if !cmd.Flags().Changed("json") {
 			createVersionReq.Version.CliVersion = args[2]
 		}
@@ -401,7 +401,7 @@ func newDeleteDeployment() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: name
+		deleteDeploymentReq.Name = args[0]
 
 		err = w.BundleDeployments.DeleteDeployment(ctx, deleteDeploymentReq)
 		if err != nil {
@@ -460,7 +460,7 @@ func newGetDeployment() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: name
+		getDeploymentReq.Name = args[0]
 
 		response, err := w.BundleDeployments.GetDeployment(ctx, getDeploymentReq)
 		if err != nil {
@@ -519,7 +519,7 @@ func newGetOperation() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: name
+		getOperationReq.Name = args[0]
 
 		response, err := w.BundleDeployments.GetOperation(ctx, getOperationReq)
 		if err != nil {
@@ -578,7 +578,7 @@ func newGetResource() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: name
+		getResourceReq.Name = args[0]
 
 		response, err := w.BundleDeployments.GetResource(ctx, getResourceReq)
 		if err != nil {
@@ -637,7 +637,7 @@ func newGetVersion() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: name
+		getVersionReq.Name = args[0]
 
 		response, err := w.BundleDeployments.GetVersion(ctx, getVersionReq)
 		if err != nil {
@@ -700,7 +700,7 @@ func newHeartbeat() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: name
+		heartbeatReq.Name = args[0]
 
 		response, err := w.BundleDeployments.Heartbeat(ctx, heartbeatReq)
 		if err != nil {
@@ -739,13 +739,14 @@ func newListDeployments() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listDeploymentsLimit int
 
-	// TODO: field not in sdk-go request: page_size
+	cmd.Flags().IntVar(&listDeploymentsReq.PageSize, "page-size", listDeploymentsReq.PageSize, `The maximum number of deployments to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listDeploymentsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	// TODO: field not in sdk-go request: page_token
+	cmd.Flags().StringVar(&listDeploymentsReq.PageToken, "page-token", listDeploymentsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-deployments"
 	cmd.Short = `List deployments.`
@@ -808,13 +809,14 @@ func newListOperations() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listOperationsLimit int
 
-	// TODO: field not in sdk-go request: page_size
+	cmd.Flags().IntVar(&listOperationsReq.PageSize, "page-size", listOperationsReq.PageSize, `The maximum number of operations to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listOperationsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	// TODO: field not in sdk-go request: page_token
+	cmd.Flags().StringVar(&listOperationsReq.PageToken, "page-token", listOperationsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-operations PARENT"
 	cmd.Short = `List operations.`
@@ -841,7 +843,7 @@ func newListOperations() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: parent
+		listOperationsReq.Parent = args[0]
 
 		response := w.BundleDeployments.ListOperations(ctx, listOperationsReq)
 		if listOperationsLimit < 0 {
@@ -883,13 +885,14 @@ func newListResources() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listResourcesLimit int
 
-	// TODO: field not in sdk-go request: page_size
+	cmd.Flags().IntVar(&listResourcesReq.PageSize, "page-size", listResourcesReq.PageSize, `The maximum number of resources to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listResourcesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	// TODO: field not in sdk-go request: page_token
+	cmd.Flags().StringVar(&listResourcesReq.PageToken, "page-token", listResourcesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-resources PARENT"
 	cmd.Short = `List resources.`
@@ -915,7 +918,7 @@ func newListResources() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: parent
+		listResourcesReq.Parent = args[0]
 
 		response := w.BundleDeployments.ListResources(ctx, listResourcesReq)
 		if listResourcesLimit < 0 {
@@ -957,13 +960,14 @@ func newListVersions() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listVersionsLimit int
 
-	// TODO: field not in sdk-go request: page_size
+	cmd.Flags().IntVar(&listVersionsReq.PageSize, "page-size", listVersionsReq.PageSize, `The maximum number of versions to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listVersionsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	// TODO: field not in sdk-go request: page_token
+	cmd.Flags().StringVar(&listVersionsReq.PageToken, "page-token", listVersionsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-versions PARENT"
 	cmd.Short = `List versions.`
@@ -990,7 +994,7 @@ func newListVersions() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: parent
+		listVersionsReq.Parent = args[0]
 
 		response := w.BundleDeployments.ListVersions(ctx, listVersionsReq)
 		if listVersionsLimit < 0 {
@@ -1070,7 +1074,7 @@ func newUpdateDeployment() *cobra.Command {
 		} else {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
-		_ = args[0] // TODO: field not in sdk-go request: name
+		updateDeploymentReq.Name = args[0]
 
 		response, err := w.BundleDeployments.UpdateDeployment(ctx, updateDeploymentReq)
 		if err != nil {
@@ -1162,7 +1166,7 @@ func newUpdateOperation() *cobra.Command {
 		} else {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
-		_ = args[0] // TODO: field not in sdk-go request: name
+		updateOperationReq.Name = args[0]
 
 		response, err := w.BundleDeployments.UpdateOperation(ctx, updateOperationReq)
 		if err != nil {

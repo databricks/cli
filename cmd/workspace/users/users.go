@@ -55,6 +55,12 @@ func New() *cobra.Command {
 		}
 		sub.Hidden = doc.hidden
 		if sub.Name() == "list" {
+			// These were regular flags of the original commands.
+			for _, name := range []string{"count", "start-index"} {
+				if f := sub.Flags().Lookup(name); f != nil {
+					f.Hidden = false
+				}
+			}
 			for _, fn := range listOverrides {
 				fn(sub)
 			}

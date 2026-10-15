@@ -378,7 +378,7 @@ func newGetPermissionLevels() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the repo for which to get or manage permissions")
 		}
-		_ = args[0] // TODO: field not in sdk-go request: repo_id
+		getPermissionLevelsReq.RequestObjectId = new(args[0])
 
 		getPermissionLevelsReq.RequestObjectType = new("repos")
 
@@ -457,7 +457,7 @@ func newGetPermissions() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the repo for which to get or manage permissions")
 		}
-		_ = args[0] // TODO: field not in sdk-go request: repo_id
+		getPermissionsReq.RequestObjectId = new(args[0])
 
 		getPermissionsReq.RequestObjectType = new("repos")
 
@@ -635,7 +635,7 @@ func newSetPermissions() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the repo for which to get or manage permissions")
 		}
-		_ = args[0] // TODO: field not in sdk-go request: repo_id
+		setPermissionsReq.RequestObjectId = new(args[0])
 
 		setPermissionsReq.RequestObjectType = new("repos")
 
@@ -839,7 +839,7 @@ func newUpdatePermissions() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the repo for which to get or manage permissions")
 		}
-		_ = args[0] // TODO: field not in sdk-go request: repo_id
+		updatePermissionsReq.RequestObjectId = new(args[0])
 
 		updatePermissionsReq.RequestObjectType = new("repos")
 

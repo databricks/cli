@@ -4,12 +4,19 @@ package genie
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
+	"net/url"
+
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/sdk-go/options/lro"
 	"github.com/spf13/cobra"
 
@@ -160,28 +167,28 @@ func newCreateMessage() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if createMessageSkipWait {
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current genie.GenieMessage
+			err = api.Do(ctx, "POST", fmt.Sprintf("/api/2.0/genie/spaces/%s/conversations/%s/messages", url.PathEscape(fmt.Sprint(utils.Deref(createMessageReq.SpaceId))), url.PathEscape(fmt.Sprint(utils.Deref(createMessageReq.ConversationId)))), auth.WorkspaceIDHeaders(w.Config), nil, &createMessageReq, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
+		}
 		wait, err := w.Genie.GenieCreateConversationMessage(ctx, *sdkReq)
 		if err != nil {
 			return err
-		}
-		if createMessageSkipWait {
-			// Render the current state, as of right after the call.
-			current, err := w.Genie.GenieGetConversationMessage(ctx, sdkgenie.GenieGetConversationMessageRequest{MessageId: new(wait.GetMessageId()), ConversationId: new(wait.GetConversationId()), SpaceId: new(wait.GetSpaceId())})
-			if err != nil {
-				return err
-			}
-			out, err := genie.GenieMessageFromSDK(current)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for create-message to complete...")
 		response, err := wait.Wait(ctx, lro.WithTimeout(createMessageTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := genie.GenieMessageFromSDK(response)
@@ -2276,28 +2283,28 @@ func newStartConversation() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if startConversationSkipWait {
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current genie.GenieStartConversationResponse
+			err = api.Do(ctx, "POST", fmt.Sprintf("/api/2.0/genie/spaces/%s/start-conversation", url.PathEscape(fmt.Sprint(utils.Deref(startConversationReq.SpaceId)))), auth.WorkspaceIDHeaders(w.Config), nil, &startConversationReq, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
+		}
 		wait, err := w.Genie.GenieStartConversation(ctx, *sdkReq)
 		if err != nil {
 			return err
-		}
-		if startConversationSkipWait {
-			// Render the current state, as of right after the call.
-			current, err := w.Genie.GenieGetConversationMessage(ctx, sdkgenie.GenieGetConversationMessageRequest{MessageId: new(wait.GetMessageId()), ConversationId: new(wait.GetConversationId()), SpaceId: new(wait.GetSpaceId())})
-			if err != nil {
-				return err
-			}
-			out, err := genie.GenieMessageFromSDK(current)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for start-conversation to complete...")
 		response, err := wait.Wait(ctx, lro.WithTimeout(startConversationTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := genie.GenieMessageFromSDK(response)

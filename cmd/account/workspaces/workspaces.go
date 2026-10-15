@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/sdk-go/options/lro"
@@ -199,7 +200,7 @@ func newCreate() *cobra.Command {
 		response, err := wait.Wait(ctx, lro.WithTimeout(createTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := workspaces.WorkspaceFromSDK(response)
@@ -389,6 +390,7 @@ func newList() *cobra.Command {
 		_ = a
 
 		sdkReq := &sdkworkspaces.ListWorkspacesRequest{}
+
 		response, err := a.Workspaces.ListWorkspacesPublic(ctx, *sdkReq)
 		if err != nil {
 			return err
@@ -530,7 +532,7 @@ func newUpdate() *cobra.Command {
 		response, err := wait.Wait(ctx, lro.WithTimeout(updateTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := workspaces.WorkspaceFromSDK(response)

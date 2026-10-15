@@ -77,6 +77,7 @@ Create provider analytics dashboard.
 		_ = w
 
 		sdkReq := &sdkmarketplaces.CreateProviderAnalyticsDashboardRequest{}
+
 		response, err := w.Marketplaces.CreateProviderAnalyticsDashboard(ctx, *sdkReq)
 		if err != nil {
 			return err
@@ -129,6 +130,7 @@ Get provider analytics dashboard.`
 		_ = w
 
 		sdkReq := &sdkmarketplaces.ListProviderAnalyticsDashboardRequest{}
+
 		response, err := w.Marketplaces.ListProviderAnalyticsDashboard(ctx, *sdkReq)
 		if err != nil {
 			return err
@@ -181,6 +183,7 @@ Get latest version of provider analytics dashboard.`
 		_ = w
 
 		sdkReq := &sdkmarketplaces.GetLatestVersionProviderAnalyticsDashboardRequest{}
+
 		response, err := w.Marketplaces.GetLatestVersionProviderAnalyticsDashboard(ctx, *sdkReq)
 		if err != nil {
 			return err

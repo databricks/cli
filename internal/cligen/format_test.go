@@ -121,7 +121,7 @@ func TestImportName(t *testing.T) {
 import (
 	"encoding/json"
 	"github.com/databricks/cli/libs/cmdio"
-	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
+	sdkcoretypes "github.com/databricks/sdk-go/core/types"
 )
 `
 	fset := token.NewFileSet()
@@ -129,7 +129,7 @@ import (
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"json", "cmdio", "sdktime"}
+	want := []string{"json", "cmdio", "sdkcoretypes"}
 	for i, imp := range f.Imports {
 		if got := importName(imp); got != want[i] {
 			t.Errorf("importName(%s) = %q, want %q", imp.Path.Value, got, want[i])

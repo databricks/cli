@@ -580,7 +580,7 @@ func newDeleteMcpService() *cobra.Command {
 	cmd := &cobra.Command{}
 	var deleteMcpServiceReq aigateway.DeleteMcpServiceRequest
 
-	// TODO: complex arg: etag
+	flags.Base64Var(cmd.Flags(), &deleteMcpServiceReq.Etag, "etag", `Optimistic concurrency token from the most recent read.`)
 
 	cmd.Use = "delete-mcp-service NAME"
 	cmd.Short = `Delete an MCP service.`
@@ -719,7 +719,7 @@ func newDeleteModelProviderService() *cobra.Command {
 	cmd := &cobra.Command{}
 	var deleteModelProviderServiceReq aigateway.DeleteModelProviderServiceRequest
 
-	// TODO: complex arg: etag
+	flags.Base64Var(cmd.Flags(), &deleteModelProviderServiceReq.Etag, "etag", `Optimistic concurrency token from the most recent read.`)
 
 	cmd.Use = "delete-model-provider-service NAME"
 	cmd.Short = `Delete a model provider service.`
@@ -791,7 +791,7 @@ func newDeleteModelService() *cobra.Command {
 	cmd := &cobra.Command{}
 	var deleteModelServiceReq aigateway.DeleteModelServiceRequest
 
-	// TODO: complex arg: etag
+	flags.Base64Var(cmd.Flags(), &deleteModelServiceReq.Etag, "etag", `Optimistic concurrency token from the most recent read.`)
 
 	cmd.Use = "delete-model-service NAME"
 	cmd.Short = `Delete a model service.`
@@ -862,7 +862,7 @@ func newDeleteSkill() *cobra.Command {
 	cmd := &cobra.Command{}
 	var deleteSkillReq aigateway.DeleteSkillRequest
 
-	// TODO: complex arg: etag
+	flags.Base64Var(cmd.Flags(), &deleteSkillReq.Etag, "etag", `Optimistic concurrency token from the most recent read.`)
 
 	cmd.Use = "delete-skill NAME"
 	cmd.Short = `*Beta* Delete a skill.`
@@ -1713,7 +1713,7 @@ func newUpdateMcpService() *cobra.Command {
 
 	cmd.Flags().Var(&updateMcpServiceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: etag
+	flags.Base64Var(cmd.Flags(), &updateMcpServiceReq.Etag, "etag", `Optimistic concurrency token from the most recent read.`)
 	flags.StringPtrVar(cmd.Flags(), &updateMcpServiceReq.McpService.Comment, "comment", `User-provided description.`)
 	// TODO: complex arg: config
 	flags.StringPtrVar(cmd.Flags(), &updateMcpServiceReq.McpService.Name, "name", `Resource name of the MCP service.`)
@@ -1820,7 +1820,7 @@ func newUpdateModelProviderService() *cobra.Command {
 
 	cmd.Flags().Var(&updateModelProviderServiceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: etag
+	flags.Base64Var(cmd.Flags(), &updateModelProviderServiceReq.Etag, "etag", `Optimistic concurrency token from the most recent read.`)
 	flags.StringPtrVar(cmd.Flags(), &updateModelProviderServiceReq.ModelProviderService.Comment, "comment", `User-provided description.`)
 	// TODO: complex arg: config
 	flags.StringPtrVar(cmd.Flags(), &updateModelProviderServiceReq.ModelProviderService.Name, "name", `Resource name of the provider service.`)
@@ -1942,7 +1942,7 @@ func newUpdateModelService() *cobra.Command {
 
 	cmd.Flags().Var(&updateModelServiceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: etag
+	flags.Base64Var(cmd.Flags(), &updateModelServiceReq.Etag, "etag", `Optimistic concurrency token from the most recent read.`)
 	flags.StringPtrVar(cmd.Flags(), &updateModelServiceReq.ModelService.Comment, "comment", `User-provided description.`)
 	// TODO: complex arg: config
 	flags.StringPtrVar(cmd.Flags(), &updateModelServiceReq.ModelService.Name, "name", `Resource name of the model service.`)
@@ -2057,7 +2057,7 @@ func newUpdateSkill() *cobra.Command {
 
 	cmd.Flags().Var(&updateSkillJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: etag
+	flags.Base64Var(cmd.Flags(), &updateSkillReq.Etag, "etag", `Optimistic concurrency token from the most recent read.`)
 	flags.StringPtrVar(cmd.Flags(), &updateSkillReq.Skill.Comment, "comment", `User-provided comment for the skill.`)
 	flags.StringPtrVar(cmd.Flags(), &updateSkillReq.Skill.Name, "name", `Resource name of the skill.`)
 

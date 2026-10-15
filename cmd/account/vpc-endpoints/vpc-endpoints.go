@@ -298,6 +298,7 @@ func newList() *cobra.Command {
 		_ = a
 
 		sdkReq := &sdknetworking.ListVpcEndpointRequest{}
+
 		response, err := a.Networking.ListVpcEndpointPublic(ctx, *sdkReq)
 		if err != nil {
 			return err

@@ -726,7 +726,7 @@ func newQueryIndex() *cobra.Command {
 	flags.StringPtrVar(cmd.Flags(), &queryIndexReq.QueryType, "query-type", `Query type: ANN, HYBRID, or FULL_TEXT.`)
 	// TODO: array: query_vector
 	// TODO: complex arg: reranker
-	// TODO: optional enum: score_threshold
+	flags.Float32PtrVar(cmd.Flags(), &queryIndexReq.ScoreThreshold, "score-threshold", `Score threshold for the approximate nearest-neighbor search.`)
 	// TODO: array: sort_columns
 
 	cmd.Use = "query-index NAME"

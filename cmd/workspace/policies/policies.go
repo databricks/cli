@@ -471,7 +471,7 @@ func newUpdatePolicy() *cobra.Command {
 	// TODO: array: match_columns
 	flags.StringPtrVar(cmd.Flags(), &updatePolicyReq.Name, "name", `Name of the policy.`)
 	flags.StringPtrVar(cmd.Flags(), &updatePolicyReq.OnSecurableFullname, "on-securable-fullname", `Full name of the securable on which the policy is defined.`)
-	flags.StringPtrVar(cmd.Flags(), &updatePolicyReq.OnSecurableType, "on-securable-type", `Type of the securable on which the policy is defined. Supported values: [
+	flags.EnumPtrVar(cmd.Flags(), &updatePolicyReq.OnSecurableType, "on-securable-type", `Type of the securable on which the policy is defined. Supported values: [
   AGENT_SERVICE,
   CATALOG,
   CLEAN_ROOM,
@@ -495,7 +495,7 @@ func newUpdatePolicy() *cobra.Command {
   STORAGE_CREDENTIAL,
   TABLE,
   VOLUME,
-]`)
+]`, "SecurableType", "AGENT_SERVICE", "CATALOG", "CLEAN_ROOM", "CONNECTION", "CREDENTIAL", "EXTERNAL_LOCATION", "EXTERNAL_METADATA", "FUNCTION", "MCP_SERVICE", "METASTORE", "MODEL", "MODEL_PROVIDER_SERVICE", "MODEL_SERVICE", "PIPELINE", "PROVIDER", "RECIPIENT", "SCHEMA", "SHARE", "SKILL", "STAGING_TABLE", "STORAGE_CREDENTIAL", "TABLE", "VOLUME")
 	// TODO: complex arg: row_filter
 	flags.StringPtrVar(cmd.Flags(), &updatePolicyReq.PolicyInfo.WhenCondition, "when-condition", `Optional condition when the policy should take effect.`)
 

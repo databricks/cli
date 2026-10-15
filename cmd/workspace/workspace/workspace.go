@@ -162,7 +162,15 @@ func newExport() *cobra.Command {
 	cmd := &cobra.Command{}
 	var exportReq workspaceapi.ExportRequest
 
-	// TODO: field not in sdk-go request: format
+	cmd.Flags().Var(&exportReq.Format, "format", `This specifies the format of the exported file. Supported values: [
+  AUTO,
+  DBC,
+  HTML,
+  JUPYTER,
+  RAW,
+  R_MARKDOWN,
+  SOURCE,
+]`)
 
 	cmd.Use = "export PATH"
 	cmd.Short = `Export a workspace object.`
@@ -196,7 +204,7 @@ func newExport() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: path
+		exportReq.Path = args[0]
 
 		response, err := w.Workspace.Export(ctx, exportReq)
 		if err != nil {
@@ -257,8 +265,8 @@ func newGetPermissionLevels() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: workspace_object_type
-		_ = args[1] // TODO: field not in sdk-go request: workspace_object_id
+		getPermissionLevelsReq.WorkspaceObjectType = args[0]
+		getPermissionLevelsReq.WorkspaceObjectId = args[1]
 
 		response, err := w.Workspace.GetPermissionLevels(ctx, getPermissionLevelsReq)
 		if err != nil {
@@ -320,8 +328,8 @@ func newGetPermissions() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: workspace_object_type
-		_ = args[1] // TODO: field not in sdk-go request: workspace_object_id
+		getPermissionsReq.WorkspaceObjectType = args[0]
+		getPermissionsReq.WorkspaceObjectId = args[1]
 
 		response, err := w.Workspace.GetPermissions(ctx, getPermissionsReq)
 		if err != nil {
@@ -380,7 +388,7 @@ func newGetStatus() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: path
+		getStatusReq.Path = args[0]
 
 		response, err := w.Workspace.GetStatus(ctx, getStatusReq)
 		if err != nil {
@@ -521,7 +529,7 @@ func newList() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	// TODO: field not in sdk-go request: notebooks_modified_after
+	cmd.Flags().Int64Var(&listReq.NotebooksModifiedAfter, "notebooks-modified-after", listReq.NotebooksModifiedAfter, `UTC timestamp in milliseconds.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
@@ -554,7 +562,7 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
-		_ = args[0] // TODO: field not in sdk-go request: path
+		listReq.Path = args[0]
 
 		response := w.Workspace.List(ctx, listReq)
 		if listLimit < 0 {
@@ -728,8 +736,8 @@ func newSetPermissions() *cobra.Command {
 				}
 			}
 		}
-		_ = args[0] // TODO: field not in sdk-go request: workspace_object_type
-		_ = args[1] // TODO: field not in sdk-go request: workspace_object_id
+		setPermissionsReq.WorkspaceObjectType = args[0]
+		setPermissionsReq.WorkspaceObjectId = args[1]
 
 		response, err := w.Workspace.SetPermissions(ctx, setPermissionsReq)
 		if err != nil {
@@ -809,8 +817,8 @@ func newUpdatePermissions() *cobra.Command {
 				}
 			}
 		}
-		_ = args[0] // TODO: field not in sdk-go request: workspace_object_type
-		_ = args[1] // TODO: field not in sdk-go request: workspace_object_id
+		updatePermissionsReq.WorkspaceObjectType = args[0]
+		updatePermissionsReq.WorkspaceObjectId = args[1]
 
 		response, err := w.Workspace.UpdatePermissions(ctx, updatePermissionsReq)
 		if err != nil {

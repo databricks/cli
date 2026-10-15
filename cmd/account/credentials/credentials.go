@@ -299,6 +299,7 @@ func newList() *cobra.Command {
 		_ = a
 
 		sdkReq := &sdkuccredentials.ListCredentialsPublicRequest{}
+
 		response, err := a.Credentials.ListCredentialsPublic(ctx, *sdkReq)
 		if err != nil {
 			return err

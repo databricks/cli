@@ -6,17 +6,15 @@ import (
 	"errors"
 	"fmt"
 
-	"maps"
-
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/apiclient"
-	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 
+	accessmanagement "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
 	tokenmanagement "github.com/databricks/cli/libs/sdktypes/tokenmanagement/v1"
+	sdkaccessmanagement "github.com/databricks/sdk-go/accessmanagement/v1"
 	sdktokenmanagement "github.com/databricks/sdk-go/tokenmanagement/v1"
 )
 
@@ -306,21 +304,21 @@ func newGetPermissionLevels() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
-		getPermissionLevelsReq := map[string]any{}
-		rawQuery := map[string]any{}
-		rawPath := "/api/2.0/permissions/authorization/tokens/permissionLevels"
 
-		maps.Copy(rawQuery, getPermissionLevelsReq)
-		api, err := apiclient.New(w.Config)
+		sdkReq := &sdkaccessmanagement.ListPermissionLevelsRequest{}
+		sdkReq.RequestObjectType = new("authorization")
+		sdkReq.RequestObjectId = new("tokens")
+
+		response, err := w.AccessManagement.ListPermissionLevels(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
-		var response any
-		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+
+		out, err := accessmanagement.ListPermissionLevelsResponseFromSDK(response)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -362,21 +360,21 @@ func newGetPermissions() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
-		getPermissionsReq := map[string]any{}
-		rawQuery := map[string]any{}
-		rawPath := "/api/2.0/permissions/authorization/tokens"
 
-		maps.Copy(rawQuery, getPermissionsReq)
-		api, err := apiclient.New(w.Config)
+		sdkReq := &sdkaccessmanagement.GetObjectPermissionsRequest{}
+		sdkReq.RequestObjectType = new("authorization")
+		sdkReq.RequestObjectId = new("tokens")
+
+		response, err := w.AccessManagement.GetObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
-		var response any
-		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -457,7 +455,7 @@ func newList() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, out)
+		return cmdio.Render(ctx, out.TokenInfos)
 	}
 
 	// Disable completions since they are not applicable.
@@ -478,13 +476,12 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var setPermissionsOverrides []func(
 	*cobra.Command,
-	*map[string]any,
+	*accessmanagement.SetObjectPermissionsRequest,
 )
 
 func newSetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
-	var setPermissionsReq map[string]any
-	setPermissionsReq = map[string]any{}
+	var setPermissionsReq accessmanagement.SetObjectPermissionsRequest
 
 	var setPermissionsJson flags.JsonFlag
 
@@ -528,19 +525,23 @@ func newSetPermissions() *cobra.Command {
 			}
 		}
 
-		rawQuery := map[string]any{}
-		rawPath := "/api/2.0/permissions/authorization/tokens"
+		setPermissionsReq.RequestObjectType = new("authorization")
+		setPermissionsReq.RequestObjectId = new("tokens")
 
-		api, err := apiclient.New(w.Config)
+		sdkReq, err := accessmanagement.SetObjectPermissionsRequestToSDK(&setPermissionsReq)
 		if err != nil {
 			return err
 		}
-		var response any
-		err = api.Do(ctx, "PUT", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, setPermissionsReq, &response)
+		response, err := w.AccessManagement.SetObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -561,13 +562,12 @@ func newSetPermissions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updatePermissionsOverrides []func(
 	*cobra.Command,
-	*map[string]any,
+	*accessmanagement.UpdateObjectPermissionsRequest,
 )
 
 func newUpdatePermissions() *cobra.Command {
 	cmd := &cobra.Command{}
-	var updatePermissionsReq map[string]any
-	updatePermissionsReq = map[string]any{}
+	var updatePermissionsReq accessmanagement.UpdateObjectPermissionsRequest
 
 	var updatePermissionsJson flags.JsonFlag
 
@@ -610,19 +610,23 @@ func newUpdatePermissions() *cobra.Command {
 			}
 		}
 
-		rawQuery := map[string]any{}
-		rawPath := "/api/2.0/permissions/authorization/tokens"
+		updatePermissionsReq.RequestObjectType = new("authorization")
+		updatePermissionsReq.RequestObjectId = new("tokens")
 
-		api, err := apiclient.New(w.Config)
+		sdkReq, err := accessmanagement.UpdateObjectPermissionsRequestToSDK(&updatePermissionsReq)
 		if err != nil {
 			return err
 		}
-		var response any
-		err = api.Do(ctx, "PATCH", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, updatePermissionsReq, &response)
+		response, err := w.AccessManagement.UpdateObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

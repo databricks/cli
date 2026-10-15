@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
@@ -132,28 +134,28 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if createSkipWait {
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current cleanrooms.CleanRoom
+			err = api.Do(ctx, "POST", "/api/2.0/clean-rooms", auth.WorkspaceIDHeaders(w.Config), nil, createReq.CleanRoom, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
+		}
 		wait, err := w.CleanRooms.CreateCleanRoom(ctx, *sdkReq)
 		if err != nil {
 			return err
-		}
-		if createSkipWait {
-			// Render the current state, as of right after the call.
-			current, err := w.CleanRooms.GetCleanRoom(ctx, sdkcleanrooms.GetCleanRoomRequest{Name: new(wait.GetName())})
-			if err != nil {
-				return err
-			}
-			out, err := cleanrooms.CleanRoomFromSDK(current)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for create to complete...")
 		response, err := wait.Wait(ctx, lro.WithTimeout(createTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := cleanrooms.CleanRoomFromSDK(response)

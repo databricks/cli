@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
@@ -330,28 +332,28 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if createSkipWait {
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current clusters.CreateClusterResponse
+			err = api.Do(ctx, "POST", "/api/2.1/clusters/create", auth.WorkspaceIDHeaders(w.Config), nil, &createReq, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
+		}
 		wait, err := w.Clusters.CreateCluster(ctx, *sdkReq)
 		if err != nil {
 			return err
-		}
-		if createSkipWait {
-			// Render the current state, as of right after the call.
-			current, err := w.Clusters.GetCluster(ctx, sdkclusters.GetClusterRequest{ClusterId: new(wait.GetClusterId())})
-			if err != nil {
-				return err
-			}
-			out, err := clusters.ClusterInfoFromSDK(current)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for create to complete...")
 		response, err := wait.Wait(ctx, lro.WithTimeout(createTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := clusters.ClusterInfoFromSDK(response)
@@ -486,7 +488,7 @@ func newDelete() *cobra.Command {
 		response, err := wait.Wait(ctx, lro.WithTimeout(deleteTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := clusters.ClusterInfoFromSDK(response)
@@ -668,7 +670,7 @@ func newEdit() *cobra.Command {
 		response, err := wait.Wait(ctx, lro.WithTimeout(editTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := clusters.ClusterInfoFromSDK(response)
@@ -945,7 +947,7 @@ func newGetPermissionLevels() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the cluster for which to get or manage permissions")
 		}
-		_ = args[0] // TODO: field not in sdk-go request: cluster_id
+		getPermissionLevelsReq.RequestObjectId = new(args[0])
 
 		getPermissionLevelsReq.RequestObjectType = new("clusters")
 
@@ -1024,7 +1026,7 @@ func newGetPermissions() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the cluster for which to get or manage permissions")
 		}
-		_ = args[0] // TODO: field not in sdk-go request: cluster_id
+		getPermissionsReq.RequestObjectId = new(args[0])
 
 		getPermissionsReq.RequestObjectType = new("clusters")
 
@@ -1160,6 +1162,7 @@ func newListNodeTypes() *cobra.Command {
 		_ = w
 
 		sdkReq := &sdkclusters.ListNodeTypesRequest{}
+
 		response, err := w.Clusters.ListNodeTypes(ctx, *sdkReq)
 		if err != nil {
 			return err
@@ -1213,6 +1216,7 @@ func newListZones() *cobra.Command {
 		_ = w
 
 		sdkReq := &sdkclusters.ListAvailableZonesRequest{}
+
 		response, err := w.Clusters.ListAvailableZones(ctx, *sdkReq)
 		if err != nil {
 			return err
@@ -1564,7 +1568,7 @@ func newResize() *cobra.Command {
 		response, err := wait.Wait(ctx, lro.WithTimeout(resizeTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := clusters.ClusterInfoFromSDK(response)
@@ -1700,7 +1704,7 @@ func newRestart() *cobra.Command {
 		response, err := wait.Wait(ctx, lro.WithTimeout(restartTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := clusters.ClusterInfoFromSDK(response)
@@ -1791,7 +1795,7 @@ func newSetPermissions() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the cluster for which to get or manage permissions")
 		}
-		_ = args[0] // TODO: field not in sdk-go request: cluster_id
+		setPermissionsReq.RequestObjectId = new(args[0])
 
 		setPermissionsReq.RequestObjectType = new("clusters")
 
@@ -1852,6 +1856,7 @@ func newSparkVersions() *cobra.Command {
 		_ = w
 
 		sdkReq := &sdkclusters.GetSparkVersionsRequest{}
+
 		response, err := w.Clusters.ListSparkVersions(ctx, *sdkReq)
 		if err != nil {
 			return err
@@ -1992,7 +1997,7 @@ func newStart() *cobra.Command {
 		response, err := wait.Wait(ctx, lro.WithTimeout(startTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := clusters.ClusterInfoFromSDK(response)
@@ -2240,7 +2245,7 @@ func newUpdate() *cobra.Command {
 		response, err := wait.Wait(ctx, lro.WithTimeout(updateTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := clusters.ClusterInfoFromSDK(response)
@@ -2330,7 +2335,7 @@ func newUpdatePermissions() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the cluster for which to get or manage permissions")
 		}
-		_ = args[0] // TODO: field not in sdk-go request: cluster_id
+		updatePermissionsReq.RequestObjectId = new(args[0])
 
 		updatePermissionsReq.RequestObjectType = new("clusters")
 

@@ -1,6 +1,8 @@
 package flags
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"slices"
 	"strconv"
@@ -107,4 +109,56 @@ func ParseEnum[T ~string](s string, values ...string) (T, error) {
 		return "", fmt.Errorf(`value "%s" is not one of "%s"`, s, strings.Join(values, `", "`))
 	}
 	return T(s), nil
+}
+
+// Float32PtrVar defines a float32 flag that sets *p only when the flag is used.
+// It reports the float64 type so help output shows "float" like pflag.Float64Var.
+func Float32PtrVar(fs *pflag.FlagSet, p **float32, name, usage string) {
+	fs.Var(&optionalValue[float32]{p: p, typ: "float64", parse: func(s string) (float32, error) {
+		f, err := strconv.ParseFloat(s, 32)
+		return float32(f), err
+	}}, name, usage)
+}
+
+// EnumPtrVar defines a flag for an optional string enum: *p is set only when
+// the flag is used.
+func EnumPtrVar[T ~string](fs *pflag.FlagSet, p **T, name, usage, typ string, values ...string) {
+	fs.Var(&optionalValue[T]{p: p, typ: typ, parse: func(s string) (T, error) {
+		return ParseEnum[T](s, values...)
+	}}, name, usage)
+}
+
+// JSONStringPtrVar defines a flag for a value that the API encodes as a JSON
+// string (e.g. a timestamp or a duration): the flag value is decoded as that
+// JSON string and *p is set only when the flag is used.
+func JSONStringPtrVar[T any](fs *pflag.FlagSet, p **T, name, usage string) {
+	fs.Var(&optionalValue[T]{p: p, typ: "string", parse: func(s string) (T, error) {
+		var v T
+		err := json.Unmarshal([]byte(strconv.Quote(s)), &v)
+		return v, err
+	}}, name, usage)
+}
+
+type base64Value struct{ p *[]byte }
+
+func (v *base64Value) String() string { return base64.StdEncoding.EncodeToString(*v.p) }
+
+func (v *base64Value) Set(s string) error {
+	b, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		b, err = base64.URLEncoding.DecodeString(s)
+	}
+	if err != nil {
+		return fmt.Errorf("invalid base64 value: %w", err)
+	}
+	*v.p = b
+	return nil
+}
+
+func (*base64Value) Type() string { return "string" }
+
+// Base64Var defines a flag for a bytes field the API exchanges as base64
+// (e.g. an etag): the flag takes the base64 string as returned by the API.
+func Base64Var(fs *pflag.FlagSet, p *[]byte, name, usage string) {
+	fs.Var(&base64Value{p: p}, name, usage)
 }

@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
@@ -281,7 +283,7 @@ func newCancelRun() *cobra.Command {
 		response, err := wait.Wait(ctx, lro.WithTimeout(cancelRunTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := jobs.GetRunResponseFromSDK(response)
@@ -827,7 +829,7 @@ func newGetPermissionLevels() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the job for which to get or manage permissions")
 		}
-		_ = args[0] // TODO: field not in sdk-go request: job_id
+		getPermissionLevelsReq.RequestObjectId = new(args[0])
 
 		getPermissionLevelsReq.RequestObjectType = new("jobs")
 
@@ -906,7 +908,7 @@ func newGetPermissions() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the job for which to get or manage permissions")
 		}
-		_ = args[0] // TODO: field not in sdk-go request: job_id
+		getPermissionsReq.RequestObjectId = new(args[0])
 
 		getPermissionsReq.RequestObjectType = new("jobs")
 
@@ -1400,28 +1402,28 @@ func newRepairRun() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if repairRunSkipWait {
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current jobs.RepairRunResponse
+			err = api.Do(ctx, "POST", "/api/2.2/jobs/runs/repair", auth.WorkspaceIDHeaders(w.Config), nil, &repairRunReq, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
+		}
 		wait, err := w.Jobs.Repair(ctx, *sdkReq)
 		if err != nil {
 			return err
-		}
-		if repairRunSkipWait {
-			// Render the current state, as of right after the call.
-			current, err := w.Jobs.GetRun(ctx, sdkjobs.GetRunRequest{RunId: new(wait.GetRunId())})
-			if err != nil {
-				return err
-			}
-			out, err := jobs.GetRunResponseFromSDK(current)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for repair-run to complete...")
 		response, err := wait.Wait(ctx, lro.WithTimeout(repairRunTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := jobs.GetRunResponseFromSDK(response)
@@ -1626,28 +1628,28 @@ func newRunNow() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if runNowSkipWait {
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current jobs.RunNowResponse
+			err = api.Do(ctx, "POST", "/api/2.2/jobs/run-now", auth.WorkspaceIDHeaders(w.Config), nil, &runNowReq, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
+		}
 		wait, err := w.Jobs.RunNow(ctx, *sdkReq)
 		if err != nil {
 			return err
-		}
-		if runNowSkipWait {
-			// Render the current state, as of right after the call.
-			current, err := w.Jobs.GetRun(ctx, sdkjobs.GetRunRequest{RunId: new(wait.GetRunId())})
-			if err != nil {
-				return err
-			}
-			out, err := jobs.GetRunResponseFromSDK(current)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for run-now to complete...")
 		response, err := wait.Wait(ctx, lro.WithTimeout(runNowTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := jobs.GetRunResponseFromSDK(response)
@@ -1738,7 +1740,7 @@ func newSetPermissions() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the job for which to get or manage permissions")
 		}
-		_ = args[0] // TODO: field not in sdk-go request: job_id
+		setPermissionsReq.RequestObjectId = new(args[0])
 
 		setPermissionsReq.RequestObjectType = new("jobs")
 
@@ -1859,28 +1861,28 @@ func newSubmit() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if submitSkipWait {
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current jobs.SubmitRunResponse
+			err = api.Do(ctx, "POST", "/api/2.2/jobs/runs/submit", auth.WorkspaceIDHeaders(w.Config), nil, &submitReq, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
+		}
 		wait, err := w.Jobs.SubmitRun(ctx, *sdkReq)
 		if err != nil {
 			return err
-		}
-		if submitSkipWait {
-			// Render the current state, as of right after the call.
-			current, err := w.Jobs.GetRun(ctx, sdkjobs.GetRunRequest{RunId: new(wait.GetRunId())})
-			if err != nil {
-				return err
-			}
-			out, err := jobs.GetRunResponseFromSDK(current)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for submit to complete...")
 		response, err := wait.Wait(ctx, lro.WithTimeout(submitTimeout))
 		sp.Close()
 		if err != nil {
-			return err
+			return &cmdgen.WaitError{Err: err}
 		}
 
 		out, err := jobs.GetRunResponseFromSDK(response)
@@ -2084,7 +2086,7 @@ func newUpdatePermissions() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the job for which to get or manage permissions")
 		}
-		_ = args[0] // TODO: field not in sdk-go request: job_id
+		updatePermissionsReq.RequestObjectId = new(args[0])
 
 		updatePermissionsReq.RequestObjectType = new("jobs")
 
