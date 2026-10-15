@@ -22,6 +22,7 @@ Migration workflows:
 
 Use --key to specify the resource name in your bundle configuration.
 Use --bind to automatically bind the generated resource to the existing workspace resource.
+Use --init-bare to automatically initialize a bare bundle skeleton if one doesn't exist.
 
 Usage:
   databricks bundle generate [command]
@@ -36,6 +37,7 @@ Available Commands:
 
 Flags:
   -h, --help         help for generate
+      --init-bare    automatically initialize a bare bundle skeleton if one doesn't exist
       --key string   resource key to use for the generated configuration
 
 Global Flags:

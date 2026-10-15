@@ -1,0 +1,15 @@
+# This is a Databricks asset bundle definition for my_bare_bundle.
+# See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
+bundle:
+  name: my_bare_bundle
+  uuid: [UUID]
+
+include:
+  - resources/*.yml
+
+targets:
+  dev:
+    default: true
+    mode: development
+    workspace:
+      host: [DATABRICKS_URL]
