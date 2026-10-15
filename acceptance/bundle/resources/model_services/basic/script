@@ -1,5 +1,3 @@
-assert_dms_unsupported model_services
-
 title "Initial summary before deploy"
 trace $CLI bundle summary -o json | jq .resources.model_services.ms1
 

@@ -1,7 +1,5 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
-assert_dms_unsupported model_services
-
 cleanup() {
     trace $CLI bundle destroy --auto-approve
 }

@@ -1,7 +1,5 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
-assert_dms_unsupported mcp_services
-
 CONN="mcp_conn_$UNIQUE_NAME"
 
 cleanup() {

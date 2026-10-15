@@ -34,9 +34,11 @@ const dmsDeploymentNodeName = "resources.deployment.json"
 // created.
 var dmsUpdatableOperationFields = []string{"state", "error_message", "resource_id", "status"}
 
-// dmsResourceTypes mirrors the resource_key prefixes in Universe's bundle/metadata-service.
+// dmsResourceTypes lists the resource_key prefixes accepted by DMS.
 // NOTE: When adding a type here, also add the corresponding enum in bundle/metadata-service/service.proto
 // and prefix mapping in parser/ResourceTypes.java in Universe.
+// TODO: Add internal_immutable_snapshots, mcp_services, model_services,
+// model_provider_services, and postgres_snapshot_schedules to the Universe enum and prefix mapping.
 var dmsResourceTypes = []string{
 	"alerts",
 	"apps",
@@ -53,6 +55,9 @@ var dmsResourceTypes = []string{
 	"internal_immutable_snapshots",
 	"job_runs",
 	"jobs",
+	"mcp_services",
+	"model_provider_services",
+	"model_services",
 	"model_serving_endpoints",
 	"models",
 	"pipelines",
@@ -62,6 +67,7 @@ var dmsResourceTypes = []string{
 	"postgres_endpoints",
 	"postgres_projects",
 	"postgres_roles",
+	"postgres_snapshot_schedules",
 	"postgres_synced_tables",
 	"quality_monitors",
 	"registered_models",

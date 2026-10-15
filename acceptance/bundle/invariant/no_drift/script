@@ -3,10 +3,6 @@
 
 invariant_setup
 
-if [[ "$INPUT_CONFIG" == "model_service.yml.tmpl" ]]; then
-    assert_dms_unsupported model_services
-fi
-
 # Only compute a plan up front when the READPLAN variant actually consumes it via --plan.
 # Without READPLAN, deploy computes its own plan internally, so a separate `bundle plan`
 # invocation is pure waste.
