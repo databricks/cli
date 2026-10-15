@@ -560,7 +560,7 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 	// second time) nor stop recording one that is (the service still holds it).
 	_, recorded := db.Data.Features[FeatureDeploymentHistory]
 	if recording && recorded && db.Data.Serial > dmsDeployment.LastVersionID {
-		return fmt.Errorf("resource state serial (%d) is ahead of deployment history version (%d); the state may refer to a different deployment", db.Data.Serial, dmsDeployment.LastVersionID)
+		return fmt.Errorf("inconsistent deployment state: resource state serial (%d) is ahead of deployment history version (%d)\n\nDelete the local state file %q and deploy the bundle again with deployment history enabled (experimental.deployment_history: true) to proceed from deployment history version %d", db.Data.Serial, dmsDeployment.LastVersionID, filepath.ToSlash(path), dmsDeployment.LastVersionID)
 	}
 	switch {
 	case recording && !recorded && len(db.Data.State) == 0:
