@@ -19,6 +19,18 @@ type AppConfig struct {
 
 	// Env contains environment variables to set for the app
 	Env []AppEnvVar `json:"env,omitempty" yaml:"env,omitempty"`
+
+	// HealthCheck configures the HTTP check that must pass before a deployment is considered successful
+	HealthCheck *AppHealthCheck `json:"health_check,omitempty" yaml:"health_check,omitempty"`
+}
+
+// AppHealthCheck represents a deploy-time health check configuration for an app
+type AppHealthCheck struct {
+	// Path is the HTTP path to probe (e.g., "/health")
+	Path string `json:"path" yaml:"path"`
+
+	// TimeoutSeconds is how long to wait for the health check to pass before failing the deployment
+	TimeoutSeconds int `json:"timeout_seconds,omitempty" yaml:"timeout_seconds,omitempty"`
 }
 
 // AppEnvVar represents an environment variable configuration for an app

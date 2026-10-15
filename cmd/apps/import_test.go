@@ -217,6 +217,9 @@ func TestInlineAppConfigFileFieldPriority(t *testing.T) {
 env:
   - name: FOO
     value: bar
+health_check:
+  path: /health
+  timeout_seconds: 120
 resources:
   - name: ENDPOINT
     serving_endpoint:
@@ -245,6 +248,7 @@ resources:
 		assert.Equal(t, "existing description", result["description"])
 		assert.NotNil(t, result["config"])
 		assert.NotNil(t, result["resources"])
+		assert.Equal(t, map[string]any{"path": "/health", "timeout_seconds": int64(120)}, result["config"].(map[string]any)["health_check"])
 	})
 }
 

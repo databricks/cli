@@ -607,6 +607,15 @@ func inlineAppConfigFile(appValue *dyn.Value) (string, error) {
 		configMap["env"] = envValue
 	}
 
+	// Add health_check if present
+	if healthCheck, ok := appConfig["health_check"]; ok {
+		healthCheckValue, err := convert.FromTyped(healthCheck, dyn.NilValue)
+		if err != nil {
+			return "", fmt.Errorf("failed to convert health_check: %w", err)
+		}
+		configMap["health_check"] = healthCheckValue
+	}
+
 	// Add the config section if we have any items
 	if len(configMap) > 0 {
 		newPairs = append(newPairs, dyn.Pair{
