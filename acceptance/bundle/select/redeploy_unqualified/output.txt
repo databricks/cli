@@ -1,0 +1,24 @@
+
+=== Initial deploy
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-redeploy-[UNIQUE_NAME]/default/files...
+Created jobs.my_job
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Redeploy with unqualified --select
+
+>>> [CLI] bundle deploy --select my_job
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-redeploy-[UNIQUE_NAME]/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+=== Destroy
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/select-redeploy-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

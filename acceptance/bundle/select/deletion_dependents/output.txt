@@ -1,0 +1,71 @@
+
+=== Initial deploy
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-deldep-[UNIQUE_NAME]/default/files...
+Created jobs.consumer
+Created jobs.keep
+Created jobs.producer
+Files: 4 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle plan --select jobs.producer
+Error: cannot delete jobs.producer: jobs.consumer still references it; remove the reference or also remove jobs.consumer from the config
+
+
+>>> [CLI] bundle deploy --select jobs.producer
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-deldep-[UNIQUE_NAME]/default/files...
+Error: cannot delete jobs.producer: jobs.consumer still references it; remove the reference or also remove jobs.consumer from the config
+
+Files: 1 uploaded, 0 deleted
+
+>>> print_requests.py --sort //jobs/delete --keep
+
+>>> [CLI] bundle plan
+update jobs.consumer
+delete jobs.producer
+
+Plan: 0 to add, 1 to change, 1 to delete, 1 unchanged
+
+>>> [CLI] bundle plan --select jobs.producer
+delete jobs.consumer
+delete jobs.producer
+
+Plan: 0 to add, 0 to change, 2 to delete, 0 unchanged, 1 not selected
+
+=== bundle deploy --select jobs.producer
+
+>>> [CLI] bundle deploy --select jobs.producer
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-deldep-[UNIQUE_NAME]/default/files...
+Deleted jobs.consumer
+Deleted jobs.producer
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 2 deleted, 0 unchanged, 1 not selected
+
+>>> print_requests.py --sort //jobs/delete
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete",
+  "body": {
+    "job_id": [PRODUCER_ID]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete",
+  "body": {
+    "job_id": [CONSUMER_ID]
+  }
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Destroy
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.keep
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/select-deldep-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

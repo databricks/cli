@@ -1,0 +1,31 @@
+envsubst '$UNIQUE_NAME' < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    title "Destroy"
+    trace $CLI bundle destroy --auto-approve
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+# Deploy both jobs.
+title "Initial deploy\n"
+trace $CLI bundle deploy
+# Register [KEEP_ID]/[GONE_ID] from state while both still exist, so the delete
+# request body below is masked deterministically.
+replace_ids.py
+
+# Remove 'gone' from config. It is now orphaned in state and planned for deletion.
+envsubst '$UNIQUE_NAME' < databricks.yml.after.tmpl > databricks.yml
+
+# A resource removed from config is selectable by name, like any created or updated
+# one. The plan is filtered to just its deletion.
+trace $CLI bundle plan --select jobs.gone
+
+title "bundle deploy --select jobs.gone\n"
+trace $CLI bundle deploy --select jobs.gone
+
+# The delete call targeted 'gone' only.
+trace print_requests.py --sort //jobs/delete
+
+# A full plan now has nothing to delete and 'keep' is unchanged.
+trace $CLI bundle plan
