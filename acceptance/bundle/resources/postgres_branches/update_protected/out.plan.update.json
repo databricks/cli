@@ -15,8 +15,6 @@
     }
   },
   "remote_state": {
-    "is_protected": false,
-    "no_expiry": false,
     "branch_id": "dev-branch",
     "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
     "name": "[DEV_BRANCH_ID]",
@@ -38,15 +36,13 @@
     "is_protected": {
       "action": "update",
       "old": false,
-      "new": true,
-      "remote": false
+      "new": true
     },
     "no_expiry": {
       "action": "skip",
       "reason": "spec:input_only",
       "old": true,
-      "new": true,
-      "remote": false
+      "new": true
     }
   }
 }

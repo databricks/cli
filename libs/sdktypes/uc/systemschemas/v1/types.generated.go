@@ -4,7 +4,6 @@ package systemschemas
 
 import (
 	fmt "fmt"
-
 	sdk "github.com/databricks/sdk-go/uc/systemschemas/v1"
 )
 

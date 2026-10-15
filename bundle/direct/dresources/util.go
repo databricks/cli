@@ -4,12 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"reflect"
 	"slices"
 	"strings"
 
 	"github.com/databricks/sdk-go/core/apierr"
-	"github.com/databricks/sdk-go/core/types"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/internal/retries"
@@ -133,20 +131,4 @@ func trueOrNil(b bool) *bool {
 		return nil
 	}
 	return new(true)
-}
-
-// newFieldMaskUnsafe creates a FieldMask without validation. This is needed for oneof
-// group names which the SDK's validation doesn't recognize but the API does accept.
-// Use sparingly and only when you know the paths are correct.
-func newFieldMaskUnsafe[T any](paths ...string) *types.FieldMask[T] {
-	if len(paths) == 0 {
-		return nil
-	}
-	// Use reflection to bypass the validation in NewFieldMask and set the
-	// unexported value field directly with the concatenated paths.
-	result := &types.FieldMask[T]{}
-	slices.Sort(paths)
-	paths = slices.Compact(paths)
-	reflect.ValueOf(result).Elem().FieldByName("value").SetString(strings.Join(paths, ","))
-	return result
 }

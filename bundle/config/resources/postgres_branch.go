@@ -29,7 +29,7 @@ type PostgresBranchConfig struct {
 	// DeleteBranch). When false or unset, the backend performs a soft delete that
 	// can be undone within the branch's retention window. Input-only: not
 	// returned by the GET API.
-	PurgeOnDelete bool `json:"purge_on_delete,omitempty"`
+	PurgeOnDelete *bool `json:"purge_on_delete,omitempty"`
 }
 
 type PostgresBranch struct {

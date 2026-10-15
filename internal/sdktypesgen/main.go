@@ -253,9 +253,6 @@ func generate(outRoot, pkg string) error {
 		"fmt":     "fmt",
 		"strings": "strings",
 		"types":   "github.com/databricks/sdk-go/core/types",
-		"slices":  "slices",
-		"reflect": "reflect",
-		"unsafe":  "unsafe",
 	}
 	for _, imp := range wf.Imports {
 		p, _ := strconv.Unquote(imp.Path.Value)

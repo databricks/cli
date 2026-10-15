@@ -5,7 +5,6 @@
     "update_mask": "spec.settings"
   },
   "body": {
-    "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/my-endpoint",
     "spec": {
       "autoscaling_limit_max_cu": 8,
       "autoscaling_limit_min_cu": 0.5,

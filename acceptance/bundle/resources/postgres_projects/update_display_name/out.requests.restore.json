@@ -9,7 +9,6 @@
     "update_mask": "spec.display_name"
   },
   "body": {
-    "name": "[MY_PROJECT_ID]",
     "spec": {
       "default_endpoint_settings": {
         "autoscaling_limit_max_cu": 4,

@@ -11,7 +11,6 @@
   ],
   "action": "skip",
   "remote_state": {
-    "role": "",
     "database_id": "my-database",
     "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
     "name": "[MY_DATABASE_ID]",
@@ -34,8 +33,7 @@
       "action": "skip",
       "reason": "spec:input_only",
       "old": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner",
-      "new": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner",
-      "remote": ""
+      "new": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
     }
   }
 }

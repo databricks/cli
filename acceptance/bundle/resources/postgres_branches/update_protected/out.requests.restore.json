@@ -17,7 +17,6 @@
     "update_mask": "spec.is_protected"
   },
   "body": {
-    "name": "[DEV_BRANCH_ID]",
     "spec": {
       "is_protected": false,
       "no_expiry": true

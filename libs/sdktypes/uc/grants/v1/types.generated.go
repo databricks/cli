@@ -4,7 +4,6 @@ package grants
 
 import (
 	fmt "fmt"
-
 	sdk "github.com/databricks/sdk-go/uc/grants/v1"
 )
 

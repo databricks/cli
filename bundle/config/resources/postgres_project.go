@@ -22,7 +22,7 @@ type PostgresProjectConfig struct {
 	// DeleteProject). When false or unset, the backend performs a soft delete that
 	// can be undone within the project's retention window. Input-only: not
 	// returned by the GET API.
-	PurgeOnDelete bool `json:"purge_on_delete,omitempty"`
+	PurgeOnDelete *bool `json:"purge_on_delete,omitempty"`
 }
 
 type PostgresProject struct {

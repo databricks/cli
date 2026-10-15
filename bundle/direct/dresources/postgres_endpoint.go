@@ -162,10 +162,8 @@ func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *Postgre
 	return remote.Name, remote, nil
 }
 
-// no_suspension and suspend_timeout_duration are two sides of one oneof. The API accepts
-// them in update_mask under the group name "suspension", but the SDK's field mask
-// validation doesn't recognize group names. So we map field names to their group name
-// for the API, and the UpdateMask string is passed through without validation.
+// no_suspension and suspend_timeout_duration are two sides of one oneof, and the API
+// accepts them in update_mask only under the group name "suspension".
 var endpointOneofGroups = map[string]string{
 	"no_suspension":            "suspension",
 	"suspend_timeout_duration": "suspension",
@@ -178,25 +176,8 @@ func (r *ResourcePostgresEndpoint) DoUpdate(ctx context.Context, id string, conf
 	// not relative to our flattened state type.
 	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.", endpointOneofGroups)
 
-	// Only name (which addresses the endpoint) and spec are set; the other
-	// Endpoint fields are output-only.
-	request, err := postgres.UpdateEndpointRequestToSDK(&postgres.UpdateEndpointRequest{
-		Endpoint: &postgres.Endpoint{
-			Name: new(id),
-			Spec: &config.EndpointSpec,
-		},
-		UpdateMask: new(strings.Join(fieldPaths, ",")),
-	})
-	if err != nil {
-		return nil, err
-	}
-	waiter, err := r.client.Postgres.UpdateEndpoint(ctx, *request)
-	if err != nil {
-		return nil, err
-	}
-
-	// Wait for the update to complete
-	_, err = waiter.Wait(ctx)
+	// Only spec is set; the other Endpoint fields are output-only.
+	_, err := updatePostgres[postgres.Endpoint](ctx, r.client, id, strings.Join(fieldPaths, ","), &postgres.Endpoint{Spec: &config.EndpointSpec})
 	if err != nil {
 		return nil, err
 	}

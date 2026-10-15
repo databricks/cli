@@ -4,9 +4,7 @@ package settings
 
 import (
 	fmt "fmt"
-
 	sdk "github.com/databricks/sdk-go/settings/v2"
-
 	strings "strings"
 )
 

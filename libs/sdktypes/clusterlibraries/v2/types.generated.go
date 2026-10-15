@@ -4,9 +4,7 @@ package clusterlibraries
 
 import (
 	fmt "fmt"
-
 	sdk "github.com/databricks/sdk-go/clusterlibraries/v2"
-
 	strings "strings"
 )
 

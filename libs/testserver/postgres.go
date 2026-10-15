@@ -387,7 +387,7 @@ func (s *FakeWorkspace) PostgresBranchCreate(req Request, parent, branchID strin
 
 	// Apply user-provided spec fields to status (where input fields are surfaced).
 	if branch.Spec != nil {
-		branch.Status.IsProtected = branch.Spec.IsProtected
+		branch.Status.IsProtected = new(utils.Deref(branch.Spec.IsProtected))
 		branch.Status.ExpireTime = branch.Spec.ExpireTime
 	}
 
@@ -482,7 +482,7 @@ func (s *FakeWorkspace) PostgresBranchUpdate(req Request, name string) Response 
 		if branch.Status == nil {
 			branch.Status = &postgres.BranchStatus{}
 		}
-		branch.Status.IsProtected = updateBranch.Spec.IsProtected
+		branch.Status.IsProtected = new(utils.Deref(updateBranch.Spec.IsProtected))
 		if updateBranch.Spec.ExpireTime != nil {
 			branch.Status.ExpireTime = updateBranch.Spec.ExpireTime
 		}

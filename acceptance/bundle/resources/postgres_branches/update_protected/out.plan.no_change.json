@@ -7,8 +7,6 @@
   ],
   "action": "skip",
   "remote_state": {
-    "is_protected": false,
-    "no_expiry": false,
     "branch_id": "dev-branch",
     "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
     "name": "[DEV_BRANCH_ID]",
@@ -27,12 +25,17 @@
     "update_time": "[TIMESTAMP]"
   },
   "changes": {
+    "is_protected": {
+      "action": "skip",
+      "reason": "empty",
+      "old": false,
+      "new": false
+    },
     "no_expiry": {
       "action": "skip",
       "reason": "spec:input_only",
       "old": true,
-      "new": true,
-      "remote": false
+      "new": true
     }
   }
 }

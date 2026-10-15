@@ -5,7 +5,6 @@
     "update_mask": "spec.expiration"
   },
   "body": {
-    "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/dev-branch",
     "spec": {
       "ttl": "259200s"
     }

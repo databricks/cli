@@ -5,7 +5,6 @@
     "update_mask": "spec.default_endpoint_settings.autoscaling_limit_max_cu"
   },
   "body": {
-    "name": "projects/test-pg-proj-[UNIQUE_NAME]",
     "spec": {
       "default_endpoint_settings": {
         "autoscaling_limit_max_cu": 8,

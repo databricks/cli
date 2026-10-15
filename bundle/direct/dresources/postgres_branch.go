@@ -59,8 +59,8 @@ func (*ResourcePostgresBranch) RemapState(remote *PostgresBranchRemote) *Postgre
 		ReplaceExisting: false,
 
 		// purge_on_delete is a delete-time query parameter; the GET API never
-		// returns it, so RemapState leaves it false.
-		PurgeOnDelete: false,
+		// returns it, so RemapState leaves it unset.
+		PurgeOnDelete: nil,
 
 		BranchSpec: remote.BranchSpec,
 	}
@@ -128,10 +128,9 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresB
 	return remote.Name, remote, nil
 }
 
-// expire_time, no_expiry and ttl are three sides of one oneof. The API accepts them
-// in update_mask under the group name "expiration", but the SDK's field mask validation
-// doesn't recognize group names. So we map field names to their group name for the API,
-// and the UpdateMask string is passed through without validation by the converter.
+// expire_time, no_expiry and ttl are three sides of one oneof, and the API accepts them
+// in update_mask only under the group name: masking the field itself is answered with
+// "Unknown field path in update_mask". Probed against a real workspace on 2026-08-31.
 var branchOneofGroups = map[string]string{
 	"expire_time": "expiration",
 	"no_expiry":   "expiration",
@@ -158,25 +157,12 @@ func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config
 		return nil, nil
 	}
 
-	// Only name (which addresses the branch) and spec are set; the other
-	// Branch fields are output-only.
-	request, err := postgres.UpdateBranchRequestToSDK(&postgres.UpdateBranchRequest{
-		Branch: &postgres.Branch{
-			Name: new(id),
-			Spec: &config.BranchSpec,
-		},
-		UpdateMask: new(strings.Join(fieldPaths, ",")),
-	})
+	// Only spec is set; the other Branch fields are output-only.
+	updated, err := updatePostgres[postgres.Branch](ctx, r.client, id, strings.Join(fieldPaths, ","), &postgres.Branch{Spec: &config.BranchSpec})
 	if err != nil {
 		return nil, err
 	}
-	waiter, err := r.client.Postgres.UpdateBranch(ctx, *request)
-	if err != nil {
-		return nil, err
-	}
-
-	// Wait for the update to complete
-	result, err := waiter.Wait(ctx)
+	result, err := postgres.BranchToSDK(updated)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +172,7 @@ func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config
 func (r *ResourcePostgresBranch) DoDelete(ctx context.Context, id string, state *PostgresBranchState) error {
 	waiter, err := r.client.Postgres.DeleteBranch(ctx, sdkpostgres.DeleteBranchRequest{
 		Name:  new(id),
-		Purge: trueOrNil(state.PurgeOnDelete),
+		Purge: trueOrNil(utils.Deref(state.PurgeOnDelete)),
 	})
 	if err != nil {
 		return err

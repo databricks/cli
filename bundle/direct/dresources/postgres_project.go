@@ -55,8 +55,8 @@ func (*ResourcePostgresProject) RemapState(remote *PostgresProjectRemote) *Postg
 		ProjectSpec: remote.ProjectSpec,
 
 		// purge_on_delete is a delete-time query parameter; the GET API never
-		// returns it, so RemapState leaves it false.
-		PurgeOnDelete: false,
+		// returns it, so RemapState leaves it unset.
+		PurgeOnDelete: nil,
 	}
 }
 
@@ -122,10 +122,8 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 	return remote.Name, remote, nil
 }
 
-// The default endpoint settings carry the same suspension oneof as an endpoint does;
-// the API accepts these under the group name "suspension", but the SDK's field mask
-// validation doesn't recognize group names. So we map field names to their group name
-// for the API, and the UpdateMask string is passed through without validation.
+// The default endpoint settings carry the same suspension oneof as an endpoint does,
+// which the API accepts in update_mask only under the group name "suspension".
 var projectOneofGroups = map[string]string{
 	"default_endpoint_settings.no_suspension":            "default_endpoint_settings.suspension",
 	"default_endpoint_settings.suspend_timeout_duration": "default_endpoint_settings.suspension",
@@ -151,25 +149,12 @@ func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, confi
 		return nil, nil
 	}
 
-	// Only name (which addresses the project) and spec are set; the other
-	// Project fields are output-only.
-	request, err := postgres.UpdateProjectRequestToSDK(&postgres.UpdateProjectRequest{
-		Project: &postgres.Project{
-			Name: new(id),
-			Spec: &config.ProjectSpec,
-		},
-		UpdateMask: new(strings.Join(fieldPaths, ",")),
-	})
+	// Only spec is set; the other Project fields are output-only.
+	updated, err := updatePostgres[postgres.Project](ctx, r.client, id, strings.Join(fieldPaths, ","), &postgres.Project{Spec: &config.ProjectSpec})
 	if err != nil {
 		return nil, err
 	}
-	waiter, err := r.client.Postgres.UpdateProject(ctx, *request)
-	if err != nil {
-		return nil, err
-	}
-
-	// Wait for the update to complete
-	result, err := waiter.Wait(ctx)
+	result, err := postgres.ProjectToSDK(updated)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +164,7 @@ func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, confi
 func (r *ResourcePostgresProject) DoDelete(ctx context.Context, id string, state *PostgresProjectState) error {
 	waiter, err := r.client.Postgres.DeleteProject(ctx, sdkpostgres.DeleteProjectRequest{
 		Name:  new(id),
-		Purge: trueOrNil(state.PurgeOnDelete),
+		Purge: trueOrNil(utils.Deref(state.PurgeOnDelete)),
 	})
 	if err != nil {
 		return err

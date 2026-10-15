@@ -5,7 +5,6 @@
     "update_mask": "spec.history_retention_duration"
   },
   "body": {
-    "name": "projects/test-pg-proj-[UNIQUE_NAME]",
     "spec": {
       "display_name": "Test Project for History Retention Update",
       "history_retention_duration": "259200s",

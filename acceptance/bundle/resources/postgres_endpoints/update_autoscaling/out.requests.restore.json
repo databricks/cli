@@ -25,7 +25,6 @@
     "update_mask": "spec.autoscaling_limit_max_cu"
   },
   "body": {
-    "name": "[MY_ENDPOINT_ID]",
     "spec": {
       "autoscaling_limit_max_cu": 8,
       "autoscaling_limit_min_cu": 0.5,
