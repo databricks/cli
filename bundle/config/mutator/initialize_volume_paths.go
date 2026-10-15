@@ -36,7 +36,7 @@ func (m *initializeVolumePaths) Apply(_ context.Context, b *bundle.Bundle) diag.
 	}
 
 	view := b.Config.View()
-	pattern := structpath.MustParsePattern("resources.volumes.*")
+	pattern := structpath.NewPattern(nil, "resources", "volumes", structpath.AnyKey)
 	err := structvar.ForEach(view, pattern, func(p *structpath.PathNode, v structvar.View) error {
 		// volume_path is computed and read-only; reject a user-provided value instead of overwriting it.
 		if existing, ok := v.Get("volume_path").AsString(); ok && existing != "" {

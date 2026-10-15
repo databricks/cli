@@ -131,7 +131,7 @@ func StateToBundle(ctx context.Context, state ExportedResourcesMap, cfg *config.
 		}
 	}
 
-	return structvar.ForEach(cfg.View(), structpath.MustParsePattern("resources.*.*"), func(p *structpath.PathNode, inner structvar.View) error {
+	return structvar.ForEach(cfg.View(), structpath.NewPattern(nil, "resources", structpath.AnyKey, structpath.AnyKey), func(p *structpath.PathNode, inner structvar.View) error {
 		group, _ := p.Parent().StringKey()
 		if !hasID(group) || inner.Get("id").IsValid() || inner.Get("modified_status").IsValid() {
 			return nil

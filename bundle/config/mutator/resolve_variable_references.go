@@ -43,9 +43,10 @@ var defaultPrefixes = []string{
 	"variables",
 }
 
-var artifactPath = structpath.MustParsePath("artifacts")
+var artifactPath = structpath.NewPath(nil, "artifacts")
 
 type resolveVariableReferences struct {
+	// prefixes are top-level config keys.
 	prefixes    []string
 	pattern     *structpath.PatternNode
 	lookupFn    func(structvar.View, *structpath.PathNode, *bundle.Bundle) (structvar.View, error)
@@ -74,7 +75,7 @@ func ResolveVariableReferencesOnlyResources(prefixes ...string) bundle.Mutator {
 		prefixes:         prefixes,
 		lookupFn:         lookup,
 		extraRounds:      maxResolutionRounds - 1,
-		pattern:          structpath.MustParsePattern("resources"),
+		pattern:          structpath.NewPattern(nil, "resources"),
 		includeResources: true,
 	}
 }
@@ -93,7 +94,7 @@ func ResolveVariableReferencesWithoutResources(prefixes ...string) bundle.Mutato
 func ResolveVariableReferencesInLookup() bundle.Mutator {
 	return &resolveVariableReferences{
 		prefixes:    defaultPrefixes,
-		pattern:     structpath.MustParsePattern("variables.*.lookup"),
+		pattern:     structpath.NewPattern(nil, "variables", structpath.AnyKey, "lookup"),
 		lookupFn:    lookupForVariables,
 		extraRounds: maxResolutionRounds - 1,
 	}
@@ -168,12 +169,12 @@ func (m *resolveVariableReferences) Validate(ctx context.Context, b *bundle.Bund
 func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	prefixes := make([]*structpath.PathNode, len(m.prefixes))
 	for i, prefix := range m.prefixes {
-		prefixes[i] = structpath.MustParsePath(prefix)
+		prefixes[i] = structpath.NewPath(nil, prefix)
 	}
 
 	// The path ${var.foo} is a shorthand for ${variables.foo.value}.
 	// We rewrite it here to make the resolution logic simpler.
-	varPath := structpath.MustParsePath("var")
+	varPath := structpath.NewPath(nil, "var")
 
 	// Resolution converts the whole configuration on every round; skip it if no
 	// reference would be resolved.

@@ -116,7 +116,7 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 	slices.Sort(keys)
 
 	for _, key := range keys {
-		pattern := structpath.MustParsePattern("resources." + key + ".*")
+		pattern := structpath.NewPattern(nil, "resources", key, structpath.AnyKey)
 
 		err = structvar.ForEach(b.Config.View(), pattern, func(p *structpath.PathNode, v structvar.View) error {
 			had := v.Get("permissions").IsValid()
