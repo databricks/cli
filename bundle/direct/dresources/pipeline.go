@@ -149,6 +149,7 @@ func (r *ResourcePipeline) DoDelete(ctx context.Context, id string, state *Pipel
 	_, err := r.client.Pipelines.Delete(ctx, sdkpipelines.DeletePipelineRequest{
 		PipelineId: new(id),
 		Cascade:    state.CascadeOnDestroy,
+		Force:      nil, // Not set by DABs
 	})
 	return err
 }

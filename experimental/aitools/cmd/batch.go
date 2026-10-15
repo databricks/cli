@@ -195,6 +195,8 @@ func cancelInFlight(ctx context.Context, client *sqlexec.Client, statementIDs []
 			// Either still running server-side, or our internal "canceled"
 			// marker meaning the goroutine bailed without telling the server.
 			// Either way, send CancelExecution.
+		case sql.StatementStatus_State_Unspecified:
+			// Unknown status; treat as still running
 		}
 		// Detach from the inbound ctx (which is typically already cancelled by
 		// the time we reach this sweep): WithoutCancel keeps the caller's

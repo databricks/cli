@@ -39,7 +39,13 @@ func updatePostgres[T any](ctx context.Context, client *sdkclients.Clients, name
 	}
 	return retries.Poll(ctx, postgresUpdateTimeout, func() (*T, *retries.Err) {
 		if !utils.Deref(op.Done) {
-			op = postgres.Operation{}
+			op = postgres.Operation{
+				Done:     nil, // Not set by DABs
+				Error:    nil, // Not set by DABs
+				Metadata: nil, // Not set by DABs
+				Name:     nil, // Not set by DABs
+				Response: nil, // Not set by DABs
+			}
 			if err := api.Do(ctx, http.MethodGet, "/api/2.0/postgres/"+opName, nil, nil, nil, &op); err != nil {
 				return nil, retries.Halt(err)
 			}

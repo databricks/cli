@@ -99,7 +99,19 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 	// Only spec is set; the other Project fields are output-only.
 	request, err := postgres.CreateProjectRequestToSDK(&postgres.CreateProjectRequest{
 		ProjectId: nonEmpty(config.ProjectId),
-		Project:   &postgres.Project{Spec: &config.ProjectSpec},
+		Project: &postgres.Project{
+			Spec:                &config.ProjectSpec,
+			CreateTime:          nil, // Not set by DABs
+			DeleteTime:          nil, // Not set by DABs
+			InitialBranchSpec:   nil, // Not set by DABs
+			InitialEndpointSpec: nil, // Not set by DABs
+			Name:                nil, // Not set by DABs
+			ProjectId:           nil, // Not set by DABs
+			PurgeTime:           nil, // Not set by DABs
+			Status:              nil, // Not set by DABs
+			Uid:                 nil, // Not set by DABs
+			UpdateTime:          nil, // Not set by DABs
+		},
 	})
 	if err != nil {
 		return "", nil, err
@@ -150,7 +162,19 @@ func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, confi
 	}
 
 	// Only spec is set; the other Project fields are output-only.
-	updated, err := updatePostgres[postgres.Project](ctx, r.client, id, strings.Join(fieldPaths, ","), &postgres.Project{Spec: &config.ProjectSpec})
+	updated, err := updatePostgres[postgres.Project](ctx, r.client, id, strings.Join(fieldPaths, ","), &postgres.Project{
+		Spec:                &config.ProjectSpec,
+		CreateTime:          nil, // Not set by DABs
+		DeleteTime:          nil, // Not set by DABs
+		InitialBranchSpec:   nil, // Not set by DABs
+		InitialEndpointSpec: nil, // Not set by DABs
+		Name:                nil, // Not set by DABs
+		ProjectId:           nil, // Not set by DABs
+		PurgeTime:           nil, // Not set by DABs
+		Status:              nil, // Not set by DABs
+		Uid:                 nil, // Not set by DABs
+		UpdateTime:          nil, // Not set by DABs
+	})
 	if err != nil {
 		return nil, err
 	}

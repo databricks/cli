@@ -37,7 +37,10 @@ func (*ResourceVolume) RemapState(info *volumes.VolumeInfo) *resources.CreateVol
 }
 
 func (r *ResourceVolume) DoRead(ctx context.Context, id string) (*volumes.VolumeInfo, error) {
-	info, err := r.client.Volumes.GetVolume(ctx, sdkvolumes.GetVolumeRequest{FullNameArg: new(id)})
+	info, err := r.client.Volumes.GetVolume(ctx, sdkvolumes.GetVolumeRequest{
+		FullNameArg:   new(id),
+		IncludeBrowse: nil, // Not set by DABs
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -64,9 +67,25 @@ func (r *ResourceVolume) DoCreate(ctx context.Context, config *resources.CreateV
 // owner is not supported by DABs.
 func (r *ResourceVolume) update(ctx context.Context, id string, config *resources.CreateVolumeRequestContent, newName *string) (*volumes.VolumeInfo, error) {
 	request, err := toSDK[sdkvolumes.UpdateVolumeRequest](&volumes.UpdateVolumeRequest{
-		FullNameArg: new(id),
-		NewName:     newName,
-		Comment:     orZero(config.Comment),
+		FullNameArg:       new(id),
+		NewName:           newName,
+		Comment:           orZero(config.Comment),
+		AccessPoint:       nil, // Not set by DABs
+		BrowseOnly:        nil, // Not set by DABs
+		CatalogName:       nil, // Not set by DABs
+		CreatedAt:         nil, // Not set by DABs
+		CreatedBy:         nil, // Not set by DABs
+		EncryptionDetails: nil, // Not set by DABs
+		FullName:          nil, // Not set by DABs
+		MetastoreId:       nil, // Not set by DABs
+		Name:              nil, // Not set by DABs
+		Owner:             nil, // Not set by DABs
+		SchemaName:        nil, // Not set by DABs
+		StorageLocation:   nil, // Not set by DABs
+		UpdatedAt:         nil, // Not set by DABs
+		UpdatedBy:         nil, // Not set by DABs
+		VolumeId:          nil, // Not set by DABs
+		VolumeType:        "",  // Not set by DABs
 	})
 	if err != nil {
 		return nil, err

@@ -136,9 +136,10 @@ func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsSt
 		return nil, errors.New("internal error: grants full_name must be resolved before deployment")
 	}
 	request, err := grants.UpdatePermissionsRequestToSDK(&grants.UpdatePermissionsRequest{
-		SecurableType:     new(state.SecurableType),
-		SecurableFullName: new(state.FullName),
-		Changes:           buildGrantChanges(state.EmbeddedSlice, remoteGrantPrivileges(entry)),
+		SecurableType:             new(state.SecurableType),
+		SecurableFullName:         new(state.FullName),
+		Changes:                   buildGrantChanges(state.EmbeddedSlice, remoteGrantPrivileges(entry)),
+		OmitPermissionsInResponse: nil, // Not set by DABs
 	})
 	if err != nil {
 		return nil, err
@@ -238,6 +239,8 @@ func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName
 			SecurableType:     new(securableType),
 			SecurableFullName: new(fullName),
 			PageToken:         pageToken,
+			Principal:         nil, // Not set by DABs
+			MaxResults:        nil, // Not set by DABs
 		})
 		if err != nil {
 			return nil, err

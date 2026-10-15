@@ -77,6 +77,14 @@ func (r *ResourceInstancePool) DoUpdate(ctx context.Context, id string, config *
 		CustomTags:                         config.CustomTags,
 		RemoteDiskThroughput:               config.RemoteDiskThroughput,
 		TotalInitialRemoteDiskSize:         config.TotalInitialRemoteDiskSize,
+		AwsAttributes:                      nil, // Not set by DABs
+		AzureAttributes:                    nil, // Not set by DABs
+		DiskSpec:                           nil, // Not set by DABs
+		EnableElasticDisk:                  nil, // Not set by DABs
+		GcpAttributes:                      nil, // Not set by DABs
+		NodeTypeFlexibility:                nil, // Not set by DABs
+		PreloadedDockerImages:              nil, // Not set by DABs
+		PreloadedSparkVersions:             nil, // Not set by DABs
 	})
 	if err != nil {
 		return nil, err

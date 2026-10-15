@@ -49,7 +49,9 @@ func (*ResourceRegisteredModel) RemapState(model *registeredmodels.RegisteredMod
 
 func (r *ResourceRegisteredModel) DoRead(ctx context.Context, id string) (*registeredmodels.RegisteredModelInfo, error) {
 	info, err := r.client.RegisteredModels.GetRegisteredModel(ctx, sdkregisteredmodels.GetRegisteredModelRequest{
-		FullNameArg: new(id),
+		FullNameArg:    new(id),
+		IncludeAliases: nil, // Not set by DABs
+		IncludeBrowse:  nil, // Not set by DABs
 	})
 	if err != nil {
 		return nil, err

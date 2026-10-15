@@ -145,10 +145,16 @@ func prepareDashboardRequest(config *DashboardState) (*lakeview.Dashboard, error
 	// Fields like "embed_credentials" are part of the bundle configuration but not the
 	// create/update request here.
 	dashboard := &lakeview.Dashboard{
-		DisplayName: nonEmpty(config.DisplayName),
-		ParentPath:  nonEmpty(config.ParentPath),
-		WarehouseId: nonEmpty(config.WarehouseId),
-		Etag:        nonEmpty(config.Etag),
+		DisplayName:         nonEmpty(config.DisplayName),
+		ParentPath:          nonEmpty(config.ParentPath),
+		WarehouseId:         nonEmpty(config.WarehouseId),
+		Etag:                nonEmpty(config.Etag),
+		CreateTime:          nil, // Not set by DABs
+		DashboardId:         nil, // Not set by DABs
+		LifecycleState:      "",  // Not set by DABs
+		Path:                nil, // Not set by DABs
+		SerializedDashboard: nil, // Not set by DABs
+		UpdateTime:          nil, // Not set by DABs
 	}
 	switch v := config.SerializedDashboard.(type) {
 	case nil:
@@ -215,6 +221,11 @@ func (r *ResourceDashboard) createDashboard(ctx context.Context, dashboard *lake
 		ParentPath:          dashboard.ParentPath,
 		WarehouseId:         dashboard.WarehouseId,
 		SerializedDashboard: dashboard.SerializedDashboard,
+		CreateTime:          nil, // Not set by DABs
+		DashboardId:         nil, // Not set by DABs
+		LifecycleState:      "",  // Not set by DABs
+		Path:                nil, // Not set by DABs
+		UpdateTime:          nil, // Not set by DABs
 	}
 	request, err := lakeview.CreateDashboardRequestToSDK(&lakeview.CreateDashboardRequest{
 		Dashboard:      create,

@@ -52,6 +52,7 @@ func autoCaptureConfigOutputToInput(output *modelserving.AutoCaptureConfig) *mod
 		SchemaName:      output.SchemaName,
 		TableNamePrefix: output.TableNamePrefix,
 		Enabled:         output.Enabled,
+		State:           nil, // Not set by DABs
 	}
 }
 
@@ -79,6 +80,12 @@ func servedEntitiesOutputToInput(output []modelserving.ServedModel) []modelservi
 			ScaleToZeroEnabled:        entity.ScaleToZeroEnabled,
 			WorkloadSize:              entity.WorkloadSize,
 			BurstScalingEnabled:       entity.BurstScalingEnabled,
+			CreationTimestamp:         nil, // Not set by DABs
+			Creator:                   nil, // Not set by DABs
+			FoundationModel:           nil, // Not set by DABs
+			ModelName:                 nil, // Not set by DABs
+			ModelVersion:              nil, // Not set by DABs
+			State:                     nil, // Not set by DABs
 		}
 	}
 
@@ -214,7 +221,14 @@ func (r *ResourceModelServingEndpoint) WaitAfterUpdate(ctx context.Context, id s
 }
 
 func (r *ResourceModelServingEndpoint) updateAiGateway(ctx context.Context, id string, aiGateway *modelserving.AiGatewayConfig) error {
-	req := modelserving.PutInferenceEndpointAiGatewayRequest{Name: new(id)}
+	req := modelserving.PutInferenceEndpointAiGatewayRequest{
+		Name:                 new(id),
+		FallbackConfig:       nil, // Not set by DABs
+		Guardrails:           nil, // Not set by DABs
+		InferenceTableConfig: nil, // Not set by DABs
+		RateLimits:           nil, // Not set by DABs
+		UsageTrackingConfig:  nil, // Not set by DABs
+	}
 	if aiGateway != nil {
 		req.FallbackConfig = aiGateway.FallbackConfig
 		req.Guardrails = aiGateway.Guardrails
@@ -236,7 +250,13 @@ func (r *ResourceModelServingEndpoint) updateAiGateway(ctx context.Context, id s
 // TODO(shreyas): Add acceptance tests for update and for unsetting. Will be done once we add selective updates for these fields.
 func (r *ResourceModelServingEndpoint) updateConfig(ctx context.Context, id string, config *modelserving.EndpointCoreConfig) error {
 	// A nil config unsets the config in the resource.
-	req := modelserving.PutInferenceEndpointConfigRequest{Name: new(id)}
+	req := modelserving.PutInferenceEndpointConfigRequest{
+		Name:              new(id),
+		AutoCaptureConfig: nil, // Not set by DABs
+		ServedEntities:    nil, // Not set by DABs
+		ServedModels:      nil, // Not set by DABs
+		TrafficConfig:     nil, // Not set by DABs
+	}
 	if config != nil {
 		req.AutoCaptureConfig = config.AutoCaptureConfig
 		req.ServedEntities = config.ServedEntities

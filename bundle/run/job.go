@@ -366,6 +366,11 @@ func waitForRun(ctx context.Context, w *sdkclients.Clients, runId int64, timeout
 			return poll.Status[sdkjobs.GetRunResponse]{}, fmt.Errorf("failed to reach %s or %s, got %s: %s",
 				jobs.RunLifeCycleState_RunLifeCycleState_Terminated, jobs.RunLifeCycleState_RunLifeCycleState_Skipped,
 				state.LifeCycleState, statusMessage)
+		case jobs.RunLifeCycleState_RunLifeCycleState_Unspecified, jobs.RunLifeCycleState_RunLifeCycleState_Pending,
+			jobs.RunLifeCycleState_RunLifeCycleState_Running, jobs.RunLifeCycleState_RunLifeCycleState_Terminating,
+			jobs.RunLifeCycleState_RunLifeCycleState_Blocked, jobs.RunLifeCycleState_RunLifeCycleState_WaitingForRetry,
+			jobs.RunLifeCycleState_RunLifeCycleState_Queued:
+			// Still running or queued; keep polling
 		}
 		return poll.Status[sdkjobs.GetRunResponse]{Message: statusMessage}, nil
 	})

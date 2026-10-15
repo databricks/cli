@@ -71,9 +71,16 @@ func responseToMcpServiceConfig(resp *sdkaigateway.McpService) (*resources.McpSe
 // (server-derived) and not sent. name addresses the resource on update.
 func mcpServiceBody(config *resources.McpServiceConfig, name *string) *aigateway.McpService {
 	return &aigateway.McpService{
-		Name:    name,
-		Comment: nonEmpty(config.Comment),
-		Config:  config.Config,
+		Name:           name,
+		Comment:        nonEmpty(config.Comment),
+		Config:         config.Config,
+		CreateTime:     nil, // Not set by DABs
+		CreatedBy:      nil, // Not set by DABs
+		EffectiveOwner: nil, // Not set by DABs
+		Etag:           nil, // Not set by DABs
+		MetastoreId:    nil, // Not set by DABs
+		UpdateTime:     nil, // Not set by DABs
+		UpdatedBy:      nil, // Not set by DABs
 	}
 }
 
@@ -118,6 +125,7 @@ func (r *ResourceMcpService) DoUpdate(ctx context.Context, id string, config *re
 	request, err := aigateway.UpdateMcpServiceRequestToSDK(&aigateway.UpdateMcpServiceRequest{
 		McpService: mcpServiceBody(config, new(mcpServiceNamePrefix+id)),
 		UpdateMask: new("*"),
+		Etag:       nil, // Not set by DABs
 	})
 	if err != nil {
 		return nil, err
@@ -132,5 +140,6 @@ func (r *ResourceMcpService) DoUpdate(ctx context.Context, id string, config *re
 func (r *ResourceMcpService) DoDelete(ctx context.Context, id string, _ *resources.McpServiceConfig) error {
 	return r.client.AiGateway.DeleteMcpService(ctx, sdkaigateway.DeleteMcpServiceRequest{
 		Name: new(mcpServiceNamePrefix + id),
+		Etag: nil, // Not set by DABs
 	})
 }

@@ -56,7 +56,7 @@ func TestUpdatesBefore(t *testing.T) {
 				t.Errorf("updatesBefore(updates, %d) returned %d updates, want %d", *tt.timestamp, len(result), tt.expectedCount)
 			}
 			if tt.expectedCount > 0 && utils.Deref(result[0].CreationTime) != tt.expectedFirst {
-				t.Errorf("updatesBefore(updates, %d) first update = %d, want %d", *tt.timestamp, result[0].CreationTime, tt.expectedFirst)
+				t.Errorf("updatesBefore(updates, %d) first update = %d, want %d", *tt.timestamp, utils.Deref(result[0].CreationTime), tt.expectedFirst)
 			}
 		})
 	}
@@ -111,7 +111,7 @@ func TestUpdatesAfter(t *testing.T) {
 				t.Errorf("updatesAfter(updates, %d) returned %d updates, want %d", *tt.timestamp, len(result), tt.expectedCount)
 			}
 			if tt.expectedCount > 0 && utils.Deref(result[0].CreationTime) != tt.expectedFirst {
-				t.Errorf("updatesAfter(updates, %d) first update = %d, want %d", *tt.timestamp, result[0].CreationTime, tt.expectedFirst)
+				t.Errorf("updatesAfter(updates, %d) first update = %d, want %d", *tt.timestamp, utils.Deref(result[0].CreationTime), tt.expectedFirst)
 			}
 		})
 	}
@@ -281,10 +281,10 @@ func TestFilterUpdates(t *testing.T) {
 			}
 			if tt.expectedCount > 0 {
 				if utils.Deref(result[0].CreationTime) != tt.expectedFirst {
-					t.Errorf("filterUpdates() first update = %d, want %d", result[0].CreationTime, tt.expectedFirst)
+					t.Errorf("filterUpdates() first update = %d, want %d", utils.Deref(result[0].CreationTime), tt.expectedFirst)
 				}
 				if utils.Deref(result[len(result)-1].CreationTime) != tt.expectedLast {
-					t.Errorf("filterUpdates() last update = %d, want %d", result[len(result)-1].CreationTime, tt.expectedLast)
+					t.Errorf("filterUpdates() last update = %d, want %d", utils.Deref(result[len(result)-1].CreationTime), tt.expectedLast)
 				}
 			}
 		})

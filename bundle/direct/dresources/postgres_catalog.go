@@ -89,7 +89,15 @@ func (r *ResourcePostgresCatalog) DoRead(ctx context.Context, id string) (*Postg
 func (r *ResourcePostgresCatalog) DoCreate(ctx context.Context, config *PostgresCatalogState) (string, *PostgresCatalogRemote, error) {
 	request, err := postgres.CreateCatalogRequestToSDK(&postgres.CreateCatalogRequest{
 		CatalogId: nonEmpty(config.CatalogId),
-		Catalog:   &postgres.Catalog{Spec: &config.Catalog_CatalogSpec},
+		Catalog: &postgres.Catalog{
+			Spec:       &config.Catalog_CatalogSpec,
+			CatalogId:  nil, // Not set by DABs
+			CreateTime: nil, // Not set by DABs
+			Name:       nil, // Not set by DABs
+			Status:     nil, // Not set by DABs
+			Uid:        nil, // Not set by DABs
+			UpdateTime: nil, // Not set by DABs
+		},
 	})
 	if err != nil {
 		return "", nil, err

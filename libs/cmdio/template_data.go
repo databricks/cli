@@ -29,8 +29,9 @@ func isScalar(k reflect.Kind) bool {
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
 		reflect.Float32, reflect.Float64:
 		return true
+	default:
+		return false
 	}
-	return false
 }
 
 // structView describes the view of a struct type: the view type and, for
@@ -58,6 +59,7 @@ func viewType(t reflect.Type) reflect.Type {
 }
 
 func computeViewType(t reflect.Type) reflect.Type {
+	//nolint:exhaustive
 	switch t.Kind() {
 	case reflect.Pointer:
 		elem := t.Elem()
@@ -143,6 +145,7 @@ func viewValue(v reflect.Value, vt reflect.Type) reflect.Value {
 	if v.Type() == vt {
 		return v
 	}
+	//nolint:exhaustive
 	switch v.Kind() {
 	case reflect.Pointer:
 		if vt.Kind() != reflect.Pointer {

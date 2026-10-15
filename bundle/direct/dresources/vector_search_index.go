@@ -86,6 +86,7 @@ func (*ResourceVectorSearchIndex) RemapState(remote *VectorSearchIndexRemote) *V
 			EmbeddingWritebackTable: remote.DeltaSyncIndexSpec.EmbeddingWritebackTable,
 			PipelineType:            remote.DeltaSyncIndexSpec.PipelineType,
 			SourceTable:             remote.DeltaSyncIndexSpec.SourceTable,
+			PipelineId:              nil, // Not set by DABs
 			// pipeline_id is output-only and not part of the config.
 		}
 	}
@@ -93,7 +94,10 @@ func (*ResourceVectorSearchIndex) RemapState(remote *VectorSearchIndexRemote) *V
 }
 
 func (r *ResourceVectorSearchIndex) getIndex(ctx context.Context, name string) (*sdkvectorsearch.VectorIndex, error) {
-	return r.client.VectorSearch.GetVectorIndex(ctx, sdkvectorsearch.GetVectorIndexRequest{Name: new(name)})
+	return r.client.VectorSearch.GetVectorIndex(ctx, sdkvectorsearch.GetVectorIndexRequest{
+		Name:                     new(name),
+		EnsureRerankerCompatible: nil, // Not set by DABs
+	})
 }
 
 func (r *ResourceVectorSearchIndex) DoRead(ctx context.Context, id string) (*VectorSearchIndexRemote, error) {

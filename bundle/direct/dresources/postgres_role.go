@@ -114,7 +114,15 @@ func (r *ResourcePostgresRole) DoCreate(ctx context.Context, config *PostgresRol
 		RoleId:          nonEmpty(config.RoleId),
 		Parent:          nonEmpty(config.Parent),
 		ReplaceExisting: trueOrNil(config.ReplaceExisting),
-		Role:            &postgres.Role{Spec: &config.Role_RoleSpec},
+		Role: &postgres.Role{
+			Spec:       &config.Role_RoleSpec,
+			CreateTime: nil, // Not set by DABs
+			Name:       nil, // Not set by DABs
+			Parent:     nil, // Not set by DABs
+			RoleId:     nil, // Not set by DABs
+			Status:     nil, // Not set by DABs
+			UpdateTime: nil, // Not set by DABs
+		},
 	})
 	if err != nil {
 		return "", nil, err
@@ -143,7 +151,14 @@ func (r *ResourcePostgresRole) DoUpdate(ctx context.Context, id string, config *
 	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.", nil)
 
 	request, err := postgres.UpdateRoleRequestToSDK(&postgres.UpdateRoleRequest{
-		Role:       &postgres.Role{Name: new(id), Spec: &config.Role_RoleSpec},
+		Role: &postgres.Role{
+			Name: new(id), Spec: &config.Role_RoleSpec,
+			CreateTime: nil, // Not set by DABs
+			Parent:     nil, // Not set by DABs
+			RoleId:     nil, // Not set by DABs
+			Status:     nil, // Not set by DABs
+			UpdateTime: nil, // Not set by DABs
+		},
 		UpdateMask: new(strings.Join(fieldPaths, ",")),
 	})
 	if err != nil {
@@ -162,7 +177,10 @@ func (r *ResourcePostgresRole) DoUpdate(ctx context.Context, id string, config *
 }
 
 func (r *ResourcePostgresRole) DoDelete(ctx context.Context, id string, _ *PostgresRoleState) error {
-	waiter, err := r.client.Postgres.DeleteRole(ctx, sdkpostgres.DeleteRoleRequest{Name: new(id)})
+	waiter, err := r.client.Postgres.DeleteRole(ctx, sdkpostgres.DeleteRoleRequest{
+		Name:            new(id),
+		ReassignOwnedTo: nil, // Not set by DABs
+	})
 	if err != nil {
 		return err
 	}

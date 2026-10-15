@@ -113,6 +113,8 @@ func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *m
 		Tags:                 model.Tags,
 		UserId:               model.UserId,
 		ModelId:              modelId,
+		Id:                   nil, // Not in the update response
+		PermissionLevel:      "",  // Not in the update response
 	}, nil
 }
 

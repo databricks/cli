@@ -97,7 +97,15 @@ func (r *ResourcePostgresDatabase) DoCreate(ctx context.Context, config *Postgre
 		DatabaseId:      nonEmpty(config.DatabaseId),
 		Parent:          nonEmpty(config.Parent),
 		ReplaceExisting: trueOrNil(config.ReplaceExisting),
-		Database:        &postgres.Database{Spec: &config.Database_DatabaseSpec},
+		Database: &postgres.Database{
+			Spec:       &config.Database_DatabaseSpec,
+			CreateTime: nil, // Not set by DABs
+			DatabaseId: nil, // Not set by DABs
+			Name:       nil, // Not set by DABs
+			Parent:     nil, // Not set by DABs
+			Status:     nil, // Not set by DABs
+			UpdateTime: nil, // Not set by DABs
+		},
 	})
 	if err != nil {
 		return "", nil, err
@@ -128,7 +136,14 @@ func (r *ResourcePostgresDatabase) DoUpdate(ctx context.Context, id string, conf
 	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.", nil)
 
 	request, err := postgres.UpdateDatabaseRequestToSDK(&postgres.UpdateDatabaseRequest{
-		Database:   &postgres.Database{Name: new(id), Spec: &config.Database_DatabaseSpec},
+		Database: &postgres.Database{
+			Name: new(id), Spec: &config.Database_DatabaseSpec,
+			CreateTime: nil, // Not set by DABs
+			DatabaseId: nil, // Not set by DABs
+			Parent:     nil, // Not set by DABs
+			Status:     nil, // Not set by DABs
+			UpdateTime: nil, // Not set by DABs
+		},
 		UpdateMask: new(strings.Join(fieldPaths, ",")),
 	})
 	if err != nil {

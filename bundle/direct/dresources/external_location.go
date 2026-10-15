@@ -41,7 +41,10 @@ func (*ResourceExternalLocation) RemapState(info *externallocations.ExternalLoca
 }
 
 func (r *ResourceExternalLocation) DoRead(ctx context.Context, id string) (*externallocations.ExternalLocationInfo, error) {
-	info, err := r.client.ExternalLocations.GetExternalLocation(ctx, sdkexternallocations.GetExternalLocationRequest{NameArg: new(id)})
+	info, err := r.client.ExternalLocations.GetExternalLocation(ctx, sdkexternallocations.GetExternalLocationRequest{
+		NameArg:       new(id),
+		IncludeBrowse: nil, // Not set by DABs
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -73,17 +76,30 @@ func (r *ResourceExternalLocation) DoCreate(ctx context.Context, config *resourc
 // Output-only effective_* fields are never sent; isolation_mode and owner are not supported by DABs.
 func (r *ResourceExternalLocation) update(ctx context.Context, id string, config *resources.CreateExternalLocation, newName *string) (*externallocations.ExternalLocationInfo, error) {
 	request, err := toSDK[sdkexternallocations.UpdateExternalLocationRequest](&externallocations.UpdateExternalLocationRequest{
-		NameArg:           new(id),
-		NewName:           newName,
-		Comment:           orZero(config.Comment),
-		CredentialName:    config.CredentialName,
-		EnableFileEvents:  config.EnableFileEvents,
-		EncryptionDetails: config.EncryptionDetails,
-		Fallback:          config.Fallback,
-		FileEventQueue:    config.FileEventQueue,
-		ReadOnly:          config.ReadOnly,
-		SkipValidation:    config.SkipValidation,
-		Url:               config.Url,
+		NameArg:                   new(id),
+		NewName:                   newName,
+		Comment:                   orZero(config.Comment),
+		CredentialName:            config.CredentialName,
+		EnableFileEvents:          config.EnableFileEvents,
+		EncryptionDetails:         config.EncryptionDetails,
+		Fallback:                  config.Fallback,
+		FileEventQueue:            config.FileEventQueue,
+		ReadOnly:                  config.ReadOnly,
+		SkipValidation:            config.SkipValidation,
+		Url:                       config.Url,
+		BrowseOnly:                nil, // Not set by DABs
+		CreatedAt:                 nil, // Not set by DABs
+		CreatedBy:                 nil, // Not set by DABs
+		CredentialId:              nil, // Not set by DABs
+		EffectiveEnableFileEvents: nil, // Not set by DABs
+		EffectiveFileEventQueue:   nil, // Not set by DABs
+		Force:                     nil, // Not set by DABs
+		IsolationMode:             "",  // Not set by DABs
+		MetastoreId:               nil, // Not set by DABs
+		Name:                      nil, // Not set by DABs
+		Owner:                     nil, // Not set by DABs
+		UpdatedAt:                 nil, // Not set by DABs
+		UpdatedBy:                 nil, // Not set by DABs
 	})
 	if err != nil {
 		return nil, err

@@ -168,8 +168,9 @@ func isBasic(k reflect.Kind) bool {
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
 		reflect.Float32, reflect.Float64:
 		return true
+	default:
+		return false
 	}
-	return false
 }
 
 func convertStruct(dst, src reflect.Value) error {

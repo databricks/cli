@@ -38,7 +38,10 @@ func (*ResourceCatalog) RemapState(info *catalogs.CatalogInfo) *resources.Create
 }
 
 func (r *ResourceCatalog) DoRead(ctx context.Context, id string) (*catalogs.CatalogInfo, error) {
-	info, err := r.client.Catalogs.GetCatalog(ctx, sdkcatalogs.GetCatalogRequest{NameArg: new(id)})
+	info, err := r.client.Catalogs.GetCatalog(ctx, sdkcatalogs.GetCatalogRequest{
+		NameArg:       new(id),
+		IncludeBrowse: nil, // Not applicable for basic catalog retrieval
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -90,11 +93,31 @@ func (r *ResourceCatalog) update(ctx context.Context, id string, config *resourc
 		// Always sent so that removing them from config clears them. Verified against a real
 		// workspace: {"comment": ""} and {"custom_max_retention_hours": 0} clear the values (an
 		// empty PATCH is otherwise rejected with "Nothing to update").
-		Comment:                   orZero(config.Comment),
-		CustomMaxRetentionHours:   orZero(config.CustomMaxRetentionHours),
-		ManagedEncryptionSettings: config.ManagedEncryptionSettings,
-		Options:                   config.Options,
-		Properties:                config.Properties,
+		Comment:                             orZero(config.Comment),
+		CustomMaxRetentionHours:             orZero(config.CustomMaxRetentionHours),
+		ManagedEncryptionSettings:           config.ManagedEncryptionSettings,
+		Options:                             config.Options,
+		Properties:                          config.Properties,
+		BrowseOnly:                          nil, // Output only
+		CatalogType:                         "",  // Output only
+		ConnectionName:                      nil, // Output only
+		CreatedAt:                           nil, // Output only
+		CreatedBy:                           nil, // Output only
+		EffectivePredictiveOptimizationFlag: nil, // Output only
+		EnablePredictiveOptimization:        nil, // Not supported by DABs
+		FullName:                            nil, // Output only
+		IsolationMode:                       "",  // Not supported by DABs
+		MetastoreId:                         nil, // Output only
+		Name:                                nil, // Read-only; use NewName for updates
+		Owner:                               nil, // Not supported by DABs
+		ProviderName:                        nil, // Output only
+		ProvisioningInfo:                    nil, // Output only
+		SecurableType:                       "",  // Output only
+		ShareName:                           nil, // Output only
+		StorageLocation:                     nil, // Output only
+		StorageRoot:                         nil, // Output only
+		UpdatedAt:                           nil, // Output only
+		UpdatedBy:                           nil, // Output only
 	})
 	if err != nil {
 		return nil, err

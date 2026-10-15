@@ -35,7 +35,10 @@ func (*ResourceSchema) RemapState(info *schemas.SchemaInfo) *resources.CreateSch
 }
 
 func (r *ResourceSchema) DoRead(ctx context.Context, id string) (*schemas.SchemaInfo, error) {
-	info, err := r.client.Schemas.GetSchema(ctx, sdkschemas.GetSchemaRequest{FullNameArg: new(id)})
+	info, err := r.client.Schemas.GetSchema(ctx, sdkschemas.GetSchemaRequest{
+		FullNameArg:   new(id),
+		IncludeBrowse: nil, // Not set by DABs
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -78,10 +81,28 @@ func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *resour
 	// new_name is not set: schemas are recreated on name change intentionally.
 	// owner and enable_predictive_optimization are not supported by DABs.
 	request, err := toSDK[sdkschemas.UpdateSchemaRequest](&schemas.UpdateSchemaRequest{
-		FullNameArg:             new(id),
-		Comment:                 orZero(config.Comment),
-		CustomMaxRetentionHours: orZero(config.CustomMaxRetentionHours),
-		Properties:              config.Properties,
+		FullNameArg:                         new(id),
+		Comment:                             orZero(config.Comment),
+		CustomMaxRetentionHours:             orZero(config.CustomMaxRetentionHours),
+		Properties:                          config.Properties,
+		BrowseOnly:                          nil, // Not set by DABs
+		CatalogName:                         nil, // Not set by DABs
+		CatalogType:                         "",  // Not set by DABs
+		CreatedAt:                           nil, // Not set by DABs
+		CreatedBy:                           nil, // Not set by DABs
+		EffectivePredictiveOptimizationFlag: nil, // Not set by DABs
+		EnablePredictiveOptimization:        nil, // Not set by DABs
+		FullName:                            nil, // Not set by DABs
+		MetastoreId:                         nil, // Not set by DABs
+		Name:                                nil, // Not set by DABs
+		NewName:                             nil, // Not set by DABs
+		Options:                             nil, // Not set by DABs
+		Owner:                               nil, // Not set by DABs
+		SchemaId:                            nil, // Not set by DABs
+		StorageLocation:                     nil, // Not set by DABs
+		StorageRoot:                         nil, // Not set by DABs
+		UpdatedAt:                           nil, // Not set by DABs
+		UpdatedBy:                           nil, // Not set by DABs
 	})
 	if err != nil {
 		return nil, err

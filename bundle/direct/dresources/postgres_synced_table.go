@@ -96,7 +96,14 @@ func (r *ResourcePostgresSyncedTable) DoRead(ctx context.Context, id string) (*P
 func (r *ResourcePostgresSyncedTable) DoCreate(ctx context.Context, config *PostgresSyncedTableState) (string, *PostgresSyncedTableRemote, error) {
 	request, err := postgres.CreateSyncedTableRequestToSDK(&postgres.CreateSyncedTableRequest{
 		SyncedTableId: nonEmpty(config.SyncedTableId),
-		SyncedTable:   &postgres.SyncedTable{Spec: &config.SyncedTable_SyncedTableSpec},
+		SyncedTable: &postgres.SyncedTable{
+			Spec:          &config.SyncedTable_SyncedTableSpec,
+			CreateTime:    nil, // Not set by DABs
+			Name:          nil, // Not set by DABs
+			Status:        nil, // Not set by DABs
+			SyncedTableId: nil, // Not set by DABs
+			Uid:           nil, // Not set by DABs
+		},
 	})
 	if err != nil {
 		return "", nil, err

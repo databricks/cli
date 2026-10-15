@@ -227,7 +227,7 @@ func resolveLogAttempt(run *jobs.GetRunResponse, requested int) (int, int64, err
 			return attempt, utils.Deref(v.RunId), nil
 		}
 	}
-	return 0, 0, fmt.Errorf("run %d has no task for retry %d", run.RunId, attempt)
+	return 0, 0, fmt.Errorf("run %d has no task for retry %d", utils.Deref(run.RunId), attempt)
 }
 
 // fetchLogs serves logs from Bricklens, falling back to MLflow when Bricklens

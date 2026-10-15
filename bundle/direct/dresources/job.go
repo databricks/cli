@@ -121,7 +121,11 @@ func (r *ResourceJob) DoRead(ctx context.Context, id string) (*JobRemote, error)
 // tasks (and job clusters, parameters, environments) per page; later pages
 // are fetched with next_page_token and merged.
 func (r *ResourceJob) getJob(ctx context.Context, id int64) (*sdkjobs.GetJobResponse, error) {
-	req := sdkjobs.GetJobRequest{JobId: new(id)}
+	req := sdkjobs.GetJobRequest{
+		JobId:               new(id),
+		IncludeTriggerState: nil, // Not set by DABs
+		PageToken:           nil, // Not set by DABs
+	}
 	job, err := r.client.Jobs.GetJob(ctx, req)
 	if err != nil {
 		return nil, err

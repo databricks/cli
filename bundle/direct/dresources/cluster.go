@@ -96,6 +96,7 @@ func (r *ResourceCluster) RemapState(input *ClusterRemote) *ClusterState {
 		AutoterminationMinutes:     input.AutoterminationMinutes,
 		AwsAttributes:              input.AwsAttributes,
 		AzureAttributes:            input.AzureAttributes,
+		CloneFrom:                  nil, // Not supported by DABs
 		ClusterLogConf:             input.ClusterLogConf,
 		ClusterName:                input.ClusterName,
 		CustomTags:                 input.CustomTags,
@@ -597,6 +598,8 @@ func (r *ResourceCluster) waitForInstall(ctx context.Context, id string, desired
 				pending--
 			case clusterlibraries.LibraryInstallStatus_Resolving, clusterlibraries.LibraryInstallStatus_Installing, clusterlibraries.LibraryInstallStatus_UninstallOnRestart:
 				// Still in progress (or being removed); keep polling.
+			case clusterlibraries.LibraryInstallStatus_Unspecified:
+				// Unknown status; treat as in progress
 			}
 		}
 		if pending > 0 {

@@ -152,6 +152,8 @@ func WaitDeploymentSucceeded(ctx context.Context, w *sdkclients.Clients, appName
 		case apps.AppDeployment_State_Failed:
 			return poll.Status[sdkapps.AppDeployment]{}, fmt.Errorf("failed to reach %s, got %s: %s",
 				apps.AppDeployment_State_Succeeded, status.State, message)
+		case apps.AppDeployment_State_Unspecified, apps.AppDeployment_State_InProgress, apps.AppDeployment_State_Cancelled:
+			// Still polling; return current message
 		}
 		return poll.Status[sdkapps.AppDeployment]{Message: message}, nil
 	})

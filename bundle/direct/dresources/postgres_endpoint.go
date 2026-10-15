@@ -134,9 +134,18 @@ func (r *ResourcePostgresEndpoint) waitForReconciliation(ctx context.Context, na
 func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *PostgresEndpointState) (string, *PostgresEndpointRemote, error) {
 	// Only spec is set; the other Endpoint fields are output-only.
 	request, err := postgres.CreateEndpointRequestToSDK(&postgres.CreateEndpointRequest{
-		EndpointId:      nonEmpty(config.EndpointId),
-		Parent:          nonEmpty(config.Parent),
-		Endpoint:        &postgres.Endpoint{Spec: &config.EndpointSpec},
+		EndpointId: nonEmpty(config.EndpointId),
+		Parent:     nonEmpty(config.Parent),
+		Endpoint: &postgres.Endpoint{
+			Spec:       &config.EndpointSpec,
+			CreateTime: nil, // Not set by DABs
+			EndpointId: nil, // Not set by DABs
+			Name:       nil, // Not set by DABs
+			Parent:     nil, // Not set by DABs
+			Status:     nil, // Not set by DABs
+			Uid:        nil, // Not set by DABs
+			UpdateTime: nil, // Not set by DABs
+		},
 		ReplaceExisting: trueOrNil(config.ReplaceExisting),
 	})
 	if err != nil {
@@ -177,7 +186,16 @@ func (r *ResourcePostgresEndpoint) DoUpdate(ctx context.Context, id string, conf
 	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.", endpointOneofGroups)
 
 	// Only spec is set; the other Endpoint fields are output-only.
-	_, err := updatePostgres[postgres.Endpoint](ctx, r.client, id, strings.Join(fieldPaths, ","), &postgres.Endpoint{Spec: &config.EndpointSpec})
+	_, err := updatePostgres[postgres.Endpoint](ctx, r.client, id, strings.Join(fieldPaths, ","), &postgres.Endpoint{
+		Spec:       &config.EndpointSpec,
+		CreateTime: nil, // Not set by DABs
+		EndpointId: nil, // Not set by DABs
+		Name:       nil, // Not set by DABs
+		Parent:     nil, // Not set by DABs
+		Status:     nil, // Not set by DABs
+		Uid:        nil, // Not set by DABs
+		UpdateTime: nil, // Not set by DABs
+	})
 	if err != nil {
 		return nil, err
 	}

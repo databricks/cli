@@ -127,9 +127,11 @@ func makeJobRunRemote(run *jobs.GetRunResponse) *JobRunRemote {
 		// Only the fields planning reads; queue_reason and user_cancelled_or_timedout
 		// are left out so the remote does not depend on what the workspace reports.
 		State: &jobs.RunState{
-			LifeCycleState: state.LifeCycleState,
-			ResultState:    state.ResultState,
-			StateMessage:   state.StateMessage,
+			LifeCycleState:          state.LifeCycleState,
+			ResultState:             state.ResultState,
+			StateMessage:            state.StateMessage,
+			QueueReason:             nil, // Not set by DABs
+			UserCancelledOrTimedout: nil, // Not set by DABs
 		},
 		RunPageUrl: workspaceurls.ModernizeJobRunPageURL(utils.Deref(run.RunPageUrl)),
 		RunType:    run.RunType,
@@ -139,13 +141,24 @@ func makeJobRunRemote(run *jobs.GetRunResponse) *JobRunRemote {
 // runState returns the run's state, or an empty one if the run has none.
 func runState(run *jobs.GetRunResponse) jobs.RunState {
 	if run.State == nil {
-		return jobs.RunState{}
+		return jobs.RunState{
+			LifeCycleState:          "",  // Not set by DABs
+			QueueReason:             nil, // Not set by DABs
+			ResultState:             "",  // Not set by DABs
+			StateMessage:            nil, // Not set by DABs
+			UserCancelledOrTimedout: nil, // Not set by DABs
+		}
 	}
 	return *run.State
 }
 
 func (r *ResourceJobRun) getRun(ctx context.Context, runID int64) (*jobs.GetRunResponse, error) {
-	run, err := r.client.Jobs.GetRun(ctx, sdkjobs.GetRunRequest{RunId: new(runID)})
+	run, err := r.client.Jobs.GetRun(ctx, sdkjobs.GetRunRequest{
+		RunId:                 new(runID),
+		IncludeHistory:        nil, // Not set by DABs
+		IncludeResolvedValues: nil, // Not set by DABs
+		PageToken:             nil, // Not set by DABs
+	})
 	if err != nil {
 		return nil, err
 	}

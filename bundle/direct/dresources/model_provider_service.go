@@ -71,9 +71,16 @@ func responseToModelProviderServiceConfig(resp *sdkaigateway.ModelProviderServic
 // is OUTPUT_ONLY (server-derived) and not sent. name addresses the resource on update.
 func modelProviderServiceBody(config *resources.ModelProviderServiceConfig, name *string) *aigateway.ModelProviderService {
 	return &aigateway.ModelProviderService{
-		Name:    name,
-		Comment: nonEmpty(config.Comment),
-		Config:  config.Config,
+		Name:           name,
+		Comment:        nonEmpty(config.Comment),
+		Config:         config.Config,
+		CreateTime:     nil, // Not set by DABs
+		CreatedBy:      nil, // Not set by DABs
+		EffectiveOwner: nil, // Not set by DABs
+		Etag:           nil, // Not set by DABs
+		MetastoreId:    nil, // Not set by DABs
+		UpdateTime:     nil, // Not set by DABs
+		UpdatedBy:      nil, // Not set by DABs
 	}
 }
 
@@ -119,6 +126,7 @@ func (r *ResourceModelProviderService) DoUpdate(ctx context.Context, id string, 
 	request, err := aigateway.UpdateModelProviderServiceRequestToSDK(&aigateway.UpdateModelProviderServiceRequest{
 		ModelProviderService: modelProviderServiceBody(config, new(modelProviderServiceNamePrefix+id)),
 		UpdateMask:           new("*"),
+		Etag:                 nil, // Not set by DABs
 	})
 	if err != nil {
 		return nil, err
@@ -133,5 +141,6 @@ func (r *ResourceModelProviderService) DoUpdate(ctx context.Context, id string, 
 func (r *ResourceModelProviderService) DoDelete(ctx context.Context, id string, _ *resources.ModelProviderServiceConfig) error {
 	return r.client.AiGateway.DeleteModelProviderService(ctx, sdkaigateway.DeleteModelProviderServiceRequest{
 		Name: new(modelProviderServiceNamePrefix + id),
+		Etag: nil, // Not set by DABs
 	})
 }

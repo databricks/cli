@@ -81,5 +81,6 @@ func (d *ResourceDatabaseInstance) DoDelete(ctx context.Context, name string, _ 
 	return d.client.Database.DeleteDatabaseInstance(ctx, sdkdatabase.DeleteDatabaseInstanceRequest{
 		Name:  new(name),
 		Purge: new(true),
+		Force: nil, // Not set by DABs
 	})
 }

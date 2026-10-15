@@ -76,9 +76,17 @@ func responseToModelServiceConfig(resp *sdkaigateway.ModelService) (*resources.M
 // (server-derived) and not sent. name addresses the resource on update.
 func modelServiceBody(config *resources.ModelServiceConfig, name *string) *aigateway.ModelService {
 	return &aigateway.ModelService{
-		Name:    name,
-		Comment: nonEmpty(config.Comment),
-		Config:  config.Config,
+		Name:              name,
+		Comment:           nonEmpty(config.Comment),
+		Config:            config.Config,
+		CreateTime:        nil, // Not set by DABs
+		CreatedBy:         nil, // Not set by DABs
+		EffectiveOwner:    nil, // Not set by DABs
+		Etag:              nil, // Not set by DABs
+		MetastoreId:       nil, // Not set by DABs
+		SupportedApiTypes: nil, // Not set by DABs
+		UpdateTime:        nil, // Not set by DABs
+		UpdatedBy:         nil, // Not set by DABs
 	}
 }
 
@@ -123,6 +131,7 @@ func (r *ResourceModelService) DoUpdate(ctx context.Context, id string, config *
 	request, err := aigateway.UpdateModelServiceRequestToSDK(&aigateway.UpdateModelServiceRequest{
 		ModelService: modelServiceBody(config, new(modelServiceNamePrefix+id)),
 		UpdateMask:   new("*"),
+		Etag:         nil, // Not set by DABs
 	})
 	if err != nil {
 		return nil, err
@@ -137,5 +146,6 @@ func (r *ResourceModelService) DoUpdate(ctx context.Context, id string, config *
 func (r *ResourceModelService) DoDelete(ctx context.Context, id string, _ *resources.ModelServiceConfig) error {
 	return r.client.AiGateway.DeleteModelService(ctx, sdkaigateway.DeleteModelServiceRequest{
 		Name: new(modelServiceNamePrefix + id),
+		Etag: nil, // Not set by DABs
 	})
 }

@@ -102,9 +102,18 @@ func (r *ResourcePostgresBranch) DoRead(ctx context.Context, id string) (*Postgr
 func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresBranchState) (string, *PostgresBranchRemote, error) {
 	// Only spec is set; the other Branch fields are output-only.
 	request, err := postgres.CreateBranchRequestToSDK(&postgres.CreateBranchRequest{
-		BranchId:        nonEmpty(config.BranchId),
-		Parent:          nonEmpty(config.Parent),
-		Branch:          &postgres.Branch{Spec: &config.BranchSpec},
+		BranchId: nonEmpty(config.BranchId),
+		Parent:   nonEmpty(config.Parent),
+		Branch: &postgres.Branch{
+			Spec:       &config.BranchSpec,
+			BranchId:   nil, // Not set by DABs
+			CreateTime: nil, // Not set by DABs
+			Name:       nil, // Not set by DABs
+			Parent:     nil, // Not set by DABs
+			Status:     nil, // Not set by DABs
+			Uid:        nil, // Not set by DABs
+			UpdateTime: nil, // Not set by DABs
+		},
 		ReplaceExisting: trueOrNil(config.ReplaceExisting),
 	})
 	if err != nil {
@@ -158,7 +167,16 @@ func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config
 	}
 
 	// Only spec is set; the other Branch fields are output-only.
-	updated, err := updatePostgres[postgres.Branch](ctx, r.client, id, strings.Join(fieldPaths, ","), &postgres.Branch{Spec: &config.BranchSpec})
+	updated, err := updatePostgres[postgres.Branch](ctx, r.client, id, strings.Join(fieldPaths, ","), &postgres.Branch{
+		Spec:       &config.BranchSpec,
+		BranchId:   nil, // Not set by DABs
+		CreateTime: nil, // Not set by DABs
+		Name:       nil, // Not set by DABs
+		Parent:     nil, // Not set by DABs
+		Status:     nil, // Not set by DABs
+		Uid:        nil, // Not set by DABs
+		UpdateTime: nil, // Not set by DABs
+	})
 	if err != nil {
 		return nil, err
 	}

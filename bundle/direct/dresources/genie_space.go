@@ -177,6 +177,7 @@ func (r *ResourceGenieSpace) DoUpdate(ctx context.Context, id string, config *re
 		WarehouseId:     nonEmpty(config.WarehouseId),
 		ParentPath:      nonEmpty(config.ParentPath),
 		SerializedSpace: nonEmpty(serializedSpace),
+		Etag:            nil, // Not set by DABs
 	})
 	if err != nil {
 		return nil, err

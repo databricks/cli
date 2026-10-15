@@ -48,7 +48,7 @@ func resolveNodeCount(run *jobs.GetRunResponse) (int, error) {
 	// Accelerators come in whole nodes, so a remainder means we can't map the
 	// count onto node indices.
 	if count%perNode != 0 {
-		return 0, fmt.Errorf("run %d reports %d %s accelerators, which is not a multiple of %d per node", run.RunId, count, accelType, perNode)
+		return 0, fmt.Errorf("run %d reports %d %s accelerators, which is not a multiple of %d per node", utils.Deref(run.RunId), count, accelType, perNode)
 	}
 	return count / perNode, nil
 }
