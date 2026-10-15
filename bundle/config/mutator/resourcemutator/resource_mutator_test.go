@@ -7,13 +7,12 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func newJob(name string) *resources.Job {
-	return &resources.Job{JobSettings: jobs.JobSettings{Name: name}}
+	return &resources.Job{Name: name}
 }
 
 func TestSelectResources(t *testing.T) {
