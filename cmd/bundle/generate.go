@@ -7,6 +7,7 @@ import (
 
 func newGenerateCommand() *cobra.Command {
 	var key string
+	var initBare bool
 
 	cmd := &cobra.Command{
 		Use:   "generate",
@@ -32,7 +33,8 @@ Migration workflows:
     2. Deploy: databricks bundle deploy
 
 Use --key to specify the resource name in your bundle configuration.
-Use --bind to automatically bind the generated resource to the existing workspace resource.`,
+Use --bind to automatically bind the generated resource to the existing workspace resource.
+Use --init-bare to automatically initialize a bare bundle skeleton if one doesn't exist.`,
 	}
 
 	cmd.AddCommand(generate.NewGenerateJobCommand())
@@ -42,5 +44,6 @@ Use --bind to automatically bind the generated resource to the existing workspac
 	cmd.AddCommand(generate.NewGenerateAppCommand())
 	cmd.AddCommand(generate.NewGenerateGenieSpaceCommand())
 	cmd.PersistentFlags().StringVar(&key, "key", "", `resource key to use for the generated configuration`)
+	cmd.PersistentFlags().BoolVar(&initBare, "init-bare", false, `automatically initialize a bare bundle skeleton if one doesn't exist`)
 	return cmd
 }
