@@ -292,6 +292,10 @@ func TestBuildAppDeploymentWithValueFrom(t *testing.T) {
 					ValueFrom: "secrets/override",
 				},
 			},
+			HealthCheck: &resources.AppHealthCheck{
+				Path:           "/health",
+				TimeoutSeconds: 120,
+			},
 		},
 	}
 
@@ -319,4 +323,7 @@ func TestBuildAppDeploymentWithValueFrom(t *testing.T) {
 	require.Equal(t, "COMBINED_VAR", deployment.EnvVars[2].Name)
 	require.Equal(t, "default_value", deployment.EnvVars[2].Value)
 	require.Equal(t, "secrets/override", deployment.EnvVars[2].ValueFrom)
+
+	require.Equal(t, "/health", deployment.HealthCheck.Path)
+	require.Equal(t, 120*time.Second, deployment.HealthCheck.Timeout.AsDuration())
 }

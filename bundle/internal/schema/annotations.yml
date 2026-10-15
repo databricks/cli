@@ -364,6 +364,16 @@ resources:
                 "value_from":
                   "description": |-
                     PLACEHOLDER
+            "health_check":
+              "description": |-
+                PLACEHOLDER
+              "$fields":
+                "path":
+                  "description": |-
+                    PLACEHOLDER
+                "timeout_seconds":
+                  "description": |-
+                    PLACEHOLDER
         "effective_budget_policy_id":
           "description": |-
             PLACEHOLDER

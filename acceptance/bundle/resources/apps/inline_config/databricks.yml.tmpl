@@ -14,3 +14,6 @@ resources:
             value: test_value
           - name: ANOTHER_VAR
             value: another_value
+        health_check:
+          path: /health
+          timeout_seconds: 120
