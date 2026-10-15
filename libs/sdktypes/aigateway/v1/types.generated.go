@@ -1569,12 +1569,12 @@ func McpServiceConfigToSDK(w *McpServiceConfig) (*sdk.McpServiceConfig, error) {
 	}
 	out := &sdk.McpServiceConfig{}
 	{
-		members := 0
+		var members []string
 		if w.SourceConnection != nil {
-			members++
+			members = append(members, "source_connection")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "McpServiceConfig.Source")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -1747,33 +1747,33 @@ func ModelProviderServiceConfigToSDK(w *ModelProviderServiceConfig) (*sdk.ModelP
 	out := &sdk.ModelProviderServiceConfig{}
 	out.ProviderType = w.ProviderType
 	{
-		members := 0
+		var members []string
 		if w.Openai != nil {
-			members++
+			members = append(members, "openai")
 		}
 		if w.AzureOpenai != nil {
-			members++
+			members = append(members, "azure_openai")
 		}
 		if w.Anthropic != nil {
-			members++
+			members = append(members, "anthropic")
 		}
 		if w.AmazonBedrock != nil {
-			members++
+			members = append(members, "amazon_bedrock")
 		}
 		if w.Custom != nil {
-			members++
+			members = append(members, "custom")
 		}
 		if w.MicrosoftFoundry != nil {
-			members++
+			members = append(members, "microsoft_foundry")
 		}
 		if w.GeminiEnterprise != nil {
-			members++
+			members = append(members, "gemini_enterprise")
 		}
 		if w.BedrockMantle != nil {
-			members++
+			members = append(members, "bedrock_mantle")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig.Provider")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -1960,12 +1960,12 @@ func ModelProviderServiceConfig_AmazonBedrockProviderConfigToSDK(w *ModelProvide
 	}
 	out := &sdk.ModelProviderServiceConfig_AmazonBedrockProviderConfig{}
 	{
-		members := 0
+		var members []string
 		if w.Direct != nil {
-			members++
+			members = append(members, "direct")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_AmazonBedrockProviderConfig.ProviderMode")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2006,15 +2006,15 @@ func ModelProviderServiceConfig_AmazonBedrockProviderDirectConfigToSDK(w *ModelP
 	out := &sdk.ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig{}
 	out.Region = w.Region
 	{
-		members := 0
+		var members []string
 		if w.ServiceCredential != nil {
-			members++
+			members = append(members, "service_credential")
 		}
 		if w.AwsAccessKey != nil {
-			members++
+			members = append(members, "aws_access_key")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig.AuthMode")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2069,15 +2069,15 @@ func ModelProviderServiceConfig_AnthropicProviderConfigToSDK(w *ModelProviderSer
 	}
 	out := &sdk.ModelProviderServiceConfig_AnthropicProviderConfig{}
 	{
-		members := 0
+		var members []string
 		if w.Direct != nil {
-			members++
+			members = append(members, "direct")
 		}
 		if w.Relayed != nil {
-			members++
+			members = append(members, "relayed")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_AnthropicProviderConfig.ProviderMode")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2131,12 +2131,12 @@ func ModelProviderServiceConfig_AnthropicProviderDirectConfigToSDK(w *ModelProvi
 	}
 	out := &sdk.ModelProviderServiceConfig_AnthropicProviderDirectConfig{}
 	{
-		members := 0
+		var members []string
 		if w.ApiKey != nil {
-			members++
+			members = append(members, "api_key")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_AnthropicProviderDirectConfig.AuthMode")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2224,12 +2224,12 @@ func ModelProviderServiceConfig_AzureOpenAiProviderConfigToSDK(w *ModelProviderS
 	}
 	out := &sdk.ModelProviderServiceConfig_AzureOpenAiProviderConfig{}
 	{
-		members := 0
+		var members []string
 		if w.Direct != nil {
-			members++
+			members = append(members, "direct")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_AzureOpenAiProviderConfig.ProviderMode")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2270,18 +2270,18 @@ func ModelProviderServiceConfig_AzureOpenAiProviderDirectConfigToSDK(w *ModelPro
 	out := &sdk.ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig{}
 	out.BaseUrl = w.BaseUrl
 	{
-		members := 0
+		var members []string
 		if w.ApiKey != nil {
-			members++
+			members = append(members, "api_key")
 		}
 		if w.ServiceCredential != nil {
-			members++
+			members = append(members, "service_credential")
 		}
 		if w.EntraServicePrincipal != nil {
-			members++
+			members = append(members, "entra_service_principal")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig.AuthMode")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2380,12 +2380,12 @@ func ModelProviderServiceConfig_CustomProviderConfigToSDK(w *ModelProviderServic
 	}
 	out := &sdk.ModelProviderServiceConfig_CustomProviderConfig{}
 	{
-		members := 0
+		var members []string
 		if w.Direct != nil {
-			members++
+			members = append(members, "direct")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_CustomProviderConfig.ProviderMode")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2426,15 +2426,15 @@ func ModelProviderServiceConfig_CustomProviderDirectConfigToSDK(w *ModelProvider
 	out := &sdk.ModelProviderServiceConfig_CustomProviderDirectConfig{}
 	out.BaseUrl = w.BaseUrl
 	{
-		members := 0
+		var members []string
 		if w.ApiKey != nil {
-			members++
+			members = append(members, "api_key")
 		}
 		if w.HeaderAuth != nil {
-			members++
+			members = append(members, "header_auth")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_CustomProviderDirectConfig.AuthMode")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2491,12 +2491,12 @@ func ModelProviderServiceConfig_EntraServicePrincipalToSDK(w *ModelProviderServi
 	out.TenantId = w.TenantId
 	out.ClientId = w.ClientId
 	{
-		members := 0
+		var members []string
 		if w.ClientSecret != nil {
-			members++
+			members = append(members, "client_secret")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_EntraServicePrincipal.Credential")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2538,12 +2538,12 @@ func ModelProviderServiceConfig_GeminiEnterpriseProviderConfigToSDK(w *ModelProv
 	}
 	out := &sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderConfig{}
 	{
-		members := 0
+		var members []string
 		if w.Direct != nil {
-			members++
+			members = append(members, "direct")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_GeminiEnterpriseProviderConfig.ProviderMode")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2583,15 +2583,15 @@ func ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfigToSDK(w *Mod
 	}
 	out := &sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig{}
 	{
-		members := 0
+		var members []string
 		if w.ApiKey != nil {
-			members++
+			members = append(members, "api_key")
 		}
 		if w.ServiceCredential != nil {
-			members++
+			members = append(members, "service_credential")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig.AuthMode")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2649,12 +2649,12 @@ func ModelProviderServiceConfig_MicrosoftFoundryProviderConfigToSDK(w *ModelProv
 	}
 	out := &sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderConfig{}
 	{
-		members := 0
+		var members []string
 		if w.Direct != nil {
-			members++
+			members = append(members, "direct")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_MicrosoftFoundryProviderConfig.ProviderMode")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2695,18 +2695,18 @@ func ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfigToSDK(w *Mod
 	out := &sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig{}
 	out.BaseUrl = w.BaseUrl
 	{
-		members := 0
+		var members []string
 		if w.ApiKey != nil {
-			members++
+			members = append(members, "api_key")
 		}
 		if w.ServiceCredential != nil {
-			members++
+			members = append(members, "service_credential")
 		}
 		if w.EntraServicePrincipal != nil {
-			members++
+			members = append(members, "entra_service_principal")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig.AuthMode")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2799,12 +2799,12 @@ func ModelProviderServiceConfig_OpenAiProviderConfigToSDK(w *ModelProviderServic
 	}
 	out := &sdk.ModelProviderServiceConfig_OpenAiProviderConfig{}
 	{
-		members := 0
+		var members []string
 		if w.Direct != nil {
-			members++
+			members = append(members, "direct")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_OpenAiProviderConfig.ProviderMode")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2844,12 +2844,12 @@ func ModelProviderServiceConfig_OpenAiProviderDirectConfigToSDK(w *ModelProvider
 	}
 	out := &sdk.ModelProviderServiceConfig_OpenAiProviderDirectConfig{}
 	{
-		members := 0
+		var members []string
 		if w.ApiKey != nil {
-			members++
+			members = append(members, "api_key")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_OpenAiProviderDirectConfig.AuthMode")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2913,15 +2913,15 @@ func ModelProviderServiceConfig_ProviderSecretToSDK(w *ModelProviderServiceConfi
 	}
 	out := &sdk.ModelProviderServiceConfig_ProviderSecret{}
 	{
-		members := 0
+		var members []string
 		if w.Plaintext != nil {
-			members++
+			members = append(members, "plaintext")
 		}
 		if w.SecretReference != nil {
-			members++
+			members = append(members, "secret_reference")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_ProviderSecret.Value")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3106,18 +3106,18 @@ func ModelServiceConfig_DestinationConfigToSDK(w *ModelServiceConfig_Destination
 	out.DestinationType = w.DestinationType
 	out.TrafficPercentage = w.TrafficPercentage
 	{
-		members := 0
+		var members []string
 		if w.PayPerTokenConfig != nil {
-			members++
+			members = append(members, "pay_per_token_config")
 		}
 		if w.ProvisionedThroughputConfig != nil {
-			members++
+			members = append(members, "provisioned_throughput_config")
 		}
 		if w.ExternalModelConfig != nil {
-			members++
+			members = append(members, "external_model_config")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelServiceConfig_DestinationConfig.TypeConfig")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

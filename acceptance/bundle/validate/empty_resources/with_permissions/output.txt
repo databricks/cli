@@ -152,7 +152,6 @@ Error: dashboard warehouse_id is required
 {
   "dashboards": {
     "rname": {
-      "embed_credentials": false,
       "parent_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/default/resources"
     }
   }

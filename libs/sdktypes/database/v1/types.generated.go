@@ -1532,15 +1532,15 @@ func RequestedResourceToSDK(w *RequestedResource) (*sdk.RequestedResource, error
 	}
 	out := &sdk.RequestedResource{}
 	{
-		members := 0
+		var members []string
 		if w.UnspecifiedResourceName != nil {
-			members++
+			members = append(members, "unspecified_resource_name")
 		}
 		if w.TableName != nil {
-			members++
+			members = append(members, "table_name")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "RequestedResource.ResourceName")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -1714,12 +1714,12 @@ func SyncedTablePositionToSDK(w *SyncedTablePosition) (*sdk.SyncedTablePosition,
 	out.SyncStartTimestamp = w.SyncStartTimestamp
 	out.SyncEndTimestamp = w.SyncEndTimestamp
 	{
-		members := 0
+		var members []string
 		if w.DeltaTableSyncInfo != nil {
-			members++
+			members = append(members, "delta_table_sync_info")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "SyncedTablePosition.SourceSyncInfo")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -1867,21 +1867,21 @@ func SyncedTableStatusToSDK(w *SyncedTableStatus) (*sdk.SyncedTableStatus, error
 	out.DetailedState = w.DetailedState
 	out.Message = w.Message
 	{
-		members := 0
+		var members []string
 		if w.ProvisioningStatus != nil {
-			members++
+			members = append(members, "provisioning_status")
 		}
 		if w.ContinuousUpdateStatus != nil {
-			members++
+			members = append(members, "continuous_update_status")
 		}
 		if w.TriggeredUpdateStatus != nil {
-			members++
+			members = append(members, "triggered_update_status")
 		}
 		if w.FailedStatus != nil {
-			members++
+			members = append(members, "failed_status")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "SyncedTableStatus.DetailedStatus")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

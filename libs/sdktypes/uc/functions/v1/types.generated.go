@@ -6,6 +6,8 @@ import (
 	fmt "fmt"
 
 	sdk "github.com/databricks/sdk-go/uc/functions/v1"
+
+	strings "strings"
 )
 
 type (
@@ -596,21 +598,21 @@ func DependencyToSDK(w *Dependency) (*sdk.Dependency, error) {
 	}
 	out := &sdk.Dependency{}
 	{
-		members := 0
+		var members []string
 		if w.Table != nil {
-			members++
+			members = append(members, "table")
 		}
 		if w.Function != nil {
-			members++
+			members = append(members, "function")
 		}
 		if w.Connection != nil {
-			members++
+			members = append(members, "connection")
 		}
 		if w.Credential != nil {
-			members++
+			members = append(members, "credential")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "Dependency.Value")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

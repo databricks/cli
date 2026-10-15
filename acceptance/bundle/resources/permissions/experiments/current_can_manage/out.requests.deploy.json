@@ -2,25 +2,25 @@
   "method": "PUT",
   "path": "/api/2.0/permissions/experiments/[FOO_ID]",
   "body": {
-    "request_object_type": "experiments",
-    "request_object_id": "[FOO_ID]",
     "access_control_list": [
       {
-        "user_name": "viewer@example.com",
-        "permission_level": "CAN_READ"
+        "permission_level": "CAN_READ",
+        "user_name": "viewer@example.com"
       },
       {
         "group_name": "data-team",
         "permission_level": "CAN_MANAGE"
       },
       {
-        "service_principal_name": "[UUID]",
-        "permission_level": "CAN_MANAGE"
+        "permission_level": "CAN_MANAGE",
+        "service_principal_name": "[UUID]"
       },
       {
-        "user_name": "[USERNAME]",
-        "permission_level": "CAN_MANAGE"
+        "permission_level": "CAN_MANAGE",
+        "user_name": "[USERNAME]"
       }
-    ]
+    ],
+    "request_object_id": "[FOO_ID]",
+    "request_object_type": "experiments"
   }
 }

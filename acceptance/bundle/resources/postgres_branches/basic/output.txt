@@ -38,7 +38,6 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
     "branch_id": "main",
     "current_state": "READY",
     "default": false,
-    "is_protected": false,
     "source_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production",
     "source_branch_lsn": "[LSN]",
     "source_branch_time": "[TIMESTAMP]",

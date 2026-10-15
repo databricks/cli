@@ -324,15 +324,15 @@ func AlertOperandToSDK(w *AlertOperand) (*sdk.AlertOperand, error) {
 	}
 	out := &sdk.AlertOperand{}
 	{
-		members := 0
+		var members []string
 		if w.Value != nil {
-			members++
+			members = append(members, "value")
 		}
 		if w.Column != nil {
-			members++
+			members = append(members, "column")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "AlertOperand.Operand")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -406,18 +406,18 @@ func AlertOperandValueToSDK(w *AlertOperandValue) (*sdk.AlertOperandValue, error
 	}
 	out := &sdk.AlertOperandValue{}
 	{
-		members := 0
+		var members []string
 		if w.StringValue != nil {
-			members++
+			members = append(members, "string_value")
 		}
 		if w.DoubleValue != nil {
-			members++
+			members = append(members, "double_value")
 		}
 		if w.BoolValue != nil {
-			members++
+			members = append(members, "bool_value")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "AlertOperandValue.ThresholdValue")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

@@ -14,51 +14,51 @@ Resources: 0 created, 0 changed, 1 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
-    "name": "Untitled",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
     "max_concurrent_runs": 1,
+    "name": "Untitled",
+    "queue": {
+      "enabled": true
+    },
     "tasks": [
       {
-        "task_key": "TestTask1",
-        "python_wheel_task": {
-          "package_name": "whl",
-          "entry_point": "run"
-        },
         "existing_cluster_id": "0717-132531-5opeqon1",
         "libraries": [
           {
             "whl": "/Workspace/Users/foo@bar.test/mywheel.whl"
           }
-        ]
+        ],
+        "python_wheel_task": {
+          "entry_point": "run",
+          "package_name": "whl"
+        },
+        "task_key": "TestTask1"
       },
       {
-        "task_key": "TestTask2",
         "for_each_task": {
           "inputs": "[1]",
           "task": {
-            "task_key": "TestTask2",
-            "python_wheel_task": {
-              "package_name": "whl",
-              "entry_point": "run"
-            },
             "existing_cluster_id": "0717-132531-5opeqon1",
             "libraries": [
               {
                 "whl": "/Workspace/Users/foo@bar.test/mywheel.whl"
               }
-            ]
+            ],
+            "python_wheel_task": {
+              "entry_point": "run",
+              "package_name": "whl"
+            },
+            "task_key": "TestTask2"
           }
-        }
+        },
+        "task_key": "TestTask2"
       }
-    ],
-    "format": "MULTI_TASK",
-    "queue": {
-      "enabled": true
-    },
-    "edit_mode": "UI_LOCKED",
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    }
+    ]
   }
 }
 {

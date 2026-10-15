@@ -441,12 +441,12 @@ func FederationPolicyToSDK(w *FederationPolicy) (*sdk.FederationPolicy, error) {
 	out.Name = w.Name
 	out.Description = w.Description
 	{
-		members := 0
+		var members []string
 		if w.OidcPolicy != nil {
-			members++
+			members = append(members, "oidc_policy")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "FederationPolicy.Policy")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

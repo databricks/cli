@@ -7,13 +7,13 @@
   "body": {
     "name": "projects/test-pg-proj-[UNIQUE_NAME]",
     "spec": {
-      "display_name": "Test Project for Default Endpoint Autoscaling",
-      "pg_version": 16,
-      "history_retention_duration": "604800s",
       "default_endpoint_settings": {
-        "autoscaling_limit_min_cu": 0.5,
-        "autoscaling_limit_max_cu": 8
-      }
+        "autoscaling_limit_max_cu": 8,
+        "autoscaling_limit_min_cu": 0.5
+      },
+      "display_name": "Test Project for Default Endpoint Autoscaling",
+      "history_retention_duration": "604800s",
+      "pg_version": 16
     }
   }
 }

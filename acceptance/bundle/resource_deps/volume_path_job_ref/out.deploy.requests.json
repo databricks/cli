@@ -2,16 +2,16 @@
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
-    "name": "foo-[UNIQUE_NAME]",
-    "max_concurrent_runs": 1,
-    "format": "MULTI_TASK",
-    "queue": {
-      "enabled": true
-    },
-    "edit_mode": "UI_LOCKED",
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "foo-[UNIQUE_NAME]",
+    "queue": {
+      "enabled": true
     }
   }
 }
@@ -19,22 +19,22 @@
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
-    "name": "process-[UNIQUE_NAME]",
-    "max_concurrent_runs": 1,
-    "format": "MULTI_TASK",
-    "queue": {
-      "enabled": true
-    },
-    "parameters": [
-      {
-        "name": "data_path",
-        "default": "/Volumes/main/[USERNAME]/[USERNAME]"
-      }
-    ],
-    "edit_mode": "UI_LOCKED",
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "process-[UNIQUE_NAME]",
+    "parameters": [
+      {
+        "default": "/Volumes/main/[USERNAME]/[USERNAME]",
+        "name": "data_path"
+      }
+    ],
+    "queue": {
+      "enabled": true
     }
   }
 }

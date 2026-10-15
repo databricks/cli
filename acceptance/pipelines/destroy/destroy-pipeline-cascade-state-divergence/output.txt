@@ -12,13 +12,13 @@ View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSP
   "method": "POST",
   "path": "/api/2.0/pipelines",
   "body": {
-    "name": "test-pipeline-cascade-divergence",
-    "edition": "ADVANCED",
     "channel": "CURRENT",
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy-cascade-divergence/default/state/metadata.json"
-    }
+    },
+    "edition": "ADVANCED",
+    "name": "test-pipeline-cascade-divergence"
   }
 }
 

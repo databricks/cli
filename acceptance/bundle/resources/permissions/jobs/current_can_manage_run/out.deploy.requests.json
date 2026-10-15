@@ -2,16 +2,16 @@
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
-    "name": "Untitled",
-    "max_concurrent_runs": 1,
-    "format": "MULTI_TASK",
-    "queue": {
-      "enabled": true
-    },
-    "edit_mode": "UI_LOCKED",
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/green/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "Untitled",
+    "queue": {
+      "enabled": true
     }
   }
 }
@@ -19,13 +19,13 @@
   "method": "PUT",
   "path": "/api/2.0/permissions/jobs/[INTERIM_GOLD_LAYER_JOB_ID]",
   "body": {
-    "request_object_type": "jobs",
-    "request_object_id": "[INTERIM_GOLD_LAYER_JOB_ID]",
     "access_control_list": [
       {
-        "service_principal_name": "[USERNAME]",
-        "permission_level": "IS_OWNER"
+        "permission_level": "IS_OWNER",
+        "service_principal_name": "[USERNAME]"
       }
-    ]
+    ],
+    "request_object_id": "[INTERIM_GOLD_LAYER_JOB_ID]",
+    "request_object_type": "jobs"
   }
 }

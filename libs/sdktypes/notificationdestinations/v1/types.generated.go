@@ -6,6 +6,8 @@ import (
 	fmt "fmt"
 
 	sdk "github.com/databricks/sdk-go/notificationdestinations/v1"
+
+	strings "strings"
 )
 
 type (
@@ -192,30 +194,30 @@ func ConfigToSDK(w *Config) (*sdk.Config, error) {
 	}
 	out := &sdk.Config{}
 	{
-		members := 0
+		var members []string
 		if w.Slack != nil {
-			members++
+			members = append(members, "slack")
 		}
 		if w.Email != nil {
-			members++
+			members = append(members, "email")
 		}
 		if w.GenericWebhook != nil {
-			members++
+			members = append(members, "generic_webhook")
 		}
 		if w.Pagerduty != nil {
-			members++
+			members = append(members, "pagerduty")
 		}
 		if w.MicrosoftTeams != nil {
-			members++
+			members = append(members, "microsoft_teams")
 		}
 		if w.DatabricksAppSlack != nil {
-			members++
+			members = append(members, "databricks_app_slack")
 		}
 		if w.DatabricksAppTeams != nil {
-			members++
+			members = append(members, "databricks_app_teams")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "Config.Config")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

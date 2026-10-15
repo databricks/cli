@@ -62,8 +62,8 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
     "update_mask": "*"
   },
   "body": {
-    "name": "model-services/main.myschema.myservice",
-    "comment": "COMMENT2"
+    "comment": "COMMENT2",
+    "name": "model-services/main.myschema.myservice"
   }
 }
 

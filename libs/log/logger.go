@@ -3,6 +3,7 @@ package log
 import (
 	"context"
 	"fmt"
+	"github.com/databricks/cli/libs/apierrs"
 	"log/slog"
 	"runtime"
 	"time"
@@ -20,6 +21,7 @@ func GetLogger(ctx context.Context) *slog.Logger {
 
 // helper function to abstract logging a string message.
 func log(ctx context.Context, logger *slog.Logger, level slog.Level, msg string) {
+	msg = apierrs.StripPrefix(msg)
 	if prefix := getPrefix(ctx); prefix != "" {
 		msg = prefix + ": " + msg
 	}

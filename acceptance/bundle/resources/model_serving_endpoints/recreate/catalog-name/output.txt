@@ -12,27 +12,27 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/serving-endpoints",
   "body": {
-    "name": "[ORIGINAL_ENDPOINT_ID]",
     "config": {
-      "served_entities": [
-        {
-          "name": "prod",
-          "external_model": {
-            "provider": "openai",
-            "name": "gpt-4o-mini",
-            "task": "llm/v1/chat",
-            "openai_config": {
-              "openai_api_key": "{{secrets/test-scope/openai-key}}"
-            }
-          }
-        }
-      ],
       "auto_capture_config": {
         "catalog_name": "main",
         "schema_name": "default",
         "table_name_prefix": "my_table"
-      }
-    }
+      },
+      "served_entities": [
+        {
+          "external_model": {
+            "name": "gpt-4o-mini",
+            "openai_config": {
+              "openai_api_key": "{{secrets/test-scope/openai-key}}"
+            },
+            "provider": "openai",
+            "task": "llm/v1/chat"
+          },
+          "name": "prod"
+        }
+      ]
+    },
+    "name": "[ORIGINAL_ENDPOINT_ID]"
   }
 }
 
@@ -58,27 +58,27 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/serving-endpoints",
   "body": {
-    "name": "[ORIGINAL_ENDPOINT_ID]",
     "config": {
-      "served_entities": [
-        {
-          "name": "prod",
-          "external_model": {
-            "provider": "openai",
-            "name": "gpt-4o-mini",
-            "task": "llm/v1/chat",
-            "openai_config": {
-              "openai_api_key": "{{secrets/test-scope/openai-key}}"
-            }
-          }
-        }
-      ],
       "auto_capture_config": {
         "catalog_name": "other_catalog",
         "schema_name": "default",
         "table_name_prefix": "my_table"
-      }
-    }
+      },
+      "served_entities": [
+        {
+          "external_model": {
+            "name": "gpt-4o-mini",
+            "openai_config": {
+              "openai_api_key": "{{secrets/test-scope/openai-key}}"
+            },
+            "provider": "openai",
+            "task": "llm/v1/chat"
+          },
+          "name": "prod"
+        }
+      ]
+    },
+    "name": "[ORIGINAL_ENDPOINT_ID]"
   }
 }
 

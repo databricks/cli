@@ -6,6 +6,8 @@ import (
 	fmt "fmt"
 
 	sdk "github.com/databricks/sdk-go/uc/volumes/v1"
+
+	strings "strings"
 )
 
 type (
@@ -273,12 +275,12 @@ func EncryptionDetailsToSDK(w *EncryptionDetails) (*sdk.EncryptionDetails, error
 	}
 	out := &sdk.EncryptionDetails{}
 	{
-		members := 0
+		var members []string
 		if w.SseEncryptionDetails != nil {
-			members++
+			members = append(members, "sse_encryption_details")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "EncryptionDetails.EncryptionDetailsType")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

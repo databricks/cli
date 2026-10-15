@@ -8,6 +8,7 @@ import (
 	sdk "github.com/databricks/sdk-go/genie/v1"
 
 	types "github.com/databricks/sdk-go/core/types"
+	strings "strings"
 )
 
 type (
@@ -1347,21 +1348,21 @@ func GenieAttachmentToSDK(w *GenieAttachment) (*sdk.GenieAttachment, error) {
 	}
 	out := &sdk.GenieAttachment{}
 	{
-		members := 0
+		var members []string
 		if w.Text != nil {
-			members++
+			members = append(members, "text")
 		}
 		if w.Query != nil {
-			members++
+			members = append(members, "query")
 		}
 		if w.SuggestedQuestions != nil {
-			members++
+			members = append(members, "suggested_questions")
 		}
 		if w.Viz != nil {
-			members++
+			members = append(members, "viz")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "GenieAttachment.Attachment")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2871,15 +2872,15 @@ func PolicyFunctionArgumentToSDK(w *PolicyFunctionArgument) (*sdk.PolicyFunction
 	}
 	out := &sdk.PolicyFunctionArgument{}
 	{
-		members := 0
+		var members []string
 		if w.Column != nil {
-			members++
+			members = append(members, "column")
 		}
 		if w.Constant != nil {
-			members++
+			members = append(members, "constant")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "PolicyFunctionArgument.Arg")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3251,27 +3252,27 @@ func ValueToSDK(w *Value) (*sdk.Value, error) {
 	}
 	out := &sdk.Value{}
 	{
-		members := 0
+		var members []string
 		if w.NullValue != "" {
-			members++
+			members = append(members, "null_value")
 		}
 		if w.NumberValue != nil {
-			members++
+			members = append(members, "number_value")
 		}
 		if w.StringValue != nil {
-			members++
+			members = append(members, "string_value")
 		}
 		if w.BoolValue != nil {
-			members++
+			members = append(members, "bool_value")
 		}
 		if w.StructValue != nil {
-			members++
+			members = append(members, "struct_value")
 		}
 		if w.ListValue != nil {
-			members++
+			members = append(members, "list_value")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "Value.Kind")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

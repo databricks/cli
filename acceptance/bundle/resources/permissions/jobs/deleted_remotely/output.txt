@@ -100,7 +100,9 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
         "permission_level": "IS_OWNER",
         "user_name": "[USERNAME]"
       }
-    ]
+    ],
+    "request_object_id": "[JOB_WITH_PERMISSIONS_ID]",
+    "request_object_type": "jobs"
   }
 }
 

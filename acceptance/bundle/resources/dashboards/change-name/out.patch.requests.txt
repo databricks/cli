@@ -4,8 +4,8 @@
   "body": {
     "dashboard_id": "[DASHBOARD_ID]",
     "display_name": "dashboard2",
-    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-name-[UNIQUE_NAME]/default/resources",
     "serialized_dashboard": "{}\n",
-    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-name-[UNIQUE_NAME]/default/resources"
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }
 }

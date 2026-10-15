@@ -335,12 +335,12 @@ func FunctionArgExpressionToSDK(w *FunctionArgExpression) (*sdk.FunctionArgExpre
 	}
 	out := &sdk.FunctionArgExpression{}
 	{
-		members := 0
+		var members []string
 		if w.TagIntrospection != nil {
-			members++
+			members = append(members, "tag_introspection")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "FunctionArgExpression.Expr")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -380,18 +380,18 @@ func FunctionArgumentToSDK(w *FunctionArgument) (*sdk.FunctionArgument, error) {
 	}
 	out := &sdk.FunctionArgument{}
 	{
-		members := 0
+		var members []string
 		if w.Alias != nil {
-			members++
+			members = append(members, "alias")
 		}
 		if w.Constant != nil {
-			members++
+			members = append(members, "constant")
 		}
 		if w.FunctionArgExpression != nil {
-			members++
+			members = append(members, "function_arg_expression")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "FunctionArgument.Arg")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -553,21 +553,21 @@ func PolicyInfoToSDK(w *PolicyInfo) (*sdk.PolicyInfo, error) {
 	out.WhenCondition = w.WhenCondition
 	out.PolicyType = w.PolicyType
 	{
-		members := 0
+		var members []string
 		if w.RowFilter != nil {
-			members++
+			members = append(members, "row_filter")
 		}
 		if w.ColumnMask != nil {
-			members++
+			members = append(members, "column_mask")
 		}
 		if w.Deny != nil {
-			members++
+			members = append(members, "deny")
 		}
 		if w.Grant != nil {
-			members++
+			members = append(members, "grant")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "PolicyInfo.Options")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -707,15 +707,15 @@ func TagIntrospectionExpressionToSDK(w *TagIntrospectionExpression) (*sdk.TagInt
 	}
 	out := &sdk.TagIntrospectionExpression{}
 	{
-		members := 0
+		var members []string
 		if w.TagValue != nil {
-			members++
+			members = append(members, "tag_value")
 		}
 		if w.ColumnTagValue != nil {
-			members++
+			members = append(members, "column_tag_value")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "TagIntrospectionExpression.Expr")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

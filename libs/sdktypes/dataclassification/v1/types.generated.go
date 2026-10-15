@@ -102,15 +102,15 @@ func CatalogConfigToSDK(w *CatalogConfig) (*sdk.CatalogConfig, error) {
 	out := &sdk.CatalogConfig{}
 	out.Name = w.Name
 	{
-		members := 0
+		var members []string
 		if w.IncludedSchemas != nil {
-			members++
+			members = append(members, "included_schemas")
 		}
 		if w.ExcludedSchemas != nil {
-			members++
+			members = append(members, "excluded_schemas")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "CatalogConfig.SelectedSchemas")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

@@ -2,7 +2,7 @@
   "method": "PATCH",
   "path": "/api/2.0/vector-search/endpoints/vs-endpoint-[UNIQUE_NAME]/budget-policy",
   "body": {
-    "name": "vs-endpoint-[UNIQUE_NAME]",
-    "budget_policy_id": "test-policy-id"
+    "budget_policy_id": "test-policy-id",
+    "name": "vs-endpoint-[UNIQUE_NAME]"
   }
 }

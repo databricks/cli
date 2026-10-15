@@ -77,7 +77,15 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
   "method": "POST",
   "path": "/api/2.0/pipelines",
   "body": {
-    "name": "bar-[UNIQUE_NAME]",
+    "catalog": "main",
+    "channel": "CURRENT",
+    "deployment": {
+      "deployment_id": "[DEPLOYMENT_ID]",
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
+      "version_id": "1"
+    },
+    "edition": "ADVANCED",
     "libraries": [
       {
         "file": {
@@ -85,35 +93,27 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
         }
       }
     ],
+    "name": "bar-[UNIQUE_NAME]",
     "schema": "default",
-    "edition": "ADVANCED",
-    "channel": "CURRENT",
-    "catalog": "main",
-    "serverless": true,
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
-      "deployment_id": "[DEPLOYMENT_ID]",
-      "version_id": "1"
-    }
+    "serverless": true
   }
 }
 {
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
-    "name": "foo",
-    "max_concurrent_runs": 1,
-    "format": "MULTI_TASK",
-    "queue": {
-      "enabled": true
-    },
-    "edit_mode": "UI_LOCKED",
     "deployment": {
+      "deployment_id": "[DEPLOYMENT_ID]",
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
-      "deployment_id": "[DEPLOYMENT_ID]",
       "version_id": "1"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "foo",
+    "queue": {
+      "enabled": true
     }
   }
 }
@@ -121,8 +121,16 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
   "method": "PUT",
   "path": "/api/2.0/pipelines/[UUID]",
   "body": {
-    "pipeline_id": "[UUID]",
-    "name": "bar-[UNIQUE_NAME]",
+    "catalog": "main",
+    "channel": "CURRENT",
+    "deployment": {
+      "deployment_id": "[DEPLOYMENT_ID]",
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
+      "version_id": "2"
+    },
+    "development": true,
+    "edition": "ADVANCED",
     "libraries": [
       {
         "file": {
@@ -130,18 +138,10 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
         }
       }
     ],
+    "name": "bar-[UNIQUE_NAME]",
+    "pipeline_id": "[UUID]",
     "schema": "default",
-    "development": true,
-    "edition": "ADVANCED",
-    "channel": "CURRENT",
-    "catalog": "main",
-    "serverless": true,
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
-      "deployment_id": "[DEPLOYMENT_ID]",
-      "version_id": "2"
-    }
+    "serverless": true
   }
 }
 

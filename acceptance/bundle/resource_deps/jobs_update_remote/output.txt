@@ -11,32 +11,32 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "job_clusters": [
+      {
+        "job_cluster_key": "key",
+        "new_cluster": {
+          "num_workers": 0,
+          "spark_version": "13.3.x-scala2.12"
+        }
+      }
+    ],
+    "max_concurrent_runs": 1,
     "name": "foo",
+    "queue": {
+      "enabled": true
+    },
     "trigger": {
       "pause_status": "UNPAUSED",
       "periodic": {
         "interval": 1,
         "unit": "DAYS"
       }
-    },
-    "max_concurrent_runs": 1,
-    "job_clusters": [
-      {
-        "job_cluster_key": "key",
-        "new_cluster": {
-          "spark_version": "13.3.x-scala2.12",
-          "num_workers": 0
-        }
-      }
-    ],
-    "format": "MULTI_TASK",
-    "queue": {
-      "enabled": true
-    },
-    "edit_mode": "UI_LOCKED",
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
     }
   }
 }
@@ -44,17 +44,17 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
-    "name": "bar",
-    "description": "depends on foo id [FOO_ID]",
-    "max_concurrent_runs": 1,
-    "format": "MULTI_TASK",
-    "queue": {
-      "enabled": true
-    },
-    "edit_mode": "UI_LOCKED",
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "description": "depends on foo id [FOO_ID]",
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "bar",
+    "queue": {
+      "enabled": true
     }
   }
 }
@@ -83,15 +83,12 @@ Destroy: 2 deleted
   "body": {
     "job_id": [FOO_ID],
     "new_settings": {
-      "name": "foo",
-      "trigger": {
-        "pause_status": "UNPAUSED",
-        "periodic": {
-          "interval": 1,
-          "unit": "HOURS"
-        }
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
       },
-      "max_concurrent_runs": 1,
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
       "job_clusters": [
         {
           "job_cluster_key": "key",
@@ -100,14 +97,17 @@ Destroy: 2 deleted
           }
         }
       ],
-      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "foo",
       "queue": {
         "enabled": true
       },
-      "edit_mode": "UI_LOCKED",
-      "deployment": {
-        "kind": "BUNDLE",
-        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+      "trigger": {
+        "pause_status": "UNPAUSED",
+        "periodic": {
+          "interval": 1,
+          "unit": "HOURS"
+        }
       }
     }
   }

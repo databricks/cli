@@ -30,17 +30,17 @@
   "method": "POST",
   "path": "/api/2.0/repos",
   "body": {
-    "url": "https://github.com/databricks/databricks-empty-ide-project.git",
+    "path": "/Repos/me@databricks.com/test-repo",
     "provider": "gitHub",
-    "path": "/Repos/me@databricks.com/test-repo"
+    "url": "https://github.com/databricks/databricks-empty-ide-project.git"
   }
 }
 {
   "method": "PATCH",
   "path": "/api/2.0/repos/[REPO_ID]",
   "body": {
-    "id": [REPO_ID],
-    "branch": "update-by-id"
+    "branch": "update-by-id",
+    "id": [REPO_ID]
   }
 }
 {
@@ -58,8 +58,8 @@
   "method": "PATCH",
   "path": "/api/2.0/repos/[REPO_ID]",
   "body": {
-    "id": [REPO_ID],
-    "branch": "update-by-path"
+    "branch": "update-by-path",
+    "id": [REPO_ID]
   }
 }
 {

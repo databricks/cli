@@ -6,6 +6,8 @@ import (
 	fmt "fmt"
 
 	sdk "github.com/databricks/sdk-go/modelserving/v1"
+
+	strings "strings"
 )
 
 type (
@@ -1864,36 +1866,36 @@ func ExternalModelToSDK(w *ExternalModel) (*sdk.ExternalModel, error) {
 	out.Name = w.Name
 	out.Task = w.Task
 	{
-		members := 0
+		var members []string
 		if w.Ai21labsConfig != nil {
-			members++
+			members = append(members, "ai21labs_config")
 		}
 		if w.AnthropicConfig != nil {
-			members++
+			members = append(members, "anthropic_config")
 		}
 		if w.AmazonBedrockConfig != nil {
-			members++
+			members = append(members, "amazon_bedrock_config")
 		}
 		if w.CohereConfig != nil {
-			members++
+			members = append(members, "cohere_config")
 		}
 		if w.GoogleCloudVertexAiConfig != nil {
-			members++
+			members = append(members, "google_cloud_vertex_ai_config")
 		}
 		if w.DatabricksModelServingConfig != nil {
-			members++
+			members = append(members, "databricks_model_serving_config")
 		}
 		if w.OpenaiConfig != nil {
-			members++
+			members = append(members, "openai_config")
 		}
 		if w.PalmConfig != nil {
-			members++
+			members = append(members, "palm_config")
 		}
 		if w.CustomProviderConfig != nil {
-			members++
+			members = append(members, "custom_provider_config")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ExternalModel.Config")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3280,15 +3282,15 @@ func TelemetryConfigToSDK(w *TelemetryConfig) (*sdk.TelemetryConfig, error) {
 	}
 	out := &sdk.TelemetryConfig{}
 	{
-		members := 0
+		var members []string
 		if w.TelemetryProfileId != nil {
-			members++
+			members = append(members, "telemetry_profile_id")
 		}
 		if w.TableNames != nil {
-			members++
+			members = append(members, "table_names")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "TelemetryConfig.TelemetryProfile")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

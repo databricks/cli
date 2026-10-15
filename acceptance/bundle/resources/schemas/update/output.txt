@@ -10,9 +10,9 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.1/unity-catalog/schemas",
   "body": {
-    "name": "myschema",
     "catalog_name": "main",
-    "comment": "COMMENT1"
+    "comment": "COMMENT1",
+    "name": "myschema"
   }
 }
 schemas schema1 id='main.myschema' name='myschema' catalog_name='main' comment='COMMENT1'
@@ -29,8 +29,8 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 >>> print_requests.py //unity
 json.method = "PATCH";
 json.path = "/api/2.1/unity-catalog/schemas/main.myschema";
-json.body.full_name_arg = "main.myschema";
 json.body.comment = "COMMENT2";
+json.body.full_name_arg = "main.myschema";
 schemas schema1 id='main.myschema' name='myschema' catalog_name='main' comment='COMMENT2'
 
 === Restore comment to original value and re-deploy
@@ -45,6 +45,6 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 >>> print_requests.py //unity
 json.method = "PATCH";
 json.path = "/api/2.1/unity-catalog/schemas/main.myschema";
-json.body.full_name_arg = "main.myschema";
 json.body.comment = "COMMENT1";
+json.body.full_name_arg = "main.myschema";
 schemas schema1 id='main.myschema' name='myschema' catalog_name='main' comment='COMMENT1'

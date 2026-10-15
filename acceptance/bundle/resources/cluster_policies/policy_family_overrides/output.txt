@@ -33,8 +33,8 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
   "path": "/api/2.0/policies/clusters/create",
   "body": {
     "name": "policy_json_string-[UNIQUE_NAME]",
-    "policy_family_id": "personal-vm",
-    "policy_family_definition_overrides": "{\"autotermination_minutes\":{\"type\":\"fixed\",\"value\":30}}"
+    "policy_family_definition_overrides": "{\"autotermination_minutes\":{\"type\":\"fixed\",\"value\":30}}",
+    "policy_family_id": "personal-vm"
   }
 }
 {
@@ -42,8 +42,8 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
   "path": "/api/2.0/policies/clusters/create",
   "body": {
     "name": "policy_multiline-[UNIQUE_NAME]",
-    "policy_family_id": "personal-vm",
-    "policy_family_definition_overrides": "{\n  \"autotermination_minutes\": {\n    \"type\": \"fixed\",\n    \"value\": 30\n  }\n}"
+    "policy_family_definition_overrides": "{\n  \"autotermination_minutes\": {\n    \"type\": \"fixed\",\n    \"value\": 30\n  }\n}",
+    "policy_family_id": "personal-vm"
   }
 }
 {
@@ -51,8 +51,8 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
   "path": "/api/2.0/policies/clusters/create",
   "body": {
     "name": "policy_yaml-[UNIQUE_NAME]",
-    "policy_family_id": "personal-vm",
-    "policy_family_definition_overrides": "{\"autotermination_minutes\":{\"type\":\"fixed\",\"value\":30},\"enable_elastic_disk\":{\"type\":\"fixed\",\"value\":true}}"
+    "policy_family_definition_overrides": "{\"autotermination_minutes\":{\"type\":\"fixed\",\"value\":30},\"enable_elastic_disk\":{\"type\":\"fixed\",\"value\":true}}",
+    "policy_family_id": "personal-vm"
   }
 }
 

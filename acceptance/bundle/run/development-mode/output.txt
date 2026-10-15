@@ -37,8 +37,8 @@ Update ID: [UUID]
   "method": "POST",
   "path": "/api/2.0/pipelines/[UUID]/updates",
   "body": {
-    "pipeline_id": "[UUID]",
-    "development": true
+    "development": true,
+    "pipeline_id": "[UUID]"
   }
 }
 
@@ -62,8 +62,8 @@ Pipeline configurations for this update:
   "method": "POST",
   "path": "/api/2.0/pipelines/[UUID]/updates",
   "body": {
-    "pipeline_id": "[UUID]",
-    "development": true
+    "development": true,
+    "pipeline_id": "[UUID]"
   }
 }
 

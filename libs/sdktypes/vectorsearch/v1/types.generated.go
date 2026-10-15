@@ -8,6 +8,7 @@ import (
 	sdk "github.com/databricks/sdk-go/vectorsearch/v1"
 
 	types "github.com/databricks/sdk-go/core/types"
+	strings "strings"
 )
 
 type (
@@ -673,15 +674,15 @@ func CreateVectorIndexRequestToSDK(w *CreateVectorIndexRequest) (*sdk.CreateVect
 	out.PrimaryKey = w.PrimaryKey
 	out.IndexType = w.IndexType
 	{
-		members := 0
+		var members []string
 		if w.DirectAccessIndexSpec != nil {
-			members++
+			members = append(members, "direct_access_index_spec")
 		}
 		if w.DeltaSyncIndexSpec != nil {
-			members++
+			members = append(members, "delta_sync_index_spec")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "CreateVectorIndexRequest.IndexSpec")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -956,12 +957,12 @@ func EmbeddingSourceColumnToSDK(w *EmbeddingSourceColumn) (*sdk.EmbeddingSourceC
 	out := &sdk.EmbeddingSourceColumn{}
 	out.Name = w.Name
 	{
-		members := 0
+		var members []string
 		if w.EmbeddingModelEndpointName != nil {
-			members++
+			members = append(members, "embedding_model_endpoint_name")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "EmbeddingSourceColumn.EmbeddingConfig")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -1452,15 +1453,15 @@ func MiniVectorIndexToSDK(w *MiniVectorIndex) (*sdk.MiniVectorIndex, error) {
 	out.PrimaryKey = w.PrimaryKey
 	out.IndexType = w.IndexType
 	{
-		members := 0
+		var members []string
 		if w.DirectAccessIndexSpec != nil {
-			members++
+			members = append(members, "direct_access_index_spec")
 		}
 		if w.DeltaSyncIndexSpec != nil {
-			members++
+			members = append(members, "delta_sync_index_spec")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "MiniVectorIndex.IndexSpec")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2144,24 +2145,24 @@ func ValueToSDK(w *Value) (*sdk.Value, error) {
 	}
 	out := &sdk.Value{}
 	{
-		members := 0
+		var members []string
 		if w.NumberValue != nil {
-			members++
+			members = append(members, "number_value")
 		}
 		if w.StringValue != nil {
-			members++
+			members = append(members, "string_value")
 		}
 		if w.BoolValue != nil {
-			members++
+			members = append(members, "bool_value")
 		}
 		if w.StructValue != nil {
-			members++
+			members = append(members, "struct_value")
 		}
 		if w.ListValue != nil {
-			members++
+			members = append(members, "list_value")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "Value.Kind")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2237,15 +2238,15 @@ func VectorIndexToSDK(w *VectorIndex) (*sdk.VectorIndex, error) {
 	out.PrimaryKey = w.PrimaryKey
 	out.IndexType = w.IndexType
 	{
-		members := 0
+		var members []string
 		if w.DirectAccessIndexSpec != nil {
-			members++
+			members = append(members, "direct_access_index_spec")
 		}
 		if w.DeltaSyncIndexSpec != nil {
-			members++
+			members = append(members, "delta_sync_index_spec")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "VectorIndex.IndexSpec")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

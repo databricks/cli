@@ -24,7 +24,6 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
     "branch_id": "production",
     "current_state": "READY",
     "default": true,
-    "is_protected": false,
     "state_change_time": "[TIMESTAMP]"
   },
   "uid": "[BRANCH_UID]"

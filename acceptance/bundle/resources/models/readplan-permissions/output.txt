@@ -12,22 +12,22 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "method": "PUT",
   "path": "/api/2.0/permissions/registered-models/[MODEL_ID]",
   "body": {
-    "request_object_type": "registered-models",
-    "request_object_id": "[MODEL_ID]",
     "access_control_list": [
       {
-        "user_name": "viewer@example.com",
-        "permission_level": "CAN_READ"
+        "permission_level": "CAN_READ",
+        "user_name": "viewer@example.com"
       },
       {
-        "user_name": "manager@example.test",
-        "permission_level": "CAN_MANAGE"
+        "permission_level": "CAN_MANAGE",
+        "user_name": "manager@example.test"
       },
       {
-        "user_name": "[USERNAME]",
-        "permission_level": "CAN_MANAGE"
+        "permission_level": "CAN_MANAGE",
+        "user_name": "[USERNAME]"
       }
-    ]
+    ],
+    "request_object_id": "[MODEL_ID]",
+    "request_object_type": "registered-models"
   }
 }
 
@@ -42,18 +42,18 @@ Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
   "method": "PUT",
   "path": "/api/2.0/permissions/registered-models/[MODEL_ID]",
   "body": {
-    "request_object_type": "registered-models",
-    "request_object_id": "[MODEL_ID]",
     "access_control_list": [
       {
-        "user_name": "viewer@example.com",
-        "permission_level": "CAN_READ"
+        "permission_level": "CAN_READ",
+        "user_name": "viewer@example.com"
       },
       {
-        "user_name": "[USERNAME]",
-        "permission_level": "CAN_MANAGE"
+        "permission_level": "CAN_MANAGE",
+        "user_name": "[USERNAME]"
       }
-    ]
+    ],
+    "request_object_id": "[MODEL_ID]",
+    "request_object_type": "registered-models"
   }
 }
 

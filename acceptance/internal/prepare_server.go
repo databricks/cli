@@ -333,8 +333,8 @@ func getLoggedRequest(req *testserver.Request, includedHeaders []string) LoggedR
 		}
 	}
 
-	if json.Valid(req.Body) {
-		result.Body = json.RawMessage(req.Body)
+	if body, ok := sortedJSON(req.Body); ok {
+		result.Body = body
 	} else if normalized, ok := normalizeMultipartBody(req); ok {
 		// Multipart bodies contain a randomly generated boundary string and binary
 		// content; record a normalized form (sorted form-field names with sizes for
@@ -345,6 +345,22 @@ func getLoggedRequest(req *testserver.Request, includedHeaders []string) LoggedR
 	}
 
 	return result
+}
+
+// sortedJSON decodes a JSON body so that it is recorded with sorted object
+// keys. Key order on the wire depends on the SDK's field declaration order,
+// which carries no meaning and would only add noise to recorded requests.
+func sortedJSON(data []byte) (any, bool) {
+	if !json.Valid(data) {
+		return nil, false
+	}
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	var v any
+	if err := dec.Decode(&v); err != nil {
+		return nil, false
+	}
+	return v, true
 }
 
 // Multipart parts larger than this limit are summarized as a size placeholder

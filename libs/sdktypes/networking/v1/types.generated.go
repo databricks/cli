@@ -1933,12 +1933,12 @@ func CreatePrivateEndpointRuleToSDK(w *CreatePrivateEndpointRule) (*sdk.CreatePr
 	out.VpcEndpointId = w.VpcEndpointId
 	out.Enabled = w.Enabled
 	{
-		members := 0
+		var members []string
 		if w.GcpEndpoint != nil {
-			members++
+			members = append(members, "gcp_endpoint")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "CreatePrivateEndpointRule.Endpoint")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -1999,12 +1999,12 @@ func CreateVpcEndpointRequestToSDK(w *CreateVpcEndpointRequest) (*sdk.CreateVpcE
 	out.Region = w.Region
 	out.AwsVpcEndpointId = w.AwsVpcEndpointId
 	{
-		members := 0
+		var members []string
 		if w.GcpVpcEndpointInfo != nil {
-			members++
+			members = append(members, "gcp_vpc_endpoint_info")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "CreateVpcEndpointRequest.VpcEndpointInfo")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2321,18 +2321,18 @@ func EndpointToSDK(w *Endpoint) (*sdk.Endpoint, error) {
 	out.Region = w.Region
 	out.State = w.State
 	{
-		members := 0
+		var members []string
 		if w.AzurePrivateEndpointInfo != nil {
-			members++
+			members = append(members, "azure_private_endpoint_info")
 		}
 		if w.AwsVpcEndpointInfo != nil {
-			members++
+			members = append(members, "aws_vpc_endpoint_info")
 		}
 		if w.GcpPscEndpointInfo != nil {
-			members++
+			members = append(members, "gcp_psc_endpoint_info")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "Endpoint.EndpointInfo")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2410,18 +2410,18 @@ func GcpEndpointToSDK(w *GcpEndpoint) (*sdk.GcpEndpoint, error) {
 	out := &sdk.GcpEndpoint{}
 	out.PscEndpointUri = w.PscEndpointUri
 	{
-		members := 0
+		var members []string
 		if w.ServiceAttachment != nil {
-			members++
+			members = append(members, "service_attachment")
 		}
 		if w.GoogleApiEndpoints != nil {
-			members++
+			members = append(members, "google_api_endpoints")
 		}
 		if w.AllVpcScServices != nil {
-			members++
+			members = append(members, "all_vpc_sc_services")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "GcpEndpoint.TargetServices")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2908,15 +2908,15 @@ func IngressNetworkPolicy_CrossWorkspaceRequestOriginToSDK(w *IngressNetworkPoli
 	}
 	out := &sdk.IngressNetworkPolicy_CrossWorkspaceRequestOrigin{}
 	{
-		members := 0
+		var members []string
 		if w.AllSourceWorkspaces != nil {
-			members++
+			members = append(members, "all_source_workspaces")
 		}
 		if w.SelectedWorkspaces != nil {
-			members++
+			members = append(members, "selected_workspaces")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "IngressNetworkPolicy_CrossWorkspaceRequestOrigin.Source")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3112,21 +3112,21 @@ func IngressNetworkPolicy_PrivateRequestOriginToSDK(w *IngressNetworkPolicy_Priv
 	}
 	out := &sdk.IngressNetworkPolicy_PrivateRequestOrigin{}
 	{
-		members := 0
+		var members []string
 		if w.Endpoints != nil {
-			members++
+			members = append(members, "endpoints")
 		}
 		if w.AllRegisteredEndpoints != nil {
-			members++
+			members = append(members, "all_registered_endpoints")
 		}
 		if w.AzureWorkspacePrivateLink != nil {
-			members++
+			members = append(members, "azure_workspace_private_link")
 		}
 		if w.AllPrivateAccess != nil {
-			members++
+			members = append(members, "all_private_access")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "IngressNetworkPolicy_PrivateRequestOrigin.Source")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3274,18 +3274,18 @@ func IngressNetworkPolicy_PublicRequestOriginToSDK(w *IngressNetworkPolicy_Publi
 	}
 	out := &sdk.IngressNetworkPolicy_PublicRequestOrigin{}
 	{
-		members := 0
+		var members []string
 		if w.AllIpRanges != nil {
-			members++
+			members = append(members, "all_ip_ranges")
 		}
 		if w.IncludedIpRanges != nil {
-			members++
+			members = append(members, "included_ip_ranges")
 		}
 		if w.ExcludedIpRanges != nil {
-			members++
+			members = append(members, "excluded_ip_ranges")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "IngressNetworkPolicy_PublicRequestOrigin.Source")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3822,12 +3822,12 @@ func NccPrivateEndpointRuleToSDK(w *NccPrivateEndpointRule) (*sdk.NccPrivateEndp
 	out.VpcEndpointId = w.VpcEndpointId
 	out.Enabled = w.Enabled
 	{
-		members := 0
+		var members []string
 		if w.GcpEndpoint != nil {
-			members++
+			members = append(members, "gcp_endpoint")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "NccPrivateEndpointRule.Endpoint")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3908,12 +3908,12 @@ func NetworkToSDK(w *Network) (*sdk.Network, error) {
 	}
 	out.VpcEndpoints = conv137
 	{
-		members := 0
+		var members []string
 		if w.GcpNetworkInfo != nil {
-			members++
+			members = append(members, "gcp_network_info")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "Network.NetworkInfo")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -4630,12 +4630,12 @@ func UpdatePrivateEndpointRuleToSDK(w *UpdatePrivateEndpointRule) (*sdk.UpdatePr
 	out.VpcEndpointId = w.VpcEndpointId
 	out.Enabled = w.Enabled
 	{
-		members := 0
+		var members []string
 		if w.GcpEndpoint != nil {
-			members++
+			members = append(members, "gcp_endpoint")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "UpdatePrivateEndpointRule.Endpoint")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -4733,12 +4733,12 @@ func VpcEndpointToSDK(w *VpcEndpoint) (*sdk.VpcEndpoint, error) {
 	out.AwsAccountId = w.AwsAccountId
 	out.State = w.State
 	{
-		members := 0
+		var members []string
 		if w.GcpVpcEndpointInfo != nil {
-			members++
+			members = append(members, "gcp_vpc_endpoint_info")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "VpcEndpoint.VpcEndpointInfo")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

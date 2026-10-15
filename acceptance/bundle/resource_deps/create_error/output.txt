@@ -12,17 +12,17 @@ Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
-    "name": "foo",
-    "description": "INJECT_ERROR",
-    "max_concurrent_runs": 1,
-    "format": "MULTI_TASK",
-    "queue": {
-      "enabled": true
-    },
-    "edit_mode": "UI_LOCKED",
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "description": "INJECT_ERROR",
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "foo",
+    "queue": {
+      "enabled": true
     }
   }
 }
@@ -30,17 +30,17 @@ Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
-    "name": "independent",
-    "description": "should be deployed anyway",
-    "max_concurrent_runs": 1,
-    "format": "MULTI_TASK",
-    "queue": {
-      "enabled": true
-    },
-    "edit_mode": "UI_LOCKED",
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "description": "should be deployed anyway",
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "independent",
+    "queue": {
+      "enabled": true
     }
   }
 }
@@ -80,17 +80,17 @@ Plan: 3 to add, 0 to change, 0 to delete, 1 unchanged
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
-    "name": "foo",
-    "description": "INJECT_ERROR",
-    "max_concurrent_runs": 1,
-    "format": "MULTI_TASK",
-    "queue": {
-      "enabled": true
-    },
-    "edit_mode": "UI_LOCKED",
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "description": "INJECT_ERROR",
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "foo",
+    "queue": {
+      "enabled": true
     }
   }
 }

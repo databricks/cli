@@ -26,11 +26,11 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.1/unity-catalog/volumes",
   "body": {
-    "name": "myvolume",
     "catalog_name": "main",
+    "comment": "COMMENT1",
+    "name": "myvolume",
     "schema_name": "myschema",
-    "volume_type": "MANAGED",
-    "comment": "COMMENT1"
+    "volume_type": "MANAGED"
   }
 }
 
@@ -81,8 +81,8 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "method": "PATCH",
   "path": "/api/2.1/unity-catalog/volumes/main.myschema.myvolume",
   "body": {
-    "full_name_arg": "main.myschema.myvolume",
-    "comment": "COMMENT2"
+    "comment": "COMMENT2",
+    "full_name_arg": "main.myschema.myvolume"
   }
 }
 

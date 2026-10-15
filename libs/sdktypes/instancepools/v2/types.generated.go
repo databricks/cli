@@ -5,6 +5,7 @@ package instancepools
 import (
 	fmt "fmt"
 	sdk "github.com/databricks/sdk-go/instancepools/v2"
+	strings "strings"
 )
 
 type (
@@ -772,15 +773,15 @@ func DiskTypeToSDK(w *DiskType) (*sdk.DiskType, error) {
 	}
 	out := &sdk.DiskType{}
 	{
-		members := 0
+		var members []string
 		if w.EbsVolumeType != "" {
-			members++
+			members = append(members, "ebs_volume_type")
 		}
 		if w.AzureDiskVolumeType != "" {
-			members++
+			members = append(members, "azure_disk_volume_type")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "DiskType.RemoteVolumeType")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -841,12 +842,12 @@ func DockerImageToSDK(w *DockerImage) (*sdk.DockerImage, error) {
 	out := &sdk.DockerImage{}
 	out.Url = w.Url
 	{
-		members := 0
+		var members []string
 		if w.BasicAuth != nil {
-			members++
+			members = append(members, "basic_auth")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "DockerImage.CredsOneof")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

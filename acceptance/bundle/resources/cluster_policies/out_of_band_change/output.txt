@@ -31,9 +31,9 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/policies/clusters/edit",
   "body": {
-    "policy_id": "[TEST_CLUSTER_POLICY_ID]",
+    "definition": "{\"spark_version\":{\"type\":\"fixed\",\"value\":\"13.3.x-scala2.12\"}}",
     "name": "my_cluster_policy_oob-[UNIQUE_NAME]",
-    "definition": "{\"spark_version\":{\"type\":\"fixed\",\"value\":\"13.3.x-scala2.12\"}}"
+    "policy_id": "[TEST_CLUSTER_POLICY_ID]"
   }
 }
 

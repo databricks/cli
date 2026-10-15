@@ -2,16 +2,16 @@
   "method": "POST",
   "path": "/api/2.1/unity-catalog/schemas",
   "body": {
-    "name": "myschema-[UNIQUE_NAME]",
-    "catalog_name": "main"
+    "catalog_name": "main",
+    "name": "myschema-[UNIQUE_NAME]"
   }
 }
 {
   "method": "POST",
   "path": "/api/2.1/unity-catalog/volumes",
   "body": {
-    "name": "volumebar-[UNIQUE_NAME]",
     "catalog_name": "main",
+    "name": "volumebar-[UNIQUE_NAME]",
     "schema_name": "myschema-[UNIQUE_NAME]",
     "volume_type": "MANAGED"
   }
@@ -20,10 +20,10 @@
   "method": "POST",
   "path": "/api/2.1/unity-catalog/volumes",
   "body": {
-    "name": "volumefoo-[UNIQUE_NAME]",
     "catalog_name": "main",
+    "comment": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]",
+    "name": "volumefoo-[UNIQUE_NAME]",
     "schema_name": "myschema-[UNIQUE_NAME]",
-    "volume_type": "MANAGED",
-    "comment": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
+    "volume_type": "MANAGED"
   }
 }

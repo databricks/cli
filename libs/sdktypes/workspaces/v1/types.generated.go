@@ -278,12 +278,12 @@ func CloudResourceContainerToSDK(w *CloudResourceContainer) (*sdk.CloudResourceC
 	}
 	out := &sdk.CloudResourceContainer{}
 	{
-		members := 0
+		var members []string
 		if w.Gcp != nil {
-			members++
+			members = append(members, "gcp")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "CloudResourceContainer.CloudResourceContainer")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -535,15 +535,15 @@ func WorkspaceToSDK(w *Workspace) (*sdk.Workspace, error) {
 	out.StorageConfigurationId = w.StorageConfigurationId
 	out.WorkspaceStatusMessage = w.WorkspaceStatusMessage
 	{
-		members := 0
+		var members []string
 		if w.NetworkId != nil {
-			members++
+			members = append(members, "network_id")
 		}
 		if w.GcpManagedNetworkConfig != nil {
-			members++
+			members = append(members, "gcp_managed_network_config")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "Workspace.NetworkConfig")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -661,15 +661,15 @@ func WorkspaceNetworkToSDK(w *WorkspaceNetwork) (*sdk.WorkspaceNetwork, error) {
 	}
 	out := &sdk.WorkspaceNetwork{}
 	{
-		members := 0
+		var members []string
 		if w.GcpManagedNetworkConfig != nil {
-			members++
+			members = append(members, "gcp_managed_network_config")
 		}
 		if w.NetworkId != nil {
-			members++
+			members = append(members, "network_id")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "WorkspaceNetwork.Network")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

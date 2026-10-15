@@ -10,9 +10,9 @@
   "path": "/api/2.0/lakeview/dashboards",
   "body": {
     "display_name": "test dashboard",
-    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-serialized-dashboard-[UNIQUE_NAME]/default/resources",
     "serialized_dashboard": "{\"pages\":[{\"name\":\"name1\",\"displayName\":\"name1\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n",
-    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-serialized-dashboard-[UNIQUE_NAME]/default/resources"
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }
 }
 {

@@ -1,18 +1,18 @@
 {
   "empty_string": {
-    "embed_credentials": false,
-    "parent_path": "/Workspace"
+    "embed_credentials": null,
+    "parent_path": "/Workspace/foo/bar"
   },
   "neither_parent_path_nor_embed_credentials": {
-    "embed_credentials": false,
+    "embed_credentials": null,
     "parent_path": "/Workspace/foo/bar"
   },
   "non_empty_string": {
-    "embed_credentials": false,
+    "embed_credentials": null,
     "parent_path": "/Workspace/already-set"
   },
   "other_fields": {
-    "embed_credentials": false,
+    "embed_credentials": null,
     "parent_path": "/Workspace/foo/bar"
   },
   "set_to_true": {

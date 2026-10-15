@@ -23,8 +23,8 @@ You can access the app at my-immutable-app-123.cloud.databricksapps.com
     "no_compute": "true"
   },
   "body": {
-    "name": "my-immutable-app",
-    "description": ""
+    "description": "",
+    "name": "my-immutable-app"
   }
 }
 {
@@ -38,7 +38,7 @@ You can access the app at my-immutable-app-123.cloud.databricksapps.com
   "method": "POST",
   "path": "/api/2.0/apps/my-immutable-app/deployments",
   "body": {
-    "source_code_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/files/app",
-    "mode": "SNAPSHOT"
+    "mode": "SNAPSHOT",
+    "source_code_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/files/app"
   }
 }

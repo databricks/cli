@@ -2807,15 +2807,15 @@ func ClusterInfoToSDK(w *ClusterInfo) (*sdk.ClusterInfo, error) {
 	out.LastStateLossTime = w.LastStateLossTime
 	out.LastRestartedTime = w.LastRestartedTime
 	{
-		members := 0
+		var members []string
 		if w.NumWorkers != nil {
-			members++
+			members = append(members, "num_workers")
 		}
 		if w.Autoscale != nil {
-			members++
+			members = append(members, "autoscale")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ClusterInfo.Size")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3036,15 +3036,15 @@ func ClusterInfo_ComputeSpecToSDK(w *ClusterInfo_ComputeSpec) (*sdk.ClusterInfo_
 	out.TotalInitialRemoteDiskSize = w.TotalInitialRemoteDiskSize
 	out.DependencyMode = w.DependencyMode
 	{
-		members := 0
+		var members []string
 		if w.NumWorkers != nil {
-			members++
+			members = append(members, "num_workers")
 		}
 		if w.Autoscale != nil {
-			members++
+			members = append(members, "autoscale")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ClusterInfo_ComputeSpec.Size")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3159,18 +3159,18 @@ func ClusterLogConfToSDK(w *ClusterLogConf) (*sdk.ClusterLogConf, error) {
 	}
 	out := &sdk.ClusterLogConf{}
 	{
-		members := 0
+		var members []string
 		if w.Dbfs != nil {
-			members++
+			members = append(members, "dbfs")
 		}
 		if w.S3 != nil {
-			members++
+			members = append(members, "s3")
 		}
 		if w.Volumes != nil {
-			members++
+			members = append(members, "volumes")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ClusterLogConf.StorageInfo")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3238,15 +3238,15 @@ func ClusterSizeToSDK(w *ClusterSize) (*sdk.ClusterSize, error) {
 	}
 	out := &sdk.ClusterSize{}
 	{
-		members := 0
+		var members []string
 		if w.NumWorkers != nil {
-			members++
+			members = append(members, "num_workers")
 		}
 		if w.Autoscale != nil {
-			members++
+			members = append(members, "autoscale")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ClusterSize.Size")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3298,15 +3298,15 @@ func CreateClusterRequestToSDK(w *CreateClusterRequest) (*sdk.CreateClusterReque
 	}
 	out.CloneFrom = conv85
 	{
-		members := 0
+		var members []string
 		if w.NumWorkers != nil {
-			members++
+			members = append(members, "num_workers")
 		}
 		if w.Autoscale != nil {
-			members++
+			members = append(members, "autoscale")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "CreateClusterRequest.Size")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3603,12 +3603,12 @@ func DockerImageToSDK(w *DockerImage) (*sdk.DockerImage, error) {
 	out := &sdk.DockerImage{}
 	out.Url = w.Url
 	{
-		members := 0
+		var members []string
 		if w.BasicAuth != nil {
-			members++
+			members = append(members, "basic_auth")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "DockerImage.CredsOneof")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3651,15 +3651,15 @@ func EditClusterRequestToSDK(w *EditClusterRequest) (*sdk.EditClusterRequest, er
 	out.ClusterId = w.ClusterId
 	out.ApplyPolicyDefaultValues = w.ApplyPolicyDefaultValues
 	{
-		members := 0
+		var members []string
 		if w.NumWorkers != nil {
-			members++
+			members = append(members, "num_workers")
 		}
 		if w.Autoscale != nil {
-			members++
+			members = append(members, "autoscale")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "EditClusterRequest.Size")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3967,15 +3967,15 @@ func EnforcePolicyComplianceForClusterResponse_ClusterSettingsToSDK(w *EnforcePo
 	out.TotalInitialRemoteDiskSize = w.TotalInitialRemoteDiskSize
 	out.DependencyMode = w.DependencyMode
 	{
-		members := 0
+		var members []string
 		if w.NumWorkers != nil {
-			members++
+			members = append(members, "num_workers")
 		}
 		if w.Autoscale != nil {
-			members++
+			members = append(members, "autoscale")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.Size")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -4457,30 +4457,30 @@ func InitScriptEventDetails_InitScriptInfoAndExecutionDetailsToSDK(w *InitScript
 	}
 	out := &sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails{}
 	{
-		members := 0
+		var members []string
 		if w.Dbfs != nil {
-			members++
+			members = append(members, "dbfs")
 		}
 		if w.S3 != nil {
-			members++
+			members = append(members, "s3")
 		}
 		if w.File != nil {
-			members++
+			members = append(members, "file")
 		}
 		if w.Gcs != nil {
-			members++
+			members = append(members, "gcs")
 		}
 		if w.Abfss != nil {
-			members++
+			members = append(members, "abfss")
 		}
 		if w.Workspace != nil {
-			members++
+			members = append(members, "workspace")
 		}
 		if w.Volumes != nil {
-			members++
+			members = append(members, "volumes")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "InitScriptEventDetails_InitScriptInfoAndExecutionDetails.StorageInfo")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -4612,30 +4612,30 @@ func InitScriptInfoToSDK(w *InitScriptInfo) (*sdk.InitScriptInfo, error) {
 	}
 	out := &sdk.InitScriptInfo{}
 	{
-		members := 0
+		var members []string
 		if w.Dbfs != nil {
-			members++
+			members = append(members, "dbfs")
 		}
 		if w.S3 != nil {
-			members++
+			members = append(members, "s3")
 		}
 		if w.File != nil {
-			members++
+			members = append(members, "file")
 		}
 		if w.Gcs != nil {
-			members++
+			members = append(members, "gcs")
 		}
 		if w.Abfss != nil {
-			members++
+			members = append(members, "abfss")
 		}
 		if w.Workspace != nil {
-			members++
+			members = append(members, "workspace")
 		}
 		if w.Volumes != nil {
-			members++
+			members = append(members, "volumes")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "InitScriptInfo.StorageInfo")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -5228,15 +5228,15 @@ func ResizeClusterRequestToSDK(w *ResizeClusterRequest) (*sdk.ResizeClusterReque
 	out := &sdk.ResizeClusterRequest{}
 	out.ClusterId = w.ClusterId
 	{
-		members := 0
+		var members []string
 		if w.NumWorkers != nil {
-			members++
+			members = append(members, "num_workers")
 		}
 		if w.Autoscale != nil {
-			members++
+			members = append(members, "autoscale")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ResizeClusterRequest.Size")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -5519,15 +5519,15 @@ func UpdateClusterRequest_UpdateClusterResourceToSDK(w *UpdateClusterRequest_Upd
 	}
 	out := &sdk.UpdateClusterRequest_UpdateClusterResource{}
 	{
-		members := 0
+		var members []string
 		if w.NumWorkers != nil {
-			members++
+			members = append(members, "num_workers")
 		}
 		if w.Autoscale != nil {
-			members++
+			members = append(members, "autoscale")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "UpdateClusterRequest_UpdateClusterResource.Size")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

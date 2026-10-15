@@ -221,6 +221,7 @@ func generate(outRoot, pkg string) error {
 		aliasSet[a] = true
 	}
 	mirrorFields := map[string][][2]string{}
+	jsonNames := map[string]map[string]string{}
 	for _, d := range decls {
 		rewrite(d, wireToModel, funcRename, m.decls, aliasSet)
 		gd := d.(*ast.GenDecl)
@@ -233,12 +234,15 @@ func generate(outRoot, pkg string) error {
 			continue
 		}
 		var fields [][2]string
+		names := map[string]string{}
 		for _, f := range st.Fields.List {
 			for _, n := range f.Names {
 				fields = append(fields, [2]string{n.Name, exprString(f.Type)})
+				names[n.Name] = jsonName(f)
 			}
 		}
 		mirrorFields[ts.Name.Name] = fields
+		jsonNames[ts.Name.Name] = names
 	}
 
 	var buf bytes.Buffer
@@ -289,7 +293,7 @@ func generate(outRoot, pkg string) error {
 		}
 		buf.WriteString("\n\n")
 	}
-	buf.WriteString(generateConverters(m, mirrorFields, m.oneofs))
+	buf.WriteString(generateConverters(m, mirrorFields, jsonNames, m.oneofs))
 
 	src, err := pruneImports(buf.Bytes())
 	if err != nil {

@@ -7,8 +7,8 @@
   "body": {
     "spec": {
       "display_name": "Test Project for Endpoint Update",
-      "pg_version": 16,
-      "history_retention_duration": "604800s"
+      "history_retention_duration": "604800s",
+      "pg_version": 16
     }
   }
 }
@@ -32,9 +32,9 @@
   },
   "body": {
     "spec": {
-      "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
-      "autoscaling_limit_min_cu": 0.5,
       "autoscaling_limit_max_cu": 8,
+      "autoscaling_limit_min_cu": 0.5,
+      "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
       "suspend_timeout_duration": "300s"
     }
   }

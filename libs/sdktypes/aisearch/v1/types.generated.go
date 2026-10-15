@@ -1008,15 +1008,15 @@ func IndexToSDK(w *Index) (*sdk.Index, error) {
 	out.PrimaryKey = w.PrimaryKey
 	out.IndexType = w.IndexType
 	{
-		members := 0
+		var members []string
 		if w.DirectAccessIndexSpec != nil {
-			members++
+			members = append(members, "direct_access_index_spec")
 		}
 		if w.DeltaSyncIndexSpec != nil {
-			members++
+			members = append(members, "delta_sync_index_spec")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "Index.IndexSpec")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

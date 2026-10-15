@@ -25,11 +25,11 @@ Use --limit <n> to preview more rows.
   "method": "POST",
   "path": "/api/2.0/sql/statements",
   "body": {
-    "statement": "SELECT * FROM `main`.`default`.`people` LIMIT 11",
-    "warehouse_id": "wh-test",
-    "format": "JSON_ARRAY",
     "disposition": "INLINE",
+    "format": "JSON_ARRAY",
+    "on_wait_timeout": "CONTINUE",
+    "statement": "SELECT * FROM `main`.`default`.`people` LIMIT 11",
     "wait_timeout": "10s",
-    "on_wait_timeout": "CONTINUE"
+    "warehouse_id": "wh-test"
   }
 }

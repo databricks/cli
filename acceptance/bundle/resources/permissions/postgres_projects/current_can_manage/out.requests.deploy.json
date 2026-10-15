@@ -19,6 +19,8 @@
         "permission_level": "CAN_MANAGE",
         "user_name": "[USERNAME]"
       }
-    ]
+    ],
+    "request_object_id": "test-project",
+    "request_object_type": "database-projects"
   }
 }

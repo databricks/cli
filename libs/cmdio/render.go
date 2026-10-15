@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/listing"
 	"io"
 	"iter"
@@ -492,6 +493,9 @@ func renderDiagnostics(ctx context.Context, out io.Writer, diags diag.Diagnostic
 		case diag.Recommendation:
 			t = recommendationT
 		}
+
+		d.Summary = apierrs.StripPrefix(d.Summary)
+		d.Detail = apierrs.StripPrefix(d.Detail)
 
 		// Render the diagnostic with the appropriate template.
 		err := t.Execute(out, d)

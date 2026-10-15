@@ -592,27 +592,27 @@ func ToolToSDK(w *Tool) (*sdk.Tool, error) {
 	out.Id = w.Id
 	out.ToolType = w.ToolType
 	{
-		members := 0
+		var members []string
 		if w.GenieSpace != nil {
-			members++
+			members = append(members, "genie_space")
 		}
 		if w.KnowledgeAssistant != nil {
-			members++
+			members = append(members, "knowledge_assistant")
 		}
 		if w.UcFunction != nil {
-			members++
+			members = append(members, "uc_function")
 		}
 		if w.App != nil {
-			members++
+			members = append(members, "app")
 		}
 		if w.Volume != nil {
-			members++
+			members = append(members, "volume")
 		}
 		if w.UcConnection != nil {
-			members++
+			members = append(members, "uc_connection")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "Tool.Spec")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

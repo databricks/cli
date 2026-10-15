@@ -6,6 +6,8 @@ import (
 	fmt "fmt"
 
 	sdk "github.com/databricks/sdk-go/cleanrooms/v1"
+
+	strings "strings"
 )
 
 type (
@@ -912,21 +914,21 @@ func CleanRoomAssetToSDK(w *CleanRoomAsset) (*sdk.CleanRoomAsset, error) {
 	out.Status = w.Status
 	out.OwnerCollaboratorAlias = w.OwnerCollaboratorAlias
 	{
-		members := 0
+		var members []string
 		if w.TableLocalDetails != nil {
-			members++
+			members = append(members, "table_local_details")
 		}
 		if w.VolumeLocalDetails != nil {
-			members++
+			members = append(members, "volume_local_details")
 		}
 		if w.ViewLocalDetails != nil {
-			members++
+			members = append(members, "view_local_details")
 		}
 		if w.ForeignTableLocalDetails != nil {
-			members++
+			members = append(members, "foreign_table_local_details")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "CleanRoomAsset.LocalDetails")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -956,24 +958,24 @@ func CleanRoomAssetToSDK(w *CleanRoomAsset) (*sdk.CleanRoomAsset, error) {
 		out.LocalDetails = &sdk.CleanRoomAsset_LocalDetails_ForeignTableLocalDetails{ForeignTableLocalDetails: *conv8}
 	}
 	{
-		members := 0
+		var members []string
 		if w.Table != nil {
-			members++
+			members = append(members, "table")
 		}
 		if w.Notebook != nil {
-			members++
+			members = append(members, "notebook")
 		}
 		if w.View != nil {
-			members++
+			members = append(members, "view")
 		}
 		if w.ForeignTable != nil {
-			members++
+			members = append(members, "foreign_table")
 		}
 		if w.JarAnalysis != nil {
-			members++
+			members = append(members, "jar_analysis")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "CleanRoomAsset.Details")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -1368,15 +1370,15 @@ func CleanRoomAutoApprovalRuleToSDK(w *CleanRoomAutoApprovalRule) (*sdk.CleanRoo
 	out.RuleId = w.RuleId
 	out.RuleOwnerCollaboratorAlias = w.RuleOwnerCollaboratorAlias
 	{
-		members := 0
+		var members []string
 		if w.AuthorCollaboratorAlias != nil {
-			members++
+			members = append(members, "author_collaborator_alias")
 		}
 		if w.AuthorScope != "" {
-			members++
+			members = append(members, "author_scope")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "CleanRoomAutoApprovalRule.Authors")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -1386,12 +1388,12 @@ func CleanRoomAutoApprovalRuleToSDK(w *CleanRoomAutoApprovalRule) (*sdk.CleanRoo
 		out.Authors = &sdk.CleanRoomAutoApprovalRule_Authors_AuthorScope{AuthorScope: w.AuthorScope}
 	}
 	{
-		members := 0
+		var members []string
 		if w.RunnerCollaboratorAlias != nil {
-			members++
+			members = append(members, "runner_collaborator_alias")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "CleanRoomAutoApprovalRule.Runners")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -1975,15 +1977,15 @@ func CreateCleanRoomAssetReviewRequestToSDK(w *CreateCleanRoomAssetReviewRequest
 	out.Name = w.Name
 	out.AssetType = w.AssetType
 	{
-		members := 0
+		var members []string
 		if w.NotebookReview != nil {
-			members++
+			members = append(members, "notebook_review")
 		}
 		if w.JarAnalysisReview != nil {
-			members++
+			members = append(members, "jar_analysis_review")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "CreateCleanRoomAssetReviewRequest.Review")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2050,15 +2052,15 @@ func CreateCleanRoomAssetReviewResponseToSDK(w *CreateCleanRoomAssetReviewRespon
 	}
 	out.JarAnalysisReviews = conv68
 	{
-		members := 0
+		var members []string
 		if w.NotebookReviewState != "" {
-			members++
+			members = append(members, "notebook_review_state")
 		}
 		if w.JarAnalysisReviewState != "" {
-			members++
+			members = append(members, "jar_analysis_review_state")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "CreateCleanRoomAssetReviewResponse.ReviewState")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2810,15 +2812,15 @@ func PolicyFunctionArgumentToSDK(w *PolicyFunctionArgument) (*sdk.PolicyFunction
 	}
 	out := &sdk.PolicyFunctionArgument{}
 	{
-		members := 0
+		var members []string
 		if w.Column != nil {
-			members++
+			members = append(members, "column")
 		}
 		if w.Constant != nil {
-			members++
+			members = append(members, "constant")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "PolicyFunctionArgument.Arg")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

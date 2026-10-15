@@ -34,10 +34,6 @@ Warning: required field "schema_name" is not set
   at resources.volumes.v1
   in databricks.yml:7:7
 
-Warning: invalid value "" for enum field. Valid values are [EXTERNAL MANAGED]
-  at resources.volumes.v1.volume_type
-  in databricks.yml:7:20
-
 Warning: invalid value "already-set" for enum field. Valid values are [EXTERNAL MANAGED]
   at resources.volumes.v2.volume_type
   in databricks.yml:10:20
@@ -45,7 +41,7 @@ Warning: invalid value "already-set" for enum field. Valid values are [EXTERNAL 
 {
   "v1": {
     "volume_path": "/Volumes///",
-    "volume_type": ""
+    "volume_type": "MANAGED"
   },
   "v2": {
     "volume_path": "/Volumes///",

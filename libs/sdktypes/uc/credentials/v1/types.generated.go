@@ -6,6 +6,8 @@ import (
 	fmt "fmt"
 
 	sdk "github.com/databricks/sdk-go/uc/credentials/v1"
+
+	strings "strings"
 )
 
 type (
@@ -1054,12 +1056,12 @@ func AwsCredentialsToSDK(w *AwsCredentials) (*sdk.AwsCredentials, error) {
 	}
 	out := &sdk.AwsCredentials{}
 	{
-		members := 0
+		var members []string
 		if w.StsRole != nil {
-			members++
+			members = append(members, "sts_role")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "AwsCredentials.Creds")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -1256,27 +1258,27 @@ func CreateAccountsStorageCredentialToSDK(w *CreateAccountsStorageCredential) (*
 	out := &sdk.CreateAccountsStorageCredential{}
 	out.Name = w.Name
 	{
-		members := 0
+		var members []string
 		if w.AwsIamRole != nil {
-			members++
+			members = append(members, "aws_iam_role")
 		}
 		if w.AzureServicePrincipal != nil {
-			members++
+			members = append(members, "azure_service_principal")
 		}
 		if w.GcpServiceAccountKey != nil {
-			members++
+			members = append(members, "gcp_service_account_key")
 		}
 		if w.AzureManagedIdentity != nil {
-			members++
+			members = append(members, "azure_managed_identity")
 		}
 		if w.DatabricksGcpServiceAccount != nil {
-			members++
+			members = append(members, "databricks_gcp_service_account")
 		}
 		if w.CloudflareApiToken != nil {
-			members++
+			members = append(members, "cloudflare_api_token")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "CreateAccountsStorageCredential.Credential")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -1411,12 +1413,12 @@ func CreateCredentialAwsCredentialsToSDK(w *CreateCredentialAwsCredentials) (*sd
 	}
 	out := &sdk.CreateCredentialAwsCredentials{}
 	{
-		members := 0
+		var members []string
 		if w.StsRole != nil {
-			members++
+			members = append(members, "sts_role")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "CreateCredentialAwsCredentials.Creds")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -1458,27 +1460,27 @@ func CreateCredentialRequestToSDK(w *CreateCredentialRequest) (*sdk.CreateCreden
 	out.SkipValidation = w.SkipValidation
 	out.Name = w.Name
 	{
-		members := 0
+		var members []string
 		if w.AwsIamRole != nil {
-			members++
+			members = append(members, "aws_iam_role")
 		}
 		if w.AzureServicePrincipal != nil {
-			members++
+			members = append(members, "azure_service_principal")
 		}
 		if w.GcpServiceAccountKey != nil {
-			members++
+			members = append(members, "gcp_service_account_key")
 		}
 		if w.AzureManagedIdentity != nil {
-			members++
+			members = append(members, "azure_managed_identity")
 		}
 		if w.DatabricksGcpServiceAccount != nil {
-			members++
+			members = append(members, "databricks_gcp_service_account")
 		}
 		if w.CloudflareApiToken != nil {
-			members++
+			members = append(members, "cloudflare_api_token")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "CreateCredentialRequest.Credential")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -1616,12 +1618,12 @@ func CreateCredentialsRequestToSDK(w *CreateCredentialsRequest) (*sdk.CreateCred
 	out.AccountId = w.AccountId
 	out.CredentialsName = w.CredentialsName
 	{
-		members := 0
+		var members []string
 		if w.AwsCredentials != nil {
-			members++
+			members = append(members, "aws_credentials")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "CreateCredentialsRequest.CloudCredentials")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -1665,27 +1667,27 @@ func CreateStorageCredentialRequestToSDK(w *CreateStorageCredentialRequest) (*sd
 	out.SkipValidation = w.SkipValidation
 	out.Name = w.Name
 	{
-		members := 0
+		var members []string
 		if w.AwsIamRole != nil {
-			members++
+			members = append(members, "aws_iam_role")
 		}
 		if w.AzureServicePrincipal != nil {
-			members++
+			members = append(members, "azure_service_principal")
 		}
 		if w.GcpServiceAccountKey != nil {
-			members++
+			members = append(members, "gcp_service_account_key")
 		}
 		if w.AzureManagedIdentity != nil {
-			members++
+			members = append(members, "azure_managed_identity")
 		}
 		if w.DatabricksGcpServiceAccount != nil {
-			members++
+			members = append(members, "databricks_gcp_service_account")
 		}
 		if w.CloudflareApiToken != nil {
-			members++
+			members = append(members, "cloudflare_api_token")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "CreateStorageCredentialRequest.Credential")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -1822,27 +1824,27 @@ func CredentialInfoToSDK(w *CredentialInfo) (*sdk.CredentialInfo, error) {
 	out := &sdk.CredentialInfo{}
 	out.Name = w.Name
 	{
-		members := 0
+		var members []string
 		if w.AwsIamRole != nil {
-			members++
+			members = append(members, "aws_iam_role")
 		}
 		if w.AzureServicePrincipal != nil {
-			members++
+			members = append(members, "azure_service_principal")
 		}
 		if w.GcpServiceAccountKey != nil {
-			members++
+			members = append(members, "gcp_service_account_key")
 		}
 		if w.AzureManagedIdentity != nil {
-			members++
+			members = append(members, "azure_managed_identity")
 		}
 		if w.DatabricksGcpServiceAccount != nil {
-			members++
+			members = append(members, "databricks_gcp_service_account")
 		}
 		if w.CloudflareApiToken != nil {
-			members++
+			members = append(members, "cloudflare_api_token")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "CredentialInfo.Credential")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -1979,12 +1981,12 @@ func CredentialsToSDK(w *Credentials) (*sdk.Credentials, error) {
 	out.CredentialsId = w.CredentialsId
 	out.AccountId = w.AccountId
 	{
-		members := 0
+		var members []string
 		if w.AwsCredentials != nil {
-			members++
+			members = append(members, "aws_credentials")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "Credentials.CloudCredentials")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2166,24 +2168,24 @@ func GenerateTemporaryPathCredentialResponseToSDK(w *GenerateTemporaryPathCreden
 	}
 	out := &sdk.GenerateTemporaryPathCredentialResponse{}
 	{
-		members := 0
+		var members []string
 		if w.AwsTempCredentials != nil {
-			members++
+			members = append(members, "aws_temp_credentials")
 		}
 		if w.AzureUserDelegationSas != nil {
-			members++
+			members = append(members, "azure_user_delegation_sas")
 		}
 		if w.GcpOauthToken != nil {
-			members++
+			members = append(members, "gcp_oauth_token")
 		}
 		if w.AzureAad != nil {
-			members++
+			members = append(members, "azure_aad")
 		}
 		if w.R2TempCredentials != nil {
-			members++
+			members = append(members, "r2_temp_credentials")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "GenerateTemporaryPathCredentialResponse.Credentials")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2284,15 +2286,15 @@ func GenerateTemporaryServiceCredentialRequestToSDK(w *GenerateTemporaryServiceC
 	out := &sdk.GenerateTemporaryServiceCredentialRequest{}
 	out.CredentialName = w.CredentialName
 	{
-		members := 0
+		var members []string
 		if w.AzureOptions != nil {
-			members++
+			members = append(members, "azure_options")
 		}
 		if w.GcpOptions != nil {
-			members++
+			members = append(members, "gcp_options")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "GenerateTemporaryServiceCredentialRequest.Options")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2409,24 +2411,24 @@ func GenerateTemporaryTableCredentialResponseToSDK(w *GenerateTemporaryTableCred
 	}
 	out := &sdk.GenerateTemporaryTableCredentialResponse{}
 	{
-		members := 0
+		var members []string
 		if w.AwsTempCredentials != nil {
-			members++
+			members = append(members, "aws_temp_credentials")
 		}
 		if w.AzureUserDelegationSas != nil {
-			members++
+			members = append(members, "azure_user_delegation_sas")
 		}
 		if w.GcpOauthToken != nil {
-			members++
+			members = append(members, "gcp_oauth_token")
 		}
 		if w.AzureAad != nil {
-			members++
+			members = append(members, "azure_aad")
 		}
 		if w.R2TempCredentials != nil {
-			members++
+			members = append(members, "r2_temp_credentials")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "GenerateTemporaryTableCredentialResponse.Credentials")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2548,24 +2550,24 @@ func GenerateTemporaryVolumeCredentialResponseToSDK(w *GenerateTemporaryVolumeCr
 	}
 	out := &sdk.GenerateTemporaryVolumeCredentialResponse{}
 	{
-		members := 0
+		var members []string
 		if w.AwsTempCredentials != nil {
-			members++
+			members = append(members, "aws_temp_credentials")
 		}
 		if w.AzureUserDelegationSas != nil {
-			members++
+			members = append(members, "azure_user_delegation_sas")
 		}
 		if w.GcpOauthToken != nil {
-			members++
+			members = append(members, "gcp_oauth_token")
 		}
 		if w.AzureAad != nil {
-			members++
+			members = append(members, "azure_aad")
 		}
 		if w.R2TempCredentials != nil {
-			members++
+			members = append(members, "r2_temp_credentials")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "GenerateTemporaryVolumeCredentialResponse.Credentials")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2798,27 +2800,27 @@ func StorageCredentialInfoToSDK(w *StorageCredentialInfo) (*sdk.StorageCredentia
 	out := &sdk.StorageCredentialInfo{}
 	out.Name = w.Name
 	{
-		members := 0
+		var members []string
 		if w.AwsIamRole != nil {
-			members++
+			members = append(members, "aws_iam_role")
 		}
 		if w.AzureServicePrincipal != nil {
-			members++
+			members = append(members, "azure_service_principal")
 		}
 		if w.GcpServiceAccountKey != nil {
-			members++
+			members = append(members, "gcp_service_account_key")
 		}
 		if w.AzureManagedIdentity != nil {
-			members++
+			members = append(members, "azure_managed_identity")
 		}
 		if w.DatabricksGcpServiceAccount != nil {
-			members++
+			members = append(members, "databricks_gcp_service_account")
 		}
 		if w.CloudflareApiToken != nil {
-			members++
+			members = append(members, "cloudflare_api_token")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "StorageCredentialInfo.Credential")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2979,24 +2981,24 @@ func TemporaryCredentialsToSDK(w *TemporaryCredentials) (*sdk.TemporaryCredentia
 	}
 	out := &sdk.TemporaryCredentials{}
 	{
-		members := 0
+		var members []string
 		if w.AwsTempCredentials != nil {
-			members++
+			members = append(members, "aws_temp_credentials")
 		}
 		if w.AzureUserDelegationSas != nil {
-			members++
+			members = append(members, "azure_user_delegation_sas")
 		}
 		if w.GcpOauthToken != nil {
-			members++
+			members = append(members, "gcp_oauth_token")
 		}
 		if w.AzureAad != nil {
-			members++
+			members = append(members, "azure_aad")
 		}
 		if w.R2TempCredentials != nil {
-			members++
+			members = append(members, "r2_temp_credentials")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "TemporaryCredentials.Credentials")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3097,27 +3099,27 @@ func UpdateAccountsStorageCredentialToSDK(w *UpdateAccountsStorageCredential) (*
 	out := &sdk.UpdateAccountsStorageCredential{}
 	out.Name = w.Name
 	{
-		members := 0
+		var members []string
 		if w.AwsIamRole != nil {
-			members++
+			members = append(members, "aws_iam_role")
 		}
 		if w.AzureServicePrincipal != nil {
-			members++
+			members = append(members, "azure_service_principal")
 		}
 		if w.GcpServiceAccountKey != nil {
-			members++
+			members = append(members, "gcp_service_account_key")
 		}
 		if w.AzureManagedIdentity != nil {
-			members++
+			members = append(members, "azure_managed_identity")
 		}
 		if w.DatabricksGcpServiceAccount != nil {
-			members++
+			members = append(members, "databricks_gcp_service_account")
 		}
 		if w.CloudflareApiToken != nil {
-			members++
+			members = append(members, "cloudflare_api_token")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "UpdateAccountsStorageCredential.Credential")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3257,27 +3259,27 @@ func UpdateCredentialRequestToSDK(w *UpdateCredentialRequest) (*sdk.UpdateCreden
 	out.Force = w.Force
 	out.Name = w.Name
 	{
-		members := 0
+		var members []string
 		if w.AwsIamRole != nil {
-			members++
+			members = append(members, "aws_iam_role")
 		}
 		if w.AzureServicePrincipal != nil {
-			members++
+			members = append(members, "azure_service_principal")
 		}
 		if w.GcpServiceAccountKey != nil {
-			members++
+			members = append(members, "gcp_service_account_key")
 		}
 		if w.AzureManagedIdentity != nil {
-			members++
+			members = append(members, "azure_managed_identity")
 		}
 		if w.DatabricksGcpServiceAccount != nil {
-			members++
+			members = append(members, "databricks_gcp_service_account")
 		}
 		if w.CloudflareApiToken != nil {
-			members++
+			members = append(members, "cloudflare_api_token")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "UpdateCredentialRequest.Credential")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3421,27 +3423,27 @@ func UpdateStorageCredentialRequestToSDK(w *UpdateStorageCredentialRequest) (*sd
 	out.Force = w.Force
 	out.Name = w.Name
 	{
-		members := 0
+		var members []string
 		if w.AwsIamRole != nil {
-			members++
+			members = append(members, "aws_iam_role")
 		}
 		if w.AzureServicePrincipal != nil {
-			members++
+			members = append(members, "azure_service_principal")
 		}
 		if w.GcpServiceAccountKey != nil {
-			members++
+			members = append(members, "gcp_service_account_key")
 		}
 		if w.AzureManagedIdentity != nil {
-			members++
+			members = append(members, "azure_managed_identity")
 		}
 		if w.DatabricksGcpServiceAccount != nil {
-			members++
+			members = append(members, "databricks_gcp_service_account")
 		}
 		if w.CloudflareApiToken != nil {
-			members++
+			members = append(members, "cloudflare_api_token")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "UpdateStorageCredentialRequest.Credential")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3580,21 +3582,21 @@ func ValidateCredentialRequestToSDK(w *ValidateCredentialRequest) (*sdk.Validate
 	}
 	out := &sdk.ValidateCredentialRequest{}
 	{
-		members := 0
+		var members []string
 		if w.CredentialName != nil {
-			members++
+			members = append(members, "credential_name")
 		}
 		if w.AwsIamRole != nil {
-			members++
+			members = append(members, "aws_iam_role")
 		}
 		if w.AzureManagedIdentity != nil {
-			members++
+			members = append(members, "azure_managed_identity")
 		}
 		if w.DatabricksGcpServiceAccount != nil {
-			members++
+			members = append(members, "databricks_gcp_service_account")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ValidateCredentialRequest.Credential")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3726,27 +3728,27 @@ func ValidateStorageCredentialRequestToSDK(w *ValidateStorageCredentialRequest) 
 	}
 	out := &sdk.ValidateStorageCredentialRequest{}
 	{
-		members := 0
+		var members []string
 		if w.StorageCredentialName != nil {
-			members++
+			members = append(members, "storage_credential_name")
 		}
 		if w.AwsIamRole != nil {
-			members++
+			members = append(members, "aws_iam_role")
 		}
 		if w.AzureServicePrincipal != nil {
-			members++
+			members = append(members, "azure_service_principal")
 		}
 		if w.AzureManagedIdentity != nil {
-			members++
+			members = append(members, "azure_managed_identity")
 		}
 		if w.DatabricksGcpServiceAccount != nil {
-			members++
+			members = append(members, "databricks_gcp_service_account")
 		}
 		if w.CloudflareApiToken != nil {
-			members++
+			members = append(members, "cloudflare_api_token")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ValidateStorageCredentialRequest.Credential")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

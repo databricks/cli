@@ -2,18 +2,18 @@
   "method": "PATCH",
   "path": "/api/2.1/unity-catalog/permissions/mcp_service/main.myschema.myservice",
   "body": {
-    "securable_type": "mcp_service",
-    "securable_full_name": "main.myschema.myservice",
     "changes": [
       {
-        "principal": "deco-test-user@databricks.com",
         "add": [
           "APPLY_TAG"
         ],
+        "principal": "deco-test-user@databricks.com",
         "remove": [
           "ALL_PRIVILEGES"
         ]
       }
-    ]
+    ],
+    "securable_full_name": "main.myschema.myservice",
+    "securable_type": "mcp_service"
   }
 }

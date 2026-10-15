@@ -14,16 +14,16 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "no_compute": "false"
   },
   "body": {
-    "name": "[UNIQUE_NAME]",
-    "description": "my_app_description"
+    "description": "my_app_description",
+    "name": "[UNIQUE_NAME]"
   }
 }
 {
   "method": "POST",
   "path": "/api/2.0/apps/[UNIQUE_NAME]/deployments",
   "body": {
-    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files/app",
-    "mode": "SNAPSHOT"
+    "mode": "SNAPSHOT",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files/app"
   }
 }
 
@@ -44,8 +44,8 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/apps/[UNIQUE_NAME]/deployments",
   "body": {
-    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files/app",
-    "mode": "SNAPSHOT"
+    "mode": "SNAPSHOT",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files/app"
   }
 }
 
@@ -92,11 +92,11 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "path": "/api/2.0/apps/[UNIQUE_NAME]/update",
   "body": {
     "app": {
-      "name": "[UNIQUE_NAME]",
-      "description": "MY_APP_DESCRIPTION_2"
+      "description": "MY_APP_DESCRIPTION_2",
+      "name": "[UNIQUE_NAME]"
     },
-    "update_mask": "budget_policy_id,compute_max_instances,compute_min_instances,compute_size,description,git_repository,resources,telemetry_export_destinations,usage_policy_id,user_api_scopes",
-    "app_name": "[UNIQUE_NAME]"
+    "app_name": "[UNIQUE_NAME]",
+    "update_mask": "budget_policy_id,compute_max_instances,compute_min_instances,compute_size,description,git_repository,resources,telemetry_export_destinations,usage_policy_id,user_api_scopes"
   }
 }
 
@@ -120,11 +120,11 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "path": "/api/2.0/apps/[UNIQUE_NAME]/update",
   "body": {
     "app": {
-      "name": "[UNIQUE_NAME]",
-      "description": "MY_APP_DESCRIPTION_3"
+      "description": "MY_APP_DESCRIPTION_3",
+      "name": "[UNIQUE_NAME]"
     },
-    "update_mask": "budget_policy_id,compute_max_instances,compute_min_instances,compute_size,description,git_repository,resources,telemetry_export_destinations,usage_policy_id,user_api_scopes",
-    "app_name": "[UNIQUE_NAME]"
+    "app_name": "[UNIQUE_NAME]",
+    "update_mask": "budget_policy_id,compute_max_instances,compute_min_instances,compute_size,description,git_repository,resources,telemetry_export_destinations,usage_policy_id,user_api_scopes"
   }
 }
 {
@@ -138,8 +138,8 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/apps/[UNIQUE_NAME]/deployments",
   "body": {
-    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files/app",
-    "mode": "SNAPSHOT"
+    "mode": "SNAPSHOT",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files/app"
   }
 }
 

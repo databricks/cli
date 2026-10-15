@@ -43,9 +43,9 @@ Exit code: 1
   "body": {
     "dashboard_id": "[DASHBOARD1_ID]",
     "display_name": "my dashboard renamed",
-    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/resources",
     "serialized_dashboard": "{\"pages\":[{\"name\":\"test-page\",\"displayName\":\"Test Dashboard\"}]}\n",
-    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/resources"
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }
 }
 {
@@ -138,9 +138,9 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "body": {
     "dashboard_id": "[DASHBOARD1_ID]",
     "display_name": "my dashboard renamed",
-    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/resources",
     "serialized_dashboard": "{\"pages\":[{\"name\":\"test-page\",\"displayName\":\"Test Dashboard\"}]}\n",
-    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/resources"
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }
 }
 {

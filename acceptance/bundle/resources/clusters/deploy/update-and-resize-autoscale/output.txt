@@ -28,15 +28,15 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.1/clusters/edit",
   "body": {
-    "cluster_id": "[CLUSTER_ID]",
     "autoscale": {
-      "min_workers": 2,
-      "max_workers": 4
+      "max_workers": 4,
+      "min_workers": 2
     },
+    "autotermination_minutes": 60,
+    "cluster_id": "[CLUSTER_ID]",
     "cluster_name": "test-cluster-[UNIQUE_NAME]",
-    "spark_version": "13.3.x-snapshot-scala2.12",
     "node_type_id": "[NODE_TYPE_ID]",
-    "autotermination_minutes": 60
+    "spark_version": "13.3.x-snapshot-scala2.12"
   }
 }
 
@@ -62,15 +62,15 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.1/clusters/edit",
   "body": {
-    "cluster_id": "[CLUSTER_ID]",
     "autoscale": {
-      "min_workers": 3,
-      "max_workers": 5
+      "max_workers": 5,
+      "min_workers": 3
     },
+    "autotermination_minutes": 60,
+    "cluster_id": "[CLUSTER_ID]",
     "cluster_name": "test-cluster-[UNIQUE_NAME]",
-    "spark_version": "13.3.x-snapshot-scala2.12",
     "node_type_id": "[NODE_TYPE_ID]",
-    "autotermination_minutes": 60
+    "spark_version": "13.3.x-snapshot-scala2.12"
   }
 }
 
@@ -116,11 +116,11 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.1/clusters/resize",
   "body": {
-    "cluster_id": "[CLUSTER_ID]",
     "autoscale": {
-      "min_workers": 4,
-      "max_workers": 6
-    }
+      "max_workers": 6,
+      "min_workers": 4
+    },
+    "cluster_id": "[CLUSTER_ID]"
   }
 }
 

@@ -4,9 +4,9 @@
   "body": {
     "dashboard_id": "[DASHBOARD_ID]",
     "display_name": "Inline Dash",
-    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-serialized-inline-[UNIQUE_NAME]/default/resources",
     "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Page One\",\"name\":\"page1\"}]}",
-    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-serialized-inline-[UNIQUE_NAME]/default/resources"
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }
 }
 {

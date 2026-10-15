@@ -38,34 +38,34 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged, 2 not selected
   "method": "PATCH",
   "path": "/api/2.1/unity-catalog/permissions/schema/[MY_SCHEMA_ID]",
   "body": {
-    "securable_type": "schema",
-    "securable_full_name": "[MY_SCHEMA_ID]",
     "changes": [
       {
-        "principal": "deco-test-user@databricks.com",
         "add": [
           "ALL_PRIVILEGES"
-        ]
+        ],
+        "principal": "deco-test-user@databricks.com"
       }
-    ]
+    ],
+    "securable_full_name": "[MY_SCHEMA_ID]",
+    "securable_type": "schema"
   }
 }
 {
   "method": "PUT",
   "path": "/api/2.0/permissions/jobs/[MY_JOB_ID]",
   "body": {
-    "request_object_type": "jobs",
-    "request_object_id": "[MY_JOB_ID]",
     "access_control_list": [
       {
-        "user_name": "viewer@example.com",
-        "permission_level": "CAN_VIEW"
+        "permission_level": "CAN_VIEW",
+        "user_name": "viewer@example.com"
       },
       {
-        "user_name": "[USERNAME]",
-        "permission_level": "IS_OWNER"
+        "permission_level": "IS_OWNER",
+        "user_name": "[USERNAME]"
       }
-    ]
+    ],
+    "request_object_id": "[MY_JOB_ID]",
+    "request_object_type": "jobs"
   }
 }
 

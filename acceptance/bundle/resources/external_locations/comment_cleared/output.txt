@@ -27,10 +27,10 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   "method": "PATCH",
   "path": "/api/2.1/unity-catalog/external-locations/myloc",
   "body": {
-    "name_arg": "myloc",
-    "url": "s3://test-bucket/path",
+    "comment": "",
     "credential_name": "test_storage_credential",
-    "comment": ""
+    "name_arg": "myloc",
+    "url": "s3://test-bucket/path"
   }
 }
 

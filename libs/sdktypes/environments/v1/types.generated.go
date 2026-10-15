@@ -432,15 +432,15 @@ func OperationToSDK(w *Operation) (*sdk.Operation, error) {
 	out.Metadata = w.Metadata
 	out.Done = w.Done
 	{
-		members := 0
+		var members []string
 		if w.Error != nil {
-			members++
+			members = append(members, "error")
 		}
 		if w.Response != nil {
-			members++
+			members = append(members, "response")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "Operation.Result")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

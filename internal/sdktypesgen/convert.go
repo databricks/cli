@@ -46,6 +46,9 @@ type converterGen struct {
 	// oneof interface name -> implementations.
 	oneofs map[string][]oneofAlt
 	// Whether a helper is needed in the output.
+	// mirror struct name -> Go field name -> JSON name.
+	jsonNames     map[string]map[string]string
+	curJSON       map[string]string
 	needSlice     bool
 	needFieldMask bool
 	b             strings.Builder
@@ -129,6 +132,7 @@ func (g *converterGen) conv(src, mt, dir, errCtx string) string {
 
 func (g *converterGen) generate(name string) {
 	mst := g.m.structs[name]
+	g.curJSON = g.jsonNames[name]
 	wireFields := map[string]string{}
 	for _, f := range g.mirrorFields[name] {
 		wireFields[f[0]] = f[1]
@@ -186,11 +190,11 @@ func (g *converterGen) oneof(dir, inVar, fname, ctx string, alts []oneofAlt, wir
 		return
 	}
 	if dir == "ToSDK" {
-		g.p("{\nmembers := 0")
+		g.p("{\nvar members []string")
 		for _, a := range present {
-			g.p("if %s {\nmembers++\n}", g.isSet("w."+a.field, a.wireType))
+			g.p("if %s {\nmembers = append(members, %q)\n}", g.isSet("w."+a.field, a.wireType), g.curJSON[a.field])
 		}
-		g.p("if members > 1 {\nreturn nil, fmt.Errorf(\"%%s: multiple oneof members set\", %q)\n}\n}", ctx)
+		g.p("if len(members) > 1 {\nreturn nil, fmt.Errorf(\"only one of %%s can be set\", strings.Join(members, \", \"))\n}\n}")
 		g.p("switch {")
 		for _, a := range present {
 			g.p("case %s:", g.isSet("w."+a.field, a.wireType))
@@ -281,8 +285,8 @@ func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
 	return b.String()
 }
 
-func generateConverters(m *model, mirrorFields map[string][][2]string, oneofs map[string][]oneofAlt) string {
-	g := &converterGen{m: m, mirrorFields: mirrorFields, oneofs: oneofs}
+func generateConverters(m *model, mirrorFields map[string][][2]string, jsonNames map[string]map[string]string, oneofs map[string][]oneofAlt) string {
+	g := &converterGen{m: m, mirrorFields: mirrorFields, jsonNames: jsonNames, oneofs: oneofs}
 	var names []string
 	for n := range mirrorFields {
 		names = append(names, n)

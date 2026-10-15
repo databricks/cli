@@ -417,15 +417,15 @@ func DateRangeValueToSDK(w *DateRangeValue) (*sdk.DateRangeValue, error) {
 	}
 	out := &sdk.DateRangeValue{}
 	{
-		members := 0
+		var members []string
 		if w.DynamicDateRangeValue != "" {
-			members++
+			members = append(members, "dynamic_date_range_value")
 		}
 		if w.DateRangeValue != nil {
-			members++
+			members = append(members, "date_range_value")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "DateRangeValue.Value")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -475,15 +475,15 @@ func DateValueToSDK(w *DateValue) (*sdk.DateValue, error) {
 	}
 	out := &sdk.DateValue{}
 	{
-		members := 0
+		var members []string
 		if w.DynamicDateValue != "" {
-			members++
+			members = append(members, "dynamic_date_value")
 		}
 		if w.DateValue != nil {
-			members++
+			members = append(members, "date_value")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "DateValue.Value")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -857,27 +857,27 @@ func QueryParameterToSDK(w *QueryParameter) (*sdk.QueryParameter, error) {
 	out.Title = w.Title
 	out.Name = w.Name
 	{
-		members := 0
+		var members []string
 		if w.TextValue != nil {
-			members++
+			members = append(members, "text_value")
 		}
 		if w.NumericValue != nil {
-			members++
+			members = append(members, "numeric_value")
 		}
 		if w.EnumValue != nil {
-			members++
+			members = append(members, "enum_value")
 		}
 		if w.DateValue != nil {
-			members++
+			members = append(members, "date_value")
 		}
 		if w.DateRangeValue != nil {
-			members++
+			members = append(members, "date_range_value")
 		}
 		if w.QueryBackedValue != nil {
-			members++
+			members = append(members, "query_backed_value")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "QueryParameter.ParameterValue")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

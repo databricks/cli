@@ -10,9 +10,9 @@
   "path": "/api/2.0/lakeview/dashboards",
   "body": {
     "display_name": "test dashboard",
-    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/resources",
     "serialized_dashboard": "{}\n",
-    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/resources"
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }
 }
 {
@@ -40,9 +40,9 @@
   "path": "/api/2.0/lakeview/dashboards",
   "body": {
     "display_name": "test dashboard",
-    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/resources2",
     "serialized_dashboard": "{}\n",
-    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/resources2"
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }
 }
 {
@@ -57,9 +57,9 @@
   "path": "/api/2.0/lakeview/dashboards",
   "body": {
     "display_name": "test dashboard",
-    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/resources2",
     "serialized_dashboard": "{}\n",
-    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/resources2"
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }
 }
 {

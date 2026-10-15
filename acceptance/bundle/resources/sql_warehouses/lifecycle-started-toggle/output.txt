@@ -11,12 +11,12 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/sql/warehouses",
   "body": {
-    "name": "[UNIQUE_NAME]",
-    "cluster_size": "2X-Small",
-    "max_num_clusters": 1,
     "auto_stop_mins": 10,
-    "spot_instance_policy": "COST_OPTIMIZED",
-    "enable_photon": true
+    "cluster_size": "2X-Small",
+    "enable_photon": true,
+    "max_num_clusters": 1,
+    "name": "[UNIQUE_NAME]",
+    "spot_instance_policy": "COST_OPTIMIZED"
   }
 }
 {

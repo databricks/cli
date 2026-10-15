@@ -25,8 +25,8 @@ You can access the app at data-app-123.cloud.databricksapps.com
     "no_compute": "true"
   },
   "body": {
-    "name": "data-app",
-    "description": "A Streamlit app that uses a SQL warehouse"
+    "description": "A Streamlit app that uses a SQL warehouse",
+    "name": "data-app"
   }
 }
 {
@@ -40,8 +40,6 @@ You can access the app at data-app-123.cloud.databricksapps.com
   "method": "POST",
   "path": "/api/2.0/apps/data-app/deployments",
   "body": {
-    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/resource-refs/default/files/app",
-    "mode": "SNAPSHOT",
     "command": [
       "streamlit",
       "run",
@@ -64,6 +62,8 @@ You can access the app at data-app-123.cloud.databricksapps.com
         "name": "MY_EXAMPLE_VAR",
         "value": "example_value"
       }
-    ]
+    ],
+    "mode": "SNAPSHOT",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/resource-refs/default/files/app"
   }
 }

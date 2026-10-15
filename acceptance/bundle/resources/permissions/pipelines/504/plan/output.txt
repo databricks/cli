@@ -22,7 +22,7 @@ Warn: planning resources.pipelines.foo.permissions: retrying after 504 Gateway T
 Warn: planning resources.pipelines.foo.permissions: retrying after 504 Gateway Timeout from GET /api/2.0/permissions/pipelines/[UUID]
 Error: cannot plan resources.pipelines.foo.permissions: reading id="/pipelines/[UUID]": Fault injected by test. (504 INJECTED)
 
-Endpoint: GET [DATABRICKS_URL]/api/2.0/permissions/pipelines/[UUID]?
+Endpoint: GET [DATABRICKS_URL]/api/2.0/permissions/pipelines/[UUID]
 HTTP Status: 504 Gateway Timeout
 API error_code: INJECTED
 API message: Fault injected by test.

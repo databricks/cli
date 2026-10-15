@@ -958,15 +958,15 @@ func AppToSDK(w *App) (*sdk.App, error) {
 	out.ThumbnailUrl = w.ThumbnailUrl
 	out.Space = w.Space
 	{
-		members := 0
+		var members []string
 		if w.SourceCodePath != nil {
-			members++
+			members = append(members, "source_code_path")
 		}
 		if w.GitSource != nil {
-			members++
+			members = append(members, "git_source")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "App.DeploymentSource")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -1341,27 +1341,27 @@ func AppManifest_AppResourceSpecToSDK(w *AppManifest_AppResourceSpec) (*sdk.AppM
 	out.Name = w.Name
 	out.Description = w.Description
 	{
-		members := 0
+		var members []string
 		if w.SecretSpec != nil {
-			members++
+			members = append(members, "secret_spec")
 		}
 		if w.SqlWarehouseSpec != nil {
-			members++
+			members = append(members, "sql_warehouse_spec")
 		}
 		if w.ServingEndpointSpec != nil {
-			members++
+			members = append(members, "serving_endpoint_spec")
 		}
 		if w.JobSpec != nil {
-			members++
+			members = append(members, "job_spec")
 		}
 		if w.UcSecurableSpec != nil {
-			members++
+			members = append(members, "uc_securable_spec")
 		}
 		if w.ExperimentSpec != nil {
-			members++
+			members = append(members, "experiment_spec")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "AppManifest_AppResourceSpec.Resource")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -1517,39 +1517,39 @@ func AppResourceToSDK(w *AppResource) (*sdk.AppResource, error) {
 	out.Name = w.Name
 	out.Description = w.Description
 	{
-		members := 0
+		var members []string
 		if w.Secret != nil {
-			members++
+			members = append(members, "secret")
 		}
 		if w.SqlWarehouse != nil {
-			members++
+			members = append(members, "sql_warehouse")
 		}
 		if w.ServingEndpoint != nil {
-			members++
+			members = append(members, "serving_endpoint")
 		}
 		if w.Job != nil {
-			members++
+			members = append(members, "job")
 		}
 		if w.UcSecurable != nil {
-			members++
+			members = append(members, "uc_securable")
 		}
 		if w.Database != nil {
-			members++
+			members = append(members, "database")
 		}
 		if w.GenieSpace != nil {
-			members++
+			members = append(members, "genie_space")
 		}
 		if w.Experiment != nil {
-			members++
+			members = append(members, "experiment")
 		}
 		if w.App != nil {
-			members++
+			members = append(members, "app")
 		}
 		if w.Postgres != nil {
-			members++
+			members = append(members, "postgres")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "AppResource.Resource")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2306,15 +2306,15 @@ func EnvVarToSDK(w *EnvVar) (*sdk.EnvVar, error) {
 	out := &sdk.EnvVar{}
 	out.Name = w.Name
 	{
-		members := 0
+		var members []string
 		if w.Value != nil {
-			members++
+			members = append(members, "value")
 		}
 		if w.ValueFrom != nil {
-			members++
+			members = append(members, "value_from")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "EnvVar.Source")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2384,18 +2384,18 @@ func GitSourceToSDK(w *GitSource) (*sdk.GitSource, error) {
 	}
 	out.GitRepository = conv84
 	{
-		members := 0
+		var members []string
 		if w.Branch != nil {
-			members++
+			members = append(members, "branch")
 		}
 		if w.Tag != nil {
-			members++
+			members = append(members, "tag")
 		}
 		if w.Commit != nil {
-			members++
+			members = append(members, "commit")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "GitSource.Reference")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2663,15 +2663,15 @@ func OperationToSDK(w *Operation) (*sdk.Operation, error) {
 	out.Metadata = w.Metadata
 	out.Done = w.Done
 	{
-		members := 0
+		var members []string
 		if w.Error != nil {
-			members++
+			members = append(members, "error")
 		}
 		if w.Response != nil {
-			members++
+			members = append(members, "response")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "Operation.Result")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2916,12 +2916,12 @@ func TelemetryExportDestinationToSDK(w *TelemetryExportDestination) (*sdk.Teleme
 	}
 	out := &sdk.TelemetryExportDestination{}
 	{
-		members := 0
+		var members []string
 		if w.UnityCatalog != nil {
-			members++
+			members = append(members, "unity_catalog")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "TelemetryExportDestination.Destination")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

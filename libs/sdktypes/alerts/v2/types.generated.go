@@ -434,15 +434,15 @@ func AlertOperandToSDK(w *AlertOperand) (*sdk.AlertOperand, error) {
 	}
 	out := &sdk.AlertOperand{}
 	{
-		members := 0
+		var members []string
 		if w.Column != nil {
-			members++
+			members = append(members, "column")
 		}
 		if w.Value != nil {
-			members++
+			members = append(members, "value")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "AlertOperand.Operand")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -520,18 +520,18 @@ func AlertOperandValueToSDK(w *AlertOperandValue) (*sdk.AlertOperandValue, error
 	}
 	out := &sdk.AlertOperandValue{}
 	{
-		members := 0
+		var members []string
 		if w.StringValue != nil {
-			members++
+			members = append(members, "string_value")
 		}
 		if w.DoubleValue != nil {
-			members++
+			members = append(members, "double_value")
 		}
 		if w.BoolValue != nil {
-			members++
+			members = append(members, "bool_value")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "AlertOperandValue.Value")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -575,15 +575,15 @@ func AlertRunAsToSDK(w *AlertRunAs) (*sdk.AlertRunAs, error) {
 	}
 	out := &sdk.AlertRunAs{}
 	{
-		members := 0
+		var members []string
 		if w.UserName != nil {
-			members++
+			members = append(members, "user_name")
 		}
 		if w.ServicePrincipalName != nil {
-			members++
+			members = append(members, "service_principal_name")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "AlertRunAs.Identity")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -645,15 +645,15 @@ func AlertSubscriptionToSDK(w *AlertSubscription) (*sdk.AlertSubscription, error
 	}
 	out := &sdk.AlertSubscription{}
 	{
-		members := 0
+		var members []string
 		if w.UserEmail != nil {
-			members++
+			members = append(members, "user_email")
 		}
 		if w.DestinationId != nil {
-			members++
+			members = append(members, "destination_id")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "AlertSubscription.SubscriptionType")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

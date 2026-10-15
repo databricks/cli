@@ -19,8 +19,8 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/policies/clusters/create",
   "body": {
-    "name": "my_policy-[UNIQUE_NAME]",
-    "definition": "{\"autotermination_minutes\":{\"maxValue\":120,\"minValue\":10,\"type\":\"range\"},\"enable_elastic_disk\":{\"type\":\"fixed\",\"value\":true},\"spark_version\":{\"type\":\"fixed\",\"value\":\"13.3.x-scala2.12\"}}"
+    "definition": "{\"autotermination_minutes\":{\"maxValue\":120,\"minValue\":10,\"type\":\"range\"},\"enable_elastic_disk\":{\"type\":\"fixed\",\"value\":true},\"spark_version\":{\"type\":\"fixed\",\"value\":\"13.3.x-scala2.12\"}}",
+    "name": "my_policy-[UNIQUE_NAME]"
   }
 }
 

@@ -1,3 +1,8 @@
-Error: Failed to acquire deployment lock: failed to upload /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock: Post "[DATABRICKS_URL]/api/2.0/workspace/import": request timed out after 5s of inactivity
-Error: failed to upload /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock: Post "[DATABRICKS_URL]/api/2.0/workspace/import": request timed out after 5s of inactivity
+Error: Failed to acquire deployment lock: no active lock on target dir: file does not exist: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
+Error: Failed to update, encountered possible permission error: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
+Error: unable to deploy to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state as [USERNAME].
+Please make sure the current user or one of their groups is listed under the permissions of this bundle.
+For assistance, contact the owners of this project.
+They may need to redeploy the bundle to apply the new permissions.
+Please refer to https://docs.databricks.com/dev-tools/bundles/permissions.html for more on managing permissions.
 

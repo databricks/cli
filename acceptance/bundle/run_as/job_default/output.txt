@@ -11,33 +11,33 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
-    "name": "Untitled",
-    "max_concurrent_runs": 1,
-    "tasks": [
-      {
-        "task_key": "task_one",
-        "notebook_task": {
-          "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/files/test"
-        },
-        "new_cluster": {
-          "spark_version": "13.3.x-snapshot-scala2.12",
-          "node_type_id": "[NODE_TYPE_ID]",
-          "num_workers": 1
-        }
-      }
-    ],
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
     "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "Untitled",
     "queue": {
       "enabled": true
     },
     "run_as": {
       "user_name": "deco-test-user@databricks.com"
     },
-    "edit_mode": "UI_LOCKED",
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/state/metadata.json"
-    }
+    "tasks": [
+      {
+        "new_cluster": {
+          "node_type_id": "[NODE_TYPE_ID]",
+          "num_workers": 1,
+          "spark_version": "13.3.x-snapshot-scala2.12"
+        },
+        "notebook_task": {
+          "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/files/test"
+        },
+        "task_key": "task_one"
+      }
+    ]
   }
 }
 
@@ -65,30 +65,30 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "body": {
     "job_id": [JOB_WITH_RUN_AS_ID],
     "new_settings": {
-      "name": "Untitled",
-      "max_concurrent_runs": 1,
-      "tasks": [
-        {
-          "task_key": "task_one",
-          "notebook_task": {
-            "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/files/test"
-          },
-          "new_cluster": {
-            "spark_version": "13.3.x-snapshot-scala2.12",
-            "node_type_id": "[NODE_TYPE_ID]",
-            "num_workers": 1
-          }
-        }
-      ],
-      "format": "MULTI_TASK",
-      "queue": {
-        "enabled": true
-      },
-      "edit_mode": "UI_LOCKED",
       "deployment": {
         "kind": "BUNDLE",
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/state/metadata.json"
-      }
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "Untitled",
+      "queue": {
+        "enabled": true
+      },
+      "tasks": [
+        {
+          "new_cluster": {
+            "node_type_id": "[NODE_TYPE_ID]",
+            "num_workers": 1,
+            "spark_version": "13.3.x-snapshot-scala2.12"
+          },
+          "notebook_task": {
+            "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/files/test"
+          },
+          "task_key": "task_one"
+        }
+      ]
     }
   }
 }

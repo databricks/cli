@@ -19,6 +19,15 @@ func ErrorString(err error) string {
 	return msg
 }
 
+// errorPrefix is what sdk-go's APIError.Error prepends to the server message.
+const errorPrefix = "databricks-api error: "
+
+// StripPrefix removes sdk-go's API error prefix from text that already embeds
+// formatted errors, such as log messages and diagnostics built with %v or %s.
+func StripPrefix(s string) string {
+	return strings.ReplaceAll(s, errorPrefix, "")
+}
+
 // all returns the API errors in err's tree, including joined errors.
 func all(err error) []*apierr.APIError {
 	var result []*apierr.APIError

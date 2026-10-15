@@ -45,35 +45,35 @@ Error: invalid table name "people": expected catalog.schema.table (Unity Catalog
   "method": "POST",
   "path": "/api/2.0/sql/statements",
   "body": {
+    "disposition": "INLINE",
+    "format": "JSON_ARRAY",
+    "on_wait_timeout": "CONTINUE",
     "statement": "SELECT * FROM `main`.`default`.`people` LIMIT 11",
-    "warehouse_id": "wh-test",
-    "format": "JSON_ARRAY",
-    "disposition": "INLINE",
     "wait_timeout": "10s",
-    "on_wait_timeout": "CONTINUE"
+    "warehouse_id": "wh-test"
   }
 }
 {
   "method": "POST",
   "path": "/api/2.0/sql/statements",
   "body": {
+    "disposition": "INLINE",
+    "format": "JSON_ARRAY",
+    "on_wait_timeout": "CONTINUE",
     "statement": "SELECT * FROM `main`.`default`.`people` LIMIT 10",
-    "warehouse_id": "wh-test",
-    "format": "JSON_ARRAY",
-    "disposition": "INLINE",
     "wait_timeout": "10s",
-    "on_wait_timeout": "CONTINUE"
+    "warehouse_id": "wh-test"
   }
 }
 {
   "method": "POST",
   "path": "/api/2.0/sql/statements",
   "body": {
-    "statement": "SELECT * FROM `main`.`default`.`people` LIMIT 9",
-    "warehouse_id": "wh-test",
-    "format": "JSON_ARRAY",
     "disposition": "INLINE",
+    "format": "JSON_ARRAY",
+    "on_wait_timeout": "CONTINUE",
+    "statement": "SELECT * FROM `main`.`default`.`people` LIMIT 9",
     "wait_timeout": "10s",
-    "on_wait_timeout": "CONTINUE"
+    "warehouse_id": "wh-test"
   }
 }

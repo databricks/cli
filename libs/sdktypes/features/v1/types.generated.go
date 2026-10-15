@@ -1441,60 +1441,60 @@ func AggregationFunctionToSDK(w *AggregationFunction) (*sdk.AggregationFunction,
 	}
 	out := &sdk.AggregationFunction{}
 	{
-		members := 0
+		var members []string
 		if w.Avg != nil {
-			members++
+			members = append(members, "avg")
 		}
 		if w.CountFunction != nil {
-			members++
+			members = append(members, "count_function")
 		}
 		if w.Sum != nil {
-			members++
+			members = append(members, "sum")
 		}
 		if w.Min != nil {
-			members++
+			members = append(members, "min")
 		}
 		if w.Max != nil {
-			members++
+			members = append(members, "max")
 		}
 		if w.First != nil {
-			members++
+			members = append(members, "first")
 		}
 		if w.Last != nil {
-			members++
+			members = append(members, "last")
 		}
 		if w.ApproxCountDistinct != nil {
-			members++
+			members = append(members, "approx_count_distinct")
 		}
 		if w.ApproxPercentile != nil {
-			members++
+			members = append(members, "approx_percentile")
 		}
 		if w.StddevPop != nil {
-			members++
+			members = append(members, "stddev_pop")
 		}
 		if w.StddevSamp != nil {
-			members++
+			members = append(members, "stddev_samp")
 		}
 		if w.VarPop != nil {
-			members++
+			members = append(members, "var_pop")
 		}
 		if w.VarSamp != nil {
-			members++
+			members = append(members, "var_samp")
 		}
 		if w.FirstN != nil {
-			members++
+			members = append(members, "first_n")
 		}
 		if w.LastN != nil {
-			members++
+			members = append(members, "last_n")
 		}
 		if w.FirstDistinct != nil {
-			members++
+			members = append(members, "first_distinct")
 		}
 		if w.LastDistinct != nil {
-			members++
+			members = append(members, "last_distinct")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "AggregationFunction.Operation")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -1840,15 +1840,15 @@ func AuthConfigToSDK(w *AuthConfig) (*sdk.AuthConfig, error) {
 	}
 	out := &sdk.AuthConfig{}
 	{
-		members := 0
+		var members []string
 		if w.UcServiceCredentialName != nil {
-			members++
+			members = append(members, "uc_service_credential_name")
 		}
 		if w.MtlsConfig != nil {
-			members++
+			members = append(members, "mtls_config")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "AuthConfig.AuthConfig")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2022,15 +2022,15 @@ func BackfillSourceToSDK(w *BackfillSource) (*sdk.BackfillSource, error) {
 	}
 	out := &sdk.BackfillSource{}
 	{
-		members := 0
+		var members []string
 		if w.DeltaTableSource != nil {
-			members++
+			members = append(members, "delta_table_source")
 		}
 		if w.DeltaTableName != nil {
-			members++
+			members = append(members, "delta_table_name")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "BackfillSource.BackfillSource")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2400,24 +2400,24 @@ func DataSourceToSDK(w *DataSource) (*sdk.DataSource, error) {
 	}
 	out := &sdk.DataSource{}
 	{
-		members := 0
+		var members []string
 		if w.DeltaTableSource != nil {
-			members++
+			members = append(members, "delta_table_source")
 		}
 		if w.KafkaSource != nil {
-			members++
+			members = append(members, "kafka_source")
 		}
 		if w.RequestSource != nil {
-			members++
+			members = append(members, "request_source")
 		}
 		if w.StreamSource != nil {
-			members++
+			members = append(members, "stream_source")
 		}
 		if w.FeatureViewSource != nil {
-			members++
+			members = append(members, "feature_view_source")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "DataSource.DataSource")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2905,18 +2905,18 @@ func FunctionToSDK(w *Function) (*sdk.Function, error) {
 	}
 	out.ExtraParameters = conv93
 	{
-		members := 0
+		var members []string
 		if w.AggregationFunction != nil {
-			members++
+			members = append(members, "aggregation_function")
 		}
 		if w.ColumnSelection != nil {
-			members++
+			members = append(members, "column_selection")
 		}
 		if w.CustomUdf != nil {
-			members++
+			members = append(members, "custom_udf")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "Function.Function")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3062,12 +3062,12 @@ func IngestionDestinationToSDK(w *IngestionDestination) (*sdk.IngestionDestinati
 	}
 	out := &sdk.IngestionDestination{}
 	{
-		members := 0
+		var members []string
 		if w.DeltaTableName != nil {
-			members++
+			members = append(members, "delta_table_name")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "IngestionDestination.IngestionDestination")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3299,18 +3299,18 @@ func KafkaSubscriptionModeToSDK(w *KafkaSubscriptionMode) (*sdk.KafkaSubscriptio
 	}
 	out := &sdk.KafkaSubscriptionMode{}
 	{
-		members := 0
+		var members []string
 		if w.Assign != nil {
-			members++
+			members = append(members, "assign")
 		}
 		if w.Subscribe != nil {
-			members++
+			members = append(members, "subscribe")
 		}
 		if w.SubscribePattern != nil {
-			members++
+			members = append(members, "subscribe_pattern")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "KafkaSubscriptionMode.SubscriptionMode")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3354,15 +3354,15 @@ func KinesisStreamConfigToSDK(w *KinesisStreamConfig) (*sdk.KinesisStreamConfig,
 	}
 	out := &sdk.KinesisStreamConfig{}
 	{
-		members := 0
+		var members []string
 		if w.StreamNames != nil {
-			members++
+			members = append(members, "stream_names")
 		}
 		if w.StreamArns != nil {
-			members++
+			members = append(members, "stream_arns")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "KinesisStreamConfig.StreamIdentifier")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3814,15 +3814,15 @@ func MaterializedFeatureToSDK(w *MaterializedFeature) (*sdk.MaterializedFeature,
 	out.MaterializedFeatureId = w.MaterializedFeatureId
 	out.FeatureName = w.FeatureName
 	{
-		members := 0
+		var members []string
 		if w.OfflineStoreConfig != nil {
-			members++
+			members = append(members, "offline_store_config")
 		}
 		if w.OnlineStoreConfig != nil {
-			members++
+			members = append(members, "online_store_config")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "MaterializedFeature.Destination")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3845,18 +3845,18 @@ func MaterializedFeatureToSDK(w *MaterializedFeature) (*sdk.MaterializedFeature,
 	out.CronSchedule = w.CronSchedule
 	out.IsOnline = w.IsOnline
 	{
-		members := 0
+		var members []string
 		if w.CronScheduleTrigger != nil {
-			members++
+			members = append(members, "cron_schedule_trigger")
 		}
 		if w.TableTrigger != nil {
-			members++
+			members = append(members, "table_trigger")
 		}
 		if w.StreamingMode != nil {
-			members++
+			members = append(members, "streaming_mode")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "MaterializedFeature.Trigger")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -4116,15 +4116,15 @@ func OperationToSDK(w *Operation) (*sdk.Operation, error) {
 	out.Metadata = w.Metadata
 	out.Done = w.Done
 	{
-		members := 0
+		var members []string
 		if w.Error != nil {
-			members++
+			members = append(members, "error")
 		}
 		if w.Response != nil {
-			members++
+			members = append(members, "response")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "Operation.Result")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -4226,12 +4226,12 @@ func PurgeFeatureEntitiesRequestToSDK(w *PurgeFeatureEntitiesRequest) (*sdk.Purg
 	out := &sdk.PurgeFeatureEntitiesRequest{}
 	out.Features = w.Features
 	{
-		members := 0
+		var members []string
 		if w.EntitiesTable != nil {
-			members++
+			members = append(members, "entities_table")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "PurgeFeatureEntitiesRequest.Entities")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -4354,15 +4354,15 @@ func RequestSourceToSDK(w *RequestSource) (*sdk.RequestSource, error) {
 	}
 	out := &sdk.RequestSource{}
 	{
-		members := 0
+		var members []string
 		if w.FlatSchema != nil {
-			members++
+			members = append(members, "flat_schema")
 		}
 		if w.DataframeSchema != nil {
-			members++
+			members = append(members, "dataframe_schema")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "RequestSource.Schema")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -4452,18 +4452,18 @@ func SchemaConfigToSDK(w *SchemaConfig) (*sdk.SchemaConfig, error) {
 	}
 	out := &sdk.SchemaConfig{}
 	{
-		members := 0
+		var members []string
 		if w.JsonSchema != nil {
-			members++
+			members = append(members, "json_schema")
 		}
 		if w.AvroSchema != nil {
-			members++
+			members = append(members, "avro_schema")
 		}
 		if w.ProtoSchema != nil {
-			members++
+			members = append(members, "proto_schema")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "SchemaConfig.Schema")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -4515,12 +4515,12 @@ func SchemaLocatorToSDK(w *SchemaLocator) (*sdk.SchemaLocator, error) {
 	}
 	out := &sdk.SchemaLocator{}
 	{
-		members := 0
+		var members []string
 		if w.ConfluentSchema != nil {
-			members++
+			members = append(members, "confluent_schema")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "SchemaLocator.RegistrySchema")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -4836,15 +4836,15 @@ func StreamConnectionConfigToSDK(w *StreamConnectionConfig) (*sdk.StreamConnecti
 	}
 	out := &sdk.StreamConnectionConfig{}
 	{
-		members := 0
+		var members []string
 		if w.UcConnectionName != nil {
-			members++
+			members = append(members, "uc_connection_name")
 		}
 		if w.DirectMtlsConfig != nil {
-			members++
+			members = append(members, "direct_mtls_config")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "StreamConnectionConfig.ConnectionConfig")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -4910,15 +4910,15 @@ func StreamSchemaConfigToSDK(w *StreamSchemaConfig) (*sdk.StreamSchemaConfig, er
 	}
 	out := &sdk.StreamSchemaConfig{}
 	{
-		members := 0
+		var members []string
 		if w.DirectSchemas != nil {
-			members++
+			members = append(members, "direct_schemas")
 		}
 		if w.SchemaRegistryConfig != nil {
-			members++
+			members = append(members, "schema_registry_config")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "StreamSchemaConfig.SchemaConfig")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -4998,15 +4998,15 @@ func StreamSourceConfigToSDK(w *StreamSourceConfig) (*sdk.StreamSourceConfig, er
 	}
 	out := &sdk.StreamSourceConfig{}
 	{
-		members := 0
+		var members []string
 		if w.KafkaStreamConfig != nil {
-			members++
+			members = append(members, "kafka_stream_config")
 		}
 		if w.KinesisStreamConfig != nil {
-			members++
+			members = append(members, "kinesis_stream_config")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "StreamSourceConfig.SourceConfig")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -5084,18 +5084,18 @@ func SubscriptionModeToSDK(w *SubscriptionMode) (*sdk.SubscriptionMode, error) {
 	}
 	out := &sdk.SubscriptionMode{}
 	{
-		members := 0
+		var members []string
 		if w.Assign != nil {
-			members++
+			members = append(members, "assign")
 		}
 		if w.Subscribe != nil {
-			members++
+			members = append(members, "subscribe")
 		}
 		if w.SubscribePattern != nil {
-			members++
+			members = append(members, "subscribe_pattern")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "SubscriptionMode.SubscriptionMode")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -5177,24 +5177,24 @@ func TimeWindowToSDK(w *TimeWindow) (*sdk.TimeWindow, error) {
 	}
 	out := &sdk.TimeWindow{}
 	{
-		members := 0
+		var members []string
 		if w.Continuous != nil {
-			members++
+			members = append(members, "continuous")
 		}
 		if w.Tumbling != nil {
-			members++
+			members = append(members, "tumbling")
 		}
 		if w.Sliding != nil {
-			members++
+			members = append(members, "sliding")
 		}
 		if w.Rolling != nil {
-			members++
+			members = append(members, "rolling")
 		}
 		if w.Sawtooth != nil {
-			members++
+			members = append(members, "sawtooth")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "TimeWindow.WindowType")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

@@ -2,7 +2,7 @@
   "method": "POST",
   "path": "/api/2.0/vector-search/endpoints",
   "body": {
-    "name": "vs-endpoint-[UNIQUE_NAME]",
-    "endpoint_type": "STANDARD"
+    "endpoint_type": "STANDARD",
+    "name": "vs-endpoint-[UNIQUE_NAME]"
   }
 }

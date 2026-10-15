@@ -10,18 +10,18 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.1/clusters/create",
   "body": {
-    "num_workers": 2,
+    "autotermination_minutes": 60,
     "cluster_name": "test-cluster",
-    "spark_version": "13.3.x-scala2.12",
+    "node_type_id": "[NODE_TYPE_ID]",
+    "num_workers": 2,
     "spark_conf": {
       "spark.executor.memory": "2g"
     },
-    "node_type_id": "[NODE_TYPE_ID]",
-    "autotermination_minutes": 60,
+    "spark_version": "13.3.x-scala2.12",
     "workload_type": {
       "clients": {
-        "notebooks": true,
-        "jobs": false
+        "jobs": false,
+        "notebooks": true
       }
     }
   }

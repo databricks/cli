@@ -2,19 +2,19 @@
   "method": "PATCH",
   "path": "/api/2.1/unity-catalog/permissions/volume/main.schema_grants_[UNIQUE_NAME].volume_name",
   "body": {
-    "securable_type": "volume",
-    "securable_full_name": "main.schema_grants_[UNIQUE_NAME].volume_name",
     "changes": [
       {
-        "principal": "deco-test-user@databricks.com",
         "add": [
           "READ_VOLUME",
           "WRITE_VOLUME"
         ],
+        "principal": "deco-test-user@databricks.com",
         "remove": [
           "ALL_PRIVILEGES"
         ]
       }
-    ]
+    ],
+    "securable_full_name": "main.schema_grants_[UNIQUE_NAME].volume_name",
+    "securable_type": "volume"
   }
 }

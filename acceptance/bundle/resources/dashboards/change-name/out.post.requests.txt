@@ -10,9 +10,9 @@
   "path": "/api/2.0/lakeview/dashboards",
   "body": {
     "display_name": "dashboard1",
-    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-name-[UNIQUE_NAME]/default/resources",
     "serialized_dashboard": "{}\n",
-    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-name-[UNIQUE_NAME]/default/resources"
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }
 }
 {

@@ -8,6 +8,7 @@ import (
 	sdk "github.com/databricks/sdk-go/uc/onlinetables/v1"
 
 	types "github.com/databricks/sdk-go/core/types"
+	strings "strings"
 )
 
 type (
@@ -297,15 +298,15 @@ func OnlineTableSpecToSDK(w *OnlineTableSpec) (*sdk.OnlineTableSpec, error) {
 	}
 	out := &sdk.OnlineTableSpec{}
 	{
-		members := 0
+		var members []string
 		if w.RunContinuously != nil {
-			members++
+			members = append(members, "run_continuously")
 		}
 		if w.RunTriggered != nil {
-			members++
+			members = append(members, "run_triggered")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "OnlineTableSpec.SchedulingPolicy")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -407,21 +408,21 @@ func OnlineTableStatusToSDK(w *OnlineTableStatus) (*sdk.OnlineTableStatus, error
 	out.DetailedState = w.DetailedState
 	out.Message = w.Message
 	{
-		members := 0
+		var members []string
 		if w.ProvisioningStatus != nil {
-			members++
+			members = append(members, "provisioning_status")
 		}
 		if w.ContinuousUpdateStatus != nil {
-			members++
+			members = append(members, "continuous_update_status")
 		}
 		if w.TriggeredUpdateStatus != nil {
-			members++
+			members = append(members, "triggered_update_status")
 		}
 		if w.FailedStatus != nil {
-			members++
+			members = append(members, "failed_status")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "OnlineTableStatus.DetailedStatus")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

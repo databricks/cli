@@ -10,7 +10,7 @@ Files: 14 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle run some_other_job
-Run URL: [DATABRICKS_URL]/jobs/29065935923952/runs/[RUN_ID]?o=[WORKSPACE_ID]
+Run URL: [DATABRICKS_URL]/jobs/39203075516784/runs/[RUN_ID]?o=[WORKSPACE_ID]
 
 [TIMESTAMP] "My Wheel Job" RUNNING
 [TIMESTAMP] "My Wheel Job" TERMINATED SUCCESS
@@ -28,7 +28,7 @@ Files: 9 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle run some_other_job
-Run URL: [DATABRICKS_URL]/jobs/29066064818496/runs/[RUN_ID]?o=[WORKSPACE_ID]
+Run URL: [DATABRICKS_URL]/jobs/39203111728608/runs/[RUN_ID]?o=[WORKSPACE_ID]
 
 [TIMESTAMP] "My Wheel Job" RUNNING
 [TIMESTAMP] "My Wheel Job" TERMINATED SUCCESS

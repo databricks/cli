@@ -558,7 +558,7 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 		RunId:                utils.NonZero(runId),
 		JobId:                request.JobId,
 		State:                &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Running},
-		RunPageUrl:           utils.NonZero(fmt.Sprintf("%s/?o=%d#job/%d/run/%d", s.url, TestWorkspaceID, request.JobId, runId)),
+		RunPageUrl:           utils.NonZero(fmt.Sprintf("%s/?o=%d#job/%d/run/%d", s.url, TestWorkspaceID, utils.Deref(request.JobId), runId)),
 		RunType:              jobs.RunType_JobRun,
 		RunName:              utils.NonZero(runName),
 		Tasks:                tasks,

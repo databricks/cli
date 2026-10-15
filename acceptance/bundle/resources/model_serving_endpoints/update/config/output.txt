@@ -45,19 +45,18 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/serving-endpoints",
   "body": {
-    "name": "[ENDPOINT_ID]",
     "config": {
       "served_entities": [
         {
-          "name": "prod",
           "external_model": {
-            "provider": "openai",
             "name": "gpt-4o-mini",
-            "task": "llm/v1/chat",
             "openai_config": {
               "openai_api_key": "{{secrets/test-scope/openai-key}}"
-            }
-          }
+            },
+            "provider": "openai",
+            "task": "llm/v1/chat"
+          },
+          "name": "prod"
         }
       ],
       "traffic_config": {
@@ -68,7 +67,8 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
           }
         ]
       }
-    }
+    },
+    "name": "[ENDPOINT_ID]"
   }
 }
 {
@@ -78,15 +78,15 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
     "name": "[ENDPOINT_ID]",
     "served_entities": [
       {
-        "name": "prod",
         "external_model": {
-          "provider": "openai",
           "name": "gpt-5o-mini",
-          "task": "llm/v1/chat",
           "openai_config": {
             "openai_api_key": "{{secrets/test-scope/openai-key}}"
-          }
-        }
+          },
+          "provider": "openai",
+          "task": "llm/v1/chat"
+        },
+        "name": "prod"
       }
     ],
     "traffic_config": {

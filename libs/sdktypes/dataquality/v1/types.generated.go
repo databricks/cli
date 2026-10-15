@@ -567,18 +567,18 @@ func DataProfilingConfigToSDK(w *DataProfilingConfig) (*sdk.DataProfilingConfig,
 	out.OutputSchemaId = w.OutputSchemaId
 	out.AssetsDir = w.AssetsDir
 	{
-		members := 0
+		var members []string
 		if w.InferenceLog != nil {
-			members++
+			members = append(members, "inference_log")
 		}
 		if w.TimeSeries != nil {
-			members++
+			members = append(members, "time_series")
 		}
 		if w.Snapshot != nil {
-			members++
+			members = append(members, "snapshot")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "DataProfilingConfig.AnalysisConfig")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

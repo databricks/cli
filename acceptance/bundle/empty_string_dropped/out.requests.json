@@ -5,16 +5,16 @@
     "no_compute": "true"
   },
   "body": {
-    "name": "test-app-direct",
-    "description": ""
+    "description": "",
+    "name": "test-app-direct"
   }
 }
 {
   "method": "POST",
   "path": "/api/2.0/database/instances",
   "body": {
-    "name": "test-db-instance",
-    "capacity": "CU_1"
+    "capacity": "CU_1",
+    "name": "test-db-instance"
   }
 }
 {
@@ -37,12 +37,16 @@
   "body": {
     "clusters": [
       {
-        "label": "default",
         "aws_attributes": {
           "availability": "SPOT"
-        }
+        },
+        "label": "default"
       }
     ],
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/direct/state/metadata.json"
+    },
     "libraries": [
       {
         "file": {
@@ -50,10 +54,6 @@
         }
       }
     ],
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/direct/state/metadata.json"
-    },
     "root_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/direct/files"
   }
 }
@@ -61,21 +61,20 @@
   "method": "POST",
   "path": "/api/2.0/sql/warehouses",
   "body": {
-    "name": "test-warehouse",
-    "cluster_size": "2X-Small",
-    "min_num_clusters": 1,
-    "max_num_clusters": 1,
     "auto_stop_mins": 10,
-    "spot_instance_policy": "COST_OPTIMIZED",
-    "enable_photon": true
+    "cluster_size": "2X-Small",
+    "enable_photon": true,
+    "max_num_clusters": 1,
+    "min_num_clusters": 1,
+    "name": "test-warehouse",
+    "spot_instance_policy": "COST_OPTIMIZED"
   }
 }
 {
   "method": "POST",
   "path": "/api/2.1/clusters/create",
   "body": {
-    "num_workers": 1,
-    "spark_version": "13.3.x-scala2.12",
+    "autotermination_minutes": 60,
     "aws_attributes": {
       "availability": "SPOT"
     },
@@ -84,15 +83,16 @@
         "destination": "s3://test-bucket/logs"
       }
     },
-    "autotermination_minutes": 60
+    "num_workers": 1,
+    "spark_version": "13.3.x-scala2.12"
   }
 }
 {
   "method": "POST",
   "path": "/api/2.1/unity-catalog/models",
   "body": {
-    "name": "test-registered-model",
     "catalog_name": "main",
+    "name": "test-registered-model",
     "schema_name": "default"
   }
 }
@@ -100,16 +100,16 @@
   "method": "POST",
   "path": "/api/2.1/unity-catalog/schemas",
   "body": {
-    "name": "test-schema",
-    "catalog_name": "main"
+    "catalog_name": "main",
+    "name": "test-schema"
   }
 }
 {
   "method": "POST",
   "path": "/api/2.1/unity-catalog/volumes",
   "body": {
-    "name": "test-volume",
     "catalog_name": "main",
+    "name": "test-volume",
     "schema_name": "default",
     "volume_type": "MANAGED"
   }
@@ -118,12 +118,21 @@
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
-    "max_concurrent_runs": 1,
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/direct/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "git_source": {
+      "git_branch": "main",
+      "git_provider": "gitHub",
+      "git_url": "https://example.com/repo"
+    },
     "job_clusters": [
       {
         "job_cluster_key": "main",
         "new_cluster": {
-          "spark_version": "13.3.x-scala2.12",
           "aws_attributes": {
             "availability": "SPOT"
           },
@@ -132,23 +141,14 @@
               "destination": "s3://test-bucket/logs"
             }
           },
-          "num_workers": 1
+          "num_workers": 1,
+          "spark_version": "13.3.x-scala2.12"
         }
       }
     ],
-    "git_source": {
-      "git_url": "https://example.com/repo",
-      "git_provider": "gitHub",
-      "git_branch": "main"
-    },
-    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
     "queue": {
       "enabled": true
-    },
-    "edit_mode": "UI_LOCKED",
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/direct/state/metadata.json"
     }
   }
 }

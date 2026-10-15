@@ -72,16 +72,16 @@ Files: 0 uploaded, 0 deleted
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
-    "job_id": [MY_JOB_ID],
-    "idempotency_token": "[UUID]"
+    "idempotency_token": "[UUID]",
+    "job_id": [MY_JOB_ID]
   }
 }
 {
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
-    "job_id": [MY_JOB_ID],
-    "idempotency_token": "[UUID]"
+    "idempotency_token": "[UUID]",
+    "job_id": [MY_JOB_ID]
   }
 }
 

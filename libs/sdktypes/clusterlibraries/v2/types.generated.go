@@ -5,6 +5,7 @@ package clusterlibraries
 import (
 	fmt "fmt"
 	sdk "github.com/databricks/sdk-go/clusterlibraries/v2"
+	strings "strings"
 )
 
 type (
@@ -195,30 +196,30 @@ func LibraryToSDK(w *Library) (*sdk.Library, error) {
 	}
 	out := &sdk.Library{}
 	{
-		members := 0
+		var members []string
 		if w.Jar != nil {
-			members++
+			members = append(members, "jar")
 		}
 		if w.Egg != nil {
-			members++
+			members = append(members, "egg")
 		}
 		if w.Pypi != nil {
-			members++
+			members = append(members, "pypi")
 		}
 		if w.Maven != nil {
-			members++
+			members = append(members, "maven")
 		}
 		if w.Cran != nil {
-			members++
+			members = append(members, "cran")
 		}
 		if w.Whl != nil {
-			members++
+			members = append(members, "whl")
 		}
 		if w.Requirements != nil {
-			members++
+			members = append(members, "requirements")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "Library.Lib")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

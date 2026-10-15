@@ -1784,18 +1784,18 @@ func BranchSpecToSDK(w *BranchSpec) (*sdk.BranchSpec, error) {
 	out.SourceBranchTime = w.SourceBranchTime
 	out.IsProtected = w.IsProtected
 	{
-		members := 0
+		var members []string
 		if w.ExpireTime != nil {
-			members++
+			members = append(members, "expire_time")
 		}
 		if w.Ttl != nil {
-			members++
+			members = append(members, "ttl")
 		}
 		if w.NoExpiry != nil {
-			members++
+			members = append(members, "no_expiry")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "BranchSpec.Expiration")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -2977,15 +2977,15 @@ func EndpointSpecToSDK(w *EndpointSpec) (*sdk.EndpointSpec, error) {
 	out.AutoscalingLimitMaxCu = w.AutoscalingLimitMaxCu
 	out.Disabled = w.Disabled
 	{
-		members := 0
+		var members []string
 		if w.SuspendTimeoutDuration != nil {
-			members++
+			members = append(members, "suspend_timeout_duration")
 		}
 		if w.NoSuspension != nil {
-			members++
+			members = append(members, "no_suspension")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "EndpointSpec.Suspension")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3119,15 +3119,15 @@ func GenerateDatabaseCredentialRequestToSDK(w *GenerateDatabaseCredentialRequest
 	out.Claims = conv51
 	out.Endpoint = w.Endpoint
 	{
-		members := 0
+		var members []string
 		if w.Ttl != nil {
-			members++
+			members = append(members, "ttl")
 		}
 		if w.ExpireTime != nil {
-			members++
+			members = append(members, "expire_time")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "GenerateDatabaseCredentialRequest.Expiration")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3198,15 +3198,15 @@ func InitialEndpointSpecToSDK(w *InitialEndpointSpec) (*sdk.InitialEndpointSpec,
 	out.AutoscalingLimitMinCu = w.AutoscalingLimitMinCu
 	out.AutoscalingLimitMaxCu = w.AutoscalingLimitMaxCu
 	{
-		members := 0
+		var members []string
 		if w.SuspendTimeoutDuration != nil {
-			members++
+			members = append(members, "suspend_timeout_duration")
 		}
 		if w.NoSuspension != nil {
-			members++
+			members = append(members, "no_suspension")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "InitialEndpointSpec.Suspension")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3736,15 +3736,15 @@ func OperationToSDK(w *Operation) (*sdk.Operation, error) {
 	out.Metadata = w.Metadata
 	out.Done = w.Done
 	{
-		members := 0
+		var members []string
 		if w.Error != nil {
-			members++
+			members = append(members, "error")
 		}
 		if w.Response != nil {
-			members++
+			members = append(members, "response")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "Operation.Result")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3889,15 +3889,15 @@ func ProjectDefaultEndpointSettingsToSDK(w *ProjectDefaultEndpointSettings) (*sd
 	out.AutoscalingLimitMinCu = w.AutoscalingLimitMinCu
 	out.AutoscalingLimitMaxCu = w.AutoscalingLimitMaxCu
 	{
-		members := 0
+		var members []string
 		if w.SuspendTimeoutDuration != nil {
-			members++
+			members = append(members, "suspend_timeout_duration")
 		}
 		if w.NoSuspension != nil {
-			members++
+			members = append(members, "no_suspension")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ProjectDefaultEndpointSettings.Suspension")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -4097,12 +4097,12 @@ func RequestedResourceToSDK(w *RequestedResource) (*sdk.RequestedResource, error
 	}
 	out := &sdk.RequestedResource{}
 	{
-		members := 0
+		var members []string
 		if w.TableName != nil {
-			members++
+			members = append(members, "table_name")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "RequestedResource.ResourceName")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -4338,18 +4338,18 @@ func ScheduleCadenceToSDK(w *ScheduleCadence) (*sdk.ScheduleCadence, error) {
 	}
 	out := &sdk.ScheduleCadence{}
 	{
-		members := 0
+		var members []string
 		if w.DailySchedule != nil {
-			members++
+			members = append(members, "daily_schedule")
 		}
 		if w.WeeklySchedule != nil {
-			members++
+			members = append(members, "weekly_schedule")
 		}
 		if w.MonthlySchedule != nil {
-			members++
+			members = append(members, "monthly_schedule")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ScheduleCadence.Schedule")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -4532,15 +4532,15 @@ func SnapshotSpecToSDK(w *SnapshotSpec) (*sdk.SnapshotSpec, error) {
 	out := &sdk.SnapshotSpec{}
 	out.SourceBranch = w.SourceBranch
 	{
-		members := 0
+		var members []string
 		if w.SourceBranchLsn != nil {
-			members++
+			members = append(members, "source_branch_lsn")
 		}
 		if w.SourceBranchTime != nil {
-			members++
+			members = append(members, "source_branch_time")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "SnapshotSpec.PointInTime")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -4550,18 +4550,18 @@ func SnapshotSpecToSDK(w *SnapshotSpec) (*sdk.SnapshotSpec, error) {
 		out.PointInTime = &sdk.SnapshotSpec_PointInTime_SourceBranchTime{SourceBranchTime: *w.SourceBranchTime}
 	}
 	{
-		members := 0
+		var members []string
 		if w.ExpireTime != nil {
-			members++
+			members = append(members, "expire_time")
 		}
 		if w.Ttl != nil {
-			members++
+			members = append(members, "ttl")
 		}
 		if w.NoExpiry != nil {
-			members++
+			members = append(members, "no_expiry")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "SnapshotSpec.Expiration")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -4617,15 +4617,15 @@ func SnapshotStatusToSDK(w *SnapshotStatus) (*sdk.SnapshotStatus, error) {
 	out := &sdk.SnapshotStatus{}
 	out.SourceBranch = w.SourceBranch
 	{
-		members := 0
+		var members []string
 		if w.ExpireTime != nil {
-			members++
+			members = append(members, "expire_time")
 		}
 		if w.NoExpiry != nil {
-			members++
+			members = append(members, "no_expiry")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "SnapshotStatus.Expiration")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -4762,12 +4762,12 @@ func SyncedTablePositionToSDK(w *SyncedTablePosition) (*sdk.SyncedTablePosition,
 	out.SyncStartTime = w.SyncStartTime
 	out.SyncEndTime = w.SyncEndTime
 	{
-		members := 0
+		var members []string
 		if w.DeltaTableSyncInfo != nil {
-			members++
+			members = append(members, "delta_table_sync_info")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "SyncedTablePosition.SourceSyncInfo")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

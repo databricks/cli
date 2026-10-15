@@ -23,16 +23,16 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
-    "name": "job bar",
-    "max_concurrent_runs": 1,
-    "format": "MULTI_TASK",
-    "queue": {
-      "enabled": true
-    },
-    "edit_mode": "UI_LOCKED",
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "job bar",
+    "queue": {
+      "enabled": true
     }
   }
 }
@@ -40,31 +40,31 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
-    "name": "job foo",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
     "max_concurrent_runs": 1,
+    "name": "job foo",
+    "queue": {
+      "enabled": true
+    },
     "tasks": [
       {
-        "task_key": "job_task",
         "notebook_task": {
-          "notebook_path": "/notebook",
           "base_parameters": {
             "escaped": "${resources.jobs.bar.id}",
             "mixed": "${runtime} [BAR_ID]",
             "real": "[BAR_ID]",
             "same_name": "${resources.jobs.bar.id} [BAR_ID]"
           },
+          "notebook_path": "/notebook",
           "source": "WORKSPACE"
-        }
+        },
+        "task_key": "job_task"
       }
-    ],
-    "format": "MULTI_TASK",
-    "queue": {
-      "enabled": true
-    },
-    "edit_mode": "UI_LOCKED",
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    }
+    ]
   }
 }

@@ -6,6 +6,8 @@ import (
 	fmt "fmt"
 
 	sdk "github.com/databricks/sdk-go/secrets/v1"
+
+	strings "strings"
 )
 
 type (
@@ -524,15 +526,15 @@ func PutSecretRequestToSDK(w *PutSecretRequest) (*sdk.PutSecretRequest, error) {
 	out.Scope = w.Scope
 	out.Key = w.Key
 	{
-		members := 0
+		var members []string
 		if w.StringValue != nil {
-			members++
+			members = append(members, "string_value")
 		}
 		if w.BytesValue != nil {
-			members++
+			members = append(members, "bytes_value")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "PutSecretRequest.Value")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

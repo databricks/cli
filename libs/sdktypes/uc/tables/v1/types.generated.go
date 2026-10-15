@@ -6,6 +6,8 @@ import (
 	fmt "fmt"
 
 	sdk "github.com/databricks/sdk-go/uc/tables/v1"
+
+	strings "strings"
 )
 
 type (
@@ -1110,21 +1112,21 @@ func DependencyToSDK(w *Dependency) (*sdk.Dependency, error) {
 	}
 	out := &sdk.Dependency{}
 	{
-		members := 0
+		var members []string
 		if w.Table != nil {
-			members++
+			members = append(members, "table")
 		}
 		if w.Function != nil {
-			members++
+			members = append(members, "function")
 		}
 		if w.Connection != nil {
-			members++
+			members = append(members, "connection")
 		}
 		if w.Credential != nil {
-			members++
+			members = append(members, "credential")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "Dependency.Value")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -1258,12 +1260,12 @@ func EncryptionDetailsToSDK(w *EncryptionDetails) (*sdk.EncryptionDetails, error
 	}
 	out := &sdk.EncryptionDetails{}
 	{
-		members := 0
+		var members []string
 		if w.SseEncryptionDetails != nil {
-			members++
+			members = append(members, "sse_encryption_details")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "EncryptionDetails.EncryptionDetailsType")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -1569,15 +1571,15 @@ func PolicyFunctionArgumentToSDK(w *PolicyFunctionArgument) (*sdk.PolicyFunction
 	}
 	out := &sdk.PolicyFunctionArgument{}
 	{
-		members := 0
+		var members []string
 		if w.Column != nil {
-			members++
+			members = append(members, "column")
 		}
 		if w.Constant != nil {
-			members++
+			members = append(members, "constant")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "PolicyFunctionArgument.Arg")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -1731,18 +1733,18 @@ func TableConstraintToSDK(w *TableConstraint) (*sdk.TableConstraint, error) {
 	}
 	out := &sdk.TableConstraint{}
 	{
-		members := 0
+		var members []string
 		if w.PrimaryKeyConstraint != nil {
-			members++
+			members = append(members, "primary_key_constraint")
 		}
 		if w.ForeignKeyConstraint != nil {
-			members++
+			members = append(members, "foreign_key_constraint")
 		}
 		if w.NamedTableConstraint != nil {
-			members++
+			members = append(members, "named_table_constraint")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "TableConstraint.Constraint")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

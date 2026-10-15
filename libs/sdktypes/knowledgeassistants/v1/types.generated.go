@@ -490,18 +490,18 @@ func KnowledgeSourceToSDK(w *KnowledgeSource) (*sdk.KnowledgeSource, error) {
 	out.Description = w.Description
 	out.SourceType = w.SourceType
 	{
-		members := 0
+		var members []string
 		if w.Index != nil {
-			members++
+			members = append(members, "index")
 		}
 		if w.Files != nil {
-			members++
+			members = append(members, "files")
 		}
 		if w.FileTable != nil {
-			members++
+			members = append(members, "file_table")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "KnowledgeSource.Spec")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

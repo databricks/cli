@@ -6,6 +6,8 @@ import (
 	fmt "fmt"
 
 	sdk "github.com/databricks/sdk-go/pipelines/v2"
+
+	strings "strings"
 )
 
 type (
@@ -2684,57 +2686,57 @@ func ConnectorOptionsToSDK(w *ConnectorOptions) (*sdk.ConnectorOptions, error) {
 	}
 	out := &sdk.ConnectorOptions{}
 	{
-		members := 0
+		var members []string
 		if w.GoogleAdsOptions != nil {
-			members++
+			members = append(members, "google_ads_options")
 		}
 		if w.TiktokAdsOptions != nil {
-			members++
+			members = append(members, "tiktok_ads_options")
 		}
 		if w.SharepointOptions != nil {
-			members++
+			members = append(members, "sharepoint_options")
 		}
 		if w.GdriveOptions != nil {
-			members++
+			members = append(members, "gdrive_options")
 		}
 		if w.OutlookOptions != nil {
-			members++
+			members = append(members, "outlook_options")
 		}
 		if w.SmartsheetOptions != nil {
-			members++
+			members = append(members, "smartsheet_options")
 		}
 		if w.JiraOptions != nil {
-			members++
+			members = append(members, "jira_options")
 		}
 		if w.ConfluenceOptions != nil {
-			members++
+			members = append(members, "confluence_options")
 		}
 		if w.MetaAdsOptions != nil {
-			members++
+			members = append(members, "meta_ads_options")
 		}
 		if w.ZendeskSupportOptions != nil {
-			members++
+			members = append(members, "zendesk_support_options")
 		}
 		if w.KafkaOptions != nil {
-			members++
+			members = append(members, "kafka_options")
 		}
 		if w.RabbitmqOptions != nil {
-			members++
+			members = append(members, "rabbitmq_options")
 		}
 		if w.MarketoOptions != nil {
-			members++
+			members = append(members, "marketo_options")
 		}
 		if w.LinkedinAdsOptions != nil {
-			members++
+			members = append(members, "linkedin_ads_options")
 		}
 		if w.RedditAdsOptions != nil {
-			members++
+			members = append(members, "reddit_ads_options")
 		}
 		if w.ApiSourceConnectorOptions != nil {
-			members++
+			members = append(members, "api_source_connector_options")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ConnectorOptions.ConnectorOptions")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3526,18 +3528,18 @@ func FileFilterToSDK(w *FileFilter) (*sdk.FileFilter, error) {
 	}
 	out := &sdk.FileFilter{}
 	{
-		members := 0
+		var members []string
 		if w.PathFilter != nil {
-			members++
+			members = append(members, "path_filter")
 		}
 		if w.ModifiedBefore != nil {
-			members++
+			members = append(members, "modified_before")
 		}
 		if w.ModifiedAfter != nil {
-			members++
+			members = append(members, "modified_after")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "FileFilter.Filter")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -3903,18 +3905,18 @@ func IngestionPipelineDefinitionToSDK(w *IngestionPipelineDefinition) (*sdk.Inge
 	}
 	out := &sdk.IngestionPipelineDefinition{}
 	{
-		members := 0
+		var members []string
 		if w.ConnectionName != nil {
-			members++
+			members = append(members, "connection_name")
 		}
 		if w.IngestionGatewayId != nil {
-			members++
+			members = append(members, "ingestion_gateway_id")
 		}
 		if w.IngestFromUcForeignCatalog != nil {
-			members++
+			members = append(members, "ingest_from_uc_foreign_catalog")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "IngestionPipelineDefinition.Source")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -4044,18 +4046,18 @@ func IngestionPipelineDefinition_IngestionConfigToSDK(w *IngestionPipelineDefini
 	}
 	out := &sdk.IngestionPipelineDefinition_IngestionConfig{}
 	{
-		members := 0
+		var members []string
 		if w.Schema != nil {
-			members++
+			members = append(members, "schema")
 		}
 		if w.Table != nil {
-			members++
+			members = append(members, "table")
 		}
 		if w.Report != nil {
-			members++
+			members = append(members, "report")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "IngestionPipelineDefinition_IngestionConfig.SourceTables")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -5076,15 +5078,15 @@ func PipelineClusterToSDK(w *PipelineCluster) (*sdk.PipelineCluster, error) {
 	out.EnableLocalDiskEncryption = w.EnableLocalDiskEncryption
 	out.DriverInstancePoolId = w.DriverInstancePoolId
 	{
-		members := 0
+		var members []string
 		if w.NumWorkers != nil {
-			members++
+			members = append(members, "num_workers")
 		}
 		if w.Autoscale != nil {
-			members++
+			members = append(members, "autoscale")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "PipelineCluster.Size")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -5263,27 +5265,27 @@ func PipelineLibraryToSDK(w *PipelineLibrary) (*sdk.PipelineLibrary, error) {
 	}
 	out := &sdk.PipelineLibrary{}
 	{
-		members := 0
+		var members []string
 		if w.Jar != nil {
-			members++
+			members = append(members, "jar")
 		}
 		if w.Maven != nil {
-			members++
+			members = append(members, "maven")
 		}
 		if w.Whl != nil {
-			members++
+			members = append(members, "whl")
 		}
 		if w.Notebook != nil {
-			members++
+			members = append(members, "notebook")
 		}
 		if w.File != nil {
-			members++
+			members = append(members, "file")
 		}
 		if w.Glob != nil {
-			members++
+			members = append(members, "glob")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "PipelineLibrary.Lib")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -5585,15 +5587,15 @@ func PipelineTriggerToSDK(w *PipelineTrigger) (*sdk.PipelineTrigger, error) {
 	}
 	out := &sdk.PipelineTrigger{}
 	{
-		members := 0
+		var members []string
 		if w.Manual != nil {
-			members++
+			members = append(members, "manual")
 		}
 		if w.Cron != nil {
-			members++
+			members = append(members, "cron")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "PipelineTrigger.Trigger")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -5733,12 +5735,12 @@ func PipelinesClusterLogConfToSDK(w *PipelinesClusterLogConf) (*sdk.PipelinesClu
 	}
 	out := &sdk.PipelinesClusterLogConf{}
 	{
-		members := 0
+		var members []string
 		if w.Dbfs != nil {
-			members++
+			members = append(members, "dbfs")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "PipelinesClusterLogConf.StorageInfo")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -5848,15 +5850,15 @@ func PipelinesInitScriptInfoToSDK(w *PipelinesInitScriptInfo) (*sdk.PipelinesIni
 	}
 	out := &sdk.PipelinesInitScriptInfo{}
 	{
-		members := 0
+		var members []string
 		if w.Dbfs != nil {
-			members++
+			members = append(members, "dbfs")
 		}
 		if w.S3 != nil {
-			members++
+			members = append(members, "s3")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "PipelinesInitScriptInfo.StorageInfo")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -5910,18 +5912,18 @@ func PipelinesJobRunAsToSDK(w *PipelinesJobRunAs) (*sdk.PipelinesJobRunAs, error
 	}
 	out := &sdk.PipelinesJobRunAs{}
 	{
-		members := 0
+		var members []string
 		if w.UserName != nil {
-			members++
+			members = append(members, "user_name")
 		}
 		if w.ServicePrincipalName != nil {
-			members++
+			members = append(members, "service_principal_name")
 		}
 		if w.GroupName != nil {
-			members++
+			members = append(members, "group_name")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "PipelinesJobRunAs.Identity")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -6430,12 +6432,12 @@ func SourceCatalogConfigToSDK(w *SourceCatalogConfig) (*sdk.SourceCatalogConfig,
 	out := &sdk.SourceCatalogConfig{}
 	out.SourceCatalog = w.SourceCatalog
 	{
-		members := 0
+		var members []string
 		if w.Postgres != nil {
-			members++
+			members = append(members, "postgres")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "SourceCatalogConfig.Options")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -6481,15 +6483,15 @@ func SourceConfigToSDK(w *SourceConfig) (*sdk.SourceConfig, error) {
 	}
 	out.Catalog = conv257
 	{
-		members := 0
+		var members []string
 		if w.GoogleAdsConfig != nil {
-			members++
+			members = append(members, "google_ads_config")
 		}
 		if w.ApiSourceConnectorConfig != nil {
-			members++
+			members = append(members, "api_source_connector_config")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "SourceConfig.ConnectorConfig")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -6741,18 +6743,18 @@ func TransformerToSDK(w *Transformer) (*sdk.Transformer, error) {
 	out := &sdk.Transformer{}
 	out.Format = w.Format
 	{
-		members := 0
+		var members []string
 		if w.JsonOptions != nil {
-			members++
+			members = append(members, "json_options")
 		}
 		if w.AvroOptions != nil {
-			members++
+			members = append(members, "avro_options")
 		}
 		if w.ProtobufOptions != nil {
-			members++
+			members = append(members, "protobuf_options")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "Transformer.Config")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

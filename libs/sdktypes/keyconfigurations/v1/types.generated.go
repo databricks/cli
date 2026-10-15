@@ -6,6 +6,8 @@ import (
 	fmt "fmt"
 
 	sdk "github.com/databricks/sdk-go/keyconfigurations/v1"
+
+	strings "strings"
 )
 
 type (
@@ -273,18 +275,18 @@ func CreateCustomerManagedKeyRequestToSDK(w *CreateCustomerManagedKeyRequest) (*
 	out := &sdk.CreateCustomerManagedKeyRequest{}
 	out.AccountId = w.AccountId
 	{
-		members := 0
+		var members []string
 		if w.AwsKeyInfo != nil {
-			members++
+			members = append(members, "aws_key_info")
 		}
 		if w.GcpKeyInfo != nil {
-			members++
+			members = append(members, "gcp_key_info")
 		}
 		if w.AzureKeyInfo != nil {
-			members++
+			members = append(members, "azure_key_info")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "CreateCustomerManagedKeyRequest.KeyInfo")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -390,18 +392,18 @@ func CustomerManagedKeyToSDK(w *CustomerManagedKey) (*sdk.CustomerManagedKey, er
 	out.CreationTime = w.CreationTime
 	out.AccountId = w.AccountId
 	{
-		members := 0
+		var members []string
 		if w.AwsKeyInfo != nil {
-			members++
+			members = append(members, "aws_key_info")
 		}
 		if w.AzureKeyInfo != nil {
-			members++
+			members = append(members, "azure_key_info")
 		}
 		if w.GcpKeyInfo != nil {
-			members++
+			members = append(members, "gcp_key_info")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "CustomerManagedKey.KeyInfo")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

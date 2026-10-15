@@ -5,6 +5,7 @@ package settings
 import (
 	fmt "fmt"
 	sdk "github.com/databricks/sdk-go/settings/v2"
+	strings "strings"
 )
 
 type (
@@ -903,45 +904,45 @@ func SettingToSDK(w *Setting) (*sdk.Setting, error) {
 	out := &sdk.Setting{}
 	out.Name = w.Name
 	{
-		members := 0
+		var members []string
 		if w.BooleanVal != nil {
-			members++
+			members = append(members, "boolean_val")
 		}
 		if w.StringVal != nil {
-			members++
+			members = append(members, "string_val")
 		}
 		if w.IntegerVal != nil {
-			members++
+			members = append(members, "integer_val")
 		}
 		if w.AutomaticClusterUpdateWorkspace != nil {
-			members++
+			members = append(members, "automatic_cluster_update_workspace")
 		}
 		if w.AibiDashboardEmbeddingApprovedDomains != nil {
-			members++
+			members = append(members, "aibi_dashboard_embedding_approved_domains")
 		}
 		if w.AibiDashboardEmbeddingAccessPolicy != nil {
-			members++
+			members = append(members, "aibi_dashboard_embedding_access_policy")
 		}
 		if w.RestrictWorkspaceAdmins != nil {
-			members++
+			members = append(members, "restrict_workspace_admins")
 		}
 		if w.PersonalCompute != nil {
-			members++
+			members = append(members, "personal_compute")
 		}
 		if w.WorkspaceLabel != nil {
-			members++
+			members = append(members, "workspace_label")
 		}
 		if w.AllowedAppsUserApiScopes != nil {
-			members++
+			members = append(members, "allowed_apps_user_api_scopes")
 		}
 		if w.OperationalEmailCustomRecipient != nil {
-			members++
+			members = append(members, "operational_email_custom_recipient")
 		}
 		if w.CollaborationPlatformConnectivity != nil {
-			members++
+			members = append(members, "collaboration_platform_connectivity")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "Setting.Value")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -1019,45 +1020,45 @@ func SettingToSDK(w *Setting) (*sdk.Setting, error) {
 		out.Value = &sdk.Setting_Value_CollaborationPlatformConnectivity{CollaborationPlatformConnectivity: *conv32}
 	}
 	{
-		members := 0
+		var members []string
 		if w.EffectiveBooleanVal != nil {
-			members++
+			members = append(members, "effective_boolean_val")
 		}
 		if w.EffectiveStringVal != nil {
-			members++
+			members = append(members, "effective_string_val")
 		}
 		if w.EffectiveIntegerVal != nil {
-			members++
+			members = append(members, "effective_integer_val")
 		}
 		if w.EffectiveAutomaticClusterUpdateWorkspace != nil {
-			members++
+			members = append(members, "effective_automatic_cluster_update_workspace")
 		}
 		if w.EffectiveAibiDashboardEmbeddingApprovedDomains != nil {
-			members++
+			members = append(members, "effective_aibi_dashboard_embedding_approved_domains")
 		}
 		if w.EffectiveAibiDashboardEmbeddingAccessPolicy != nil {
-			members++
+			members = append(members, "effective_aibi_dashboard_embedding_access_policy")
 		}
 		if w.EffectiveRestrictWorkspaceAdmins != nil {
-			members++
+			members = append(members, "effective_restrict_workspace_admins")
 		}
 		if w.EffectivePersonalCompute != nil {
-			members++
+			members = append(members, "effective_personal_compute")
 		}
 		if w.EffectiveWorkspaceLabel != nil {
-			members++
+			members = append(members, "effective_workspace_label")
 		}
 		if w.EffectiveAllowedAppsUserApiScopes != nil {
-			members++
+			members = append(members, "effective_allowed_apps_user_api_scopes")
 		}
 		if w.EffectiveOperationalEmailCustomRecipient != nil {
-			members++
+			members = append(members, "effective_operational_email_custom_recipient")
 		}
 		if w.EffectiveCollaborationPlatformConnectivity != nil {
-			members++
+			members = append(members, "effective_collaboration_platform_connectivity")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "Setting.EffectiveValue")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -1402,15 +1403,15 @@ func UserPreferenceToSDK(w *UserPreference) (*sdk.UserPreference, error) {
 	out.Name = w.Name
 	out.UserId = w.UserId
 	{
-		members := 0
+		var members []string
 		if w.BooleanVal != nil {
-			members++
+			members = append(members, "boolean_val")
 		}
 		if w.StringVal != nil {
-			members++
+			members = append(members, "string_val")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "UserPreference.Value")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -1428,15 +1429,15 @@ func UserPreferenceToSDK(w *UserPreference) (*sdk.UserPreference, error) {
 		out.Value = &sdk.UserPreference_Value_StringVal{StringVal: *conv70}
 	}
 	{
-		members := 0
+		var members []string
 		if w.EffectiveBooleanVal != nil {
-			members++
+			members = append(members, "effective_boolean_val")
 		}
 		if w.EffectiveStringVal != nil {
-			members++
+			members = append(members, "effective_string_val")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "UserPreference.EffectiveValue")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

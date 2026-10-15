@@ -573,21 +573,21 @@ func ExternalLineageRelationshipObjectToSDK(w *ExternalLineageRelationshipObject
 	}
 	out := &sdk.ExternalLineageRelationshipObject{}
 	{
-		members := 0
+		var members []string
 		if w.Table != nil {
-			members++
+			members = append(members, "table")
 		}
 		if w.Path != nil {
-			members++
+			members = append(members, "path")
 		}
 		if w.ModelVersion != nil {
-			members++
+			members = append(members, "model_version")
 		}
 		if w.ExternalMetadata != nil {
-			members++
+			members = append(members, "external_metadata")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ExternalLineageRelationshipObject.Tpe")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

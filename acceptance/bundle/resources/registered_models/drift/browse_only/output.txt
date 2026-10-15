@@ -27,7 +27,7 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 >>> print_requests.py //unity
 json.method = "POST";
 json.path = "/api/2.1/unity-catalog/models";
-json.body.name = "model_browse_only";
 json.body.catalog_name = "main";
-json.body.schema_name = "default";
 json.body.comment = "original comment";
+json.body.name = "model_browse_only";
+json.body.schema_name = "default";

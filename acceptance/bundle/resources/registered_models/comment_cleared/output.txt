@@ -28,11 +28,11 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
   "method": "PATCH",
   "path": "/api/2.1/unity-catalog/models/main.test-schema-[UNIQUE_NAME].test-model-[UNIQUE_NAME]",
   "body": {
+    "catalog_name": "main",
+    "comment": "",
     "full_name_arg": "main.test-schema-[UNIQUE_NAME].test-model-[UNIQUE_NAME]",
     "name": "test-model-[UNIQUE_NAME]",
-    "catalog_name": "main",
-    "schema_name": "test-schema-[UNIQUE_NAME]",
-    "comment": ""
+    "schema_name": "test-schema-[UNIQUE_NAME]"
   }
 }
 

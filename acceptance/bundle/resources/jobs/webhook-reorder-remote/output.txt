@@ -21,7 +21,35 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
     "name": "webhook reorder",
+    "queue": {
+      "enabled": true
+    },
+    "tasks": [
+      {
+        "run_job_task": {
+          "job_id": 123
+        },
+        "task_key": "main",
+        "webhook_notifications": {
+          "on_start": [
+            {
+              "id": "delta"
+            },
+            {
+              "id": "epsilon"
+            }
+          ]
+        }
+      }
+    ],
     "webhook_notifications": {
       "on_success": [
         {
@@ -34,34 +62,6 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
           "id": "gamma"
         }
       ]
-    },
-    "max_concurrent_runs": 1,
-    "tasks": [
-      {
-        "task_key": "main",
-        "webhook_notifications": {
-          "on_start": [
-            {
-              "id": "delta"
-            },
-            {
-              "id": "epsilon"
-            }
-          ]
-        },
-        "run_job_task": {
-          "job_id": 123
-        }
-      }
-    ],
-    "format": "MULTI_TASK",
-    "queue": {
-      "enabled": true
-    },
-    "edit_mode": "UI_LOCKED",
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
     }
   }
 }
@@ -71,8 +71,40 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   "body": {
     "job_id": [MY_JOB_ID],
     "new_settings": {
-      "name": "webhook reorder",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
       "email_notifications": {},
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "webhook reorder",
+      "queue": {
+        "enabled": true
+      },
+      "tasks": [
+        {
+          "email_notifications": {},
+          "run_if": "ALL_SUCCESS",
+          "run_job_task": {
+            "job_id": 123
+          },
+          "task_key": "main",
+          "timeout_seconds": 0,
+          "webhook_notifications": {
+            "on_start": [
+              {
+                "id": "epsilon"
+              },
+              {
+                "id": "delta"
+              }
+            ]
+          }
+        }
+      ],
+      "timeout_seconds": 0,
       "webhook_notifications": {
         "on_success": [
           {
@@ -85,38 +117,6 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
             "id": "beta"
           }
         ]
-      },
-      "timeout_seconds": 0,
-      "max_concurrent_runs": 1,
-      "tasks": [
-        {
-          "task_key": "main",
-          "run_if": "ALL_SUCCESS",
-          "timeout_seconds": 0,
-          "email_notifications": {},
-          "webhook_notifications": {
-            "on_start": [
-              {
-                "id": "epsilon"
-              },
-              {
-                "id": "delta"
-              }
-            ]
-          },
-          "run_job_task": {
-            "job_id": 123
-          }
-        }
-      ],
-      "format": "MULTI_TASK",
-      "queue": {
-        "enabled": true
-      },
-      "edit_mode": "UI_LOCKED",
-      "deployment": {
-        "kind": "BUNDLE",
-        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
       }
     }
   }

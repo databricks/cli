@@ -54,35 +54,34 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
   "method": "POST",
   "path": "/api/2.0/serving-endpoints",
   "body": {
-    "name": "test-endpoint",
     "config": {
       "served_entities": [
         {
-          "name": "prod",
+          "burst_scaling_enabled": true,
           "external_model": {
-            "provider": "openai",
             "name": "gpt-4o-mini",
-            "task": "llm/v1/chat",
             "openai_config": {
               "openai_api_key_plaintext": "sk-test-plaintext-key"
-            }
+            },
+            "provider": "openai",
+            "task": "llm/v1/chat"
           },
-          "burst_scaling_enabled": true
+          "name": "prod"
         },
         {
-          "name": "prod-custom",
           "external_model": {
-            "provider": "custom",
-            "name": "my-custom-model",
-            "task": "llm/v1/chat",
             "custom_provider_config": {
-              "custom_provider_url": "https://custom-provider.example",
               "api_key_auth": {
                 "key": "Authorization",
                 "value_plaintext": "custom-plaintext-key"
-              }
-            }
-          }
+              },
+              "custom_provider_url": "https://custom-provider.example"
+            },
+            "name": "my-custom-model",
+            "provider": "custom",
+            "task": "llm/v1/chat"
+          },
+          "name": "prod-custom"
         }
       ],
       "traffic_config": {
@@ -93,6 +92,7 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
           }
         ]
       }
-    }
+    },
+    "name": "test-endpoint"
   }
 }

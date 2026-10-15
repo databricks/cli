@@ -31,9 +31,9 @@
   "path": "/api/2.0/lakeview/dashboards",
   "body": {
     "display_name": "my dashboard",
-    "warehouse_id": "doesnotexist",
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/publish-failure-cleans-up-dashboard/default/resources",
     "serialized_dashboard": "{\"pages\":[{\"name\":\"test-page\",\"displayName\":\"Test Dashboard\"}]}\n",
-    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/publish-failure-cleans-up-dashboard/default/resources"
+    "warehouse_id": "doesnotexist"
   }
 }
 {

@@ -6,6 +6,8 @@ import (
 	fmt "fmt"
 
 	sdk "github.com/databricks/sdk-go/jobs/v2"
+
+	strings "strings"
 )
 
 type (
@@ -4423,18 +4425,18 @@ func AccessControlRequestToSDK(w *AccessControlRequest) (*sdk.AccessControlReque
 	}
 	out := &sdk.AccessControlRequest{}
 	{
-		members := 0
+		var members []string
 		if w.UserName != nil {
-			members++
+			members = append(members, "user_name")
 		}
 		if w.GroupName != nil {
-			members++
+			members = append(members, "group_name")
 		}
 		if w.ServicePrincipalName != nil {
-			members++
+			members = append(members, "service_principal_name")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "AccessControlRequest.PrincipalName")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -4624,15 +4626,15 @@ func AlertTaskSubscriberToSDK(w *AlertTaskSubscriber) (*sdk.AlertTaskSubscriber,
 	}
 	out := &sdk.AlertTaskSubscriber{}
 	{
-		members := 0
+		var members []string
 		if w.UserName != nil {
-			members++
+			members = append(members, "user_name")
 		}
 		if w.DestinationId != nil {
-			members++
+			members = append(members, "destination_id")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "AlertTaskSubscriber.SubscriberType")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -5184,18 +5186,18 @@ func ClusterLogConfToSDK(w *ClusterLogConf) (*sdk.ClusterLogConf, error) {
 	}
 	out := &sdk.ClusterLogConf{}
 	{
-		members := 0
+		var members []string
 		if w.Dbfs != nil {
-			members++
+			members = append(members, "dbfs")
 		}
 		if w.S3 != nil {
-			members++
+			members = append(members, "s3")
 		}
 		if w.Volumes != nil {
-			members++
+			members = append(members, "volumes")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ClusterLogConf.StorageInfo")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -5263,18 +5265,18 @@ func ClusterSpecToSDK(w *ClusterSpec) (*sdk.ClusterSpec, error) {
 	}
 	out := &sdk.ClusterSpec{}
 	{
-		members := 0
+		var members []string
 		if w.ExistingClusterId != nil {
-			members++
+			members = append(members, "existing_cluster_id")
 		}
 		if w.NewCluster != nil {
-			members++
+			members = append(members, "new_cluster")
 		}
 		if w.JobClusterKey != nil {
-			members++
+			members = append(members, "job_cluster_key")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ClusterSpec.Spec")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -5405,15 +5407,15 @@ func ClusterSpec_NewClusterToSDK(w *ClusterSpec_NewCluster) (*sdk.ClusterSpec_Ne
 	out.TotalInitialRemoteDiskSize = w.TotalInitialRemoteDiskSize
 	out.DependencyMode = w.DependencyMode
 	{
-		members := 0
+		var members []string
 		if w.NumWorkers != nil {
-			members++
+			members = append(members, "num_workers")
 		}
 		if w.Autoscale != nil {
-			members++
+			members = append(members, "autoscale")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ClusterSpec_NewCluster.Size")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -6439,12 +6441,12 @@ func DockerImageToSDK(w *DockerImage) (*sdk.DockerImage, error) {
 	out := &sdk.DockerImage{}
 	out.Url = w.Url
 	{
-		members := 0
+		var members []string
 		if w.BasicAuth != nil {
-			members++
+			members = append(members, "basic_auth")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "DockerImage.CredsOneof")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -6980,39 +6982,39 @@ func GetRunOutputResponseToSDK(w *GetRunOutputResponse) (*sdk.GetRunOutputRespon
 	out.Error = w.Error
 	out.Info = w.Info
 	{
-		members := 0
+		var members []string
 		if w.NotebookOutput != nil {
-			members++
+			members = append(members, "notebook_output")
 		}
 		if w.SqlOutput != nil {
-			members++
+			members = append(members, "sql_output")
 		}
 		if w.DbtOutput != nil {
-			members++
+			members = append(members, "dbt_output")
 		}
 		if w.RunJobOutput != nil {
-			members++
+			members = append(members, "run_job_output")
 		}
 		if w.CleanRoomsNotebookOutput != nil {
-			members++
+			members = append(members, "clean_rooms_notebook_output")
 		}
 		if w.DashboardOutput != nil {
-			members++
+			members = append(members, "dashboard_output")
 		}
 		if w.DbtCloudOutput != nil {
-			members++
+			members = append(members, "dbt_cloud_output")
 		}
 		if w.DbtPlatformOutput != nil {
-			members++
+			members = append(members, "dbt_platform_output")
 		}
 		if w.AlertOutput != nil {
-			members++
+			members = append(members, "alert_output")
 		}
 		if w.AiRuntimeTaskOutput != nil {
-			members++
+			members = append(members, "ai_runtime_task_output")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "GetRunOutputResponse.Result")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -7437,18 +7439,18 @@ func GitSourceToSDK(w *GitSource) (*sdk.GitSource, error) {
 	out.GitUrl = w.GitUrl
 	out.GitProvider = w.GitProvider
 	{
-		members := 0
+		var members []string
 		if w.GitBranch != nil {
-			members++
+			members = append(members, "git_branch")
 		}
 		if w.GitTag != nil {
-			members++
+			members = append(members, "git_tag")
 		}
 		if w.GitCommit != nil {
-			members++
+			members = append(members, "git_commit")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "GitSource.GitReference")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -7524,30 +7526,30 @@ func InitScriptInfoToSDK(w *InitScriptInfo) (*sdk.InitScriptInfo, error) {
 	}
 	out := &sdk.InitScriptInfo{}
 	{
-		members := 0
+		var members []string
 		if w.Dbfs != nil {
-			members++
+			members = append(members, "dbfs")
 		}
 		if w.S3 != nil {
-			members++
+			members = append(members, "s3")
 		}
 		if w.File != nil {
-			members++
+			members = append(members, "file")
 		}
 		if w.Gcs != nil {
-			members++
+			members = append(members, "gcs")
 		}
 		if w.Abfss != nil {
-			members++
+			members = append(members, "abfss")
 		}
 		if w.Workspace != nil {
-			members++
+			members = append(members, "workspace")
 		}
 		if w.Volumes != nil {
-			members++
+			members = append(members, "volumes")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "InitScriptInfo.StorageInfo")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -7867,18 +7869,18 @@ func JobRunAsToSDK(w *JobRunAs) (*sdk.JobRunAs, error) {
 	}
 	out := &sdk.JobRunAs{}
 	{
-		members := 0
+		var members []string
 		if w.UserName != nil {
-			members++
+			members = append(members, "user_name")
 		}
 		if w.ServicePrincipalName != nil {
-			members++
+			members = append(members, "service_principal_name")
 		}
 		if w.GroupName != nil {
-			members++
+			members = append(members, "group_name")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "JobRunAs.Identity")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -8141,12 +8143,12 @@ func JobSourceToSDK(w *JobSource) (*sdk.JobSource, error) {
 	out := &sdk.JobSource{}
 	out.JobConfigPath = w.JobConfigPath
 	{
-		members := 0
+		var members []string
 		if w.ImportFromGitBranch != nil {
-			members++
+			members = append(members, "import_from_git_branch")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "JobSource.ImportFromGitReference")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -8233,30 +8235,30 @@ func LibraryToSDK(w *Library) (*sdk.Library, error) {
 	}
 	out := &sdk.Library{}
 	{
-		members := 0
+		var members []string
 		if w.Jar != nil {
-			members++
+			members = append(members, "jar")
 		}
 		if w.Egg != nil {
-			members++
+			members = append(members, "egg")
 		}
 		if w.Pypi != nil {
-			members++
+			members = append(members, "pypi")
 		}
 		if w.Maven != nil {
-			members++
+			members = append(members, "maven")
 		}
 		if w.Cran != nil {
-			members++
+			members = append(members, "cran")
 		}
 		if w.Whl != nil {
-			members++
+			members = append(members, "whl")
 		}
 		if w.Requirements != nil {
-			members++
+			members = append(members, "requirements")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "Library.Lib")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -8491,15 +8493,15 @@ func ListRunsRequestToSDK(w *ListRunsRequest) (*sdk.ListRunsRequest, error) {
 	out := &sdk.ListRunsRequest{}
 	out.JobId = w.JobId
 	{
-		members := 0
+		var members []string
 		if w.ActiveOnly != nil {
-			members++
+			members = append(members, "active_only")
 		}
 		if w.CompletedOnly != nil {
-			members++
+			members = append(members, "completed_only")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ListRunsRequest.StateConstraint")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -8840,27 +8842,27 @@ func PerTriggerStateToSDK(w *PerTriggerState) (*sdk.PerTriggerState, error) {
 	}
 	out := &sdk.PerTriggerState{}
 	{
-		members := 0
+		var members []string
 		if w.Periodic != nil {
-			members++
+			members = append(members, "periodic")
 		}
 		if w.Schedule != nil {
-			members++
+			members = append(members, "schedule")
 		}
 		if w.Continuous != nil {
-			members++
+			members = append(members, "continuous")
 		}
 		if w.FileArrival != nil {
-			members++
+			members = append(members, "file_arrival")
 		}
 		if w.TableUpdate != nil {
-			members++
+			members = append(members, "table_update")
 		}
 		if w.Model != nil {
-			members++
+			members = append(members, "model")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "PerTriggerState.TriggerType")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -9502,45 +9504,45 @@ func ResolvedValuesToSDK(w *ResolvedValues) (*sdk.ResolvedValues, error) {
 	}
 	out := &sdk.ResolvedValues{}
 	{
-		members := 0
+		var members []string
 		if w.NotebookTask != nil {
-			members++
+			members = append(members, "notebook_task")
 		}
 		if w.SparkJarTask != nil {
-			members++
+			members = append(members, "spark_jar_task")
 		}
 		if w.SparkPythonTask != nil {
-			members++
+			members = append(members, "spark_python_task")
 		}
 		if w.SparkSubmitTask != nil {
-			members++
+			members = append(members, "spark_submit_task")
 		}
 		if w.PythonWheelTask != nil {
-			members++
+			members = append(members, "python_wheel_task")
 		}
 		if w.DbtTask != nil {
-			members++
+			members = append(members, "dbt_task")
 		}
 		if w.SqlTask != nil {
-			members++
+			members = append(members, "sql_task")
 		}
 		if w.RunJobTask != nil {
-			members++
+			members = append(members, "run_job_task")
 		}
 		if w.ConditionTask != nil {
-			members++
+			members = append(members, "condition_task")
 		}
 		if w.SimulationTask != nil {
-			members++
+			members = append(members, "simulation_task")
 		}
 		if w.PipelineTask != nil {
-			members++
+			members = append(members, "pipeline_task")
 		}
 		if w.AiRuntimeTask != nil {
-			members++
+			members = append(members, "ai_runtime_task")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "ResolvedValues.Resolved")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -10488,12 +10490,12 @@ func RunTaskToSDK(w *RunTask) (*sdk.RunTask, error) {
 	}
 	out.WebhookNotifications = conv368
 	{
-		members := 0
+		var members []string
 		if w.EnvironmentKey != nil {
-			members++
+			members = append(members, "environment_key")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "RunTask.EnvironmentRef")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -10508,69 +10510,69 @@ func RunTaskToSDK(w *RunTask) (*sdk.RunTask, error) {
 	out.Compute = conv369
 	out.EnvironmentVariablesKey = w.EnvironmentVariablesKey
 	{
-		members := 0
+		var members []string
 		if w.NotebookTask != nil {
-			members++
+			members = append(members, "notebook_task")
 		}
 		if w.SparkJarTask != nil {
-			members++
+			members = append(members, "spark_jar_task")
 		}
 		if w.SparkPythonTask != nil {
-			members++
+			members = append(members, "spark_python_task")
 		}
 		if w.SparkSubmitTask != nil {
-			members++
+			members = append(members, "spark_submit_task")
 		}
 		if w.PipelineTask != nil {
-			members++
+			members = append(members, "pipeline_task")
 		}
 		if w.PythonWheelTask != nil {
-			members++
+			members = append(members, "python_wheel_task")
 		}
 		if w.DbtTask != nil {
-			members++
+			members = append(members, "dbt_task")
 		}
 		if w.SqlTask != nil {
-			members++
+			members = append(members, "sql_task")
 		}
 		if w.RunJobTask != nil {
-			members++
+			members = append(members, "run_job_task")
 		}
 		if w.ConditionTask != nil {
-			members++
+			members = append(members, "condition_task")
 		}
 		if w.ForEachTask != nil {
-			members++
+			members = append(members, "for_each_task")
 		}
 		if w.CleanRoomsNotebookTask != nil {
-			members++
+			members = append(members, "clean_rooms_notebook_task")
 		}
 		if w.GenAiComputeTask != nil {
-			members++
+			members = append(members, "gen_ai_compute_task")
 		}
 		if w.AlertTask != nil {
-			members++
+			members = append(members, "alert_task")
 		}
 		if w.PowerBiTask != nil {
-			members++
+			members = append(members, "power_bi_task")
 		}
 		if w.DashboardTask != nil {
-			members++
+			members = append(members, "dashboard_task")
 		}
 		if w.DbtCloudTask != nil {
-			members++
+			members = append(members, "dbt_cloud_task")
 		}
 		if w.DbtPlatformTask != nil {
-			members++
+			members = append(members, "dbt_platform_task")
 		}
 		if w.PythonOperatorTask != nil {
-			members++
+			members = append(members, "python_operator_task")
 		}
 		if w.AiRuntimeTask != nil {
-			members++
+			members = append(members, "ai_runtime_task")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "RunTask.Task")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -10696,18 +10698,18 @@ func RunTaskToSDK(w *RunTask) (*sdk.RunTask, error) {
 		out.Task = &sdk.RunTask_Task_AiRuntimeTask{AiRuntimeTask: *conv389}
 	}
 	{
-		members := 0
+		var members []string
 		if w.ExistingClusterId != nil {
-			members++
+			members = append(members, "existing_cluster_id")
 		}
 		if w.NewCluster != nil {
-			members++
+			members = append(members, "new_cluster")
 		}
 		if w.JobClusterKey != nil {
-			members++
+			members = append(members, "job_cluster_key")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "RunTask.Spec")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -11053,12 +11055,12 @@ func RunTaskSettingsToSDK(w *RunTaskSettings) (*sdk.RunTaskSettings, error) {
 	}
 	out.WebhookNotifications = conv429
 	{
-		members := 0
+		var members []string
 		if w.EnvironmentKey != nil {
-			members++
+			members = append(members, "environment_key")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "RunTaskSettings.EnvironmentRef")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -11073,69 +11075,69 @@ func RunTaskSettingsToSDK(w *RunTaskSettings) (*sdk.RunTaskSettings, error) {
 	out.Compute = conv430
 	out.EnvironmentVariablesKey = w.EnvironmentVariablesKey
 	{
-		members := 0
+		var members []string
 		if w.NotebookTask != nil {
-			members++
+			members = append(members, "notebook_task")
 		}
 		if w.SparkJarTask != nil {
-			members++
+			members = append(members, "spark_jar_task")
 		}
 		if w.SparkPythonTask != nil {
-			members++
+			members = append(members, "spark_python_task")
 		}
 		if w.SparkSubmitTask != nil {
-			members++
+			members = append(members, "spark_submit_task")
 		}
 		if w.PipelineTask != nil {
-			members++
+			members = append(members, "pipeline_task")
 		}
 		if w.PythonWheelTask != nil {
-			members++
+			members = append(members, "python_wheel_task")
 		}
 		if w.DbtTask != nil {
-			members++
+			members = append(members, "dbt_task")
 		}
 		if w.SqlTask != nil {
-			members++
+			members = append(members, "sql_task")
 		}
 		if w.RunJobTask != nil {
-			members++
+			members = append(members, "run_job_task")
 		}
 		if w.ConditionTask != nil {
-			members++
+			members = append(members, "condition_task")
 		}
 		if w.ForEachTask != nil {
-			members++
+			members = append(members, "for_each_task")
 		}
 		if w.CleanRoomsNotebookTask != nil {
-			members++
+			members = append(members, "clean_rooms_notebook_task")
 		}
 		if w.GenAiComputeTask != nil {
-			members++
+			members = append(members, "gen_ai_compute_task")
 		}
 		if w.AlertTask != nil {
-			members++
+			members = append(members, "alert_task")
 		}
 		if w.PowerBiTask != nil {
-			members++
+			members = append(members, "power_bi_task")
 		}
 		if w.DashboardTask != nil {
-			members++
+			members = append(members, "dashboard_task")
 		}
 		if w.DbtCloudTask != nil {
-			members++
+			members = append(members, "dbt_cloud_task")
 		}
 		if w.DbtPlatformTask != nil {
-			members++
+			members = append(members, "dbt_platform_task")
 		}
 		if w.PythonOperatorTask != nil {
-			members++
+			members = append(members, "python_operator_task")
 		}
 		if w.AiRuntimeTask != nil {
-			members++
+			members = append(members, "ai_runtime_task")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "RunTaskSettings.Task")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -11261,18 +11263,18 @@ func RunTaskSettingsToSDK(w *RunTaskSettings) (*sdk.RunTaskSettings, error) {
 		out.Task = &sdk.RunTaskSettings_Task_AiRuntimeTask{AiRuntimeTask: *conv450}
 	}
 	{
-		members := 0
+		var members []string
 		if w.ExistingClusterId != nil {
-			members++
+			members = append(members, "existing_cluster_id")
 		}
 		if w.NewCluster != nil {
-			members++
+			members = append(members, "new_cluster")
 		}
 		if w.JobClusterKey != nil {
-			members++
+			members = append(members, "job_cluster_key")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "RunTaskSettings.Spec")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -11813,21 +11815,21 @@ func SqlTaskToSDK(w *SqlTask) (*sdk.SqlTask, error) {
 	out := &sdk.SqlTask{}
 	out.Parameters = w.Parameters
 	{
-		members := 0
+		var members []string
 		if w.Query != nil {
-			members++
+			members = append(members, "query")
 		}
 		if w.Dashboard != nil {
-			members++
+			members = append(members, "dashboard")
 		}
 		if w.Alert != nil {
-			members++
+			members = append(members, "alert")
 		}
 		if w.File != nil {
-			members++
+			members = append(members, "file")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "SqlTask.SqlTaskType")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -12000,12 +12002,12 @@ func SqlTaskQueryToSDK(w *SqlTaskQuery) (*sdk.SqlTaskQuery, error) {
 	}
 	out := &sdk.SqlTaskQuery{}
 	{
-		members := 0
+		var members []string
 		if w.QueryId != nil {
-			members++
+			members = append(members, "query_id")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "SqlTaskQuery.QueryType")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -12037,15 +12039,15 @@ func SqlTaskSubscriptionToSDK(w *SqlTaskSubscription) (*sdk.SqlTaskSubscription,
 	}
 	out := &sdk.SqlTaskSubscription{}
 	{
-		members := 0
+		var members []string
 		if w.UserName != nil {
-			members++
+			members = append(members, "user_name")
 		}
 		if w.DestinationId != nil {
-			members++
+			members = append(members, "destination_id")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "SqlTaskSubscription.SubscriptionType")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -12189,18 +12191,18 @@ func SqlTask_SqlOutputToSDK(w *SqlTask_SqlOutput) (*sdk.SqlTask_SqlOutput, error
 	}
 	out := &sdk.SqlTask_SqlOutput{}
 	{
-		members := 0
+		var members []string
 		if w.QueryOutput != nil {
-			members++
+			members = append(members, "query_output")
 		}
 		if w.DashboardOutput != nil {
-			members++
+			members = append(members, "dashboard_output")
 		}
 		if w.AlertOutput != nil {
-			members++
+			members = append(members, "alert_output")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "SqlTask_SqlOutput.SqlOutputType")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -12536,15 +12538,15 @@ func Subscription_SubscriberToSDK(w *Subscription_Subscriber) (*sdk.Subscription
 	}
 	out := &sdk.Subscription_Subscriber{}
 	{
-		members := 0
+		var members []string
 		if w.UserName != nil {
-			members++
+			members = append(members, "user_name")
 		}
 		if w.DestinationId != nil {
-			members++
+			members = append(members, "destination_id")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "Subscription_Subscriber.SubscriptionType")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -12711,12 +12713,12 @@ func TaskSettingsToSDK(w *TaskSettings) (*sdk.TaskSettings, error) {
 	out.WebhookNotifications = conv539
 	out.Description = w.Description
 	{
-		members := 0
+		var members []string
 		if w.EnvironmentKey != nil {
-			members++
+			members = append(members, "environment_key")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "TaskSettings.EnvironmentRef")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -12731,69 +12733,69 @@ func TaskSettingsToSDK(w *TaskSettings) (*sdk.TaskSettings, error) {
 	out.Compute = conv540
 	out.EnvironmentVariablesKey = w.EnvironmentVariablesKey
 	{
-		members := 0
+		var members []string
 		if w.NotebookTask != nil {
-			members++
+			members = append(members, "notebook_task")
 		}
 		if w.SparkJarTask != nil {
-			members++
+			members = append(members, "spark_jar_task")
 		}
 		if w.SparkPythonTask != nil {
-			members++
+			members = append(members, "spark_python_task")
 		}
 		if w.SparkSubmitTask != nil {
-			members++
+			members = append(members, "spark_submit_task")
 		}
 		if w.PipelineTask != nil {
-			members++
+			members = append(members, "pipeline_task")
 		}
 		if w.PythonWheelTask != nil {
-			members++
+			members = append(members, "python_wheel_task")
 		}
 		if w.DbtTask != nil {
-			members++
+			members = append(members, "dbt_task")
 		}
 		if w.SqlTask != nil {
-			members++
+			members = append(members, "sql_task")
 		}
 		if w.RunJobTask != nil {
-			members++
+			members = append(members, "run_job_task")
 		}
 		if w.ConditionTask != nil {
-			members++
+			members = append(members, "condition_task")
 		}
 		if w.ForEachTask != nil {
-			members++
+			members = append(members, "for_each_task")
 		}
 		if w.CleanRoomsNotebookTask != nil {
-			members++
+			members = append(members, "clean_rooms_notebook_task")
 		}
 		if w.GenAiComputeTask != nil {
-			members++
+			members = append(members, "gen_ai_compute_task")
 		}
 		if w.AlertTask != nil {
-			members++
+			members = append(members, "alert_task")
 		}
 		if w.PowerBiTask != nil {
-			members++
+			members = append(members, "power_bi_task")
 		}
 		if w.DashboardTask != nil {
-			members++
+			members = append(members, "dashboard_task")
 		}
 		if w.DbtCloudTask != nil {
-			members++
+			members = append(members, "dbt_cloud_task")
 		}
 		if w.DbtPlatformTask != nil {
-			members++
+			members = append(members, "dbt_platform_task")
 		}
 		if w.PythonOperatorTask != nil {
-			members++
+			members = append(members, "python_operator_task")
 		}
 		if w.AiRuntimeTask != nil {
-			members++
+			members = append(members, "ai_runtime_task")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "TaskSettings.Task")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -12919,18 +12921,18 @@ func TaskSettingsToSDK(w *TaskSettings) (*sdk.TaskSettings, error) {
 		out.Task = &sdk.TaskSettings_Task_AiRuntimeTask{AiRuntimeTask: *conv560}
 	}
 	{
-		members := 0
+		var members []string
 		if w.ExistingClusterId != nil {
-			members++
+			members = append(members, "existing_cluster_id")
 		}
 		if w.NewCluster != nil {
-			members++
+			members = append(members, "new_cluster")
 		}
 		if w.JobClusterKey != nil {
-			members++
+			members = append(members, "job_cluster_key")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "TaskSettings.Spec")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -13429,21 +13431,21 @@ func TriggerSettingsToSDK(w *TriggerSettings) (*sdk.TriggerSettings, error) {
 	out := &sdk.TriggerSettings{}
 	out.PauseStatus = w.PauseStatus
 	{
-		members := 0
+		var members []string
 		if w.FileArrival != nil {
-			members++
+			members = append(members, "file_arrival")
 		}
 		if w.Periodic != nil {
-			members++
+			members = append(members, "periodic")
 		}
 		if w.TableUpdate != nil {
-			members++
+			members = append(members, "table_update")
 		}
 		if w.Model != nil {
-			members++
+			members = append(members, "model")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "TriggerSettings.Configuration")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -13536,15 +13538,15 @@ func TriggerStateToSDK(w *TriggerState) (*sdk.TriggerState, error) {
 	}
 	out := &sdk.TriggerState{}
 	{
-		members := 0
+		var members []string
 		if w.Table != nil {
-			members++
+			members = append(members, "table")
 		}
 		if w.FileArrival != nil {
-			members++
+			members = append(members, "file_arrival")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "TriggerState.TriggerType")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

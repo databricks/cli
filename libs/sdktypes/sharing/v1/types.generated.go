@@ -8,6 +8,7 @@ import (
 	sdk "github.com/databricks/sdk-go/sharing/v1"
 
 	types "github.com/databricks/sdk-go/core/types"
+	strings "strings"
 )
 
 type (
@@ -1323,15 +1324,15 @@ func DependencyToSDK(w *Dependency) (*sdk.Dependency, error) {
 	}
 	out := &sdk.Dependency{}
 	{
-		members := 0
+		var members []string
 		if w.Table != nil {
-			members++
+			members = append(members, "table")
 		}
 		if w.Function != nil {
-			members++
+			members = append(members, "function")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "Dependency.Value")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -1414,12 +1415,12 @@ func FederationPolicyToSDK(w *FederationPolicy) (*sdk.FederationPolicy, error) {
 	out := &sdk.FederationPolicy{}
 	out.Name = w.Name
 	{
-		members := 0
+		var members []string
 		if w.OidcPolicy != nil {
-			members++
+			members = append(members, "oidc_policy")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "FederationPolicy.Policy")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

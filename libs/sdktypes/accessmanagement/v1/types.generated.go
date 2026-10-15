@@ -6,6 +6,8 @@ import (
 	fmt "fmt"
 
 	sdk "github.com/databricks/sdk-go/accessmanagement/v1"
+
+	strings "strings"
 )
 
 type (
@@ -309,18 +311,18 @@ func AccessControlRequestToSDK(w *AccessControlRequest) (*sdk.AccessControlReque
 	}
 	out := &sdk.AccessControlRequest{}
 	{
-		members := 0
+		var members []string
 		if w.UserName != nil {
-			members++
+			members = append(members, "user_name")
 		}
 		if w.GroupName != nil {
-			members++
+			members = append(members, "group_name")
 		}
 		if w.ServicePrincipalName != nil {
-			members++
+			members = append(members, "service_principal_name")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "AccessControlRequest.PrincipalName")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -366,18 +368,18 @@ func AccessControlResponseToSDK(w *AccessControlResponse) (*sdk.AccessControlRes
 	}
 	out := &sdk.AccessControlResponse{}
 	{
-		members := 0
+		var members []string
 		if w.UserName != nil {
-			members++
+			members = append(members, "user_name")
 		}
 		if w.GroupName != nil {
-			members++
+			members = append(members, "group_name")
 		}
 		if w.ServicePrincipalName != nil {
-			members++
+			members = append(members, "service_principal_name")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "AccessControlResponse.PrincipalName")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -433,12 +435,12 @@ func ActorToSDK(w *Actor) (*sdk.Actor, error) {
 	}
 	out := &sdk.Actor{}
 	{
-		members := 0
+		var members []string
 		if w.ActorId != nil {
-			members++
+			members = append(members, "actor_id")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "Actor.Kind")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {
@@ -854,18 +856,18 @@ func PrincipalOutputToSDK(w *PrincipalOutput) (*sdk.PrincipalOutput, error) {
 	}
 	out := &sdk.PrincipalOutput{}
 	{
-		members := 0
+		var members []string
 		if w.UserName != nil {
-			members++
+			members = append(members, "user_name")
 		}
 		if w.GroupName != nil {
-			members++
+			members = append(members, "group_name")
 		}
 		if w.ServicePrincipalName != nil {
-			members++
+			members = append(members, "service_principal_name")
 		}
-		if members > 1 {
-			return nil, fmt.Errorf("%s: multiple oneof members set", "PrincipalOutput.PrincipalName")
+		if len(members) > 1 {
+			return nil, fmt.Errorf("only one of %s can be set", strings.Join(members, ", "))
 		}
 	}
 	switch {

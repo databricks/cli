@@ -2,8 +2,9 @@
   "method": "POST",
   "path": "/api/2.1/unity-catalog/volumes",
   "body": {
-    "name": "bazname",
     "catalog_name": "mycatalog",
+    "comment": "/Volumes/mycatalog/myschema/mycatalog.myschema.bazname",
+    "name": "fooname",
     "schema_name": "myschema",
     "volume_type": "MANAGED"
   }
@@ -12,19 +13,18 @@
   "method": "POST",
   "path": "/api/2.1/unity-catalog/volumes",
   "body": {
-    "name": "fooname",
     "catalog_name": "mycatalog",
+    "name": "bazname",
     "schema_name": "myschema",
-    "volume_type": "MANAGED",
-    "comment": "/Volumes/mycatalog/myschema/mycatalog.myschema.bazname"
+    "volume_type": "MANAGED"
   }
 }
 {
   "method": "POST",
   "path": "/api/2.1/unity-catalog/volumes",
   "body": {
-    "name": "mycatalog.myschema.bazname",
     "catalog_name": "mycatalog",
+    "name": "mycatalog.myschema.bazname",
     "schema_name": "myschema",
     "volume_type": "MANAGED"
   }
