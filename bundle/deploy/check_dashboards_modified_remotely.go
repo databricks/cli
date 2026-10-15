@@ -73,7 +73,7 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 		}
 
 		path := structpath.NewPath(nil, "resources", "dashboards", dashboard.Name)
-		loc := b.Config.GetLocation(path.String())
+		loc := b.Config.GetLocationOf(path)
 		actual, err := b.WorkspaceClient(ctx).Lakeview.GetByDashboardId(ctx, dashboard.ID)
 		if err != nil {
 			diags = diags.Append(diag.Diagnostic{

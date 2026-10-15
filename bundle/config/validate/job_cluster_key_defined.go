@@ -31,14 +31,13 @@ func (v *jobClusterKeyDefined) Apply(ctx context.Context, b *bundle.Bundle) diag
 		}
 
 		for index, task := range job.Tasks {
-			taskPath := structpath.NewPath(nil, "resources", "jobs", k, "tasks", index)
 			diags = diags.Extend(checkJobClusterKey(b, jobClusterKeys, task.JobClusterKey,
-				structpath.NewPath(taskPath, "job_cluster_key")))
+				structpath.NewPath(nil, "resources", "jobs", k, "tasks", index, "job_cluster_key")))
 
 			// The Jobs API rejects nested for_each_task, so one level is sufficient.
 			if task.ForEachTask != nil {
 				diags = diags.Extend(checkJobClusterKey(b, jobClusterKeys, task.ForEachTask.Task.JobClusterKey,
-					structpath.NewPath(taskPath, "for_each_task", "task", "job_cluster_key")))
+					structpath.NewPath(nil, "resources", "jobs", k, "tasks", index, "for_each_task", "task", "job_cluster_key")))
 			}
 		}
 	}
@@ -61,7 +60,7 @@ func checkJobClusterKey(b *bundle.Bundle, jobClusterKeys map[string]bool, jobClu
 		// Show only the location where the job_cluster_key is defined.
 		// Other associated locations are not relevant since they are
 		// overridden during merging.
-		Locations: b.Config.GetLocations(path.String()),
+		Locations: b.Config.GetLocationsOf(path),
 		Paths:     []*structpath.PathNode{path},
 	}}
 }

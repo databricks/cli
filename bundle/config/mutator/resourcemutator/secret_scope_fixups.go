@@ -131,7 +131,6 @@ func (m *secretScopeFixups) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		currentUser := b.Config.Workspace.CurrentUser.User
 
 		addManageForCurrentUser(scope, currentUser)
-		path := structpath.NewPath(nil, "resources", "secret_scopes", key)
 		err := collapsePermissions(scope)
 		if err != nil {
 			return diag.Diagnostics{
@@ -139,8 +138,8 @@ func (m *secretScopeFixups) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 					Severity:  diag.Error,
 					Summary:   "Failed to collapse permissions for secret scope",
 					Detail:    err.Error(),
-					Paths:     []*structpath.PathNode{path},
-					Locations: []diag.Location{b.Config.GetLocation(path.String())},
+					Paths:     structpath.NewPathSlice("resources", "secret_scopes", key),
+					Locations: []diag.Location{b.Config.GetLocationOf(structpath.NewPath(nil, "resources", "secret_scopes", key))},
 				},
 			}
 		}

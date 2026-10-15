@@ -68,8 +68,8 @@ func findVolumeInBundle(r config.Root, catalogName, schemaName, volumeName strin
 		if v.SchemaName != schemaName && !isSchemaDefinedInBundle {
 			continue
 		}
-		pathString := "resources.volumes." + k
-		return structpath.MustParsePath(pathString), r.GetLocations(pathString), true
+		volumePath := structpath.NewPath(nil, "resources", "volumes", k)
+		return volumePath, r.GetLocationsOf(volumePath), true
 	}
 	return nil, nil, false
 }
