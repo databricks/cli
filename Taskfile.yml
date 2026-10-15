@@ -778,6 +778,7 @@ tasks:
       # Runs first: regenerates CLI command stubs from the checked-in
       # .codegen/cli.json (no universe checkout needed). Refreshing cli.json
       # itself from the OpenAPI spec is the separate `generate-clijson` task.
+      - task: generate-sdktypes
       - task: generate-cligen
       # Refreshes acceptance/bundle/refschema/out.fields.txt, which feeds
       # generate-direct-apitypes and generate-direct-resources below.
@@ -798,6 +799,7 @@ tasks:
   generate-check:
     desc: Run the reproducible generators (CI drift subset of `generate`)
     cmds:
+      - task: generate-sdktypes
       - task: generate-cligen
       - task: generate-refschema
       - task: generate-schema
@@ -812,6 +814,21 @@ tasks:
   # templates derived from genkit's cli_v0 generator and formats the output
   # in-process (whitespace normalization, unused-import pruning, gofmt), so
   # the result matches the committed files byte-for-byte.
+  # Regenerates the JSON-tagged mirrors of sdk-go types (libs/sdktypes) and the
+  # oneof registry used by libs/sdktypes/sdkconv, for the sdk-go packages listed
+  # in libs/sdktypes/packages.txt ("<module path> <dir>" per line). Inputs are
+  # the sdk-go sources pinned in go.mod.
+  generate-sdktypes:
+    desc: Regenerate libs/sdktypes from the sdk-go packages in go.mod
+    sources:
+      - go.mod
+      - libs/sdktypes/packages.txt
+      - internal/sdktypesgen/*.go
+      - internal/sdkconvgen/*.go
+    cmds:
+      - "sh -c 'sed \"s|^\\([^ ]*\\).*|github.com/databricks/sdk-go/\\1|\" libs/sdktypes/packages.txt | xargs go run ./internal/sdktypesgen libs/sdktypes'"
+      - "sh -c 'sed \"s|^\\([^ ]*\\).*|github.com/databricks/sdk-go/\\1|\" libs/sdktypes/packages.txt | xargs go run ./internal/sdkconvgen libs/sdktypes/sdkconv/oneofs.generated.go'"
+
   generate-cligen:
     desc: Regenerate CLI command stubs from .codegen/cli.json
     sources:
