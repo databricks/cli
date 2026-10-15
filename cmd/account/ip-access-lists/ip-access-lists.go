@@ -10,8 +10,10 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
+
+	networking "github.com/databricks/cli/libs/sdktypes/networking/v1"
+	sdknetworking "github.com/databricks/sdk-go/networking/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -74,13 +76,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*settings.CreateIpAccessList,
+	*networking.CreateAccountIpAccessListRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq networking.CreateAccountIpAccessListRequest
 
-	var createReq settings.CreateIpAccessList
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -131,6 +133,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -145,22 +148,26 @@ func newCreate() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createReq.Label = args[0]
+			createReq.Label = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &createReq.ListType)
-			if err != nil {
-				return fmt.Errorf("invalid LIST_TYPE: %s", args[1])
-			}
-
+			createReq.ListType = networking.AccountIpAccessListType_IpAccessListType(args[1])
 		}
 
-		response, err := a.IpAccessLists.Create(ctx, createReq)
+		sdkReq, err := networking.CreateAccountIpAccessListRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Networking.CreateAccountIpAccessList(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.CreateAccountIpAccessListResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -181,13 +188,12 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*settings.DeleteAccountIpAccessListRequest,
+	*sdknetworking.DeleteAccountIpAccessListRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq settings.DeleteAccountIpAccessListRequest
+	var deleteReq sdknetworking.DeleteAccountIpAccessListRequest
 
 	cmd.Use = "delete IP_ACCESS_LIST_ID"
 	cmd.Short = `Delete access list.`
@@ -202,34 +208,26 @@ func newDelete() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No IP_ACCESS_LIST_ID argument specified. Loading names for Account Ip Access Lists drop-down.")
-			names, err := a.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Account Ip Access Lists drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The ID for the corresponding IP access list")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have the id for the corresponding ip access list")
-		}
-		deleteReq.IpAccessListId = args[0]
+		deleteReq.ListId = new(args[0])
 
-		err = a.IpAccessLists.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := a.Networking.DeleteAccountIpAccessList(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -251,13 +249,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*settings.GetAccountIpAccessListRequest,
+	*sdknetworking.GetAccountIpAccessListRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq settings.GetAccountIpAccessListRequest
+	var getReq sdknetworking.GetAccountIpAccessListRequest
 
 	cmd.Use = "get IP_ACCESS_LIST_ID"
 	cmd.Short = `Get IP access list.`
@@ -272,36 +269,30 @@ func newGet() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No IP_ACCESS_LIST_ID argument specified. Loading names for Account Ip Access Lists drop-down.")
-			names, err := a.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Account Ip Access Lists drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The ID for the corresponding IP access list")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have the id for the corresponding ip access list")
-		}
-		getReq.IpAccessListId = args[0]
+		getReq.ListId = new(args[0])
 
-		response, err := a.IpAccessLists.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := a.Networking.GetAccountIpAccessList(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.GetAccountIpAccessListResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -350,7 +341,13 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
-		response := a.IpAccessLists.List(ctx)
+		_ = a
+
+		sdkReq := &sdknetworking.ListAccountIpAccessListsRequest{}
+		response, err := a.Networking.ListAccountIpAccessLists(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
@@ -358,7 +355,11 @@ func newList() *cobra.Command {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
 
-		return cmdio.RenderIterator(ctx, response)
+		out, err := networking.ListAccountIpAccessListsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -379,13 +380,13 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var replaceOverrides []func(
 	*cobra.Command,
-	*settings.ReplaceIpAccessList,
+	*networking.ReplaceAccountIpAccessListRequest,
 )
 
 func newReplace() *cobra.Command {
 	cmd := &cobra.Command{}
+	var replaceReq networking.ReplaceAccountIpAccessListRequest
 
-	var replaceReq settings.ReplaceIpAccessList
 	var replaceJson flags.JsonFlag
 
 	cmd.Flags().Var(&replaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -434,6 +435,7 @@ func newReplace() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := replaceJson.Unmarshal(&replaceReq)
@@ -447,30 +449,36 @@ func newReplace() *cobra.Command {
 				}
 			}
 		}
-		replaceReq.IpAccessListId = args[0]
+		replaceReq.ListId = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			replaceReq.Label = args[1]
+			replaceReq.Label = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &replaceReq.ListType)
-			if err != nil {
-				return fmt.Errorf("invalid LIST_TYPE: %s", args[2])
-			}
-
+			replaceReq.ListType = networking.AccountIpAccessListType_IpAccessListType(args[2])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[3], &replaceReq.Enabled)
+			var replaceEnabledArg bool
+			_, err = fmt.Sscan(args[3], &replaceEnabledArg)
 			if err != nil {
 				return fmt.Errorf("invalid ENABLED: %s", args[3])
 			}
-
+			replaceReq.Enabled = &replaceEnabledArg
 		}
 
-		err = a.IpAccessLists.Replace(ctx, replaceReq)
+		sdkReq, err := networking.ReplaceAccountIpAccessListRequestToSDK(&replaceReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		response, err := a.Networking.ReplaceAccountIpAccessList(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		out, err := networking.ReplaceAccountIpAccessListResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -491,21 +499,21 @@ func newReplace() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*settings.UpdateIpAccessList,
+	*networking.UpdateAccountIpAccessListRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq networking.UpdateAccountIpAccessListRequest
 
-	var updateReq settings.UpdateIpAccessList
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&updateReq.Enabled, "enabled", updateReq.Enabled, `Specifies whether this IP access list is enabled.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateReq.Enabled, "enabled", `Specifies whether this IP access list is enabled.`)
 	// TODO: array: ip_addresses
-	cmd.Flags().StringVar(&updateReq.Label, "label", updateReq.Label, `Label for the IP access list.`)
-	cmd.Flags().Var(&updateReq.ListType, "list-type", `Supported values: [ALLOW, BLOCK]`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Label, "label", `Label for the IP access list.`)
+	flags.EnumVar(cmd.Flags(), &updateReq.ListType, "list-type", `Supported values: [ALLOW, BLOCK]`, "ListType", "ALLOW", "BLOCK")
 
 	cmd.Use = "update IP_ACCESS_LIST_ID"
 	cmd.Short = `Update access list.`
@@ -533,10 +541,16 @@ func newUpdate() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -550,30 +564,22 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No IP_ACCESS_LIST_ID argument specified. Loading names for Account Ip Access Lists drop-down.")
-			names, err := a.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Account Ip Access Lists drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The ID for the corresponding IP access list")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have the id for the corresponding ip access list")
-		}
-		updateReq.IpAccessListId = args[0]
+		updateReq.ListId = new(args[0])
 
-		err = a.IpAccessLists.Update(ctx, updateReq)
+		sdkReq, err := networking.UpdateAccountIpAccessListRequestToSDK(&updateReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		response, err := a.Networking.UpdateAccountIpAccessList(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		out, err := networking.UpdateAccountIpAccessListResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

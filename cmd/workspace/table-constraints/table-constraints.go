@@ -10,8 +10,9 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+
+	uctables "github.com/databricks/cli/libs/sdktypes/uc/tables/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -61,13 +62,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*catalog.CreateTableConstraint,
+	*uctables.CreateTableConstraintRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq uctables.CreateTableConstraintRequest
 
-	var createReq catalog.CreateTableConstraint
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -95,6 +96,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -111,12 +113,20 @@ func newCreate() *cobra.Command {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.TableConstraints.Create(ctx, createReq)
+		sdkReq, err := uctables.CreateTableConstraintRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Tables.CreateTableConstraint(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := uctables.TableConstraintFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -137,13 +147,12 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteTableConstraintRequest,
+	*uctables.DeleteTableConstraintRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq catalog.DeleteTableConstraintRequest
+	var deleteReq uctables.DeleteTableConstraintRequest
 
 	cmd.Use = "delete FULL_NAME CONSTRAINT_NAME CASCADE"
 	cmd.Short = `Delete a table constraint.`
@@ -179,18 +188,27 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteReq.FullName = args[0]
-		deleteReq.ConstraintName = args[1]
-		_, err = fmt.Sscan(args[2], &deleteReq.Cascade)
+		deleteReq.FullNameArg = new(args[0])
+		deleteReq.ConstraintName = new(args[1])
+		var deleteCascadeArg bool
+		_, err = fmt.Sscan(args[2], &deleteCascadeArg)
 		if err != nil {
 			return fmt.Errorf("invalid CASCADE: %s", args[2])
 		}
+		deleteReq.Cascade = &deleteCascadeArg
 
-		err = w.TableConstraints.Delete(ctx, deleteReq)
+		sdkReq, err := uctables.DeleteTableConstraintRequestToSDK(&deleteReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Tables.DeleteTableConstraint(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 

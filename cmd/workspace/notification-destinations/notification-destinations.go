@@ -7,10 +7,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
+
+	notificationdestinations "github.com/databricks/cli/libs/sdktypes/notificationdestinations/v1"
+	sdknotificationdestinations "github.com/databricks/sdk-go/notificationdestinations/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -55,19 +58,19 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*settings.CreateNotificationDestinationRequest,
+	*notificationdestinations.CreateNotificationDestinationRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq notificationdestinations.CreateNotificationDestinationRequest
 
-	var createReq settings.CreateNotificationDestinationRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: config
-	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `The display name for the notification destination.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.DisplayName, "display-name", `The display name for the notification destination.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create a notification destination.`
@@ -88,6 +91,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -102,12 +106,20 @@ func newCreate() *cobra.Command {
 			}
 		}
 
-		response, err := w.NotificationDestinations.Create(ctx, createReq)
+		sdkReq, err := notificationdestinations.CreateNotificationDestinationRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.NotificationDestinations.CreateNotificationDestination(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := notificationdestinations.NotificationDestinationFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -128,13 +140,12 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*settings.DeleteNotificationDestinationRequest,
+	*sdknotificationdestinations.DeleteNotificationDestinationRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq settings.DeleteNotificationDestinationRequest
+	var deleteReq sdknotificationdestinations.DeleteNotificationDestinationRequest
 
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete a notification destination.`
@@ -155,13 +166,17 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteReq.Id = args[0]
+		deleteReq.Id = new(args[0])
 
-		err = w.NotificationDestinations.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := w.NotificationDestinations.DeleteNotificationDestination(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -183,13 +198,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*settings.GetNotificationDestinationRequest,
+	*sdknotificationdestinations.GetNotificationDestinationRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq settings.GetNotificationDestinationRequest
+	var getReq sdknotificationdestinations.GetNotificationDestinationRequest
 
 	cmd.Use = "get ID"
 	cmd.Short = `Get a notification destination.`
@@ -210,15 +224,21 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getReq.Id = args[0]
+		getReq.Id = new(args[0])
 
-		response, err := w.NotificationDestinations.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.NotificationDestinations.GetNotificationDestination(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := notificationdestinations.NotificationDestinationFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -239,25 +259,25 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*settings.ListNotificationDestinationsRequest,
+	*notificationdestinations.ListNotificationDestinationsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq notificationdestinations.ListNotificationDestinationsRequest
 
-	var listReq settings.ListNotificationDestinationsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().Int64Var(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	flags.Int64PtrVar(cmd.Flags(), &listReq.PageSize, "page-size", ``)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
@@ -279,16 +299,20 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.NotificationDestinations.List(ctx, listReq)
+		sdkReq, err := notificationdestinations.ListNotificationDestinationsRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.NotificationDestinations.ListNotificationDestinationsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, notificationdestinations.ListNotificationDestinationsResultFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -309,19 +333,19 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*settings.UpdateNotificationDestinationRequest,
+	*notificationdestinations.UpdateNotificationDestinationRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq notificationdestinations.UpdateNotificationDestinationRequest
 
-	var updateReq settings.UpdateNotificationDestinationRequest
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: config
-	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `The display name for the notification destination.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.DisplayName, "display-name", `The display name for the notification destination.`)
 
 	cmd.Use = "update ID"
 	cmd.Short = `Update a notification destination.`
@@ -346,6 +370,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -359,14 +384,22 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.Id = args[0]
+		updateReq.Id = new(args[0])
 
-		response, err := w.NotificationDestinations.Update(ctx, updateReq)
+		sdkReq, err := notificationdestinations.UpdateNotificationDestinationRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.NotificationDestinations.UpdateNotificationDestination(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := notificationdestinations.NotificationDestinationFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

@@ -9,8 +9,10 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/agentbricks"
 	"github.com/spf13/cobra"
+
+	customllms "github.com/databricks/cli/libs/sdktypes/customllms/v1"
+	sdkcustomllms "github.com/databricks/sdk-go/customllms/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -56,13 +58,12 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cancelOptimizeOverrides []func(
 	*cobra.Command,
-	*agentbricks.CancelCustomLlmOptimizationRunRequest,
+	*customllms.CancelCustomLlmOptimizationRunRequest,
 )
 
 func newCancelOptimize() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var cancelOptimizeReq agentbricks.CancelCustomLlmOptimizationRunRequest
+	var cancelOptimizeReq customllms.CancelCustomLlmOptimizationRunRequest
 
 	cmd.Use = "cancel-optimize ID"
 	cmd.Short = `Cancel a Custom LLM Optimization Run.`
@@ -81,10 +82,15 @@ func newCancelOptimize() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		cancelOptimizeReq.Id = args[0]
+		cancelOptimizeReq.Id = new(args[0])
 
-		err = w.AgentBricks.CancelOptimize(ctx, cancelOptimizeReq)
+		sdkReq, err := customllms.CancelCustomLlmOptimizationRunRequestToSDK(&cancelOptimizeReq)
+		if err != nil {
+			return err
+		}
+		err = w.CustomLlms.CancelCustomLlmOptimizationRun(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -109,18 +115,18 @@ func newCancelOptimize() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createCustomLlmOverrides []func(
 	*cobra.Command,
-	*agentbricks.CreateCustomLlmRequest,
+	*customllms.CreateCustomLlmRequest,
 )
 
 func newCreateCustomLlm() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createCustomLlmReq customllms.CreateCustomLlmRequest
 
-	var createCustomLlmReq agentbricks.CreateCustomLlmRequest
 	var createCustomLlmJson flags.JsonFlag
 
 	cmd.Flags().Var(&createCustomLlmJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createCustomLlmReq.AgentArtifactPath, "agent-artifact-path", createCustomLlmReq.AgentArtifactPath, `This will soon be deprecated!! Optional: UC path for agent artifacts.`)
+	flags.StringPtrVar(cmd.Flags(), &createCustomLlmReq.AgentArtifactPath, "agent-artifact-path", `This will soon be deprecated!! Optional: UC path for agent artifacts.`)
 	// TODO: array: datasets
 	// TODO: array: guidelines
 
@@ -152,6 +158,7 @@ func newCreateCustomLlm() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createCustomLlmJson.Unmarshal(&createCustomLlmReq)
@@ -166,18 +173,26 @@ func newCreateCustomLlm() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createCustomLlmReq.Name = args[0]
+			createCustomLlmReq.Name = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			createCustomLlmReq.Instructions = args[1]
+			createCustomLlmReq.Instructions = new(args[1])
 		}
 
-		response, err := w.AgentBricks.CreateCustomLlm(ctx, createCustomLlmReq)
+		sdkReq, err := customllms.CreateCustomLlmRequestToSDK(&createCustomLlmReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.CustomLlms.CreateCustomLlm(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := customllms.CustomLlmFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -198,13 +213,12 @@ func newCreateCustomLlm() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteCustomLlmOverrides []func(
 	*cobra.Command,
-	*agentbricks.DeleteCustomLlmRequest,
+	*sdkcustomllms.DeleteCustomLlmRequest,
 )
 
 func newDeleteCustomLlm() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteCustomLlmReq agentbricks.DeleteCustomLlmRequest
+	var deleteCustomLlmReq sdkcustomllms.DeleteCustomLlmRequest
 
 	cmd.Use = "delete-custom-llm ID"
 	cmd.Short = `Delete a Custom LLM.`
@@ -226,10 +240,12 @@ func newDeleteCustomLlm() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteCustomLlmReq.Id = args[0]
+		deleteCustomLlmReq.Id = new(args[0])
 
-		err = w.AgentBricks.DeleteCustomLlm(ctx, deleteCustomLlmReq)
+		sdkReq := &deleteCustomLlmReq
+		err = w.CustomLlms.DeleteCustomLlm(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -254,13 +270,12 @@ func newDeleteCustomLlm() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getCustomLlmOverrides []func(
 	*cobra.Command,
-	*agentbricks.GetCustomLlmRequest,
+	*sdkcustomllms.GetCustomLlmRequest,
 )
 
 func newGetCustomLlm() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getCustomLlmReq agentbricks.GetCustomLlmRequest
+	var getCustomLlmReq sdkcustomllms.GetCustomLlmRequest
 
 	cmd.Use = "get-custom-llm ID"
 	cmd.Short = `Get a Custom LLM.`
@@ -282,15 +297,21 @@ func newGetCustomLlm() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getCustomLlmReq.Id = args[0]
+		getCustomLlmReq.Id = new(args[0])
 
-		response, err := w.AgentBricks.GetCustomLlm(ctx, getCustomLlmReq)
+		sdkReq := &getCustomLlmReq
+		response, err := w.CustomLlms.GetCustomLlm(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := customllms.CustomLlmFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -311,13 +332,12 @@ func newGetCustomLlm() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var startOptimizeOverrides []func(
 	*cobra.Command,
-	*agentbricks.StartCustomLlmOptimizationRunRequest,
+	*customllms.StartCustomLlmOptimizationRunRequest,
 )
 
 func newStartOptimize() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var startOptimizeReq agentbricks.StartCustomLlmOptimizationRunRequest
+	var startOptimizeReq customllms.StartCustomLlmOptimizationRunRequest
 
 	cmd.Use = "start-optimize ID"
 	cmd.Short = `Start a Custom LLM Optimization Run.`
@@ -339,15 +359,24 @@ func newStartOptimize() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		startOptimizeReq.Id = args[0]
+		startOptimizeReq.Id = new(args[0])
 
-		response, err := w.AgentBricks.StartOptimize(ctx, startOptimizeReq)
+		sdkReq, err := customllms.StartCustomLlmOptimizationRunRequestToSDK(&startOptimizeReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.CustomLlms.StartCustomLlmOptimizationRun(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := customllms.CustomLlmFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -368,13 +397,13 @@ func newStartOptimize() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateCustomLlmOverrides []func(
 	*cobra.Command,
-	*agentbricks.UpdateCustomLlmRequest,
+	*customllms.UpdateCustomLlmRequest,
 )
 
 func newUpdateCustomLlm() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateCustomLlmReq customllms.UpdateCustomLlmRequest
 
-	var updateCustomLlmReq agentbricks.UpdateCustomLlmRequest
 	var updateCustomLlmJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateCustomLlmJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -399,6 +428,7 @@ func newUpdateCustomLlm() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateCustomLlmJson.Unmarshal(&updateCustomLlmReq)
@@ -414,14 +444,22 @@ func newUpdateCustomLlm() *cobra.Command {
 		} else {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
-		updateCustomLlmReq.Id = args[0]
+		updateCustomLlmReq.Id = new(args[0])
 
-		response, err := w.AgentBricks.UpdateCustomLlm(ctx, updateCustomLlmReq)
+		sdkReq, err := customllms.UpdateCustomLlmRequestToSDK(&updateCustomLlmReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.CustomLlms.UpdateCustomLlm(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := customllms.CustomLlmFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

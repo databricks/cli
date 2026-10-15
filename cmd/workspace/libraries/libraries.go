@@ -10,8 +10,10 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/spf13/cobra"
+
+	clusterlibraries "github.com/databricks/cli/libs/sdktypes/clusterlibraries/v2"
+	sdkclusterlibraries "github.com/databricks/sdk-go/clusterlibraries/v2"
 )
 
 // Slice with functions to override default command behavior.
@@ -95,7 +97,13 @@ func newAllClusterStatuses() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
-		response := w.Libraries.AllClusterStatuses(ctx)
+		_ = w
+
+		sdkReq := &sdkclusterlibraries.ListAllClusterLibraryStatusesRequest{}
+		response, err := w.Libraries.AllClusterStatuses(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
 		if allClusterStatusesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", allClusterStatusesLimit)
 		}
@@ -103,7 +111,11 @@ func newAllClusterStatuses() *cobra.Command {
 			ctx = cmdio.WithLimit(ctx, allClusterStatusesLimit)
 		}
 
-		return cmdio.RenderIterator(ctx, response)
+		out, err := clusterlibraries.ListAllClusterLibraryStatusesResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -124,13 +136,13 @@ func newAllClusterStatuses() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var clusterStatusOverrides []func(
 	*cobra.Command,
-	*compute.ClusterStatus,
+	*clusterlibraries.ClusterStatusRequest,
 )
 
 func newClusterStatus() *cobra.Command {
 	cmd := &cobra.Command{}
+	var clusterStatusReq clusterlibraries.ClusterStatusRequest
 
-	var clusterStatusReq compute.ClusterStatus
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
@@ -169,10 +181,18 @@ func newClusterStatus() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		clusterStatusReq.ClusterId = args[0]
+		clusterStatusReq.ClusterId = new(args[0])
 
-		response := w.Libraries.ClusterStatus(ctx, clusterStatusReq)
+		sdkReq, err := clusterlibraries.ClusterStatusRequestToSDK(&clusterStatusReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Libraries.ClusterStatus(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
 		if clusterStatusLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", clusterStatusLimit)
 		}
@@ -180,7 +200,11 @@ func newClusterStatus() *cobra.Command {
 			ctx = cmdio.WithLimit(ctx, clusterStatusLimit)
 		}
 
-		return cmdio.RenderIterator(ctx, response)
+		out, err := clusterlibraries.ClusterLibraryStatusesFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -201,13 +225,13 @@ func newClusterStatus() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var installOverrides []func(
 	*cobra.Command,
-	*compute.InstallLibraries,
+	*clusterlibraries.InstallLibrariesRequest,
 )
 
 func newInstall() *cobra.Command {
 	cmd := &cobra.Command{}
+	var installReq clusterlibraries.InstallLibrariesRequest
 
-	var installReq compute.InstallLibraries
 	var installJson flags.JsonFlag
 
 	cmd.Flags().Var(&installJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -227,6 +251,7 @@ func newInstall() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := installJson.Unmarshal(&installReq)
@@ -243,10 +268,16 @@ func newInstall() *cobra.Command {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		err = w.Libraries.Install(ctx, installReq)
+		sdkReq, err := clusterlibraries.InstallLibrariesRequestToSDK(&installReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Libraries.InstallLibraries(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -268,13 +299,13 @@ func newInstall() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var uninstallOverrides []func(
 	*cobra.Command,
-	*compute.UninstallLibraries,
+	*clusterlibraries.UninstallLibrariesRequest,
 )
 
 func newUninstall() *cobra.Command {
 	cmd := &cobra.Command{}
+	var uninstallReq clusterlibraries.UninstallLibrariesRequest
 
-	var uninstallReq compute.UninstallLibraries
 	var uninstallJson flags.JsonFlag
 
 	cmd.Flags().Var(&uninstallJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -295,6 +326,7 @@ func newUninstall() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := uninstallJson.Unmarshal(&uninstallReq)
@@ -311,10 +343,16 @@ func newUninstall() *cobra.Command {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		err = w.Libraries.Uninstall(ctx, uninstallReq)
+		sdkReq, err := clusterlibraries.UninstallLibrariesRequestToSDK(&uninstallReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Libraries.UninstallLibraries(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 

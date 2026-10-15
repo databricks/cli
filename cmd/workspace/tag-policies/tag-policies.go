@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/tags"
 	"github.com/spf13/cobra"
+
+	tagpolicies "github.com/databricks/cli/libs/sdktypes/tagpolicies/v1"
+	sdktagpolicies "github.com/databricks/sdk-go/tagpolicies/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -58,19 +61,19 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createTagPolicyOverrides []func(
 	*cobra.Command,
-	*tags.CreateTagPolicyRequest,
+	*tagpolicies.CreateTagPolicyRequest,
 )
 
 func newCreateTagPolicy() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createTagPolicyReq tagpolicies.CreateTagPolicyRequest
+	createTagPolicyReq.TagPolicy = &tagpolicies.TagPolicy{}
 
-	var createTagPolicyReq tags.CreateTagPolicyRequest
-	createTagPolicyReq.TagPolicy = tags.TagPolicy{}
 	var createTagPolicyJson flags.JsonFlag
 
 	cmd.Flags().Var(&createTagPolicyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createTagPolicyReq.TagPolicy.Description, "description", createTagPolicyReq.TagPolicy.Description, ``)
+	flags.StringPtrVar(cmd.Flags(), &createTagPolicyReq.TagPolicy.Description, "description", ``)
 	// TODO: array: values
 
 	cmd.Use = "create-tag-policy TAG_KEY"
@@ -104,6 +107,7 @@ func newCreateTagPolicy() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createTagPolicyJson.Unmarshal(&createTagPolicyReq.TagPolicy)
@@ -118,15 +122,23 @@ func newCreateTagPolicy() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createTagPolicyReq.TagPolicy.TagKey = args[0]
+			createTagPolicyReq.TagPolicy.TagKey = new(args[0])
 		}
 
-		response, err := w.TagPolicies.CreateTagPolicy(ctx, createTagPolicyReq)
+		sdkReq, err := tagpolicies.CreateTagPolicyRequestToSDK(&createTagPolicyReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.TagPolicies.CreateTagPolicy(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := tagpolicies.TagPolicyFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -147,13 +159,12 @@ func newCreateTagPolicy() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteTagPolicyOverrides []func(
 	*cobra.Command,
-	*tags.DeleteTagPolicyRequest,
+	*sdktagpolicies.DeleteTagPolicyRequest,
 )
 
 func newDeleteTagPolicy() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteTagPolicyReq tags.DeleteTagPolicyRequest
+	var deleteTagPolicyReq sdktagpolicies.DeleteTagPolicyRequest
 
 	cmd.Use = "delete-tag-policy TAG_KEY"
 	cmd.Short = `Delete a tag policy.`
@@ -178,10 +189,12 @@ func newDeleteTagPolicy() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteTagPolicyReq.TagKey = args[0]
+		deleteTagPolicyReq.TagKey = new(args[0])
 
-		err = w.TagPolicies.DeleteTagPolicy(ctx, deleteTagPolicyReq)
+		sdkReq := &deleteTagPolicyReq
+		err = w.TagPolicies.DeleteTagPolicy(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -206,13 +219,12 @@ func newDeleteTagPolicy() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getTagPolicyOverrides []func(
 	*cobra.Command,
-	*tags.GetTagPolicyRequest,
+	*sdktagpolicies.GetTagPolicyRequest,
 )
 
 func newGetTagPolicy() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getTagPolicyReq tags.GetTagPolicyRequest
+	var getTagPolicyReq sdktagpolicies.GetTagPolicyRequest
 
 	cmd.Use = "get-tag-policy TAG_KEY"
 	cmd.Short = `Get a tag policy.`
@@ -238,15 +250,21 @@ func newGetTagPolicy() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getTagPolicyReq.TagKey = args[0]
+		getTagPolicyReq.TagKey = new(args[0])
 
-		response, err := w.TagPolicies.GetTagPolicy(ctx, getTagPolicyReq)
+		sdkReq := &getTagPolicyReq
+		response, err := w.TagPolicies.GetTagPolicy(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := tagpolicies.TagPolicyFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -267,25 +285,25 @@ func newGetTagPolicy() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listTagPoliciesOverrides []func(
 	*cobra.Command,
-	*tags.ListTagPoliciesRequest,
+	*tagpolicies.ListTagPoliciesRequest,
 )
 
 func newListTagPolicies() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listTagPoliciesReq tagpolicies.ListTagPoliciesRequest
 
-	var listTagPoliciesReq tags.ListTagPoliciesRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listTagPoliciesLimit int
 
-	cmd.Flags().IntVar(&listTagPoliciesReq.PageSize, "page-size", listTagPoliciesReq.PageSize, `The maximum number of results to return in this request.`)
+	flags.IntPtrVar(cmd.Flags(), &listTagPoliciesReq.PageSize, "page-size", `The maximum number of results to return in this request.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listTagPoliciesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listTagPoliciesReq.PageToken, "page-token", listTagPoliciesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listTagPoliciesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-tag-policies"
@@ -312,16 +330,20 @@ func newListTagPolicies() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.TagPolicies.ListTagPolicies(ctx, listTagPoliciesReq)
+		sdkReq, err := tagpolicies.ListTagPoliciesRequestToSDK(&listTagPoliciesReq)
+		if err != nil {
+			return err
+		}
 		if listTagPoliciesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listTagPoliciesLimit)
 		}
 		if listTagPoliciesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listTagPoliciesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.TagPolicies.ListTagPoliciesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, tagpolicies.TagPolicyFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -342,19 +364,19 @@ func newListTagPolicies() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateTagPolicyOverrides []func(
 	*cobra.Command,
-	*tags.UpdateTagPolicyRequest,
+	*tagpolicies.UpdateTagPolicyRequest,
 )
 
 func newUpdateTagPolicy() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateTagPolicyReq tagpolicies.UpdateTagPolicyRequest
+	updateTagPolicyReq.TagPolicy = &tagpolicies.TagPolicy{}
 
-	var updateTagPolicyReq tags.UpdateTagPolicyRequest
-	updateTagPolicyReq.TagPolicy = tags.TagPolicy{}
 	var updateTagPolicyJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateTagPolicyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateTagPolicyReq.TagPolicy.Description, "description", updateTagPolicyReq.TagPolicy.Description, ``)
+	flags.StringPtrVar(cmd.Flags(), &updateTagPolicyReq.TagPolicy.Description, "description", ``)
 	// TODO: array: values
 
 	cmd.Use = "update-tag-policy TAG_KEY UPDATE_MASK"
@@ -395,6 +417,7 @@ func newUpdateTagPolicy() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateTagPolicyJson.Unmarshal(&updateTagPolicyReq.TagPolicy)
@@ -408,15 +431,23 @@ func newUpdateTagPolicy() *cobra.Command {
 				}
 			}
 		}
-		updateTagPolicyReq.TagKey = args[0]
-		updateTagPolicyReq.UpdateMask = args[1]
+		updateTagPolicyReq.TagPolicy.TagKey = new(args[0])
+		updateTagPolicyReq.UpdateMask = new(args[1])
 
-		response, err := w.TagPolicies.UpdateTagPolicy(ctx, updateTagPolicyReq)
+		sdkReq, err := tagpolicies.UpdateTagPolicyRequestToSDK(&updateTagPolicyReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.TagPolicies.UpdateTagPolicy(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := tagpolicies.TagPolicyFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

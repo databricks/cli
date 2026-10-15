@@ -9,16 +9,22 @@ import (
 	"strings"
 	"time"
 
+	"maps"
+	"strconv"
+
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/databricks-sdk-go/experimental/api"
-	"github.com/databricks/databricks-sdk-go/common/types/duration"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
-	"github.com/databricks/databricks-sdk-go/service/{{.Package.Name}}"
+	sdkcoretypes "github.com/databricks/sdk-go/core/types"
+	"github.com/databricks/sdk-go/options/lro"
 	"github.com/spf13/cobra"
+	{{range .BindImports}}
+	{{.}}
+	{{- end}}
 
 	{{range .Subservices -}}
 	{{.SnakeName}} "github.com/databricks/cli/cmd/{{ if .ParentService.IsAccounts }}account{{ else }}workspace{{ end }}/{{.KebabName}}"
@@ -131,8 +137,8 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var {{.CamelName}}Overrides []func(
 	*cobra.Command,
-	{{- if not .IsLegacyEmptyRequest }}
-	*{{$.Package.Name}}.{{.Request.PascalName}},
+	{{- if and (not .IsLegacyEmptyRequest) .Bind.HasRequest }}
+	*{{.Bind.ReqType}},
 	{{- end }}
 )
 
@@ -144,10 +150,13 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- $canUseJson := and .CanUseJson (not (in $excludeFromJson .KebabName )) -}}
 	{{- if not .IsLegacyEmptyRequest}}
 
-	var {{.CamelName}}Req {{$.Package.Name}}.{{.Request.PascalName}}
-	{{- if .RequestBodyField }}
-	{{.CamelName}}Req.{{.RequestBodyField.PascalName}} = {{ if .RequestBodyField.IsOptionalObject }}&{{end}}{{$.Package.Name}}.{{.RequestBodyField.Entity.PascalName}}{}
+	{{- if .Bind.HasRequest }}
+	var {{.Bind.ReqVar}} {{.Bind.ReqType}}
+	{{- with .Bind.ReqInit }}
+	{{.}}
 	{{- end }}
+	{{- end }}
+	{{.Bind.RawDecls}}
 	{{- if $canUseJson}}
 	var {{.CamelName}}Json flags.JsonFlag
 	{{- end}}
@@ -213,18 +222,20 @@ func new{{.PascalName}}() *cobra.Command {
 			{{- /* The API field is named "limit" but isn't a declared pagination field
 			       (e.g. jobs.List.Limit). Rename to --page-size to avoid colliding with
 			       the --limit result capping flag. */ -}}
-	cmd.Flags().{{template "arg-type" .Entity}}(&{{- template "request-body-obj" (dict "Method" $method "Field" .)}}, "page-size", {{- template "request-body-obj" (dict "Method" $method "Field" .)}}, `{{.Summary | without "`" | trimSuffix "."}}{{if .Summary}}.{{end}}`)
+	{{$method.Bind.FlagDef . "page-size" (.FlagUsage false)}}
+	{{- if $method.Bind.Mapped .}}
 	cmd.Flags().Lookup("page-size").Hidden = true
+	{{- end}}
 			{{else if .Entity.IsObject}}{{if not (eq . $method.RequestBodyField) }}// TODO: complex arg: {{.Name}}{{end}}
 			{{else if .Entity.IsAny }}// TODO: any: {{.Name}}
 			{{else if .Entity.ArrayValue }}// TODO: array: {{.Name}}
 			{{else if .Entity.MapValue }}// TODO: map via StringToStringVar: {{.Name}}
 			{{else if .IsComputed -}}
 			{{else if .IsOutputOnly -}}
-			{{else if .Entity.Enum }}cmd.Flags().Var(&{{- template "request-body-obj" (dict "Method" $method "Field" .)}}, "{{.KebabName}}", `{{.Summary | without "`" | trimSuffix "."}}{{if .Summary}}. {{end}}Supported values: {{template "printArray" .Entity.Enum}}{{if $hasFieldMask}}. Wire name: '{{.Name}}'.{{end}}`)
+			{{else if .Entity.Enum }}{{$method.Bind.FlagDef . .KebabName (.EnumFlagUsage $hasFieldMask)}}
 			{{else if or .Entity.IsDuration .Entity.IsTimestamp .Entity.IsFieldMask}} var {{.CamelName}}Param string
 			cmd.Flags().StringVar(&{{.CamelName}}Param, "{{.KebabName}}", {{.CamelName}}Param, `{{.Summary | without "`" | trimSuffix "."}}{{if .Summary}}.{{end}}{{if $hasFieldMask}} Wire name: '{{.Name}}'.{{end}}`)
-			{{else}}cmd.Flags().{{template "arg-type" .Entity}}(&{{- template "request-body-obj" (dict "Method" $method "Field" .)}}, "{{.KebabName}}", {{- template "request-body-obj" (dict "Method" $method "Field" .)}}, `{{.Summary | without "`" | trimSuffix "."}}{{if .Summary}}.{{end}}{{if $hasFieldMask}} Wire name: '{{.Name}}'.{{end}}`)
+			{{else}}{{$method.Bind.FlagDef . .KebabName (.FlagUsage $hasFieldMask)}}
 			{{end}}
 		{{- end -}}
 	{{- end}}
@@ -242,26 +253,36 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- if eq .Path "/api/2.1/clusters/events" }}
 	{{- $method := . }}
 	{{- range .AllFields }}{{ if eq .Name "offset" }}
-	cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{$method.CamelName}}Req.{{.PascalName}}, `{{.Summary | without "`" | trimSuffix "."}}{{if .Summary}}.{{end}}`)
+	{{$method.Bind.FlagDef . .KebabName (.FlagUsage false)}}
+	{{- if $method.Bind.Mapped .}}
 	cmd.Flags().Lookup("{{.KebabName}}").Hidden = true
+	{{- end}}
 	{{- end }}{{ end }}
 	{{- else if and .Pagination.Token .Pagination.Token.PollField }}
-	cmd.Flags().{{template "arg-type" .Pagination.Token.PollField.Entity}}(&{{.CamelName}}Req.{{.Pagination.Token.PollField.PascalName}}, "{{.Pagination.Token.PollField.KebabName}}", {{.CamelName}}Req.{{.Pagination.Token.PollField.PascalName}}, `Pagination token.`)
+	{{.Bind.FlagDef .Pagination.Token.PollField .Pagination.Token.PollField.KebabName "Pagination token."}}
+	{{- if .Bind.Mapped .Pagination.Token.PollField}}
 	cmd.Flags().Lookup("{{.Pagination.Token.PollField.KebabName}}").Hidden = true
+	{{- end}}
 	{{- end }}
 	{{- if .Pagination.Offset }}
-	cmd.Flags().{{template "arg-type" .Pagination.Offset.Entity}}(&{{.CamelName}}Req.{{.Pagination.Offset.PascalName}}, "{{.Pagination.Offset.KebabName}}", {{.CamelName}}Req.{{.Pagination.Offset.PascalName}}, `{{.Pagination.Offset.Summary | without "`" | trimSuffix "."}}{{if .Pagination.Offset.Summary}}.{{end}}`)
+	{{.Bind.FlagDef .Pagination.Offset .Pagination.Offset.KebabName (.Pagination.Offset.FlagUsage false)}}
+	{{- if .Bind.Mapped .Pagination.Offset}}
 	cmd.Flags().Lookup("{{.Pagination.Offset.KebabName}}").Hidden = true
+	{{- end}}
 	{{- end }}
 	{{- if .Pagination.Limit }}
 	{{- if ne .Pagination.Limit.KebabName "limit" }}
-	cmd.Flags().{{template "arg-type" .Pagination.Limit.Entity}}(&{{.CamelName}}Req.{{.Pagination.Limit.PascalName}}, "{{.Pagination.Limit.KebabName}}", {{.CamelName}}Req.{{.Pagination.Limit.PascalName}}, `Number of results per API page.`)
+	{{.Bind.FlagDef .Pagination.Limit .Pagination.Limit.KebabName "Number of results per API page."}}
+	{{- if .Bind.Mapped .Pagination.Limit}}
 	cmd.Flags().Lookup("{{.Pagination.Limit.KebabName}}").Hidden = true
+	{{- end}}
 	{{- end }}
 	{{- end }}
 	{{- if .Pagination.MaxResults }}
-	cmd.Flags().{{template "arg-type" .Pagination.MaxResults.Entity}}(&{{.CamelName}}Req.{{.Pagination.MaxResults.PascalName}}, "{{.Pagination.MaxResults.KebabName}}", {{.CamelName}}Req.{{.Pagination.MaxResults.PascalName}}, `{{.Pagination.MaxResults.Summary | without "`" | trimSuffix "."}}{{if .Pagination.MaxResults.Summary}}.{{end}}`)
+	{{.Bind.FlagDef .Pagination.MaxResults .Pagination.MaxResults.KebabName (.Pagination.MaxResults.FlagUsage false)}}
+	{{- if .Bind.Mapped .Pagination.MaxResults}}
 	cmd.Flags().Lookup("{{.Pagination.MaxResults.KebabName}}").Hidden = true
+	{{- end}}
 	{{- end }}
 	{{- end }}
 
@@ -279,7 +300,7 @@ func new{{.PascalName}}() *cobra.Command {
 
 	{{- $hasPosArgs := .HasRequiredPositionalArguments -}}
 	{{- $hasSinglePosArg := and $hasPosArgs (and (eq 1 (len .RequiredPositionalArguments)) (eq 1 (len $request.RequiredFields))) -}}
-	{{- $serviceHasNamedIdMap := and (and $.List $.List.NamedIdMap) (not (eq .PascalName "List")) -}}
+	{{- $serviceHasNamedIdMap := and (and (and $.List $.List.NamedIdMap) (not (eq .PascalName "List"))) (ne $.NamedIdMapCall "") -}}
 	{{- $hasIdPrompt := and (not $noPrompt) (and $hasSinglePosArg $serviceHasNamedIdMap) -}}
 	{{- $wait := and .Wait (and (not .IsCrudRead) (not (eq .SnakeName "get_run"))) -}}
 	{{- $hasRequiredArgs :=  and (not $hasIdPrompt) $hasPosArgs -}}
@@ -359,10 +380,11 @@ func new{{.PascalName}}() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		{{if $.IsAccounts}}a := cmdctx.AccountClient(ctx){{else}}w := cmdctx.WorkspaceClient(ctx){{end}}
+		_ = {{if $.IsAccounts}}a{{else}}w{{end}}
 		{{- if not .IsLegacyEmptyRequest }}
 			{{ if $canUseJson }}
 			if cmd.Flags().Changed("json") {
-					diags := {{.CamelName}}Json.Unmarshal(&{{.CamelName}}Req{{ if .RequestBodyField }}.{{.RequestBodyField.PascalName}}{{ end }})
+					diags := {{.CamelName}}Json.Unmarshal({{.Bind.JsonTarget}})
 					if diags.HasError() {
 						return diags.Error()
 					}
@@ -382,7 +404,7 @@ func new{{.PascalName}}() *cobra.Command {
 				if len(args) == 0 {
 					sp := cmdio.NewSpinner(ctx)
 					sp.Update("No{{range $request.RequiredFields}} {{.ConstantName}}{{end}} argument specified. Loading names for {{$.TitleName}} drop-down.")
-					names, err := {{if $.IsAccounts}}a{{else}}w{{end}}.{{($.TrimPrefix "account").PascalName}}.{{$.List.NamedIdMap.PascalName}}(ctx{{if not $.List.IsLegacyEmptyRequest}}, {{$.Package.Name}}.{{$.List.Request.PascalName}}{}{{end}})
+					names, err := {{$.NamedIdMapCall}}
 					sp.Close()
 					if err != nil {
 						return fmt.Errorf("failed to load names for {{$.TitleName}} drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -406,7 +428,7 @@ func new{{.PascalName}}() *cobra.Command {
 			{{- if and (not .Required) (not .IsComputed) (not .IsOutputOnly)}}
 				{{if or .Entity.IsDuration .Entity.IsTimestamp .Entity.IsFieldMask}}
 			        if {{.CamelName}}Param != "" {
-						{{template "parse-well-known-type" (dict "Method" $method "Field" . "SourceValue" (printf "%sParam" .CamelName))}}
+						{{$method.Bind.WellKnown . (printf "%sParam" .CamelName)}}
 				    }
 				{{- end -}}
 			{{- end -}}
@@ -417,26 +439,69 @@ func new{{.PascalName}}() *cobra.Command {
 
 			{{- end}}
 		{{end}}
-		{{if .LongRunningOperation -}}
+		{{- if .Bind.IsRaw }}
+		{{template "raw-call" (dict "Method" . "Service" $)}}
+		{{- else if .Bind.IsLegacy }}
+		{{- if eq .Bind.LegacyKind "listing" }}
+		response := {{.Bind.LegacyCall}}(ctx{{if .Bind.HasRequest}}, {{.Bind.ReqVar}}{{end}})
+		{{- if .Pagination }}
+		if {{.CamelName}}Limit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", {{.CamelName}}Limit)
+		}
+		if {{.CamelName}}Limit > 0 {
+			ctx = cmdio.WithLimit(ctx, {{.CamelName}}Limit)
+		}
+		{{- end }}
+		return cmdio.RenderListing(ctx, response)
+		{{- else if eq .Bind.LegacyKind "err" }}
+		err = {{.Bind.LegacyCall}}(ctx{{if .Bind.HasRequest}}, {{.Bind.ReqVar}}{{end}})
+		if err != nil {
+			return err
+		}
+		return nil
+		{{- else }}
+		response, err := {{.Bind.LegacyCall}}(ctx{{if .Bind.HasRequest}}, {{.Bind.ReqVar}}{{end}})
+		if err != nil {
+			return err
+		}
+		{{- if .IsResponseByteStream }}
+		defer response.{{.ResponseBodyField.PascalName}}.Close()
+		return cmdio.Render(ctx, response.{{.ResponseBodyField.PascalName}})
+		{{- else }}
+		return cmdio.Render(ctx, response)
+		{{- end }}
+		{{- end }}
+		{{- else }}
+		{{.Bind.PathConsts}}
+		{{.Bind.SdkReq}}
+		{{- if and .LongRunningOperation (eq .Bind.SdkKind "op") }}
 		// Determine which mode to execute based on flags.
 		switch {
 		case {{.CamelName}}SkipWait:
-			wait, err := {{if $.IsAccounts}}a{{else}}w{{end}}.{{$.PascalName}}.{{.PascalName}}(ctx{{if not .IsLegacyEmptyRequest}}, {{.CamelName}}Req{{end}})
+			wait, err := {{.Bind.ClientExpr}}.{{.Bind.SdkMethod}}(ctx{{.Bind.CallArgs}})
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := {{if $.IsAccounts}}a{{else}}w{{end}}.{{$.PascalName}}.{{.LongRunningOperation.GetOperation.PascalName}}(ctx, {{$.Package.Name}}.{{.LongRunningOperation.GetOperation.Request.PascalName}}{
+			{{- if .Bind.GetOperation }}
+			operation, err := {{.Bind.ClientExpr}}.{{.Bind.GetOperation}}(ctx, {{.Bind.GetOperationRequest}}{
 				Name: wait.Name(),
 			})
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(ctx, operation)
+			out, err := {{.Bind.GetOperationFromSDK}}(operation)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
+			{{- else }}
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
+			{{- end }}
 
 		default:
-			wait, err := {{if $.IsAccounts}}a{{else}}w{{end}}.{{$.PascalName}}.{{.PascalName}}(ctx{{if not .IsLegacyEmptyRequest}}, {{.CamelName}}Req{{end}})
+			wait, err := {{.Bind.ClientExpr}}.{{.Bind.SdkMethod}}(ctx{{.Bind.CallArgs}})
 			if err != nil {
 				return err
 			}
@@ -446,63 +511,82 @@ func new{{.PascalName}}() *cobra.Command {
 			sp.Update("Waiting for {{.KebabName}} to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout({{.CamelName}}Timeout)
-			{{ if not .LongRunningOperation.ResponseType.IsEmptyResponse -}}
-			response, err := wait.Wait(ctx, opts)
-			{{- else }}
-			err = wait.Wait(ctx, opts)
-			{{- end }}
+			{{if .Bind.HasWaitResult}}response, err :={{else}}response := struct{}{}
+			err ={{end}} wait.Wait(ctx, lro.WithTimeout({{.CamelName}}Timeout))
 			if err != nil {
 				return err
 			}
 			sp.Close()
-			{{if not .LongRunningOperation.ResponseType.IsEmptyResponse -}}
-			return cmdio.Render(ctx, response)
-			{{- else -}}
+			{{template "render-result" .}}
+		}
+		{{- else if eq .Bind.SdkKind "waiter" }}
+		wait, err := {{.Bind.ClientExpr}}.{{.Bind.SdkMethod}}(ctx{{.Bind.CallArgs}})
+		if err != nil {
+			return err
+		}
+		{{- if or .Wait .LongRunningOperation }}
+		if {{.CamelName}}SkipWait {
+			{{- if .Bind.WaiterID }}
+			return cmdio.Render(ctx, map[string]any{"{{.Bind.WaiterIDJSON}}": wait.{{.Bind.WaiterID}}()})
+			{{- else }}
 			return nil
 			{{- end }}
 		}
-		{{else if $wait -}}
-		wait, err := {{if $.IsAccounts}}a{{else}}w{{end}}.{{$.PascalName}}.{{.PascalName}}(ctx{{if not .IsLegacyEmptyRequest}}, {{.CamelName}}Req{{end}})
-		if err != nil {
-			return err
-		}
-		if {{.CamelName}}SkipWait {
-			{{if not .Response.IsEmptyResponse -}}
-			return cmdio.Render(ctx, wait.Response)
-			{{- else -}}
-			return nil
-			{{- end}}
-		}
 		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *{{$.Package.Name}}.{{.Wait.Poll.Response.PascalName}}) {
-			{{if .Wait.MessagePath -}}
-			{{if .Wait.ComplexMessagePath -}}
-			if i.{{.Wait.MessagePathHead.PascalName}} == nil {
-				return
-			}
-			status := i{{range .Wait.StatusPath}}.{{.PascalName}}{{end}}
-			statusMessage := fmt.Sprintf("current status: %s", status)
-			if i.{{.Wait.MessagePathHead.PascalName}} != nil {
-				statusMessage = i{{range .Wait.MessagePath}}.{{.PascalName}}{{end}}
-			}
-			{{- else -}}
-			statusMessage := i{{range .Wait.MessagePath}}.{{.PascalName}}{{end}}
-			{{- end}}
-			{{- else -}}
-			status := i{{range .Wait.StatusPath}}.{{.PascalName}}{{end}}
-			statusMessage := fmt.Sprintf("current status: %s", status)
-			{{- end}}
-			sp.Update(statusMessage)
-		}).GetWithTimeout({{.CamelName}}Timeout)
+		sp.Update("Waiting for {{.KebabName}} to complete...")
+		{{if .Bind.HasWaitResult}}response, err :={{else}}response := struct{}{}
+		err ={{end}} wait.Wait(ctx, lro.WithTimeout({{.CamelName}}Timeout))
 		sp.Close()
+		{{- else }}
+		{{if .Bind.HasWaitResult}}response, err :={{else}}response := struct{}{}
+		err ={{end}} wait.Wait(ctx)
+		{{- end }}
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
-		{{- else -}}
-		{{template "method-call" (dict "Method" . "Service" $)}}
-		{{end -}}
+		{{template "render-result" .}}
+		{{- else if eq .Bind.SdkKind "op" }}
+		wait, err := {{.Bind.ClientExpr}}.{{.Bind.SdkMethod}}(ctx{{.Bind.CallArgs}})
+		if err != nil {
+			return err
+		}
+		{{if .Bind.HasWaitResult}}response, err :={{else}}response := struct{}{}
+		err ={{end}} wait.Wait(ctx)
+		if err != nil {
+			return err
+		}
+		{{template "render-result" .}}
+		{{- else if eq .Bind.SdkKind "iter" }}
+		if {{.CamelName}}Limit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", {{.CamelName}}Limit)
+		}
+		if {{.CamelName}}Limit > 0 {
+			ctx = cmdio.WithLimit(ctx, {{.CamelName}}Limit)
+		}
+		response := {{.Bind.ClientExpr}}.{{.Bind.IterMethod}}(ctx{{.Bind.CallArgs}})
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, {{.Bind.FromSDK}}))
+		{{- else if eq .Bind.SdkKind "err" }}
+		err = {{.Bind.ClientExpr}}.{{.Bind.SdkMethod}}(ctx{{.Bind.CallArgs}})
+		if err != nil {
+			return err
+		}
+		return nil
+		{{- else }}
+		response, err := {{.Bind.ClientExpr}}.{{.Bind.SdkMethod}}(ctx{{.Bind.CallArgs}})
+		if err != nil {
+			return err
+		}
+		{{- if .Pagination }}
+		if {{.CamelName}}Limit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", {{.CamelName}}Limit)
+		}
+		if {{.CamelName}}Limit > 0 {
+			ctx = cmdio.WithLimit(ctx, {{.CamelName}}Limit)
+		}
+		{{- end }}
+		{{template "render-result" .}}
+		{{- end }}
+		{{- end }}
 	}
 
 	// Disable completions since they are not applicable.
@@ -511,7 +595,7 @@ func new{{.PascalName}}() *cobra.Command {
 
 	// Apply optional overrides to this command.
 	for _, fn := range {{.CamelName}}Overrides {
-		fn(cmd{{if not .IsLegacyEmptyRequest}}, &{{.CamelName}}Req{{end}})
+		fn(cmd{{if and (not .IsLegacyEmptyRequest) .Bind.HasRequest}}, &{{.Bind.ReqVar}}{{end}})
 	}
 
 	return cmd
@@ -520,87 +604,49 @@ func new{{.PascalName}}() *cobra.Command {
 {{end}}
 // end service {{.Name}}{{end}}
 
-{{- define "method-call" -}}
-	{{- $method := .Method -}}
-	{{- $service := .Service -}}
-
-		{{if not $method.Response.IsEmptyResponse -}}
-		  response{{ if not $method.Pagination}}, err{{end}} :=
-		{{- else -}}
-		  err =
-		{{- end}}
-		{{- if $service.IsAccounts}}a{{else}}w{{end}}.
-		{{- if $service.HasParent }}
-			{{- ($service.ParentService.TrimPrefix "account").PascalName }}.
-			{{- ($service.TrimPrefix "account").PascalName}}().
-		{{- else}}
-			{{- ($service.TrimPrefix "account").PascalName}}.
-		{{- end}}
-		{{- $method.PascalName}}(ctx{{if not $method.IsLegacyEmptyRequest}}, {{$method.CamelName}}Req{{end}})
-		{{- if not (and $method.Response $method.Pagination) }}
+{{- define "render-result" -}}
+	{{- if not .Bind.HasWaitResult }}
+		_ = response
+		return nil
+	{{- else if .Bind.HasResult }}
+		out, err := {{.Bind.FromSDK}}(response)
 		if err != nil {
 			return err
 		}
-		{{- end}}
-		{{ if not $method.Response.IsEmptyResponse -}}
-			{{- if $method.Pagination -}}
-			if {{$method.CamelName}}Limit < 0 {
-				return fmt.Errorf("--limit must be a non-negative integer, got %d", {{$method.CamelName}}Limit)
-			}
-			if {{$method.CamelName}}Limit > 0 {
-				ctx = cmdio.WithLimit(ctx, {{$method.CamelName}}Limit)
-			}
-			{{- end }}
-			{{ if $method.IsResponseByteStream -}}
-			defer response.{{$method.ResponseBodyField.PascalName}}.Close()
-			return cmdio.Render{{ if $method.Pagination}}Iterator{{end}}(ctx, response.{{$method.ResponseBodyField.PascalName}})
-			{{- else }}
-			return cmdio.Render{{ if $method.Pagination}}Iterator{{end}}(ctx, response)
-			{{- end -}}
-		{{ else -}}
+		return cmdio.Render(ctx, out)
+	{{- else }}
+		_ = response
 		return nil
-		{{- end -}}
+	{{- end }}
 {{- end -}}
 
-{{- define "arg-type" -}}
-	{{- if .IsString}}StringVar
-	{{- /* The following Well Known Types are expressed as strings in JSON */}}
-	{{- else if .IsTimestamp}}StringVar
-	{{- else if .IsDuration}}StringVar
-	{{- else if .IsFieldMask}}StringVar
-	{{- else if .IsBool}}BoolVar
-	{{- else if .IsInt64}}Int64Var
-	{{- else if .IsFloat64}}Float64Var
-	{{- else if .IsInt}}IntVar
-	{{- else if .Enum }}StringVar
-	{{- else}}/* NOT PRIMITIVE */
-	{{- end -}}
-{{- end -}}
-
-{{- define "parse-well-known-type" -}}
-	{{- $field := .Field -}}
+{{- define "raw-call" -}}
 	{{- $method := .Method -}}
-	{{- $sourceValue := .SourceValue -}}
-	{{- if $field.Entity.IsTimestamp -}}
-		{{$field.CamelName}}Bytes := []byte(fmt.Sprintf("\"%s\"", {{$sourceValue}}))
-		var {{$field.CamelName}}Field sdktime.Time
-		err = json.Unmarshal({{$field.CamelName}}Bytes, &{{$field.CamelName}}Field)
+		{{$method.Bind.RawAssemble}}
+		{{$method.Bind.RawQuery}}
+		api, err := apiclient.New({{if .Service.IsAccounts}}a{{else}}w{{end}}.Config)
 		if err != nil {
-			return fmt.Errorf("invalid {{$field.ConstantName}}: %s", {{$sourceValue}})
+			return err
 		}
-		{{template "request-body-obj" (dict "Method" $method "Field" $field)}} = {{if not $field.Required}}&{{end}}{{$field.CamelName}}Field
-	{{- else if $field.Entity.IsDuration -}}
-		{{$field.CamelName}}Bytes := []byte(fmt.Sprintf("\"%s\"", {{$sourceValue}}))
-		var {{$field.CamelName}}Field duration.Duration
-		err = json.Unmarshal({{$field.CamelName}}Bytes, &{{$field.CamelName}}Field)
+		{{- if $method.Response.IsEmptyResponse }}
+		err = api.Do(ctx, "{{$method.Bind.Verb}}", rawPath, {{$method.Bind.RawHeaders}}, rawQuery, {{$method.Bind.RawBody}}, nil)
 		if err != nil {
-			return fmt.Errorf("invalid {{$field.ConstantName}}: %s", {{$sourceValue}})
+			return err
 		}
-		{{template "request-body-obj" (dict "Method" $method "Field" $field)}} = {{if not $field.Required}}&{{end}}{{$field.CamelName}}Field
-	{{- else if $field.Entity.IsFieldMask -}}
-		{{$field.CamelName}}Array := strings.Split({{$sourceValue}}, ",")
-		{{template "request-body-obj" (dict "Method" $method "Field" $field)}} = {{if $field.Required}}*{{end}}fieldmask.New({{$field.CamelName}}Array)
-	{{- end -}}
+		return nil
+		{{- else }}
+		var response any
+		err = api.Do(ctx, "{{$method.Bind.Verb}}", rawPath, {{$method.Bind.RawHeaders}}, rawQuery, {{$method.Bind.RawBody}}, &response)
+		if err != nil {
+			return err
+		}
+		{{- if $method.Pagination }}
+		if {{$method.CamelName}}Limit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", {{$method.CamelName}}Limit)
+		}
+		{{- end }}
+		return cmdio.Render(ctx, response)
+		{{- end }}
 {{- end -}}
 
 {{- define "args-scan" -}}
@@ -613,25 +659,14 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- if $optionalIfJsonIsUsed  }}
 	if !cmd.Flags().Changed("json") {
 	{{- end }}
-	{{if and (not $field.Entity.IsString) (not $field.Entity.IsFieldMask) (not $field.Entity.IsTimestamp) (not $field.Entity.IsDuration) -}}
-	_, err = fmt.Sscan(args[{{$arg}}], &{{- template "request-body-obj" (dict "Method" $method "Field" $field)}})
-	if err != nil {
-		return fmt.Errorf("invalid {{$field.ConstantName}}: %s", args[{{$arg}}])
-	}
-	{{else if or $field.Entity.IsTimestamp $field.Entity.IsDuration $field.Entity.IsFieldMask -}}
+	{{- if or $field.Entity.IsTimestamp $field.Entity.IsDuration $field.Entity.IsFieldMask }}
 	if args[{{$arg}}] != "" {
-		{{template "parse-well-known-type" (dict "Method" $method "Field" $field "SourceValue" (printf "args[%d]" $arg))}}
+		{{$method.Bind.ArgScan $field (printf "args[%d]" $arg)}}
 	}
-	{{- else -}}
-	{{- template "request-body-obj" (dict "Method" $method "Field" $field)}} = args[{{$arg}}]
-	{{- end -}}
+	{{- else }}
+	{{$method.Bind.ArgScan $field (printf "args[%d]" $arg)}}
+	{{- end }}
 	{{- if $optionalIfJsonIsUsed  }}
 	}
 	{{- end }}
-{{- end -}}
-
-{{- define "request-body-obj" -}}
-	{{- $method := .Method -}}
-	{{- $field := .Field -}}
-	{{$method.CamelName}}Req{{ if (and $method.RequestBodyField (and (not $field.IsPath) (not $field.IsQuery))) }}.{{$method.RequestBodyField.PascalName}}{{end}}.{{$field.PascalName}}
 {{- end -}}

@@ -7,10 +7,11 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 )
 
@@ -52,18 +53,23 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var migratePermissionsOverrides []func(
 	*cobra.Command,
-	*iam.MigratePermissionsRequest,
+	*map[string]any,
 )
 
 func newMigratePermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var migratePermissionsReq map[string]any
+	migratePermissionsReq = map[string]any{}
+	var migratePermissionsFromWorkspaceGroupNameRaw string
+	var migratePermissionsSizeRaw int
+	var migratePermissionsToAccountGroupNameRaw string
+	var migratePermissionsWorkspaceIdRaw int64
 
-	var migratePermissionsReq iam.MigratePermissionsRequest
 	var migratePermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&migratePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().IntVar(&migratePermissionsReq.Size, "size", migratePermissionsReq.Size, `The maximum number of permissions that will be migrated.`)
+	cmd.Flags().IntVar(&migratePermissionsSizeRaw, "size", migratePermissionsSizeRaw, `The maximum number of permissions that will be migrated.`)
 
 	cmd.Use = "migrate-permissions WORKSPACE_ID FROM_WORKSPACE_GROUP_NAME TO_ACCOUNT_GROUP_NAME"
 	cmd.Short = `Migrate Permissions.`
@@ -95,6 +101,7 @@ func newMigratePermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := migratePermissionsJson.Unmarshal(&migratePermissionsReq)
@@ -109,24 +116,42 @@ func newMigratePermissions() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[0], &migratePermissionsReq.WorkspaceId)
+			_, err = fmt.Sscan(args[0], &migratePermissionsWorkspaceIdRaw)
 			if err != nil {
 				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 			}
-
 		}
 		if !cmd.Flags().Changed("json") {
-			migratePermissionsReq.FromWorkspaceGroupName = args[1]
+			migratePermissionsFromWorkspaceGroupNameRaw = args[1]
 		}
 		if !cmd.Flags().Changed("json") {
-			migratePermissionsReq.ToAccountGroupName = args[2]
+			migratePermissionsToAccountGroupNameRaw = args[2]
 		}
 
-		response, err := w.PermissionMigration.MigratePermissions(ctx, migratePermissionsReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("from-workspace-group-name") || migratePermissionsFromWorkspaceGroupNameRaw != "" {
+			migratePermissionsReq["from_workspace_group_name"] = migratePermissionsFromWorkspaceGroupNameRaw
+		}
+		if cmd.Flags().Changed("size") || migratePermissionsSizeRaw != 0 {
+			migratePermissionsReq["size"] = migratePermissionsSizeRaw
+		}
+		if cmd.Flags().Changed("to-account-group-name") || migratePermissionsToAccountGroupNameRaw != "" {
+			migratePermissionsReq["to_account_group_name"] = migratePermissionsToAccountGroupNameRaw
+		}
+		if cmd.Flags().Changed("workspace-id") || migratePermissionsWorkspaceIdRaw != 0 {
+			migratePermissionsReq["workspace_id"] = migratePermissionsWorkspaceIdRaw
+		}
+		rawPath := "/api/2.0/permissionmigration"
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "POST", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, migratePermissionsReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 

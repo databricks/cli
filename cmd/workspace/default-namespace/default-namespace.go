@@ -5,11 +5,14 @@ package default_namespace
 import (
 	"errors"
 
+	"maps"
+
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
 )
 
@@ -61,15 +64,16 @@ The default namespace setting API allows users to configure the default
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*settings.DeleteDefaultNamespaceSettingRequest,
+	*map[string]any,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteReq map[string]any
+	deleteReq = map[string]any{}
+	var deleteEtagRaw string
 
-	var deleteReq settings.DeleteDefaultNamespaceSettingRequest
-
-	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning.`)
+	cmd.Flags().StringVar(&deleteEtagRaw, "etag", deleteEtagRaw, `etag used for versioning.`)
 
 	cmd.Use = "delete"
 	cmd.Short = `*Public Preview* Delete the default namespace setting.`
@@ -96,12 +100,24 @@ Delete the default namespace setting.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response, err := w.Settings.DefaultNamespace().Delete(ctx, deleteReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("etag") || deleteEtagRaw != "" {
+			rawQuery["etag"] = deleteEtagRaw
+		}
+		rawPath := "/api/2.0/settings/types/default_namespace_ws/names/default"
+
+		maps.Copy(rawQuery, deleteReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "DELETE", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -123,15 +139,16 @@ Delete the default namespace setting.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*settings.GetDefaultNamespaceSettingRequest,
+	*map[string]any,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
+	var getReq map[string]any
+	getReq = map[string]any{}
+	var getEtagRaw string
 
-	var getReq settings.GetDefaultNamespaceSettingRequest
-
-	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
+	cmd.Flags().StringVar(&getEtagRaw, "etag", getEtagRaw, `etag used for versioning.`)
 
 	cmd.Use = "get"
 	cmd.Short = `*Public Preview* Get the default namespace setting.`
@@ -154,12 +171,24 @@ Get the default namespace setting.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response, err := w.Settings.DefaultNamespace().Get(ctx, getReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("etag") || getEtagRaw != "" {
+			rawQuery["etag"] = getEtagRaw
+		}
+		rawPath := "/api/2.0/settings/types/default_namespace_ws/names/default"
+
+		maps.Copy(rawQuery, getReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -181,13 +210,16 @@ Get the default namespace setting.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*settings.UpdateDefaultNamespaceSettingRequest,
+	*map[string]any,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq map[string]any
+	updateReq = map[string]any{}
+	var updateAllowMissingRaw bool
+	var updateFieldMaskRaw string
 
-	var updateReq settings.UpdateDefaultNamespaceSettingRequest
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -214,6 +246,7 @@ Update the default namespace setting.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -230,11 +263,24 @@ Update the default namespace setting.
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.Settings.DefaultNamespace().Update(ctx, updateReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("allow-missing") || updateAllowMissingRaw != false {
+			updateReq["allow_missing"] = updateAllowMissingRaw
+		}
+		if cmd.Flags().Changed("field-mask") || updateFieldMaskRaw != "" {
+			updateReq["field_mask"] = updateFieldMaskRaw
+		}
+		rawPath := "/api/2.0/settings/types/default_namespace_ws/names/default"
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "PATCH", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, updateReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 

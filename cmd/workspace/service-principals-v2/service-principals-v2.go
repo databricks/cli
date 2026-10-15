@@ -7,10 +7,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
+
+	scim "github.com/databricks/cli/libs/sdktypes/scim/v1"
+	sdkscim "github.com/databricks/sdk-go/scim/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -59,24 +62,24 @@ Identities for use with jobs, automated tools, and systems such as scripts,
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*iam.CreateServicePrincipalRequest,
+	*scim.CreateServicePrincipalRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq scim.CreateServicePrincipalRequest
 
-	var createReq iam.CreateServicePrincipalRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createReq.Active, "active", createReq.Active, `If this user is active.`)
-	cmd.Flags().StringVar(&createReq.ApplicationId, "application-id", createReq.ApplicationId, `UUID relating to the service principal.`)
-	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `String that represents a concatenation of given and family names.`)
+	flags.BoolPtrVar(cmd.Flags(), &createReq.Active, "active", `If this user is active.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.ApplicationId, "application-id", `UUID relating to the service principal.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.DisplayName, "display-name", `String that represents a concatenation of given and family names.`)
 	// TODO: array: entitlements
-	cmd.Flags().StringVar(&createReq.ExternalId, "external-id", createReq.ExternalId, ``)
+	flags.StringPtrVar(cmd.Flags(), &createReq.ExternalId, "external-id", ``)
 	// TODO: array: groups
-	cmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Databricks service principal ID.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Id, "id", `Databricks service principal ID.`)
 	// TODO: array: roles
 	// TODO: array: schemas
 
@@ -101,6 +104,7 @@ Create a service principal.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -115,12 +119,20 @@ Create a service principal.
 			}
 		}
 
-		response, err := w.ServicePrincipalsV2.Create(ctx, createReq)
+		sdkReq, err := scim.CreateServicePrincipalRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Scim.CreateServicePrincipal(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := scim.ServicePrincipalFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -141,13 +153,12 @@ Create a service principal.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*iam.DeleteServicePrincipalRequest,
+	*sdkscim.DeleteServicePrincipalRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq iam.DeleteServicePrincipalRequest
+	var deleteReq sdkscim.DeleteServicePrincipalRequest
 
 	cmd.Use = "delete ID"
 	cmd.Short = `*Public Preview* Delete a service principal.`
@@ -173,10 +184,12 @@ Delete a service principal.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteReq.Id = args[0]
+		deleteReq.Id = new(args[0])
 
-		err = w.ServicePrincipalsV2.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		err = w.Scim.DeleteServicePrincipal(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -201,13 +214,12 @@ Delete a service principal.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*iam.GetServicePrincipalRequest,
+	*sdkscim.GetServicePrincipalRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq iam.GetServicePrincipalRequest
+	var getReq sdkscim.GetServicePrincipalRequest
 
 	cmd.Use = "get ID"
 	cmd.Short = `*Public Preview* Get service principal details.`
@@ -234,15 +246,21 @@ Get service principal details.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getReq.Id = args[0]
+		getReq.Id = new(args[0])
 
-		response, err := w.ServicePrincipalsV2.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.Scim.GetServicePrincipal(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := scim.ServicePrincipalFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -263,31 +281,31 @@ Get service principal details.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*iam.ListServicePrincipalsRequest,
+	*scim.ListServicePrincipalsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq scim.ListServicePrincipalsRequest
 
-	var listReq iam.ListServicePrincipalsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().StringVar(&listReq.Attributes, "attributes", listReq.Attributes, `Comma-separated list of attributes to return in response.`)
-	cmd.Flags().StringVar(&listReq.ExcludedAttributes, "excluded-attributes", listReq.ExcludedAttributes, `Comma-separated list of attributes to exclude in response.`)
-	cmd.Flags().StringVar(&listReq.Filter, "filter", listReq.Filter, `Query by which the results have to be filtered.`)
-	cmd.Flags().StringVar(&listReq.SortBy, "sort-by", listReq.SortBy, `Attribute to sort the results.`)
-	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order to sort the results. Supported values: [ascending, descending]`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.Attributes, "attributes", `Comma-separated list of attributes to return in response.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.ExcludedAttributes, "excluded-attributes", `Comma-separated list of attributes to exclude in response.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.Filter, "filter", `Query by which the results have to be filtered.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.SortBy, "sort-by", `Attribute to sort the results.`)
+	flags.EnumVar(cmd.Flags(), &listReq.SortOrder, "sort-order", `The order to sort the results. Supported values: [ascending, descending]`, "ListSortOrder", "ascending", "descending")
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().Int64Var(&listReq.StartIndex, "start-index", listReq.StartIndex, `Specifies the index of the first result.`)
+	flags.Int64PtrVar(cmd.Flags(), &listReq.StartIndex, "start-index", `Specifies the index of the first result.`)
 	cmd.Flags().Lookup("start-index").Hidden = true
-	cmd.Flags().Int64Var(&listReq.Count, "count", listReq.Count, `Number of results per API page.`)
+	flags.Int64PtrVar(cmd.Flags(), &listReq.Count, "count", `Number of results per API page.`)
 	cmd.Flags().Lookup("count").Hidden = true
 
 	cmd.Use = "list"
@@ -311,16 +329,20 @@ List service principals.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.ServicePrincipalsV2.List(ctx, listReq)
+		sdkReq, err := scim.ListServicePrincipalsRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Scim.ListServicePrincipalsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, scim.ServicePrincipalFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -341,13 +363,13 @@ List service principals.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var patchOverrides []func(
 	*cobra.Command,
-	*iam.PatchServicePrincipalRequest,
+	*scim.PatchServicePrincipalRequest,
 )
 
 func newPatch() *cobra.Command {
 	cmd := &cobra.Command{}
+	var patchReq scim.PatchServicePrincipalRequest
 
-	var patchReq iam.PatchServicePrincipalRequest
 	var patchJson flags.JsonFlag
 
 	cmd.Flags().Var(&patchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -380,6 +402,7 @@ Update service principal details.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := patchJson.Unmarshal(&patchReq)
@@ -393,9 +416,13 @@ Update service principal details.
 				}
 			}
 		}
-		patchReq.Id = args[0]
+		patchReq.Id = new(args[0])
 
-		err = w.ServicePrincipalsV2.Patch(ctx, patchReq)
+		sdkReq, err := scim.PatchServicePrincipalRequestToSDK(&patchReq)
+		if err != nil {
+			return err
+		}
+		err = w.Scim.PatchServicePrincipal(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -420,22 +447,22 @@ Update service principal details.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*iam.UpdateServicePrincipalRequest,
+	*scim.UpdateServicePrincipalRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq scim.UpdateServicePrincipalRequest
 
-	var updateReq iam.UpdateServicePrincipalRequest
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&updateReq.Active, "active", updateReq.Active, `If this user is active.`)
-	cmd.Flags().StringVar(&updateReq.ApplicationId, "application-id", updateReq.ApplicationId, `UUID relating to the service principal.`)
-	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `String that represents a concatenation of given and family names.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateReq.Active, "active", `If this user is active.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.ApplicationId, "application-id", `UUID relating to the service principal.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.DisplayName, "display-name", `String that represents a concatenation of given and family names.`)
 	// TODO: array: entitlements
-	cmd.Flags().StringVar(&updateReq.ExternalId, "external-id", updateReq.ExternalId, ``)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.ExternalId, "external-id", ``)
 	// TODO: array: groups
 	// TODO: array: roles
 	// TODO: array: schemas
@@ -466,6 +493,7 @@ Replace service principal.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -479,9 +507,13 @@ Replace service principal.
 				}
 			}
 		}
-		updateReq.Id = args[0]
+		updateReq.Id = new(args[0])
 
-		err = w.ServicePrincipalsV2.Update(ctx, updateReq)
+		sdkReq, err := scim.UpdateServicePrincipalRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		err = w.Scim.UpdateServicePrincipal(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}

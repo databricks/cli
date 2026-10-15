@@ -4,12 +4,15 @@ package enable_ip_access_lists
 
 import (
 	"errors"
+	"fmt"
+
+	"maps"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
 )
 
@@ -52,15 +55,16 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*settings.DeleteAccountIpAccessEnableRequest,
+	*map[string]any,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteReq map[string]any
+	deleteReq = map[string]any{}
+	var deleteEtagRaw string
 
-	var deleteReq settings.DeleteAccountIpAccessEnableRequest
-
-	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning.`)
+	cmd.Flags().StringVar(&deleteEtagRaw, "etag", deleteEtagRaw, `etag used for versioning.`)
 
 	cmd.Use = "delete"
 	cmd.Short = `Delete the account IP access toggle setting.`
@@ -81,12 +85,24 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		response, err := a.Settings.EnableIpAccessLists().Delete(ctx, deleteReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("etag") || deleteEtagRaw != "" {
+			rawQuery["etag"] = deleteEtagRaw
+		}
+		rawPath := fmt.Sprintf("/api/2.0/accounts/%s/settings/types/acct_ip_acl_enable/names/default", a.Config.AccountID)
+
+		maps.Copy(rawQuery, deleteReq)
+		api, err := apiclient.New(a.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "DELETE", rawPath, nil, rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -108,15 +124,16 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*settings.GetAccountIpAccessEnableRequest,
+	*map[string]any,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
+	var getReq map[string]any
+	getReq = map[string]any{}
+	var getEtagRaw string
 
-	var getReq settings.GetAccountIpAccessEnableRequest
-
-	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
+	cmd.Flags().StringVar(&getEtagRaw, "etag", getEtagRaw, `etag used for versioning.`)
 
 	cmd.Use = "get"
 	cmd.Short = `Get the account IP access toggle setting.`
@@ -137,12 +154,24 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		response, err := a.Settings.EnableIpAccessLists().Get(ctx, getReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("etag") || getEtagRaw != "" {
+			rawQuery["etag"] = getEtagRaw
+		}
+		rawPath := fmt.Sprintf("/api/2.0/accounts/%s/settings/types/acct_ip_acl_enable/names/default", a.Config.AccountID)
+
+		maps.Copy(rawQuery, getReq)
+		api, err := apiclient.New(a.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, nil, rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -164,13 +193,16 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*settings.UpdateAccountIpAccessEnableRequest,
+	*map[string]any,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq map[string]any
+	updateReq = map[string]any{}
+	var updateAllowMissingRaw bool
+	var updateFieldMaskRaw string
 
-	var updateReq settings.UpdateAccountIpAccessEnableRequest
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -189,6 +221,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -205,11 +238,24 @@ func newUpdate() *cobra.Command {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := a.Settings.EnableIpAccessLists().Update(ctx, updateReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("allow-missing") || updateAllowMissingRaw != false {
+			updateReq["allow_missing"] = updateAllowMissingRaw
+		}
+		if cmd.Flags().Changed("field-mask") || updateFieldMaskRaw != "" {
+			updateReq["field_mask"] = updateFieldMaskRaw
+		}
+		rawPath := fmt.Sprintf("/api/2.0/accounts/%s/settings/types/acct_ip_acl_enable/names/default", a.Config.AccountID)
+
+		api, err := apiclient.New(a.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "PATCH", rawPath, nil, rawQuery, updateReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 

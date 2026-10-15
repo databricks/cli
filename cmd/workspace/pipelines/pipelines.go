@@ -9,10 +9,16 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/sdk-go/options/lro"
 	"github.com/spf13/cobra"
+
+	accessmanagement "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
+	pipelines "github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	sdkaccessmanagement "github.com/databricks/sdk-go/accessmanagement/v1"
+	sdkpipelines "github.com/databricks/sdk-go/pipelines/v2"
 )
 
 // Slice with functions to override default command behavior.
@@ -83,7 +89,6 @@ var applyEnvironmentOverrides []func(
 
 func newApplyEnvironment() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var applyEnvironmentReq pipelines.ApplyEnvironmentRequest
 
 	cmd.Use = "apply-environment PIPELINE_ID"
@@ -99,36 +104,30 @@ Apply the latest environment to the pipeline.
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
 	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
-			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have ")
-		}
-		applyEnvironmentReq.PipelineId = args[0]
+		applyEnvironmentReq.PipelineId = new(args[0])
 
-		response, err := w.Pipelines.ApplyEnvironment(ctx, applyEnvironmentReq)
+		sdkReq, err := pipelines.ApplyEnvironmentRequestToSDK(&applyEnvironmentReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Pipelines.ApplyEnvironment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		_ = response
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -154,8 +153,8 @@ var cloneOverrides []func(
 
 func newClone() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var cloneReq pipelines.ClonePipelineRequest
+
 	var cloneJson flags.JsonFlag
 
 	cmd.Flags().Var(&cloneJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -184,6 +183,7 @@ func newClone() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := cloneJson.Unmarshal(&cloneReq)
@@ -199,14 +199,22 @@ func newClone() *cobra.Command {
 		} else {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
-		cloneReq.PipelineId = args[0]
+		cloneReq.PipelineId = new(args[0])
 
-		response, err := w.Pipelines.Clone(ctx, cloneReq)
+		sdkReq, err := pipelines.ClonePipelineRequestToSDK(&cloneReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Pipelines.Clone(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := pipelines.ClonePipelineResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -227,13 +235,13 @@ func newClone() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*pipelines.CreatePipeline,
+	*pipelines.CreatePipelineRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq pipelines.CreatePipelineRequest
 
-	var createReq pipelines.CreatePipeline
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -253,6 +261,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -269,12 +278,20 @@ func newCreate() *cobra.Command {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.Pipelines.Create(ctx, createReq)
+		sdkReq, err := pipelines.CreatePipelineRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Pipelines.Create(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := pipelines.CreatePipelineResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -300,11 +317,10 @@ var deleteOverrides []func(
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var deleteReq pipelines.DeletePipelineRequest
 
-	cmd.Flags().BoolVar(&deleteReq.Cascade, "cascade", deleteReq.Cascade, `If false, pipeline deletion will not cascade to its datasets (MVs, STs, Views).`)
-	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `If true, deletion will proceed even if resource cleanup fails.`)
+	flags.BoolPtrVar(cmd.Flags(), &deleteReq.Cascade, "cascade", `If false, pipeline deletion will not cascade to its datasets (MVs, STs, Views).`)
+	flags.BoolPtrVar(cmd.Flags(), &deleteReq.Force, "force", `If true, deletion will proceed even if resource cleanup fails.`)
 
 	cmd.Use = "delete PIPELINE_ID"
 	cmd.Short = `Delete a pipeline.`
@@ -318,34 +334,29 @@ func newDelete() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
-			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have ")
-		}
-		deleteReq.PipelineId = args[0]
+		deleteReq.PipelineId = new(args[0])
 
-		err = w.Pipelines.Delete(ctx, deleteReq)
+		sdkReq, err := pipelines.DeletePipelineRequestToSDK(&deleteReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Pipelines.Delete(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -367,13 +378,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*pipelines.GetPipelineRequest,
+	*sdkpipelines.GetPipelineRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq pipelines.GetPipelineRequest
+	var getReq sdkpipelines.GetPipelineRequest
 
 	cmd.Use = "get PIPELINE_ID"
 	cmd.Short = `Get a pipeline.`
@@ -383,36 +393,30 @@ func newGet() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
-			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have ")
-		}
-		getReq.PipelineId = args[0]
+		getReq.PipelineId = new(args[0])
 
-		response, err := w.Pipelines.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.Pipelines.Get(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := pipelines.GetPipelineResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -433,13 +437,12 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPermissionLevelsOverrides []func(
 	*cobra.Command,
-	*pipelines.GetPipelinePermissionLevelsRequest,
+	*sdkaccessmanagement.ListPermissionLevelsRequest,
 )
 
 func newGetPermissionLevels() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPermissionLevelsReq pipelines.GetPipelinePermissionLevelsRequest
+	var getPermissionLevelsReq sdkaccessmanagement.ListPermissionLevelsRequest
 
 	cmd.Use = "get-permission-levels PIPELINE_ID"
 	cmd.Short = `Get pipeline permission levels.`
@@ -454,36 +457,32 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
-			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The pipeline for which to get or manage permissions")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have the pipeline for which to get or manage permissions")
-		}
-		getPermissionLevelsReq.PipelineId = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: pipeline_id
 
-		response, err := w.Pipelines.GetPermissionLevels(ctx, getPermissionLevelsReq)
+		getPermissionLevelsReq.RequestObjectType = new("pipelines")
+
+		sdkReq := &getPermissionLevelsReq
+		response, err := w.AccessManagement.ListPermissionLevels(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.ListPermissionLevelsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -504,13 +503,12 @@ func newGetPermissionLevels() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPermissionsOverrides []func(
 	*cobra.Command,
-	*pipelines.GetPipelinePermissionsRequest,
+	*sdkaccessmanagement.GetObjectPermissionsRequest,
 )
 
 func newGetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPermissionsReq pipelines.GetPipelinePermissionsRequest
+	var getPermissionsReq sdkaccessmanagement.GetObjectPermissionsRequest
 
 	cmd.Use = "get-permissions PIPELINE_ID"
 	cmd.Short = `Get pipeline permissions.`
@@ -526,36 +524,32 @@ func newGetPermissions() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
-			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The pipeline for which to get or manage permissions")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have the pipeline for which to get or manage permissions")
-		}
-		getPermissionsReq.PipelineId = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: pipeline_id
 
-		response, err := w.Pipelines.GetPermissions(ctx, getPermissionsReq)
+		getPermissionsReq.RequestObjectType = new("pipelines")
+
+		sdkReq := &getPermissionsReq
+		response, err := w.AccessManagement.GetObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -576,13 +570,12 @@ func newGetPermissions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getUpdateOverrides []func(
 	*cobra.Command,
-	*pipelines.GetUpdateRequest,
+	*sdkpipelines.GetUpdateRequest,
 )
 
 func newGetUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getUpdateReq pipelines.GetUpdateRequest
+	var getUpdateReq sdkpipelines.GetUpdateRequest
 
 	cmd.Use = "get-update PIPELINE_ID UPDATE_ID"
 	cmd.Short = `Get a pipeline update.`
@@ -607,16 +600,22 @@ func newGetUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getUpdateReq.PipelineId = args[0]
-		getUpdateReq.UpdateId = args[1]
+		getUpdateReq.PipelineId = new(args[0])
+		getUpdateReq.UpdateId = new(args[1])
 
-		response, err := w.Pipelines.GetUpdate(ctx, getUpdateReq)
+		sdkReq := &getUpdateReq
+		response, err := w.Pipelines.GetUpdate(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := pipelines.GetUpdateResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -642,22 +641,22 @@ var listPipelineEventsOverrides []func(
 
 func newListPipelineEvents() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listPipelineEventsReq pipelines.ListPipelineEventsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listPipelineEventsLimit int
 
-	cmd.Flags().StringVar(&listPipelineEventsReq.Filter, "filter", listPipelineEventsReq.Filter, `Criteria to select a subset of results, expressed using a SQL-like syntax.`)
-	cmd.Flags().IntVar(&listPipelineEventsReq.MaxResults, "max-results", listPipelineEventsReq.MaxResults, `Max number of entries to return in a single page.`)
+	flags.StringPtrVar(cmd.Flags(), &listPipelineEventsReq.Filter, "filter", `Criteria to select a subset of results, expressed using a SQL-like syntax.`)
+	flags.IntPtrVar(cmd.Flags(), &listPipelineEventsReq.MaxResults, "max-results", `Max number of entries to return in a single page.`)
 	// TODO: array: order_by
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listPipelineEventsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listPipelineEventsReq.PageToken, "page-token", listPipelineEventsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listPipelineEventsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-pipeline-events PIPELINE_ID"
@@ -673,39 +672,31 @@ func newListPipelineEvents() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
-			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The pipeline to return events for")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have the pipeline to return events for")
-		}
-		listPipelineEventsReq.PipelineId = args[0]
+		listPipelineEventsReq.PipelineId = new(args[0])
 
-		response := w.Pipelines.ListPipelineEvents(ctx, listPipelineEventsReq)
+		sdkReq, err := pipelines.ListPipelineEventsRequestToSDK(&listPipelineEventsReq)
+		if err != nil {
+			return err
+		}
 		if listPipelineEventsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listPipelineEventsLimit)
 		}
 		if listPipelineEventsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listPipelineEventsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Pipelines.EventsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, pipelines.PipelineEventFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -731,22 +722,22 @@ var listPipelinesOverrides []func(
 
 func newListPipelines() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listPipelinesReq pipelines.ListPipelinesRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listPipelinesLimit int
 
-	cmd.Flags().StringVar(&listPipelinesReq.Filter, "filter", listPipelinesReq.Filter, `Select a subset of results based on the specified criteria.`)
-	cmd.Flags().IntVar(&listPipelinesReq.MaxResults, "max-results", listPipelinesReq.MaxResults, `The maximum number of entries to return in a single page.`)
+	flags.StringPtrVar(cmd.Flags(), &listPipelinesReq.Filter, "filter", `Select a subset of results based on the specified criteria.`)
+	flags.IntPtrVar(cmd.Flags(), &listPipelinesReq.MaxResults, "max-results", `The maximum number of entries to return in a single page.`)
 	// TODO: array: order_by
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listPipelinesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listPipelinesReq.PageToken, "page-token", listPipelinesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listPipelinesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-pipelines"
@@ -768,16 +759,20 @@ func newListPipelines() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.Pipelines.ListPipelines(ctx, listPipelinesReq)
+		sdkReq, err := pipelines.ListPipelinesRequestToSDK(&listPipelinesReq)
+		if err != nil {
+			return err
+		}
 		if listPipelinesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listPipelinesLimit)
 		}
 		if listPipelinesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listPipelinesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Pipelines.ListIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, pipelines.PipelineStateInfoFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -803,12 +798,11 @@ var listUpdatesOverrides []func(
 
 func newListUpdates() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listUpdatesReq pipelines.ListUpdatesRequest
 
-	cmd.Flags().IntVar(&listUpdatesReq.MaxResults, "max-results", listUpdatesReq.MaxResults, `Max number of entries to return in a single page.`)
-	cmd.Flags().StringVar(&listUpdatesReq.PageToken, "page-token", listUpdatesReq.PageToken, `Page token returned by previous call.`)
-	cmd.Flags().StringVar(&listUpdatesReq.UntilUpdateId, "until-update-id", listUpdatesReq.UntilUpdateId, `If present, returns updates until and including this update_id.`)
+	flags.IntPtrVar(cmd.Flags(), &listUpdatesReq.MaxResults, "max-results", `Max number of entries to return in a single page.`)
+	flags.StringPtrVar(cmd.Flags(), &listUpdatesReq.PageToken, "page-token", `Page token returned by previous call.`)
+	flags.StringPtrVar(cmd.Flags(), &listUpdatesReq.UntilUpdateId, "until-update-id", `If present, returns updates until and including this update_id.`)
 
 	cmd.Use = "list-updates PIPELINE_ID"
 	cmd.Short = `List pipeline updates.`
@@ -823,36 +817,33 @@ func newListUpdates() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
-			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The pipeline to return updates for")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have the pipeline to return updates for")
-		}
-		listUpdatesReq.PipelineId = args[0]
+		listUpdatesReq.PipelineId = new(args[0])
 
-		response, err := w.Pipelines.ListUpdates(ctx, listUpdatesReq)
+		sdkReq, err := pipelines.ListUpdatesRequestToSDK(&listUpdatesReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Pipelines.ListUpdates(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := pipelines.ListUpdatesResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -873,13 +864,13 @@ func newListUpdates() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var setPermissionsOverrides []func(
 	*cobra.Command,
-	*pipelines.PipelinePermissionsRequest,
+	*accessmanagement.SetObjectPermissionsRequest,
 )
 
 func newSetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var setPermissionsReq accessmanagement.SetObjectPermissionsRequest
 
-	var setPermissionsReq pipelines.PipelinePermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -901,10 +892,16 @@ func newSetPermissions() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
@@ -918,31 +915,24 @@ func newSetPermissions() *cobra.Command {
 				}
 			}
 		}
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
-			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The pipeline for which to get or manage permissions")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have the pipeline for which to get or manage permissions")
-		}
-		setPermissionsReq.PipelineId = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: pipeline_id
 
-		response, err := w.Pipelines.SetPermissions(ctx, setPermissionsReq)
+		setPermissionsReq.RequestObjectType = new("pipelines")
+
+		sdkReq, err := accessmanagement.SetObjectPermissionsRequestToSDK(&setPermissionsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AccessManagement.SetObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -963,18 +953,18 @@ func newSetPermissions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var startUpdateOverrides []func(
 	*cobra.Command,
-	*pipelines.StartUpdate,
+	*pipelines.StartUpdateRequest,
 )
 
 func newStartUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var startUpdateReq pipelines.StartUpdateRequest
 
-	var startUpdateReq pipelines.StartUpdate
 	var startUpdateJson flags.JsonFlag
 
 	cmd.Flags().Var(&startUpdateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().Var(&startUpdateReq.Cause, "cause", `Supported values: [
+	flags.EnumVar(cmd.Flags(), &startUpdateReq.Cause, "cause", `Supported values: [
   API_CALL,
   INFRASTRUCTURE_MAINTENANCE,
   JOB_TASK,
@@ -982,16 +972,16 @@ func newStartUpdate() *cobra.Command {
   SCHEMA_CHANGE,
   SERVICE_UPGRADE,
   USER_ACTION,
-]`)
-	cmd.Flags().BoolVar(&startUpdateReq.Development, "development", startUpdateReq.Development, `Whether the update is started in the development mode.`)
-	cmd.Flags().BoolVar(&startUpdateReq.FullRefresh, "full-refresh", startUpdateReq.FullRefresh, `If true, this update will reset all tables before running.`)
+]`, "StartUpdateCause", "API_CALL", "INFRASTRUCTURE_MAINTENANCE", "JOB_TASK", "RETRY_ON_FAILURE", "SCHEMA_CHANGE", "SERVICE_UPGRADE", "USER_ACTION")
+	flags.BoolPtrVar(cmd.Flags(), &startUpdateReq.Development, "development", `Whether the update is started in the development mode.`)
+	flags.BoolPtrVar(cmd.Flags(), &startUpdateReq.FullRefresh, "full-refresh", `If true, this update will reset all tables before running.`)
 	// TODO: array: full_refresh_selection
 	// TODO: map via StringToStringVar: parameters
 	// TODO: array: refresh_selection
 	// TODO: array: replace_where_overrides
 	// TODO: array: reset_checkpoint_selection
 	// TODO: complex arg: rewind_spec
-	cmd.Flags().BoolVar(&startUpdateReq.ValidateOnly, "validate-only", startUpdateReq.ValidateOnly, `If true, this update only validates the correctness of pipeline source code but does not materialize or publish any datasets.`)
+	flags.BoolPtrVar(cmd.Flags(), &startUpdateReq.ValidateOnly, "validate-only", `If true, this update only validates the correctness of pipeline source code but does not materialize or publish any datasets.`)
 
 	cmd.Use = "start-update PIPELINE_ID"
 	cmd.Short = `Start a pipeline.`
@@ -1004,10 +994,16 @@ func newStartUpdate() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := startUpdateJson.Unmarshal(&startUpdateReq)
@@ -1021,31 +1017,22 @@ func newStartUpdate() *cobra.Command {
 				}
 			}
 		}
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
-			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have ")
-		}
-		startUpdateReq.PipelineId = args[0]
+		startUpdateReq.PipelineId = new(args[0])
 
-		response, err := w.Pipelines.StartUpdate(ctx, startUpdateReq)
+		sdkReq, err := pipelines.StartUpdateRequestToSDK(&startUpdateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Pipelines.Start(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := pipelines.StartUpdateResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1066,13 +1053,12 @@ func newStartUpdate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var stopOverrides []func(
 	*cobra.Command,
-	*pipelines.StopRequest,
+	*pipelines.StopPipelineRequest,
 )
 
 func newStop() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var stopReq pipelines.StopRequest
+	var stopReq pipelines.StopPipelineRequest
 
 	var stopSkipWait bool
 	var stopTimeout time.Duration
@@ -1091,47 +1077,43 @@ func newStop() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
-			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have ")
-		}
-		stopReq.PipelineId = args[0]
+		stopReq.PipelineId = new(args[0])
 
-		wait, err := w.Pipelines.Stop(ctx, stopReq)
+		sdkReq, err := pipelines.StopPipelineRequestToSDK(&stopReq)
+		if err != nil {
+			return err
+		}
+		wait, err := w.Pipelines.Stop(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 		if stopSkipWait {
-			return nil
+			return cmdio.Render(ctx, map[string]any{"pipeline_id": wait.GetPipelineId()})
 		}
 		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *pipelines.GetPipelineResponse) {
-			statusMessage := i.Cause
-			sp.Update(statusMessage)
-		}).GetWithTimeout(stopTimeout)
+		sp.Update("Waiting for stop to complete...")
+		response, err := wait.Wait(ctx, lro.WithTimeout(stopTimeout))
 		sp.Close()
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+
+		out, err := pipelines.GetPipelineResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1152,51 +1134,51 @@ func newStop() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*pipelines.EditPipeline,
+	*pipelines.EditPipelineRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq pipelines.EditPipelineRequest
 
-	var updateReq pipelines.EditPipeline
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&updateReq.AllowDuplicateNames, "allow-duplicate-names", updateReq.AllowDuplicateNames, `If false, deployment will fail if name has changed and conflicts the name of another pipeline.`)
-	cmd.Flags().StringVar(&updateReq.BudgetPolicyId, "budget-policy-id", updateReq.BudgetPolicyId, `Budget policy of this pipeline.`)
-	cmd.Flags().StringVar(&updateReq.Catalog, "catalog", updateReq.Catalog, `A catalog in Unity Catalog to publish data from this pipeline to.`)
-	cmd.Flags().StringVar(&updateReq.Channel, "channel", updateReq.Channel, `SDP Release Channel that specifies which version to use.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateReq.AllowDuplicateNames, "allow-duplicate-names", `If false, deployment will fail if name has changed and conflicts the name of another pipeline.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.BudgetPolicyId, "budget-policy-id", `Budget policy of this pipeline.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Catalog, "catalog", `A catalog in Unity Catalog to publish data from this pipeline to.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Channel, "channel", `SDP Release Channel that specifies which version to use.`)
 	// TODO: array: clusters
 	// TODO: map via StringToStringVar: configuration
-	cmd.Flags().BoolVar(&updateReq.Continuous, "continuous", updateReq.Continuous, `Whether the pipeline is continuous or triggered.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateReq.Continuous, "continuous", `Whether the pipeline is continuous or triggered.`)
 	// TODO: complex arg: deployment
-	cmd.Flags().BoolVar(&updateReq.Development, "development", updateReq.Development, `Whether the pipeline is in Development mode.`)
-	cmd.Flags().StringVar(&updateReq.Edition, "edition", updateReq.Edition, `Pipeline product edition.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateReq.Development, "development", `Whether the pipeline is in Development mode.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Edition, "edition", `Pipeline product edition.`)
 	// TODO: complex arg: environment
 	// TODO: complex arg: event_log
-	cmd.Flags().Int64Var(&updateReq.ExpectedLastModified, "expected-last-modified", updateReq.ExpectedLastModified, `If present, the last-modified time of the pipeline settings before the edit.`)
+	flags.Int64PtrVar(cmd.Flags(), &updateReq.ExpectedLastModified, "expected-last-modified", `If present, the last-modified time of the pipeline settings before the edit.`)
 	// TODO: complex arg: filters
 	// TODO: complex arg: gateway_definition
-	cmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `Unique identifier for this pipeline.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Id, "id", `Unique identifier for this pipeline.`)
 	// TODO: complex arg: ingestion_definition
 	// TODO: array: libraries
-	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Friendly identifier for this pipeline.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Name, "name", `Friendly identifier for this pipeline.`)
 	// TODO: array: notifications
 	// TODO: map via StringToStringVar: parameters
-	cmd.Flags().StringVar(&updateReq.ParentPath, "parent-path", updateReq.ParentPath, `Path of the pipeline parent folder in workspace file tree.`)
-	cmd.Flags().BoolVar(&updateReq.Photon, "photon", updateReq.Photon, `Whether Photon is enabled for this pipeline.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.ParentPath, "parent-path", `Path of the pipeline parent folder in workspace file tree.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateReq.Photon, "photon", `Whether Photon is enabled for this pipeline.`)
 	// TODO: complex arg: restart_window
-	cmd.Flags().StringVar(&updateReq.RootPath, "root-path", updateReq.RootPath, `Root path for this pipeline.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.RootPath, "root-path", `Root path for this pipeline.`)
 	// TODO: complex arg: run_as
-	cmd.Flags().StringVar(&updateReq.Schema, "schema", updateReq.Schema, `The default schema (database) where tables are read from or published to.`)
-	cmd.Flags().BoolVar(&updateReq.Serverless, "serverless", updateReq.Serverless, `Whether serverless compute is enabled for this pipeline.`)
-	cmd.Flags().StringVar(&updateReq.ServerlessComputeId, "serverless-compute-id", updateReq.ServerlessComputeId, `Serverless compute ID specified by the user for serverless pipelines.`)
-	cmd.Flags().StringVar(&updateReq.Storage, "storage", updateReq.Storage, `DBFS root directory for storing checkpoints and tables.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Schema, "schema", `The default schema (database) where tables are read from or published to.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateReq.Serverless, "serverless", `Whether serverless compute is enabled for this pipeline.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.ServerlessComputeId, "serverless-compute-id", `Serverless compute ID specified by the user for serverless pipelines.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Storage, "storage", `DBFS root directory for storing checkpoints and tables.`)
 	// TODO: map via StringToStringVar: tags
-	cmd.Flags().StringVar(&updateReq.Target, "target", updateReq.Target, `Target schema (database) to add tables in this pipeline to.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Target, "target", `Target schema (database) to add tables in this pipeline to.`)
 	// TODO: complex arg: trigger
-	cmd.Flags().StringVar(&updateReq.UsagePolicyId, "usage-policy-id", updateReq.UsagePolicyId, `Usage policy of this pipeline.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.UsagePolicyId, "usage-policy-id", `Usage policy of this pipeline.`)
 
 	cmd.Use = "update PIPELINE_ID"
 	cmd.Short = `Edit a pipeline.`
@@ -1211,10 +1193,16 @@ func newUpdate() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -1228,29 +1216,18 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
-			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "Unique identifier for this pipeline")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have unique identifier for this pipeline")
-		}
-		updateReq.PipelineId = args[0]
+		updateReq.PipelineId = new(args[0])
 
-		err = w.Pipelines.Update(ctx, updateReq)
+		sdkReq, err := pipelines.EditPipelineRequestToSDK(&updateReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Pipelines.Edit(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -1272,13 +1249,13 @@ func newUpdate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updatePermissionsOverrides []func(
 	*cobra.Command,
-	*pipelines.PipelinePermissionsRequest,
+	*accessmanagement.UpdateObjectPermissionsRequest,
 )
 
 func newUpdatePermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updatePermissionsReq accessmanagement.UpdateObjectPermissionsRequest
 
-	var updatePermissionsReq pipelines.PipelinePermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1299,10 +1276,16 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)
@@ -1316,31 +1299,24 @@ func newUpdatePermissions() *cobra.Command {
 				}
 			}
 		}
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
-			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The pipeline for which to get or manage permissions")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have the pipeline for which to get or manage permissions")
-		}
-		updatePermissionsReq.PipelineId = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: pipeline_id
 
-		response, err := w.Pipelines.UpdatePermissions(ctx, updatePermissionsReq)
+		updatePermissionsReq.RequestObjectType = new("pipelines")
+
+		sdkReq, err := accessmanagement.UpdateObjectPermissionsRequestToSDK(&updatePermissionsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AccessManagement.UpdateObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

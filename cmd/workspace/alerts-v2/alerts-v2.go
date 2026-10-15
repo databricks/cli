@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
+
+	alertsv2 "github.com/databricks/cli/libs/sdktypes/alerts/v2"
+	sdkalertsv2 "github.com/databricks/sdk-go/alerts/v2"
 )
 
 // Slice with functions to override default command behavior.
@@ -52,26 +55,26 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createAlertOverrides []func(
 	*cobra.Command,
-	*sql.CreateAlertV2Request,
+	*alertsv2.CreateAlertRequest,
 )
 
 func newCreateAlert() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createAlertReq alertsv2.CreateAlertRequest
+	createAlertReq.Alert = &alertsv2.Alert{}
 
-	var createAlertReq sql.CreateAlertV2Request
-	createAlertReq.Alert = sql.AlertV2{}
 	var createAlertJson flags.JsonFlag
 
 	cmd.Flags().Var(&createAlertJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createAlertReq.Alert.CustomDescription, "custom-description", createAlertReq.Alert.CustomDescription, `Custom description for the alert.`)
-	cmd.Flags().StringVar(&createAlertReq.Alert.CustomSummary, "custom-summary", createAlertReq.Alert.CustomSummary, `Custom summary for the alert.`)
-	cmd.Flags().Var(&createAlertReq.Alert.CustomTemplateFormat, "custom-template-format", `The format used to interpret the custom_summary and custom_description templates. Supported values: [HTML, MARKDOWN]`)
+	flags.StringPtrVar(cmd.Flags(), &createAlertReq.Alert.CustomDescription, "custom-description", `Custom description for the alert.`)
+	flags.StringPtrVar(cmd.Flags(), &createAlertReq.Alert.CustomSummary, "custom-summary", `Custom summary for the alert.`)
+	flags.EnumVar(cmd.Flags(), &createAlertReq.Alert.CustomTemplateFormat, "custom-template-format", `The format used to interpret the custom_summary and custom_description templates. Supported values: [HTML, MARKDOWN]`, "CustomTemplateFormat", "HTML", "MARKDOWN")
 	// TODO: complex arg: effective_run_as
 	// TODO: array: parameters
-	cmd.Flags().StringVar(&createAlertReq.Alert.ParentPath, "parent-path", createAlertReq.Alert.ParentPath, `The workspace path of the folder containing the alert.`)
+	flags.StringPtrVar(cmd.Flags(), &createAlertReq.Alert.ParentPath, "parent-path", `The workspace path of the folder containing the alert.`)
 	// TODO: complex arg: run_as
-	cmd.Flags().StringVar(&createAlertReq.Alert.RunAsUserName, "run-as-user-name", createAlertReq.Alert.RunAsUserName, `The run as username or application ID of service principal.`)
+	flags.StringPtrVar(cmd.Flags(), &createAlertReq.Alert.RunAsUserName, "run-as-user-name", `The run as username or application ID of service principal.`)
 
 	cmd.Use = "create-alert DISPLAY_NAME QUERY_TEXT WAREHOUSE_ID EVALUATION SCHEDULE"
 	cmd.Short = `Create an alert.`
@@ -106,6 +109,7 @@ func newCreateAlert() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createAlertJson.Unmarshal(&createAlertReq.Alert)
@@ -120,35 +124,35 @@ func newCreateAlert() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createAlertReq.Alert.DisplayName = args[0]
+			createAlertReq.Alert.DisplayName = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			createAlertReq.Alert.QueryText = args[1]
+			createAlertReq.Alert.QueryText = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			createAlertReq.Alert.WarehouseId = args[2]
+			createAlertReq.Alert.WarehouseId = new(args[2])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[3], &createAlertReq.Alert.Evaluation)
-			if err != nil {
-				return fmt.Errorf("invalid EVALUATION: %s", args[3])
-			}
-
+			_ = args[3] // TODO: complex arg: evaluation
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[4], &createAlertReq.Alert.Schedule)
-			if err != nil {
-				return fmt.Errorf("invalid SCHEDULE: %s", args[4])
-			}
-
+			_ = args[4] // TODO: complex arg: schedule
 		}
 
-		response, err := w.AlertsV2.CreateAlert(ctx, createAlertReq)
+		sdkReq, err := alertsv2.CreateAlertRequestToSDK(&createAlertReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Alerts.CreateAlert(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := alertsv2.AlertFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -169,13 +173,12 @@ func newCreateAlert() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getAlertOverrides []func(
 	*cobra.Command,
-	*sql.GetAlertV2Request,
+	*sdkalertsv2.GetAlertRequest,
 )
 
 func newGetAlert() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getAlertReq sql.GetAlertV2Request
+	var getAlertReq sdkalertsv2.GetAlertRequest
 
 	cmd.Use = "get-alert ID"
 	cmd.Short = `Get an alert.`
@@ -187,36 +190,30 @@ func newGetAlert() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No ID argument specified. Loading names for Alerts V2 drop-down.")
-			names, err := w.AlertsV2.AlertV2DisplayNameToIdMap(ctx, sql.ListAlertsV2Request{})
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Alerts V2 drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have ")
-		}
-		getAlertReq.Id = args[0]
+		getAlertReq.Id = new(args[0])
 
-		response, err := w.AlertsV2.GetAlert(ctx, getAlertReq)
+		sdkReq := &getAlertReq
+		response, err := w.Alerts.GetAlert(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := alertsv2.AlertFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -237,25 +234,25 @@ func newGetAlert() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listAlertsOverrides []func(
 	*cobra.Command,
-	*sql.ListAlertsV2Request,
+	*alertsv2.ListAlertsRequest,
 )
 
 func newListAlerts() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listAlertsReq alertsv2.ListAlertsRequest
 
-	var listAlertsReq sql.ListAlertsV2Request
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listAlertsLimit int
 
-	cmd.Flags().IntVar(&listAlertsReq.PageSize, "page-size", listAlertsReq.PageSize, ``)
+	flags.IntPtrVar(cmd.Flags(), &listAlertsReq.PageSize, "page-size", ``)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listAlertsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listAlertsReq.PageToken, "page-token", listAlertsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listAlertsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-alerts"
@@ -277,16 +274,20 @@ func newListAlerts() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.AlertsV2.ListAlerts(ctx, listAlertsReq)
+		sdkReq, err := alertsv2.ListAlertsRequestToSDK(&listAlertsReq)
+		if err != nil {
+			return err
+		}
 		if listAlertsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listAlertsLimit)
 		}
 		if listAlertsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listAlertsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Alerts.ListAlertsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, alertsv2.AlertFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -307,15 +308,14 @@ func newListAlerts() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var trashAlertOverrides []func(
 	*cobra.Command,
-	*sql.TrashAlertV2Request,
+	*alertsv2.TrashAlertRequest,
 )
 
 func newTrashAlert() *cobra.Command {
 	cmd := &cobra.Command{}
+	var trashAlertReq alertsv2.TrashAlertRequest
 
-	var trashAlertReq sql.TrashAlertV2Request
-
-	cmd.Flags().BoolVar(&trashAlertReq.Purge, "purge", trashAlertReq.Purge, `Whether to permanently delete the alert.`)
+	flags.BoolPtrVar(cmd.Flags(), &trashAlertReq.Purge, "purge", `Whether to permanently delete the alert.`)
 
 	cmd.Use = "trash-alert ID"
 	cmd.Short = `Delete an alert (legacy TrashAlert).`
@@ -329,34 +329,29 @@ func newTrashAlert() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No ID argument specified. Loading names for Alerts V2 drop-down.")
-			names, err := w.AlertsV2.AlertV2DisplayNameToIdMap(ctx, sql.ListAlertsV2Request{})
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Alerts V2 drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have ")
-		}
-		trashAlertReq.Id = args[0]
+		trashAlertReq.Id = new(args[0])
 
-		err = w.AlertsV2.TrashAlert(ctx, trashAlertReq)
+		sdkReq, err := alertsv2.TrashAlertRequestToSDK(&trashAlertReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Alerts.TrashAlert(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -378,26 +373,26 @@ func newTrashAlert() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateAlertOverrides []func(
 	*cobra.Command,
-	*sql.UpdateAlertV2Request,
+	*alertsv2.UpdateAlertRequest,
 )
 
 func newUpdateAlert() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateAlertReq alertsv2.UpdateAlertRequest
+	updateAlertReq.Alert = &alertsv2.Alert{}
 
-	var updateAlertReq sql.UpdateAlertV2Request
-	updateAlertReq.Alert = sql.AlertV2{}
 	var updateAlertJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateAlertJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateAlertReq.Alert.CustomDescription, "custom-description", updateAlertReq.Alert.CustomDescription, `Custom description for the alert.`)
-	cmd.Flags().StringVar(&updateAlertReq.Alert.CustomSummary, "custom-summary", updateAlertReq.Alert.CustomSummary, `Custom summary for the alert.`)
-	cmd.Flags().Var(&updateAlertReq.Alert.CustomTemplateFormat, "custom-template-format", `The format used to interpret the custom_summary and custom_description templates. Supported values: [HTML, MARKDOWN]`)
+	flags.StringPtrVar(cmd.Flags(), &updateAlertReq.Alert.CustomDescription, "custom-description", `Custom description for the alert.`)
+	flags.StringPtrVar(cmd.Flags(), &updateAlertReq.Alert.CustomSummary, "custom-summary", `Custom summary for the alert.`)
+	flags.EnumVar(cmd.Flags(), &updateAlertReq.Alert.CustomTemplateFormat, "custom-template-format", `The format used to interpret the custom_summary and custom_description templates. Supported values: [HTML, MARKDOWN]`, "CustomTemplateFormat", "HTML", "MARKDOWN")
 	// TODO: complex arg: effective_run_as
 	// TODO: array: parameters
-	cmd.Flags().StringVar(&updateAlertReq.Alert.ParentPath, "parent-path", updateAlertReq.Alert.ParentPath, `The workspace path of the folder containing the alert.`)
+	flags.StringPtrVar(cmd.Flags(), &updateAlertReq.Alert.ParentPath, "parent-path", `The workspace path of the folder containing the alert.`)
 	// TODO: complex arg: run_as
-	cmd.Flags().StringVar(&updateAlertReq.Alert.RunAsUserName, "run-as-user-name", updateAlertReq.Alert.RunAsUserName, `The run as username or application ID of service principal.`)
+	flags.StringPtrVar(cmd.Flags(), &updateAlertReq.Alert.RunAsUserName, "run-as-user-name", `The run as username or application ID of service principal.`)
 
 	cmd.Use = "update-alert ID UPDATE_MASK DISPLAY_NAME QUERY_TEXT WAREHOUSE_ID EVALUATION SCHEDULE"
 	cmd.Short = `Update an alert.`
@@ -444,6 +439,7 @@ func newUpdateAlert() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateAlertJson.Unmarshal(&updateAlertReq.Alert)
@@ -457,38 +453,38 @@ func newUpdateAlert() *cobra.Command {
 				}
 			}
 		}
-		updateAlertReq.Id = args[0]
-		updateAlertReq.UpdateMask = args[1]
+		updateAlertReq.Alert.Id = new(args[0])
+		updateAlertReq.UpdateMask = new(args[1])
 		if !cmd.Flags().Changed("json") {
-			updateAlertReq.Alert.DisplayName = args[2]
+			updateAlertReq.Alert.DisplayName = new(args[2])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateAlertReq.Alert.QueryText = args[3]
+			updateAlertReq.Alert.QueryText = new(args[3])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateAlertReq.Alert.WarehouseId = args[4]
+			updateAlertReq.Alert.WarehouseId = new(args[4])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[5], &updateAlertReq.Alert.Evaluation)
-			if err != nil {
-				return fmt.Errorf("invalid EVALUATION: %s", args[5])
-			}
-
+			_ = args[5] // TODO: complex arg: evaluation
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[6], &updateAlertReq.Alert.Schedule)
-			if err != nil {
-				return fmt.Errorf("invalid SCHEDULE: %s", args[6])
-			}
-
+			_ = args[6] // TODO: complex arg: schedule
 		}
 
-		response, err := w.AlertsV2.UpdateAlert(ctx, updateAlertReq)
+		sdkReq, err := alertsv2.UpdateAlertRequestToSDK(&updateAlertReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Alerts.UpdateAlert(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := alertsv2.AlertFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

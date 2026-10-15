@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/cleanrooms"
 	"github.com/spf13/cobra"
+
+	cleanrooms "github.com/databricks/cli/libs/sdktypes/cleanrooms/v1"
+	sdkcleanrooms "github.com/databricks/sdk-go/cleanrooms/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -61,8 +64,8 @@ var createOverrides []func(
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createReq cleanrooms.CreateCleanRoomAutoApprovalRuleRequest
+
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -91,6 +94,7 @@ Create an auto-approval rule.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -106,14 +110,22 @@ Create an auto-approval rule.
 		} else {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
-		createReq.CleanRoomName = args[0]
+		createReq.AutoApprovalRule.CleanRoomName = new(args[0])
 
-		response, err := w.CleanRoomAutoApprovalRules.Create(ctx, createReq)
+		sdkReq, err := cleanrooms.CreateCleanRoomAutoApprovalRuleRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.CleanRooms.CreateCleanRoomAutoApprovalRule(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := cleanrooms.CleanRoomAutoApprovalRuleFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -134,13 +146,12 @@ Create an auto-approval rule.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*cleanrooms.DeleteCleanRoomAutoApprovalRuleRequest,
+	*sdkcleanrooms.DeleteCleanRoomAutoApprovalRuleRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq cleanrooms.DeleteCleanRoomAutoApprovalRuleRequest
+	var deleteReq sdkcleanrooms.DeleteCleanRoomAutoApprovalRuleRequest
 
 	cmd.Use = "delete CLEAN_ROOM_NAME RULE_ID"
 	cmd.Short = `*Beta* Delete an auto-approval rule.`
@@ -163,11 +174,13 @@ Delete an auto-approval rule.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteReq.CleanRoomName = args[0]
-		deleteReq.RuleId = args[1]
+		deleteReq.CleanRoomName = new(args[0])
+		deleteReq.RuleId = new(args[1])
 
-		err = w.CleanRoomAutoApprovalRules.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		err = w.CleanRooms.DeleteCleanRoomAutoApprovalRule(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -192,13 +205,12 @@ Delete an auto-approval rule.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*cleanrooms.GetCleanRoomAutoApprovalRuleRequest,
+	*sdkcleanrooms.GetCleanRoomAutoApprovalRuleRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq cleanrooms.GetCleanRoomAutoApprovalRuleRequest
+	var getReq sdkcleanrooms.GetCleanRoomAutoApprovalRuleRequest
 
 	cmd.Use = "get CLEAN_ROOM_NAME RULE_ID"
 	cmd.Short = `*Beta* Get an auto-approval rule.`
@@ -221,16 +233,22 @@ Get an auto-approval rule.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getReq.CleanRoomName = args[0]
-		getReq.RuleId = args[1]
+		getReq.CleanRoomName = new(args[0])
+		getReq.RuleId = new(args[1])
 
-		response, err := w.CleanRoomAutoApprovalRules.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.CleanRooms.GetCleanRoomAutoApprovalRule(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := cleanrooms.CleanRoomAutoApprovalRuleFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -256,20 +274,20 @@ var listOverrides []func(
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listReq cleanrooms.ListCleanRoomAutoApprovalRulesRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Maximum number of auto-approval rules to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listReq.PageSize, "page-size", `Maximum number of auto-approval rules to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list CLEAN_ROOM_NAME"
@@ -293,18 +311,22 @@ List auto-approval rules.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listReq.CleanRoomName = args[0]
+		listReq.CleanRoomName = new(args[0])
 
-		response := w.CleanRoomAutoApprovalRules.List(ctx, listReq)
+		sdkReq, err := cleanrooms.ListCleanRoomAutoApprovalRulesRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.CleanRooms.ListCleanRoomAutoApprovalRulesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, cleanrooms.CleanRoomAutoApprovalRuleFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -330,17 +352,17 @@ var updateOverrides []func(
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateReq cleanrooms.UpdateCleanRoomAutoApprovalRuleRequest
-	updateReq.AutoApprovalRule = cleanrooms.CleanRoomAutoApprovalRule{}
+	updateReq.AutoApprovalRule = &cleanrooms.CleanRoomAutoApprovalRule{}
+
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.AutoApprovalRule.AuthorCollaboratorAlias, "author-collaborator-alias", updateReq.AutoApprovalRule.AuthorCollaboratorAlias, `Collaborator alias of the author covered by the rule.`)
-	cmd.Flags().Var(&updateReq.AutoApprovalRule.AuthorScope, "author-scope", `Scope of authors covered by the rule. Supported values: [ANY_AUTHOR]`)
-	cmd.Flags().StringVar(&updateReq.AutoApprovalRule.CleanRoomName, "clean-room-name", updateReq.AutoApprovalRule.CleanRoomName, `The name of the clean room this auto-approval rule belongs to.`)
-	cmd.Flags().StringVar(&updateReq.AutoApprovalRule.RunnerCollaboratorAlias, "runner-collaborator-alias", updateReq.AutoApprovalRule.RunnerCollaboratorAlias, `Collaborator alias of the runner covered by the rule.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.AutoApprovalRule.AuthorCollaboratorAlias, "author-collaborator-alias", `Collaborator alias of the author covered by the rule.`)
+	flags.EnumVar(cmd.Flags(), &updateReq.AutoApprovalRule.AuthorScope, "author-scope", `Scope of authors covered by the rule. Supported values: [ANY_AUTHOR]`, "CleanRoomAutoApprovalRuleAuthorScope", "ANY_AUTHOR")
+	flags.StringPtrVar(cmd.Flags(), &updateReq.AutoApprovalRule.CleanRoomName, "clean-room-name", `The name of the clean room this auto-approval rule belongs to.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.AutoApprovalRule.RunnerCollaboratorAlias, "runner-collaborator-alias", `Collaborator alias of the runner covered by the rule.`)
 
 	cmd.Use = "update CLEAN_ROOM_NAME RULE_ID"
 	cmd.Short = `*Beta* Update an auto-approval rule.`
@@ -367,6 +389,7 @@ Update an auto-approval rule.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq.AutoApprovalRule)
@@ -380,15 +403,23 @@ Update an auto-approval rule.
 				}
 			}
 		}
-		updateReq.CleanRoomName = args[0]
-		updateReq.RuleId = args[1]
+		updateReq.AutoApprovalRule.CleanRoomName = new(args[0])
+		updateReq.AutoApprovalRule.RuleId = new(args[1])
 
-		response, err := w.CleanRoomAutoApprovalRules.Update(ctx, updateReq)
+		sdkReq, err := cleanrooms.UpdateCleanRoomAutoApprovalRuleRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.CleanRooms.UpdateCleanRoomAutoApprovalRule(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := cleanrooms.CleanRoomAutoApprovalRuleFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

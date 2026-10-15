@@ -7,9 +7,12 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/marketplace"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
+
+	marketplaces "github.com/databricks/cli/libs/sdktypes/marketplaces/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -49,25 +52,25 @@ Fulfillments are entities that allow consumers to preview installations.`,
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*marketplace.GetListingContentMetadataRequest,
+	*marketplaces.GetListingContentMetadataRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
+	var getReq marketplaces.GetListingContentMetadataRequest
 
-	var getReq marketplace.GetListingContentMetadataRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var getLimit int
 
-	cmd.Flags().IntVar(&getReq.PageSize, "page-size", getReq.PageSize, ``)
+	flags.IntPtrVar(cmd.Flags(), &getReq.PageSize, "page-size", ``)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&getLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&getReq.PageToken, "page-token", getReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &getReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "get LISTING_ID"
@@ -91,18 +94,22 @@ Get listing content metadata.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getReq.ListingId = args[0]
+		getReq.ListingId = new(args[0])
 
-		response := w.ConsumerFulfillments.Get(ctx, getReq)
+		sdkReq, err := marketplaces.GetListingContentMetadataRequestToSDK(&getReq)
+		if err != nil {
+			return err
+		}
 		if getLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", getLimit)
 		}
 		if getLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, getLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Marketplaces.GetListingContentIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, marketplaces.SharedDataObjectFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -123,25 +130,25 @@ Get listing content metadata.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*marketplace.ListFulfillmentsRequest,
+	*marketplaces.ListListingFulfillmentsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq marketplaces.ListListingFulfillmentsRequest
 
-	var listReq marketplace.ListFulfillmentsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	flags.IntPtrVar(cmd.Flags(), &listReq.PageSize, "page-size", ``)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list LISTING_ID"
@@ -169,18 +176,22 @@ List all listing fulfillments.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listReq.ListingId = args[0]
+		listReq.ListingId = new(args[0])
 
-		response := w.ConsumerFulfillments.List(ctx, listReq)
+		sdkReq, err := marketplaces.ListListingFulfillmentsRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Marketplaces.ListListingFulfillmentsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, marketplaces.ListingFulfillmentFromSDK))
 	}
 
 	// Disable completions since they are not applicable.

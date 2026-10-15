@@ -5,15 +5,16 @@ package domains
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	"github.com/databricks/databricks-sdk-go/service/domains"
 	"github.com/spf13/cobra"
+
+	domains "github.com/databricks/cli/libs/sdktypes/domains/v1"
+	sdkdomains "github.com/databricks/sdk-go/domains/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -61,21 +62,21 @@ var createDomainOverrides []func(
 
 func newCreateDomain() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createDomainReq domains.CreateDomainRequest
-	createDomainReq.Domain = domains.Domain{}
+	createDomainReq.Domain = &domains.Domain{}
+
 	var createDomainJson flags.JsonFlag
 
 	cmd.Flags().Var(&createDomainJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createDomainReq.DomainId, "domain-id", createDomainReq.DomainId, `Client-supplied resource ID for the new domain.`)
+	flags.StringPtrVar(cmd.Flags(), &createDomainReq.DomainId, "domain-id", `Client-supplied resource ID for the new domain.`)
 	// TODO: array: business_owner_ids
-	cmd.Flags().StringVar(&createDomainReq.Domain.Description, "description", createDomainReq.Domain.Description, `Full description (max 4096 chars).`)
-	cmd.Flags().BoolVar(&createDomainReq.Domain.Draft, "draft", createDomainReq.Domain.Draft, `Whether to mark the domain as a draft.`)
+	flags.StringPtrVar(cmd.Flags(), &createDomainReq.Domain.Description, "description", `Full description (max 4096 chars).`)
+	flags.BoolPtrVar(cmd.Flags(), &createDomainReq.Domain.Draft, "draft", `Whether to mark the domain as a draft.`)
 	// TODO: complex arg: icon
-	cmd.Flags().StringVar(&createDomainReq.Domain.Name, "name", createDomainReq.Domain.Name, `Full resource name of the domain.`)
-	cmd.Flags().StringVar(&createDomainReq.Domain.ParentDomainId, "parent-domain-id", createDomainReq.Domain.ParentDomainId, `Domain ID of the parent.`)
-	cmd.Flags().StringVar(&createDomainReq.Domain.Subtitle, "subtitle", createDomainReq.Domain.Subtitle, `Short description (max 280 chars).`)
+	flags.StringPtrVar(cmd.Flags(), &createDomainReq.Domain.Name, "name", `Full resource name of the domain.`)
+	flags.StringPtrVar(cmd.Flags(), &createDomainReq.Domain.ParentDomainId, "parent-domain-id", `Domain ID of the parent.`)
+	flags.StringPtrVar(cmd.Flags(), &createDomainReq.Domain.Subtitle, "subtitle", `Short description (max 280 chars).`)
 	// TODO: array: technical_owner_ids
 
 	cmd.Use = "create-domain TAG_KEY"
@@ -109,6 +110,7 @@ Create a domain.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createDomainJson.Unmarshal(&createDomainReq.Domain)
@@ -123,15 +125,23 @@ Create a domain.
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createDomainReq.Domain.TagKey = args[0]
+			createDomainReq.Domain.TagKey = new(args[0])
 		}
 
-		response, err := w.Domains.CreateDomain(ctx, createDomainReq)
+		sdkReq, err := domains.CreateDomainRequestToSDK(&createDomainReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Domains.CreateDomain(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := domains.DomainFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -157,10 +167,9 @@ var deleteDomainOverrides []func(
 
 func newDeleteDomain() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var deleteDomainReq domains.DeleteDomainRequest
 
-	cmd.Flags().BoolVar(&deleteDomainReq.Force, "force", deleteDomainReq.Force, `When false (default), DeleteDomain is rejected with FAILED_PRECONDITION if the domain still has Glossary pages.`)
+	flags.BoolPtrVar(cmd.Flags(), &deleteDomainReq.Force, "force", `When false (default), DeleteDomain is rejected with FAILED_PRECONDITION if the domain still has Glossary pages.`)
 
 	cmd.Use = "delete-domain NAME"
 	cmd.Short = `*Beta* Delete a domain.`
@@ -187,10 +196,15 @@ Delete a domain.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteDomainReq.Name = args[0]
+		deleteDomainReq.Name = new(args[0])
 
-		err = w.Domains.DeleteDomain(ctx, deleteDomainReq)
+		sdkReq, err := domains.DeleteDomainRequestToSDK(&deleteDomainReq)
+		if err != nil {
+			return err
+		}
+		err = w.Domains.DeleteDomain(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -215,13 +229,12 @@ Delete a domain.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getDomainOverrides []func(
 	*cobra.Command,
-	*domains.GetDomainRequest,
+	*sdkdomains.GetDomainRequest,
 )
 
 func newGetDomain() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getDomainReq domains.GetDomainRequest
+	var getDomainReq sdkdomains.GetDomainRequest
 
 	cmd.Use = "get-domain NAME"
 	cmd.Short = `*Beta* Get a domain.`
@@ -250,15 +263,21 @@ Get a domain.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getDomainReq.Name = args[0]
+		getDomainReq.Name = new(args[0])
 
-		response, err := w.Domains.GetDomain(ctx, getDomainReq)
+		sdkReq := &getDomainReq
+		response, err := w.Domains.GetDomain(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := domains.DomainFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -284,21 +303,21 @@ var listDomainsOverrides []func(
 
 func newListDomains() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listDomainsReq domains.ListDomainsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listDomainsLimit int
 
-	cmd.Flags().IntVar(&listDomainsReq.PageSize, "page-size", listDomainsReq.PageSize, ``)
-	cmd.Flags().StringVar(&listDomainsReq.ParentDomainId, "parent-domain-id", listDomainsReq.ParentDomainId, `Filter by parent domain.`)
+	flags.IntPtrVar(cmd.Flags(), &listDomainsReq.PageSize, "page-size", ``)
+	flags.StringPtrVar(cmd.Flags(), &listDomainsReq.ParentDomainId, "parent-domain-id", `Filter by parent domain.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listDomainsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listDomainsReq.PageToken, "page-token", listDomainsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listDomainsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-domains"
@@ -326,16 +345,20 @@ List domains.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.Domains.ListDomains(ctx, listDomainsReq)
+		sdkReq, err := domains.ListDomainsRequestToSDK(&listDomainsReq)
+		if err != nil {
+			return err
+		}
 		if listDomainsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listDomainsLimit)
 		}
 		if listDomainsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listDomainsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Domains.ListDomainsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, domains.DomainFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -361,20 +384,20 @@ var updateDomainOverrides []func(
 
 func newUpdateDomain() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateDomainReq domains.UpdateDomainRequest
-	updateDomainReq.Domain = domains.Domain{}
+	updateDomainReq.Domain = &domains.Domain{}
+
 	var updateDomainJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateDomainJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: business_owner_ids
-	cmd.Flags().StringVar(&updateDomainReq.Domain.Description, "description", updateDomainReq.Domain.Description, `Full description (max 4096 chars).`)
-	cmd.Flags().BoolVar(&updateDomainReq.Domain.Draft, "draft", updateDomainReq.Domain.Draft, `Whether to mark the domain as a draft.`)
+	flags.StringPtrVar(cmd.Flags(), &updateDomainReq.Domain.Description, "description", `Full description (max 4096 chars).`)
+	flags.BoolPtrVar(cmd.Flags(), &updateDomainReq.Domain.Draft, "draft", `Whether to mark the domain as a draft.`)
 	// TODO: complex arg: icon
-	cmd.Flags().StringVar(&updateDomainReq.Domain.Name, "name", updateDomainReq.Domain.Name, `Full resource name of the domain.`)
-	cmd.Flags().StringVar(&updateDomainReq.Domain.ParentDomainId, "parent-domain-id", updateDomainReq.Domain.ParentDomainId, `Domain ID of the parent.`)
-	cmd.Flags().StringVar(&updateDomainReq.Domain.Subtitle, "subtitle", updateDomainReq.Domain.Subtitle, `Short description (max 280 chars).`)
+	flags.StringPtrVar(cmd.Flags(), &updateDomainReq.Domain.Name, "name", `Full resource name of the domain.`)
+	flags.StringPtrVar(cmd.Flags(), &updateDomainReq.Domain.ParentDomainId, "parent-domain-id", `Domain ID of the parent.`)
+	flags.StringPtrVar(cmd.Flags(), &updateDomainReq.Domain.Subtitle, "subtitle", `Short description (max 280 chars).`)
 	// TODO: array: technical_owner_ids
 
 	cmd.Use = "update-domain NAME UPDATE_MASK TAG_KEY"
@@ -424,6 +447,7 @@ Update a domain.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateDomainJson.Unmarshal(&updateDomainReq.Domain)
@@ -437,21 +461,28 @@ Update a domain.
 				}
 			}
 		}
-		updateDomainReq.Name = args[0]
+		updateDomainReq.Domain.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateDomainReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateDomainReq.UpdateMask = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateDomainReq.Domain.TagKey = args[2]
+			updateDomainReq.Domain.TagKey = new(args[2])
 		}
 
-		response, err := w.Domains.UpdateDomain(ctx, updateDomainReq)
+		sdkReq, err := domains.UpdateDomainRequestToSDK(&updateDomainReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Domains.UpdateDomain(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := domains.DomainFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

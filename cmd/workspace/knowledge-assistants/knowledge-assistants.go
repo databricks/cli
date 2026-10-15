@@ -5,15 +5,18 @@ package knowledge_assistants
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	"github.com/databricks/databricks-sdk-go/service/knowledgeassistants"
 	"github.com/spf13/cobra"
+
+	accessmanagement "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
+	knowledgeassistants "github.com/databricks/cli/libs/sdktypes/knowledgeassistants/v1"
+	sdkaccessmanagement "github.com/databricks/sdk-go/accessmanagement/v1"
+	sdkknowledgeassistants "github.com/databricks/sdk-go/knowledgeassistants/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -76,15 +79,15 @@ var createExampleOverrides []func(
 
 func newCreateExample() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createExampleReq knowledgeassistants.CreateExampleRequest
-	createExampleReq.Example = knowledgeassistants.Example{}
+	createExampleReq.Example = &knowledgeassistants.Example{}
+
 	var createExampleJson flags.JsonFlag
 
 	cmd.Flags().Var(&createExampleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: guidelines
-	cmd.Flags().StringVar(&createExampleReq.Example.Name, "name", createExampleReq.Example.Name, `Full resource name: knowledge-assistants/{knowledge_assistant_id}/examples/{example_id}.`)
+	flags.StringPtrVar(cmd.Flags(), &createExampleReq.Example.Name, "name", `Full resource name: knowledge-assistants/{knowledge_assistant_id}/examples/{example_id}.`)
 
 	cmd.Use = "create-example PARENT QUESTION"
 	cmd.Short = `*Beta* Create an example for a Knowledge Assistant.`
@@ -119,6 +122,7 @@ Create an example for a Knowledge Assistant.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createExampleJson.Unmarshal(&createExampleReq.Example)
@@ -132,17 +136,25 @@ Create an example for a Knowledge Assistant.
 				}
 			}
 		}
-		createExampleReq.Parent = args[0]
+		createExampleReq.Parent = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			createExampleReq.Example.Question = args[1]
+			createExampleReq.Example.Question = new(args[1])
 		}
 
-		response, err := w.KnowledgeAssistants.CreateExample(ctx, createExampleReq)
+		sdkReq, err := knowledgeassistants.CreateExampleRequestToSDK(&createExampleReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.KnowledgeAssistants.CreateExample(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := knowledgeassistants.ExampleFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -168,15 +180,15 @@ var createKnowledgeAssistantOverrides []func(
 
 func newCreateKnowledgeAssistant() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createKnowledgeAssistantReq knowledgeassistants.CreateKnowledgeAssistantRequest
-	createKnowledgeAssistantReq.KnowledgeAssistant = knowledgeassistants.KnowledgeAssistant{}
+	createKnowledgeAssistantReq.KnowledgeAssistant = &knowledgeassistants.KnowledgeAssistant{}
+
 	var createKnowledgeAssistantJson flags.JsonFlag
 
 	cmd.Flags().Var(&createKnowledgeAssistantJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createKnowledgeAssistantReq.KnowledgeAssistant.Instructions, "instructions", createKnowledgeAssistantReq.KnowledgeAssistant.Instructions, `Additional global instructions on how the agent should generate answers.`)
-	cmd.Flags().StringVar(&createKnowledgeAssistantReq.KnowledgeAssistant.Name, "name", createKnowledgeAssistantReq.KnowledgeAssistant.Name, `The resource name of the Knowledge Assistant.`)
+	flags.StringPtrVar(cmd.Flags(), &createKnowledgeAssistantReq.KnowledgeAssistant.Instructions, "instructions", `Additional global instructions on how the agent should generate answers.`)
+	flags.StringPtrVar(cmd.Flags(), &createKnowledgeAssistantReq.KnowledgeAssistant.Name, "name", `The resource name of the Knowledge Assistant.`)
 
 	cmd.Use = "create-knowledge-assistant DISPLAY_NAME DESCRIPTION"
 	cmd.Short = `*Beta* Create a Knowledge Assistant.`
@@ -214,6 +226,7 @@ Create a Knowledge Assistant.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createKnowledgeAssistantJson.Unmarshal(&createKnowledgeAssistantReq.KnowledgeAssistant)
@@ -228,18 +241,26 @@ Create a Knowledge Assistant.
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createKnowledgeAssistantReq.KnowledgeAssistant.DisplayName = args[0]
+			createKnowledgeAssistantReq.KnowledgeAssistant.DisplayName = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			createKnowledgeAssistantReq.KnowledgeAssistant.Description = args[1]
+			createKnowledgeAssistantReq.KnowledgeAssistant.Description = new(args[1])
 		}
 
-		response, err := w.KnowledgeAssistants.CreateKnowledgeAssistant(ctx, createKnowledgeAssistantReq)
+		sdkReq, err := knowledgeassistants.CreateKnowledgeAssistantRequestToSDK(&createKnowledgeAssistantReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.KnowledgeAssistants.CreateKnowledgeAssistant(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := knowledgeassistants.KnowledgeAssistantFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -265,9 +286,9 @@ var createKnowledgeSourceOverrides []func(
 
 func newCreateKnowledgeSource() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createKnowledgeSourceReq knowledgeassistants.CreateKnowledgeSourceRequest
-	createKnowledgeSourceReq.KnowledgeSource = knowledgeassistants.KnowledgeSource{}
+	createKnowledgeSourceReq.KnowledgeSource = &knowledgeassistants.KnowledgeSource{}
+
 	var createKnowledgeSourceJson flags.JsonFlag
 
 	cmd.Flags().Var(&createKnowledgeSourceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -275,7 +296,7 @@ func newCreateKnowledgeSource() *cobra.Command {
 	// TODO: complex arg: file_table
 	// TODO: complex arg: files
 	// TODO: complex arg: index
-	cmd.Flags().StringVar(&createKnowledgeSourceReq.KnowledgeSource.Name, "name", createKnowledgeSourceReq.KnowledgeSource.Name, `Full resource name: knowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}.`)
+	flags.StringPtrVar(cmd.Flags(), &createKnowledgeSourceReq.KnowledgeSource.Name, "name", `Full resource name: knowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}.`)
 
 	cmd.Use = "create-knowledge-source PARENT DISPLAY_NAME DESCRIPTION SOURCE_TYPE"
 	cmd.Short = `*Beta* Create a Knowledge Source.`
@@ -318,6 +339,7 @@ Create a Knowledge Source.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createKnowledgeSourceJson.Unmarshal(&createKnowledgeSourceReq.KnowledgeSource)
@@ -331,23 +353,31 @@ Create a Knowledge Source.
 				}
 			}
 		}
-		createKnowledgeSourceReq.Parent = args[0]
+		createKnowledgeSourceReq.Parent = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			createKnowledgeSourceReq.KnowledgeSource.DisplayName = args[1]
+			createKnowledgeSourceReq.KnowledgeSource.DisplayName = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			createKnowledgeSourceReq.KnowledgeSource.Description = args[2]
+			createKnowledgeSourceReq.KnowledgeSource.Description = new(args[2])
 		}
 		if !cmd.Flags().Changed("json") {
-			createKnowledgeSourceReq.KnowledgeSource.SourceType = args[3]
+			createKnowledgeSourceReq.KnowledgeSource.SourceType = new(args[3])
 		}
 
-		response, err := w.KnowledgeAssistants.CreateKnowledgeSource(ctx, createKnowledgeSourceReq)
+		sdkReq, err := knowledgeassistants.CreateKnowledgeSourceRequestToSDK(&createKnowledgeSourceReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.KnowledgeAssistants.CreateKnowledgeSource(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := knowledgeassistants.KnowledgeSourceFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -368,13 +398,12 @@ Create a Knowledge Source.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteExampleOverrides []func(
 	*cobra.Command,
-	*knowledgeassistants.DeleteExampleRequest,
+	*sdkknowledgeassistants.DeleteExampleRequest,
 )
 
 func newDeleteExample() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteExampleReq knowledgeassistants.DeleteExampleRequest
+	var deleteExampleReq sdkknowledgeassistants.DeleteExampleRequest
 
 	cmd.Use = "delete-example NAME"
 	cmd.Short = `*Beta* Delete an example from a Knowledge Assistant.`
@@ -401,10 +430,12 @@ Delete an example from a Knowledge Assistant.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteExampleReq.Name = args[0]
+		deleteExampleReq.Name = new(args[0])
 
-		err = w.KnowledgeAssistants.DeleteExample(ctx, deleteExampleReq)
+		sdkReq := &deleteExampleReq
+		err = w.KnowledgeAssistants.DeleteExample(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -429,13 +460,12 @@ Delete an example from a Knowledge Assistant.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteKnowledgeAssistantOverrides []func(
 	*cobra.Command,
-	*knowledgeassistants.DeleteKnowledgeAssistantRequest,
+	*sdkknowledgeassistants.DeleteKnowledgeAssistantRequest,
 )
 
 func newDeleteKnowledgeAssistant() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteKnowledgeAssistantReq knowledgeassistants.DeleteKnowledgeAssistantRequest
+	var deleteKnowledgeAssistantReq sdkknowledgeassistants.DeleteKnowledgeAssistantRequest
 
 	cmd.Use = "delete-knowledge-assistant NAME"
 	cmd.Short = `*Beta* Delete a Knowledge Assistant.`
@@ -462,10 +492,12 @@ Delete a Knowledge Assistant.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteKnowledgeAssistantReq.Name = args[0]
+		deleteKnowledgeAssistantReq.Name = new(args[0])
 
-		err = w.KnowledgeAssistants.DeleteKnowledgeAssistant(ctx, deleteKnowledgeAssistantReq)
+		sdkReq := &deleteKnowledgeAssistantReq
+		err = w.KnowledgeAssistants.DeleteKnowledgeAssistant(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -490,13 +522,12 @@ Delete a Knowledge Assistant.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteKnowledgeSourceOverrides []func(
 	*cobra.Command,
-	*knowledgeassistants.DeleteKnowledgeSourceRequest,
+	*sdkknowledgeassistants.DeleteKnowledgeSourceRequest,
 )
 
 func newDeleteKnowledgeSource() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteKnowledgeSourceReq knowledgeassistants.DeleteKnowledgeSourceRequest
+	var deleteKnowledgeSourceReq sdkknowledgeassistants.DeleteKnowledgeSourceRequest
 
 	cmd.Use = "delete-knowledge-source NAME"
 	cmd.Short = `*Beta* Delete a Knowledge Source.`
@@ -523,10 +554,12 @@ Delete a Knowledge Source.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteKnowledgeSourceReq.Name = args[0]
+		deleteKnowledgeSourceReq.Name = new(args[0])
 
-		err = w.KnowledgeAssistants.DeleteKnowledgeSource(ctx, deleteKnowledgeSourceReq)
+		sdkReq := &deleteKnowledgeSourceReq
+		err = w.KnowledgeAssistants.DeleteKnowledgeSource(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -551,13 +584,12 @@ Delete a Knowledge Source.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getExampleOverrides []func(
 	*cobra.Command,
-	*knowledgeassistants.GetExampleRequest,
+	*sdkknowledgeassistants.GetExampleRequest,
 )
 
 func newGetExample() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getExampleReq knowledgeassistants.GetExampleRequest
+	var getExampleReq sdkknowledgeassistants.GetExampleRequest
 
 	cmd.Use = "get-example NAME"
 	cmd.Short = `*Beta* Get an example from a Knowledge Assistant.`
@@ -584,15 +616,21 @@ Get an example from a Knowledge Assistant.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getExampleReq.Name = args[0]
+		getExampleReq.Name = new(args[0])
 
-		response, err := w.KnowledgeAssistants.GetExample(ctx, getExampleReq)
+		sdkReq := &getExampleReq
+		response, err := w.KnowledgeAssistants.GetExample(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := knowledgeassistants.ExampleFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -613,13 +651,12 @@ Get an example from a Knowledge Assistant.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getKnowledgeAssistantOverrides []func(
 	*cobra.Command,
-	*knowledgeassistants.GetKnowledgeAssistantRequest,
+	*sdkknowledgeassistants.GetKnowledgeAssistantRequest,
 )
 
 func newGetKnowledgeAssistant() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getKnowledgeAssistantReq knowledgeassistants.GetKnowledgeAssistantRequest
+	var getKnowledgeAssistantReq sdkknowledgeassistants.GetKnowledgeAssistantRequest
 
 	cmd.Use = "get-knowledge-assistant NAME"
 	cmd.Short = `*Beta* Get a Knowledge Assistant.`
@@ -646,15 +683,21 @@ Get a Knowledge Assistant.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getKnowledgeAssistantReq.Name = args[0]
+		getKnowledgeAssistantReq.Name = new(args[0])
 
-		response, err := w.KnowledgeAssistants.GetKnowledgeAssistant(ctx, getKnowledgeAssistantReq)
+		sdkReq := &getKnowledgeAssistantReq
+		response, err := w.KnowledgeAssistants.GetKnowledgeAssistant(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := knowledgeassistants.KnowledgeAssistantFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -675,13 +718,12 @@ Get a Knowledge Assistant.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getKnowledgeSourceOverrides []func(
 	*cobra.Command,
-	*knowledgeassistants.GetKnowledgeSourceRequest,
+	*sdkknowledgeassistants.GetKnowledgeSourceRequest,
 )
 
 func newGetKnowledgeSource() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getKnowledgeSourceReq knowledgeassistants.GetKnowledgeSourceRequest
+	var getKnowledgeSourceReq sdkknowledgeassistants.GetKnowledgeSourceRequest
 
 	cmd.Use = "get-knowledge-source NAME"
 	cmd.Short = `*Beta* Get a Knowledge Source.`
@@ -708,15 +750,21 @@ Get a Knowledge Source.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getKnowledgeSourceReq.Name = args[0]
+		getKnowledgeSourceReq.Name = new(args[0])
 
-		response, err := w.KnowledgeAssistants.GetKnowledgeSource(ctx, getKnowledgeSourceReq)
+		sdkReq := &getKnowledgeSourceReq
+		response, err := w.KnowledgeAssistants.GetKnowledgeSource(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := knowledgeassistants.KnowledgeSourceFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -737,13 +785,12 @@ Get a Knowledge Source.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPermissionLevelsOverrides []func(
 	*cobra.Command,
-	*knowledgeassistants.GetKnowledgeAssistantPermissionLevelsRequest,
+	*sdkaccessmanagement.ListPermissionLevelsRequest,
 )
 
 func newGetPermissionLevels() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPermissionLevelsReq knowledgeassistants.GetKnowledgeAssistantPermissionLevelsRequest
+	var getPermissionLevelsReq sdkaccessmanagement.ListPermissionLevelsRequest
 
 	cmd.Use = "get-permission-levels KNOWLEDGE_ASSISTANT_ID"
 	cmd.Short = `*Beta* Get knowledge assistant permission levels.`
@@ -769,15 +816,23 @@ Get knowledge assistant permission levels.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getPermissionLevelsReq.KnowledgeAssistantId = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: knowledge_assistant_id
 
-		response, err := w.KnowledgeAssistants.GetPermissionLevels(ctx, getPermissionLevelsReq)
+		getPermissionLevelsReq.RequestObjectType = new("knowledge-assistants")
+
+		sdkReq := &getPermissionLevelsReq
+		response, err := w.AccessManagement.ListPermissionLevels(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.ListPermissionLevelsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -798,13 +853,12 @@ Get knowledge assistant permission levels.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPermissionsOverrides []func(
 	*cobra.Command,
-	*knowledgeassistants.GetKnowledgeAssistantPermissionsRequest,
+	*sdkaccessmanagement.GetObjectPermissionsRequest,
 )
 
 func newGetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPermissionsReq knowledgeassistants.GetKnowledgeAssistantPermissionsRequest
+	var getPermissionsReq sdkaccessmanagement.GetObjectPermissionsRequest
 
 	cmd.Use = "get-permissions KNOWLEDGE_ASSISTANT_ID"
 	cmd.Short = `*Beta* Get knowledge assistant permissions.`
@@ -831,15 +885,23 @@ Get knowledge assistant permissions.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getPermissionsReq.KnowledgeAssistantId = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: knowledge_assistant_id
 
-		response, err := w.KnowledgeAssistants.GetPermissions(ctx, getPermissionsReq)
+		getPermissionsReq.RequestObjectType = new("knowledge-assistants")
+
+		sdkReq := &getPermissionsReq
+		response, err := w.AccessManagement.GetObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -865,20 +927,20 @@ var listExamplesOverrides []func(
 
 func newListExamples() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listExamplesReq knowledgeassistants.ListExamplesRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listExamplesLimit int
 
-	cmd.Flags().IntVar(&listExamplesReq.PageSize, "page-size", listExamplesReq.PageSize, `The maximum number of examples to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listExamplesReq.PageSize, "page-size", `The maximum number of examples to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listExamplesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listExamplesReq.PageToken, "page-token", listExamplesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listExamplesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-examples PARENT"
@@ -906,18 +968,22 @@ List examples for a Knowledge Assistant.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listExamplesReq.Parent = args[0]
+		listExamplesReq.Parent = new(args[0])
 
-		response := w.KnowledgeAssistants.ListExamples(ctx, listExamplesReq)
+		sdkReq, err := knowledgeassistants.ListExamplesRequestToSDK(&listExamplesReq)
+		if err != nil {
+			return err
+		}
 		if listExamplesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listExamplesLimit)
 		}
 		if listExamplesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listExamplesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.KnowledgeAssistants.ListExamplesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, knowledgeassistants.ExampleFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -943,20 +1009,20 @@ var listKnowledgeAssistantsOverrides []func(
 
 func newListKnowledgeAssistants() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listKnowledgeAssistantsReq knowledgeassistants.ListKnowledgeAssistantsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listKnowledgeAssistantsLimit int
 
-	cmd.Flags().IntVar(&listKnowledgeAssistantsReq.PageSize, "page-size", listKnowledgeAssistantsReq.PageSize, `The maximum number of knowledge assistants to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listKnowledgeAssistantsReq.PageSize, "page-size", `The maximum number of knowledge assistants to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listKnowledgeAssistantsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listKnowledgeAssistantsReq.PageToken, "page-token", listKnowledgeAssistantsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listKnowledgeAssistantsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-knowledge-assistants"
@@ -980,16 +1046,20 @@ List Knowledge Assistants.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.KnowledgeAssistants.ListKnowledgeAssistants(ctx, listKnowledgeAssistantsReq)
+		sdkReq, err := knowledgeassistants.ListKnowledgeAssistantsRequestToSDK(&listKnowledgeAssistantsReq)
+		if err != nil {
+			return err
+		}
 		if listKnowledgeAssistantsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listKnowledgeAssistantsLimit)
 		}
 		if listKnowledgeAssistantsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listKnowledgeAssistantsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.KnowledgeAssistants.ListKnowledgeAssistantsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, knowledgeassistants.KnowledgeAssistantFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1015,20 +1085,20 @@ var listKnowledgeSourcesOverrides []func(
 
 func newListKnowledgeSources() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listKnowledgeSourcesReq knowledgeassistants.ListKnowledgeSourcesRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listKnowledgeSourcesLimit int
 
-	cmd.Flags().IntVar(&listKnowledgeSourcesReq.PageSize, "page-size", listKnowledgeSourcesReq.PageSize, ``)
+	flags.IntPtrVar(cmd.Flags(), &listKnowledgeSourcesReq.PageSize, "page-size", ``)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listKnowledgeSourcesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listKnowledgeSourcesReq.PageToken, "page-token", listKnowledgeSourcesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listKnowledgeSourcesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-knowledge-sources PARENT"
@@ -1056,18 +1126,22 @@ List Knowledge Sources.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listKnowledgeSourcesReq.Parent = args[0]
+		listKnowledgeSourcesReq.Parent = new(args[0])
 
-		response := w.KnowledgeAssistants.ListKnowledgeSources(ctx, listKnowledgeSourcesReq)
+		sdkReq, err := knowledgeassistants.ListKnowledgeSourcesRequestToSDK(&listKnowledgeSourcesReq)
+		if err != nil {
+			return err
+		}
 		if listKnowledgeSourcesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listKnowledgeSourcesLimit)
 		}
 		if listKnowledgeSourcesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listKnowledgeSourcesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.KnowledgeAssistants.ListKnowledgeSourcesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, knowledgeassistants.KnowledgeSourceFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1088,13 +1162,13 @@ List Knowledge Sources.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var setPermissionsOverrides []func(
 	*cobra.Command,
-	*knowledgeassistants.KnowledgeAssistantPermissionsRequest,
+	*accessmanagement.SetObjectPermissionsRequest,
 )
 
 func newSetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var setPermissionsReq accessmanagement.SetObjectPermissionsRequest
 
-	var setPermissionsReq knowledgeassistants.KnowledgeAssistantPermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1127,6 +1201,7 @@ Set knowledge assistant permissions.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
@@ -1140,14 +1215,24 @@ Set knowledge assistant permissions.
 				}
 			}
 		}
-		setPermissionsReq.KnowledgeAssistantId = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: knowledge_assistant_id
 
-		response, err := w.KnowledgeAssistants.SetPermissions(ctx, setPermissionsReq)
+		setPermissionsReq.RequestObjectType = new("knowledge-assistants")
+
+		sdkReq, err := accessmanagement.SetObjectPermissionsRequestToSDK(&setPermissionsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AccessManagement.SetObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1173,7 +1258,6 @@ var syncKnowledgeSourcesOverrides []func(
 
 func newSyncKnowledgeSources() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var syncKnowledgeSourcesReq knowledgeassistants.SyncKnowledgeSourcesRequest
 
 	cmd.Use = "sync-knowledge-sources NAME"
@@ -1202,10 +1286,15 @@ Syncs all Knowledge Sources for a Knowledge Assistant.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		syncKnowledgeSourcesReq.Name = args[0]
+		syncKnowledgeSourcesReq.Name = new(args[0])
 
-		err = w.KnowledgeAssistants.SyncKnowledgeSources(ctx, syncKnowledgeSourcesReq)
+		sdkReq, err := knowledgeassistants.SyncKnowledgeSourcesRequestToSDK(&syncKnowledgeSourcesReq)
+		if err != nil {
+			return err
+		}
+		err = w.KnowledgeAssistants.SyncKnowledgeSources(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -1235,15 +1324,15 @@ var updateExampleOverrides []func(
 
 func newUpdateExample() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateExampleReq knowledgeassistants.UpdateExampleRequest
-	updateExampleReq.Example = knowledgeassistants.Example{}
+	updateExampleReq.Example = &knowledgeassistants.Example{}
+
 	var updateExampleJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateExampleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: guidelines
-	cmd.Flags().StringVar(&updateExampleReq.Example.Name, "name", updateExampleReq.Example.Name, `Full resource name: knowledge-assistants/{knowledge_assistant_id}/examples/{example_id}.`)
+	flags.StringPtrVar(cmd.Flags(), &updateExampleReq.Name, "name", `Full resource name: knowledge-assistants/{knowledge_assistant_id}/examples/{example_id}.`)
 
 	cmd.Use = "update-example NAME UPDATE_MASK QUESTION"
 	cmd.Short = `*Beta* Update an example in a Knowledge Assistant.`
@@ -1280,6 +1369,7 @@ Update an example in a Knowledge Assistant.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateExampleJson.Unmarshal(&updateExampleReq.Example)
@@ -1293,21 +1383,28 @@ Update an example in a Knowledge Assistant.
 				}
 			}
 		}
-		updateExampleReq.Name = args[0]
+		updateExampleReq.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateExampleReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateExampleReq.UpdateMask = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateExampleReq.Example.Question = args[2]
+			updateExampleReq.Example.Question = new(args[2])
 		}
 
-		response, err := w.KnowledgeAssistants.UpdateExample(ctx, updateExampleReq)
+		sdkReq, err := knowledgeassistants.UpdateExampleRequestToSDK(&updateExampleReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.KnowledgeAssistants.UpdateExample(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := knowledgeassistants.ExampleFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1333,15 +1430,15 @@ var updateKnowledgeAssistantOverrides []func(
 
 func newUpdateKnowledgeAssistant() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateKnowledgeAssistantReq knowledgeassistants.UpdateKnowledgeAssistantRequest
-	updateKnowledgeAssistantReq.KnowledgeAssistant = knowledgeassistants.KnowledgeAssistant{}
+	updateKnowledgeAssistantReq.KnowledgeAssistant = &knowledgeassistants.KnowledgeAssistant{}
+
 	var updateKnowledgeAssistantJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateKnowledgeAssistantJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateKnowledgeAssistantReq.KnowledgeAssistant.Instructions, "instructions", updateKnowledgeAssistantReq.KnowledgeAssistant.Instructions, `Additional global instructions on how the agent should generate answers.`)
-	cmd.Flags().StringVar(&updateKnowledgeAssistantReq.KnowledgeAssistant.Name, "name", updateKnowledgeAssistantReq.KnowledgeAssistant.Name, `The resource name of the Knowledge Assistant.`)
+	flags.StringPtrVar(cmd.Flags(), &updateKnowledgeAssistantReq.KnowledgeAssistant.Instructions, "instructions", `Additional global instructions on how the agent should generate answers.`)
+	flags.StringPtrVar(cmd.Flags(), &updateKnowledgeAssistantReq.KnowledgeAssistant.Name, "name", `The resource name of the Knowledge Assistant.`)
 
 	cmd.Use = "update-knowledge-assistant NAME UPDATE_MASK DISPLAY_NAME DESCRIPTION"
 	cmd.Short = `*Beta* Update a Knowledge Assistant.`
@@ -1384,6 +1481,7 @@ Update a Knowledge Assistant.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateKnowledgeAssistantJson.Unmarshal(&updateKnowledgeAssistantReq.KnowledgeAssistant)
@@ -1397,24 +1495,31 @@ Update a Knowledge Assistant.
 				}
 			}
 		}
-		updateKnowledgeAssistantReq.Name = args[0]
+		updateKnowledgeAssistantReq.KnowledgeAssistant.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateKnowledgeAssistantReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateKnowledgeAssistantReq.UpdateMask = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateKnowledgeAssistantReq.KnowledgeAssistant.DisplayName = args[2]
+			updateKnowledgeAssistantReq.KnowledgeAssistant.DisplayName = new(args[2])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateKnowledgeAssistantReq.KnowledgeAssistant.Description = args[3]
+			updateKnowledgeAssistantReq.KnowledgeAssistant.Description = new(args[3])
 		}
 
-		response, err := w.KnowledgeAssistants.UpdateKnowledgeAssistant(ctx, updateKnowledgeAssistantReq)
+		sdkReq, err := knowledgeassistants.UpdateKnowledgeAssistantRequestToSDK(&updateKnowledgeAssistantReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.KnowledgeAssistants.UpdateKnowledgeAssistant(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := knowledgeassistants.KnowledgeAssistantFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1440,9 +1545,9 @@ var updateKnowledgeSourceOverrides []func(
 
 func newUpdateKnowledgeSource() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateKnowledgeSourceReq knowledgeassistants.UpdateKnowledgeSourceRequest
-	updateKnowledgeSourceReq.KnowledgeSource = knowledgeassistants.KnowledgeSource{}
+	updateKnowledgeSourceReq.KnowledgeSource = &knowledgeassistants.KnowledgeSource{}
+
 	var updateKnowledgeSourceJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateKnowledgeSourceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1450,7 +1555,7 @@ func newUpdateKnowledgeSource() *cobra.Command {
 	// TODO: complex arg: file_table
 	// TODO: complex arg: files
 	// TODO: complex arg: index
-	cmd.Flags().StringVar(&updateKnowledgeSourceReq.KnowledgeSource.Name, "name", updateKnowledgeSourceReq.KnowledgeSource.Name, `Full resource name: knowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}.`)
+	flags.StringPtrVar(cmd.Flags(), &updateKnowledgeSourceReq.Name, "name", `Full resource name: knowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}.`)
 
 	cmd.Use = "update-knowledge-source NAME UPDATE_MASK DISPLAY_NAME DESCRIPTION SOURCE_TYPE"
 	cmd.Short = `*Beta* Update a Knowledge Source.`
@@ -1496,6 +1601,7 @@ Update a Knowledge Source.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateKnowledgeSourceJson.Unmarshal(&updateKnowledgeSourceReq.KnowledgeSource)
@@ -1509,27 +1615,34 @@ Update a Knowledge Source.
 				}
 			}
 		}
-		updateKnowledgeSourceReq.Name = args[0]
+		updateKnowledgeSourceReq.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateKnowledgeSourceReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateKnowledgeSourceReq.UpdateMask = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateKnowledgeSourceReq.KnowledgeSource.DisplayName = args[2]
+			updateKnowledgeSourceReq.KnowledgeSource.DisplayName = new(args[2])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateKnowledgeSourceReq.KnowledgeSource.Description = args[3]
+			updateKnowledgeSourceReq.KnowledgeSource.Description = new(args[3])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateKnowledgeSourceReq.KnowledgeSource.SourceType = args[4]
+			updateKnowledgeSourceReq.KnowledgeSource.SourceType = new(args[4])
 		}
 
-		response, err := w.KnowledgeAssistants.UpdateKnowledgeSource(ctx, updateKnowledgeSourceReq)
+		sdkReq, err := knowledgeassistants.UpdateKnowledgeSourceRequestToSDK(&updateKnowledgeSourceReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.KnowledgeAssistants.UpdateKnowledgeSource(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := knowledgeassistants.KnowledgeSourceFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1550,13 +1663,13 @@ Update a Knowledge Source.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updatePermissionsOverrides []func(
 	*cobra.Command,
-	*knowledgeassistants.KnowledgeAssistantPermissionsRequest,
+	*accessmanagement.UpdateObjectPermissionsRequest,
 )
 
 func newUpdatePermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updatePermissionsReq accessmanagement.UpdateObjectPermissionsRequest
 
-	var updatePermissionsReq knowledgeassistants.KnowledgeAssistantPermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1588,6 +1701,7 @@ Update knowledge assistant permissions.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)
@@ -1601,14 +1715,24 @@ Update knowledge assistant permissions.
 				}
 			}
 		}
-		updatePermissionsReq.KnowledgeAssistantId = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: knowledge_assistant_id
 
-		response, err := w.KnowledgeAssistants.UpdatePermissions(ctx, updatePermissionsReq)
+		updatePermissionsReq.RequestObjectType = new("knowledge-assistants")
+
+		sdkReq, err := accessmanagement.UpdateObjectPermissionsRequestToSDK(&updatePermissionsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AccessManagement.UpdateObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

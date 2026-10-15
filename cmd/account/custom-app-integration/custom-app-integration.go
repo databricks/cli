@@ -7,10 +7,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/oauth2"
 	"github.com/spf13/cobra"
+
+	oauth "github.com/databricks/cli/libs/sdktypes/oauth/v1"
+	sdkoauth "github.com/databricks/sdk-go/oauth/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -53,19 +56,19 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*oauth2.CreateCustomAppIntegration,
+	*oauth.CreateCustomOAuthAppIntegrationRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq oauth.CreateCustomOAuthAppIntegrationRequest
 
-	var createReq oauth2.CreateCustomAppIntegration
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createReq.Confidential, "confidential", createReq.Confidential, `This field indicates whether an OAuth client secret is required to authenticate this client.`)
-	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Name of the custom OAuth app.`)
+	flags.BoolPtrVar(cmd.Flags(), &createReq.Confidential, "confidential", `This field indicates whether an OAuth client secret is required to authenticate this client.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Name, "name", `Name of the custom OAuth app.`)
 	// TODO: array: redirect_urls
 	// TODO: array: scopes
 	// TODO: complex arg: token_access_policy
@@ -95,6 +98,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -109,12 +113,20 @@ func newCreate() *cobra.Command {
 			}
 		}
 
-		response, err := a.CustomAppIntegration.Create(ctx, createReq)
+		sdkReq, err := oauth.CreateCustomOAuthAppIntegrationRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.OAuth.CreateCustomOAuthAppIntegration(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := oauth.CustomOAuthAppIntegrationSecretFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -135,13 +147,12 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*oauth2.DeleteCustomAppIntegrationRequest,
+	*sdkoauth.DeleteCustomOAuthAppIntegrationRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq oauth2.DeleteCustomAppIntegrationRequest
+	var deleteReq sdkoauth.DeleteCustomOAuthAppIntegrationRequest
 
 	cmd.Use = "delete INTEGRATION_ID"
 	cmd.Short = `Delete Custom OAuth App Integration.`
@@ -165,13 +176,17 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		deleteReq.IntegrationId = args[0]
+		deleteReq.IntegrationId = new(args[0])
 
-		err = a.CustomAppIntegration.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := a.OAuth.DeleteCustomOAuthAppIntegration(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -193,13 +208,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*oauth2.GetCustomAppIntegrationRequest,
+	*sdkoauth.GetCustomOAuthAppIntegrationRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq oauth2.GetCustomAppIntegrationRequest
+	var getReq sdkoauth.GetCustomOAuthAppIntegrationRequest
 
 	cmd.Use = "get INTEGRATION_ID"
 	cmd.Short = `Get OAuth Custom App Integration.`
@@ -223,15 +237,21 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		getReq.IntegrationId = args[0]
+		getReq.IntegrationId = new(args[0])
 
-		response, err := a.CustomAppIntegration.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := a.OAuth.GetCustomOAuthAppIntegration(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := oauth.CustomOAuthAppIntegrationFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -252,26 +272,26 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*oauth2.ListCustomAppIntegrationsRequest,
+	*oauth.ListCustomOAuthAppIntegrationsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq oauth.ListCustomOAuthAppIntegrationsRequest
 
-	var listReq oauth2.ListCustomAppIntegrationsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().BoolVar(&listReq.IncludeCreatorUsername, "include-creator-username", listReq.IncludeCreatorUsername, ``)
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	flags.BoolPtrVar(cmd.Flags(), &listReq.IncludeCreatorUsername, "include-creator-username", ``)
+	flags.IntPtrVar(cmd.Flags(), &listReq.PageSize, "page-size", ``)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
@@ -294,16 +314,20 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		response := a.CustomAppIntegration.List(ctx, listReq)
+		sdkReq, err := oauth.ListCustomOAuthAppIntegrationsRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := a.OAuth.ListCustomOAuthAppIntegrationsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, oauth.CustomOAuthAppIntegrationFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -324,13 +348,13 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*oauth2.UpdateCustomAppIntegration,
+	*oauth.UpdateCustomOAuthAppIntegrationRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq oauth.UpdateCustomOAuthAppIntegrationRequest
 
-	var updateReq oauth2.UpdateCustomAppIntegration
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -362,6 +386,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -375,12 +400,18 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.IntegrationId = args[0]
+		updateReq.IntegrationId = new(args[0])
 
-		err = a.CustomAppIntegration.Update(ctx, updateReq)
+		sdkReq, err := oauth.UpdateCustomOAuthAppIntegrationRequestToSDK(&updateReq)
 		if err != nil {
 			return err
 		}
+		response, err := a.OAuth.UpdateCustomOAuthAppIntegration(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 

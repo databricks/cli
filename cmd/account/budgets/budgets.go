@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/billing"
 	"github.com/spf13/cobra"
+
+	budgets "github.com/databricks/cli/libs/sdktypes/budgets/v1"
+	sdkbudgets "github.com/databricks/sdk-go/budgets/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -57,13 +60,13 @@ These APIs manage budget configurations for this account. Budgets enable you
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*billing.CreateBudgetConfigurationRequest,
+	*budgets.CreateBudgetConfigurationRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq budgets.CreateBudgetConfigurationRequest
 
-	var createReq billing.CreateBudgetConfigurationRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -85,6 +88,7 @@ Create new budget.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -101,12 +105,20 @@ Create new budget.
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := a.Budgets.Create(ctx, createReq)
+		sdkReq, err := budgets.CreateBudgetConfigurationRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Budgets.CreateBudgetConfiguration(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := budgets.CreateBudgetConfigurationResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -127,13 +139,12 @@ Create new budget.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*billing.DeleteBudgetConfigurationRequest,
+	*sdkbudgets.DeleteBudgetConfigurationRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq billing.DeleteBudgetConfigurationRequest
+	var deleteReq sdkbudgets.DeleteBudgetConfigurationRequest
 
 	cmd.Use = "delete BUDGET_ID"
 	cmd.Short = `*Public Preview* Delete budget.`
@@ -160,13 +171,17 @@ Delete budget.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		deleteReq.BudgetId = args[0]
+		deleteReq.BudgetId = new(args[0])
 
-		err = a.Budgets.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := a.Budgets.DeleteBudgetConfiguration(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -188,13 +203,12 @@ Delete budget.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*billing.GetBudgetConfigurationRequest,
+	*sdkbudgets.GetBudgetConfigurationRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq billing.GetBudgetConfigurationRequest
+	var getReq sdkbudgets.GetBudgetConfigurationRequest
 
 	cmd.Use = "get BUDGET_ID"
 	cmd.Short = `*Public Preview* Get budget.`
@@ -221,15 +235,21 @@ Get budget.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		getReq.BudgetId = args[0]
+		getReq.BudgetId = new(args[0])
 
-		response, err := a.Budgets.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := a.Budgets.GetBudgetConfiguration(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := budgets.GetBudgetConfigurationResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -250,13 +270,13 @@ Get budget.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*billing.ListBudgetConfigurationsRequest,
+	*budgets.ListBudgetConfigurationsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq budgets.ListBudgetConfigurationsRequest
 
-	var listReq billing.ListBudgetConfigurationsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
@@ -266,7 +286,7 @@ func newList() *cobra.Command {
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
@@ -290,16 +310,20 @@ Get all budgets.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		response := a.Budgets.List(ctx, listReq)
+		sdkReq, err := budgets.ListBudgetConfigurationsRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := a.Budgets.ListBudgetConfigurationsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, budgets.BudgetConfigurationFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -320,13 +344,13 @@ Get all budgets.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*billing.UpdateBudgetConfigurationRequest,
+	*budgets.UpdateBudgetConfigurationRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq budgets.UpdateBudgetConfigurationRequest
 
-	var updateReq billing.UpdateBudgetConfigurationRequest
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -356,6 +380,7 @@ Modify budget.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -371,14 +396,22 @@ Modify budget.
 		} else {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
-		updateReq.BudgetId = args[0]
+		updateReq.BudgetId = new(args[0])
 
-		response, err := a.Budgets.Update(ctx, updateReq)
+		sdkReq, err := budgets.UpdateBudgetConfigurationRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Budgets.UpdateBudgetConfiguration(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := budgets.UpdateBudgetConfigurationResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

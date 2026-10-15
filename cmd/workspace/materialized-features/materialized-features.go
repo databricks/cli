@@ -6,11 +6,14 @@ import (
 	"errors"
 	"fmt"
 
+	"maps"
+
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/spf13/cobra"
 )
 
@@ -57,19 +60,23 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createFeatureTagOverrides []func(
 	*cobra.Command,
-	*ml.CreateFeatureTagRequest,
+	*map[string]any,
 )
 
 func newCreateFeatureTag() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createFeatureTagReq map[string]any
+	createFeatureTagReq = map[string]any{}
+	var createFeatureTagFeatureNameRaw string
+	var createFeatureTagTableNameRaw string
+	var createFeatureTagKeyRaw string
+	var createFeatureTagValueRaw string
 
-	var createFeatureTagReq ml.CreateFeatureTagRequest
-	createFeatureTagReq.FeatureTag = ml.FeatureTag{}
 	var createFeatureTagJson flags.JsonFlag
 
 	cmd.Flags().Var(&createFeatureTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createFeatureTagReq.FeatureTag.Value, "value", createFeatureTagReq.FeatureTag.Value, ``)
+	cmd.Flags().StringVar(&createFeatureTagValueRaw, "value", createFeatureTagValueRaw, ``)
 
 	cmd.Use = "create-feature-tag TABLE_NAME FEATURE_NAME KEY"
 	cmd.Short = `Create a feature tag.`
@@ -97,9 +104,10 @@ func newCreateFeatureTag() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
-			diags := createFeatureTagJson.Unmarshal(&createFeatureTagReq.FeatureTag)
+			diags := createFeatureTagJson.Unmarshal(&createFeatureTagReq)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -110,17 +118,30 @@ func newCreateFeatureTag() *cobra.Command {
 				}
 			}
 		}
-		createFeatureTagReq.TableName = args[0]
-		createFeatureTagReq.FeatureName = args[1]
+		createFeatureTagTableNameRaw = args[0]
+		createFeatureTagFeatureNameRaw = args[1]
 		if !cmd.Flags().Changed("json") {
-			createFeatureTagReq.FeatureTag.Key = args[2]
+			createFeatureTagKeyRaw = args[2]
 		}
 
-		response, err := w.MaterializedFeatures.CreateFeatureTag(ctx, createFeatureTagReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("key") || createFeatureTagKeyRaw != "" {
+			createFeatureTagReq["key"] = createFeatureTagKeyRaw
+		}
+		if cmd.Flags().Changed("value") || createFeatureTagValueRaw != "" {
+			createFeatureTagReq["value"] = createFeatureTagValueRaw
+		}
+		rawPath := fmt.Sprintf("/api/2.0/feature-store/feature-tables/%s/features/%s/tags", fmt.Sprint(createFeatureTagTableNameRaw), fmt.Sprint(createFeatureTagFeatureNameRaw))
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "POST", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, createFeatureTagReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -142,13 +163,16 @@ func newCreateFeatureTag() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteFeatureTagOverrides []func(
 	*cobra.Command,
-	*ml.DeleteFeatureTagRequest,
+	*map[string]any,
 )
 
 func newDeleteFeatureTag() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteFeatureTagReq ml.DeleteFeatureTagRequest
+	var deleteFeatureTagReq map[string]any
+	deleteFeatureTagReq = map[string]any{}
+	var deleteFeatureTagFeatureNameRaw string
+	var deleteFeatureTagKeyRaw string
+	var deleteFeatureTagTableNameRaw string
 
 	cmd.Use = "delete-feature-tag TABLE_NAME FEATURE_NAME KEY"
 	cmd.Short = `Delete a feature tag.`
@@ -174,12 +198,21 @@ func newDeleteFeatureTag() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteFeatureTagReq.TableName = args[0]
-		deleteFeatureTagReq.FeatureName = args[1]
-		deleteFeatureTagReq.Key = args[2]
+		deleteFeatureTagTableNameRaw = args[0]
+		deleteFeatureTagFeatureNameRaw = args[1]
+		deleteFeatureTagKeyRaw = args[2]
 
-		err = w.MaterializedFeatures.DeleteFeatureTag(ctx, deleteFeatureTagReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/feature-store/feature-tables/%s/features/%s/tags/%s", fmt.Sprint(deleteFeatureTagTableNameRaw), fmt.Sprint(deleteFeatureTagFeatureNameRaw), fmt.Sprint(deleteFeatureTagKeyRaw))
+
+		maps.Copy(rawQuery, deleteFeatureTagReq)
+		api, err := apiclient.New(w.Config)
+		if err != nil {
+			return err
+		}
+		err = api.Do(ctx, "DELETE", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -204,13 +237,15 @@ func newDeleteFeatureTag() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getFeatureLineageOverrides []func(
 	*cobra.Command,
-	*ml.GetFeatureLineageRequest,
+	*map[string]any,
 )
 
 func newGetFeatureLineage() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getFeatureLineageReq ml.GetFeatureLineageRequest
+	var getFeatureLineageReq map[string]any
+	getFeatureLineageReq = map[string]any{}
+	var getFeatureLineageFeatureNameRaw string
+	var getFeatureLineageTableNameRaw string
 
 	cmd.Use = "get-feature-lineage TABLE_NAME FEATURE_NAME"
 	cmd.Short = `Get Feature Lineage.`
@@ -233,15 +268,24 @@ func newGetFeatureLineage() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getFeatureLineageReq.TableName = args[0]
-		getFeatureLineageReq.FeatureName = args[1]
+		getFeatureLineageTableNameRaw = args[0]
+		getFeatureLineageFeatureNameRaw = args[1]
 
-		response, err := w.MaterializedFeatures.GetFeatureLineage(ctx, getFeatureLineageReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/feature-store/feature-tables/%s/features/%s/lineage", fmt.Sprint(getFeatureLineageTableNameRaw), fmt.Sprint(getFeatureLineageFeatureNameRaw))
+
+		maps.Copy(rawQuery, getFeatureLineageReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -263,13 +307,16 @@ func newGetFeatureLineage() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getFeatureTagOverrides []func(
 	*cobra.Command,
-	*ml.GetFeatureTagRequest,
+	*map[string]any,
 )
 
 func newGetFeatureTag() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getFeatureTagReq ml.GetFeatureTagRequest
+	var getFeatureTagReq map[string]any
+	getFeatureTagReq = map[string]any{}
+	var getFeatureTagFeatureNameRaw string
+	var getFeatureTagKeyRaw string
+	var getFeatureTagTableNameRaw string
 
 	cmd.Use = "get-feature-tag TABLE_NAME FEATURE_NAME KEY"
 	cmd.Short = `Get a feature tag.`
@@ -290,16 +337,25 @@ func newGetFeatureTag() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getFeatureTagReq.TableName = args[0]
-		getFeatureTagReq.FeatureName = args[1]
-		getFeatureTagReq.Key = args[2]
+		getFeatureTagTableNameRaw = args[0]
+		getFeatureTagFeatureNameRaw = args[1]
+		getFeatureTagKeyRaw = args[2]
 
-		response, err := w.MaterializedFeatures.GetFeatureTag(ctx, getFeatureTagReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/feature-store/feature-tables/%s/features/%s/tags/%s", fmt.Sprint(getFeatureTagTableNameRaw), fmt.Sprint(getFeatureTagFeatureNameRaw), fmt.Sprint(getFeatureTagKeyRaw))
+
+		maps.Copy(rawQuery, getFeatureTagReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -321,25 +377,30 @@ func newGetFeatureTag() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listFeatureTagsOverrides []func(
 	*cobra.Command,
-	*ml.ListFeatureTagsRequest,
+	*map[string]any,
 )
 
 func newListFeatureTags() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listFeatureTagsReq map[string]any
+	listFeatureTagsReq = map[string]any{}
+	var listFeatureTagsFeatureNameRaw string
+	var listFeatureTagsPageSizeRaw int
+	var listFeatureTagsPageTokenRaw string
+	var listFeatureTagsTableNameRaw string
 
-	var listFeatureTagsReq ml.ListFeatureTagsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listFeatureTagsLimit int
 
-	cmd.Flags().IntVar(&listFeatureTagsReq.PageSize, "page-size", listFeatureTagsReq.PageSize, `The maximum number of results to return.`)
+	cmd.Flags().IntVar(&listFeatureTagsPageSizeRaw, "page-size", listFeatureTagsPageSizeRaw, `The maximum number of results to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listFeatureTagsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listFeatureTagsReq.PageToken, "page-token", listFeatureTagsReq.PageToken, `Pagination token.`)
+	cmd.Flags().StringVar(&listFeatureTagsPageTokenRaw, "page-token", listFeatureTagsPageTokenRaw, `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-feature-tags TABLE_NAME FEATURE_NAME"
@@ -361,19 +422,34 @@ func newListFeatureTags() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listFeatureTagsReq.TableName = args[0]
-		listFeatureTagsReq.FeatureName = args[1]
+		listFeatureTagsTableNameRaw = args[0]
+		listFeatureTagsFeatureNameRaw = args[1]
 
-		response := w.MaterializedFeatures.ListFeatureTags(ctx, listFeatureTagsReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("page-size") || listFeatureTagsPageSizeRaw != 0 {
+			rawQuery["page_size"] = listFeatureTagsPageSizeRaw
+		}
+		if cmd.Flags().Changed("page-token") || listFeatureTagsPageTokenRaw != "" {
+			rawQuery["page_token"] = listFeatureTagsPageTokenRaw
+		}
+		rawPath := fmt.Sprintf("/api/2.0/feature-store/feature-tables/%s/features/%s/tags", fmt.Sprint(listFeatureTagsTableNameRaw), fmt.Sprint(listFeatureTagsFeatureNameRaw))
+
+		maps.Copy(rawQuery, listFeatureTagsReq)
+		api, err := apiclient.New(w.Config)
+		if err != nil {
+			return err
+		}
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		if listFeatureTagsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listFeatureTagsLimit)
 		}
-		if listFeatureTagsLimit > 0 {
-			ctx = cmdio.WithLimit(ctx, listFeatureTagsLimit)
-		}
-
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -394,20 +470,25 @@ func newListFeatureTags() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateFeatureTagOverrides []func(
 	*cobra.Command,
-	*ml.UpdateFeatureTagRequest,
+	*map[string]any,
 )
 
 func newUpdateFeatureTag() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateFeatureTagReq map[string]any
+	updateFeatureTagReq = map[string]any{}
+	var updateFeatureTagFeatureNameRaw string
+	var updateFeatureTagKeyRaw string
+	var updateFeatureTagTableNameRaw string
+	var updateFeatureTagUpdateMaskRaw string
+	var updateFeatureTagValueRaw string
 
-	var updateFeatureTagReq ml.UpdateFeatureTagRequest
-	updateFeatureTagReq.FeatureTag = ml.FeatureTag{}
 	var updateFeatureTagJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateFeatureTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateFeatureTagReq.UpdateMask, "update-mask", updateFeatureTagReq.UpdateMask, `The list of fields to update.`)
-	cmd.Flags().StringVar(&updateFeatureTagReq.FeatureTag.Value, "value", updateFeatureTagReq.FeatureTag.Value, ``)
+	cmd.Flags().StringVar(&updateFeatureTagUpdateMaskRaw, "update-mask", updateFeatureTagUpdateMaskRaw, `The list of fields to update.`)
+	cmd.Flags().StringVar(&updateFeatureTagValueRaw, "value", updateFeatureTagValueRaw, ``)
 
 	cmd.Use = "update-feature-tag TABLE_NAME FEATURE_NAME KEY"
 	cmd.Short = `Update a feature tag.`
@@ -428,9 +509,10 @@ func newUpdateFeatureTag() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
-			diags := updateFeatureTagJson.Unmarshal(&updateFeatureTagReq.FeatureTag)
+			diags := updateFeatureTagJson.Unmarshal(&updateFeatureTagReq)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -441,15 +523,31 @@ func newUpdateFeatureTag() *cobra.Command {
 				}
 			}
 		}
-		updateFeatureTagReq.TableName = args[0]
-		updateFeatureTagReq.FeatureName = args[1]
-		updateFeatureTagReq.Key = args[2]
+		updateFeatureTagTableNameRaw = args[0]
+		updateFeatureTagFeatureNameRaw = args[1]
+		updateFeatureTagKeyRaw = args[2]
 
-		response, err := w.MaterializedFeatures.UpdateFeatureTag(ctx, updateFeatureTagReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("update-mask") || updateFeatureTagUpdateMaskRaw != "" {
+			rawQuery["update_mask"] = updateFeatureTagUpdateMaskRaw
+		}
+		if cmd.Flags().Changed("key") || updateFeatureTagKeyRaw != "" {
+			updateFeatureTagReq["key"] = updateFeatureTagKeyRaw
+		}
+		if cmd.Flags().Changed("value") || updateFeatureTagValueRaw != "" {
+			updateFeatureTagReq["value"] = updateFeatureTagValueRaw
+		}
+		rawPath := fmt.Sprintf("/api/2.0/feature-store/feature-tables/%s/features/%s/tags/%s", fmt.Sprint(updateFeatureTagTableNameRaw), fmt.Sprint(updateFeatureTagFeatureNameRaw), fmt.Sprint(updateFeatureTagKeyRaw))
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "PATCH", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, updateFeatureTagReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 

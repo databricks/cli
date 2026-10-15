@@ -6,10 +6,11 @@ import (
 	"errors"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
 )
 
@@ -51,13 +52,14 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var exchangeTokenOverrides []func(
 	*cobra.Command,
-	*settings.ExchangeTokenRequest,
+	*map[string]any,
 )
 
 func newExchangeToken() *cobra.Command {
 	cmd := &cobra.Command{}
+	var exchangeTokenReq map[string]any
+	exchangeTokenReq = map[string]any{}
 
-	var exchangeTokenReq settings.ExchangeTokenRequest
 	var exchangeTokenJson flags.JsonFlag
 
 	cmd.Flags().Var(&exchangeTokenJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -88,6 +90,7 @@ func newExchangeToken() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := exchangeTokenJson.Unmarshal(&exchangeTokenReq)
@@ -104,11 +107,18 @@ func newExchangeToken() *cobra.Command {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.CredentialsManager.ExchangeToken(ctx, exchangeTokenReq)
+		rawQuery := map[string]any{}
+		rawPath := "/api/2.0/credentials-manager/exchange-tokens/token"
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "POST", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, exchangeTokenReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 

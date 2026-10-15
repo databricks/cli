@@ -9,8 +9,9 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/aifunctions"
 	"github.com/spf13/cobra"
+
+	aifunctions "github.com/databricks/cli/libs/sdktypes/aifunctions/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -55,8 +56,8 @@ var aiClassifyOverrides []func(
 
 func newAiClassify() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var aiClassifyReq aifunctions.AiClassifyRequest
+
 	var aiClassifyJson flags.JsonFlag
 
 	cmd.Flags().Var(&aiClassifyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -79,6 +80,7 @@ func newAiClassify() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := aiClassifyJson.Unmarshal(&aiClassifyReq)
@@ -95,12 +97,20 @@ func newAiClassify() *cobra.Command {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.AiFunctions.AiClassify(ctx, aiClassifyReq)
+		sdkReq, err := aifunctions.AiClassifyRequestToSDK(&aiClassifyReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AiFunctions.AiClassify(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aifunctions.AiClassifyResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -126,8 +136,8 @@ var aiDecideOverrides []func(
 
 func newAiDecide() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var aiDecideReq aifunctions.AiDecideRequest
+
 	var aiDecideJson flags.JsonFlag
 
 	cmd.Flags().Var(&aiDecideJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -152,6 +162,7 @@ Get fast structured decisions.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := aiDecideJson.Unmarshal(&aiDecideReq)
@@ -168,12 +179,20 @@ Get fast structured decisions.
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.AiFunctions.AiDecide(ctx, aiDecideReq)
+		sdkReq, err := aifunctions.AiDecideRequestToSDK(&aiDecideReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AiFunctions.AiDecide(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aifunctions.AiDecideResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -199,8 +218,8 @@ var aiExtractOverrides []func(
 
 func newAiExtract() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var aiExtractReq aifunctions.AiExtractRequest
+
 	var aiExtractJson flags.JsonFlag
 
 	cmd.Flags().Var(&aiExtractJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -224,6 +243,7 @@ func newAiExtract() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := aiExtractJson.Unmarshal(&aiExtractReq)
@@ -240,12 +260,20 @@ func newAiExtract() *cobra.Command {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.AiFunctions.AiExtract(ctx, aiExtractReq)
+		sdkReq, err := aifunctions.AiExtractRequestToSDK(&aiExtractReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AiFunctions.AiExtract(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aifunctions.AiExtractResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -271,8 +299,8 @@ var aiParseDocumentOverrides []func(
 
 func newAiParseDocument() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var aiParseDocumentReq aifunctions.AiParseDocumentRequest
+
 	var aiParseDocumentJson flags.JsonFlag
 
 	cmd.Flags().Var(&aiParseDocumentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -311,6 +339,7 @@ func newAiParseDocument() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := aiParseDocumentJson.Unmarshal(&aiParseDocumentReq)
@@ -325,15 +354,23 @@ func newAiParseDocument() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			aiParseDocumentReq.Content = args[0]
+			aiParseDocumentReq.Content = new(args[0])
 		}
 
-		response, err := w.AiFunctions.AiParseDocument(ctx, aiParseDocumentReq)
+		sdkReq, err := aifunctions.AiParseDocumentRequestToSDK(&aiParseDocumentReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AiFunctions.AiParseDocument(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aifunctions.AiParseDocumentResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

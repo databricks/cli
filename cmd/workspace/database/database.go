@@ -9,10 +9,14 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/sdk-go/options/lro"
 	"github.com/spf13/cobra"
+
+	database "github.com/databricks/cli/libs/sdktypes/database/v1"
+	sdkdatabase "github.com/databricks/sdk-go/database/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -79,14 +83,14 @@ var createDatabaseCatalogOverrides []func(
 
 func newCreateDatabaseCatalog() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createDatabaseCatalogReq database.CreateDatabaseCatalogRequest
-	createDatabaseCatalogReq.Catalog = database.DatabaseCatalog{}
+	createDatabaseCatalogReq.Catalog = &database.DatabaseCatalog{}
+
 	var createDatabaseCatalogJson flags.JsonFlag
 
 	cmd.Flags().Var(&createDatabaseCatalogJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createDatabaseCatalogReq.Catalog.CreateDatabaseIfNotExists, "create-database-if-not-exists", createDatabaseCatalogReq.Catalog.CreateDatabaseIfNotExists, ``)
+	flags.BoolPtrVar(cmd.Flags(), &createDatabaseCatalogReq.Catalog.CreateDatabaseIfNotExists, "create-database-if-not-exists", ``)
 
 	cmd.Use = "create-database-catalog NAME DATABASE_INSTANCE_NAME DATABASE_NAME"
 	cmd.Short = `*Public Preview* Create a Database Catalog.`
@@ -119,6 +123,7 @@ Create a Database Catalog.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createDatabaseCatalogJson.Unmarshal(&createDatabaseCatalogReq.Catalog)
@@ -133,21 +138,29 @@ Create a Database Catalog.
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createDatabaseCatalogReq.Catalog.Name = args[0]
+			createDatabaseCatalogReq.Catalog.Name = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			createDatabaseCatalogReq.Catalog.DatabaseInstanceName = args[1]
+			createDatabaseCatalogReq.Catalog.DatabaseInstanceName = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			createDatabaseCatalogReq.Catalog.DatabaseName = args[2]
+			createDatabaseCatalogReq.Catalog.DatabaseName = new(args[2])
 		}
 
-		response, err := w.Database.CreateDatabaseCatalog(ctx, createDatabaseCatalogReq)
+		sdkReq, err := database.CreateDatabaseCatalogRequestToSDK(&createDatabaseCatalogReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Database.CreateDatabaseCatalog(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := database.DatabaseCatalogFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -173,9 +186,9 @@ var createDatabaseInstanceOverrides []func(
 
 func newCreateDatabaseInstance() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createDatabaseInstanceReq database.CreateDatabaseInstanceRequest
-	createDatabaseInstanceReq.DatabaseInstance = database.DatabaseInstance{}
+	createDatabaseInstanceReq.DatabaseInstance = &database.DatabaseInstance{}
+
 	var createDatabaseInstanceJson flags.JsonFlag
 
 	var createDatabaseInstanceSkipWait bool
@@ -186,17 +199,17 @@ func newCreateDatabaseInstance() *cobra.Command {
 
 	cmd.Flags().Var(&createDatabaseInstanceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createDatabaseInstanceReq.DatabaseInstance.Capacity, "capacity", createDatabaseInstanceReq.DatabaseInstance.Capacity, `The sku of the instance.`)
+	flags.StringPtrVar(cmd.Flags(), &createDatabaseInstanceReq.DatabaseInstance.Capacity, "capacity", `The sku of the instance.`)
 	// TODO: array: child_instance_refs
 	// TODO: array: custom_tags
 	// TODO: array: effective_custom_tags
-	cmd.Flags().BoolVar(&createDatabaseInstanceReq.DatabaseInstance.EnablePgNativeLogin, "enable-pg-native-login", createDatabaseInstanceReq.DatabaseInstance.EnablePgNativeLogin, `Whether to enable PG native password login on the instance.`)
-	cmd.Flags().BoolVar(&createDatabaseInstanceReq.DatabaseInstance.EnableReadableSecondaries, "enable-readable-secondaries", createDatabaseInstanceReq.DatabaseInstance.EnableReadableSecondaries, `Whether to enable secondaries to serve read-only traffic.`)
-	cmd.Flags().IntVar(&createDatabaseInstanceReq.DatabaseInstance.NodeCount, "node-count", createDatabaseInstanceReq.DatabaseInstance.NodeCount, `The number of nodes in the instance, composed of 1 primary and 0 or more secondaries.`)
+	flags.BoolPtrVar(cmd.Flags(), &createDatabaseInstanceReq.DatabaseInstance.EnablePgNativeLogin, "enable-pg-native-login", `Whether to enable PG native password login on the instance.`)
+	flags.BoolPtrVar(cmd.Flags(), &createDatabaseInstanceReq.DatabaseInstance.EnableReadableSecondaries, "enable-readable-secondaries", `Whether to enable secondaries to serve read-only traffic.`)
+	flags.IntPtrVar(cmd.Flags(), &createDatabaseInstanceReq.DatabaseInstance.NodeCount, "node-count", `The number of nodes in the instance, composed of 1 primary and 0 or more secondaries.`)
 	// TODO: complex arg: parent_instance_ref
-	cmd.Flags().IntVar(&createDatabaseInstanceReq.DatabaseInstance.RetentionWindowInDays, "retention-window-in-days", createDatabaseInstanceReq.DatabaseInstance.RetentionWindowInDays, `The retention window for the instance.`)
-	cmd.Flags().BoolVar(&createDatabaseInstanceReq.DatabaseInstance.Stopped, "stopped", createDatabaseInstanceReq.DatabaseInstance.Stopped, `Whether to stop the instance.`)
-	cmd.Flags().StringVar(&createDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, "usage-policy-id", createDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, `The desired usage policy to associate with the instance.`)
+	flags.IntPtrVar(cmd.Flags(), &createDatabaseInstanceReq.DatabaseInstance.RetentionWindowInDays, "retention-window-in-days", `The retention window for the instance.`)
+	flags.BoolPtrVar(cmd.Flags(), &createDatabaseInstanceReq.DatabaseInstance.Stopped, "stopped", `Whether to stop the instance.`)
+	flags.StringPtrVar(cmd.Flags(), &createDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, "usage-policy-id", `The desired usage policy to associate with the instance.`)
 
 	cmd.Use = "create-database-instance NAME"
 	cmd.Short = `*Public Preview* Create a Database Instance.`
@@ -227,6 +240,7 @@ Create a Database Instance.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createDatabaseInstanceJson.Unmarshal(&createDatabaseInstanceReq.DatabaseInstance)
@@ -241,27 +255,33 @@ Create a Database Instance.
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createDatabaseInstanceReq.DatabaseInstance.Name = args[0]
+			createDatabaseInstanceReq.DatabaseInstance.Name = new(args[0])
 		}
 
-		wait, err := w.Database.CreateDatabaseInstance(ctx, createDatabaseInstanceReq)
+		sdkReq, err := database.CreateDatabaseInstanceRequestToSDK(&createDatabaseInstanceReq)
+		if err != nil {
+			return err
+		}
+		wait, err := w.Database.CreateDatabaseInstance(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 		if createDatabaseInstanceSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			return cmdio.Render(ctx, map[string]any{"name": wait.GetName()})
 		}
 		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *database.DatabaseInstance) {
-			status := i.State
-			statusMessage := fmt.Sprintf("current status: %s", status)
-			sp.Update(statusMessage)
-		}).GetWithTimeout(createDatabaseInstanceTimeout)
+		sp.Update("Waiting for create-database-instance to complete...")
+		response, err := wait.Wait(ctx, lro.WithTimeout(createDatabaseInstanceTimeout))
 		sp.Close()
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+
+		out, err := database.DatabaseInstanceFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -287,19 +307,19 @@ var createDatabaseInstanceRoleOverrides []func(
 
 func newCreateDatabaseInstanceRole() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createDatabaseInstanceRoleReq database.CreateDatabaseInstanceRoleRequest
-	createDatabaseInstanceRoleReq.DatabaseInstanceRole = database.DatabaseInstanceRole{}
+	createDatabaseInstanceRoleReq.DatabaseInstanceRole = &database.DatabaseInstanceRole{}
+
 	var createDatabaseInstanceRoleJson flags.JsonFlag
 
 	cmd.Flags().Var(&createDatabaseInstanceRoleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createDatabaseInstanceRoleReq.DatabaseInstanceName, "database-instance-name", createDatabaseInstanceRoleReq.DatabaseInstanceName, ``)
+	flags.StringPtrVar(cmd.Flags(), &createDatabaseInstanceRoleReq.DatabaseInstanceName, "database-instance-name", ``)
 	// TODO: complex arg: attributes
 	// TODO: complex arg: effective_attributes
-	cmd.Flags().Var(&createDatabaseInstanceRoleReq.DatabaseInstanceRole.IdentityType, "identity-type", `The type of the role. Supported values: [GROUP, PG_ONLY, SERVICE_PRINCIPAL, USER]`)
-	cmd.Flags().StringVar(&createDatabaseInstanceRoleReq.DatabaseInstanceRole.InstanceName, "instance-name", createDatabaseInstanceRoleReq.DatabaseInstanceRole.InstanceName, ``)
-	cmd.Flags().Var(&createDatabaseInstanceRoleReq.DatabaseInstanceRole.MembershipRole, "membership-role", `An enum value for a standard role that this role is a member of. Supported values: [DATABRICKS_SUPERUSER]`)
+	flags.EnumVar(cmd.Flags(), &createDatabaseInstanceRoleReq.DatabaseInstanceRole.IdentityType, "identity-type", `The type of the role. Supported values: [GROUP, PG_ONLY, SERVICE_PRINCIPAL, USER]`, "DatabaseInstanceRoleIdentityType", "GROUP", "PG_ONLY", "SERVICE_PRINCIPAL", "USER")
+	flags.StringPtrVar(cmd.Flags(), &createDatabaseInstanceRoleReq.InstanceName, "instance-name", ``)
+	flags.EnumVar(cmd.Flags(), &createDatabaseInstanceRoleReq.DatabaseInstanceRole.MembershipRole, "membership-role", `An enum value for a standard role that this role is a member of. Supported values: [DATABRICKS_SUPERUSER]`, "DatabaseInstanceRoleMembershipRole", "DATABRICKS_SUPERUSER")
 
 	cmd.Use = "create-database-instance-role INSTANCE_NAME NAME"
 	cmd.Short = `Create a role for a Database Instance.`
@@ -333,6 +353,7 @@ func newCreateDatabaseInstanceRole() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createDatabaseInstanceRoleJson.Unmarshal(&createDatabaseInstanceRoleReq.DatabaseInstanceRole)
@@ -346,17 +367,25 @@ func newCreateDatabaseInstanceRole() *cobra.Command {
 				}
 			}
 		}
-		createDatabaseInstanceRoleReq.InstanceName = args[0]
+		createDatabaseInstanceRoleReq.InstanceName = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			createDatabaseInstanceRoleReq.DatabaseInstanceRole.Name = args[1]
+			createDatabaseInstanceRoleReq.DatabaseInstanceRole.Name = new(args[1])
 		}
 
-		response, err := w.Database.CreateDatabaseInstanceRole(ctx, createDatabaseInstanceRoleReq)
+		sdkReq, err := database.CreateDatabaseInstanceRoleRequestToSDK(&createDatabaseInstanceRoleReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Database.CreateDatabaseInstanceRole(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := database.DatabaseInstanceRoleFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -382,15 +411,15 @@ var createDatabaseTableOverrides []func(
 
 func newCreateDatabaseTable() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createDatabaseTableReq database.CreateDatabaseTableRequest
-	createDatabaseTableReq.Table = database.DatabaseTable{}
+	createDatabaseTableReq.Table = &database.DatabaseTable{}
+
 	var createDatabaseTableJson flags.JsonFlag
 
 	cmd.Flags().Var(&createDatabaseTableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createDatabaseTableReq.Table.DatabaseInstanceName, "database-instance-name", createDatabaseTableReq.Table.DatabaseInstanceName, `Name of the target database instance.`)
-	cmd.Flags().StringVar(&createDatabaseTableReq.Table.LogicalDatabaseName, "logical-database-name", createDatabaseTableReq.Table.LogicalDatabaseName, `Target Postgres database object (logical database) name for this table.`)
+	flags.StringPtrVar(cmd.Flags(), &createDatabaseTableReq.Table.DatabaseInstanceName, "database-instance-name", `Name of the target database instance.`)
+	flags.StringPtrVar(cmd.Flags(), &createDatabaseTableReq.Table.LogicalDatabaseName, "logical-database-name", `Target Postgres database object (logical database) name for this table.`)
 
 	cmd.Use = "create-database-table NAME"
 	cmd.Short = `*Public Preview* Create a Database Table.`
@@ -425,6 +454,7 @@ Create a Database Table.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createDatabaseTableJson.Unmarshal(&createDatabaseTableReq.Table)
@@ -439,15 +469,23 @@ Create a Database Table.
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createDatabaseTableReq.Table.Name = args[0]
+			createDatabaseTableReq.Table.Name = new(args[0])
 		}
 
-		response, err := w.Database.CreateDatabaseTable(ctx, createDatabaseTableReq)
+		sdkReq, err := database.CreateDatabaseTableRequestToSDK(&createDatabaseTableReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Database.CreateDatabaseTable(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := database.DatabaseTableFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -473,16 +511,16 @@ var createSyncedDatabaseTableOverrides []func(
 
 func newCreateSyncedDatabaseTable() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createSyncedDatabaseTableReq database.CreateSyncedDatabaseTableRequest
-	createSyncedDatabaseTableReq.SyncedTable = database.SyncedDatabaseTable{}
+	createSyncedDatabaseTableReq.SyncedTable = &database.SyncedDatabaseTable{}
+
 	var createSyncedDatabaseTableJson flags.JsonFlag
 
 	cmd.Flags().Var(&createSyncedDatabaseTableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: data_synchronization_status
-	cmd.Flags().StringVar(&createSyncedDatabaseTableReq.SyncedTable.DatabaseInstanceName, "database-instance-name", createSyncedDatabaseTableReq.SyncedTable.DatabaseInstanceName, `Name of the target database instance.`)
-	cmd.Flags().StringVar(&createSyncedDatabaseTableReq.SyncedTable.LogicalDatabaseName, "logical-database-name", createSyncedDatabaseTableReq.SyncedTable.LogicalDatabaseName, `Target Postgres database object (logical database) name for this table.`)
+	flags.StringPtrVar(cmd.Flags(), &createSyncedDatabaseTableReq.SyncedTable.DatabaseInstanceName, "database-instance-name", `Name of the target database instance.`)
+	flags.StringPtrVar(cmd.Flags(), &createSyncedDatabaseTableReq.SyncedTable.LogicalDatabaseName, "logical-database-name", `Target Postgres database object (logical database) name for this table.`)
 	// TODO: complex arg: spec
 
 	cmd.Use = "create-synced-database-table NAME"
@@ -514,6 +552,7 @@ Create a Synced Database Table.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createSyncedDatabaseTableJson.Unmarshal(&createSyncedDatabaseTableReq.SyncedTable)
@@ -528,15 +567,23 @@ Create a Synced Database Table.
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createSyncedDatabaseTableReq.SyncedTable.Name = args[0]
+			createSyncedDatabaseTableReq.SyncedTable.Name = new(args[0])
 		}
 
-		response, err := w.Database.CreateSyncedDatabaseTable(ctx, createSyncedDatabaseTableReq)
+		sdkReq, err := database.CreateSyncedDatabaseTableRequestToSDK(&createSyncedDatabaseTableReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Database.CreateSyncedDatabaseTable(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := database.SyncedDatabaseTableFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -557,13 +604,12 @@ Create a Synced Database Table.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteDatabaseCatalogOverrides []func(
 	*cobra.Command,
-	*database.DeleteDatabaseCatalogRequest,
+	*sdkdatabase.DeleteDatabaseCatalogRequest,
 )
 
 func newDeleteDatabaseCatalog() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteDatabaseCatalogReq database.DeleteDatabaseCatalogRequest
+	var deleteDatabaseCatalogReq sdkdatabase.DeleteDatabaseCatalogRequest
 
 	cmd.Use = "delete-database-catalog NAME"
 	cmd.Short = `*Public Preview* Delete a Database Catalog.`
@@ -584,10 +630,12 @@ Delete a Database Catalog.`
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteDatabaseCatalogReq.Name = args[0]
+		deleteDatabaseCatalogReq.Name = new(args[0])
 
-		err = w.Database.DeleteDatabaseCatalog(ctx, deleteDatabaseCatalogReq)
+		sdkReq := &deleteDatabaseCatalogReq
+		err = w.Database.DeleteDatabaseCatalog(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -617,11 +665,10 @@ var deleteDatabaseInstanceOverrides []func(
 
 func newDeleteDatabaseInstance() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var deleteDatabaseInstanceReq database.DeleteDatabaseInstanceRequest
 
-	cmd.Flags().BoolVar(&deleteDatabaseInstanceReq.Force, "force", deleteDatabaseInstanceReq.Force, `By default, an instance cannot be deleted if it has descendant instances created via PITR.`)
-	cmd.Flags().BoolVar(&deleteDatabaseInstanceReq.Purge, "purge", deleteDatabaseInstanceReq.Purge, `Deprecated.`)
+	flags.BoolPtrVar(cmd.Flags(), &deleteDatabaseInstanceReq.Force, "force", `By default, an instance cannot be deleted if it has descendant instances created via PITR.`)
+	flags.BoolPtrVar(cmd.Flags(), &deleteDatabaseInstanceReq.Purge, "purge", `Deprecated.`)
 
 	cmd.Use = "delete-database-instance NAME"
 	cmd.Short = `*Public Preview* Delete a Database Instance.`
@@ -645,10 +692,15 @@ Delete a Database Instance.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteDatabaseInstanceReq.Name = args[0]
+		deleteDatabaseInstanceReq.Name = new(args[0])
 
-		err = w.Database.DeleteDatabaseInstance(ctx, deleteDatabaseInstanceReq)
+		sdkReq, err := database.DeleteDatabaseInstanceRequestToSDK(&deleteDatabaseInstanceReq)
+		if err != nil {
+			return err
+		}
+		err = w.Database.DeleteDatabaseInstance(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -678,11 +730,10 @@ var deleteDatabaseInstanceRoleOverrides []func(
 
 func newDeleteDatabaseInstanceRole() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var deleteDatabaseInstanceRoleReq database.DeleteDatabaseInstanceRoleRequest
 
-	cmd.Flags().BoolVar(&deleteDatabaseInstanceRoleReq.AllowMissing, "allow-missing", deleteDatabaseInstanceRoleReq.AllowMissing, `This is the AIP standard name for the equivalent of Postgres' IF EXISTS option.`)
-	cmd.Flags().StringVar(&deleteDatabaseInstanceRoleReq.ReassignOwnedTo, "reassign-owned-to", deleteDatabaseInstanceRoleReq.ReassignOwnedTo, ``)
+	flags.BoolPtrVar(cmd.Flags(), &deleteDatabaseInstanceRoleReq.AllowMissing, "allow-missing", `This is the AIP standard name for the equivalent of Postgres' IF EXISTS option.`)
+	flags.StringPtrVar(cmd.Flags(), &deleteDatabaseInstanceRoleReq.ReassignOwnedTo, "reassign-owned-to", ``)
 
 	cmd.Use = "delete-database-instance-role INSTANCE_NAME NAME"
 	cmd.Short = `Delete a role for a Database Instance.`
@@ -706,11 +757,16 @@ func newDeleteDatabaseInstanceRole() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteDatabaseInstanceRoleReq.InstanceName = args[0]
-		deleteDatabaseInstanceRoleReq.Name = args[1]
+		deleteDatabaseInstanceRoleReq.InstanceName = new(args[0])
+		deleteDatabaseInstanceRoleReq.Name = new(args[1])
 
-		err = w.Database.DeleteDatabaseInstanceRole(ctx, deleteDatabaseInstanceRoleReq)
+		sdkReq, err := database.DeleteDatabaseInstanceRoleRequestToSDK(&deleteDatabaseInstanceRoleReq)
+		if err != nil {
+			return err
+		}
+		err = w.Database.DeleteDatabaseInstanceRole(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -735,13 +791,12 @@ func newDeleteDatabaseInstanceRole() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteDatabaseTableOverrides []func(
 	*cobra.Command,
-	*database.DeleteDatabaseTableRequest,
+	*sdkdatabase.DeleteDatabaseTableRequest,
 )
 
 func newDeleteDatabaseTable() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteDatabaseTableReq database.DeleteDatabaseTableRequest
+	var deleteDatabaseTableReq sdkdatabase.DeleteDatabaseTableRequest
 
 	cmd.Use = "delete-database-table NAME"
 	cmd.Short = `*Public Preview* Delete a Database Table.`
@@ -762,10 +817,12 @@ Delete a Database Table.`
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteDatabaseTableReq.Name = args[0]
+		deleteDatabaseTableReq.Name = new(args[0])
 
-		err = w.Database.DeleteDatabaseTable(ctx, deleteDatabaseTableReq)
+		sdkReq := &deleteDatabaseTableReq
+		err = w.Database.DeleteDatabaseTable(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -795,10 +852,9 @@ var deleteSyncedDatabaseTableOverrides []func(
 
 func newDeleteSyncedDatabaseTable() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var deleteSyncedDatabaseTableReq database.DeleteSyncedDatabaseTableRequest
 
-	cmd.Flags().BoolVar(&deleteSyncedDatabaseTableReq.PurgeData, "purge-data", deleteSyncedDatabaseTableReq.PurgeData, `Optional.`)
+	flags.BoolPtrVar(cmd.Flags(), &deleteSyncedDatabaseTableReq.PurgeData, "purge-data", `Optional.`)
 
 	cmd.Use = "delete-synced-database-table NAME"
 	cmd.Short = `*Public Preview* Delete a Synced Database Table.`
@@ -819,10 +875,15 @@ Delete a Synced Database Table.`
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteSyncedDatabaseTableReq.Name = args[0]
+		deleteSyncedDatabaseTableReq.Name = new(args[0])
 
-		err = w.Database.DeleteSyncedDatabaseTable(ctx, deleteSyncedDatabaseTableReq)
+		sdkReq, err := database.DeleteSyncedDatabaseTableRequestToSDK(&deleteSyncedDatabaseTableReq)
+		if err != nil {
+			return err
+		}
+		err = w.Database.DeleteSyncedDatabaseTable(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -852,10 +913,9 @@ var findDatabaseInstanceByUidOverrides []func(
 
 func newFindDatabaseInstanceByUid() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var findDatabaseInstanceByUidReq database.FindDatabaseInstanceByUidRequest
 
-	cmd.Flags().StringVar(&findDatabaseInstanceByUidReq.Uid, "uid", findDatabaseInstanceByUidReq.Uid, `UID of the cluster to get.`)
+	flags.StringPtrVar(cmd.Flags(), &findDatabaseInstanceByUidReq.Uid, "uid", `UID of the cluster to get.`)
 
 	cmd.Use = "find-database-instance-by-uid"
 	cmd.Short = `*Public Preview* Find a Database Instance by uid.`
@@ -876,13 +936,22 @@ Find a Database Instance by uid.`
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response, err := w.Database.FindDatabaseInstanceByUid(ctx, findDatabaseInstanceByUidReq)
+		sdkReq, err := database.FindDatabaseInstanceByUidRequestToSDK(&findDatabaseInstanceByUidReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Database.FindDatabaseInstanceByUid(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := database.DatabaseInstanceFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -908,15 +977,15 @@ var generateDatabaseCredentialOverrides []func(
 
 func newGenerateDatabaseCredential() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var generateDatabaseCredentialReq database.GenerateDatabaseCredentialRequest
+
 	var generateDatabaseCredentialJson flags.JsonFlag
 
 	cmd.Flags().Var(&generateDatabaseCredentialJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: claims
 	// TODO: array: instance_names
-	cmd.Flags().StringVar(&generateDatabaseCredentialReq.RequestId, "request-id", generateDatabaseCredentialReq.RequestId, ``)
+	flags.StringPtrVar(cmd.Flags(), &generateDatabaseCredentialReq.RequestId, "request-id", ``)
 
 	cmd.Use = "generate-database-credential"
 	cmd.Short = `*Public Preview* Generates a credential that can be used to access database instances.`
@@ -937,6 +1006,7 @@ Generates a credential that can be used to access database instances.`
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := generateDatabaseCredentialJson.Unmarshal(&generateDatabaseCredentialReq)
@@ -951,12 +1021,20 @@ Generates a credential that can be used to access database instances.`
 			}
 		}
 
-		response, err := w.Database.GenerateDatabaseCredential(ctx, generateDatabaseCredentialReq)
+		sdkReq, err := database.GenerateDatabaseCredentialRequestToSDK(&generateDatabaseCredentialReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Database.GenerateDatabaseCredential(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := database.DatabaseCredentialFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -977,13 +1055,12 @@ Generates a credential that can be used to access database instances.`
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getDatabaseCatalogOverrides []func(
 	*cobra.Command,
-	*database.GetDatabaseCatalogRequest,
+	*sdkdatabase.GetDatabaseCatalogRequest,
 )
 
 func newGetDatabaseCatalog() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getDatabaseCatalogReq database.GetDatabaseCatalogRequest
+	var getDatabaseCatalogReq sdkdatabase.GetDatabaseCatalogRequest
 
 	cmd.Use = "get-database-catalog NAME"
 	cmd.Short = `*Public Preview* Get a Database Catalog.`
@@ -1004,15 +1081,21 @@ Get a Database Catalog.`
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getDatabaseCatalogReq.Name = args[0]
+		getDatabaseCatalogReq.Name = new(args[0])
 
-		response, err := w.Database.GetDatabaseCatalog(ctx, getDatabaseCatalogReq)
+		sdkReq := &getDatabaseCatalogReq
+		response, err := w.Database.GetDatabaseCatalog(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := database.DatabaseCatalogFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1033,13 +1116,12 @@ Get a Database Catalog.`
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getDatabaseInstanceOverrides []func(
 	*cobra.Command,
-	*database.GetDatabaseInstanceRequest,
+	*sdkdatabase.GetDatabaseInstanceRequest,
 )
 
 func newGetDatabaseInstance() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getDatabaseInstanceReq database.GetDatabaseInstanceRequest
+	var getDatabaseInstanceReq sdkdatabase.GetDatabaseInstanceRequest
 
 	cmd.Use = "get-database-instance NAME"
 	cmd.Short = `*Public Preview* Get a Database Instance.`
@@ -1063,15 +1145,21 @@ Get a Database Instance.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getDatabaseInstanceReq.Name = args[0]
+		getDatabaseInstanceReq.Name = new(args[0])
 
-		response, err := w.Database.GetDatabaseInstance(ctx, getDatabaseInstanceReq)
+		sdkReq := &getDatabaseInstanceReq
+		response, err := w.Database.GetDatabaseInstance(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := database.DatabaseInstanceFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1092,13 +1180,12 @@ Get a Database Instance.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getDatabaseInstanceRoleOverrides []func(
 	*cobra.Command,
-	*database.GetDatabaseInstanceRoleRequest,
+	*sdkdatabase.GetDatabaseInstanceRoleRequest,
 )
 
 func newGetDatabaseInstanceRole() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getDatabaseInstanceRoleReq database.GetDatabaseInstanceRoleRequest
+	var getDatabaseInstanceRoleReq sdkdatabase.GetDatabaseInstanceRoleRequest
 
 	cmd.Use = "get-database-instance-role INSTANCE_NAME NAME"
 	cmd.Short = `Get a role for a Database Instance.`
@@ -1122,16 +1209,22 @@ func newGetDatabaseInstanceRole() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getDatabaseInstanceRoleReq.InstanceName = args[0]
-		getDatabaseInstanceRoleReq.Name = args[1]
+		getDatabaseInstanceRoleReq.InstanceName = new(args[0])
+		getDatabaseInstanceRoleReq.Name = new(args[1])
 
-		response, err := w.Database.GetDatabaseInstanceRole(ctx, getDatabaseInstanceRoleReq)
+		sdkReq := &getDatabaseInstanceRoleReq
+		response, err := w.Database.GetDatabaseInstanceRole(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := database.DatabaseInstanceRoleFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1152,13 +1245,12 @@ func newGetDatabaseInstanceRole() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getDatabaseTableOverrides []func(
 	*cobra.Command,
-	*database.GetDatabaseTableRequest,
+	*sdkdatabase.GetDatabaseTableRequest,
 )
 
 func newGetDatabaseTable() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getDatabaseTableReq database.GetDatabaseTableRequest
+	var getDatabaseTableReq sdkdatabase.GetDatabaseTableRequest
 
 	cmd.Use = "get-database-table NAME"
 	cmd.Short = `*Public Preview* Get a Database Table.`
@@ -1179,15 +1271,21 @@ Get a Database Table.`
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getDatabaseTableReq.Name = args[0]
+		getDatabaseTableReq.Name = new(args[0])
 
-		response, err := w.Database.GetDatabaseTable(ctx, getDatabaseTableReq)
+		sdkReq := &getDatabaseTableReq
+		response, err := w.Database.GetDatabaseTable(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := database.DatabaseTableFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1208,13 +1306,12 @@ Get a Database Table.`
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getSyncedDatabaseTableOverrides []func(
 	*cobra.Command,
-	*database.GetSyncedDatabaseTableRequest,
+	*sdkdatabase.GetSyncedDatabaseTableRequest,
 )
 
 func newGetSyncedDatabaseTable() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getSyncedDatabaseTableReq database.GetSyncedDatabaseTableRequest
+	var getSyncedDatabaseTableReq sdkdatabase.GetSyncedDatabaseTableRequest
 
 	cmd.Use = "get-synced-database-table NAME"
 	cmd.Short = `*Public Preview* Get a Synced Database Table.`
@@ -1235,15 +1332,21 @@ Get a Synced Database Table.`
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getSyncedDatabaseTableReq.Name = args[0]
+		getSyncedDatabaseTableReq.Name = new(args[0])
 
-		response, err := w.Database.GetSyncedDatabaseTable(ctx, getSyncedDatabaseTableReq)
+		sdkReq := &getSyncedDatabaseTableReq
+		response, err := w.Database.GetSyncedDatabaseTable(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := database.SyncedDatabaseTableFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1269,20 +1372,20 @@ var listDatabaseCatalogsOverrides []func(
 
 func newListDatabaseCatalogs() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listDatabaseCatalogsReq database.ListDatabaseCatalogsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listDatabaseCatalogsLimit int
 
-	cmd.Flags().IntVar(&listDatabaseCatalogsReq.PageSize, "page-size", listDatabaseCatalogsReq.PageSize, `Upper bound for items returned.`)
+	flags.IntPtrVar(cmd.Flags(), &listDatabaseCatalogsReq.PageSize, "page-size", `Upper bound for items returned.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listDatabaseCatalogsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listDatabaseCatalogsReq.PageToken, "page-token", listDatabaseCatalogsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listDatabaseCatalogsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-database-catalogs INSTANCE_NAME"
@@ -1310,18 +1413,22 @@ func newListDatabaseCatalogs() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listDatabaseCatalogsReq.InstanceName = args[0]
+		listDatabaseCatalogsReq.InstanceName = new(args[0])
 
-		response := w.Database.ListDatabaseCatalogs(ctx, listDatabaseCatalogsReq)
+		sdkReq, err := database.ListDatabaseCatalogsRequestToSDK(&listDatabaseCatalogsReq)
+		if err != nil {
+			return err
+		}
 		if listDatabaseCatalogsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listDatabaseCatalogsLimit)
 		}
 		if listDatabaseCatalogsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listDatabaseCatalogsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Database.ListDatabaseCatalogsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, database.DatabaseCatalogFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1347,20 +1454,20 @@ var listDatabaseInstanceRolesOverrides []func(
 
 func newListDatabaseInstanceRoles() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listDatabaseInstanceRolesReq database.ListDatabaseInstanceRolesRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listDatabaseInstanceRolesLimit int
 
-	cmd.Flags().IntVar(&listDatabaseInstanceRolesReq.PageSize, "page-size", listDatabaseInstanceRolesReq.PageSize, `Upper bound for items returned.`)
+	flags.IntPtrVar(cmd.Flags(), &listDatabaseInstanceRolesReq.PageSize, "page-size", `Upper bound for items returned.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listDatabaseInstanceRolesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listDatabaseInstanceRolesReq.PageToken, "page-token", listDatabaseInstanceRolesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listDatabaseInstanceRolesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-database-instance-roles INSTANCE_NAME"
@@ -1389,18 +1496,22 @@ func newListDatabaseInstanceRoles() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listDatabaseInstanceRolesReq.InstanceName = args[0]
+		listDatabaseInstanceRolesReq.InstanceName = new(args[0])
 
-		response := w.Database.ListDatabaseInstanceRoles(ctx, listDatabaseInstanceRolesReq)
+		sdkReq, err := database.ListDatabaseInstanceRolesRequestToSDK(&listDatabaseInstanceRolesReq)
+		if err != nil {
+			return err
+		}
 		if listDatabaseInstanceRolesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listDatabaseInstanceRolesLimit)
 		}
 		if listDatabaseInstanceRolesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listDatabaseInstanceRolesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Database.ListDatabaseInstanceRolesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, database.DatabaseInstanceRoleFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1426,20 +1537,20 @@ var listDatabaseInstancesOverrides []func(
 
 func newListDatabaseInstances() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listDatabaseInstancesReq database.ListDatabaseInstancesRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listDatabaseInstancesLimit int
 
-	cmd.Flags().IntVar(&listDatabaseInstancesReq.PageSize, "page-size", listDatabaseInstancesReq.PageSize, `Upper bound for items returned.`)
+	flags.IntPtrVar(cmd.Flags(), &listDatabaseInstancesReq.PageSize, "page-size", `Upper bound for items returned.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listDatabaseInstancesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listDatabaseInstancesReq.PageToken, "page-token", listDatabaseInstancesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listDatabaseInstancesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-database-instances"
@@ -1461,16 +1572,20 @@ List Database Instances.`
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.Database.ListDatabaseInstances(ctx, listDatabaseInstancesReq)
+		sdkReq, err := database.ListDatabaseInstancesRequestToSDK(&listDatabaseInstancesReq)
+		if err != nil {
+			return err
+		}
 		if listDatabaseInstancesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listDatabaseInstancesLimit)
 		}
 		if listDatabaseInstancesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listDatabaseInstancesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Database.ListDatabaseInstancesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, database.DatabaseInstanceFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1496,20 +1611,20 @@ var listSyncedDatabaseTablesOverrides []func(
 
 func newListSyncedDatabaseTables() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listSyncedDatabaseTablesReq database.ListSyncedDatabaseTablesRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listSyncedDatabaseTablesLimit int
 
-	cmd.Flags().IntVar(&listSyncedDatabaseTablesReq.PageSize, "page-size", listSyncedDatabaseTablesReq.PageSize, `Upper bound for items returned.`)
+	flags.IntPtrVar(cmd.Flags(), &listSyncedDatabaseTablesReq.PageSize, "page-size", `Upper bound for items returned.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listSyncedDatabaseTablesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listSyncedDatabaseTablesReq.PageToken, "page-token", listSyncedDatabaseTablesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listSyncedDatabaseTablesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-synced-database-tables INSTANCE_NAME"
@@ -1537,18 +1652,22 @@ func newListSyncedDatabaseTables() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listSyncedDatabaseTablesReq.InstanceName = args[0]
+		listSyncedDatabaseTablesReq.InstanceName = new(args[0])
 
-		response := w.Database.ListSyncedDatabaseTables(ctx, listSyncedDatabaseTablesReq)
+		sdkReq, err := database.ListSyncedDatabaseTablesRequestToSDK(&listSyncedDatabaseTablesReq)
+		if err != nil {
+			return err
+		}
 		if listSyncedDatabaseTablesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listSyncedDatabaseTablesLimit)
 		}
 		if listSyncedDatabaseTablesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listSyncedDatabaseTablesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Database.ListSyncedDatabaseTablesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, database.SyncedDatabaseTableFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1574,14 +1693,14 @@ var updateDatabaseCatalogOverrides []func(
 
 func newUpdateDatabaseCatalog() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateDatabaseCatalogReq database.UpdateDatabaseCatalogRequest
-	updateDatabaseCatalogReq.DatabaseCatalog = database.DatabaseCatalog{}
+	updateDatabaseCatalogReq.DatabaseCatalog = &database.DatabaseCatalog{}
+
 	var updateDatabaseCatalogJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateDatabaseCatalogJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&updateDatabaseCatalogReq.DatabaseCatalog.CreateDatabaseIfNotExists, "create-database-if-not-exists", updateDatabaseCatalogReq.DatabaseCatalog.CreateDatabaseIfNotExists, ``)
+	flags.BoolPtrVar(cmd.Flags(), &updateDatabaseCatalogReq.DatabaseCatalog.CreateDatabaseIfNotExists, "create-database-if-not-exists", ``)
 
 	cmd.Use = "update-database-catalog NAME UPDATE_MASK DATABASE_INSTANCE_NAME DATABASE_NAME"
 	cmd.Short = `Update a Database Catalog.`
@@ -1618,6 +1737,7 @@ func newUpdateDatabaseCatalog() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateDatabaseCatalogJson.Unmarshal(&updateDatabaseCatalogReq.DatabaseCatalog)
@@ -1631,21 +1751,29 @@ func newUpdateDatabaseCatalog() *cobra.Command {
 				}
 			}
 		}
-		updateDatabaseCatalogReq.Name = args[0]
-		updateDatabaseCatalogReq.UpdateMask = args[1]
+		updateDatabaseCatalogReq.DatabaseCatalog.Name = new(args[0])
+		updateDatabaseCatalogReq.UpdateMask = new(args[1])
 		if !cmd.Flags().Changed("json") {
-			updateDatabaseCatalogReq.DatabaseCatalog.DatabaseInstanceName = args[2]
+			updateDatabaseCatalogReq.DatabaseCatalog.DatabaseInstanceName = new(args[2])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateDatabaseCatalogReq.DatabaseCatalog.DatabaseName = args[3]
+			updateDatabaseCatalogReq.DatabaseCatalog.DatabaseName = new(args[3])
 		}
 
-		response, err := w.Database.UpdateDatabaseCatalog(ctx, updateDatabaseCatalogReq)
+		sdkReq, err := database.UpdateDatabaseCatalogRequestToSDK(&updateDatabaseCatalogReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Database.UpdateDatabaseCatalog(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := database.DatabaseCatalogFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1671,24 +1799,24 @@ var updateDatabaseInstanceOverrides []func(
 
 func newUpdateDatabaseInstance() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateDatabaseInstanceReq database.UpdateDatabaseInstanceRequest
-	updateDatabaseInstanceReq.DatabaseInstance = database.DatabaseInstance{}
+	updateDatabaseInstanceReq.DatabaseInstance = &database.DatabaseInstance{}
+
 	var updateDatabaseInstanceJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateDatabaseInstanceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateDatabaseInstanceReq.DatabaseInstance.Capacity, "capacity", updateDatabaseInstanceReq.DatabaseInstance.Capacity, `The sku of the instance.`)
+	flags.StringPtrVar(cmd.Flags(), &updateDatabaseInstanceReq.DatabaseInstance.Capacity, "capacity", `The sku of the instance.`)
 	// TODO: array: child_instance_refs
 	// TODO: array: custom_tags
 	// TODO: array: effective_custom_tags
-	cmd.Flags().BoolVar(&updateDatabaseInstanceReq.DatabaseInstance.EnablePgNativeLogin, "enable-pg-native-login", updateDatabaseInstanceReq.DatabaseInstance.EnablePgNativeLogin, `Whether to enable PG native password login on the instance.`)
-	cmd.Flags().BoolVar(&updateDatabaseInstanceReq.DatabaseInstance.EnableReadableSecondaries, "enable-readable-secondaries", updateDatabaseInstanceReq.DatabaseInstance.EnableReadableSecondaries, `Whether to enable secondaries to serve read-only traffic.`)
-	cmd.Flags().IntVar(&updateDatabaseInstanceReq.DatabaseInstance.NodeCount, "node-count", updateDatabaseInstanceReq.DatabaseInstance.NodeCount, `The number of nodes in the instance, composed of 1 primary and 0 or more secondaries.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateDatabaseInstanceReq.DatabaseInstance.EnablePgNativeLogin, "enable-pg-native-login", `Whether to enable PG native password login on the instance.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateDatabaseInstanceReq.DatabaseInstance.EnableReadableSecondaries, "enable-readable-secondaries", `Whether to enable secondaries to serve read-only traffic.`)
+	flags.IntPtrVar(cmd.Flags(), &updateDatabaseInstanceReq.DatabaseInstance.NodeCount, "node-count", `The number of nodes in the instance, composed of 1 primary and 0 or more secondaries.`)
 	// TODO: complex arg: parent_instance_ref
-	cmd.Flags().IntVar(&updateDatabaseInstanceReq.DatabaseInstance.RetentionWindowInDays, "retention-window-in-days", updateDatabaseInstanceReq.DatabaseInstance.RetentionWindowInDays, `The retention window for the instance.`)
-	cmd.Flags().BoolVar(&updateDatabaseInstanceReq.DatabaseInstance.Stopped, "stopped", updateDatabaseInstanceReq.DatabaseInstance.Stopped, `Whether to stop the instance.`)
-	cmd.Flags().StringVar(&updateDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, "usage-policy-id", updateDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, `The desired usage policy to associate with the instance.`)
+	flags.IntPtrVar(cmd.Flags(), &updateDatabaseInstanceReq.DatabaseInstance.RetentionWindowInDays, "retention-window-in-days", `The retention window for the instance.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateDatabaseInstanceReq.DatabaseInstance.Stopped, "stopped", `Whether to stop the instance.`)
+	flags.StringPtrVar(cmd.Flags(), &updateDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, "usage-policy-id", `The desired usage policy to associate with the instance.`)
 
 	cmd.Use = "update-database-instance NAME UPDATE_MASK"
 	cmd.Short = `*Public Preview* Update a Database Instance.`
@@ -1715,6 +1843,7 @@ Update a Database Instance.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateDatabaseInstanceJson.Unmarshal(&updateDatabaseInstanceReq.DatabaseInstance)
@@ -1728,15 +1857,23 @@ Update a Database Instance.
 				}
 			}
 		}
-		updateDatabaseInstanceReq.Name = args[0]
-		updateDatabaseInstanceReq.UpdateMask = args[1]
+		updateDatabaseInstanceReq.DatabaseInstance.Name = new(args[0])
+		updateDatabaseInstanceReq.UpdateMask = new(args[1])
 
-		response, err := w.Database.UpdateDatabaseInstance(ctx, updateDatabaseInstanceReq)
+		sdkReq, err := database.UpdateDatabaseInstanceRequestToSDK(&updateDatabaseInstanceReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Database.UpdateDatabaseInstance(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := database.DatabaseInstanceFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1762,16 +1899,16 @@ var updateSyncedDatabaseTableOverrides []func(
 
 func newUpdateSyncedDatabaseTable() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateSyncedDatabaseTableReq database.UpdateSyncedDatabaseTableRequest
-	updateSyncedDatabaseTableReq.SyncedTable = database.SyncedDatabaseTable{}
+	updateSyncedDatabaseTableReq.SyncedTable = &database.SyncedDatabaseTable{}
+
 	var updateSyncedDatabaseTableJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateSyncedDatabaseTableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: data_synchronization_status
-	cmd.Flags().StringVar(&updateSyncedDatabaseTableReq.SyncedTable.DatabaseInstanceName, "database-instance-name", updateSyncedDatabaseTableReq.SyncedTable.DatabaseInstanceName, `Name of the target database instance.`)
-	cmd.Flags().StringVar(&updateSyncedDatabaseTableReq.SyncedTable.LogicalDatabaseName, "logical-database-name", updateSyncedDatabaseTableReq.SyncedTable.LogicalDatabaseName, `Target Postgres database object (logical database) name for this table.`)
+	flags.StringPtrVar(cmd.Flags(), &updateSyncedDatabaseTableReq.SyncedTable.DatabaseInstanceName, "database-instance-name", `Name of the target database instance.`)
+	flags.StringPtrVar(cmd.Flags(), &updateSyncedDatabaseTableReq.SyncedTable.LogicalDatabaseName, "logical-database-name", `Target Postgres database object (logical database) name for this table.`)
 	// TODO: complex arg: spec
 
 	cmd.Use = "update-synced-database-table NAME UPDATE_MASK"
@@ -1800,6 +1937,7 @@ func newUpdateSyncedDatabaseTable() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateSyncedDatabaseTableJson.Unmarshal(&updateSyncedDatabaseTableReq.SyncedTable)
@@ -1813,15 +1951,23 @@ func newUpdateSyncedDatabaseTable() *cobra.Command {
 				}
 			}
 		}
-		updateSyncedDatabaseTableReq.Name = args[0]
-		updateSyncedDatabaseTableReq.UpdateMask = args[1]
+		updateSyncedDatabaseTableReq.SyncedTable.Name = new(args[0])
+		updateSyncedDatabaseTableReq.UpdateMask = new(args[1])
 
-		response, err := w.Database.UpdateSyncedDatabaseTable(ctx, updateSyncedDatabaseTableReq)
+		sdkReq, err := database.UpdateSyncedDatabaseTableRequestToSDK(&updateSyncedDatabaseTableReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Database.UpdateSyncedDatabaseTable(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := database.SyncedDatabaseTableFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

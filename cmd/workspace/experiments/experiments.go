@@ -8,10 +8,15 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/spf13/cobra"
+
+	accessmanagement "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
+	experiments "github.com/databricks/cli/libs/sdktypes/experiments/v1"
+	sdkaccessmanagement "github.com/databricks/sdk-go/accessmanagement/v1"
+	sdkexperiments "github.com/databricks/sdk-go/experiments/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -94,18 +99,18 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createExperimentOverrides []func(
 	*cobra.Command,
-	*ml.CreateExperiment,
+	*experiments.CreateExperimentRequest,
 )
 
 func newCreateExperiment() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createExperimentReq experiments.CreateExperimentRequest
 
-	var createExperimentReq ml.CreateExperiment
 	var createExperimentJson flags.JsonFlag
 
 	cmd.Flags().Var(&createExperimentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createExperimentReq.ArtifactLocation, "artifact-location", createExperimentReq.ArtifactLocation, `Location where all artifacts for the experiment are stored.`)
+	flags.StringPtrVar(cmd.Flags(), &createExperimentReq.ArtifactLocation, "artifact-location", `Location where all artifacts for the experiment are stored.`)
 	// TODO: array: tags
 	// TODO: complex arg: trace_location
 
@@ -145,6 +150,7 @@ func newCreateExperiment() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createExperimentJson.Unmarshal(&createExperimentReq)
@@ -159,15 +165,23 @@ func newCreateExperiment() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createExperimentReq.Name = args[0]
+			createExperimentReq.Name = new(args[0])
 		}
 
-		response, err := w.Experiments.CreateExperiment(ctx, createExperimentReq)
+		sdkReq, err := experiments.CreateExperimentRequestToSDK(&createExperimentReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Experiments.CreateExperiment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := experiments.CreateExperimentResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -188,21 +202,21 @@ func newCreateExperiment() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createLoggedModelOverrides []func(
 	*cobra.Command,
-	*ml.CreateLoggedModelRequest,
+	*experiments.CreateLoggedModelRequest,
 )
 
 func newCreateLoggedModel() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createLoggedModelReq experiments.CreateLoggedModelRequest
 
-	var createLoggedModelReq ml.CreateLoggedModelRequest
 	var createLoggedModelJson flags.JsonFlag
 
 	cmd.Flags().Var(&createLoggedModelJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createLoggedModelReq.ModelType, "model-type", createLoggedModelReq.ModelType, `The type of the model, such as "Agent", "Classifier", "LLM".`)
-	cmd.Flags().StringVar(&createLoggedModelReq.Name, "name", createLoggedModelReq.Name, `The name of the model (optional).`)
+	flags.StringPtrVar(cmd.Flags(), &createLoggedModelReq.ModelType, "model-type", `The type of the model, such as "Agent", "Classifier", "LLM".`)
+	flags.StringPtrVar(cmd.Flags(), &createLoggedModelReq.Name, "name", `The name of the model (optional).`)
 	// TODO: array: params
-	cmd.Flags().StringVar(&createLoggedModelReq.SourceRunId, "source-run-id", createLoggedModelReq.SourceRunId, `The ID of the run that created the model.`)
+	flags.StringPtrVar(cmd.Flags(), &createLoggedModelReq.SourceRunId, "source-run-id", `The ID of the run that created the model.`)
 	// TODO: array: tags
 
 	cmd.Use = "create-logged-model EXPERIMENT_ID"
@@ -232,6 +246,7 @@ func newCreateLoggedModel() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createLoggedModelJson.Unmarshal(&createLoggedModelReq)
@@ -246,15 +261,23 @@ func newCreateLoggedModel() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createLoggedModelReq.ExperimentId = args[0]
+			createLoggedModelReq.ExperimentId = new(args[0])
 		}
 
-		response, err := w.Experiments.CreateLoggedModel(ctx, createLoggedModelReq)
+		sdkReq, err := experiments.CreateLoggedModelRequestToSDK(&createLoggedModelReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Experiments.CreateLoggedModel(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := experiments.CreateLoggedModelResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -275,22 +298,22 @@ func newCreateLoggedModel() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createRunOverrides []func(
 	*cobra.Command,
-	*ml.CreateRun,
+	*experiments.CreateRunRequest,
 )
 
 func newCreateRun() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createRunReq experiments.CreateRunRequest
 
-	var createRunReq ml.CreateRun
 	var createRunJson flags.JsonFlag
 
 	cmd.Flags().Var(&createRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createRunReq.ExperimentId, "experiment-id", createRunReq.ExperimentId, `ID of the associated experiment.`)
-	cmd.Flags().StringVar(&createRunReq.RunName, "run-name", createRunReq.RunName, `The name of the run.`)
-	cmd.Flags().Int64Var(&createRunReq.StartTime, "start-time", createRunReq.StartTime, `Unix timestamp in milliseconds of when the run started.`)
+	flags.StringPtrVar(cmd.Flags(), &createRunReq.ExperimentId, "experiment-id", `ID of the associated experiment.`)
+	flags.StringPtrVar(cmd.Flags(), &createRunReq.RunName, "run-name", `The name of the run.`)
+	flags.Int64PtrVar(cmd.Flags(), &createRunReq.StartTime, "start-time", `Unix timestamp in milliseconds of when the run started.`)
 	// TODO: array: tags
-	cmd.Flags().StringVar(&createRunReq.UserId, "user-id", createRunReq.UserId, `ID of the user executing the run.`)
+	flags.StringPtrVar(cmd.Flags(), &createRunReq.UserId, "user-id", `ID of the user executing the run.`)
 
 	cmd.Use = "create-run"
 	cmd.Short = `Create a run.`
@@ -314,6 +337,7 @@ func newCreateRun() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createRunJson.Unmarshal(&createRunReq)
@@ -328,12 +352,20 @@ func newCreateRun() *cobra.Command {
 			}
 		}
 
-		response, err := w.Experiments.CreateRun(ctx, createRunReq)
+		sdkReq, err := experiments.CreateRunRequestToSDK(&createRunReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Experiments.CreateRun(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := experiments.CreateRunResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -354,13 +386,13 @@ func newCreateRun() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteExperimentOverrides []func(
 	*cobra.Command,
-	*ml.DeleteExperiment,
+	*experiments.DeleteExperimentRequest,
 )
 
 func newDeleteExperiment() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteExperimentReq experiments.DeleteExperimentRequest
 
-	var deleteExperimentReq ml.DeleteExperiment
 	var deleteExperimentJson flags.JsonFlag
 
 	cmd.Flags().Var(&deleteExperimentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -396,6 +428,7 @@ func newDeleteExperiment() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteExperimentJson.Unmarshal(&deleteExperimentReq)
@@ -410,13 +443,19 @@ func newDeleteExperiment() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			deleteExperimentReq.ExperimentId = args[0]
+			deleteExperimentReq.ExperimentId = new(args[0])
 		}
 
-		err = w.Experiments.DeleteExperiment(ctx, deleteExperimentReq)
+		sdkReq, err := experiments.DeleteExperimentRequestToSDK(&deleteExperimentReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Experiments.DeleteExperiment(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -438,13 +477,12 @@ func newDeleteExperiment() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteLoggedModelOverrides []func(
 	*cobra.Command,
-	*ml.DeleteLoggedModelRequest,
+	*sdkexperiments.DeleteLoggedModelRequest,
 )
 
 func newDeleteLoggedModel() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteLoggedModelReq ml.DeleteLoggedModelRequest
+	var deleteLoggedModelReq sdkexperiments.DeleteLoggedModelRequest
 
 	cmd.Use = "delete-logged-model MODEL_ID"
 	cmd.Short = `Delete a logged model.`
@@ -466,13 +504,17 @@ func newDeleteLoggedModel() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteLoggedModelReq.ModelId = args[0]
+		deleteLoggedModelReq.ModelId = new(args[0])
 
-		err = w.Experiments.DeleteLoggedModel(ctx, deleteLoggedModelReq)
+		sdkReq := &deleteLoggedModelReq
+		response, err := w.Experiments.DeleteLoggedModel(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -494,13 +536,12 @@ func newDeleteLoggedModel() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteLoggedModelTagOverrides []func(
 	*cobra.Command,
-	*ml.DeleteLoggedModelTagRequest,
+	*sdkexperiments.DeleteLoggedModelTagRequest,
 )
 
 func newDeleteLoggedModelTag() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteLoggedModelTagReq ml.DeleteLoggedModelTagRequest
+	var deleteLoggedModelTagReq sdkexperiments.DeleteLoggedModelTagRequest
 
 	cmd.Use = "delete-logged-model-tag MODEL_ID TAG_KEY"
 	cmd.Short = `Delete a tag on a logged model.`
@@ -523,14 +564,18 @@ func newDeleteLoggedModelTag() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteLoggedModelTagReq.ModelId = args[0]
-		deleteLoggedModelTagReq.TagKey = args[1]
+		deleteLoggedModelTagReq.ModelId = new(args[0])
+		deleteLoggedModelTagReq.TagKey = new(args[1])
 
-		err = w.Experiments.DeleteLoggedModelTag(ctx, deleteLoggedModelTagReq)
+		sdkReq := &deleteLoggedModelTagReq
+		response, err := w.Experiments.DeleteLoggedModelTag(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -552,13 +597,13 @@ func newDeleteLoggedModelTag() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteRunOverrides []func(
 	*cobra.Command,
-	*ml.DeleteRun,
+	*experiments.DeleteRunRequest,
 )
 
 func newDeleteRun() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteRunReq experiments.DeleteRunRequest
 
-	var deleteRunReq ml.DeleteRun
 	var deleteRunJson flags.JsonFlag
 
 	cmd.Flags().Var(&deleteRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -592,6 +637,7 @@ func newDeleteRun() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteRunJson.Unmarshal(&deleteRunReq)
@@ -606,13 +652,19 @@ func newDeleteRun() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			deleteRunReq.RunId = args[0]
+			deleteRunReq.RunId = new(args[0])
 		}
 
-		err = w.Experiments.DeleteRun(ctx, deleteRunReq)
+		sdkReq, err := experiments.DeleteRunRequestToSDK(&deleteRunReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Experiments.DeleteRun(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -634,18 +686,18 @@ func newDeleteRun() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteRunsOverrides []func(
 	*cobra.Command,
-	*ml.DeleteRuns,
+	*experiments.DeleteRunsRequest,
 )
 
 func newDeleteRuns() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteRunsReq experiments.DeleteRunsRequest
 
-	var deleteRunsReq ml.DeleteRuns
 	var deleteRunsJson flags.JsonFlag
 
 	cmd.Flags().Var(&deleteRunsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().IntVar(&deleteRunsReq.MaxRuns, "max-runs", deleteRunsReq.MaxRuns, `An optional positive integer indicating the maximum number of runs to delete.`)
+	flags.IntPtrVar(cmd.Flags(), &deleteRunsReq.MaxRuns, "max-runs", `An optional positive integer indicating the maximum number of runs to delete.`)
 
 	cmd.Use = "delete-runs EXPERIMENT_ID MAX_TIMESTAMP_MILLIS"
 	cmd.Short = `Delete runs by creation time.`
@@ -681,6 +733,7 @@ func newDeleteRuns() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteRunsJson.Unmarshal(&deleteRunsReq)
@@ -695,22 +748,31 @@ func newDeleteRuns() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			deleteRunsReq.ExperimentId = args[0]
+			deleteRunsReq.ExperimentId = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &deleteRunsReq.MaxTimestampMillis)
+			var deleteRunsMaxTimestampMillisArg int64
+			_, err = fmt.Sscan(args[1], &deleteRunsMaxTimestampMillisArg)
 			if err != nil {
 				return fmt.Errorf("invalid MAX_TIMESTAMP_MILLIS: %s", args[1])
 			}
-
+			deleteRunsReq.MaxTimestampMillis = &deleteRunsMaxTimestampMillisArg
 		}
 
-		response, err := w.Experiments.DeleteRuns(ctx, deleteRunsReq)
+		sdkReq, err := experiments.DeleteRunsRequestToSDK(&deleteRunsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Experiments.DeleteRuns(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := experiments.DeleteRunsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -731,13 +793,13 @@ func newDeleteRuns() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteTagOverrides []func(
 	*cobra.Command,
-	*ml.DeleteTag,
+	*experiments.DeleteTagRequest,
 )
 
 func newDeleteTag() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteTagReq experiments.DeleteTagRequest
 
-	var deleteTagReq ml.DeleteTag
 	var deleteTagJson flags.JsonFlag
 
 	cmd.Flags().Var(&deleteTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -773,6 +835,7 @@ func newDeleteTag() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteTagJson.Unmarshal(&deleteTagReq)
@@ -787,16 +850,22 @@ func newDeleteTag() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			deleteTagReq.RunId = args[0]
+			deleteTagReq.RunId = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			deleteTagReq.Key = args[1]
+			deleteTagReq.Key = new(args[1])
 		}
 
-		err = w.Experiments.DeleteTag(ctx, deleteTagReq)
+		sdkReq, err := experiments.DeleteTagRequestToSDK(&deleteTagReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Experiments.DeleteTag(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -818,13 +887,13 @@ func newDeleteTag() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var finalizeLoggedModelOverrides []func(
 	*cobra.Command,
-	*ml.FinalizeLoggedModelRequest,
+	*experiments.FinalizeLoggedModelRequest,
 )
 
 func newFinalizeLoggedModel() *cobra.Command {
 	cmd := &cobra.Command{}
+	var finalizeLoggedModelReq experiments.FinalizeLoggedModelRequest
 
-	var finalizeLoggedModelReq ml.FinalizeLoggedModelRequest
 	var finalizeLoggedModelJson flags.JsonFlag
 
 	cmd.Flags().Var(&finalizeLoggedModelJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -860,6 +929,7 @@ func newFinalizeLoggedModel() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := finalizeLoggedModelJson.Unmarshal(&finalizeLoggedModelReq)
@@ -873,21 +943,25 @@ func newFinalizeLoggedModel() *cobra.Command {
 				}
 			}
 		}
-		finalizeLoggedModelReq.ModelId = args[0]
+		finalizeLoggedModelReq.ModelId = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &finalizeLoggedModelReq.Status)
-			if err != nil {
-				return fmt.Errorf("invalid STATUS: %s", args[1])
-			}
-
+			finalizeLoggedModelReq.Status = experiments.LoggedModelStatus(args[1])
 		}
 
-		response, err := w.Experiments.FinalizeLoggedModel(ctx, finalizeLoggedModelReq)
+		sdkReq, err := experiments.FinalizeLoggedModelRequestToSDK(&finalizeLoggedModelReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Experiments.FinalizeLoggedModel(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := experiments.FinalizeLoggedModelResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -908,13 +982,12 @@ func newFinalizeLoggedModel() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getByNameOverrides []func(
 	*cobra.Command,
-	*ml.GetByNameRequest,
+	*experiments.GetExperimentByNameRequest,
 )
 
 func newGetByName() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getByNameReq ml.GetByNameRequest
+	var getByNameReq experiments.GetExperimentByNameRequest
 
 	cmd.Use = "get-by-name EXPERIMENT_NAME"
 	cmd.Short = `Get an experiment by name.`
@@ -946,15 +1019,24 @@ func newGetByName() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getByNameReq.ExperimentName = args[0]
+		getByNameReq.ExperimentName = new(args[0])
 
-		response, err := w.Experiments.GetByName(ctx, getByNameReq)
+		sdkReq, err := experiments.GetExperimentByNameRequestToSDK(&getByNameReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Experiments.GetExperimentByName(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := experiments.GetExperimentByNameResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -975,13 +1057,12 @@ func newGetByName() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getExperimentOverrides []func(
 	*cobra.Command,
-	*ml.GetExperimentRequest,
+	*experiments.GetExperimentRequest,
 )
 
 func newGetExperiment() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getExperimentReq ml.GetExperimentRequest
+	var getExperimentReq experiments.GetExperimentRequest
 
 	cmd.Use = "get-experiment EXPERIMENT_ID"
 	cmd.Short = `Get an experiment.`
@@ -1005,15 +1086,24 @@ func newGetExperiment() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getExperimentReq.ExperimentId = args[0]
+		getExperimentReq.ExperimentId = new(args[0])
 
-		response, err := w.Experiments.GetExperiment(ctx, getExperimentReq)
+		sdkReq, err := experiments.GetExperimentRequestToSDK(&getExperimentReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Experiments.GetExperiment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := experiments.GetExperimentResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1034,27 +1124,27 @@ func newGetExperiment() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getHistoryOverrides []func(
 	*cobra.Command,
-	*ml.GetHistoryRequest,
+	*experiments.ListMetricHistoryRequest,
 )
 
 func newGetHistory() *cobra.Command {
 	cmd := &cobra.Command{}
+	var getHistoryReq experiments.ListMetricHistoryRequest
 
-	var getHistoryReq ml.GetHistoryRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var getHistoryLimit int
 
-	cmd.Flags().IntVar(&getHistoryReq.MaxResults, "max-results", getHistoryReq.MaxResults, `Maximum number of Metric records to return per paginated request.`)
-	cmd.Flags().StringVar(&getHistoryReq.RunId, "run-id", getHistoryReq.RunId, `ID of the run from which to fetch metric values.`)
-	cmd.Flags().StringVar(&getHistoryReq.RunUuid, "run-uuid", getHistoryReq.RunUuid, `[Deprecated, use run_id instead] ID of the run from which to fetch metric values.`)
+	flags.IntPtrVar(cmd.Flags(), &getHistoryReq.MaxResults, "max-results", `Maximum number of Metric records to return per paginated request.`)
+	flags.StringPtrVar(cmd.Flags(), &getHistoryReq.RunId, "run-id", `ID of the run from which to fetch metric values.`)
+	flags.StringPtrVar(cmd.Flags(), &getHistoryReq.RunUuid, "run-uuid", `[Deprecated, use run_id instead] ID of the run from which to fetch metric values.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&getHistoryLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&getHistoryReq.PageToken, "page-token", getHistoryReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &getHistoryReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "get-history METRIC_KEY"
@@ -1079,18 +1169,22 @@ func newGetHistory() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getHistoryReq.MetricKey = args[0]
+		getHistoryReq.MetricKey = new(args[0])
 
-		response := w.Experiments.GetHistory(ctx, getHistoryReq)
+		sdkReq, err := experiments.ListMetricHistoryRequestToSDK(&getHistoryReq)
+		if err != nil {
+			return err
+		}
 		if getHistoryLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", getHistoryLimit)
 		}
 		if getHistoryLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, getHistoryLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Experiments.ListMetricHistoryIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, experiments.MetricFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1111,13 +1205,12 @@ func newGetHistory() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getLoggedModelOverrides []func(
 	*cobra.Command,
-	*ml.GetLoggedModelRequest,
+	*sdkexperiments.GetLoggedModelRequest,
 )
 
 func newGetLoggedModel() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getLoggedModelReq ml.GetLoggedModelRequest
+	var getLoggedModelReq sdkexperiments.GetLoggedModelRequest
 
 	cmd.Use = "get-logged-model MODEL_ID"
 	cmd.Short = `Get a logged model.`
@@ -1139,15 +1232,21 @@ func newGetLoggedModel() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getLoggedModelReq.ModelId = args[0]
+		getLoggedModelReq.ModelId = new(args[0])
 
-		response, err := w.Experiments.GetLoggedModel(ctx, getLoggedModelReq)
+		sdkReq := &getLoggedModelReq
+		response, err := w.Experiments.GetLoggedModel(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := experiments.GetLoggedModelResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1168,13 +1267,12 @@ func newGetLoggedModel() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPermissionLevelsOverrides []func(
 	*cobra.Command,
-	*ml.GetExperimentPermissionLevelsRequest,
+	*sdkaccessmanagement.ListPermissionLevelsRequest,
 )
 
 func newGetPermissionLevels() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPermissionLevelsReq ml.GetExperimentPermissionLevelsRequest
+	var getPermissionLevelsReq sdkaccessmanagement.ListPermissionLevelsRequest
 
 	cmd.Use = "get-permission-levels EXPERIMENT_ID"
 	cmd.Short = `Get experiment permission levels.`
@@ -1198,15 +1296,23 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getPermissionLevelsReq.ExperimentId = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: experiment_id
 
-		response, err := w.Experiments.GetPermissionLevels(ctx, getPermissionLevelsReq)
+		getPermissionLevelsReq.RequestObjectType = new("experiments")
+
+		sdkReq := &getPermissionLevelsReq
+		response, err := w.AccessManagement.ListPermissionLevels(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.ListPermissionLevelsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1227,13 +1333,12 @@ func newGetPermissionLevels() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPermissionsOverrides []func(
 	*cobra.Command,
-	*ml.GetExperimentPermissionsRequest,
+	*sdkaccessmanagement.GetObjectPermissionsRequest,
 )
 
 func newGetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPermissionsReq ml.GetExperimentPermissionsRequest
+	var getPermissionsReq sdkaccessmanagement.GetObjectPermissionsRequest
 
 	cmd.Use = "get-permissions EXPERIMENT_ID"
 	cmd.Short = `Get experiment permissions.`
@@ -1258,15 +1363,23 @@ func newGetPermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getPermissionsReq.ExperimentId = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: experiment_id
 
-		response, err := w.Experiments.GetPermissions(ctx, getPermissionsReq)
+		getPermissionsReq.RequestObjectType = new("experiments")
+
+		sdkReq := &getPermissionsReq
+		response, err := w.AccessManagement.GetObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1287,15 +1400,14 @@ func newGetPermissions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getRunOverrides []func(
 	*cobra.Command,
-	*ml.GetRunRequest,
+	*experiments.GetRunRequest,
 )
 
 func newGetRun() *cobra.Command {
 	cmd := &cobra.Command{}
+	var getRunReq experiments.GetRunRequest
 
-	var getRunReq ml.GetRunRequest
-
-	cmd.Flags().StringVar(&getRunReq.RunUuid, "run-uuid", getRunReq.RunUuid, `[Deprecated, use run_id instead] ID of the run to fetch.`)
+	flags.StringPtrVar(cmd.Flags(), &getRunReq.RunUuid, "run-uuid", `[Deprecated, use run_id instead] ID of the run to fetch.`)
 
 	cmd.Use = "get-run RUN_ID"
 	cmd.Short = `Get a run.`
@@ -1324,15 +1436,24 @@ func newGetRun() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getRunReq.RunId = args[0]
+		getRunReq.RunId = new(args[0])
 
-		response, err := w.Experiments.GetRun(ctx, getRunReq)
+		sdkReq, err := experiments.GetRunRequestToSDK(&getRunReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Experiments.GetRun(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := experiments.GetRunResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1353,27 +1474,27 @@ func newGetRun() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listArtifactsOverrides []func(
 	*cobra.Command,
-	*ml.ListArtifactsRequest,
+	*experiments.ListArtifactsRequest,
 )
 
 func newListArtifacts() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listArtifactsReq experiments.ListArtifactsRequest
 
-	var listArtifactsReq ml.ListArtifactsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listArtifactsLimit int
 
-	cmd.Flags().StringVar(&listArtifactsReq.Path, "path", listArtifactsReq.Path, `Filter artifacts matching this path (a relative path from the root artifact directory).`)
-	cmd.Flags().StringVar(&listArtifactsReq.RunId, "run-id", listArtifactsReq.RunId, `ID of the run whose artifacts to list.`)
-	cmd.Flags().StringVar(&listArtifactsReq.RunUuid, "run-uuid", listArtifactsReq.RunUuid, `[Deprecated, use run_id instead] ID of the run whose artifacts to list.`)
+	flags.StringPtrVar(cmd.Flags(), &listArtifactsReq.Path, "path", `Filter artifacts matching this path (a relative path from the root artifact directory).`)
+	flags.StringPtrVar(cmd.Flags(), &listArtifactsReq.RunId, "run-id", `ID of the run whose artifacts to list.`)
+	flags.StringPtrVar(cmd.Flags(), &listArtifactsReq.RunUuid, "run-uuid", `[Deprecated, use run_id instead] ID of the run whose artifacts to list.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listArtifactsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listArtifactsReq.PageToken, "page-token", listArtifactsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listArtifactsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-artifacts"
@@ -1400,16 +1521,20 @@ func newListArtifacts() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.Experiments.ListArtifacts(ctx, listArtifactsReq)
+		sdkReq, err := experiments.ListArtifactsRequestToSDK(&listArtifactsReq)
+		if err != nil {
+			return err
+		}
 		if listArtifactsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listArtifactsLimit)
 		}
 		if listArtifactsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listArtifactsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Experiments.ListArtifactsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, experiments.FileInfoFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1430,26 +1555,26 @@ func newListArtifacts() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listExperimentsOverrides []func(
 	*cobra.Command,
-	*ml.ListExperimentsRequest,
+	*experiments.ListExperimentsRequest,
 )
 
 func newListExperiments() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listExperimentsReq experiments.ListExperimentsRequest
 
-	var listExperimentsReq ml.ListExperimentsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listExperimentsLimit int
 
-	cmd.Flags().Int64Var(&listExperimentsReq.MaxResults, "max-results", listExperimentsReq.MaxResults, `Maximum number of experiments desired.`)
-	cmd.Flags().Var(&listExperimentsReq.ViewType, "view-type", `Qualifier for type of experiments to be returned. Supported values: [ACTIVE_ONLY, ALL, DELETED_ONLY]`)
+	flags.Int64PtrVar(cmd.Flags(), &listExperimentsReq.MaxResults, "max-results", `Maximum number of experiments desired.`)
+	flags.EnumVar(cmd.Flags(), &listExperimentsReq.ViewType, "view-type", `Qualifier for type of experiments to be returned. Supported values: [ACTIVE_ONLY, ALL, DELETED_ONLY]`, "ViewType", "ACTIVE_ONLY", "ALL", "DELETED_ONLY")
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listExperimentsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listExperimentsReq.PageToken, "page-token", listExperimentsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listExperimentsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-experiments"
@@ -1471,16 +1596,20 @@ func newListExperiments() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.Experiments.ListExperiments(ctx, listExperimentsReq)
+		sdkReq, err := experiments.ListExperimentsRequestToSDK(&listExperimentsReq)
+		if err != nil {
+			return err
+		}
 		if listExperimentsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listExperimentsLimit)
 		}
 		if listExperimentsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listExperimentsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Experiments.ListExperimentsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, experiments.ExperimentFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1501,20 +1630,20 @@ func newListExperiments() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var logBatchOverrides []func(
 	*cobra.Command,
-	*ml.LogBatch,
+	*experiments.LogBatchRequest,
 )
 
 func newLogBatch() *cobra.Command {
 	cmd := &cobra.Command{}
+	var logBatchReq experiments.LogBatchRequest
 
-	var logBatchReq ml.LogBatch
 	var logBatchJson flags.JsonFlag
 
 	cmd.Flags().Var(&logBatchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: metrics
 	// TODO: array: params
-	cmd.Flags().StringVar(&logBatchReq.RunId, "run-id", logBatchReq.RunId, `ID of the run to log under.`)
+	flags.StringPtrVar(cmd.Flags(), &logBatchReq.RunId, "run-id", `ID of the run to log under.`)
 	// TODO: array: tags
 
 	cmd.Use = "log-batch"
@@ -1578,6 +1707,7 @@ func newLogBatch() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := logBatchJson.Unmarshal(&logBatchReq)
@@ -1592,10 +1722,16 @@ func newLogBatch() *cobra.Command {
 			}
 		}
 
-		err = w.Experiments.LogBatch(ctx, logBatchReq)
+		sdkReq, err := experiments.LogBatchRequestToSDK(&logBatchReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Experiments.LogBatch(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -1617,13 +1753,13 @@ func newLogBatch() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var logInputsOverrides []func(
 	*cobra.Command,
-	*ml.LogInputs,
+	*experiments.LogInputsRequest,
 )
 
 func newLogInputs() *cobra.Command {
 	cmd := &cobra.Command{}
+	var logInputsReq experiments.LogInputsRequest
 
-	var logInputsReq ml.LogInputs
 	var logInputsJson flags.JsonFlag
 
 	cmd.Flags().Var(&logInputsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1660,6 +1796,7 @@ func newLogInputs() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := logInputsJson.Unmarshal(&logInputsReq)
@@ -1674,13 +1811,19 @@ func newLogInputs() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			logInputsReq.RunId = args[0]
+			logInputsReq.RunId = new(args[0])
 		}
 
-		err = w.Experiments.LogInputs(ctx, logInputsReq)
+		sdkReq, err := experiments.LogInputsRequestToSDK(&logInputsReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Experiments.LogInputs(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -1702,13 +1845,13 @@ func newLogInputs() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var logLoggedModelParamsOverrides []func(
 	*cobra.Command,
-	*ml.LogLoggedModelParamsRequest,
+	*experiments.LogLoggedModelParamsRequest,
 )
 
 func newLogLoggedModelParams() *cobra.Command {
 	cmd := &cobra.Command{}
+	var logLoggedModelParamsReq experiments.LogLoggedModelParamsRequest
 
-	var logLoggedModelParamsReq ml.LogLoggedModelParamsRequest
 	var logLoggedModelParamsJson flags.JsonFlag
 
 	cmd.Flags().Var(&logLoggedModelParamsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1740,6 +1883,7 @@ func newLogLoggedModelParams() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := logLoggedModelParamsJson.Unmarshal(&logLoggedModelParamsReq)
@@ -1753,12 +1897,18 @@ func newLogLoggedModelParams() *cobra.Command {
 				}
 			}
 		}
-		logLoggedModelParamsReq.ModelId = args[0]
+		logLoggedModelParamsReq.ModelId = new(args[0])
 
-		err = w.Experiments.LogLoggedModelParams(ctx, logLoggedModelParamsReq)
+		sdkReq, err := experiments.LogLoggedModelParamsRequestToSDK(&logLoggedModelParamsReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Experiments.LogLoggedModelParams(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -1780,23 +1930,23 @@ func newLogLoggedModelParams() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var logMetricOverrides []func(
 	*cobra.Command,
-	*ml.LogMetric,
+	*experiments.LogMetricRequest,
 )
 
 func newLogMetric() *cobra.Command {
 	cmd := &cobra.Command{}
+	var logMetricReq experiments.LogMetricRequest
 
-	var logMetricReq ml.LogMetric
 	var logMetricJson flags.JsonFlag
 
 	cmd.Flags().Var(&logMetricJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&logMetricReq.DatasetDigest, "dataset-digest", logMetricReq.DatasetDigest, `Dataset digest of the dataset associated with the metric, e.g.`)
-	cmd.Flags().StringVar(&logMetricReq.DatasetName, "dataset-name", logMetricReq.DatasetName, `The name of the dataset associated with the metric.`)
-	cmd.Flags().StringVar(&logMetricReq.ModelId, "model-id", logMetricReq.ModelId, `ID of the logged model associated with the metric, if applicable.`)
-	cmd.Flags().StringVar(&logMetricReq.RunId, "run-id", logMetricReq.RunId, `ID of the run under which to log the metric.`)
-	cmd.Flags().StringVar(&logMetricReq.RunUuid, "run-uuid", logMetricReq.RunUuid, `[Deprecated, use run_id instead] ID of the run under which to log the metric.`)
-	cmd.Flags().Int64Var(&logMetricReq.Step, "step", logMetricReq.Step, `Step at which to log the metric.`)
+	flags.StringPtrVar(cmd.Flags(), &logMetricReq.DatasetDigest, "dataset-digest", `Dataset digest of the dataset associated with the metric, e.g.`)
+	flags.StringPtrVar(cmd.Flags(), &logMetricReq.DatasetName, "dataset-name", `The name of the dataset associated with the metric.`)
+	flags.StringPtrVar(cmd.Flags(), &logMetricReq.ModelId, "model-id", `ID of the logged model associated with the metric, if applicable.`)
+	flags.StringPtrVar(cmd.Flags(), &logMetricReq.RunId, "run-id", `ID of the run under which to log the metric.`)
+	flags.StringPtrVar(cmd.Flags(), &logMetricReq.RunUuid, "run-uuid", `[Deprecated, use run_id instead] ID of the run under which to log the metric.`)
+	flags.Int64PtrVar(cmd.Flags(), &logMetricReq.Step, "step", `Step at which to log the metric.`)
 
 	cmd.Use = "log-metric KEY VALUE TIMESTAMP"
 	cmd.Short = `Log a metric for a run.`
@@ -1831,6 +1981,7 @@ func newLogMetric() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := logMetricJson.Unmarshal(&logMetricReq)
@@ -1845,27 +1996,35 @@ func newLogMetric() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			logMetricReq.Key = args[0]
+			logMetricReq.Key = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &logMetricReq.Value)
+			var logMetricValueArg float64
+			_, err = fmt.Sscan(args[1], &logMetricValueArg)
 			if err != nil {
 				return fmt.Errorf("invalid VALUE: %s", args[1])
 			}
-
+			logMetricReq.Value = &logMetricValueArg
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &logMetricReq.Timestamp)
+			var logMetricTimestampArg int64
+			_, err = fmt.Sscan(args[2], &logMetricTimestampArg)
 			if err != nil {
 				return fmt.Errorf("invalid TIMESTAMP: %s", args[2])
 			}
-
+			logMetricReq.Timestamp = &logMetricTimestampArg
 		}
 
-		err = w.Experiments.LogMetric(ctx, logMetricReq)
+		sdkReq, err := experiments.LogMetricRequestToSDK(&logMetricReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Experiments.LogMetric(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -1887,19 +2046,19 @@ func newLogMetric() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var logModelOverrides []func(
 	*cobra.Command,
-	*ml.LogModel,
+	*experiments.LogModelRequest,
 )
 
 func newLogModel() *cobra.Command {
 	cmd := &cobra.Command{}
+	var logModelReq experiments.LogModelRequest
 
-	var logModelReq ml.LogModel
 	var logModelJson flags.JsonFlag
 
 	cmd.Flags().Var(&logModelJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&logModelReq.ModelJson, "model-json", logModelReq.ModelJson, `MLmodel file in json format.`)
-	cmd.Flags().StringVar(&logModelReq.RunId, "run-id", logModelReq.RunId, `ID of the run to log under.`)
+	flags.StringPtrVar(cmd.Flags(), &logModelReq.ModelJson, "model-json", `MLmodel file in json format.`)
+	flags.StringPtrVar(cmd.Flags(), &logModelReq.RunId, "run-id", `ID of the run to log under.`)
 
 	cmd.Use = "log-model"
 	cmd.Short = `Log a model.`
@@ -1924,6 +2083,7 @@ func newLogModel() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := logModelJson.Unmarshal(&logModelReq)
@@ -1938,10 +2098,16 @@ func newLogModel() *cobra.Command {
 			}
 		}
 
-		err = w.Experiments.LogModel(ctx, logModelReq)
+		sdkReq, err := experiments.LogModelRequestToSDK(&logModelReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Experiments.LogModel(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -1963,13 +2129,13 @@ func newLogModel() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var logOutputsOverrides []func(
 	*cobra.Command,
-	*ml.LogOutputsRequest,
+	*experiments.LogOutputsRequest,
 )
 
 func newLogOutputs() *cobra.Command {
 	cmd := &cobra.Command{}
+	var logOutputsReq experiments.LogOutputsRequest
 
-	var logOutputsReq ml.LogOutputsRequest
 	var logOutputsJson flags.JsonFlag
 
 	cmd.Flags().Var(&logOutputsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -2005,6 +2171,7 @@ func newLogOutputs() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := logOutputsJson.Unmarshal(&logOutputsReq)
@@ -2019,13 +2186,19 @@ func newLogOutputs() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			logOutputsReq.RunId = args[0]
+			logOutputsReq.RunId = new(args[0])
 		}
 
-		err = w.Experiments.LogOutputs(ctx, logOutputsReq)
+		sdkReq, err := experiments.LogOutputsRequestToSDK(&logOutputsReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Experiments.LogOutputs(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -2047,19 +2220,19 @@ func newLogOutputs() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var logParamOverrides []func(
 	*cobra.Command,
-	*ml.LogParam,
+	*experiments.LogParamRequest,
 )
 
 func newLogParam() *cobra.Command {
 	cmd := &cobra.Command{}
+	var logParamReq experiments.LogParamRequest
 
-	var logParamReq ml.LogParam
 	var logParamJson flags.JsonFlag
 
 	cmd.Flags().Var(&logParamJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&logParamReq.RunId, "run-id", logParamReq.RunId, `ID of the run under which to log the param.`)
-	cmd.Flags().StringVar(&logParamReq.RunUuid, "run-uuid", logParamReq.RunUuid, `[Deprecated, use run_id instead] ID of the run under which to log the param.`)
+	flags.StringPtrVar(cmd.Flags(), &logParamReq.RunId, "run-id", `ID of the run under which to log the param.`)
+	flags.StringPtrVar(cmd.Flags(), &logParamReq.RunUuid, "run-uuid", `[Deprecated, use run_id instead] ID of the run under which to log the param.`)
 
 	cmd.Use = "log-param KEY VALUE"
 	cmd.Short = `Log a param for a run.`
@@ -2094,6 +2267,7 @@ func newLogParam() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := logParamJson.Unmarshal(&logParamReq)
@@ -2108,16 +2282,22 @@ func newLogParam() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			logParamReq.Key = args[0]
+			logParamReq.Key = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			logParamReq.Value = args[1]
+			logParamReq.Value = new(args[1])
 		}
 
-		err = w.Experiments.LogParam(ctx, logParamReq)
+		sdkReq, err := experiments.LogParamRequestToSDK(&logParamReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Experiments.LogParam(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -2139,13 +2319,13 @@ func newLogParam() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var restoreExperimentOverrides []func(
 	*cobra.Command,
-	*ml.RestoreExperiment,
+	*experiments.RestoreExperimentRequest,
 )
 
 func newRestoreExperiment() *cobra.Command {
 	cmd := &cobra.Command{}
+	var restoreExperimentReq experiments.RestoreExperimentRequest
 
-	var restoreExperimentReq ml.RestoreExperiment
 	var restoreExperimentJson flags.JsonFlag
 
 	cmd.Flags().Var(&restoreExperimentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -2184,6 +2364,7 @@ func newRestoreExperiment() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := restoreExperimentJson.Unmarshal(&restoreExperimentReq)
@@ -2198,13 +2379,19 @@ func newRestoreExperiment() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			restoreExperimentReq.ExperimentId = args[0]
+			restoreExperimentReq.ExperimentId = new(args[0])
 		}
 
-		err = w.Experiments.RestoreExperiment(ctx, restoreExperimentReq)
+		sdkReq, err := experiments.RestoreExperimentRequestToSDK(&restoreExperimentReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Experiments.RestoreExperiment(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -2226,13 +2413,13 @@ func newRestoreExperiment() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var restoreRunOverrides []func(
 	*cobra.Command,
-	*ml.RestoreRun,
+	*experiments.RestoreRunRequest,
 )
 
 func newRestoreRun() *cobra.Command {
 	cmd := &cobra.Command{}
+	var restoreRunReq experiments.RestoreRunRequest
 
-	var restoreRunReq ml.RestoreRun
 	var restoreRunJson flags.JsonFlag
 
 	cmd.Flags().Var(&restoreRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -2270,6 +2457,7 @@ func newRestoreRun() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := restoreRunJson.Unmarshal(&restoreRunReq)
@@ -2284,13 +2472,19 @@ func newRestoreRun() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			restoreRunReq.RunId = args[0]
+			restoreRunReq.RunId = new(args[0])
 		}
 
-		err = w.Experiments.RestoreRun(ctx, restoreRunReq)
+		sdkReq, err := experiments.RestoreRunRequestToSDK(&restoreRunReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Experiments.RestoreRun(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -2312,18 +2506,18 @@ func newRestoreRun() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var restoreRunsOverrides []func(
 	*cobra.Command,
-	*ml.RestoreRuns,
+	*experiments.RestoreRunsRequest,
 )
 
 func newRestoreRuns() *cobra.Command {
 	cmd := &cobra.Command{}
+	var restoreRunsReq experiments.RestoreRunsRequest
 
-	var restoreRunsReq ml.RestoreRuns
 	var restoreRunsJson flags.JsonFlag
 
 	cmd.Flags().Var(&restoreRunsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().IntVar(&restoreRunsReq.MaxRuns, "max-runs", restoreRunsReq.MaxRuns, `An optional positive integer indicating the maximum number of runs to restore.`)
+	flags.IntPtrVar(cmd.Flags(), &restoreRunsReq.MaxRuns, "max-runs", `An optional positive integer indicating the maximum number of runs to restore.`)
 
 	cmd.Use = "restore-runs EXPERIMENT_ID MIN_TIMESTAMP_MILLIS"
 	cmd.Short = `Restore runs by deletion time.`
@@ -2359,6 +2553,7 @@ func newRestoreRuns() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := restoreRunsJson.Unmarshal(&restoreRunsReq)
@@ -2373,22 +2568,31 @@ func newRestoreRuns() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			restoreRunsReq.ExperimentId = args[0]
+			restoreRunsReq.ExperimentId = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &restoreRunsReq.MinTimestampMillis)
+			var restoreRunsMinTimestampMillisArg int64
+			_, err = fmt.Sscan(args[1], &restoreRunsMinTimestampMillisArg)
 			if err != nil {
 				return fmt.Errorf("invalid MIN_TIMESTAMP_MILLIS: %s", args[1])
 			}
-
+			restoreRunsReq.MinTimestampMillis = &restoreRunsMinTimestampMillisArg
 		}
 
-		response, err := w.Experiments.RestoreRuns(ctx, restoreRunsReq)
+		sdkReq, err := experiments.RestoreRunsRequestToSDK(&restoreRunsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Experiments.RestoreRuns(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := experiments.RestoreRunsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2409,13 +2613,13 @@ func newRestoreRuns() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var searchExperimentsOverrides []func(
 	*cobra.Command,
-	*ml.SearchExperiments,
+	*experiments.SearchExperimentsRequest,
 )
 
 func newSearchExperiments() *cobra.Command {
 	cmd := &cobra.Command{}
+	var searchExperimentsReq experiments.SearchExperimentsRequest
 
-	var searchExperimentsReq ml.SearchExperiments
 	var searchExperimentsJson flags.JsonFlag
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
@@ -2424,16 +2628,16 @@ func newSearchExperiments() *cobra.Command {
 
 	cmd.Flags().Var(&searchExperimentsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&searchExperimentsReq.Filter, "filter", searchExperimentsReq.Filter, `String representing a SQL filter condition (e.g.`)
-	cmd.Flags().Int64Var(&searchExperimentsReq.MaxResults, "max-results", searchExperimentsReq.MaxResults, `Maximum number of experiments desired.`)
+	flags.StringPtrVar(cmd.Flags(), &searchExperimentsReq.Filter, "filter", `String representing a SQL filter condition (e.g.`)
+	flags.Int64PtrVar(cmd.Flags(), &searchExperimentsReq.MaxResults, "max-results", `Maximum number of experiments desired.`)
 	// TODO: array: order_by
-	cmd.Flags().Var(&searchExperimentsReq.ViewType, "view-type", `Qualifier for type of experiments to be returned. Supported values: [ACTIVE_ONLY, ALL, DELETED_ONLY]`)
+	flags.EnumVar(cmd.Flags(), &searchExperimentsReq.ViewType, "view-type", `Qualifier for type of experiments to be returned. Supported values: [ACTIVE_ONLY, ALL, DELETED_ONLY]`, "ViewType", "ACTIVE_ONLY", "ALL", "DELETED_ONLY")
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&searchExperimentsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&searchExperimentsReq.PageToken, "page-token", searchExperimentsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &searchExperimentsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "search-experiments"
@@ -2455,6 +2659,7 @@ func newSearchExperiments() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := searchExperimentsJson.Unmarshal(&searchExperimentsReq)
@@ -2469,15 +2674,18 @@ func newSearchExperiments() *cobra.Command {
 			}
 		}
 
-		response := w.Experiments.SearchExperiments(ctx, searchExperimentsReq)
+		sdkReq, err := experiments.SearchExperimentsRequestToSDK(&searchExperimentsReq)
+		if err != nil {
+			return err
+		}
 		if searchExperimentsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", searchExperimentsLimit)
 		}
 		if searchExperimentsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, searchExperimentsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Experiments.SearchExperimentsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, experiments.ExperimentFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -2498,23 +2706,23 @@ func newSearchExperiments() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var searchLoggedModelsOverrides []func(
 	*cobra.Command,
-	*ml.SearchLoggedModelsRequest,
+	*experiments.SearchLoggedModelsRequest,
 )
 
 func newSearchLoggedModels() *cobra.Command {
 	cmd := &cobra.Command{}
+	var searchLoggedModelsReq experiments.SearchLoggedModelsRequest
 
-	var searchLoggedModelsReq ml.SearchLoggedModelsRequest
 	var searchLoggedModelsJson flags.JsonFlag
 
 	cmd.Flags().Var(&searchLoggedModelsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: datasets
 	// TODO: array: experiment_ids
-	cmd.Flags().StringVar(&searchLoggedModelsReq.Filter, "filter", searchLoggedModelsReq.Filter, `A filter expression over logged model info and data that allows returning a subset of logged models.`)
-	cmd.Flags().IntVar(&searchLoggedModelsReq.MaxResults, "max-results", searchLoggedModelsReq.MaxResults, `The maximum number of Logged Models to return.`)
+	flags.StringPtrVar(cmd.Flags(), &searchLoggedModelsReq.Filter, "filter", `A filter expression over logged model info and data that allows returning a subset of logged models.`)
+	flags.IntPtrVar(cmd.Flags(), &searchLoggedModelsReq.MaxResults, "max-results", `The maximum number of Logged Models to return.`)
 	// TODO: array: order_by
-	cmd.Flags().StringVar(&searchLoggedModelsReq.PageToken, "page-token", searchLoggedModelsReq.PageToken, `The token indicating the page of logged models to fetch.`)
+	flags.StringPtrVar(cmd.Flags(), &searchLoggedModelsReq.PageToken, "page-token", `The token indicating the page of logged models to fetch.`)
 
 	cmd.Use = "search-logged-models"
 	cmd.Short = `Search logged models.`
@@ -2535,6 +2743,7 @@ func newSearchLoggedModels() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := searchLoggedModelsJson.Unmarshal(&searchLoggedModelsReq)
@@ -2549,12 +2758,20 @@ func newSearchLoggedModels() *cobra.Command {
 			}
 		}
 
-		response, err := w.Experiments.SearchLoggedModels(ctx, searchLoggedModelsReq)
+		sdkReq, err := experiments.SearchLoggedModelsRequestToSDK(&searchLoggedModelsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Experiments.SearchLoggedModels(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := experiments.SearchLoggedModelsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2575,13 +2792,13 @@ func newSearchLoggedModels() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var searchRunsOverrides []func(
 	*cobra.Command,
-	*ml.SearchRuns,
+	*experiments.SearchRunsRequest,
 )
 
 func newSearchRuns() *cobra.Command {
 	cmd := &cobra.Command{}
+	var searchRunsReq experiments.SearchRunsRequest
 
-	var searchRunsReq ml.SearchRuns
 	var searchRunsJson flags.JsonFlag
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
@@ -2591,16 +2808,16 @@ func newSearchRuns() *cobra.Command {
 	cmd.Flags().Var(&searchRunsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: experiment_ids
-	cmd.Flags().StringVar(&searchRunsReq.Filter, "filter", searchRunsReq.Filter, `A filter expression over params, metrics, and tags, that allows returning a subset of runs.`)
-	cmd.Flags().IntVar(&searchRunsReq.MaxResults, "max-results", searchRunsReq.MaxResults, `Maximum number of runs desired.`)
+	flags.StringPtrVar(cmd.Flags(), &searchRunsReq.Filter, "filter", `A filter expression over params, metrics, and tags, that allows returning a subset of runs.`)
+	flags.IntPtrVar(cmd.Flags(), &searchRunsReq.MaxResults, "max-results", `Maximum number of runs desired.`)
 	// TODO: array: order_by
-	cmd.Flags().Var(&searchRunsReq.RunViewType, "run-view-type", `Whether to display only active, only deleted, or all runs. Supported values: [ACTIVE_ONLY, ALL, DELETED_ONLY]`)
+	flags.EnumVar(cmd.Flags(), &searchRunsReq.RunViewType, "run-view-type", `Whether to display only active, only deleted, or all runs. Supported values: [ACTIVE_ONLY, ALL, DELETED_ONLY]`, "ViewType", "ACTIVE_ONLY", "ALL", "DELETED_ONLY")
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&searchRunsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&searchRunsReq.PageToken, "page-token", searchRunsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &searchRunsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "search-runs"
@@ -2624,6 +2841,7 @@ func newSearchRuns() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := searchRunsJson.Unmarshal(&searchRunsReq)
@@ -2638,15 +2856,18 @@ func newSearchRuns() *cobra.Command {
 			}
 		}
 
-		response := w.Experiments.SearchRuns(ctx, searchRunsReq)
+		sdkReq, err := experiments.SearchRunsRequestToSDK(&searchRunsReq)
+		if err != nil {
+			return err
+		}
 		if searchRunsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", searchRunsLimit)
 		}
 		if searchRunsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, searchRunsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Experiments.SearchRunsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, experiments.RunFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -2667,13 +2888,13 @@ func newSearchRuns() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var setExperimentTagOverrides []func(
 	*cobra.Command,
-	*ml.SetExperimentTag,
+	*experiments.SetExperimentTagRequest,
 )
 
 func newSetExperimentTag() *cobra.Command {
 	cmd := &cobra.Command{}
+	var setExperimentTagReq experiments.SetExperimentTagRequest
 
-	var setExperimentTagReq ml.SetExperimentTag
 	var setExperimentTagJson flags.JsonFlag
 
 	cmd.Flags().Var(&setExperimentTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -2710,6 +2931,7 @@ func newSetExperimentTag() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := setExperimentTagJson.Unmarshal(&setExperimentTagReq)
@@ -2724,19 +2946,25 @@ func newSetExperimentTag() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			setExperimentTagReq.ExperimentId = args[0]
+			setExperimentTagReq.ExperimentId = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			setExperimentTagReq.Key = args[1]
+			setExperimentTagReq.Key = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			setExperimentTagReq.Value = args[2]
+			setExperimentTagReq.Value = new(args[2])
 		}
 
-		err = w.Experiments.SetExperimentTag(ctx, setExperimentTagReq)
+		sdkReq, err := experiments.SetExperimentTagRequestToSDK(&setExperimentTagReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Experiments.SetExperimentTag(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -2758,13 +2986,13 @@ func newSetExperimentTag() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var setLoggedModelTagsOverrides []func(
 	*cobra.Command,
-	*ml.SetLoggedModelTagsRequest,
+	*experiments.SetLoggedModelTagsRequest,
 )
 
 func newSetLoggedModelTags() *cobra.Command {
 	cmd := &cobra.Command{}
+	var setLoggedModelTagsReq experiments.SetLoggedModelTagsRequest
 
-	var setLoggedModelTagsReq ml.SetLoggedModelTagsRequest
 	var setLoggedModelTagsJson flags.JsonFlag
 
 	cmd.Flags().Var(&setLoggedModelTagsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -2791,6 +3019,7 @@ func newSetLoggedModelTags() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := setLoggedModelTagsJson.Unmarshal(&setLoggedModelTagsReq)
@@ -2804,12 +3033,18 @@ func newSetLoggedModelTags() *cobra.Command {
 				}
 			}
 		}
-		setLoggedModelTagsReq.ModelId = args[0]
+		setLoggedModelTagsReq.ModelId = new(args[0])
 
-		err = w.Experiments.SetLoggedModelTags(ctx, setLoggedModelTagsReq)
+		sdkReq, err := experiments.SetLoggedModelTagsRequestToSDK(&setLoggedModelTagsReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Experiments.SetLoggedModelTags(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -2831,13 +3066,13 @@ func newSetLoggedModelTags() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var setPermissionsOverrides []func(
 	*cobra.Command,
-	*ml.ExperimentPermissionsRequest,
+	*accessmanagement.SetObjectPermissionsRequest,
 )
 
 func newSetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var setPermissionsReq accessmanagement.SetObjectPermissionsRequest
 
-	var setPermissionsReq ml.ExperimentPermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -2868,6 +3103,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
@@ -2881,14 +3117,24 @@ func newSetPermissions() *cobra.Command {
 				}
 			}
 		}
-		setPermissionsReq.ExperimentId = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: experiment_id
 
-		response, err := w.Experiments.SetPermissions(ctx, setPermissionsReq)
+		setPermissionsReq.RequestObjectType = new("experiments")
+
+		sdkReq, err := accessmanagement.SetObjectPermissionsRequestToSDK(&setPermissionsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AccessManagement.SetObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2909,19 +3155,19 @@ func newSetPermissions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var setTagOverrides []func(
 	*cobra.Command,
-	*ml.SetTag,
+	*experiments.SetTagRequest,
 )
 
 func newSetTag() *cobra.Command {
 	cmd := &cobra.Command{}
+	var setTagReq experiments.SetTagRequest
 
-	var setTagReq ml.SetTag
 	var setTagJson flags.JsonFlag
 
 	cmd.Flags().Var(&setTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&setTagReq.RunId, "run-id", setTagReq.RunId, `ID of the run under which to log the tag.`)
-	cmd.Flags().StringVar(&setTagReq.RunUuid, "run-uuid", setTagReq.RunUuid, `[Deprecated, use run_id instead] ID of the run under which to log the tag.`)
+	flags.StringPtrVar(cmd.Flags(), &setTagReq.RunId, "run-id", `ID of the run under which to log the tag.`)
+	flags.StringPtrVar(cmd.Flags(), &setTagReq.RunUuid, "run-uuid", `[Deprecated, use run_id instead] ID of the run under which to log the tag.`)
 
 	cmd.Use = "set-tag KEY VALUE"
 	cmd.Short = `Set a tag for a run.`
@@ -2955,6 +3201,7 @@ func newSetTag() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := setTagJson.Unmarshal(&setTagReq)
@@ -2969,16 +3216,22 @@ func newSetTag() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			setTagReq.Key = args[0]
+			setTagReq.Key = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			setTagReq.Value = args[1]
+			setTagReq.Value = new(args[1])
 		}
 
-		err = w.Experiments.SetTag(ctx, setTagReq)
+		sdkReq, err := experiments.SetTagRequestToSDK(&setTagReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Experiments.SetTag(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -3000,18 +3253,18 @@ func newSetTag() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateExperimentOverrides []func(
 	*cobra.Command,
-	*ml.UpdateExperiment,
+	*experiments.UpdateExperimentRequest,
 )
 
 func newUpdateExperiment() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateExperimentReq experiments.UpdateExperimentRequest
 
-	var updateExperimentReq ml.UpdateExperiment
 	var updateExperimentJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateExperimentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateExperimentReq.NewName, "new-name", updateExperimentReq.NewName, `If provided, the experiment's name is changed to the new name.`)
+	flags.StringPtrVar(cmd.Flags(), &updateExperimentReq.NewName, "new-name", `If provided, the experiment's name is changed to the new name.`)
 
 	cmd.Use = "update-experiment EXPERIMENT_ID"
 	cmd.Short = `Update an experiment.`
@@ -3042,6 +3295,7 @@ func newUpdateExperiment() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateExperimentJson.Unmarshal(&updateExperimentReq)
@@ -3056,13 +3310,19 @@ func newUpdateExperiment() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			updateExperimentReq.ExperimentId = args[0]
+			updateExperimentReq.ExperimentId = new(args[0])
 		}
 
-		err = w.Experiments.UpdateExperiment(ctx, updateExperimentReq)
+		sdkReq, err := experiments.UpdateExperimentRequestToSDK(&updateExperimentReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Experiments.UpdateExperiment(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -3084,13 +3344,13 @@ func newUpdateExperiment() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updatePermissionsOverrides []func(
 	*cobra.Command,
-	*ml.ExperimentPermissionsRequest,
+	*accessmanagement.UpdateObjectPermissionsRequest,
 )
 
 func newUpdatePermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updatePermissionsReq accessmanagement.UpdateObjectPermissionsRequest
 
-	var updatePermissionsReq ml.ExperimentPermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -3120,6 +3380,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)
@@ -3133,14 +3394,24 @@ func newUpdatePermissions() *cobra.Command {
 				}
 			}
 		}
-		updatePermissionsReq.ExperimentId = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: experiment_id
 
-		response, err := w.Experiments.UpdatePermissions(ctx, updatePermissionsReq)
+		updatePermissionsReq.RequestObjectType = new("experiments")
+
+		sdkReq, err := accessmanagement.UpdateObjectPermissionsRequestToSDK(&updatePermissionsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AccessManagement.UpdateObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -3161,22 +3432,22 @@ func newUpdatePermissions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateRunOverrides []func(
 	*cobra.Command,
-	*ml.UpdateRun,
+	*experiments.UpdateRunRequest,
 )
 
 func newUpdateRun() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateRunReq experiments.UpdateRunRequest
 
-	var updateRunReq ml.UpdateRun
 	var updateRunJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().Int64Var(&updateRunReq.EndTime, "end-time", updateRunReq.EndTime, `Unix timestamp in milliseconds of when the run ended.`)
-	cmd.Flags().StringVar(&updateRunReq.RunId, "run-id", updateRunReq.RunId, `ID of the run to update.`)
-	cmd.Flags().StringVar(&updateRunReq.RunName, "run-name", updateRunReq.RunName, `Updated name of the run.`)
-	cmd.Flags().StringVar(&updateRunReq.RunUuid, "run-uuid", updateRunReq.RunUuid, `[Deprecated, use run_id instead] ID of the run to update.`)
-	cmd.Flags().Var(&updateRunReq.Status, "status", `Updated status of the run. Supported values: [FAILED, FINISHED, KILLED, RUNNING, SCHEDULED]`)
+	flags.Int64PtrVar(cmd.Flags(), &updateRunReq.EndTime, "end-time", `Unix timestamp in milliseconds of when the run ended.`)
+	flags.StringPtrVar(cmd.Flags(), &updateRunReq.RunId, "run-id", `ID of the run to update.`)
+	flags.StringPtrVar(cmd.Flags(), &updateRunReq.RunName, "run-name", `Updated name of the run.`)
+	flags.StringPtrVar(cmd.Flags(), &updateRunReq.RunUuid, "run-uuid", `[Deprecated, use run_id instead] ID of the run to update.`)
+	flags.EnumVar(cmd.Flags(), &updateRunReq.Status, "status", `Updated status of the run. Supported values: [FAILED, FINISHED, KILLED, RUNNING, SCHEDULED]`, "UpdateRunStatus", "FAILED", "FINISHED", "KILLED", "RUNNING", "SCHEDULED")
 
 	cmd.Use = "update-run"
 	cmd.Short = `Update a run.`
@@ -3197,6 +3468,7 @@ func newUpdateRun() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateRunJson.Unmarshal(&updateRunReq)
@@ -3211,12 +3483,20 @@ func newUpdateRun() *cobra.Command {
 			}
 		}
 
-		response, err := w.Experiments.UpdateRun(ctx, updateRunReq)
+		sdkReq, err := experiments.UpdateRunRequestToSDK(&updateRunReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Experiments.UpdateRun(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := experiments.UpdateRunResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

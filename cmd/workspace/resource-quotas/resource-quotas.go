@@ -7,9 +7,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
+
+	ucresourcequotas "github.com/databricks/cli/libs/sdktypes/uc/resourcequotas/v1"
+	sdkucresourcequotas "github.com/databricks/sdk-go/uc/resourcequotas/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -54,13 +58,12 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getQuotaOverrides []func(
 	*cobra.Command,
-	*catalog.GetQuotaRequest,
+	*sdkucresourcequotas.GetQuotaRequest,
 )
 
 func newGetQuota() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getQuotaReq catalog.GetQuotaRequest
+	var getQuotaReq sdkucresourcequotas.GetQuotaRequest
 
 	cmd.Use = "get-quota PARENT_SECURABLE_TYPE PARENT_FULL_NAME QUOTA_NAME"
 	cmd.Short = `Get information for a single resource quota.`
@@ -91,17 +94,23 @@ func newGetQuota() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getQuotaReq.ParentSecurableType = args[0]
-		getQuotaReq.ParentFullName = args[1]
-		getQuotaReq.QuotaName = args[2]
+		getQuotaReq.ParentSecurableType = new(args[0])
+		getQuotaReq.ParentFullName = new(args[1])
+		getQuotaReq.QuotaName = new(args[2])
 
-		response, err := w.ResourceQuotas.GetQuota(ctx, getQuotaReq)
+		sdkReq := &getQuotaReq
+		response, err := w.ResourceQuotas.GetQuota(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucresourcequotas.GetQuotaResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -122,25 +131,25 @@ func newGetQuota() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listQuotasOverrides []func(
 	*cobra.Command,
-	*catalog.ListQuotasRequest,
+	*ucresourcequotas.ListQuotasRequest,
 )
 
 func newListQuotas() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listQuotasReq ucresourcequotas.ListQuotasRequest
 
-	var listQuotasReq catalog.ListQuotasRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listQuotasLimit int
 
-	cmd.Flags().IntVar(&listQuotasReq.MaxResults, "max-results", listQuotasReq.MaxResults, `The number of quotas to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listQuotasReq.MaxResults, "max-results", `The number of quotas to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listQuotasLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listQuotasReq.PageToken, "page-token", listQuotasReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listQuotasReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-quotas"
@@ -169,16 +178,20 @@ func newListQuotas() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.ResourceQuotas.ListQuotas(ctx, listQuotasReq)
+		sdkReq, err := ucresourcequotas.ListQuotasRequestToSDK(&listQuotasReq)
+		if err != nil {
+			return err
+		}
 		if listQuotasLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listQuotasLimit)
 		}
 		if listQuotasLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listQuotasLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.ResourceQuotas.ListQuotasIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, ucresourcequotas.QuotaInfoFromSDK))
 	}
 
 	// Disable completions since they are not applicable.

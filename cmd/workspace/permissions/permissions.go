@@ -7,8 +7,10 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
+
+	accessmanagement "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
+	sdkaccessmanagement "github.com/databricks/sdk-go/accessmanagement/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -78,13 +80,12 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*iam.GetPermissionRequest,
+	*sdkaccessmanagement.GetObjectPermissionsRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq iam.GetPermissionRequest
+	var getReq sdkaccessmanagement.GetObjectPermissionsRequest
 
 	cmd.Use = "get REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID"
 	cmd.Short = `Get object permissions.`
@@ -115,16 +116,22 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getReq.RequestObjectType = args[0]
-		getReq.RequestObjectId = args[1]
+		getReq.RequestObjectType = new(args[0])
+		getReq.RequestObjectId = new(args[1])
 
-		response, err := w.Permissions.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.AccessManagement.GetObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -145,13 +152,12 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPermissionLevelsOverrides []func(
 	*cobra.Command,
-	*iam.GetPermissionLevelsRequest,
+	*sdkaccessmanagement.ListPermissionLevelsRequest,
 )
 
 func newGetPermissionLevels() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPermissionLevelsReq iam.GetPermissionLevelsRequest
+	var getPermissionLevelsReq sdkaccessmanagement.ListPermissionLevelsRequest
 
 	cmd.Use = "get-permission-levels REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID"
 	cmd.Short = `Get object permission levels.`
@@ -181,16 +187,22 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getPermissionLevelsReq.RequestObjectType = args[0]
-		getPermissionLevelsReq.RequestObjectId = args[1]
+		getPermissionLevelsReq.RequestObjectType = new(args[0])
+		getPermissionLevelsReq.RequestObjectId = new(args[1])
 
-		response, err := w.Permissions.GetPermissionLevels(ctx, getPermissionLevelsReq)
+		sdkReq := &getPermissionLevelsReq
+		response, err := w.AccessManagement.ListPermissionLevels(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.ListPermissionLevelsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -211,13 +223,13 @@ func newGetPermissionLevels() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var setOverrides []func(
 	*cobra.Command,
-	*iam.SetObjectPermissions,
+	*accessmanagement.SetObjectPermissionsRequest,
 )
 
 func newSet() *cobra.Command {
 	cmd := &cobra.Command{}
+	var setReq accessmanagement.SetObjectPermissionsRequest
 
-	var setReq iam.SetObjectPermissions
 	var setJson flags.JsonFlag
 
 	cmd.Flags().Var(&setJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -254,6 +266,7 @@ func newSet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := setJson.Unmarshal(&setReq)
@@ -267,15 +280,23 @@ func newSet() *cobra.Command {
 				}
 			}
 		}
-		setReq.RequestObjectType = args[0]
-		setReq.RequestObjectId = args[1]
+		setReq.RequestObjectType = new(args[0])
+		setReq.RequestObjectId = new(args[1])
 
-		response, err := w.Permissions.Set(ctx, setReq)
+		sdkReq, err := accessmanagement.SetObjectPermissionsRequestToSDK(&setReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AccessManagement.SetObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -296,13 +317,13 @@ func newSet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*iam.UpdateObjectPermissions,
+	*accessmanagement.UpdateObjectPermissionsRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq accessmanagement.UpdateObjectPermissionsRequest
 
-	var updateReq iam.UpdateObjectPermissions
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -338,6 +359,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -351,15 +373,23 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.RequestObjectType = args[0]
-		updateReq.RequestObjectId = args[1]
+		updateReq.RequestObjectType = new(args[0])
+		updateReq.RequestObjectId = new(args[1])
 
-		response, err := w.Permissions.Update(ctx, updateReq)
+		sdkReq, err := accessmanagement.UpdateObjectPermissionsRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AccessManagement.UpdateObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

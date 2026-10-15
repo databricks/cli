@@ -10,8 +10,10 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
+
+	tokens "github.com/databricks/cli/libs/sdktypes/tokens/v1"
+	sdktokens "github.com/databricks/sdk-go/tokens/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -52,20 +54,20 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*settings.CreateTokenRequest,
+	*tokens.CreateTokenRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq tokens.CreateTokenRequest
 
-	var createReq settings.CreateTokenRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createReq.AutoscopeEnabled, "autoscope-enabled", createReq.AutoscopeEnabled, `Whether to enable autoscoping for this token.`)
-	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Optional description to attach to the token.`)
-	cmd.Flags().Int64Var(&createReq.LifetimeSeconds, "lifetime-seconds", createReq.LifetimeSeconds, `The lifetime of the token, in seconds.`)
+	flags.BoolPtrVar(cmd.Flags(), &createReq.AutoscopeEnabled, "autoscope-enabled", `Whether to enable autoscoping for this token.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Comment, "comment", `Optional description to attach to the token.`)
+	flags.Int64PtrVar(cmd.Flags(), &createReq.LifetimeSeconds, "lifetime-seconds", `The lifetime of the token, in seconds.`)
 	// TODO: array: scopes
 
 	cmd.Use = "create"
@@ -90,6 +92,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -104,12 +107,20 @@ func newCreate() *cobra.Command {
 			}
 		}
 
-		response, err := w.Tokens.Create(ctx, createReq)
+		sdkReq, err := tokens.CreateTokenRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Tokens.CreateToken(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := tokens.CreateTokenResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -130,13 +141,13 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*settings.RevokeTokenRequest,
+	*tokens.RevokeTokenRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteReq tokens.RevokeTokenRequest
 
-	var deleteReq settings.RevokeTokenRequest
 	var deleteJson flags.JsonFlag
 
 	cmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -165,13 +176,15 @@ func newDelete() *cobra.Command {
 			}
 			return nil
 		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteJson.Unmarshal(&deleteReq)
@@ -184,31 +197,21 @@ func newDelete() *cobra.Command {
 					return err
 				}
 			}
-		} else {
-			if len(args) == 0 {
-				sp := cmdio.NewSpinner(ctx)
-				sp.Update("No TOKEN_ID argument specified. Loading names for Tokens drop-down.")
-				names, err := w.Tokens.PublicTokenInfoCommentToTokenIdMap(ctx)
-				sp.Close()
-				if err != nil {
-					return fmt.Errorf("failed to load names for Tokens drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The ID of the token to be revoked")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return errors.New("expected to have the id of the token to be revoked")
-			}
-			deleteReq.TokenId = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
+			deleteReq.TokenId = new(args[0])
 		}
 
-		err = w.Tokens.Delete(ctx, deleteReq)
+		sdkReq, err := tokens.RevokeTokenRequestToSDK(&deleteReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Tokens.RevokeToken(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -258,7 +261,13 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
-		response := w.Tokens.List(ctx)
+		_ = w
+
+		sdkReq := &sdktokens.ListTokensRequest{}
+		response, err := w.Tokens.ListTokens(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
@@ -266,7 +275,11 @@ func newList() *cobra.Command {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
 
-		return cmdio.RenderIterator(ctx, response)
+		out, err := tokens.ListTokensResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -287,13 +300,13 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*settings.UpdateTokenRequest,
+	*tokens.UpdateTokenRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq tokens.UpdateTokenRequest
 
-	var updateReq settings.UpdateTokenRequest
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -323,6 +336,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -338,14 +352,19 @@ func newUpdate() *cobra.Command {
 		} else {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
-		updateReq.TokenId = args[0]
+		updateReq.TokenId = new(args[0])
 
-		response, err := w.Tokens.Update(ctx, updateReq)
+		sdkReq, err := tokens.UpdateTokenRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Tokens.UpdateToken(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		_ = response
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
+
+	apps "github.com/databricks/cli/libs/sdktypes/apps/v1"
+	sdkapps "github.com/databricks/sdk-go/apps/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -61,14 +64,14 @@ var createCustomTemplateOverrides []func(
 
 func newCreateCustomTemplate() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createCustomTemplateReq apps.CreateCustomTemplateRequest
-	createCustomTemplateReq.Template = apps.CustomTemplate{}
+	createCustomTemplateReq.Template = &apps.CustomTemplate{}
+
 	var createCustomTemplateJson flags.JsonFlag
 
 	cmd.Flags().Var(&createCustomTemplateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createCustomTemplateReq.Template.Description, "description", createCustomTemplateReq.Template.Description, `The description of the template.`)
+	flags.StringPtrVar(cmd.Flags(), &createCustomTemplateReq.Template.Description, "description", `The description of the template.`)
 
 	cmd.Use = "create-custom-template NAME GIT_REPO PATH MANIFEST GIT_PROVIDER"
 	cmd.Short = `Create a template.`
@@ -106,6 +109,7 @@ func newCreateCustomTemplate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createCustomTemplateJson.Unmarshal(&createCustomTemplateReq.Template)
@@ -120,31 +124,35 @@ func newCreateCustomTemplate() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createCustomTemplateReq.Template.Name = args[0]
+			createCustomTemplateReq.Template.Name = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			createCustomTemplateReq.Template.GitRepo = args[1]
+			createCustomTemplateReq.Template.GitRepo = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			createCustomTemplateReq.Template.Path = args[2]
+			createCustomTemplateReq.Template.Path = new(args[2])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[3], &createCustomTemplateReq.Template.Manifest)
-			if err != nil {
-				return fmt.Errorf("invalid MANIFEST: %s", args[3])
-			}
-
+			_ = args[3] // TODO: complex arg: manifest
 		}
 		if !cmd.Flags().Changed("json") {
-			createCustomTemplateReq.Template.GitProvider = args[4]
+			createCustomTemplateReq.Template.GitProvider = new(args[4])
 		}
 
-		response, err := w.AppsSettings.CreateCustomTemplate(ctx, createCustomTemplateReq)
+		sdkReq, err := apps.CreateCustomTemplateRequestToSDK(&createCustomTemplateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Apps.CreateCustomTemplate(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := apps.CustomTemplateFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -165,13 +173,12 @@ func newCreateCustomTemplate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteCustomTemplateOverrides []func(
 	*cobra.Command,
-	*apps.DeleteCustomTemplateRequest,
+	*sdkapps.DeleteCustomTemplateRequest,
 )
 
 func newDeleteCustomTemplate() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteCustomTemplateReq apps.DeleteCustomTemplateRequest
+	var deleteCustomTemplateReq sdkapps.DeleteCustomTemplateRequest
 
 	cmd.Use = "delete-custom-template NAME"
 	cmd.Short = `Delete a template.`
@@ -195,15 +202,21 @@ func newDeleteCustomTemplate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteCustomTemplateReq.Name = args[0]
+		deleteCustomTemplateReq.Name = new(args[0])
 
-		response, err := w.AppsSettings.DeleteCustomTemplate(ctx, deleteCustomTemplateReq)
+		sdkReq := &deleteCustomTemplateReq
+		response, err := w.Apps.DeleteCustomTemplate(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := apps.CustomTemplateFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -224,13 +237,12 @@ func newDeleteCustomTemplate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getCustomTemplateOverrides []func(
 	*cobra.Command,
-	*apps.GetCustomTemplateRequest,
+	*sdkapps.GetCustomTemplateRequest,
 )
 
 func newGetCustomTemplate() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getCustomTemplateReq apps.GetCustomTemplateRequest
+	var getCustomTemplateReq sdkapps.GetCustomTemplateRequest
 
 	cmd.Use = "get-custom-template NAME"
 	cmd.Short = `Get a template.`
@@ -254,15 +266,21 @@ func newGetCustomTemplate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getCustomTemplateReq.Name = args[0]
+		getCustomTemplateReq.Name = new(args[0])
 
-		response, err := w.AppsSettings.GetCustomTemplate(ctx, getCustomTemplateReq)
+		sdkReq := &getCustomTemplateReq
+		response, err := w.Apps.GetCustomTemplate(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := apps.CustomTemplateFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -288,20 +306,20 @@ var listCustomTemplatesOverrides []func(
 
 func newListCustomTemplates() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listCustomTemplatesReq apps.ListCustomTemplatesRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listCustomTemplatesLimit int
 
-	cmd.Flags().IntVar(&listCustomTemplatesReq.PageSize, "page-size", listCustomTemplatesReq.PageSize, `Upper bound for items returned.`)
+	flags.IntPtrVar(cmd.Flags(), &listCustomTemplatesReq.PageSize, "page-size", `Upper bound for items returned.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listCustomTemplatesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listCustomTemplatesReq.PageToken, "page-token", listCustomTemplatesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listCustomTemplatesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-custom-templates"
@@ -323,16 +341,20 @@ func newListCustomTemplates() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.AppsSettings.ListCustomTemplates(ctx, listCustomTemplatesReq)
+		sdkReq, err := apps.ListCustomTemplatesRequestToSDK(&listCustomTemplatesReq)
+		if err != nil {
+			return err
+		}
 		if listCustomTemplatesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listCustomTemplatesLimit)
 		}
 		if listCustomTemplatesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listCustomTemplatesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Apps.ListCustomTemplatesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, apps.CustomTemplateFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -358,14 +380,14 @@ var updateCustomTemplateOverrides []func(
 
 func newUpdateCustomTemplate() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateCustomTemplateReq apps.UpdateCustomTemplateRequest
-	updateCustomTemplateReq.Template = apps.CustomTemplate{}
+	updateCustomTemplateReq.Template = &apps.CustomTemplate{}
+
 	var updateCustomTemplateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateCustomTemplateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateCustomTemplateReq.Template.Description, "description", updateCustomTemplateReq.Template.Description, `The description of the template.`)
+	flags.StringPtrVar(cmd.Flags(), &updateCustomTemplateReq.Template.Description, "description", `The description of the template.`)
 
 	cmd.Use = "update-custom-template NAME GIT_REPO PATH MANIFEST GIT_PROVIDER"
 	cmd.Short = `Update a template.`
@@ -404,6 +426,7 @@ func newUpdateCustomTemplate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateCustomTemplateJson.Unmarshal(&updateCustomTemplateReq.Template)
@@ -417,30 +440,34 @@ func newUpdateCustomTemplate() *cobra.Command {
 				}
 			}
 		}
-		updateCustomTemplateReq.Name = args[0]
+		updateCustomTemplateReq.Template.Name = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			updateCustomTemplateReq.Template.GitRepo = args[1]
+			updateCustomTemplateReq.Template.GitRepo = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateCustomTemplateReq.Template.Path = args[2]
+			updateCustomTemplateReq.Template.Path = new(args[2])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[3], &updateCustomTemplateReq.Template.Manifest)
-			if err != nil {
-				return fmt.Errorf("invalid MANIFEST: %s", args[3])
-			}
-
+			_ = args[3] // TODO: complex arg: manifest
 		}
 		if !cmd.Flags().Changed("json") {
-			updateCustomTemplateReq.Template.GitProvider = args[4]
+			updateCustomTemplateReq.Template.GitProvider = new(args[4])
 		}
 
-		response, err := w.AppsSettings.UpdateCustomTemplate(ctx, updateCustomTemplateReq)
+		sdkReq, err := apps.UpdateCustomTemplateRequestToSDK(&updateCustomTemplateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Apps.UpdateCustomTemplate(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := apps.CustomTemplateFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

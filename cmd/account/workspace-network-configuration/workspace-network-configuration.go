@@ -9,8 +9,10 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
+
+	networking "github.com/databricks/cli/libs/sdktypes/networking/v1"
+	sdknetworking "github.com/databricks/sdk-go/networking/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -54,13 +56,12 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getWorkspaceNetworkOptionRpcOverrides []func(
 	*cobra.Command,
-	*settings.GetWorkspaceNetworkOptionRequest,
+	*sdknetworking.GetWorkspaceNetworkOptionRequest,
 )
 
 func newGetWorkspaceNetworkOptionRpc() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getWorkspaceNetworkOptionRpcReq settings.GetWorkspaceNetworkOptionRequest
+	var getWorkspaceNetworkOptionRpcReq sdknetworking.GetWorkspaceNetworkOptionRequest
 
 	cmd.Use = "get-workspace-network-option-rpc WORKSPACE_ID"
 	cmd.Short = `Get workspace network option.`
@@ -86,18 +87,26 @@ func newGetWorkspaceNetworkOptionRpc() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		_, err = fmt.Sscan(args[0], &getWorkspaceNetworkOptionRpcReq.WorkspaceId)
+		var getWorkspaceNetworkOptionRpcWorkspaceIdArg int64
+		_, err = fmt.Sscan(args[0], &getWorkspaceNetworkOptionRpcWorkspaceIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
+		getWorkspaceNetworkOptionRpcReq.WorkspaceId = &getWorkspaceNetworkOptionRpcWorkspaceIdArg
 
-		response, err := a.WorkspaceNetworkConfiguration.GetWorkspaceNetworkOptionRpc(ctx, getWorkspaceNetworkOptionRpcReq)
+		sdkReq := &getWorkspaceNetworkOptionRpcReq
+		response, err := a.Networking.GetWorkspaceNetworkOptionRpc(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.WorkspaceNetworkOptionFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -118,20 +127,20 @@ func newGetWorkspaceNetworkOptionRpc() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateWorkspaceNetworkOptionRpcOverrides []func(
 	*cobra.Command,
-	*settings.UpdateWorkspaceNetworkOptionRequest,
+	*networking.UpdateWorkspaceNetworkOptionRequest,
 )
 
 func newUpdateWorkspaceNetworkOptionRpc() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateWorkspaceNetworkOptionRpcReq networking.UpdateWorkspaceNetworkOptionRequest
+	updateWorkspaceNetworkOptionRpcReq.WorkspaceNetworkOption = &networking.WorkspaceNetworkOption{}
 
-	var updateWorkspaceNetworkOptionRpcReq settings.UpdateWorkspaceNetworkOptionRequest
-	updateWorkspaceNetworkOptionRpcReq.WorkspaceNetworkOption = settings.WorkspaceNetworkOption{}
 	var updateWorkspaceNetworkOptionRpcJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateWorkspaceNetworkOptionRpcJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateWorkspaceNetworkOptionRpcReq.WorkspaceNetworkOption.NetworkPolicyId, "network-policy-id", updateWorkspaceNetworkOptionRpcReq.WorkspaceNetworkOption.NetworkPolicyId, `The network policy ID to apply to the workspace.`)
-	cmd.Flags().Int64Var(&updateWorkspaceNetworkOptionRpcReq.WorkspaceNetworkOption.WorkspaceId, "workspace-id", updateWorkspaceNetworkOptionRpcReq.WorkspaceNetworkOption.WorkspaceId, `The workspace ID.`)
+	flags.StringPtrVar(cmd.Flags(), &updateWorkspaceNetworkOptionRpcReq.WorkspaceNetworkOption.NetworkPolicyId, "network-policy-id", `The network policy ID to apply to the workspace.`)
+	flags.Int64PtrVar(cmd.Flags(), &updateWorkspaceNetworkOptionRpcReq.WorkspaceId, "workspace-id", `The workspace ID.`)
 
 	cmd.Use = "update-workspace-network-option-rpc WORKSPACE_ID"
 	cmd.Short = `Update workspace network option.`
@@ -157,6 +166,7 @@ func newUpdateWorkspaceNetworkOptionRpc() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := updateWorkspaceNetworkOptionRpcJson.Unmarshal(&updateWorkspaceNetworkOptionRpcReq.WorkspaceNetworkOption)
@@ -170,17 +180,27 @@ func newUpdateWorkspaceNetworkOptionRpc() *cobra.Command {
 				}
 			}
 		}
-		_, err = fmt.Sscan(args[0], &updateWorkspaceNetworkOptionRpcReq.WorkspaceId)
+		var updateWorkspaceNetworkOptionRpcWorkspaceIdArg int64
+		_, err = fmt.Sscan(args[0], &updateWorkspaceNetworkOptionRpcWorkspaceIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
+		updateWorkspaceNetworkOptionRpcReq.WorkspaceId = &updateWorkspaceNetworkOptionRpcWorkspaceIdArg
 
-		response, err := a.WorkspaceNetworkConfiguration.UpdateWorkspaceNetworkOptionRpc(ctx, updateWorkspaceNetworkOptionRpcReq)
+		sdkReq, err := networking.UpdateWorkspaceNetworkOptionRequestToSDK(&updateWorkspaceNetworkOptionRpcReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Networking.UpdateWorkspaceNetworkOptionRpc(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.WorkspaceNetworkOptionFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

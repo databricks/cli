@@ -5,17 +5,24 @@ package apps
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
+	"maps"
+
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	"github.com/databricks/databricks-sdk-go/experimental/api"
-	"github.com/databricks/databricks-sdk-go/service/apps"
+	"github.com/databricks/sdk-go/options/lro"
 	"github.com/spf13/cobra"
+
+	accessmanagement "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
+	apps "github.com/databricks/cli/libs/sdktypes/apps/v1"
+	sdkaccessmanagement "github.com/databricks/sdk-go/accessmanagement/v1"
+	sdkapps "github.com/databricks/sdk-go/apps/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -82,9 +89,9 @@ var createOverrides []func(
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createReq apps.CreateAppRequest
-	createReq.App = apps.App{}
+	createReq.App = &apps.App{}
+
 	var createJson flags.JsonFlag
 
 	var createSkipWait bool
@@ -95,26 +102,26 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createReq.NoCompute, "no-compute", createReq.NoCompute, `If true, the app will not be started after creation.`)
+	flags.BoolPtrVar(cmd.Flags(), &createReq.NoCompute, "no-compute", `If true, the app will not be started after creation.`)
 	// TODO: complex arg: active_deployment
 	// TODO: complex arg: app_status
-	cmd.Flags().StringVar(&createReq.App.BudgetPolicyId, "budget-policy-id", createReq.App.BudgetPolicyId, ``)
-	cmd.Flags().IntVar(&createReq.App.ComputeMaxInstances, "compute-max-instances", createReq.App.ComputeMaxInstances, `Maximum number of app instances the app is configured to run.`)
-	cmd.Flags().IntVar(&createReq.App.ComputeMinInstances, "compute-min-instances", createReq.App.ComputeMinInstances, `Minimum number of app instances the app is configured to run.`)
-	cmd.Flags().Var(&createReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, MEDIUM, XLARGE]`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.App.BudgetPolicyId, "budget-policy-id", ``)
+	flags.IntPtrVar(cmd.Flags(), &createReq.App.ComputeMaxInstances, "compute-max-instances", `Maximum number of app instances the app is configured to run.`)
+	flags.IntPtrVar(cmd.Flags(), &createReq.App.ComputeMinInstances, "compute-min-instances", `Minimum number of app instances the app is configured to run.`)
+	flags.EnumVar(cmd.Flags(), &createReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, MEDIUM, XLARGE]`, "ComputeSize", "LARGE", "MEDIUM", "XLARGE")
 	// TODO: complex arg: compute_status
 	// TODO: complex arg: default_git_source
-	cmd.Flags().StringVar(&createReq.App.Description, "description", createReq.App.Description, `The description of the app.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.App.Description, "description", `The description of the app.`)
 	// TODO: array: effective_user_api_scopes
-	cmd.Flags().BoolVar(&createReq.App.ForwardUserAccessToken, "forward-user-access-token", createReq.App.ForwardUserAccessToken, `Forward the user's access token to the app.`)
+	flags.BoolPtrVar(cmd.Flags(), &createReq.App.ForwardUserAccessToken, "forward-user-access-token", `Forward the user's access token to the app.`)
 	// TODO: complex arg: git_repository
 	// TODO: complex arg: git_source
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
-	cmd.Flags().StringVar(&createReq.App.SourceCodePath, "source-code-path", createReq.App.SourceCodePath, ``)
-	cmd.Flags().StringVar(&createReq.App.Space, "space", createReq.App.Space, `Name of the space this app belongs to.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.App.SourceCodePath, "source-code-path", ``)
+	flags.StringPtrVar(cmd.Flags(), &createReq.App.Space, "space", `Name of the space this app belongs to.`)
 	// TODO: array: telemetry_export_destinations
-	cmd.Flags().StringVar(&createReq.App.UsagePolicyId, "usage-policy-id", createReq.App.UsagePolicyId, ``)
+	flags.StringPtrVar(cmd.Flags(), &createReq.App.UsagePolicyId, "usage-policy-id", ``)
 	// TODO: array: user_api_scopes
 
 	cmd.Use = "create NAME"
@@ -147,6 +154,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq.App)
@@ -161,33 +169,33 @@ func newCreate() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createReq.App.Name = args[0]
+			createReq.App.Name = new(args[0])
 		}
 
-		wait, err := w.Apps.Create(ctx, createReq)
+		sdkReq, err := apps.CreateAppRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		wait, err := w.Apps.CreateApp(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 		if createSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			return cmdio.Render(ctx, map[string]any{"name": wait.GetName()})
 		}
 		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *apps.App) {
-			if i.ComputeStatus == nil {
-				return
-			}
-			status := i.ComputeStatus.State
-			statusMessage := fmt.Sprintf("current status: %s", status)
-			if i.ComputeStatus != nil {
-				statusMessage = i.ComputeStatus.Message
-			}
-			sp.Update(statusMessage)
-		}).GetWithTimeout(createTimeout)
+		sp.Update("Waiting for create to complete...")
+		response, err := wait.Wait(ctx, lro.WithTimeout(createTimeout))
 		sp.Close()
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+
+		out, err := apps.AppFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -213,9 +221,9 @@ var createSpaceOverrides []func(
 
 func newCreateSpace() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createSpaceReq apps.CreateSpaceRequest
-	createSpaceReq.Space = apps.Space{}
+	createSpaceReq.Space = &apps.Space{}
+
 	var createSpaceJson flags.JsonFlag
 
 	var createSpaceSkipWait bool
@@ -226,12 +234,12 @@ func newCreateSpace() *cobra.Command {
 
 	cmd.Flags().Var(&createSpaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createSpaceReq.Space.AssumeGroupId, "assume-group-id", createSpaceReq.Space.AssumeGroupId, `The group whose permissions users assume via Role Authorization for apps in this space.`)
-	cmd.Flags().StringVar(&createSpaceReq.Space.Description, "description", createSpaceReq.Space.Description, `The description of the app space.`)
+	flags.StringPtrVar(cmd.Flags(), &createSpaceReq.Space.AssumeGroupId, "assume-group-id", `The group whose permissions users assume via Role Authorization for apps in this space.`)
+	flags.StringPtrVar(cmd.Flags(), &createSpaceReq.Space.Description, "description", `The description of the app space.`)
 	// TODO: array: effective_user_api_scopes
 	// TODO: array: resources
 	// TODO: complex arg: status
-	cmd.Flags().StringVar(&createSpaceReq.Space.UsagePolicyId, "usage-policy-id", createSpaceReq.Space.UsagePolicyId, `The usage policy ID for managing cost at the space level.`)
+	flags.StringPtrVar(cmd.Flags(), &createSpaceReq.Space.UsagePolicyId, "usage-policy-id", `The usage policy ID for managing cost at the space level.`)
 	// TODO: array: user_api_scopes
 
 	cmd.Use = "create-space NAME"
@@ -273,6 +281,7 @@ func newCreateSpace() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createSpaceJson.Unmarshal(&createSpaceReq.Space)
@@ -287,28 +296,26 @@ func newCreateSpace() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createSpaceReq.Space.Name = args[0]
+			createSpaceReq.Space.Name = new(args[0])
 		}
 
+		sdkReq, err := apps.CreateSpaceRequestToSDK(&createSpaceReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case createSpaceSkipWait:
-			wait, err := w.Apps.CreateSpace(ctx, createSpaceReq)
+			wait, err := w.Apps.CreateSpace(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Apps.GetSpaceOperation(ctx, apps.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Apps.CreateSpace(ctx, createSpaceReq)
+			wait, err := w.Apps.CreateSpace(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -318,13 +325,17 @@ func newCreateSpace() *cobra.Command {
 			sp.Update("Waiting for create-space to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(createSpaceTimeout)
-			response, err := wait.Wait(ctx, opts)
+			response, err := wait.Wait(ctx, lro.WithTimeout(createSpaceTimeout))
 			if err != nil {
 				return err
 			}
 			sp.Close()
-			return cmdio.Render(ctx, response)
+
+			out, err := apps.SpaceFromSDK(response)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 	}
 
@@ -351,8 +362,8 @@ var createUpdateOverrides []func(
 
 func newCreateUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createUpdateReq apps.AsyncUpdateAppRequest
+
 	var createUpdateJson flags.JsonFlag
 
 	var createUpdateSkipWait bool
@@ -407,6 +418,7 @@ func newCreateUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createUpdateJson.Unmarshal(&createUpdateReq)
@@ -420,35 +432,35 @@ func newCreateUpdate() *cobra.Command {
 				}
 			}
 		}
-		createUpdateReq.AppName = args[0]
+		createUpdateReq.AppName = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			createUpdateReq.UpdateMask = args[1]
+			createUpdateReq.UpdateMask = new(args[1])
 		}
 
-		wait, err := w.Apps.CreateUpdate(ctx, createUpdateReq)
+		sdkReq, err := apps.AsyncUpdateAppRequestToSDK(&createUpdateReq)
+		if err != nil {
+			return err
+		}
+		wait, err := w.Apps.AsyncUpdateApp(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 		if createUpdateSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			return cmdio.Render(ctx, map[string]any{"app_name": wait.GetAppName()})
 		}
 		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *apps.AppUpdate) {
-			if i.Status == nil {
-				return
-			}
-			status := i.Status.State
-			statusMessage := fmt.Sprintf("current status: %s", status)
-			if i.Status != nil {
-				statusMessage = i.Status.Message
-			}
-			sp.Update(statusMessage)
-		}).GetWithTimeout(createUpdateTimeout)
+		sp.Update("Waiting for create-update to complete...")
+		response, err := wait.Wait(ctx, lro.WithTimeout(createUpdateTimeout))
 		sp.Close()
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+
+		out, err := apps.AppUpdateFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -469,13 +481,12 @@ func newCreateUpdate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*apps.DeleteAppRequest,
+	*sdkapps.DeleteAppRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq apps.DeleteAppRequest
+	var deleteReq sdkapps.DeleteAppRequest
 
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete an app.`
@@ -499,15 +510,21 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteReq.Name = args[0]
+		deleteReq.Name = new(args[0])
 
-		response, err := w.Apps.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := w.Apps.DeleteApp(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := apps.AppFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -528,13 +545,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteAppThumbnailOverrides []func(
 	*cobra.Command,
-	*apps.DeleteAppThumbnailRequest,
+	*sdkapps.DeleteAppThumbnailRequest,
 )
 
 func newDeleteAppThumbnail() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteAppThumbnailReq apps.DeleteAppThumbnailRequest
+	var deleteAppThumbnailReq sdkapps.DeleteAppThumbnailRequest
 
 	cmd.Use = "delete-app-thumbnail NAME"
 	cmd.Short = `Delete an app thumbnail.`
@@ -558,10 +574,12 @@ func newDeleteAppThumbnail() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteAppThumbnailReq.Name = args[0]
+		deleteAppThumbnailReq.Name = new(args[0])
 
-		err = w.Apps.DeleteAppThumbnail(ctx, deleteAppThumbnailReq)
+		sdkReq := &deleteAppThumbnailReq
+		err = w.Apps.DeleteAppThumbnail(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -586,13 +604,12 @@ func newDeleteAppThumbnail() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteSpaceOverrides []func(
 	*cobra.Command,
-	*apps.DeleteSpaceRequest,
+	*sdkapps.DeleteSpaceRequest,
 )
 
 func newDeleteSpace() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteSpaceReq apps.DeleteSpaceRequest
+	var deleteSpaceReq sdkapps.DeleteSpaceRequest
 
 	var deleteSpaceSkipWait bool
 	var deleteSpaceTimeout time.Duration
@@ -630,28 +647,24 @@ func newDeleteSpace() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteSpaceReq.Name = args[0]
+		deleteSpaceReq.Name = new(args[0])
 
+		sdkReq := &deleteSpaceReq
 		// Determine which mode to execute based on flags.
 		switch {
 		case deleteSpaceSkipWait:
-			wait, err := w.Apps.DeleteSpace(ctx, deleteSpaceReq)
+			wait, err := w.Apps.DeleteSpace(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Apps.GetSpaceOperation(ctx, apps.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Apps.DeleteSpace(ctx, deleteSpaceReq)
+			wait, err := w.Apps.DeleteSpace(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -661,13 +674,14 @@ func newDeleteSpace() *cobra.Command {
 			sp.Update("Waiting for delete-space to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(deleteSpaceTimeout)
-
-			err = wait.Wait(ctx, opts)
+			response := struct{}{}
+			err = wait.Wait(ctx, lro.WithTimeout(deleteSpaceTimeout))
 			if err != nil {
 				return err
 			}
 			sp.Close()
+
+			_ = response
 			return nil
 		}
 	}
@@ -695,9 +709,9 @@ var deployOverrides []func(
 
 func newDeploy() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var deployReq apps.CreateAppDeploymentRequest
-	deployReq.AppDeployment = apps.AppDeployment{}
+	deployReq.AppDeployment = &apps.AppDeployment{}
+
 	var deployJson flags.JsonFlag
 
 	var deploySkipWait bool
@@ -710,12 +724,12 @@ func newDeploy() *cobra.Command {
 
 	// TODO: array: command
 	// TODO: complex arg: deployment_artifacts
-	cmd.Flags().StringVar(&deployReq.AppDeployment.DeploymentId, "deployment-id", deployReq.AppDeployment.DeploymentId, `The unique id of the deployment.`)
+	flags.StringPtrVar(cmd.Flags(), &deployReq.AppDeployment.DeploymentId, "deployment-id", `The unique id of the deployment.`)
 	// TODO: array: env_vars
 	// TODO: complex arg: git_source
 	// TODO: complex arg: health_check
-	cmd.Flags().Var(&deployReq.AppDeployment.Mode, "mode", `The mode of which the deployment will manage the source code. Supported values: [AUTO_SYNC, SNAPSHOT]`)
-	cmd.Flags().StringVar(&deployReq.AppDeployment.SourceCodePath, "source-code-path", deployReq.AppDeployment.SourceCodePath, `The workspace file system path of the source code used to create the app deployment.`)
+	flags.EnumVar(cmd.Flags(), &deployReq.AppDeployment.Mode, "mode", `The mode of which the deployment will manage the source code. Supported values: [AUTO_SYNC, SNAPSHOT]`, "AppDeploymentMode", "AUTO_SYNC", "SNAPSHOT")
+	flags.StringPtrVar(cmd.Flags(), &deployReq.AppDeployment.SourceCodePath, "source-code-path", `The workspace file system path of the source code used to create the app deployment.`)
 	// TODO: complex arg: status
 
 	cmd.Use = "deploy APP_NAME"
@@ -740,6 +754,7 @@ func newDeploy() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := deployJson.Unmarshal(&deployReq.AppDeployment)
@@ -753,32 +768,32 @@ func newDeploy() *cobra.Command {
 				}
 			}
 		}
-		deployReq.AppName = args[0]
+		deployReq.AppName = new(args[0])
 
-		wait, err := w.Apps.Deploy(ctx, deployReq)
+		sdkReq, err := apps.CreateAppDeploymentRequestToSDK(&deployReq)
+		if err != nil {
+			return err
+		}
+		wait, err := w.Apps.CreateAppDeployment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 		if deploySkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			return cmdio.Render(ctx, map[string]any{"deployment_id": wait.GetDeploymentId()})
 		}
 		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *apps.AppDeployment) {
-			if i.Status == nil {
-				return
-			}
-			status := i.Status.State
-			statusMessage := fmt.Sprintf("current status: %s", status)
-			if i.Status != nil {
-				statusMessage = i.Status.Message
-			}
-			sp.Update(statusMessage)
-		}).GetWithTimeout(deployTimeout)
+		sp.Update("Waiting for deploy to complete...")
+		response, err := wait.Wait(ctx, lro.WithTimeout(deployTimeout))
 		sp.Close()
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+
+		out, err := apps.AppDeploymentFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -799,13 +814,12 @@ func newDeploy() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*apps.GetAppRequest,
+	*sdkapps.GetAppRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq apps.GetAppRequest
+	var getReq sdkapps.GetAppRequest
 
 	cmd.Use = "get NAME"
 	cmd.Short = `Get an app.`
@@ -829,15 +843,21 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getReq.Name = args[0]
+		getReq.Name = new(args[0])
 
-		response, err := w.Apps.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.Apps.GetApp(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := apps.AppFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -858,13 +878,12 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getDeploymentOverrides []func(
 	*cobra.Command,
-	*apps.GetAppDeploymentRequest,
+	*sdkapps.GetAppDeploymentRequest,
 )
 
 func newGetDeployment() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getDeploymentReq apps.GetAppDeploymentRequest
+	var getDeploymentReq sdkapps.GetAppDeploymentRequest
 
 	cmd.Use = "get-deployment APP_NAME DEPLOYMENT_ID"
 	cmd.Short = `Get an app deployment.`
@@ -890,16 +909,22 @@ func newGetDeployment() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getDeploymentReq.AppName = args[0]
-		getDeploymentReq.DeploymentId = args[1]
+		getDeploymentReq.AppName = new(args[0])
+		getDeploymentReq.DeploymentId = new(args[1])
 
-		response, err := w.Apps.GetDeployment(ctx, getDeploymentReq)
+		sdkReq := &getDeploymentReq
+		response, err := w.Apps.GetAppDeployment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := apps.AppDeploymentFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -920,13 +945,12 @@ func newGetDeployment() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPermissionLevelsOverrides []func(
 	*cobra.Command,
-	*apps.GetAppPermissionLevelsRequest,
+	*sdkaccessmanagement.ListPermissionLevelsRequest,
 )
 
 func newGetPermissionLevels() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPermissionLevelsReq apps.GetAppPermissionLevelsRequest
+	var getPermissionLevelsReq sdkaccessmanagement.ListPermissionLevelsRequest
 
 	cmd.Use = "get-permission-levels APP_NAME"
 	cmd.Short = `Get app permission levels.`
@@ -950,15 +974,23 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getPermissionLevelsReq.AppName = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: app_name
 
-		response, err := w.Apps.GetPermissionLevels(ctx, getPermissionLevelsReq)
+		getPermissionLevelsReq.RequestObjectType = new("apps")
+
+		sdkReq := &getPermissionLevelsReq
+		response, err := w.AccessManagement.ListPermissionLevels(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.ListPermissionLevelsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -979,13 +1011,12 @@ func newGetPermissionLevels() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPermissionsOverrides []func(
 	*cobra.Command,
-	*apps.GetAppPermissionsRequest,
+	*sdkaccessmanagement.GetObjectPermissionsRequest,
 )
 
 func newGetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPermissionsReq apps.GetAppPermissionsRequest
+	var getPermissionsReq sdkaccessmanagement.GetObjectPermissionsRequest
 
 	cmd.Use = "get-permissions APP_NAME"
 	cmd.Short = `Get app permissions.`
@@ -1010,15 +1041,23 @@ func newGetPermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getPermissionsReq.AppName = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: app_name
 
-		response, err := w.Apps.GetPermissions(ctx, getPermissionsReq)
+		getPermissionsReq.RequestObjectType = new("apps")
+
+		sdkReq := &getPermissionsReq
+		response, err := w.AccessManagement.GetObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1039,13 +1078,12 @@ func newGetPermissions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getSpaceOverrides []func(
 	*cobra.Command,
-	*apps.GetSpaceRequest,
+	*sdkapps.GetSpaceRequest,
 )
 
 func newGetSpace() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getSpaceReq apps.GetSpaceRequest
+	var getSpaceReq sdkapps.GetSpaceRequest
 
 	cmd.Use = "get-space NAME"
 	cmd.Short = `Get an app space.`
@@ -1072,15 +1110,21 @@ func newGetSpace() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getSpaceReq.Name = args[0]
+		getSpaceReq.Name = new(args[0])
 
-		response, err := w.Apps.GetSpace(ctx, getSpaceReq)
+		sdkReq := &getSpaceReq
+		response, err := w.Apps.GetSpace(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := apps.SpaceFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1101,13 +1145,14 @@ func newGetSpace() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getSpaceOperationOverrides []func(
 	*cobra.Command,
-	*apps.GetOperationRequest,
+	*map[string]any,
 )
 
 func newGetSpaceOperation() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getSpaceOperationReq apps.GetOperationRequest
+	var getSpaceOperationReq map[string]any
+	getSpaceOperationReq = map[string]any{}
+	var getSpaceOperationNameRaw string
 
 	cmd.Use = "get-space-operation NAME"
 	cmd.Short = `Get the status of an app space operation.`
@@ -1134,14 +1179,23 @@ func newGetSpaceOperation() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getSpaceOperationReq.Name = args[0]
+		getSpaceOperationNameRaw = args[0]
 
-		response, err := w.Apps.GetSpaceOperation(ctx, getSpaceOperationReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/app-spaces/%s/operation", fmt.Sprint(getSpaceOperationNameRaw))
+
+		maps.Copy(rawQuery, getSpaceOperationReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1163,13 +1217,12 @@ func newGetSpaceOperation() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getUpdateOverrides []func(
 	*cobra.Command,
-	*apps.GetAppUpdateRequest,
+	*sdkapps.GetAppUpdateRequest,
 )
 
 func newGetUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getUpdateReq apps.GetAppUpdateRequest
+	var getUpdateReq sdkapps.GetAppUpdateRequest
 
 	cmd.Use = "get-update APP_NAME"
 	cmd.Short = `Get an app update.`
@@ -1193,15 +1246,21 @@ func newGetUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getUpdateReq.AppName = args[0]
+		getUpdateReq.AppName = new(args[0])
 
-		response, err := w.Apps.GetUpdate(ctx, getUpdateReq)
+		sdkReq := &getUpdateReq
+		response, err := w.Apps.GetAppUpdate(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := apps.AppUpdateFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1227,21 +1286,21 @@ var listOverrides []func(
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listReq apps.ListAppsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Upper bound for items returned.`)
-	cmd.Flags().StringVar(&listReq.Space, "space", listReq.Space, `Filter apps by app space name.`)
+	flags.IntPtrVar(cmd.Flags(), &listReq.PageSize, "page-size", `Upper bound for items returned.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.Space, "space", `Filter apps by app space name.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
@@ -1263,16 +1322,20 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.Apps.List(ctx, listReq)
+		sdkReq, err := apps.ListAppsRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Apps.ListAppsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, apps.AppFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1298,20 +1361,20 @@ var listDeploymentsOverrides []func(
 
 func newListDeployments() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listDeploymentsReq apps.ListAppDeploymentsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listDeploymentsLimit int
 
-	cmd.Flags().IntVar(&listDeploymentsReq.PageSize, "page-size", listDeploymentsReq.PageSize, `Upper bound for items returned.`)
+	flags.IntPtrVar(cmd.Flags(), &listDeploymentsReq.PageSize, "page-size", `Upper bound for items returned.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listDeploymentsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listDeploymentsReq.PageToken, "page-token", listDeploymentsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listDeploymentsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-deployments APP_NAME"
@@ -1336,18 +1399,22 @@ func newListDeployments() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listDeploymentsReq.AppName = args[0]
+		listDeploymentsReq.AppName = new(args[0])
 
-		response := w.Apps.ListDeployments(ctx, listDeploymentsReq)
+		sdkReq, err := apps.ListAppDeploymentsRequestToSDK(&listDeploymentsReq)
+		if err != nil {
+			return err
+		}
 		if listDeploymentsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listDeploymentsLimit)
 		}
 		if listDeploymentsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listDeploymentsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Apps.ListAppDeploymentsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, apps.AppDeploymentFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1373,20 +1440,20 @@ var listSpacesOverrides []func(
 
 func newListSpaces() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listSpacesReq apps.ListSpacesRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listSpacesLimit int
 
-	cmd.Flags().IntVar(&listSpacesReq.PageSize, "page-size", listSpacesReq.PageSize, `Upper bound for items returned.`)
+	flags.IntPtrVar(cmd.Flags(), &listSpacesReq.PageSize, "page-size", `Upper bound for items returned.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listSpacesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listSpacesReq.PageToken, "page-token", listSpacesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listSpacesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-spaces"
@@ -1411,16 +1478,20 @@ func newListSpaces() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.Apps.ListSpaces(ctx, listSpacesReq)
+		sdkReq, err := apps.ListSpacesRequestToSDK(&listSpacesReq)
+		if err != nil {
+			return err
+		}
 		if listSpacesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listSpacesLimit)
 		}
 		if listSpacesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listSpacesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Apps.ListSpacesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, apps.SpaceFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1441,13 +1512,13 @@ func newListSpaces() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var setPermissionsOverrides []func(
 	*cobra.Command,
-	*apps.AppPermissionsRequest,
+	*accessmanagement.SetObjectPermissionsRequest,
 )
 
 func newSetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var setPermissionsReq accessmanagement.SetObjectPermissionsRequest
 
-	var setPermissionsReq apps.AppPermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1478,6 +1549,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
@@ -1491,14 +1563,24 @@ func newSetPermissions() *cobra.Command {
 				}
 			}
 		}
-		setPermissionsReq.AppName = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: app_name
 
-		response, err := w.Apps.SetPermissions(ctx, setPermissionsReq)
+		setPermissionsReq.RequestObjectType = new("apps")
+
+		sdkReq, err := accessmanagement.SetObjectPermissionsRequestToSDK(&setPermissionsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AccessManagement.SetObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1524,7 +1606,6 @@ var startOverrides []func(
 
 func newStart() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var startReq apps.StartAppRequest
 
 	var startSkipWait bool
@@ -1555,33 +1636,34 @@ func newStart() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		startReq.Name = args[0]
+		startReq.Name = new(args[0])
 
-		wait, err := w.Apps.Start(ctx, startReq)
+		sdkReq, err := apps.StartAppRequestToSDK(&startReq)
+		if err != nil {
+			return err
+		}
+		wait, err := w.Apps.StartApp(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 		if startSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			return cmdio.Render(ctx, map[string]any{"name": wait.GetName()})
 		}
 		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *apps.App) {
-			if i.ComputeStatus == nil {
-				return
-			}
-			status := i.ComputeStatus.State
-			statusMessage := fmt.Sprintf("current status: %s", status)
-			if i.ComputeStatus != nil {
-				statusMessage = i.ComputeStatus.Message
-			}
-			sp.Update(statusMessage)
-		}).GetWithTimeout(startTimeout)
+		sp.Update("Waiting for start to complete...")
+		response, err := wait.Wait(ctx, lro.WithTimeout(startTimeout))
 		sp.Close()
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+
+		out, err := apps.AppFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1607,7 +1689,6 @@ var stopOverrides []func(
 
 func newStop() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var stopReq apps.StopAppRequest
 
 	var stopSkipWait bool
@@ -1638,33 +1719,34 @@ func newStop() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		stopReq.Name = args[0]
+		stopReq.Name = new(args[0])
 
-		wait, err := w.Apps.Stop(ctx, stopReq)
+		sdkReq, err := apps.StopAppRequestToSDK(&stopReq)
+		if err != nil {
+			return err
+		}
+		wait, err := w.Apps.StopApp(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 		if stopSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			return cmdio.Render(ctx, map[string]any{"name": wait.GetName()})
 		}
 		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *apps.App) {
-			if i.ComputeStatus == nil {
-				return
-			}
-			status := i.ComputeStatus.State
-			statusMessage := fmt.Sprintf("current status: %s", status)
-			if i.ComputeStatus != nil {
-				statusMessage = i.ComputeStatus.Message
-			}
-			sp.Update(statusMessage)
-		}).GetWithTimeout(stopTimeout)
+		sp.Update("Waiting for stop to complete...")
+		response, err := wait.Wait(ctx, lro.WithTimeout(stopTimeout))
 		sp.Close()
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+
+		out, err := apps.AppFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1690,32 +1772,32 @@ var updateOverrides []func(
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateReq apps.UpdateAppRequest
-	updateReq.App = apps.App{}
+	updateReq.App = &apps.App{}
+
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: active_deployment
 	// TODO: complex arg: app_status
-	cmd.Flags().StringVar(&updateReq.App.BudgetPolicyId, "budget-policy-id", updateReq.App.BudgetPolicyId, ``)
-	cmd.Flags().IntVar(&updateReq.App.ComputeMaxInstances, "compute-max-instances", updateReq.App.ComputeMaxInstances, `Maximum number of app instances the app is configured to run.`)
-	cmd.Flags().IntVar(&updateReq.App.ComputeMinInstances, "compute-min-instances", updateReq.App.ComputeMinInstances, `Minimum number of app instances the app is configured to run.`)
-	cmd.Flags().Var(&updateReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, MEDIUM, XLARGE]`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.App.BudgetPolicyId, "budget-policy-id", ``)
+	flags.IntPtrVar(cmd.Flags(), &updateReq.App.ComputeMaxInstances, "compute-max-instances", `Maximum number of app instances the app is configured to run.`)
+	flags.IntPtrVar(cmd.Flags(), &updateReq.App.ComputeMinInstances, "compute-min-instances", `Minimum number of app instances the app is configured to run.`)
+	flags.EnumVar(cmd.Flags(), &updateReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, MEDIUM, XLARGE]`, "ComputeSize", "LARGE", "MEDIUM", "XLARGE")
 	// TODO: complex arg: compute_status
 	// TODO: complex arg: default_git_source
-	cmd.Flags().StringVar(&updateReq.App.Description, "description", updateReq.App.Description, `The description of the app.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.App.Description, "description", `The description of the app.`)
 	// TODO: array: effective_user_api_scopes
-	cmd.Flags().BoolVar(&updateReq.App.ForwardUserAccessToken, "forward-user-access-token", updateReq.App.ForwardUserAccessToken, `Forward the user's access token to the app.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateReq.App.ForwardUserAccessToken, "forward-user-access-token", `Forward the user's access token to the app.`)
 	// TODO: complex arg: git_repository
 	// TODO: complex arg: git_source
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
-	cmd.Flags().StringVar(&updateReq.App.SourceCodePath, "source-code-path", updateReq.App.SourceCodePath, ``)
-	cmd.Flags().StringVar(&updateReq.App.Space, "space", updateReq.App.Space, `Name of the space this app belongs to.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.App.SourceCodePath, "source-code-path", ``)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.App.Space, "space", `Name of the space this app belongs to.`)
 	// TODO: array: telemetry_export_destinations
-	cmd.Flags().StringVar(&updateReq.App.UsagePolicyId, "usage-policy-id", updateReq.App.UsagePolicyId, ``)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.App.UsagePolicyId, "usage-policy-id", ``)
 	// TODO: array: user_api_scopes
 
 	cmd.Use = "update NAME"
@@ -1742,6 +1824,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq.App)
@@ -1755,14 +1838,22 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.Name = args[0]
+		updateReq.App.Name = new(args[0])
 
-		response, err := w.Apps.Update(ctx, updateReq)
+		sdkReq, err := apps.UpdateAppRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Apps.UpdateApp(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := apps.AppFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1788,8 +1879,8 @@ var updateAppThumbnailOverrides []func(
 
 func newUpdateAppThumbnail() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateAppThumbnailReq apps.UpdateAppThumbnailRequest
+
 	var updateAppThumbnailJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateAppThumbnailJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1818,6 +1909,7 @@ func newUpdateAppThumbnail() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateAppThumbnailJson.Unmarshal(&updateAppThumbnailReq)
@@ -1831,14 +1923,22 @@ func newUpdateAppThumbnail() *cobra.Command {
 				}
 			}
 		}
-		updateAppThumbnailReq.Name = args[0]
+		updateAppThumbnailReq.Name = new(args[0])
 
-		response, err := w.Apps.UpdateAppThumbnail(ctx, updateAppThumbnailReq)
+		sdkReq, err := apps.UpdateAppThumbnailRequestToSDK(&updateAppThumbnailReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Apps.UpdateAppThumbnail(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := apps.AppThumbnailFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1859,13 +1959,13 @@ func newUpdateAppThumbnail() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updatePermissionsOverrides []func(
 	*cobra.Command,
-	*apps.AppPermissionsRequest,
+	*accessmanagement.UpdateObjectPermissionsRequest,
 )
 
 func newUpdatePermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updatePermissionsReq accessmanagement.UpdateObjectPermissionsRequest
 
-	var updatePermissionsReq apps.AppPermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1895,6 +1995,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)
@@ -1908,14 +2009,24 @@ func newUpdatePermissions() *cobra.Command {
 				}
 			}
 		}
-		updatePermissionsReq.AppName = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: app_name
 
-		response, err := w.Apps.UpdatePermissions(ctx, updatePermissionsReq)
+		updatePermissionsReq.RequestObjectType = new("apps")
+
+		sdkReq, err := accessmanagement.UpdateObjectPermissionsRequestToSDK(&updatePermissionsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AccessManagement.UpdateObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1941,9 +2052,9 @@ var updateSpaceOverrides []func(
 
 func newUpdateSpace() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateSpaceReq apps.UpdateSpaceRequest
-	updateSpaceReq.Space = apps.Space{}
+	updateSpaceReq.Space = &apps.Space{}
+
 	var updateSpaceJson flags.JsonFlag
 
 	var updateSpaceSkipWait bool
@@ -1954,12 +2065,12 @@ func newUpdateSpace() *cobra.Command {
 
 	cmd.Flags().Var(&updateSpaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateSpaceReq.Space.AssumeGroupId, "assume-group-id", updateSpaceReq.Space.AssumeGroupId, `The group whose permissions users assume via Role Authorization for apps in this space.`)
-	cmd.Flags().StringVar(&updateSpaceReq.Space.Description, "description", updateSpaceReq.Space.Description, `The description of the app space.`)
+	flags.StringPtrVar(cmd.Flags(), &updateSpaceReq.Space.AssumeGroupId, "assume-group-id", `The group whose permissions users assume via Role Authorization for apps in this space.`)
+	flags.StringPtrVar(cmd.Flags(), &updateSpaceReq.Space.Description, "description", `The description of the app space.`)
 	// TODO: array: effective_user_api_scopes
 	// TODO: array: resources
 	// TODO: complex arg: status
-	cmd.Flags().StringVar(&updateSpaceReq.Space.UsagePolicyId, "usage-policy-id", updateSpaceReq.Space.UsagePolicyId, `The usage policy ID for managing cost at the space level.`)
+	flags.StringPtrVar(cmd.Flags(), &updateSpaceReq.Space.UsagePolicyId, "usage-policy-id", `The usage policy ID for managing cost at the space level.`)
 	// TODO: array: user_api_scopes
 
 	cmd.Use = "update-space NAME UPDATE_MASK"
@@ -2006,6 +2117,7 @@ func newUpdateSpace() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateSpaceJson.Unmarshal(&updateSpaceReq.Space)
@@ -2019,31 +2131,28 @@ func newUpdateSpace() *cobra.Command {
 				}
 			}
 		}
-		updateSpaceReq.Name = args[0]
+		updateSpaceReq.Space.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateSpaceReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateSpaceReq.UpdateMask = new(args[1])
 		}
 
+		sdkReq, err := apps.UpdateSpaceRequestToSDK(&updateSpaceReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case updateSpaceSkipWait:
-			wait, err := w.Apps.UpdateSpace(ctx, updateSpaceReq)
+			wait, err := w.Apps.UpdateSpace(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Apps.GetSpaceOperation(ctx, apps.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Apps.UpdateSpace(ctx, updateSpaceReq)
+			wait, err := w.Apps.UpdateSpace(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -2053,13 +2162,17 @@ func newUpdateSpace() *cobra.Command {
 			sp.Update("Waiting for update-space to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(updateSpaceTimeout)
-			response, err := wait.Wait(ctx, opts)
+			response, err := wait.Wait(ctx, lro.WithTimeout(updateSpaceTimeout))
 			if err != nil {
 				return err
 			}
 			sp.Close()
-			return cmdio.Render(ctx, response)
+
+			out, err := apps.SpaceFromSDK(response)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 	}
 

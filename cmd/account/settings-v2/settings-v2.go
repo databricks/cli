@@ -7,10 +7,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/settingsv2"
 	"github.com/spf13/cobra"
+
+	settings "github.com/databricks/cli/libs/sdktypes/settings/v2"
+	sdksettings "github.com/databricks/sdk-go/settings/v2"
 )
 
 // Slice with functions to override default command behavior.
@@ -52,13 +55,12 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPublicAccountSettingOverrides []func(
 	*cobra.Command,
-	*settingsv2.GetPublicAccountSettingRequest,
+	*sdksettings.GetPublicAccountSettingRequest,
 )
 
 func newGetPublicAccountSetting() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPublicAccountSettingReq settingsv2.GetPublicAccountSettingRequest
+	var getPublicAccountSettingReq sdksettings.GetPublicAccountSettingRequest
 
 	cmd.Use = "get-public-account-setting NAME"
 	cmd.Short = `Get an account setting.`
@@ -81,15 +83,21 @@ func newGetPublicAccountSetting() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		getPublicAccountSettingReq.Name = args[0]
+		getPublicAccountSettingReq.Name = new(args[0])
 
-		response, err := a.SettingsV2.GetPublicAccountSetting(ctx, getPublicAccountSettingReq)
+		sdkReq := &getPublicAccountSettingReq
+		response, err := a.Settings.GetPublicAccountSetting(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := settings.SettingFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -110,13 +118,12 @@ func newGetPublicAccountSetting() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPublicAccountUserPreferenceOverrides []func(
 	*cobra.Command,
-	*settingsv2.GetPublicAccountUserPreferenceRequest,
+	*sdksettings.GetPublicAccountUserPreferenceRequest,
 )
 
 func newGetPublicAccountUserPreference() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPublicAccountUserPreferenceReq settingsv2.GetPublicAccountUserPreferenceRequest
+	var getPublicAccountUserPreferenceReq sdksettings.GetPublicAccountUserPreferenceRequest
 
 	cmd.Use = "get-public-account-user-preference USER_ID NAME"
 	cmd.Short = `*Beta* Get a user preference.`
@@ -146,16 +153,22 @@ Get a user preference.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		getPublicAccountUserPreferenceReq.UserId = args[0]
-		getPublicAccountUserPreferenceReq.Name = args[1]
+		getPublicAccountUserPreferenceReq.UserId = new(args[0])
+		getPublicAccountUserPreferenceReq.Name = new(args[1])
 
-		response, err := a.SettingsV2.GetPublicAccountUserPreference(ctx, getPublicAccountUserPreferenceReq)
+		sdkReq := &getPublicAccountUserPreferenceReq
+		response, err := a.Settings.GetPublicAccountUserPreference(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := settings.UserPreferenceFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -176,25 +189,25 @@ Get a user preference.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listAccountSettingsMetadataOverrides []func(
 	*cobra.Command,
-	*settingsv2.ListAccountSettingsMetadataRequest,
+	*settings.ListAccountSettingsMetadataRequest,
 )
 
 func newListAccountSettingsMetadata() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listAccountSettingsMetadataReq settings.ListAccountSettingsMetadataRequest
 
-	var listAccountSettingsMetadataReq settingsv2.ListAccountSettingsMetadataRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listAccountSettingsMetadataLimit int
 
-	cmd.Flags().IntVar(&listAccountSettingsMetadataReq.PageSize, "page-size", listAccountSettingsMetadataReq.PageSize, `The maximum number of settings to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listAccountSettingsMetadataReq.PageSize, "page-size", `The maximum number of settings to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listAccountSettingsMetadataLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listAccountSettingsMetadataReq.PageToken, "page-token", listAccountSettingsMetadataReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listAccountSettingsMetadataReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-account-settings-metadata"
@@ -218,16 +231,20 @@ func newListAccountSettingsMetadata() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		response := a.SettingsV2.ListAccountSettingsMetadata(ctx, listAccountSettingsMetadataReq)
+		sdkReq, err := settings.ListAccountSettingsMetadataRequestToSDK(&listAccountSettingsMetadataReq)
+		if err != nil {
+			return err
+		}
 		if listAccountSettingsMetadataLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listAccountSettingsMetadataLimit)
 		}
 		if listAccountSettingsMetadataLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listAccountSettingsMetadataLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := a.Settings.ListAccountSettingsMetadataIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, settings.SettingsMetadataFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -248,25 +265,25 @@ func newListAccountSettingsMetadata() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listAccountUserPreferencesMetadataOverrides []func(
 	*cobra.Command,
-	*settingsv2.ListAccountUserPreferencesMetadataRequest,
+	*settings.ListAccountUserPreferencesMetadataRequest,
 )
 
 func newListAccountUserPreferencesMetadata() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listAccountUserPreferencesMetadataReq settings.ListAccountUserPreferencesMetadataRequest
 
-	var listAccountUserPreferencesMetadataReq settingsv2.ListAccountUserPreferencesMetadataRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listAccountUserPreferencesMetadataLimit int
 
-	cmd.Flags().IntVar(&listAccountUserPreferencesMetadataReq.PageSize, "page-size", listAccountUserPreferencesMetadataReq.PageSize, `The maximum number of settings to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listAccountUserPreferencesMetadataReq.PageSize, "page-size", `The maximum number of settings to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listAccountUserPreferencesMetadataLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listAccountUserPreferencesMetadataReq.PageToken, "page-token", listAccountUserPreferencesMetadataReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listAccountUserPreferencesMetadataReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-account-user-preferences-metadata USER_ID"
@@ -297,18 +314,22 @@ List user preferences and their metadata.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		listAccountUserPreferencesMetadataReq.UserId = args[0]
+		listAccountUserPreferencesMetadataReq.UserId = new(args[0])
 
-		response := a.SettingsV2.ListAccountUserPreferencesMetadata(ctx, listAccountUserPreferencesMetadataReq)
+		sdkReq, err := settings.ListAccountUserPreferencesMetadataRequestToSDK(&listAccountUserPreferencesMetadataReq)
+		if err != nil {
+			return err
+		}
 		if listAccountUserPreferencesMetadataLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listAccountUserPreferencesMetadataLimit)
 		}
 		if listAccountUserPreferencesMetadataLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listAccountUserPreferencesMetadataLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := a.Settings.ListAccountUserPreferencesMetadataIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, settings.SettingsMetadataFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -329,14 +350,14 @@ List user preferences and their metadata.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var patchPublicAccountSettingOverrides []func(
 	*cobra.Command,
-	*settingsv2.PatchPublicAccountSettingRequest,
+	*settings.PatchPublicAccountSettingRequest,
 )
 
 func newPatchPublicAccountSetting() *cobra.Command {
 	cmd := &cobra.Command{}
+	var patchPublicAccountSettingReq settings.PatchPublicAccountSettingRequest
+	patchPublicAccountSettingReq.Setting = &settings.Setting{}
 
-	var patchPublicAccountSettingReq settingsv2.PatchPublicAccountSettingRequest
-	patchPublicAccountSettingReq.Setting = settingsv2.Setting{}
 	var patchPublicAccountSettingJson flags.JsonFlag
 
 	cmd.Flags().Var(&patchPublicAccountSettingJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -360,7 +381,7 @@ func newPatchPublicAccountSetting() *cobra.Command {
 	// TODO: complex arg: effective_string_val
 	// TODO: complex arg: effective_workspace_label
 	// TODO: complex arg: integer_val
-	cmd.Flags().StringVar(&patchPublicAccountSettingReq.Setting.Name, "name", patchPublicAccountSettingReq.Setting.Name, `Name of the setting.`)
+	flags.StringPtrVar(cmd.Flags(), &patchPublicAccountSettingReq.Name, "name", `Name of the setting.`)
 	// TODO: complex arg: operational_email_custom_recipient
 	// TODO: complex arg: personal_compute
 	// TODO: complex arg: restrict_workspace_admins
@@ -392,6 +413,7 @@ func newPatchPublicAccountSetting() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := patchPublicAccountSettingJson.Unmarshal(&patchPublicAccountSettingReq.Setting)
@@ -405,14 +427,22 @@ func newPatchPublicAccountSetting() *cobra.Command {
 				}
 			}
 		}
-		patchPublicAccountSettingReq.Name = args[0]
+		patchPublicAccountSettingReq.Name = new(args[0])
 
-		response, err := a.SettingsV2.PatchPublicAccountSetting(ctx, patchPublicAccountSettingReq)
+		sdkReq, err := settings.PatchPublicAccountSettingRequestToSDK(&patchPublicAccountSettingReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Settings.PatchPublicAccountSetting(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := settings.SettingFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -433,14 +463,14 @@ func newPatchPublicAccountSetting() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var patchPublicAccountUserPreferenceOverrides []func(
 	*cobra.Command,
-	*settingsv2.PatchPublicAccountUserPreferenceRequest,
+	*settings.PatchPublicAccountUserPreferenceRequest,
 )
 
 func newPatchPublicAccountUserPreference() *cobra.Command {
 	cmd := &cobra.Command{}
+	var patchPublicAccountUserPreferenceReq settings.PatchPublicAccountUserPreferenceRequest
+	patchPublicAccountUserPreferenceReq.Setting = &settings.UserPreference{}
 
-	var patchPublicAccountUserPreferenceReq settingsv2.PatchPublicAccountUserPreferenceRequest
-	patchPublicAccountUserPreferenceReq.Setting = settingsv2.UserPreference{}
 	var patchPublicAccountUserPreferenceJson flags.JsonFlag
 
 	cmd.Flags().Var(&patchPublicAccountUserPreferenceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -448,9 +478,9 @@ func newPatchPublicAccountUserPreference() *cobra.Command {
 	// TODO: complex arg: boolean_val
 	// TODO: complex arg: effective_boolean_val
 	// TODO: complex arg: effective_string_val
-	cmd.Flags().StringVar(&patchPublicAccountUserPreferenceReq.Setting.Name, "name", patchPublicAccountUserPreferenceReq.Setting.Name, `Name of the setting.`)
+	flags.StringPtrVar(cmd.Flags(), &patchPublicAccountUserPreferenceReq.Name, "name", `Name of the setting.`)
 	// TODO: complex arg: string_val
-	cmd.Flags().StringVar(&patchPublicAccountUserPreferenceReq.Setting.UserId, "user-id", patchPublicAccountUserPreferenceReq.Setting.UserId, `User ID of the user.`)
+	flags.StringPtrVar(cmd.Flags(), &patchPublicAccountUserPreferenceReq.UserId, "user-id", `User ID of the user.`)
 
 	cmd.Use = "patch-public-account-user-preference USER_ID NAME"
 	cmd.Short = `*Beta* Update a user preference.`
@@ -482,6 +512,7 @@ Update a user preference.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := patchPublicAccountUserPreferenceJson.Unmarshal(&patchPublicAccountUserPreferenceReq.Setting)
@@ -495,15 +526,23 @@ Update a user preference.
 				}
 			}
 		}
-		patchPublicAccountUserPreferenceReq.UserId = args[0]
-		patchPublicAccountUserPreferenceReq.Name = args[1]
+		patchPublicAccountUserPreferenceReq.UserId = new(args[0])
+		patchPublicAccountUserPreferenceReq.Name = new(args[1])
 
-		response, err := a.SettingsV2.PatchPublicAccountUserPreference(ctx, patchPublicAccountUserPreferenceReq)
+		sdkReq, err := settings.PatchPublicAccountUserPreferenceRequestToSDK(&patchPublicAccountUserPreferenceReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Settings.PatchPublicAccountUserPreference(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := settings.UserPreferenceFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

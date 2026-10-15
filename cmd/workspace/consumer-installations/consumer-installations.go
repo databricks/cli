@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/marketplace"
 	"github.com/spf13/cobra"
+
+	marketplaces "github.com/databricks/cli/libs/sdktypes/marketplaces/v1"
+	sdkmarketplaces "github.com/databricks/sdk-go/marketplaces/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -55,22 +58,22 @@ Installations are entities that allow consumers to interact with Databricks
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*marketplace.CreateInstallationRequest,
+	*marketplaces.CreateInstallationRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq marketplaces.CreateInstallationRequest
 
-	var createReq marketplace.CreateInstallationRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: accepted_consumer_terms
-	cmd.Flags().StringVar(&createReq.CatalogName, "catalog-name", createReq.CatalogName, ``)
-	cmd.Flags().Var(&createReq.RecipientType, "recipient-type", `Supported values: [DELTA_SHARING_RECIPIENT_TYPE_DATABRICKS, DELTA_SHARING_RECIPIENT_TYPE_OPEN]`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.CatalogName, "catalog-name", ``)
+	flags.EnumVar(cmd.Flags(), &createReq.RecipientType, "recipient-type", `Supported values: [DELTA_SHARING_RECIPIENT_TYPE_DATABRICKS, DELTA_SHARING_RECIPIENT_TYPE_OPEN]`, "DeltaSharingRecipientType", "DELTA_SHARING_RECIPIENT_TYPE_DATABRICKS", "DELTA_SHARING_RECIPIENT_TYPE_OPEN")
 	// TODO: complex arg: repo_detail
-	cmd.Flags().StringVar(&createReq.ShareName, "share-name", createReq.ShareName, ``)
+	flags.StringPtrVar(cmd.Flags(), &createReq.ShareName, "share-name", ``)
 
 	cmd.Use = "create LISTING_ID"
 	cmd.Short = `*Public Preview* Install from a listing.`
@@ -93,6 +96,7 @@ Install from a listing.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -106,14 +110,22 @@ Install from a listing.
 				}
 			}
 		}
-		createReq.ListingId = args[0]
+		createReq.ListingId = new(args[0])
 
-		response, err := w.ConsumerInstallations.Create(ctx, createReq)
+		sdkReq, err := marketplaces.CreateInstallationRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Marketplaces.InstallListing(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := marketplaces.CreateInstallationResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -134,13 +146,12 @@ Install from a listing.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*marketplace.DeleteInstallationRequest,
+	*sdkmarketplaces.DeleteInstallationRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq marketplace.DeleteInstallationRequest
+	var deleteReq sdkmarketplaces.DeleteInstallationRequest
 
 	cmd.Use = "delete LISTING_ID INSTALLATION_ID"
 	cmd.Short = `*Public Preview* Uninstall from a listing.`
@@ -163,14 +174,18 @@ Uninstall from a listing.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteReq.ListingId = args[0]
-		deleteReq.InstallationId = args[1]
+		deleteReq.ListingId = new(args[0])
+		deleteReq.InstallationId = new(args[1])
 
-		err = w.ConsumerInstallations.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := w.Marketplaces.UninstallListing(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -192,25 +207,25 @@ Uninstall from a listing.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*marketplace.ListAllInstallationsRequest,
+	*marketplaces.ListInstallationsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq marketplaces.ListInstallationsRequest
 
-	var listReq marketplace.ListAllInstallationsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	flags.IntPtrVar(cmd.Flags(), &listReq.PageSize, "page-size", ``)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
@@ -234,16 +249,20 @@ List all installations.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.ConsumerInstallations.List(ctx, listReq)
+		sdkReq, err := marketplaces.ListInstallationsRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Marketplaces.ListInstallationsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, marketplaces.InstallationDetailFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -264,25 +283,25 @@ List all installations.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listListingInstallationsOverrides []func(
 	*cobra.Command,
-	*marketplace.ListInstallationsRequest,
+	*marketplaces.GetInstallationDetailsRequest,
 )
 
 func newListListingInstallations() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listListingInstallationsReq marketplaces.GetInstallationDetailsRequest
 
-	var listListingInstallationsReq marketplace.ListInstallationsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listListingInstallationsLimit int
 
-	cmd.Flags().IntVar(&listListingInstallationsReq.PageSize, "page-size", listListingInstallationsReq.PageSize, ``)
+	flags.IntPtrVar(cmd.Flags(), &listListingInstallationsReq.PageSize, "page-size", ``)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listListingInstallationsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listListingInstallationsReq.PageToken, "page-token", listListingInstallationsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listListingInstallationsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-listing-installations LISTING_ID"
@@ -306,18 +325,22 @@ List installations for a listing.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listListingInstallationsReq.ListingId = args[0]
+		listListingInstallationsReq.ListingId = new(args[0])
 
-		response := w.ConsumerInstallations.ListListingInstallations(ctx, listListingInstallationsReq)
+		sdkReq, err := marketplaces.GetInstallationDetailsRequestToSDK(&listListingInstallationsReq)
+		if err != nil {
+			return err
+		}
 		if listListingInstallationsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listListingInstallationsLimit)
 		}
 		if listListingInstallationsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listListingInstallationsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Marketplaces.GetInstallationDetailsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, marketplaces.InstallationDetailFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -338,18 +361,18 @@ List installations for a listing.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*marketplace.UpdateInstallationRequest,
+	*marketplaces.UpdateInstallationRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq marketplaces.UpdateInstallationRequest
 
-	var updateReq marketplace.UpdateInstallationRequest
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&updateReq.RotateToken, "rotate-token", updateReq.RotateToken, ``)
+	flags.BoolPtrVar(cmd.Flags(), &updateReq.RotateToken, "rotate-token", ``)
 
 	cmd.Use = "update LISTING_ID INSTALLATION_ID"
 	cmd.Short = `*Public Preview* Update an installation.`
@@ -376,6 +399,7 @@ Update an installation.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -391,15 +415,23 @@ Update an installation.
 		} else {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
-		updateReq.ListingId = args[0]
-		updateReq.InstallationId = args[1]
+		updateReq.ListingId = new(args[0])
+		updateReq.InstallationId = new(args[1])
 
-		response, err := w.ConsumerInstallations.Update(ctx, updateReq)
+		sdkReq, err := marketplaces.UpdateInstallationRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Marketplaces.UpdateInstallationDetail(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := marketplaces.UpdateInstallationResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

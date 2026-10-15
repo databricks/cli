@@ -4,14 +4,14 @@ package quality_monitors
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+
+	qualitymonitors "github.com/databricks/cli/libs/qualitymonitors"
 )
 
 // Slice with functions to override default command behavior.
@@ -66,13 +66,12 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cancelRefreshOverrides []func(
 	*cobra.Command,
-	*catalog.CancelRefreshRequest,
+	*qualitymonitors.CancelRefreshRequest,
 )
 
 func newCancelRefresh() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var cancelRefreshReq catalog.CancelRefreshRequest
+	var cancelRefreshReq qualitymonitors.CancelRefreshRequest
 
 	cmd.Use = "cancel-refresh TABLE_NAME REFRESH_ID"
 	cmd.Short = `Cancel refresh.`
@@ -102,12 +101,10 @@ func newCancelRefresh() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		cancelRefreshReq.TableName = args[0]
-		_, err = fmt.Sscan(args[1], &cancelRefreshReq.RefreshId)
-		if err != nil {
-			return fmt.Errorf("invalid REFRESH_ID: %s", args[1])
-		}
+		_ = args[0] // TODO: field not in sdk-go request: table_name
+		_ = args[1] // TODO: field not in sdk-go request: refresh_id
 
 		err = w.QualityMonitors.CancelRefresh(ctx, cancelRefreshReq)
 		if err != nil {
@@ -134,13 +131,13 @@ func newCancelRefresh() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*catalog.CreateMonitor,
+	*qualitymonitors.CreateMonitor,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq qualitymonitors.CreateMonitor
 
-	var createReq catalog.CreateMonitor
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -205,6 +202,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -218,7 +216,7 @@ func newCreate() *cobra.Command {
 				}
 			}
 		}
-		createReq.TableName = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: table_name
 		if !cmd.Flags().Changed("json") {
 			createReq.OutputSchemaName = args[1]
 		}
@@ -230,7 +228,6 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
-
 		return cmdio.Render(ctx, response)
 	}
 
@@ -252,13 +249,12 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteQualityMonitorRequest,
+	*qualitymonitors.DeleteQualityMonitorRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq catalog.DeleteQualityMonitorRequest
+	var deleteReq qualitymonitors.DeleteQualityMonitorRequest
 
 	cmd.Use = "delete TABLE_NAME"
 	cmd.Short = `Delete a table monitor.`
@@ -296,14 +292,14 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteReq.TableName = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: table_name
 
 		response, err := w.QualityMonitors.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-
 		return cmdio.Render(ctx, response)
 	}
 
@@ -325,13 +321,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*catalog.GetQualityMonitorRequest,
+	*qualitymonitors.GetQualityMonitorRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq catalog.GetQualityMonitorRequest
+	var getReq qualitymonitors.GetQualityMonitorRequest
 
 	cmd.Use = "get TABLE_NAME"
 	cmd.Short = `Get a table monitor.`
@@ -368,14 +363,14 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getReq.TableName = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: table_name
 
 		response, err := w.QualityMonitors.Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
-
 		return cmdio.Render(ctx, response)
 	}
 
@@ -397,13 +392,12 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getRefreshOverrides []func(
 	*cobra.Command,
-	*catalog.GetRefreshRequest,
+	*qualitymonitors.GetRefreshRequest,
 )
 
 func newGetRefresh() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getRefreshReq catalog.GetRefreshRequest
+	var getRefreshReq qualitymonitors.GetRefreshRequest
 
 	cmd.Use = "get-refresh TABLE_NAME REFRESH_ID"
 	cmd.Short = `Get refresh.`
@@ -439,18 +433,15 @@ func newGetRefresh() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getRefreshReq.TableName = args[0]
-		_, err = fmt.Sscan(args[1], &getRefreshReq.RefreshId)
-		if err != nil {
-			return fmt.Errorf("invalid REFRESH_ID: %s", args[1])
-		}
+		_ = args[0] // TODO: field not in sdk-go request: table_name
+		_ = args[1] // TODO: field not in sdk-go request: refresh_id
 
 		response, err := w.QualityMonitors.GetRefresh(ctx, getRefreshReq)
 		if err != nil {
 			return err
 		}
-
 		return cmdio.Render(ctx, response)
 	}
 
@@ -472,13 +463,12 @@ func newGetRefresh() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listRefreshesOverrides []func(
 	*cobra.Command,
-	*catalog.ListRefreshesRequest,
+	*qualitymonitors.ListRefreshesRequest,
 )
 
 func newListRefreshes() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var listRefreshesReq catalog.ListRefreshesRequest
+	var listRefreshesReq qualitymonitors.ListRefreshesRequest
 
 	cmd.Use = "list-refreshes TABLE_NAME"
 	cmd.Short = `List refreshes.`
@@ -514,14 +504,14 @@ func newListRefreshes() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listRefreshesReq.TableName = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: table_name
 
 		response, err := w.QualityMonitors.ListRefreshes(ctx, listRefreshesReq)
 		if err != nil {
 			return err
 		}
-
 		return cmdio.Render(ctx, response)
 	}
 
@@ -543,13 +533,13 @@ func newListRefreshes() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var regenerateDashboardOverrides []func(
 	*cobra.Command,
-	*catalog.RegenerateDashboardRequest,
+	*qualitymonitors.RegenerateDashboardRequest,
 )
 
 func newRegenerateDashboard() *cobra.Command {
 	cmd := &cobra.Command{}
+	var regenerateDashboardReq qualitymonitors.RegenerateDashboardRequest
 
-	var regenerateDashboardReq catalog.RegenerateDashboardRequest
 	var regenerateDashboardJson flags.JsonFlag
 
 	cmd.Flags().Var(&regenerateDashboardJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -594,6 +584,7 @@ func newRegenerateDashboard() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := regenerateDashboardJson.Unmarshal(&regenerateDashboardReq)
@@ -607,13 +598,12 @@ func newRegenerateDashboard() *cobra.Command {
 				}
 			}
 		}
-		regenerateDashboardReq.TableName = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: table_name
 
 		response, err := w.QualityMonitors.RegenerateDashboard(ctx, regenerateDashboardReq)
 		if err != nil {
 			return err
 		}
-
 		return cmdio.Render(ctx, response)
 	}
 
@@ -635,13 +625,12 @@ func newRegenerateDashboard() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var runRefreshOverrides []func(
 	*cobra.Command,
-	*catalog.RunRefreshRequest,
+	*qualitymonitors.RunRefreshRequest,
 )
 
 func newRunRefresh() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var runRefreshReq catalog.RunRefreshRequest
+	var runRefreshReq qualitymonitors.RunRefreshRequest
 
 	cmd.Use = "run-refresh TABLE_NAME"
 	cmd.Short = `Run refresh.`
@@ -677,14 +666,14 @@ func newRunRefresh() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		runRefreshReq.TableName = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: table_name
 
 		response, err := w.QualityMonitors.RunRefresh(ctx, runRefreshReq)
 		if err != nil {
 			return err
 		}
-
 		return cmdio.Render(ctx, response)
 	}
 
@@ -706,13 +695,13 @@ func newRunRefresh() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*catalog.UpdateMonitor,
+	*qualitymonitors.UpdateMonitor,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq qualitymonitors.UpdateMonitor
 
-	var updateReq catalog.UpdateMonitor
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -774,6 +763,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -787,7 +777,7 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.TableName = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: table_name
 		if !cmd.Flags().Changed("json") {
 			updateReq.OutputSchemaName = args[1]
 		}
@@ -796,7 +786,6 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
-
 		return cmdio.Render(ctx, response)
 	}
 

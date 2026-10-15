@@ -6,12 +6,17 @@ import (
 	"errors"
 	"fmt"
 
+	"maps"
+
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/qualitymonitorv2"
 	"github.com/spf13/cobra"
+
+	domains "github.com/databricks/cli/libs/sdktypes/domains/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -56,14 +61,16 @@ Deprecated: Please use the Data Quality Monitoring API instead (REST:
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createQualityMonitorOverrides []func(
 	*cobra.Command,
-	*qualitymonitorv2.CreateQualityMonitorRequest,
+	*map[string]any,
 )
 
 func newCreateQualityMonitor() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createQualityMonitorReq map[string]any
+	createQualityMonitorReq = map[string]any{}
+	var createQualityMonitorObjectIdRaw string
+	var createQualityMonitorObjectTypeRaw string
 
-	var createQualityMonitorReq qualitymonitorv2.CreateQualityMonitorRequest
-	createQualityMonitorReq.QualityMonitor = qualitymonitorv2.QualityMonitor{}
 	var createQualityMonitorJson flags.JsonFlag
 
 	cmd.Flags().Var(&createQualityMonitorJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -104,9 +111,10 @@ Create a quality monitor.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
-			diags := createQualityMonitorJson.Unmarshal(&createQualityMonitorReq.QualityMonitor)
+			diags := createQualityMonitorJson.Unmarshal(&createQualityMonitorReq)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -118,17 +126,30 @@ Create a quality monitor.
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createQualityMonitorReq.QualityMonitor.ObjectType = args[0]
+			createQualityMonitorObjectTypeRaw = args[0]
 		}
 		if !cmd.Flags().Changed("json") {
-			createQualityMonitorReq.QualityMonitor.ObjectId = args[1]
+			createQualityMonitorObjectIdRaw = args[1]
 		}
 
-		response, err := w.QualityMonitorV2.CreateQualityMonitor(ctx, createQualityMonitorReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("object-id") || createQualityMonitorObjectIdRaw != "" {
+			createQualityMonitorReq["object_id"] = createQualityMonitorObjectIdRaw
+		}
+		if cmd.Flags().Changed("object-type") || createQualityMonitorObjectTypeRaw != "" {
+			createQualityMonitorReq["object_type"] = createQualityMonitorObjectTypeRaw
+		}
+		rawPath := "/api/2.0/quality-monitors"
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "POST", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, createQualityMonitorReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -150,13 +171,15 @@ Create a quality monitor.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteQualityMonitorOverrides []func(
 	*cobra.Command,
-	*qualitymonitorv2.DeleteQualityMonitorRequest,
+	*map[string]any,
 )
 
 func newDeleteQualityMonitor() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteQualityMonitorReq qualitymonitorv2.DeleteQualityMonitorRequest
+	var deleteQualityMonitorReq map[string]any
+	deleteQualityMonitorReq = map[string]any{}
+	var deleteQualityMonitorObjectIdRaw string
+	var deleteQualityMonitorObjectTypeRaw string
 
 	cmd.Use = "delete-quality-monitor OBJECT_TYPE OBJECT_ID"
 	cmd.Short = `*Beta* Delete a quality monitor.`
@@ -184,11 +207,20 @@ Delete a quality monitor.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteQualityMonitorReq.ObjectType = args[0]
-		deleteQualityMonitorReq.ObjectId = args[1]
+		deleteQualityMonitorObjectTypeRaw = args[0]
+		deleteQualityMonitorObjectIdRaw = args[1]
 
-		err = w.QualityMonitorV2.DeleteQualityMonitor(ctx, deleteQualityMonitorReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/quality-monitors/%s/%s", fmt.Sprint(deleteQualityMonitorObjectTypeRaw), fmt.Sprint(deleteQualityMonitorObjectIdRaw))
+
+		maps.Copy(rawQuery, deleteQualityMonitorReq)
+		api, err := apiclient.New(w.Config)
+		if err != nil {
+			return err
+		}
+		err = api.Do(ctx, "DELETE", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -213,13 +245,15 @@ Delete a quality monitor.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getQualityMonitorOverrides []func(
 	*cobra.Command,
-	*qualitymonitorv2.GetQualityMonitorRequest,
+	*map[string]any,
 )
 
 func newGetQualityMonitor() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getQualityMonitorReq qualitymonitorv2.GetQualityMonitorRequest
+	var getQualityMonitorReq map[string]any
+	getQualityMonitorReq = map[string]any{}
+	var getQualityMonitorObjectIdRaw string
+	var getQualityMonitorObjectTypeRaw string
 
 	cmd.Use = "get-quality-monitor OBJECT_TYPE OBJECT_ID"
 	cmd.Short = `*Beta* Read a quality monitor.`
@@ -247,15 +281,24 @@ Read a quality monitor.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getQualityMonitorReq.ObjectType = args[0]
-		getQualityMonitorReq.ObjectId = args[1]
+		getQualityMonitorObjectTypeRaw = args[0]
+		getQualityMonitorObjectIdRaw = args[1]
 
-		response, err := w.QualityMonitorV2.GetQualityMonitor(ctx, getQualityMonitorReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/quality-monitors/%s/%s", fmt.Sprint(getQualityMonitorObjectTypeRaw), fmt.Sprint(getQualityMonitorObjectIdRaw))
+
+		maps.Copy(rawQuery, getQualityMonitorReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -277,26 +320,25 @@ Read a quality monitor.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listQualityMonitorOverrides []func(
 	*cobra.Command,
-	*qualitymonitorv2.ListQualityMonitorRequest,
+	*domains.DeleteDomainRequest,
 )
 
 func newListQualityMonitor() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listQualityMonitorReq domains.DeleteDomainRequest
 
-	var listQualityMonitorReq qualitymonitorv2.ListQualityMonitorRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listQualityMonitorLimit int
 
-	cmd.Flags().IntVar(&listQualityMonitorReq.PageSize, "page-size", listQualityMonitorReq.PageSize, ``)
+	// TODO: field not in sdk-go request: page_size
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listQualityMonitorLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listQualityMonitorReq.PageToken, "page-token", listQualityMonitorReq.PageToken, `Pagination token.`)
-	cmd.Flags().Lookup("page-token").Hidden = true
+	// TODO: field not in sdk-go request: page_token
 
 	cmd.Use = "list-quality-monitor"
 	cmd.Short = `*Beta* List quality monitors.`
@@ -320,16 +362,19 @@ List quality monitors.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.QualityMonitorV2.ListQualityMonitor(ctx, listQualityMonitorReq)
-		if listQualityMonitorLimit < 0 {
-			return fmt.Errorf("--limit must be a non-negative integer, got %d", listQualityMonitorLimit)
-		}
-		if listQualityMonitorLimit > 0 {
-			ctx = cmdio.WithLimit(ctx, listQualityMonitorLimit)
-		}
+		listQualityMonitorReq.Name = new("quality-monitors")
 
-		return cmdio.RenderIterator(ctx, response)
+		sdkReq, err := domains.DeleteDomainRequestToSDK(&listQualityMonitorReq)
+		if err != nil {
+			return err
+		}
+		err = w.Domains.DeleteDomain(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -350,14 +395,16 @@ List quality monitors.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateQualityMonitorOverrides []func(
 	*cobra.Command,
-	*qualitymonitorv2.UpdateQualityMonitorRequest,
+	*map[string]any,
 )
 
 func newUpdateQualityMonitor() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateQualityMonitorReq map[string]any
+	updateQualityMonitorReq = map[string]any{}
+	var updateQualityMonitorObjectIdRaw string
+	var updateQualityMonitorObjectTypeRaw string
 
-	var updateQualityMonitorReq qualitymonitorv2.UpdateQualityMonitorRequest
-	updateQualityMonitorReq.QualityMonitor = qualitymonitorv2.QualityMonitor{}
 	var updateQualityMonitorJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateQualityMonitorJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -401,9 +448,10 @@ Update a quality monitor.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
-			diags := updateQualityMonitorJson.Unmarshal(&updateQualityMonitorReq.QualityMonitor)
+			diags := updateQualityMonitorJson.Unmarshal(&updateQualityMonitorReq)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -414,20 +462,33 @@ Update a quality monitor.
 				}
 			}
 		}
-		updateQualityMonitorReq.ObjectType = args[0]
-		updateQualityMonitorReq.ObjectId = args[1]
+		updateQualityMonitorObjectTypeRaw = args[0]
+		updateQualityMonitorObjectIdRaw = args[1]
 		if !cmd.Flags().Changed("json") {
-			updateQualityMonitorReq.QualityMonitor.ObjectType = args[2]
+			updateQualityMonitorObjectTypeRaw = args[2]
 		}
 		if !cmd.Flags().Changed("json") {
-			updateQualityMonitorReq.QualityMonitor.ObjectId = args[3]
+			updateQualityMonitorObjectIdRaw = args[3]
 		}
 
-		response, err := w.QualityMonitorV2.UpdateQualityMonitor(ctx, updateQualityMonitorReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("object-id") || updateQualityMonitorObjectIdRaw != "" {
+			updateQualityMonitorReq["object_id"] = updateQualityMonitorObjectIdRaw
+		}
+		if cmd.Flags().Changed("object-type") || updateQualityMonitorObjectTypeRaw != "" {
+			updateQualityMonitorReq["object_type"] = updateQualityMonitorObjectTypeRaw
+		}
+		rawPath := fmt.Sprintf("/api/2.0/quality-monitors/%s/%s", fmt.Sprint(updateQualityMonitorObjectTypeRaw), fmt.Sprint(updateQualityMonitorObjectIdRaw))
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "PUT", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, updateQualityMonitorReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 

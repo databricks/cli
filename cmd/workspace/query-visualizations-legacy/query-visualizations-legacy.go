@@ -4,12 +4,16 @@ package query_visualizations_legacy
 
 import (
 	"errors"
+	"fmt"
+
+	"maps"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
 )
 
@@ -59,19 +63,24 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*sql.CreateQueryVisualizationsLegacyRequest,
+	*map[string]any,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq map[string]any
+	createReq = map[string]any{}
+	var createDescriptionRaw string
+	var createNameRaw string
+	var createQueryIdRaw string
+	var createTypeRaw string
 
-	var createReq sql.CreateQueryVisualizationsLegacyRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `A short description of this visualization.`)
-	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `The name of the visualization that appears on dashboards and the query screen.`)
+	cmd.Flags().StringVar(&createDescriptionRaw, "description", createDescriptionRaw, `A short description of this visualization.`)
+	cmd.Flags().StringVar(&createNameRaw, "name", createNameRaw, `The name of the visualization that appears on dashboards and the query screen.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Add visualization to a query.`
@@ -92,6 +101,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -108,11 +118,30 @@ func newCreate() *cobra.Command {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.QueryVisualizationsLegacy.Create(ctx, createReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("description") || createDescriptionRaw != "" {
+			createReq["description"] = createDescriptionRaw
+		}
+		if cmd.Flags().Changed("name") || createNameRaw != "" {
+			createReq["name"] = createNameRaw
+		}
+		if cmd.Flags().Changed("query-id") || createQueryIdRaw != "" {
+			createReq["query_id"] = createQueryIdRaw
+		}
+		if cmd.Flags().Changed("type") || createTypeRaw != "" {
+			createReq["type"] = createTypeRaw
+		}
+		rawPath := "/api/2.0/preview/sql/visualizations"
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "POST", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, createReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -134,13 +163,14 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*sql.DeleteQueryVisualizationsLegacyRequest,
+	*map[string]any,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq sql.DeleteQueryVisualizationsLegacyRequest
+	var deleteReq map[string]any
+	deleteReq = map[string]any{}
+	var deleteIdRaw string
 
 	cmd.Use = "delete ID"
 	cmd.Short = `Remove visualization.`
@@ -169,10 +199,19 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteReq.Id = args[0]
+		deleteIdRaw = args[0]
 
-		err = w.QueryVisualizationsLegacy.Delete(ctx, deleteReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/preview/sql/visualizations/%s", fmt.Sprint(deleteIdRaw))
+
+		maps.Copy(rawQuery, deleteReq)
+		api, err := apiclient.New(w.Config)
+		if err != nil {
+			return err
+		}
+		err = api.Do(ctx, "DELETE", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -197,25 +236,32 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*sql.LegacyVisualization,
+	*map[string]any,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq map[string]any
+	updateReq = map[string]any{}
+	var updateCreatedAtRaw string
+	var updateDescriptionRaw string
+	var updateIdRaw string
+	var updateNameRaw string
+	var updateTypeRaw string
+	var updateUpdatedAtRaw string
 
-	var updateReq sql.LegacyVisualization
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, ``)
-	cmd.Flags().StringVar(&updateReq.Description, "description", updateReq.Description, `A short description of this visualization.`)
-	cmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `The UUID for this visualization.`)
-	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name of the visualization that appears on dashboards and the query screen.`)
+	cmd.Flags().StringVar(&updateCreatedAtRaw, "created-at", updateCreatedAtRaw, ``)
+	cmd.Flags().StringVar(&updateDescriptionRaw, "description", updateDescriptionRaw, `A short description of this visualization.`)
+	cmd.Flags().StringVar(&updateIdRaw, "id", updateIdRaw, `The UUID for this visualization.`)
+	cmd.Flags().StringVar(&updateNameRaw, "name", updateNameRaw, `The name of the visualization that appears on dashboards and the query screen.`)
 	// TODO: any: options
 	// TODO: complex arg: query
-	cmd.Flags().StringVar(&updateReq.Type, "type", updateReq.Type, `The type of visualization: chart, table, pivot table, and so on.`)
-	cmd.Flags().StringVar(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, ``)
+	cmd.Flags().StringVar(&updateTypeRaw, "type", updateTypeRaw, `The type of visualization: chart, table, pivot table, and so on.`)
+	cmd.Flags().StringVar(&updateUpdatedAtRaw, "updated-at", updateUpdatedAtRaw, ``)
 
 	cmd.Use = "update"
 	cmd.Short = `Edit existing visualization.`
@@ -241,6 +287,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -255,11 +302,36 @@ func newUpdate() *cobra.Command {
 			}
 		}
 
-		response, err := w.QueryVisualizationsLegacy.Update(ctx, updateReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("created-at") || updateCreatedAtRaw != "" {
+			updateReq["created_at"] = updateCreatedAtRaw
+		}
+		if cmd.Flags().Changed("description") || updateDescriptionRaw != "" {
+			updateReq["description"] = updateDescriptionRaw
+		}
+		if cmd.Flags().Changed("id") || updateIdRaw != "" {
+			updateReq["id"] = updateIdRaw
+		}
+		if cmd.Flags().Changed("name") || updateNameRaw != "" {
+			updateReq["name"] = updateNameRaw
+		}
+		if cmd.Flags().Changed("type") || updateTypeRaw != "" {
+			updateReq["type"] = updateTypeRaw
+		}
+		if cmd.Flags().Changed("updated-at") || updateUpdatedAtRaw != "" {
+			updateReq["updated_at"] = updateUpdatedAtRaw
+		}
+		rawPath := fmt.Sprintf("/api/2.0/preview/sql/visualizations/%s", fmt.Sprint(updateIdRaw))
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "POST", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, updateReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 

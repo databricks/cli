@@ -10,8 +10,11 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/provisioning"
+	"github.com/databricks/sdk-go/options/lro"
 	"github.com/spf13/cobra"
+
+	workspaces "github.com/databricks/cli/libs/sdktypes/workspaces/v1"
+	sdkworkspaces "github.com/databricks/sdk-go/workspaces/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -59,13 +62,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*provisioning.CreateWorkspaceRequest,
+	*workspaces.CreateWorkspaceRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq workspaces.CreateWorkspaceRequest
 
-	var createReq provisioning.CreateWorkspaceRequest
 	var createJson flags.JsonFlag
 
 	var createSkipWait bool
@@ -76,31 +79,31 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.AwsRegion, "aws-region", createReq.AwsRegion, ``)
-	cmd.Flags().StringVar(&createReq.Cloud, "cloud", createReq.Cloud, `DEPRECATED: This field is being ignored by the server and will be removed in the future.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.AwsRegion, "aws-region", ``)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Cloud, "cloud", `DEPRECATED: This field is being ignored by the server and will be removed in the future.`)
 	// TODO: complex arg: cloud_resource_container
-	cmd.Flags().Var(&createReq.ComputeMode, "compute-mode", `If the compute mode is SERVERLESS, a serverless workspace is created that comes pre-configured with serverless compute and default storage, providing a fully-managed, enterprise-ready SaaS experience. Supported values: [HYBRID, SERVERLESS]`)
-	cmd.Flags().StringVar(&createReq.CredentialsId, "credentials-id", createReq.CredentialsId, `ID of the workspace's credential configuration object.`)
+	flags.EnumVar(cmd.Flags(), &createReq.ComputeMode, "compute-mode", `If the compute mode is SERVERLESS, a serverless workspace is created that comes pre-configured with serverless compute and default storage, providing a fully-managed, enterprise-ready SaaS experience. Supported values: [HYBRID, SERVERLESS]`, "CustomerFacingComputeMode", "HYBRID", "SERVERLESS")
+	flags.StringPtrVar(cmd.Flags(), &createReq.CredentialsId, "credentials-id", `ID of the workspace's credential configuration object.`)
 	// TODO: map via StringToStringVar: custom_tags
-	cmd.Flags().StringVar(&createReq.DeploymentName, "deployment-name", createReq.DeploymentName, `The deployment name defines part of the subdomain for the workspace.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.DeploymentName, "deployment-name", `The deployment name defines part of the subdomain for the workspace.`)
 	// TODO: complex arg: gcp_managed_network_config
 	// TODO: complex arg: gke_config
-	cmd.Flags().StringVar(&createReq.Location, "location", createReq.Location, `The Google Cloud region of the workspace data plane in your Google account (for example, us-east4).`)
-	cmd.Flags().StringVar(&createReq.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", createReq.ManagedServicesCustomerManagedKeyId, `The ID of the workspace's managed services encryption key configuration object.`)
-	cmd.Flags().StringVar(&createReq.NetworkConnectivityConfigId, "network-connectivity-config-id", createReq.NetworkConnectivityConfigId, `The object ID of network connectivity config.`)
-	cmd.Flags().StringVar(&createReq.NetworkId, "network-id", createReq.NetworkId, `The ID of the workspace's network configuration object.`)
-	cmd.Flags().Var(&createReq.PricingTier, "pricing-tier", `Supported values: [
+	flags.StringPtrVar(cmd.Flags(), &createReq.Location, "location", `The Google Cloud region of the workspace data plane in your Google account (for example, us-east4).`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", `The ID of the workspace's managed services encryption key configuration object.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.NetworkConnectivityConfigId, "network-connectivity-config-id", `The object ID of network connectivity config.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.NetworkId, "network-id", `The ID of the workspace's network configuration object.`)
+	flags.EnumVar(cmd.Flags(), &createReq.PricingTier, "pricing-tier", `Supported values: [
   COMMUNITY_EDITION,
   DEDICATED,
   ENTERPRISE,
   PREMIUM,
   STANDARD,
   UNKNOWN,
-]`)
-	cmd.Flags().StringVar(&createReq.PrivateAccessSettingsId, "private-access-settings-id", createReq.PrivateAccessSettingsId, `ID of the workspace's private access settings object.`)
-	cmd.Flags().StringVar(&createReq.StorageConfigurationId, "storage-configuration-id", createReq.StorageConfigurationId, `ID of the workspace's storage configuration object.`)
-	cmd.Flags().StringVar(&createReq.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", createReq.StorageCustomerManagedKeyId, `The ID of the workspace's storage encryption key configuration object.`)
-	cmd.Flags().StringVar(&createReq.WorkspaceName, "workspace-name", createReq.WorkspaceName, `The human-readable name of the workspace.`)
+]`, "PricingTier", "COMMUNITY_EDITION", "DEDICATED", "ENTERPRISE", "PREMIUM", "STANDARD", "UNKNOWN")
+	flags.StringPtrVar(cmd.Flags(), &createReq.PrivateAccessSettingsId, "private-access-settings-id", `ID of the workspace's private access settings object.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.StorageConfigurationId, "storage-configuration-id", `ID of the workspace's storage configuration object.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", `The ID of the workspace's storage encryption key configuration object.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.WorkspaceName, "workspace-name", `The human-readable name of the workspace.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create a workspace.`
@@ -156,6 +159,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -170,23 +174,30 @@ func newCreate() *cobra.Command {
 			}
 		}
 
-		wait, err := a.Workspaces.Create(ctx, createReq)
+		sdkReq, err := workspaces.CreateWorkspaceRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		wait, err := a.Workspaces.CreateWorkspacePublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 		if createSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			return cmdio.Render(ctx, map[string]any{"workspace_id": wait.GetWorkspaceId()})
 		}
 		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *provisioning.Workspace) {
-			statusMessage := i.WorkspaceStatusMessage
-			sp.Update(statusMessage)
-		}).GetWithTimeout(createTimeout)
+		sp.Update("Waiting for create to complete...")
+		response, err := wait.Wait(ctx, lro.WithTimeout(createTimeout))
 		sp.Close()
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+
+		out, err := workspaces.WorkspaceFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -207,13 +218,12 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*provisioning.DeleteWorkspaceRequest,
+	*sdkworkspaces.DeleteWorkspaceRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq provisioning.DeleteWorkspaceRequest
+	var deleteReq sdkworkspaces.DeleteWorkspaceRequest
 
 	cmd.Use = "delete WORKSPACE_ID"
 	cmd.Short = `Delete a workspace.`
@@ -234,18 +244,26 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		_, err = fmt.Sscan(args[0], &deleteReq.WorkspaceId)
+		var deleteWorkspaceIdArg int64
+		_, err = fmt.Sscan(args[0], &deleteWorkspaceIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
+		deleteReq.WorkspaceId = &deleteWorkspaceIdArg
 
-		response, err := a.Workspaces.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := a.Workspaces.DeleteWorkspacePublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := workspaces.WorkspaceFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -266,13 +284,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*provisioning.GetWorkspaceRequest,
+	*sdkworkspaces.GetWorkspaceRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq provisioning.GetWorkspaceRequest
+	var getReq sdkworkspaces.GetWorkspaceRequest
 
 	cmd.Use = "get WORKSPACE_ID"
 	cmd.Short = `Get a workspace.`
@@ -301,18 +318,26 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		_, err = fmt.Sscan(args[0], &getReq.WorkspaceId)
+		var getWorkspaceIdArg int64
+		_, err = fmt.Sscan(args[0], &getWorkspaceIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
+		getReq.WorkspaceId = &getWorkspaceIdArg
 
-		response, err := a.Workspaces.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := a.Workspaces.GetWorkspacePublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := workspaces.WorkspaceFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -352,12 +377,16 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
-		response, err := a.Workspaces.List(ctx)
+		_ = a
+
+		sdkReq := &sdkworkspaces.ListWorkspacesRequest{}
+		response, err := a.Workspaces.ListWorkspacesPublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		_ = response
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -378,14 +407,14 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*provisioning.UpdateWorkspaceRequest,
+	*workspaces.UpdateWorkspaceRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq workspaces.UpdateWorkspaceRequest
+	updateReq.CustomerFacingWorkspace = &workspaces.Workspace{}
 
-	var updateReq provisioning.UpdateWorkspaceRequest
-	updateReq.CustomerFacingWorkspace = provisioning.Workspace{}
 	var updateJson flags.JsonFlag
 
 	var updateSkipWait bool
@@ -396,33 +425,33 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.UpdateMask, "update-mask", updateReq.UpdateMask, `The field mask must be a single string, with multiple fields separated by commas (no spaces).`)
-	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.AwsRegion, "aws-region", updateReq.CustomerFacingWorkspace.AwsRegion, ``)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.UpdateMask, "update-mask", `The field mask must be a single string, with multiple fields separated by commas (no spaces).`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.CustomerFacingWorkspace.AwsRegion, "aws-region", ``)
 	// TODO: complex arg: azure_workspace_info
-	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.Cloud, "cloud", updateReq.CustomerFacingWorkspace.Cloud, `The cloud name.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.CustomerFacingWorkspace.Cloud, "cloud", `The cloud name.`)
 	// TODO: complex arg: cloud_resource_container
-	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.CredentialsId, "credentials-id", updateReq.CustomerFacingWorkspace.CredentialsId, `ID of the workspace's credential configuration object.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.CustomerFacingWorkspace.CredentialsId, "credentials-id", `ID of the workspace's credential configuration object.`)
 	// TODO: map via StringToStringVar: custom_tags
-	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.DeploymentName, "deployment-name", updateReq.CustomerFacingWorkspace.DeploymentName, ``)
-	cmd.Flags().Var(&updateReq.CustomerFacingWorkspace.ExpectedWorkspaceStatus, "expected-workspace-status", `A client owned field used to indicate the workspace status that the client expects to be in. Supported values: [
+	flags.StringPtrVar(cmd.Flags(), &updateReq.CustomerFacingWorkspace.DeploymentName, "deployment-name", ``)
+	flags.EnumVar(cmd.Flags(), &updateReq.CustomerFacingWorkspace.ExpectedWorkspaceStatus, "expected-workspace-status", `A client owned field used to indicate the workspace status that the client expects to be in. Supported values: [
   BANNED,
   CANCELLING,
   FAILED,
   NOT_PROVISIONED,
   PROVISIONING,
   RUNNING,
-]`)
+]`, "WorkspaceStatus", "BANNED", "CANCELLING", "FAILED", "NOT_PROVISIONED", "PROVISIONING", "RUNNING")
 	// TODO: complex arg: gcp_managed_network_config
 	// TODO: complex arg: gke_config
-	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.Location, "location", updateReq.CustomerFacingWorkspace.Location, `The Google Cloud region of the workspace data plane in your Google account (for example, us-east4).`)
-	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", updateReq.CustomerFacingWorkspace.ManagedServicesCustomerManagedKeyId, `ID of the key configuration for encrypting managed services.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.CustomerFacingWorkspace.Location, "location", `The Google Cloud region of the workspace data plane in your Google account (for example, us-east4).`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.CustomerFacingWorkspace.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", `ID of the key configuration for encrypting managed services.`)
 	// TODO: complex arg: network
-	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.NetworkConnectivityConfigId, "network-connectivity-config-id", updateReq.CustomerFacingWorkspace.NetworkConnectivityConfigId, `The object ID of network connectivity config.`)
-	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.NetworkId, "network-id", updateReq.CustomerFacingWorkspace.NetworkId, `If this workspace is BYO VPC, then the network_id will be populated.`)
-	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.PrivateAccessSettingsId, "private-access-settings-id", updateReq.CustomerFacingWorkspace.PrivateAccessSettingsId, `ID of the workspace's private access settings object.`)
-	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.StorageConfigurationId, "storage-configuration-id", updateReq.CustomerFacingWorkspace.StorageConfigurationId, `ID of the workspace's storage configuration object.`)
-	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", updateReq.CustomerFacingWorkspace.StorageCustomerManagedKeyId, `ID of the key configuration for encrypting workspace storage.`)
-	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.WorkspaceName, "workspace-name", updateReq.CustomerFacingWorkspace.WorkspaceName, `The human-readable name of the workspace.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.CustomerFacingWorkspace.NetworkConnectivityConfigId, "network-connectivity-config-id", `The object ID of network connectivity config.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.CustomerFacingWorkspace.NetworkId, "network-id", `If this workspace is BYO VPC, then the network_id will be populated.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.CustomerFacingWorkspace.PrivateAccessSettingsId, "private-access-settings-id", `ID of the workspace's private access settings object.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.CustomerFacingWorkspace.StorageConfigurationId, "storage-configuration-id", `ID of the workspace's storage configuration object.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.CustomerFacingWorkspace.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", `ID of the key configuration for encrypting workspace storage.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.CustomerFacingWorkspace.WorkspaceName, "workspace-name", `The human-readable name of the workspace.`)
 
 	cmd.Use = "update WORKSPACE_ID"
 	cmd.Short = `Update a workspace.`
@@ -446,6 +475,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq.CustomerFacingWorkspace)
@@ -459,28 +489,37 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		_, err = fmt.Sscan(args[0], &updateReq.WorkspaceId)
+		var updateWorkspaceIdArg int64
+		_, err = fmt.Sscan(args[0], &updateWorkspaceIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
+		updateReq.CustomerFacingWorkspace.WorkspaceId = &updateWorkspaceIdArg
 
-		wait, err := a.Workspaces.Update(ctx, updateReq)
+		sdkReq, err := workspaces.UpdateWorkspaceRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		wait, err := a.Workspaces.UpdateWorkspacePublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 		if updateSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			return cmdio.Render(ctx, map[string]any{"workspace_id": wait.GetWorkspaceId()})
 		}
 		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *provisioning.Workspace) {
-			statusMessage := i.WorkspaceStatusMessage
-			sp.Update(statusMessage)
-		}).GetWithTimeout(updateTimeout)
+		sp.Update("Waiting for update to complete...")
+		response, err := wait.Wait(ctx, lro.WithTimeout(updateTimeout))
 		sp.Close()
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+
+		out, err := workspaces.WorkspaceFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

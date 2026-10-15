@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+
+	ucmetastores "github.com/databricks/cli/libs/sdktypes/uc/metastores/v1"
+	sdkucmetastores "github.com/databricks/sdk-go/uc/metastores/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -69,13 +72,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var assignOverrides []func(
 	*cobra.Command,
-	*catalog.CreateMetastoreAssignment,
+	*ucmetastores.CreateMetastoreAssignmentRequest,
 )
 
 func newAssign() *cobra.Command {
 	cmd := &cobra.Command{}
+	var assignReq ucmetastores.CreateMetastoreAssignmentRequest
 
-	var assignReq catalog.CreateMetastoreAssignment
 	var assignJson flags.JsonFlag
 
 	cmd.Flags().Var(&assignJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -115,6 +118,7 @@ func newAssign() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := assignJson.Unmarshal(&assignReq)
@@ -128,22 +132,29 @@ func newAssign() *cobra.Command {
 				}
 			}
 		}
-		_, err = fmt.Sscan(args[0], &assignReq.WorkspaceId)
+		var assignWorkspaceIdArg int64
+		_, err = fmt.Sscan(args[0], &assignWorkspaceIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
-
+		assignReq.WorkspaceId = &assignWorkspaceIdArg
 		if !cmd.Flags().Changed("json") {
-			assignReq.MetastoreId = args[1]
+			assignReq.MetastoreId = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			assignReq.DefaultCatalogName = args[2]
+			assignReq.DefaultCatalogName = new(args[2])
 		}
 
-		err = w.Metastores.Assign(ctx, assignReq)
+		sdkReq, err := ucmetastores.CreateMetastoreAssignmentRequestToSDK(&assignReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Metastores.CreateMetastoreAssignment(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -165,20 +176,20 @@ func newAssign() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*catalog.CreateMetastore,
+	*ucmetastores.CreateMetastoreRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq ucmetastores.CreateMetastoreRequest
 
-	var createReq catalog.CreateMetastore
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createReq.ExternalAccessEnabled, "external-access-enabled", createReq.ExternalAccessEnabled, `Whether to allow non-DBR clients to directly access entities under the metastore.`)
-	cmd.Flags().StringVar(&createReq.Region, "region", createReq.Region, `Cloud region which the metastore serves (e.g., us-west-2, westus).`)
-	cmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", createReq.StorageRoot, `The storage root URL for metastore.`)
+	flags.BoolPtrVar(cmd.Flags(), &createReq.ExternalAccessEnabled, "external-access-enabled", `Whether to allow non-DBR clients to directly access entities under the metastore.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Region, "region", `Cloud region which the metastore serves (e.g., us-west-2, westus).`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.StorageRoot, "storage-root", `The storage root URL for metastore.`)
 
 	cmd.Use = "create NAME"
 	cmd.Short = `Create a metastore.`
@@ -213,6 +224,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -227,15 +239,23 @@ func newCreate() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createReq.Name = args[0]
+			createReq.Name = new(args[0])
 		}
 
-		response, err := w.Metastores.Create(ctx, createReq)
+		sdkReq, err := ucmetastores.CreateMetastoreRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Metastores.CreateMetastore(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucmetastores.MetastoreInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -275,12 +295,19 @@ func newCurrent() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
-		response, err := w.Metastores.Current(ctx)
+		_ = w
+
+		sdkReq := &sdkucmetastores.GetCurrentMetastoreAssignmentRequest{}
+		response, err := w.Metastores.GetCurrentMetastoreAssignment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucmetastores.MetastoreAssignmentFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -301,15 +328,14 @@ func newCurrent() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteMetastoreRequest,
+	*ucmetastores.DeleteMetastoreRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteReq ucmetastores.DeleteMetastoreRequest
 
-	var deleteReq catalog.DeleteMetastoreRequest
-
-	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the metastore is not empty.`)
+	flags.BoolPtrVar(cmd.Flags(), &deleteReq.Force, "force", `Force deletion even if the metastore is not empty.`)
 
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete a metastore.`
@@ -333,13 +359,20 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteReq.Id = args[0]
+		deleteReq.Id = new(args[0])
 
-		err = w.Metastores.Delete(ctx, deleteReq)
+		sdkReq, err := ucmetastores.DeleteMetastoreRequestToSDK(&deleteReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Metastores.DeleteMetastore(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -361,13 +394,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*catalog.GetMetastoreRequest,
+	*sdkucmetastores.GetMetastoreRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq catalog.GetMetastoreRequest
+	var getReq sdkucmetastores.GetMetastoreRequest
 
 	cmd.Use = "get ID"
 	cmd.Short = `Get a metastore.`
@@ -392,15 +424,21 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getReq.Id = args[0]
+		getReq.Id = new(args[0])
 
-		response, err := w.Metastores.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.Metastores.GetMetastore(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucmetastores.MetastoreInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -421,13 +459,13 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*catalog.ListMetastoresRequest,
+	*ucmetastores.ListMetastoresRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq ucmetastores.ListMetastoresRequest
 
-	var listReq catalog.ListMetastoresRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
@@ -437,9 +475,9 @@ func newList() *cobra.Command {
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of metastores to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listReq.MaxResults, "max-results", `Maximum number of metastores to return.`)
 	cmd.Flags().Lookup("max-results").Hidden = true
 
 	cmd.Use = "list"
@@ -471,16 +509,20 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.Metastores.List(ctx, listReq)
+		sdkReq, err := ucmetastores.ListMetastoresRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Metastores.ListMetastoresIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, ucmetastores.MetastoreInfoFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -521,12 +563,19 @@ func newSummary() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
-		response, err := w.Metastores.Summary(ctx)
+		_ = w
+
+		sdkReq := &sdkucmetastores.GetMetastoreSummaryRequest{}
+		response, err := w.Metastores.GetMetastoreSummary(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucmetastores.GetMetastoreSummaryResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -547,13 +596,12 @@ func newSummary() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var unassignOverrides []func(
 	*cobra.Command,
-	*catalog.UnassignRequest,
+	*ucmetastores.DeleteMetastoreAssignmentRequest,
 )
 
 func newUnassign() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var unassignReq catalog.UnassignRequest
+	var unassignReq ucmetastores.DeleteMetastoreAssignmentRequest
 
 	cmd.Use = "unassign WORKSPACE_ID METASTORE_ID"
 	cmd.Short = `Delete an assignment.`
@@ -578,18 +626,26 @@ func newUnassign() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		_, err = fmt.Sscan(args[0], &unassignReq.WorkspaceId)
+		var unassignWorkspaceIdArg int64
+		_, err = fmt.Sscan(args[0], &unassignWorkspaceIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
+		unassignReq.WorkspaceId = &unassignWorkspaceIdArg
+		unassignReq.MetastoreId = new(args[1])
 
-		unassignReq.MetastoreId = args[1]
-
-		err = w.Metastores.Unassign(ctx, unassignReq)
+		sdkReq, err := ucmetastores.DeleteMetastoreAssignmentRequestToSDK(&unassignReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Metastores.DeleteMetastoreAssignment(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -611,25 +667,25 @@ func newUnassign() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*catalog.UpdateMetastore,
+	*ucmetastores.UpdateMetastoreRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq ucmetastores.UpdateMetastoreRequest
 
-	var updateReq catalog.UpdateMetastore
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.DeltaSharingOrganizationName, "delta-sharing-organization-name", updateReq.DeltaSharingOrganizationName, `The organization name of a Delta Sharing entity, to be used in Databricks-to-Databricks Delta Sharing as the official name.`)
-	cmd.Flags().Int64Var(&updateReq.DeltaSharingRecipientTokenLifetimeInSeconds, "delta-sharing-recipient-token-lifetime-in-seconds", updateReq.DeltaSharingRecipientTokenLifetimeInSeconds, `The lifetime of delta sharing recipient token in seconds.`)
-	cmd.Flags().Var(&updateReq.DeltaSharingScope, "delta-sharing-scope", `The scope of Delta Sharing enabled for the metastore. Supported values: [INTERNAL, INTERNAL_AND_EXTERNAL]`)
-	cmd.Flags().BoolVar(&updateReq.ExternalAccessEnabled, "external-access-enabled", updateReq.ExternalAccessEnabled, `Whether to allow non-DBR clients to directly access entities under the metastore.`)
-	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the metastore.`)
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `The owner of the metastore.`)
-	cmd.Flags().StringVar(&updateReq.PrivilegeModelVersion, "privilege-model-version", updateReq.PrivilegeModelVersion, `Privilege model version of the metastore, of the form major.minor (e.g., 1.0).`)
-	cmd.Flags().StringVar(&updateReq.StorageRootCredentialId, "storage-root-credential-id", updateReq.StorageRootCredentialId, `UUID of storage credential to access the metastore storage_root.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.DeltaSharingOrganizationName, "delta-sharing-organization-name", `The organization name of a Delta Sharing entity, to be used in Databricks-to-Databricks Delta Sharing as the official name.`)
+	flags.Int64PtrVar(cmd.Flags(), &updateReq.DeltaSharingRecipientTokenLifetimeInSeconds, "delta-sharing-recipient-token-lifetime-in-seconds", `The lifetime of delta sharing recipient token in seconds.`)
+	flags.EnumVar(cmd.Flags(), &updateReq.DeltaSharingScope, "delta-sharing-scope", `The scope of Delta Sharing enabled for the metastore. Supported values: [INTERNAL, INTERNAL_AND_EXTERNAL]`, "DeltaSharingScopeEnum", "INTERNAL", "INTERNAL_AND_EXTERNAL")
+	flags.BoolPtrVar(cmd.Flags(), &updateReq.ExternalAccessEnabled, "external-access-enabled", `Whether to allow non-DBR clients to directly access entities under the metastore.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.NewName, "new-name", `New name for the metastore.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Owner, "owner", `The owner of the metastore.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.PrivilegeModelVersion, "privilege-model-version", `Privilege model version of the metastore, of the form major.minor (e.g., 1.0).`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.StorageRootCredentialId, "storage-root-credential-id", `UUID of storage credential to access the metastore storage_root.`)
 
 	cmd.Use = "update ID"
 	cmd.Short = `Update a metastore.`
@@ -655,6 +711,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -668,14 +725,22 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.Id = args[0]
+		updateReq.Id = new(args[0])
 
-		response, err := w.Metastores.Update(ctx, updateReq)
+		sdkReq, err := ucmetastores.UpdateMetastoreRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Metastores.UpdateMetastore(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucmetastores.MetastoreInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -696,19 +761,19 @@ func newUpdate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateAssignmentOverrides []func(
 	*cobra.Command,
-	*catalog.UpdateMetastoreAssignment,
+	*ucmetastores.UpdateMetastoreAssignmentRequest,
 )
 
 func newUpdateAssignment() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateAssignmentReq ucmetastores.UpdateMetastoreAssignmentRequest
 
-	var updateAssignmentReq catalog.UpdateMetastoreAssignment
 	var updateAssignmentJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateAssignmentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateAssignmentReq.DefaultCatalogName, "default-catalog-name", updateAssignmentReq.DefaultCatalogName, `The name of the default catalog in the metastore.`)
-	cmd.Flags().StringVar(&updateAssignmentReq.MetastoreId, "metastore-id", updateAssignmentReq.MetastoreId, `The unique ID of the metastore.`)
+	flags.StringPtrVar(cmd.Flags(), &updateAssignmentReq.DefaultCatalogName, "default-catalog-name", `The name of the default catalog in the metastore.`)
+	flags.StringPtrVar(cmd.Flags(), &updateAssignmentReq.MetastoreId, "metastore-id", `The unique ID of the metastore.`)
 
 	cmd.Use = "update-assignment WORKSPACE_ID"
 	cmd.Short = `Update an assignment.`
@@ -735,6 +800,7 @@ func newUpdateAssignment() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateAssignmentJson.Unmarshal(&updateAssignmentReq)
@@ -748,15 +814,23 @@ func newUpdateAssignment() *cobra.Command {
 				}
 			}
 		}
-		_, err = fmt.Sscan(args[0], &updateAssignmentReq.WorkspaceId)
+		var updateAssignmentWorkspaceIdArg int64
+		_, err = fmt.Sscan(args[0], &updateAssignmentWorkspaceIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
+		updateAssignmentReq.WorkspaceId = &updateAssignmentWorkspaceIdArg
 
-		err = w.Metastores.UpdateAssignment(ctx, updateAssignmentReq)
+		sdkReq, err := ucmetastores.UpdateMetastoreAssignmentRequestToSDK(&updateAssignmentReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Metastores.UpdateMetastoreAssignment(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 

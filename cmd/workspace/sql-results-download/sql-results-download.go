@@ -5,11 +5,14 @@ package sql_results_download
 import (
 	"errors"
 
+	"maps"
+
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
 )
 
@@ -52,15 +55,16 @@ Controls whether users within the workspace are allowed to download results
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*settings.DeleteSqlResultsDownloadRequest,
+	*map[string]any,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteReq map[string]any
+	deleteReq = map[string]any{}
+	var deleteEtagRaw string
 
-	var deleteReq settings.DeleteSqlResultsDownloadRequest
-
-	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning.`)
+	cmd.Flags().StringVar(&deleteEtagRaw, "etag", deleteEtagRaw, `etag used for versioning.`)
 
 	cmd.Use = "delete"
 	cmd.Short = `*Public Preview* Delete the SQL Results Download setting.`
@@ -83,12 +87,24 @@ Delete the SQL Results Download setting.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response, err := w.Settings.SqlResultsDownload().Delete(ctx, deleteReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("etag") || deleteEtagRaw != "" {
+			rawQuery["etag"] = deleteEtagRaw
+		}
+		rawPath := "/api/2.0/settings/types/sql_results_download/names/default"
+
+		maps.Copy(rawQuery, deleteReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "DELETE", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -110,15 +126,16 @@ Delete the SQL Results Download setting.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*settings.GetSqlResultsDownloadRequest,
+	*map[string]any,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
+	var getReq map[string]any
+	getReq = map[string]any{}
+	var getEtagRaw string
 
-	var getReq settings.GetSqlResultsDownloadRequest
-
-	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
+	cmd.Flags().StringVar(&getEtagRaw, "etag", getEtagRaw, `etag used for versioning.`)
 
 	cmd.Use = "get"
 	cmd.Short = `*Public Preview* Get the SQL Results Download setting.`
@@ -141,12 +158,24 @@ Get the SQL Results Download setting.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response, err := w.Settings.SqlResultsDownload().Get(ctx, getReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("etag") || getEtagRaw != "" {
+			rawQuery["etag"] = getEtagRaw
+		}
+		rawPath := "/api/2.0/settings/types/sql_results_download/names/default"
+
+		maps.Copy(rawQuery, getReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -168,13 +197,16 @@ Get the SQL Results Download setting.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*settings.UpdateSqlResultsDownloadRequest,
+	*map[string]any,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq map[string]any
+	updateReq = map[string]any{}
+	var updateAllowMissingRaw bool
+	var updateFieldMaskRaw string
 
-	var updateReq settings.UpdateSqlResultsDownloadRequest
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -195,6 +227,7 @@ Update the SQL Results Download setting.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -211,11 +244,24 @@ Update the SQL Results Download setting.
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.Settings.SqlResultsDownload().Update(ctx, updateReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("allow-missing") || updateAllowMissingRaw != false {
+			updateReq["allow_missing"] = updateAllowMissingRaw
+		}
+		if cmd.Flags().Changed("field-mask") || updateFieldMaskRaw != "" {
+			updateReq["field_mask"] = updateFieldMaskRaw
+		}
+		rawPath := "/api/2.0/settings/types/sql_results_download/names/default"
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "PATCH", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, updateReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 

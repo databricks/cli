@@ -8,10 +8,15 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
+
+	accessmanagement "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
+	repos "github.com/databricks/cli/libs/sdktypes/repos/v1"
+	sdkaccessmanagement "github.com/databricks/sdk-go/accessmanagement/v1"
+	sdkrepos "github.com/databricks/sdk-go/repos/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -65,19 +70,19 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*workspace.CreateRepoRequest,
+	*repos.CreateRepoRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq repos.CreateRepoRequest
 
-	var createReq workspace.CreateRepoRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().Int64Var(&createReq.GitCredentialId, "git-credential-id", createReq.GitCredentialId, `Git credential ID to use when cloning the repository.`)
-	cmd.Flags().StringVar(&createReq.Path, "path", createReq.Path, `Desired path for the repo in the workspace.`)
+	flags.Int64PtrVar(cmd.Flags(), &createReq.GitCredentialId, "git-credential-id", `Git credential ID to use when cloning the repository.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Path, "path", `Desired path for the repo in the workspace.`)
 	// TODO: complex arg: sparse_checkout
 
 	cmd.Use = "create URL PROVIDER"
@@ -116,6 +121,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -130,18 +136,26 @@ func newCreate() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createReq.Url = args[0]
+			createReq.Url = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			createReq.Provider = args[1]
+			createReq.Provider = new(args[1])
 		}
 
-		response, err := w.Repos.Create(ctx, createReq)
+		sdkReq, err := repos.CreateRepoRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Repos.CreateRepo(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := repos.CreateRepoResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -162,13 +176,12 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*workspace.DeleteRepoRequest,
+	*sdkrepos.DeleteRepoRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq workspace.DeleteRepoRequest
+	var deleteReq sdkrepos.DeleteRepoRequest
 
 	cmd.Use = "delete REPO_ID"
 	cmd.Short = `Delete a repo.`
@@ -187,11 +200,12 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No REPO_ID argument specified. Loading names for Repos drop-down.")
-			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Repos.ListReposIter(ctx, sdkrepos.ListReposRequest{}), []string{"Path"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -205,15 +219,20 @@ func newDelete() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the id for the corresponding repo to delete")
 		}
-		_, err = fmt.Sscan(args[0], &deleteReq.RepoId)
+		var deleteRepoIdArg int64
+		_, err = fmt.Sscan(args[0], &deleteRepoIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid REPO_ID: %s", args[0])
 		}
+		deleteReq.Id = &deleteRepoIdArg
 
-		err = w.Repos.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := w.Repos.DeleteRepo(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -235,13 +254,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*workspace.GetRepoRequest,
+	*sdkrepos.GetRepoRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq workspace.GetRepoRequest
+	var getReq sdkrepos.GetRepoRequest
 
 	cmd.Use = "get REPO_ID"
 	cmd.Short = `Get a repo.`
@@ -260,11 +278,12 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No REPO_ID argument specified. Loading names for Repos drop-down.")
-			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Repos.ListReposIter(ctx, sdkrepos.ListReposRequest{}), []string{"Path"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -278,17 +297,24 @@ func newGet() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have id of the git folder (repo) object in the workspace")
 		}
-		_, err = fmt.Sscan(args[0], &getReq.RepoId)
+		var getRepoIdArg int64
+		_, err = fmt.Sscan(args[0], &getRepoIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid REPO_ID: %s", args[0])
 		}
+		getReq.Id = &getRepoIdArg
 
-		response, err := w.Repos.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.Repos.GetRepo(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := repos.GetRepoResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -309,13 +335,12 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPermissionLevelsOverrides []func(
 	*cobra.Command,
-	*workspace.GetRepoPermissionLevelsRequest,
+	*sdkaccessmanagement.ListPermissionLevelsRequest,
 )
 
 func newGetPermissionLevels() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPermissionLevelsReq workspace.GetRepoPermissionLevelsRequest
+	var getPermissionLevelsReq sdkaccessmanagement.ListPermissionLevelsRequest
 
 	cmd.Use = "get-permission-levels REPO_ID"
 	cmd.Short = `Get repo permission levels.`
@@ -334,11 +359,12 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No REPO_ID argument specified. Loading names for Repos drop-down.")
-			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Repos.ListReposIter(ctx, sdkrepos.ListReposRequest{}), []string{"Path"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -352,14 +378,21 @@ func newGetPermissionLevels() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the repo for which to get or manage permissions")
 		}
-		getPermissionLevelsReq.RepoId = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: repo_id
 
-		response, err := w.Repos.GetPermissionLevels(ctx, getPermissionLevelsReq)
+		getPermissionLevelsReq.RequestObjectType = new("repos")
+
+		sdkReq := &getPermissionLevelsReq
+		response, err := w.AccessManagement.ListPermissionLevels(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.ListPermissionLevelsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -380,13 +413,12 @@ func newGetPermissionLevels() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPermissionsOverrides []func(
 	*cobra.Command,
-	*workspace.GetRepoPermissionsRequest,
+	*sdkaccessmanagement.GetObjectPermissionsRequest,
 )
 
 func newGetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPermissionsReq workspace.GetRepoPermissionsRequest
+	var getPermissionsReq sdkaccessmanagement.GetObjectPermissionsRequest
 
 	cmd.Use = "get-permissions REPO_ID"
 	cmd.Short = `Get repo permissions.`
@@ -406,11 +438,12 @@ func newGetPermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No REPO_ID argument specified. Loading names for Repos drop-down.")
-			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Repos.ListReposIter(ctx, sdkrepos.ListReposRequest{}), []string{"Path"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -424,14 +457,21 @@ func newGetPermissions() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the repo for which to get or manage permissions")
 		}
-		getPermissionsReq.RepoId = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: repo_id
 
-		response, err := w.Repos.GetPermissions(ctx, getPermissionsReq)
+		getPermissionsReq.RequestObjectType = new("repos")
+
+		sdkReq := &getPermissionsReq
+		response, err := w.AccessManagement.GetObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -452,25 +492,25 @@ func newGetPermissions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*workspace.ListReposRequest,
+	*repos.ListReposRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq repos.ListReposRequest
 
-	var listReq workspace.ListReposRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().StringVar(&listReq.PathPrefix, "path-prefix", listReq.PathPrefix, `Filters repos that have paths starting with the given path prefix.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PathPrefix, "path-prefix", `Filters repos that have paths starting with the given path prefix.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.NextPageToken, "next-page-token", listReq.NextPageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.NextPageToken, "next-page-token", `Pagination token.`)
 	cmd.Flags().Lookup("next-page-token").Hidden = true
 
 	cmd.Use = "list"
@@ -498,16 +538,20 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.Repos.List(ctx, listReq)
+		sdkReq, err := repos.ListReposRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Repos.ListReposIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, repos.RepoInfoFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -528,13 +572,13 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var setPermissionsOverrides []func(
 	*cobra.Command,
-	*workspace.RepoPermissionsRequest,
+	*accessmanagement.SetObjectPermissionsRequest,
 )
 
 func newSetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var setPermissionsReq accessmanagement.SetObjectPermissionsRequest
 
-	var setPermissionsReq workspace.RepoPermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -560,6 +604,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
@@ -576,7 +621,7 @@ func newSetPermissions() *cobra.Command {
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No REPO_ID argument specified. Loading names for Repos drop-down.")
-			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Repos.ListReposIter(ctx, sdkrepos.ListReposRequest{}), []string{"Path"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -590,14 +635,24 @@ func newSetPermissions() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the repo for which to get or manage permissions")
 		}
-		setPermissionsReq.RepoId = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: repo_id
 
-		response, err := w.Repos.SetPermissions(ctx, setPermissionsReq)
+		setPermissionsReq.RequestObjectType = new("repos")
+
+		sdkReq, err := accessmanagement.SetObjectPermissionsRequestToSDK(&setPermissionsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AccessManagement.SetObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -618,22 +673,22 @@ func newSetPermissions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*workspace.UpdateRepoRequest,
+	*repos.UpdateRepoRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq repos.UpdateRepoRequest
 
-	var updateReq workspace.UpdateRepoRequest
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Branch, "branch", updateReq.Branch, `Branch that the local version of the repo is checked out to.`)
-	cmd.Flags().BoolVar(&updateReq.DangerouslyForceDiscardAll, "dangerously-force-discard-all", updateReq.DangerouslyForceDiscardAll, `WARNING: DESTRUCTIVE AND IRREVERSIBLE.`)
-	cmd.Flags().Int64Var(&updateReq.GitCredentialId, "git-credential-id", updateReq.GitCredentialId, `Git credential ID to use for this update operation.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Branch, "branch", `Branch that the local version of the repo is checked out to.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateReq.DangerouslyForceDiscardAll, "dangerously-force-discard-all", `WARNING: DESTRUCTIVE AND IRREVERSIBLE.`)
+	flags.Int64PtrVar(cmd.Flags(), &updateReq.GitCredentialId, "git-credential-id", `Git credential ID to use for this update operation.`)
 	// TODO: complex arg: sparse_checkout
-	cmd.Flags().StringVar(&updateReq.Tag, "tag", updateReq.Tag, `Tag that the local version of the repo is checked out to.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Tag, "tag", `Tag that the local version of the repo is checked out to.`)
 
 	cmd.Use = "update REPO_ID"
 	cmd.Short = `Update a repo.`
@@ -653,6 +708,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -669,7 +725,7 @@ func newUpdate() *cobra.Command {
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No REPO_ID argument specified. Loading names for Repos drop-down.")
-			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Repos.ListReposIter(ctx, sdkrepos.ListReposRequest{}), []string{"Path"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -683,15 +739,23 @@ func newUpdate() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have id of the git folder (repo) object in the workspace")
 		}
-		_, err = fmt.Sscan(args[0], &updateReq.RepoId)
+		var updateRepoIdArg int64
+		_, err = fmt.Sscan(args[0], &updateRepoIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid REPO_ID: %s", args[0])
 		}
+		updateReq.Id = &updateRepoIdArg
 
-		err = w.Repos.Update(ctx, updateReq)
+		sdkReq, err := repos.UpdateRepoRequestToSDK(&updateReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Repos.UpdateRepo(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -713,13 +777,13 @@ func newUpdate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updatePermissionsOverrides []func(
 	*cobra.Command,
-	*workspace.RepoPermissionsRequest,
+	*accessmanagement.UpdateObjectPermissionsRequest,
 )
 
 func newUpdatePermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updatePermissionsReq accessmanagement.UpdateObjectPermissionsRequest
 
-	var updatePermissionsReq workspace.RepoPermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -744,6 +808,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)
@@ -760,7 +825,7 @@ func newUpdatePermissions() *cobra.Command {
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No REPO_ID argument specified. Loading names for Repos drop-down.")
-			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Repos.ListReposIter(ctx, sdkrepos.ListReposRequest{}), []string{"Path"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -774,14 +839,24 @@ func newUpdatePermissions() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the repo for which to get or manage permissions")
 		}
-		updatePermissionsReq.RepoId = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: repo_id
 
-		response, err := w.Repos.UpdatePermissions(ctx, updatePermissionsReq)
+		updatePermissionsReq.RequestObjectType = new("repos")
+
+		sdkReq, err := accessmanagement.UpdateObjectPermissionsRequestToSDK(&updatePermissionsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AccessManagement.UpdateObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

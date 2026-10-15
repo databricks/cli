@@ -7,10 +7,12 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+
+	ucgrants "github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -60,17 +62,16 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*catalog.GetGrantRequest,
+	*ucgrants.GetPermissionsRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
+	var getReq ucgrants.GetPermissionsRequest
 
-	var getReq catalog.GetGrantRequest
-
-	cmd.Flags().IntVar(&getReq.MaxResults, "max-results", getReq.MaxResults, `Specifies the maximum number of privileges to return (page length).`)
-	cmd.Flags().StringVar(&getReq.PageToken, "page-token", getReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
-	cmd.Flags().StringVar(&getReq.Principal, "principal", getReq.Principal, `If provided, only the permissions for the specified principal (user or group) are returned.`)
+	flags.IntPtrVar(cmd.Flags(), &getReq.MaxResults, "max-results", `Specifies the maximum number of privileges to return (page length).`)
+	flags.StringPtrVar(cmd.Flags(), &getReq.PageToken, "page-token", `Opaque pagination token to go to next page based on previous query.`)
+	flags.StringPtrVar(cmd.Flags(), &getReq.Principal, "principal", `If provided, only the permissions for the specified principal (user or group) are returned.`)
 
 	cmd.Use = "get SECURABLE_TYPE FULL_NAME"
 	cmd.Short = `Get permissions.`
@@ -103,16 +104,25 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getReq.SecurableType = args[0]
-		getReq.FullName = args[1]
+		getReq.SecurableType = new(args[0])
+		getReq.SecurableFullName = new(args[1])
 
-		response, err := w.Grants.Get(ctx, getReq)
+		sdkReq, err := ucgrants.GetPermissionsRequestToSDK(&getReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Grants.GetPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucgrants.GetPermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -133,17 +143,16 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getEffectiveOverrides []func(
 	*cobra.Command,
-	*catalog.GetEffectiveRequest,
+	*ucgrants.GetEffectivePermissionsRequest,
 )
 
 func newGetEffective() *cobra.Command {
 	cmd := &cobra.Command{}
+	var getEffectiveReq ucgrants.GetEffectivePermissionsRequest
 
-	var getEffectiveReq catalog.GetEffectiveRequest
-
-	cmd.Flags().IntVar(&getEffectiveReq.MaxResults, "max-results", getEffectiveReq.MaxResults, `Specifies the maximum number of privileges to return (page length).`)
-	cmd.Flags().StringVar(&getEffectiveReq.PageToken, "page-token", getEffectiveReq.PageToken, `Opaque token for the next page of results (pagination).`)
-	cmd.Flags().StringVar(&getEffectiveReq.Principal, "principal", getEffectiveReq.Principal, `If provided, only the effective permissions for the specified principal (user or group) are returned.`)
+	flags.IntPtrVar(cmd.Flags(), &getEffectiveReq.MaxResults, "max-results", `Specifies the maximum number of privileges to return (page length).`)
+	flags.StringPtrVar(cmd.Flags(), &getEffectiveReq.PageToken, "page-token", `Opaque token for the next page of results (pagination).`)
+	flags.StringPtrVar(cmd.Flags(), &getEffectiveReq.Principal, "principal", `If provided, only the effective permissions for the specified principal (user or group) are returned.`)
 
 	cmd.Use = "get-effective SECURABLE_TYPE FULL_NAME"
 	cmd.Short = `Get effective permissions.`
@@ -177,16 +186,25 @@ func newGetEffective() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getEffectiveReq.SecurableType = args[0]
-		getEffectiveReq.FullName = args[1]
+		getEffectiveReq.SecurableType = new(args[0])
+		getEffectiveReq.SecurableFullName = new(args[1])
 
-		response, err := w.Grants.GetEffective(ctx, getEffectiveReq)
+		sdkReq, err := ucgrants.GetEffectivePermissionsRequestToSDK(&getEffectiveReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Grants.GetEffectivePermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucgrants.GetEffectivePermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -207,26 +225,26 @@ func newGetEffective() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*catalog.ListPrivilegeAssignmentsRequest,
+	*ucgrants.ListPrivilegeAssignmentsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq ucgrants.ListPrivilegeAssignmentsRequest
 
-	var listReq catalog.ListPrivilegeAssignmentsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Specifies the maximum number of privilege assignments to return (page length).`)
-	cmd.Flags().StringVar(&listReq.Principal, "principal", listReq.Principal, `If provided, only the permissions for the specified principal (user or group) are returned.`)
+	flags.IntPtrVar(cmd.Flags(), &listReq.PageSize, "page-size", `Specifies the maximum number of privilege assignments to return (page length).`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.Principal, "principal", `If provided, only the permissions for the specified principal (user or group) are returned.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list SECURABLE_TYPE FULL_NAME"
@@ -253,19 +271,23 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listReq.SecurableType = args[0]
-		listReq.FullName = args[1]
+		listReq.SecurableType = new(args[0])
+		listReq.FullName = new(args[1])
 
-		response := w.Grants.List(ctx, listReq)
+		sdkReq, err := ucgrants.ListPrivilegeAssignmentsRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Grants.ListPrivilegeAssignmentsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, ucgrants.PrivilegeAssignmentFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -286,26 +308,26 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listEffectiveOverrides []func(
 	*cobra.Command,
-	*catalog.ListEffectivePrivilegeAssignmentsRequest,
+	*ucgrants.ListEffectivePrivilegeAssignmentsRequest,
 )
 
 func newListEffective() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listEffectiveReq ucgrants.ListEffectivePrivilegeAssignmentsRequest
 
-	var listEffectiveReq catalog.ListEffectivePrivilegeAssignmentsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listEffectiveLimit int
 
-	cmd.Flags().IntVar(&listEffectiveReq.PageSize, "page-size", listEffectiveReq.PageSize, `Specifies the maximum number of privilege assignments to return (page length).`)
-	cmd.Flags().StringVar(&listEffectiveReq.Principal, "principal", listEffectiveReq.Principal, `If provided, only the effective permissions for the specified principal (user or group) are returned.`)
+	flags.IntPtrVar(cmd.Flags(), &listEffectiveReq.PageSize, "page-size", `Specifies the maximum number of privilege assignments to return (page length).`)
+	flags.StringPtrVar(cmd.Flags(), &listEffectiveReq.Principal, "principal", `If provided, only the effective permissions for the specified principal (user or group) are returned.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listEffectiveLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listEffectiveReq.PageToken, "page-token", listEffectiveReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listEffectiveReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-effective SECURABLE_TYPE FULL_NAME"
@@ -332,19 +354,23 @@ func newListEffective() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listEffectiveReq.SecurableType = args[0]
-		listEffectiveReq.FullName = args[1]
+		listEffectiveReq.SecurableType = new(args[0])
+		listEffectiveReq.FullName = new(args[1])
 
-		response := w.Grants.ListEffective(ctx, listEffectiveReq)
+		sdkReq, err := ucgrants.ListEffectivePrivilegeAssignmentsRequestToSDK(&listEffectiveReq)
+		if err != nil {
+			return err
+		}
 		if listEffectiveLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listEffectiveLimit)
 		}
 		if listEffectiveLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listEffectiveLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Grants.ListEffectivePrivilegeAssignmentsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, ucgrants.EffectivePrivilegeAssignmentFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -365,19 +391,19 @@ func newListEffective() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*catalog.UpdatePermissions,
+	*ucgrants.UpdatePermissionsRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq ucgrants.UpdatePermissionsRequest
 
-	var updateReq catalog.UpdatePermissions
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: changes
-	cmd.Flags().BoolVar(&updateReq.OmitPermissionsInResponse, "omit-permissions-in-response", updateReq.OmitPermissionsInResponse, `Optional, default false.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateReq.OmitPermissionsInResponse, "omit-permissions-in-response", `Optional, default false.`)
 
 	cmd.Use = "update SECURABLE_TYPE FULL_NAME"
 	cmd.Short = `Update permissions.`
@@ -402,6 +428,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -415,15 +442,23 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.SecurableType = args[0]
-		updateReq.FullName = args[1]
+		updateReq.SecurableType = new(args[0])
+		updateReq.SecurableFullName = new(args[1])
 
-		response, err := w.Grants.Update(ctx, updateReq)
+		sdkReq, err := ucgrants.UpdatePermissionsRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Grants.UpdatePermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucgrants.UpdatePermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

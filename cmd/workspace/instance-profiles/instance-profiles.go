@@ -10,8 +10,10 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/spf13/cobra"
+
+	instanceprofiles "github.com/databricks/cli/libs/sdktypes/instanceprofiles/v2"
+	sdkinstanceprofiles "github.com/databricks/sdk-go/instanceprofiles/v2"
 )
 
 // Slice with functions to override default command behavior.
@@ -56,20 +58,20 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var addOverrides []func(
 	*cobra.Command,
-	*compute.AddInstanceProfile,
+	*instanceprofiles.AddInstanceProfileRequest,
 )
 
 func newAdd() *cobra.Command {
 	cmd := &cobra.Command{}
+	var addReq instanceprofiles.AddInstanceProfileRequest
 
-	var addReq compute.AddInstanceProfile
 	var addJson flags.JsonFlag
 
 	cmd.Flags().Var(&addJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&addReq.IamRoleArn, "iam-role-arn", addReq.IamRoleArn, `The AWS IAM role ARN of the role associated with the instance profile.`)
-	cmd.Flags().BoolVar(&addReq.IsMetaInstanceProfile, "is-meta-instance-profile", addReq.IsMetaInstanceProfile, `Boolean flag indicating whether the instance profile should only be used in credential passthrough scenarios.`)
-	cmd.Flags().BoolVar(&addReq.SkipValidation, "skip-validation", addReq.SkipValidation, `By default, Databricks validates that it has sufficient permissions to launch instances with the instance profile.`)
+	flags.StringPtrVar(cmd.Flags(), &addReq.IamRoleArn, "iam-role-arn", `The AWS IAM role ARN of the role associated with the instance profile.`)
+	flags.BoolPtrVar(cmd.Flags(), &addReq.IsMetaInstanceProfile, "is-meta-instance-profile", `Boolean flag indicating whether the instance profile should only be used in credential passthrough scenarios.`)
+	flags.BoolPtrVar(cmd.Flags(), &addReq.SkipValidation, "skip-validation", `By default, Databricks validates that it has sufficient permissions to launch instances with the instance profile.`)
 
 	cmd.Use = "add INSTANCE_PROFILE_ARN"
 	cmd.Short = `Register an instance profile.`
@@ -104,6 +106,7 @@ func newAdd() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := addJson.Unmarshal(&addReq)
@@ -118,13 +121,19 @@ func newAdd() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			addReq.InstanceProfileArn = args[0]
+			addReq.InstanceProfileArn = new(args[0])
 		}
 
-		err = w.InstanceProfiles.Add(ctx, addReq)
+		sdkReq, err := instanceprofiles.AddInstanceProfileRequestToSDK(&addReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.InstanceProfiles.AddInstanceProfile(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -146,19 +155,19 @@ func newAdd() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var editOverrides []func(
 	*cobra.Command,
-	*compute.InstanceProfile,
+	*instanceprofiles.EditInstanceProfileRequest,
 )
 
 func newEdit() *cobra.Command {
 	cmd := &cobra.Command{}
+	var editReq instanceprofiles.EditInstanceProfileRequest
 
-	var editReq compute.InstanceProfile
 	var editJson flags.JsonFlag
 
 	cmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&editReq.IamRoleArn, "iam-role-arn", editReq.IamRoleArn, `The AWS IAM role ARN of the role associated with the instance profile.`)
-	cmd.Flags().BoolVar(&editReq.IsMetaInstanceProfile, "is-meta-instance-profile", editReq.IsMetaInstanceProfile, `Boolean flag indicating whether the instance profile should only be used in credential passthrough scenarios.`)
+	flags.StringPtrVar(cmd.Flags(), &editReq.IamRoleArn, "iam-role-arn", `The AWS IAM role ARN of the role associated with the instance profile.`)
+	flags.BoolPtrVar(cmd.Flags(), &editReq.IsMetaInstanceProfile, "is-meta-instance-profile", `Boolean flag indicating whether the instance profile should only be used in credential passthrough scenarios.`)
 
 	cmd.Use = "edit INSTANCE_PROFILE_ARN"
 	cmd.Short = `Edit an instance profile.`
@@ -204,6 +213,7 @@ func newEdit() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := editJson.Unmarshal(&editReq)
@@ -218,13 +228,19 @@ func newEdit() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			editReq.InstanceProfileArn = args[0]
+			editReq.InstanceProfileArn = new(args[0])
 		}
 
-		err = w.InstanceProfiles.Edit(ctx, editReq)
+		sdkReq, err := instanceprofiles.EditInstanceProfileRequestToSDK(&editReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.InstanceProfiles.EditInstanceProfile(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -276,7 +292,13 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
-		response := w.InstanceProfiles.List(ctx)
+		_ = w
+
+		sdkReq := &sdkinstanceprofiles.ListInstanceProfilesRequest{}
+		response, err := w.InstanceProfiles.ListInstanceProfiles(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
@@ -284,7 +306,11 @@ func newList() *cobra.Command {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
 
-		return cmdio.RenderIterator(ctx, response)
+		out, err := instanceprofiles.ListInstanceProfilesResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -305,13 +331,13 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var removeOverrides []func(
 	*cobra.Command,
-	*compute.RemoveInstanceProfile,
+	*instanceprofiles.RemoveInstanceProfileRequest,
 )
 
 func newRemove() *cobra.Command {
 	cmd := &cobra.Command{}
+	var removeReq instanceprofiles.RemoveInstanceProfileRequest
 
-	var removeReq compute.RemoveInstanceProfile
 	var removeJson flags.JsonFlag
 
 	cmd.Flags().Var(&removeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -348,6 +374,7 @@ func newRemove() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := removeJson.Unmarshal(&removeReq)
@@ -362,13 +389,19 @@ func newRemove() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			removeReq.InstanceProfileArn = args[0]
+			removeReq.InstanceProfileArn = new(args[0])
 		}
 
-		err = w.InstanceProfiles.Remove(ctx, removeReq)
+		sdkReq, err := instanceprofiles.RemoveInstanceProfileRequestToSDK(&removeReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.InstanceProfiles.RemoveInstanceProfile(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 

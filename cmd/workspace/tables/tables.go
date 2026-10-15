@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+
+	uctables "github.com/databricks/cli/libs/sdktypes/uc/tables/v1"
+	sdkuctables "github.com/databricks/sdk-go/uc/tables/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -62,13 +65,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*catalog.CreateTableRequest,
+	*uctables.CreateTableRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq uctables.CreateTableRequest
 
-	var createReq catalog.CreateTableRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -178,6 +181,7 @@ Create a table.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -192,38 +196,38 @@ Create a table.
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createReq.Name = args[0]
+			createReq.Name = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			createReq.CatalogName = args[1]
+			createReq.CatalogName = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			createReq.SchemaName = args[2]
+			createReq.SchemaName = new(args[2])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[3], &createReq.TableType)
-			if err != nil {
-				return fmt.Errorf("invalid TABLE_TYPE: %s", args[3])
-			}
-
+			createReq.TableType = uctables.TableType(args[3])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[4], &createReq.DataSourceFormat)
-			if err != nil {
-				return fmt.Errorf("invalid DATA_SOURCE_FORMAT: %s", args[4])
-			}
-
+			createReq.DataSourceFormat = uctables.DataSourceFormat(args[4])
 		}
 		if !cmd.Flags().Changed("json") {
-			createReq.StorageLocation = args[5]
+			createReq.StorageLocation = new(args[5])
 		}
 
-		response, err := w.Tables.Create(ctx, createReq)
+		sdkReq, err := uctables.CreateTableRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Tables.CreateTable(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := uctables.TableInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -244,13 +248,12 @@ Create a table.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteTableRequest,
+	*sdkuctables.DeleteTableRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq catalog.DeleteTableRequest
+	var deleteReq sdkuctables.DeleteTableRequest
 
 	cmd.Use = "delete FULL_NAME"
 	cmd.Short = `Delete a table.`
@@ -278,13 +281,17 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteReq.FullName = args[0]
+		deleteReq.FullNameArg = new(args[0])
 
-		err = w.Tables.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := w.Tables.DeleteTable(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -306,13 +313,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var existsOverrides []func(
 	*cobra.Command,
-	*catalog.ExistsRequest,
+	*sdkuctables.TableExistsRequest,
 )
 
 func newExists() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var existsReq catalog.ExistsRequest
+	var existsReq sdkuctables.TableExistsRequest
 
 	cmd.Use = "exists FULL_NAME"
 	cmd.Short = `Get boolean reflecting if table exists.`
@@ -343,15 +349,21 @@ func newExists() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		existsReq.FullName = args[0]
+		existsReq.FullNameArg = new(args[0])
 
-		response, err := w.Tables.Exists(ctx, existsReq)
+		sdkReq := &existsReq
+		response, err := w.Tables.TableExists(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := uctables.TableExistsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -372,17 +384,16 @@ func newExists() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*catalog.GetTableRequest,
+	*uctables.GetTableRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
+	var getReq uctables.GetTableRequest
 
-	var getReq catalog.GetTableRequest
-
-	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include tables in the response for which the principal can only access selective metadata for.`)
-	cmd.Flags().BoolVar(&getReq.IncludeDeltaMetadata, "include-delta-metadata", getReq.IncludeDeltaMetadata, `Whether delta metadata should be included in the response.`)
-	cmd.Flags().BoolVar(&getReq.IncludeManifestCapabilities, "include-manifest-capabilities", getReq.IncludeManifestCapabilities, `Whether to include a manifest containing table capabilities in the response.`)
+	flags.BoolPtrVar(cmd.Flags(), &getReq.IncludeBrowse, "include-browse", `Whether to include tables in the response for which the principal can only access selective metadata for.`)
+	flags.BoolPtrVar(cmd.Flags(), &getReq.IncludeDeltaMetadata, "include-delta-metadata", `Whether delta metadata should be included in the response.`)
+	flags.BoolPtrVar(cmd.Flags(), &getReq.IncludeManifestCapabilities, "include-manifest-capabilities", `Whether to include a manifest containing table capabilities in the response.`)
 
 	cmd.Use = "get FULL_NAME"
 	cmd.Short = `Get a table.`
@@ -412,15 +423,24 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getReq.FullName = args[0]
+		getReq.FullNameArg = new(args[0])
 
-		response, err := w.Tables.Get(ctx, getReq)
+		sdkReq, err := uctables.GetTableRequestToSDK(&getReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Tables.GetTable(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := uctables.TableInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -441,31 +461,31 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*catalog.ListTablesRequest,
+	*uctables.ListTablesRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq uctables.ListTablesRequest
 
-	var listReq catalog.ListTablesRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include tables in the response for which the principal can only access selective metadata for.`)
-	cmd.Flags().BoolVar(&listReq.IncludeManifestCapabilities, "include-manifest-capabilities", listReq.IncludeManifestCapabilities, `Whether to include a manifest containing table capabilities in the response.`)
-	cmd.Flags().BoolVar(&listReq.OmitColumns, "omit-columns", listReq.OmitColumns, `Whether to omit the columns of the table from the response or not.`)
-	cmd.Flags().BoolVar(&listReq.OmitProperties, "omit-properties", listReq.OmitProperties, `Whether to omit the properties of the table from the response or not.`)
-	cmd.Flags().BoolVar(&listReq.OmitUsername, "omit-username", listReq.OmitUsername, `Whether to omit the username of the table (e.g.`)
+	flags.BoolPtrVar(cmd.Flags(), &listReq.IncludeBrowse, "include-browse", `Whether to include tables in the response for which the principal can only access selective metadata for.`)
+	flags.BoolPtrVar(cmd.Flags(), &listReq.IncludeManifestCapabilities, "include-manifest-capabilities", `Whether to include a manifest containing table capabilities in the response.`)
+	flags.BoolPtrVar(cmd.Flags(), &listReq.OmitColumns, "omit-columns", `Whether to omit the columns of the table from the response or not.`)
+	flags.BoolPtrVar(cmd.Flags(), &listReq.OmitProperties, "omit-properties", `Whether to omit the properties of the table from the response or not.`)
+	flags.BoolPtrVar(cmd.Flags(), &listReq.OmitUsername, "omit-username", `Whether to omit the username of the table (e.g.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of tables to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listReq.MaxResults, "max-results", `Maximum number of tables to return.`)
 	cmd.Flags().Lookup("max-results").Hidden = true
 
 	cmd.Use = "list CATALOG_NAME SCHEMA_NAME"
@@ -507,19 +527,23 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listReq.CatalogName = args[0]
-		listReq.SchemaName = args[1]
+		listReq.CatalogName = new(args[0])
+		listReq.SchemaName = new(args[1])
 
-		response := w.Tables.List(ctx, listReq)
+		sdkReq, err := uctables.ListTablesRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Tables.ListTablesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, uctables.TableInfoFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -540,28 +564,28 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listSummariesOverrides []func(
 	*cobra.Command,
-	*catalog.ListSummariesRequest,
+	*uctables.ListTableSummariesRequest,
 )
 
 func newListSummaries() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listSummariesReq uctables.ListTableSummariesRequest
 
-	var listSummariesReq catalog.ListSummariesRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listSummariesLimit int
 
-	cmd.Flags().BoolVar(&listSummariesReq.IncludeManifestCapabilities, "include-manifest-capabilities", listSummariesReq.IncludeManifestCapabilities, `Whether to include a manifest containing table capabilities in the response.`)
-	cmd.Flags().IntVar(&listSummariesReq.MaxResults, "max-results", listSummariesReq.MaxResults, `Maximum number of summaries for tables to return.`)
-	cmd.Flags().StringVar(&listSummariesReq.SchemaNamePattern, "schema-name-pattern", listSummariesReq.SchemaNamePattern, `A sql LIKE pattern (% and _) for schema names.`)
-	cmd.Flags().StringVar(&listSummariesReq.TableNamePattern, "table-name-pattern", listSummariesReq.TableNamePattern, `A sql LIKE pattern (% and _) for table names.`)
+	flags.BoolPtrVar(cmd.Flags(), &listSummariesReq.IncludeManifestCapabilities, "include-manifest-capabilities", `Whether to include a manifest containing table capabilities in the response.`)
+	flags.IntPtrVar(cmd.Flags(), &listSummariesReq.MaxResults, "max-results", `Maximum number of summaries for tables to return.`)
+	flags.StringPtrVar(cmd.Flags(), &listSummariesReq.SchemaNamePattern, "schema-name-pattern", `A sql LIKE pattern (% and _) for schema names.`)
+	flags.StringPtrVar(cmd.Flags(), &listSummariesReq.TableNamePattern, "table-name-pattern", `A sql LIKE pattern (% and _) for table names.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listSummariesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listSummariesReq.PageToken, "page-token", listSummariesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listSummariesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-summaries CATALOG_NAME"
@@ -601,18 +625,22 @@ func newListSummaries() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listSummariesReq.CatalogName = args[0]
+		listSummariesReq.CatalogName = new(args[0])
 
-		response := w.Tables.ListSummaries(ctx, listSummariesReq)
+		sdkReq, err := uctables.ListTableSummariesRequestToSDK(&listSummariesReq)
+		if err != nil {
+			return err
+		}
 		if listSummariesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listSummariesLimit)
 		}
 		if listSummariesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listSummariesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Tables.ListTableSummariesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, uctables.TableSummaryFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -633,18 +661,18 @@ func newListSummaries() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*catalog.UpdateTableRequest,
+	*uctables.UpdateTableRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq uctables.UpdateTableRequest
 
-	var updateReq catalog.UpdateTableRequest
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of table.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Owner, "owner", `Username of current owner of table.`)
 
 	cmd.Use = "update FULL_NAME"
 	cmd.Short = `Update a table owner.`
@@ -675,6 +703,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -688,12 +717,18 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.FullName = args[0]
+		updateReq.FullNameArg = new(args[0])
 
-		err = w.Tables.Update(ctx, updateReq)
+		sdkReq, err := uctables.UpdateTableRequestToSDK(&updateReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Tables.UpdateTable(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 

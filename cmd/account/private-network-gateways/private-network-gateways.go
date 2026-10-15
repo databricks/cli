@@ -5,17 +5,19 @@ package private_network_gateways
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
+	"maps"
+
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	"github.com/databricks/databricks-sdk-go/experimental/api"
-	"github.com/databricks/databricks-sdk-go/service/networking"
 	"github.com/spf13/cobra"
+
+	networking "github.com/databricks/cli/libs/sdktypes/networking/v1"
+	sdknetworking "github.com/databricks/sdk-go/networking/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -61,14 +63,22 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createPrivateNetworkGatewayOverrides []func(
 	*cobra.Command,
-	*networking.CreatePrivateNetworkGatewayRequest,
+	*map[string]any,
 )
 
 func newCreatePrivateNetworkGateway() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createPrivateNetworkGatewayReq map[string]any
+	createPrivateNetworkGatewayReq = map[string]any{}
+	var createPrivateNetworkGatewayParentRaw string
+	var createPrivateNetworkGatewayRequestIdRaw string
+	var createPrivateNetworkGatewayBandwidthTierGigabitsPerSecondRaw int
+	var createPrivateNetworkGatewayDisplayNameRaw string
+	var createPrivateNetworkGatewayErrorMessageRaw string
+	var createPrivateNetworkGatewayNameRaw string
+	var createPrivateNetworkGatewayStateRaw string
+	var createPrivateNetworkGatewayTrafficModeRaw string
 
-	var createPrivateNetworkGatewayReq networking.CreatePrivateNetworkGatewayRequest
-	createPrivateNetworkGatewayReq.PrivateNetworkGateway = networking.PrivateNetworkGateway{}
 	var createPrivateNetworkGatewayJson flags.JsonFlag
 
 	var createPrivateNetworkGatewaySkipWait bool
@@ -79,12 +89,12 @@ func newCreatePrivateNetworkGateway() *cobra.Command {
 
 	cmd.Flags().Var(&createPrivateNetworkGatewayJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createPrivateNetworkGatewayReq.RequestId, "request-id", createPrivateNetworkGatewayReq.RequestId, `A unique identifier for this request.`)
+	cmd.Flags().StringVar(&createPrivateNetworkGatewayRequestIdRaw, "request-id", createPrivateNetworkGatewayRequestIdRaw, `A unique identifier for this request.`)
 	// TODO: complex arg: aws_cloud_connection
 	// TODO: complex arg: azure_cloud_connection
-	cmd.Flags().IntVar(&createPrivateNetworkGatewayReq.PrivateNetworkGateway.BandwidthTierGigabitsPerSecond, "bandwidth-tier-gigabits-per-second", createPrivateNetworkGatewayReq.PrivateNetworkGateway.BandwidthTierGigabitsPerSecond, `The provisioned bandwidth tier for an Azure gateway, in gigabits per second.`)
+	cmd.Flags().IntVar(&createPrivateNetworkGatewayBandwidthTierGigabitsPerSecondRaw, "bandwidth-tier-gigabits-per-second", createPrivateNetworkGatewayBandwidthTierGigabitsPerSecondRaw, `The provisioned bandwidth tier for an Azure gateway, in gigabits per second.`)
 	// TODO: array: destinations
-	cmd.Flags().StringVar(&createPrivateNetworkGatewayReq.PrivateNetworkGateway.Name, "name", createPrivateNetworkGatewayReq.PrivateNetworkGateway.Name, `The canonical resource name of the gateway, in the form accounts/{account_id}/network-connectivity-configs/{ncc_id}/private-network-gateways/{gateway_id}.`)
+	cmd.Flags().StringVar(&createPrivateNetworkGatewayNameRaw, "name", createPrivateNetworkGatewayNameRaw, `The canonical resource name of the gateway, in the form accounts/{account_id}/network-connectivity-configs/{ncc_id}/private-network-gateways/{gateway_id}.`)
 	// TODO: array: private_dns_resolvers
 
 	cmd.Use = "create-private-network-gateway PARENT DISPLAY_NAME TRAFFIC_MODE"
@@ -124,9 +134,10 @@ func newCreatePrivateNetworkGateway() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
-			diags := createPrivateNetworkGatewayJson.Unmarshal(&createPrivateNetworkGatewayReq.PrivateNetworkGateway)
+			diags := createPrivateNetworkGatewayJson.Unmarshal(&createPrivateNetworkGatewayReq)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -137,54 +148,48 @@ func newCreatePrivateNetworkGateway() *cobra.Command {
 				}
 			}
 		}
-		createPrivateNetworkGatewayReq.Parent = args[0]
+		createPrivateNetworkGatewayParentRaw = args[0]
 		if !cmd.Flags().Changed("json") {
-			createPrivateNetworkGatewayReq.PrivateNetworkGateway.DisplayName = args[1]
+			createPrivateNetworkGatewayDisplayNameRaw = args[1]
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &createPrivateNetworkGatewayReq.PrivateNetworkGateway.TrafficMode)
-			if err != nil {
-				return fmt.Errorf("invalid TRAFFIC_MODE: %s", args[2])
-			}
-
+			createPrivateNetworkGatewayTrafficModeRaw = args[2]
 		}
 
-		// Determine which mode to execute based on flags.
-		switch {
-		case createPrivateNetworkGatewaySkipWait:
-			wait, err := a.PrivateNetworkGateways.CreatePrivateNetworkGateway(ctx, createPrivateNetworkGatewayReq)
-			if err != nil {
-				return err
-			}
-
-			// Return operation immediately without waiting.
-			operation, err := a.PrivateNetworkGateways.GetPrivateNetworkGatewayOperation(ctx, networking.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
-
-		default:
-			wait, err := a.PrivateNetworkGateways.CreatePrivateNetworkGateway(ctx, createPrivateNetworkGatewayReq)
-			if err != nil {
-				return err
-			}
-
-			// Show spinner while waiting for completion.
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("Waiting for create-private-network-gateway to complete...")
-
-			// Wait for completion.
-			opts := api.WithTimeout(createPrivateNetworkGatewayTimeout)
-			response, err := wait.Wait(ctx, opts)
-			if err != nil {
-				return err
-			}
-			sp.Close()
-			return cmdio.Render(ctx, response)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("request-id") || createPrivateNetworkGatewayRequestIdRaw != "" {
+			rawQuery["request_id"] = createPrivateNetworkGatewayRequestIdRaw
 		}
+		if cmd.Flags().Changed("bandwidth-tier-gigabits-per-second") || createPrivateNetworkGatewayBandwidthTierGigabitsPerSecondRaw != 0 {
+			createPrivateNetworkGatewayReq["bandwidth_tier_gigabits_per_second"] = createPrivateNetworkGatewayBandwidthTierGigabitsPerSecondRaw
+		}
+		if cmd.Flags().Changed("display-name") || createPrivateNetworkGatewayDisplayNameRaw != "" {
+			createPrivateNetworkGatewayReq["display_name"] = createPrivateNetworkGatewayDisplayNameRaw
+		}
+		if cmd.Flags().Changed("error-message") || createPrivateNetworkGatewayErrorMessageRaw != "" {
+			createPrivateNetworkGatewayReq["error_message"] = createPrivateNetworkGatewayErrorMessageRaw
+		}
+		if cmd.Flags().Changed("name") || createPrivateNetworkGatewayNameRaw != "" {
+			createPrivateNetworkGatewayReq["name"] = createPrivateNetworkGatewayNameRaw
+		}
+		if cmd.Flags().Changed("state") || createPrivateNetworkGatewayStateRaw != "" {
+			createPrivateNetworkGatewayReq["state"] = createPrivateNetworkGatewayStateRaw
+		}
+		if cmd.Flags().Changed("traffic-mode") || createPrivateNetworkGatewayTrafficModeRaw != "" {
+			createPrivateNetworkGatewayReq["traffic_mode"] = createPrivateNetworkGatewayTrafficModeRaw
+		}
+		rawPath := fmt.Sprintf("/api/networking/v1/%s/private-network-gateways", fmt.Sprint(createPrivateNetworkGatewayParentRaw))
+
+		api, err := apiclient.New(a.Config)
+		if err != nil {
+			return err
+		}
+		var response any
+		err = api.Do(ctx, "POST", rawPath, nil, rawQuery, createPrivateNetworkGatewayReq, &response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -205,13 +210,12 @@ func newCreatePrivateNetworkGateway() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deletePrivateNetworkGatewayOverrides []func(
 	*cobra.Command,
-	*networking.DeletePrivateNetworkGatewayRequest,
+	*sdknetworking.DeleteEndpointRequest,
 )
 
 func newDeletePrivateNetworkGateway() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deletePrivateNetworkGatewayReq networking.DeletePrivateNetworkGatewayRequest
+	var deletePrivateNetworkGatewayReq sdknetworking.DeleteEndpointRequest
 
 	cmd.Use = "delete-private-network-gateway NAME"
 	cmd.Short = `Delete a private network gateway.`
@@ -235,10 +239,12 @@ func newDeletePrivateNetworkGateway() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		deletePrivateNetworkGatewayReq.Name = args[0]
+		deletePrivateNetworkGatewayReq.Name = new(args[0])
 
-		err = a.PrivateNetworkGateways.DeletePrivateNetworkGateway(ctx, deletePrivateNetworkGatewayReq)
+		sdkReq := &deletePrivateNetworkGatewayReq
+		err = a.Networking.DeleteEndpoint(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -263,13 +269,12 @@ func newDeletePrivateNetworkGateway() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPrivateNetworkGatewayOverrides []func(
 	*cobra.Command,
-	*networking.GetPrivateNetworkGatewayRequest,
+	*sdknetworking.GetEndpointRequest,
 )
 
 func newGetPrivateNetworkGateway() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPrivateNetworkGatewayReq networking.GetPrivateNetworkGatewayRequest
+	var getPrivateNetworkGatewayReq sdknetworking.GetEndpointRequest
 
 	cmd.Use = "get-private-network-gateway NAME"
 	cmd.Short = `Get a private network gateway.`
@@ -293,15 +298,21 @@ func newGetPrivateNetworkGateway() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		getPrivateNetworkGatewayReq.Name = args[0]
+		getPrivateNetworkGatewayReq.Name = new(args[0])
 
-		response, err := a.PrivateNetworkGateways.GetPrivateNetworkGateway(ctx, getPrivateNetworkGatewayReq)
+		sdkReq := &getPrivateNetworkGatewayReq
+		response, err := a.Networking.GetEndpoint(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.EndpointFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -322,13 +333,12 @@ func newGetPrivateNetworkGateway() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPrivateNetworkGatewayOperationOverrides []func(
 	*cobra.Command,
-	*networking.GetOperationRequest,
+	*sdknetworking.GetEndpointRequest,
 )
 
 func newGetPrivateNetworkGatewayOperation() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPrivateNetworkGatewayOperationReq networking.GetOperationRequest
+	var getPrivateNetworkGatewayOperationReq sdknetworking.GetEndpointRequest
 
 	cmd.Use = "get-private-network-gateway-operation NAME"
 	cmd.Short = `Get a private network gateway operation.`
@@ -352,15 +362,21 @@ func newGetPrivateNetworkGatewayOperation() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		getPrivateNetworkGatewayOperationReq.Name = args[0]
+		getPrivateNetworkGatewayOperationReq.Name = new(args[0])
 
-		response, err := a.PrivateNetworkGateways.GetPrivateNetworkGatewayOperation(ctx, getPrivateNetworkGatewayOperationReq)
+		sdkReq := &getPrivateNetworkGatewayOperationReq
+		response, err := a.Networking.GetEndpoint(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.EndpointFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -381,13 +397,16 @@ func newGetPrivateNetworkGatewayOperation() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listPrivateNetworkGatewaysOverrides []func(
 	*cobra.Command,
-	*networking.ListPrivateNetworkGatewaysRequest,
+	*map[string]any,
 )
 
 func newListPrivateNetworkGateways() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listPrivateNetworkGatewaysReq map[string]any
+	listPrivateNetworkGatewaysReq = map[string]any{}
+	var listPrivateNetworkGatewaysPageTokenRaw string
+	var listPrivateNetworkGatewaysParentRaw string
 
-	var listPrivateNetworkGatewaysReq networking.ListPrivateNetworkGatewaysRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
@@ -397,7 +416,7 @@ func newListPrivateNetworkGateways() *cobra.Command {
 	cmd.Flags().IntVar(&listPrivateNetworkGatewaysLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listPrivateNetworkGatewaysReq.PageToken, "page-token", listPrivateNetworkGatewaysReq.PageToken, `Pagination token.`)
+	cmd.Flags().StringVar(&listPrivateNetworkGatewaysPageTokenRaw, "page-token", listPrivateNetworkGatewaysPageTokenRaw, `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-private-network-gateways PARENT"
@@ -422,18 +441,30 @@ func newListPrivateNetworkGateways() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		listPrivateNetworkGatewaysReq.Parent = args[0]
+		listPrivateNetworkGatewaysParentRaw = args[0]
 
-		response := a.PrivateNetworkGateways.ListPrivateNetworkGateways(ctx, listPrivateNetworkGatewaysReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("page-token") || listPrivateNetworkGatewaysPageTokenRaw != "" {
+			rawQuery["page_token"] = listPrivateNetworkGatewaysPageTokenRaw
+		}
+		rawPath := fmt.Sprintf("/api/networking/v1/%s/private-network-gateways", fmt.Sprint(listPrivateNetworkGatewaysParentRaw))
+
+		maps.Copy(rawQuery, listPrivateNetworkGatewaysReq)
+		api, err := apiclient.New(a.Config)
+		if err != nil {
+			return err
+		}
+		var response any
+		err = api.Do(ctx, "GET", rawPath, nil, rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		if listPrivateNetworkGatewaysLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listPrivateNetworkGatewaysLimit)
 		}
-		if listPrivateNetworkGatewaysLimit > 0 {
-			ctx = cmdio.WithLimit(ctx, listPrivateNetworkGatewaysLimit)
-		}
-
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -454,23 +485,29 @@ func newListPrivateNetworkGateways() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updatePrivateNetworkGatewayOverrides []func(
 	*cobra.Command,
-	*networking.UpdatePrivateNetworkGatewayRequest,
+	*map[string]any,
 )
 
 func newUpdatePrivateNetworkGateway() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updatePrivateNetworkGatewayReq map[string]any
+	updatePrivateNetworkGatewayReq = map[string]any{}
+	var updatePrivateNetworkGatewayNameRaw string
+	var updatePrivateNetworkGatewayBandwidthTierGigabitsPerSecondRaw int
+	var updatePrivateNetworkGatewayDisplayNameRaw string
+	var updatePrivateNetworkGatewayErrorMessageRaw string
+	var updatePrivateNetworkGatewayStateRaw string
+	var updatePrivateNetworkGatewayTrafficModeRaw string
 
-	var updatePrivateNetworkGatewayReq networking.UpdatePrivateNetworkGatewayRequest
-	updatePrivateNetworkGatewayReq.PrivateNetworkGateway = networking.PrivateNetworkGateway{}
 	var updatePrivateNetworkGatewayJson flags.JsonFlag
 
 	cmd.Flags().Var(&updatePrivateNetworkGatewayJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: aws_cloud_connection
 	// TODO: complex arg: azure_cloud_connection
-	cmd.Flags().IntVar(&updatePrivateNetworkGatewayReq.PrivateNetworkGateway.BandwidthTierGigabitsPerSecond, "bandwidth-tier-gigabits-per-second", updatePrivateNetworkGatewayReq.PrivateNetworkGateway.BandwidthTierGigabitsPerSecond, `The provisioned bandwidth tier for an Azure gateway, in gigabits per second.`)
+	cmd.Flags().IntVar(&updatePrivateNetworkGatewayBandwidthTierGigabitsPerSecondRaw, "bandwidth-tier-gigabits-per-second", updatePrivateNetworkGatewayBandwidthTierGigabitsPerSecondRaw, `The provisioned bandwidth tier for an Azure gateway, in gigabits per second.`)
 	// TODO: array: destinations
-	cmd.Flags().StringVar(&updatePrivateNetworkGatewayReq.PrivateNetworkGateway.Name, "name", updatePrivateNetworkGatewayReq.PrivateNetworkGateway.Name, `The canonical resource name of the gateway, in the form accounts/{account_id}/network-connectivity-configs/{ncc_id}/private-network-gateways/{gateway_id}.`)
+	cmd.Flags().StringVar(&updatePrivateNetworkGatewayNameRaw, "name", updatePrivateNetworkGatewayNameRaw, `The canonical resource name of the gateway, in the form accounts/{account_id}/network-connectivity-configs/{ncc_id}/private-network-gateways/{gateway_id}.`)
 	// TODO: array: private_dns_resolvers
 
 	cmd.Use = "update-private-network-gateway NAME UPDATE_MASK DISPLAY_NAME TRAFFIC_MODE"
@@ -507,9 +544,10 @@ func newUpdatePrivateNetworkGateway() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
-			diags := updatePrivateNetworkGatewayJson.Unmarshal(&updatePrivateNetworkGatewayReq.PrivateNetworkGateway)
+			diags := updatePrivateNetworkGatewayJson.Unmarshal(&updatePrivateNetworkGatewayReq)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -520,27 +558,47 @@ func newUpdatePrivateNetworkGateway() *cobra.Command {
 				}
 			}
 		}
-		updatePrivateNetworkGatewayReq.Name = args[0]
+		updatePrivateNetworkGatewayNameRaw = args[0]
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updatePrivateNetworkGatewayReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updatePrivateNetworkGatewayReq["update_mask"] = args[1]
 		}
 		if !cmd.Flags().Changed("json") {
-			updatePrivateNetworkGatewayReq.PrivateNetworkGateway.DisplayName = args[2]
+			updatePrivateNetworkGatewayDisplayNameRaw = args[2]
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[3], &updatePrivateNetworkGatewayReq.PrivateNetworkGateway.TrafficMode)
-			if err != nil {
-				return fmt.Errorf("invalid TRAFFIC_MODE: %s", args[3])
-			}
-
+			updatePrivateNetworkGatewayTrafficModeRaw = args[3]
 		}
 
-		response, err := a.PrivateNetworkGateways.UpdatePrivateNetworkGateway(ctx, updatePrivateNetworkGatewayReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("bandwidth-tier-gigabits-per-second") || updatePrivateNetworkGatewayBandwidthTierGigabitsPerSecondRaw != 0 {
+			updatePrivateNetworkGatewayReq["bandwidth_tier_gigabits_per_second"] = updatePrivateNetworkGatewayBandwidthTierGigabitsPerSecondRaw
+		}
+		if cmd.Flags().Changed("display-name") || updatePrivateNetworkGatewayDisplayNameRaw != "" {
+			updatePrivateNetworkGatewayReq["display_name"] = updatePrivateNetworkGatewayDisplayNameRaw
+		}
+		if cmd.Flags().Changed("error-message") || updatePrivateNetworkGatewayErrorMessageRaw != "" {
+			updatePrivateNetworkGatewayReq["error_message"] = updatePrivateNetworkGatewayErrorMessageRaw
+		}
+		if cmd.Flags().Changed("name") || updatePrivateNetworkGatewayNameRaw != "" {
+			updatePrivateNetworkGatewayReq["name"] = updatePrivateNetworkGatewayNameRaw
+		}
+		if cmd.Flags().Changed("state") || updatePrivateNetworkGatewayStateRaw != "" {
+			updatePrivateNetworkGatewayReq["state"] = updatePrivateNetworkGatewayStateRaw
+		}
+		if cmd.Flags().Changed("traffic-mode") || updatePrivateNetworkGatewayTrafficModeRaw != "" {
+			updatePrivateNetworkGatewayReq["traffic_mode"] = updatePrivateNetworkGatewayTrafficModeRaw
+		}
+		rawPath := fmt.Sprintf("/api/networking/v1/%s", fmt.Sprint(updatePrivateNetworkGatewayNameRaw))
+
+		api, err := apiclient.New(a.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "PATCH", rawPath, nil, rawQuery, updatePrivateNetworkGatewayReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 

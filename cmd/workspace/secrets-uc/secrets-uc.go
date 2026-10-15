@@ -6,16 +6,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
+
+	"strconv"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	sdkcoretypes "github.com/databricks/sdk-go/core/types"
 	"github.com/spf13/cobra"
+
+	ucsecrets "github.com/databricks/cli/libs/sdktypes/uc/secrets/v1"
+	sdkucsecrets "github.com/databricks/sdk-go/uc/secrets/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -61,22 +64,22 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createSecretOverrides []func(
 	*cobra.Command,
-	*catalog.CreateSecretRequest,
+	*ucsecrets.CreateSecretRequest,
 )
 
 func newCreateSecret() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createSecretReq ucsecrets.CreateSecretRequest
+	createSecretReq.Secret = &ucsecrets.Secret{}
 
-	var createSecretReq catalog.CreateSecretRequest
-	createSecretReq.Secret = catalog.Secret{}
 	var createSecretJson flags.JsonFlag
 
 	cmd.Flags().Var(&createSecretJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createSecretReq.Secret.Comment, "comment", createSecretReq.Secret.Comment, `User-provided free-form text description of the secret.`)
+	flags.StringPtrVar(cmd.Flags(), &createSecretReq.Secret.Comment, "comment", `User-provided free-form text description of the secret.`)
 	var expireTimeParam string
 	cmd.Flags().StringVar(&expireTimeParam, "expire-time", expireTimeParam, `User-provided expiration time of the secret.`)
-	cmd.Flags().StringVar(&createSecretReq.Secret.Owner, "owner", createSecretReq.Secret.Owner, `The owner of the secret.`)
+	flags.StringPtrVar(cmd.Flags(), &createSecretReq.Secret.Owner, "owner", `The owner of the secret.`)
 
 	cmd.Use = "create-secret NAME CATALOG_NAME SCHEMA_NAME VALUE"
 	cmd.Short = `Create a secret.`
@@ -121,6 +124,7 @@ func newCreateSecret() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createSecretJson.Unmarshal(&createSecretReq.Secret)
@@ -135,34 +139,41 @@ func newCreateSecret() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createSecretReq.Secret.Name = args[0]
+			createSecretReq.Secret.Name = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			createSecretReq.Secret.CatalogName = args[1]
+			createSecretReq.Secret.CatalogName = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			createSecretReq.Secret.SchemaName = args[2]
+			createSecretReq.Secret.SchemaName = new(args[2])
 		}
 		if !cmd.Flags().Changed("json") {
-			createSecretReq.Secret.Value = args[3]
+			createSecretReq.Secret.Value = new(args[3])
 		}
 
 		if expireTimeParam != "" {
-			expireTimeBytes := []byte(fmt.Sprintf("\"%s\"", expireTimeParam))
-			var expireTimeField sdktime.Time
-			err = json.Unmarshal(expireTimeBytes, &expireTimeField)
+			var expireTimeField sdkcoretypes.Time
+			err = json.Unmarshal([]byte(strconv.Quote(expireTimeParam)), &expireTimeField)
 			if err != nil {
 				return fmt.Errorf("invalid EXPIRE_TIME: %s", expireTimeParam)
 			}
 			createSecretReq.Secret.ExpireTime = &expireTimeField
 		}
 
-		response, err := w.SecretsUc.CreateSecret(ctx, createSecretReq)
+		sdkReq, err := ucsecrets.CreateSecretRequestToSDK(&createSecretReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.SecretsUc.CreateSecret(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucsecrets.SecretFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -183,13 +194,12 @@ func newCreateSecret() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteSecretOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteSecretRequest,
+	*sdkucsecrets.DeleteSecretRequest,
 )
 
 func newDeleteSecret() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteSecretReq catalog.DeleteSecretRequest
+	var deleteSecretReq sdkucsecrets.DeleteSecretRequest
 
 	cmd.Use = "delete-secret FULL_NAME"
 	cmd.Short = `Delete a secret.`
@@ -216,10 +226,12 @@ func newDeleteSecret() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteSecretReq.FullName = args[0]
+		deleteSecretReq.FullName = new(args[0])
 
-		err = w.SecretsUc.DeleteSecret(ctx, deleteSecretReq)
+		sdkReq := &deleteSecretReq
+		err = w.SecretsUc.DeleteSecret(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -244,15 +256,14 @@ func newDeleteSecret() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getSecretOverrides []func(
 	*cobra.Command,
-	*catalog.GetSecretRequest,
+	*ucsecrets.GetSecretRequest,
 )
 
 func newGetSecret() *cobra.Command {
 	cmd := &cobra.Command{}
+	var getSecretReq ucsecrets.GetSecretRequest
 
-	var getSecretReq catalog.GetSecretRequest
-
-	cmd.Flags().BoolVar(&getSecretReq.IncludeValue, "include-value", getSecretReq.IncludeValue, `Whether to include the secret value in the response.`)
+	flags.BoolPtrVar(cmd.Flags(), &getSecretReq.IncludeValue, "include-value", `Whether to include the secret value in the response.`)
 
 	cmd.Use = "get-secret FULL_NAME"
 	cmd.Short = `Get a secret.`
@@ -284,15 +295,24 @@ func newGetSecret() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getSecretReq.FullName = args[0]
+		getSecretReq.FullName = new(args[0])
 
-		response, err := w.SecretsUc.GetSecret(ctx, getSecretReq)
+		sdkReq, err := ucsecrets.GetSecretRequestToSDK(&getSecretReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.SecretsUc.GetSecret(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucsecrets.SecretFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -313,27 +333,27 @@ func newGetSecret() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listSecretsOverrides []func(
 	*cobra.Command,
-	*catalog.ListSecretsRequest,
+	*ucsecrets.ListSecretsRequest,
 )
 
 func newListSecrets() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listSecretsReq ucsecrets.ListSecretsRequest
 
-	var listSecretsReq catalog.ListSecretsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listSecretsLimit int
 
-	cmd.Flags().StringVar(&listSecretsReq.CatalogName, "catalog-name", listSecretsReq.CatalogName, `The name of the catalog under which to list secrets.`)
-	cmd.Flags().IntVar(&listSecretsReq.PageSize, "page-size", listSecretsReq.PageSize, `Maximum number of secrets to return.`)
-	cmd.Flags().StringVar(&listSecretsReq.SchemaName, "schema-name", listSecretsReq.SchemaName, `The name of the schema under which to list secrets.`)
+	flags.StringPtrVar(cmd.Flags(), &listSecretsReq.CatalogName, "catalog-name", `The name of the catalog under which to list secrets.`)
+	flags.IntPtrVar(cmd.Flags(), &listSecretsReq.PageSize, "page-size", `Maximum number of secrets to return.`)
+	flags.StringPtrVar(cmd.Flags(), &listSecretsReq.SchemaName, "schema-name", `The name of the schema under which to list secrets.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listSecretsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listSecretsReq.PageToken, "page-token", listSecretsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listSecretsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-secrets"
@@ -362,16 +382,20 @@ func newListSecrets() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.SecretsUc.ListSecrets(ctx, listSecretsReq)
+		sdkReq, err := ucsecrets.ListSecretsRequestToSDK(&listSecretsReq)
+		if err != nil {
+			return err
+		}
 		if listSecretsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listSecretsLimit)
 		}
 		if listSecretsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listSecretsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.SecretsUc.ListSecretsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, ucsecrets.SecretFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -392,22 +416,22 @@ func newListSecrets() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateSecretOverrides []func(
 	*cobra.Command,
-	*catalog.UpdateSecretRequest,
+	*ucsecrets.UpdateSecretRequest,
 )
 
 func newUpdateSecret() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateSecretReq ucsecrets.UpdateSecretRequest
+	updateSecretReq.Secret = &ucsecrets.Secret{}
 
-	var updateSecretReq catalog.UpdateSecretRequest
-	updateSecretReq.Secret = catalog.Secret{}
 	var updateSecretJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateSecretJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateSecretReq.Secret.Comment, "comment", updateSecretReq.Secret.Comment, `User-provided free-form text description of the secret.`)
+	flags.StringPtrVar(cmd.Flags(), &updateSecretReq.Secret.Comment, "comment", `User-provided free-form text description of the secret.`)
 	var expireTimeParam string
 	cmd.Flags().StringVar(&expireTimeParam, "expire-time", expireTimeParam, `User-provided expiration time of the secret.`)
-	cmd.Flags().StringVar(&updateSecretReq.Secret.Owner, "owner", updateSecretReq.Secret.Owner, `The owner of the secret.`)
+	flags.StringPtrVar(cmd.Flags(), &updateSecretReq.Secret.Owner, "owner", `The owner of the secret.`)
 
 	cmd.Use = "update-secret FULL_NAME UPDATE_MASK NAME CATALOG_NAME SCHEMA_NAME VALUE"
 	cmd.Short = `Update a secret.`
@@ -460,6 +484,7 @@ func newUpdateSecret() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateSecretJson.Unmarshal(&updateSecretReq.Secret)
@@ -473,40 +498,46 @@ func newUpdateSecret() *cobra.Command {
 				}
 			}
 		}
-		updateSecretReq.FullName = args[0]
+		updateSecretReq.FullName = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateSecretReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateSecretReq.UpdateMask = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateSecretReq.Secret.Name = args[2]
+			updateSecretReq.Secret.Name = new(args[2])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateSecretReq.Secret.CatalogName = args[3]
+			updateSecretReq.Secret.CatalogName = new(args[3])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateSecretReq.Secret.SchemaName = args[4]
+			updateSecretReq.Secret.SchemaName = new(args[4])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateSecretReq.Secret.Value = args[5]
+			updateSecretReq.Secret.Value = new(args[5])
 		}
 
 		if expireTimeParam != "" {
-			expireTimeBytes := []byte(fmt.Sprintf("\"%s\"", expireTimeParam))
-			var expireTimeField sdktime.Time
-			err = json.Unmarshal(expireTimeBytes, &expireTimeField)
+			var expireTimeField sdkcoretypes.Time
+			err = json.Unmarshal([]byte(strconv.Quote(expireTimeParam)), &expireTimeField)
 			if err != nil {
 				return fmt.Errorf("invalid EXPIRE_TIME: %s", expireTimeParam)
 			}
 			updateSecretReq.Secret.ExpireTime = &expireTimeField
 		}
 
-		response, err := w.SecretsUc.UpdateSecret(ctx, updateSecretReq)
+		sdkReq, err := ucsecrets.UpdateSecretRequestToSDK(&updateSecretReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.SecretsUc.UpdateSecret(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucsecrets.SecretFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

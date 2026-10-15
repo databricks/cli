@@ -9,8 +9,9 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
+
+	accessmanagement "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -50,13 +51,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var checkPolicyOverrides []func(
 	*cobra.Command,
-	*iam.CheckPolicyRequest,
+	*accessmanagement.CheckPolicyRequest,
 )
 
 func newCheckPolicy() *cobra.Command {
 	cmd := &cobra.Command{}
+	var checkPolicyReq accessmanagement.CheckPolicyRequest
 
-	var checkPolicyReq iam.CheckPolicyRequest
 	var checkPolicyJson flags.JsonFlag
 
 	cmd.Flags().Var(&checkPolicyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -75,6 +76,7 @@ func newCheckPolicy() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := checkPolicyJson.Unmarshal(&checkPolicyReq)
@@ -91,12 +93,20 @@ func newCheckPolicy() *cobra.Command {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.AccessControl.CheckPolicy(ctx, checkPolicyReq)
+		sdkReq, err := accessmanagement.CheckPolicyRequestToSDK(&checkPolicyReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AccessManagement.CheckPolicy(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.CheckPolicyResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

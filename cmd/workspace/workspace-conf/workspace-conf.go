@@ -9,8 +9,10 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
+
+	domains "github.com/databricks/cli/libs/sdktypes/domains/v1"
+	sdkdomains "github.com/databricks/sdk-go/domains/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -48,13 +50,12 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getStatusOverrides []func(
 	*cobra.Command,
-	*settings.GetStatusRequest,
+	*sdkdomains.GetDomainRequest,
 )
 
 func newGetStatus() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getStatusReq settings.GetStatusRequest
+	var getStatusReq sdkdomains.GetDomainRequest
 
 	cmd.Use = "get-status KEYS"
 	cmd.Short = `Check configuration status.`
@@ -75,15 +76,23 @@ func newGetStatus() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getStatusReq.Keys = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: keys
 
-		response, err := w.WorkspaceConf.GetStatus(ctx, getStatusReq)
+		getStatusReq.Name = new("workspace-conf")
+
+		sdkReq := &getStatusReq
+		response, err := w.Domains.GetDomain(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := domains.DomainFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -104,13 +113,13 @@ func newGetStatus() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var setStatusOverrides []func(
 	*cobra.Command,
-	*settings.WorkspaceConf,
+	*domains.UpdateDomainRequest,
 )
 
 func newSetStatus() *cobra.Command {
 	cmd := &cobra.Command{}
+	var setStatusReq domains.UpdateDomainRequest
 
-	var setStatusReq settings.WorkspaceConf
 	var setStatusJson flags.JsonFlag
 
 	cmd.Flags().Var(&setStatusJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -130,6 +139,7 @@ func newSetStatus() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := setStatusJson.Unmarshal(&setStatusReq)
@@ -146,11 +156,22 @@ func newSetStatus() *cobra.Command {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		err = w.WorkspaceConf.SetStatus(ctx, setStatusReq)
+		setStatusReq.Domain.Name = new("workspace-conf")
+
+		sdkReq, err := domains.UpdateDomainRequestToSDK(&setStatusReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		response, err := w.Domains.UpdateDomain(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		out, err := domains.DomainFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

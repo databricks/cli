@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+
+	ucabacpolicies "github.com/databricks/cli/libs/sdktypes/uc/abacpolicies/v1"
+	sdkucabacpolicies "github.com/databricks/sdk-go/uc/abacpolicies/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -59,27 +62,27 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createPolicyOverrides []func(
 	*cobra.Command,
-	*catalog.CreatePolicyRequest,
+	*ucabacpolicies.CreatePolicyRequest,
 )
 
 func newCreatePolicy() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createPolicyReq ucabacpolicies.CreatePolicyRequest
+	createPolicyReq.PolicyInfo = &ucabacpolicies.PolicyInfo{}
 
-	var createPolicyReq catalog.CreatePolicyRequest
-	createPolicyReq.PolicyInfo = catalog.PolicyInfo{}
 	var createPolicyJson flags.JsonFlag
 
 	cmd.Flags().Var(&createPolicyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: column_mask
-	cmd.Flags().StringVar(&createPolicyReq.PolicyInfo.Comment, "comment", createPolicyReq.PolicyInfo.Comment, `Optional description of the policy.`)
+	flags.StringPtrVar(cmd.Flags(), &createPolicyReq.PolicyInfo.Comment, "comment", `Optional description of the policy.`)
 	// TODO: complex arg: deny
 	// TODO: array: except_principals
 	// TODO: complex arg: grant
 	// TODO: array: match_columns
-	cmd.Flags().StringVar(&createPolicyReq.PolicyInfo.Name, "name", createPolicyReq.PolicyInfo.Name, `Name of the policy.`)
-	cmd.Flags().StringVar(&createPolicyReq.PolicyInfo.OnSecurableFullname, "on-securable-fullname", createPolicyReq.PolicyInfo.OnSecurableFullname, `Full name of the securable on which the policy is defined.`)
-	cmd.Flags().Var(&createPolicyReq.PolicyInfo.OnSecurableType, "on-securable-type", `Type of the securable on which the policy is defined. Supported values: [
+	flags.StringPtrVar(cmd.Flags(), &createPolicyReq.PolicyInfo.Name, "name", `Name of the policy.`)
+	flags.StringPtrVar(cmd.Flags(), &createPolicyReq.PolicyInfo.OnSecurableFullname, "on-securable-fullname", `Full name of the securable on which the policy is defined.`)
+	flags.EnumVar(cmd.Flags(), &createPolicyReq.PolicyInfo.OnSecurableType, "on-securable-type", `Type of the securable on which the policy is defined. Supported values: [
   AGENT_SERVICE,
   CATALOG,
   CLEAN_ROOM,
@@ -103,9 +106,9 @@ func newCreatePolicy() *cobra.Command {
   STORAGE_CREDENTIAL,
   TABLE,
   VOLUME,
-]`)
+]`, "SecurableType", "AGENT_SERVICE", "CATALOG", "CLEAN_ROOM", "CONNECTION", "CREDENTIAL", "EXTERNAL_LOCATION", "EXTERNAL_METADATA", "FUNCTION", "MCP_SERVICE", "METASTORE", "MODEL", "MODEL_PROVIDER_SERVICE", "MODEL_SERVICE", "PIPELINE", "PROVIDER", "RECIPIENT", "SCHEMA", "SHARE", "SKILL", "STAGING_TABLE", "STORAGE_CREDENTIAL", "TABLE", "VOLUME")
 	// TODO: complex arg: row_filter
-	cmd.Flags().StringVar(&createPolicyReq.PolicyInfo.WhenCondition, "when-condition", createPolicyReq.PolicyInfo.WhenCondition, `Optional condition when the policy should take effect.`)
+	flags.StringPtrVar(cmd.Flags(), &createPolicyReq.PolicyInfo.WhenCondition, "when-condition", `Optional condition when the policy should take effect.`)
 
 	cmd.Use = "create-policy TO_PRINCIPALS FOR_SECURABLE_TYPE POLICY_TYPE"
 	cmd.Short = `Create an ABAC policy.`
@@ -167,6 +170,7 @@ func newCreatePolicy() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createPolicyJson.Unmarshal(&createPolicyReq.PolicyInfo)
@@ -181,33 +185,29 @@ func newCreatePolicy() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[0], &createPolicyReq.PolicyInfo.ToPrincipals)
-			if err != nil {
-				return fmt.Errorf("invalid TO_PRINCIPALS: %s", args[0])
-			}
-
+			_ = args[0] // TODO: complex arg: to_principals
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &createPolicyReq.PolicyInfo.ForSecurableType)
-			if err != nil {
-				return fmt.Errorf("invalid FOR_SECURABLE_TYPE: %s", args[1])
-			}
-
+			createPolicyReq.PolicyInfo.ForSecurableType = ucabacpolicies.SecurableType(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &createPolicyReq.PolicyInfo.PolicyType)
-			if err != nil {
-				return fmt.Errorf("invalid POLICY_TYPE: %s", args[2])
-			}
-
+			createPolicyReq.PolicyInfo.PolicyType = ucabacpolicies.PolicyType(args[2])
 		}
 
-		response, err := w.Policies.CreatePolicy(ctx, createPolicyReq)
+		sdkReq, err := ucabacpolicies.CreatePolicyRequestToSDK(&createPolicyReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AbacPolicies.CreatePolicy(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucabacpolicies.PolicyInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -228,13 +228,12 @@ func newCreatePolicy() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deletePolicyOverrides []func(
 	*cobra.Command,
-	*catalog.DeletePolicyRequest,
+	*sdkucabacpolicies.DeletePolicyRequest,
 )
 
 func newDeletePolicy() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deletePolicyReq catalog.DeletePolicyRequest
+	var deletePolicyReq sdkucabacpolicies.DeletePolicyRequest
 
 	cmd.Use = "delete-policy ON_SECURABLE_TYPE ON_SECURABLE_FULLNAME NAME"
 	cmd.Short = `Delete an ABAC policy.`
@@ -261,17 +260,20 @@ func newDeletePolicy() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deletePolicyReq.OnSecurableType = args[0]
-		deletePolicyReq.OnSecurableFullname = args[1]
-		deletePolicyReq.Name = args[2]
+		deletePolicyReq.OnSecurableType = new(args[0])
+		deletePolicyReq.OnSecurableFullname = new(args[1])
+		deletePolicyReq.Name = new(args[2])
 
-		response, err := w.Policies.DeletePolicy(ctx, deletePolicyReq)
+		sdkReq := &deletePolicyReq
+		response, err := w.AbacPolicies.DeletePolicy(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		_ = response
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -292,13 +294,12 @@ func newDeletePolicy() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPolicyOverrides []func(
 	*cobra.Command,
-	*catalog.GetPolicyRequest,
+	*sdkucabacpolicies.GetPolicyRequest,
 )
 
 func newGetPolicy() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPolicyReq catalog.GetPolicyRequest
+	var getPolicyReq sdkucabacpolicies.GetPolicyRequest
 
 	cmd.Use = "get-policy ON_SECURABLE_TYPE ON_SECURABLE_FULLNAME NAME"
 	cmd.Short = `Get an ABAC policy.`
@@ -324,17 +325,23 @@ func newGetPolicy() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getPolicyReq.OnSecurableType = args[0]
-		getPolicyReq.OnSecurableFullname = args[1]
-		getPolicyReq.Name = args[2]
+		getPolicyReq.OnSecurableType = new(args[0])
+		getPolicyReq.OnSecurableFullname = new(args[1])
+		getPolicyReq.Name = new(args[2])
 
-		response, err := w.Policies.GetPolicy(ctx, getPolicyReq)
+		sdkReq := &getPolicyReq
+		response, err := w.AbacPolicies.GetPolicy(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucabacpolicies.PolicyInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -355,26 +362,26 @@ func newGetPolicy() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listPoliciesOverrides []func(
 	*cobra.Command,
-	*catalog.ListPoliciesRequest,
+	*ucabacpolicies.ListPoliciesRequest,
 )
 
 func newListPolicies() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listPoliciesReq ucabacpolicies.ListPoliciesRequest
 
-	var listPoliciesReq catalog.ListPoliciesRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listPoliciesLimit int
 
-	cmd.Flags().BoolVar(&listPoliciesReq.IncludeInherited, "include-inherited", listPoliciesReq.IncludeInherited, `Optional.`)
-	cmd.Flags().IntVar(&listPoliciesReq.MaxResults, "max-results", listPoliciesReq.MaxResults, `Optional.`)
+	flags.BoolPtrVar(cmd.Flags(), &listPoliciesReq.IncludeInherited, "include-inherited", `Optional.`)
+	flags.IntPtrVar(cmd.Flags(), &listPoliciesReq.MaxResults, "max-results", `Optional.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listPoliciesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listPoliciesReq.PageToken, "page-token", listPoliciesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listPoliciesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-policies ON_SECURABLE_TYPE ON_SECURABLE_FULLNAME"
@@ -406,19 +413,23 @@ func newListPolicies() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listPoliciesReq.OnSecurableType = args[0]
-		listPoliciesReq.OnSecurableFullname = args[1]
+		listPoliciesReq.OnSecurableType = new(args[0])
+		listPoliciesReq.OnSecurableFullname = new(args[1])
 
-		response := w.Policies.ListPolicies(ctx, listPoliciesReq)
+		sdkReq, err := ucabacpolicies.ListPoliciesRequestToSDK(&listPoliciesReq)
+		if err != nil {
+			return err
+		}
 		if listPoliciesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listPoliciesLimit)
 		}
 		if listPoliciesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listPoliciesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.AbacPolicies.ListPoliciesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, ucabacpolicies.PolicyInfoFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -439,28 +450,28 @@ func newListPolicies() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updatePolicyOverrides []func(
 	*cobra.Command,
-	*catalog.UpdatePolicyRequest,
+	*ucabacpolicies.UpdatePolicyRequest,
 )
 
 func newUpdatePolicy() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updatePolicyReq ucabacpolicies.UpdatePolicyRequest
+	updatePolicyReq.PolicyInfo = &ucabacpolicies.PolicyInfo{}
 
-	var updatePolicyReq catalog.UpdatePolicyRequest
-	updatePolicyReq.PolicyInfo = catalog.PolicyInfo{}
 	var updatePolicyJson flags.JsonFlag
 
 	cmd.Flags().Var(&updatePolicyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updatePolicyReq.UpdateMask, "update-mask", updatePolicyReq.UpdateMask, `Optional.`)
+	flags.StringPtrVar(cmd.Flags(), &updatePolicyReq.UpdateMask, "update-mask", `Optional.`)
 	// TODO: complex arg: column_mask
-	cmd.Flags().StringVar(&updatePolicyReq.PolicyInfo.Comment, "comment", updatePolicyReq.PolicyInfo.Comment, `Optional description of the policy.`)
+	flags.StringPtrVar(cmd.Flags(), &updatePolicyReq.PolicyInfo.Comment, "comment", `Optional description of the policy.`)
 	// TODO: complex arg: deny
 	// TODO: array: except_principals
 	// TODO: complex arg: grant
 	// TODO: array: match_columns
-	cmd.Flags().StringVar(&updatePolicyReq.PolicyInfo.Name, "name", updatePolicyReq.PolicyInfo.Name, `Name of the policy.`)
-	cmd.Flags().StringVar(&updatePolicyReq.PolicyInfo.OnSecurableFullname, "on-securable-fullname", updatePolicyReq.PolicyInfo.OnSecurableFullname, `Full name of the securable on which the policy is defined.`)
-	cmd.Flags().Var(&updatePolicyReq.PolicyInfo.OnSecurableType, "on-securable-type", `Type of the securable on which the policy is defined. Supported values: [
+	flags.StringPtrVar(cmd.Flags(), &updatePolicyReq.Name, "name", `Name of the policy.`)
+	flags.StringPtrVar(cmd.Flags(), &updatePolicyReq.OnSecurableFullname, "on-securable-fullname", `Full name of the securable on which the policy is defined.`)
+	flags.StringPtrVar(cmd.Flags(), &updatePolicyReq.OnSecurableType, "on-securable-type", `Type of the securable on which the policy is defined. Supported values: [
   AGENT_SERVICE,
   CATALOG,
   CLEAN_ROOM,
@@ -486,7 +497,7 @@ func newUpdatePolicy() *cobra.Command {
   VOLUME,
 ]`)
 	// TODO: complex arg: row_filter
-	cmd.Flags().StringVar(&updatePolicyReq.PolicyInfo.WhenCondition, "when-condition", updatePolicyReq.PolicyInfo.WhenCondition, `Optional condition when the policy should take effect.`)
+	flags.StringPtrVar(cmd.Flags(), &updatePolicyReq.PolicyInfo.WhenCondition, "when-condition", `Optional condition when the policy should take effect.`)
 
 	cmd.Use = "update-policy ON_SECURABLE_TYPE ON_SECURABLE_FULLNAME NAME TO_PRINCIPALS FOR_SECURABLE_TYPE POLICY_TYPE"
 	cmd.Short = `Update an ABAC policy.`
@@ -551,6 +562,7 @@ func newUpdatePolicy() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updatePolicyJson.Unmarshal(&updatePolicyReq.PolicyInfo)
@@ -564,37 +576,33 @@ func newUpdatePolicy() *cobra.Command {
 				}
 			}
 		}
-		updatePolicyReq.OnSecurableType = args[0]
-		updatePolicyReq.OnSecurableFullname = args[1]
-		updatePolicyReq.Name = args[2]
+		updatePolicyReq.OnSecurableType = new(args[0])
+		updatePolicyReq.OnSecurableFullname = new(args[1])
+		updatePolicyReq.Name = new(args[2])
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[3], &updatePolicyReq.PolicyInfo.ToPrincipals)
-			if err != nil {
-				return fmt.Errorf("invalid TO_PRINCIPALS: %s", args[3])
-			}
-
+			_ = args[3] // TODO: complex arg: to_principals
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[4], &updatePolicyReq.PolicyInfo.ForSecurableType)
-			if err != nil {
-				return fmt.Errorf("invalid FOR_SECURABLE_TYPE: %s", args[4])
-			}
-
+			updatePolicyReq.PolicyInfo.ForSecurableType = ucabacpolicies.SecurableType(args[4])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[5], &updatePolicyReq.PolicyInfo.PolicyType)
-			if err != nil {
-				return fmt.Errorf("invalid POLICY_TYPE: %s", args[5])
-			}
-
+			updatePolicyReq.PolicyInfo.PolicyType = ucabacpolicies.PolicyType(args[5])
 		}
 
-		response, err := w.Policies.UpdatePolicy(ctx, updatePolicyReq)
+		sdkReq, err := ucabacpolicies.UpdatePolicyRequestToSDK(&updatePolicyReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AbacPolicies.UpdatePolicy(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucabacpolicies.PolicyInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

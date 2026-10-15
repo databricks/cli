@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+
+	ucvolumes "github.com/databricks/cli/libs/sdktypes/uc/volumes/v1"
+	sdkucvolumes "github.com/databricks/sdk-go/uc/volumes/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -59,19 +62,19 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*catalog.CreateVolumeRequestContent,
+	*ucvolumes.CreateVolumeRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq ucvolumes.CreateVolumeRequest
 
-	var createReq catalog.CreateVolumeRequestContent
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `The comment attached to the volume.`)
-	cmd.Flags().StringVar(&createReq.StorageLocation, "storage-location", createReq.StorageLocation, `The storage location on the cloud.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Comment, "comment", `The comment attached to the volume.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.StorageLocation, "storage-location", `The storage location on the cloud.`)
 
 	cmd.Use = "create CATALOG_NAME SCHEMA_NAME NAME VOLUME_TYPE"
 	cmd.Short = `Create a Volume.`
@@ -128,6 +131,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -142,28 +146,32 @@ func newCreate() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createReq.CatalogName = args[0]
+			createReq.CatalogName = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			createReq.SchemaName = args[1]
+			createReq.SchemaName = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			createReq.Name = args[2]
+			createReq.Name = new(args[2])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[3], &createReq.VolumeType)
-			if err != nil {
-				return fmt.Errorf("invalid VOLUME_TYPE: %s", args[3])
-			}
-
+			createReq.VolumeType = ucvolumes.VolumeType(args[3])
 		}
 
-		response, err := w.Volumes.Create(ctx, createReq)
+		sdkReq, err := ucvolumes.CreateVolumeRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Volumes.CreateVolume(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucvolumes.VolumeInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -184,13 +192,12 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteVolumeRequest,
+	*sdkucvolumes.DeleteVolumeRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq catalog.DeleteVolumeRequest
+	var deleteReq sdkucvolumes.DeleteVolumeRequest
 
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a Volume.`
@@ -213,11 +220,12 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No NAME argument specified. Loading names for Volumes drop-down.")
-			names, err := w.Volumes.VolumeInfoNameToVolumeIdMap(ctx, catalog.ListVolumesRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Volumes.ListVolumesIter(ctx, sdkucvolumes.ListVolumesRequest{}), []string{"Name"}, []string{"VolumeId"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Volumes drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -231,12 +239,15 @@ func newDelete() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the three-level (fully qualified) name of the volume")
 		}
-		deleteReq.Name = args[0]
+		deleteReq.FullNameArg = new(args[0])
 
-		err = w.Volumes.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := w.Volumes.DeleteVolume(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -258,26 +269,26 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*catalog.ListVolumesRequest,
+	*ucvolumes.ListVolumesRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq ucvolumes.ListVolumesRequest
 
-	var listReq catalog.ListVolumesRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include volumes in the response for which the principal can only access selective metadata for.`)
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of volumes to return (page length).`)
+	flags.BoolPtrVar(cmd.Flags(), &listReq.IncludeBrowse, "include-browse", `Whether to include volumes in the response for which the principal can only access selective metadata for.`)
+	flags.IntPtrVar(cmd.Flags(), &listReq.MaxResults, "max-results", `Maximum number of volumes to return (page length).`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list CATALOG_NAME SCHEMA_NAME"
@@ -318,19 +329,23 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listReq.CatalogName = args[0]
-		listReq.SchemaName = args[1]
+		listReq.CatalogName = new(args[0])
+		listReq.SchemaName = new(args[1])
 
-		response := w.Volumes.List(ctx, listReq)
+		sdkReq, err := ucvolumes.ListVolumesRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Volumes.ListVolumesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, ucvolumes.VolumeInfoFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -351,15 +366,14 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var readOverrides []func(
 	*cobra.Command,
-	*catalog.ReadVolumeRequest,
+	*ucvolumes.GetVolumeRequest,
 )
 
 func newRead() *cobra.Command {
 	cmd := &cobra.Command{}
+	var readReq ucvolumes.GetVolumeRequest
 
-	var readReq catalog.ReadVolumeRequest
-
-	cmd.Flags().BoolVar(&readReq.IncludeBrowse, "include-browse", readReq.IncludeBrowse, `Whether to include volumes in the response for which the principal can only access selective metadata for.`)
+	flags.BoolPtrVar(cmd.Flags(), &readReq.IncludeBrowse, "include-browse", `Whether to include volumes in the response for which the principal can only access selective metadata for.`)
 
 	cmd.Use = "read NAME"
 	cmd.Short = `Get a Volume.`
@@ -383,11 +397,12 @@ func newRead() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No NAME argument specified. Loading names for Volumes drop-down.")
-			names, err := w.Volumes.VolumeInfoNameToVolumeIdMap(ctx, catalog.ListVolumesRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Volumes.ListVolumesIter(ctx, sdkucvolumes.ListVolumesRequest{}), []string{"Name"}, []string{"VolumeId"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Volumes drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -401,14 +416,22 @@ func newRead() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the three-level (fully qualified) name of the volume")
 		}
-		readReq.Name = args[0]
+		readReq.FullNameArg = new(args[0])
 
-		response, err := w.Volumes.Read(ctx, readReq)
+		sdkReq, err := ucvolumes.GetVolumeRequestToSDK(&readReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Volumes.GetVolume(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucvolumes.VolumeInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -429,20 +452,20 @@ func newRead() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*catalog.UpdateVolumeRequestContent,
+	*ucvolumes.UpdateVolumeRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq ucvolumes.UpdateVolumeRequest
 
-	var updateReq catalog.UpdateVolumeRequestContent
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `The comment attached to the volume.`)
-	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the volume.`)
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `The identifier of the user who owns the volume.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Comment, "comment", `The comment attached to the volume.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.NewName, "new-name", `New name for the volume.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Owner, "owner", `The identifier of the user who owns the volume.`)
 
 	cmd.Use = "update NAME"
 	cmd.Short = `Update a Volume.`
@@ -468,6 +491,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -484,7 +508,7 @@ func newUpdate() *cobra.Command {
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No NAME argument specified. Loading names for Volumes drop-down.")
-			names, err := w.Volumes.VolumeInfoNameToVolumeIdMap(ctx, catalog.ListVolumesRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Volumes.ListVolumesIter(ctx, sdkucvolumes.ListVolumesRequest{}), []string{"Name"}, []string{"VolumeId"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Volumes drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -498,14 +522,22 @@ func newUpdate() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the three-level (fully qualified) name of the volume")
 		}
-		updateReq.Name = args[0]
+		updateReq.FullNameArg = new(args[0])
 
-		response, err := w.Volumes.Update(ctx, updateReq)
+		sdkReq, err := ucvolumes.UpdateVolumeRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Volumes.UpdateVolume(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucvolumes.VolumeInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

@@ -8,9 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/marketplace"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
+
+	marketplaces "github.com/databricks/cli/libs/sdktypes/marketplaces/v1"
+	sdkmarketplaces "github.com/databricks/sdk-go/marketplaces/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -51,13 +55,12 @@ Providers are the entities that publish listings to the Marketplace.`,
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var batchGetOverrides []func(
 	*cobra.Command,
-	*marketplace.BatchGetProvidersRequest,
+	*marketplaces.BatchGetProvidersRequest,
 )
 
 func newBatchGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var batchGetReq marketplace.BatchGetProvidersRequest
+	var batchGetReq marketplaces.BatchGetProvidersRequest
 
 	// TODO: array: ids
 
@@ -83,13 +86,22 @@ Get one batch of providers. One may specify up to 50 IDs per request.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response, err := w.ConsumerProviders.BatchGet(ctx, batchGetReq)
+		sdkReq, err := marketplaces.BatchGetProvidersRequestToSDK(&batchGetReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Marketplaces.BatchGetProviders(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := marketplaces.BatchGetProvidersResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -110,13 +122,12 @@ Get one batch of providers. One may specify up to 50 IDs per request.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*marketplace.GetProviderRequest,
+	*sdkmarketplaces.GetPublishedProviderForConsumerRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq marketplace.GetProviderRequest
+	var getReq sdkmarketplaces.GetPublishedProviderForConsumerRequest
 
 	cmd.Use = "get ID"
 	cmd.Short = `*Public Preview* Get a provider.`
@@ -135,11 +146,12 @@ Get a provider.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No ID argument specified. Loading names for Consumer Providers drop-down.")
-			names, err := w.ConsumerProviders.ProviderInfoNameToIdMap(ctx, marketplace.ListConsumerProvidersRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Marketplaces.ListPublishedProvidersForConsumerIter(ctx, sdkmarketplaces.ListPublishedProvidersForConsumerRequest{}), []string{"Name"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Consumer Providers drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -153,14 +165,19 @@ Get a provider.
 		if len(args) != 1 {
 			return errors.New("expected to have ")
 		}
-		getReq.Id = args[0]
+		getReq.Id = new(args[0])
 
-		response, err := w.ConsumerProviders.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.Marketplaces.GetPublishedProviderForConsumer(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := marketplaces.GetPublishedProviderForConsumerResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -181,26 +198,26 @@ Get a provider.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*marketplace.ListConsumerProvidersRequest,
+	*marketplaces.ListPublishedProvidersForConsumerRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq marketplaces.ListPublishedProvidersForConsumerRequest
 
-	var listReq marketplace.ListConsumerProvidersRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().BoolVar(&listReq.IsFeatured, "is-featured", listReq.IsFeatured, ``)
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	flags.BoolPtrVar(cmd.Flags(), &listReq.IsFeatured, "is-featured", ``)
+	flags.IntPtrVar(cmd.Flags(), &listReq.PageSize, "page-size", ``)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
@@ -225,16 +242,20 @@ List providers.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.ConsumerProviders.List(ctx, listReq)
+		sdkReq, err := marketplaces.ListPublishedProvidersForConsumerRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Marketplaces.ListPublishedProvidersForConsumerIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, marketplaces.ProviderInfoFromSDK))
 	}
 
 	// Disable completions since they are not applicable.

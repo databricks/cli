@@ -7,8 +7,10 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/provisioning"
 	"github.com/spf13/cobra"
+
+	networking "github.com/databricks/cli/libs/sdktypes/networking/v1"
+	sdknetworking "github.com/databricks/sdk-go/networking/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -49,22 +51,22 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*provisioning.CreatePrivateAccessSettingsRequest,
+	*networking.CreatePrivateAccessSettingsRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq networking.CreatePrivateAccessSettingsRequest
 
-	var createReq provisioning.CreatePrivateAccessSettingsRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: allowed_vpc_endpoint_ids
-	cmd.Flags().Var(&createReq.PrivateAccessLevel, "private-access-level", `The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object. Supported values: [ACCOUNT, ENDPOINT]`)
-	cmd.Flags().StringVar(&createReq.PrivateAccessSettingsName, "private-access-settings-name", createReq.PrivateAccessSettingsName, `The human-readable name of the private access settings object.`)
-	cmd.Flags().BoolVar(&createReq.PublicAccessEnabled, "public-access-enabled", createReq.PublicAccessEnabled, `Determines if the workspace can be accessed over public internet.`)
-	cmd.Flags().StringVar(&createReq.Region, "region", createReq.Region, `The AWS region for workspaces attached to this private access settings object.`)
+	flags.EnumVar(cmd.Flags(), &createReq.PrivateAccessLevel, "private-access-level", `The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object. Supported values: [ACCOUNT, ENDPOINT]`, "PrivateAccessLevel", "ACCOUNT", "ENDPOINT")
+	flags.StringPtrVar(cmd.Flags(), &createReq.PrivateAccessSettingsName, "private-access-settings-name", `The human-readable name of the private access settings object.`)
+	flags.BoolPtrVar(cmd.Flags(), &createReq.PublicAccessEnabled, "public-access-enabled", `Determines if the workspace can be accessed over public internet.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Region, "region", `The AWS region for workspaces attached to this private access settings object.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create private access settings.`
@@ -88,6 +90,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -102,12 +105,20 @@ func newCreate() *cobra.Command {
 			}
 		}
 
-		response, err := a.PrivateAccess.Create(ctx, createReq)
+		sdkReq, err := networking.CreatePrivateAccessSettingsRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Networking.CreatePrivateAccessSettingsPublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.PrivateAccessSettingsFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -128,13 +139,12 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*provisioning.DeletePrivateAccesRequest,
+	*sdknetworking.DeletePrivateAccessSettingsRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq provisioning.DeletePrivateAccesRequest
+	var deleteReq sdknetworking.DeletePrivateAccessSettingsRequest
 
 	cmd.Use = "delete PRIVATE_ACCESS_SETTINGS_ID"
 	cmd.Short = `Delete private access settings.`
@@ -156,15 +166,21 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		deleteReq.PrivateAccessSettingsId = args[0]
+		deleteReq.PrivateAccessSettingsId = new(args[0])
 
-		response, err := a.PrivateAccess.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := a.Networking.DeletePrivateAccessSettingsPublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.PrivateAccessSettingsFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -185,13 +201,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*provisioning.GetPrivateAccesRequest,
+	*sdknetworking.GetPrivateAccessSettingsRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq provisioning.GetPrivateAccesRequest
+	var getReq sdknetworking.GetPrivateAccessSettingsRequest
 
 	cmd.Use = "get PRIVATE_ACCESS_SETTINGS_ID"
 	cmd.Short = `Get private access settings.`
@@ -212,15 +227,21 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		getReq.PrivateAccessSettingsId = args[0]
+		getReq.PrivateAccessSettingsId = new(args[0])
 
-		response, err := a.PrivateAccess.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := a.Networking.GetPrivateAccessSettingsPublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.PrivateAccessSettingsFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -260,12 +281,16 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
-		response, err := a.PrivateAccess.List(ctx)
+		_ = a
+
+		sdkReq := &sdknetworking.ListPrivateAccessSettingsRequest{}
+		response, err := a.Networking.ListPrivateAccessSettingsPublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		_ = response
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -286,23 +311,23 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var replaceOverrides []func(
 	*cobra.Command,
-	*provisioning.ReplacePrivateAccessSettingsRequest,
+	*networking.UpdatePrivateAccessSettingsRequest,
 )
 
 func newReplace() *cobra.Command {
 	cmd := &cobra.Command{}
+	var replaceReq networking.UpdatePrivateAccessSettingsRequest
+	replaceReq.CustomerFacingPrivateAccessSettings = &networking.PrivateAccessSettings{}
 
-	var replaceReq provisioning.ReplacePrivateAccessSettingsRequest
-	replaceReq.CustomerFacingPrivateAccessSettings = provisioning.PrivateAccessSettings{}
 	var replaceJson flags.JsonFlag
 
 	cmd.Flags().Var(&replaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: allowed_vpc_endpoint_ids
-	cmd.Flags().Var(&replaceReq.CustomerFacingPrivateAccessSettings.PrivateAccessLevel, "private-access-level", `The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object. Supported values: [ACCOUNT, ENDPOINT]`)
-	cmd.Flags().StringVar(&replaceReq.CustomerFacingPrivateAccessSettings.PrivateAccessSettingsName, "private-access-settings-name", replaceReq.CustomerFacingPrivateAccessSettings.PrivateAccessSettingsName, `The human-readable name of the private access settings object.`)
-	cmd.Flags().BoolVar(&replaceReq.CustomerFacingPrivateAccessSettings.PublicAccessEnabled, "public-access-enabled", replaceReq.CustomerFacingPrivateAccessSettings.PublicAccessEnabled, `Determines if the workspace can be accessed over public internet.`)
-	cmd.Flags().StringVar(&replaceReq.CustomerFacingPrivateAccessSettings.Region, "region", replaceReq.CustomerFacingPrivateAccessSettings.Region, `The AWS region for workspaces attached to this private access settings object.`)
+	flags.EnumVar(cmd.Flags(), &replaceReq.CustomerFacingPrivateAccessSettings.PrivateAccessLevel, "private-access-level", `The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object. Supported values: [ACCOUNT, ENDPOINT]`, "PrivateAccessLevel", "ACCOUNT", "ENDPOINT")
+	flags.StringPtrVar(cmd.Flags(), &replaceReq.CustomerFacingPrivateAccessSettings.PrivateAccessSettingsName, "private-access-settings-name", `The human-readable name of the private access settings object.`)
+	flags.BoolPtrVar(cmd.Flags(), &replaceReq.CustomerFacingPrivateAccessSettings.PublicAccessEnabled, "public-access-enabled", `Determines if the workspace can be accessed over public internet.`)
+	flags.StringPtrVar(cmd.Flags(), &replaceReq.CustomerFacingPrivateAccessSettings.Region, "region", `The AWS region for workspaces attached to this private access settings object.`)
 
 	cmd.Use = "replace PRIVATE_ACCESS_SETTINGS_ID"
 	cmd.Short = `Update private access settings.`
@@ -338,6 +363,7 @@ func newReplace() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := replaceJson.Unmarshal(&replaceReq.CustomerFacingPrivateAccessSettings)
@@ -351,14 +377,22 @@ func newReplace() *cobra.Command {
 				}
 			}
 		}
-		replaceReq.PrivateAccessSettingsId = args[0]
+		replaceReq.CustomerFacingPrivateAccessSettings.PrivateAccessSettingsId = new(args[0])
 
-		response, err := a.PrivateAccess.Replace(ctx, replaceReq)
+		sdkReq, err := networking.UpdatePrivateAccessSettingsRequestToSDK(&replaceReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Networking.UpdatePrivateAccessSettingsPublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.PrivateAccessSettingsFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

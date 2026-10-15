@@ -8,10 +8,12 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+
+	ucexternallineage "github.com/databricks/cli/libs/sdktypes/uc/externallineage/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -59,14 +61,14 @@ External Lineage APIs enable defining and managing lineage relationships
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createExternalLineageRelationshipOverrides []func(
 	*cobra.Command,
-	*catalog.CreateExternalLineageRelationshipRequest,
+	*ucexternallineage.CreateExternalLineageRelationshipRequest,
 )
 
 func newCreateExternalLineageRelationship() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createExternalLineageRelationshipReq ucexternallineage.CreateExternalLineageRelationshipRequest
+	createExternalLineageRelationshipReq.ExternalLineageRelationship = &ucexternallineage.CreateRequestExternalLineage{}
 
-	var createExternalLineageRelationshipReq catalog.CreateExternalLineageRelationshipRequest
-	createExternalLineageRelationshipReq.ExternalLineageRelationship = catalog.CreateRequestExternalLineage{}
 	var createExternalLineageRelationshipJson flags.JsonFlag
 
 	cmd.Flags().Var(&createExternalLineageRelationshipJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -107,6 +109,7 @@ Create an external lineage relationship.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createExternalLineageRelationshipJson.Unmarshal(&createExternalLineageRelationshipReq.ExternalLineageRelationship)
@@ -121,26 +124,26 @@ Create an external lineage relationship.
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[0], &createExternalLineageRelationshipReq.ExternalLineageRelationship.Source)
-			if err != nil {
-				return fmt.Errorf("invalid SOURCE: %s", args[0])
-			}
-
+			_ = args[0] // TODO: complex arg: source
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &createExternalLineageRelationshipReq.ExternalLineageRelationship.Target)
-			if err != nil {
-				return fmt.Errorf("invalid TARGET: %s", args[1])
-			}
-
+			_ = args[1] // TODO: complex arg: target
 		}
 
-		response, err := w.ExternalLineage.CreateExternalLineageRelationship(ctx, createExternalLineageRelationshipReq)
+		sdkReq, err := ucexternallineage.CreateExternalLineageRelationshipRequestToSDK(&createExternalLineageRelationshipReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ExternalLineage.CreateExternalLineageRelationship(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucexternallineage.ExternalLineageRelationshipFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -161,13 +164,13 @@ Create an external lineage relationship.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteExternalLineageRelationshipOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteExternalLineageRelationshipRequest,
+	*ucexternallineage.DeleteExternalLineageRelationshipRequest,
 )
 
 func newDeleteExternalLineageRelationship() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteExternalLineageRelationshipReq ucexternallineage.DeleteExternalLineageRelationshipRequest
 
-	var deleteExternalLineageRelationshipReq catalog.DeleteExternalLineageRelationshipRequest
 	var deleteExternalLineageRelationshipJson flags.JsonFlag
 
 	cmd.Flags().Var(&deleteExternalLineageRelationshipJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -189,6 +192,7 @@ Delete an external lineage relationship.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteExternalLineageRelationshipJson.Unmarshal(&deleteExternalLineageRelationshipReq)
@@ -205,7 +209,11 @@ Delete an external lineage relationship.
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		err = w.ExternalLineage.DeleteExternalLineageRelationship(ctx, deleteExternalLineageRelationshipReq)
+		sdkReq, err := ucexternallineage.DeleteExternalLineageRelationshipRequestToSDK(&deleteExternalLineageRelationshipReq)
+		if err != nil {
+			return err
+		}
+		err = w.ExternalLineage.DeleteExternalLineageRelationship(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -230,13 +238,13 @@ Delete an external lineage relationship.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listExternalLineageRelationshipsOverrides []func(
 	*cobra.Command,
-	*catalog.ListExternalLineageRelationshipsRequest,
+	*ucexternallineage.ListExternalLineageRelationshipsRequest,
 )
 
 func newListExternalLineageRelationships() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listExternalLineageRelationshipsReq ucexternallineage.ListExternalLineageRelationshipsRequest
 
-	var listExternalLineageRelationshipsReq catalog.ListExternalLineageRelationshipsRequest
 	var listExternalLineageRelationshipsJson flags.JsonFlag
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
@@ -245,13 +253,13 @@ func newListExternalLineageRelationships() *cobra.Command {
 
 	cmd.Flags().Var(&listExternalLineageRelationshipsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().IntVar(&listExternalLineageRelationshipsReq.PageSize, "page-size", listExternalLineageRelationshipsReq.PageSize, `Specifies the maximum number of external lineage relationships to return in a single response.`)
+	flags.IntPtrVar(cmd.Flags(), &listExternalLineageRelationshipsReq.PageSize, "page-size", `Specifies the maximum number of external lineage relationships to return in a single response.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listExternalLineageRelationshipsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listExternalLineageRelationshipsReq.PageToken, "page-token", listExternalLineageRelationshipsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listExternalLineageRelationshipsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-external-lineage-relationships"
@@ -271,6 +279,7 @@ List external lineage relationships.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := listExternalLineageRelationshipsJson.Unmarshal(&listExternalLineageRelationshipsReq)
@@ -287,15 +296,18 @@ List external lineage relationships.
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response := w.ExternalLineage.ListExternalLineageRelationships(ctx, listExternalLineageRelationshipsReq)
+		sdkReq, err := ucexternallineage.ListExternalLineageRelationshipsRequestToSDK(&listExternalLineageRelationshipsReq)
+		if err != nil {
+			return err
+		}
 		if listExternalLineageRelationshipsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listExternalLineageRelationshipsLimit)
 		}
 		if listExternalLineageRelationshipsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listExternalLineageRelationshipsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.ExternalLineage.ListExternalLineageRelationshipsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, ucexternallineage.ExternalLineageInfoFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -316,14 +328,14 @@ List external lineage relationships.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateExternalLineageRelationshipOverrides []func(
 	*cobra.Command,
-	*catalog.UpdateExternalLineageRelationshipRequest,
+	*ucexternallineage.UpdateExternalLineageRelationshipRequest,
 )
 
 func newUpdateExternalLineageRelationship() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateExternalLineageRelationshipReq ucexternallineage.UpdateExternalLineageRelationshipRequest
+	updateExternalLineageRelationshipReq.ExternalLineageRelationship = &ucexternallineage.UpdateRequestExternalLineage{}
 
-	var updateExternalLineageRelationshipReq catalog.UpdateExternalLineageRelationshipRequest
-	updateExternalLineageRelationshipReq.ExternalLineageRelationship = catalog.UpdateRequestExternalLineage{}
 	var updateExternalLineageRelationshipJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateExternalLineageRelationshipJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -375,6 +387,7 @@ Update an external lineage relationship.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateExternalLineageRelationshipJson.Unmarshal(&updateExternalLineageRelationshipReq.ExternalLineageRelationship)
@@ -388,28 +401,28 @@ Update an external lineage relationship.
 				}
 			}
 		}
-		updateExternalLineageRelationshipReq.UpdateMask = args[0]
+		updateExternalLineageRelationshipReq.UpdateMask = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &updateExternalLineageRelationshipReq.ExternalLineageRelationship.Source)
-			if err != nil {
-				return fmt.Errorf("invalid SOURCE: %s", args[1])
-			}
-
+			_ = args[1] // TODO: complex arg: source
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &updateExternalLineageRelationshipReq.ExternalLineageRelationship.Target)
-			if err != nil {
-				return fmt.Errorf("invalid TARGET: %s", args[2])
-			}
-
+			_ = args[2] // TODO: complex arg: target
 		}
 
-		response, err := w.ExternalLineage.UpdateExternalLineageRelationship(ctx, updateExternalLineageRelationshipReq)
+		sdkReq, err := ucexternallineage.UpdateExternalLineageRelationshipRequestToSDK(&updateExternalLineageRelationshipReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ExternalLineage.UpdateExternalLineageRelationship(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucexternallineage.ExternalLineageRelationshipFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

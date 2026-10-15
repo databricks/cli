@@ -836,6 +836,10 @@ tasks:
       - .gitattributes.manual
       - internal/cligen/**/*.go
       - internal/cligen/templates/*.tmpl
+      - internal/cligen/http_verbs.json
+      - libs/sdkclients/services.go
+      - libs/sdktypes/**/types.generated.go
+      - go.mod
     generates:
       - cmd/workspace/**/*.go
       - cmd/account/**/*.go

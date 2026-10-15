@@ -6,12 +6,18 @@ import (
 	"errors"
 	"fmt"
 
+	"maps"
+
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
+
+	tokenmanagement "github.com/databricks/cli/libs/sdktypes/tokenmanagement/v1"
+	sdktokenmanagement "github.com/databricks/sdk-go/tokenmanagement/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -58,20 +64,20 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOboTokenOverrides []func(
 	*cobra.Command,
-	*settings.CreateOboTokenRequest,
+	*tokenmanagement.CreateOnBehalfOfTokenRequest,
 )
 
 func newCreateOboToken() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createOboTokenReq tokenmanagement.CreateOnBehalfOfTokenRequest
 
-	var createOboTokenReq settings.CreateOboTokenRequest
 	var createOboTokenJson flags.JsonFlag
 
 	cmd.Flags().Var(&createOboTokenJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createOboTokenReq.AutoscopeEnabled, "autoscope-enabled", createOboTokenReq.AutoscopeEnabled, `Whether to enable autoscoping for this token.`)
-	cmd.Flags().StringVar(&createOboTokenReq.Comment, "comment", createOboTokenReq.Comment, `Comment that describes the purpose of the token.`)
-	cmd.Flags().Int64Var(&createOboTokenReq.LifetimeSeconds, "lifetime-seconds", createOboTokenReq.LifetimeSeconds, `The number of seconds before the token expires.`)
+	flags.BoolPtrVar(cmd.Flags(), &createOboTokenReq.AutoscopeEnabled, "autoscope-enabled", `Whether to enable autoscoping for this token.`)
+	flags.StringPtrVar(cmd.Flags(), &createOboTokenReq.Comment, "comment", `Comment that describes the purpose of the token.`)
+	flags.Int64PtrVar(cmd.Flags(), &createOboTokenReq.LifetimeSeconds, "lifetime-seconds", `The number of seconds before the token expires.`)
 	// TODO: array: scopes
 
 	cmd.Use = "create-obo-token APPLICATION_ID"
@@ -95,13 +101,15 @@ func newCreateOboToken() *cobra.Command {
 			}
 			return nil
 		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createOboTokenJson.Unmarshal(&createOboTokenReq)
@@ -114,34 +122,25 @@ func newCreateOboToken() *cobra.Command {
 					return err
 				}
 			}
-		} else {
-			if len(args) == 0 {
-				sp := cmdio.NewSpinner(ctx)
-				sp.Update("No APPLICATION_ID argument specified. Loading names for Token Management drop-down.")
-				names, err := w.TokenManagement.TokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
-				sp.Close()
-				if err != nil {
-					return fmt.Errorf("failed to load names for Token Management drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Application ID of the service principal")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return errors.New("expected to have application id of the service principal")
-			}
-			createOboTokenReq.ApplicationId = args[0]
-
+		}
+		if !cmd.Flags().Changed("json") {
+			createOboTokenReq.ApplicationId = new(args[0])
 		}
 
-		response, err := w.TokenManagement.CreateOboToken(ctx, createOboTokenReq)
+		sdkReq, err := tokenmanagement.CreateOnBehalfOfTokenRequestToSDK(&createOboTokenReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.TokenManagement.CreateOnBehalfOfToken(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := tokenmanagement.CreateOnBehalfOfTokenResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -162,13 +161,12 @@ func newCreateOboToken() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*settings.DeleteTokenManagementRequest,
+	*sdktokenmanagement.RevokeTokenRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq settings.DeleteTokenManagementRequest
+	var deleteReq sdktokenmanagement.RevokeTokenRequest
 
 	cmd.Use = "delete TOKEN_ID"
 	cmd.Short = `Delete a token.`
@@ -183,34 +181,26 @@ func newDelete() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No TOKEN_ID argument specified. Loading names for Token Management drop-down.")
-			names, err := w.TokenManagement.TokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Token Management drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The ID of the token to revoke")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have the id of the token to revoke")
-		}
-		deleteReq.TokenId = args[0]
+		deleteReq.TokenId = new(args[0])
 
-		err = w.TokenManagement.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := w.TokenManagement.DeleteToken(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -232,13 +222,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*settings.GetTokenManagementRequest,
+	*sdktokenmanagement.GetTokenRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq settings.GetTokenManagementRequest
+	var getReq sdktokenmanagement.GetTokenRequest
 
 	cmd.Use = "get TOKEN_ID"
 	cmd.Short = `Get token info.`
@@ -253,36 +242,30 @@ func newGet() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No TOKEN_ID argument specified. Loading names for Token Management drop-down.")
-			names, err := w.TokenManagement.TokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Token Management drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The ID of the token to get")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have the id of the token to get")
-		}
-		getReq.TokenId = args[0]
+		getReq.TokenId = new(args[0])
 
-		response, err := w.TokenManagement.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.TokenManagement.GetToken(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := tokenmanagement.GetTokenResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -322,11 +305,21 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
-		response, err := w.TokenManagement.GetPermissionLevels(ctx)
+		_ = w
+		getPermissionLevelsReq := map[string]any{}
+		rawQuery := map[string]any{}
+		rawPath := "/api/2.0/permissions/authorization/tokens/permissionLevels"
+
+		maps.Copy(rawQuery, getPermissionLevelsReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -368,11 +361,21 @@ func newGetPermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
-		response, err := w.TokenManagement.GetPermissions(ctx)
+		_ = w
+		getPermissionsReq := map[string]any{}
+		rawQuery := map[string]any{}
+		rawPath := "/api/2.0/permissions/authorization/tokens"
+
+		maps.Copy(rawQuery, getPermissionsReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -394,20 +397,20 @@ func newGetPermissions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*settings.ListTokenManagementRequest,
+	*tokenmanagement.ListTokensRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq tokenmanagement.ListTokensRequest
 
-	var listReq settings.ListTokenManagementRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().Int64Var(&listReq.CreatedById, "created-by-id", listReq.CreatedById, `User ID of the user that created the token.`)
-	cmd.Flags().StringVar(&listReq.CreatedByUsername, "created-by-username", listReq.CreatedByUsername, `Username of the user that created the token.`)
+	flags.Int64PtrVar(cmd.Flags(), &listReq.CreatedById, "created-by-id", `User ID of the user that created the token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.CreatedByUsername, "created-by-username", `Username of the user that created the token.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
@@ -433,8 +436,16 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.TokenManagement.List(ctx, listReq)
+		sdkReq, err := tokenmanagement.ListTokensRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.TokenManagement.ListTokens(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
@@ -442,7 +453,11 @@ func newList() *cobra.Command {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
 
-		return cmdio.RenderIterator(ctx, response)
+		out, err := tokenmanagement.ListTokensResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -463,13 +478,14 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var setPermissionsOverrides []func(
 	*cobra.Command,
-	*settings.TokenPermissionsRequest,
+	*map[string]any,
 )
 
 func newSetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var setPermissionsReq map[string]any
+	setPermissionsReq = map[string]any{}
 
-	var setPermissionsReq settings.TokenPermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -497,6 +513,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
@@ -511,11 +528,18 @@ func newSetPermissions() *cobra.Command {
 			}
 		}
 
-		response, err := w.TokenManagement.SetPermissions(ctx, setPermissionsReq)
+		rawQuery := map[string]any{}
+		rawPath := "/api/2.0/permissions/authorization/tokens"
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "PUT", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, setPermissionsReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -537,13 +561,14 @@ func newSetPermissions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updatePermissionsOverrides []func(
 	*cobra.Command,
-	*settings.TokenPermissionsRequest,
+	*map[string]any,
 )
 
 func newUpdatePermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updatePermissionsReq map[string]any
+	updatePermissionsReq = map[string]any{}
 
-	var updatePermissionsReq settings.TokenPermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -570,6 +595,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)
@@ -584,11 +610,18 @@ func newUpdatePermissions() *cobra.Command {
 			}
 		}
 
-		response, err := w.TokenManagement.UpdatePermissions(ctx, updatePermissionsReq)
+		rawQuery := map[string]any{}
+		rawPath := "/api/2.0/permissions/authorization/tokens"
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "PATCH", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, updatePermissionsReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -610,13 +643,13 @@ func newUpdatePermissions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateTokenManagementOverrides []func(
 	*cobra.Command,
-	*settings.UpdateTokenManagementRequest,
+	*tokenmanagement.UpdateTokenRequest,
 )
 
 func newUpdateTokenManagement() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateTokenManagementReq tokenmanagement.UpdateTokenRequest
 
-	var updateTokenManagementReq settings.UpdateTokenManagementRequest
 	var updateTokenManagementJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateTokenManagementJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -643,6 +676,7 @@ func newUpdateTokenManagement() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateTokenManagementJson.Unmarshal(&updateTokenManagementReq)
@@ -658,14 +692,22 @@ func newUpdateTokenManagement() *cobra.Command {
 		} else {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
-		updateTokenManagementReq.TokenId = args[0]
+		updateTokenManagementReq.Token.TokenId = new(args[0])
 
-		response, err := w.TokenManagement.UpdateTokenManagement(ctx, updateTokenManagementReq)
+		sdkReq, err := tokenmanagement.UpdateTokenRequestToSDK(&updateTokenManagementReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.TokenManagement.UpdateToken(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := tokenmanagement.AdminTokenInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

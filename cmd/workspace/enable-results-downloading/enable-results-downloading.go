@@ -5,11 +5,14 @@ package enable_results_downloading
 import (
 	"errors"
 
+	"maps"
+
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
 )
 
@@ -71,11 +74,21 @@ Get the Notebook results download setting.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
-		response, err := w.Settings.EnableResultsDownloading().GetEnableResultsDownloading(ctx)
+		_ = w
+		getEnableResultsDownloadingReq := map[string]any{}
+		rawQuery := map[string]any{}
+		rawPath := "/api/2.0/settings/types/enable-results-downloading/names/default"
+
+		maps.Copy(rawQuery, getEnableResultsDownloadingReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -97,13 +110,16 @@ Get the Notebook results download setting.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var patchEnableResultsDownloadingOverrides []func(
 	*cobra.Command,
-	*settings.UpdateEnableResultsDownloadingRequest,
+	*map[string]any,
 )
 
 func newPatchEnableResultsDownloading() *cobra.Command {
 	cmd := &cobra.Command{}
+	var patchEnableResultsDownloadingReq map[string]any
+	patchEnableResultsDownloadingReq = map[string]any{}
+	var patchEnableResultsDownloadingAllowMissingRaw bool
+	var patchEnableResultsDownloadingFieldMaskRaw string
 
-	var patchEnableResultsDownloadingReq settings.UpdateEnableResultsDownloadingRequest
 	var patchEnableResultsDownloadingJson flags.JsonFlag
 
 	cmd.Flags().Var(&patchEnableResultsDownloadingJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -126,6 +142,7 @@ Update the Notebook results download setting.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := patchEnableResultsDownloadingJson.Unmarshal(&patchEnableResultsDownloadingReq)
@@ -142,11 +159,24 @@ Update the Notebook results download setting.
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.Settings.EnableResultsDownloading().PatchEnableResultsDownloading(ctx, patchEnableResultsDownloadingReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("allow-missing") || patchEnableResultsDownloadingAllowMissingRaw != false {
+			patchEnableResultsDownloadingReq["allow_missing"] = patchEnableResultsDownloadingAllowMissingRaw
+		}
+		if cmd.Flags().Changed("field-mask") || patchEnableResultsDownloadingFieldMaskRaw != "" {
+			patchEnableResultsDownloadingReq["field_mask"] = patchEnableResultsDownloadingFieldMaskRaw
+		}
+		rawPath := "/api/2.0/settings/types/enable-results-downloading/names/default"
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "PATCH", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, patchEnableResultsDownloadingReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 

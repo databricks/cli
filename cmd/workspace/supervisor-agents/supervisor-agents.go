@@ -5,15 +5,20 @@ package supervisor_agents
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	"github.com/databricks/databricks-sdk-go/service/supervisoragents"
 	"github.com/spf13/cobra"
+
+	accessmanagement "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
+	knowledgeassistants "github.com/databricks/cli/libs/sdktypes/knowledgeassistants/v1"
+	supervisoragents "github.com/databricks/cli/libs/sdktypes/supervisoragents/v1"
+	sdkaccessmanagement "github.com/databricks/sdk-go/accessmanagement/v1"
+	sdkknowledgeassistants "github.com/databricks/sdk-go/knowledgeassistants/v1"
+	sdksupervisoragents "github.com/databricks/sdk-go/supervisoragents/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -70,19 +75,19 @@ Manage Supervisor Agents and related resources.`,
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createExampleOverrides []func(
 	*cobra.Command,
-	*supervisoragents.CreateExampleRequest,
+	*knowledgeassistants.CreateExampleRequest,
 )
 
 func newCreateExample() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createExampleReq knowledgeassistants.CreateExampleRequest
+	createExampleReq.Example = &knowledgeassistants.Example{}
 
-	var createExampleReq supervisoragents.CreateExampleRequest
-	createExampleReq.Example = supervisoragents.Example{}
 	var createExampleJson flags.JsonFlag
 
 	cmd.Flags().Var(&createExampleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createExampleReq.Example.Name, "name", createExampleReq.Example.Name, `Full resource name: supervisor-agents/{supervisor_agent_id}/examples/{example_id}.`)
+	flags.StringPtrVar(cmd.Flags(), &createExampleReq.Example.Name, "name", `Full resource name: supervisor-agents/{supervisor_agent_id}/examples/{example_id}.`)
 
 	cmd.Use = "create-example PARENT QUESTION GUIDELINES"
 	cmd.Short = `*Beta* Create an example for a Supervisor Agent.`
@@ -118,6 +123,7 @@ Create an example for a Supervisor Agent.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createExampleJson.Unmarshal(&createExampleReq.Example)
@@ -131,24 +137,28 @@ Create an example for a Supervisor Agent.
 				}
 			}
 		}
-		createExampleReq.Parent = args[0]
+		createExampleReq.Parent = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			createExampleReq.Example.Question = args[1]
+			createExampleReq.Example.Question = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &createExampleReq.Example.Guidelines)
-			if err != nil {
-				return fmt.Errorf("invalid GUIDELINES: %s", args[2])
-			}
-
+			_ = args[2] // TODO: complex arg: guidelines
 		}
 
-		response, err := w.SupervisorAgents.CreateExample(ctx, createExampleReq)
+		sdkReq, err := knowledgeassistants.CreateExampleRequestToSDK(&createExampleReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.KnowledgeAssistants.CreateExample(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := knowledgeassistants.ExampleFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -174,16 +184,16 @@ var createSupervisorAgentOverrides []func(
 
 func newCreateSupervisorAgent() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createSupervisorAgentReq supervisoragents.CreateSupervisorAgentRequest
-	createSupervisorAgentReq.SupervisorAgent = supervisoragents.SupervisorAgent{}
+	createSupervisorAgentReq.SupervisorAgent = &supervisoragents.SupervisorAgent{}
+
 	var createSupervisorAgentJson flags.JsonFlag
 
 	cmd.Flags().Var(&createSupervisorAgentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createSupervisorAgentReq.SupervisorAgent.Description, "description", createSupervisorAgentReq.SupervisorAgent.Description, `Description of what this agent can do (user-facing).`)
-	cmd.Flags().StringVar(&createSupervisorAgentReq.SupervisorAgent.Instructions, "instructions", createSupervisorAgentReq.SupervisorAgent.Instructions, `Optional natural-language instructions for the supervisor agent.`)
-	cmd.Flags().StringVar(&createSupervisorAgentReq.SupervisorAgent.Name, "name", createSupervisorAgentReq.SupervisorAgent.Name, `The resource name of the SupervisorAgent.`)
+	flags.StringPtrVar(cmd.Flags(), &createSupervisorAgentReq.SupervisorAgent.Description, "description", `Description of what this agent can do (user-facing).`)
+	flags.StringPtrVar(cmd.Flags(), &createSupervisorAgentReq.SupervisorAgent.Instructions, "instructions", `Optional natural-language instructions for the supervisor agent.`)
+	flags.StringPtrVar(cmd.Flags(), &createSupervisorAgentReq.SupervisorAgent.Name, "name", `The resource name of the SupervisorAgent.`)
 
 	cmd.Use = "create-supervisor-agent DISPLAY_NAME"
 	cmd.Short = `*Beta* Create a Supervisor Agent.`
@@ -216,6 +226,7 @@ Create a Supervisor Agent.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createSupervisorAgentJson.Unmarshal(&createSupervisorAgentReq.SupervisorAgent)
@@ -230,15 +241,23 @@ Create a Supervisor Agent.
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createSupervisorAgentReq.SupervisorAgent.DisplayName = args[0]
+			createSupervisorAgentReq.SupervisorAgent.DisplayName = new(args[0])
 		}
 
-		response, err := w.SupervisorAgents.CreateSupervisorAgent(ctx, createSupervisorAgentReq)
+		sdkReq, err := supervisoragents.CreateSupervisorAgentRequestToSDK(&createSupervisorAgentReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.SupervisorAgents.CreateSupervisorAgent(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := supervisoragents.SupervisorAgentFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -264,18 +283,18 @@ var createToolOverrides []func(
 
 func newCreateTool() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createToolReq supervisoragents.CreateToolRequest
-	createToolReq.Tool = supervisoragents.Tool{}
+	createToolReq.Tool = &supervisoragents.Tool{}
+
 	var createToolJson flags.JsonFlag
 
 	cmd.Flags().Var(&createToolJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: app
-	cmd.Flags().StringVar(&createToolReq.Tool.Description, "description", createToolReq.Tool.Description, `Description of what this tool does (user-facing).`)
+	flags.StringPtrVar(cmd.Flags(), &createToolReq.Tool.Description, "description", `Description of what this tool does (user-facing).`)
 	// TODO: complex arg: genie_space
 	// TODO: complex arg: knowledge_assistant
-	cmd.Flags().StringVar(&createToolReq.Tool.Name, "name", createToolReq.Tool.Name, `Full resource name: supervisor-agents/{supervisor_agent_id}/tools/{tool_id}.`)
+	flags.StringPtrVar(cmd.Flags(), &createToolReq.Tool.Name, "name", `Full resource name: supervisor-agents/{supervisor_agent_id}/tools/{tool_id}.`)
 	// TODO: complex arg: uc_connection
 	// TODO: complex arg: uc_function
 	// TODO: complex arg: volume
@@ -329,6 +348,7 @@ Create a Tool.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createToolJson.Unmarshal(&createToolReq.Tool)
@@ -342,18 +362,26 @@ Create a Tool.
 				}
 			}
 		}
-		createToolReq.Parent = args[0]
-		createToolReq.ToolId = args[1]
+		createToolReq.Parent = new(args[0])
+		createToolReq.ToolId = new(args[1])
 		if !cmd.Flags().Changed("json") {
-			createToolReq.Tool.ToolType = args[2]
+			createToolReq.Tool.ToolType = new(args[2])
 		}
 
-		response, err := w.SupervisorAgents.CreateTool(ctx, createToolReq)
+		sdkReq, err := supervisoragents.CreateToolRequestToSDK(&createToolReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.SupervisorAgents.CreateTool(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := supervisoragents.ToolFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -374,13 +402,12 @@ Create a Tool.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteExampleOverrides []func(
 	*cobra.Command,
-	*supervisoragents.DeleteExampleRequest,
+	*sdkknowledgeassistants.DeleteExampleRequest,
 )
 
 func newDeleteExample() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteExampleReq supervisoragents.DeleteExampleRequest
+	var deleteExampleReq sdkknowledgeassistants.DeleteExampleRequest
 
 	cmd.Use = "delete-example NAME"
 	cmd.Short = `*Beta* Delete an example from a Supervisor Agent.`
@@ -407,10 +434,12 @@ Delete an example from a Supervisor Agent.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteExampleReq.Name = args[0]
+		deleteExampleReq.Name = new(args[0])
 
-		err = w.SupervisorAgents.DeleteExample(ctx, deleteExampleReq)
+		sdkReq := &deleteExampleReq
+		err = w.KnowledgeAssistants.DeleteExample(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -435,13 +464,12 @@ Delete an example from a Supervisor Agent.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteSupervisorAgentOverrides []func(
 	*cobra.Command,
-	*supervisoragents.DeleteSupervisorAgentRequest,
+	*sdksupervisoragents.DeleteSupervisorAgentRequest,
 )
 
 func newDeleteSupervisorAgent() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteSupervisorAgentReq supervisoragents.DeleteSupervisorAgentRequest
+	var deleteSupervisorAgentReq sdksupervisoragents.DeleteSupervisorAgentRequest
 
 	cmd.Use = "delete-supervisor-agent NAME"
 	cmd.Short = `*Beta* Delete a Supervisor Agent.`
@@ -468,10 +496,12 @@ Delete a Supervisor Agent.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteSupervisorAgentReq.Name = args[0]
+		deleteSupervisorAgentReq.Name = new(args[0])
 
-		err = w.SupervisorAgents.DeleteSupervisorAgent(ctx, deleteSupervisorAgentReq)
+		sdkReq := &deleteSupervisorAgentReq
+		err = w.SupervisorAgents.DeleteSupervisorAgent(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -496,13 +526,12 @@ Delete a Supervisor Agent.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteToolOverrides []func(
 	*cobra.Command,
-	*supervisoragents.DeleteToolRequest,
+	*sdksupervisoragents.DeleteToolRequest,
 )
 
 func newDeleteTool() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteToolReq supervisoragents.DeleteToolRequest
+	var deleteToolReq sdksupervisoragents.DeleteToolRequest
 
 	cmd.Use = "delete-tool NAME"
 	cmd.Short = `*Beta* Delete a Tool.`
@@ -529,10 +558,12 @@ Delete a Tool.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteToolReq.Name = args[0]
+		deleteToolReq.Name = new(args[0])
 
-		err = w.SupervisorAgents.DeleteTool(ctx, deleteToolReq)
+		sdkReq := &deleteToolReq
+		err = w.SupervisorAgents.DeleteTool(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -557,13 +588,12 @@ Delete a Tool.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getExampleOverrides []func(
 	*cobra.Command,
-	*supervisoragents.GetExampleRequest,
+	*sdkknowledgeassistants.GetExampleRequest,
 )
 
 func newGetExample() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getExampleReq supervisoragents.GetExampleRequest
+	var getExampleReq sdkknowledgeassistants.GetExampleRequest
 
 	cmd.Use = "get-example NAME"
 	cmd.Short = `*Beta* Get an example from a Supervisor Agent.`
@@ -590,15 +620,21 @@ Get an example from a Supervisor Agent.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getExampleReq.Name = args[0]
+		getExampleReq.Name = new(args[0])
 
-		response, err := w.SupervisorAgents.GetExample(ctx, getExampleReq)
+		sdkReq := &getExampleReq
+		response, err := w.KnowledgeAssistants.GetExample(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := knowledgeassistants.ExampleFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -619,13 +655,12 @@ Get an example from a Supervisor Agent.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPermissionLevelsOverrides []func(
 	*cobra.Command,
-	*supervisoragents.GetSupervisorAgentPermissionLevelsRequest,
+	*sdkaccessmanagement.ListPermissionLevelsRequest,
 )
 
 func newGetPermissionLevels() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPermissionLevelsReq supervisoragents.GetSupervisorAgentPermissionLevelsRequest
+	var getPermissionLevelsReq sdkaccessmanagement.ListPermissionLevelsRequest
 
 	cmd.Use = "get-permission-levels SUPERVISOR_AGENT_ID"
 	cmd.Short = `*Beta* Get supervisor agent permission levels.`
@@ -651,15 +686,23 @@ Get supervisor agent permission levels.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getPermissionLevelsReq.SupervisorAgentId = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: supervisor_agent_id
 
-		response, err := w.SupervisorAgents.GetPermissionLevels(ctx, getPermissionLevelsReq)
+		getPermissionLevelsReq.RequestObjectType = new("supervisor-agents")
+
+		sdkReq := &getPermissionLevelsReq
+		response, err := w.AccessManagement.ListPermissionLevels(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.ListPermissionLevelsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -680,13 +723,12 @@ Get supervisor agent permission levels.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPermissionsOverrides []func(
 	*cobra.Command,
-	*supervisoragents.GetSupervisorAgentPermissionsRequest,
+	*sdkaccessmanagement.GetObjectPermissionsRequest,
 )
 
 func newGetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPermissionsReq supervisoragents.GetSupervisorAgentPermissionsRequest
+	var getPermissionsReq sdkaccessmanagement.GetObjectPermissionsRequest
 
 	cmd.Use = "get-permissions SUPERVISOR_AGENT_ID"
 	cmd.Short = `*Beta* Get supervisor agent permissions.`
@@ -713,15 +755,23 @@ Get supervisor agent permissions.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getPermissionsReq.SupervisorAgentId = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: supervisor_agent_id
 
-		response, err := w.SupervisorAgents.GetPermissions(ctx, getPermissionsReq)
+		getPermissionsReq.RequestObjectType = new("supervisor-agents")
+
+		sdkReq := &getPermissionsReq
+		response, err := w.AccessManagement.GetObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -742,13 +792,12 @@ Get supervisor agent permissions.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getSupervisorAgentOverrides []func(
 	*cobra.Command,
-	*supervisoragents.GetSupervisorAgentRequest,
+	*sdksupervisoragents.GetSupervisorAgentRequest,
 )
 
 func newGetSupervisorAgent() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getSupervisorAgentReq supervisoragents.GetSupervisorAgentRequest
+	var getSupervisorAgentReq sdksupervisoragents.GetSupervisorAgentRequest
 
 	cmd.Use = "get-supervisor-agent NAME"
 	cmd.Short = `*Beta* Get a Supervisor Agent.`
@@ -775,15 +824,21 @@ Get a Supervisor Agent.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getSupervisorAgentReq.Name = args[0]
+		getSupervisorAgentReq.Name = new(args[0])
 
-		response, err := w.SupervisorAgents.GetSupervisorAgent(ctx, getSupervisorAgentReq)
+		sdkReq := &getSupervisorAgentReq
+		response, err := w.SupervisorAgents.GetSupervisorAgent(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := supervisoragents.SupervisorAgentFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -804,13 +859,12 @@ Get a Supervisor Agent.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getToolOverrides []func(
 	*cobra.Command,
-	*supervisoragents.GetToolRequest,
+	*sdksupervisoragents.GetToolRequest,
 )
 
 func newGetTool() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getToolReq supervisoragents.GetToolRequest
+	var getToolReq sdksupervisoragents.GetToolRequest
 
 	cmd.Use = "get-tool NAME"
 	cmd.Short = `*Beta* Get a Tool.`
@@ -837,15 +891,21 @@ Get a Tool.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getToolReq.Name = args[0]
+		getToolReq.Name = new(args[0])
 
-		response, err := w.SupervisorAgents.GetTool(ctx, getToolReq)
+		sdkReq := &getToolReq
+		response, err := w.SupervisorAgents.GetTool(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := supervisoragents.ToolFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -866,25 +926,25 @@ Get a Tool.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listExamplesOverrides []func(
 	*cobra.Command,
-	*supervisoragents.ListExamplesRequest,
+	*knowledgeassistants.ListExamplesRequest,
 )
 
 func newListExamples() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listExamplesReq knowledgeassistants.ListExamplesRequest
 
-	var listExamplesReq supervisoragents.ListExamplesRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listExamplesLimit int
 
-	cmd.Flags().IntVar(&listExamplesReq.PageSize, "page-size", listExamplesReq.PageSize, `The maximum number of examples to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listExamplesReq.PageSize, "page-size", `The maximum number of examples to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listExamplesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listExamplesReq.PageToken, "page-token", listExamplesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listExamplesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-examples PARENT"
@@ -912,18 +972,22 @@ List examples for a Supervisor Agent.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listExamplesReq.Parent = args[0]
+		listExamplesReq.Parent = new(args[0])
 
-		response := w.SupervisorAgents.ListExamples(ctx, listExamplesReq)
+		sdkReq, err := knowledgeassistants.ListExamplesRequestToSDK(&listExamplesReq)
+		if err != nil {
+			return err
+		}
 		if listExamplesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listExamplesLimit)
 		}
 		if listExamplesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listExamplesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.KnowledgeAssistants.ListExamplesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, knowledgeassistants.ExampleFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -949,20 +1013,20 @@ var listSupervisorAgentsOverrides []func(
 
 func newListSupervisorAgents() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listSupervisorAgentsReq supervisoragents.ListSupervisorAgentsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listSupervisorAgentsLimit int
 
-	cmd.Flags().IntVar(&listSupervisorAgentsReq.PageSize, "page-size", listSupervisorAgentsReq.PageSize, `The maximum number of supervisor agents to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listSupervisorAgentsReq.PageSize, "page-size", `The maximum number of supervisor agents to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listSupervisorAgentsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listSupervisorAgentsReq.PageToken, "page-token", listSupervisorAgentsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listSupervisorAgentsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-supervisor-agents"
@@ -986,16 +1050,20 @@ List Supervisor Agents.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.SupervisorAgents.ListSupervisorAgents(ctx, listSupervisorAgentsReq)
+		sdkReq, err := supervisoragents.ListSupervisorAgentsRequestToSDK(&listSupervisorAgentsReq)
+		if err != nil {
+			return err
+		}
 		if listSupervisorAgentsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listSupervisorAgentsLimit)
 		}
 		if listSupervisorAgentsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listSupervisorAgentsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.SupervisorAgents.ListSupervisorAgentsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, supervisoragents.SupervisorAgentFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1021,20 +1089,20 @@ var listToolsOverrides []func(
 
 func newListTools() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listToolsReq supervisoragents.ListToolsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listToolsLimit int
 
-	cmd.Flags().IntVar(&listToolsReq.PageSize, "page-size", listToolsReq.PageSize, ``)
+	flags.IntPtrVar(cmd.Flags(), &listToolsReq.PageSize, "page-size", ``)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listToolsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listToolsReq.PageToken, "page-token", listToolsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listToolsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-tools PARENT"
@@ -1062,18 +1130,22 @@ List Tools.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listToolsReq.Parent = args[0]
+		listToolsReq.Parent = new(args[0])
 
-		response := w.SupervisorAgents.ListTools(ctx, listToolsReq)
+		sdkReq, err := supervisoragents.ListToolsRequestToSDK(&listToolsReq)
+		if err != nil {
+			return err
+		}
 		if listToolsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listToolsLimit)
 		}
 		if listToolsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listToolsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.SupervisorAgents.ListToolsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, supervisoragents.ToolFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1094,13 +1166,13 @@ List Tools.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var setPermissionsOverrides []func(
 	*cobra.Command,
-	*supervisoragents.SupervisorAgentPermissionsRequest,
+	*accessmanagement.SetObjectPermissionsRequest,
 )
 
 func newSetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var setPermissionsReq accessmanagement.SetObjectPermissionsRequest
 
-	var setPermissionsReq supervisoragents.SupervisorAgentPermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1133,6 +1205,7 @@ Set supervisor agent permissions.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
@@ -1146,14 +1219,24 @@ Set supervisor agent permissions.
 				}
 			}
 		}
-		setPermissionsReq.SupervisorAgentId = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: supervisor_agent_id
 
-		response, err := w.SupervisorAgents.SetPermissions(ctx, setPermissionsReq)
+		setPermissionsReq.RequestObjectType = new("supervisor-agents")
+
+		sdkReq, err := accessmanagement.SetObjectPermissionsRequestToSDK(&setPermissionsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AccessManagement.SetObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1174,19 +1257,19 @@ Set supervisor agent permissions.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateExampleOverrides []func(
 	*cobra.Command,
-	*supervisoragents.UpdateExampleRequest,
+	*knowledgeassistants.UpdateExampleRequest,
 )
 
 func newUpdateExample() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateExampleReq knowledgeassistants.UpdateExampleRequest
+	updateExampleReq.Example = &knowledgeassistants.Example{}
 
-	var updateExampleReq supervisoragents.UpdateExampleRequest
-	updateExampleReq.Example = supervisoragents.Example{}
 	var updateExampleJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateExampleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateExampleReq.Example.Name, "name", updateExampleReq.Example.Name, `Full resource name: supervisor-agents/{supervisor_agent_id}/examples/{example_id}.`)
+	flags.StringPtrVar(cmd.Flags(), &updateExampleReq.Name, "name", `Full resource name: supervisor-agents/{supervisor_agent_id}/examples/{example_id}.`)
 
 	cmd.Use = "update-example NAME UPDATE_MASK QUESTION GUIDELINES"
 	cmd.Short = `*Beta* Update an example in a Supervisor Agent.`
@@ -1224,6 +1307,7 @@ Update an example in a Supervisor Agent.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateExampleJson.Unmarshal(&updateExampleReq.Example)
@@ -1237,28 +1321,31 @@ Update an example in a Supervisor Agent.
 				}
 			}
 		}
-		updateExampleReq.Name = args[0]
+		updateExampleReq.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateExampleReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateExampleReq.UpdateMask = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateExampleReq.Example.Question = args[2]
+			updateExampleReq.Example.Question = new(args[2])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[3], &updateExampleReq.Example.Guidelines)
-			if err != nil {
-				return fmt.Errorf("invalid GUIDELINES: %s", args[3])
-			}
-
+			_ = args[3] // TODO: complex arg: guidelines
 		}
 
-		response, err := w.SupervisorAgents.UpdateExample(ctx, updateExampleReq)
+		sdkReq, err := knowledgeassistants.UpdateExampleRequestToSDK(&updateExampleReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.KnowledgeAssistants.UpdateExample(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := knowledgeassistants.ExampleFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1279,13 +1366,13 @@ Update an example in a Supervisor Agent.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updatePermissionsOverrides []func(
 	*cobra.Command,
-	*supervisoragents.SupervisorAgentPermissionsRequest,
+	*accessmanagement.UpdateObjectPermissionsRequest,
 )
 
 func newUpdatePermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updatePermissionsReq accessmanagement.UpdateObjectPermissionsRequest
 
-	var updatePermissionsReq supervisoragents.SupervisorAgentPermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1317,6 +1404,7 @@ Update supervisor agent permissions.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)
@@ -1330,14 +1418,24 @@ Update supervisor agent permissions.
 				}
 			}
 		}
-		updatePermissionsReq.SupervisorAgentId = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: supervisor_agent_id
 
-		response, err := w.SupervisorAgents.UpdatePermissions(ctx, updatePermissionsReq)
+		updatePermissionsReq.RequestObjectType = new("supervisor-agents")
+
+		sdkReq, err := accessmanagement.UpdateObjectPermissionsRequestToSDK(&updatePermissionsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AccessManagement.UpdateObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1363,16 +1461,16 @@ var updateSupervisorAgentOverrides []func(
 
 func newUpdateSupervisorAgent() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateSupervisorAgentReq supervisoragents.UpdateSupervisorAgentRequest
-	updateSupervisorAgentReq.SupervisorAgent = supervisoragents.SupervisorAgent{}
+	updateSupervisorAgentReq.SupervisorAgent = &supervisoragents.SupervisorAgent{}
+
 	var updateSupervisorAgentJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateSupervisorAgentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateSupervisorAgentReq.SupervisorAgent.Description, "description", updateSupervisorAgentReq.SupervisorAgent.Description, `Description of what this agent can do (user-facing).`)
-	cmd.Flags().StringVar(&updateSupervisorAgentReq.SupervisorAgent.Instructions, "instructions", updateSupervisorAgentReq.SupervisorAgent.Instructions, `Optional natural-language instructions for the supervisor agent.`)
-	cmd.Flags().StringVar(&updateSupervisorAgentReq.SupervisorAgent.Name, "name", updateSupervisorAgentReq.SupervisorAgent.Name, `The resource name of the SupervisorAgent.`)
+	flags.StringPtrVar(cmd.Flags(), &updateSupervisorAgentReq.SupervisorAgent.Description, "description", `Description of what this agent can do (user-facing).`)
+	flags.StringPtrVar(cmd.Flags(), &updateSupervisorAgentReq.SupervisorAgent.Instructions, "instructions", `Optional natural-language instructions for the supervisor agent.`)
+	flags.StringPtrVar(cmd.Flags(), &updateSupervisorAgentReq.SupervisorAgent.Name, "name", `The resource name of the SupervisorAgent.`)
 
 	cmd.Use = "update-supervisor-agent NAME UPDATE_MASK DISPLAY_NAME"
 	cmd.Short = `*Beta* Update a Supervisor Agent.`
@@ -1409,6 +1507,7 @@ Update a Supervisor Agent.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateSupervisorAgentJson.Unmarshal(&updateSupervisorAgentReq.SupervisorAgent)
@@ -1422,21 +1521,28 @@ Update a Supervisor Agent.
 				}
 			}
 		}
-		updateSupervisorAgentReq.Name = args[0]
+		updateSupervisorAgentReq.SupervisorAgent.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateSupervisorAgentReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateSupervisorAgentReq.UpdateMask = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateSupervisorAgentReq.SupervisorAgent.DisplayName = args[2]
+			updateSupervisorAgentReq.SupervisorAgent.DisplayName = new(args[2])
 		}
 
-		response, err := w.SupervisorAgents.UpdateSupervisorAgent(ctx, updateSupervisorAgentReq)
+		sdkReq, err := supervisoragents.UpdateSupervisorAgentRequestToSDK(&updateSupervisorAgentReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.SupervisorAgents.UpdateSupervisorAgent(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := supervisoragents.SupervisorAgentFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1462,18 +1568,18 @@ var updateToolOverrides []func(
 
 func newUpdateTool() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateToolReq supervisoragents.UpdateToolRequest
-	updateToolReq.Tool = supervisoragents.Tool{}
+	updateToolReq.Tool = &supervisoragents.Tool{}
+
 	var updateToolJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateToolJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: app
-	cmd.Flags().StringVar(&updateToolReq.Tool.Description, "description", updateToolReq.Tool.Description, `Description of what this tool does (user-facing).`)
+	flags.StringPtrVar(cmd.Flags(), &updateToolReq.Tool.Description, "description", `Description of what this tool does (user-facing).`)
 	// TODO: complex arg: genie_space
 	// TODO: complex arg: knowledge_assistant
-	cmd.Flags().StringVar(&updateToolReq.Tool.Name, "name", updateToolReq.Tool.Name, `Full resource name: supervisor-agents/{supervisor_agent_id}/tools/{tool_id}.`)
+	flags.StringPtrVar(cmd.Flags(), &updateToolReq.Tool.Name, "name", `Full resource name: supervisor-agents/{supervisor_agent_id}/tools/{tool_id}.`)
 	// TODO: complex arg: uc_connection
 	// TODO: complex arg: uc_function
 	// TODO: complex arg: volume
@@ -1521,6 +1627,7 @@ Update a Tool.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateToolJson.Unmarshal(&updateToolReq.Tool)
@@ -1534,21 +1641,28 @@ Update a Tool.
 				}
 			}
 		}
-		updateToolReq.Name = args[0]
+		updateToolReq.Tool.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateToolReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateToolReq.UpdateMask = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateToolReq.Tool.ToolType = args[2]
+			updateToolReq.Tool.ToolType = new(args[2])
 		}
 
-		response, err := w.SupervisorAgents.UpdateTool(ctx, updateToolReq)
+		sdkReq, err := supervisoragents.UpdateToolRequestToSDK(&updateToolReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.SupervisorAgents.UpdateTool(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := supervisoragents.ToolFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

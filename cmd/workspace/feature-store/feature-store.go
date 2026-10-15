@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/spf13/cobra"
+
+	featurestore "github.com/databricks/cli/libs/sdktypes/featurestore/v1"
+	sdkfeaturestore "github.com/databricks/sdk-go/featurestore/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -63,20 +66,20 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOnlineStoreOverrides []func(
 	*cobra.Command,
-	*ml.CreateOnlineStoreRequest,
+	*featurestore.CreateOnlineStoreRequest,
 )
 
 func newCreateOnlineStore() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createOnlineStoreReq featurestore.CreateOnlineStoreRequest
+	createOnlineStoreReq.OnlineStore = &featurestore.OnlineStore{}
 
-	var createOnlineStoreReq ml.CreateOnlineStoreRequest
-	createOnlineStoreReq.OnlineStore = ml.OnlineStore{}
 	var createOnlineStoreJson flags.JsonFlag
 
 	cmd.Flags().Var(&createOnlineStoreJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().IntVar(&createOnlineStoreReq.OnlineStore.ReadReplicaCount, "read-replica-count", createOnlineStoreReq.OnlineStore.ReadReplicaCount, `The number of read replicas for the online store.`)
-	cmd.Flags().StringVar(&createOnlineStoreReq.OnlineStore.UsagePolicyId, "usage-policy-id", createOnlineStoreReq.OnlineStore.UsagePolicyId, `The usage policy applied to the online store to track billing.`)
+	flags.IntPtrVar(cmd.Flags(), &createOnlineStoreReq.OnlineStore.ReadReplicaCount, "read-replica-count", `The number of read replicas for the online store.`)
+	flags.StringPtrVar(cmd.Flags(), &createOnlineStoreReq.OnlineStore.UsagePolicyId, "usage-policy-id", `The usage policy applied to the online store to track billing.`)
 
 	cmd.Use = "create-online-store NAME CAPACITY"
 	cmd.Short = `Create an Online Feature Store.`
@@ -108,6 +111,7 @@ func newCreateOnlineStore() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createOnlineStoreJson.Unmarshal(&createOnlineStoreReq.OnlineStore)
@@ -122,18 +126,26 @@ func newCreateOnlineStore() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createOnlineStoreReq.OnlineStore.Name = args[0]
+			createOnlineStoreReq.OnlineStore.Name = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			createOnlineStoreReq.OnlineStore.Capacity = args[1]
+			createOnlineStoreReq.OnlineStore.Capacity = new(args[1])
 		}
 
-		response, err := w.FeatureStore.CreateOnlineStore(ctx, createOnlineStoreReq)
+		sdkReq, err := featurestore.CreateOnlineStoreRequestToSDK(&createOnlineStoreReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.FeatureStore.CreateOnlineStore(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := featurestore.OnlineStoreFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -154,13 +166,12 @@ func newCreateOnlineStore() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOnlineStoreOverrides []func(
 	*cobra.Command,
-	*ml.DeleteOnlineStoreRequest,
+	*sdkfeaturestore.DeleteOnlineStoreRequest,
 )
 
 func newDeleteOnlineStore() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteOnlineStoreReq ml.DeleteOnlineStoreRequest
+	var deleteOnlineStoreReq sdkfeaturestore.DeleteOnlineStoreRequest
 
 	cmd.Use = "delete-online-store NAME"
 	cmd.Short = `Delete an Online Feature Store.`
@@ -182,10 +193,12 @@ func newDeleteOnlineStore() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteOnlineStoreReq.Name = args[0]
+		deleteOnlineStoreReq.Name = new(args[0])
 
-		err = w.FeatureStore.DeleteOnlineStore(ctx, deleteOnlineStoreReq)
+		sdkReq := &deleteOnlineStoreReq
+		err = w.FeatureStore.DeleteOnlineStore(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -210,13 +223,12 @@ func newDeleteOnlineStore() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOnlineTableOverrides []func(
 	*cobra.Command,
-	*ml.DeleteOnlineTableRequest,
+	*sdkfeaturestore.DeleteOnlineTableRequest,
 )
 
 func newDeleteOnlineTable() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteOnlineTableReq ml.DeleteOnlineTableRequest
+	var deleteOnlineTableReq sdkfeaturestore.DeleteOnlineTableRequest
 
 	cmd.Use = "delete-online-table ONLINE_TABLE_NAME"
 	cmd.Short = `Delete an online table.`
@@ -240,10 +252,12 @@ func newDeleteOnlineTable() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteOnlineTableReq.OnlineTableName = args[0]
+		deleteOnlineTableReq.OnlineTableName = new(args[0])
 
-		err = w.FeatureStore.DeleteOnlineTable(ctx, deleteOnlineTableReq)
+		sdkReq := &deleteOnlineTableReq
+		err = w.FeatureStore.DeleteOnlineTable(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -268,13 +282,12 @@ func newDeleteOnlineTable() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOnlineStoreOverrides []func(
 	*cobra.Command,
-	*ml.GetOnlineStoreRequest,
+	*sdkfeaturestore.GetOnlineStoreRequest,
 )
 
 func newGetOnlineStore() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getOnlineStoreReq ml.GetOnlineStoreRequest
+	var getOnlineStoreReq sdkfeaturestore.GetOnlineStoreRequest
 
 	cmd.Use = "get-online-store NAME"
 	cmd.Short = `Get an Online Feature Store.`
@@ -296,15 +309,21 @@ func newGetOnlineStore() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getOnlineStoreReq.Name = args[0]
+		getOnlineStoreReq.Name = new(args[0])
 
-		response, err := w.FeatureStore.GetOnlineStore(ctx, getOnlineStoreReq)
+		sdkReq := &getOnlineStoreReq
+		response, err := w.FeatureStore.GetOnlineStore(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := featurestore.OnlineStoreFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -325,25 +344,25 @@ func newGetOnlineStore() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOnlineStoresOverrides []func(
 	*cobra.Command,
-	*ml.ListOnlineStoresRequest,
+	*featurestore.ListOnlineStoresRequest,
 )
 
 func newListOnlineStores() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listOnlineStoresReq featurestore.ListOnlineStoresRequest
 
-	var listOnlineStoresReq ml.ListOnlineStoresRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listOnlineStoresLimit int
 
-	cmd.Flags().IntVar(&listOnlineStoresReq.PageSize, "page-size", listOnlineStoresReq.PageSize, `The maximum number of results to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listOnlineStoresReq.PageSize, "page-size", `The maximum number of results to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listOnlineStoresLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listOnlineStoresReq.PageToken, "page-token", listOnlineStoresReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listOnlineStoresReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-online-stores"
@@ -363,16 +382,20 @@ func newListOnlineStores() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.FeatureStore.ListOnlineStores(ctx, listOnlineStoresReq)
+		sdkReq, err := featurestore.ListOnlineStoresRequestToSDK(&listOnlineStoresReq)
+		if err != nil {
+			return err
+		}
 		if listOnlineStoresLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listOnlineStoresLimit)
 		}
 		if listOnlineStoresLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listOnlineStoresLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.FeatureStore.ListOnlineStoresIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, featurestore.OnlineStoreFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -393,13 +416,13 @@ func newListOnlineStores() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var publishTableOverrides []func(
 	*cobra.Command,
-	*ml.PublishTableRequest,
+	*featurestore.PublishTableRequest,
 )
 
 func newPublishTable() *cobra.Command {
 	cmd := &cobra.Command{}
+	var publishTableReq featurestore.PublishTableRequest
 
-	var publishTableReq ml.PublishTableRequest
 	var publishTableJson flags.JsonFlag
 
 	cmd.Flags().Var(&publishTableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -424,6 +447,7 @@ func newPublishTable() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := publishTableJson.Unmarshal(&publishTableReq)
@@ -439,14 +463,22 @@ func newPublishTable() *cobra.Command {
 		} else {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
-		publishTableReq.SourceTableName = args[0]
+		publishTableReq.SourceTableName = new(args[0])
 
-		response, err := w.FeatureStore.PublishTable(ctx, publishTableReq)
+		sdkReq, err := featurestore.PublishTableRequestToSDK(&publishTableReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.FeatureStore.PublishTable(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := featurestore.PublishTableResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -467,20 +499,20 @@ func newPublishTable() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOnlineStoreOverrides []func(
 	*cobra.Command,
-	*ml.UpdateOnlineStoreRequest,
+	*featurestore.UpdateOnlineStoreRequest,
 )
 
 func newUpdateOnlineStore() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateOnlineStoreReq featurestore.UpdateOnlineStoreRequest
+	updateOnlineStoreReq.OnlineStore = &featurestore.OnlineStore{}
 
-	var updateOnlineStoreReq ml.UpdateOnlineStoreRequest
-	updateOnlineStoreReq.OnlineStore = ml.OnlineStore{}
 	var updateOnlineStoreJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateOnlineStoreJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().IntVar(&updateOnlineStoreReq.OnlineStore.ReadReplicaCount, "read-replica-count", updateOnlineStoreReq.OnlineStore.ReadReplicaCount, `The number of read replicas for the online store.`)
-	cmd.Flags().StringVar(&updateOnlineStoreReq.OnlineStore.UsagePolicyId, "usage-policy-id", updateOnlineStoreReq.OnlineStore.UsagePolicyId, `The usage policy applied to the online store to track billing.`)
+	flags.IntPtrVar(cmd.Flags(), &updateOnlineStoreReq.OnlineStore.ReadReplicaCount, "read-replica-count", `The number of read replicas for the online store.`)
+	flags.StringPtrVar(cmd.Flags(), &updateOnlineStoreReq.OnlineStore.UsagePolicyId, "usage-policy-id", `The usage policy applied to the online store to track billing.`)
 
 	cmd.Use = "update-online-store NAME UPDATE_MASK CAPACITY"
 	cmd.Short = `Update an Online Feature Store.`
@@ -519,6 +551,7 @@ func newUpdateOnlineStore() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateOnlineStoreJson.Unmarshal(&updateOnlineStoreReq.OnlineStore)
@@ -532,18 +565,26 @@ func newUpdateOnlineStore() *cobra.Command {
 				}
 			}
 		}
-		updateOnlineStoreReq.Name = args[0]
-		updateOnlineStoreReq.UpdateMask = args[1]
+		updateOnlineStoreReq.OnlineStore.Name = new(args[0])
+		updateOnlineStoreReq.UpdateMask = new(args[1])
 		if !cmd.Flags().Changed("json") {
-			updateOnlineStoreReq.OnlineStore.Capacity = args[2]
+			updateOnlineStoreReq.OnlineStore.Capacity = new(args[2])
 		}
 
-		response, err := w.FeatureStore.UpdateOnlineStore(ctx, updateOnlineStoreReq)
+		sdkReq, err := featurestore.UpdateOnlineStoreRequestToSDK(&updateOnlineStoreReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.FeatureStore.UpdateOnlineStore(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := featurestore.OnlineStoreFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

@@ -7,10 +7,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
+
+	networking "github.com/databricks/cli/libs/sdktypes/networking/v1"
+	sdknetworking "github.com/databricks/sdk-go/networking/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -57,14 +60,14 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createNetworkPolicyRpcOverrides []func(
 	*cobra.Command,
-	*settings.CreateNetworkPolicyRequest,
+	*networking.CreateNetworkPolicyRequest,
 )
 
 func newCreateNetworkPolicyRpc() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createNetworkPolicyRpcReq networking.CreateNetworkPolicyRequest
+	createNetworkPolicyRpcReq.NetworkPolicy = &networking.AccountNetworkPolicy{}
 
-	var createNetworkPolicyRpcReq settings.CreateNetworkPolicyRequest
-	createNetworkPolicyRpcReq.NetworkPolicy = settings.AccountNetworkPolicy{}
 	var createNetworkPolicyRpcJson flags.JsonFlag
 
 	cmd.Flags().Var(&createNetworkPolicyRpcJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -72,7 +75,7 @@ func newCreateNetworkPolicyRpc() *cobra.Command {
 	// TODO: complex arg: egress
 	// TODO: complex arg: ingress
 	// TODO: complex arg: ingress_dry_run
-	cmd.Flags().StringVar(&createNetworkPolicyRpcReq.NetworkPolicy.NetworkPolicyId, "network-policy-id", createNetworkPolicyRpcReq.NetworkPolicy.NetworkPolicyId, `The unique identifier for the network policy.`)
+	flags.StringPtrVar(cmd.Flags(), &createNetworkPolicyRpcReq.NetworkPolicy.NetworkPolicyId, "network-policy-id", `The unique identifier for the network policy.`)
 
 	cmd.Use = "create-network-policy-rpc"
 	cmd.Short = `Create a network policy.`
@@ -94,6 +97,7 @@ func newCreateNetworkPolicyRpc() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := createNetworkPolicyRpcJson.Unmarshal(&createNetworkPolicyRpcReq.NetworkPolicy)
@@ -108,12 +112,20 @@ func newCreateNetworkPolicyRpc() *cobra.Command {
 			}
 		}
 
-		response, err := a.NetworkPolicies.CreateNetworkPolicyRpc(ctx, createNetworkPolicyRpcReq)
+		sdkReq, err := networking.CreateNetworkPolicyRequestToSDK(&createNetworkPolicyRpcReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Networking.CreateNetworkPolicyRpc(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.AccountNetworkPolicyFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -134,13 +146,12 @@ func newCreateNetworkPolicyRpc() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteNetworkPolicyRpcOverrides []func(
 	*cobra.Command,
-	*settings.DeleteNetworkPolicyRequest,
+	*sdknetworking.DeleteNetworkPolicyRequest,
 )
 
 func newDeleteNetworkPolicyRpc() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteNetworkPolicyRpcReq settings.DeleteNetworkPolicyRequest
+	var deleteNetworkPolicyRpcReq sdknetworking.DeleteNetworkPolicyRequest
 
 	cmd.Use = "delete-network-policy-rpc NETWORK_POLICY_ID"
 	cmd.Short = `Delete a network policy.`
@@ -164,10 +175,12 @@ func newDeleteNetworkPolicyRpc() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		deleteNetworkPolicyRpcReq.NetworkPolicyId = args[0]
+		deleteNetworkPolicyRpcReq.NetworkPolicyId = new(args[0])
 
-		err = a.NetworkPolicies.DeleteNetworkPolicyRpc(ctx, deleteNetworkPolicyRpcReq)
+		sdkReq := &deleteNetworkPolicyRpcReq
+		err = a.Networking.DeleteNetworkPolicyRpc(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -192,13 +205,12 @@ func newDeleteNetworkPolicyRpc() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getNetworkPolicyRpcOverrides []func(
 	*cobra.Command,
-	*settings.GetNetworkPolicyRequest,
+	*sdknetworking.GetNetworkPolicyRequest,
 )
 
 func newGetNetworkPolicyRpc() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getNetworkPolicyRpcReq settings.GetNetworkPolicyRequest
+	var getNetworkPolicyRpcReq sdknetworking.GetNetworkPolicyRequest
 
 	cmd.Use = "get-network-policy-rpc NETWORK_POLICY_ID"
 	cmd.Short = `Get a network policy.`
@@ -222,15 +234,21 @@ func newGetNetworkPolicyRpc() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		getNetworkPolicyRpcReq.NetworkPolicyId = args[0]
+		getNetworkPolicyRpcReq.NetworkPolicyId = new(args[0])
 
-		response, err := a.NetworkPolicies.GetNetworkPolicyRpc(ctx, getNetworkPolicyRpcReq)
+		sdkReq := &getNetworkPolicyRpcReq
+		response, err := a.Networking.GetNetworkPolicyRpc(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.AccountNetworkPolicyFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -251,13 +269,13 @@ func newGetNetworkPolicyRpc() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listNetworkPoliciesRpcOverrides []func(
 	*cobra.Command,
-	*settings.ListNetworkPoliciesRequest,
+	*networking.ListNetworkPoliciesRequest,
 )
 
 func newListNetworkPoliciesRpc() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listNetworkPoliciesRpcReq networking.ListNetworkPoliciesRequest
 
-	var listNetworkPoliciesRpcReq settings.ListNetworkPoliciesRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
@@ -267,7 +285,7 @@ func newListNetworkPoliciesRpc() *cobra.Command {
 	cmd.Flags().IntVar(&listNetworkPoliciesRpcLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listNetworkPoliciesRpcReq.PageToken, "page-token", listNetworkPoliciesRpcReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listNetworkPoliciesRpcReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-network-policies-rpc"
@@ -289,16 +307,20 @@ func newListNetworkPoliciesRpc() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		response := a.NetworkPolicies.ListNetworkPoliciesRpc(ctx, listNetworkPoliciesRpcReq)
+		sdkReq, err := networking.ListNetworkPoliciesRequestToSDK(&listNetworkPoliciesRpcReq)
+		if err != nil {
+			return err
+		}
 		if listNetworkPoliciesRpcLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listNetworkPoliciesRpcLimit)
 		}
 		if listNetworkPoliciesRpcLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listNetworkPoliciesRpcLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := a.Networking.ListNetworkPoliciesRpcIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, networking.AccountNetworkPolicyFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -319,14 +341,14 @@ func newListNetworkPoliciesRpc() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateNetworkPolicyRpcOverrides []func(
 	*cobra.Command,
-	*settings.UpdateNetworkPolicyRequest,
+	*networking.UpdateNetworkPolicyRequest,
 )
 
 func newUpdateNetworkPolicyRpc() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateNetworkPolicyRpcReq networking.UpdateNetworkPolicyRequest
+	updateNetworkPolicyRpcReq.NetworkPolicy = &networking.AccountNetworkPolicy{}
 
-	var updateNetworkPolicyRpcReq settings.UpdateNetworkPolicyRequest
-	updateNetworkPolicyRpcReq.NetworkPolicy = settings.AccountNetworkPolicy{}
 	var updateNetworkPolicyRpcJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateNetworkPolicyRpcJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -334,7 +356,7 @@ func newUpdateNetworkPolicyRpc() *cobra.Command {
 	// TODO: complex arg: egress
 	// TODO: complex arg: ingress
 	// TODO: complex arg: ingress_dry_run
-	cmd.Flags().StringVar(&updateNetworkPolicyRpcReq.NetworkPolicy.NetworkPolicyId, "network-policy-id", updateNetworkPolicyRpcReq.NetworkPolicy.NetworkPolicyId, `The unique identifier for the network policy.`)
+	flags.StringPtrVar(cmd.Flags(), &updateNetworkPolicyRpcReq.NetworkPolicyId, "network-policy-id", `The unique identifier for the network policy.`)
 
 	cmd.Use = "update-network-policy-rpc NETWORK_POLICY_ID"
 	cmd.Short = `Update a network policy.`
@@ -359,6 +381,7 @@ func newUpdateNetworkPolicyRpc() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := updateNetworkPolicyRpcJson.Unmarshal(&updateNetworkPolicyRpcReq.NetworkPolicy)
@@ -372,14 +395,22 @@ func newUpdateNetworkPolicyRpc() *cobra.Command {
 				}
 			}
 		}
-		updateNetworkPolicyRpcReq.NetworkPolicyId = args[0]
+		updateNetworkPolicyRpcReq.NetworkPolicyId = new(args[0])
 
-		response, err := a.NetworkPolicies.UpdateNetworkPolicyRpc(ctx, updateNetworkPolicyRpcReq)
+		sdkReq, err := networking.UpdateNetworkPolicyRequestToSDK(&updateNetworkPolicyRpcReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Networking.UpdateNetworkPolicyRpc(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.AccountNetworkPolicyFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

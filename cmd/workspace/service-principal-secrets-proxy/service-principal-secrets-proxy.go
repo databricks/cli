@@ -7,10 +7,12 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/oauth2"
 	"github.com/spf13/cobra"
+
+	authentication "github.com/databricks/cli/libs/sdktypes/authentication/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -63,18 +65,18 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*oauth2.CreateServicePrincipalSecretRequest,
+	*authentication.CreateServicePrincipalSecretRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq authentication.CreateServicePrincipalSecretRequest
 
-	var createReq oauth2.CreateServicePrincipalSecretRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Lifetime, "lifetime", createReq.Lifetime, `The lifetime of the secret in seconds.`)
+	// TODO: complex arg: lifetime
 
 	cmd.Use = "create SERVICE_PRINCIPAL_ID"
 	cmd.Short = `Create service principal secret.`
@@ -98,6 +100,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -111,14 +114,22 @@ func newCreate() *cobra.Command {
 				}
 			}
 		}
-		createReq.ServicePrincipalId = args[0]
+		createReq.ServicePrincipal = new(args[0])
 
-		response, err := w.ServicePrincipalSecretsProxy.Create(ctx, createReq)
+		sdkReq, err := authentication.CreateServicePrincipalSecretRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Authentication.CreateServicePrincipalSecretProxy(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := authentication.CreateServicePrincipalSecretResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -139,13 +150,12 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*oauth2.DeleteServicePrincipalSecretRequest,
+	*authentication.DeleteServicePrincipalSecretRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq oauth2.DeleteServicePrincipalSecretRequest
+	var deleteReq authentication.DeleteServicePrincipalSecretRequest
 
 	cmd.Use = "delete SERVICE_PRINCIPAL_ID SECRET_ID"
 	cmd.Short = `Delete service principal secret.`
@@ -170,14 +180,21 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteReq.ServicePrincipalId = args[0]
-		deleteReq.SecretId = args[1]
+		deleteReq.ServicePrincipal = new(args[0])
+		deleteReq.SecretId = new(args[1])
 
-		err = w.ServicePrincipalSecretsProxy.Delete(ctx, deleteReq)
+		sdkReq, err := authentication.DeleteServicePrincipalSecretRequestToSDK(&deleteReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Authentication.DeleteServicePrincipalSecretProxy(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -199,25 +216,25 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*oauth2.ListServicePrincipalSecretsRequest,
+	*authentication.ListServicePrincipalSecretsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq authentication.ListServicePrincipalSecretsRequest
 
-	var listReq oauth2.ListServicePrincipalSecretsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	flags.IntPtrVar(cmd.Flags(), &listReq.PageSize, "page-size", ``)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list SERVICE_PRINCIPAL_ID"
@@ -244,18 +261,22 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listReq.ServicePrincipalId = args[0]
+		listReq.ServicePrincipal = new(args[0])
 
-		response := w.ServicePrincipalSecretsProxy.List(ctx, listReq)
+		sdkReq, err := authentication.ListServicePrincipalSecretsRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Authentication.ListServicePrincipalSecretsProxyIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, authentication.ServicePrincipalSecretFromSDK))
 	}
 
 	// Disable completions since they are not applicable.

@@ -6,8 +6,10 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/sharing"
 	"github.com/spf13/cobra"
+
+	sharing "github.com/databricks/cli/libs/sdktypes/sharing/v1"
+	sdksharing "github.com/databricks/sdk-go/sharing/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -54,13 +56,12 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getActivationUrlInfoOverrides []func(
 	*cobra.Command,
-	*sharing.GetActivationUrlInfoRequest,
+	*sdksharing.GetActivationUrlInfoRequest,
 )
 
 func newGetActivationUrlInfo() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getActivationUrlInfoReq sharing.GetActivationUrlInfoRequest
+	var getActivationUrlInfoReq sdksharing.GetActivationUrlInfoRequest
 
 	cmd.Use = "get-activation-url-info ACTIVATION_URL"
 	cmd.Short = `Get a share activation URL.`
@@ -84,13 +85,17 @@ func newGetActivationUrlInfo() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getActivationUrlInfoReq.ActivationUrl = args[0]
+		getActivationUrlInfoReq.ActivationUrl = new(args[0])
 
-		err = w.RecipientActivation.GetActivationUrlInfo(ctx, getActivationUrlInfoReq)
+		sdkReq := &getActivationUrlInfoReq
+		response, err := w.Sharing.GetActivationUrlInfo(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -112,13 +117,12 @@ func newGetActivationUrlInfo() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var retrieveTokenOverrides []func(
 	*cobra.Command,
-	*sharing.RetrieveTokenRequest,
+	*sdksharing.RetrieveTokenRequest,
 )
 
 func newRetrieveToken() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var retrieveTokenReq sharing.RetrieveTokenRequest
+	var retrieveTokenReq sdksharing.RetrieveTokenRequest
 
 	cmd.Use = "retrieve-token ACTIVATION_URL"
 	cmd.Short = `Get an access token.`
@@ -143,15 +147,21 @@ func newRetrieveToken() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		retrieveTokenReq.ActivationUrl = args[0]
+		retrieveTokenReq.ActivationUrl = new(args[0])
 
-		response, err := w.RecipientActivation.RetrieveToken(ctx, retrieveTokenReq)
+		sdkReq := &retrieveTokenReq
+		response, err := w.Sharing.RetrieveAccessToken(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := sharing.RetrieveTokenResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

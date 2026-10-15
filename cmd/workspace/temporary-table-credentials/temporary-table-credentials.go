@@ -7,8 +7,9 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+
+	uccredentials "github.com/databricks/cli/libs/sdktypes/uc/credentials/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -61,19 +62,19 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var generateTemporaryTableCredentialsOverrides []func(
 	*cobra.Command,
-	*catalog.GenerateTemporaryTableCredentialRequest,
+	*uccredentials.GenerateTemporaryTableCredentialRequest,
 )
 
 func newGenerateTemporaryTableCredentials() *cobra.Command {
 	cmd := &cobra.Command{}
+	var generateTemporaryTableCredentialsReq uccredentials.GenerateTemporaryTableCredentialRequest
 
-	var generateTemporaryTableCredentialsReq catalog.GenerateTemporaryTableCredentialRequest
 	var generateTemporaryTableCredentialsJson flags.JsonFlag
 
 	cmd.Flags().Var(&generateTemporaryTableCredentialsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().Var(&generateTemporaryTableCredentialsReq.Operation, "operation", `The operation performed against the table data, either READ or READ_WRITE. Supported values: [READ, READ_WRITE]`)
-	cmd.Flags().StringVar(&generateTemporaryTableCredentialsReq.TableId, "table-id", generateTemporaryTableCredentialsReq.TableId, `UUID of the table to read or write.`)
+	flags.EnumVar(cmd.Flags(), &generateTemporaryTableCredentialsReq.Operation, "operation", `The operation performed against the table data, either READ or READ_WRITE. Supported values: [READ, READ_WRITE]`, "TableOperation", "READ", "READ_WRITE")
+	flags.StringPtrVar(cmd.Flags(), &generateTemporaryTableCredentialsReq.TableId, "table-id", `UUID of the table to read or write.`)
 
 	cmd.Use = "generate-temporary-table-credentials"
 	cmd.Short = `Generate a temporary table credential.`
@@ -97,6 +98,7 @@ func newGenerateTemporaryTableCredentials() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := generateTemporaryTableCredentialsJson.Unmarshal(&generateTemporaryTableCredentialsReq)
@@ -111,12 +113,20 @@ func newGenerateTemporaryTableCredentials() *cobra.Command {
 			}
 		}
 
-		response, err := w.TemporaryTableCredentials.GenerateTemporaryTableCredentials(ctx, generateTemporaryTableCredentialsReq)
+		sdkReq, err := uccredentials.GenerateTemporaryTableCredentialRequestToSDK(&generateTemporaryTableCredentialsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Credentials.GenerateTemporaryTableCredential(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := uccredentials.GenerateTemporaryTableCredentialResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

@@ -7,9 +7,12 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
+
+	policyfamilies "github.com/databricks/cli/libs/sdktypes/policyfamilies/v2"
 )
 
 // Slice with functions to override default command behavior.
@@ -55,15 +58,14 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*compute.GetPolicyFamilyRequest,
+	*policyfamilies.GetPolicyFamilyRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
+	var getReq policyfamilies.GetPolicyFamilyRequest
 
-	var getReq compute.GetPolicyFamilyRequest
-
-	cmd.Flags().Int64Var(&getReq.Version, "version", getReq.Version, `The version number for the family to fetch.`)
+	flags.Int64PtrVar(cmd.Flags(), &getReq.Version, "version", `The version number for the family to fetch.`)
 
 	cmd.Use = "get POLICY_FAMILY_ID"
 	cmd.Short = `Get policy family information.`
@@ -88,15 +90,24 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getReq.PolicyFamilyId = args[0]
+		getReq.PolicyFamilyId = new(args[0])
 
-		response, err := w.PolicyFamilies.Get(ctx, getReq)
+		sdkReq, err := policyfamilies.GetPolicyFamilyRequestToSDK(&getReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.PolicyFamilies.GetPolicyFamily(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := policyfamilies.PolicyFamilyFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -117,25 +128,25 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*compute.ListPolicyFamiliesRequest,
+	*policyfamilies.ListPolicyFamiliesRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq policyfamilies.ListPolicyFamiliesRequest
 
-	var listReq compute.ListPolicyFamiliesRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().Int64Var(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of policy families to return.`)
+	flags.Int64PtrVar(cmd.Flags(), &listReq.MaxResults, "max-results", `Maximum number of policy families to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
@@ -158,16 +169,20 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.PolicyFamilies.List(ctx, listReq)
+		sdkReq, err := policyfamilies.ListPolicyFamiliesRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.PolicyFamilies.ListPolicyFamiliesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, policyfamilies.PolicyFamilyFromSDK))
 	}
 
 	// Disable completions since they are not applicable.

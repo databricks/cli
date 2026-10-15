@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+
+	uccredentials "github.com/databricks/cli/libs/sdktypes/uc/credentials/v1"
+	sdkuccredentials "github.com/databricks/sdk-go/uc/credentials/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -61,13 +64,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createCredentialOverrides []func(
 	*cobra.Command,
-	*catalog.CreateCredentialRequest,
+	*uccredentials.CreateCredentialRequest,
 )
 
 func newCreateCredential() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createCredentialReq uccredentials.CreateCredentialRequest
 
-	var createCredentialReq catalog.CreateCredentialRequest
 	var createCredentialJson flags.JsonFlag
 
 	cmd.Flags().Var(&createCredentialJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -75,11 +78,11 @@ func newCreateCredential() *cobra.Command {
 	// TODO: complex arg: aws_iam_role
 	// TODO: complex arg: azure_managed_identity
 	// TODO: complex arg: azure_service_principal
-	cmd.Flags().StringVar(&createCredentialReq.Comment, "comment", createCredentialReq.Comment, `Comment associated with the credential.`)
+	flags.StringPtrVar(cmd.Flags(), &createCredentialReq.Comment, "comment", `Comment associated with the credential.`)
 	// TODO: complex arg: databricks_gcp_service_account
-	cmd.Flags().Var(&createCredentialReq.Purpose, "purpose", `Indicates the purpose of the credential. Supported values: [SERVICE, STORAGE]`)
-	cmd.Flags().BoolVar(&createCredentialReq.ReadOnly, "read-only", createCredentialReq.ReadOnly, `Whether the credential is usable only for read operations.`)
-	cmd.Flags().BoolVar(&createCredentialReq.SkipValidation, "skip-validation", createCredentialReq.SkipValidation, `Optional.`)
+	// TODO: field not in sdk-go request: purpose
+	flags.BoolPtrVar(cmd.Flags(), &createCredentialReq.ReadOnly, "read-only", `Whether the credential is usable only for read operations.`)
+	flags.BoolPtrVar(cmd.Flags(), &createCredentialReq.SkipValidation, "skip-validation", `Optional.`)
 
 	cmd.Use = "create-credential NAME"
 	cmd.Short = `Create a credential.`
@@ -116,6 +119,7 @@ func newCreateCredential() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createCredentialJson.Unmarshal(&createCredentialReq)
@@ -130,15 +134,23 @@ func newCreateCredential() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createCredentialReq.Name = args[0]
+			createCredentialReq.Name = new(args[0])
 		}
 
-		response, err := w.Credentials.CreateCredential(ctx, createCredentialReq)
+		sdkReq, err := uccredentials.CreateCredentialRequestToSDK(&createCredentialReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Credentials.CreateCredential(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := uccredentials.StorageCredentialInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -159,15 +171,14 @@ func newCreateCredential() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteCredentialOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteCredentialRequest,
+	*uccredentials.DeleteCredentialRequest,
 )
 
 func newDeleteCredential() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteCredentialReq uccredentials.DeleteCredentialRequest
 
-	var deleteCredentialReq catalog.DeleteCredentialRequest
-
-	cmd.Flags().BoolVar(&deleteCredentialReq.Force, "force", deleteCredentialReq.Force, `Force an update even if there are dependent services (when purpose is **SERVICE**) or dependent external locations and external tables (when purpose is **STORAGE**).`)
+	flags.BoolPtrVar(cmd.Flags(), &deleteCredentialReq.Force, "force", `Force an update even if there are dependent services (when purpose is **SERVICE**) or dependent external locations and external tables (when purpose is **STORAGE**).`)
 
 	cmd.Use = "delete-credential NAME_ARG"
 	cmd.Short = `Delete a credential.`
@@ -192,13 +203,20 @@ func newDeleteCredential() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteCredentialReq.NameArg = args[0]
+		deleteCredentialReq.NameArg = new(args[0])
 
-		err = w.Credentials.DeleteCredential(ctx, deleteCredentialReq)
+		sdkReq, err := uccredentials.DeleteCredentialRequestToSDK(&deleteCredentialReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Credentials.DeleteCredential(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -220,13 +238,13 @@ func newDeleteCredential() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var generateTemporaryServiceCredentialOverrides []func(
 	*cobra.Command,
-	*catalog.GenerateTemporaryServiceCredentialRequest,
+	*uccredentials.GenerateTemporaryServiceCredentialRequest,
 )
 
 func newGenerateTemporaryServiceCredential() *cobra.Command {
 	cmd := &cobra.Command{}
+	var generateTemporaryServiceCredentialReq uccredentials.GenerateTemporaryServiceCredentialRequest
 
-	var generateTemporaryServiceCredentialReq catalog.GenerateTemporaryServiceCredentialRequest
 	var generateTemporaryServiceCredentialJson flags.JsonFlag
 
 	cmd.Flags().Var(&generateTemporaryServiceCredentialJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -265,6 +283,7 @@ func newGenerateTemporaryServiceCredential() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := generateTemporaryServiceCredentialJson.Unmarshal(&generateTemporaryServiceCredentialReq)
@@ -279,15 +298,23 @@ func newGenerateTemporaryServiceCredential() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			generateTemporaryServiceCredentialReq.CredentialName = args[0]
+			generateTemporaryServiceCredentialReq.CredentialName = new(args[0])
 		}
 
-		response, err := w.Credentials.GenerateTemporaryServiceCredential(ctx, generateTemporaryServiceCredentialReq)
+		sdkReq, err := uccredentials.GenerateTemporaryServiceCredentialRequestToSDK(&generateTemporaryServiceCredentialReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Credentials.GenerateTemporaryServiceCredential(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := uccredentials.TemporaryCredentialsFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -308,13 +335,12 @@ func newGenerateTemporaryServiceCredential() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getCredentialOverrides []func(
 	*cobra.Command,
-	*catalog.GetCredentialRequest,
+	*sdkuccredentials.GetCredentialRequest,
 )
 
 func newGetCredential() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getCredentialReq catalog.GetCredentialRequest
+	var getCredentialReq sdkuccredentials.GetCredentialRequest
 
 	cmd.Use = "get-credential NAME_ARG"
 	cmd.Short = `Get a credential.`
@@ -340,15 +366,21 @@ func newGetCredential() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getCredentialReq.NameArg = args[0]
+		getCredentialReq.NameArg = new(args[0])
 
-		response, err := w.Credentials.GetCredential(ctx, getCredentialReq)
+		sdkReq := &getCredentialReq
+		response, err := w.Credentials.GetCredential(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := uccredentials.StorageCredentialInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -369,27 +401,27 @@ func newGetCredential() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listCredentialsOverrides []func(
 	*cobra.Command,
-	*catalog.ListCredentialsRequest,
+	*uccredentials.ListCredentialsRequest,
 )
 
 func newListCredentials() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listCredentialsReq uccredentials.ListCredentialsRequest
 
-	var listCredentialsReq catalog.ListCredentialsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listCredentialsLimit int
 
-	cmd.Flags().BoolVar(&listCredentialsReq.IncludeUnbound, "include-unbound", listCredentialsReq.IncludeUnbound, `Whether to include credentials not bound to the workspace.`)
-	cmd.Flags().IntVar(&listCredentialsReq.MaxResults, "max-results", listCredentialsReq.MaxResults, `Maximum number of credentials to return.`)
-	cmd.Flags().Var(&listCredentialsReq.Purpose, "purpose", `Return only credentials for the specified purpose. Supported values: [SERVICE, STORAGE]`)
+	flags.BoolPtrVar(cmd.Flags(), &listCredentialsReq.IncludeUnbound, "include-unbound", `Whether to include credentials not bound to the workspace.`)
+	flags.IntPtrVar(cmd.Flags(), &listCredentialsReq.MaxResults, "max-results", `Maximum number of credentials to return.`)
+	// TODO: field not in sdk-go request: purpose
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listCredentialsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listCredentialsReq.PageToken, "page-token", listCredentialsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listCredentialsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-credentials"
@@ -421,16 +453,20 @@ func newListCredentials() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.Credentials.ListCredentials(ctx, listCredentialsReq)
+		sdkReq, err := uccredentials.ListCredentialsRequestToSDK(&listCredentialsReq)
+		if err != nil {
+			return err
+		}
 		if listCredentialsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listCredentialsLimit)
 		}
 		if listCredentialsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listCredentialsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Credentials.ListCredentialsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, uccredentials.CredentialInfoFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -451,13 +487,13 @@ func newListCredentials() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateCredentialOverrides []func(
 	*cobra.Command,
-	*catalog.UpdateCredentialRequest,
+	*uccredentials.UpdateCredentialRequest,
 )
 
 func newUpdateCredential() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateCredentialReq uccredentials.UpdateCredentialRequest
 
-	var updateCredentialReq catalog.UpdateCredentialRequest
 	var updateCredentialJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateCredentialJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -465,14 +501,14 @@ func newUpdateCredential() *cobra.Command {
 	// TODO: complex arg: aws_iam_role
 	// TODO: complex arg: azure_managed_identity
 	// TODO: complex arg: azure_service_principal
-	cmd.Flags().StringVar(&updateCredentialReq.Comment, "comment", updateCredentialReq.Comment, `Comment associated with the credential.`)
+	flags.StringPtrVar(cmd.Flags(), &updateCredentialReq.Comment, "comment", `Comment associated with the credential.`)
 	// TODO: complex arg: databricks_gcp_service_account
-	cmd.Flags().BoolVar(&updateCredentialReq.Force, "force", updateCredentialReq.Force, `Force an update even if there are dependent services (when purpose is **SERVICE**) or dependent external locations and external tables (when purpose is **STORAGE**).`)
-	cmd.Flags().Var(&updateCredentialReq.IsolationMode, "isolation-mode", `Whether the current securable is accessible from all workspaces or a specific set of workspaces. Supported values: [ISOLATION_MODE_ISOLATED, ISOLATION_MODE_OPEN]`)
-	cmd.Flags().StringVar(&updateCredentialReq.NewName, "new-name", updateCredentialReq.NewName, `New name of credential.`)
-	cmd.Flags().StringVar(&updateCredentialReq.Owner, "owner", updateCredentialReq.Owner, `Username of current owner of credential.`)
-	cmd.Flags().BoolVar(&updateCredentialReq.ReadOnly, "read-only", updateCredentialReq.ReadOnly, `Whether the credential is usable only for read operations.`)
-	cmd.Flags().BoolVar(&updateCredentialReq.SkipValidation, "skip-validation", updateCredentialReq.SkipValidation, `Supply true to this argument to skip validation of the updated credential.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateCredentialReq.Force, "force", `Force an update even if there are dependent services (when purpose is **SERVICE**) or dependent external locations and external tables (when purpose is **STORAGE**).`)
+	flags.EnumVar(cmd.Flags(), &updateCredentialReq.IsolationMode, "isolation-mode", `Whether the current securable is accessible from all workspaces or a specific set of workspaces. Supported values: [ISOLATION_MODE_ISOLATED, ISOLATION_MODE_OPEN]`, "IsolationMode", "ISOLATION_MODE_ISOLATED", "ISOLATION_MODE_OPEN")
+	flags.StringPtrVar(cmd.Flags(), &updateCredentialReq.NewName, "new-name", `New name of credential.`)
+	flags.StringPtrVar(cmd.Flags(), &updateCredentialReq.Owner, "owner", `Username of current owner of credential.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateCredentialReq.ReadOnly, "read-only", `Whether the credential is usable only for read operations.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateCredentialReq.SkipValidation, "skip-validation", `Supply true to this argument to skip validation of the updated credential.`)
 
 	cmd.Use = "update-credential NAME_ARG"
 	cmd.Short = `Update a credential.`
@@ -500,6 +536,7 @@ func newUpdateCredential() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateCredentialJson.Unmarshal(&updateCredentialReq)
@@ -513,14 +550,22 @@ func newUpdateCredential() *cobra.Command {
 				}
 			}
 		}
-		updateCredentialReq.NameArg = args[0]
+		updateCredentialReq.NameArg = new(args[0])
 
-		response, err := w.Credentials.UpdateCredential(ctx, updateCredentialReq)
+		sdkReq, err := uccredentials.UpdateCredentialRequestToSDK(&updateCredentialReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Credentials.UpdateCredential(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := uccredentials.StorageCredentialInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -541,25 +586,25 @@ func newUpdateCredential() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var validateCredentialOverrides []func(
 	*cobra.Command,
-	*catalog.ValidateCredentialRequest,
+	*uccredentials.ValidateCredentialRequest,
 )
 
 func newValidateCredential() *cobra.Command {
 	cmd := &cobra.Command{}
+	var validateCredentialReq uccredentials.ValidateCredentialRequest
 
-	var validateCredentialReq catalog.ValidateCredentialRequest
 	var validateCredentialJson flags.JsonFlag
 
 	cmd.Flags().Var(&validateCredentialJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: aws_iam_role
 	// TODO: complex arg: azure_managed_identity
-	cmd.Flags().StringVar(&validateCredentialReq.CredentialName, "credential-name", validateCredentialReq.CredentialName, `Required.`)
+	flags.StringPtrVar(cmd.Flags(), &validateCredentialReq.CredentialName, "credential-name", `Required.`)
 	// TODO: complex arg: databricks_gcp_service_account
-	cmd.Flags().StringVar(&validateCredentialReq.ExternalLocationName, "external-location-name", validateCredentialReq.ExternalLocationName, `The name of an existing external location to validate.`)
-	cmd.Flags().Var(&validateCredentialReq.Purpose, "purpose", `The purpose of the credential. Supported values: [SERVICE, STORAGE]`)
-	cmd.Flags().BoolVar(&validateCredentialReq.ReadOnly, "read-only", validateCredentialReq.ReadOnly, `Whether the credential is only usable for read operations.`)
-	cmd.Flags().StringVar(&validateCredentialReq.Url, "url", validateCredentialReq.Url, `The external location url to validate.`)
+	flags.StringPtrVar(cmd.Flags(), &validateCredentialReq.ExternalLocationName, "external-location-name", `The name of an existing external location to validate.`)
+	// TODO: field not in sdk-go request: purpose
+	flags.BoolPtrVar(cmd.Flags(), &validateCredentialReq.ReadOnly, "read-only", `Whether the credential is only usable for read operations.`)
+	flags.StringPtrVar(cmd.Flags(), &validateCredentialReq.Url, "url", `The external location url to validate.`)
 
 	cmd.Use = "validate-credential"
 	cmd.Short = `Validate a credential.`
@@ -594,6 +639,7 @@ func newValidateCredential() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := validateCredentialJson.Unmarshal(&validateCredentialReq)
@@ -608,12 +654,20 @@ func newValidateCredential() *cobra.Command {
 			}
 		}
 
-		response, err := w.Credentials.ValidateCredential(ctx, validateCredentialReq)
+		sdkReq, err := uccredentials.ValidateCredentialRequestToSDK(&validateCredentialReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Credentials.ValidateCredential(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := uccredentials.ValidateCredentialResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

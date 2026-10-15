@@ -11,8 +11,14 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/serving"
+	"github.com/databricks/sdk-go/options/lro"
 	"github.com/spf13/cobra"
+
+	accessmanagement "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
+	modelserving "github.com/databricks/cli/libs/sdktypes/modelserving/v1"
+	modelservingquery "github.com/databricks/cli/libs/sdktypes/modelservingquery/v1"
+	sdkaccessmanagement "github.com/databricks/sdk-go/accessmanagement/v1"
+	sdkmodelserving "github.com/databricks/sdk-go/modelserving/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -82,13 +88,12 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var buildLogsOverrides []func(
 	*cobra.Command,
-	*serving.BuildLogsRequest,
+	*sdkmodelserving.GetServedModelBuildLogsRequest,
 )
 
 func newBuildLogs() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var buildLogsReq serving.BuildLogsRequest
+	var buildLogsReq sdkmodelserving.GetServedModelBuildLogsRequest
 
 	cmd.Use = "build-logs NAME SERVED_MODEL_NAME"
 	cmd.Short = `Get build logs for a served model.`
@@ -115,16 +120,22 @@ func newBuildLogs() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		buildLogsReq.Name = args[0]
-		buildLogsReq.ServedModelName = args[1]
+		buildLogsReq.Name = new(args[0])
+		buildLogsReq.ServedModelName = new(args[1])
 
-		response, err := w.ServingEndpoints.BuildLogs(ctx, buildLogsReq)
+		sdkReq := &buildLogsReq
+		response, err := w.ServingEndpoints.GetServedModelBuildLogs(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelserving.GetServedModelBuildLogsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -145,13 +156,13 @@ func newBuildLogs() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*serving.CreateServingEndpoint,
+	*modelserving.CreateInferenceEndpointRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq modelserving.CreateInferenceEndpointRequest
 
-	var createReq serving.CreateServingEndpoint
 	var createJson flags.JsonFlag
 
 	var createSkipWait bool
@@ -163,12 +174,12 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: ai_gateway
-	cmd.Flags().StringVar(&createReq.BudgetPolicyId, "budget-policy-id", createReq.BudgetPolicyId, `The budget policy to be applied to the serving endpoint.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.BudgetPolicyId, "budget-policy-id", `The budget policy to be applied to the serving endpoint.`)
 	// TODO: complex arg: config
-	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, ``)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Description, "description", ``)
 	// TODO: complex arg: email_notifications
 	// TODO: array: rate_limits
-	cmd.Flags().BoolVar(&createReq.RouteOptimized, "route-optimized", createReq.RouteOptimized, `Enable route optimization for the serving endpoint.`)
+	flags.BoolPtrVar(cmd.Flags(), &createReq.RouteOptimized, "route-optimized", `Enable route optimization for the serving endpoint.`)
 	// TODO: array: tags
 	// TODO: complex arg: telemetry_config
 
@@ -201,6 +212,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -215,27 +227,33 @@ func newCreate() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createReq.Name = args[0]
+			createReq.Name = new(args[0])
 		}
 
-		wait, err := w.ServingEndpoints.Create(ctx, createReq)
+		sdkReq, err := modelserving.CreateInferenceEndpointRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		wait, err := w.ServingEndpoints.CreateInferenceEndpoint(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 		if createSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			return cmdio.Render(ctx, map[string]any{"name": wait.GetName()})
 		}
 		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *serving.ServingEndpointDetailed) {
-			status := i.State.ConfigUpdate
-			statusMessage := fmt.Sprintf("current status: %s", status)
-			sp.Update(statusMessage)
-		}).GetWithTimeout(createTimeout)
+		sp.Update("Waiting for create to complete...")
+		response, err := wait.Wait(ctx, lro.WithTimeout(createTimeout))
 		sp.Close()
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+
+		out, err := modelserving.InferenceEndpointDetailedFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -256,13 +274,13 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createProvisionedThroughputEndpointOverrides []func(
 	*cobra.Command,
-	*serving.CreatePtEndpointRequest,
+	*modelserving.CreatePtEndpointRequest,
 )
 
 func newCreateProvisionedThroughputEndpoint() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createProvisionedThroughputEndpointReq modelserving.CreatePtEndpointRequest
 
-	var createProvisionedThroughputEndpointReq serving.CreatePtEndpointRequest
 	var createProvisionedThroughputEndpointJson flags.JsonFlag
 
 	var createProvisionedThroughputEndpointSkipWait bool
@@ -274,7 +292,7 @@ func newCreateProvisionedThroughputEndpoint() *cobra.Command {
 	cmd.Flags().Var(&createProvisionedThroughputEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: ai_gateway
-	cmd.Flags().StringVar(&createProvisionedThroughputEndpointReq.BudgetPolicyId, "budget-policy-id", createProvisionedThroughputEndpointReq.BudgetPolicyId, `The budget policy associated with the endpoint.`)
+	flags.StringPtrVar(cmd.Flags(), &createProvisionedThroughputEndpointReq.BudgetPolicyId, "budget-policy-id", `The budget policy associated with the endpoint.`)
 	// TODO: complex arg: email_notifications
 	// TODO: array: tags
 
@@ -292,6 +310,7 @@ Create a new PT serving endpoint.`
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createProvisionedThroughputEndpointJson.Unmarshal(&createProvisionedThroughputEndpointReq)
@@ -308,24 +327,30 @@ Create a new PT serving endpoint.`
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		wait, err := w.ServingEndpoints.CreateProvisionedThroughputEndpoint(ctx, createProvisionedThroughputEndpointReq)
+		sdkReq, err := modelserving.CreatePtEndpointRequestToSDK(&createProvisionedThroughputEndpointReq)
+		if err != nil {
+			return err
+		}
+		wait, err := w.ServingEndpoints.CreateProvisionedThroughputInferenceEndpoint(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 		if createProvisionedThroughputEndpointSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			return cmdio.Render(ctx, map[string]any{"name": wait.GetName()})
 		}
 		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *serving.ServingEndpointDetailed) {
-			status := i.State.ConfigUpdate
-			statusMessage := fmt.Sprintf("current status: %s", status)
-			sp.Update(statusMessage)
-		}).GetWithTimeout(createProvisionedThroughputEndpointTimeout)
+		sp.Update("Waiting for create-provisioned-throughput-endpoint to complete...")
+		response, err := wait.Wait(ctx, lro.WithTimeout(createProvisionedThroughputEndpointTimeout))
 		sp.Close()
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+
+		out, err := modelserving.InferenceEndpointDetailedFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -346,13 +371,12 @@ Create a new PT serving endpoint.`
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*serving.DeleteServingEndpointRequest,
+	*sdkmodelserving.DeleteInferenceEndpointRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq serving.DeleteServingEndpointRequest
+	var deleteReq sdkmodelserving.DeleteInferenceEndpointRequest
 
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a serving endpoint.`
@@ -371,13 +395,17 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteReq.Name = args[0]
+		deleteReq.Name = new(args[0])
 
-		err = w.ServingEndpoints.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := w.ServingEndpoints.DeleteInferenceEndpoint(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -399,13 +427,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var exportMetricsOverrides []func(
 	*cobra.Command,
-	*serving.ExportMetricsRequest,
+	*sdkmodelserving.GetExportEndpointMetricsRequest,
 )
 
 func newExportMetrics() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var exportMetricsReq serving.ExportMetricsRequest
+	var exportMetricsReq sdkmodelserving.GetExportEndpointMetricsRequest
 
 	cmd.Use = "export-metrics NAME"
 	cmd.Short = `Get metrics of a serving endpoint.`
@@ -431,16 +458,18 @@ func newExportMetrics() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		exportMetricsReq.Name = args[0]
+		exportMetricsReq.Name = new(args[0])
 
-		response, err := w.ServingEndpoints.ExportMetrics(ctx, exportMetricsReq)
+		sdkReq := &exportMetricsReq
+		response, err := w.ServingEndpoints.GetExportEndpointMetrics(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		defer response.Contents.Close()
-		return cmdio.Render(ctx, response.Contents)
+		_ = response
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -461,13 +490,12 @@ func newExportMetrics() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*serving.GetServingEndpointRequest,
+	*sdkmodelserving.GetInferenceEndpointRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq serving.GetServingEndpointRequest
+	var getReq sdkmodelserving.GetInferenceEndpointRequest
 
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a single serving endpoint.`
@@ -491,15 +519,21 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getReq.Name = args[0]
+		getReq.Name = new(args[0])
 
-		response, err := w.ServingEndpoints.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.ServingEndpoints.GetInferenceEndpoint(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelserving.InferenceEndpointDetailedFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -520,13 +554,12 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOpenApiOverrides []func(
 	*cobra.Command,
-	*serving.GetOpenApiRequest,
+	*sdkmodelserving.GetInferenceEndpointSchemaRequest,
 )
 
 func newGetOpenApi() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getOpenApiReq serving.GetOpenApiRequest
+	var getOpenApiReq sdkmodelserving.GetInferenceEndpointSchemaRequest
 
 	cmd.Use = "get-open-api NAME"
 	cmd.Short = `*Public Preview* Get the schema for a serving endpoint.`
@@ -555,16 +588,18 @@ Get the schema for a serving endpoint.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getOpenApiReq.Name = args[0]
+		getOpenApiReq.Name = new(args[0])
 
-		response, err := w.ServingEndpoints.GetOpenApi(ctx, getOpenApiReq)
+		sdkReq := &getOpenApiReq
+		response, err := w.ServingEndpoints.GetInferenceEndpointSchema(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		defer response.Contents.Close()
-		return cmdio.Render(ctx, response.Contents)
+		_ = response
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -585,13 +620,12 @@ Get the schema for a serving endpoint.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPermissionLevelsOverrides []func(
 	*cobra.Command,
-	*serving.GetServingEndpointPermissionLevelsRequest,
+	*sdkaccessmanagement.ListPermissionLevelsRequest,
 )
 
 func newGetPermissionLevels() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPermissionLevelsReq serving.GetServingEndpointPermissionLevelsRequest
+	var getPermissionLevelsReq sdkaccessmanagement.ListPermissionLevelsRequest
 
 	cmd.Use = "get-permission-levels SERVING_ENDPOINT_ID"
 	cmd.Short = `Get serving endpoint permission levels.`
@@ -615,15 +649,23 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getPermissionLevelsReq.ServingEndpointId = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: serving_endpoint_id
 
-		response, err := w.ServingEndpoints.GetPermissionLevels(ctx, getPermissionLevelsReq)
+		getPermissionLevelsReq.RequestObjectType = new("serving-endpoints")
+
+		sdkReq := &getPermissionLevelsReq
+		response, err := w.AccessManagement.ListPermissionLevels(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.ListPermissionLevelsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -644,13 +686,12 @@ func newGetPermissionLevels() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPermissionsOverrides []func(
 	*cobra.Command,
-	*serving.GetServingEndpointPermissionsRequest,
+	*sdkaccessmanagement.GetObjectPermissionsRequest,
 )
 
 func newGetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPermissionsReq serving.GetServingEndpointPermissionsRequest
+	var getPermissionsReq sdkaccessmanagement.GetObjectPermissionsRequest
 
 	cmd.Use = "get-permissions SERVING_ENDPOINT_ID"
 	cmd.Short = `Get serving endpoint permissions.`
@@ -675,15 +716,23 @@ func newGetPermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getPermissionsReq.ServingEndpointId = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: serving_endpoint_id
 
-		response, err := w.ServingEndpoints.GetPermissions(ctx, getPermissionsReq)
+		getPermissionsReq.RequestObjectType = new("serving-endpoints")
+
+		sdkReq := &getPermissionsReq
+		response, err := w.AccessManagement.GetObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -704,18 +753,17 @@ func newGetPermissions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var httpRequestOverrides []func(
 	*cobra.Command,
-	*serving.ExternalFunctionRequest,
+	*modelserving.ExternalFunctionRequest,
 )
 
 func newHttpRequest() *cobra.Command {
 	cmd := &cobra.Command{}
+	var httpRequestReq modelserving.ExternalFunctionRequest
 
-	var httpRequestReq serving.ExternalFunctionRequest
-
-	cmd.Flags().StringVar(&httpRequestReq.Headers, "headers", httpRequestReq.Headers, `Additional headers for the request.`)
-	cmd.Flags().StringVar(&httpRequestReq.Json, "json", httpRequestReq.Json, `The JSON payload to send in the request body.`)
-	cmd.Flags().StringVar(&httpRequestReq.Params, "params", httpRequestReq.Params, `Query parameters for the request.`)
-	cmd.Flags().StringVar(&httpRequestReq.SubDomain, "sub-domain", httpRequestReq.SubDomain, `Optional subdomain to prepend to the connection URL's host.`)
+	flags.StringPtrVar(cmd.Flags(), &httpRequestReq.Headers, "headers", `Additional headers for the request.`)
+	flags.StringPtrVar(cmd.Flags(), &httpRequestReq.Json, "json", `The JSON payload to send in the request body.`)
+	flags.StringPtrVar(cmd.Flags(), &httpRequestReq.Params, "params", `Query parameters for the request.`)
+	flags.StringPtrVar(cmd.Flags(), &httpRequestReq.SubDomain, "sub-domain", `Optional subdomain to prepend to the connection URL's host.`)
 
 	cmd.Use = "http-request CONNECTION_NAME METHOD PATH"
 	cmd.Short = `Make external services call using the credentials stored in UC Connection.`
@@ -744,22 +792,23 @@ func newHttpRequest() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		httpRequestReq.ConnectionName = args[0]
-		_, err = fmt.Sscan(args[1], &httpRequestReq.Method)
+		httpRequestReq.ConnectionName = new(args[0])
+		httpRequestReq.Method = modelserving.ExternalFunctionRequest_HttpMethod(args[1])
+		httpRequestReq.Path = new(args[2])
+
+		sdkReq, err := modelserving.ExternalFunctionRequestToSDK(&httpRequestReq)
 		if err != nil {
-			return fmt.Errorf("invalid METHOD: %s", args[1])
+			return err
 		}
-
-		httpRequestReq.Path = args[2]
-
-		response, err := w.ServingEndpoints.HttpRequest(ctx, httpRequestReq)
+		response, err := w.ServingEndpoints.HttpRequest(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		defer response.Contents.Close()
-		return cmdio.Render(ctx, response.Contents)
+		_ = response
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -806,7 +855,13 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
-		response := w.ServingEndpoints.List(ctx)
+		_ = w
+
+		sdkReq := &sdkmodelserving.ListInferenceEndpointsRequest{}
+		response, err := w.ServingEndpoints.ListInferenceEndpoints(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
@@ -814,7 +869,11 @@ func newList() *cobra.Command {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
 
-		return cmdio.RenderIterator(ctx, response)
+		out, err := modelserving.ListInferenceEndpointsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -835,13 +894,12 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var logsOverrides []func(
 	*cobra.Command,
-	*serving.LogsRequest,
+	*sdkmodelserving.GetServedModelLogsRequest,
 )
 
 func newLogs() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var logsReq serving.LogsRequest
+	var logsReq sdkmodelserving.GetServedModelLogsRequest
 
 	cmd.Use = "logs NAME SERVED_MODEL_NAME"
 	cmd.Short = `Get the latest logs for a served model.`
@@ -868,16 +926,22 @@ func newLogs() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		logsReq.Name = args[0]
-		logsReq.ServedModelName = args[1]
+		logsReq.Name = new(args[0])
+		logsReq.ServedModelName = new(args[1])
 
-		response, err := w.ServingEndpoints.Logs(ctx, logsReq)
+		sdkReq := &logsReq
+		response, err := w.ServingEndpoints.GetServedModelLogs(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelserving.GetServedModelLogsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -898,13 +962,13 @@ func newLogs() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var patchOverrides []func(
 	*cobra.Command,
-	*serving.PatchServingEndpointTags,
+	*modelserving.PatchInferenceEndpointTagsRequest,
 )
 
 func newPatch() *cobra.Command {
 	cmd := &cobra.Command{}
+	var patchReq modelserving.PatchInferenceEndpointTagsRequest
 
-	var patchReq serving.PatchServingEndpointTags
 	var patchJson flags.JsonFlag
 
 	cmd.Flags().Var(&patchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -936,6 +1000,7 @@ func newPatch() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := patchJson.Unmarshal(&patchReq)
@@ -949,14 +1014,22 @@ func newPatch() *cobra.Command {
 				}
 			}
 		}
-		patchReq.Name = args[0]
+		patchReq.Name = new(args[0])
 
-		response, err := w.ServingEndpoints.Patch(ctx, patchReq)
+		sdkReq, err := modelserving.PatchInferenceEndpointTagsRequestToSDK(&patchReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ServingEndpoints.PatchInferenceEndpointTags(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelserving.PatchInferenceEndpointTagsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -977,13 +1050,13 @@ func newPatch() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var patchTelemetryConfigOverrides []func(
 	*cobra.Command,
-	*serving.PatchTelemetryConfigRequest,
+	*modelserving.PatchInferenceEndpointTelemetryConfigRequest,
 )
 
 func newPatchTelemetryConfig() *cobra.Command {
 	cmd := &cobra.Command{}
+	var patchTelemetryConfigReq modelserving.PatchInferenceEndpointTelemetryConfigRequest
 
-	var patchTelemetryConfigReq serving.PatchTelemetryConfigRequest
 	var patchTelemetryConfigJson flags.JsonFlag
 
 	cmd.Flags().Var(&patchTelemetryConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1013,6 +1086,7 @@ func newPatchTelemetryConfig() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := patchTelemetryConfigJson.Unmarshal(&patchTelemetryConfigReq)
@@ -1026,14 +1100,22 @@ func newPatchTelemetryConfig() *cobra.Command {
 				}
 			}
 		}
-		patchTelemetryConfigReq.Name = args[0]
+		patchTelemetryConfigReq.Name = new(args[0])
 
-		response, err := w.ServingEndpoints.PatchTelemetryConfig(ctx, patchTelemetryConfigReq)
+		sdkReq, err := modelserving.PatchInferenceEndpointTelemetryConfigRequestToSDK(&patchTelemetryConfigReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ServingEndpoints.PatchInferenceEndpointTelemetryConfig(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelserving.InferenceEndpointDetailedFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1054,13 +1136,13 @@ func newPatchTelemetryConfig() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var putOverrides []func(
 	*cobra.Command,
-	*serving.PutRequest,
+	*modelserving.PutInferenceEndpointRateLimitsRequest,
 )
 
 func newPut() *cobra.Command {
 	cmd := &cobra.Command{}
+	var putReq modelserving.PutInferenceEndpointRateLimitsRequest
 
-	var putReq serving.PutRequest
 	var putJson flags.JsonFlag
 
 	cmd.Flags().Var(&putJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1092,6 +1174,7 @@ Update rate limits of a serving endpoint.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := putJson.Unmarshal(&putReq)
@@ -1105,14 +1188,22 @@ Update rate limits of a serving endpoint.
 				}
 			}
 		}
-		putReq.Name = args[0]
+		putReq.Name = new(args[0])
 
-		response, err := w.ServingEndpoints.Put(ctx, putReq)
+		sdkReq, err := modelserving.PutInferenceEndpointRateLimitsRequestToSDK(&putReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ServingEndpoints.PutInferenceEndpointRateLimits(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelserving.PutInferenceEndpointRateLimitsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1133,13 +1224,13 @@ Update rate limits of a serving endpoint.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var putAiGatewayOverrides []func(
 	*cobra.Command,
-	*serving.PutAiGatewayRequest,
+	*modelserving.PutInferenceEndpointAiGatewayRequest,
 )
 
 func newPutAiGateway() *cobra.Command {
 	cmd := &cobra.Command{}
+	var putAiGatewayReq modelserving.PutInferenceEndpointAiGatewayRequest
 
-	var putAiGatewayReq serving.PutAiGatewayRequest
 	var putAiGatewayJson flags.JsonFlag
 
 	cmd.Flags().Var(&putAiGatewayJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1175,6 +1266,7 @@ func newPutAiGateway() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := putAiGatewayJson.Unmarshal(&putAiGatewayReq)
@@ -1188,14 +1280,22 @@ func newPutAiGateway() *cobra.Command {
 				}
 			}
 		}
-		putAiGatewayReq.Name = args[0]
+		putAiGatewayReq.Name = new(args[0])
 
-		response, err := w.ServingEndpoints.PutAiGateway(ctx, putAiGatewayReq)
+		sdkReq, err := modelserving.PutInferenceEndpointAiGatewayRequestToSDK(&putAiGatewayReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ServingEndpoints.PutInferenceEndpointAiGateway(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelserving.PutInferenceEndpointAiGatewayResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1216,31 +1316,31 @@ func newPutAiGateway() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var queryOverrides []func(
 	*cobra.Command,
-	*serving.QueryEndpointInput,
+	*modelservingquery.QueryEndpointRequest,
 )
 
 func newQuery() *cobra.Command {
 	cmd := &cobra.Command{}
+	var queryReq modelservingquery.QueryEndpointRequest
 
-	var queryReq serving.QueryEndpointInput
 	var queryJson flags.JsonFlag
 
 	cmd.Flags().Var(&queryJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&queryReq.ClientRequestId, "client-request-id", queryReq.ClientRequestId, `Optional user-provided request identifier that will be recorded in the inference table and the usage tracking table.`)
+	flags.StringPtrVar(cmd.Flags(), &queryReq.ClientRequestId, "client-request-id", `Optional user-provided request identifier that will be recorded in the inference table and the usage tracking table.`)
 	// TODO: array: dataframe_records
 	// TODO: complex arg: dataframe_split
 	// TODO: map via StringToStringVar: extra_params
 	// TODO: any: input
 	// TODO: any: inputs
 	// TODO: array: instances
-	cmd.Flags().IntVar(&queryReq.MaxTokens, "max-tokens", queryReq.MaxTokens, `The max tokens field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints.`)
+	flags.IntPtrVar(cmd.Flags(), &queryReq.MaxTokens, "max-tokens", `The max tokens field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints.`)
 	// TODO: array: messages
-	cmd.Flags().IntVar(&queryReq.N, "n", queryReq.N, `The n (number of candidates) field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints.`)
+	flags.IntPtrVar(cmd.Flags(), &queryReq.N, "n", `The n (number of candidates) field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints.`)
 	// TODO: any: prompt
 	// TODO: array: stop
-	cmd.Flags().BoolVar(&queryReq.Stream, "stream", queryReq.Stream, `The stream field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints.`)
-	cmd.Flags().Float64Var(&queryReq.Temperature, "temperature", queryReq.Temperature, `The temperature field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints.`)
+	flags.BoolPtrVar(cmd.Flags(), &queryReq.Stream, "stream", `The stream field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints.`)
+	flags.Float64PtrVar(cmd.Flags(), &queryReq.Temperature, "temperature", `The temperature field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints.`)
 	// TODO: map via StringToStringVar: usage_context
 
 	cmd.Use = "query NAME"
@@ -1266,6 +1366,7 @@ func newQuery() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := queryJson.Unmarshal(&queryReq)
@@ -1279,14 +1380,22 @@ func newQuery() *cobra.Command {
 				}
 			}
 		}
-		queryReq.Name = args[0]
+		queryReq.Name = new(args[0])
 
-		response, err := w.ServingEndpoints.Query(ctx, queryReq)
+		sdkReq, err := modelservingquery.QueryEndpointRequestToSDK(&queryReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ServingQuery.Query(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelservingquery.QueryEndpointResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1307,13 +1416,13 @@ func newQuery() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var setPermissionsOverrides []func(
 	*cobra.Command,
-	*serving.ServingEndpointPermissionsRequest,
+	*accessmanagement.SetObjectPermissionsRequest,
 )
 
 func newSetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var setPermissionsReq accessmanagement.SetObjectPermissionsRequest
 
-	var setPermissionsReq serving.ServingEndpointPermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1344,6 +1453,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
@@ -1357,14 +1467,24 @@ func newSetPermissions() *cobra.Command {
 				}
 			}
 		}
-		setPermissionsReq.ServingEndpointId = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: serving_endpoint_id
 
-		response, err := w.ServingEndpoints.SetPermissions(ctx, setPermissionsReq)
+		setPermissionsReq.RequestObjectType = new("serving-endpoints")
+
+		sdkReq, err := accessmanagement.SetObjectPermissionsRequestToSDK(&setPermissionsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AccessManagement.SetObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1385,13 +1505,13 @@ func newSetPermissions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateConfigOverrides []func(
 	*cobra.Command,
-	*serving.EndpointCoreConfigInput,
+	*modelserving.PutInferenceEndpointConfigRequest,
 )
 
 func newUpdateConfig() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateConfigReq modelserving.PutInferenceEndpointConfigRequest
 
-	var updateConfigReq serving.EndpointCoreConfigInput
 	var updateConfigJson flags.JsonFlag
 
 	var updateConfigSkipWait bool
@@ -1432,6 +1552,7 @@ func newUpdateConfig() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateConfigJson.Unmarshal(&updateConfigReq)
@@ -1445,26 +1566,32 @@ func newUpdateConfig() *cobra.Command {
 				}
 			}
 		}
-		updateConfigReq.Name = args[0]
+		updateConfigReq.Name = new(args[0])
 
-		wait, err := w.ServingEndpoints.UpdateConfig(ctx, updateConfigReq)
+		sdkReq, err := modelserving.PutInferenceEndpointConfigRequestToSDK(&updateConfigReq)
+		if err != nil {
+			return err
+		}
+		wait, err := w.ServingEndpoints.PutInferenceEndpointConfig(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 		if updateConfigSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			return cmdio.Render(ctx, map[string]any{"name": wait.GetName()})
 		}
 		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *serving.ServingEndpointDetailed) {
-			status := i.State.ConfigUpdate
-			statusMessage := fmt.Sprintf("current status: %s", status)
-			sp.Update(statusMessage)
-		}).GetWithTimeout(updateConfigTimeout)
+		sp.Update("Waiting for update-config to complete...")
+		response, err := wait.Wait(ctx, lro.WithTimeout(updateConfigTimeout))
 		sp.Close()
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+
+		out, err := modelserving.InferenceEndpointDetailedFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1485,13 +1612,13 @@ func newUpdateConfig() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateNotificationsOverrides []func(
 	*cobra.Command,
-	*serving.UpdateInferenceEndpointNotifications,
+	*modelserving.UpdateInferenceEndpointNotificationsRequest,
 )
 
 func newUpdateNotifications() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateNotificationsReq modelserving.UpdateInferenceEndpointNotificationsRequest
 
-	var updateNotificationsReq serving.UpdateInferenceEndpointNotifications
 	var updateNotificationsJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateNotificationsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1521,6 +1648,7 @@ func newUpdateNotifications() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateNotificationsJson.Unmarshal(&updateNotificationsReq)
@@ -1534,14 +1662,22 @@ func newUpdateNotifications() *cobra.Command {
 				}
 			}
 		}
-		updateNotificationsReq.Name = args[0]
+		updateNotificationsReq.Name = new(args[0])
 
-		response, err := w.ServingEndpoints.UpdateNotifications(ctx, updateNotificationsReq)
+		sdkReq, err := modelserving.UpdateInferenceEndpointNotificationsRequestToSDK(&updateNotificationsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ServingEndpoints.UpdateInferenceEndpointNotifications(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelserving.UpdateInferenceEndpointNotificationsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1562,13 +1698,13 @@ func newUpdateNotifications() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updatePermissionsOverrides []func(
 	*cobra.Command,
-	*serving.ServingEndpointPermissionsRequest,
+	*accessmanagement.UpdateObjectPermissionsRequest,
 )
 
 func newUpdatePermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updatePermissionsReq accessmanagement.UpdateObjectPermissionsRequest
 
-	var updatePermissionsReq serving.ServingEndpointPermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1598,6 +1734,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)
@@ -1611,14 +1748,24 @@ func newUpdatePermissions() *cobra.Command {
 				}
 			}
 		}
-		updatePermissionsReq.ServingEndpointId = args[0]
+		_ = args[0] // TODO: field not in sdk-go request: serving_endpoint_id
 
-		response, err := w.ServingEndpoints.UpdatePermissions(ctx, updatePermissionsReq)
+		updatePermissionsReq.RequestObjectType = new("serving-endpoints")
+
+		sdkReq, err := accessmanagement.UpdateObjectPermissionsRequestToSDK(&updatePermissionsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AccessManagement.UpdateObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1639,13 +1786,13 @@ func newUpdatePermissions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateProvisionedThroughputEndpointConfigOverrides []func(
 	*cobra.Command,
-	*serving.UpdateProvisionedThroughputEndpointConfigRequest,
+	*modelserving.PutPtEndpointConfigRequest,
 )
 
 func newUpdateProvisionedThroughputEndpointConfig() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateProvisionedThroughputEndpointConfigReq modelserving.PutPtEndpointConfigRequest
 
-	var updateProvisionedThroughputEndpointConfigReq serving.UpdateProvisionedThroughputEndpointConfigRequest
 	var updateProvisionedThroughputEndpointConfigJson flags.JsonFlag
 
 	var updateProvisionedThroughputEndpointConfigSkipWait bool
@@ -1682,6 +1829,7 @@ Update config of a PT serving endpoint.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateProvisionedThroughputEndpointConfigJson.Unmarshal(&updateProvisionedThroughputEndpointConfigReq)
@@ -1697,26 +1845,32 @@ Update config of a PT serving endpoint.
 		} else {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
-		updateProvisionedThroughputEndpointConfigReq.Name = args[0]
+		updateProvisionedThroughputEndpointConfigReq.Name = new(args[0])
 
-		wait, err := w.ServingEndpoints.UpdateProvisionedThroughputEndpointConfig(ctx, updateProvisionedThroughputEndpointConfigReq)
+		sdkReq, err := modelserving.PutPtEndpointConfigRequestToSDK(&updateProvisionedThroughputEndpointConfigReq)
+		if err != nil {
+			return err
+		}
+		wait, err := w.ServingEndpoints.PutProvisionedThroughputInferenceEndpointConfig(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 		if updateProvisionedThroughputEndpointConfigSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			return cmdio.Render(ctx, map[string]any{"name": wait.GetName()})
 		}
 		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *serving.ServingEndpointDetailed) {
-			status := i.State.ConfigUpdate
-			statusMessage := fmt.Sprintf("current status: %s", status)
-			sp.Update(statusMessage)
-		}).GetWithTimeout(updateProvisionedThroughputEndpointConfigTimeout)
+		sp.Update("Waiting for update-provisioned-throughput-endpoint-config to complete...")
+		response, err := wait.Wait(ctx, lro.WithTimeout(updateProvisionedThroughputEndpointConfigTimeout))
 		sp.Close()
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+
+		out, err := modelserving.InferenceEndpointDetailedFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

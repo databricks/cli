@@ -7,10 +7,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/sharing"
 	"github.com/spf13/cobra"
+
+	sharing "github.com/databricks/cli/libs/sdktypes/sharing/v1"
+	sdksharing "github.com/databricks/sdk-go/sharing/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -81,15 +84,15 @@ var createOverrides []func(
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createReq sharing.CreateFederationPolicyRequest
-	createReq.Policy = sharing.FederationPolicy{}
+	createReq.Policy = &sharing.FederationPolicy{}
+
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Policy.Comment, "comment", createReq.Policy.Comment, `Description of the policy.`)
-	cmd.Flags().StringVar(&createReq.Policy.Name, "name", createReq.Policy.Name, `Name of the federation policy.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Policy.Comment, "comment", `Description of the policy.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Policy.Name, "name", `Name of the federation policy.`)
 	// TODO: complex arg: oidc_policy
 
 	cmd.Use = "create RECIPIENT_NAME"
@@ -142,6 +145,7 @@ Create recipient federation policy.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq.Policy)
@@ -155,14 +159,22 @@ Create recipient federation policy.
 				}
 			}
 		}
-		createReq.RecipientName = args[0]
+		createReq.RecipientName = new(args[0])
 
-		response, err := w.RecipientFederationPolicies.Create(ctx, createReq)
+		sdkReq, err := sharing.CreateFederationPolicyRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Sharing.CreateFederationPolicy(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := sharing.FederationPolicyFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -183,13 +195,12 @@ Create recipient federation policy.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*sharing.DeleteFederationPolicyRequest,
+	*sdksharing.DeleteFederationPolicyRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq sharing.DeleteFederationPolicyRequest
+	var deleteReq sdksharing.DeleteFederationPolicyRequest
 
 	cmd.Use = "delete RECIPIENT_NAME NAME"
 	cmd.Short = `*Public Preview* Delete recipient federation policy.`
@@ -218,11 +229,13 @@ Delete recipient federation policy.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteReq.RecipientName = args[0]
-		deleteReq.Name = args[1]
+		deleteReq.RecipientName = new(args[0])
+		deleteReq.Name = new(args[1])
 
-		err = w.RecipientFederationPolicies.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		err = w.Sharing.DeleteFederationPolicy(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -247,13 +260,12 @@ Delete recipient federation policy.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getFederationPolicyOverrides []func(
 	*cobra.Command,
-	*sharing.GetFederationPolicyRequest,
+	*sdksharing.GetFederationPolicyRequest,
 )
 
 func newGetFederationPolicy() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getFederationPolicyReq sharing.GetFederationPolicyRequest
+	var getFederationPolicyReq sdksharing.GetFederationPolicyRequest
 
 	cmd.Use = "get-federation-policy RECIPIENT_NAME NAME"
 	cmd.Short = `*Public Preview* Get recipient federation policy.`
@@ -283,16 +295,22 @@ Get recipient federation policy.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getFederationPolicyReq.RecipientName = args[0]
-		getFederationPolicyReq.Name = args[1]
+		getFederationPolicyReq.RecipientName = new(args[0])
+		getFederationPolicyReq.Name = new(args[1])
 
-		response, err := w.RecipientFederationPolicies.GetFederationPolicy(ctx, getFederationPolicyReq)
+		sdkReq := &getFederationPolicyReq
+		response, err := w.Sharing.GetFederationPolicy(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := sharing.FederationPolicyFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -318,20 +336,20 @@ var listOverrides []func(
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listReq sharing.ListFederationPoliciesRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, ``)
+	flags.IntPtrVar(cmd.Flags(), &listReq.MaxResults, "max-results", ``)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list RECIPIENT_NAME"
@@ -361,18 +379,22 @@ List recipient federation policies.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listReq.RecipientName = args[0]
+		listReq.RecipientName = new(args[0])
 
-		response := w.RecipientFederationPolicies.List(ctx, listReq)
+		sdkReq, err := sharing.ListFederationPoliciesRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Sharing.ListFederationPoliciesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, sharing.FederationPolicyFromSDK))
 	}
 
 	// Disable completions since they are not applicable.

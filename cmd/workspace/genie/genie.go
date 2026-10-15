@@ -4,15 +4,17 @@ package genie
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
+	"github.com/databricks/sdk-go/options/lro"
 	"github.com/spf13/cobra"
+
+	genie "github.com/databricks/cli/libs/sdktypes/genie/v1"
+	sdkgenie "github.com/databricks/sdk-go/genie/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -82,13 +84,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createMessageOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieCreateConversationMessageRequest,
+	*genie.GenieCreateConversationMessageRequest,
 )
 
 func newCreateMessage() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createMessageReq genie.GenieCreateConversationMessageRequest
 
-	var createMessageReq dashboards.GenieCreateConversationMessageRequest
 	var createMessageJson flags.JsonFlag
 
 	var createMessageSkipWait bool
@@ -99,7 +101,7 @@ func newCreateMessage() *cobra.Command {
 
 	cmd.Flags().Var(&createMessageJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createMessageReq.EnableVisualization, "enable-visualization", createMessageReq.EnableVisualization, `Enable visualization generation.`)
+	flags.BoolPtrVar(cmd.Flags(), &createMessageReq.EnableVisualization, "enable-visualization", `Enable visualization generation.`)
 
 	cmd.Use = "create-message SPACE_ID CONVERSATION_ID CONTENT"
 	cmd.Short = `Chat mode: Send a message.`
@@ -134,6 +136,7 @@ func newCreateMessage() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createMessageJson.Unmarshal(&createMessageReq)
@@ -147,30 +150,36 @@ func newCreateMessage() *cobra.Command {
 				}
 			}
 		}
-		createMessageReq.SpaceId = args[0]
-		createMessageReq.ConversationId = args[1]
+		createMessageReq.SpaceId = new(args[0])
+		createMessageReq.ConversationId = new(args[1])
 		if !cmd.Flags().Changed("json") {
-			createMessageReq.Content = args[2]
+			createMessageReq.Content = new(args[2])
 		}
 
-		wait, err := w.Genie.CreateMessage(ctx, createMessageReq)
+		sdkReq, err := genie.GenieCreateConversationMessageRequestToSDK(&createMessageReq)
+		if err != nil {
+			return err
+		}
+		wait, err := w.Genie.GenieCreateConversationMessage(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 		if createMessageSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			return cmdio.Render(ctx, map[string]any{"space_id": wait.GetSpaceId()})
 		}
 		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *dashboards.GenieMessage) {
-			status := i.Status
-			statusMessage := fmt.Sprintf("current status: %s", status)
-			sp.Update(statusMessage)
-		}).GetWithTimeout(createMessageTimeout)
+		sp.Update("Waiting for create-message to complete...")
+		response, err := wait.Wait(ctx, lro.WithTimeout(createMessageTimeout))
 		sp.Close()
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+
+		out, err := genie.GenieMessageFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -191,13 +200,13 @@ func newCreateMessage() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createMessageCommentOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieCreateMessageCommentRequest,
+	*genie.GenieCreateMessageCommentRequest,
 )
 
 func newCreateMessageComment() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createMessageCommentReq genie.GenieCreateMessageCommentRequest
 
-	var createMessageCommentReq dashboards.GenieCreateMessageCommentRequest
 	var createMessageCommentJson flags.JsonFlag
 
 	cmd.Flags().Var(&createMessageCommentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -236,6 +245,7 @@ Add a comment to a message.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createMessageCommentJson.Unmarshal(&createMessageCommentReq)
@@ -249,19 +259,27 @@ Add a comment to a message.
 				}
 			}
 		}
-		createMessageCommentReq.SpaceId = args[0]
-		createMessageCommentReq.ConversationId = args[1]
-		createMessageCommentReq.MessageId = args[2]
+		createMessageCommentReq.SpaceId = new(args[0])
+		createMessageCommentReq.ConversationId = new(args[1])
+		createMessageCommentReq.MessageId = new(args[2])
 		if !cmd.Flags().Changed("json") {
-			createMessageCommentReq.Content = args[3]
+			createMessageCommentReq.Content = new(args[3])
 		}
 
-		response, err := w.Genie.CreateMessageComment(ctx, createMessageCommentReq)
+		sdkReq, err := genie.GenieCreateMessageCommentRequestToSDK(&createMessageCommentReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Genie.GenieCreateMessageComment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := genie.GenieMessageCommentFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -282,20 +300,20 @@ Add a comment to a message.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createSpaceOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieCreateSpaceRequest,
+	*genie.GenieCreateSpaceRequest,
 )
 
 func newCreateSpace() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createSpaceReq genie.GenieCreateSpaceRequest
 
-	var createSpaceReq dashboards.GenieCreateSpaceRequest
 	var createSpaceJson flags.JsonFlag
 
 	cmd.Flags().Var(&createSpaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createSpaceReq.Description, "description", createSpaceReq.Description, `Optional description.`)
-	cmd.Flags().StringVar(&createSpaceReq.ParentPath, "parent-path", createSpaceReq.ParentPath, `Parent folder path where the space will be registered.`)
-	cmd.Flags().StringVar(&createSpaceReq.Title, "title", createSpaceReq.Title, `Optional title override.`)
+	flags.StringPtrVar(cmd.Flags(), &createSpaceReq.Description, "description", `Optional description.`)
+	flags.StringPtrVar(cmd.Flags(), &createSpaceReq.ParentPath, "parent-path", `Parent folder path where the space will be registered.`)
+	flags.StringPtrVar(cmd.Flags(), &createSpaceReq.Title, "title", `Optional title override.`)
 
 	cmd.Use = "create-space WAREHOUSE_ID SERIALIZED_SPACE"
 	cmd.Short = `Create a Genie space.`
@@ -331,6 +349,7 @@ func newCreateSpace() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createSpaceJson.Unmarshal(&createSpaceReq)
@@ -345,18 +364,26 @@ func newCreateSpace() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createSpaceReq.WarehouseId = args[0]
+			createSpaceReq.WarehouseId = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			createSpaceReq.SerializedSpace = args[1]
+			createSpaceReq.SerializedSpace = new(args[1])
 		}
 
-		response, err := w.Genie.CreateSpace(ctx, createSpaceReq)
+		sdkReq, err := genie.GenieCreateSpaceRequestToSDK(&createSpaceReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Genie.CreateSpace(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := genie.GenieSpaceFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -377,13 +404,12 @@ func newCreateSpace() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteConversationOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieDeleteConversationRequest,
+	*sdkgenie.GenieDeleteConversationRequest,
 )
 
 func newDeleteConversation() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteConversationReq dashboards.GenieDeleteConversationRequest
+	var deleteConversationReq sdkgenie.GenieDeleteConversationRequest
 
 	cmd.Use = "delete-conversation SPACE_ID CONVERSATION_ID"
 	cmd.Short = `Delete a conversation.`
@@ -406,11 +432,13 @@ func newDeleteConversation() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteConversationReq.SpaceId = args[0]
-		deleteConversationReq.ConversationId = args[1]
+		deleteConversationReq.SpaceId = new(args[0])
+		deleteConversationReq.ConversationId = new(args[1])
 
-		err = w.Genie.DeleteConversation(ctx, deleteConversationReq)
+		sdkReq := &deleteConversationReq
+		err = w.Genie.GenieDeleteConversation(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -435,13 +463,12 @@ func newDeleteConversation() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteConversationMessageOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieDeleteConversationMessageRequest,
+	*sdkgenie.GenieDeleteConversationMessageRequest,
 )
 
 func newDeleteConversationMessage() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteConversationMessageReq dashboards.GenieDeleteConversationMessageRequest
+	var deleteConversationMessageReq sdkgenie.GenieDeleteConversationMessageRequest
 
 	cmd.Use = "delete-conversation-message SPACE_ID CONVERSATION_ID MESSAGE_ID"
 	cmd.Short = `Delete a conversation message.`
@@ -465,12 +492,14 @@ func newDeleteConversationMessage() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteConversationMessageReq.SpaceId = args[0]
-		deleteConversationMessageReq.ConversationId = args[1]
-		deleteConversationMessageReq.MessageId = args[2]
+		deleteConversationMessageReq.SpaceId = new(args[0])
+		deleteConversationMessageReq.ConversationId = new(args[1])
+		deleteConversationMessageReq.MessageId = new(args[2])
 
-		err = w.Genie.DeleteConversationMessage(ctx, deleteConversationMessageReq)
+		sdkReq := &deleteConversationMessageReq
+		err = w.Genie.GenieDeleteConversationMessage(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -495,13 +524,12 @@ func newDeleteConversationMessage() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var downloadMessageAttachmentVisualizationOverrides []func(
 	*cobra.Command,
-	*dashboards.DownloadMessageAttachmentVisualizationRequest,
+	*sdkgenie.DownloadMessageAttachmentVisualizationRequest,
 )
 
 func newDownloadMessageAttachmentVisualization() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var downloadMessageAttachmentVisualizationReq dashboards.DownloadMessageAttachmentVisualizationRequest
+	var downloadMessageAttachmentVisualizationReq sdkgenie.DownloadMessageAttachmentVisualizationRequest
 
 	cmd.Use = "download-message-attachment-visualization NAME"
 	cmd.Short = `Download an attachment visualization.`
@@ -528,16 +556,18 @@ func newDownloadMessageAttachmentVisualization() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		downloadMessageAttachmentVisualizationReq.Name = args[0]
+		downloadMessageAttachmentVisualizationReq.Name = new(args[0])
 
-		response, err := w.Genie.DownloadMessageAttachmentVisualization(ctx, downloadMessageAttachmentVisualizationReq)
+		sdkReq := &downloadMessageAttachmentVisualizationReq
+		response, err := w.Genie.DownloadMessageAttachmentVisualization(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		defer response.Contents.Close()
-		return cmdio.Render(ctx, response.Contents)
+		_ = response
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -558,13 +588,12 @@ func newDownloadMessageAttachmentVisualization() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var executeMessageAttachmentQueryOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieExecuteMessageAttachmentQueryRequest,
+	*genie.GenieExecuteMessageAttachmentQueryRequest,
 )
 
 func newExecuteMessageAttachmentQuery() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var executeMessageAttachmentQueryReq dashboards.GenieExecuteMessageAttachmentQueryRequest
+	var executeMessageAttachmentQueryReq genie.GenieExecuteMessageAttachmentQueryRequest
 
 	cmd.Use = "execute-message-attachment-query SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID"
 	cmd.Short = `Execute an attachment SQL query.`
@@ -592,18 +621,27 @@ func newExecuteMessageAttachmentQuery() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		executeMessageAttachmentQueryReq.SpaceId = args[0]
-		executeMessageAttachmentQueryReq.ConversationId = args[1]
-		executeMessageAttachmentQueryReq.MessageId = args[2]
-		executeMessageAttachmentQueryReq.AttachmentId = args[3]
+		executeMessageAttachmentQueryReq.SpaceId = new(args[0])
+		executeMessageAttachmentQueryReq.ConversationId = new(args[1])
+		executeMessageAttachmentQueryReq.MessageId = new(args[2])
+		executeMessageAttachmentQueryReq.AttachmentId = new(args[3])
 
-		response, err := w.Genie.ExecuteMessageAttachmentQuery(ctx, executeMessageAttachmentQueryReq)
+		sdkReq, err := genie.GenieExecuteMessageAttachmentQueryRequestToSDK(&executeMessageAttachmentQueryReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Genie.GenieExecuteMessageAttachmentQuery(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := genie.GenieGetMessageQueryResultResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -624,13 +662,12 @@ func newExecuteMessageAttachmentQuery() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var executeMessageQueryOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieExecuteMessageQueryRequest,
+	*genie.GenieExecuteMessageQueryRequest,
 )
 
 func newExecuteMessageQuery() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var executeMessageQueryReq dashboards.GenieExecuteMessageQueryRequest
+	var executeMessageQueryReq genie.GenieExecuteMessageQueryRequest
 
 	cmd.Use = "execute-message-query SPACE_ID CONVERSATION_ID MESSAGE_ID"
 	cmd.Short = `[Deprecated] Execute SQL query in a conversation message.`
@@ -660,17 +697,26 @@ func newExecuteMessageQuery() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		executeMessageQueryReq.SpaceId = args[0]
-		executeMessageQueryReq.ConversationId = args[1]
-		executeMessageQueryReq.MessageId = args[2]
+		executeMessageQueryReq.SpaceId = new(args[0])
+		executeMessageQueryReq.ConversationId = new(args[1])
+		executeMessageQueryReq.MessageId = new(args[2])
 
-		response, err := w.Genie.ExecuteMessageQuery(ctx, executeMessageQueryReq)
+		sdkReq, err := genie.GenieExecuteMessageQueryRequestToSDK(&executeMessageQueryReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Genie.GenieExecuteMessageQuery(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := genie.GenieGetMessageQueryResultResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -691,13 +737,12 @@ func newExecuteMessageQuery() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var generateDownloadFullQueryResultOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieGenerateDownloadFullQueryResultRequest,
+	*genie.GenieGenerateDownloadFullQueryResultRequest,
 )
 
 func newGenerateDownloadFullQueryResult() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var generateDownloadFullQueryResultReq dashboards.GenieGenerateDownloadFullQueryResultRequest
+	var generateDownloadFullQueryResultReq genie.GenieGenerateDownloadFullQueryResultRequest
 
 	cmd.Use = "generate-download-full-query-result SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID"
 	cmd.Short = `Start a full query-result download.`
@@ -744,18 +789,27 @@ func newGenerateDownloadFullQueryResult() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		generateDownloadFullQueryResultReq.SpaceId = args[0]
-		generateDownloadFullQueryResultReq.ConversationId = args[1]
-		generateDownloadFullQueryResultReq.MessageId = args[2]
-		generateDownloadFullQueryResultReq.AttachmentId = args[3]
+		generateDownloadFullQueryResultReq.SpaceId = new(args[0])
+		generateDownloadFullQueryResultReq.ConversationId = new(args[1])
+		generateDownloadFullQueryResultReq.MessageId = new(args[2])
+		generateDownloadFullQueryResultReq.AttachmentId = new(args[3])
 
-		response, err := w.Genie.GenerateDownloadFullQueryResult(ctx, generateDownloadFullQueryResultReq)
+		sdkReq, err := genie.GenieGenerateDownloadFullQueryResultRequestToSDK(&generateDownloadFullQueryResultReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Genie.GenieGenerateDownloadFullQueryResult(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := genie.GenieGenerateDownloadFullQueryResultResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -776,13 +830,12 @@ func newGenerateDownloadFullQueryResult() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var genieCancelResponseOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieCancelResponseRequest,
+	*genie.GenieCancelResponseRequest,
 )
 
 func newGenieCancelResponse() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var genieCancelResponseReq dashboards.GenieCancelResponseRequest
+	var genieCancelResponseReq genie.GenieCancelResponseRequest
 
 	cmd.Use = "genie-cancel-response AGENT_ID CONVERSATION_ID RESPONSE_ID"
 	cmd.Short = `Agent mode: Cancel a response.`
@@ -811,17 +864,26 @@ func newGenieCancelResponse() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		genieCancelResponseReq.AgentId = args[0]
-		genieCancelResponseReq.ConversationId = args[1]
-		genieCancelResponseReq.ResponseId = args[2]
+		genieCancelResponseReq.AgentId = new(args[0])
+		genieCancelResponseReq.ConversationId = new(args[1])
+		genieCancelResponseReq.ResponseId = new(args[2])
 
-		response, err := w.Genie.GenieCancelResponse(ctx, genieCancelResponseReq)
+		sdkReq, err := genie.GenieCancelResponseRequestToSDK(&genieCancelResponseReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Genie.GenieCancelResponse(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := genie.GenieMessageFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -842,13 +904,13 @@ func newGenieCancelResponse() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var genieCreateEvalRunOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieCreateEvalRunRequest,
+	*genie.GenieCreateEvalRunRequest,
 )
 
 func newGenieCreateEvalRun() *cobra.Command {
 	cmd := &cobra.Command{}
+	var genieCreateEvalRunReq genie.GenieCreateEvalRunRequest
 
-	var genieCreateEvalRunReq dashboards.GenieCreateEvalRunRequest
 	var genieCreateEvalRunJson flags.JsonFlag
 
 	cmd.Flags().Var(&genieCreateEvalRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -881,6 +943,7 @@ Start a benchmark evaluation run.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := genieCreateEvalRunJson.Unmarshal(&genieCreateEvalRunReq)
@@ -894,14 +957,22 @@ Start a benchmark evaluation run.
 				}
 			}
 		}
-		genieCreateEvalRunReq.SpaceId = args[0]
+		genieCreateEvalRunReq.SpaceId = new(args[0])
 
-		response, err := w.Genie.GenieCreateEvalRun(ctx, genieCreateEvalRunReq)
+		sdkReq, err := genie.GenieCreateEvalRunRequestToSDK(&genieCreateEvalRunReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Genie.GenieCreateEvalRun(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := genie.GenieEvalRunResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -922,13 +993,12 @@ Start a benchmark evaluation run.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var genieGetEvalResultDetailsOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieGetEvalResultDetailsRequest,
+	*sdkgenie.GenieGetEvalResultDetailsRequest,
 )
 
 func newGenieGetEvalResultDetails() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var genieGetEvalResultDetailsReq dashboards.GenieGetEvalResultDetailsRequest
+	var genieGetEvalResultDetailsReq sdkgenie.GenieGetEvalResultDetailsRequest
 
 	cmd.Use = "genie-get-eval-result-details SPACE_ID EVAL_RUN_ID RESULT_ID"
 	cmd.Short = `*Beta* Get benchmark evaluation result details.`
@@ -957,17 +1027,23 @@ Get benchmark evaluation result details.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		genieGetEvalResultDetailsReq.SpaceId = args[0]
-		genieGetEvalResultDetailsReq.EvalRunId = args[1]
-		genieGetEvalResultDetailsReq.ResultId = args[2]
+		genieGetEvalResultDetailsReq.SpaceId = new(args[0])
+		genieGetEvalResultDetailsReq.EvalRunId = new(args[1])
+		genieGetEvalResultDetailsReq.ResultId = new(args[2])
 
-		response, err := w.Genie.GenieGetEvalResultDetails(ctx, genieGetEvalResultDetailsReq)
+		sdkReq := &genieGetEvalResultDetailsReq
+		response, err := w.Genie.GenieGetEvalResultDetails(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := genie.GenieEvalResultDetailsFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -988,13 +1064,12 @@ Get benchmark evaluation result details.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var genieGetEvalRunOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieGetEvalRunRequest,
+	*sdkgenie.GenieGetEvalRunRequest,
 )
 
 func newGenieGetEvalRun() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var genieGetEvalRunReq dashboards.GenieGetEvalRunRequest
+	var genieGetEvalRunReq sdkgenie.GenieGetEvalRunRequest
 
 	cmd.Use = "genie-get-eval-run SPACE_ID EVAL_RUN_ID"
 	cmd.Short = `*Beta* Get a benchmark evaluation run.`
@@ -1022,16 +1097,22 @@ Get a benchmark evaluation run.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		genieGetEvalRunReq.SpaceId = args[0]
-		genieGetEvalRunReq.EvalRunId = args[1]
+		genieGetEvalRunReq.SpaceId = new(args[0])
+		genieGetEvalRunReq.EvalRunId = new(args[1])
 
-		response, err := w.Genie.GenieGetEvalRun(ctx, genieGetEvalRunReq)
+		sdkReq := &genieGetEvalRunReq
+		response, err := w.Genie.GenieGetEvalRun(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := genie.GenieEvalRunResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1052,16 +1133,15 @@ Get a benchmark evaluation run.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var genieListEvalResultsOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieListEvalResultsRequest,
+	*genie.GenieListEvalResultsRequest,
 )
 
 func newGenieListEvalResults() *cobra.Command {
 	cmd := &cobra.Command{}
+	var genieListEvalResultsReq genie.GenieListEvalResultsRequest
 
-	var genieListEvalResultsReq dashboards.GenieListEvalResultsRequest
-
-	cmd.Flags().IntVar(&genieListEvalResultsReq.PageSize, "page-size", genieListEvalResultsReq.PageSize, `Maximum number of eval results to return per page.`)
-	cmd.Flags().StringVar(&genieListEvalResultsReq.PageToken, "page-token", genieListEvalResultsReq.PageToken, `Opaque token to retrieve the next page of results.`)
+	flags.IntPtrVar(cmd.Flags(), &genieListEvalResultsReq.PageSize, "page-size", `Maximum number of eval results to return per page.`)
+	flags.StringPtrVar(cmd.Flags(), &genieListEvalResultsReq.PageToken, "page-token", `Opaque token to retrieve the next page of results.`)
 
 	cmd.Use = "genie-list-eval-results SPACE_ID EVAL_RUN_ID"
 	cmd.Short = `*Beta* List results for a benchmark evaluation run.`
@@ -1089,16 +1169,25 @@ List results for a benchmark evaluation run.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		genieListEvalResultsReq.SpaceId = args[0]
-		genieListEvalResultsReq.EvalRunId = args[1]
+		genieListEvalResultsReq.SpaceId = new(args[0])
+		genieListEvalResultsReq.EvalRunId = new(args[1])
 
-		response, err := w.Genie.GenieListEvalResults(ctx, genieListEvalResultsReq)
+		sdkReq, err := genie.GenieListEvalResultsRequestToSDK(&genieListEvalResultsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Genie.GenieListEvalResults(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := genie.GenieListEvalResultsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1119,16 +1208,15 @@ List results for a benchmark evaluation run.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var genieListEvalRunsOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieListEvalRunsRequest,
+	*genie.GenieListEvalRunsRequest,
 )
 
 func newGenieListEvalRuns() *cobra.Command {
 	cmd := &cobra.Command{}
+	var genieListEvalRunsReq genie.GenieListEvalRunsRequest
 
-	var genieListEvalRunsReq dashboards.GenieListEvalRunsRequest
-
-	cmd.Flags().IntVar(&genieListEvalRunsReq.PageSize, "page-size", genieListEvalRunsReq.PageSize, `Maximum number of evaluation runs to return per page.`)
-	cmd.Flags().StringVar(&genieListEvalRunsReq.PageToken, "page-token", genieListEvalRunsReq.PageToken, `Token to get the next page of results.`)
+	flags.IntPtrVar(cmd.Flags(), &genieListEvalRunsReq.PageSize, "page-size", `Maximum number of evaluation runs to return per page.`)
+	flags.StringPtrVar(cmd.Flags(), &genieListEvalRunsReq.PageToken, "page-token", `Token to get the next page of results.`)
 
 	cmd.Use = "genie-list-eval-runs SPACE_ID"
 	cmd.Short = `*Beta* List benchmark evaluation runs.`
@@ -1155,15 +1243,24 @@ List benchmark evaluation runs.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		genieListEvalRunsReq.SpaceId = args[0]
+		genieListEvalRunsReq.SpaceId = new(args[0])
 
-		response, err := w.Genie.GenieListEvalRuns(ctx, genieListEvalRunsReq)
+		sdkReq, err := genie.GenieListEvalRunsRequestToSDK(&genieListEvalRunsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Genie.GenieListEvalRuns(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := genie.GenieListEvalRunsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1184,13 +1281,12 @@ List benchmark evaluation runs.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getDownloadFullQueryResultOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieGetDownloadFullQueryResultRequest,
+	*genie.GenieGetDownloadFullQueryResultRequest,
 )
 
 func newGetDownloadFullQueryResult() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getDownloadFullQueryResultReq dashboards.GenieGetDownloadFullQueryResultRequest
+	var getDownloadFullQueryResultReq genie.GenieGetDownloadFullQueryResultRequest
 
 	cmd.Use = "get-download-full-query-result SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID DOWNLOAD_ID DOWNLOAD_ID_SIGNATURE"
 	cmd.Short = `Get full query-result download status.`
@@ -1241,20 +1337,29 @@ func newGetDownloadFullQueryResult() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getDownloadFullQueryResultReq.SpaceId = args[0]
-		getDownloadFullQueryResultReq.ConversationId = args[1]
-		getDownloadFullQueryResultReq.MessageId = args[2]
-		getDownloadFullQueryResultReq.AttachmentId = args[3]
-		getDownloadFullQueryResultReq.DownloadId = args[4]
-		getDownloadFullQueryResultReq.DownloadIdSignature = args[5]
+		getDownloadFullQueryResultReq.SpaceId = new(args[0])
+		getDownloadFullQueryResultReq.ConversationId = new(args[1])
+		getDownloadFullQueryResultReq.MessageId = new(args[2])
+		getDownloadFullQueryResultReq.AttachmentId = new(args[3])
+		getDownloadFullQueryResultReq.DownloadId = new(args[4])
+		getDownloadFullQueryResultReq.DownloadIdSignature = new(args[5])
 
-		response, err := w.Genie.GetDownloadFullQueryResult(ctx, getDownloadFullQueryResultReq)
+		sdkReq, err := genie.GenieGetDownloadFullQueryResultRequestToSDK(&getDownloadFullQueryResultReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Genie.GenieGetDownloadFullQueryResult(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := genie.GenieGetDownloadFullQueryResultResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1275,13 +1380,12 @@ func newGetDownloadFullQueryResult() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getMessageOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieGetConversationMessageRequest,
+	*sdkgenie.GenieGetConversationMessageRequest,
 )
 
 func newGetMessage() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getMessageReq dashboards.GenieGetConversationMessageRequest
+	var getMessageReq sdkgenie.GenieGetConversationMessageRequest
 
 	cmd.Use = "get-message SPACE_ID CONVERSATION_ID MESSAGE_ID"
 	cmd.Short = `Get a conversation message.`
@@ -1310,17 +1414,23 @@ func newGetMessage() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getMessageReq.SpaceId = args[0]
-		getMessageReq.ConversationId = args[1]
-		getMessageReq.MessageId = args[2]
+		getMessageReq.SpaceId = new(args[0])
+		getMessageReq.ConversationId = new(args[1])
+		getMessageReq.MessageId = new(args[2])
 
-		response, err := w.Genie.GetMessage(ctx, getMessageReq)
+		sdkReq := &getMessageReq
+		response, err := w.Genie.GenieGetConversationMessage(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := genie.GenieMessageFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1341,13 +1451,12 @@ func newGetMessage() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getMessageAttachmentQueryResultOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieGetMessageAttachmentQueryResultRequest,
+	*sdkgenie.GenieGetMessageAttachmentQueryResultRequest,
 )
 
 func newGetMessageAttachmentQueryResult() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getMessageAttachmentQueryResultReq dashboards.GenieGetMessageAttachmentQueryResultRequest
+	var getMessageAttachmentQueryResultReq sdkgenie.GenieGetMessageAttachmentQueryResultRequest
 
 	cmd.Use = "get-message-attachment-query-result SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID"
 	cmd.Short = `Get an attachment SQL result.`
@@ -1376,18 +1485,24 @@ func newGetMessageAttachmentQueryResult() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getMessageAttachmentQueryResultReq.SpaceId = args[0]
-		getMessageAttachmentQueryResultReq.ConversationId = args[1]
-		getMessageAttachmentQueryResultReq.MessageId = args[2]
-		getMessageAttachmentQueryResultReq.AttachmentId = args[3]
+		getMessageAttachmentQueryResultReq.SpaceId = new(args[0])
+		getMessageAttachmentQueryResultReq.ConversationId = new(args[1])
+		getMessageAttachmentQueryResultReq.MessageId = new(args[2])
+		getMessageAttachmentQueryResultReq.AttachmentId = new(args[3])
 
-		response, err := w.Genie.GetMessageAttachmentQueryResult(ctx, getMessageAttachmentQueryResultReq)
+		sdkReq := &getMessageAttachmentQueryResultReq
+		response, err := w.Genie.GenieGetMessageAttachmentQueryResult(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := genie.GenieGetMessageQueryResultResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1408,13 +1523,12 @@ func newGetMessageAttachmentQueryResult() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getMessageQueryResultOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieGetMessageQueryResultRequest,
+	*sdkgenie.GenieGetMessageQueryResultRequest,
 )
 
 func newGetMessageQueryResult() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getMessageQueryResultReq dashboards.GenieGetMessageQueryResultRequest
+	var getMessageQueryResultReq sdkgenie.GenieGetMessageQueryResultRequest
 
 	cmd.Use = "get-message-query-result SPACE_ID CONVERSATION_ID MESSAGE_ID"
 	cmd.Short = `[Deprecated] Get conversation message SQL query result.`
@@ -1444,17 +1558,23 @@ func newGetMessageQueryResult() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getMessageQueryResultReq.SpaceId = args[0]
-		getMessageQueryResultReq.ConversationId = args[1]
-		getMessageQueryResultReq.MessageId = args[2]
+		getMessageQueryResultReq.SpaceId = new(args[0])
+		getMessageQueryResultReq.ConversationId = new(args[1])
+		getMessageQueryResultReq.MessageId = new(args[2])
 
-		response, err := w.Genie.GetMessageQueryResult(ctx, getMessageQueryResultReq)
+		sdkReq := &getMessageQueryResultReq
+		response, err := w.Genie.GenieGetMessageQueryResult(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := genie.GenieGetMessageQueryResultResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1475,13 +1595,12 @@ func newGetMessageQueryResult() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getMessageQueryResultByAttachmentOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieGetQueryResultByAttachmentRequest,
+	*sdkgenie.GenieGetQueryResultByAttachmentRequest,
 )
 
 func newGetMessageQueryResultByAttachment() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getMessageQueryResultByAttachmentReq dashboards.GenieGetQueryResultByAttachmentRequest
+	var getMessageQueryResultByAttachmentReq sdkgenie.GenieGetQueryResultByAttachmentRequest
 
 	cmd.Use = "get-message-query-result-by-attachment SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID"
 	cmd.Short = `[Deprecated] Get conversation message SQL query result.`
@@ -1512,18 +1631,24 @@ func newGetMessageQueryResultByAttachment() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getMessageQueryResultByAttachmentReq.SpaceId = args[0]
-		getMessageQueryResultByAttachmentReq.ConversationId = args[1]
-		getMessageQueryResultByAttachmentReq.MessageId = args[2]
-		getMessageQueryResultByAttachmentReq.AttachmentId = args[3]
+		getMessageQueryResultByAttachmentReq.SpaceId = new(args[0])
+		getMessageQueryResultByAttachmentReq.ConversationId = new(args[1])
+		getMessageQueryResultByAttachmentReq.MessageId = new(args[2])
+		getMessageQueryResultByAttachmentReq.AttachmentId = new(args[3])
 
-		response, err := w.Genie.GetMessageQueryResultByAttachment(ctx, getMessageQueryResultByAttachmentReq)
+		sdkReq := &getMessageQueryResultByAttachmentReq
+		response, err := w.Genie.GenieGetQueryResultByAttachment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := genie.GenieGetMessageQueryResultResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1544,15 +1669,14 @@ func newGetMessageQueryResultByAttachment() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getSpaceOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieGetSpaceRequest,
+	*genie.GenieGetSpaceRequest,
 )
 
 func newGetSpace() *cobra.Command {
 	cmd := &cobra.Command{}
+	var getSpaceReq genie.GenieGetSpaceRequest
 
-	var getSpaceReq dashboards.GenieGetSpaceRequest
-
-	cmd.Flags().BoolVar(&getSpaceReq.IncludeSerializedSpace, "include-serialized-space", getSpaceReq.IncludeSerializedSpace, `Whether to include the serialized space export in the response.`)
+	flags.BoolPtrVar(cmd.Flags(), &getSpaceReq.IncludeSerializedSpace, "include-serialized-space", `Whether to include the serialized space export in the response.`)
 
 	cmd.Use = "get-space SPACE_ID"
 	cmd.Short = `Get a Genie space.`
@@ -1576,15 +1700,24 @@ func newGetSpace() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getSpaceReq.SpaceId = args[0]
+		getSpaceReq.SpaceId = new(args[0])
 
-		response, err := w.Genie.GetSpace(ctx, getSpaceReq)
+		sdkReq, err := genie.GenieGetSpaceRequestToSDK(&getSpaceReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Genie.GenieGetSpace(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := genie.GenieSpaceFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1605,16 +1738,15 @@ func newGetSpace() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listConversationCommentsOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieListConversationCommentsRequest,
+	*genie.GenieListConversationCommentsRequest,
 )
 
 func newListConversationComments() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listConversationCommentsReq genie.GenieListConversationCommentsRequest
 
-	var listConversationCommentsReq dashboards.GenieListConversationCommentsRequest
-
-	cmd.Flags().IntVar(&listConversationCommentsReq.PageSize, "page-size", listConversationCommentsReq.PageSize, `Maximum number of comments to return per page.`)
-	cmd.Flags().StringVar(&listConversationCommentsReq.PageToken, "page-token", listConversationCommentsReq.PageToken, `Pagination token for getting the next page of results.`)
+	flags.IntPtrVar(cmd.Flags(), &listConversationCommentsReq.PageSize, "page-size", `Maximum number of comments to return per page.`)
+	flags.StringPtrVar(cmd.Flags(), &listConversationCommentsReq.PageToken, "page-token", `Pagination token for getting the next page of results.`)
 
 	cmd.Use = "list-conversation-comments SPACE_ID CONVERSATION_ID"
 	cmd.Short = `*Public Preview* List all comments in a conversation.`
@@ -1641,16 +1773,25 @@ List all comments in a conversation.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listConversationCommentsReq.SpaceId = args[0]
-		listConversationCommentsReq.ConversationId = args[1]
+		listConversationCommentsReq.SpaceId = new(args[0])
+		listConversationCommentsReq.ConversationId = new(args[1])
 
-		response, err := w.Genie.ListConversationComments(ctx, listConversationCommentsReq)
+		sdkReq, err := genie.GenieListConversationCommentsRequestToSDK(&listConversationCommentsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Genie.GenieListConversationComments(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := genie.GenieListConversationCommentsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1671,16 +1812,15 @@ List all comments in a conversation.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listConversationMessagesOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieListConversationMessagesRequest,
+	*genie.GenieListConversationMessagesRequest,
 )
 
 func newListConversationMessages() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listConversationMessagesReq genie.GenieListConversationMessagesRequest
 
-	var listConversationMessagesReq dashboards.GenieListConversationMessagesRequest
-
-	cmd.Flags().IntVar(&listConversationMessagesReq.PageSize, "page-size", listConversationMessagesReq.PageSize, `Maximum number of messages to return per page.`)
-	cmd.Flags().StringVar(&listConversationMessagesReq.PageToken, "page-token", listConversationMessagesReq.PageToken, `Token to get the next page of results.`)
+	flags.IntPtrVar(cmd.Flags(), &listConversationMessagesReq.PageSize, "page-size", `Maximum number of messages to return per page.`)
+	flags.StringPtrVar(cmd.Flags(), &listConversationMessagesReq.PageToken, "page-token", `Token to get the next page of results.`)
 
 	cmd.Use = "list-conversation-messages SPACE_ID CONVERSATION_ID"
 	cmd.Short = `List conversation messages.`
@@ -1707,16 +1847,25 @@ func newListConversationMessages() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listConversationMessagesReq.SpaceId = args[0]
-		listConversationMessagesReq.ConversationId = args[1]
+		listConversationMessagesReq.SpaceId = new(args[0])
+		listConversationMessagesReq.ConversationId = new(args[1])
 
-		response, err := w.Genie.ListConversationMessages(ctx, listConversationMessagesReq)
+		sdkReq, err := genie.GenieListConversationMessagesRequestToSDK(&listConversationMessagesReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Genie.GenieListConversationMessages(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := genie.GenieListConversationMessagesResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1737,17 +1886,16 @@ func newListConversationMessages() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listConversationsOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieListConversationsRequest,
+	*genie.GenieListConversationsRequest,
 )
 
 func newListConversations() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listConversationsReq genie.GenieListConversationsRequest
 
-	var listConversationsReq dashboards.GenieListConversationsRequest
-
-	cmd.Flags().BoolVar(&listConversationsReq.IncludeAll, "include-all", listConversationsReq.IncludeAll, `Include all conversations in the space across all users.`)
-	cmd.Flags().IntVar(&listConversationsReq.PageSize, "page-size", listConversationsReq.PageSize, `Maximum number of conversations to return per page.`)
-	cmd.Flags().StringVar(&listConversationsReq.PageToken, "page-token", listConversationsReq.PageToken, `Token to get the next page of results.`)
+	flags.BoolPtrVar(cmd.Flags(), &listConversationsReq.IncludeAll, "include-all", `Include all conversations in the space across all users.`)
+	flags.IntPtrVar(cmd.Flags(), &listConversationsReq.PageSize, "page-size", `Maximum number of conversations to return per page.`)
+	flags.StringPtrVar(cmd.Flags(), &listConversationsReq.PageToken, "page-token", `Token to get the next page of results.`)
 
 	cmd.Use = "list-conversations SPACE_ID"
 	cmd.Short = `List conversations.`
@@ -1771,15 +1919,24 @@ func newListConversations() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listConversationsReq.SpaceId = args[0]
+		listConversationsReq.SpaceId = new(args[0])
 
-		response, err := w.Genie.ListConversations(ctx, listConversationsReq)
+		sdkReq, err := genie.GenieListConversationsRequestToSDK(&listConversationsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Genie.GenieListConversations(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := genie.GenieListConversationsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1800,16 +1957,15 @@ func newListConversations() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listMessageCommentsOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieListMessageCommentsRequest,
+	*genie.GenieListMessageCommentsRequest,
 )
 
 func newListMessageComments() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listMessageCommentsReq genie.GenieListMessageCommentsRequest
 
-	var listMessageCommentsReq dashboards.GenieListMessageCommentsRequest
-
-	cmd.Flags().IntVar(&listMessageCommentsReq.PageSize, "page-size", listMessageCommentsReq.PageSize, `Maximum number of comments to return per page.`)
-	cmd.Flags().StringVar(&listMessageCommentsReq.PageToken, "page-token", listMessageCommentsReq.PageToken, `Pagination token for getting the next page of results.`)
+	flags.IntPtrVar(cmd.Flags(), &listMessageCommentsReq.PageSize, "page-size", `Maximum number of comments to return per page.`)
+	flags.StringPtrVar(cmd.Flags(), &listMessageCommentsReq.PageToken, "page-token", `Pagination token for getting the next page of results.`)
 
 	cmd.Use = "list-message-comments SPACE_ID CONVERSATION_ID MESSAGE_ID"
 	cmd.Short = `*Public Preview* List comments on a message.`
@@ -1837,17 +1993,26 @@ List comments on a message.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listMessageCommentsReq.SpaceId = args[0]
-		listMessageCommentsReq.ConversationId = args[1]
-		listMessageCommentsReq.MessageId = args[2]
+		listMessageCommentsReq.SpaceId = new(args[0])
+		listMessageCommentsReq.ConversationId = new(args[1])
+		listMessageCommentsReq.MessageId = new(args[2])
 
-		response, err := w.Genie.ListMessageComments(ctx, listMessageCommentsReq)
+		sdkReq, err := genie.GenieListMessageCommentsRequestToSDK(&listMessageCommentsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Genie.GenieListMessageComments(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := genie.GenieListMessageCommentsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1868,16 +2033,15 @@ List comments on a message.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listSpacesOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieListSpacesRequest,
+	*genie.GenieListSpacesRequest,
 )
 
 func newListSpaces() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listSpacesReq genie.GenieListSpacesRequest
 
-	var listSpacesReq dashboards.GenieListSpacesRequest
-
-	cmd.Flags().IntVar(&listSpacesReq.PageSize, "page-size", listSpacesReq.PageSize, `Maximum number of spaces to return per page.`)
-	cmd.Flags().StringVar(&listSpacesReq.PageToken, "page-token", listSpacesReq.PageToken, `Pagination token for getting the next page of results.`)
+	flags.IntPtrVar(cmd.Flags(), &listSpacesReq.PageSize, "page-size", `Maximum number of spaces to return per page.`)
+	flags.StringPtrVar(cmd.Flags(), &listSpacesReq.PageToken, "page-token", `Pagination token for getting the next page of results.`)
 
 	cmd.Use = "list-spaces"
 	cmd.Short = `List Genie spaces.`
@@ -1898,13 +2062,22 @@ func newListSpaces() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response, err := w.Genie.ListSpaces(ctx, listSpacesReq)
+		sdkReq, err := genie.GenieListSpacesRequestToSDK(&listSpacesReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Genie.GenieListSpaces(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := genie.GenieListSpacesResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1925,18 +2098,18 @@ func newListSpaces() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var sendMessageFeedbackOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieSendMessageFeedbackRequest,
+	*genie.GenieSendMessageFeedbackRequest,
 )
 
 func newSendMessageFeedback() *cobra.Command {
 	cmd := &cobra.Command{}
+	var sendMessageFeedbackReq genie.GenieSendMessageFeedbackRequest
 
-	var sendMessageFeedbackReq dashboards.GenieSendMessageFeedbackRequest
 	var sendMessageFeedbackJson flags.JsonFlag
 
 	cmd.Flags().Var(&sendMessageFeedbackJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&sendMessageFeedbackReq.Comment, "comment", sendMessageFeedbackReq.Comment, `Optional text feedback that will be stored as a comment.`)
+	flags.StringPtrVar(cmd.Flags(), &sendMessageFeedbackReq.Comment, "comment", `Optional text feedback that will be stored as a comment.`)
 
 	cmd.Use = "send-message-feedback SPACE_ID CONVERSATION_ID MESSAGE_ID RATING"
 	cmd.Short = `Send feedback on a message.`
@@ -1971,6 +2144,7 @@ func newSendMessageFeedback() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := sendMessageFeedbackJson.Unmarshal(&sendMessageFeedbackReq)
@@ -1984,18 +2158,18 @@ func newSendMessageFeedback() *cobra.Command {
 				}
 			}
 		}
-		sendMessageFeedbackReq.SpaceId = args[0]
-		sendMessageFeedbackReq.ConversationId = args[1]
-		sendMessageFeedbackReq.MessageId = args[2]
+		sendMessageFeedbackReq.SpaceId = new(args[0])
+		sendMessageFeedbackReq.ConversationId = new(args[1])
+		sendMessageFeedbackReq.MessageId = new(args[2])
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[3], &sendMessageFeedbackReq.Rating)
-			if err != nil {
-				return fmt.Errorf("invalid RATING: %s", args[3])
-			}
-
+			sendMessageFeedbackReq.Rating = genie.GenieFeedbackRating(args[3])
 		}
 
-		err = w.Genie.SendMessageFeedback(ctx, sendMessageFeedbackReq)
+		sdkReq, err := genie.GenieSendMessageFeedbackRequestToSDK(&sendMessageFeedbackReq)
+		if err != nil {
+			return err
+		}
+		err = w.Genie.GenieSendMessageFeedback(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -2020,13 +2194,13 @@ func newSendMessageFeedback() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var startConversationOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieStartConversationMessageRequest,
+	*genie.GenieStartConversationRequest,
 )
 
 func newStartConversation() *cobra.Command {
 	cmd := &cobra.Command{}
+	var startConversationReq genie.GenieStartConversationRequest
 
-	var startConversationReq dashboards.GenieStartConversationMessageRequest
 	var startConversationJson flags.JsonFlag
 
 	var startConversationSkipWait bool
@@ -2037,7 +2211,7 @@ func newStartConversation() *cobra.Command {
 
 	cmd.Flags().Var(&startConversationJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&startConversationReq.EnableVisualization, "enable-visualization", startConversationReq.EnableVisualization, `Enable visualization generation.`)
+	flags.BoolPtrVar(cmd.Flags(), &startConversationReq.EnableVisualization, "enable-visualization", `Enable visualization generation.`)
 
 	cmd.Use = "start-conversation SPACE_ID CONTENT"
 	cmd.Short = `Chat mode: Start a conversation.`
@@ -2070,6 +2244,7 @@ func newStartConversation() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := startConversationJson.Unmarshal(&startConversationReq)
@@ -2083,29 +2258,35 @@ func newStartConversation() *cobra.Command {
 				}
 			}
 		}
-		startConversationReq.SpaceId = args[0]
+		startConversationReq.SpaceId = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			startConversationReq.Content = args[1]
+			startConversationReq.Content = new(args[1])
 		}
 
-		wait, err := w.Genie.StartConversation(ctx, startConversationReq)
+		sdkReq, err := genie.GenieStartConversationRequestToSDK(&startConversationReq)
+		if err != nil {
+			return err
+		}
+		wait, err := w.Genie.GenieStartConversation(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 		if startConversationSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			return cmdio.Render(ctx, map[string]any{"conversation_id": wait.GetConversationId()})
 		}
 		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *dashboards.GenieMessage) {
-			status := i.Status
-			statusMessage := fmt.Sprintf("current status: %s", status)
-			sp.Update(statusMessage)
-		}).GetWithTimeout(startConversationTimeout)
+		sp.Update("Waiting for start-conversation to complete...")
+		response, err := wait.Wait(ctx, lro.WithTimeout(startConversationTimeout))
 		sp.Close()
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+
+		out, err := genie.GenieMessageFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2126,13 +2307,12 @@ func newStartConversation() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var trashSpaceOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieTrashSpaceRequest,
+	*sdkgenie.GenieTrashSpaceRequest,
 )
 
 func newTrashSpace() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var trashSpaceReq dashboards.GenieTrashSpaceRequest
+	var trashSpaceReq sdkgenie.GenieTrashSpaceRequest
 
 	cmd.Use = "trash-space SPACE_ID"
 	cmd.Short = `Trash a Genie space.`
@@ -2156,10 +2336,12 @@ func newTrashSpace() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		trashSpaceReq.SpaceId = args[0]
+		trashSpaceReq.SpaceId = new(args[0])
 
-		err = w.Genie.TrashSpace(ctx, trashSpaceReq)
+		sdkReq := &trashSpaceReq
+		err = w.Genie.GenieTrashSpace(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -2184,23 +2366,23 @@ func newTrashSpace() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateSpaceOverrides []func(
 	*cobra.Command,
-	*dashboards.GenieUpdateSpaceRequest,
+	*genie.GenieUpdateSpaceRequest,
 )
 
 func newUpdateSpace() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateSpaceReq genie.GenieUpdateSpaceRequest
 
-	var updateSpaceReq dashboards.GenieUpdateSpaceRequest
 	var updateSpaceJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateSpaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateSpaceReq.Description, "description", updateSpaceReq.Description, `Optional description.`)
-	cmd.Flags().StringVar(&updateSpaceReq.Etag, "etag", updateSpaceReq.Etag, `ETag returned by a previous GET or UPDATE.`)
-	cmd.Flags().StringVar(&updateSpaceReq.ParentPath, "parent-path", updateSpaceReq.ParentPath, `Parent workspace folder path to move this Genie space under.`)
-	cmd.Flags().StringVar(&updateSpaceReq.SerializedSpace, "serialized-space", updateSpaceReq.SerializedSpace, `The contents of the Genie Space in serialized string form (full replacement).`)
-	cmd.Flags().StringVar(&updateSpaceReq.Title, "title", updateSpaceReq.Title, `Optional title override.`)
-	cmd.Flags().StringVar(&updateSpaceReq.WarehouseId, "warehouse-id", updateSpaceReq.WarehouseId, `Optional warehouse override.`)
+	flags.StringPtrVar(cmd.Flags(), &updateSpaceReq.Description, "description", `Optional description.`)
+	flags.StringPtrVar(cmd.Flags(), &updateSpaceReq.Etag, "etag", `ETag returned by a previous GET or UPDATE.`)
+	flags.StringPtrVar(cmd.Flags(), &updateSpaceReq.ParentPath, "parent-path", `Parent workspace folder path to move this Genie space under.`)
+	flags.StringPtrVar(cmd.Flags(), &updateSpaceReq.SerializedSpace, "serialized-space", `The contents of the Genie Space in serialized string form (full replacement).`)
+	flags.StringPtrVar(cmd.Flags(), &updateSpaceReq.Title, "title", `Optional title override.`)
+	flags.StringPtrVar(cmd.Flags(), &updateSpaceReq.WarehouseId, "warehouse-id", `Optional warehouse override.`)
 
 	cmd.Use = "update-space SPACE_ID"
 	cmd.Short = `Update a Genie space.`
@@ -2224,6 +2406,7 @@ func newUpdateSpace() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateSpaceJson.Unmarshal(&updateSpaceReq)
@@ -2237,14 +2420,22 @@ func newUpdateSpace() *cobra.Command {
 				}
 			}
 		}
-		updateSpaceReq.SpaceId = args[0]
+		updateSpaceReq.SpaceId = new(args[0])
 
-		response, err := w.Genie.UpdateSpace(ctx, updateSpaceReq)
+		sdkReq, err := genie.GenieUpdateSpaceRequestToSDK(&updateSpaceReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Genie.UpdateSpace(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := genie.GenieSpaceFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

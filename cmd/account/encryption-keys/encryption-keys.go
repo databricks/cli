@@ -9,8 +9,10 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/provisioning"
 	"github.com/spf13/cobra"
+
+	keyconfigurations "github.com/databricks/cli/libs/sdktypes/keyconfigurations/v1"
+	sdkkeyconfigurations "github.com/databricks/sdk-go/keyconfigurations/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -65,13 +67,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*provisioning.CreateCustomerManagedKeyRequest,
+	*keyconfigurations.CreateCustomerManagedKeyRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq keyconfigurations.CreateCustomerManagedKeyRequest
 
-	var createReq provisioning.CreateCustomerManagedKeyRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -120,6 +122,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -136,12 +139,20 @@ func newCreate() *cobra.Command {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := a.EncryptionKeys.Create(ctx, createReq)
+		sdkReq, err := keyconfigurations.CreateCustomerManagedKeyRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.KeyConfigurations.CreateCustomerManagedKeyPublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := keyconfigurations.CustomerManagedKeyFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -162,13 +173,12 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*provisioning.DeleteEncryptionKeyRequest,
+	*sdkkeyconfigurations.DeleteCustomerManagedKeyRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq provisioning.DeleteEncryptionKeyRequest
+	var deleteReq sdkkeyconfigurations.DeleteCustomerManagedKeyRequest
 
 	cmd.Use = "delete CUSTOMER_MANAGED_KEY_ID"
 	cmd.Short = `Delete encryption key configuration.`
@@ -193,15 +203,21 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		deleteReq.CustomerManagedKeyId = args[0]
+		deleteReq.CustomerManagedKeyId = new(args[0])
 
-		response, err := a.EncryptionKeys.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := a.KeyConfigurations.DeleteCustomerManagedKeyPublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := keyconfigurations.CustomerManagedKeyFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -222,13 +238,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*provisioning.GetEncryptionKeyRequest,
+	*sdkkeyconfigurations.GetCustomerManagedKeyRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq provisioning.GetEncryptionKeyRequest
+	var getReq sdkkeyconfigurations.GetCustomerManagedKeyRequest
 
 	cmd.Use = "get CUSTOMER_MANAGED_KEY_ID"
 	cmd.Short = `Get encryption key configuration.`
@@ -266,15 +281,21 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		getReq.CustomerManagedKeyId = args[0]
+		getReq.CustomerManagedKeyId = new(args[0])
 
-		response, err := a.EncryptionKeys.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := a.KeyConfigurations.GetCustomerManagedKeyPublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := keyconfigurations.CustomerManagedKeyFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -314,12 +335,16 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
-		response, err := a.EncryptionKeys.List(ctx)
+		_ = a
+
+		sdkReq := &sdkkeyconfigurations.ListCustomerManagedKeyRequest{}
+		response, err := a.KeyConfigurations.ListCustomerManagedKeyPublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		_ = response
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

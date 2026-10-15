@@ -7,10 +7,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
+
+	scim "github.com/databricks/cli/libs/sdktypes/scim/v1"
+	sdkscim "github.com/databricks/sdk-go/scim/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -62,25 +65,25 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*iam.CreateAccountUserRequest,
+	*scim.CreateAccountUserRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq scim.CreateAccountUserRequest
 
-	var createReq iam.CreateAccountUserRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createReq.Active, "active", createReq.Active, `If this user is active.`)
-	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `String that represents a concatenation of given and family names.`)
+	flags.BoolPtrVar(cmd.Flags(), &createReq.Active, "active", `If this user is active.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.DisplayName, "display-name", `String that represents a concatenation of given and family names.`)
 	// TODO: array: emails
-	cmd.Flags().StringVar(&createReq.ExternalId, "external-id", createReq.ExternalId, `External ID is not currently supported.`)
-	cmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Databricks user ID.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.ExternalId, "external-id", `External ID is not currently supported.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Id, "id", `Databricks user ID.`)
 	// TODO: complex arg: name
 	// TODO: array: roles
-	cmd.Flags().StringVar(&createReq.UserName, "user-name", createReq.UserName, `Email address of the Databricks user.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.UserName, "user-name", `Email address of the Databricks user.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create a new user.`
@@ -102,6 +105,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -116,12 +120,20 @@ func newCreate() *cobra.Command {
 			}
 		}
 
-		response, err := a.UsersV2.Create(ctx, createReq)
+		sdkReq, err := scim.CreateAccountUserRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Scim.CreateAccountUser(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := scim.AccountUserFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -142,13 +154,12 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*iam.DeleteAccountUserRequest,
+	*sdkscim.DeleteAccountUserRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq iam.DeleteAccountUserRequest
+	var deleteReq sdkscim.DeleteAccountUserRequest
 
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete a user.`
@@ -173,10 +184,12 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		deleteReq.Id = args[0]
+		deleteReq.Id = new(args[0])
 
-		err = a.UsersV2.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		err = a.Scim.DeleteAccountUser(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -201,21 +214,20 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*iam.GetAccountUserRequest,
+	*scim.GetAccountUserRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
+	var getReq scim.GetAccountUserRequest
 
-	var getReq iam.GetAccountUserRequest
-
-	cmd.Flags().StringVar(&getReq.Attributes, "attributes", getReq.Attributes, `Comma-separated list of attributes to return in response.`)
-	cmd.Flags().IntVar(&getReq.Count, "count", getReq.Count, `Desired number of results per page.`)
-	cmd.Flags().StringVar(&getReq.ExcludedAttributes, "excluded-attributes", getReq.ExcludedAttributes, `Comma-separated list of attributes to exclude in response.`)
-	cmd.Flags().StringVar(&getReq.Filter, "filter", getReq.Filter, `Query by which the results have to be filtered.`)
-	cmd.Flags().StringVar(&getReq.SortBy, "sort-by", getReq.SortBy, `Attribute to sort the results.`)
-	cmd.Flags().Var(&getReq.SortOrder, "sort-order", `The order to sort the results. Supported values: [ascending, descending]`)
-	cmd.Flags().IntVar(&getReq.StartIndex, "start-index", getReq.StartIndex, `Specifies the index of the first result.`)
+	flags.StringPtrVar(cmd.Flags(), &getReq.Attributes, "attributes", `Comma-separated list of attributes to return in response.`)
+	flags.IntPtrVar(cmd.Flags(), &getReq.Count, "count", `Desired number of results per page.`)
+	flags.StringPtrVar(cmd.Flags(), &getReq.ExcludedAttributes, "excluded-attributes", `Comma-separated list of attributes to exclude in response.`)
+	flags.StringPtrVar(cmd.Flags(), &getReq.Filter, "filter", `Query by which the results have to be filtered.`)
+	flags.StringPtrVar(cmd.Flags(), &getReq.SortBy, "sort-by", `Attribute to sort the results.`)
+	flags.EnumVar(cmd.Flags(), &getReq.SortOrder, "sort-order", `The order to sort the results. Supported values: [ascending, descending]`, "GetSortOrder", "ascending", "descending")
+	flags.IntPtrVar(cmd.Flags(), &getReq.StartIndex, "start-index", `Specifies the index of the first result.`)
 
 	cmd.Use = "get ID"
 	cmd.Short = `Get user details.`
@@ -239,15 +251,24 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		getReq.Id = args[0]
+		getReq.Id = new(args[0])
 
-		response, err := a.UsersV2.Get(ctx, getReq)
+		sdkReq, err := scim.GetAccountUserRequestToSDK(&getReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Scim.GetAccountUser(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := scim.AccountUserFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -268,31 +289,31 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*iam.ListAccountUsersRequest,
+	*scim.ListAccountUsersRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq scim.ListAccountUsersRequest
 
-	var listReq iam.ListAccountUsersRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().StringVar(&listReq.Attributes, "attributes", listReq.Attributes, `Comma-separated list of attributes to return in response.`)
-	cmd.Flags().StringVar(&listReq.ExcludedAttributes, "excluded-attributes", listReq.ExcludedAttributes, `Comma-separated list of attributes to exclude in response.`)
-	cmd.Flags().StringVar(&listReq.Filter, "filter", listReq.Filter, `Query by which the results have to be filtered.`)
-	cmd.Flags().StringVar(&listReq.SortBy, "sort-by", listReq.SortBy, `Attribute to sort the results.`)
-	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order to sort the results. Supported values: [ascending, descending]`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.Attributes, "attributes", `Comma-separated list of attributes to return in response.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.ExcludedAttributes, "excluded-attributes", `Comma-separated list of attributes to exclude in response.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.Filter, "filter", `Query by which the results have to be filtered.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.SortBy, "sort-by", `Attribute to sort the results.`)
+	flags.EnumVar(cmd.Flags(), &listReq.SortOrder, "sort-order", `The order to sort the results. Supported values: [ascending, descending]`, "ListSortOrder", "ascending", "descending")
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().Int64Var(&listReq.StartIndex, "start-index", listReq.StartIndex, `Specifies the index of the first result.`)
+	flags.Int64PtrVar(cmd.Flags(), &listReq.StartIndex, "start-index", `Specifies the index of the first result.`)
 	cmd.Flags().Lookup("start-index").Hidden = true
-	cmd.Flags().Int64Var(&listReq.Count, "count", listReq.Count, `Number of results per API page.`)
+	flags.Int64PtrVar(cmd.Flags(), &listReq.Count, "count", `Number of results per API page.`)
 	cmd.Flags().Lookup("count").Hidden = true
 
 	cmd.Use = "list"
@@ -314,16 +335,20 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		response := a.UsersV2.List(ctx, listReq)
+		sdkReq, err := scim.ListAccountUsersRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := a.Scim.ListAccountUsersIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, scim.AccountUserFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -344,13 +369,13 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var patchOverrides []func(
 	*cobra.Command,
-	*iam.PatchAccountUserRequest,
+	*scim.PatchAccountUserRequest,
 )
 
 func newPatch() *cobra.Command {
 	cmd := &cobra.Command{}
+	var patchReq scim.PatchAccountUserRequest
 
-	var patchReq iam.PatchAccountUserRequest
 	var patchJson flags.JsonFlag
 
 	cmd.Flags().Var(&patchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -382,6 +407,7 @@ func newPatch() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := patchJson.Unmarshal(&patchReq)
@@ -395,9 +421,13 @@ func newPatch() *cobra.Command {
 				}
 			}
 		}
-		patchReq.Id = args[0]
+		patchReq.Id = new(args[0])
 
-		err = a.UsersV2.Patch(ctx, patchReq)
+		sdkReq, err := scim.PatchAccountUserRequestToSDK(&patchReq)
+		if err != nil {
+			return err
+		}
+		err = a.Scim.PatchAccountUser(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -422,24 +452,24 @@ func newPatch() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*iam.UpdateAccountUserRequest,
+	*scim.UpdateAccountUserRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq scim.UpdateAccountUserRequest
 
-	var updateReq iam.UpdateAccountUserRequest
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&updateReq.Active, "active", updateReq.Active, `If this user is active.`)
-	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `String that represents a concatenation of given and family names.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateReq.Active, "active", `If this user is active.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.DisplayName, "display-name", `String that represents a concatenation of given and family names.`)
 	// TODO: array: emails
-	cmd.Flags().StringVar(&updateReq.ExternalId, "external-id", updateReq.ExternalId, `External ID is not currently supported.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.ExternalId, "external-id", `External ID is not currently supported.`)
 	// TODO: complex arg: name
 	// TODO: array: roles
-	cmd.Flags().StringVar(&updateReq.UserName, "user-name", updateReq.UserName, `Email address of the Databricks user.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.UserName, "user-name", `Email address of the Databricks user.`)
 
 	cmd.Use = "update ID"
 	cmd.Short = `Replace a user.`
@@ -465,6 +495,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -478,9 +509,13 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.Id = args[0]
+		updateReq.Id = new(args[0])
 
-		err = a.UsersV2.Update(ctx, updateReq)
+		sdkReq, err := scim.UpdateAccountUserRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		err = a.Scim.UpdateAccountUser(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
