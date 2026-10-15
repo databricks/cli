@@ -104,17 +104,29 @@ Apply the latest environment to the pipeline.
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
 	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
+		if len(args) == 0 {
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
+			names, err := cmdgen.NamedIdMap(ctx, w.Pipelines.ListIter(ctx, sdkpipelines.ListPipelinesRequest{}), []string{"Name"}, []string{"PipelineId"})
+			sp.Close()
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return errors.New("expected to have ")
+		}
 		applyEnvironmentReq.PipelineId = new(args[0])
 
 		sdkReq, err := pipelines.ApplyEnvironmentRequestToSDK(&applyEnvironmentReq)
@@ -334,17 +346,29 @@ func newDelete() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
+		if len(args) == 0 {
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
+			names, err := cmdgen.NamedIdMap(ctx, w.Pipelines.ListIter(ctx, sdkpipelines.ListPipelinesRequest{}), []string{"Name"}, []string{"PipelineId"})
+			sp.Close()
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return errors.New("expected to have ")
+		}
 		deleteReq.PipelineId = new(args[0])
 
 		sdkReq, err := pipelines.DeletePipelineRequestToSDK(&deleteReq)
@@ -393,17 +417,29 @@ func newGet() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
+		if len(args) == 0 {
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
+			names, err := cmdgen.NamedIdMap(ctx, w.Pipelines.ListIter(ctx, sdkpipelines.ListPipelinesRequest{}), []string{"Name"}, []string{"PipelineId"})
+			sp.Close()
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return errors.New("expected to have ")
+		}
 		getReq.PipelineId = new(args[0])
 
 		sdkReq := &getReq
@@ -457,17 +493,29 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
+		if len(args) == 0 {
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
+			names, err := cmdgen.NamedIdMap(ctx, w.Pipelines.ListIter(ctx, sdkpipelines.ListPipelinesRequest{}), []string{"Name"}, []string{"PipelineId"})
+			sp.Close()
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The pipeline for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return errors.New("expected to have the pipeline for which to get or manage permissions")
+		}
 		getPermissionLevelsReq.RequestObjectId = new(args[0])
 
 		getPermissionLevelsReq.RequestObjectType = new("pipelines")
@@ -524,17 +572,29 @@ func newGetPermissions() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
+		if len(args) == 0 {
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
+			names, err := cmdgen.NamedIdMap(ctx, w.Pipelines.ListIter(ctx, sdkpipelines.ListPipelinesRequest{}), []string{"Name"}, []string{"PipelineId"})
+			sp.Close()
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The pipeline for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return errors.New("expected to have the pipeline for which to get or manage permissions")
+		}
 		getPermissionsReq.RequestObjectId = new(args[0])
 
 		getPermissionsReq.RequestObjectType = new("pipelines")
@@ -672,17 +732,29 @@ func newListPipelineEvents() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
+		if len(args) == 0 {
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
+			names, err := cmdgen.NamedIdMap(ctx, w.Pipelines.ListIter(ctx, sdkpipelines.ListPipelinesRequest{}), []string{"Name"}, []string{"PipelineId"})
+			sp.Close()
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The pipeline to return events for")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return errors.New("expected to have the pipeline to return events for")
+		}
 		listPipelineEventsReq.PipelineId = new(args[0])
 
 		sdkReq, err := pipelines.ListPipelineEventsRequestToSDK(&listPipelineEventsReq)
@@ -817,17 +889,29 @@ func newListUpdates() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
+		if len(args) == 0 {
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
+			names, err := cmdgen.NamedIdMap(ctx, w.Pipelines.ListIter(ctx, sdkpipelines.ListPipelinesRequest{}), []string{"Name"}, []string{"PipelineId"})
+			sp.Close()
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The pipeline to return updates for")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return errors.New("expected to have the pipeline to return updates for")
+		}
 		listUpdatesReq.PipelineId = new(args[0])
 
 		sdkReq, err := pipelines.ListUpdatesRequestToSDK(&listUpdatesReq)
@@ -892,11 +976,6 @@ func newSetPermissions() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -914,6 +993,23 @@ func newSetPermissions() *cobra.Command {
 					return err
 				}
 			}
+		}
+		if len(args) == 0 {
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
+			names, err := cmdgen.NamedIdMap(ctx, w.Pipelines.ListIter(ctx, sdkpipelines.ListPipelinesRequest{}), []string{"Name"}, []string{"PipelineId"})
+			sp.Close()
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The pipeline for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return errors.New("expected to have the pipeline for which to get or manage permissions")
 		}
 		setPermissionsReq.RequestObjectId = new(args[0])
 
@@ -994,11 +1090,6 @@ func newStartUpdate() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -1016,6 +1107,23 @@ func newStartUpdate() *cobra.Command {
 					return err
 				}
 			}
+		}
+		if len(args) == 0 {
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
+			names, err := cmdgen.NamedIdMap(ctx, w.Pipelines.ListIter(ctx, sdkpipelines.ListPipelinesRequest{}), []string{"Name"}, []string{"PipelineId"})
+			sp.Close()
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return errors.New("expected to have ")
 		}
 		startUpdateReq.PipelineId = new(args[0])
 
@@ -1077,17 +1185,29 @@ func newStop() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.MaximumNArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
+		if len(args) == 0 {
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
+			names, err := cmdgen.NamedIdMap(ctx, w.Pipelines.ListIter(ctx, sdkpipelines.ListPipelinesRequest{}), []string{"Name"}, []string{"PipelineId"})
+			sp.Close()
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return errors.New("expected to have ")
+		}
 		stopReq.PipelineId = new(args[0])
 
 		sdkReq, err := pipelines.StopPipelineRequestToSDK(&stopReq)
@@ -1202,11 +1322,6 @@ func newUpdate() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -1224,6 +1339,23 @@ func newUpdate() *cobra.Command {
 					return err
 				}
 			}
+		}
+		if len(args) == 0 {
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
+			names, err := cmdgen.NamedIdMap(ctx, w.Pipelines.ListIter(ctx, sdkpipelines.ListPipelinesRequest{}), []string{"Name"}, []string{"PipelineId"})
+			sp.Close()
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Unique identifier for this pipeline")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return errors.New("expected to have unique identifier for this pipeline")
 		}
 		updateReq.PipelineId = new(args[0])
 
@@ -1285,11 +1417,6 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -1307,6 +1434,23 @@ func newUpdatePermissions() *cobra.Command {
 					return err
 				}
 			}
+		}
+		if len(args) == 0 {
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
+			names, err := cmdgen.NamedIdMap(ctx, w.Pipelines.ListIter(ctx, sdkpipelines.ListPipelinesRequest{}), []string{"Name"}, []string{"PipelineId"})
+			sp.Close()
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The pipeline for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return errors.New("expected to have the pipeline for which to get or manage permissions")
 		}
 		updatePermissionsReq.RequestObjectId = new(args[0])
 

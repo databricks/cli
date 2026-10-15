@@ -879,8 +879,14 @@ func (s *ServiceJSON) NamedIdMapCall() string {
 	}
 	var list *MethodJSON
 	for _, m := range s.Methods {
-		if m.Name == "List" {
+		if m.Name == "List" && list == nil {
 			list = m
+		}
+		// The service names its list method by request type when it is not
+		// called List (e.g. Pipelines.ListPipelines).
+		if s.List.Request != nil && m.Request != nil && m.Request.PascalName == s.List.Request.PascalName {
+			list = m
+			break
 		}
 	}
 	if list == nil || list.Bind == nil || !list.Bind.IsSdk() || list.Bind.sdk.Iter == "" {

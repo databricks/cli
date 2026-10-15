@@ -13,6 +13,7 @@ import (
 	"maps"
 	"net/http"
 	"net/url"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -186,7 +187,7 @@ func addQuery(query url.Values, v any) error {
 		// Like the previous SDK: nil values are skipped, everything else
 		// (including zero values such as 0 or false) is formatted with %v.
 		for _, k := range slices.Sorted(maps.Keys(x)) {
-			if v := x[k]; v != nil {
+			if v, ok := derefValue(x[k]); ok {
 				query.Add(k, fmt.Sprintf("%v", v))
 			}
 		}
@@ -211,6 +212,22 @@ func addQuery(query url.Values, v any) error {
 	}
 	flatten(query, "", m)
 	return nil
+}
+
+// derefValue follows pointers (optional fields of request types are pointers)
+// and reports false for nil.
+func derefValue(v any) (any, bool) {
+	rv := reflect.ValueOf(v)
+	for rv.Kind() == reflect.Pointer {
+		if rv.IsNil() {
+			return nil, false
+		}
+		rv = rv.Elem()
+	}
+	if !rv.IsValid() {
+		return nil, false
+	}
+	return rv.Interface(), true
 }
 
 func flatten(query url.Values, prefix string, m map[string]any) {

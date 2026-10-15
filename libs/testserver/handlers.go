@@ -209,10 +209,12 @@ func AddDefaultHandlers(server *Server) {
 				{
 					ClusterName: utils.NonZero("some-test-cluster"),
 					ClusterId:   utils.NonZero("4321"),
+					State:        clusters.ClusterState_ClusterState_Running,
 				},
 				{
 					ClusterName: utils.NonZero("some-other-cluster"),
 					ClusterId:   utils.NonZero("9876"),
+					State:        clusters.ClusterState_ClusterState_Running,
 				},
 			},
 		}

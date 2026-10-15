@@ -190,17 +190,29 @@ func newGetAlert() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
+		if len(args) == 0 {
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No ID argument specified. Loading names for Alerts V2 drop-down.")
+			names, err := cmdgen.NamedIdMap(ctx, w.Alerts.ListAlertsIter(ctx, sdkalertsv2.ListAlertsRequest{}), []string{"DisplayName"}, []string{"Id"})
+			sp.Close()
+			if err != nil {
+				return fmt.Errorf("failed to load names for Alerts V2 drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return errors.New("expected to have ")
+		}
 		getAlertReq.Id = new(args[0])
 
 		sdkReq := &getAlertReq
@@ -329,17 +341,29 @@ func newTrashAlert() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 		_ = w
 
+		if len(args) == 0 {
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No ID argument specified. Loading names for Alerts V2 drop-down.")
+			names, err := cmdgen.NamedIdMap(ctx, w.Alerts.ListAlertsIter(ctx, sdkalertsv2.ListAlertsRequest{}), []string{"DisplayName"}, []string{"Id"})
+			sp.Close()
+			if err != nil {
+				return fmt.Errorf("failed to load names for Alerts V2 drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return errors.New("expected to have ")
+		}
 		trashAlertReq.Id = new(args[0])
 
 		sdkReq, err := alertsv2.TrashAlertRequestToSDK(&trashAlertReq)

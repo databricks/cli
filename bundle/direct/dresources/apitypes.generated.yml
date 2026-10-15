@@ -8,7 +8,7 @@ catalogs: catalog.CreateCatalog
 
 cluster_policies: compute.CreatePolicy
 
-clusters: compute.ClusterSpec
+clusters: compute.CreateCluster
 
 dashboards: dashboards.Dashboard
 
