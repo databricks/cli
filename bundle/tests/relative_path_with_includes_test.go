@@ -1,9 +1,10 @@
 package config_tests
 
 import (
-	"github.com/databricks/cli/libs/utils"
 	"path"
 	"testing"
+
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"

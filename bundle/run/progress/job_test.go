@@ -1,9 +1,10 @@
 package progress
 
 import (
-	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"testing"
 	"time"
+
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 
 	"github.com/stretchr/testify/assert"
 )

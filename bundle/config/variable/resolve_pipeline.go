@@ -2,6 +2,7 @@ package variable
 
 import (
 	"context"
+
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/sdk-go/pipelines/v2"

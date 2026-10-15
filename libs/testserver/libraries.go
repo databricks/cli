@@ -3,10 +3,11 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
-	clusterlibraries "github.com/databricks/cli/libs/sdktypes/clusterlibraries/v2"
-	"github.com/databricks/cli/libs/utils"
 	"net/http"
 	"reflect"
+
+	clusterlibraries "github.com/databricks/cli/libs/sdktypes/clusterlibraries/v2"
+	"github.com/databricks/cli/libs/utils"
 )
 
 func (s *FakeWorkspace) LibrariesInstall(req Request) any {

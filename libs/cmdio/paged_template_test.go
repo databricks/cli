@@ -5,12 +5,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/databricks/cli/libs/listing"
 	"io"
 	"regexp"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/databricks/cli/libs/listing"
 
 	"github.com/databricks/cli/libs/flags"
 	"github.com/stretchr/testify/assert"

@@ -1,10 +1,11 @@
 package resourcemutator
 
 import (
+	"testing"
+
 	"github.com/databricks/cli/libs/qualitymonitors"
 	"github.com/databricks/cli/libs/sdktypes/uc/registeredmodels/v1"
 	"github.com/databricks/cli/libs/utils"
-	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"

@@ -85,7 +85,6 @@ func (a *workspaceImpl) Import(ctx context.Context, request Import) error {
 // the input path does not exist, this call returns an error
 // `RESOURCE_DOES_NOT_EXIST`.
 func (a *workspaceImpl) List(ctx context.Context, request ListWorkspaceRequest) listing.Iterator[ObjectInfo] {
-
 	getNextPage := func(ctx context.Context, req ListWorkspaceRequest) (*ListResponse, error) {
 		return a.internalList(ctx, req)
 	}

@@ -3,9 +3,10 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	externallocations "github.com/databricks/cli/libs/sdktypes/uc/externallocations/v1"
 	"github.com/databricks/cli/libs/utils"
-	"net/http"
 )
 
 func (s *FakeWorkspace) ExternalLocationsCreate(req Request) Response {

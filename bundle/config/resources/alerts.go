@@ -2,11 +2,12 @@ package resources
 
 import (
 	"context"
+	"net/url"
+
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sdktypes/alerts/v2"
 	"github.com/databricks/cli/libs/utils"
 	sdkalerts "github.com/databricks/sdk-go/alerts/v2"
-	"net/url"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"

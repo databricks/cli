@@ -50,23 +50,21 @@ func (*ResourceSqlWarehouse) PrepareState(input *resources.SqlWarehouse) *SqlWar
 
 func (*ResourceSqlWarehouse) RemapState(warehouse *SqlWarehouseRemote) *SqlWarehouseState {
 	return &SqlWarehouseState{
-		CreateWarehouseRequest: warehouses.CreateWarehouseRequest{
-			AutoStopMins:            warehouse.AutoStopMins,
-			Channel:                 warehouse.Channel,
-			ClusterSize:             warehouse.ClusterSize,
-			CreatorName:             warehouse.CreatorName,
-			EnablePhoton:            warehouse.EnablePhoton,
-			EnableServerlessCompute: warehouse.EnableServerlessCompute,
-			InstanceProfileArn:      warehouse.InstanceProfileArn,
-			MaxNumClusters:          warehouse.MaxNumClusters,
-			MinNumClusters:          warehouse.MinNumClusters,
-			Name:                    warehouse.Name,
-			SpotInstancePolicy:      warehouse.SpotInstancePolicy,
-			StatementTimeout:        warehouse.StatementTimeout,
-			Tags:                    warehouse.Tags,
-			WarehouseType:           warehouse.WarehouseType,
-		},
-		Lifecycle: warehouse.Lifecycle,
+		AutoStopMins:            warehouse.AutoStopMins,
+		Channel:                 warehouse.Channel,
+		ClusterSize:             warehouse.ClusterSize,
+		CreatorName:             warehouse.CreatorName,
+		EnablePhoton:            warehouse.EnablePhoton,
+		EnableServerlessCompute: warehouse.EnableServerlessCompute,
+		InstanceProfileArn:      warehouse.InstanceProfileArn,
+		MaxNumClusters:          warehouse.MaxNumClusters,
+		MinNumClusters:          warehouse.MinNumClusters,
+		Name:                    warehouse.Name,
+		SpotInstancePolicy:      warehouse.SpotInstancePolicy,
+		StatementTimeout:        warehouse.StatementTimeout,
+		Tags:                    warehouse.Tags,
+		WarehouseType:           warehouse.WarehouseType,
+		Lifecycle:               warehouse.Lifecycle,
 	}
 }
 

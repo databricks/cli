@@ -5,9 +5,10 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"github.com/databricks/cli/libs/utils"
 	"os"
 	"path/filepath"
+
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"

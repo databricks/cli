@@ -3,11 +3,12 @@ package snapshot_test
 import (
 	"archive/zip"
 	"bytes"
-	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 	"os"
 	"path/filepath"
 	"slices"
 	"testing"
+
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"

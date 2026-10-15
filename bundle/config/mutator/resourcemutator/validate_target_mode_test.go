@@ -1,8 +1,9 @@
 package resourcemutator
 
 import (
-	"github.com/databricks/cli/libs/utils"
 	"testing"
+
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"

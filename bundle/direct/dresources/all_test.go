@@ -3,13 +3,14 @@ package dresources
 import (
 	"context"
 	"encoding/json"
-	"github.com/databricks/cli/libs/apierrs"
 	"math"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/databricks/cli/libs/apierrs"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -20,7 +21,6 @@ import (
 	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/sdktypes/modelregistry/v1"
 	"github.com/databricks/cli/libs/sdktypes/modelserving/v1"
-	pipelines "github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	postgres "github.com/databricks/cli/libs/sdktypes/postgres/v1"
 	"github.com/databricks/cli/libs/sdktypes/secrets/v1"
 	grants "github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
@@ -291,10 +291,8 @@ var testDeps = map[string]prepareWorkspace{
 		})
 
 		return &resources.DatabaseCatalog{
-			DatabaseCatalog: database.DatabaseCatalog{
-				Name:                 new("mydbcatalog"),
-				DatabaseInstanceName: new("mydbinstance1"),
-			},
+			Name:                 new("mydbcatalog"),
+			DatabaseInstanceName: new("mydbinstance1"),
 		}, err
 	},
 
@@ -332,7 +330,7 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &resources.JobRun{
-			RunNowRequest: jobs.RunNowRequest{JobId: new(jobID)},
+			JobId: new(jobID),
 		}, nil
 	},
 
@@ -362,7 +360,7 @@ var testDeps = map[string]prepareWorkspace{
 
 	"pipelines.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		id, _, err := (&ResourcePipeline{client: client}).DoCreate(ctx, &PipelineState{
-			CreatePipelineRequest: pipelines.CreatePipelineRequest{Name: new("pipeline-permissions")},
+			Name: new("pipeline-permissions"),
 		})
 		if err != nil {
 			return nil, err
@@ -748,13 +746,11 @@ var testDeps = map[string]prepareWorkspace{
 
 	"secret_scopes.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		_, _, err := (&ResourceSecretScope{client: client}).DoCreate(ctx, &SecretScopeConfig{
-			CreateScopeRequest: secrets.CreateScopeRequest{
-				Scope:            new("permissions_test_scope"),
-				ScopeBackendType: secrets.ScopeBackendType_AzureKeyvault,
-				BackendAzureKeyvault: &secrets.AzureKeyVaultSecretScopeMetadata{
-					DnsName:    new("https://my-keyvault.vault.azure.net/"),
-					ResourceId: new("my-keyvault-resource-id"),
-				},
+			Scope:            new("permissions_test_scope"),
+			ScopeBackendType: secrets.ScopeBackendType_AzureKeyvault,
+			BackendAzureKeyvault: &secrets.AzureKeyVaultSecretScopeMetadata{
+				DnsName:    new("https://my-keyvault.vault.azure.net/"),
+				ResourceId: new("my-keyvault-resource-id"),
 			},
 		})
 		if err != nil {
@@ -775,21 +771,17 @@ var testDeps = map[string]prepareWorkspace{
 	"postgres_branches": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		// Create parent project first
 		_, _, err := (&ResourcePostgresProject{client: client}).DoCreate(ctx, &PostgresProjectState{
-			ProjectId: "test-project-for-branch",
-			ProjectSpec: postgres.ProjectSpec{
-				DisplayName: new("Test Project for Branch"),
-				PgVersion:   new(16),
-			},
+			ProjectId:   "test-project-for-branch",
+			DisplayName: new("Test Project for Branch"),
+			PgVersion:   new(16),
 		})
 		if err != nil {
 			return nil, err
 		}
 
 		return &resources.PostgresBranch{
-			PostgresBranchConfig: resources.PostgresBranchConfig{
-				Parent:   "projects/test-project-for-branch",
-				BranchId: "test-branch",
-			},
+			Parent:   "projects/test-project-for-branch",
+			BranchId: "test-branch",
 		}, nil
 	},
 
@@ -797,31 +789,25 @@ var testDeps = map[string]prepareWorkspace{
 		// Creating the project implicitly provisions the root "production"
 		// branch, the only branch a snapshot schedule may target.
 		_, _, err := (&ResourcePostgresProject{client: client}).DoCreate(ctx, &PostgresProjectState{
-			ProjectId: "test-project-for-snapshot-schedule",
-			ProjectSpec: postgres.ProjectSpec{
-				DisplayName: new("Test Project for Snapshot Schedule"),
-				PgVersion:   new(16),
-			},
+			ProjectId:   "test-project-for-snapshot-schedule",
+			DisplayName: new("Test Project for Snapshot Schedule"),
+			PgVersion:   new(16),
 		})
 		if err != nil {
 			return nil, err
 		}
 
 		return &resources.PostgresSnapshotSchedule{
-			PostgresSnapshotScheduleConfig: resources.PostgresSnapshotScheduleConfig{
-				Branch: "projects/test-project-for-snapshot-schedule/branches/production",
-			},
+			Branch: "projects/test-project-for-snapshot-schedule/branches/production",
 		}, nil
 	},
 
 	"postgres_endpoints": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		// Create parent project first
 		_, _, err := (&ResourcePostgresProject{client: client}).DoCreate(ctx, &PostgresProjectState{
-			ProjectId: "test-project-for-endpoint",
-			ProjectSpec: postgres.ProjectSpec{
-				DisplayName: new("Test Project for Endpoint"),
-				PgVersion:   new(16),
-			},
+			ProjectId:   "test-project-for-endpoint",
+			DisplayName: new("Test Project for Endpoint"),
+			PgVersion:   new(16),
 		})
 		if err != nil {
 			return nil, err
@@ -837,24 +823,18 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &resources.PostgresEndpoint{
-			PostgresEndpointConfig: resources.PostgresEndpointConfig{
-				Parent:     "projects/test-project-for-endpoint/branches/test-branch-for-endpoint",
-				EndpointId: "test-endpoint",
-				EndpointSpec: postgres.EndpointSpec{
-					EndpointType: postgres.EndpointType_EndpointTypeReadWrite,
-				},
-			},
+			Parent:       "projects/test-project-for-endpoint/branches/test-branch-for-endpoint",
+			EndpointId:   "test-endpoint",
+			EndpointType: postgres.EndpointType_EndpointTypeReadWrite,
 		}, nil
 	},
 
 	"postgres_databases": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		// Create parent project first
 		_, _, err := (&ResourcePostgresProject{client: client}).DoCreate(ctx, &PostgresProjectState{
-			ProjectId: "test-project-for-database",
-			ProjectSpec: postgres.ProjectSpec{
-				DisplayName: new("Test Project for Database"),
-				PgVersion:   new(16),
-			},
+			ProjectId:   "test-project-for-database",
+			DisplayName: new("Test Project for Database"),
+			PgVersion:   new(16),
 		})
 		if err != nil {
 			return nil, err
@@ -870,25 +850,19 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &resources.PostgresDatabase{
-			PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
-				Parent:     "projects/test-project-for-database/branches/test-branch-for-database",
-				DatabaseId: "test-database",
-				Database_DatabaseSpec: postgres.Database_DatabaseSpec{
-					PostgresDatabase: new("app_db"),
-					Role:             new("projects/test-project-for-database/branches/test-branch-for-database/roles/owner"),
-				},
-			},
+			Parent:           "projects/test-project-for-database/branches/test-branch-for-database",
+			DatabaseId:       "test-database",
+			PostgresDatabase: new("app_db"),
+			Role:             new("projects/test-project-for-database/branches/test-branch-for-database/roles/owner"),
 		}, nil
 	},
 
 	"postgres_roles": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		// Create parent project first
 		_, _, err := (&ResourcePostgresProject{client: client}).DoCreate(ctx, &PostgresProjectState{
-			ProjectId: "test-project-for-role",
-			ProjectSpec: postgres.ProjectSpec{
-				DisplayName: new("Test Project for Role"),
-				PgVersion:   new(16),
-			},
+			ProjectId:   "test-project-for-role",
+			DisplayName: new("Test Project for Role"),
+			PgVersion:   new(16),
 		})
 		if err != nil {
 			return nil, err
@@ -904,13 +878,9 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &resources.PostgresRole{
-			PostgresRoleConfig: resources.PostgresRoleConfig{
-				Parent: "projects/test-project-for-role/branches/test-branch-for-role",
-				RoleId: "test-role",
-				Role_RoleSpec: postgres.Role_RoleSpec{
-					PostgresRole: new("test_role"),
-				},
-			},
+			Parent:       "projects/test-project-for-role/branches/test-branch-for-role",
+			RoleId:       "test-role",
+			PostgresRole: new("test_role"),
 		}, nil
 	},
 }

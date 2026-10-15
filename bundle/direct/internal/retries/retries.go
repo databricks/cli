@@ -64,20 +64,19 @@ func Continues(msg string) *Err {
 	return Continue(fmt.Errorf("%s", msg))
 }
 
-func Continuef(format string, err error, args ...interface{}) *Err {
-	wrapped := fmt.Errorf(format, append([]interface{}{err}, args...))
+func Continuef(format string, err error, args ...any) *Err {
+	wrapped := fmt.Errorf(format, append([]any{err}, args...))
 	return Continue(wrapped)
 }
 
-var maxWait = 10 * time.Second
-var minJitter = 50 * time.Millisecond
-var maxJitter = 750 * time.Millisecond
+var (
+	maxWait   = 10 * time.Second
+	minJitter = 50 * time.Millisecond
+	maxJitter = 750 * time.Millisecond
+)
 
 func backoff(attempt int) time.Duration {
-	wait := time.Duration(attempt) * time.Second
-	if wait > maxWait {
-		wait = maxWait
-	}
+	wait := min(time.Duration(attempt)*time.Second, maxWait)
 	// add some random jitter
 	rand.Seed(time.Now().UnixNano())
 	jitter := rand.Intn(int(maxJitter)-int(minJitter)+1) + int(minJitter)

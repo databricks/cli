@@ -3,6 +3,7 @@ package validate
 import (
 	"context"
 	"fmt"
+
 	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/cli/bundle"

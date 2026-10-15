@@ -1,9 +1,10 @@
 package resourcemutator_test
 
 import (
-	"github.com/databricks/cli/libs/utils"
 	"strings"
 	"testing"
+
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 

@@ -2,9 +2,10 @@ package mutator
 
 import (
 	"context"
-	"github.com/databricks/cli/libs/utils"
 	"path"
 	"strings"
+
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"

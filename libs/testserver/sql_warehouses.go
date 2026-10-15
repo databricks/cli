@@ -3,10 +3,11 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	warehouses "github.com/databricks/cli/libs/sdktypes/warehouses/v1"
 	"github.com/databricks/cli/libs/sqllegacy"
 	"github.com/databricks/cli/libs/utils"
-	"net/http"
 )
 
 func sqlWarehouseFixUps(warehouse *warehouses.GetWarehouseResponse, userName string) {

@@ -3,13 +3,14 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
-	alerts "github.com/databricks/cli/libs/sdktypes/alerts/v2"
-	"github.com/databricks/cli/libs/utils"
-	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"net/http"
 	"path"
 	"strconv"
 	"strings"
+
+	alerts "github.com/databricks/cli/libs/sdktypes/alerts/v2"
+	"github.com/databricks/cli/libs/utils"
+	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 )
 
 // alertFile mirrors the schema of a .dbalert.json file. It is the inverse of

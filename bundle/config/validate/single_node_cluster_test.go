@@ -1,8 +1,9 @@
 package validate
 
 import (
-	"github.com/databricks/cli/libs/sdktypes/clusters/v2"
 	"testing"
+
+	"github.com/databricks/cli/libs/sdktypes/clusters/v2"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"

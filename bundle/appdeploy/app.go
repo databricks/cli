@@ -3,6 +3,7 @@ package appdeploy
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -176,10 +177,8 @@ func WaitComputeState(ctx context.Context, w *sdkclients.Clients, appName string
 		if status.State == target {
 			return poll.Status[sdkapps.App]{Done: true, Result: app}, nil
 		}
-		for _, failure := range failures {
-			if status.State == failure {
-				return poll.Status[sdkapps.App]{}, fmt.Errorf("failed to reach %s, got %s: %s", target, status.State, message)
-			}
+		if slices.Contains(failures, status.State) {
+			return poll.Status[sdkapps.App]{}, fmt.Errorf("failed to reach %s, got %s: %s", target, status.State, message)
 		}
 		return poll.Status[sdkapps.App]{Message: message}, nil
 	})

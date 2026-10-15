@@ -3,8 +3,9 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
-	qualitymonitors "github.com/databricks/cli/libs/qualitymonitors"
 	"net/http"
+
+	qualitymonitors "github.com/databricks/cli/libs/qualitymonitors"
 )
 
 func (s *FakeWorkspace) QualityMonitorUpsert(req Request, tableName string, checkExists bool) Response {

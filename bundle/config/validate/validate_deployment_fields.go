@@ -3,8 +3,9 @@ package validate
 import (
 	"cmp"
 	"context"
-	"github.com/databricks/cli/libs/utils"
 	"slices"
+
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"

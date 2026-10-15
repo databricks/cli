@@ -3,8 +3,9 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/databricks/cli/libs/utils"
 	"strconv"
+
+	"github.com/databricks/cli/libs/utils"
 
 	iam "github.com/databricks/cli/libs/sdktypes/scim/v1"
 )

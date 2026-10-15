@@ -58,12 +58,12 @@ func encodeStruct(q url.Values, prefix string, v reflect.Value) {
 
 func encodeValue(q url.Values, key string, v reflect.Value) {
 	if v.CanAddr() {
-		if enc, ok := v.Addr().Interface().(queryEncoder); ok {
+		if enc, ok := reflect.TypeAssert[queryEncoder](v.Addr()); ok {
 			_ = enc.EncodeValues(key, &q)
 			return
 		}
 	}
-	if enc, ok := v.Interface().(queryEncoder); ok {
+	if enc, ok := reflect.TypeAssert[queryEncoder](v); ok {
 		_ = enc.EncodeValues(key, &q)
 		return
 	}

@@ -3,10 +3,11 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"time"
+
 	database "github.com/databricks/cli/libs/sdktypes/database/v1"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/sdk-go/core/types"
-	"time"
 )
 
 // setEffectiveBools makes the effective_* booleans always serialize, false

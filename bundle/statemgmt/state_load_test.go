@@ -1,6 +1,9 @@
 package statemgmt
 
 import (
+	"reflect"
+	"testing"
+
 	"github.com/databricks/cli/libs/qualitymonitors"
 	"github.com/databricks/cli/libs/sdktypes/alerts/v2"
 	"github.com/databricks/cli/libs/sdktypes/apps/v1"
@@ -19,8 +22,6 @@ import (
 	"github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
 	"github.com/databricks/cli/libs/sdktypes/warehouses/v1"
 	"github.com/databricks/cli/libs/utils"
-	"reflect"
-	"testing"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"

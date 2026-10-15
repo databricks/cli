@@ -2,11 +2,12 @@ package resources
 
 import (
 	"context"
+	"net/url"
+	"strings"
+
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sdktypes/postgres/v1"
 	sdkpostgres "github.com/databricks/sdk-go/postgres/v1"
-	"net/url"
-	"strings"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"

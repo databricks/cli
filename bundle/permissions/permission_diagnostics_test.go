@@ -1,8 +1,9 @@
 package permissions_test
 
 import (
-	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 	"testing"
+
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"

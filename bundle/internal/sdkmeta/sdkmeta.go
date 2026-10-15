@@ -13,6 +13,7 @@ package sdkmeta
 import (
 	_ "embed"
 	"encoding/json"
+	"maps"
 	"reflect"
 	"slices"
 	"strings"
@@ -68,9 +69,7 @@ var legacy = sync.OnceValue(func() legacyFile {
 // Build walks root and maps every API type reachable from it.
 func Build(root reflect.Type, schemas map[string]*clijson.SchemaJSON) (*Meta, error) {
 	m := &Meta{schemas: schemas, names: map[reflect.Type]string{}, alt: map[reflect.Type][]string{}, order: map[reflect.Type]int{}}
-	for t, name := range roots() {
-		m.names[t] = name
-	}
+	maps.Copy(m.names, roots())
 	lookup := func(t reflect.Type) string {
 		if name, ok := m.names[t]; ok {
 			return name

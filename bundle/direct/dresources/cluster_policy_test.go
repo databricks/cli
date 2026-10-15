@@ -1,8 +1,9 @@
 package dresources
 
 import (
-	"github.com/databricks/cli/libs/utils"
 	"testing"
+
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/stretchr/testify/assert"

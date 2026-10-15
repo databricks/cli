@@ -1,9 +1,10 @@
 package run
 
 import (
-	"github.com/databricks/cli/libs/utils"
 	"maps"
 	"slices"
+
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/spf13/cobra"

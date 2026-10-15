@@ -75,15 +75,17 @@ func (g *converterGen) newVar(prefix string) string {
 // sdkType renders a model type expression as seen from the mirror package.
 func (g *converterGen) sdkType(t string) string {
 	prefix := ""
+	var prefixSb78 strings.Builder
 	for strings.HasPrefix(t, "*") || strings.HasPrefix(t, "[]") {
 		if t[0] == '*' {
-			prefix += "*"
+			prefixSb78.WriteString("*")
 			t = t[1:]
 		} else {
-			prefix += "[]"
+			prefixSb78.WriteString("[]")
 			t = t[2:]
 		}
 	}
+	prefix += prefixSb78.String()
 	if g.m.decls[t] {
 		return prefix + "sdk." + t
 	}

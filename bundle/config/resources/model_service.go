@@ -2,12 +2,13 @@ package resources
 
 import (
 	"context"
+	"net/url"
+
 	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sdktypes/aigateway/v1"
 	"github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
 	sdkaigateway "github.com/databricks/sdk-go/aigateway/v1"
-	"net/url"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"

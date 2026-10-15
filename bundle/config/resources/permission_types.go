@@ -1,7 +1,5 @@
 package resources
 
-import ()
-
 // Each resource defines its own permission type so that the JSON schema names them distinctly.
 // Using non-alias type definitions (not =) makes them appear as named types in the schema.
 // The underlying struct is identical to PermissionT[L], enabling conversion to use generic methods.

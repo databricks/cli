@@ -1,12 +1,13 @@
 package mutator
 
 import (
+	"testing"
+
 	"github.com/databricks/cli/libs/qualitymonitors"
 	"github.com/databricks/cli/libs/sdktypes/clusters/v2"
 	"github.com/databricks/cli/libs/sdktypes/experiments/v1"
 	"github.com/databricks/cli/libs/sdktypes/modelregistry/v1"
 	"github.com/databricks/cli/libs/sdktypes/uc/registeredmodels/v1"
-	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"

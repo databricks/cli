@@ -2,11 +2,12 @@ package cmdio
 
 import (
 	"errors"
-	"github.com/databricks/cli/libs/listing"
 	"io"
 	"reflect"
 	"testing"
 	"text/template"
+
+	"github.com/databricks/cli/libs/listing"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/stretchr/testify/assert"

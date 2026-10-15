@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/databricks/cli/libs/apierrs"
 	"io"
 	"maps"
+
+	"github.com/databricks/cli/libs/apierrs"
 
 	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/auth"

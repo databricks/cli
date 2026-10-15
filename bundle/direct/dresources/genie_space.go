@@ -3,9 +3,10 @@ package dresources
 import (
 	"context"
 	"fmt"
-	"github.com/databricks/cli/libs/apierrs"
 	"net/http"
 	"strings"
+
+	"github.com/databricks/cli/libs/apierrs"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"

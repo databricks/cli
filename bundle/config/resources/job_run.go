@@ -2,13 +2,14 @@ package resources
 
 import (
 	"context"
+	"net/url"
+	"strconv"
+
 	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/utils"
 	sdkjobs "github.com/databricks/sdk-go/jobs/v2"
-	"net/url"
-	"strconv"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"

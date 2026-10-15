@@ -2,14 +2,15 @@ package resources
 
 import (
 	"context"
+	"net/url"
+	"strings"
+
 	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
 	"github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
 	"github.com/databricks/cli/libs/utils"
 	sdkvectorsearch "github.com/databricks/sdk-go/vectorsearch/v1"
-	"net/url"
-	"strings"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"

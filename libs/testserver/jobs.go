@@ -5,10 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	clusterlibraries "github.com/databricks/cli/libs/sdktypes/clusterlibraries/v2"
-	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
-	"github.com/databricks/cli/libs/utils"
-	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"net/url"
 	"os"
 	"os/exec"
@@ -17,6 +13,11 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	clusterlibraries "github.com/databricks/cli/libs/sdktypes/clusterlibraries/v2"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
+	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 
 	"github.com/databricks/cli/libs/patchwheel"
 )

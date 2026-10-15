@@ -16,10 +16,11 @@ package testsql
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/databricks/cli/libs/utils"
 	"regexp"
 	"strings"
 	"sync"
+
+	"github.com/databricks/cli/libs/utils"
 
 	sql "github.com/databricks/cli/libs/sdktypes/statementexecution/v1"
 )

@@ -3,8 +3,9 @@ package lock
 import (
 	"context"
 	"errors"
-	"github.com/databricks/cli/libs/utils"
 	"io/fs"
+
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/permissions"

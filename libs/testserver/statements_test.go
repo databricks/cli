@@ -2,10 +2,11 @@ package testserver
 
 import (
 	"encoding/json"
-	statementexecution "github.com/databricks/cli/libs/sdktypes/statementexecution/v1"
-	"github.com/databricks/cli/libs/utils"
 	"regexp"
 	"testing"
+
+	statementexecution "github.com/databricks/cli/libs/sdktypes/statementexecution/v1"
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/cli/libs/testserver/testsql"
 	"github.com/stretchr/testify/assert"

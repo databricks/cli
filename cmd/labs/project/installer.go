@@ -5,10 +5,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/databricks/cli/libs/utils"
 	"io/fs"
 	"os"
 	"strings"
+
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/cli/cmd/labs/github"
 	"github.com/databricks/cli/cmd/labs/unpack"

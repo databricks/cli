@@ -3,12 +3,13 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
-	accessmanagement "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
-	apps "github.com/databricks/cli/libs/sdktypes/apps/v1"
-	"github.com/databricks/cli/libs/utils"
 	"net/http"
 	"strconv"
 	"strings"
+
+	accessmanagement "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
+	apps "github.com/databricks/cli/libs/sdktypes/apps/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 const (

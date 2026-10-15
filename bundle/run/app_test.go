@@ -220,9 +220,7 @@ func TestStopApp(t *testing.T) {
 
 func TestBuildAppDeploymentWithValueFrom(t *testing.T) {
 	app := &resources.App{
-		App: apps.App{
-			SourceCodePath: new("/path/to/app"),
-		},
+		SourceCodePath: new("/path/to/app"),
 		Config: &resources.AppConfig{
 			Command: []string{"python", "app.py"},
 			Env: []resources.AppEnvVar{

@@ -2,10 +2,11 @@ package resources
 
 import (
 	"context"
-	"github.com/databricks/cli/libs/sdkclients"
 	"net/url"
 	"path"
 	"strings"
+
+	"github.com/databricks/cli/libs/sdkclients"
 
 	"github.com/databricks/cli/libs/snapshot"
 )

@@ -4,10 +4,11 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
-	genie "github.com/databricks/cli/libs/sdktypes/genie/v1"
-	"github.com/databricks/cli/libs/utils"
 	"strconv"
 	"strings"
+
+	genie "github.com/databricks/cli/libs/sdktypes/genie/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 // generateGenieSpaceId returns a random 32-character hex string.

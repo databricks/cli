@@ -3,8 +3,9 @@ package resourcemutator
 import (
 	"context"
 	"fmt"
-	"github.com/databricks/cli/libs/utils"
 	"strings"
+
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/cli/libs/iamutil"
 

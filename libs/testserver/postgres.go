@@ -5,12 +5,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	postgres "github.com/databricks/cli/libs/sdktypes/postgres/v1"
-	"github.com/databricks/cli/libs/utils"
 	"regexp"
 	"slices"
 	"strings"
 	"time"
+
+	postgres "github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/sdk-go/core/types"
 )

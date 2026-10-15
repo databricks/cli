@@ -6,6 +6,7 @@ package dbfs
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 
@@ -65,7 +66,7 @@ func (h *handle) wrap(err error) error {
 func (h *handle) Read(p []byte) (int, error) {
 	r := h.reader
 	if r == nil {
-		return 0, fmt.Errorf("dbfs: file not open for reading")
+		return 0, errors.New("dbfs: file not open for reading")
 	}
 	var ntotal int
 	for ntotal < len(p) {
@@ -99,7 +100,7 @@ func (h *handle) Read(p []byte) (int, error) {
 func (h *handle) Write(p []byte) (int, error) {
 	w := h.writer
 	if w == nil {
-		return 0, fmt.Errorf("dbfs: file not open for writing")
+		return 0, errors.New("dbfs: file not open for writing")
 	}
 	var ntotal int
 	for ntotal < len(p) {
@@ -122,7 +123,7 @@ func (h *handle) Write(p []byte) (int, error) {
 func (h *handle) Close() error {
 	w := h.writer
 	if w == nil {
-		return fmt.Errorf("dbfs: file not open for writing")
+		return errors.New("dbfs: file not open for writing")
 	}
 	_, err := h.api.Close(h.ctx, files.CloseRequest{Handle: new(w.handle)})
 	return h.wrap(err)
@@ -131,7 +132,7 @@ func (h *handle) Close() error {
 // WriteTo maximizes throughput by reading in chunks of the DBFS maximum size.
 func (h *handle) WriteTo(w io.Writer) (int64, error) {
 	if h.reader == nil {
-		return 0, fmt.Errorf("dbfs: file not open for reading")
+		return 0, errors.New("dbfs: file not open for reading")
 	}
 	// Plain io.Reader/io.Writer wrappers avoid recursing into WriteTo/ReadFrom.
 	ior := struct{ io.Reader }{h}
@@ -142,7 +143,7 @@ func (h *handle) WriteTo(w io.Writer) (int64, error) {
 // ReadFrom maximizes throughput by writing in chunks of the DBFS maximum size.
 func (h *handle) ReadFrom(r io.Reader) (int64, error) {
 	if h.writer == nil {
-		return 0, fmt.Errorf("dbfs: file not open for writing")
+		return 0, errors.New("dbfs: file not open for writing")
 	}
 	ior := struct{ io.Reader }{r}
 	iow := struct{ io.Writer }{h}
@@ -161,7 +162,7 @@ func Open(ctx context.Context, api *files.Client, path string, mode FileMode) (H
 	isRead := mode&FileModeRead != 0
 	isWrite := mode&FileModeWrite != 0
 	if isRead == isWrite {
-		return nil, fmt.Errorf("dbfs open: must specify dbfs.FileModeRead or dbfs.FileModeWrite")
+		return nil, errors.New("dbfs open: must specify dbfs.FileModeRead or dbfs.FileModeWrite")
 	}
 	if isRead {
 		res, err := api.GetStatus(ctx, files.GetStatusRequest{Path: new(path)})
@@ -169,7 +170,7 @@ func Open(ctx context.Context, api *files.Client, path string, mode FileMode) (H
 			return nil, fmt.Errorf("dbfs open: %w", err)
 		}
 		if utils.Deref(res.IsDir) {
-			return nil, fmt.Errorf("dbfs open: cannot open directory for reading")
+			return nil, errors.New("dbfs open: cannot open directory for reading")
 		}
 		h.reader = &reader{size: utils.Deref(res.FileSize)}
 	} else {

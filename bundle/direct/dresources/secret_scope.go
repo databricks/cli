@@ -38,23 +38,19 @@ func (*ResourceSecretScope) New(client *sdkclients.Clients) *ResourceSecretScope
 
 func (*ResourceSecretScope) PrepareState(input *resources.SecretScope) *SecretScopeConfig {
 	return &SecretScopeConfig{
-		CreateScopeRequest: secrets.CreateScopeRequest{
-			Scope:                  new(input.Name),
-			ScopeBackendType:       input.BackendType,
-			BackendAzureKeyvault:   input.KeyvaultMetadata,
-			InitialManagePrincipal: nil,
-		},
+		Scope:                  new(input.Name),
+		ScopeBackendType:       input.BackendType,
+		BackendAzureKeyvault:   input.KeyvaultMetadata,
+		InitialManagePrincipal: nil,
 	}
 }
 
 func (*ResourceSecretScope) RemapState(remote *SecretScopeRemote) *SecretScopeConfig {
 	return &SecretScopeConfig{
-		CreateScopeRequest: secrets.CreateScopeRequest{
-			Scope:                  new(remote.Scope),
-			ScopeBackendType:       remote.ScopeBackendType,
-			BackendAzureKeyvault:   remote.BackendAzureKeyvault,
-			InitialManagePrincipal: nil,
-		},
+		Scope:                  new(remote.Scope),
+		ScopeBackendType:       remote.ScopeBackendType,
+		BackendAzureKeyvault:   remote.BackendAzureKeyvault,
+		InitialManagePrincipal: nil,
 	}
 }
 

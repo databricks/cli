@@ -2,10 +2,11 @@ package resources
 
 import (
 	"context"
+	"net/url"
+
 	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/sdkclients"
 	sdkgenie "github.com/databricks/sdk-go/genie/v1"
-	"net/url"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"

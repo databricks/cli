@@ -3,10 +3,11 @@ package permissions
 import (
 	"context"
 	"fmt"
-	"github.com/databricks/cli/libs/utils"
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"

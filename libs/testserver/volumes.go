@@ -3,11 +3,12 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strings"
+
 	volumes "github.com/databricks/cli/libs/sdktypes/uc/volumes/v1"
 	"github.com/databricks/cli/libs/utils"
 	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
-	"net/http"
-	"strings"
 )
 
 func (s *FakeWorkspace) VolumesCreate(req Request) Response {

@@ -1,8 +1,9 @@
 package resourcemutator
 
 import (
-	"github.com/databricks/cli/libs/qualitymonitors"
 	"testing"
+
+	"github.com/databricks/cli/libs/qualitymonitors"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"

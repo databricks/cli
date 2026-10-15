@@ -3,11 +3,12 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
-	grants "github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
-	"github.com/databricks/cli/libs/utils"
 	"net/http"
 	"slices"
 	"strings"
+
+	grants "github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 // notImpliedByAllPrivileges are the privileges UC does not include in

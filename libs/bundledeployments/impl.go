@@ -128,7 +128,6 @@ func (a *bundleDeploymentsImpl) Heartbeat(ctx context.Context, request Heartbeat
 
 // Lists deployments in the workspace.
 func (a *bundleDeploymentsImpl) ListDeployments(ctx context.Context, request ListDeploymentsRequest) listing.Iterator[Deployment] {
-
 	getNextPage := func(ctx context.Context, req ListDeploymentsRequest) (*ListDeploymentsResponse, error) {
 		return a.internalListDeployments(ctx, req)
 	}
@@ -169,7 +168,6 @@ func (a *bundleDeploymentsImpl) internalListDeployments(ctx context.Context, req
 
 // Lists resource operations under a version.
 func (a *bundleDeploymentsImpl) ListOperations(ctx context.Context, request ListOperationsRequest) listing.Iterator[Operation] {
-
 	getNextPage := func(ctx context.Context, req ListOperationsRequest) (*ListOperationsResponse, error) {
 		return a.internalListOperations(ctx, req)
 	}
@@ -210,7 +208,6 @@ func (a *bundleDeploymentsImpl) internalListOperations(ctx context.Context, requ
 
 // Lists resources under a deployment.
 func (a *bundleDeploymentsImpl) ListResources(ctx context.Context, request ListResourcesRequest) listing.Iterator[Resource] {
-
 	getNextPage := func(ctx context.Context, req ListResourcesRequest) (*ListResourcesResponse, error) {
 		return a.internalListResources(ctx, req)
 	}
@@ -252,7 +249,6 @@ func (a *bundleDeploymentsImpl) internalListResources(ctx context.Context, reque
 // Lists versions under a deployment, ordered numerically by version_id
 // descending (most recent first).
 func (a *bundleDeploymentsImpl) ListVersions(ctx context.Context, request ListVersionsRequest) listing.Iterator[Version] {
-
 	getNextPage := func(ctx context.Context, req ListVersionsRequest) (*ListVersionsResponse, error) {
 		return a.internalListVersions(ctx, req)
 	}

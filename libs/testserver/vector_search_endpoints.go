@@ -3,9 +3,10 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	vectorsearch "github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
 	"github.com/databricks/cli/libs/utils"
-	"net/http"
 )
 
 func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {

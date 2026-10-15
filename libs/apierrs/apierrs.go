@@ -132,7 +132,7 @@ func classify(e *apierr.APIError) *sentinel {
 // Is reports whether err is an API error of the given class, e.g.
 // Is(err, ErrNotFound) holds for 404 responses and RESOURCE_DOES_NOT_EXIST.
 // target must be one of the sentinels of this package.
-func Is(err error, target error) bool {
+func Is(err, target error) bool {
 	e, ok := Get(err)
 	if !ok {
 		return false

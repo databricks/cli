@@ -3,10 +3,11 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
-	ucsecrets "github.com/databricks/cli/libs/sdktypes/uc/secrets/v1"
-	"github.com/databricks/cli/libs/utils"
 	"strings"
 	"time"
+
+	ucsecrets "github.com/databricks/cli/libs/sdktypes/uc/secrets/v1"
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/sdk-go/core/types"
 )

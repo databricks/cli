@@ -2,11 +2,12 @@ package testserver_test
 
 import (
 	"encoding/json"
-	postgres "github.com/databricks/cli/libs/sdktypes/postgres/v1"
-	"github.com/databricks/cli/libs/utils"
 	"net/http"
 	"strings"
 	"testing"
+
+	postgres "github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/assert"

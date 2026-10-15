@@ -2,9 +2,10 @@ package auth
 
 import (
 	"errors"
-	"github.com/databricks/cli/libs/apierrs"
 	"strings"
 	"testing"
+
+	"github.com/databricks/cli/libs/apierrs"
 
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/sdk-go/core/apierr"

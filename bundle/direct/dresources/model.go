@@ -105,16 +105,14 @@ func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *m
 	// real values until the next plan's DoRead.
 	model := response.RegisteredModel
 	return &MlflowModelRemote{
-		RegisteredModelDatabricks: modelregistry.RegisteredModelDatabricks{
-			CreationTimestamp:    model.CreationTimestamp,
-			Description:          model.Description,
-			LastUpdatedTimestamp: model.LastUpdatedTimestamp,
-			LatestVersions:       model.LatestVersions,
-			Name:                 model.Name,
-			Tags:                 model.Tags,
-			UserId:               model.UserId,
-		},
-		ModelId: modelId,
+		CreationTimestamp:    model.CreationTimestamp,
+		Description:          model.Description,
+		LastUpdatedTimestamp: model.LastUpdatedTimestamp,
+		LatestVersions:       model.LatestVersions,
+		Name:                 model.Name,
+		Tags:                 model.Tags,
+		UserId:               model.UserId,
+		ModelId:              modelId,
 	}, nil
 }
 

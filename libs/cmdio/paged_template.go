@@ -3,12 +3,13 @@ package cmdio
 import (
 	"bytes"
 	"context"
-	"github.com/databricks/cli/libs/listing"
 	"io"
 	"regexp"
 	"strings"
 	"text/template"
 	"unicode/utf8"
+
+	"github.com/databricks/cli/libs/listing"
 
 	tea "github.com/charmbracelet/bubbletea"
 )

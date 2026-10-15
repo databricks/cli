@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 	"io"
 	"io/fs"
 	"os"
 	"testing"
+
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"

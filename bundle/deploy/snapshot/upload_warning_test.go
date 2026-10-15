@@ -3,10 +3,11 @@ package snapshot
 import (
 	"context"
 	"fmt"
-	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"

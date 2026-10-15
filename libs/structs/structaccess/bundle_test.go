@@ -95,7 +95,7 @@ func TestGetSet_DoublyEmbeddedField(t *testing.T) {
 
 	// An explicit empty value is kept behind the pointer.
 	require.NoError(t, SetByString(project, "budget_policy_id", ""))
-	require.Equal(t, new(""), project.ProjectSpec.BudgetPolicyId)
+	require.Equal(t, new(""), project.BudgetPolicyId)
 
 	value, err = GetByString(project, "budget_policy_id")
 	require.NoError(t, err)
@@ -104,7 +104,7 @@ func TestGetSet_DoublyEmbeddedField(t *testing.T) {
 
 	// And dropping it again leaves the field absent.
 	require.NoError(t, SetByString(project, "budget_policy_id", nil))
-	require.Nil(t, project.ProjectSpec.BudgetPolicyId)
+	require.Nil(t, project.BudgetPolicyId)
 	value, err = GetByString(project, "budget_policy_id")
 	require.NoError(t, err)
 	require.Nil(t, value)

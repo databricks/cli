@@ -162,7 +162,7 @@ func (b *MethodBind) SdkReq() string {
 		return fmt.Sprintf("sdkReq := &%s.%s{}\n", b.pkg.SdkAlias, b.sdk.Request) + b.pathConstsOn("sdkReq")
 	}
 	if b.direct {
-		return fmt.Sprintf("sdkReq := &%s", b.reqVar)
+		return "sdkReq := &" + b.reqVar
 	}
 	return fmt.Sprintf(`sdkReq, err := %s.%sToSDK(&%s)
 		if err != nil {
@@ -898,11 +898,11 @@ func (s *ServiceJSON) NamedIdMapCall() string {
 		return ""
 	}
 	name := strings.TrimSuffix(s.List.NamedIdMap.PascalName, "Map")
-	i := strings.LastIndex(name, "To")
-	if i < 0 {
+	before, after, ok := strings.CutLast(name, "To")
+	if !ok {
 		return ""
 	}
-	left, right := name[:i], name[i+2:]
+	left, right := before, after
 	namePath := b.findPath(item, left, true)
 	idPath := b.findPath(item, right, false)
 	if namePath == nil || idPath == nil {

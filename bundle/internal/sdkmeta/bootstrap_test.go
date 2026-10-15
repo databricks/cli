@@ -53,8 +53,7 @@ func TestBootstrap(t *testing.T) {
 		return s
 	}
 	// resolve follows a $ref through slice/ and map/ wrappers to a type def name.
-	var resolve func(ref string) string
-	resolve = func(ref string) string {
+	var resolve func(ref string) string = func(ref string) string {
 		name := strings.TrimPrefix(ref, "#/$defs/")
 		for strings.HasPrefix(name, "slice/") || strings.HasPrefix(name, "map/") {
 			name = name[strings.Index(name, "/")+1:]
@@ -89,8 +88,8 @@ func TestBootstrap(t *testing.T) {
 				continue
 			}
 			old := resolve(ref)
-			if strings.HasPrefix(old, LegacyPkgPrefix) {
-				oldName := strings.TrimPrefix(old, LegacyPkgPrefix)
+			if after, ok0 := strings.CutPrefix(old, LegacyPkgPrefix); ok0 {
+				oldName := after
 				key := typeName(ft)
 				if _, ok := names[key]; !ok && isAPIType(ft) {
 					if _, isRoot := roots()[ft]; !isRoot {

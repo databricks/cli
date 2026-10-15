@@ -60,8 +60,7 @@ type CreateMonitor struct {
 	WarehouseId string `json:"warehouse_id,omitempty"`
 }
 
-type DeleteMonitorResponse struct {
-}
+type DeleteMonitorResponse struct{}
 
 type DeleteQualityMonitorRequest struct {
 	// UC table name in format `catalog.schema.table_name`. This field
@@ -512,8 +511,7 @@ type MonitorRefreshListResponse struct {
 }
 
 // Snapshot analysis configuration
-type MonitorSnapshot struct {
-}
+type MonitorSnapshot struct{}
 
 // Time series analysis configuration.
 type MonitorTimeSeries struct {

@@ -1,9 +1,10 @@
 package apps
 
 import (
-	"github.com/databricks/cli/libs/sdktypes/apps/v1"
 	"path/filepath"
 	"testing"
+
+	"github.com/databricks/cli/libs/sdktypes/apps/v1"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"

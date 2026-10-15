@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	vectorsearch "github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
-	"github.com/databricks/cli/libs/utils"
 	"net/http"
 	"regexp"
 	"strings"
+
+	vectorsearch "github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 // indexNamePart matches each catalog.schema.table component the real backend

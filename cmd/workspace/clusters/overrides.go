@@ -99,9 +99,7 @@ type clusterSources struct {
 
 func (c *clusterSources) String() string {
 	s := make([]string, len(*c.source))
-	for i, source := range *c.source {
-		s[i] = source
-	}
+	copy(s, *c.source)
 
 	return strings.Join(s, ",")
 }
@@ -125,9 +123,7 @@ type clusterStates struct {
 
 func (c *clusterStates) String() string {
 	s := make([]string, len(*c.state))
-	for i, source := range *c.state {
-		s[i] = source
-	}
+	copy(s, *c.state)
 
 	return strings.Join(s, ",")
 }

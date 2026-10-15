@@ -3,10 +3,11 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
-	aigateway "github.com/databricks/cli/libs/sdktypes/aigateway/v1"
-	"github.com/databricks/cli/libs/utils"
 	"net/http"
 	"strings"
+
+	aigateway "github.com/databricks/cli/libs/sdktypes/aigateway/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 // ModelServicesCreate fakes POST /api/2.1/unity-catalog/model-services.

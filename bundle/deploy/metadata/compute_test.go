@@ -1,10 +1,11 @@
 package metadata
 
 import (
-	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
-	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"runtime"
 	"testing"
+
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"

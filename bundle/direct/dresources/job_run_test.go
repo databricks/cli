@@ -370,7 +370,7 @@ func TestJobRunCreateSendsAFreshIdempotencyToken(t *testing.T) {
 		return jobs.RunNowResponse{RunId: new(int64(123 + len(tokens)))}
 	})
 	r := (&ResourceJobRun{}).New(jobRunClientFor(t, server))
-	config := &JobRunState{RunNowRequest: jobs.RunNowRequest{JobId: new(int64(456))}}
+	config := &JobRunState{JobId: new(int64(456))}
 
 	for range 2 {
 		_, _, err := r.DoCreate(t.Context(), config)

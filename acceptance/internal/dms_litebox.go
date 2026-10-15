@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/tls"
 	"crypto/x509"
-	"github.com/databricks/cli/libs/utils"
 	"io"
 	"net"
 	"net/http"
@@ -13,6 +12,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/require"

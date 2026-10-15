@@ -3,9 +3,10 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/databricks/cli/libs/utils"
 	sdklakeview "github.com/databricks/sdk-go/lakeview/v1"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/agent"

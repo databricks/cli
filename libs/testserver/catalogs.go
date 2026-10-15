@@ -3,10 +3,11 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
-	catalogs "github.com/databricks/cli/libs/sdktypes/uc/catalogs/v1"
-	"github.com/databricks/cli/libs/utils"
 	"net/http"
 	"strings"
+
+	catalogs "github.com/databricks/cli/libs/sdktypes/uc/catalogs/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 // catalogNameManagedDefaults scopes the managed-property injection to the

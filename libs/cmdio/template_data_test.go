@@ -40,13 +40,13 @@ func renderTemplateData(t *testing.T, tmpl string, data any) string {
 
 func TestTemplateDataDereferencesScalars(t *testing.T) {
 	data := templateDataOuter{
-		templateDataBase: templateDataBase{Base: new("base")},
-		Flag:             new(false),
-		Count:            new(int64(41)),
-		Inner:            &templateDataInner{Name: new("in")},
-		Nested:           []templateDataInner{{Name: new("a")}, {}},
-		ByKey:            map[string]templateDataInner{"k": {Name: new("v")}},
-		Plain:            "p",
+		Base:   new("base"),
+		Flag:   new(false),
+		Count:  new(int64(41)),
+		Inner:  &templateDataInner{Name: new("in")},
+		Nested: []templateDataInner{{Name: new("a")}, {}},
+		ByKey:  map[string]templateDataInner{"k": {Name: new("v")}},
+		Plain:  "p",
 	}
 	got := renderTemplateData(t, `{{if .Flag}}T{{else}}F{{end}} {{plus1 .Count}} [{{.Unset}}] {{.Inner.Name}} {{range .Nested}}<{{.Name}}>{{end}} {{(index .ByKey "k").Name}} {{.Plain}} {{.Base}}`, data)
 	assert.Equal(t, "F 42 [] in <a><> v p base", got)

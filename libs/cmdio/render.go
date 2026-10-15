@@ -7,8 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/databricks/cli/libs/apierrs"
-	"github.com/databricks/cli/libs/listing"
 	"io"
 	"iter"
 	"maps"
@@ -16,6 +14,9 @@ import (
 	"text/tabwriter"
 	"text/template"
 	"time"
+
+	"github.com/databricks/cli/libs/apierrs"
+	"github.com/databricks/cli/libs/listing"
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"

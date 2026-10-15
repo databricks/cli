@@ -3,9 +3,10 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 	modelregistry "github.com/databricks/cli/libs/sdktypes/modelregistry/v1"
 	"github.com/databricks/cli/libs/utils"
-	"strconv"
 )
 
 func (s *FakeWorkspace) ModelRegistryCreateModel(req Request) any {

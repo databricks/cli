@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/databricks/cli/libs/bundledeployments"
-	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"path"
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/databricks/cli/libs/bundledeployments"
+	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 )
 
 // Handlers for the Deployment Metadata Service (DMS) API under /api/2.0/bundle.

@@ -62,7 +62,7 @@ func TestAppDoCreate_RetriesWhenAppIsDeleting(t *testing.T) {
 
 	r := (&ResourceApp{}).New(client)
 	ctx := t.Context()
-	name, _, err := r.DoCreate(ctx, &AppState{App: apps.App{Name: new("test-app")}})
+	name, _, err := r.DoCreate(ctx, &AppState{Name: new("test-app")})
 
 	require.NoError(t, err)
 	assert.Equal(t, "test-app", name)
@@ -118,7 +118,7 @@ func TestAppDoCreate_RetriesWhenGetReturnsNotFound(t *testing.T) {
 
 	r := (&ResourceApp{}).New(client)
 	ctx := t.Context()
-	name, _, err := r.DoCreate(ctx, &AppState{App: apps.App{Name: new("test-app")}})
+	name, _, err := r.DoCreate(ctx, &AppState{Name: new("test-app")})
 
 	require.NoError(t, err)
 	assert.Equal(t, "test-app", name)
@@ -180,11 +180,9 @@ func TestAppDoUpdate_UpdateMaskHasAllFields(t *testing.T) {
 // UpdateApp body caused a 400 in v1.14.0).
 func TestAppRequestBody_StripsDeployOnlyFields(t *testing.T) {
 	config := &AppState{
-		App: apps.App{
-			Name:           new("my-app"),
-			SourceCodePath: new("/Workspace/Users/me/app"),
-			GitSource:      &apps.GitSource{Branch: new("main")},
-		},
+		Name:           new("my-app"),
+		SourceCodePath: new("/Workspace/Users/me/app"),
+		GitSource:      &apps.GitSource{Branch: new("main")},
 	}
 
 	body := appRequestBody(config)

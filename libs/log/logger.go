@@ -3,10 +3,11 @@ package log
 import (
 	"context"
 	"fmt"
-	"github.com/databricks/cli/libs/apierrs"
 	"log/slog"
 	"runtime"
 	"time"
+
+	"github.com/databricks/cli/libs/apierrs"
 )
 
 // GetLogger returns either the logger configured on the context,

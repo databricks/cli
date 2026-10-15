@@ -3,11 +3,12 @@ package mutator_test
 import (
 	"context"
 	"fmt"
-	"github.com/databricks/cli/libs/utils"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"

@@ -3,10 +3,11 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
-	serving "github.com/databricks/cli/libs/sdktypes/modelserving/v1"
-	"github.com/databricks/cli/libs/utils"
 	"maps"
 	"slices"
+
+	serving "github.com/databricks/cli/libs/sdktypes/modelserving/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 func servedEntitiesInputToOutput(input []serving.ServedModel) []serving.ServedModel {

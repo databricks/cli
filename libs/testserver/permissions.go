@@ -3,10 +3,11 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/databricks/cli/libs/utils"
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/databricks/cli/libs/utils"
 
 	iam "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
 )

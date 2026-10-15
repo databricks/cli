@@ -2,10 +2,11 @@ package libraries
 
 import (
 	"context"
-	"github.com/databricks/cli/libs/utils"
 	"maps"
 	"path/filepath"
 	"slices"
+
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"

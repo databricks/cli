@@ -2,12 +2,13 @@ package permissions
 
 import (
 	"encoding/json"
+	"sync"
+	"testing"
+
 	"github.com/databricks/cli/libs/sdktypes/experiments/v1"
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/sdktypes/modelserving/v1"
 	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
-	"sync"
-	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"

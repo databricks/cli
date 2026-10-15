@@ -5,12 +5,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	lakeview "github.com/databricks/cli/libs/sdktypes/lakeview/v1"
-	"github.com/databricks/cli/libs/utils"
-	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"path"
 	"strconv"
 	"strings"
+
+	lakeview "github.com/databricks/cli/libs/sdktypes/lakeview/v1"
+	"github.com/databricks/cli/libs/utils"
+	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 )
 
 // Generate 32 character hex string for dashboard ID

@@ -3,9 +3,10 @@ package dresources
 import (
 	"context"
 	"fmt"
-	"github.com/databricks/cli/libs/apierrs"
 	"path"
 	"strings"
+
+	"github.com/databricks/cli/libs/apierrs"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -187,26 +188,24 @@ func dashboardToState(dashboard *lakeview.Dashboard, publishResp *lakeview.Publi
 	}
 
 	return &DashboardState{
-		DashboardConfig: resources.DashboardConfig{
-			DisplayName:         utils.Deref(dashboard.DisplayName),
-			Etag:                utils.Deref(dashboard.Etag),
-			WarehouseId:         utils.Deref(dashboard.WarehouseId),
-			SerializedDashboard: serializedDashboard,
-			ParentPath:          ensureWorkspacePrefix(utils.Deref(dashboard.ParentPath)),
-			// diffs are detected via etags, which will change if dataset_catalog/dataset_schema is updated.
-			DatasetCatalog: "",
-			DatasetSchema:  "",
+		DisplayName:         utils.Deref(dashboard.DisplayName),
+		Etag:                utils.Deref(dashboard.Etag),
+		WarehouseId:         utils.Deref(dashboard.WarehouseId),
+		SerializedDashboard: serializedDashboard,
+		ParentPath:          ensureWorkspacePrefix(utils.Deref(dashboard.ParentPath)),
+		// diffs are detected via etags, which will change if dataset_catalog/dataset_schema is updated.
+		DatasetCatalog: "",
+		DatasetSchema:  "",
 
-			// Output only fields
-			CreateTime:     timeString(dashboard.CreateTime),
-			DashboardId:    utils.Deref(dashboard.DashboardId),
-			LifecycleState: dashboard.LifecycleState,
-			Path:           utils.Deref(dashboard.Path),
-			UpdateTime:     timeString(dashboard.UpdateTime),
+		// Output only fields
+		CreateTime:     timeString(dashboard.CreateTime),
+		DashboardId:    utils.Deref(dashboard.DashboardId),
+		LifecycleState: dashboard.LifecycleState,
+		Path:           utils.Deref(dashboard.Path),
+		UpdateTime:     timeString(dashboard.UpdateTime),
 
-			EmbedCredentials: embedCredentials,
-		},
-		Published: published,
+		EmbedCredentials: embedCredentials,
+		Published:        published,
 	}
 }
 

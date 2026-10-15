@@ -2,8 +2,9 @@ package resourcemutator
 
 import (
 	"context"
-	"github.com/databricks/cli/libs/utils"
 	"strings"
+
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"

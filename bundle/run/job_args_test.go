@@ -1,8 +1,9 @@
 package run
 
 import (
-	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"testing"
+
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/stretchr/testify/assert"

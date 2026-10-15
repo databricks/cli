@@ -3,11 +3,12 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
-	statementexecution "github.com/databricks/cli/libs/sdktypes/statementexecution/v1"
-	"github.com/databricks/cli/libs/utils"
 	"net/http"
 	"regexp"
 	"strconv"
+
+	statementexecution "github.com/databricks/cli/libs/sdktypes/statementexecution/v1"
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/cli/libs/testserver/testsql"
 )

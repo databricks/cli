@@ -3,13 +3,14 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
-	clusterpolicies "github.com/databricks/cli/libs/sdktypes/clusterpolicies/v2"
-	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
-	"github.com/databricks/cli/libs/utils"
 	"maps"
 	"reflect"
 	"slices"
 	"strings"
+
+	clusterpolicies "github.com/databricks/cli/libs/sdktypes/clusterpolicies/v2"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
 )
 
 // policyFamilyDefinition mimics the real backend: a policy created from a policy

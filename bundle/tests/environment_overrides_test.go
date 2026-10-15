@@ -1,8 +1,9 @@
 package config_tests
 
 import (
-	"github.com/databricks/cli/libs/utils"
 	"testing"
+
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/stretchr/testify/assert"
 )

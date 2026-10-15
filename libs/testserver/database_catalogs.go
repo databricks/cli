@@ -3,6 +3,7 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+
 	database "github.com/databricks/cli/libs/sdktypes/database/v1"
 	"github.com/databricks/cli/libs/utils"
 )

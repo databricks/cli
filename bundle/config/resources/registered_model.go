@@ -2,12 +2,13 @@ package resources
 
 import (
 	"context"
+	"net/url"
+
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
 	"github.com/databricks/cli/libs/sdktypes/uc/registeredmodels/v1"
 	"github.com/databricks/cli/libs/utils"
 	sdkregisteredmodels "github.com/databricks/sdk-go/uc/registeredmodels/v1"
-	"net/url"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"

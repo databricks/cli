@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/databricks/cli/bundle/internal/sdkmeta"
 	"reflect"
 	"regexp"
 	"strings"
+
+	"github.com/databricks/cli/bundle/internal/sdkmeta"
 
 	"github.com/databricks/cli/bundle/internal/annotation"
 	"github.com/databricks/cli/internal/clijson"

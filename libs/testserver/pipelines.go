@@ -3,9 +3,10 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	pipelines "github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"github.com/databricks/cli/libs/utils"
-	"strings"
 )
 
 func (s *FakeWorkspace) PipelineGet(pipelineId string) Response {

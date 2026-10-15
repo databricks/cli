@@ -3,7 +3,6 @@ package python
 import (
 	"context"
 	"fmt"
-	"github.com/databricks/cli/libs/utils"
 	"maps"
 	"os"
 	"os/exec"
@@ -11,6 +10,8 @@ import (
 	"runtime"
 	"slices"
 	"testing"
+
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn/convert"

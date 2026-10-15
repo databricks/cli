@@ -2,9 +2,10 @@ package deploy
 
 import (
 	"encoding/json"
-	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 	"os"
 	"testing"
+
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"

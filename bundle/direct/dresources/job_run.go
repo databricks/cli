@@ -106,26 +106,24 @@ func makeJobRunRemote(run *jobs.GetRunResponse) *JobRunRemote {
 	}
 	state := runState(run)
 	return &JobRunRemote{
-		RunNowRequest: jobs.RunNowRequest{
-			JobId:             run.JobId,
-			JobParameters:     jobParameters,
-			DbtCommands:       overriding.DbtCommands,
-			JarParams:         overriding.JarParams,
-			NotebookParams:    overriding.NotebookParams,
-			PipelineParams:    overriding.PipelineParams,
-			PythonNamedParams: overriding.PythonNamedParams,
-			PythonParams:      overriding.PythonParams,
-			SparkSubmitParams: overriding.SparkSubmitParams,
-			SqlParams:         overriding.SqlParams,
-			// Request-only fields GetRun never reports.
-			IdempotencyToken:  nil,
-			Only:              nil,
-			PerformanceTarget: "",
-			Queue:             nil,
-		},
-		ResultState: state.ResultState,
-		RunId:       utils.Deref(run.RunId),
-		RunName:     utils.Deref(run.RunName),
+		JobId:             run.JobId,
+		JobParameters:     jobParameters,
+		DbtCommands:       overriding.DbtCommands,
+		JarParams:         overriding.JarParams,
+		NotebookParams:    overriding.NotebookParams,
+		PipelineParams:    overriding.PipelineParams,
+		PythonNamedParams: overriding.PythonNamedParams,
+		PythonParams:      overriding.PythonParams,
+		SparkSubmitParams: overriding.SparkSubmitParams,
+		SqlParams:         overriding.SqlParams,
+		// Request-only fields GetRun never reports.
+		IdempotencyToken:  nil,
+		Only:              nil,
+		PerformanceTarget: "",
+		Queue:             nil,
+		ResultState:       state.ResultState,
+		RunId:             utils.Deref(run.RunId),
+		RunName:           utils.Deref(run.RunName),
 		// Only the fields planning reads; queue_reason and user_cancelled_or_timedout
 		// are left out so the remote does not depend on what the workspace reports.
 		State: &jobs.RunState{

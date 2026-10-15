@@ -4,7 +4,7 @@ package bundledeployments
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"net/url"
 	"strings"
 
@@ -35,7 +35,7 @@ func (f FieldMask) MarshalJSON() ([]byte, error) {
 
 func (f *FieldMask) UnmarshalJSON(data []byte) error {
 	if f == nil {
-		return fmt.Errorf("FieldMask.UnmarshalJSON on nil pointer")
+		return errors.New("FieldMask.UnmarshalJSON on nil pointer")
 	}
 	var s string
 	if err := json.Unmarshal(data, &s); err != nil {

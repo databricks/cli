@@ -9,7 +9,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/databricks/cli/libs/utils"
 	"io"
 	"maps"
 	"math/rand/v2"
@@ -26,6 +25,8 @@ import (
 	"testing"
 	"time"
 	"unicode/utf8"
+
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/google/uuid"
 

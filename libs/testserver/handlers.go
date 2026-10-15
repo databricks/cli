@@ -5,6 +5,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime"
+	"mime/multipart"
+	"net/http"
+	"path"
+	"strconv"
+	"strings"
+
 	alerts "github.com/databricks/cli/libs/sdktypes/alerts/v2"
 	clusters "github.com/databricks/cli/libs/sdktypes/clusters/v2"
 	instancepools "github.com/databricks/cli/libs/sdktypes/instancepools/v2"
@@ -14,13 +22,6 @@ import (
 	tables "github.com/databricks/cli/libs/sdktypes/uc/tables/v1"
 	"github.com/databricks/cli/libs/utils"
 	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
-	"io"
-	"mime"
-	"mime/multipart"
-	"net/http"
-	"path"
-	"strconv"
-	"strings"
 
 	"github.com/databricks/cli/libs/notebook"
 )
@@ -209,12 +210,12 @@ func AddDefaultHandlers(server *Server) {
 				{
 					ClusterName: utils.NonZero("some-test-cluster"),
 					ClusterId:   utils.NonZero("4321"),
-					State:        clusters.ClusterState_ClusterState_Running,
+					State:       clusters.ClusterState_ClusterState_Running,
 				},
 				{
 					ClusterName: utils.NonZero("some-other-cluster"),
 					ClusterId:   utils.NonZero("9876"),
-					State:        clusters.ClusterState_ClusterState_Running,
+					State:       clusters.ClusterState_ClusterState_Running,
 				},
 			},
 		}

@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/databricks/cli/libs/apierrs"
 	"reflect"
 	"strings"
+
+	"github.com/databricks/cli/libs/apierrs"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"

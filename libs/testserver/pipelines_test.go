@@ -1,11 +1,12 @@
 package testserver
 
 import (
+	"testing"
+
 	pipelines "github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func createTestPipeline(t *testing.T, workspace *FakeWorkspace) string {

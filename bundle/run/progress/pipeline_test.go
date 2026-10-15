@@ -1,8 +1,9 @@
 package progress
 
 import (
-	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"testing"
+
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 
 	"github.com/stretchr/testify/assert"
 )

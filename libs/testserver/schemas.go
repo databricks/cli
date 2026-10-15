@@ -3,10 +3,11 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
-	schemas "github.com/databricks/cli/libs/sdktypes/uc/schemas/v1"
-	"github.com/databricks/cli/libs/utils"
 	"net/http"
 	"strings"
+
+	schemas "github.com/databricks/cli/libs/sdktypes/uc/schemas/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 const testMetastoreName = "deco-uc-prod-isolated-aws-us-east-1"

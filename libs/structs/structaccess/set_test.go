@@ -607,7 +607,7 @@ func TestSet_PointerScalarZeroValue(t *testing.T) {
 
 	got, err := structaccess.GetByString(job, "description")
 	require.NoError(t, err)
-	assert.Equal(t, "", got)
+	assert.Empty(t, got)
 }
 
 // encoding/json resolves a name declared at two embedding depths in favour of the shallower

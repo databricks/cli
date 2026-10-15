@@ -1,11 +1,12 @@
 package mutator_test
 
 import (
-	"github.com/databricks/cli/libs/sdktypes/alerts/v2"
-	"github.com/databricks/cli/libs/utils"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/databricks/cli/libs/sdktypes/alerts/v2"
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"

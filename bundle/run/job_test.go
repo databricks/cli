@@ -19,13 +19,11 @@ import (
 
 func TestConvertPythonParams(t *testing.T) {
 	job := &resources.Job{
-		JobSettings: jobs.JobSettings{
-			Tasks: []jobs.TaskSettings{
-				{PythonWheelTask: &jobs.PythonWheelTask{
-					PackageName: new("my_test_code"),
-					EntryPoint:  new("run"),
-				}},
-			},
+		Tasks: []jobs.TaskSettings{
+			{PythonWheelTask: &jobs.PythonWheelTask{
+				PackageName: new("my_test_code"),
+				EntryPoint:  new("run"),
+			}},
 		},
 	}
 	b := &bundle.Bundle{

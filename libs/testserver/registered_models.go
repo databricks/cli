@@ -3,9 +3,10 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	registeredmodels "github.com/databricks/cli/libs/sdktypes/uc/registeredmodels/v1"
 	"github.com/databricks/cli/libs/utils"
-	"net/http"
 )
 
 // modelNameBrowseOnly scopes the computed browse_only flag to the browse_only

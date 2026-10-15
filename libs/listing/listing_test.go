@@ -189,7 +189,7 @@ func TestDedupeIterator(t *testing.T) {
 		dedupeIterator := listing.NewDedupeIterator[int, int](
 			iterator, func(a int) int { return a })
 
-		values := make([]int, 0)
+		var values []int
 		for dedupeIterator.HasNext(context.Background()) {
 			assert.True(t, dedupeIterator.HasNext(context.Background()))
 			v, err := dedupeIterator.Next(context.Background())
@@ -247,7 +247,6 @@ func TestSliceIterator(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, []int{1, 2, 3}, items)
 	})
-
 }
 
 func TestLimitIterator(t *testing.T) {
@@ -358,7 +357,7 @@ func TestLimitIterator(t *testing.T) {
 		iterator := makeIterator(rrs)
 		limited := listing.NewLimitIterator[int](iterator, 4)
 
-		values := make([]int, 0)
+		var values []int
 		for limited.HasNext(context.Background()) {
 			v, err := limited.Next(context.Background())
 			assert.NoError(t, err)

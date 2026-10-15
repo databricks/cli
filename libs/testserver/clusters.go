@@ -3,9 +3,10 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+
 	clusters "github.com/databricks/cli/libs/sdktypes/clusters/v2"
 	"github.com/databricks/cli/libs/utils"
-	"os"
 )
 
 func (s *FakeWorkspace) ClustersCreate(req Request) any {

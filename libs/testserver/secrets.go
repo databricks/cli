@@ -4,9 +4,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"slices"
+
 	secrets "github.com/databricks/cli/libs/sdktypes/secrets/v1"
 	"github.com/databricks/cli/libs/utils"
-	"slices"
 )
 
 func (s *FakeWorkspace) SecretsPut(req Request) Response {

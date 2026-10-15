@@ -2,12 +2,13 @@ package resourcemutator
 
 import (
 	"fmt"
-	"github.com/databricks/cli/libs/sdktypes/alerts/v2"
-	"github.com/databricks/cli/libs/utils"
 	"reflect"
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/databricks/cli/libs/sdktypes/alerts/v2"
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"

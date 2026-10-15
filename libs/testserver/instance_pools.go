@@ -3,6 +3,7 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+
 	instancepools "github.com/databricks/cli/libs/sdktypes/instancepools/v2"
 	"github.com/databricks/cli/libs/utils"
 )

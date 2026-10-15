@@ -113,7 +113,7 @@ func goListDirs(pkgs []string) (map[string]string, error) {
 		return nil, fmt.Errorf("go list: %w", err)
 	}
 	dirs := map[string]string{}
-	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+	for line := range strings.SplitSeq(strings.TrimSpace(string(out)), "\n") {
 		p, d, ok := strings.Cut(line, " ")
 		if ok {
 			dirs[p] = d

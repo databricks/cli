@@ -2,10 +2,11 @@ package cmdio
 
 import (
 	"context"
-	"github.com/databricks/cli/libs/listing"
 	"io"
 	"strings"
 	"time"
+
+	"github.com/databricks/cli/libs/listing"
 
 	bubblespinner "github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"

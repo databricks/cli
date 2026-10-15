@@ -488,7 +488,7 @@ func TestJobDiff(t *testing.T) {
 	// Explicit zero values are kept behind pointers.
 	ch := findChange(t, changes, "budget_policy_id")
 	assert.Equal(t, "550e8400-e29b-41d4-a716-446655440000", ch.Old)
-	assert.Equal(t, "", ch.New)
+	assert.Empty(t, ch.New)
 	// Enums are not pointers: an empty enum is absent.
 	ch = findChange(t, changes, "continuous.pause_status")
 	assert.Equal(t, jobs.SchedulePauseStatus("UNPAUSED"), ch.Old)
@@ -498,7 +498,7 @@ func TestJobDiff(t *testing.T) {
 	assert.Nil(t, ch.New)
 	ch = findChange(t, changes, "deployment.metadata_file_path")
 	assert.Equal(t, "string", ch.Old)
-	assert.Equal(t, "", ch.New)
+	assert.Empty(t, ch.New)
 
 	changes, err = GetStructDiff(job, nils, nil)
 	require.NoError(t, err)
@@ -524,13 +524,13 @@ func TestJobDiff(t *testing.T) {
 	require.NoError(t, err)
 	assert.GreaterOrEqual(t, len(changes), 58)
 	ch = findChange(t, changes, "budget_policy_id")
-	assert.Equal(t, "", ch.Old)
+	assert.Empty(t, ch.Old)
 	assert.Nil(t, ch.New)
 	ch = findChange(t, changes, "continuous")
 	assert.Equal(t, jobs.ContinuousSettings{}, ch.Old)
 	assert.Nil(t, ch.New)
 
 	ch = findChange(t, changes, "deployment.metadata_file_path")
-	assert.Equal(t, "", ch.Old)
+	assert.Empty(t, ch.Old)
 	assert.Nil(t, ch.New)
 }

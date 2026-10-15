@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+
 	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/cli/bundle"

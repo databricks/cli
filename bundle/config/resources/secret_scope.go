@@ -2,11 +2,12 @@ package resources
 
 import (
 	"context"
+	"net/url"
+
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sdktypes/secrets/v1"
 	"github.com/databricks/cli/libs/utils"
 	sdksecrets "github.com/databricks/sdk-go/secrets/v1"
-	"net/url"
 )
 
 type SecretScopePermissionLevel string

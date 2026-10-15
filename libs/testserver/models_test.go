@@ -1,12 +1,13 @@
 package testserver
 
 import (
+	"net/url"
+	"testing"
+
 	modelregistry "github.com/databricks/cli/libs/sdktypes/modelregistry/v1"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"net/url"
-	"testing"
 )
 
 func TestModelRegistryCreateModel_RejectsEmptyName(t *testing.T) {

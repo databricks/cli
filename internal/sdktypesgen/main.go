@@ -15,6 +15,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/format"
@@ -152,7 +153,7 @@ func parseModel(fset *token.FileSet, path string) (*model, string, error) {
 
 func generate(outRoot, pkg string) error {
 	if !strings.HasPrefix(pkg, sdkModulePrefix) {
-		return fmt.Errorf("not an sdk-go package")
+		return errors.New("not an sdk-go package")
 	}
 	dir, err := packageDir(pkg)
 	if err != nil {

@@ -3,10 +3,11 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
-	repos "github.com/databricks/cli/libs/sdktypes/repos/v1"
-	"github.com/databricks/cli/libs/utils"
 	"net/http"
 	"strconv"
+
+	repos "github.com/databricks/cli/libs/sdktypes/repos/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 // fakeHeadCommitID is the commit the fake reports a clone is checked out to.

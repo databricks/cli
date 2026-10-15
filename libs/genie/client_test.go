@@ -3,11 +3,12 @@ package genie
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/databricks/cli/libs/apierrs"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/databricks/cli/libs/apierrs"
 
 	"github.com/databricks/cli/libs/genie/agentstream"
 	"github.com/databricks/databricks-sdk-go/config"

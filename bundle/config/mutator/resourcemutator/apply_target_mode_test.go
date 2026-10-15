@@ -1,6 +1,10 @@
 package resourcemutator
 
 import (
+	"reflect"
+	"slices"
+	"testing"
+
 	"github.com/databricks/cli/libs/qualitymonitors"
 	"github.com/databricks/cli/libs/sdktypes/alerts/v2"
 	"github.com/databricks/cli/libs/sdktypes/clusterpolicies/v2"
@@ -12,9 +16,6 @@ import (
 	ucsecrets "github.com/databricks/cli/libs/sdktypes/uc/secrets/v1"
 	"github.com/databricks/cli/libs/sdktypes/warehouses/v1"
 	"github.com/databricks/cli/libs/utils"
-	"reflect"
-	"slices"
-	"testing"
 
 	"github.com/databricks/cli/libs/sdktypes/database/v1"
 
