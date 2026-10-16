@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth/storage"
+	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -268,7 +269,7 @@ const (
 // failing describe; the user-visible auth status is more important than
 // secondary metadata about where a token would have been stored.
 func resolveTokenStorageInfo(ctx context.Context, authType string) *tokenStorageInfo {
-	if authType != authTypeDatabricksCLI {
+	if authType != u2m.AuthTypeDatabricksCLI {
 		return nil
 	}
 	mode, source, err := storage.ResolveStorageModeWithSource(ctx, "")
