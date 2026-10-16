@@ -107,7 +107,7 @@ func (sv *StructVar) Delete(path *structpath.PathNode) error {
 			if f := FieldByIndex(v, index); f.IsValid() {
 				f.SetZero()
 			}
-			removeForceSend(v, &info, last.key)
+			removeForceSend(v, info, last.key)
 		default:
 			return fmt.Errorf("cannot delete %s", path)
 		}
@@ -329,7 +329,7 @@ func updateChild(v reflect.Value, c pathComponent, fn func(reflect.Value) (bool,
 			return err
 		}
 		if zero {
-			addForceSend(v, &info, c.key)
+			addForceSend(v, info, c.key)
 		}
 		return nil
 	case c.isKey && v.Kind() == reflect.Map:

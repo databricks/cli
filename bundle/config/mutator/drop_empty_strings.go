@@ -75,8 +75,7 @@ func collectEmptyStrings(v structvar.View, p *structpath.PathNode, out *[]*struc
 		var info *structvar.StructInfo
 		switch {
 		case r.Kind() == reflect.Struct && !structvar.IsSDKNativeType(r.Type()):
-			i := structvar.GetStructInfo(r.Type())
-			info = &i
+			info = structvar.GetStructInfo(r.Type())
 		case r.Kind() == reflect.Map:
 		default:
 			return

@@ -470,7 +470,7 @@ func (d *decoder) decodeStruct(dst reflect.Value, src source, path *structpath.P
 
 		// An explicitly set zero value must still serialize: add it to ForceSendFields.
 		if fn.isZeroValue(fv) {
-			addForceSend(dst, &info, p.key)
+			addForceSend(dst, info, p.key)
 		}
 	}
 	return n, true, nil

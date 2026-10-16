@@ -5,6 +5,7 @@ import (
 	"iter"
 	"reflect"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -282,77 +283,140 @@ func (x View) field(info *StructInfo, sv reflect.Value, k string, fv reflect.Val
 }
 
 func (x View) hasFields(v reflect.Value) bool {
-	for range x.structFields(v) {
-		return true
+	return !x.eachField(v, func(string, bool, View) bool { return false })
+}
+
+// eachField calls fn for the represented fields of the struct v, in declaration order,
+// until fn returns false. It returns false if fn did. fn also gets whether the key can
+// be a dotted path component, so callers building paths need not check it.
+//
+// The traversal helpers take a callback rather than returning an iterator so that
+// walking a value does not allocate a closure per visited node.
+func (x View) eachField(v reflect.Value, fn func(string, bool, View) bool) bool {
+	info := GetStructInfo(v.Type())
+
+	// Mark the fields listed in the struct's ForceSendFields, read once per visit.
+	var forcedBuf [128]bool
+	var forced []bool
+	if len(info.List) <= len(forcedBuf) {
+		forced = forcedBuf[:len(info.List)]
+	} else {
+		forced = make([]bool, len(info.List))
+	}
+	for g, index := range info.ForceSendGroups {
+		names := FieldByIndex(v, index)
+		if !names.IsValid() {
+			continue
+		}
+		for j := range names.Len() {
+			if i, ok := info.ForceSendTargets[g][names.Index(j).String()]; ok {
+				forced[i] = true
+			}
+		}
+	}
+
+	for i := range info.List {
+		f := &info.List[i]
+		fv := FieldByIndex(v, f.Index)
+		if !fv.IsValid() {
+			continue
+		}
+		isForced := forced[i] || !fv.IsZero()
+		if !isForced && x.isAbsentZeroField(fv, f.Key) {
+			continue
+		}
+		child, ok := x.field(info, v, f.Key, fv, isForced)
+		if ok && !fn(f.Key, f.Dot, child) {
+			return false
+		}
+	}
+	return true
+}
+
+// containsString reports whether the []string value s (possibly invalid) contains name.
+// It iterates with reflect: converting s with Interface would allocate.
+func containsString(s reflect.Value, name string) bool {
+	if !s.IsValid() {
+		return false
+	}
+	for i := range s.Len() {
+		if s.Index(i).String() == name {
+			return true
+		}
 	}
 	return false
 }
 
-func (x View) structFields(v reflect.Value) iter.Seq2[string, View] {
-	return func(yield func(string, View) bool) {
-		info := GetStructInfo(v.Type())
-		for fv := range info.FieldValues(v) {
-			child, ok := x.field(&info, v, fv.Key, fv.Value, fv.IsForced)
-			if ok && !yield(fv.Key, child) {
-				return
+// isAbsentZeroField reports whether the zero, unforced field fv (key k) is absent
+// without building its view: [View.field] would find it absent, because it is neither
+// a struct nor an interface (whose presence depends on their contents), has no
+// location and holds no reference.
+func (x View) isAbsentZeroField(fv reflect.Value, k string) bool {
+	switch fv.Kind() {
+	case reflect.Struct, reflect.Interface:
+		return false
+	default:
+	}
+	if x.loc.Key(k) != nil {
+		return false
+	}
+	return len(x.refs) == 0 || x.refs[structpath.NewStringKey(x.path, k).String()] == ""
+}
+
+// eachMapItem calls fn for the entries of a map value (struct fields in declaration
+// order, map entries in key order) until fn returns false. It returns false if fn did.
+func (x View) eachMapItem(fn func(string, bool, View) bool) bool {
+	if x.ref() != "" {
+		return true
+	}
+	v, _ := x.deref()
+	switch {
+	case !v.IsValid():
+	case v.Kind() == reflect.Struct && !IsSDKNativeType(v.Type()):
+		return x.eachField(v, fn)
+	case v.Kind() == reflect.Map:
+		keys := v.MapKeys()
+		slices.SortFunc(keys, func(a, b reflect.Value) int {
+			return strings.Compare(a.String(), b.String())
+		})
+		for _, key := range keys {
+			ev := v.MapIndex(key)
+			k := key.String()
+			if !fn(k, false, x.childKey(ev, k, elemOptions(ev))) {
+				return false
 			}
 		}
 	}
+	return true
+}
+
+// eachElem calls fn for the elements of a sequence value until fn returns false.
+// It returns false if fn did.
+func (x View) eachElem(fn func(int, View) bool) bool {
+	if x.Kind() != KindSequence {
+		return true
+	}
+	v, _ := x.deref()
+	for i := range v.Len() {
+		ev := v.Index(i)
+		if !fn(i, x.childIndex(ev, i, elemOptions(ev))) {
+			return false
+		}
+	}
+	return true
 }
 
 // MapItems returns the entries of a map value: struct fields in declaration order,
 // map entries in key order.
 func (x View) MapItems() iter.Seq2[string, View] {
 	return func(yield func(string, View) bool) {
-		if x.ref() != "" {
-			return
-		}
-		v, _ := x.deref()
-		switch {
-		case !v.IsValid():
-		case v.Kind() == reflect.Struct && !IsSDKNativeType(v.Type()):
-			for k, c := range x.structFields(v) {
-				if !yield(k, c) {
-					return
-				}
-			}
-		case v.Kind() == reflect.Map:
-			keys := v.MapKeys()
-			slices.SortFunc(keys, func(a, b reflect.Value) int {
-				switch {
-				case a.String() < b.String():
-					return -1
-				case a.String() > b.String():
-					return 1
-				}
-				return 0
-			})
-			for _, key := range keys {
-				ev := v.MapIndex(key)
-				child := x.childKey(ev, key.String(), elemOptions(ev))
-				if !yield(key.String(), child) {
-					return
-				}
-			}
-		}
+		x.eachMapItem(func(k string, _ bool, c View) bool { return yield(k, c) })
 	}
 }
 
 // Sequence returns the elements of a sequence value.
 func (x View) Sequence() iter.Seq2[int, View] {
-	return func(yield func(int, View) bool) {
-		if x.Kind() != KindSequence {
-			return
-		}
-		v, _ := x.deref()
-		for i := range v.Len() {
-			ev := v.Index(i)
-			child := x.childIndex(ev, i, elemOptions(ev))
-			if !yield(i, child) {
-				return
-			}
-		}
-	}
+	return func(yield func(int, View) bool) { x.eachElem(yield) }
 }
 
 // Get returns the value of key k of a map value, or an invalid value.
@@ -373,7 +437,7 @@ func (x View) Get(k string) View {
 			return View{}
 		}
 		isForced := !fv.IsZero() || info.IsForceSend(v, k)
-		child, ok := x.field(&info, v, k, fv, isForced)
+		child, ok := x.field(info, v, k, fv, isForced)
 		if !ok {
 			return View{}
 		}
