@@ -1,0 +1,183 @@
+
+=== Device code login is disabled by default
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code
+Error: --use-device-code is experimental. Set DATABRICKS_CLI_DEVICE_CODE=true to enable it
+
+=== Inputs device code login cannot honor are rejected
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --resource https://resource.test
+Error: --use-device-code cannot be combined with --resource
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --skip-workspace
+Error: --use-device-code cannot be combined with --skip-workspace
+
+>>> musterr [CLI] auth login --profile new-profile --use-device-code
+Error: --use-device-code requires a workspace host. Pass it as an argument or with --host
+
+>>> musterr [CLI] auth login --profile scoped --use-device-code
+Error: --use-device-code cannot be used with profile scoped because its login is scoped to resources. Log in without --use-device-code
+
+=== Account hosts are rejected, whether passed directly or from a profile
+
+>>> musterr [CLI] auth login --host https://accounts.cloud.databricks.com --profile test --use-device-code
+Error: --use-device-code is only supported for workspace hosts
+
+>>> musterr [CLI] auth login --profile account --use-device-code
+Error: --use-device-code is only supported for workspace hosts
+
+=== Login fails when no confirmation code is provided
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code
+Using a browser on another device, visit:
+[DATABRICKS_URL]/device/verification
+
+And enter the code:
+WDJB-MJHT
+
+Once finished, enter the confirmation code provided in your browser.
+Confirmation code: Error: reading confirmation code: EOF
+
+=== Login times out while waiting for the confirmation code
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --timeout 1s
+Using a browser on another device, visit:
+[DATABRICKS_URL]/device/verification
+
+And enter the code:
+WDJB-MJHT
+
+Once finished, enter the confirmation code provided in your browser.
+Confirmation code: Error: reading confirmation code: context deadline exceeded
+
+=== Login fails after 3 wrong confirmation codes
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code
+Using a browser on another device, visit:
+[DATABRICKS_URL]/device/verification
+
+And enter the code:
+WDJB-MJHT
+
+Once finished, enter the confirmation code provided in your browser.
+Confirmation code: Invalid confirmation code (error code: invalid_request). Enter the confirmation code again (2 attempts left).
+Confirmation code: Invalid confirmation code (error code: invalid_request). Enter the confirmation code again (1 attempt left).
+Confirmation code: Error: Invalid confirmation code (error code: invalid_request). Start login from scratch
+
+=== Login succeeds after re-entering the confirmation code
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code
+Using a browser on another device, visit:
+[DATABRICKS_URL]/device/verification
+
+And enter the code:
+WDJB-MJHT
+
+Once finished, enter the confirmation code provided in your browser.
+Confirmation code: Invalid confirmation code (error code: invalid_request). Enter the confirmation code again (2 attempts left).
+Confirmation code: Confirmation code: Profile test was successfully saved
+
+>>> [CLI] auth token --profile test
+json.access_token = "oauth-token";
+
+>>> [CLI] auth profiles
+Name            Host                    Valid
+test (Default)  [DATABRICKS_URL]  YES
+
+=== Login again with the host from the saved profile
+
+>>> [CLI] auth login --profile test --use-device-code
+Using a browser on another device, visit:
+[DATABRICKS_URL]/device/verification
+
+And enter the code:
+WDJB-MJHT
+
+Once finished, enter the confirmation code provided in your browser.
+Confirmation code: Profile test was successfully saved
+
+>>> [CLI] auth token --profile test
+json.access_token = "oauth-token";
+
+=== Device code requests
+
+>>> print_requests.py //oidc/v1/device/auth //oidc/v1/token
+{
+  "method": "POST",
+  "path": "/oidc/v1/device/auth",
+  "raw_body": "client_id=databricks-cli&scope=offline_access+all-apis"
+}
+{
+  "method": "POST",
+  "path": "/oidc/v1/device/auth",
+  "raw_body": "client_id=databricks-cli&scope=offline_access+all-apis"
+}
+{
+  "method": "POST",
+  "path": "/oidc/v1/device/auth",
+  "raw_body": "client_id=databricks-cli&scope=offline_access+all-apis"
+}
+{
+  "method": "POST",
+  "path": "/oidc/v1/token",
+  "raw_body": "client_id=databricks-cli&confirmation_code=AAAAAAAA&device_code=device-code-3&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"
+}
+{
+  "method": "POST",
+  "path": "/oidc/v1/token",
+  "raw_body": "client_id=databricks-cli&confirmation_code=BBBBBBBB&device_code=device-code-3&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"
+}
+{
+  "method": "POST",
+  "path": "/oidc/v1/token",
+  "raw_body": "client_id=databricks-cli&confirmation_code=CCCCCCCC&device_code=device-code-3&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"
+}
+{
+  "method": "POST",
+  "path": "/oidc/v1/device/auth",
+  "raw_body": "client_id=databricks-cli&scope=offline_access+all-apis"
+}
+{
+  "method": "POST",
+  "path": "/oidc/v1/token",
+  "raw_body": "client_id=databricks-cli&confirmation_code=AAAAAAAA&device_code=device-code-4&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"
+}
+{
+  "method": "POST",
+  "path": "/oidc/v1/token",
+  "raw_body": "client_id=databricks-cli&confirmation_code=FTFAQQKY&device_code=device-code-4&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"
+}
+{
+  "method": "POST",
+  "path": "/oidc/v1/device/auth",
+  "raw_body": "client_id=databricks-cli&scope=offline_access+all-apis"
+}
+{
+  "method": "POST",
+  "path": "/oidc/v1/token",
+  "raw_body": "client_id=databricks-cli&confirmation_code=FTFAQQKY&device_code=device-code-5&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"
+}
+
+=== Custom scopes are requested at device authorization
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile custom-scopes --use-device-code --scopes sql
+Using a browser on another device, visit:
+[DATABRICKS_URL]/device/verification
+
+And enter the code:
+WDJB-MJHT
+
+Once finished, enter the confirmation code provided in your browser.
+Confirmation code: Profile custom-scopes was successfully saved
+
+>>> print_requests.py //oidc/v1/device/auth //oidc/v1/token
+{
+  "method": "POST",
+  "path": "/oidc/v1/device/auth",
+  "raw_body": "client_id=databricks-cli&scope=offline_access+sql"
+}
+{
+  "method": "POST",
+  "path": "/oidc/v1/token",
+  "raw_body": "client_id=databricks-cli&confirmation_code=FTFAQQKY&device_code=device-code-6&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"
+}

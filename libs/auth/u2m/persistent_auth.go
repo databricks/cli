@@ -647,9 +647,10 @@ func (a *PersistentAuth) oauth2Config() (*oauth2.Config, error) {
 	return &oauth2.Config{
 		ClientID: a.clientID,
 		Endpoint: oauth2.Endpoint{
-			AuthURL:   authURL,
-			TokenURL:  endpoints.TokenEndpoint,
-			AuthStyle: oauth2.AuthStyleInParams,
+			AuthURL:       authURL,
+			TokenURL:      endpoints.TokenEndpoint,
+			DeviceAuthURL: endpoints.DeviceAuthorizationEndpoint,
+			AuthStyle:     oauth2.AuthStyleInParams,
 		},
 		RedirectURL: "http://" + a.redirectAddr,
 		Scopes:      scopes,
