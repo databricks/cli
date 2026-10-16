@@ -1,0 +1,67 @@
+
+=== Python notebook is uploaded without its extension
+
+>>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
+Initial Sync Complete
+Uploaded foo.py
+
+>>> remote_tree
+NOTEBOOK foo PYTHON
+
+>>> snapshot_files
+foo.py
+
+=== Turn the notebook into a plain Python file
+
+>>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
+Deleted foo
+Initial Sync Complete
+Uploaded foo.py
+
+>>> remote_tree
+FILE foo.py
+
+>>> snapshot_files
+foo.py
+
+=== Delete the plain Python file
+
+>>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
+Deleted foo.py
+Initial Sync Complete
+
+>>> remote_tree
+
+>>> snapshot_files
+
+=== Plain Python file
+
+>>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
+Initial Sync Complete
+Uploaded bar.py
+
+>>> remote_tree
+FILE bar.py
+
+=== Turn the plain Python file into a notebook
+
+>>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
+Deleted bar.py
+Initial Sync Complete
+Uploaded bar.py
+
+>>> remote_tree
+NOTEBOOK bar PYTHON
+
+>>> snapshot_files
+bar.py
+
+=== Delete the notebook
+
+>>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
+Deleted bar
+Initial Sync Complete
+
+>>> remote_tree
+
+>>> snapshot_files
