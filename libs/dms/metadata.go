@@ -1,11 +1,16 @@
 package dms
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"path"
 	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/libs/structs/structdiff"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
@@ -84,6 +89,20 @@ func NextVersion(lastVersionID string) (int, error) {
 // DeploymentNodeName is the workspace node DMS makes for each deployment.
 // Keep it equal to the service's DEPLOYMENT_NODE_NAME.
 const DeploymentNodeName = "resources.deployment.json"
+
+// LookupDeploymentID returns the id of the deployment whose node sits in statePath, the node's
+// object id. It returns "" when there is no node, i.e. nothing was deployed with history yet.
+func LookupDeploymentID(ctx context.Context, w *databricks.WorkspaceClient, statePath string) (string, error) {
+	nodePath := path.Join(statePath, DeploymentNodeName)
+	obj, err := w.Workspace.GetStatusByPath(ctx, nodePath)
+	if errors.Is(err, apierr.ErrNotFound) || errors.Is(err, apierr.ErrResourceDoesNotExist) {
+		return "", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("looking up deployment at %s: %w", nodePath, err)
+	}
+	return strconv.FormatInt(obj.ObjectId, 10), nil
+}
 
 // DeploymentName, VersionName and OperationName build the resource names the
 // service uses, so callers pass only ids.
