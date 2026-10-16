@@ -1,0 +1,55 @@
+bundle:
+  name: complex-foreach-inputs
+
+variables:
+  table_list:
+    type: complex
+    description: "Tables to load from source"
+    default:
+      - task_id: load_customers
+        table: customers
+        source_type: parquet
+      - task_id: load_orders
+        table: orders
+        source_type: json
+  job_tasks:
+    type: complex
+    description: "Shared tasks with a nested inputs reference"
+    default:
+      - task_key: process_tables
+        for_each_task:
+          inputs: ${var.table_list}
+          concurrency: 2
+          task:
+            task_key: load_table
+            job_cluster_key: c
+            spark_python_task:
+              python_file: ./hello.py
+
+resources:
+  jobs:
+    my_job:
+      job_clusters:
+        - job_cluster_key: c
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 1
+      tasks:
+        - task_key: process_tables
+          for_each_task:
+            inputs: ${var.table_list}
+            concurrency: 2
+            task:
+              task_key: load_table
+              job_cluster_key: c
+              spark_python_task:
+                python_file: ./hello.py
+    var_tasks_job:
+      job_clusters:
+        - job_cluster_key: c
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 1
+      tasks: ${var.job_tasks}
