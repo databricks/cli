@@ -288,14 +288,15 @@ func remoteIsStarted(entry *PlanEntry) bool {
 }
 
 // deploymentToAppConfig extracts an AppConfig from an active deployment.
-// Returns nil if the deployment has no command or env vars.
+// Returns nil if the deployment has no command, env vars or health check.
 func deploymentToAppConfig(d *apps.AppDeployment) *resources.AppConfig {
-	if len(d.Command) == 0 && len(d.EnvVars) == 0 {
+	if len(d.Command) == 0 && len(d.EnvVars) == 0 && d.HealthCheck == nil {
 		return nil
 	}
 	config := &resources.AppConfig{
-		Command: d.Command,
-		Env:     nil,
+		Command:     d.Command,
+		Env:         nil,
+		HealthCheck: nil,
 	}
 	if len(d.EnvVars) > 0 {
 		config.Env = make([]resources.AppEnvVar, len(d.EnvVars))
@@ -305,6 +306,16 @@ func deploymentToAppConfig(d *apps.AppDeployment) *resources.AppConfig {
 				Value:     ev.Value,
 				ValueFrom: ev.ValueFrom,
 			}
+		}
+	}
+	if d.HealthCheck != nil {
+		timeoutSeconds := 0
+		if d.HealthCheck.Timeout != nil {
+			timeoutSeconds = int(d.HealthCheck.Timeout.AsDuration().Seconds())
+		}
+		config.HealthCheck = &resources.AppHealthCheck{
+			Path:           d.HealthCheck.Path,
+			TimeoutSeconds: timeoutSeconds,
 		}
 	}
 	return config
