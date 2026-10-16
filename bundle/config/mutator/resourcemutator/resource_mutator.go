@@ -232,7 +232,7 @@ func NormalizeAndInitializeResources(
 		return selectResources(root, addedResources)
 	})
 	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("failed to select resources: %s", err))
+		logdiag.LogError(ctx, fmt.Errorf("failed to select resources: %w", err))
 		return
 	}
 
@@ -251,7 +251,7 @@ func NormalizeAndInitializeResources(
 		return mergeResources(root, snapshot)
 	})
 	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("failed to merge resources: %s", err))
+		logdiag.LogError(ctx, fmt.Errorf("failed to merge resources: %w", err))
 	}
 }
 
@@ -274,7 +274,7 @@ func NormalizeResources(
 		return selectResources(root, updatedResources)
 	})
 	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("failed to select resources: %s", err))
+		logdiag.LogError(ctx, fmt.Errorf("failed to select resources: %w", err))
 		return
 	}
 
@@ -299,7 +299,7 @@ func NormalizeResources(
 		return mergeResources(root, snapshot)
 	})
 	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("failed to merge resources: %s", err))
+		logdiag.LogError(ctx, fmt.Errorf("failed to merge resources: %w", err))
 	}
 }
 
