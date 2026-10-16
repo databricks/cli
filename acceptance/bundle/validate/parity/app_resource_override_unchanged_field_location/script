@@ -1,0 +1,2 @@
+# A diagnostic on a field of a duplicated app resource entry points at the first entry.
+errcode trace $CLI bundle validate

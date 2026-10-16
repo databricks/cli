@@ -1,0 +1,13 @@
+
+>>> [CLI] bundle validate -o json
+Warning: required field "quartz_cron_expression" is not set
+  at resources.jobs.j.schedule
+  in databricks.yml:8:17
+
+Warning: required field "timezone_id" is not set
+  at resources.jobs.j.schedule
+  in databricks.yml:8:17
+
+{
+  "schedule": null
+}

@@ -1,0 +1,7 @@
+bundle:
+  name: test-bundle
+
+variables:
+  snapshot:
+    type: complex
+    default: ${bundle.deployment.lock}

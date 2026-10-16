@@ -1,0 +1,13 @@
+bundle:
+  name: test-bundle
+
+variables:
+  x:
+    default: base
+
+targets:
+  dev:
+    variables:
+      x:
+        default: first
+        default: second

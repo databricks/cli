@@ -1,0 +1,8 @@
+
+>>> [CLI] bundle validate
+Error: failed to load [TEST_TMP_DIR]/databricks.yml: yaml ([TEST_TMP_DIR]/databricks.yml:11:11): map merge requires map or sequence of maps as the value
+
+
+Found 1 error
+
+Exit code: 1

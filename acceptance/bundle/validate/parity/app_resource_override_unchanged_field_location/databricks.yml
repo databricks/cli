@@ -1,0 +1,17 @@
+bundle:
+  name: test-bundle
+
+resources:
+  apps:
+    app:
+      name: test-app
+      source_code_path: .
+      resources:
+        - name: job
+          job:
+            id: "1"
+            permission: INVALID
+        - name: job
+          job:
+            id: "2"
+            permission: INVALID
