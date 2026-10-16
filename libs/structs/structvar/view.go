@@ -291,7 +291,7 @@ func (x View) hasFields(v reflect.Value) bool {
 func (x View) structFields(v reflect.Value) iter.Seq2[string, View] {
 	return func(yield func(string, View) bool) {
 		info := GetStructInfo(v.Type())
-		for _, fv := range info.FieldValues(v) {
+		for fv := range info.FieldValues(v) {
 			child, ok := x.field(&info, v, fv.Key, fv.Value, fv.IsForced)
 			if ok && !yield(fv.Key, child) {
 				return
