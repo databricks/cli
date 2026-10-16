@@ -5,6 +5,6 @@
  },
  "cli_version": "0.0.0-dev",
  "lineage": "test-lineage",
- "serial": 1,
+ "serial": 0,
  "state": {}
 }
