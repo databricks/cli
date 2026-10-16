@@ -1,0 +1,23 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  features:
+    foo:
+      full_name: main.feat_inv_$UNIQUE_NAME.test_feature
+      description: This is a test feature # CAN_REMOVE
+      source:
+        delta_table_source:
+          full_name: main.feat_inv_$UNIQUE_NAME.source_table
+      function:
+        aggregation_function:
+          count_function:
+            input: value
+          time_window:
+            sliding:
+              window_duration: 604800s
+              slide_duration: 86400s
+      entities:
+        - name: id
+      timeseries_column:
+        name: timestamp
