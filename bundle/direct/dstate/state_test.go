@@ -106,15 +106,57 @@ func TestOpenUsesDMSVersionForSerial(t *testing.T) {
 		lastVersionID int
 		wantErr       string
 	}{
-		{name: "legacy missing serial", omitSerial: true, deploymentID: "123", lastVersionID: 7},
-		{name: "legacy zero serial", deploymentID: "123", lastVersionID: 7},
-		{name: "serial copy behind service", fileSerial: 2, deploymentID: "123", lastVersionID: 7},
-		{name: "serial copy equal to service", fileSerial: 7, deploymentID: "123", lastVersionID: 7},
-		{name: "serial copy ahead of service", fileSerial: 99, deploymentID: "123", lastVersionID: 7, wantErr: "resource state serial (99) is ahead of deployment history version (7)"},
-		{name: "no deployment has version zero"},
-		{name: "positive serial copy without deployment", fileSerial: 99, wantErr: "resource state serial (99) is ahead of deployment history version (0)"},
-		{name: "positive serial copy without recorded version", fileSerial: 1, deploymentID: "123", wantErr: "resource state serial (1) is ahead of deployment history version (0)"},
-		{name: "unmarked serial can be ahead of service", fileSerial: 99, unmarked: true, deploymentID: "123", lastVersionID: 7},
+		{
+			name:          "legacy missing serial",
+			omitSerial:    true,
+			deploymentID:  "123",
+			lastVersionID: 7,
+		},
+		{
+			name:          "legacy zero serial",
+			deploymentID:  "123",
+			lastVersionID: 7,
+		},
+		{
+			name:          "serial copy behind service",
+			fileSerial:    2,
+			deploymentID:  "123",
+			lastVersionID: 7,
+		},
+		{
+			name:          "serial copy equal to service",
+			fileSerial:    7,
+			deploymentID:  "123",
+			lastVersionID: 7,
+		},
+		{
+			name:          "serial copy ahead of service",
+			fileSerial:    99,
+			deploymentID:  "123",
+			lastVersionID: 7,
+			wantErr:       "resource state serial (99) is ahead of deployment history version (7)",
+		},
+		{
+			name: "no deployment has version zero",
+		},
+		{
+			name:       "positive serial copy without deployment",
+			fileSerial: 99,
+			wantErr:    "resource state serial (99) is ahead of deployment history version (0)",
+		},
+		{
+			name:         "positive serial copy without recorded version",
+			fileSerial:   1,
+			deploymentID: "123",
+			wantErr:      "resource state serial (1) is ahead of deployment history version (0)",
+		},
+		{
+			name:          "unmarked serial can be ahead of service",
+			fileSerial:    99,
+			unmarked:      true,
+			deploymentID:  "123",
+			lastVersionID: 7,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
