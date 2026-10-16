@@ -53,6 +53,14 @@ const (
 	Delete       ActionType = "delete"
 )
 
+// Bind and BindAndUpdate adopt an existing workspace resource: Bind records it unchanged and
+// BindAndUpdate also applies the config. Only the resource being bound gets them, so they are
+// never compared by severity.
+const (
+	Bind          ActionType = "bind"
+	BindAndUpdate ActionType = "bind_and_update"
+)
+
 var actionOrder = map[ActionType]int{
 	Undefined:    0,
 	Skip:         1,

@@ -46,6 +46,21 @@ type BindResult struct {
 	StatePath string
 }
 
+// copyRemoteEtag copies the etag from remote state for resources that use etag-based drift
+// detection (dashboards and genie spaces). The etag is not provided by the
+// user; it comes from remote. If we don't store it in state, we won't
+// detect remote drift correctly and the next plan shows a bogus update.
+func copyRemoteEtag(resourceKey string, remoteState, newState any) {
+	if (strings.Contains(resourceKey, ".dashboards.") || strings.Contains(resourceKey, ".genie_spaces.")) && remoteState != nil {
+		etag, err := structaccess.Get(remoteState, structpath.NewStringKey(nil, "etag"))
+		if err == nil && etag != nil {
+			if etagStr, ok := etag.(string); ok && etagStr != "" {
+				_ = structaccess.Set(newState, structpath.NewStringKey(nil, "etag"), etagStr)
+			}
+		}
+	}
+}
+
 // Bind adds an existing workspace resource to a temporary state and calculates
 // if there will be any changes when deploying.
 //
@@ -137,17 +152,8 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 			dependsOn = entry.DependsOn
 		}
 
-		// Copy etag from remote state for resources that use etag-based drift
-		// detection (dashboards and genie spaces). The etag is not provided by the
-		// user; it comes from remote. If we don't store it in state, we won't
-		// detect remote drift correctly and the next plan shows a bogus update.
-		if (strings.Contains(resourceKey, ".dashboards.") || strings.Contains(resourceKey, ".genie_spaces.")) && entry != nil && entry.RemoteState != nil {
-			etag, err := structaccess.Get(entry.RemoteState, structpath.NewStringKey(nil, "etag"))
-			if err == nil && etag != nil {
-				if etagStr, ok := etag.(string); ok && etagStr != "" {
-					_ = structaccess.Set(sv.Value, structpath.NewStringKey(nil, "etag"), etagStr)
-				}
-			}
+		if entry != nil {
+			copyRemoteEtag(resourceKey, entry.RemoteState, sv.Value)
 		}
 
 		// Compact hashed_fields fields so the persisted state stays small. Not needed for
