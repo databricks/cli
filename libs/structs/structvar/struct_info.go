@@ -1,6 +1,7 @@
 package structvar
 
 import (
+	"iter"
 	"reflect"
 	"slices"
 	"sync"
@@ -140,13 +141,16 @@ type FieldValue struct {
 	IsForced bool
 }
 
-func (s *StructInfo) FieldValues(v reflect.Value) []FieldValue {
-	out := make([]FieldValue, 0, len(s.Fields))
+// FieldValues yields the fields of the struct v. It is an iterator rather than a slice
+// because views call it on every struct they traverse.
+func (s *StructInfo) FieldValues(v reflect.Value) iter.Seq[FieldValue] {
+	return func(yield func(FieldValue) bool) {
+		for _, k := range s.FieldNames {
+			fv := FieldByIndex(v, s.Fields[k])
+			if !fv.IsValid() {
+				continue
+			}
 
-	for _, k := range s.FieldNames {
-		fv := FieldByIndex(v, s.Fields[k])
-
-		if fv.IsValid() {
 			isForced := true
 
 			// TODO: we should use isEmptyForOmitEmpty instead of IsZero()
@@ -154,15 +158,11 @@ func (s *StructInfo) FieldValues(v reflect.Value) []FieldValue {
 				isForced = s.IsForceSend(v, k)
 			}
 
-			out = append(out, FieldValue{
-				Key:      k,
-				Value:    fv,
-				IsForced: isForced,
-			})
+			if !yield(FieldValue{Key: k, Value: fv, IsForced: isForced}) {
+				return
+			}
 		}
 	}
-
-	return out
 }
 
 // isForceSend reports whether the field named k is listed in the ForceSendFields
@@ -176,7 +176,15 @@ func (s *StructInfo) IsForceSend(v reflect.Value, k string) bool {
 	if !fsf.IsValid() {
 		return false
 	}
-	return slices.Contains(fsf.Interface().([]string), s.GolangNames[k])
+	// Iterate with reflect: converting the slice to []string via Interface would
+	// allocate on every call.
+	name := s.GolangNames[k]
+	for i := range fsf.Len() {
+		if fsf.Index(i).String() == name {
+			return true
+		}
+	}
+	return false
 }
 
 // fieldByIndex resolves the value at the given index path, dereferencing embedded
