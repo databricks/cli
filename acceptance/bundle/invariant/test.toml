@@ -116,6 +116,9 @@ EnvMatrixExclude.no_model_serving_endpoint_telemetry_on_cloud = ["CONFIG_Cloud=t
 # UC connection to create on cloud, which the invariant tests don't provision; the
 # local mock server accepts them, so these run locally only.
 EnvMatrixExclude.no_model_service_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=model_service.yml.tmpl"]
+# The bundle deployments service rejects a "features." resource-key prefix, so recording
+# deployment history fails for this config on cloud; the local test server has no allowlist.
+EnvMatrixExclude.no_feature_dms_on_cloud = ["CONFIG_Cloud=true", "DMS=true", "INPUT_CONFIG=feature.yml.tmpl"]
 # Fake SQL endpoint for local tests
 
 [[Server]]
