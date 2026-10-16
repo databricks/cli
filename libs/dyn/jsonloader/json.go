@@ -30,7 +30,7 @@ func LoadJSON(data []byte, source string) (dyn.Value, error) {
 		// Get the current offset for error reporting
 		errorOffset := decoder.InputOffset()
 		errorLocation := offset.GetPosition(errorOffset)
-		return dyn.InvalidValue, fmt.Errorf("error decoding JSON at %s: %v", errorLocation, err)
+		return dyn.InvalidValue, fmt.Errorf("error decoding JSON at %s: %w", errorLocation, err)
 	}
 
 	// Check if there are any remaining tokens (should not be valid JSON)
