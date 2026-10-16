@@ -15,8 +15,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class RequestSource:
     """
-    :meta private: [EXPERIMENTAL]
-
     A request-time data source whose value is provided at inference time: offline batch scoring or online serving endpoint
     """
 
@@ -30,9 +28,7 @@ class RequestSource:
 
     flat_schema: VariableOrOptional[FlatSchema] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] A flat schema with scalar-typed fields only.
+    [Public Preview] A flat schema with scalar-typed fields only.
     """
 
     @classmethod
@@ -56,9 +52,7 @@ class RequestSourceDict(TypedDict, total=False):
 
     flat_schema: VariableOrOptional[FlatSchemaParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] A flat schema with scalar-typed fields only.
+    [Public Preview] A flat schema with scalar-typed fields only.
     """
 
 

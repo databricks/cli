@@ -25,22 +25,16 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class Function:
-    """
-    :meta private: [EXPERIMENTAL]
-    """
+    """"""
 
     aggregation_function: VariableOrOptional[AggregationFunction] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] An aggregation function applied over a time window.
+    [Public Preview] An aggregation function applied over a time window.
     """
 
     column_selection: VariableOrOptional[ColumnSelection] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Selects the latest value of a single column in a data source
+    [Public Preview] Selects the latest value of a single column in a data source
     """
 
     custom_udf: VariableOrOptional[CustomUdf] = None
@@ -63,16 +57,12 @@ class FunctionDict(TypedDict, total=False):
 
     aggregation_function: VariableOrOptional[AggregationFunctionParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] An aggregation function applied over a time window.
+    [Public Preview] An aggregation function applied over a time window.
     """
 
     column_selection: VariableOrOptional[ColumnSelectionParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Selects the latest value of a single column in a data source
+    [Public Preview] Selects the latest value of a single column in a data source
     """
 
     custom_udf: VariableOrOptional[CustomUdfParam]

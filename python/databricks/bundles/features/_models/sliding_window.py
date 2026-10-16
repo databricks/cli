@@ -13,15 +13,11 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class SlidingWindow:
-    """
-    :meta private: [EXPERIMENTAL]
-    """
+    """"""
 
     slide_duration: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The slide duration (interval by which windows advance, must be positive and less than duration).
+    [Public Preview] The slide duration (interval by which windows advance, must be positive and less than duration).
     """
 
     delay: VariableOrOptional[str] = None
@@ -45,9 +41,7 @@ class SlidingWindow:
 
     window_duration: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The duration of the sliding window. Must be positive when set; absent means lifetime
+    [Public Preview] The duration of the sliding window. Must be positive when set; absent means lifetime
     (aggregate over the entity's entire history).
     """
 
@@ -64,9 +58,7 @@ class SlidingWindowDict(TypedDict, total=False):
 
     slide_duration: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The slide duration (interval by which windows advance, must be positive and less than duration).
+    [Public Preview] The slide duration (interval by which windows advance, must be positive and less than duration).
     """
 
     delay: VariableOrOptional[str]
@@ -90,9 +82,7 @@ class SlidingWindowDict(TypedDict, total=False):
 
     window_duration: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The duration of the sliding window. Must be positive when set; absent means lifetime
+    [Public Preview] The duration of the sliding window. Must be positive when set; absent means lifetime
     (aggregate over the entity's entire history).
     """
 

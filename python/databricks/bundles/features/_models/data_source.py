@@ -38,16 +38,12 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class DataSource:
     """
-    :meta private: [EXPERIMENTAL]
-
     Specifies the data source backing a feature. Exactly one source type must be set.
     """
 
     delta_table_source: VariableOrOptional[DeltaTableSource] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] A Delta table data source.
+    [Public Preview] A Delta table data source.
     """
 
     feature_view_source: VariableOrOptional[FeatureViewSource] = None
@@ -59,9 +55,7 @@ class DataSource:
 
     kafka_source: VariableOrOptional[KafkaSource] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] A Kafka stream data source.
+    [Public Preview] A Kafka stream data source.
     """
 
     lateness: VariableOrOptional[SourceLateness] = None
@@ -74,16 +68,12 @@ class DataSource:
 
     request_source: VariableOrOptional[RequestSource] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] A request-time data source.
+    [Public Preview] A request-time data source.
     """
 
     stream_source: VariableOrOptional[StreamSource] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] A Stream data source.
+    [Public Preview] A Stream data source.
     """
 
     @classmethod
@@ -99,9 +89,7 @@ class DataSourceDict(TypedDict, total=False):
 
     delta_table_source: VariableOrOptional[DeltaTableSourceParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] A Delta table data source.
+    [Public Preview] A Delta table data source.
     """
 
     feature_view_source: VariableOrOptional[FeatureViewSourceParam]
@@ -113,9 +101,7 @@ class DataSourceDict(TypedDict, total=False):
 
     kafka_source: VariableOrOptional[KafkaSourceParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] A Kafka stream data source.
+    [Public Preview] A Kafka stream data source.
     """
 
     lateness: VariableOrOptional[SourceLatenessParam]
@@ -128,16 +114,12 @@ class DataSourceDict(TypedDict, total=False):
 
     request_source: VariableOrOptional[RequestSourceParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] A request-time data source.
+    [Public Preview] A request-time data source.
     """
 
     stream_source: VariableOrOptional[StreamSourceParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] A Stream data source.
+    [Public Preview] A Stream data source.
     """
 
 

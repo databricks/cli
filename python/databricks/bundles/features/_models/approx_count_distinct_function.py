@@ -14,23 +14,17 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class ApproxCountDistinctFunction:
     """
-    :meta private: [EXPERIMENTAL]
-
     Computes the approximate count of distinct values.
     """
 
     input: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The input column from which the approximate count of distinct values is computed.
+    [Public Preview] The input column from which the approximate count of distinct values is computed.
     """
 
     relative_sd: VariableOrOptional[float] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The maximum relative standard deviation allowed (default defined by Spark).
+    [Public Preview] The maximum relative standard deviation allowed (default defined by Spark).
     """
 
     @classmethod
@@ -46,16 +40,12 @@ class ApproxCountDistinctFunctionDict(TypedDict, total=False):
 
     input: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The input column from which the approximate count of distinct values is computed.
+    [Public Preview] The input column from which the approximate count of distinct values is computed.
     """
 
     relative_sd: VariableOrOptional[float]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The maximum relative standard deviation allowed (default defined by Spark).
+    [Public Preview] The maximum relative standard deviation allowed (default defined by Spark).
     """
 
 

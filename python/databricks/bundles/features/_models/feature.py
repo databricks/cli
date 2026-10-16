@@ -46,39 +46,28 @@ class Feature(Resource):
 
     full_name: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The full three-part name (catalog, schema, name) of the feature. This is the
-    feature's resource identifier; the catalog_name, schema_name, and name fields
-    below are OUTPUT_ONLY decomposed views of this value.
+    [Public Preview] The full three-part name (catalog, schema, name) of the feature.
     """
 
     function: VariableOr[Function]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The function by which the feature is computed.
+    [Public Preview] The function by which the feature is computed.
     """
 
     source: VariableOr[DataSource]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The data source of the feature.
+    [Public Preview] The data source of the feature.
     """
 
     description: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The description of the feature.
+    [Public Preview] The description of the feature.
     """
 
     entities: VariableOrList[EntityColumn] = field(default_factory=list)
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The entity columns for the feature, used as aggregation keys and for query-time lookup.
+    [Public Preview] The entity columns for the feature, used as aggregation keys and for query-time lookup.
+    Optional since entities are not set for RequestSource features or on-demand calculated features.
     """
 
     lifecycle: VariableOrOptional[Lifecycle] = None
@@ -96,9 +85,9 @@ class Feature(Resource):
 
     timeseries_column: VariableOrOptional[TimeseriesColumn] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Column recording time, used for point-in-time joins, backfills, and aggregations.
+    [Public Preview] Column recording time, used for point-in-time joins, backfills, and aggregations.
+    Optional since a timeseries column is not set for RequestSource features or on-demand
+    calculated features.
     """
 
     @classmethod
@@ -114,39 +103,28 @@ class FeatureDict(TypedDict, total=False):
 
     full_name: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The full three-part name (catalog, schema, name) of the feature. This is the
-    feature's resource identifier; the catalog_name, schema_name, and name fields
-    below are OUTPUT_ONLY decomposed views of this value.
+    [Public Preview] The full three-part name (catalog, schema, name) of the feature.
     """
 
     function: VariableOr[FunctionParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The function by which the feature is computed.
+    [Public Preview] The function by which the feature is computed.
     """
 
     source: VariableOr[DataSourceParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The data source of the feature.
+    [Public Preview] The data source of the feature.
     """
 
     description: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The description of the feature.
+    [Public Preview] The description of the feature.
     """
 
     entities: VariableOrList[EntityColumnParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The entity columns for the feature, used as aggregation keys and for query-time lookup.
+    [Public Preview] The entity columns for the feature, used as aggregation keys and for query-time lookup.
+    Optional since entities are not set for RequestSource features or on-demand calculated features.
     """
 
     lifecycle: VariableOrOptional[LifecycleParam]
@@ -164,9 +142,9 @@ class FeatureDict(TypedDict, total=False):
 
     timeseries_column: VariableOrOptional[TimeseriesColumnParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Column recording time, used for point-in-time joins, backfills, and aggregations.
+    [Public Preview] Column recording time, used for point-in-time joins, backfills, and aggregations.
+    Optional since a timeseries column is not set for RequestSource features or on-demand
+    calculated features.
     """
 
 

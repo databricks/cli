@@ -14,16 +14,12 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class MaxFunction:
     """
-    :meta private: [EXPERIMENTAL]
-
     Computes the maximum value.
     """
 
     input: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The input column from which the maximum is computed.
+    [Public Preview] The input column from which the maximum is computed.
     """
 
     @classmethod
@@ -39,9 +35,7 @@ class MaxFunctionDict(TypedDict, total=False):
 
     input: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The input column from which the maximum is computed.
+    [Public Preview] The input column from which the maximum is computed.
     """
 
 

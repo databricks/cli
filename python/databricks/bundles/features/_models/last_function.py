@@ -14,16 +14,12 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class LastFunction:
     """
-    :meta private: [EXPERIMENTAL]
-
     Returns the last value.
     """
 
     input: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The input column from which the last value is returned.
+    [Public Preview] The input column from which the last value is returned.
     """
 
     @classmethod
@@ -39,9 +35,7 @@ class LastFunctionDict(TypedDict, total=False):
 
     input: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The input column from which the last value is returned.
+    [Public Preview] The input column from which the last value is returned.
     """
 
 

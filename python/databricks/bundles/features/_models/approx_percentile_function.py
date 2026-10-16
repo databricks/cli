@@ -14,30 +14,22 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class ApproxPercentileFunction:
     """
-    :meta private: [EXPERIMENTAL]
-
     Computes the approximate percentile of values.
     """
 
     input: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The input column from which the approximate percentile is computed.
+    [Public Preview] The input column from which the approximate percentile is computed.
     """
 
     percentile: VariableOr[float]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The percentile value to compute (between 0 and 1).
+    [Public Preview] The percentile value to compute (between 0 and 1).
     """
 
     accuracy: VariableOrOptional[int] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The accuracy parameter (higher is more accurate but slower).
+    [Public Preview] The accuracy parameter (higher is more accurate but slower).
     """
 
     @classmethod
@@ -53,23 +45,17 @@ class ApproxPercentileFunctionDict(TypedDict, total=False):
 
     input: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The input column from which the approximate percentile is computed.
+    [Public Preview] The input column from which the approximate percentile is computed.
     """
 
     percentile: VariableOr[float]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The percentile value to compute (between 0 and 1).
+    [Public Preview] The percentile value to compute (between 0 and 1).
     """
 
     accuracy: VariableOrOptional[int]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The accuracy parameter (higher is more accurate but slower).
+    [Public Preview] The accuracy parameter (higher is more accurate but slower).
     """
 
 

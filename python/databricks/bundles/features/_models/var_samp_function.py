@@ -14,16 +14,12 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class VarSampFunction:
     """
-    :meta private: [EXPERIMENTAL]
-
     Computes the sample variance.
     """
 
     input: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The input column from which the sample variance is computed.
+    [Public Preview] The input column from which the sample variance is computed.
     """
 
     @classmethod
@@ -39,9 +35,7 @@ class VarSampFunctionDict(TypedDict, total=False):
 
     input: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The input column from which the sample variance is computed.
+    [Public Preview] The input column from which the sample variance is computed.
     """
 
 

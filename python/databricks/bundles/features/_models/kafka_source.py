@@ -13,22 +13,16 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class KafkaSource:
-    """
-    :meta private: [EXPERIMENTAL]
-    """
+    """"""
 
     name: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Name of the Kafka source, used to identify it. This is used to look up the corresponding KafkaConfig object. Can be distinct from topic name.
+    [Public Preview] Name of the Kafka source, used to identify it. This is used to look up the corresponding KafkaConfig object. Can be distinct from topic name.
     """
 
     filter_condition: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The filter condition applied to the source data before aggregation.
+    [Public Preview] The filter condition applied to the source data before aggregation.
     """
 
     @classmethod
@@ -44,16 +38,12 @@ class KafkaSourceDict(TypedDict, total=False):
 
     name: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Name of the Kafka source, used to identify it. This is used to look up the corresponding KafkaConfig object. Can be distinct from topic name.
+    [Public Preview] Name of the Kafka source, used to identify it. This is used to look up the corresponding KafkaConfig object. Can be distinct from topic name.
     """
 
     filter_condition: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The filter condition applied to the source data before aggregation.
+    [Public Preview] The filter condition applied to the source data before aggregation.
     """
 
 

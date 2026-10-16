@@ -18,24 +18,18 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class FieldDefinition:
     """
-    :meta private: [EXPERIMENTAL]
-
     A single field definition within a FlatSchema, specifying the field name and its scalar data type.
     Does not support nested or complex types (arrays, maps, structs).
     """
 
     data_type: VariableOr[ScalarDataType]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The scalar data type of the field.
+    [Public Preview] The scalar data type of the field.
     """
 
     name: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The name of the field.
+    [Public Preview] The name of the field.
     """
 
     @classmethod
@@ -51,16 +45,12 @@ class FieldDefinitionDict(TypedDict, total=False):
 
     data_type: VariableOr[ScalarDataTypeParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The scalar data type of the field.
+    [Public Preview] The scalar data type of the field.
     """
 
     name: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The name of the field.
+    [Public Preview] The name of the field.
     """
 
 

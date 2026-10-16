@@ -1,14 +1,29 @@
 # Generated, do not edit.
 
 recreate_on_changes:
+  - field: entities
+    reason: spec:immutable
+  - field: filter_condition
+    reason: spec:immutable
   - field: full_name
     reason: spec:immutable
   - field: function
     reason: spec:immutable
+  - field: inputs
+    reason: spec:immutable
+  - field: lineage_context
+    reason: spec:immutable
   - field: source
+    reason: spec:immutable
+  - field: time_window
+    reason: spec:immutable
+  - field: timeseries_column
     reason: spec:immutable
 
 ignore_remote_changes:
+  - field: lineage_context
+    reason: spec:input_only
+
   - field: catalog_name
     reason: spec:output_only
   - field: created_at

@@ -14,25 +14,19 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class RollingWindow:
     """
-    :meta private: [EXPERIMENTAL]
-
     A rolling time window with an optional non-negative delay.
     """
 
     delay: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Non-negative analytic lag that evaluates the window this far in the past. Use this for timing
+    [Public Preview] Non-negative analytic lag that evaluates the window this far in the past. Use this for timing
     variations unrelated to source lateness, such as a 30-day count as of one week ago. If unset,
     the analytic lag is zero. It composes with source.lateness when both are set.
     """
 
     window_duration: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The duration of the rolling window. Must be positive when set; absent means lifetime
+    [Public Preview] The duration of the rolling window. Must be positive when set; absent means lifetime
     (aggregate over the entity's entire history).
     """
 
@@ -49,18 +43,14 @@ class RollingWindowDict(TypedDict, total=False):
 
     delay: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Non-negative analytic lag that evaluates the window this far in the past. Use this for timing
+    [Public Preview] Non-negative analytic lag that evaluates the window this far in the past. Use this for timing
     variations unrelated to source lateness, such as a 30-day count as of one week ago. If unset,
     the analytic lag is zero. It composes with source.lateness when both are set.
     """
 
     window_duration: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The duration of the rolling window. Must be positive when set; absent means lifetime
+    [Public Preview] The duration of the rolling window. Must be positive when set; absent means lifetime
     (aggregate over the entity's entire history).
     """
 

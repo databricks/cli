@@ -14,16 +14,12 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class FirstFunction:
     """
-    :meta private: [EXPERIMENTAL]
-
     Returns the first value.
     """
 
     input: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The input column from which the first value is returned.
+    [Public Preview] The input column from which the first value is returned.
     """
 
     @classmethod
@@ -39,9 +35,7 @@ class FirstFunctionDict(TypedDict, total=False):
 
     input: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The input column from which the first value is returned.
+    [Public Preview] The input column from which the first value is returned.
     """
 
 

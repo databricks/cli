@@ -6,8 +6,6 @@ from typing import Literal
 
 class ScalarDataType(Enum):
     """
-    :meta private: [EXPERIMENTAL]
-
     Scalar data types for request-time field definitions.
     Only flat (non-nested) types are supported.
     """

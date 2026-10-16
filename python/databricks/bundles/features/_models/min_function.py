@@ -14,16 +14,12 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class MinFunction:
     """
-    :meta private: [EXPERIMENTAL]
-
     Computes the minimum value.
     """
 
     input: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The input column from which the minimum is computed.
+    [Public Preview] The input column from which the minimum is computed.
     """
 
     @classmethod
@@ -39,9 +35,7 @@ class MinFunctionDict(TypedDict, total=False):
 
     input: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The input column from which the minimum is computed.
+    [Public Preview] The input column from which the minimum is computed.
     """
 
 

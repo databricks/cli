@@ -29,15 +29,11 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class TimeWindow:
-    """
-    :meta private: [EXPERIMENTAL]
-    """
+    """"""
 
     rolling: VariableOrOptional[RollingWindow] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] A rolling time window with an optional non-negative delay.
+    [Public Preview] A rolling time window with an optional non-negative delay.
     """
 
     sawtooth: VariableOrOptional[SawtoothWindow] = None
@@ -49,9 +45,7 @@ class TimeWindow:
 
     sliding: VariableOrOptional[SlidingWindow] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview]
+    [Public Preview]
     """
 
     start_time: VariableOrOptional[str] = None
@@ -70,9 +64,7 @@ class TimeWindow:
 
     tumbling: VariableOrOptional[TumblingWindow] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview]
+    [Public Preview]
     """
 
     @classmethod
@@ -88,9 +80,7 @@ class TimeWindowDict(TypedDict, total=False):
 
     rolling: VariableOrOptional[RollingWindowParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] A rolling time window with an optional non-negative delay.
+    [Public Preview] A rolling time window with an optional non-negative delay.
     """
 
     sawtooth: VariableOrOptional[SawtoothWindowParam]
@@ -102,9 +92,7 @@ class TimeWindowDict(TypedDict, total=False):
 
     sliding: VariableOrOptional[SlidingWindowParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview]
+    [Public Preview]
     """
 
     start_time: VariableOrOptional[str]
@@ -123,9 +111,7 @@ class TimeWindowDict(TypedDict, total=False):
 
     tumbling: VariableOrOptional[TumblingWindowParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview]
+    [Public Preview]
     """
 
 

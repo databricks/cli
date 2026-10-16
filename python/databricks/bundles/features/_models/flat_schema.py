@@ -18,17 +18,13 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class FlatSchema:
     """
-    :meta private: [EXPERIMENTAL]
-
     A flat (non-nested) schema for request-time fields, defined as an ordered list of field definitions.
     This schema only supports scalar types.
     """
 
     fields: VariableOrList[FieldDefinition] = field(default_factory=list)
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The list of fields in this schema.
+    [Public Preview] The list of fields in this schema.
     """
 
     @classmethod
@@ -44,9 +40,7 @@ class FlatSchemaDict(TypedDict, total=False):
 
     fields: VariableOrList[FieldDefinitionParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The list of fields in this schema.
+    [Public Preview] The list of fields in this schema.
     """
 
 

@@ -14,16 +14,12 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class ColumnSelection:
     """
-    :meta private: [EXPERIMENTAL]
-
     A ColumnSelection function, equivalent to the LAST() record of an entity over a lifetime window
     """
 
     column: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Column name from source to select as the feature value.
+    [Public Preview] Column name from source to select as the feature value.
     """
 
     @classmethod
@@ -39,9 +35,7 @@ class ColumnSelectionDict(TypedDict, total=False):
 
     column: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Column name from source to select as the feature value.
+    [Public Preview] Column name from source to select as the feature value.
     """
 
 

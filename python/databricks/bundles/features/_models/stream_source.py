@@ -14,16 +14,12 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class StreamSource:
     """
-    :meta private: [EXPERIMENTAL]
-
     A Stream entity used as a data source for a feature.
     """
 
     full_name: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Three-part full name of the Stream (catalog.schema.stream).
+    [Public Preview] Three-part full name of the Stream (catalog.schema.stream).
     """
 
     dataframe_schema: VariableOrOptional[str] = None
@@ -37,9 +33,7 @@ class StreamSource:
 
     filter_condition: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The filter condition applied to the source data before aggregation.
+    [Public Preview] The filter condition applied to the source data before aggregation.
     """
 
     transformation_sql: VariableOrOptional[str] = None
@@ -63,9 +57,7 @@ class StreamSourceDict(TypedDict, total=False):
 
     full_name: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Three-part full name of the Stream (catalog.schema.stream).
+    [Public Preview] Three-part full name of the Stream (catalog.schema.stream).
     """
 
     dataframe_schema: VariableOrOptional[str]
@@ -79,9 +71,7 @@ class StreamSourceDict(TypedDict, total=False):
 
     filter_condition: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The filter condition applied to the source data before aggregation.
+    [Public Preview] The filter condition applied to the source data before aggregation.
     """
 
     transformation_sql: VariableOrOptional[str]

@@ -83,44 +83,32 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class AggregationFunction:
     """
-    :meta private: [EXPERIMENTAL]
-
     An aggregation function applied over a time window.
     """
 
     approx_count_distinct: VariableOrOptional[ApproxCountDistinctFunction] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Computes the approximate count of distinct values.
+    [Public Preview] Computes the approximate count of distinct values.
     """
 
     approx_percentile: VariableOrOptional[ApproxPercentileFunction] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Computes the approximate percentile of values.
+    [Public Preview] Computes the approximate percentile of values.
     """
 
     avg: VariableOrOptional[AvgFunction] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Computes the average of values.
+    [Public Preview] Computes the average of values.
     """
 
     count_function: VariableOrOptional[CountFunction] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Computes the count of values.
+    [Public Preview] Computes the count of values.
     """
 
     first: VariableOrOptional[FirstFunction] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Returns the first value.
+    [Public Preview] Returns the first value.
     """
 
     first_distinct: VariableOrOptional[FirstDistinctFunction] = None
@@ -139,9 +127,7 @@ class AggregationFunction:
 
     last: VariableOrOptional[LastFunction] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Returns the last value.
+    [Public Preview] Returns the last value.
     """
 
     last_distinct: VariableOrOptional[LastDistinctFunction] = None
@@ -160,58 +146,42 @@ class AggregationFunction:
 
     max: VariableOrOptional[MaxFunction] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Computes the maximum value.
+    [Public Preview] Computes the maximum value.
     """
 
     min: VariableOrOptional[MinFunction] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Computes the minimum value.
+    [Public Preview] Computes the minimum value.
     """
 
     stddev_pop: VariableOrOptional[StddevPopFunction] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Computes the population standard deviation.
+    [Public Preview] Computes the population standard deviation.
     """
 
     stddev_samp: VariableOrOptional[StddevSampFunction] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Computes the sample standard deviation.
+    [Public Preview] Computes the sample standard deviation.
     """
 
     sum: VariableOrOptional[SumFunction] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Computes the sum of values.
+    [Public Preview] Computes the sum of values.
     """
 
     time_window: VariableOrOptional[TimeWindow] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The time window over which the aggregation is computed.
+    [Public Preview] The time window over which the aggregation is computed.
     """
 
     var_pop: VariableOrOptional[VarPopFunction] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Computes the population variance.
+    [Public Preview] Computes the population variance.
     """
 
     var_samp: VariableOrOptional[VarSampFunction] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Computes the sample variance.
+    [Public Preview] Computes the sample variance.
     """
 
     @classmethod
@@ -227,37 +197,27 @@ class AggregationFunctionDict(TypedDict, total=False):
 
     approx_count_distinct: VariableOrOptional[ApproxCountDistinctFunctionParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Computes the approximate count of distinct values.
+    [Public Preview] Computes the approximate count of distinct values.
     """
 
     approx_percentile: VariableOrOptional[ApproxPercentileFunctionParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Computes the approximate percentile of values.
+    [Public Preview] Computes the approximate percentile of values.
     """
 
     avg: VariableOrOptional[AvgFunctionParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Computes the average of values.
+    [Public Preview] Computes the average of values.
     """
 
     count_function: VariableOrOptional[CountFunctionParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Computes the count of values.
+    [Public Preview] Computes the count of values.
     """
 
     first: VariableOrOptional[FirstFunctionParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Returns the first value.
+    [Public Preview] Returns the first value.
     """
 
     first_distinct: VariableOrOptional[FirstDistinctFunctionParam]
@@ -276,9 +236,7 @@ class AggregationFunctionDict(TypedDict, total=False):
 
     last: VariableOrOptional[LastFunctionParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Returns the last value.
+    [Public Preview] Returns the last value.
     """
 
     last_distinct: VariableOrOptional[LastDistinctFunctionParam]
@@ -297,58 +255,42 @@ class AggregationFunctionDict(TypedDict, total=False):
 
     max: VariableOrOptional[MaxFunctionParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Computes the maximum value.
+    [Public Preview] Computes the maximum value.
     """
 
     min: VariableOrOptional[MinFunctionParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Computes the minimum value.
+    [Public Preview] Computes the minimum value.
     """
 
     stddev_pop: VariableOrOptional[StddevPopFunctionParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Computes the population standard deviation.
+    [Public Preview] Computes the population standard deviation.
     """
 
     stddev_samp: VariableOrOptional[StddevSampFunctionParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Computes the sample standard deviation.
+    [Public Preview] Computes the sample standard deviation.
     """
 
     sum: VariableOrOptional[SumFunctionParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Computes the sum of values.
+    [Public Preview] Computes the sum of values.
     """
 
     time_window: VariableOrOptional[TimeWindowParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The time window over which the aggregation is computed.
+    [Public Preview] The time window over which the aggregation is computed.
     """
 
     var_pop: VariableOrOptional[VarPopFunctionParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Computes the population variance.
+    [Public Preview] Computes the population variance.
     """
 
     var_samp: VariableOrOptional[VarSampFunctionParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Computes the sample variance.
+    [Public Preview] Computes the sample variance.
     """
 
 

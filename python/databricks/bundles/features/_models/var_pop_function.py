@@ -14,16 +14,12 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class VarPopFunction:
     """
-    :meta private: [EXPERIMENTAL]
-
     Computes the population variance.
     """
 
     input: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The input column from which the population variance is computed.
+    [Public Preview] The input column from which the population variance is computed.
     """
 
     @classmethod
@@ -39,9 +35,7 @@ class VarPopFunctionDict(TypedDict, total=False):
 
     input: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The input column from which the population variance is computed.
+    [Public Preview] The input column from which the population variance is computed.
     """
 
 

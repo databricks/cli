@@ -14,16 +14,12 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class SumFunction:
     """
-    :meta private: [EXPERIMENTAL]
-
     Computes the sum of values.
     """
 
     input: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The input column from which the sum is computed. For Kafka sources, use dot-prefixed path
+    [Public Preview] The input column from which the sum is computed. For Kafka sources, use dot-prefixed path
     notation (e.g., "value.amount"). For nested fields, the leaf node name is used.
     Colon-prefixed notation (e.g., "value:amount") is supported for backwards
     compatibility but is deprecated; migrate to dot notation.
@@ -42,9 +38,7 @@ class SumFunctionDict(TypedDict, total=False):
 
     input: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The input column from which the sum is computed. For Kafka sources, use dot-prefixed path
+    [Public Preview] The input column from which the sum is computed. For Kafka sources, use dot-prefixed path
     notation (e.g., "value.amount"). For nested fields, the leaf node name is used.
     Colon-prefixed notation (e.g., "value:amount") is supported for backwards
     compatibility but is deprecated; migrate to dot notation.

@@ -14,16 +14,12 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class StddevSampFunction:
     """
-    :meta private: [EXPERIMENTAL]
-
     Computes the sample standard deviation.
     """
 
     input: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The input column from which the sample standard deviation is computed.
+    [Public Preview] The input column from which the sample standard deviation is computed.
     """
 
     @classmethod
@@ -39,9 +35,7 @@ class StddevSampFunctionDict(TypedDict, total=False):
 
     input: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The input column from which the sample standard deviation is computed.
+    [Public Preview] The input column from which the sample standard deviation is computed.
     """
 
 

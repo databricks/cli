@@ -13,38 +13,28 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class DeltaTableSource:
-    """
-    :meta private: [EXPERIMENTAL]
-    """
+    """"""
 
     full_name: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The full three-part (catalog, schema, table) name of the Delta table.
+    [Public Preview] The full three-part (catalog, schema, table) name of the Delta table.
     """
 
     dataframe_schema: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Schema of the resulting dataframe after transformations, in Spark StructType JSON format (from df.schema.json()).
+    [Public Preview] Schema of the resulting dataframe after transformations, in Spark StructType JSON format (from df.schema.json()).
     Required if transformation_sql is specified.
     Example: {"type":"struct","fields":[{"name":"col_a","type":"integer","nullable":true,"metadata":{}},{"name":"col_c","type":"integer","nullable":true,"metadata":{}}]}
     """
 
     filter_condition: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Single WHERE clause to filter delta table before applying transformations. Will be row-wise evaluated, so should only include conditionals and projections.
+    [Public Preview] Single WHERE clause to filter delta table before applying transformations. Will be row-wise evaluated, so should only include conditionals and projections.
     """
 
     transformation_sql: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] A single SQL SELECT expression applied after filter_condition.
+    [Public Preview] A single SQL SELECT expression applied after filter_condition.
     Should contains all the columns needed (eg. "SELECT *, col_a + col_b AS col_c FROM x.y.z WHERE col_a > 0" would have `transformation_sql` "*, col_a + col_b AS col_c")
     If transformation_sql is not provided, all columns of the delta table are present in the DataSource dataframe.
     """
@@ -62,32 +52,24 @@ class DeltaTableSourceDict(TypedDict, total=False):
 
     full_name: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The full three-part (catalog, schema, table) name of the Delta table.
+    [Public Preview] The full three-part (catalog, schema, table) name of the Delta table.
     """
 
     dataframe_schema: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Schema of the resulting dataframe after transformations, in Spark StructType JSON format (from df.schema.json()).
+    [Public Preview] Schema of the resulting dataframe after transformations, in Spark StructType JSON format (from df.schema.json()).
     Required if transformation_sql is specified.
     Example: {"type":"struct","fields":[{"name":"col_a","type":"integer","nullable":true,"metadata":{}},{"name":"col_c","type":"integer","nullable":true,"metadata":{}}]}
     """
 
     filter_condition: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Single WHERE clause to filter delta table before applying transformations. Will be row-wise evaluated, so should only include conditionals and projections.
+    [Public Preview] Single WHERE clause to filter delta table before applying transformations. Will be row-wise evaluated, so should only include conditionals and projections.
     """
 
     transformation_sql: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] A single SQL SELECT expression applied after filter_condition.
+    [Public Preview] A single SQL SELECT expression applied after filter_condition.
     Should contains all the columns needed (eg. "SELECT *, col_a + col_b AS col_c FROM x.y.z WHERE col_a > 0" would have `transformation_sql` "*, col_a + col_b AS col_c")
     If transformation_sql is not provided, all columns of the delta table are present in the DataSource dataframe.
     """
