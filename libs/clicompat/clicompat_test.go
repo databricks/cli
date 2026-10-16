@@ -304,7 +304,6 @@ func TestResolveAgentSkillsVersion(t *testing.T) {
 		want     string
 	}{
 		{name: "pinned", manifest: `{"0.0.0":{"appkit":"0.84.0","skills":"0.2.30"}}`, want: "0.2.30"},
-		{name: "track latest", manifest: `{"0.0.0":{"appkit":"0.84.0","skills":"0.2.30","skills_track_latest":true}}`, want: AgentSkillsLatest},
 		{name: "latest sentinel", manifest: `{"0.0.0":{"appkit":"0.84.0","skills":"latest"}}`, want: AgentSkillsLatest},
 	}
 	for _, tc := range tests {
@@ -333,9 +332,24 @@ func TestResolveEmbeddedAppKitVersion(t *testing.T) {
 }
 
 func TestResolveEmbeddedAgentSkillsVersion(t *testing.T) {
-	v, err := ResolveEmbeddedAgentSkillsVersion()
-	require.NoError(t, err)
-	assert.True(t, semver.IsValid("v"+v), "embedded skills version must be concrete")
+	for _, tc := range []struct {
+		version string
+		want    string
+	}{
+		{version: "1.0.0", want: "0.2.10"},
+		{version: "1.22.0", want: build.AgentSkillsFallbackVersion},
+		{version: "0.0.0-dev+test", want: build.AgentSkillsFallbackVersion},
+	} {
+		t.Run(tc.version, func(t *testing.T) {
+			original := build.GetInfo().Version
+			build.SetBuildVersion(tc.version)
+			t.Cleanup(func() { build.SetBuildVersion(original) })
+
+			v, err := ResolveEmbeddedAgentSkillsVersion()
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, v)
+		})
+	}
 }
 
 // --- Embedded manifest validation (replaces AppKit TS validator) ---
@@ -359,17 +373,10 @@ func TestEmbeddedManifest_IsWellFormed(t *testing.T) {
 
 	// Pinning the newest range (e.g. after a breaking skills release) must
 	// update this assertion in the same change.
-	assert.True(t, m[keys[len(keys)-1]].AgentSkillsTrackLatest,
+	assert.Equal(t, AgentSkillsLatest, m[keys[len(keys)-1]].AgentSkills,
 		"the newest CLI range must track the latest skills release")
-	for k, entry := range m {
-		// CLIs before 1.6.0 reject the whole manifest if any entry uses "latest".
-		assert.True(t, semver.IsValid("v"+entry.AgentSkills),
-			"entry %q must use a concrete skills version", k)
-		if entry.AgentSkillsTrackLatest {
-			assert.GreaterOrEqual(t, semver.Compare("v"+k, "v1.22.0"), 0,
-				"entry %q: CLIs before 1.22.0 ignore skills_track_latest", k)
-		}
-	}
+	assert.True(t, semver.IsValid("v"+build.AgentSkillsFallbackVersion),
+		"compiled skills fallback must be a concrete version")
 
 	// Keys must be in ascending semver order.
 	for i := 1; i < len(keys); i++ {

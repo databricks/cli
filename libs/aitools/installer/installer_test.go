@@ -460,9 +460,7 @@ func setupSkillsFallback(t *testing.T, latestErr error) (ManifestSource, string)
 	t.Setenv("DATABRICKS_CACHE_DIR", cacheDir)
 	require.NoError(t, os.WriteFile(filepath.Join(cacheDir, "compat-manifest.json"), build.CLICompatManifestJSON, 0o600))
 	stubLatestSkillsReleaseRef(t, "v9.9.9", latestErr)
-	embedded, err := clicompat.ResolveEmbeddedAgentSkillsVersion()
-	require.NoError(t, err)
-	fallbackRef := "v" + embedded
+	fallbackRef := "v" + build.AgentSkillsFallbackVersion
 	body, err := json.Marshal(testManifest())
 	require.NoError(t, err)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -1365,7 +1363,11 @@ func TestGetSkillsRefDefaultManifest(t *testing.T) {
 				var latestErr error
 				if offline {
 					latestErr = errors.New("network down")
-				} else if tc.latest {
+				}
+				switch {
+				case tc.latest && offline:
+					wantRef = "v" + build.AgentSkillsFallbackVersion
+				case tc.latest:
 					wantRef = "v9.9.9"
 				}
 				stubLatestSkillsReleaseRef(t, "v9.9.9", latestErr)
@@ -1380,24 +1382,21 @@ func TestGetSkillsRefDefaultManifest(t *testing.T) {
 }
 
 func TestGetSkillsRefLatestReleaseFallsBackToEmbeddedPin(t *testing.T) {
+	setBuildVersion(t, "1.22.0")
 	t.Setenv("DATABRICKS_SKILLS_REF", "")
 	withCachedCompat(t, skillsLatestSentinel)
 	stubLatestSkillsReleaseRef(t, "", errors.New("network down"))
-	embedded, err := clicompat.ResolveEmbeddedAgentSkillsVersion()
-	require.NoError(t, err)
 
 	ref, explicit, err := GetSkillsRef(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, "v"+embedded, ref)
+	assert.Equal(t, "v"+build.AgentSkillsFallbackVersion, ref)
 	assert.False(t, explicit, "an embedded fallback is not a user pin")
 }
 
 func TestFetchSkillsManifestWithFallback(t *testing.T) {
 	const missingRef = "v9.9.9"
 	setBuildVersion(t, "1.22.0")
-	embedded, err := clicompat.ResolveEmbeddedAgentSkillsVersion()
-	require.NoError(t, err)
-	fallbackRef := "v" + embedded
+	fallbackRef := "v" + build.AgentSkillsFallbackVersion
 
 	tests := []struct {
 		name          string
