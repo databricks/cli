@@ -8,8 +8,8 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 )
 
@@ -28,7 +28,7 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 				Severity:  diag.Error,
 				Summary:   "Missing app source code path or git source",
 				Detail:    fmt.Sprintf("app resource '%s' should have either source_code_path or git_source field", key),
-				Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "resources", "apps", key)),
+				Locations: b.Config.NearestLocations(structpath.NewPath(nil, "resources", "apps", key)),
 			})
 			continue
 		}
@@ -38,7 +38,7 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 				Severity:  diag.Error,
 				Summary:   "Both source_code_path and git_source fields are set",
 				Detail:    fmt.Sprintf("app resource '%s' should have either source_code_path or git_source field, not both", key),
-				Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "resources", "apps", key)),
+				Locations: b.Config.NearestLocations(structpath.NewPath(nil, "resources", "apps", key)),
 			})
 			continue
 		}
@@ -48,7 +48,7 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 				Severity:  diag.Error,
 				Summary:   "Duplicate app source code path",
 				Detail:    fmt.Sprintf("app resource '%s' has the same source code path as app resource '%s', this will lead to the app configuration being overridden by each other", key, usedSourceCodePaths[app.SourceCodePath]),
-				Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "resources", "apps", key, "source_code_path")),
+				Locations: b.Config.NearestLocations(structpath.NewPath(nil, "resources", "apps", key, "source_code_path")),
 			})
 		}
 		usedSourceCodePaths[app.SourceCodePath] = key
@@ -92,34 +92,20 @@ type appResourceReference struct {
 	permission   string
 }
 
-// hasPermissions checks if a bundle resource at the given dyn path has a non-empty permissions list.
-func hasPermissions(b *bundle.Bundle, resourcePath string) bool {
-	pv, err := dyn.Get(b.Config.Value(), resourcePath+".permissions")
-	if err != nil {
-		return false
+// hasPermissions checks if a bundle resource has a non-empty permissions list.
+func hasPermissions(resource structvar.View) bool {
+	for range resource.Get("permissions").Sequence() {
+		return true
 	}
-	s, ok := pv.AsSequence()
-	return ok && len(s) > 0
+	return false
 }
 
 // hasAppSPInPermissions checks if any permission entry for the given resource
 // references the app's service principal via variable interpolation.
-func hasAppSPInPermissions(b *bundle.Bundle, resourcePath, appKey string) bool {
+func hasAppSPInPermissions(resource structvar.View, appKey string) bool {
 	appSPRef := fmt.Sprintf("${resources.apps.%s.service_principal_client_id}", appKey)
-	pv, err := dyn.Get(b.Config.Value(), resourcePath+".permissions")
-	if err != nil {
-		return false
-	}
-	s, ok := pv.AsSequence()
-	if !ok {
-		return false
-	}
-	for _, entry := range s {
-		spn, err := dyn.Get(entry, "service_principal_name")
-		if err != nil {
-			continue
-		}
-		if str, ok := spn.AsString(); ok && str == appSPRef {
+	for _, entry := range resource.Get("permissions").Sequence() {
+		if str, ok := entry.Get("service_principal_name").AsString(); ok && str == appSPRef {
 			return true
 		}
 	}
@@ -146,12 +132,12 @@ func warnForAppResourcePermissions(b *bundle.Bundle, appKey string, app *resourc
 		}
 		refType, resourceKey := matches[1], matches[2]
 
-		resourcePath := fmt.Sprintf("resources.%s.%s", refType, resourceKey)
-		if !hasPermissions(b, resourcePath) {
+		resource := b.Config.View().Get("resources").Get(refType).Get(resourceKey)
+		if !hasPermissions(resource) {
 			continue
 		}
 
-		if hasAppSPInPermissions(b, resourcePath, appKey) {
+		if hasAppSPInPermissions(resource, appKey) {
 			continue
 		}
 
@@ -174,7 +160,7 @@ func warnForAppResourcePermissions(b *bundle.Bundle, appKey string, app *resourc
 				appKey,
 			),
 			Paths:     []*structpath.PathNode{appPath},
-			Locations: b.Config.GetLocationsOf(appPath),
+			Locations: b.Config.NearestLocations(appPath),
 		})
 	}
 

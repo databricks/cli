@@ -13,7 +13,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/statemgmt"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 // PreDeployChecks is common set of mutators between "bundle plan" and "bundle deploy".
@@ -52,22 +52,22 @@ func pipelineDeletionCascades(b *bundle.Bundle, action deployplan.Action) (bool,
 // checkForPreventDestroy checks if the resource has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed.
 // If it does, it returns an error.
 func checkForPreventDestroy(b *bundle.Bundle, actions []deployplan.Action) error {
-	root := b.Config.Value()
+	root := b.Config.View()
 	var errs []error
 	for _, action := range actions {
 		if action.ActionType != deployplan.Recreate && action.ActionType != deployplan.Delete {
 			continue
 		}
 
-		path, err := dyn.NewPathFromString(action.ResourceKey)
+		path, err := structpath.ParsePath(action.ResourceKey)
 		if err != nil {
 			return fmt.Errorf("failed to parse %q", action.ResourceKey)
 		}
 
-		path = append(path, dyn.Key("lifecycle"), dyn.Key("prevent_destroy"))
+		path = structpath.NewPath(path, "lifecycle", "prevent_destroy")
 
-		preventDestroyV, err := dyn.GetByPath(root, path)
-		if err != nil {
+		preventDestroyV := root.Lookup(path)
+		if !preventDestroyV.IsValid() {
 			continue
 		}
 

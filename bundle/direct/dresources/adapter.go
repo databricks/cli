@@ -512,7 +512,7 @@ func (a *Adapter) FieldIsStableOutput(path *structpath.PathNode) bool {
 // references needed to complete it. Resources without PrepareInputConfig pass their config through.
 func (a *Adapter) PrepareInputConfig(inputConfig any, resourceKey string) (*structvar.StructVar, error) {
 	if a.prepareInputConfig == nil {
-		return &structvar.StructVar{Value: inputConfig, Refs: nil}, nil
+		return &structvar.StructVar{Value: inputConfig, Refs: nil, Locations: nil}, nil
 	}
 
 	outs, err := a.prepareInputConfig.Call(inputConfig, resourceKey)

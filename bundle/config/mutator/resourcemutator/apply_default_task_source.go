@@ -5,7 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -37,57 +37,62 @@ func (a *applyDefaultTaskSource) Name() string {
 	return "ApplyDefaultTaskSource"
 }
 
-// sourceAwareTaskTypes are the task types that support the `source` field.
-// https://docs.databricks.com/api/workspace/jobs/create
-var sourceAwareTaskTypes = []string{
-	"dbt_task",
-	"gen_ai_compute_task",
-	"notebook_task",
-	"spark_python_task",
-	"sql_task.file",
-}
-
 func (a *applyDefaultTaskSource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	jobsPattern := dyn.NewPattern(dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey())
+	for name, job := range b.Config.Resources.Jobs {
+		// Only git_source jobs need an explicit source; leave the rest untouched.
+		// A missing key or an explicit `git_source: null` both count as absent,
+		// matching the typed nil pointer TranslatePaths keys off; otherwise we would
+		// set source: GIT on a job whose paths get translated to workspace paths.
+		// A reference is not absent, although the typed field is nil.
+		if job == nil || (job.GitSource == nil && !b.Config.IsReference("resources.jobs."+name+".git_source")) {
+			continue
+		}
 
-	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		return dyn.MapByPattern(root, jobsPattern, func(_ dyn.Path, job dyn.Value) (dyn.Value, error) {
-			// Only git_source jobs need an explicit source; leave the rest untouched.
-			// A missing key (KindInvalid) or an explicit `git_source: null` (KindNil)
-			// both count as absent, matching the typed nil pointer TranslatePaths keys
-			// off; otherwise we would set source: GIT on a job whose paths get
-			// translated to workspace paths.
-			gitSource := job.Get("git_source")
-			if gitSource.Kind() == dyn.KindInvalid || gitSource.Kind() == dyn.KindNil {
-				return job, nil
+		for i := range job.Tasks {
+			task := &job.Tasks[i]
+			taskPath := structpath.NewPath(nil, "resources", "jobs", name, "tasks", i)
+			if task.ForEachTask != nil {
+				setGitTaskSource(b, structpath.NewPath(taskPath, "for_each_task", "task"), &task.ForEachTask.Task)
 			}
-
-			return dyn.Map(job, "tasks", dyn.Foreach(func(_ dyn.Path, task dyn.Value) (dyn.Value, error) {
-				task, err := dyn.Map(task, "for_each_task.task", func(_ dyn.Path, foreachTask dyn.Value) (dyn.Value, error) {
-					return setGitTaskSource(foreachTask)
-				})
-				if err != nil {
-					return dyn.InvalidValue, err
-				}
-				return setGitTaskSource(task)
-			}))
-		})
-	})
-
-	return diag.FromErr(err)
+			setGitTaskSource(b, taskPath, task)
+		}
+	}
+	return nil
 }
 
 // setGitTaskSource sets source: GIT on the first task-type block present that
 // supports the field, unless the user already set it.
-func setGitTaskSource(task dyn.Value) (dyn.Value, error) {
-	for _, taskType := range sourceAwareTaskTypes {
-		t, err := dyn.Get(task, taskType)
-		if err != nil {
+// The task types are the ones that support the `source` field:
+// https://docs.databricks.com/api/workspace/jobs/create
+func setGitTaskSource(b *bundle.Bundle, taskPath *structpath.PathNode, task *jobs.Task) {
+	type taskSource struct {
+		path   []any
+		source *jobs.Source
+	}
+	var sources []taskSource
+	if task.DbtTask != nil {
+		sources = append(sources, taskSource{[]any{"dbt_task", "source"}, &task.DbtTask.Source})
+	}
+	if task.GenAiComputeTask != nil {
+		sources = append(sources, taskSource{[]any{"gen_ai_compute_task", "source"}, &task.GenAiComputeTask.Source})
+	}
+	if task.NotebookTask != nil {
+		sources = append(sources, taskSource{[]any{"notebook_task", "source"}, &task.NotebookTask.Source})
+	}
+	if task.SparkPythonTask != nil {
+		sources = append(sources, taskSource{[]any{"spark_python_task", "source"}, &task.SparkPythonTask.Source})
+	}
+	if task.SqlTask != nil && task.SqlTask.File != nil {
+		sources = append(sources, taskSource{[]any{"sql_task", "file", "source"}, &task.SqlTask.File.Source})
+	}
+	for _, s := range sources {
+		// An explicit `source: ""` is set by the user, although the typed value is
+		// empty; not every task type has ForceSendFields to record it, but it is
+		// defined in the configuration.
+		if *s.source != "" || b.Config.ExactLocation(structpath.NewPath(taskPath, s.path...)).File != "" {
 			continue
 		}
-		if _, err := dyn.Get(t, "source"); err != nil {
-			return dyn.Set(task, taskType+".source", dyn.V(string(jobs.SourceGit)))
-		}
+		*s.source = jobs.SourceGit
+		return
 	}
-	return task, nil
 }

@@ -528,7 +528,7 @@ func makeEditCluster(id string, config *compute.ClusterSpec) compute.EditCluster
 }
 
 // librariesPath is the ClusterState path of the libraries slice, used to detect library changes.
-var librariesPath = structpath.MustParsePath("libraries")
+var librariesPath = structpath.NewPath(nil, "libraries")
 
 // KeyedSlices compares libraries by identity rather than index so reordering (or the
 // read-order the status API returns) does not produce phantom diffs.

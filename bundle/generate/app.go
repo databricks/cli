@@ -1,54 +1,47 @@
 package generate
 
 import (
-	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/structs/structyaml"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 )
 
-func ConvertAppToValue(app *apps.App, sourceCodePath string) (dyn.Value, error) {
-	ar, err := convert.FromTyped(app.Resources, dyn.NilValue)
-	if err != nil {
-		return dyn.NilValue, err
-	}
-
+func ConvertAppToValue(app *apps.App, sourceCodePath string) (structyaml.Map, error) {
 	// The majority of fields of the app struct are read-only.
 	// We copy the relevant fields manually.
-	dv := map[string]dyn.Value{
-		"name":        dyn.NewValue(app.Name, []diag.Location{{Line: 1}}),
-		"description": dyn.NewValue(app.Description, []diag.Location{{Line: 2}}),
-	}
+	dv := structyaml.M(
+		"name", app.Name,
+		"description", app.Description,
+	)
 
 	// For a git-backed app, emit git_repository + git_source instead of a
 	// workspace source_code_path. Otherwise the generated bundle would silently
 	// down-convert the app to workspace source and point source_code_path at a
 	// local directory that has nothing downloaded into it.
 	if app.GitRepository != nil {
-		dv["git_repository"] = gitRepositoryValue(app.GitRepository)
-		if gs := gitSourceValue(app); gs.Kind() != dyn.KindNil {
-			dv["git_source"] = gs
+		dv.Add("git_repository", gitRepositoryValue(app.GitRepository))
+		if gs := gitSourceValue(app); len(gs) > 0 {
+			dv.Add("git_source", gs)
 		}
 	} else {
-		dv["source_code_path"] = dyn.NewValue(sourceCodePath, []diag.Location{{Line: 4}})
+		dv.Add("source_code_path", sourceCodePath)
 	}
 
-	if ar.Kind() != dyn.KindNil {
-		dv["resources"] = ar.WithLocations([]diag.Location{{Line: 5}})
+	if ar := structyaml.Value(app.Resources); ar != nil {
+		dv.Add("resources", ar)
 	}
 
-	return dyn.V(dv), nil
+	return dv, nil
 }
 
-func gitRepositoryValue(r *apps.GitRepository) dyn.Value {
-	m := map[string]dyn.Value{
-		"url":      dyn.NewValue(r.Url, []diag.Location{{Line: 1}}),
-		"provider": dyn.NewValue(r.Provider, []diag.Location{{Line: 2}}),
-	}
+func gitRepositoryValue(r *apps.GitRepository) structyaml.Map {
+	m := structyaml.M(
+		"url", r.Url,
+		"provider", r.Provider,
+	)
 	if r.AutoDeploy {
-		m["auto_deploy"] = dyn.NewValue(r.AutoDeploy, []diag.Location{{Line: 3}})
+		m.Add("auto_deploy", r.AutoDeploy)
 	}
-	return dyn.NewValue(m, []diag.Location{{Line: 3}})
+	return m
 }
 
 // gitSourceValue returns the reference the app deploys from (branch, tag, or
@@ -56,29 +49,26 @@ func gitRepositoryValue(r *apps.GitRepository) dyn.Value {
 // configured git_source and falls back to the default source of the app's most
 // recent deployment. System-populated fields (resolved_commit and the nested
 // git_repository) are intentionally omitted.
-func gitSourceValue(app *apps.App) dyn.Value {
+func gitSourceValue(app *apps.App) structyaml.Map {
 	src := app.GitSource
 	if src == nil {
 		src = app.DefaultGitSource
 	}
 	if src == nil {
-		return dyn.NilValue
+		return nil
 	}
 
-	m := map[string]dyn.Value{}
+	var m structyaml.Map
 	switch {
 	case src.Branch != "":
-		m["branch"] = dyn.NewValue(src.Branch, []diag.Location{{Line: 1}})
+		m.Add("branch", src.Branch)
 	case src.Tag != "":
-		m["tag"] = dyn.NewValue(src.Tag, []diag.Location{{Line: 1}})
+		m.Add("tag", src.Tag)
 	case src.Commit != "":
-		m["commit"] = dyn.NewValue(src.Commit, []diag.Location{{Line: 1}})
+		m.Add("commit", src.Commit)
 	}
 	if src.SourceCodePath != "" {
-		m["source_code_path"] = dyn.NewValue(src.SourceCodePath, []diag.Location{{Line: 2}})
+		m.Add("source_code_path", src.SourceCodePath)
 	}
-	if len(m) == 0 {
-		return dyn.NilValue
-	}
-	return dyn.NewValue(m, []diag.Location{{Line: 4}})
+	return m
 }

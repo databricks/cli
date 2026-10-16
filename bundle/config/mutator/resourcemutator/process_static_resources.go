@@ -2,12 +2,10 @@ package resourcemutator
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
 )
 
@@ -64,18 +62,10 @@ func (p processStaticResources) Apply(ctx context.Context, b *bundle.Bundle) dia
 
 func getAllResources(b *bundle.Bundle) (ResourceKeySet, error) {
 	set := NewResourceKeySet()
-	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		pattern := dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey())
-		err := set.AddPattern(pattern, root)
-		if err != nil {
-			return dyn.InvalidValue, err
+	for _, group := range b.Config.Resources.AllResources() {
+		for name := range group.Resources {
+			set.AddResourceKey(ResourceKey{Type: group.Description.PluralName, Name: name})
 		}
-
-		return root, nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to collect resources: %s", err)
 	}
-
 	return set, nil
 }

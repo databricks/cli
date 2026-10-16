@@ -8,7 +8,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -57,7 +56,7 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 	if identityCount != 1 {
 		return diag.Diagnostics{{
 			Summary:   "run_as section must specify exactly one non-empty identity: user_name, service_principal_name, or group_name",
-			Locations: []diag.Location{b.Config.GetLocation("run_as")},
+			Locations: []diag.Location{b.Config.NearestLocation(structpath.NewPath(nil, "run_as"))},
 			Severity:  diag.Error,
 		}}
 	}
@@ -85,7 +84,7 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 	if len(b.Config.Resources.ModelServingEndpoints) > 0 {
 		diags = diags.Extend(reportRunAsNotSupported(
 			"model_serving_endpoints",
-			b.Config.GetLocation("resources.model_serving_endpoints"),
+			b.Config.NearestLocation(structpath.NewPath(nil, "resources", "model_serving_endpoints")),
 			b.Config.Workspace.CurrentUser.UserName,
 			identity,
 		))
@@ -95,7 +94,7 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 	if len(b.Config.Resources.QualityMonitors) > 0 {
 		diags = diags.Extend(reportRunAsNotSupported(
 			"quality_monitors",
-			b.Config.GetLocation("resources.quality_monitors"),
+			b.Config.NearestLocation(structpath.NewPath(nil, "resources", "quality_monitors")),
 			b.Config.Workspace.CurrentUser.UserName,
 			identity,
 		))
@@ -109,7 +108,7 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 			}
 			diags = diags.Extend(reportRunAsNotSupported(
 				"dashboards with embed_credentials set to true",
-				b.Config.GetLocationOf(structpath.NewPath(nil, "resources", "dashboards", key)),
+				b.Config.NearestLocation(structpath.NewPath(nil, "resources", "dashboards", key)),
 				b.Config.Workspace.CurrentUser.UserName,
 				identity,
 			))
@@ -120,7 +119,7 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 	if len(b.Config.Resources.Apps) > 0 {
 		diags = diags.Extend(reportRunAsNotSupported(
 			"apps",
-			b.Config.GetLocation("resources.apps"),
+			b.Config.NearestLocation(structpath.NewPath(nil, "resources", "apps")),
 			b.Config.Workspace.CurrentUser.UserName,
 			identity,
 		))
@@ -220,17 +219,17 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	b.Metrics.AddBoolValue("experimental.use_legacy_run_as", b.Config.Experimental != nil && b.Config.Experimental.UseLegacyRunAs)
 
 	// Track whether top level run_as is set.
-	b.Metrics.AddBoolValue("run_as_set", b.Config.Value().Get("run_as").Kind() != dyn.KindInvalid)
+	b.Metrics.AddBoolValue("run_as_set", b.Config.RunAs != nil)
 
 	// Mutator is a no-op if run_as is not specified in the bundle
-	if b.Config.Value().Get("run_as").Kind() == dyn.KindInvalid {
+	if b.Config.RunAs == nil {
 		return nil
 	}
 
 	// User has opted to use the legacy behavior of run_as with the
 	// experimental.use_legacy_run_as flag.
 	if b.Config.Experimental != nil && b.Config.Experimental.UseLegacyRunAs {
-		if b.Config.Value().Get("run_as").Get("group_name").Kind() != dyn.KindInvalid {
+		if b.Config.RunAs.GroupName != "" || slices.Contains(b.Config.RunAs.ForceSendFields, "GroupName") {
 			return diag.Errorf("run_as.group_name is not supported with experimental.use_legacy_run_as; disable experimental.use_legacy_run_as to use a group identity")
 		}
 		setPipelineOwnersToRunAsIdentity(b)
@@ -240,7 +239,7 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 				Severity:  diag.Warning,
 				Summary:   "You are using the legacy mode of run_as. The support for this mode is experimental and might be removed in a future release of the CLI. In order to run the pipelines in your DABs project as the run_as user this mode changes the owners of the pipelines to the run_as identity, which requires the user deploying the bundle to be a workspace admin, and also a Metastore admin if the pipeline target is in UC.",
 				Paths:     structpath.NewPathSlice("experimental", "use_legacy_run_as"),
-				Locations: b.Config.GetLocations("experimental.use_legacy_run_as"),
+				Locations: b.Config.NearestLocations(structpath.NewPath(nil, "experimental", "use_legacy_run_as")),
 			},
 		}
 	}

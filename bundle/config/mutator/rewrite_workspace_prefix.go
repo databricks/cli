@@ -7,7 +7,8 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type rewriteWorkspacePrefix struct{}
@@ -44,38 +45,36 @@ func (m *rewriteWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) di
 		{"/Workspace${workspace.resource_path}", "${workspace.resource_path}"},
 	}
 
-	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		// Walk through the bundle configuration, check all the string leafs and
-		// see if any of the prefixes are used in the remote path.
-		return dyn.Walk(root, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			vv, ok := v.AsString()
-			if !ok {
-				return v, nil
+	// Walk through the bundle configuration, check all the string leafs and
+	// see if any of the prefixes are used in the remote path.
+	err := structvar.Walk(b.Config.View(), func(p *structpath.PathNode, v structvar.View) error {
+		vv, ok := v.AsString()
+		if !ok {
+			return nil
+		}
+
+		newPath := vv
+		for _, rewrite := range paths {
+			if !strings.Contains(newPath, rewrite.pattern) {
+				continue
 			}
 
-			newPath := vv
-			for _, rewrite := range paths {
-				if !strings.Contains(newPath, rewrite.pattern) {
-					continue
-				}
+			newPath = strings.ReplaceAll(newPath, rewrite.pattern, rewrite.replacement)
+			diags = append(diags, diag.Diagnostic{
+				Severity:  diag.Warning,
+				Summary:   fmt.Sprintf("substring %q found in %q. Please update this to %q.", rewrite.pattern, vv, newPath),
+				Detail:    "For more information, please refer to: https://docs.databricks.com/en/release-notes/dev-tools/bundles.html#workspace-paths",
+				Locations: v.Locations(),
+				Paths:     []*structpath.PathNode{p},
+			})
+		}
 
-				newPath = strings.ReplaceAll(newPath, rewrite.pattern, rewrite.replacement)
-				diags = append(diags, diag.Diagnostic{
-					Severity:  diag.Warning,
-					Summary:   fmt.Sprintf("substring %q found in %q. Please update this to %q.", rewrite.pattern, vv, newPath),
-					Detail:    "For more information, please refer to: https://docs.databricks.com/en/release-notes/dev-tools/bundles.html#workspace-paths",
-					Locations: v.Locations(),
-					Paths:     dyn.ToStructPaths(p),
-				})
-			}
+		if newPath == vv {
+			return nil
+		}
 
-			if newPath == vv {
-				return v, nil
-			}
-
-			// Remove the workspace prefix from the string.
-			return dyn.NewValue(newPath, v.Locations()), nil
-		})
+		// Remove the workspace prefix from the string.
+		return b.Config.Set(p, newPath)
 	})
 	if err != nil {
 		return diag.FromErr(err)
