@@ -11,7 +11,8 @@ normalize_slash:
   - field: storage_root
     reason: uc_strips_trailing_slash
 backend_defaults:
-  # UC auto-populates unity.catalog.managed.<format>.defaults.* keys after create.
-  # Without this, every subsequent plan produces an Update whose payload is empty,
-  # and UC rejects it with "UpdateSchema Nothing to update".
-  - field: properties['unity.catalog.managed.*.defaults.*']
+  # Skip properties present only on the remote when the config declares none,
+  # including unity.catalog.managed.*.defaults.* keys UC sets after create.
+  # The SDK cannot send an empty map to clear them. Declared properties
+  # still take part in drift detection.
+  - field: properties
