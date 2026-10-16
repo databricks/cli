@@ -39,11 +39,9 @@ func escapeMemberKeyPart(part string) string {
 	return strings.ReplaceAll(part, "|", "%7C")
 }
 
-// materializationSetMemberKey identifies a member by content rather than position, matching how
-// UpdateMaterializationSet pairs a requested member with a stored one. The parts are the feature
-// name, the online store name (empty for the offline member, since an online destination always
-// carries one), and whether the member is streaming. Feature name alone is not unique: one feature
-// has an offline member plus one member per online store.
+// materializationSetMemberKey identifies a materialized feature member by content rather than
+// position. The key components are the feature name, the online store name (empty for the offline
+// member), and whether the trigger is streaming.
 func materializationSetMemberKey(member ml.MaterializedFeature) (string, string) {
 	onlineStoreName := ""
 	if member.OnlineStoreConfig != nil {
@@ -64,17 +62,12 @@ func (*ResourceMaterializationSet) KeyedSlices() map[string]any {
 
 var materializedFeaturesPattern = structpath.NewPatternDotString(nil, "materialized_features")
 
-// OverrideChangeDesc keeps a member added or removed whole on the update path. Such a change is a
-// two-segment path, which still matches every per-field rule under materialized_features[*] because
-// the matcher truncates a pattern longer than the path, so without this it classifies as recreate.
-//
-// Both directions belong on the update path, for different reasons. A removal is what the endpoint
-// is for: it deletes the members the request omits, leaving the rest untouched. An addition the
-// endpoint rejects outright, and routing it here surfaces that rejection naming the feature,
-// instead of recreating the set and destroying every sibling the config left alone to achieve it.
-//
-// A one-segment path is deliberately left alone: it means one side has no members at all, which
-// materialized_features being required makes invalid config, and recreate is the safe plan for it.
+// OverrideChangeDesc marks a materialized feature member added to or removed from the set as an
+// update. Such a change is a two-segment path,
+// materialized_features[member='<feature name>|<online store name>|<is streaming>'], which an
+// immutable field rule under materialized_features[*] still matches. This counts that match as an
+// update rather than a destroy-and-recreate, because a whole-member addition or removal is what the
+// update endpoint handles.
 func (*ResourceMaterializationSet) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *ml.MaterializationSet) error {
 	if path.Len() == 2 && path.HasPatternPrefix(materializedFeaturesPattern) {
 		change.Action = deployplan.Update
