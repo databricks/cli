@@ -1,0 +1,34 @@
+title "Python notebook is uploaded without its extension\n"
+echo "# Databricks notebook source" > src/foo.py
+sync_once
+trace remote_tree
+trace snapshot_files
+
+title "Turn the notebook into a plain Python file\n"
+echo "# No longer a python notebook" > src/foo.py
+sync_once
+trace remote_tree
+trace snapshot_files
+
+title "Delete the plain Python file\n"
+rm src/foo.py
+sync_once
+trace remote_tree
+trace snapshot_files
+
+title "Plain Python file\n"
+touch src/bar.py
+sync_once
+trace remote_tree
+
+title "Turn the plain Python file into a notebook\n"
+echo "# Databricks notebook source" > src/bar.py
+sync_once
+trace remote_tree
+trace snapshot_files
+
+title "Delete the notebook\n"
+rm src/bar.py
+sync_once
+trace remote_tree
+trace snapshot_files

@@ -1,0 +1,30 @@
+# Output events arrive in non-deterministic order, so sync output is sorted.
+mkdir src
+touch src/foo.txt
+
+repo_path="/Repos/$CURRENT_USER_NAME/sync-repo-$UNIQUE_NAME"
+workspace_path="/Users/$CURRENT_USER_NAME/sync-$UNIQUE_NAME"
+
+cleanup() {
+    $CLI repos delete "$repo_path" &>> LOG.cleanup || true
+    $CLI workspace delete --recursive "$workspace_path" &>> LOG.cleanup || true
+}
+trap cleanup EXIT
+
+title "A repo path must exist\n"
+trace musterr $CLI sync src "/Repos/$CURRENT_USER_NAME/doesnt-exist-$UNIQUE_NAME"
+
+title "So must the repo a nested path points into\n"
+trace musterr $CLI sync src "/Repos/$CURRENT_USER_NAME/doesnt-exist-$UNIQUE_NAME/nested/directory"
+
+title "Syncing into an existing repo works\n"
+$CLI repos create https://github.com/databricks/databricks-empty-ide-project.git gitHub --path "$repo_path" > /dev/null
+trace $CLI sync src "$repo_path" | sort
+
+title "A missing folder nested under the repo is created\n"
+trace $CLI sync src "$repo_path/nested/directory" | sort
+trace $CLI workspace get-status "$repo_path/nested/directory" | jq -r .object_type
+
+title "A missing workspace folder is created\n"
+trace $CLI sync src "$workspace_path" | sort
+trace $CLI workspace get-status "$workspace_path" | jq -r .object_type
