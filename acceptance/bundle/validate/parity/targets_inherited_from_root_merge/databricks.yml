@@ -1,0 +1,15 @@
+bundle:
+  name: test-bundle
+
+variables:
+  x:
+    default: base
+
+definitions:
+  root_defaults: &root_defaults
+    targets:
+      dev:
+        variables:
+          x: overridden
+
+<<: *root_defaults

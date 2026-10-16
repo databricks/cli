@@ -1,0 +1,2 @@
+# A reference to an unset struct resolves to the struct with its fields filled in.
+trace $CLI bundle validate -o json | jq .variables.snapshot

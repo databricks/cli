@@ -1,0 +1,2 @@
+# A value replaced by a later duplicate key is still loaded, so its invalid (integer) key is rejected.
+errcode trace $CLI bundle validate
