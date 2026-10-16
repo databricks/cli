@@ -1,0 +1,13 @@
+trace uv run $UV_ARGS -q $CLI bundle deploy
+
+# pydabs covers only resources defined or modified in Python (jobs, pipelines),
+# while resources_metadata covers every resource in the bundle (including schemas).
+title "PyDABs deploy telemetry"
+trace cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event | {
+  pydabs,
+  experimental: .experimental | with_entries(select(.key | startswith("python_"))),
+  all_resource_types: [.resources_metadata.resources[].resource_type]
+}'
+
+rm -fr .databricks __pycache__
+rm "$OUT_REQUESTS"

@@ -1,0 +1,20 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+experimental:
+  python:
+    resources:
+      - "resources:load_resources"
+    mutators:
+      - "mutators:update_job"
+
+resources:
+  jobs:
+    yaml_job:
+      name: "YAML Job"
+  schemas:
+    yaml_schema:
+      catalog_name: main
+      name: yaml_schema

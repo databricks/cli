@@ -1,0 +1,44 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/default/files...
+Created jobs.python_job
+Created jobs.yaml_job
+Created pipelines.python_pipeline
+Created schemas.yaml_schema
+Files: 0 uploaded, 0 deleted
+Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
+
+=== PyDABs deploy telemetry
+>>> cat [OUTPUT_DIR]/out.requests.txt
+{
+  "pydabs": {
+    "resource_loaders_count": 1,
+    "resource_mutators_count": 1,
+    "added_resources_count": 2,
+    "updated_resources_count": 2,
+    "resources": [
+      {
+        "resource_type": "jobs",
+        "added_count": 1,
+        "updated_count": 2
+      },
+      {
+        "resource_type": "pipelines",
+        "added_count": 1,
+        "updated_count": 0
+      }
+    ],
+    "config_section": "EXPERIMENTAL_PYTHON"
+  },
+  "experimental": {
+    "python_added_resources_count": 2,
+    "python_updated_resources_count": 2,
+    "python_resource_loaders_count": 1,
+    "python_resource_mutators_count": 1
+  },
+  "all_resource_types": [
+    "jobs",
+    "pipelines",
+    "schemas"
+  ]
+}
