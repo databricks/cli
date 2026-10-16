@@ -1,0 +1,9 @@
+{"Time":"2026-10-05T15:53:15.831243+02:00","Action":"start","Package":"github.com/databricks/cli/bundle/internal/tf/codegen"}
+{"Time":"2026-10-05T15:53:15.831346+02:00","Action":"output","Package":"github.com/databricks/cli/bundle/internal/tf/codegen","Output":"?   \tgithub.com/databricks/cli/bundle/internal/tf/codegen\t[no test files]\n"}
+{"Time":"2026-10-05T15:53:15.831356+02:00","Action":"skip","Package":"github.com/databricks/cli/bundle/internal/tf/codegen","Elapsed":0}
+{"Time":"2026-10-05T15:53:15.831369+02:00","Action":"start","Package":"github.com/databricks/cli/bundle/internal/tf/codegen/generator"}
+{"Time":"2026-10-05T15:53:15.831395+02:00","Action":"output","Package":"github.com/databricks/cli/bundle/internal/tf/codegen/generator","Output":"?   \tgithub.com/databricks/cli/bundle/internal/tf/codegen/generator\t[no test files]\n"}
+{"Time":"2026-10-05T15:53:15.831401+02:00","Action":"start","Package":"github.com/databricks/cli/bundle/internal/tf/codegen/schema"}
+{"Time":"2026-10-05T15:53:15.831403+02:00","Action":"output","Package":"github.com/databricks/cli/bundle/internal/tf/codegen/schema","Output":"?   \tgithub.com/databricks/cli/bundle/internal/tf/codegen/schema\t[no test files]\n"}
+{"Time":"2026-10-05T15:53:15.831403+02:00","Action":"skip","Package":"github.com/databricks/cli/bundle/internal/tf/codegen/generator","Elapsed":0}
+{"Time":"2026-10-05T15:53:15.831412+02:00","Action":"skip","Package":"github.com/databricks/cli/bundle/internal/tf/codegen/schema","Elapsed":0}

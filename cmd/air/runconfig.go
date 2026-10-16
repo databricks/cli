@@ -712,11 +712,11 @@ func configLeafName(path string) string {
 
 // cutLast splits s around the final instance of sep.
 func cutLast(s, sep string) (before, after string, found bool) {
-	i := strings.LastIndex(s, sep)
-	if i < 0 {
+	before, after, ok := strings.CutLast(s, sep)
+	if !ok {
 		return s, "", false
 	}
-	return s[:i], s[i+len(sep):], true
+	return before, after, true
 }
 
 // unknownConfigFieldError reports an unresolvable segment, naming the valid

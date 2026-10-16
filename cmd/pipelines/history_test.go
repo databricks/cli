@@ -250,9 +250,9 @@ func TestFilterUpdates(t *testing.T) {
 			expectedLast:  400,
 		},
 		{
-			name:          "no updates - empty slice",
+			name:          "no updates with time filter",
 			updates:       noUpdates,
-			startTime:     nil,
+			startTime:     new(int64(500)),
 			endTime:       nil,
 			expectedCount: 0,
 			expectedFirst: 0,
@@ -273,17 +273,17 @@ func TestFilterUpdates(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := filterUpdates(tt.updates, tt.startTime, tt.endTime)
 			if err != nil {
-				t.Errorf("filterUpdates(updates, %d, %d) returned error: %v", tt.startTime, tt.endTime, err)
+				t.Errorf("filterUpdates() returned error: %v", err)
 			}
 			if len(result) != tt.expectedCount {
-				t.Errorf("filterUpdates(updates, %d, %d) returned %d updates, want %d", tt.startTime, tt.endTime, len(result), tt.expectedCount)
+				t.Errorf("filterUpdates() returned %d updates, want %d", len(result), tt.expectedCount)
 			}
 			if tt.expectedCount > 0 {
 				if result[0].CreationTime != tt.expectedFirst {
-					t.Errorf("filterUpdates(updates, %d, %d) first update = %d, want %d", tt.startTime, tt.endTime, result[0].CreationTime, tt.expectedFirst)
+					t.Errorf("filterUpdates() first update = %d, want %d", result[0].CreationTime, tt.expectedFirst)
 				}
 				if result[len(result)-1].CreationTime != tt.expectedLast {
-					t.Errorf("filterUpdates(updates, %d, %d) last update = %d, want %d", tt.startTime, tt.endTime, result[len(result)-1].CreationTime, tt.expectedLast)
+					t.Errorf("filterUpdates() last update = %d, want %d", result[len(result)-1].CreationTime, tt.expectedLast)
 				}
 			}
 		})

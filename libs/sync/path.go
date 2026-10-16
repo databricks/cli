@@ -7,11 +7,21 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
+
+// getStatusWithRetry returns the workspace object at remotePath, retrying transient failures.
+// The read has no side effects, so a transient server error or a refused HTTP/2 stream
+// (https://github.com/databricks/cli/issues/6472) is safe to replay instead of failing the sync.
+func getStatusWithRetry(ctx context.Context, wsc *databricks.WorkspaceClient, remotePath string) (*workspace.ObjectInfo, error) {
+	return retry.With(ctx, retry.IsTransientRead, func() (*workspace.ObjectInfo, error) {
+		return wsc.Workspace.GetStatusByPath(ctx, remotePath)
+	})
+}
 
 func repoPathForPath(me *iam.User, remotePath string) string {
 	base := path.Clean("/Repos/" + me.UserName)
@@ -40,7 +50,7 @@ func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClie
 	// Ensure that the remote path exists.
 	// If it is a repo, it has to exist.
 	// If it is a workspace path, it may not exist.
-	info, err := wsc.Workspace.GetStatusByPath(ctx, remotePath)
+	info, err := getStatusWithRetry(ctx, wsc, remotePath)
 	if err != nil {
 		// We only deal with 404s below.
 		if !apierr.IsMissing(err) {
@@ -50,7 +60,7 @@ func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClie
 		// If the path is nested under a repo, the repo has to exist.
 		if strings.HasPrefix(remotePath, "/Repos/") {
 			repoPath := repoPathForPath(me, remotePath)
-			_, err = wsc.Workspace.GetStatusByPath(ctx, repoPath)
+			_, err = getStatusWithRetry(ctx, wsc, repoPath)
 			if err != nil && apierr.IsMissing(err) {
 				return fmt.Errorf("%s does not exist; please create it first", repoPath)
 			}
@@ -66,7 +76,7 @@ func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClie
 		if err != nil {
 			return fmt.Errorf("unable to create directory at %s: %w", remotePath, err)
 		}
-		info, err = wsc.Workspace.GetStatusByPath(ctx, remotePath)
+		info, err = getStatusWithRetry(ctx, wsc, remotePath)
 		if err != nil {
 			return err
 		}

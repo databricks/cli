@@ -910,11 +910,9 @@ func TestFromTypedForceSendFieldsEmbedded(t *testing.T) {
 	}
 
 	src := Outer{
-		Inner: Inner{
-			Field:           nil,
-			ForceSendFields: []string{"Field"},
-		},
-		Other: "value",
+		Field:           nil,
+		ForceSendFields: []string{"Field"},
+		Other:           "value",
 	}
 
 	nv, err := FromTyped(src, dyn.NilValue)

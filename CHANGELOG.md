@@ -1,5 +1,37 @@
 # Version changelog
 
+## Release v1.21.0 (2026-10-14)
+
+### CLI
+
+ * Support pipeline IDs in `pipelines history`. ([#6995](https://github.com/databricks/cli/pull/6995))
+ * Show a hint for previewing more rows in `pipelines show`. ([#6995](https://github.com/databricks/cli/pull/6995))
+ * `databricks environments setup-local` now uses the environment in `UV_PROJECT_ENVIRONMENT` when it is set, as `uv sync` does. ([#7026](https://github.com/databricks/cli/pull/7026))
+ * `databricks environments setup-local` now supports uv workspace members: it uses the shared `.venv` at the workspace root and writes the dependency constraints to the root `pyproject.toml`. ([#7018](https://github.com/databricks/cli/pull/7018))
+
+### AI Runtime
+
+ * Limit `databricks air run` submission preflight validation to one five-second attempt before continuing when the service is unavailable. ([#6994](https://github.com/databricks/cli/pull/6994))
+
+### Bundles
+
+ * Bundle file uploads now use the multipart `POST /api/2.0/workspace/import` endpoint instead of the deprecated `POST /api/2.0/workspace-files/import-file`, raising the per-workspace upload rate limit and improving deploy throughput under concurrency. ([#6149](https://github.com/databricks/cli/pull/6149))
+ * Diagnostic paths now quote map keys that are not identifiers, e.g. `resources.jobs['${var.env}_job']`. ([#6980](https://github.com/databricks/cli/pull/6980))
+ * No longer include `CLAUDE.md` in the bundle templates, now that Claude supports `AGENTS.md`. ([#7000](https://github.com/databricks/cli/pull/7000))
+ * Fix `bundle deployment bind` silently binding over a deployment state it could not read, which could take over a resource that was already managed by the bundle. ([#6331](https://github.com/databricks/cli/pull/6331))
+ * `databricks bundle deploy`, `databricks bundle sync` and `databricks sync` now retry file, library, state and metadata uploads that fail with a transient server error (5xx or 408), instead of failing. ([#7014](https://github.com/databricks/cli/pull/7014))
+ * `databricks bundle deploy`, `databricks bundle sync` and `databricks sync` now retry the workspace path check (`workspace/get-status`) when it fails with a transient server error (5xx or 408) or an HTTP/2 `REFUSED_STREAM`, instead of failing. ([#7044](https://github.com/databricks/cli/pull/7044))
+ * Fixed `experimental.immutable_folder` failing validation for targets with `mode: development` ("file_path must start with '~/' or contain the current username"). ([#7027](https://github.com/databricks/cli/pull/7027))
+ * Fixed `experimental.immutable_folder` failing with `experimental.deployment_history` ("workspace_info.file_path must be an absolute workspace path") and failing `bundle validate` when top-level `permissions` are set. ([#7001](https://github.com/databricks/cli/pull/7001))
+ * Translate relative `.env` file paths in a job's `environment_variables[].spec.files` to their deployed workspace locations. ([#6985](https://github.com/databricks/cli/pull/6985))
+ * Resolve job `project_environment` paths relative to the YAML file that defines them. ([#6983](https://github.com/databricks/cli/pull/6983))
+
+### Dependency Updates
+
+ * Bump Go toolchain to 1.26.9. ([#6996](https://github.com/databricks/cli/pull/6996))
+ * Update Go SDK to 0.188.0. ([#7038](https://github.com/databricks/cli/pull/7038))
+
+
 ## Release v1.20.0 (2026-10-07)
 
 ### Notable Changes

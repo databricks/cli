@@ -46,6 +46,10 @@ from databricks.bundles.model_provider_services._models.model_provider_service_c
     ModelProviderServiceConfigOpenAiProviderConfig,
     ModelProviderServiceConfigOpenAiProviderConfigParam,
 )
+from databricks.bundles.model_provider_services._models.model_provider_service_config_provider_pricing_config import (
+    ModelProviderServiceConfigProviderPricingConfig,
+    ModelProviderServiceConfigProviderPricingConfigParam,
+)
 from databricks.bundles.model_provider_services._models.rate_limit import (
     RateLimit,
     RateLimitParam,
@@ -92,6 +96,15 @@ class ModelProviderServiceConfig:
     ] = None
     """
     Azure OpenAI provider configuration.
+    """
+
+    bedrock_mantle: VariableOrOptional[
+        ModelProviderServiceConfigAmazonBedrockProviderConfig
+    ] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Amazon Bedrock provider configuration.
     """
 
     custom: VariableOrOptional[ModelProviderServiceConfigCustomProviderConfig] = None
@@ -148,6 +161,14 @@ class ModelProviderServiceConfig:
     openai: VariableOrOptional[ModelProviderServiceConfigOpenAiProviderConfig] = None
     """
     OpenAI provider configuration.
+    """
+
+    pricing: VariableOrOptional[ModelProviderServiceConfigProviderPricingConfig] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Pricing configuration for this provider service. An explicitly empty
+    configuration is retained on Create and Update and applies no adjustment.
     """
 
     provider_type: VariableOrOptional[
@@ -217,6 +238,15 @@ class ModelProviderServiceConfigDict(TypedDict, total=False):
     Azure OpenAI provider configuration.
     """
 
+    bedrock_mantle: VariableOrOptional[
+        ModelProviderServiceConfigAmazonBedrockProviderConfigParam
+    ]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Amazon Bedrock provider configuration.
+    """
+
     custom: VariableOrOptional[ModelProviderServiceConfigCustomProviderConfigParam]
     """
     Custom OpenAI-compatible provider configuration with bearer-token
@@ -271,6 +301,14 @@ class ModelProviderServiceConfigDict(TypedDict, total=False):
     openai: VariableOrOptional[ModelProviderServiceConfigOpenAiProviderConfigParam]
     """
     OpenAI provider configuration.
+    """
+
+    pricing: VariableOrOptional[ModelProviderServiceConfigProviderPricingConfigParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Pricing configuration for this provider service. An explicitly empty
+    configuration is retained on Create and Update and applies no adjustment.
     """
 
     provider_type: VariableOrOptional[

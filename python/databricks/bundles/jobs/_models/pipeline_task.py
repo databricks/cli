@@ -32,9 +32,7 @@ class PipelineTask:
 
     full_refresh_selection: VariableOrList[str] = field(default_factory=list)
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] A list of tables to update with fullRefresh.
+    A list of tables to update with fullRefresh.
     """
 
     parameters: VariableOrDict[str] = field(default_factory=dict)
@@ -47,24 +45,18 @@ class PipelineTask:
 
     refresh_flow_selection: VariableOrList[str] = field(default_factory=list)
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Flow names to selectively refresh. These are unioned with other selective refresh
+    Flow names to selectively refresh. These are unioned with other selective refresh
     options (refresh_selection, full_refresh_selection) to determine the final set of flows to refresh.
     """
 
     refresh_selection: VariableOrList[str] = field(default_factory=list)
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] A list of tables to update without fullRefresh.
+    A list of tables to update without fullRefresh.
     """
 
     reset_checkpoint_selection: VariableOrList[str] = field(default_factory=list)
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] A list of streaming flows to reset checkpoints without clearing data.
+    A list of streaming flows to reset checkpoints without clearing data.
     """
 
     @classmethod
@@ -90,9 +82,7 @@ class PipelineTaskDict(TypedDict, total=False):
 
     full_refresh_selection: VariableOrList[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] A list of tables to update with fullRefresh.
+    A list of tables to update with fullRefresh.
     """
 
     parameters: VariableOrDict[str]
@@ -105,24 +95,18 @@ class PipelineTaskDict(TypedDict, total=False):
 
     refresh_flow_selection: VariableOrList[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Flow names to selectively refresh. These are unioned with other selective refresh
+    Flow names to selectively refresh. These are unioned with other selective refresh
     options (refresh_selection, full_refresh_selection) to determine the final set of flows to refresh.
     """
 
     refresh_selection: VariableOrList[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] A list of tables to update without fullRefresh.
+    A list of tables to update without fullRefresh.
     """
 
     reset_checkpoint_selection: VariableOrList[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] A list of streaming flows to reset checkpoints without clearing data.
+    A list of streaming flows to reset checkpoints without clearing data.
     """
 
 

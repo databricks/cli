@@ -47,6 +47,11 @@ var sshServerBootstrapScript string
 
 var errServerMetadata = errors.New("server metadata error")
 
+// errDriverProxyForbidden is a 403 from the driver proxy. Unlike the other non-200 responses, which a
+// server that is still starting produces too, retrying cannot change it: the workspace forbids the
+// connection, e.g. because an administrator disabled port forwarding to serverless compute.
+var errDriverProxyForbidden = errors.New("the workspace refused the SSH tunnel connection")
+
 var connectionNameRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
 
 const (
@@ -653,7 +658,7 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 	log.Debugf(ctx, "Metadata response status code: %d", resp.StatusCode)
 
 	if resp.StatusCode != http.StatusOK {
-		return serverMetadata{}, errors.Join(errServerMetadata, fmt.Errorf("server is not ok, status code %d", resp.StatusCode))
+		return serverMetadata{}, metadataResponseError(resp.StatusCode, bodyBytes)
 	}
 
 	return serverMetadata{
@@ -663,6 +668,26 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 		UsagePolicyID:         wsMetadata.UsagePolicyID,
 		KeepDetachedProcesses: wsMetadata.KeepDetachedProcesses,
 	}, nil
+}
+
+// metadataResponseError classifies a non-200 response from the server's /metadata endpoint. A 403
+// is final and carries the driver proxy's own explanation; anything else is errServerMetadata,
+// which callers treat as a server that is not running yet.
+func metadataResponseError(statusCode int, body []byte) error {
+	if statusCode != http.StatusForbidden {
+		return errors.Join(errServerMetadata, fmt.Errorf("server is not ok, status code %d", statusCode))
+	}
+	// The driver proxy writes its error as a JSON string ("CODE: message") rather than the usual
+	// {"error_code", "message"} object.
+	var message string
+	if json.Unmarshal(body, &message) != nil {
+		message = string(body)
+	}
+	message = strings.TrimSpace(message)
+	if message == "" {
+		message = fmt.Sprintf("status code %d", statusCode)
+	}
+	return fmt.Errorf("%w: %s", errDriverProxyForbidden, message)
 }
 
 // newDriverProxyRequest builds an authenticated GET request to one of the SSH server's
@@ -1292,6 +1317,15 @@ func describeRunFailure(ctx context.Context, client *databricks.WorkspaceClient,
 	return strings.TrimRight(b.String(), "\n")
 }
 
+// cancelSSHServerRun cancels the bootstrap run this connection submitted once no client can reach
+// its server. Best effort: the server also shuts itself down after its no-client delay, so a
+// failure here must not hide the error that made the connection give up.
+func cancelSSHServerRun(ctx context.Context, client *databricks.WorkspaceClient, runID int64) {
+	if _, err := client.Jobs.CancelRun(ctx, jobs.CancelRun{RunId: runID}); err != nil {
+		log.Debugf(ctx, "Failed to cancel the ssh server job run %d: %v", runID, err)
+	}
+}
+
 // runFailureIfTerminated reports whether the bootstrap run has reached a terminal state (so the
 // SSH server will never come up), returning a formatted failure description when it has.
 func runFailureIfTerminated(ctx context.Context, client *databricks.WorkspaceClient, runID int64) (string, bool) {
@@ -1381,6 +1415,7 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 	clusterID := opts.ClusterID
 
 	meta, err := getServerMetadata(ctx, client, sessionID, clusterID, version, opts.Liteswap)
+	// This includes errDriverProxyForbidden: a new server would be refused the same way.
 	if err != nil && !errors.Is(err, errServerMetadata) {
 		return "", 0, "", err
 	}
@@ -1410,6 +1445,10 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 				return "", 0, "", ctx.Err()
 			}
 			meta, err = getServerMetadata(ctx, client, sessionID, clusterID, version, opts.Liteswap)
+			if errors.Is(err, errDriverProxyForbidden) {
+				cancelSSHServerRun(ctx, client, runID)
+				return "", 0, "", err
+			}
 			// Accept only once metadata reflects the requested usage policy, so we don't latch
 			// onto a server a previous connection started under a different policy before our new
 			// server has overwritten metadata.json.

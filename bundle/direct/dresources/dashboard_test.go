@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,11 +13,9 @@ import (
 
 func TestDashboardState_JSONSerialization_PublishedField(t *testing.T) {
 	state := &DashboardState{
-		DashboardConfig: resources.DashboardConfig{
-			DisplayName: "test-dashboard",
-			WarehouseId: "warehouse123",
-		},
-		Published: true,
+		DisplayName: "test-dashboard",
+		WarehouseId: "warehouse123",
+		Published:   true,
 	}
 
 	data, err := json.Marshal(state)
@@ -31,11 +28,9 @@ func TestDashboardCompactState(t *testing.T) {
 	requireLargeEnoughToHash(t, largeDashboard)
 
 	state := &DashboardState{
-		DashboardConfig: resources.DashboardConfig{
-			DisplayName:         "test-dashboard",
-			Etag:                "etag-123",
-			SerializedDashboard: largeDashboard,
-		},
+		DisplayName:         "test-dashboard",
+		Etag:                "etag-123",
+		SerializedDashboard: largeDashboard,
 	}
 
 	out, err := CompactState(GetResourceConfig("dashboards"), state)

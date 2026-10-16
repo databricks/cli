@@ -24,12 +24,12 @@ type procStat struct {
 func parseProcStat(content string) (procStat, error) {
 	// Anchor on the last ')' instead of splitting from the left: the second field is the
 	// executable name, and it can contain both spaces and parentheses.
-	comm := strings.LastIndex(content, ")")
-	if comm < 0 {
+	_, after, ok := strings.CutLast(content, ")")
+	if !ok {
 		return procStat{}, fmt.Errorf("no comm field in %q", content)
 	}
 	// state, ppid and pgrp are the three fields that follow comm.
-	fields := strings.Fields(content[comm+1:])
+	fields := strings.Fields(after)
 	if len(fields) < 3 {
 		return procStat{}, fmt.Errorf("expected state, ppid and pgrp after comm in %q", content)
 	}

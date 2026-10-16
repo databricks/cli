@@ -1,0 +1,36 @@
+
+=== default target without compute_id
+>>> [CLI] bundle validate
+Warning: compute_id is deprecated, please use cluster_id instead
+  at bundle.compute_id
+  in databricks.yml:3:15
+
+Warning: compute_id is deprecated, please use cluster_id instead
+  at targets.dev.compute_id
+  in databricks.yml:7:17
+
+Name: test-bundle
+Target: other
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/other
+
+Found 2 warnings
+
+=== target with compute_id
+>>> [CLI] bundle validate -t dev
+Warning: compute_id is deprecated, please use cluster_id instead
+  at bundle.compute_id
+  in databricks.yml:3:15
+
+Warning: compute_id is deprecated, please use cluster_id instead
+  at targets.dev.compute_id
+  in databricks.yml:7:17
+
+Name: test-bundle
+Target: dev
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev
+
+Found 2 warnings

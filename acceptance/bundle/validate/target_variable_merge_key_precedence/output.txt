@@ -1,0 +1,8 @@
+
+>>> [CLI] bundle validate -t dev -o json
+{
+  "x": {
+    "default": "from-b",
+    "value": "from-b"
+  }
+}

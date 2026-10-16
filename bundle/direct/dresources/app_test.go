@@ -61,7 +61,7 @@ func TestAppDoCreate_RetriesWhenAppIsDeleting(t *testing.T) {
 
 	r := (&ResourceApp{}).New(client)
 	ctx := t.Context()
-	name, _, err := r.DoCreate(ctx, &AppState{App: apps.App{Name: "test-app"}})
+	name, _, err := r.DoCreate(ctx, &AppState{Name: "test-app"})
 
 	require.NoError(t, err)
 	assert.Equal(t, "test-app", name)
@@ -117,7 +117,7 @@ func TestAppDoCreate_RetriesWhenGetReturnsNotFound(t *testing.T) {
 
 	r := (&ResourceApp{}).New(client)
 	ctx := t.Context()
-	name, _, err := r.DoCreate(ctx, &AppState{App: apps.App{Name: "test-app"}})
+	name, _, err := r.DoCreate(ctx, &AppState{Name: "test-app"})
 
 	require.NoError(t, err)
 	assert.Equal(t, "test-app", name)
@@ -179,15 +179,13 @@ func TestAppDoUpdate_UpdateMaskHasAllFields(t *testing.T) {
 // "source_code_path": "" was sent in the UpdateApp body, causing a 400.
 func TestAppRequestBody_StripsSourceCodePathFromForceSendFields(t *testing.T) {
 	config := &AppState{
-		App: apps.App{
-			Name:           "my-app",
-			SourceCodePath: "/Workspace/Users/me/app",
-			// Simulate ForceSendFields as populated by marshal.Unmarshal when the
-			// plan entry is deserialized from JSON (ToStructVar calls json.Unmarshal,
-			// which calls apps.App.UnmarshalJSON -> marshal.Unmarshal, which adds
-			// every basic-type field present in the JSON to ForceSendFields).
-			ForceSendFields: []string{"Name", "SourceCodePath"},
-		},
+		Name:           "my-app",
+		SourceCodePath: "/Workspace/Users/me/app",
+		// Simulate ForceSendFields as populated by marshal.Unmarshal when the
+		// plan entry is deserialized from JSON (ToStructVar calls json.Unmarshal,
+		// which calls apps.App.UnmarshalJSON -> marshal.Unmarshal, which adds
+		// every basic-type field present in the JSON to ForceSendFields).
+		ForceSendFields: []string{"Name", "SourceCodePath"},
 	}
 
 	body := appRequestBody(config)

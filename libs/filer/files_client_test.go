@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	cliauth "github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
@@ -30,7 +31,7 @@ func TestNewFilesAPIClientDoesNotResolveAmbientConfig(t *testing.T) {
 	workspaceClient, err := databricks.NewWorkspaceClient(&databricks.Config{
 		Host:        server.URL,
 		Token:       "resolved-token",
-		WorkspaceID: cliauth.WorkspaceIDNone,
+		WorkspaceID: profile.WorkspaceIDNone,
 	})
 	require.NoError(t, err)
 

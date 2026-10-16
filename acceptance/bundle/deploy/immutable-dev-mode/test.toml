@@ -1,0 +1,14 @@
+Cloud = false # Temporary disable cloud tests until the API is fully available
+
+# immutable_folder only works with the direct engine.
+
+Ignore = [
+    "databricks.yml",
+    ".databricks",
+]
+
+# Normalize the content-addressed snapshot hash so it doesn't need to be
+# hardcoded in output.txt and the test stays stable across file changes.
+[[Repls]]
+Old = '[0-9a-f]{64}'
+New = '[SNAPSHOT_HASH]'

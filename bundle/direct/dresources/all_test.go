@@ -23,7 +23,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -40,97 +39,73 @@ import (
 
 var testConfig map[string]any = map[string]any{
 	"apps": &resources.App{
-		App: apps.App{
-			Name: "myapp",
-		},
+		Name: "myapp",
 	},
 
 	"catalogs": &resources.Catalog{
-		CreateCatalog: catalog.CreateCatalog{
-			Name:    "mycatalog",
-			Comment: "Test catalog",
-		},
+		Name:    "mycatalog",
+		Comment: "Test catalog",
 		// Note: EnablePredictiveOptimization and IsolationMode cannot be set during creation,
 		// only during updates. They are not included in the test config.
 	},
 
 	"external_locations": &resources.ExternalLocation{
-		CreateExternalLocation: catalog.CreateExternalLocation{
-			Name:           "myexternallocation",
-			Url:            "s3://mybucket/mypath",
-			CredentialName: "mycredential",
-			Comment:        "Test external location",
-		},
+		Name:           "myexternallocation",
+		Url:            "s3://mybucket/mypath",
+		CredentialName: "mycredential",
+		Comment:        "Test external location",
 	},
 
 	"schemas": &resources.Schema{
-		CreateSchema: catalog.CreateSchema{
-			CatalogName: "main",
-			Name:        "myschema",
-			Comment:     "Test schema",
-		},
+		CatalogName: "main",
+		Name:        "myschema",
+		Comment:     "Test schema",
 	},
 
 	"volumes": &resources.Volume{
-		CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-			CatalogName: "main",
-			SchemaName:  "myschema",
-			Name:        "myvolume",
-			Comment:     "Test volume",
-		},
+		CatalogName: "main",
+		SchemaName:  "myschema",
+		Name:        "myvolume",
+		Comment:     "Test volume",
 	},
 
 	"database_instances": &resources.DatabaseInstance{
-		DatabaseInstance: database.DatabaseInstance{
-			Name: "mydbinstance",
-		},
+		Name: "mydbinstance",
 	},
 
 	"instance_pools": &resources.InstancePool{
-		CreateInstancePool: compute.CreateInstancePool{
-			InstancePoolName: "my-instance-pool",
-			NodeTypeId:       "i3.xlarge",
-		},
+		InstancePoolName: "my-instance-pool",
+		NodeTypeId:       "i3.xlarge",
 	},
 
 	"synced_database_tables": &resources.SyncedDatabaseTable{
-		SyncedDatabaseTable: database.SyncedDatabaseTable{
-			Name: "main.myschema.my_synced_table",
-		},
+		Name: "main.myschema.my_synced_table",
 	},
 
 	"model_services": &resources.ModelService{
-		ModelServiceConfig: resources.ModelServiceConfig{
-			Parent:         "schemas/main.default",
-			ModelServiceId: "my_model_service",
-			Comment:        "Test model service",
-		},
+		Parent:         "schemas/main.default",
+		ModelServiceId: "my_model_service",
+		Comment:        "Test model service",
 	},
 
 	"mcp_services": &resources.McpService{
-		McpServiceConfig: resources.McpServiceConfig{
-			Parent:       "schemas/main.default",
-			McpServiceId: "my_mcp_service",
-			Comment:      "Test mcp service",
-		},
+		Parent:       "schemas/main.default",
+		McpServiceId: "my_mcp_service",
+		Comment:      "Test mcp service",
 	},
 
 	"model_provider_services": &resources.ModelProviderService{
-		ModelProviderServiceConfig: resources.ModelProviderServiceConfig{
-			Parent:                 "schemas/main.default",
-			ModelProviderServiceId: "my_model_provider_service",
-			Comment:                "Test model provider service",
-		},
+		Parent:                 "schemas/main.default",
+		ModelProviderServiceId: "my_model_provider_service",
+		Comment:                "Test model provider service",
 	},
 
 	"registered_models": &resources.RegisteredModel{
-		CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
-			Name:            "my_registered_model",
-			Comment:         "Test registered model",
-			CatalogName:     "main",
-			SchemaName:      "default",
-			StorageLocation: "s3://my-bucket/my-path",
-		},
+		Name:            "my_registered_model",
+		Comment:         "Test registered model",
+		CatalogName:     "main",
+		SchemaName:      "default",
+		StorageLocation: "s3://my-bucket/my-path",
 	},
 
 	"features": &resources.Feature{
@@ -151,39 +126,33 @@ var testConfig map[string]any = map[string]any{
 	},
 
 	"experiments": &resources.MlflowExperiment{
-		CreateExperiment: ml.CreateExperiment{
-			Name: "my-experiment",
-			Tags: []ml.ExperimentTag{
-				{
-					Key:   "my-tag",
-					Value: "my-value",
-				},
+		Name: "my-experiment",
+		Tags: []ml.ExperimentTag{
+			{
+				Key:   "my-tag",
+				Value: "my-value",
 			},
-			ArtifactLocation: "s3://my-bucket/my-experiment",
 		},
+		ArtifactLocation: "s3://my-bucket/my-experiment",
 	},
 
 	"models": &resources.MlflowModel{
-		CreateModelRequest: ml.CreateModelRequest{
-			Name:        "my_mlflow_model",
-			Description: "my_mlflow_model_description",
-			Tags: []ml.ModelTag{
-				{
-					Key:   "k1",
-					Value: "v1",
-				},
+		Name:        "my_mlflow_model",
+		Description: "my_mlflow_model_description",
+		Tags: []ml.ModelTag{
+			{
+				Key:   "k1",
+				Value: "v1",
 			},
 		},
 	},
 
 	"secrets": &resources.Secret{
-		Secret: catalog.Secret{
-			CatalogName: "main",
-			SchemaName:  "default",
-			Name:        "my_secret",
-			Value:       "my_secret_value",
-			Comment:     "Test secret",
-		},
+		CatalogName: "main",
+		SchemaName:  "default",
+		Name:        "my_secret",
+		Value:       "my_secret_value",
+		Comment:     "Test secret",
 	},
 
 	"secret_scopes": &resources.SecretScope{
@@ -202,44 +171,42 @@ var testConfig map[string]any = map[string]any{
 	},
 
 	"model_serving_endpoints": &resources.ModelServingEndpoint{
-		CreateServingEndpoint: serving.CreateServingEndpoint{
+		Name: "my-endpoint",
+		Config: &serving.EndpointCoreConfigInput{
 			Name: "my-endpoint",
-			Config: &serving.EndpointCoreConfigInput{
-				Name: "my-endpoint",
-				//nolint:staticcheck // SA1019: deprecated AutoCaptureConfigInput kept for bundle config compatibility
-				AutoCaptureConfig: &serving.AutoCaptureConfigInput{
-					CatalogName:     "main",
-					SchemaName:      "myschema",
-					TableNamePrefix: "my_table",
-					Enabled:         true,
-					ForceSendFields: nil,
+			//nolint:staticcheck // SA1019: deprecated AutoCaptureConfigInput kept for bundle config compatibility
+			AutoCaptureConfig: &serving.AutoCaptureConfigInput{
+				CatalogName:     "main",
+				SchemaName:      "myschema",
+				TableNamePrefix: "my_table",
+				Enabled:         true,
+				ForceSendFields: nil,
+			},
+			ServedModels: nil,
+			ServedEntities: []serving.ServedEntityInput{
+				{
+					EntityName:                "entity-name",
+					EntityVersion:             "1",
+					WorkloadSize:              "Small",
+					ScaleToZeroEnabled:        true,
+					WorkloadType:              serving.ServingModelWorkloadTypeCpu,
+					EnvironmentVars:           map[string]string{"key": "value"},
+					InstanceProfileArn:        "arn:aws:iam::123456789012:instance-profile/my-instance-profile",
+					MaxProvisionedConcurrency: 10,
+					MaxProvisionedThroughput:  100,
+					MinProvisionedConcurrency: 1,
+					MinProvisionedThroughput:  10,
+					Name:                      "entity-name",
+					ProvisionedModelUnits:     100,
+					ExternalModel:             nil,
+					ForceSendFields:           nil,
 				},
-				ServedModels: nil,
-				ServedEntities: []serving.ServedEntityInput{
+			},
+			TrafficConfig: &serving.TrafficConfig{
+				Routes: []serving.Route{
 					{
-						EntityName:                "entity-name",
-						EntityVersion:             "1",
-						WorkloadSize:              "Small",
-						ScaleToZeroEnabled:        true,
-						WorkloadType:              serving.ServingModelWorkloadTypeCpu,
-						EnvironmentVars:           map[string]string{"key": "value"},
-						InstanceProfileArn:        "arn:aws:iam::123456789012:instance-profile/my-instance-profile",
-						MaxProvisionedConcurrency: 10,
-						MaxProvisionedThroughput:  100,
-						MinProvisionedConcurrency: 1,
-						MinProvisionedThroughput:  10,
-						Name:                      "entity-name",
-						ProvisionedModelUnits:     100,
-						ExternalModel:             nil,
-						ForceSendFields:           nil,
-					},
-				},
-				TrafficConfig: &serving.TrafficConfig{
-					Routes: []serving.Route{
-						{
-							ServedModelName:   "model-name-1",
-							TrafficPercentage: 100,
-						},
+						ServedModelName:   "model-name-1",
+						TrafficPercentage: 100,
 					},
 				},
 			},
@@ -247,96 +214,76 @@ var testConfig map[string]any = map[string]any{
 	},
 
 	"postgres_projects": &resources.PostgresProject{
-		PostgresProjectConfig: resources.PostgresProjectConfig{
-			ProjectId: "test-project",
-			ProjectSpec: postgres.ProjectSpec{
-				DisplayName: "Test Project",
-				PgVersion:   16,
-			},
-		},
+		ProjectId:   "test-project",
+		DisplayName: "Test Project",
+		PgVersion:   16,
 	},
 
 	"postgres_catalogs": &resources.PostgresCatalog{
-		PostgresCatalogConfig: resources.PostgresCatalogConfig{
-			CatalogId: "test_catalog",
-		},
+		CatalogId: "test_catalog",
 	},
 
 	"postgres_synced_tables": &resources.PostgresSyncedTable{
-		PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
-			SyncedTableId: "main.public.trips_synced",
-		},
+		SyncedTableId: "main.public.trips_synced",
 	},
 
 	"alerts": &resources.Alert{
-		AlertV2: sql.AlertV2{
-			DisplayName: "my-alert",
-			QueryText:   "SELECT 1",
-			WarehouseId: "test-warehouse-id",
-			Schedule: sql.CronSchedule{
-				QuartzCronSchedule: "0 0 12 * * ?",
-				TimezoneId:         "UTC",
+		DisplayName: "my-alert",
+		QueryText:   "SELECT 1",
+		WarehouseId: "test-warehouse-id",
+		Schedule: sql.CronSchedule{
+			QuartzCronSchedule: "0 0 12 * * ?",
+			TimezoneId:         "UTC",
+		},
+		Evaluation: sql.AlertV2Evaluation{
+			ComparisonOperator: sql.ComparisonOperatorGreaterThan,
+			Source: sql.AlertV2OperandColumn{
+				Name: "column1",
 			},
-			Evaluation: sql.AlertV2Evaluation{
-				ComparisonOperator: sql.ComparisonOperatorGreaterThan,
-				Source: sql.AlertV2OperandColumn{
-					Name: "column1",
-				},
-				Threshold: &sql.AlertV2Operand{
-					Column: &sql.AlertV2OperandColumn{
-						Name: "column2",
-					},
+			Threshold: &sql.AlertV2Operand{
+				Column: &sql.AlertV2OperandColumn{
+					Name: "column2",
 				},
 			},
 		},
 	},
 
 	"quality_monitors": &resources.QualityMonitor{
-		TableName: "main.myschema.mytable",
-		CreateMonitor: catalog.CreateMonitor{
-			AssetsDir:        "/Workspace/Users/user@example.com/assets",
-			OutputSchemaName: "main.myschema",
-		},
+		TableName:        "main.myschema.mytable",
+		AssetsDir:        "/Workspace/Users/user@example.com/assets",
+		OutputSchemaName: "main.myschema",
 	},
 
 	"dashboards": &resources.Dashboard{
-		DashboardConfig: resources.DashboardConfig{
-			DisplayName:         "my-dashboard",
-			ParentPath:          "/Workspace/Users/user@example.com",
-			WarehouseId:         "test-warehouse-id",
-			SerializedDashboard: `{"pages":[{"name":"page1","displayName":"Page 1","pageType":"PAGE_TYPE_CANVAS"}]}`,
+		DisplayName:         "my-dashboard",
+		ParentPath:          "/Workspace/Users/user@example.com",
+		WarehouseId:         "test-warehouse-id",
+		SerializedDashboard: `{"pages":[{"name":"page1","displayName":"Page 1","pageType":"PAGE_TYPE_CANVAS"}]}`,
 
-			DatasetCatalog: "main",
-			DatasetSchema:  "myschema",
-		},
+		DatasetCatalog: "main",
+		DatasetSchema:  "myschema",
 	},
 
 	"genie_spaces": &resources.GenieSpace{
-		GenieSpaceConfig: resources.GenieSpaceConfig{
-			Title:           "my-genie-space",
-			WarehouseId:     "test-warehouse-id",
-			ParentPath:      "/Workspace/Users/user@example.com",
-			SerializedSpace: "{}",
-		},
+		Title:           "my-genie-space",
+		WarehouseId:     "test-warehouse-id",
+		ParentPath:      "/Workspace/Users/user@example.com",
+		SerializedSpace: "{}",
 	},
 
 	"vector_search_endpoints": &resources.VectorSearchEndpoint{
-		CreateEndpoint: vectorsearch.CreateEndpoint{
-			Name:         "my-endpoint",
-			EndpointType: vectorsearch.EndpointTypeStandard,
-		},
+		Name:         "my-endpoint",
+		EndpointType: vectorsearch.EndpointTypeStandard,
 	},
 
 	"vector_search_indexes": &resources.VectorSearchIndex{
-		CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
-			Name:         "main.default.my_index",
-			EndpointName: "my-index-endpoint",
-			PrimaryKey:   "id",
-			IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
-			DeltaSyncIndexSpec: &vectorsearch.DeltaSyncVectorIndexSpecRequest{
-				SourceTable:  "main.default.source_table",
-				PipelineType: vectorsearch.PipelineTypeTriggered,
-			},
+		Name:         "main.default.my_index",
+		EndpointName: "my-index-endpoint",
+		PrimaryKey:   "id",
+		IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
+		DeltaSyncIndexSpec: &vectorsearch.DeltaSyncVectorIndexSpecRequest{
+			SourceTable:  "main.default.source_table",
+			PipelineType: vectorsearch.PipelineTypeTriggered,
 		},
 		Grants: []catalog.PrivilegeAssignment{{
 			Principal:  "user@example.com",
@@ -363,10 +310,8 @@ var testDeps = map[string]prepareWorkspace{
 		})
 
 		return &resources.DatabaseCatalog{
-			DatabaseCatalog: database.DatabaseCatalog{
-				Name:                 "mydbcatalog",
-				DatabaseInstanceName: "mydbinstance1",
-			},
+			Name:                 "mydbcatalog",
+			DatabaseInstanceName: "mydbinstance1",
 		}, err
 	},
 
@@ -400,9 +345,7 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &resources.JobRun{
-			RunNow: jobs.RunNow{
-				JobId: resp.JobId,
-			},
+			JobId: resp.JobId,
 		}, nil
 	},
 
@@ -857,11 +800,9 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &resources.PostgresBranch{
-			PostgresBranchConfig: resources.PostgresBranchConfig{
-				Parent:     "projects/test-project-for-branch",
-				BranchId:   "test-branch",
-				BranchSpec: postgres.BranchSpec{},
-			},
+			Parent:     "projects/test-project-for-branch",
+			BranchId:   "test-branch",
+			BranchSpec: postgres.BranchSpec{},
 		}, nil
 	},
 
@@ -882,9 +823,7 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &resources.PostgresSnapshotSchedule{
-			PostgresSnapshotScheduleConfig: resources.PostgresSnapshotScheduleConfig{
-				Branch: "projects/test-project-for-snapshot-schedule/branches/production",
-			},
+			Branch: "projects/test-project-for-snapshot-schedule/branches/production",
 		}, nil
 	},
 
@@ -914,13 +853,9 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &resources.PostgresEndpoint{
-			PostgresEndpointConfig: resources.PostgresEndpointConfig{
-				Parent:     "projects/test-project-for-endpoint/branches/test-branch-for-endpoint",
-				EndpointId: "test-endpoint",
-				EndpointSpec: postgres.EndpointSpec{
-					EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
-				},
-			},
+			Parent:       "projects/test-project-for-endpoint/branches/test-branch-for-endpoint",
+			EndpointId:   "test-endpoint",
+			EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
 		}, nil
 	},
 
@@ -950,14 +885,10 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &resources.PostgresDatabase{
-			PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
-				Parent:     "projects/test-project-for-database/branches/test-branch-for-database",
-				DatabaseId: "test-database",
-				DatabaseDatabaseSpec: postgres.DatabaseDatabaseSpec{
-					PostgresDatabase: "app_db",
-					Role:             "projects/test-project-for-database/branches/test-branch-for-database/roles/owner",
-				},
-			},
+			Parent:           "projects/test-project-for-database/branches/test-branch-for-database",
+			DatabaseId:       "test-database",
+			PostgresDatabase: "app_db",
+			Role:             "projects/test-project-for-database/branches/test-branch-for-database/roles/owner",
 		}, nil
 	},
 
@@ -987,13 +918,9 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &resources.PostgresRole{
-			PostgresRoleConfig: resources.PostgresRoleConfig{
-				Parent: "projects/test-project-for-role/branches/test-branch-for-role",
-				RoleId: "test-role",
-				RoleRoleSpec: postgres.RoleRoleSpec{
-					PostgresRole: "test_role",
-				},
-			},
+			Parent:       "projects/test-project-for-role/branches/test-branch-for-role",
+			RoleId:       "test-role",
+			PostgresRole: "test_role",
 		}, nil
 	},
 }

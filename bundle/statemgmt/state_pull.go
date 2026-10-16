@@ -21,6 +21,7 @@ import (
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/shortid"
 )
 
 type AlwaysPull bool
@@ -46,6 +47,15 @@ func (s *StateDesc) String() string {
 		source = "local"
 	}
 	return fmt.Sprintf("%s: %s %s state serial=%d lineage=%q", s.SourcePath, source, s.Engine, s.Serial, s.Lineage)
+}
+
+// LineageHash returns the lineage in the compact form reported in the user agent
+// and telemetry, or "" when the state has no lineage yet (nothing deployed).
+func (s *StateDesc) LineageHash() string {
+	if s.Lineage == "" {
+		return ""
+	}
+	return shortid.Hash(s.Lineage)
 }
 
 func (s *StateDesc) HasRemoteTerraformState() bool {

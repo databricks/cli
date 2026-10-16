@@ -155,16 +155,6 @@ func TestAccept(t *testing.T) {
 	testAccept(t, InprocessMode, nil, false)
 }
 
-// TestDmsAcc runs acceptance tests against local DMS, selected with go test -run.
-// The in-process runner skips unrelated tool builds and old CLI downloads.
-func TestDmsAcc(t *testing.T) {
-	if os.Getenv("DMS_LITEBOX_URL") == "" {
-		t.Skip("DMS_LITEBOX_URL is not set")
-	}
-	require.Empty(t, os.Getenv("CLOUD_ENV"), "Litebox must not use a cloud workspace")
-	testAccept(t, true, nil, true)
-}
-
 func TestInprocessMode(t *testing.T) {
 	if InprocessMode && !Forcerun {
 		t.Skip("Already tested by TestAccept")
@@ -287,6 +277,10 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	} {
 		os.Unsetenv(v) //nolint:usetesting // t.Setenv cannot unset
 	}
+
+	// environments setup-local follows uv's UV_PROJECT_ENVIRONMENT, so a value
+	// from the host shell would move the venv the localenv tests expect.
+	os.Unsetenv("UV_PROJECT_ENVIRONMENT") //nolint:usetesting // t.Setenv cannot unset
 
 	if !requirePrerequisites(t) {
 		// Don't run the suite against a stale toolchain; the failed subtest
@@ -681,7 +675,7 @@ func getEnvFilters(t *testing.T) []string {
 	}
 
 	filters := strings.Split(envFilterValue, ",")
-	outFilters := make([]string, len(filters))
+	outFilters := make([]string, 0, len(filters))
 
 	for _, filter := range filters {
 		items := strings.Split(filter, "=")

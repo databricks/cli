@@ -365,7 +365,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 			DeploymentId: b.Metrics.DeploymentId.String(),
 			ErrorMessage: errMsg,
 
-			ResourceCount:                     resourcesCount,
+			ResourceCount:                     resourcesCount, //nolint:staticcheck // SA1019: populated alongside ResourcesMetadata during the transition
 			ResourceJobCount:                  int64(len(b.Config.Resources.Jobs)),
 			ResourcePipelineCount:             int64(len(b.Config.Resources.Pipelines)),
 			ResourceModelCount:                int64(len(b.Config.Resources.Models)),

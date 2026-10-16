@@ -21,7 +21,7 @@ func TestSshAgentShimEventEncodesFailureExplicitly(t *testing.T) {
 	assert.Equal(t, false, got["is_success"], "is_success must be sent as false, not omitted")
 	// The remaining fields must appear in the payload at all: omitempty would drop the
 	// zero value and make a failure indistinguishable from an unreported one.
-	for _, field := range []string{"agent_name", "error_category", "setup_duration_ms"} {
+	for _, field := range []string{"agent", "error_category", "setup_duration_ms"} {
 		assert.Contains(t, got, field, "%s must be sent, not omitted", field)
 	}
 }

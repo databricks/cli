@@ -5,6 +5,7 @@ package workspace
 import (
 	access_control "github.com/databricks/cli/cmd/workspace/access-control"
 	agent_bricks "github.com/databricks/cli/cmd/workspace/agent-bricks"
+	agent_kit "github.com/databricks/cli/cmd/workspace/agent-kit"
 	ai_functions "github.com/databricks/cli/cmd/workspace/ai-functions"
 	ai_gateway "github.com/databricks/cli/cmd/workspace/ai-gateway"
 	ai_search "github.com/databricks/cli/cmd/workspace/ai-search"
@@ -62,7 +63,6 @@ import (
 	lakeview "github.com/databricks/cli/cmd/workspace/lakeview"
 	lakeview_embedded "github.com/databricks/cli/cmd/workspace/lakeview-embedded"
 	libraries "github.com/databricks/cli/cmd/workspace/libraries"
-	mason "github.com/databricks/cli/cmd/workspace/mason"
 	materialized_features "github.com/databricks/cli/cmd/workspace/materialized-features"
 	metastores "github.com/databricks/cli/cmd/workspace/metastores"
 	model_registry "github.com/databricks/cli/cmd/workspace/model-registry"
@@ -143,6 +143,7 @@ func All() []*cobra.Command {
 
 	out = append(out, access_control.New())
 	out = append(out, agent_bricks.New())
+	out = append(out, agent_kit.New())
 	out = append(out, ai_functions.New())
 	out = append(out, ai_gateway.New())
 	out = append(out, ai_search.New())
@@ -200,7 +201,6 @@ func All() []*cobra.Command {
 	out = append(out, lakeview.New())
 	out = append(out, lakeview_embedded.New())
 	out = append(out, libraries.New())
-	out = append(out, mason.New())
 	out = append(out, materialized_features.New())
 	out = append(out, metastores.New())
 	out = append(out, model_registry.New())

@@ -24,4 +24,4 @@ OK: Accept header present
 }
 
 === Malformed --json is rejected client-side with a positioned error
-Error: error decoding JSON at (inline):1:9: invalid character '}' looking for beginning of object key string
+Error: error decoding JSON at (inline):1:8: invalid character ',' looking for beginning of value

@@ -74,7 +74,7 @@ func (s *FakeWorkspace) CreateDeployment(req Request) Response {
 	if resp, ok := s.requireParentDirectory(nodePath); !ok {
 		return resp
 	}
-	objectID := nextID()
+	objectID := nextTreenodeID()
 	s.files[nodePath] = FileEntry{
 		Info: workspace.ObjectInfo{
 			// The service registers its own node type, which get-status reports back;
@@ -178,8 +178,16 @@ type dmsWorkspaceInfo struct {
 var dmsUpdatableDeploymentFields = []string{"display_name", "target_name", "deployment_mode", "workspace_info"}
 
 // checkWorkspaceInfo rejects a bundle_root_path without the git_folder_path it is relative to,
-// which is what the service does.
+// and a root_path or file_path that is not absolute, which is what the service does.
 func checkWorkspaceInfo(ws *bundledeployments.WorkspaceInfo) (Response, bool) {
+	if ws != nil {
+		if ws.RootPath != "" && !strings.HasPrefix(ws.RootPath, "/") {
+			return dmsInvalidArgument("workspace_info.root_path must be an absolute workspace path"), false
+		}
+		if ws.FilePath != "" && !strings.HasPrefix(ws.FilePath, "/") {
+			return dmsInvalidArgument("workspace_info.file_path must be an absolute workspace path"), false
+		}
+	}
 	if ws != nil && (ws.GitFolderPath == "") != (ws.BundleRootPath == "") {
 		return dmsInvalidArgument("workspace_info.git_folder_path and workspace_info.bundle_root_path must be set together"), false
 	}

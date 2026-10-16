@@ -1,8 +1,8 @@
 module github.com/databricks/cli
 
-go 1.26.0
+go 1.27.0
 
-toolchain go1.26.9
+toolchain go1.27.2
 
 require (
 	dario.cat/mergo v1.0.2 // BSD-3-Clause
@@ -13,7 +13,11 @@ require (
 	github.com/charmbracelet/huh v1.0.0 // MIT
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
 	github.com/charmbracelet/x/ansi v0.11.8 // MIT
-	github.com/databricks/databricks-sdk-go v0.185.0 // Apache-2.0
+	github.com/databricks/databricks-sdk-go v0.188.0 // Apache-2.0
+	github.com/databricks/sdk-go/auth v0.0.1-dev.8 // Apache-2.0
+	github.com/databricks/sdk-go/core v0.0.1-dev.8 // Apache-2.0
+	github.com/databricks/sdk-go/files v0.0.1-dev.10 // Apache-2.0
+	github.com/databricks/sdk-go/options v0.0.1-dev.9 // Apache-2.0
 	github.com/google/jsonschema-go v0.4.3 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/gorilla/websocket v1.5.3 // BSD-2-Clause
@@ -36,19 +40,11 @@ require (
 	golang.org/x/mod v0.41.0 // BSD-3-Clause
 	golang.org/x/net v0.59.0 // BSD-3-Clause
 	golang.org/x/oauth2 v0.37.0 // BSD-3-Clause
-	golang.org/x/sync v0.23.0 // BSD-3-Clause
+	golang.org/x/sync v0.24.0 // BSD-3-Clause
 	golang.org/x/sys v0.48.0 // BSD-3-Clause
 	golang.org/x/term v0.46.0 // BSD-3-Clause
 	golang.org/x/text v0.42.0 // BSD-3-Clause
 	gopkg.in/ini.v1 v1.67.3 // Apache-2.0
-)
-
-require github.com/databricks/sdk-go/core v0.0.1-dev.8 // Apache-2.0
-
-require (
-	github.com/databricks/sdk-go/auth v0.0.1-dev.8 // Apache-2.0
-	github.com/databricks/sdk-go/files v0.0.1-dev.9 // Apache-2.0
-	github.com/databricks/sdk-go/options v0.0.1-dev.8 // Apache-2.0
 )
 
 require (

@@ -5,18 +5,21 @@ import (
 
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/databricks/cli/libs/cmdio"
+	databricks "github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
 
 func historyCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "history [flags] [KEY]",
+		Use:   "history [flags] [KEY|PIPELINE_ID]",
 		Args:  root.MaximumNArgs(1),
 		Short: "Retrieve past runs for a pipeline",
-		Long:  `Retrieve past runs for a pipeline identified by KEY, the unique name of the pipeline as defined in its YAML file.`,
+		Long:  `Retrieve past runs for a pipeline identified by KEY, the unique name of the pipeline as defined in its YAML file, or by PIPELINE_ID, the unique identifier of the pipeline.`,
 	}
 
 	var startTimeStr string
@@ -34,25 +37,45 @@ func historyCommand() *cobra.Command {
 	wrappedCmd.AddFlagGroup(historyGroup)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
-			InitIDs: true,
-		})
-		if err != nil {
-			return err
+		var key, pipelineId string
+		var w *databricks.WorkspaceClient
+		if len(args) == 1 {
+			id, err := uuid.Parse(args[0])
+			if err == nil {
+				pipelineId = id.String()
+			}
+		}
+
+		if pipelineId != "" {
+			if cmd.Flag("target").Value.String() == "" {
+				cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
+			}
+			if err := root.MustWorkspaceClient(cmd, args); err != nil {
+				return err
+			}
+			key = pipelineId
+			w = cmdctx.WorkspaceClient(cmd.Context())
+		} else {
+			b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
+				InitIDs: true,
+			})
+			if err != nil {
+				return err
+			}
+			ctx := cmd.Context()
+
+			key, err = resolvePipelineArgument(ctx, b, args)
+			if err != nil {
+				return err
+			}
+
+			pipelineId, err = resolvePipelineIdFromKey(ctx, b, key)
+			if err != nil {
+				return err
+			}
+			w = b.WorkspaceClient(ctx)
 		}
 		ctx := cmd.Context()
-
-		key, err := resolvePipelineArgument(ctx, b, args)
-		if err != nil {
-			return err
-		}
-
-		pipelineId, err := resolvePipelineIdFromKey(ctx, b, key)
-		if err != nil {
-			return err
-		}
-
-		w := b.WorkspaceClient(ctx)
 
 		startTimePtr, err := parseTimeToUnixMillis(startTimeStr)
 		if err != nil {

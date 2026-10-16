@@ -269,7 +269,7 @@ func (w *DbfsClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, e
 
 	info := make([]fs.DirEntry, len(res.Files))
 	for i, v := range res.Files {
-		info[i] = dbfsDirEntry{dbfsFileInfo: dbfsFileInfo{fi: v}}
+		info[i] = dbfsDirEntry{fi: v}
 	}
 
 	// Sort by name for parity with os.ReadDir.

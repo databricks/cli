@@ -713,6 +713,7 @@ func newDeploy() *cobra.Command {
 	cmd.Flags().StringVar(&deployReq.AppDeployment.DeploymentId, "deployment-id", deployReq.AppDeployment.DeploymentId, `The unique id of the deployment.`)
 	// TODO: array: env_vars
 	// TODO: complex arg: git_source
+	// TODO: complex arg: health_check
 	cmd.Flags().Var(&deployReq.AppDeployment.Mode, "mode", `The mode of which the deployment will manage the source code. Supported values: [AUTO_SYNC, SNAPSHOT]`)
 	cmd.Flags().StringVar(&deployReq.AppDeployment.SourceCodePath, "source-code-path", deployReq.AppDeployment.SourceCodePath, `The workspace file system path of the source code used to create the app deployment.`)
 	// TODO: complex arg: status

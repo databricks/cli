@@ -277,13 +277,11 @@ func (db *DeploymentState) RecordFailure(resourceKey, resourceID string, cause e
 
 func NewDatabase(lineage string, serial int) Database {
 	return Database{
-		Header: Header{
-			StateVersion: currentStateVersion,
-			CLIVersion:   build.GetInfo().Version,
-			Lineage:      lineage,
-			Serial:       serial,
-		},
-		State: make(map[string]ResourceEntry),
+		StateVersion: currentStateVersion,
+		CLIVersion:   build.GetInfo().Version,
+		Lineage:      lineage,
+		Serial:       serial,
+		State:        make(map[string]ResourceEntry),
 	}
 }
 

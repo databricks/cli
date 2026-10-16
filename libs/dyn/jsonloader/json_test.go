@@ -79,7 +79,7 @@ const malformedArray = `
 
 func TestJsonLoaderMalformedArray(t *testing.T) {
 	_, err := LoadJSON([]byte(malformedArray), "path/to/file.json")
-	assert.ErrorContains(t, err, "error decoding JSON at path/to/file.json:6:28: invalid character ']' looking for beginning of value")
+	assert.ErrorContains(t, err, "error decoding JSON at path/to/file.json:6:27: invalid character ',' looking for beginning of value")
 }
 
 const eofData = `

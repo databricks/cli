@@ -66,17 +66,22 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	// The state is opened without a DMS client, so the writes below record nothing;
 	// phases.Bind and phases.Unbind refuse to run at all when recording is enabled.
 	var checkStateDB dstate.DeploymentState
-	if err := checkStateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err == nil {
-		existingID := checkStateDB.GetResourceID(resourceKey)
-		if _, err := checkStateDB.Finalize(ctx); err != nil {
-			log.Warnf(ctx, "failed to finalize state: %v", err)
-		}
-		if existingID != "" {
-			return nil, ErrResourceAlreadyBound{
-				ResourceKey: resourceKey,
-				ExistingID:  existingID,
-				NewID:       resourceID,
-			}
+	if err := checkStateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
+		// State that cannot be read is not the same as state without a binding:
+		// the resource may well be managed already, and binding on top of it
+		// would take over a resource whose ownership was never checked. A state
+		// file that does not exist yet opens successfully as an empty one.
+		return nil, fmt.Errorf("cannot check whether %s is already bound: %w", resourceKey, err)
+	}
+	existingID := checkStateDB.GetResourceID(resourceKey)
+	if _, err := checkStateDB.Finalize(ctx); err != nil {
+		log.Warnf(ctx, "failed to finalize state: %v", err)
+	}
+	if existingID != "" {
+		return nil, ErrResourceAlreadyBound{
+			ResourceKey: resourceKey,
+			ExistingID:  existingID,
+			NewID:       resourceID,
 		}
 	}
 
