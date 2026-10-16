@@ -845,7 +845,25 @@ func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
 
 func (s *FakeWorkspace) WorkspaceExport(path string) []byte {
 	defer s.LockUnlock()()
+	if _, isDir := s.directories[path]; isDir {
+		return exportDirectory(path)
+	}
 	return s.files[path].Data
+}
+
+// exportDirectory mimics the real API, which exports a directory as a ZIP archive even with
+// direct_download=true. Only the directory's own entry is included: callers just need to see
+// that they got an archive rather than a file.
+func exportDirectory(dirPath string) []byte {
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	if _, err := zw.Create(path.Base(dirPath) + "/"); err != nil {
+		panic(err)
+	}
+	if err := zw.Close(); err != nil {
+		panic(err)
+	}
+	return buf.Bytes()
 }
 
 // WorkspaceDelete implements POST /api/2.0/workspace/delete. As in the real API, a
