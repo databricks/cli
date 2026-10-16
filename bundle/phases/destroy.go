@@ -138,7 +138,39 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	return cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 }
 
+// logDestroySummary prints the destroy summary showing how many resources were deleted
+// and, if the destroy errored partway, how many failed. Called even on error, since
+// partial deletions may have succeeded.
+func logDestroySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
+	if b.Quiet < bundle.QuietAll {
+		// Count top-level resources only, matching the approval list above (which
+		// skips children). Gone resources are excluded to match that list: they were
+		// already deleted remotely, so applying their Delete only cleans up stale
+		// state and is not a destruction to report. A delete that was applied counts
+		// as deleted; an eligible one that was not counts as failed.
+		deleted, failed := 0, 0
+		for _, a := range plan.GetActions() {
+			if a.ActionType != deployplan.Delete || a.IsChildResource() || a.IsStateOnlyDelete() {
+				continue
+			}
+			if a.Applied {
+				deleted++
+			} else if a.Attempted {
+				failed++
+			}
+		}
+		summary := fmt.Sprintf("Destroy: %d deleted", deleted)
+		if failed > 0 {
+			summary += fmt.Sprintf(", %d failed", failed)
+		}
+		cmdio.LogString(ctx, summary)
+	}
+}
+
 func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
+	// Ensure the destroy summary is printed even on error, since partial deletions
+	// may have succeeded (an accurate partial count is a follow-up).
+	defer logDestroySummary(ctx, b, plan)
 	// Not reported per resource: destroy names them up front for consent and then
 	// reports only a count, so there is no per-resource output to report into.
 	b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, false)
@@ -176,23 +208,6 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 	}
 
 	bundle.ApplyContext(ctx, b, files.Delete())
-
-	// Print the summary even on error: resources that were deleted are still worth
-	// reporting (an accurate partial count is a follow-up).
-	if b.Quiet < bundle.QuietAll {
-		// Count top-level resources only, matching the approval list above (which
-		// skips children); this also keeps the count stable across engines. Gone
-		// resources are excluded to match that list: they were already deleted
-		// remotely, so applying their Delete only cleans up stale state and is not
-		// a destruction to report.
-		deleted := 0
-		for _, a := range plan.GetActions() {
-			if a.ActionType == deployplan.Delete && !a.IsChildResource() && !a.IsStateOnlyDelete() {
-				deleted++
-			}
-		}
-		cmdio.LogString(ctx, fmt.Sprintf("Destroy: %d deleted", deleted))
-	}
 
 	if logdiag.HasError(ctx) {
 		return

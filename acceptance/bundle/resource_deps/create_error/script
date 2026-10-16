@@ -13,7 +13,9 @@ trace $CLI bundle plan
 
 rm "$OUT_REQUESTS"
 musterr $CLI bundle deploy -q &> out.deploy2.txt
-title "Expecting no difference in the output between first and second deploy"
+# The only difference is the summary: the first deploy created the independent job (1
+# created), the second finds it unchanged. foo still fails and bar/baz still skip on both.
+title "Second deploy: only the summary differs, independent is now unchanged"
 diff.py out.deploy.txt out.deploy2.txt
 rm out.deploy2.txt
 trace print_requests.py --nostamp //jobs

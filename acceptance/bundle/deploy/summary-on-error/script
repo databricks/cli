@@ -1,0 +1,6 @@
+title "Deploy three chained jobs; the second create fails"
+# Creates run in chain order (job_01, job_02, job_03); faulting the second create makes
+# job_01 succeed, job_02 fail, and job_03 skip because its dependency failed. The summary
+# reports the accurate counts (1 created, 2 failed) rather than the planned 3 created.
+trace fault.py "POST /api/2.2/jobs/create" 400 1 1 INVALID_PARAMETER_VALUE
+trace musterr $CLI bundle deploy

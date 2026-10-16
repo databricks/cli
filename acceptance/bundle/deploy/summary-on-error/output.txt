@@ -1,0 +1,18 @@
+
+=== Deploy three chained jobs; the second create fails
+>>> fault.py POST /api/2.2/jobs/create 400 1 1 INVALID_PARAMETER_VALUE
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-deploy-summary-on-error/default/files...
+Created jobs.job_01
+Error: cannot create resources.jobs.job_02: Fault injected by test. (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.2/jobs/create
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Fault injected by test.
+
+Error: cannot create resources.jobs.job_03: dependency failed: resources.jobs.job_02
+
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged, 2 failed

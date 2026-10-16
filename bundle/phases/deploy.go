@@ -120,8 +120,9 @@ func logFileSummary(ctx context.Context, b *bundle.Bundle) {
 	cmdio.LogString(ctx, fmt.Sprintf("Files: %d uploaded, %d deleted", b.FileCounts.Uploaded, b.FileCounts.Deleted))
 }
 
-// logDeploySummary prints the resource summary line. -qq drops it too. The direct engine
-// prints each per-resource applied line itself as it goes, so there are none to report here.
+// logDeploySummary prints the resource summary line. -qq drops it too. The counts reflect
+// what Apply actually did (CountApplied), so the line is accurate on a partial failure too;
+// per-resource applied lines are printed by the engine as it goes, not here.
 func logDeploySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 	if b.Quiet >= bundle.QuietAll {
 		return
@@ -129,8 +130,11 @@ func logDeploySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Pl
 
 	logFileSummary(ctx, b)
 
-	counts := plan.CountActions()
+	counts := plan.CountApplied()
 	summary := fmt.Sprintf("Resources: %d created, %d changed, %d deleted, %d unchanged", counts.Create, counts.Change, counts.Delete, counts.Unchanged)
+	if counts.Failed > 0 {
+		summary += fmt.Sprintf(", %d failed", counts.Failed)
+	}
 	// Gate on the plan's own NotSelected (not b.Select) so the suffix survives a
 	// deploy from a --plan file, where --select was applied at plan time and
 	// b.Select is empty here. NotSelected is only ever set by FilterToSelected.
@@ -351,19 +355,20 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 	deployCore(ctx, b, plan)
 
+	// Report what was deployed, mirroring "bundle plan". Printed before the postdeploy
+	// script so the deploy's own report is not interleaved with post-deploy output. The
+	// counts come from CountApplied, so they describe what Apply actually did: on a
+	// partial resource failure this still reports what succeeded and what failed. A
+	// failure with no failed resources (e.g. a later state-push error) reports files
+	// only, as before - see acceptance bundle/deploy/partial-summary-on-push-fail.
+	if !logdiag.HasError(ctx) || plan.CountApplied().Failed > 0 {
+		filesReported = true
+		logDeploySummary(ctx, b, plan)
+	}
+
 	if logdiag.HasError(ctx) {
 		return
 	}
-
-	// Report what was deployed, mirroring "bundle plan". Printed before the
-	// postdeploy script so the deploy's own report is not interleaved with
-	// post-deploy output: the script's lines and the migration's below both follow
-	// it, and neither reads as belonging to the deploy. The resources were applied
-	// above, so the counts are accurate however the script turns out, and its error
-	// still propagates. Earlier failures report the files only, since the plan
-	// counts would then describe what was intended rather than what was applied.
-	filesReported = true
-	logDeploySummary(ctx, b, plan)
 
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
 }
