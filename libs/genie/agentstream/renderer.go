@@ -37,7 +37,7 @@ func RenderDebug(r io.Reader, w io.Writer) error {
 	reader := NewSSEReader(r)
 	for {
 		ev, err := reader.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return nil
 		}
 		if err != nil {
@@ -92,7 +92,7 @@ func RenderText(ctx context.Context, r io.Reader, stdout, stderr io.Writer, adap
 
 	for {
 		ev, err := reader.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
@@ -198,7 +198,7 @@ func RenderJSON(r io.Reader, stdout, stderr io.Writer, adapt AdapterFunc) (strin
 loop:
 	for {
 		ev, err := reader.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {

@@ -11,6 +11,24 @@ import (
 // which the driver proxy enforces for the SSH tunnel.
 const portFwdServerlessSetting = "port_fwd_serverless_enabled"
 
+func (s *FakeWorkspace) WorkspaceSettingGet(req Request) Response {
+	defer s.LockUnlock()()
+
+	name := req.Vars["name"]
+	if setting, ok := s.WorkspaceSettings[name]; ok {
+		return Response{Body: setting}
+	}
+	// The setting's own default is true: port forwarding stays on until an administrator turns it off.
+	if name == portFwdServerlessSetting {
+		enabled := &settingsv2.BooleanMessage{Value: true}
+		return Response{Body: settingsv2.Setting{Name: name, EffectiveBooleanVal: enabled}}
+	}
+	return Response{
+		StatusCode: 404,
+		Body:       map[string]string{"error_code": "RESOURCE_DOES_NOT_EXIST", "message": fmt.Sprintf("Setting %s does not exist", name)},
+	}
+}
+
 func (s *FakeWorkspace) WorkspaceSettingPatch(req Request) Response {
 	var setting settingsv2.Setting
 	if err := json.Unmarshal(req.Body, &setting); err != nil {
