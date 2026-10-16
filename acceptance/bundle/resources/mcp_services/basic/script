@@ -1,3 +1,5 @@
+assert_dms_unsupported mcp_services
+
 title "Initial summary before deploy"
 trace $CLI bundle summary -o json | jq .resources.mcp_services.mcp1
 

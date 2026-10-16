@@ -8,6 +8,8 @@ schedule_name="projects/test-pg-proj-${UNIQUE_NAME}/branches/production/snapshot
 
 title "Create with a snapshot schedule"
 envsubst < databricks.yml.tmpl > databricks.yml
+
+assert_dms_unsupported postgres_snapshot_schedules
 rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 trace $CLI postgres get-snapshot-schedule "${schedule_name}" | snapshot_schedule_fields
