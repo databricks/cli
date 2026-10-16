@@ -51,6 +51,10 @@ func actionToSDK(a deployplan.ActionType) (bundledeployments.OperationActionType
 	switch a {
 	case deployplan.Create:
 		return bundledeployments.OperationActionTypeOperationActionTypeCreate, nil
+	case deployplan.Bind:
+		return bundledeployments.OperationActionTypeOperationActionTypeBind, nil
+	case deployplan.BindAndUpdate:
+		return bundledeployments.OperationActionTypeOperationActionTypeBindAndUpdate, nil
 	case deployplan.Update:
 		return bundledeployments.OperationActionTypeOperationActionTypeUpdate, nil
 	case deployplan.UpdateWithID:
@@ -79,7 +83,8 @@ func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bu
 		return
 	}
 	deploymentID := db.StateDB.DeploymentID
-	if deploymentID == "" {
+	firstDeploy := deploymentID == ""
+	if firstDeploy {
 		dep := metadata.Deployment()
 		dep.InitialParentPath = b.Config.Workspace.StatePath
 		created, err := w.BundleDeployments.CreateDeployment(ctx, bundledeployments.CreateDeploymentRequest{Deployment: dep})
@@ -110,6 +115,11 @@ func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bu
 	bundle.ApplyFuncContext(ctx, b, func(_ context.Context, b *bundle.Bundle) {
 		b.Config.Bundle.Deployment.DeploymentID = deploymentID
 	})
+	if firstDeploy {
+		if err := db.StampDeploymentIdForFirstVersion(deploymentID); err != nil {
+			logdiag.LogError(ctx, err)
+		}
+	}
 }
 
 // startVersion claims the version the run settled on and opens the buffer that records

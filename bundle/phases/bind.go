@@ -47,13 +47,13 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		return
 	}
 
+	resourceKey := fmt.Sprintf("resources.%s.%s", opts.Group, opts.ResourceKey)
 	if stateDesc.IsDMS() {
-		logdiag.LogError(ctx, errors.New("bind is not supported for a bundle target that records deployment history"))
+		bindWithHistory(ctx, b, resourceKey, opts.ResourceId, opts.AutoApprove)
 		return
 	}
 
 	// Direct engine: import into temp state, run plan, check for changes.
-	resourceKey := fmt.Sprintf("resources.%s.%s", opts.Group, opts.ResourceKey)
 	_, statePath := b.StateFilenameDirect(ctx)
 
 	result, err := b.DeploymentBundle.Bind(ctx, b.WorkspaceClient(ctx), &b.Config, statePath, resourceKey, opts.ResourceId)
@@ -62,7 +62,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		return
 	}
 
-	if !confirmBindPlan(ctx, resourceKey, result.Plan, opts.AutoApprove) {
+	if !confirmBindPlan(ctx, resourceKey, result.Plan, opts.AutoApprove, false) {
 		result.Cancel()
 		return
 	}
@@ -86,24 +86,37 @@ func jsonDump(ctx context.Context, v any, field string) string {
 	return string(b)
 }
 
-// confirmBindPlan shows the planned changes to the bound resource and, unless autoApprove, asks
-// the user to approve them. It reports whether the bind should proceed.
-func confirmBindPlan(ctx context.Context, resourceKey string, plan *deployplan.Plan, autoApprove bool) bool {
-	entry := plan.Plan[resourceKey]
-	if autoApprove || entry == nil || entry.Action == deployplan.Skip || entry.Action == deployplan.Undefined {
+// confirmBindPlan shows the planned changes and, unless autoApprove, asks the user to approve them.
+// It reports whether the bind should proceed. An immediate bind (DMS) also applies the bound
+// resource's permissions and grants now, so their changes need approval too.
+func confirmBindPlan(ctx context.Context, resourceKey string, plan *deployplan.Plan, autoApprove, immediate bool) bool {
+	if autoApprove {
 		return true
 	}
-
-	cmdio.LogString(ctx, fmt.Sprintf("Plan: %s %s", entry.Action, resourceKey))
-	if len(entry.Changes) > 0 {
-		cmdio.LogString(ctx, "\nChanges detected:")
-		for _, field := range slices.Sorted(maps.Keys(entry.Changes)) {
-			change := entry.Changes[field]
-			if change.Action != deployplan.Skip {
-				cmdio.LogString(ctx, fmt.Sprintf("  ~ %s: %v -> %v", field, jsonDump(ctx, change.Remote, field), jsonDump(ctx, change.New, field)))
-			}
+	changesWorkspace := false
+	for _, action := range plan.GetActions() {
+		if !immediate && action.ResourceKey != resourceKey {
+			continue
 		}
-		cmdio.LogString(ctx, "")
+		if action.ActionType == deployplan.Skip || action.ActionType == deployplan.Bind || action.ActionType == deployplan.Undefined {
+			continue
+		}
+		changesWorkspace = true
+		entry := plan.Plan[action.ResourceKey]
+		cmdio.LogString(ctx, fmt.Sprintf("Plan: %s %s", entry.Action, action.ResourceKey))
+		if len(entry.Changes) > 0 {
+			cmdio.LogString(ctx, "\nChanges detected:")
+			for _, field := range slices.Sorted(maps.Keys(entry.Changes)) {
+				change := entry.Changes[field]
+				if change.Action != deployplan.Skip {
+					cmdio.LogString(ctx, fmt.Sprintf("  ~ %s: %v -> %v", field, jsonDump(ctx, change.Remote, field), jsonDump(ctx, change.New, field)))
+				}
+			}
+			cmdio.LogString(ctx, "")
+		}
+	}
+	if !changesWorkspace {
+		return true
 	}
 
 	if !cmdio.IsPromptSupported(ctx) {
@@ -111,7 +124,11 @@ func confirmBindPlan(ctx context.Context, resourceKey string, plan *deployplan.P
 		return false
 	}
 
-	ans, err := cmdio.AskYesOrNo(ctx, "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'.")
+	prompt := "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'."
+	if immediate {
+		prompt = "Confirm bind? The changes will be applied to the workspace now."
+	}
+	ans, err := cmdio.AskYesOrNo(ctx, prompt)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return false
