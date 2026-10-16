@@ -1,0 +1,23 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  title "Cleanup"
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Replay the prior terraform deployment (captured from a real terraform run)"
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
+rm -f "$OUT_REQUESTS"
+
+title "Rename the secret scope (an updatable id field). With the fix, the migration detects it."
+# name is an updatable id field, so a rename requires the resource to be recreated/renamed.
+# reconcileIDFields should detect the mismatch between config and deployed value.
+update_file.py databricks.yml "my-scope-$UNIQUE_NAME" "my-scope-$UNIQUE_NAME-renamed"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy --auto-approve
+
+title "Redeploy on direct: the scope now matches config, so the plan should be a clean no-op"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+
+title "Verify the scope exists with the new name"
+trace $CLI secrets list-scopes | grep "my-scope-$UNIQUE_NAME-renamed"
