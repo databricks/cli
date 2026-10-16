@@ -252,9 +252,9 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) ([
 		})
 
 		// Whether the state records deployment history is only known once it is read, but the
-		// lookup is needed right after; going by the config overlaps it with the reads. A state
-		// that disagrees with the config is either rejected or looked up again by the caller.
-		if ConfiguresDeploymentHistory(ctx, b) {
+		// lookup is needed right after; going by the config and the local state overlaps it with
+		// the reads. Without either, a recording state is looked up again by the caller.
+		if ConfiguresDeploymentHistory(ctx, b) || (directLocalState != nil && directLocalState.IsDMS()) {
 			wg.Go(func() {
 				id, err := dms.LookupDeploymentID(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 				deployment = &DeploymentLookup{ID: id, Err: err}
