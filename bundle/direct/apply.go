@@ -45,7 +45,18 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 		log.Infof(ctx, "Bound %s id=%#v", d.ResourceKey, planEntry.ID)
 		return d.saveState(ctx, db, planEntry.ID, newState, d.DependsOn)
 	case deployplan.BindAndUpdate:
-		return d.Update(ctx, db, planEntry.ID, newState, planEntry)
+		err := d.Update(ctx, db, planEntry.ID, newState, planEntry)
+		// A failed wait may already have recorded the updated state.
+		if err == nil || db.GetResourceID(d.ResourceKey) != "" {
+			return err
+		}
+		// DMS requires state for an existing resource even when its update fails. Keep the
+		// remote baseline; a later deploy can finish applying the configuration.
+		remoteState, stateErr := d.Adapter.RemapState(planEntry.RemoteState)
+		if stateErr != nil {
+			return errors.Join(err, stateErr)
+		}
+		return errors.Join(err, d.saveState(ctx, db, planEntry.ID, remoteState, d.DependsOn))
 	default:
 		// The remaining actions act on a resource already in state.
 	}
