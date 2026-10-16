@@ -38,8 +38,9 @@ linters:
     - errorlint
   settings:
     errorlint:
-      # Formatting errors with %v instead of %w is often deliberate, to keep
-      # the cause out of the error chain.
+      # Switching %v to %w changes which errors callers can match with
+      # errors.Is/As (e.g. fs.ErrNotExist, context.Canceled), so it needs
+      # per-site review rather than a bulk fix.
       errorf: false
     modernize:
       # omitzero changes JSON wire format for nested structs (unlike omitempty),
