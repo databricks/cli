@@ -6,21 +6,12 @@
 >>> jq -c {serial, features} .databricks/resources.v2.json
 {"serial":2,"features":{"deployment_history":{}}}
 
-=== Local recorded serial 3 is ahead of DMS version 2
+=== Local recorded serial 3 ahead of DMS version 2 is rejected
 >>> update_file.py .databricks/bundle/default/resources.json "serial": 2 "serial": 3
 
 >>> musterr [CLI] bundle deploy
 Error: inconsistent deployment state: resource state serial (3) is ahead of deployment history version (2)
 
-Delete the local state file "[TEST_TMP_DIR]/.databricks/bundle/default/resources.json" and deploy the bundle again with deployment history enabled (experimental.deployment_history: true) to proceed from deployment history version 2
-
-
-=== Delete the local copy and restore authoritative state
->>> rm .databricks/bundle/default/resources.json
-
->>> [CLI] bundle deploy -qq
-
->>> cmp .databricks/resources.v2.json .databricks/bundle/default/resources.json
 
 === 1. Config false and env false: newer remote state replaces the local copy and reads DMS
 >>> cp .databricks/resources.v1.json .databricks/bundle/default/resources.json

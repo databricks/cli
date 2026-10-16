@@ -14,14 +14,9 @@ title "Setup (LOG.setup): reconstruct full version 1 without a history marker, t
 trace jq -c '{serial, features}' .databricks/resources.v1.json
 trace jq -c '{serial, features}' .databricks/resources.v2.json
 
-title "Local recorded serial 3 is ahead of DMS version 2"
+title "Local recorded serial 3 ahead of DMS version 2 is rejected"
 trace update_file.py .databricks/bundle/default/resources.json '"serial": 2' '"serial": 3'
 trace musterr $CLI bundle deploy
-
-title "Delete the local copy and restore authoritative state"
-trace rm .databricks/bundle/default/resources.json
-trace $CLI bundle deploy -qq
-trace cmp .databricks/resources.v2.json .databricks/bundle/default/resources.json
 
 rm -f "$OUT_REQUESTS"
 

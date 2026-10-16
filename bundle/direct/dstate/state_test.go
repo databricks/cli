@@ -2,7 +2,6 @@ package dstate
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -142,11 +141,7 @@ func TestOpenUsesDMSVersionForSerial(t *testing.T) {
 				DeploymentID: tt.deploymentID, LastVersionID: tt.lastVersionID,
 			})
 			if tt.wantErr != "" {
-				require.ErrorContains(t, err, tt.wantErr)
-				assert.ErrorContains(t, err, "inconsistent deployment state:")
-				assert.ErrorContains(t, err, fmt.Sprintf("Delete the local state file %q", filepath.ToSlash(path)))
-				assert.ErrorContains(t, err, "deployment history enabled (experimental.deployment_history: true)")
-				assert.ErrorContains(t, err, fmt.Sprintf("to proceed from deployment history version %d", tt.lastVersionID))
+				require.EqualError(t, err, "inconsistent deployment state: "+tt.wantErr)
 				assert.False(t, db.IsOpen())
 				return
 			}
