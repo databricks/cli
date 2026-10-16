@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -45,7 +46,7 @@ func getExitCode(err error) (int, error) {
 	if err == nil {
 		return 0, nil
 	}
-	if exitError, ok := err.(*exec.ExitError); ok {
+	if exitError, ok := errors.AsType[*exec.ExitError](err); ok {
 		if status, ok := exitError.Sys().(syscall.WaitStatus); ok {
 			return status.ExitStatus(), nil
 		}

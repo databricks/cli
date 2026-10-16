@@ -24,7 +24,7 @@ func LoadJSON(data []byte, source string) (dyn.Value, error) {
 	// Start decoding from the top-level value
 	value, err := decodeValue(decoder, &offset)
 	if err != nil {
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			err = errors.New("unexpected end of JSON input")
 		}
 		// Get the current offset for error reporting
