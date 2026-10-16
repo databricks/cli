@@ -20,6 +20,10 @@ from databricks.bundles.core._generated.dashboards import (
     _DashboardResources,
     dashboard_mutator,
 )
+from databricks.bundles.core._generated.data_quality_monitors import (
+    _DataQualityMonitorResources,
+    data_quality_monitor_mutator,
+)
 from databricks.bundles.core._generated.database_catalogs import (
     _DatabaseCatalogResources,
     database_catalog_mutator,
@@ -117,6 +121,7 @@ __all__ = [
     "cluster_mutator",
     "cluster_policy_mutator",
     "dashboard_mutator",
+    "data_quality_monitor_mutator",
     "database_catalog_mutator",
     "database_instance_mutator",
     "external_location_mutator",
@@ -151,6 +156,7 @@ class _GeneratedResources(
     _ClusterPolicyResources,
     _ClusterResources,
     _DashboardResources,
+    _DataQualityMonitorResources,
     _DatabaseCatalogResources,
     _DatabaseInstanceResources,
     _MlflowExperimentResources,
@@ -187,6 +193,7 @@ def _all_resource_types() -> "tuple[_ResourceType, ...]":
         cluster_policies,
         clusters,
         dashboards,
+        data_quality_monitors,
         database_catalogs,
         database_instances,
         experiments,
@@ -220,6 +227,7 @@ def _all_resource_types() -> "tuple[_ResourceType, ...]":
         cluster_policies._resource_type(),
         clusters._resource_type(),
         dashboards._resource_type(),
+        data_quality_monitors._resource_type(),
         database_catalogs._resource_type(),
         database_instances._resource_type(),
         experiments._resource_type(),

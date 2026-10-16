@@ -23,6 +23,7 @@ type Resources struct {
 	ModelProviderServices     map[string]*resources.ModelProviderService     `json:"model_provider_services,omitempty"`
 	RegisteredModels          map[string]*resources.RegisteredModel          `json:"registered_models,omitempty"`
 	QualityMonitors           map[string]*resources.QualityMonitor           `json:"quality_monitors,omitempty"`
+	DataQualityMonitors       map[string]*resources.DataQualityMonitor       `json:"data_quality_monitors,omitempty"`
 	Catalogs                  map[string]*resources.Catalog                  `json:"catalogs,omitempty"`
 	Schemas                   map[string]*resources.Schema                   `json:"schemas,omitempty"`
 	Volumes                   map[string]*resources.Volume                   `json:"volumes,omitempty"`
@@ -119,6 +120,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["model_provider_services"], r.ModelProviderServices),
 		collectResourceMap(descriptions["registered_models"], r.RegisteredModels),
 		collectResourceMap(descriptions["quality_monitors"], r.QualityMonitors),
+		collectResourceMap(descriptions["data_quality_monitors"], r.DataQualityMonitors),
 		collectResourceMap(descriptions["catalogs"], r.Catalogs),
 		collectResourceMap(descriptions["schemas"], r.Schemas),
 		collectResourceMap(descriptions["external_locations"], r.ExternalLocations),
@@ -194,6 +196,7 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"model_provider_services":      (&resources.ModelProviderService{}).ResourceDescription(),
 		"registered_models":            (&resources.RegisteredModel{}).ResourceDescription(),
 		"quality_monitors":             (&resources.QualityMonitor{}).ResourceDescription(),
+		"data_quality_monitors":        (&resources.DataQualityMonitor{}).ResourceDescription(),
 		"catalogs":                     (&resources.Catalog{}).ResourceDescription(),
 		"schemas":                      (&resources.Schema{}).ResourceDescription(),
 		"external_locations":           (&resources.ExternalLocation{}).ResourceDescription(),

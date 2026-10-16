@@ -1,0 +1,21 @@
+# Generated, do not edit.
+
+ignore_remote_changes:
+  - field: data_profiling_config.dashboard_id
+    reason: spec:output_only
+  - field: data_profiling_config.drift_metrics_table_name
+    reason: spec:output_only
+  - field: data_profiling_config.effective_warehouse_id
+    reason: spec:output_only
+  - field: data_profiling_config.latest_monitor_failure_message
+    reason: spec:output_only
+  - field: data_profiling_config.monitor_version
+    reason: spec:output_only
+  - field: data_profiling_config.monitored_table_name
+    reason: spec:output_only
+  - field: data_profiling_config.profile_metrics_table_name
+    reason: spec:output_only
+  - field: data_profiling_config.schedule.pause_status
+    reason: spec:output_only
+  - field: data_profiling_config.status
+    reason: spec:output_only

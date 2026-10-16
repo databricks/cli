@@ -1,0 +1,21 @@
+provided_id_fields:
+  # object_type + object_id identify the monitored object and compose the ID the
+  # monitor is fetched by. Both are immutable; a local change recreates.
+  - field: object_type
+    reason: id_field
+  - field: object_id
+    reason: id_field
+
+recreate_on_changes:
+  # Create:REQ Update:IGN in the data-quality API: the update endpoint ignores it.
+  # Same as quality_monitors.assets_dir.
+  - field: data_profiling_config.assets_dir
+    reason: immutable
+
+ignore_remote_changes:
+  # Create-time options for the built-in dashboard; quality_monitors treats the
+  # same fields as not returned on read.
+  - field: data_profiling_config.skip_builtin_dashboard
+    reason: input_only
+  - field: data_profiling_config.warehouse_id
+    reason: input_only
