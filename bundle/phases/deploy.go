@@ -375,7 +375,10 @@ func RunPlan(ctx context.Context, b *bundle.Bundle) *deployplan.Plan {
 		return nil
 	}
 	if len(b.Select) > 0 {
-		plan.FilterToSelected(b.Select)
+		if err := plan.FilterToSelected(ctx, b.Select); err != nil {
+			logdiag.LogError(ctx, err)
+			return nil
+		}
 	}
 	return plan
 }

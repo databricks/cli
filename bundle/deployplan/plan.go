@@ -2,10 +2,15 @@ package deployplan
 
 import (
 	"cmp"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"iter"
+	"maps"
 	"os"
 	"slices"
+	"strings"
 	"sync"
 
 	"github.com/databricks/cli/internal/build"
@@ -32,6 +37,17 @@ type Plan struct {
 	// --select flag. Serialized so the summary survives a deploy from a plan file
 	// (--plan); used only for summary reporting.
 	NotSelected int `json:"not_selected,omitempty"`
+
+	// WasFiltered is true when FilterToSelected was called on this plan, regardless
+	// of how many resources were excluded. Serialized so process.go can distinguish
+	// a plan that was pre-filtered at plan time (suppress the "--select ignored"
+	// warning) from one that was not (the flag has no effect and should warn).
+	WasFiltered bool `json:"was_filtered,omitempty"`
+
+	// Selectors holds the raw --select values used to produce this filtered plan.
+	// Serialized alongside WasFiltered so process.go can warn when --select at
+	// deploy time differs from the selectors baked into the plan file.
+	Selectors []string `json:"selectors,omitempty"`
 
 	mutex   sync.Mutex `json:"-"`
 	lockmap lockmap    `json:"-"`
@@ -277,17 +293,87 @@ func (p *Plan) ReadUnlockEntry(resourceKey string) {
 	p.lockmap.RUnlock(resourceKey)
 }
 
-// FilterToSelected reduces the plan to the nodes in selected (format "type.name",
-// e.g. "jobs.my_job") plus their transitive dependencies as recorded in each
-// entry's DependsOn field. Nodes not reachable from the selected set are removed.
-func (p *Plan) FilterToSelected(selected []string) {
+// ResolveSelectors maps each --select selector to its plan key ("resources.type.name")
+// against resourceKeys of that same form. A selector is a qualified "type.name" or an
+// unqualified "name"; it errors on no match or, when unqualified, more than one.
+// Duplicate resourceKeys (a resource present in both config and state) collapse, so an
+// unqualified selector is never falsely ambiguous against itself.
+func ResolveSelectors(resourceKeys iter.Seq[string], selectors []string) ([]string, error) {
+	// Index top-level resource keys by name and as qualified "type.name". Keys look like
+	// "resources.<type>.<name>" (names have no dots, see Action.IsChildResource), so
+	// sub-nodes (4 parts: grants/permissions) are skipped as not --select-addressable.
+	byName := map[string][]string{}
+	known := map[string]struct{}{}
+	for key := range resourceKeys {
+		parts := strings.Split(key, ".")
+		if len(parts) != 3 || parts[0] != "resources" {
+			continue
+		}
+		typeName, name := parts[1], parts[2]
+		// Internal resource types (e.g. internal_immutable_snapshots) are not user-
+		// addressable; skip them so they neither resolve a selector nor make an
+		// unqualified one ambiguous (nor leak an internal type into the error).
+		if strings.HasPrefix(typeName, "internal_") {
+			continue
+		}
+		qualified := typeName + "." + name
+		if _, alreadySeen := known[qualified]; !alreadySeen {
+			known[qualified] = struct{}{}
+			byName[name] = append(byName[name], qualified)
+		}
+	}
+
+	resolved := make([]string, 0, len(selectors))
+	for _, s := range selectors {
+		var qualified string
+		if strings.Contains(s, ".") {
+			if _, ok := known[s]; !ok {
+				return nil, fmt.Errorf("no such resource: %s", s)
+			}
+			qualified = s
+		} else {
+			switch matches := byName[s]; len(matches) {
+			case 0:
+				return nil, fmt.Errorf("no such resource: %s", s)
+			case 1:
+				qualified = matches[0]
+			default:
+				slices.Sort(matches)
+				return nil, fmt.Errorf("ambiguous resource: %s (can resolve to %s); use a qualified name to disambiguate", s, strings.Join(matches, ", "))
+			}
+		}
+		resolved = append(resolved, "resources."+qualified)
+	}
+	return resolved, nil
+}
+
+// FilterToSelected reduces the plan to the resources named in selected (resolved via
+// ResolveSelectors) plus the others that must change with them. The closure follows
+// edges by action, like the apply graph (makeGraph): a deployed resource pulls in its
+// dependencies (forward), a deleted one its dependents (reverse) so they are removed
+// together. A delete selection errors if a live resource (not itself being deleted)
+// still references the resource to be deleted; removing it would break the live resource.
+func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 	before := len(p.Plan)
 
-	// Convert "type.name" → "resources.type.name" (plan key format).
+	resolved, err := ResolveSelectors(maps.Keys(p.Plan), selected)
+	if err != nil {
+		return err
+	}
+
+	// Only build reverse edges when at least one selected resource is being deleted,
+	// since non-delete selections only follow forward DependsOn edges.
+	var dependents map[string][]string
+	for _, key := range resolved {
+		if e, ok := p.Plan[key]; ok && e.Action == Delete {
+			dependents = p.reverseEdges()
+			break
+		}
+	}
+
 	queue := make([]string, 0, len(selected))
 	reachable := make(map[string]struct{}, len(selected))
-	for _, s := range selected {
-		key := "resources." + s
+	for _, key := range resolved {
 		p.enqueueReachable(reachable, &queue, key)
 		// Grants and permissions are modeled as separate plan nodes for internal
 		// reasons, but the user cannot address them via --select. Pull them in as
@@ -298,13 +384,44 @@ func (p *Plan) FilterToSelected(selected []string) {
 		p.enqueueReachable(reachable, &queue, key+".permissions")
 	}
 
-	// BFS following DependsOn edges to include transitive dependencies.
+	// BFS: deleted nodes pull in their dependents (also being deleted); deployed
+	// nodes pull in their dependencies. Collect errors for live dependents of a
+	// delete selection before returning, so the user sees all conflicts at once.
+	var errs []string
 	for len(queue) > 0 {
 		key := queue[0]
 		queue = queue[1:]
-		for _, dep := range p.Plan[key].DependsOn {
-			p.enqueueReachable(reachable, &queue, dep.Node)
+		if p.Plan[key].Action == Delete {
+			for _, dependent := range dependents[key] {
+				// Sub-nodes (grants/permissions, 4-part key) are not user-facing dependents
+				// and never trigger the live-dependent error. If they are themselves being
+				// deleted, they must be pulled in alongside their parent.
+				if strings.Count(dependent, ".") >= 3 {
+					if p.Plan[dependent].Action == Delete {
+						p.enqueueReachable(reachable, &queue, dependent)
+					}
+					continue
+				}
+				if p.Plan[dependent].Action == Delete {
+					// Dependent is also being deleted: pull it in.
+					p.enqueueReachable(reachable, &queue, dependent)
+				} else {
+					// Dependent is live (still in config): deleting key would leave
+					// it broken. Report a user-facing error with both names.
+					deleted := strings.TrimPrefix(key, "resources.")
+					live := strings.TrimPrefix(dependent, "resources.")
+					errs = append(errs, fmt.Sprintf("cannot delete %s: %s still references it; remove the reference or also remove %s from the config", deleted, live, live))
+				}
+			}
+		} else {
+			for _, dep := range p.Plan[key].DependsOn {
+				p.enqueueReachable(reachable, &queue, dep.Node)
+			}
 		}
+	}
+	if len(errs) > 0 {
+		slices.Sort(errs)
+		return errors.New(strings.Join(errs, "\n"))
 	}
 
 	for key := range p.Plan {
@@ -314,6 +431,21 @@ func (p *Plan) FilterToSelected(selected []string) {
 	}
 
 	p.NotSelected = before - len(p.Plan)
+	p.WasFiltered = true
+	p.Selectors = slices.Clone(selected)
+	return nil
+}
+
+// reverseEdges returns the reverse of the plan's DependsOn edges: for each node, the
+// nodes that depend on it.
+func (p *Plan) reverseEdges() map[string][]string {
+	dependents := map[string][]string{}
+	for key, entry := range p.Plan {
+		for _, dep := range entry.DependsOn {
+			dependents[dep.Node] = append(dependents[dep.Node], key)
+		}
+	}
+	return dependents
 }
 
 // enqueueReachable marks key as reachable and appends it to queue, if key exists
