@@ -378,7 +378,7 @@ func probeModelServices(ctx context.Context, apiClient *client.DatabricksClient)
 	it := catalog.NewAiGateway(apiClient).ListModelServices(ctx, catalog.ListModelServicesRequest{PageSize: modelServiceProbePageSize})
 	_, err := it.Next(ctx)
 	if err != nil {
-		if err == listing.ErrNoMoreItems {
+		if errors.Is(err, listing.ErrNoMoreItems) {
 			// endpoint is reachable but there are no results
 			return gatewayProbe{reachable: true}
 		}

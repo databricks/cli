@@ -35,7 +35,12 @@ linters:
     - reassign
     - modernize
     - makezero
+    - errorlint
   settings:
+    errorlint:
+      # Formatting errors with %v instead of %w is often deliberate, to keep
+      # the cause out of the error chain.
+      errorf: false
     modernize:
       # omitzero changes JSON wire format for nested structs (unlike omitempty),
       # so each site needs per-site review rather than a bulk rewrite.

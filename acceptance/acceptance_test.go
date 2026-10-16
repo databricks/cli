@@ -1648,7 +1648,7 @@ func formatOutput(w io.Writer, err error) {
 	if err == nil {
 		return
 	}
-	if exiterr, ok := err.(*exec.ExitError); ok {
+	if exiterr, ok := errors.AsType[*exec.ExitError](err); ok {
 		exitCode := exiterr.ExitCode()
 		fmt.Fprintf(w, "\nExit code: %d\n", exitCode)
 	} else {
@@ -1859,7 +1859,7 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool, timeout ti
 				require.NoError(t, err)
 			}
 		}
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		require.NoError(t, err)
