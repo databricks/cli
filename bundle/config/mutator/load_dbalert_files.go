@@ -80,8 +80,8 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf("field %s is not allowed in the bundle configuration.", k),
 					Detail:    "When a .dbalert.json is specified, only the following fields are allowed in the bundle configuration: " + strings.Join(allowedInYAML, ", "),
+					Locations: nil,
 					Paths:     []*structpath.PathNode{structpath.NewStringKey(alertPath, k)},
-					Locations: v.Locations(),
 				},
 			}
 		}
@@ -102,8 +102,8 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf("failed to read .dbalert.json file %s: %s", alert.FilePath, err),
 					Detail:    "",
+					Locations: nil,
 					Paths:     []*structpath.PathNode{structpath.NewStringKey(alertPath, "file_path")},
-					Locations: alertV.Get("file_path").Locations(),
 				},
 			}
 		}
@@ -117,8 +117,8 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf("failed to parse .dbalert.json file %s: %s", alert.FilePath, err),
 					Detail:    "",
+					Locations: nil,
 					Paths:     []*structpath.PathNode{structpath.NewStringKey(alertPath, "file_path")},
-					Locations: alertV.Get("file_path").Locations(),
 				},
 			}
 		}
@@ -131,8 +131,8 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf(".alert file %s must not contain variable interpolations.", alert.FilePath),
 					Detail:    "Please inline the alert configuration in the bundle configuration to use variables",
+					Locations: nil,
 					Paths:     []*structpath.PathNode{structpath.NewStringKey(alertPath, "file_path")},
-					Locations: alertV.Get("file_path").Locations(),
 				},
 			}
 		}

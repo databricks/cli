@@ -12,6 +12,7 @@ presets: # PRESETS
 
 >>> musterr [CLI] bundle validate -o json
 Error: prefix should contain the current username or ${workspace.current_user.short_name} to ensure uniqueness when using 'mode: development'
+  at presets.name_prefix
   in databricks.yml:25:16
 
 

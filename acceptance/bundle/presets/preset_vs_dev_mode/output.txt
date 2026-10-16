@@ -1,4 +1,5 @@
 Error: target with 'mode: development' cannot set trigger pause status to UNPAUSED by default
+  at presets.trigger_pause_status
   in databricks.yml:9:29
 
 Name: preset

@@ -11,14 +11,14 @@ Error: secret scope permission principal is required
 Set one of user_name, group_name or service_principal_name
 
 Error: secret scope permission principal is required
-  at resources.secret_scopes.wrong_type_principal.permissions[0]
-  in databricks.yml:18:7
+  at resources.secret_scopes.no_principal.permissions[0]
+  in databricks.yml:7:7
 
 Set one of user_name, group_name or service_principal_name
 
 Error: secret scope permission principal is required
-  at resources.secret_scopes.no_principal.permissions[0]
-  in databricks.yml:7:7
+  at resources.secret_scopes.wrong_type_principal.permissions[0]
+  in databricks.yml:18:7
 
 Set one of user_name, group_name or service_principal_name
 
@@ -42,14 +42,14 @@ Error: secret scope permission principal is required
 Set one of user_name, group_name or service_principal_name
 
 Error: secret scope permission principal is required
-  at resources.secret_scopes.wrong_type_principal.permissions[0]
-  in databricks.yml:18:7
+  at resources.secret_scopes.no_principal.permissions[0]
+  in databricks.yml:7:7
 
 Set one of user_name, group_name or service_principal_name
 
 Error: secret scope permission principal is required
-  at resources.secret_scopes.no_principal.permissions[0]
-  in databricks.yml:7:7
+  at resources.secret_scopes.wrong_type_principal.permissions[0]
+  in databricks.yml:18:7
 
 Set one of user_name, group_name or service_principal_name
 

@@ -2,9 +2,11 @@
 >>> [CLI] bundle run foo
 Error: Script bar has no content
   at scripts.bar.content
+  in databricks.yml:7:14
 
 Error: Script foo has no content
   at scripts.foo.content
+  in databricks.yml:5:7
 
 
 Exit code: 1
@@ -12,9 +14,11 @@ Exit code: 1
 >>> [CLI] bundle run bar
 Error: Script bar has no content
   at scripts.bar.content
+  in databricks.yml:7:14
 
 Error: Script foo has no content
   at scripts.foo.content
+  in databricks.yml:5:7
 
 
 Exit code: 1

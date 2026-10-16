@@ -80,10 +80,9 @@ func TestValidateArtifactPath(t *testing.T) {
 	assertDiags := func(t *testing.T, diags diag.Diagnostics, expected string) {
 		assert.Len(t, diags, 1)
 		assert.Equal(t, diag.Diagnostics{{
-			Severity:  diag.Error,
-			Summary:   expected,
-			Locations: []diag.Location{{File: "file", Line: 1, Column: 1}},
-			Paths:     structpath.NewPathSlice("workspace", "artifact_path"),
+			Severity: diag.Error,
+			Summary:  expected,
+			Paths:    structpath.NewPathSlice("workspace", "artifact_path"),
 		}}, diags)
 	}
 
@@ -167,10 +166,9 @@ func TestValidateArtifactPathWithInvalidPaths(t *testing.T) {
 
 		diags := ValidateArtifactPath().Apply(t.Context(), b)
 		require.Equal(t, diag.Diagnostics{{
-			Severity:  diag.Error,
-			Summary:   "expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got " + p,
-			Locations: []diag.Location{{File: "config.yml", Line: 1, Column: 2}},
-			Paths:     structpath.NewPathSlice("workspace", "artifact_path"),
+			Severity: diag.Error,
+			Summary:  "expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got " + p,
+			Paths:    structpath.NewPathSlice("workspace", "artifact_path"),
 		}}, diags)
 	}
 }

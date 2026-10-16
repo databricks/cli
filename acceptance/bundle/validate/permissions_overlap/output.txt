@@ -10,6 +10,7 @@ Consider using a adding a top-level permissions section such as the following:
       level: CAN_MANAGE
 
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
+  at permissions
   in databricks.yml:5:3
 
 {

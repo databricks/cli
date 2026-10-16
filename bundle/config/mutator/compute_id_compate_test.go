@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestComputeIdToClusterId(t *testing.T) {
@@ -53,4 +54,16 @@ func TestComputeIdToClusterIdInTargetOverride(t *testing.T) {
 	assert.Len(t, diags, 1)
 	assert.Equal(t, "compute_id is deprecated, please use cluster_id instead", diags[0].Summary)
 	assert.Equal(t, diag.Warning, diags[0].Severity)
+}
+
+func TestComputeIdToClusterIdKeepsLocation(t *testing.T) {
+	root, diags := config.LoadFromBytes("databricks.yml", []byte("bundle:\n  name: x\n  compute_id: compute-id\n"))
+	require.NoError(t, diags.Error())
+	b := &bundle.Bundle{Config: *root}
+
+	diags = bundle.Apply(t.Context(), b, mutator.ComputeIdToClusterId())
+	require.NoError(t, diags.Error())
+	require.Len(t, diags, 1)
+	// The key is deleted before the diagnostic is logged, so its location is kept explicitly.
+	assert.Equal(t, []diag.Location{{File: "databricks.yml", Line: 3, Column: 15}}, diags[0].Locations)
 }

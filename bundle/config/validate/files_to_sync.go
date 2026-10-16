@@ -62,8 +62,7 @@ func (v *filesToSync) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 			Summary:  "There are no files to sync, please check your .gitignore and sync.exclude configuration",
 			// Show all locations where sync.exclude is defined, since merging
 			// sync.exclude is additive.
-			Locations: b.Config.NearestLocations(path),
-			Paths:     []*structpath.PathNode{path},
+			Paths: []*structpath.PathNode{path},
 		})
 	}
 
