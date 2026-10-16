@@ -1,11 +1,11 @@
 package structvar
 
 import (
-	"iter"
 	"reflect"
 	"slices"
 	"sync"
 
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 	sdkduration "github.com/databricks/databricks-sdk-go/common/types/duration"
 	sdkfieldmask "github.com/databricks/databricks-sdk-go/common/types/fieldmask"
@@ -36,33 +36,54 @@ type StructInfo struct {
 	// PostgresProject -> PostgresProjectConfig -> ProjectSpec). A field whose
 	// declaring struct has no ForceSendFields has no entry.
 	ForceSendFieldsIndex map[string][]int
+
+	// List holds the fields in FieldNames order, with everything traversal needs, so
+	// that visiting a struct does no lookups by name.
+	List []FieldInfo
+
+	// ForceSendGroups holds the distinct ForceSendFields index paths; a struct with
+	// embedded structs can have several.
+	ForceSendGroups [][]int
+
+	// ForceSendTargets maps, per ForceSendGroups entry, the Go field names listed in
+	// that ForceSendFields to their index in List.
+	ForceSendTargets []map[string]int
 }
 
-// StructInfoCache caches type information.
-var StructInfoCache = make(map[reflect.Type]StructInfo)
+// FieldInfo describes a field of a struct.
+type FieldInfo struct {
+	Key        string
+	Index      []int
+	GolangName string
 
-// StructInfoCacheLock guards concurrent access to StructInfoCache.
-var StructInfoCacheLock sync.Mutex
+	// ForceEmpty is set for fields without omitempty.
+	ForceEmpty bool
 
-// getStructInfo returns the [StructInfo] for the given type.
+	// Dot is set if Key can be written as a dotted path component (see
+	// [structpath.NewDotString]), which is true for every JSON name in practice.
+	Dot bool
+
+	// ForceSendGroup is the index in [StructInfo.ForceSendGroups] of the
+	// ForceSendFields governing the field, or -1.
+	ForceSendGroup int
+}
+
+var structInfoCache sync.Map // reflect.Type -> *StructInfo
+
+// GetStructInfo returns the [StructInfo] for the given type.
 // It lazily populates a cache, so the first call for a given
 // type is slower than subsequent calls for that same type.
-func GetStructInfo(typ reflect.Type) StructInfo {
-	StructInfoCacheLock.Lock()
-	defer StructInfoCacheLock.Unlock()
-
-	si, ok := StructInfoCache[typ]
-	if !ok {
-		si = buildStructInfo(typ)
-		StructInfoCache[typ] = si
+func GetStructInfo(typ reflect.Type) *StructInfo {
+	if si, ok := structInfoCache.Load(typ); ok {
+		return si.(*StructInfo)
 	}
-
-	return si
+	si, _ := structInfoCache.LoadOrStore(typ, buildStructInfo(typ))
+	return si.(*StructInfo)
 }
 
 // buildStructInfo populates a new [StructInfo] for the given type.
-func buildStructInfo(typ reflect.Type) StructInfo {
-	out := StructInfo{
+func buildStructInfo(typ reflect.Type) *StructInfo {
+	out := &StructInfo{
 		Fields:               make(map[string][]int),
 		ForceEmpty:           make(map[string]bool),
 		GolangNames:          make(map[string]string),
@@ -126,43 +147,47 @@ func buildStructInfo(typ reflect.Type) StructInfo {
 
 			// The field is declared directly in this struct, so it is governed by
 			// this struct's ForceSendFields (if it has one).
+			group := -1
 			if forceSendFieldsIndex != nil {
 				out.ForceSendFieldsIndex[name] = forceSendFieldsIndex
+				group = forceSendGroup(out, forceSendFieldsIndex)
 			}
+			out.List = append(out.List, FieldInfo{
+				Key:            name,
+				Index:          out.Fields[name],
+				GolangName:     sf.Name,
+				ForceEmpty:     out.ForceEmpty[name],
+				Dot:            structpath.NewStringKey(nil, name).IsDotString(),
+				ForceSendGroup: group,
+			})
 		}
 	}
 
+	out.ForceSendTargets = make([]map[string]int, len(out.ForceSendGroups))
+	for i, f := range out.List {
+		if f.ForceSendGroup < 0 {
+			continue
+		}
+		m := out.ForceSendTargets[f.ForceSendGroup]
+		if m == nil {
+			m = map[string]int{}
+			out.ForceSendTargets[f.ForceSendGroup] = m
+		}
+		m[f.GolangName] = i
+	}
 	return out
 }
 
-type FieldValue struct {
-	Key      string
-	Value    reflect.Value
-	IsForced bool
-}
-
-// FieldValues yields the fields of the struct v. It is an iterator rather than a slice
-// because views call it on every struct they traverse.
-func (s *StructInfo) FieldValues(v reflect.Value) iter.Seq[FieldValue] {
-	return func(yield func(FieldValue) bool) {
-		for _, k := range s.FieldNames {
-			fv := FieldByIndex(v, s.Fields[k])
-			if !fv.IsValid() {
-				continue
-			}
-
-			isForced := true
-
-			// TODO: we should use isEmptyForOmitEmpty instead of IsZero()
-			if fv.IsZero() {
-				isForced = s.IsForceSend(v, k)
-			}
-
-			if !yield(FieldValue{Key: k, Value: fv, IsForced: isForced}) {
-				return
-			}
+// forceSendGroup returns the index of the ForceSendFields path index in
+// out.ForceSendGroups, adding it if needed.
+func forceSendGroup(out *StructInfo, index []int) int {
+	for i, g := range out.ForceSendGroups {
+		if slices.Equal(g, index) {
+			return i
 		}
 	}
+	out.ForceSendGroups = append(out.ForceSendGroups, index)
+	return len(out.ForceSendGroups) - 1
 }
 
 // isForceSend reports whether the field named k is listed in the ForceSendFields
@@ -176,15 +201,7 @@ func (s *StructInfo) IsForceSend(v reflect.Value, k string) bool {
 	if !fsf.IsValid() {
 		return false
 	}
-	// Iterate with reflect: converting the slice to []string via Interface would
-	// allocate on every call.
-	name := s.GolangNames[k]
-	for i := range fsf.Len() {
-		if fsf.Index(i).String() == name {
-			return true
-		}
-	}
-	return false
+	return containsString(fsf, s.GolangNames[k])
 }
 
 // fieldByIndex resolves the value at the given index path, dereferencing embedded

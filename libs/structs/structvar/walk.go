@@ -24,22 +24,27 @@ func walk(x View, p *structpath.PathNode, fn func(*structpath.PathNode, View) er
 		return err
 	}
 
+	var err error
 	switch x.Kind() {
 	case KindMap:
-		for k, c := range x.MapItems() {
-			if err := walk(c, structpath.NewStringKey(p, k), fn); err != nil {
-				return err
+		x.eachMapItem(func(k string, dot bool, c View) bool {
+			var cp *structpath.PathNode
+			if dot {
+				cp = structpath.NewDotString(p, k)
+			} else {
+				cp = structpath.NewStringKey(p, k)
 			}
-		}
+			err = walk(c, cp, fn)
+			return err == nil
+		})
 	case KindSequence:
-		for i, c := range x.Sequence() {
-			if err := walk(c, structpath.NewIndex(p, i), fn); err != nil {
-				return err
-			}
-		}
+		x.eachElem(func(i int, c View) bool {
+			err = walk(c, structpath.NewIndex(p, i), fn)
+			return err == nil
+		})
 	default:
 	}
-	return nil
+	return err
 }
 
 // ErrSkip can be returned by the function passed to [Walk] to skip the subtree of the
