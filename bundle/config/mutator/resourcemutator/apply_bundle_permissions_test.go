@@ -24,6 +24,7 @@ var unsupportedResources = []string{
 	"volumes",
 	"schemas",
 	"features",
+	"materialization_sets",
 	"quality_monitors",
 	"registered_models",
 	"model_services",

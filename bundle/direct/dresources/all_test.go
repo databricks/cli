@@ -123,6 +123,30 @@ var testConfig map[string]any = map[string]any{
 		TimeseriesColumn: &ml.TimeseriesColumn{Name: "ts"},
 	},
 
+	// A feature materialized to both an offline table and one online store: the two members
+	// share a feature name, so they exercise the member key's online-store discriminator.
+	"materialization_sets": &resources.MaterializationSet{
+		MaterializedFeatures: []ml.MaterializedFeature{
+			{
+				FeatureName:         "main.default.my_feature",
+				CronScheduleTrigger: &ml.CronSchedule{CronExpression: "0 0 * * * ?"},
+				OfflineStoreConfig: &ml.OfflineStoreConfig{
+					CatalogName: "main",
+					SchemaName:  "default",
+				},
+			},
+			{
+				FeatureName:         "main.default.my_feature",
+				CronScheduleTrigger: &ml.CronSchedule{CronExpression: "0 0 * * * ?"},
+				OnlineStoreConfig: &ml.OnlineStoreConfig{
+					CatalogName:     "main",
+					SchemaName:      "default",
+					OnlineStoreName: "my_store",
+				},
+			},
+		},
+	},
+
 	"experiments": &resources.MlflowExperiment{
 		Name: "my-experiment",
 		Tags: []ml.ExperimentTag{

@@ -17,6 +17,7 @@ type Resources struct {
 	Pipelines map[string]*resources.Pipeline `json:"pipelines,omitempty"`
 
 	Features                  map[string]*resources.Feature                  `json:"features,omitempty"`
+	MaterializationSets       map[string]*resources.MaterializationSet       `json:"materialization_sets,omitempty"`
 	Models                    map[string]*resources.MlflowModel              `json:"models,omitempty"`
 	Experiments               map[string]*resources.MlflowExperiment         `json:"experiments,omitempty"`
 	ModelServingEndpoints     map[string]*resources.ModelServingEndpoint     `json:"model_serving_endpoints,omitempty"`
@@ -116,6 +117,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["models"], r.Models),
 		collectResourceMap(descriptions["experiments"], r.Experiments),
 		collectResourceMap(descriptions["features"], r.Features),
+		collectResourceMap(descriptions["materialization_sets"], r.MaterializationSets),
 		collectResourceMap(descriptions["model_serving_endpoints"], r.ModelServingEndpoints),
 		collectResourceMap(descriptions["model_services"], r.ModelServices),
 		collectResourceMap(descriptions["mcp_services"], r.McpServices),
@@ -203,6 +205,7 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"models":                       (&resources.MlflowModel{}).ResourceDescription(),
 		"experiments":                  (&resources.MlflowExperiment{}).ResourceDescription(),
 		"features":                     (&resources.Feature{}).ResourceDescription(),
+		"materialization_sets":         (&resources.MaterializationSet{}).ResourceDescription(),
 		"instance_pools":               (&resources.InstancePool{}).ResourceDescription(),
 		"model_serving_endpoints":      (&resources.ModelServingEndpoint{}).ResourceDescription(),
 		"model_services":               (&resources.ModelService{}).ResourceDescription(),

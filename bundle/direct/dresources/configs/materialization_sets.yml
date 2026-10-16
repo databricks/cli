@@ -1,0 +1,32 @@
+# UpdateMaterializationSet accepts only the `materialized_features` mask, and a member's own
+# fields are write-once: the server has no way to alter one in place. The spec leaves them
+# OPTIONAL rather than IMMUTABLE because UpdateMaterializedFeature can still change some of them
+# on a member addressed directly, so materialization_sets.generated.yml will never cover them and
+# these entries are permanent.
+#
+# A member added or removed whole also matches these patterns, because the matcher truncates a
+# pattern longer than the path. ResourceMaterializationSet.OverrideChangeDesc downgrades that case
+# to update so reconciling membership does not destroy the siblings the config left alone.
+recreate_on_changes:
+  - field: materialized_features[*].feature_name
+    reason: immutable
+  - field: materialized_features[*].cron_schedule
+    reason: immutable
+  - field: materialized_features[*].cron_schedule_trigger
+    reason: immutable
+  - field: materialized_features[*].table_trigger
+    reason: immutable
+  - field: materialized_features[*].streaming_mode
+    reason: immutable
+  - field: materialized_features[*].tags
+    reason: immutable
+  - field: materialized_features[*].budget_policy_id
+    reason: immutable
+  - field: materialized_features[*].notifications
+    reason: immutable
+
+backend_defaults:
+  # The server sets a member's schedule state on create and writes it on only one node per
+  # feature, so a member the config leaves unset reports a value the bundle never wrote. Without
+  # this the undeclared case diffs as old=nil, new=nil, remote=ACTIVE and re-plans on every deploy.
+  - field: materialized_features[*].pipeline_schedule_state
