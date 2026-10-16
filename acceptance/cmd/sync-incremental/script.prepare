@@ -1,0 +1,39 @@
+# Every test syncs ./src to its own remote directory, so concurrent cloud runs do not collide.
+# Each sync_once call is a separate CLI process, so the snapshot in src/.databricks is saved
+# and loaded again between steps.
+remote_dir="/Users/$CURRENT_USER_NAME/sync-$UNIQUE_NAME"
+mkdir -p src
+
+cleanup_remote_dir() {
+    $CLI workspace delete --recursive "$remote_dir" &>> LOG.cleanup || true
+}
+trap cleanup_remote_dir EXIT
+
+# Runs one sync pass and prints the files it uploaded and deleted.
+# The "Action:" line lists files in non-deterministic order, so it is dropped.
+sync_once() {
+    trace $CLI sync src "$remote_dir" "$@" | grep -v '^Action' | sort
+}
+
+# Prints every object under the sync root as "<object_type> <relative path> [<language>]".
+remote_tree() {
+    _list_remote "$remote_dir" | sort
+}
+
+_list_remote() {
+    local entries
+    entries=$($CLI workspace list "$1" -o json)
+    echo "$entries" | jq -r --arg root "$remote_dir/" '.[] | [.object_type, (.path | ltrimstr($root)), (.language // empty)] | join(" ")'
+    echo "$entries" | jq -r '.[] | select(.object_type == "DIRECTORY") | .path' | while IFS= read -r dir; do
+        _list_remote "$dir"
+    done
+}
+
+# Prints the local paths recorded in the sync snapshot.
+snapshot_files() {
+    jq -r '.last_modified_times | keys[]' src/.databricks/sync-snapshots/*.json
+}
+
+remote_content() {
+    $CLI workspace export "$remote_dir/$1"
+}

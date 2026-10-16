@@ -1,0 +1,25 @@
+title "New file in nested folders\n"
+mkdir -p src/dir1/dir2/dir3
+touch src/dir1/dir2/dir3/foo.txt
+sync_once
+trace remote_tree
+trace snapshot_files
+
+title "Delete the file; the empty remote folders are removed too\n"
+rm src/dir1/dir2/dir3/foo.txt
+sync_once
+trace remote_tree
+trace snapshot_files
+
+title "Spaces, plus and hash in folder and file names\n"
+mkdir -p "src/dir1/a b+c/c+d e"
+touch "src/dir1/a b+c/c+d e/e+f g#i.txt"
+sync_once
+trace remote_tree
+trace snapshot_files
+
+title "Delete the file with special characters\n"
+rm "src/dir1/a b+c/c+d e/e+f g#i.txt"
+sync_once
+trace remote_tree
+trace snapshot_files
