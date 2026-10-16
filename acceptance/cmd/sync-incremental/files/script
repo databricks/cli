@@ -1,0 +1,33 @@
+title "Initial sync of an empty directory\n"
+sync_once
+trace remote_tree
+
+title "New file\n"
+touch src/foo.txt
+sync_once
+trace remote_tree
+trace remote_content foo.txt
+trace snapshot_files
+
+title "Write to file\n"
+echo '{"statement": "Mi Gente"}' > src/foo.txt
+sync_once
+trace remote_content foo.txt
+
+title "Write again\n"
+echo '{"statement": "Young Dumb & Broke"}' > src/foo.txt
+sync_once
+trace remote_content foo.txt
+
+title "Sync without changes uploads nothing\n"
+sync_once
+
+title "Full sync uploads unchanged files again\n"
+sync_once --full
+trace remote_content foo.txt
+
+title "Delete\n"
+rm src/foo.txt
+sync_once
+trace remote_tree
+trace snapshot_files
