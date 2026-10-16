@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"slices"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	sdkduration "github.com/databricks/databricks-sdk-go/common/types/duration"
@@ -13,13 +14,19 @@ import (
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 )
 
-// sdkNativeTypes is a list of SDK native types that use custom JSON marshaling
-// and should be treated as strings in dyn.Value. These types all implement
-// json.Marshaler and json.Unmarshaler interfaces.
-var sdkNativeTypes = []reflect.Type{
-	reflect.TypeFor[sdkduration.Duration](),   // Protobuf duration format (e.g., "300s")
-	reflect.TypeFor[sdktime.Time](),           // RFC3339 timestamp format (e.g., "2023-12-25T10:30:00Z")
-	reflect.TypeFor[sdkfieldmask.FieldMask](), // Comma-separated paths (e.g., "name,age,email")
+// sdkNativeTypes maps SDK native types that use custom JSON marshaling and
+// should be treated as strings in dyn.Value to a description of their string
+// format. These types all implement json.Marshaler and json.Unmarshaler interfaces.
+var sdkNativeTypes = map[reflect.Type]string{
+	reflect.TypeFor[sdkduration.Duration]():   `a duration in seconds (e.g. "300s")`,
+	reflect.TypeFor[sdktime.Time]():           `an RFC 3339 timestamp (e.g. "2023-12-25T10:30:00Z")`,
+	reflect.TypeFor[sdkfieldmask.FieldMask](): `a comma-separated list of field paths (e.g. "name,age,email")`,
+}
+
+// isSDKNativeType reports whether typ is one of [sdkNativeTypes].
+func isSDKNativeType(typ reflect.Type) bool {
+	_, ok := sdkNativeTypes[typ]
+	return ok
 }
 
 // fromTypedSDKNative converts SDK native types to dyn.Value.
@@ -63,6 +70,26 @@ func fromTypedSDKNative(src reflect.Value, ref dyn.Value, options ...fromTypedOp
 	}
 
 	return dyn.V(str), nil
+}
+
+// normalizeSDKNative normalizes an SDK native type as a string and checks that it
+// parses, so a malformed value is reported with its location instead of failing
+// later in [ToTyped].
+func (n normalizeOptions) normalizeSDKNative(typ reflect.Type, src dyn.Value, path dyn.Path) (dyn.Value, diag.Diagnostics) {
+	v, diags := n.normalizeString(reflect.TypeFor[string](), src, path)
+	if !v.IsValid() || dynvar.IsPureVariableReference(v.MustString()) {
+		return v, diags
+	}
+
+	if err := toTypedSDKNative(reflect.New(typ).Elem(), v); err != nil {
+		return dyn.InvalidValue, diags.Append(diag.Diagnostic{
+			Severity:  diag.Error,
+			Summary:   fmt.Sprintf("cannot parse %q as %s", v.MustString(), sdkNativeTypes[typ]),
+			Locations: []dyn.Location{src.Location()},
+			Paths:     []dyn.Path{path},
+		})
+	}
+	return v, diags
 }
 
 // toTypedSDKNative converts a dyn.Value to an SDK native type.
