@@ -1,0 +1,43 @@
+version: 1.1
+source: my_table
+
+dimensions:
+  - name: date
+    expr: cast(date_add(date,0) as string)
+  - name: week
+    expr: week
+  - name: month
+    expr: month
+  - name: year
+    expr: year
+  - name: category
+    expr: category
+  - name: base_value
+    expr: value
+  - name: value
+    expr: base_value * 1
+  - name: rs
+    expr: running_sum
+measures:
+  - name: sum
+    expr: sum(value)
+  - name: cumulative_sum_last
+    expr: sum(value)
+    window:
+      - order: date
+        range: cumulative
+        semiadditive: last
+  - name: current_sum_last
+    expr: sum(value)
+    window:
+      - order: date
+        range: current
+        semiadditive: last
+  - name: all_sum_last
+    expr: sum(value)
+    window:
+      - order: date
+        range: all
+        semiadditive: last
+  - name: current_sum_last_plus_one
+    expr: Measure(current_sum_last) + 1

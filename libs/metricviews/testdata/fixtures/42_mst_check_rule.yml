@@ -1,0 +1,10 @@
+version: 0.1
+source: main.default.my_table
+dimensions:
+  - name: ID
+    expr: id
+measures:
+  - name: Total value
+    expr: SUM(v)
+  - name: Average value
+    expr: AVG(v)
