@@ -10,6 +10,10 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 {
   "bool_values": [
     {
+      "key": "null-in-targets",
+      "value": false
+    },
+    {
       "key": "local.cache.attempt",
       "value": true
     },

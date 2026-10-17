@@ -1,0 +1,81 @@
+
+>>> [CLI] bundle validate -o json -t dev-run-as
+Warning: expected a string value, found null
+  at targets.dev-job-field.resources.jobs.my_job.description
+  in databricks.yml:31:23
+
+{
+  "run_as": {
+    "user_name": "base-user"
+  }
+}
+
+>>> [CLI] bundle validate -o json -t dev-job-field
+Warning: expected a string value, found null
+  at targets.dev-job-field.resources.jobs.my_job.description
+  in databricks.yml:31:23
+
+{
+  "description": "base description"
+}
+
+>>> [CLI] bundle validate -o json -t dev-variable
+Warning: expected a string value, found null
+  at targets.dev-job-field.resources.jobs.my_job.description
+  in databricks.yml:31:23
+
+{
+  "variables": {
+    "foo": {
+      "default": "base-value",
+      "description": "a variable",
+      "value": "base-value"
+    }
+  }
+}
+
+>>> [CLI] bundle validate -o json -t dev-resource
+Warning: expected a string value, found null
+  at targets.dev-job-field.resources.jobs.my_job.description
+  in databricks.yml:31:23
+
+{
+  "resources": {
+    "jobs": {
+      "my_job": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/dev-resource/state/metadata.json"
+        },
+        "description": "base description",
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "max_concurrent_runs": 1,
+        "name": "my job",
+        "queue": {
+          "enabled": true
+        },
+        "run_as": {
+          "user_name": "base-user"
+        }
+      }
+    }
+  }
+}
+
+>>> [CLI] bundle deploy -t dev-run-as
+Warning: expected a string value, found null
+  at targets.dev-job-field.resources.jobs.my_job.description
+  in databricks.yml:31:23
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev-run-as/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_telemetry_bool_values
+null-in-targets true
+null-in-targets-complex true
+null-in-targets-key true
+null-in-targets-resource true
+null-in-targets-scalar true

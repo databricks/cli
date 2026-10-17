@@ -1,0 +1,43 @@
+bundle:
+  name: test-bundle
+
+run_as:
+  user_name: base-user
+
+variables:
+  foo:
+    default: base-value
+    description: a variable
+
+resources:
+  jobs:
+    my_job:
+      name: my job
+      description: base description
+
+targets:
+  dev-run-as:
+    # Complex: null on a struct-typed field at the top level of a target override.
+    # The base run_as value survives merge. When null-merge semantics change this
+    # field should become absent.
+    run_as:
+
+  dev-job-field:
+    # Scalar: null on a string field inside a resource. Normalization drops it
+    # and emits a warning; the base description survives merge.
+    resources:
+      jobs:
+        my_job:
+          description:
+
+  dev-variable:
+    # MapKey: null on a value in the variables map (map[string]*TargetVariable).
+    # The null overrides the variable entry; currently survives as null.
+    variables:
+      foo:
+
+  dev-resource:
+    # Resource: null on an entire resource entry. The job is completely nulled.
+    resources:
+      jobs:
+        my_job:

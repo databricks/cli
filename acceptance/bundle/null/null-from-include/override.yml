@@ -1,0 +1,6 @@
+targets:
+  dev:
+    # Null in an included file under targets: NullInTargets should be true
+    # even though the null comes from an included file, not the root config.
+    workspace:
+      root_path:
