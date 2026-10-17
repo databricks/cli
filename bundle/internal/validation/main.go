@@ -5,7 +5,7 @@ import (
 )
 
 // This package is meant to be run from the root of the CLI repo. It generates the
-// typed walkers of the required and enum field validators.
+// walkers of the required and enum field validators from the bundle configuration types.
 func main() {
 	err := generateWalkers("bundle/config/validate")
 	if err != nil {
