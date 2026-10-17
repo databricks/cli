@@ -677,6 +677,11 @@ func enforceDeploymentHistorySetting(ctx context.Context, b *bundle.Bundle, stat
 	if configured == recorded {
 		return nil
 	}
+	// Recording sticks to a deployment that has it: leaving the setting out keeps it on, and only
+	// an explicit false conflicts with the state.
+	if recorded && (b.Config.Experimental == nil || b.Config.Experimental.DeploymentHistory == nil) {
+		return nil
+	}
 	if requireMatch {
 		return fmt.Errorf(`deployment history setting (%t) does not match the existing state (%t)
 
