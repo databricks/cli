@@ -15,8 +15,19 @@ a claim about the real API, and the cloud run is what checks it.
 | `immutable` | a write-once member field is caught by the planner as `recreate` and never reaches the server; adding a member routes to `update` so the server refuses it by name |
 | `removal_scope` | the delete cascade is scoped per feature: a feature contributing one member can have it removed alone, while removing one member of a feature contributing two is refused |
 | `destination` | a destination field the server accepts on write and never returns on read is not drift, while a repoint the config actually asked for still recreates — the two are told apart by whether the persisted value is recoverable |
+| `sawtooth` | the offline-and-online batch pair is refused at create, because a set is not expanded into the third materialization; all three declared creates and then plans nothing |
+| `streaming` | a lone streaming online member needs no schedule and no cron, and pausing it is refused |
 
 ## Running against a workspace
+
+`sawtooth` and `streaming` already carry `Cloud = true`. Both reference an existing `Stream`,
+because a Stream is not a bundle resource; override `MATSET_CATALOG`, `MATSET_SCHEMA`,
+`MATSET_ONLINE_STORE` and `MATSET_STREAM` to move them to another workspace, and set
+`MATSET_PROFILE` to pin the bundle to a named profile. **`DATABRICKS_CONFIG_PROFILE` does not reach
+the CLI subprocess**, and the harness builds its own workspace client from the ambient environment
+before any script runs, so a local cloud run needs working ambient auth to the target workspace.
+
+### The other six cases
 
 Add to `test.toml`:
 
@@ -41,15 +52,8 @@ rejects every create otherwise, with `declarativePreviewsNotEnabled`.
 
 ## Not covered yet
 
-- **Sawtooth.** A sawtooth feature in a set must declare all three members itself — batch offline,
-  batch online and streaming online — each batch one carrying a `DERIVED` cron schedule with no
-  expression, and both online ones the same destination. Declaring only the offline-and-online pair
-  is **rejected at create**, not silently expanded: `handleCreateMaterializationSet` stamps a
-  materialization set id on every member before delegating, and the normalization that would expand
-  the pair is skipped whenever that id is set, deliberately, so that a member maps to exactly one
-  materialized feature and the set stays diffable. The rejection names all three materializations.
-  A sawtooth fixture needs a `Stream`, which is not a bundle resource; `danielb.fs2680` already has
-  usable ones, so the fixture should reference an existing stream rather than create one.
+- **Bind and unbind.** `Bind` seeds state from the resolved config rather than from a read, so the
+  destination fields should be present and the first plan after a bind should settle. Read, not run.
 - **Partial failure.** One member failing does not stop the others, and the error carries what was
   updated, deleted and failed. Reproducing it needs per-member failure injection the fake does not
   have.
