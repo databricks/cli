@@ -4,12 +4,10 @@ import (
 	"cmp"
 	"context"
 	"fmt"
-	"maps"
 	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/internal/validation/generated"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
@@ -26,43 +24,10 @@ func (f *required) Name() string {
 }
 
 // Warn for missing fields, based on annotations in the Go SDK / OpenAPI spec.
+// The walker is generated (required_walk.go) by bundle/internal/validation.
 func warnForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-
-	// Generate prefix tree for all required fields.
-	patterns, err := newPatternSet(slices.Collect(maps.Keys(generated.RequiredFields)))
-	if err != nil {
-		return diag.FromErr(fmt.Errorf("required field validation: %w", err))
-	}
-
-	err = structvar.Walk(b.Config.View(), func(np *structpath.PathNode, v structvar.View) error {
-		// If the path matches no pattern, we do not need to validate any required
-		// fields in it.
-		pattern, ok := patterns.find(np)
-		if !ok {
-			return nil
-		}
-
-		fields := generated.RequiredFields[pattern]
-		for _, field := range fields {
-			vv := v.Get(field)
-			if vv.Kind() == structvar.KindInvalid || vv.Kind() == structvar.KindNil {
-				diags = diags.Append(diag.Diagnostic{
-					Severity:  diag.Warning,
-					Summary:   fmt.Sprintf("required field %q is not set", field),
-					Locations: v.Locations(),
-					Paths:     []*structpath.PathNode{np},
-				})
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
+	diags := walk(&b.Config, requiredConfigRoot)
 	sortDiagnostics(diags)
-
 	return diags
 }
 
