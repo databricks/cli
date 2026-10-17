@@ -74,8 +74,8 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		}},
 
 		// This is converted from single-task to multi-task
-		{"resources.jobs.*.task[*].dbt_task.schema", "default"},
-		{"resources.jobs.*.task[*].for_each_task.task.dbt_task.schema", "default"},
+		{"resources.jobs.*.tasks[*].dbt_task.schema", "default"},
+		{"resources.jobs.*.tasks[*].for_each_task.task.dbt_task.schema", "default"},
 
 		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/clusters/resource_cluster.go
 		{"resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.notebooks", true},

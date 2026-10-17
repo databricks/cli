@@ -1,0 +1,25 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    my_job:
+      name: my job
+      tasks:
+        - task_key: dbt
+          existing_cluster_id: 0123-456789-abcdefgh
+          dbt_task:
+            commands: ["dbt run"]
+        - task_key: dbt_with_schema
+          existing_cluster_id: 0123-456789-abcdefgh
+          dbt_task:
+            commands: ["dbt run"]
+            schema: custom
+        - task_key: loop
+          for_each_task:
+            inputs: "[1]"
+            task:
+              task_key: loop_inner
+              existing_cluster_id: 0123-456789-abcdefgh
+              dbt_task:
+                commands: ["dbt run"]
