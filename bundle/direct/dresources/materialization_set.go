@@ -103,28 +103,28 @@ func isAbsentRemotely(remote any) bool {
 	return isString && text == ""
 }
 
-// OverrideChangeDesc marks a materialized feature member added to or removed from the set as an
-// update. Such a change is a two-segment path,
-// materialized_features[member='<feature name>|<online store name>|<is streaming>'], which an
-// immutable field rule under materialized_features[*] still matches. This counts that match as an
-// update rather than a destroy-and-recreate, because a whole-member addition or removal is what the
-// update endpoint handles.
+// OverrideChangeDesc does two things the generic classification gets wrong here: it marks a whole
+// materialized feature member added to or removed from the set as an update rather than a
+// destroy-and-recreate, and it suppresses the drift left behind by an ignore_remote_changes rule
+// that cannot fire.
 func (*ResourceMaterializationSet) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *ml.MaterializationSet) error {
+	// A member added to or removed from the set is a two-segment path,
+	// materialized_features[member='<feature name>|<online store name>|<is streaming>'], which an
+	// immutable field rule under materialized_features[*] still matches. That match counts as an
+	// update rather than a destroy-and-recreate, because a whole-member addition or removal is what
+	// the update endpoint handles.
 	if path.Len() == 2 && path.HasPatternPrefix(materializedFeaturesPattern) {
 		change.Action = deployplan.Update
 		return nil
 	}
 
-	// A destination field the read never returns diffs as config-set versus remote-empty, and the
-	// generated spec:input_only rule under ignore_remote_changes cannot suppress it: that rule
-	// fires only when the persisted value equals the configured one, and the planner recovers the
-	// persisted value by resolving the change path against stored state. Resolving a keyed-slice
-	// segment matches the key label against a real string field of the element, and this
-	// resource's key label is composite, so the lookup finds nothing and the persisted value reads
-	// as unset.
-	//
-	// An unset Old is what separates that unrecoverable case from a repoint the config actually
-	// asked for, which carries the persisted value in from the local diff and still recreates.
+	// The ignore_remote_changes suppression on a destination field cannot fire for this resource,
+	// which keys its member slice on a composite of feature name, online store name and whether the
+	// member is streaming. The suppression fires only when the persisted value equals the configured
+	// one, and the persisted-value lookup resolves that composite against the element's field names,
+	// which never match, so it always returns nothing. An unset change.Old is the surrogate for the
+	// persisted value being unreachable; a repoint the config asked for carries that value in from
+	// the local diff instead, and so still recreates.
 	if isRedactedDestinationField(path) && change.Old == nil && change.New != nil &&
 		isAbsentRemotely(change.Remote) {
 		change.Action = deployplan.Skip
