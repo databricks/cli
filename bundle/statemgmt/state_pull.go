@@ -1,6 +1,7 @@
 package statemgmt
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -25,6 +26,9 @@ import (
 )
 
 type AlwaysPull bool
+
+// zipMagic starts every ZIP archive; a state file is JSON and never does.
+var zipMagic = []byte("PK\x03\x04")
 
 type StateDesc struct {
 	Serial   int                 `json:"serial"`
@@ -113,6 +117,11 @@ func _filerRead(ctx context.Context, f filer.Filer, path string) (*StateDesc, er
 	state := &StateDesc{}
 	err = json.Unmarshal(content, state)
 	if err != nil {
+		// The workspace exports a directory as a ZIP archive rather than failing, so a directory
+		// at the state path reads fine and only shows up here.
+		if bytes.HasPrefix(content, zipMagic) {
+			return nil, errors.New("not a file: the workspace has a directory at this path")
+		}
 		return nil, fmt.Errorf("parsing state: %w", err)
 	}
 
