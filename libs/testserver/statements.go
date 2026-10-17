@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"regexp"
 	"strconv"
 
 	"github.com/databricks/cli/libs/testserver/testsql"
@@ -15,12 +14,6 @@ import (
 // statement exactly (after trimming).
 func (s *Server) HandleSQL(statement string, fn func(testsql.Request) testsql.Result) {
 	s.sqlHandler.Handle(statement, fn)
-}
-
-// HandleSQLPattern registers a matcher that runs fn when re matches a submitted
-// statement, passing the submatches through as Request.Match.
-func (s *Server) HandleSQLPattern(re *regexp.Regexp, fn func(testsql.Request) testsql.Result) {
-	s.sqlHandler.HandlePattern(re, fn)
 }
 
 // sqlExecuteStatement handles POST /api/2.0/sql/statements. A statement that
