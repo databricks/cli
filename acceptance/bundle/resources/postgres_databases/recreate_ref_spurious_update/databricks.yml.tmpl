@@ -1,0 +1,48 @@
+bundle:
+  name: recreate-ref-update-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+# When a resource is recreated, the direct deploy engine cannot resolve a reference to its
+# output fields at plan time (a recreate does not preserve the id), so the reference stays the
+# literal "${...}" placeholder. A dependent that uses it then diffs its saved value against the
+# placeholder and plans a phantom change -- even when the referenced value is actually
+# unchanged. This test covers the mutable-field case (a spurious UPDATE); the immutable case
+# (a spurious recreate) is postgres_projects/recreate_ref_both_engines.
+#
+# Changing postgres_role recreates the role in the direct engine (the backend rejects this
+# field in the PATCH update_mask, so it is delete + create -- see postgres_roles/
+# recreate-postgres-role). role_id is unchanged, so my_role.name (projects/.../roles/app-owner)
+# is stable. The direct engine cannot resolve ${my_role.name} while the role is recreated, so
+# my_database.role diffs the saved name against the "${...}" placeholder and plans an
+# unnecessary update.
+#
+# This test runs the direct engine only. For context, the terraform engine (now being removed)
+# left my_database alone: against the lenient testserver it updates the role in place, so the
+# name reference resolved at plan and never diffed.
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-$UNIQUE_NAME
+      display_name: My project
+      pg_version: 16
+
+  postgres_branches:
+    my_branch:
+      parent: ${resources.postgres_projects.my_project.name}
+      branch_id: main
+      no_expiry: true
+
+  postgres_roles:
+    my_role:
+      parent: ${resources.postgres_branches.my_branch.name}
+      role_id: app-owner
+      postgres_role: app_role
+
+  postgres_databases:
+    my_database:
+      database_id: my-db
+      parent: ${resources.postgres_branches.my_branch.name}
+      postgres_database: mydb
+      role: ${resources.postgres_roles.my_role.name}
