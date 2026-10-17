@@ -15,17 +15,24 @@ a claim about the real API, and the cloud run is what checks it.
 | `immutable` | a write-once member field is caught by the planner as `recreate` and never reaches the server; adding a member routes to `update` so the server refuses it by name |
 | `removal_scope` | the delete cascade is scoped per feature: a feature contributing one member can have it removed alone, while removing one member of a feature contributing two is refused |
 | `destination` | a destination field the server accepts on write and never returns on read is not drift, while a repoint the config actually asked for still recreates — the two are told apart by whether the persisted value is recoverable |
+| `batch` | a batch feature with both destinations creates and settles; repointing the destinations is a `recreate`; an update mixing an acceptable change with an unacceptable one is refused whole, and the acceptable one applies on its own |
 | `sawtooth` | the offline-and-online batch pair is refused at create, because a set is not expanded into the third materialization; all three declared creates and then plans nothing |
 | `streaming` | a lone streaming online member needs no schedule and no cron, and pausing it is refused |
 
 ## Running against a workspace
 
-`sawtooth` and `streaming` already carry `Cloud = true`. Both reference an existing `Stream`,
+`batch`, `sawtooth` and `streaming` already carry `Cloud = true`, and all three pass against a workspace. Both reference an existing `Stream`,
 because a Stream is not a bundle resource; override `MATSET_CATALOG`, `MATSET_SCHEMA`,
 `MATSET_ONLINE_STORE` and `MATSET_STREAM` to move them to another workspace, and set
 `MATSET_PROFILE` to pin the bundle to a named profile. **`DATABRICKS_CONFIG_PROFILE` does not reach
 the CLI subprocess**, and the harness builds its own workspace client from the ambient environment
-before any script runs, so a local cloud run needs working ambient auth to the target workspace.
+before any script runs, so a local cloud run needs working ambient auth to the target workspace. `batch`
+also needs `TEST_DEFAULT_WAREHOUSE_ID`, which the harness only supplies off cloud.
+
+The deployment-history leg (`DMS=true`) cannot run against a workspace: the bundle deployments API
+rejects `features.` and `materialization_sets.` as resource-type prefixes, so every deploy of either
+type fails there with `operations.resource_key must have a known resource type prefix`. Select the
+`DMS=` leg until that allowlist includes them.
 
 ### The other six cases
 
