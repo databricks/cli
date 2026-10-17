@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -18,7 +17,6 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
-	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/statemgmt"
@@ -35,7 +33,6 @@ import (
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
@@ -372,7 +369,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 		if needDirectState && stateDesc.IsDMS() {
 			var err error
-			dmsDeploymentID, dmsDeployment, err = fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+			dmsDeploymentID, dmsDeployment, err = fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath, stateDesc)
 			if err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
@@ -586,6 +583,8 @@ func ValidateEngineSetting(ctx context.Context, b *bundle.Bundle) error {
 
 // Lookup and return the deployment object from ${workspace.state_path}/resources.deployment.json
 //
+// The id comes from stateDesc.Deployment when the state pull already looked it up.
+//
 // TODO: a deployment is only usable when both the node and the service's record exist, and a
 // half-created one - node present, record missing - blocks the bundle here even though
 // CreateDeployment already recovers from it. Move this behind a dms.ReadDeployment(ctx, statePath)
@@ -594,17 +593,17 @@ func ValidateEngineSetting(ctx context.Context, b *bundle.Bundle) error {
 //
 // TODO: ask the service for a lookup by state path, so this is one round trip rather than two - a
 // workspace lookup to turn the node into an id, then a get by that id.
-func fetchDeploymentFromStatePath(ctx context.Context, w *databricks.WorkspaceClient, statePath string) (string, *bundledeployments.Deployment, error) {
-	nodePath := path.Join(statePath, dms.DeploymentNodeName)
-
-	obj, err := w.Workspace.GetStatusByPath(ctx, nodePath)
-	if errors.Is(err, apierr.ErrNotFound) || errors.Is(err, apierr.ErrResourceDoesNotExist) {
-		return "", nil, nil
+func fetchDeploymentFromStatePath(ctx context.Context, w *databricks.WorkspaceClient, statePath string, stateDesc *statemgmt.StateDesc) (string, *bundledeployments.Deployment, error) {
+	var deploymentID string
+	var err error
+	if stateDesc.Deployment != nil {
+		deploymentID, err = stateDesc.Deployment.ID, stateDesc.Deployment.Err
+	} else {
+		deploymentID, err = dms.LookupDeploymentID(ctx, w, statePath)
 	}
-	if err != nil {
-		return "", nil, fmt.Errorf("looking up deployment at %s: %w", nodePath, err)
+	if err != nil || deploymentID == "" {
+		return "", nil, err
 	}
-	deploymentID := strconv.FormatInt(obj.ObjectId, 10)
 	deployment, err := w.BundleDeployments.GetDeployment(ctx, bundledeployments.GetDeploymentRequest{
 		Name: dms.DeploymentName(deploymentID),
 	})
@@ -639,7 +638,7 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 		return enforceDeploymentHistorySetting(ctx, b, stateDesc, false)
 	}
 
-	dmsDeploymentID, dmsDeployment, err := fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+	dmsDeploymentID, dmsDeployment, err := fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath, stateDesc)
 	if err != nil {
 		return err
 	}
@@ -658,7 +657,7 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 }
 
 func resolveDeploymentHistory(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) bool {
-	configured := configuresDeploymentHistory(ctx, b)
+	configured := statemgmt.ConfiguresDeploymentHistory(ctx, b)
 	if stateDesc.SourcePath == "" {
 		if configured {
 			stateDesc.Features = map[string]struct{}{dstate.FeatureDeploymentHistory: {}}
@@ -673,7 +672,7 @@ func enforceDeploymentHistorySetting(ctx context.Context, b *bundle.Bundle, stat
 	if stateDesc.SourcePath == "" {
 		return nil
 	}
-	configured := configuresDeploymentHistory(ctx, b)
+	configured := statemgmt.ConfiguresDeploymentHistory(ctx, b)
 	recorded := stateDesc.IsDMS()
 	if configured == recorded {
 		return nil
@@ -690,14 +689,6 @@ Run "databricks bundle destroy" first, then deploy again with deployment history
 	}
 	log.Warnf(ctx, "Deployment history setting (%t) does not match the existing state (%t). Using the existing state.", configured, recorded)
 	return nil
-}
-
-func configuresDeploymentHistory(ctx context.Context, b *bundle.Bundle) bool {
-	var configured *bool
-	if b.Config.Experimental != nil {
-		configured = b.Config.Experimental.DeploymentHistory
-	}
-	return bundleenv.RecordsDeploymentHistory(ctx, configured)
 }
 
 // isNewerVersion reports whether the state's recorded CLI version is strictly

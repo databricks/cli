@@ -17,8 +17,10 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy"
+	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -43,6 +45,16 @@ type StateDesc struct {
 	IsLocal bool              `json:"-"`
 
 	AllStates []*StateDesc
+
+	// Deployment is the deployment-history lookup made alongside the remote state reads; nil when
+	// none was made (state not pulled, or deployment history not configured).
+	Deployment *DeploymentLookup `json:"-"`
+}
+
+// DeploymentLookup is the result of dms.LookupDeploymentID.
+type DeploymentLookup struct {
+	ID  string
+	Err error
 }
 
 func (s *StateDesc) String() string {
@@ -151,7 +163,7 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	_, localPathDirect := b.StateFilenameDirect(ctx)
 	_, localPathTerraform := b.StateFilenameTerraform(ctx)
 
-	states := readStates(ctx, b, alwaysPull)
+	states, deployment := readStates(ctx, b, alwaysPull)
 
 	if logdiag.HasError(ctx) {
 		return nil
@@ -170,6 +182,7 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 		winner = states[len(states)-1]
 		winner.AllStates = states
 	}
+	winner.Deployment = deployment
 
 	log.Infof(ctx, "Available resource state files (from least to most preferred): %v", states)
 
@@ -206,14 +219,15 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	return winner
 }
 
-func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []*StateDesc {
+func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) ([]*StateDesc, *DeploymentLookup) {
 	var states []*StateDesc
+	var deployment *DeploymentLookup
 
 	remotePathDirect, localPathDirect := b.StateFilenameDirect(ctx)
 	remotePathTerraform, localPathTerraform := b.StateFilenameTerraform(ctx)
 
 	if logdiag.HasError(ctx) {
-		return nil
+		return nil, nil
 	}
 
 	directLocalState := localRead(ctx, localPathDirect, engine.EngineDirect)
@@ -223,7 +237,7 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 		f, err := deploy.StateFiler(ctx, b)
 		if err != nil {
 			logdiag.LogError(ctx, err)
-			return nil
+			return nil, nil
 		}
 
 		var wg sync.WaitGroup
@@ -236,6 +250,16 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 		wg.Go(func() {
 			terraformRemoteState = filerRead(ctx, f, remotePathTerraform, engine.EngineTerraform)
 		})
+
+		// Whether the state records deployment history is only known once it is read, but the
+		// lookup is needed right after; going by the config overlaps it with the reads. A state
+		// that disagrees with the config is either rejected or looked up again by the caller.
+		if ConfiguresDeploymentHistory(ctx, b) {
+			wg.Go(func() {
+				id, err := dms.LookupDeploymentID(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+				deployment = &DeploymentLookup{ID: id, Err: err}
+			})
+		}
 
 		wg.Wait()
 
@@ -250,7 +274,16 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 		return a.Serial - b.Serial
 	})
 
-	return states
+	return states, deployment
+}
+
+// ConfiguresDeploymentHistory reports whether the bundle config (or env) turns deployment history on.
+func ConfiguresDeploymentHistory(ctx context.Context, b *bundle.Bundle) bool {
+	var configured *bool
+	if b.Config.Experimental != nil {
+		configured = b.Config.Experimental.DeploymentHistory
+	}
+	return bundleenv.RecordsDeploymentHistory(ctx, configured)
 }
 
 func validateStates(states []*StateDesc) error {
