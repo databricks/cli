@@ -1,0 +1,18 @@
+trace $CLI bundle deploy
+
+title "Pausing the offline member is an in-place update"
+trace update_file.py databricks.yml 'pipeline_schedule_state: ACTIVE' 'pipeline_schedule_state: PAUSED'
+trace $CLI bundle plan -o json > out.plan.json
+trace jq '.plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action)' out.plan.json
+trace $CLI bundle deploy
+trace print_requests.py //materialization-sets
+
+title "The change did not cascade: the online member keeps its own state"
+trace $CLI bundle summary -o json | jq '.resources.materialization_sets.set1.materialized_features | map({is_online, pipeline_schedule_state})'
+
+title "Declaring the state on the online member is refused, since the write would land on it"
+trace update_file.py databricks.yml '            table_name_prefix: feata' '            table_name_prefix: feata
+          pipeline_schedule_state: PAUSED'
+trace musterr $CLI bundle deploy
+
+rm -f out.requests.txt out.plan.json

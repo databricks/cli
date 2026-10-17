@@ -1,0 +1,30 @@
+trace $CLI bundle deploy
+trace print_requests.py //materialization-sets
+
+title "Removing one member of a feature that has two is refused: the delete cascades from the"
+title "offline member to its online one, so it would also reach a member still declared"
+trace update_file.py databricks.yml '        - feature_name: main.myschema.featA
+          online_store_config:
+            online_store_name: danielb
+            catalog_name: main
+            schema_name: myschema
+            table_name_prefix: feata
+' ''
+trace musterr $CLI bundle deploy --auto-approve
+trace print_requests.py //materialization-sets
+
+title "Removing a whole feature's members plans as update, not recreate, and leaves the sibling"
+trace update_file.py databricks.yml '        - feature_name: main.myschema.featA
+          offline_store_config: {}
+' ''
+trace $CLI bundle plan -o json > out.plan.json
+trace jq '.plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action)' out.plan.json
+trace $CLI bundle deploy --auto-approve
+trace print_requests.py //materialization-sets
+
+title "The surviving member kept its id, so the set was reconciled rather than rebuilt"
+trace $CLI bundle summary -o json | jq '.resources.materialization_sets.set1.materialized_features | map({feature_name, is_online})'
+
+trace $CLI bundle destroy --auto-approve
+
+rm -f out.requests.txt out.plan.json

@@ -1,0 +1,19 @@
+bundle:
+  name: test-bundle
+
+resources:
+  materialization_sets:
+    set1:
+      materialized_features:
+        # F1 contributes one member, so nothing cascades from it.
+        - feature_name: main.myschema.featF1
+          offline_store_config: {}
+        # F2 contributes both, so a delete on its offline member reaches its online one.
+        - feature_name: main.myschema.featF2
+          offline_store_config: {}
+        - feature_name: main.myschema.featF2
+          online_store_config:
+            online_store_name: danielb
+            catalog_name: main
+            schema_name: myschema
+            table_name_prefix: featf2

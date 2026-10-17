@@ -1,0 +1,54 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created materialization_sets.set1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Removing F1's only member is allowed: the cascade is scoped per feature, and F2's pair is
+=== untouched because the request asks nothing about it
+>>> update_file.py databricks.yml         - feature_name: main.myschema.featF1
+          offline_store_config: {}
+ 
+
+>>> [CLI] bundle plan -o json
+
+>>> jq .plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action) out.plan.json
+{
+  "resources.materialization_sets.set1": "update"
+}
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated materialization_sets.set1
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle summary -o json
+[
+  {
+    "feature_name": "main.myschema.featF2",
+    "is_online": null
+  },
+  {
+    "feature_name": "main.myschema.featF2",
+    "is_online": null
+  }
+]
+
+=== Removing F2's offline member alone is refused, because that delete cascades to F2's online
+=== member, which the request still declares
+>>> update_file.py databricks.yml         - feature_name: main.myschema.featF2
+          offline_store_config: {}
+ 
+
+>>> musterr [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Changing one materialized feature of feature 'main.myschema.featF2' also changes '[UUID]', which the request does not change. Apply the same change to every materialized feature of the feature. (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?update_mask=materialized_features
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Changing one materialized feature of feature 'main.myschema.featF2' also changes '[UUID]', which the request does not change. Apply the same change to every materialized feature of the feature.
+
+Files: 1 uploaded, 0 deleted

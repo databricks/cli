@@ -1,0 +1,47 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created materialization_sets.set1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== A member field the endpoint cannot alter is caught by the planner as a recreate, so the
+=== request never reaches the server
+>>> update_file.py databricks.yml 0 0 * * * ? 0 30 * * * ?
+
+>>> [CLI] bundle plan -o json
+
+>>> jq .plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action) out.plan.json
+{
+  "resources.materialization_sets.set1": "recreate"
+}
+
+>>> update_file.py databricks.yml 0 30 * * * ? 0 0 * * * ?
+
+=== Adding a member is routed to update, where the server refuses it by name rather than
+=== recreating the set and destroying the members the config left alone
+>>> update_file.py databricks.yml           cron_schedule_trigger:
+            mode: MANUAL
+            cron_expression: "0 0 * * * ?"           cron_schedule_trigger:
+            mode: MANUAL
+            cron_expression: "0 0 * * * ?"
+        - feature_name: main.myschema.featB
+          offline_store_config: {}
+
+>>> [CLI] bundle plan -o json
+
+>>> jq .plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action) out.plan.json
+{
+  "resources.materialization_sets.set1": "update"
+}
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Materialized features cannot be added to an existing materialization set, and feature 'main.myschema.featB' does not match any member of this set. Recreate the set instead. (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?update_mask=materialized_features
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Materialized features cannot be added to an existing materialization set, and feature 'main.myschema.featB' does not match any member of this set. Recreate the set instead.
+
+Files: 2 uploaded, 0 deleted

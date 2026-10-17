@@ -1,0 +1,111 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created materialization_sets.set1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Pausing the offline member is an in-place update
+>>> update_file.py databricks.yml pipeline_schedule_state: ACTIVE pipeline_schedule_state: PAUSED
+
+>>> [CLI] bundle plan -o json
+
+>>> jq .plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action) out.plan.json
+{
+  "resources.materialization_sets.set1": "update"
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated materialization_sets.set1
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //materialization-sets
+{
+  "method": "POST",
+  "path": "/api/2.0/feature-engineering/materialization-sets",
+  "q": {
+    "request_id": "[UUID]"
+  },
+  "body": {
+    "materialized_features": [
+      {
+        "feature_name": "main.myschema.featA",
+        "offline_store_config": {
+          "catalog_name": "",
+          "schema_name": "",
+          "table_name_prefix": ""
+        },
+        "pipeline_schedule_state": "ACTIVE"
+      },
+      {
+        "feature_name": "main.myschema.featA",
+        "online_store_config": {
+          "catalog_name": "main",
+          "online_store_name": "danielb",
+          "schema_name": "myschema",
+          "table_name_prefix": "feata"
+        }
+      }
+    ]
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/feature-engineering/materialization-sets/[UUID]",
+  "q": {
+    "update_mask": "materialized_features"
+  },
+  "body": {
+    "materialization_set_id": "[UUID]",
+    "materialized_features": [
+      {
+        "feature_name": "main.myschema.featA",
+        "offline_store_config": {
+          "catalog_name": "",
+          "schema_name": "",
+          "table_name_prefix": ""
+        },
+        "pipeline_schedule_state": "PAUSED"
+      },
+      {
+        "feature_name": "main.myschema.featA",
+        "online_store_config": {
+          "catalog_name": "main",
+          "online_store_name": "danielb",
+          "schema_name": "myschema",
+          "table_name_prefix": "feata"
+        }
+      }
+    ]
+  }
+}
+
+=== The change did not cascade: the online member keeps its own state
+>>> [CLI] bundle summary -o json
+[
+  {
+    "is_online": null,
+    "pipeline_schedule_state": "PAUSED"
+  },
+  {
+    "is_online": null,
+    "pipeline_schedule_state": null
+  }
+]
+
+=== Declaring the state on the online member is refused, since the write would land on it
+>>> update_file.py databricks.yml             table_name_prefix: feata             table_name_prefix: feata
+          pipeline_schedule_state: PAUSED
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Directly updating pipeline_schedule_state is only supported for offline materialized features. Cannot update pipeline_schedule_state for online materialization of feature 'main.myschema.featA'. If this feature has an offline materialization, please update that instead. (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?update_mask=materialized_features
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Directly updating pipeline_schedule_state is only supported for offline materialized features. Cannot update pipeline_schedule_state for online materialization of feature 'main.myschema.featA'. If this feature has an offline materialization, please update that instead.
+
+Files: 1 uploaded, 0 deleted

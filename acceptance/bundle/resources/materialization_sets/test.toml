@@ -1,0 +1,7 @@
+# Local-only for now. The fake in libs/testserver/materialization_set.go mirrors
+# UpdateMaterializationSet's reconcile semantics, so these goldens are a claim about the real API;
+# turning on Cloud = true checks that claim against a workspace. See README.md for the delta.
+Ignore = [
+    "databricks.yml",
+    ".databricks",
+]
