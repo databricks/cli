@@ -6,3 +6,14 @@ Ignore = [
     ".databricks",
     "databricks.yml",
 ]
+
+# A real materialization set or member id is 32 undashed hex characters; the harness's built-in
+# replacement only matches the dashed form the fake produces.
+[[Repls]]
+Old = '\b[0-9a-f]{32}\b'
+New = '[UUID]'
+
+# The workspace host, which only a cloud run puts in the output.
+[[Repls]]
+Old = 'https://[a-z0-9.-]+\.cloud\.databricks\.com'
+New = '[DATABRICKS_URL]'

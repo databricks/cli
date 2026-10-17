@@ -1,0 +1,52 @@
+export CATALOG_NAME="${MATSET_CATALOG:-danielb}"
+export SCHEMA_NAME="${MATSET_SCHEMA:-fs2680}"
+export ONLINE_STORE_NAME="${MATSET_ONLINE_STORE:-danielb}"
+export TABLE_NAME="$CATALOG_NAME.$SCHEMA_NAME.src_$UNIQUE_NAME"
+
+# Each phase is its own template rather than a string edit, so the fixture a phase deploys is
+# readable on its own.
+render() {
+    envsubst < "$1" > databricks.yml
+    [ -n "${MATSET_PROFILE:-}" ] || return 0
+    printf "\nworkspace:\n  profile: %s\n" "$MATSET_PROFILE" >> databricks.yml
+}
+
+set_actions() {
+    jq '.plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action)' out.plan.json
+}
+
+cleanup() {
+    $CLI bundle destroy --auto-approve > /dev/null 2>&1 || true
+    $CLI tables delete "$TABLE_NAME" > /dev/null 2>&1 || true
+}
+trap cleanup EXIT
+
+trace create_table.py "$TABLE_NAME"
+render databricks.yml.tmpl
+
+title "A batch feature with both destinations creates, and a redeploy plans nothing"
+trace $CLI bundle deploy
+trace $CLI bundle plan -o json > out.plan.json
+trace set_actions
+
+title "Repointing the destinations is a recreate, not a silent no-op. The server cannot move a"
+title "materialization in place, so the set is rebuilt at the new location."
+render moved.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_actions
+trace jq -r '.plan["resources.materialization_sets.set1"].changes | to_entries | map(select(.value.action == "recreate")) | .[] | "\(.value.reason) old=\(.value.old) new=\(.value.new)"' out.plan.json
+
+title "One request pausing both members. The offline half is a change the endpoint accepts and"
+title "the online half is not, so the whole request is refused."
+render paused-both.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_actions
+trace musterr $CLI bundle deploy
+
+title "The offline member paused on its own is applied, and does not cascade to the online one"
+render paused-offline.yml.tmpl
+trace $CLI bundle deploy
+trace $CLI bundle plan -o json > out.plan.json
+trace set_actions
+
+rm -f out.requests.txt out.plan.json

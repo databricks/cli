@@ -1,0 +1,67 @@
+
+>>> create_table.py danielb.fs2680.src_[UNIQUE_NAME]
+Created table danielb.fs2680.src_[UNIQUE_NAME]
+Inserted sample data into danielb.fs2680.src_[UNIQUE_NAME]
+Table danielb.fs2680.src_[UNIQUE_NAME] is now visible (catalog_name=danielb)
+
+=== A batch feature with both destinations creates, and a redeploy plans nothing
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-batch-[UNIQUE_NAME]/default/files...
+Created features.batchfeat
+Created materialization_sets.set1
+Files: 5 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> set_actions
+{
+  "resources.materialization_sets.set1": "skip"
+}
+
+=== Repointing the destinations is a recreate, not a silent no-op. The server cannot move a
+=== materialization in place, so the set is rebuilt at the new location.
+>>> [CLI] bundle plan -o json
+
+>>> set_actions
+{
+  "resources.materialization_sets.set1": "recreate"
+}
+
+>>> jq -r .plan["resources.materialization_sets.set1"].changes | to_entries | map(select(.value.action == "recreate")) | .[] | "\(.value.reason) old=\(.value.old) new=\(.value.new)" out.plan.json
+spec:immutable old=batch_[UNIQUE_NAME] new=moved_[UNIQUE_NAME]
+spec:immutable old=batch_[UNIQUE_NAME]_off new=moved_[UNIQUE_NAME]_off
+
+=== One request pausing both members. The offline half is a change the endpoint accepts and
+=== the online half is not, so the whole request is refused.
+>>> [CLI] bundle plan -o json
+
+>>> set_actions
+{
+  "resources.materialization_sets.set1": "update"
+}
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-batch-[UNIQUE_NAME]/default/files...
+Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: The 'pipeline_schedule_state' of feature 'danielb.fs2680.batch_[UNIQUE_NAME]' cannot be changed, because the change would be written on an online materialized feature. (400 BAD_REQUEST)
+
+Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?update_mask=materialized_features
+HTTP Status: 400 Bad Request
+API error_code: BAD_REQUEST
+API message: The 'pipeline_schedule_state' of feature 'danielb.fs2680.batch_[UNIQUE_NAME]' cannot be changed, because the change would be written on an online materialized feature.
+
+Files: 2 uploaded, 0 deleted
+
+=== The offline member paused on its own is applied, and does not cascade to the online one
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-batch-[UNIQUE_NAME]/default/files...
+Updated materialization_sets.set1
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> set_actions
+{
+  "resources.materialization_sets.set1": "skip"
+}
