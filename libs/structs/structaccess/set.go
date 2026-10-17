@@ -29,25 +29,139 @@ func Set(target any, path *structpath.PathNode, value any) error {
 		return errors.New("target must be a pointer")
 	}
 
-	// For single-level paths, get the target directly
-	if pathLen == 1 {
-		return setValueAtNode(targetVal.Elem(), path, value)
+	return setAt(targetVal.Elem(), path.AsSlice(), path.Parent(), value)
+}
+
+// setAt sets value at nodes relative to cur, allocating nil maps, pointers and slices on the way.
+// parent is the parent of the final node and is only used in error messages.
+func setAt(cur reflect.Value, nodes []*structpath.PathNode, parent *structpath.PathNode, value any) error {
+	node := nodes[0]
+	cur, err := allocate(cur, node)
+	if err != nil {
+		return err
+	}
+	if len(nodes) == 1 {
+		return setValueAtNode(cur, node, value)
 	}
 
-	// For multi-level paths, get the parent container
-	parent := path.Parent()
-	if parent == nil {
-		return errors.New("failed to get parent path")
-	}
-
-	// Get the parent container using getValue, passing the original target
-	parentVal, err := getValue(target, parent)
+	next, writeBack, err := child(cur, node)
 	if err != nil {
 		return fmt.Errorf("failed to navigate to parent %s: %w", parent.String(), err)
 	}
+	if err := setAt(next, nodes[1:], parent, value); err != nil {
+		return err
+	}
+	if writeBack != nil {
+		writeBack()
+	}
+	return nil
+}
 
-	// Set the value at the final node
-	return setValueAtNode(parentVal, path, value)
+// allocate dereferences cur and makes it ready to hold node: nil pointers are allocated,
+// a nil map is made and a nil slice is grown to fit the index.
+func allocate(cur reflect.Value, node *structpath.PathNode) (reflect.Value, error) {
+	for cur.Kind() == reflect.Pointer || cur.Kind() == reflect.Interface {
+		if cur.IsNil() {
+			if cur.Kind() == reflect.Interface || !cur.CanSet() {
+				return cur, nilParentError(node)
+			}
+			cur.Set(reflect.New(cur.Type().Elem()))
+		}
+		cur = cur.Elem()
+	}
+
+	idx, isIndex := node.Index()
+	if isIndex && cur.Kind() == reflect.Struct {
+		if embed := findEmbedField(cur); embed.IsValid() {
+			cur = embed
+		}
+	}
+
+	var alloc reflect.Value
+	switch {
+	case cur.Kind() == reflect.Map && cur.IsNil():
+		alloc = reflect.MakeMap(cur.Type())
+	case isIndex && idx >= 0 && cur.Kind() == reflect.Slice && cur.IsNil():
+		alloc = reflect.MakeSlice(cur.Type(), idx+1, idx+1)
+	default:
+		return cur, nil
+	}
+	if !cur.CanSet() {
+		return cur, nilParentError(node)
+	}
+	cur.Set(alloc)
+	return cur, nil
+}
+
+// child returns the addressable value selected by node in cur, which allocate has prepared.
+// Map values are not addressable, so for maps it returns a copy and a function that stores it back.
+func child(cur reflect.Value, node *structpath.PathNode) (reflect.Value, func(), error) {
+	if idx, isIndex := node.Index(); isIndex {
+		switch cur.Kind() {
+		case reflect.Slice, reflect.Array:
+			if idx < 0 || idx >= cur.Len() {
+				return reflect.Value{}, nil, &NotFoundError{fmt.Sprintf("%s: index out of range, length is %d", node.String(), cur.Len())}
+			}
+			return cur.Index(idx), nil, nil
+		case reflect.Struct:
+			// Terraform represents single-block fields as lists and uses [0] to access them.
+			if idx == 0 {
+				return cur, nil, nil
+			}
+		default:
+		}
+		return reflect.Value{}, nil, fmt.Errorf("%s: cannot index %s", node.String(), cur.Kind())
+	}
+
+	if key, value, ok := node.KeyValue(); ok {
+		if cur.Kind() == reflect.Struct {
+			if embed := findEmbedField(cur); embed.IsValid() {
+				cur = embed
+			}
+		}
+		nv, err := accessKeyValue(cur, key, value, node)
+		return nv, nil, err
+	}
+
+	key, ok := node.StringKey()
+	if !ok {
+		return reflect.Value{}, nil, errors.New("unsupported path node type")
+	}
+
+	switch cur.Kind() {
+	case reflect.Struct:
+		fv, _, _, ok := findStructFieldByKey(cur, key)
+		if !ok {
+			return reflect.Value{}, nil, fmt.Errorf("%s: field %q not found in %s", node.String(), key, cur.Type())
+		}
+		return fv, nil, nil
+	case reflect.Map:
+		mk, err := mapKey(cur, key)
+		if err != nil {
+			return reflect.Value{}, nil, fmt.Errorf("%s: %w", node.String(), err)
+		}
+		elem := reflect.New(cur.Type().Elem()).Elem()
+		if existing := cur.MapIndex(mk); existing.IsValid() {
+			elem.Set(existing)
+		}
+		return elem, func() { cur.SetMapIndex(mk, elem) }, nil
+	default:
+		return reflect.Value{}, nil, fmt.Errorf("%s: cannot access key %q on %s", node.String(), key, cur.Kind())
+	}
+}
+
+// mapKey converts key to the key type of the map m, which must be a string type.
+func mapKey(m reflect.Value, key string) (reflect.Value, error) {
+	kt := m.Type().Key()
+	if kt.Kind() != reflect.String {
+		return reflect.Value{}, fmt.Errorf("map key must be string, got %s", kt)
+	}
+	return reflect.ValueOf(key).Convert(kt), nil
+}
+
+// nilParentError reports that the parent of node is nil and cannot be allocated.
+func nilParentError(node *structpath.PathNode) error {
+	return fmt.Errorf("cannot set %s: parent %s is nil", node.String(), node.Parent().String())
 }
 
 // SetByString sets the value at the given path string inside the target object.
@@ -74,7 +188,6 @@ func setValueAtNode(parentVal reflect.Value, node *structpath.PathNode, value an
 		}
 		parentVal = parentVal.Elem()
 	}
-
 	valueVal := reflect.ValueOf(value)
 
 	if idx, isIndex := node.Index(); isIndex {
@@ -162,14 +275,9 @@ func setStructField(parentVal reflect.Value, fieldName string, valueVal reflect.
 
 // setMapValue sets a value in a map
 func setMapValue(parentVal reflect.Value, key string, valueVal reflect.Value) error {
-	kt := parentVal.Type().Key()
-	if kt.Kind() != reflect.String {
-		return fmt.Errorf("map key must be string, got %s", kt)
-	}
-
-	mk := reflect.ValueOf(key)
-	if kt != mk.Type() {
-		mk = mk.Convert(kt)
+	mk, err := mapKey(parentVal, key)
+	if err != nil {
+		return err
 	}
 
 	// For maps, we need to handle the value type
