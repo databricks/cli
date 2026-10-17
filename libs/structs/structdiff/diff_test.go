@@ -602,6 +602,67 @@ func TestGetStructDiffEmbedTagWithKeyFunc(t *testing.T) {
 	}
 }
 
+// principal has two interchangeable identity fields (like a permission's
+// user_name / service_principal_name) plus a non-key field.
+type principal struct {
+	UserName string `json:"user_name,omitempty"`
+	SpName   string `json:"service_principal_name,omitempty"`
+	Level    string `json:"level,omitempty"`
+}
+
+type principalContainer struct {
+	ObjectID      string      `json:"object_id"`
+	EmbeddedSlice []principal `json:"items,omitempty"`
+}
+
+// principalKey returns a varying key field depending on which identity field is set.
+func principalKey(p principal) (string, string) {
+	if p.UserName != "" {
+		return "user_name", p.UserName
+	}
+	return "service_principal_name", p.SpName
+}
+
+// TestGetStructDiffKeyFieldSwap covers a KeyFunc whose key field varies per element:
+// the same identity value carried under a different field is not a change, but a
+// non-key field still diffs.
+func TestGetStructDiffKeyFieldSwap(t *testing.T) {
+	sliceKeys := map[string]KeyFunc{"": principalKey}
+
+	tests := []struct {
+		name string
+		a, b principalContainer
+		want []ResolvedChange
+	}{
+		{
+			name: "field swap only is not a change",
+			a:    principalContainer{EmbeddedSlice: []principal{{SpName: "X", Level: "CAN_MANAGE"}}},
+			b:    principalContainer{EmbeddedSlice: []principal{{UserName: "X", Level: "CAN_MANAGE"}}},
+			want: nil,
+		},
+		{
+			name: "field swap with level change reports only the level",
+			a:    principalContainer{EmbeddedSlice: []principal{{SpName: "X", Level: "CAN_MANAGE"}}},
+			b:    principalContainer{EmbeddedSlice: []principal{{UserName: "X", Level: "CAN_READ"}}},
+			want: []ResolvedChange{{Field: "[service_principal_name='X'].level", Old: "CAN_MANAGE", New: "CAN_READ"}},
+		},
+		{
+			name: "same field, level change",
+			a:    principalContainer{EmbeddedSlice: []principal{{UserName: "X", Level: "CAN_MANAGE"}}},
+			b:    principalContainer{EmbeddedSlice: []principal{{UserName: "X", Level: "CAN_READ"}}},
+			want: []ResolvedChange{{Field: "[user_name='X'].level", Old: "CAN_MANAGE", New: "CAN_READ"}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetStructDiff(tt.a, tt.b, sliceKeys)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, resolveChanges(got))
+		})
+	}
+}
+
 type Dep struct {
 	TaskKey string `json:"task_key,omitempty"`
 	Outcome string `json:"outcome,omitempty"`

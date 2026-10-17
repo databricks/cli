@@ -1,0 +1,23 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Deploy the bundle"
+trace $CLI bundle deploy
+replace_ids.py
+
+# The service principal is declared under user_name but the API returns it as
+# service_principal_name. The entry is matched by value and the field difference is
+# relaxed, so a re-plan reports no changes rather than a perpetual no-op "update".
+title "Re-plan after deploy (expected: no changes)"
+trace $CLI bundle plan
+
+title "Permissions node of the JSON plan"
+$CLI bundle plan -o json | jq '.plan["resources.dashboards.foo.permissions"] | {action, changes}'
+
+# A genuine change to the same principal must still be detected: lowering the level
+# leaves the principal-field difference relaxed but reports the level update.
+title "Lower the permission level: real drift is still detected"
+update_file.py databricks.yml "CAN_MANAGE" "CAN_READ"
+trace $CLI bundle plan
+
+title "Permissions node of the JSON plan"
+$CLI bundle plan -o json | jq '.plan["resources.dashboards.foo.permissions"] | {action, changes}'
