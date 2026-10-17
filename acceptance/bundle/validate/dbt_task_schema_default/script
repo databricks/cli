@@ -1,0 +1,2 @@
+# A dbt_task without a schema gets the default "default", also inside for_each_task; an explicit schema is kept.
+trace $CLI bundle validate -o json | jq '[.resources.jobs.my_job.tasks[] | {task_key, schema: .dbt_task.schema, inner_schema: .for_each_task.task.dbt_task.schema}]'
