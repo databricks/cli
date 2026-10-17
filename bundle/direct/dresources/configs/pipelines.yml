@@ -70,3 +70,11 @@ backend_defaults:
   # s.SchemaPath("event_log", "schema").SetComputed()
   - field: event_log.catalog
   - field: event_log.schema
+
+# An ingestion gateway pipeline is always continuous, and the backend copies
+# gateway_definition.gateway_storage_catalog/schema into the top-level catalog/schema, even when
+# the config declares none of them. Without this, every deploy plans an update that unsets them
+# and fails ("Cannot unset 'schema' field"). A value the config does declare still diffs.
+# Pinned by acceptance/bundle/resources/pipelines/gateway.
+ignore_remote_additions:
+  - when_set: gateway_definition

@@ -79,6 +79,7 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	r.EffectivePublishingMode = pipelines.PublishingModeDefaultPublishingMode
 
 	setSpecDefaults(&spec, pipelineId)
+	setGatewayDefaults(&spec)
 	s.Pipelines[pipelineId] = r
 
 	return Response{
@@ -86,6 +87,19 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 			PipelineId: pipelineId,
 		},
 	}
+}
+
+// setGatewayDefaults mirrors the backend for ingestion gateway pipelines: they are always
+// continuous, and the gateway storage catalog/schema are echoed as the top-level catalog/schema
+// (observed on aws-prod-ucws and azure-prod-ucws), even when the request omits them.
+func setGatewayDefaults(spec *pipelines.PipelineSpec) {
+	gw := spec.GatewayDefinition
+	if gw == nil {
+		return
+	}
+	spec.Continuous = true //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
+	spec.Catalog = gw.GatewayStorageCatalog
+	spec.Schema = gw.GatewayStorageSchema
 }
 
 func setSpecDefaults(spec *pipelines.PipelineSpec, pipelineId string) {
@@ -127,6 +141,17 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 		}
 	}
 
+	// Observed on aws-prod-ucws: the backend refuses to clear a schema once the spec has one.
+	if item.Spec != nil && item.Spec.Schema != "" && spec.Schema == "" {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    "Specified 'schema' field in the pipeline settings is illegal. Reason: Cannot unset 'schema' field once it's defined in the pipeline spec. Please create a new DLT pipeline. For more information about publishing modes, see https://docs.databricks.com/en/dlt/migrate-to-dpm.html.",
+			},
+		}
+	}
+
 	item.Spec = &spec
 	item.Parameters = edit.Parameters
 	// The backend echoes the spec name on GetPipelineResponse.Name; mirror that so a
@@ -138,6 +163,7 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 		item.RunAs = edit.RunAs
 	}
 	setSpecDefaults(&spec, pipelineId)
+	setGatewayDefaults(&spec)
 	s.Pipelines[pipelineId] = item
 
 	return Response{}
