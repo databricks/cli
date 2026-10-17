@@ -16,6 +16,14 @@ import (
 
 const bundleVarPrefix = "BUNDLE_VAR_"
 
+// variableOverridesLocation is the file name in the bundle root that values from the
+// variable overrides file are located at. The file is written by tools, not users, so
+// relative paths in it must resolve against the bundle root. A location serves both
+// diagnostics and path resolution (relative to the directory of its file), so we use a
+// fake file at the bundle root. The limitation is that diagnostics name this label
+// rather than the real file under .databricks.
+const variableOverridesLocation = "<variable-overrides>"
+
 type setVariables struct{}
 
 func SetVariables() bundle.Mutator {
@@ -107,8 +115,10 @@ func readVariablesFromFile(b *bundle.Bundle) (dyn.Value, diag.Diagnostics) {
 		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to read variables file: %w", err))
 	}
 
-	val, err := jsonloader.LoadJSON(f, filePath)
+	val, err := jsonloader.LoadJSON(f, filepath.Join(b.BundleRootPath, variableOverridesLocation))
 	if err != nil {
+		// Report the parse error at the real file.
+		_, err = jsonloader.LoadJSON(f, filePath)
 		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to parse variables file %s: %w", filePath, err))
 	}
 
