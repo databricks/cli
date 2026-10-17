@@ -1,0 +1,6 @@
+
+>>> musterr [CLI] bundle plan
+Error: cannot plan resources.jobs.foo: cannot update max_concurrent_runs with value of "${resources.jobs.bar.job_clusters[0].new_cluster.azure_attributes.spot_bid_max_price}": cannot set (*jobs.JobSettings).max_concurrent_runs to float64 (1.9): cannot set 1.9 to int: precision loss
+
+Error: planning failed
+
