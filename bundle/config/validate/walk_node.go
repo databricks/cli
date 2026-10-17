@@ -2,54 +2,33 @@ package validate
 
 import (
 	"fmt"
+	"reflect"
 	"slices"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
-// This file is the bridge between the generated typed walkers (required_walk.go,
-// enum_walk.go) and the dynamic configuration. The typed configuration cannot tell an
-// unset field from one that is null, set to its zero value or to a pure variable
-// reference, and it has no locations, so a node follows the [dyn.Value] at its path
-// for those. The typed configuration is derived from the dynamic one after every
-// mutation, so the two agree. Replace the node once the configuration no longer uses
-// dyn.
-
-// node is a position in the configuration visited by a generated walker. Nodes live
-// on the stack and link to their parent; the path is only built for a diagnostic.
+// node is a position in the configuration visited by the generated walkers
+// (required_walk.go, enum_walk.go). Nodes live on the stack and link to their parent;
+// the path is only built when a diagnostic needs it. A node also follows the
+// locations tree and the tree of pure references, so neither needs a path lookup.
 type node struct {
 	parent *node
 	key    string
 	index  int // -1 for a key, -2 for the root
-	v      dyn.Value
+	locs   *structvar.Locations
+	refs   *refNode
 }
 
-func rootNode(v dyn.Value) node {
-	return node{index: -2, v: v}
-}
-
-// child returns the node of the key k of n.
 func (n *node) child(k string) node {
-	return node{parent: n, key: k, index: -1, v: n.v.Get(k)}
+	return node{parent: n, key: k, index: -1, locs: n.locs.Key(k), refs: n.refs.key(k)}
 }
 
-// elem returns the node of element i of n.
 func (n *node) elem(i int) node {
-	return node{parent: n, index: i, v: n.v.Index(i)}
-}
-
-// exists reports whether the configuration has a value (possibly null) at n.
-func (n *node) exists() bool {
-	return n.v.IsValid()
-}
-
-// has reports whether the key k of n is set to a value that is not null.
-func (n *node) has(k string) bool {
-	kind := n.v.Get(k).Kind()
-	return kind != dyn.KindInvalid && kind != dyn.KindNil
+	return node{parent: n, index: i, locs: n.locs.Index(i), refs: n.refs.elem(i)}
 }
 
 func (n *node) path() *structpath.PathNode {
@@ -63,9 +42,81 @@ func (n *node) path() *structpath.PathNode {
 	}
 }
 
-// walker holds the diagnostics of a generated walk.
+// refNode is a tree of the paths that hold pure variable references.
+type refNode struct {
+	ref   bool
+	keys  map[string]*refNode
+	elems map[int]*refNode
+}
+
+func (r *refNode) key(k string) *refNode {
+	if r == nil {
+		return nil
+	}
+	return r.keys[k]
+}
+
+func (r *refNode) elem(i int) *refNode {
+	if r == nil {
+		return nil
+	}
+	return r.elems[i]
+}
+
+func newRefTree(root *config.Root) *refNode {
+	var out *refNode
+	for p := range root.References() {
+		if out == nil {
+			out = &refNode{}
+		}
+		n := out
+		for _, c := range p.AsSlice() {
+			if k, ok := c.StringKey(); ok {
+				if n.keys == nil {
+					n.keys = map[string]*refNode{}
+				}
+				if n.keys[k] == nil {
+					n.keys[k] = &refNode{}
+				}
+				n = n.keys[k]
+			} else if i, ok := c.Index(); ok {
+				if n.elems == nil {
+					n.elems = map[int]*refNode{}
+				}
+				if n.elems[i] == nil {
+					n.elems[i] = &refNode{}
+				}
+				n = n.elems[i]
+			}
+		}
+		n.ref = true
+	}
+	return out
+}
+
+// walker holds the state of a generated walk.
 type walker struct {
 	diags diag.Diagnostics
+}
+
+// walk runs the generated walker fn over the configuration of root.
+func walk(root *config.Root, fn func(*walker, *node, *config.Root)) diag.Diagnostics {
+	w := &walker{}
+	n := node{index: -2, locs: root.View().Locs(), refs: newRefTree(root)}
+	fn(w, &n, root)
+	return w.diags
+}
+
+// isRef reports whether the field k of n holds a pure variable reference. Only fields
+// that cannot hold a string can.
+func (w *walker) isRef(n *node, k string) bool {
+	r := n.refs.key(k)
+	return r != nil && r.ref
+}
+
+// forced reports whether name is listed in the ForceSendFields fsf.
+func forced(fsf []string, name string) bool {
+	return slices.Contains(fsf, name)
 }
 
 // missing reports that the required field of n is not set. A pure reference
@@ -78,80 +129,27 @@ func (w *walker) missing(n *node, field string) {
 	w.diags = append(w.diags, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   fmt.Sprintf("required field %q is not set", field),
-		Locations: n.v.Locations(),
+		Locations: n.locs.Get(),
 		Paths:     []*structpath.PathNode{n.path()},
 	})
 }
 
-// enumField checks the enum field k of n, whose typed value is s.
-func (w *walker) enumField(n *node, k, s string, valid []string) {
-	if s != "" && slices.Contains(valid, s) {
-		return
-	}
-	c := n.child(k)
-	w.enumValue(&c, valid)
-}
-
-// enumElem checks the enum element n, whose typed value is s.
-func (w *walker) enumElem(n *node, s string, valid []string) {
-	if s != "" && slices.Contains(valid, s) {
-		return
-	}
-	w.enumValue(n, valid)
-}
-
-// enumValue reports the value of n if it is a string that is not one of valid. Values
-// with variable references are not resolved yet and are skipped.
-func (w *walker) enumValue(n *node, valid []string) {
-	s, ok := n.v.AsString()
-	if !ok || dynvar.ContainsVariableReference(s) || slices.Contains(valid, s) {
+// enumValue reports s, the value of n, if it is not one of valid. Values with variable
+// references are not resolved yet and are skipped.
+func (w *walker) enumValue(n *node, s string, valid []string) {
+	if slices.Contains(valid, s) || structvar.ContainsVariableReference(s) {
 		return
 	}
 	w.diags = append(w.diags, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   fmt.Sprintf("invalid value %q for enum field. Valid values are %v", s, valid),
-		Locations: n.v.Locations(),
+		Locations: n.locs.Get(),
 		Paths:     []*structpath.PathNode{n.path()},
 	})
 }
 
-// sortByWalkOrder orders diagnostics with one path each in the order [dyn.WalkReadOnly]
-// visits their paths in root, which the walkers do not follow.
-func sortByWalkOrder(root dyn.Value, diags diag.Diagnostics) {
-	type item struct {
-		pos []int
-		d   diag.Diagnostic
-	}
-	items := make([]item, len(diags))
-	for i, d := range diags {
-		items[i] = item{walkPosition(root, d.Paths[0]), d}
-	}
-	slices.SortStableFunc(items, func(a, b item) int {
-		return slices.Compare(a.pos, b.pos)
-	})
-	for i := range items {
-		diags[i] = items[i].d
-	}
-}
-
-// walkPosition returns the position of each component of path p in root: the index of
-// a key among the keys of its map, or the index of an element.
-func walkPosition(root dyn.Value, p *structpath.PathNode) []int {
-	v := root
-	var pos []int
-	for _, c := range p.AsSlice() {
-		if i, ok := c.Index(); ok {
-			pos = append(pos, i)
-			v = v.Index(i)
-			continue
-		}
-		k, _ := c.StringKey()
-		m, _ := v.AsMap()
-		i := slices.IndexFunc(m.Pairs(), func(pair dyn.Pair) bool {
-			return pair.Key.MustString() == k
-		})
-		pos = append(pos, i)
-		v = v.Get(k)
-	}
-	return pos
+// isZeroStruct reports whether the struct *v is the zero value. Only the few struct
+// fields that are not pointers need it.
+func isZeroStruct[T any](v *T) bool {
+	return reflect.ValueOf(v).Elem().IsZero()
 }
