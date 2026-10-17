@@ -60,7 +60,48 @@ func (*ResourceMaterializationSet) KeyedSlices() map[string]any {
 	}
 }
 
-var materializedFeaturesPattern = structpath.NewPatternDotString(nil, "materialized_features")
+var (
+	materializedFeaturesPattern = structpath.NewPatternDotString(nil, "materialized_features")
+	materializedFeatureMember   = structpath.NewPatternBracketStar(materializedFeaturesPattern)
+
+	// The destination fields the server accepts on write and never returns on read. The whole
+	// offline block is input-only; online_store_name is returned, so it is deliberately absent.
+	redactedDestinationPatterns = []*structpath.PatternNode{
+		structpath.NewPatternDotString(materializedFeatureMember, "offline_store_config"),
+		structpath.NewPatternDotString(
+			structpath.NewPatternDotString(materializedFeatureMember, "online_store_config"),
+			"catalog_name",
+		),
+		structpath.NewPatternDotString(
+			structpath.NewPatternDotString(materializedFeatureMember, "online_store_config"),
+			"schema_name",
+		),
+		structpath.NewPatternDotString(
+			structpath.NewPatternDotString(materializedFeatureMember, "online_store_config"),
+			"table_name_prefix",
+		),
+	}
+)
+
+// isRedactedDestinationField reports whether path names a destination field the read never returns.
+func isRedactedDestinationField(path *structpath.PathNode) bool {
+	for _, pattern := range redactedDestinationPatterns {
+		if path.HasPatternPrefix(pattern) {
+			return true
+		}
+	}
+	return false
+}
+
+// isAbsentRemotely reports whether a read returned nothing for a field, which for a redacted field
+// is indistinguishable from the server having no value.
+func isAbsentRemotely(remote any) bool {
+	if remote == nil {
+		return true
+	}
+	text, isString := remote.(string)
+	return isString && text == ""
+}
 
 // OverrideChangeDesc marks a materialized feature member added to or removed from the set as an
 // update. Such a change is a two-segment path,
@@ -71,6 +112,23 @@ var materializedFeaturesPattern = structpath.NewPatternDotString(nil, "materiali
 func (*ResourceMaterializationSet) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *ml.MaterializationSet) error {
 	if path.Len() == 2 && path.HasPatternPrefix(materializedFeaturesPattern) {
 		change.Action = deployplan.Update
+		return nil
+	}
+
+	// A destination field the read never returns diffs as config-set versus remote-empty, and the
+	// generated spec:input_only rule under ignore_remote_changes cannot suppress it: that rule
+	// fires only when the persisted value equals the configured one, and the planner recovers the
+	// persisted value by resolving the change path against stored state. Resolving a keyed-slice
+	// segment matches the key label against a real string field of the element, and this
+	// resource's key label is composite, so the lookup finds nothing and the persisted value reads
+	// as unset.
+	//
+	// An unset Old is what separates that unrecoverable case from a repoint the config actually
+	// asked for, which carries the persisted value in from the local diff and still recreates.
+	if isRedactedDestinationField(path) && change.Old == nil && change.New != nil &&
+		isAbsentRemotely(change.Remote) {
+		change.Action = deployplan.Skip
+		change.Reason = "input_only_not_returned"
 	}
 	return nil
 }

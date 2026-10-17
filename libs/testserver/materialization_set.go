@@ -4,13 +4,29 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
-// materializationSetMemberKey matches a requested member to a stored one the way the backend
-// does: by feature name, online store and whether the member is streaming. Feature name alone is
-// not unique because one feature has an offline member plus one member per online store.
+// This fake mirrors UpdateMaterializationSet closely enough that one set of acceptance goldens
+// serves both the local run and a run against a real workspace. Where it rejects, it returns the
+// backend's own message text, so a golden recorded locally is a claim about the real API that the
+// cloud run then checks.
+
+func materializationSetError(statusCode int, errorCode, message string) Response {
+	return Response{
+		StatusCode: statusCode,
+		Body: map[string]string{
+			"error_code": errorCode,
+			"message":    message,
+		},
+	}
+}
+
+// materializationSetMemberKey matches a requested member to a stored one the way the backend does:
+// by feature name, online store and whether the trigger is streaming. Feature name alone is not
+// unique because one feature has an offline member plus one member per online store.
 func materializationSetMemberKey(member ml.MaterializedFeature) string {
 	onlineStoreName := ""
 	if member.OnlineStoreConfig != nil {
@@ -19,14 +35,50 @@ func materializationSetMemberKey(member ml.MaterializedFeature) string {
 	return fmt.Sprintf("%s|%s|%t", member.FeatureName, onlineStoreName, member.StreamingMode != nil)
 }
 
-// populateMaterializationSetMember fills the fields the backend assigns on create: the member id,
-// the online flag derived from the destination, and the schedule state the pipeline starts in.
+// effectivePipelineScheduleState resolves the create-path default, so a request mixing unset and
+// ACTIVE members is not read as a disagreement.
+func effectivePipelineScheduleState(
+	state ml.MaterializedFeaturePipelineScheduleState,
+) ml.MaterializedFeaturePipelineScheduleState {
+	if state == "" {
+		return ml.MaterializedFeaturePipelineScheduleStateActive
+	}
+	return state
+}
+
+// populateMaterializationSetMember fills the fields the backend assigns on create, then redacts
+// the INPUT_ONLY destination fields the way the response path does. Storing them redacted is what
+// makes a read here match a read from a real workspace, which an echoing fake hides.
 func populateMaterializationSetMember(member ml.MaterializedFeature, setID string) ml.MaterializedFeature {
 	member.MaterializedFeatureId = nextUUID()
 	member.MaterializationSetId = setID
 	member.IsOnline = member.OnlineStoreConfig != nil
-	member.PipelineScheduleState = ml.MaterializedFeaturePipelineScheduleStateActive
+	member.PipelineScheduleState = effectivePipelineScheduleState(member.PipelineScheduleState)
+	member.OfflineStoreConfig = nil
+	if member.OnlineStoreConfig != nil {
+		member.OnlineStoreConfig = &ml.OnlineStoreConfig{
+			OnlineStoreName: member.OnlineStoreConfig.OnlineStoreName,
+		}
+	}
 	return member
+}
+
+// validateBatchPipelineScheduleStates mirrors the create-path rule that every batch member agrees
+// on one effective schedule state. Streaming members never carry one, so they are excluded.
+func validateBatchPipelineScheduleStates(members []ml.MaterializedFeature) *Response {
+	states := map[ml.MaterializedFeaturePipelineScheduleState]bool{}
+	for _, member := range members {
+		if member.StreamingMode != nil {
+			continue
+		}
+		states[effectivePipelineScheduleState(member.PipelineScheduleState)] = true
+	}
+	if len(states) > 1 {
+		response := materializationSetError(http.StatusBadRequest, "INVALID_PARAMETER_VALUE",
+			"All materialized features must have the same pipeline schedule state.")
+		return &response
+	}
+	return nil
 }
 
 // MaterializationSetsCreate fakes POST /api/2.0/feature-engineering/materialization-sets.
@@ -42,10 +94,11 @@ func (s *FakeWorkspace) MaterializationSetsCreate(req Request) Response {
 	}
 
 	if len(set.MaterializedFeatures) == 0 {
-		return Response{
-			StatusCode: http.StatusBadRequest,
-			Body:       "materialized_features must not be empty",
-		}
+		return materializationSetError(http.StatusBadRequest, "INVALID_PARAMETER_VALUE",
+			"materialized_features must not be empty")
+	}
+	if bad := validateBatchPipelineScheduleStates(set.MaterializedFeatures); bad != nil {
+		return *bad
 	}
 
 	set.MaterializationSetId = nextUUID()
@@ -57,20 +110,82 @@ func (s *FakeWorkspace) MaterializationSetsCreate(req Request) Response {
 	return Response{Body: set}
 }
 
+// effectiveCronScheduleMode treats an unset mode as MANUAL, so spelling MANUAL out is no change.
+func effectiveCronScheduleMode(mode ml.CronScheduleMode) ml.CronScheduleMode {
+	if mode == "" {
+		return ml.CronScheduleModeManual
+	}
+	return mode
+}
+
+// isCronScheduleChangeRequested mirrors the backend's comparison. The mode is always compared, so
+// dropping DERIVED reads as asking to stop deriving; a DERIVED schedule's expression and timezone
+// belong to the service, so leaving them out asks for nothing. That is what keeps a sawtooth
+// feature updatable, where comparing the field as a whole would reject every update after create.
+func isCronScheduleChangeRequested(requested, existing *ml.CronSchedule) bool {
+	if requested == nil || existing == nil {
+		return false
+	}
+	requestedMode := effectiveCronScheduleMode(requested.Mode)
+	if requestedMode != effectiveCronScheduleMode(existing.Mode) {
+		return true
+	}
+	if requestedMode == ml.CronScheduleModeDerived {
+		if requested.CronExpression != "" && requested.CronExpression != existing.CronExpression {
+			return true
+		}
+	} else if requested.CronExpression != existing.CronExpression {
+		return true
+	}
+	return requested.TimezoneId != "" && requested.TimezoneId != existing.TimezoneId
+}
+
+// materializationSetDeletionTargets groups each feature's members into the one a delete is applied
+// to and the ones it cascades to. Deleting a feature's offline member deletes its online ones; a
+// feature with no offline member is deleted through each online one.
+func materializationSetDeletionTargets(members []ml.MaterializedFeature) [][]ml.MaterializedFeature {
+	byFeature := map[string][]ml.MaterializedFeature{}
+	var featureOrder []string
+	for _, member := range members {
+		if _, seen := byFeature[member.FeatureName]; !seen {
+			featureOrder = append(featureOrder, member.FeatureName)
+		}
+		byFeature[member.FeatureName] = append(byFeature[member.FeatureName], member)
+	}
+
+	var targets [][]ml.MaterializedFeature
+	for _, featureName := range featureOrder {
+		var offline, online []ml.MaterializedFeature
+		for _, member := range byFeature[featureName] {
+			if member.IsOnline {
+				online = append(online, member)
+			} else {
+				offline = append(offline, member)
+			}
+		}
+		if len(offline) == 0 {
+			for _, member := range online {
+				targets = append(targets, []ml.MaterializedFeature{member})
+			}
+			continue
+		}
+		// Assumes one offline destination per feature, as the backend does.
+		targets = append(targets, append([]ml.MaterializedFeature{offline[0]}, online...))
+	}
+	return targets
+}
+
 // MaterializationSetsUpdate fakes PATCH
-// /api/2.0/feature-engineering/materialization-sets/{materialization_set_id}. Membership is
-// reconciled against the request: a member the request omits is deleted, and one it adds is
-// created. A member matched to a stored one keeps that member's server-assigned fields, because
-// the endpoint cannot alter a member in place.
+// /api/2.0/feature-engineering/materialization-sets/{materialization_set_id}. Field updates are
+// validated before any deletion, so the destructive half is never attempted on a set that could
+// not be fully updated.
 func (s *FakeWorkspace) MaterializationSetsUpdate(req Request, setID string) Response {
 	defer s.LockUnlock()()
 
 	existing, ok := s.MaterializationSets[setID]
 	if !ok {
-		return Response{
-			StatusCode: http.StatusNotFound,
-			Body:       fmt.Sprintf("materialization set %s not found", setID),
-		}
+		return materializationSetError(http.StatusNotFound, "NOT_FOUND",
+			fmt.Sprintf("Materialization set with ID '%s' does not exist.", setID))
 	}
 
 	var requested ml.MaterializationSet
@@ -81,26 +196,102 @@ func (s *FakeWorkspace) MaterializationSetsUpdate(req Request, setID string) Res
 		}
 	}
 
+	if len(requested.MaterializedFeatures) == 0 {
+		return materializationSetError(http.StatusBadRequest, "INVALID_PARAMETER_VALUE",
+			fmt.Sprintf("Updating materialization set '%s' with no materialized features is not "+
+				"supported. Delete the set instead.", setID))
+	}
+
 	storedByKey := map[string]ml.MaterializedFeature{}
 	for _, member := range existing.MaterializedFeatures {
 		storedByKey[materializationSetMemberKey(member)] = member
 	}
 
-	desired := requested.MaterializedFeatures
-	if len(desired) == 0 {
-		return Response{
-			StatusCode: http.StatusBadRequest,
-			Body:       "materialized_features must not be empty",
+	// Match each requested member to a stored one. A requested member matching nothing is an
+	// addition, which this endpoint does not support.
+	matched := make([]ml.MaterializedFeature, 0, len(requested.MaterializedFeatures))
+	requestedKeys := map[string]bool{}
+	for _, member := range requested.MaterializedFeatures {
+		stored, found := storedByKey[materializationSetMemberKey(member)]
+		if !found {
+			return materializationSetError(http.StatusBadRequest, "INVALID_PARAMETER_VALUE",
+				fmt.Sprintf("Materialized features cannot be added to an existing materialization "+
+					"set, and feature '%s' does not match any member of this set. Recreate the "+
+					"set instead.", member.FeatureName))
+		}
+		if isCronScheduleChangeRequested(member.CronScheduleTrigger, stored.CronScheduleTrigger) {
+			return materializationSetError(http.StatusBadRequest, "INVALID_PARAMETER_VALUE",
+				fmt.Sprintf("The 'cron_schedule_trigger' of feature '%s' cannot be changed after "+
+					"its materialized features are created. Recreate the materialization set "+
+					"instead.", member.FeatureName))
+		}
+		requestedKeys[materializationSetMemberKey(member)] = true
+		matched = append(matched, stored)
+	}
+
+	// Apply the one mutable field. It is written on the member it is applied to and no other, and
+	// applying it to an online member is refused.
+	scheduleStateChanges := map[string]ml.MaterializedFeaturePipelineScheduleState{}
+	for _, member := range requested.MaterializedFeatures {
+		key := materializationSetMemberKey(member)
+		stored := storedByKey[key]
+		if member.PipelineScheduleState == "" ||
+			member.PipelineScheduleState == stored.PipelineScheduleState {
+			continue
+		}
+		if stored.IsOnline {
+			return materializationSetError(http.StatusBadRequest, "INVALID_PARAMETER_VALUE",
+				fmt.Sprintf("Directly updating pipeline_schedule_state is only supported for "+
+					"offline materialized features. Cannot update pipeline_schedule_state for "+
+					"online materialization of feature '%s'. If this feature has an offline "+
+					"materialization, please update that instead.", member.FeatureName))
+		}
+		if member.PipelineScheduleState != ml.MaterializedFeaturePipelineScheduleStateActive &&
+			member.PipelineScheduleState != ml.MaterializedFeaturePipelineScheduleStatePaused {
+			return materializationSetError(http.StatusBadRequest, "INVALID_PARAMETER_VALUE",
+				fmt.Sprintf("Pipeline schedule state cannot be updated to '%s'. It must be ACTIVE "+
+					"or PAUSED.", member.PipelineScheduleState))
+		}
+		scheduleStateChanges[key] = member.PipelineScheduleState
+	}
+
+	// Delete the members the request omits. Because a delete cascades from a feature's offline
+	// member to its online ones, a removal that would also reach a member the request still lists
+	// cannot be expressed and is refused before anything is written.
+	removedIDs := map[string]bool{}
+	for _, member := range existing.MaterializedFeatures {
+		if !requestedKeys[materializationSetMemberKey(member)] {
+			removedIDs[member.MaterializedFeatureId] = true
+		}
+	}
+	if len(removedIDs) > 0 {
+		for _, target := range materializationSetDeletionTargets(existing.MaterializedFeatures) {
+			var unrequested []string
+			requestedForChange := false
+			for _, member := range target {
+				if removedIDs[member.MaterializedFeatureId] {
+					requestedForChange = true
+				} else {
+					unrequested = append(unrequested, "'"+member.MaterializedFeatureId+"'")
+				}
+			}
+			// A target the caller asked nothing about is not in play.
+			if requestedForChange && len(unrequested) > 0 {
+				return materializationSetError(http.StatusBadRequest, "INVALID_PARAMETER_VALUE",
+					fmt.Sprintf("Changing one materialized feature of feature '%s' also changes "+
+						"%s, which the request does not change. Apply the same change to every "+
+						"materialized feature of the feature.",
+						target[0].FeatureName, strings.Join(unrequested, ", ")))
+			}
 		}
 	}
 
-	members := make([]ml.MaterializedFeature, 0, len(desired))
-	for _, member := range desired {
-		if stored, found := storedByKey[materializationSetMemberKey(member)]; found {
-			members = append(members, stored)
-			continue
+	members := make([]ml.MaterializedFeature, 0, len(matched))
+	for _, member := range matched {
+		if state, changed := scheduleStateChanges[materializationSetMemberKey(member)]; changed {
+			member.PipelineScheduleState = state
 		}
-		members = append(members, populateMaterializationSetMember(member, setID))
+		members = append(members, member)
 	}
 
 	existing.MaterializedFeatures = members
