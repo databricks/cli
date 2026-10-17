@@ -4,15 +4,11 @@ import (
 	"log"
 )
 
-// This package is meant to be run from the root of the CLI repo.
+// This package is meant to be run from the root of the CLI repo. It generates the
+// walkers of the required and enum field validators from the bundle configuration types.
 func main() {
-	err := generateRequiredFields("bundle/internal/validation/generated")
+	err := generateWalkers("bundle/config/validate")
 	if err != nil {
-		log.Fatalf("Error generating required fields: %v", err)
-	}
-
-	err = generateEnumFields("bundle/internal/validation/generated")
-	if err != nil {
-		log.Fatalf("Error generating enum fields: %v", err)
+		log.Fatalf("Error generating walkers: %v", err)
 	}
 }
