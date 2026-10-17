@@ -1,0 +1,13 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Deploy a model with a description"
+trace $CLI bundle deploy
+
+# The MLflow update endpoint exists to set the description and rejects clearing it. The direct
+# engine drops the emptied description (omitempty), so the update arrives without one and fails.
+title "Clearing the description fails on update"
+trace update_file.py databricks.yml 'description: This is a test model' 'description: ""'
+musterr $CLI bundle deploy

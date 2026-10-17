@@ -68,6 +68,19 @@ func (s *FakeWorkspace) ModelRegistryUpdateModel(req Request) any {
 		}
 	}
 
+	// The MLflow update endpoint exists to set the description and rejects clearing it. The CLI
+	// drops an empty description (omitempty), so a cleared description arrives as absent here and
+	// must be rejected, mirroring the real backend.
+	if request.Description == "" {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    "Description cannot be empty.",
+			},
+		}
+	}
+
 	// Update the model
 	existingModel.Description = request.Description
 	s.ModelRegistryModels[request.Name] = existingModel
