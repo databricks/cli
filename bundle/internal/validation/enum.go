@@ -90,8 +90,8 @@ func getEnumValues(typ reflect.Type) ([]string, error) {
 	return enumStrings, nil
 }
 
-// extractEnumFields walks through a struct type and returns the valid values of the
-// enum fields by their pattern.
+// extractEnumFields walks through a struct type and returns the valid values by the
+// pattern of the enum fields.
 func extractEnumFields(typ reflect.Type) (map[string][]string, error) {
 	fieldsByPattern := make(map[string][]string)
 
