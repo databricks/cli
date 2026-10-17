@@ -1,0 +1,44 @@
+
+=== A streaming member carries a trigger and no schedule, so none of the batch rules apply
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-streaming-[UNIQUE_NAME]/default/files...
+Created features.streamfeat
+Created materialization_sets.set1
+Files: 2 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== A redeploy plans nothing. The schedule state the server assigns to a lone streaming member
+=== must not read as drift, and neither must its online destination.
+>>> [CLI] bundle plan -o json
+
+>>> jq .plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action) out.plan.json
+{
+  "resources.materialization_sets.set1": "skip"
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-streaming-[UNIQUE_NAME]/default/files...
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+=== Pausing a streaming member is refused: the schedule state applies to offline members only
+>>> update_file.py databricks.yml           streaming_mode:           pipeline_schedule_state: PAUSED
+          streaming_mode:
+
+>>> [CLI] bundle plan -o json
+
+>>> jq .plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action) out.plan.json
+{
+  "resources.materialization_sets.set1": "update"
+}
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-streaming-[UNIQUE_NAME]/default/files...
+Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: The 'pipeline_schedule_state' of feature 'danielb.fs2680.stream_[UNIQUE_NAME]' cannot be changed, because the change would be written on an online materialized feature. (400 BAD_REQUEST)
+
+Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?update_mask=materialized_features
+HTTP Status: 400 Bad Request
+API error_code: BAD_REQUEST
+API message: The 'pipeline_schedule_state' of feature 'danielb.fs2680.stream_[UNIQUE_NAME]' cannot be changed, because the change would be written on an online materialized feature.
+
+Files: 2 uploaded, 0 deleted

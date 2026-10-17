@@ -1,0 +1,36 @@
+bundle:
+  name: test-matset-streaming-$UNIQUE_NAME
+
+resources:
+  features:
+    streamfeat:
+      full_name: $CATALOG_NAME.$SCHEMA_NAME.stream_$UNIQUE_NAME
+      source:
+        stream_source:
+          full_name: $STREAM_FULL_NAME
+      function:
+        aggregation_function:
+          count_function:
+            input: value.passenger_count_1
+          # A Stream source accepts a rolling or a sawtooth window. Rolling keeps this feature on
+          # the plain streaming path, where one member is one materialized feature.
+          time_window:
+            rolling:
+              window_duration: 3600s
+      entities:
+        - name: value.pickup_zip
+      timeseries_column:
+        name: value.event_timestamp
+
+  materialization_sets:
+    set1:
+      materialized_features:
+        # Online streaming only: no cron schedule, and no pipeline schedule state to agree on.
+        - feature_name: ${resources.features.streamfeat.full_name}
+          online_store_config:
+            online_store_name: $ONLINE_STORE_NAME
+            catalog_name: $CATALOG_NAME
+            schema_name: $SCHEMA_NAME
+            table_name_prefix: stream_$UNIQUE_NAME
+          streaming_mode:
+            mode: STREAMING_MODE_TYPE_RTM

@@ -1,0 +1,43 @@
+# A sawtooth feature needs a Stream source, and a Stream is not a bundle resource, so this case
+# references one that already exists rather than creating it. Everything else is per-run.
+export CATALOG_NAME="${MATSET_CATALOG:-danielb}"
+export SCHEMA_NAME="${MATSET_SCHEMA:-fs2680}"
+export ONLINE_STORE_NAME="${MATSET_ONLINE_STORE:-danielb}"
+export STREAM_FULL_NAME="${MATSET_STREAM:-danielb.fs2680.fs2680_dch48o_stream}"
+
+# The harness resolves auth from the ambient environment, which on a cloud run is the workspace
+# under test. Pointing a local run at a named profile needs it in the bundle, because
+# DATABRICKS_CONFIG_PROFILE does not survive into the CLI subprocess.
+pin_profile() {
+    [ -n "${MATSET_PROFILE:-}" ] || return 0
+    printf "\nworkspace:\n  profile: %s\n" "$MATSET_PROFILE" >> databricks.yml
+}
+
+cleanup() {
+    $CLI bundle destroy --auto-approve > /dev/null 2>&1 || true
+}
+trap cleanup EXIT
+
+title "A sawtooth feature declaring only the offline and online batch pair is refused at create."
+title "The pair is not expanded into the third materialization: a set stamps its id on every"
+title "member before the backend reaches that normalization, and the normalization is skipped"
+title "whenever the id is set, so one member stays one materialized feature."
+envsubst < twoleg.yml.tmpl > databricks.yml
+pin_profile
+trace musterr $CLI bundle deploy
+
+title "Declaring all three creates the set"
+envsubst < databricks.yml.tmpl > databricks.yml
+pin_profile
+trace $CLI bundle deploy
+
+title "A redeploy plans nothing. Both online members carry a destination the read never returns,"
+title "so this is also what proves the input-only suppression holds for a three-member set."
+trace $CLI bundle plan -o json > out.plan.json
+trace jq '.plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action)' out.plan.json
+trace $CLI bundle deploy
+
+title "Every suppressed destination change, by reason"
+trace jq -r '.plan["resources.materialization_sets.set1"].changes | to_entries | map(select(.value.reason == "input_only_not_returned")) | length' out.plan.json
+
+rm -f out.requests.txt out.plan.json

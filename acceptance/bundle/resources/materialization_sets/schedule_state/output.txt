@@ -101,11 +101,11 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Directly updating pipeline_schedule_state is only supported for offline materialized features. Cannot update pipeline_schedule_state for online materialization of feature 'main.myschema.featA'. If this feature has an offline materialization, please update that instead. (400 INVALID_PARAMETER_VALUE)
+Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: The 'pipeline_schedule_state' of feature 'main.myschema.featA' cannot be changed, because the change would be written on an online materialized feature. (400 BAD_REQUEST)
 
 Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?update_mask=materialized_features
 HTTP Status: 400 Bad Request
-API error_code: INVALID_PARAMETER_VALUE
-API message: Directly updating pipeline_schedule_state is only supported for offline materialized features. Cannot update pipeline_schedule_state for online materialization of feature 'main.myschema.featA'. If this feature has an offline materialization, please update that instead.
+API error_code: BAD_REQUEST
+API message: The 'pipeline_schedule_state' of feature 'main.myschema.featA' cannot be changed, because the change would be written on an online materialized feature.
 
 Files: 1 uploaded, 0 deleted

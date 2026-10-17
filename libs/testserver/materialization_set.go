@@ -81,6 +81,64 @@ func validateBatchPipelineScheduleStates(members []ml.MaterializedFeature) *Resp
 	return nil
 }
 
+// sawtoothMaterializedFeatureCount is how many materialized features a sawtooth window produces:
+// an offline batch one, an online batch one and an online streaming one.
+const sawtoothMaterializedFeatureCount = 3
+
+// isSawtoothFeature reports whether a stored feature aggregates over a sawtooth window. An unknown
+// feature is not treated as sawtooth: the real create resolves the feature first and fails on a
+// missing one, which is a separate rejection this fake does not model.
+func (s *FakeWorkspace) isSawtoothFeature(featureName string) bool {
+	feature, stored := s.Features[featureName]
+	if !stored {
+		return false
+	}
+	aggregation := feature.Function.AggregationFunction
+	return aggregation != nil && aggregation.TimeWindow != nil && aggregation.TimeWindow.Sawtooth != nil
+}
+
+// validateSawtoothMaterializedFeatures mirrors the rule that a sawtooth feature declares all three
+// of its materialized features itself. The request is not expanded for it: a materialization set
+// stamps a set id on every member before the backend reaches its normalization, and that
+// normalization is skipped whenever the id is set, so a member maps to exactly one materialized
+// feature and the set stays diffable.
+func (s *FakeWorkspace) validateSawtoothMaterializedFeatures(members []ml.MaterializedFeature) *Response {
+	byFeature := map[string][]ml.MaterializedFeature{}
+	var featureOrder []string
+	for _, member := range members {
+		if !s.isSawtoothFeature(member.FeatureName) {
+			continue
+		}
+		if _, seen := byFeature[member.FeatureName]; !seen {
+			featureOrder = append(featureOrder, member.FeatureName)
+		}
+		byFeature[member.FeatureName] = append(byFeature[member.FeatureName], member)
+	}
+
+	for _, featureName := range featureOrder {
+		var offlineBatch, onlineBatch, onlineStreaming int
+		for _, member := range byFeature[featureName] {
+			switch {
+			case member.OnlineStoreConfig != nil && member.StreamingMode != nil:
+				onlineStreaming++
+			case member.OnlineStoreConfig != nil:
+				onlineBatch++
+			case member.OfflineStoreConfig != nil && member.StreamingMode == nil:
+				offlineBatch++
+			}
+		}
+		if len(byFeature[featureName]) != sawtoothMaterializedFeatureCount ||
+			offlineBatch != 1 || onlineBatch != 1 || onlineStreaming != 1 {
+			response := materializationSetError(http.StatusBadRequest, "BAD_REQUEST", fmt.Sprintf(
+				"Feature '%s' uses a sawtooth window, which requires an offline batch "+
+					"materialization, an online batch materialization and an online streaming "+
+					"materialization. Declare one materialize feature request for each.", featureName))
+			return &response
+		}
+	}
+	return nil
+}
+
 // MaterializationSetsCreate fakes POST /api/2.0/feature-engineering/materialization-sets.
 func (s *FakeWorkspace) MaterializationSetsCreate(req Request) Response {
 	defer s.LockUnlock()()
@@ -98,6 +156,9 @@ func (s *FakeWorkspace) MaterializationSetsCreate(req Request) Response {
 			"materialized_features must not be empty")
 	}
 	if bad := validateBatchPipelineScheduleStates(set.MaterializedFeatures); bad != nil {
+		return *bad
+	}
+	if bad := s.validateSawtoothMaterializedFeatures(set.MaterializedFeatures); bad != nil {
 		return *bad
 	}
 
@@ -240,11 +301,10 @@ func (s *FakeWorkspace) MaterializationSetsUpdate(req Request, setID string) Res
 			continue
 		}
 		if stored.IsOnline {
-			return materializationSetError(http.StatusBadRequest, "INVALID_PARAMETER_VALUE",
-				fmt.Sprintf("Directly updating pipeline_schedule_state is only supported for "+
-					"offline materialized features. Cannot update pipeline_schedule_state for "+
-					"online materialization of feature '%s'. If this feature has an offline "+
-					"materialization, please update that instead.", member.FeatureName))
+			return materializationSetError(http.StatusBadRequest, "BAD_REQUEST",
+				fmt.Sprintf("The 'pipeline_schedule_state' of feature '%s' cannot be changed, "+
+					"because the change would be written on an online materialized feature.",
+					member.FeatureName))
 		}
 		if member.PipelineScheduleState != ml.MaterializedFeaturePipelineScheduleStateActive &&
 			member.PipelineScheduleState != ml.MaterializedFeaturePipelineScheduleStatePaused {

@@ -1,0 +1,41 @@
+
+=== A sawtooth feature declaring only the offline and online batch pair is refused at create.
+=== The pair is not expanded into the third materialization: a set stamps its id on every
+=== member before the backend reaches that normalization, and the normalization is skipped
+=== whenever the id is set, so one member stays one materialized feature.
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-sawtooth-[UNIQUE_NAME]/default/files...
+Created features.sawfeat
+Error: cannot create resources.materialization_sets.set1: Feature 'danielb.fs2680.saw_[UNIQUE_NAME]' uses a sawtooth window, which requires an offline batch materialization, an online batch materialization and an online streaming materialization. Declare one materialize feature request for each. (400 BAD_REQUEST)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets?request_id=[UUID]
+HTTP Status: 400 Bad Request
+API error_code: BAD_REQUEST
+API message: Feature 'danielb.fs2680.saw_[UNIQUE_NAME]' uses a sawtooth window, which requires an offline batch materialization, an online batch materialization and an online streaming materialization. Declare one materialize feature request for each.
+
+Files: 3 uploaded, 0 deleted
+
+=== Declaring all three creates the set
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-sawtooth-[UNIQUE_NAME]/default/files...
+Created materialization_sets.set1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
+
+=== A redeploy plans nothing. Both online members carry a destination the read never returns,
+=== so this is also what proves the input-only suppression holds for a three-member set.
+>>> [CLI] bundle plan -o json
+
+>>> jq .plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action) out.plan.json
+{
+  "resources.materialization_sets.set1": "skip"
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-sawtooth-[UNIQUE_NAME]/default/files...
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+=== Every suppressed destination change, by reason
+>>> jq -r .plan["resources.materialization_sets.set1"].changes | to_entries | map(select(.value.reason == "input_only_not_returned")) | length out.plan.json
+7
