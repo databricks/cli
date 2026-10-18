@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resourcedefaults"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 // The walkers generated here replace matching every configuration node against the
@@ -229,6 +230,14 @@ func selector(v string, t reflect.Type, index []int) (string, []string) {
 	return expr.String(), guards
 }
 
+// zeroIsValid lists the required fields (by struct type) whose zero value is a valid
+// value, so it is not reported as missing. Presence comes from ForceSendFields only, and
+// these structs have none to record an explicit zero value.
+var zeroIsValid = map[reflect.Type]string{
+	// An empty default is a common, valid job parameter default.
+	reflect.TypeFor[jobs.JobParameterDefinition](): "default",
+}
+
 // field describes the field k of the struct type st as seen from variable v.
 type field struct {
 	key, goName string
@@ -265,37 +274,35 @@ func (f field) forcedCond() string {
 }
 
 // present returns the condition under which a required field counts as set. Presence
-// comes from the value and ForceSendFields only, never from locations: a string is set
-// if it is not empty (an empty string never satisfies a required field, even if
-// forced); another scalar or a struct if it is not zero or is in ForceSendFields (zero
-// is a meaningful bool or number); a pointer, slice, map or interface if it is not nil.
-// A value that cannot hold a string can also be replaced by a pure reference.
+// comes from the value and ForceSendFields only, never from locations: a scalar or a
+// struct is set if it is not zero or is in ForceSendFields (decoding records a written
+// zero value there, e.g. a job parameter's `default: ""`); a pointer, slice, map or
+// interface if it is not nil. A value that cannot hold a string can also be replaced
+// by a pure reference.
 func (f field) present() string {
 	ref := fmt.Sprintf(" || n.IsRef(%q)", f.key)
 	switch f.typ.Kind() {
 	case reflect.String:
-		return guarded(f.guards, f.expr+` != ""`)
+		return guarded(f.guards, f.expr+` != ""`+f.forcedCond())
 	case reflect.Pointer, reflect.Slice, reflect.Map, reflect.Interface:
 		return guarded(f.guards, f.expr+" != nil") + ref
 	case reflect.Bool:
 		return guarded(f.guards, f.expr+f.forcedCond()) + ref
 	case reflect.Struct:
-		return guarded(f.guards, fmt.Sprintf("!walk.IsZeroStruct(&%s)", f.expr)+f.forcedCond()) + ref
+		// A struct whose fields are only references is zero, but set.
+		return guarded(f.guards, fmt.Sprintf("!walk.IsZeroStruct(&%s)", f.expr)+f.forcedCond()) + fmt.Sprintf(" || n.HasRefs(%q)", f.key)
 	default:
 		return guarded(f.guards, f.expr+" != 0"+f.forcedCond()) + ref
 	}
 }
 
 // isSet returns the condition under which the field is set as [structvar.View.Get]
-// finds it valid: like [field.present], and a forced empty string or a forced nil
-// pointer, slice or map is also set.
+// finds it valid: like [field.present], and a forced nil pointer, slice or map is also
+// set.
 func (f field) isSet() string {
 	switch f.typ.Kind() {
 	case reflect.Pointer, reflect.Slice, reflect.Map, reflect.Interface:
 		return guarded(f.guards, f.expr+" != nil"+f.forcedCond()) + fmt.Sprintf(" || n.IsRef(%q)", f.key)
-	case reflect.String:
-		// An explicit, forced "" is kept rather than replaced by a default.
-		return guarded(f.guards, f.expr+` != ""`+f.forcedCond())
 	default:
 		return f.present()
 	}
@@ -311,6 +318,9 @@ func (g *gen) emitStruct(t *tnode) {
 	}
 	fmt.Fprintf(&g.out, "\t\treturn\n\t}\n")
 	for _, k := range t.required {
+		if zeroIsValid[st] == k {
+			continue
+		}
 		f := structField("v", st, k)
 		fmt.Fprintf(&g.out, "\tif !(%s) {\n\t\tw.missing(n, %q)\n\t}\n", f.present(), k)
 	}
@@ -343,7 +353,7 @@ func (g *gen) emitField(f field, child *tnode) {
 		}
 		fmt.Fprintf(&g.out, "\n")
 	case f.typ.Kind() == reflect.Struct:
-		fmt.Fprintf(&g.out, "\tif x := &%s; !walk.IsZeroStruct(x)%s {\n\t\tc := n.Child(%q)\n\t\t%s(w, &c, x)\n\t}\n", f.expr, f.forcedCond(), f.key, g.funcFor(child))
+		fmt.Fprintf(&g.out, "\tif x := &%s; !walk.IsZeroStruct(x)%s || n.HasRefs(%q) {\n\t\tc := n.Child(%q)\n\t\t%s(w, &c, x)\n\t}\n", f.expr, f.forcedCond(), f.key, f.key, g.funcFor(child))
 	case f.typ.Kind() == reflect.Slice || f.typ.Kind() == reflect.Map:
 		fmt.Fprintf(&g.out, "\tif len(%s) > 0 {\n\t\tc := n.Child(%q)\n", f.expr, f.key)
 		g.emitContainer("\t\t", f.expr, f.typ, child)

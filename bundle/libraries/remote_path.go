@@ -161,8 +161,8 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]LocationToUpdate, err
 		}
 		for i, f := range a.Files {
 			p := structpath.NewPath(nil, "artifacts", name, "files", i)
-			// source has no omitempty: an explicit empty value is present too.
-			if f.Source == "" && len(b.Config.GetLocationsOfExact(structpath.NewStringKey(p, "source"))) == 0 {
+			// An empty source is missing (ArtifactFile has no ForceSendFields).
+			if f.Source == "" {
 				continue
 			}
 			source := f.Source

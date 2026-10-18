@@ -337,7 +337,18 @@ func (t *translateContext) rewriteAt(ctx context.Context, p *structpath.PathNode
 func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContext, translations []translateFunc) diag.Diagnostics {
 	switch {
 	case b.IsImmutableFolder():
-		// An explicit workspace.file_path is rejected by DefineDefaultWorkspacePaths.
+		// Reject an explicit workspace.file_path: immutable bundles set it
+		// automatically to the content-addressed snapshot location. A user-supplied
+		// value would be silently discarded during path translation, so we error early.
+		// DefineDefaultWorkspacePaths sets the snapshot location, or root/files if
+		// immutable_folder was a reference not resolved yet; any other value is the user's.
+		if fp := b.Config.Workspace.FilePath; fp != resources.SnapshotFullPathRef+"/files" && fp != path.Join(b.Config.Workspace.RootPath, "files") {
+			return diag.Diagnostics{{
+				Severity:  diag.Error,
+				Summary:   "workspace.file_path cannot be configured when experimental.immutable_folder is enabled",
+				Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "workspace", "file_path")),
+			}}
+		}
 		t.remoteRoot = resources.SnapshotFullPathRef + "/files"
 	case config.IsExplicitlyEnabled(t.b.Config.Presets.SourceLinkedDeployment):
 		t.remoteRoot = t.b.SyncRootPath
