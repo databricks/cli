@@ -136,11 +136,13 @@ func (sv *StructVar) CopyMetadataAt(from, to *structpath.PathNode) {
 	if len(sv.Refs) == 0 {
 		return
 	}
-	fromKey, toKey := from.String(), to.String()
+	fromKey := from.String()
 	refs := withoutRefs(sv.Refs, to)
 	for k, v := range sv.Refs {
 		if isUnder(k, fromKey) {
-			refs[toKey+strings.TrimPrefix(k, fromKey)] = v
+			if moved, ok := rebaseKey(k, from, to); ok {
+				refs[moved] = v
+			}
 		}
 	}
 	sv.Refs = refs
@@ -208,17 +210,29 @@ func (sv *StructVar) UpdateSequence(path *structpath.PathNode, sources [][]int) 
 		}
 	}
 	for i, src := range sources {
-		to := structpath.NewIndex(path, i).String()
+		to := structpath.NewIndex(path, i)
 		for _, old := range src {
-			from := structpath.NewIndex(path, old).String()
+			from := structpath.NewIndex(path, old)
+			fromKey := from.String()
 			for k, v := range sv.Refs {
-				if isUnder(k, from) {
-					refs[to+strings.TrimPrefix(k, from)] = v
+				if isUnder(k, fromKey) {
+					if moved, ok := rebaseKey(k, from, to); ok {
+						refs[moved] = v
+					}
 				}
 			}
 		}
 	}
 	sv.Refs = refs
+}
+
+// rebaseKey returns the refs key k, at or below from, moved to the same place below to.
+func rebaseKey(k string, from, to *structpath.PathNode) (string, bool) {
+	p, err := structpath.ParsePath(k)
+	if err != nil {
+		return "", false
+	}
+	return structpath.Join(to, p.SkipPrefix(from.Len()).AsSlice()...).String(), true
 }
 
 // isUnder reports whether the path string key is prefix or a path below it.
