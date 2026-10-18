@@ -12,7 +12,6 @@ import (
 
 type checkForSameNameLibraries struct{}
 
-
 type libData struct {
 	fullPath   string
 	locations  []diag.Location
