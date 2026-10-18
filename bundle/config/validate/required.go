@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
@@ -172,34 +171,6 @@ func errorForInvalidSecretScopePermissions(ctx context.Context, b *bundle.Bundle
 	sortDiagnostics(diags)
 
 	return diags
-}
-
-// isMissingOrEmptyString reports whether v is unset, null, or an empty string.
-func isMissingOrEmptyString(v structvar.View) bool {
-	switch v.Kind() {
-	case structvar.KindInvalid, structvar.KindNil:
-		return true
-	case structvar.KindString:
-		s, _ := v.AsString()
-		return s == ""
-	default:
-		return false
-	}
-}
-
-// isMissingOrEmptySequence reports whether v is unset, null, or an empty sequence.
-func isMissingOrEmptySequence(v structvar.View) bool {
-	switch v.Kind() {
-	case structvar.KindInvalid, structvar.KindNil:
-		return true
-	case structvar.KindSequence:
-		for range v.Sequence() {
-			return false
-		}
-		return true
-	default:
-		return false
-	}
 }
 
 func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
