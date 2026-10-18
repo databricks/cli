@@ -27,110 +27,140 @@ import (
 )
 
 func stringsConfigRoot(c *stringsWalk, n *Node, v *config.Root) {
-	if len(v.Variables) > 0 {
-		cn := n.Child("variables")
-		for _, k := range sortedKeys(v.Variables) {
-			if x := v.Variables[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsVariableVariable(c, &ch, x)
-			}
-		}
-	}
-	{
-		ch := n.Child("bundle")
-		stringsConfigBundle(c, &ch, &v.Bundle)
-	}
-	if len(v.Include) > 0 {
-		cn := n.Child("include")
-		for i := range v.Include {
-			if s := string(v.Include[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Include[i] = (r)
+	if !n.IsRef("variables") {
+		if len(v.Variables) > 0 {
+			cn := n.Child("variables")
+			for _, k := range sortedKeys(v.Variables) {
+				if x := v.Variables[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsVariableVariable(c, &ch, x)
 				}
 			}
 		}
 	}
-	{
-		ch := n.Child("workspace")
-		stringsConfigWorkspace(c, &ch, &v.Workspace)
+	if !n.IsRef("bundle") {
+		{
+			ch := n.Child("bundle")
+			stringsConfigBundle(c, &ch, &v.Bundle)
+		}
 	}
-	if len(v.Artifacts) > 0 {
-		cn := n.Child("artifacts")
-		for _, k := range sortedKeys(v.Artifacts) {
-			if x := v.Artifacts[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsConfigArtifact(c, &ch, x)
+	if !n.IsRef("include") {
+		if len(v.Include) > 0 {
+			cn := n.Child("include")
+			for i := range v.Include {
+				if s := string(v.Include[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Include[i] = (r)
+					}
+				}
 			}
 		}
 	}
-	if !c.skipResources {
+	if !n.IsRef("workspace") {
+		{
+			ch := n.Child("workspace")
+			stringsConfigWorkspace(c, &ch, &v.Workspace)
+		}
+	}
+	if !n.IsRef("artifacts") {
+		if len(v.Artifacts) > 0 {
+			cn := n.Child("artifacts")
+			for _, k := range sortedKeys(v.Artifacts) {
+				if x := v.Artifacts[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsConfigArtifact(c, &ch, x)
+				}
+			}
+		}
+	}
+	if !c.skipResources && !n.IsRef("resources") {
 		{
 			ch := n.Child("resources")
 			stringsConfigResources(c, &ch, &v.Resources)
 		}
 	}
-	if len(v.Targets) > 0 {
-		cn := n.Child("targets")
-		for _, k := range sortedKeys(v.Targets) {
-			if x := v.Targets[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsConfigTarget(c, &ch, x)
+	if !n.IsRef("targets") {
+		if len(v.Targets) > 0 {
+			cn := n.Child("targets")
+			for _, k := range sortedKeys(v.Targets) {
+				if x := v.Targets[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsConfigTarget(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.Environments) > 0 {
-		cn := n.Child("environments")
-		for _, k := range sortedKeys(v.Environments) {
-			if x := v.Environments[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsConfigTarget(c, &ch, x)
+	if !n.IsRef("environments") {
+		if len(v.Environments) > 0 {
+			cn := n.Child("environments")
+			for _, k := range sortedKeys(v.Environments) {
+				if x := v.Environments[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsConfigTarget(c, &ch, x)
+				}
 			}
 		}
 	}
-	{
-		ch := n.Child("sync")
-		stringsConfigSync(c, &ch, &v.Sync)
+	if !n.IsRef("sync") {
+		{
+			ch := n.Child("sync")
+			stringsConfigSync(c, &ch, &v.Sync)
+		}
 	}
-	if x := v.RunAs; x != nil {
-		ch := n.Child("run_as")
-		stringsJobsJobRunAs(c, &ch, x)
+	if !n.IsRef("run_as") {
+		if x := v.RunAs; x != nil {
+			ch := n.Child("run_as")
+			stringsJobsJobRunAs(c, &ch, x)
+		}
 	}
-	{
-		ch := n.Child("presets")
-		stringsConfigPresets(c, &ch, &v.Presets)
+	if !n.IsRef("presets") {
+		{
+			ch := n.Child("presets")
+			stringsConfigPresets(c, &ch, &v.Presets)
+		}
 	}
-	if x := v.Experimental; x != nil {
-		ch := n.Child("experimental")
-		stringsConfigExperimental(c, &ch, x)
+	if !n.IsRef("experimental") {
+		if x := v.Experimental; x != nil {
+			ch := n.Child("experimental")
+			stringsConfigExperimental(c, &ch, x)
+		}
 	}
-	if len(v.Permissions) > 0 {
-		cn := n.Child("permissions")
-		for i := range v.Permissions {
-			{
-				ch := cn.Elem(i)
-				stringsResourcesPermission(c, &ch, &v.Permissions[i])
+	if !n.IsRef("permissions") {
+		if len(v.Permissions) > 0 {
+			cn := n.Child("permissions")
+			for i := range v.Permissions {
+				{
+					ch := cn.Elem(i)
+					stringsResourcesPermission(c, &ch, &v.Permissions[i])
+				}
 			}
 		}
 	}
-	if x := v.Locations; x != nil {
-		ch := n.Child("__locations")
-		stringsLoctableLocations(c, &ch, x)
-	}
-	if len(v.Scripts) > 0 {
-		cn := n.Child("scripts")
-		for _, k := range sortedKeys(v.Scripts) {
-			x := v.Scripts[k]
-			{
-				ch := cn.Child(string(k))
-				stringsConfigScript(c, &ch, &x)
-			}
-			v.Scripts[k] = x
+	if !n.IsRef("__locations") {
+		if x := v.Locations; x != nil {
+			ch := n.Child("__locations")
+			stringsLoctableLocations(c, &ch, x)
 		}
 	}
-	{
-		ch := n.Child("python")
-		stringsConfigPython(c, &ch, &v.Python)
+	if !n.IsRef("scripts") {
+		if len(v.Scripts) > 0 {
+			cn := n.Child("scripts")
+			for _, k := range sortedKeys(v.Scripts) {
+				x := v.Scripts[k]
+				{
+					ch := cn.Child(string(k))
+					stringsConfigScript(c, &ch, &x)
+				}
+				v.Scripts[k] = x
+			}
+		}
+	}
+	if !n.IsRef("python") {
+		{
+			ch := n.Child("python")
+			stringsConfigPython(c, &ch, &v.Python)
+		}
 	}
 	if c.mode == EmptyFields && v.Definitions == "" {
 		ch := n.Child("definitions")
@@ -171,9 +201,11 @@ func stringsVariableVariable(c *stringsWalk, n *Node, v *variable.Variable) {
 		ch := n.Child("value")
 		c.any(&ch, &v.Value)
 	}
-	if x := v.Lookup; x != nil {
-		ch := n.Child("lookup")
-		stringsVariableLookup(c, &ch, x)
+	if !n.IsRef("lookup") {
+		if x := v.Lookup; x != nil {
+			ch := n.Child("lookup")
+			stringsVariableLookup(c, &ch, x)
+		}
 	}
 }
 
@@ -196,13 +228,17 @@ func stringsConfigBundle(c *stringsWalk, n *Node, v *config.Bundle) {
 			v.Environment = (r)
 		}
 	}
-	if x := v.Terraform; x != nil {
-		ch := n.Child("terraform")
-		stringsConfigTerraform(c, &ch, x)
+	if !n.IsRef("terraform") {
+		if x := v.Terraform; x != nil {
+			ch := n.Child("terraform")
+			stringsConfigTerraform(c, &ch, x)
+		}
 	}
-	{
-		ch := n.Child("git")
-		stringsConfigGit(c, &ch, &v.Git)
+	if !n.IsRef("git") {
+		{
+			ch := n.Child("git")
+			stringsConfigGit(c, &ch, &v.Git)
+		}
 	}
 	if s := string(v.Mode); c.match(s) {
 		ch := n.Child("mode")
@@ -228,9 +264,11 @@ func stringsConfigBundle(c *stringsWalk, n *Node, v *config.Bundle) {
 			v.Engine = engine.EngineType(r)
 		}
 	}
-	{
-		ch := n.Child("deployment")
-		stringsConfigDeployment(c, &ch, &v.Deployment)
+	if !n.IsRef("deployment") {
+		{
+			ch := n.Child("deployment")
+			stringsConfigDeployment(c, &ch, &v.Deployment)
+		}
 	}
 	if s := string(v.DatabricksCliVersion); c.match(s) {
 		ch := n.Child("databricks_cli_version")
@@ -325,9 +363,11 @@ func stringsConfigWorkspace(c *stringsWalk, n *Node, v *config.Workspace) {
 			v.WorkspaceID = (r)
 		}
 	}
-	if x := v.CurrentUser; x != nil {
-		ch := n.Child("current_user")
-		stringsConfigUser(c, &ch, x)
+	if !n.IsRef("current_user") {
+		if x := v.CurrentUser; x != nil {
+			ch := n.Child("current_user")
+			stringsConfigUser(c, &ch, x)
+		}
 	}
 	if s := string(v.RootPath); c.match(s) {
 		ch := n.Child("root_path")
@@ -374,12 +414,14 @@ func stringsConfigArtifact(c *stringsWalk, n *Node, v *config.Artifact) {
 			v.Path = (r)
 		}
 	}
-	if len(v.Files) > 0 {
-		cn := n.Child("files")
-		for i := range v.Files {
-			{
-				ch := cn.Elem(i)
-				stringsConfigArtifactFile(c, &ch, &v.Files[i])
+	if !n.IsRef("files") {
+		if len(v.Files) > 0 {
+			cn := n.Child("files")
+			for i := range v.Files {
+				{
+					ch := cn.Elem(i)
+					stringsConfigArtifactFile(c, &ch, &v.Files[i])
+				}
 			}
 		}
 	}
@@ -395,372 +437,454 @@ func stringsConfigArtifact(c *stringsWalk, n *Node, v *config.Artifact) {
 			v.Executable = exec.ExecutableType(r)
 		}
 	}
-	if len(v.Include) > 0 {
-		cn := n.Child("include")
-		for i := range v.Include {
-			if s := string(v.Include[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Include[i] = (r)
+	if !n.IsRef("include") {
+		if len(v.Include) > 0 {
+			cn := n.Child("include")
+			for i := range v.Include {
+				if s := string(v.Include[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Include[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if x := v.Git; x != nil {
-		ch := n.Child("git")
-		stringsConfigArtifactGit(c, &ch, x)
+	if !n.IsRef("git") {
+		if x := v.Git; x != nil {
+			ch := n.Child("git")
+			stringsConfigArtifactGit(c, &ch, x)
+		}
 	}
 }
 
 func stringsConfigResources(c *stringsWalk, n *Node, v *config.Resources) {
-	if len(v.Jobs) > 0 {
-		cn := n.Child("jobs")
-		for _, k := range sortedKeys(v.Jobs) {
-			if x := v.Jobs[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesJob(c, &ch, x)
+	if !n.IsRef("jobs") {
+		if len(v.Jobs) > 0 {
+			cn := n.Child("jobs")
+			for _, k := range sortedKeys(v.Jobs) {
+				if x := v.Jobs[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesJob(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.JobRuns) > 0 {
-		cn := n.Child("job_runs")
-		for _, k := range sortedKeys(v.JobRuns) {
-			if x := v.JobRuns[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesJobRun(c, &ch, x)
+	if !n.IsRef("job_runs") {
+		if len(v.JobRuns) > 0 {
+			cn := n.Child("job_runs")
+			for _, k := range sortedKeys(v.JobRuns) {
+				if x := v.JobRuns[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesJobRun(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.Pipelines) > 0 {
-		cn := n.Child("pipelines")
-		for _, k := range sortedKeys(v.Pipelines) {
-			if x := v.Pipelines[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesPipeline(c, &ch, x)
+	if !n.IsRef("pipelines") {
+		if len(v.Pipelines) > 0 {
+			cn := n.Child("pipelines")
+			for _, k := range sortedKeys(v.Pipelines) {
+				if x := v.Pipelines[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesPipeline(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.Models) > 0 {
-		cn := n.Child("models")
-		for _, k := range sortedKeys(v.Models) {
-			if x := v.Models[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesMlflowModel(c, &ch, x)
+	if !n.IsRef("models") {
+		if len(v.Models) > 0 {
+			cn := n.Child("models")
+			for _, k := range sortedKeys(v.Models) {
+				if x := v.Models[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesMlflowModel(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.Experiments) > 0 {
-		cn := n.Child("experiments")
-		for _, k := range sortedKeys(v.Experiments) {
-			if x := v.Experiments[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesMlflowExperiment(c, &ch, x)
+	if !n.IsRef("experiments") {
+		if len(v.Experiments) > 0 {
+			cn := n.Child("experiments")
+			for _, k := range sortedKeys(v.Experiments) {
+				if x := v.Experiments[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesMlflowExperiment(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.ModelServingEndpoints) > 0 {
-		cn := n.Child("model_serving_endpoints")
-		for _, k := range sortedKeys(v.ModelServingEndpoints) {
-			if x := v.ModelServingEndpoints[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesModelServingEndpoint(c, &ch, x)
+	if !n.IsRef("model_serving_endpoints") {
+		if len(v.ModelServingEndpoints) > 0 {
+			cn := n.Child("model_serving_endpoints")
+			for _, k := range sortedKeys(v.ModelServingEndpoints) {
+				if x := v.ModelServingEndpoints[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesModelServingEndpoint(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.ModelServices) > 0 {
-		cn := n.Child("model_services")
-		for _, k := range sortedKeys(v.ModelServices) {
-			if x := v.ModelServices[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesModelService(c, &ch, x)
+	if !n.IsRef("model_services") {
+		if len(v.ModelServices) > 0 {
+			cn := n.Child("model_services")
+			for _, k := range sortedKeys(v.ModelServices) {
+				if x := v.ModelServices[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesModelService(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.McpServices) > 0 {
-		cn := n.Child("mcp_services")
-		for _, k := range sortedKeys(v.McpServices) {
-			if x := v.McpServices[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesMcpService(c, &ch, x)
+	if !n.IsRef("mcp_services") {
+		if len(v.McpServices) > 0 {
+			cn := n.Child("mcp_services")
+			for _, k := range sortedKeys(v.McpServices) {
+				if x := v.McpServices[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesMcpService(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.ModelProviderServices) > 0 {
-		cn := n.Child("model_provider_services")
-		for _, k := range sortedKeys(v.ModelProviderServices) {
-			if x := v.ModelProviderServices[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesModelProviderService(c, &ch, x)
+	if !n.IsRef("model_provider_services") {
+		if len(v.ModelProviderServices) > 0 {
+			cn := n.Child("model_provider_services")
+			for _, k := range sortedKeys(v.ModelProviderServices) {
+				if x := v.ModelProviderServices[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesModelProviderService(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.RegisteredModels) > 0 {
-		cn := n.Child("registered_models")
-		for _, k := range sortedKeys(v.RegisteredModels) {
-			if x := v.RegisteredModels[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesRegisteredModel(c, &ch, x)
+	if !n.IsRef("registered_models") {
+		if len(v.RegisteredModels) > 0 {
+			cn := n.Child("registered_models")
+			for _, k := range sortedKeys(v.RegisteredModels) {
+				if x := v.RegisteredModels[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesRegisteredModel(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.QualityMonitors) > 0 {
-		cn := n.Child("quality_monitors")
-		for _, k := range sortedKeys(v.QualityMonitors) {
-			if x := v.QualityMonitors[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesQualityMonitor(c, &ch, x)
+	if !n.IsRef("quality_monitors") {
+		if len(v.QualityMonitors) > 0 {
+			cn := n.Child("quality_monitors")
+			for _, k := range sortedKeys(v.QualityMonitors) {
+				if x := v.QualityMonitors[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesQualityMonitor(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.Catalogs) > 0 {
-		cn := n.Child("catalogs")
-		for _, k := range sortedKeys(v.Catalogs) {
-			if x := v.Catalogs[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesCatalog(c, &ch, x)
+	if !n.IsRef("catalogs") {
+		if len(v.Catalogs) > 0 {
+			cn := n.Child("catalogs")
+			for _, k := range sortedKeys(v.Catalogs) {
+				if x := v.Catalogs[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesCatalog(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.Schemas) > 0 {
-		cn := n.Child("schemas")
-		for _, k := range sortedKeys(v.Schemas) {
-			if x := v.Schemas[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesSchema(c, &ch, x)
+	if !n.IsRef("schemas") {
+		if len(v.Schemas) > 0 {
+			cn := n.Child("schemas")
+			for _, k := range sortedKeys(v.Schemas) {
+				if x := v.Schemas[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesSchema(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.Volumes) > 0 {
-		cn := n.Child("volumes")
-		for _, k := range sortedKeys(v.Volumes) {
-			if x := v.Volumes[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesVolume(c, &ch, x)
+	if !n.IsRef("volumes") {
+		if len(v.Volumes) > 0 {
+			cn := n.Child("volumes")
+			for _, k := range sortedKeys(v.Volumes) {
+				if x := v.Volumes[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesVolume(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.ExternalLocations) > 0 {
-		cn := n.Child("external_locations")
-		for _, k := range sortedKeys(v.ExternalLocations) {
-			if x := v.ExternalLocations[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesExternalLocation(c, &ch, x)
+	if !n.IsRef("external_locations") {
+		if len(v.ExternalLocations) > 0 {
+			cn := n.Child("external_locations")
+			for _, k := range sortedKeys(v.ExternalLocations) {
+				if x := v.ExternalLocations[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesExternalLocation(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.Clusters) > 0 {
-		cn := n.Child("clusters")
-		for _, k := range sortedKeys(v.Clusters) {
-			if x := v.Clusters[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesCluster(c, &ch, x)
+	if !n.IsRef("clusters") {
+		if len(v.Clusters) > 0 {
+			cn := n.Child("clusters")
+			for _, k := range sortedKeys(v.Clusters) {
+				if x := v.Clusters[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesCluster(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.Dashboards) > 0 {
-		cn := n.Child("dashboards")
-		for _, k := range sortedKeys(v.Dashboards) {
-			if x := v.Dashboards[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesDashboard(c, &ch, x)
+	if !n.IsRef("dashboards") {
+		if len(v.Dashboards) > 0 {
+			cn := n.Child("dashboards")
+			for _, k := range sortedKeys(v.Dashboards) {
+				if x := v.Dashboards[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesDashboard(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.GenieSpaces) > 0 {
-		cn := n.Child("genie_spaces")
-		for _, k := range sortedKeys(v.GenieSpaces) {
-			if x := v.GenieSpaces[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesGenieSpace(c, &ch, x)
+	if !n.IsRef("genie_spaces") {
+		if len(v.GenieSpaces) > 0 {
+			cn := n.Child("genie_spaces")
+			for _, k := range sortedKeys(v.GenieSpaces) {
+				if x := v.GenieSpaces[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesGenieSpace(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.Apps) > 0 {
-		cn := n.Child("apps")
-		for _, k := range sortedKeys(v.Apps) {
-			if x := v.Apps[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesApp(c, &ch, x)
+	if !n.IsRef("apps") {
+		if len(v.Apps) > 0 {
+			cn := n.Child("apps")
+			for _, k := range sortedKeys(v.Apps) {
+				if x := v.Apps[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesApp(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.SecretScopes) > 0 {
-		cn := n.Child("secret_scopes")
-		for _, k := range sortedKeys(v.SecretScopes) {
-			if x := v.SecretScopes[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesSecretScope(c, &ch, x)
+	if !n.IsRef("secret_scopes") {
+		if len(v.SecretScopes) > 0 {
+			cn := n.Child("secret_scopes")
+			for _, k := range sortedKeys(v.SecretScopes) {
+				if x := v.SecretScopes[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesSecretScope(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.Alerts) > 0 {
-		cn := n.Child("alerts")
-		for _, k := range sortedKeys(v.Alerts) {
-			if x := v.Alerts[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesAlert(c, &ch, x)
+	if !n.IsRef("alerts") {
+		if len(v.Alerts) > 0 {
+			cn := n.Child("alerts")
+			for _, k := range sortedKeys(v.Alerts) {
+				if x := v.Alerts[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesAlert(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.SqlWarehouses) > 0 {
-		cn := n.Child("sql_warehouses")
-		for _, k := range sortedKeys(v.SqlWarehouses) {
-			if x := v.SqlWarehouses[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesSqlWarehouse(c, &ch, x)
+	if !n.IsRef("sql_warehouses") {
+		if len(v.SqlWarehouses) > 0 {
+			cn := n.Child("sql_warehouses")
+			for _, k := range sortedKeys(v.SqlWarehouses) {
+				if x := v.SqlWarehouses[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesSqlWarehouse(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.DatabaseInstances) > 0 {
-		cn := n.Child("database_instances")
-		for _, k := range sortedKeys(v.DatabaseInstances) {
-			if x := v.DatabaseInstances[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesDatabaseInstance(c, &ch, x)
+	if !n.IsRef("database_instances") {
+		if len(v.DatabaseInstances) > 0 {
+			cn := n.Child("database_instances")
+			for _, k := range sortedKeys(v.DatabaseInstances) {
+				if x := v.DatabaseInstances[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesDatabaseInstance(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.DatabaseCatalogs) > 0 {
-		cn := n.Child("database_catalogs")
-		for _, k := range sortedKeys(v.DatabaseCatalogs) {
-			if x := v.DatabaseCatalogs[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesDatabaseCatalog(c, &ch, x)
+	if !n.IsRef("database_catalogs") {
+		if len(v.DatabaseCatalogs) > 0 {
+			cn := n.Child("database_catalogs")
+			for _, k := range sortedKeys(v.DatabaseCatalogs) {
+				if x := v.DatabaseCatalogs[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesDatabaseCatalog(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.SyncedDatabaseTables) > 0 {
-		cn := n.Child("synced_database_tables")
-		for _, k := range sortedKeys(v.SyncedDatabaseTables) {
-			if x := v.SyncedDatabaseTables[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesSyncedDatabaseTable(c, &ch, x)
+	if !n.IsRef("synced_database_tables") {
+		if len(v.SyncedDatabaseTables) > 0 {
+			cn := n.Child("synced_database_tables")
+			for _, k := range sortedKeys(v.SyncedDatabaseTables) {
+				if x := v.SyncedDatabaseTables[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesSyncedDatabaseTable(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.PostgresProjects) > 0 {
-		cn := n.Child("postgres_projects")
-		for _, k := range sortedKeys(v.PostgresProjects) {
-			if x := v.PostgresProjects[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesPostgresProject(c, &ch, x)
+	if !n.IsRef("postgres_projects") {
+		if len(v.PostgresProjects) > 0 {
+			cn := n.Child("postgres_projects")
+			for _, k := range sortedKeys(v.PostgresProjects) {
+				if x := v.PostgresProjects[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesPostgresProject(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.PostgresBranches) > 0 {
-		cn := n.Child("postgres_branches")
-		for _, k := range sortedKeys(v.PostgresBranches) {
-			if x := v.PostgresBranches[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesPostgresBranch(c, &ch, x)
+	if !n.IsRef("postgres_branches") {
+		if len(v.PostgresBranches) > 0 {
+			cn := n.Child("postgres_branches")
+			for _, k := range sortedKeys(v.PostgresBranches) {
+				if x := v.PostgresBranches[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesPostgresBranch(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.PostgresEndpoints) > 0 {
-		cn := n.Child("postgres_endpoints")
-		for _, k := range sortedKeys(v.PostgresEndpoints) {
-			if x := v.PostgresEndpoints[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesPostgresEndpoint(c, &ch, x)
+	if !n.IsRef("postgres_endpoints") {
+		if len(v.PostgresEndpoints) > 0 {
+			cn := n.Child("postgres_endpoints")
+			for _, k := range sortedKeys(v.PostgresEndpoints) {
+				if x := v.PostgresEndpoints[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesPostgresEndpoint(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.PostgresCatalogs) > 0 {
-		cn := n.Child("postgres_catalogs")
-		for _, k := range sortedKeys(v.PostgresCatalogs) {
-			if x := v.PostgresCatalogs[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesPostgresCatalog(c, &ch, x)
+	if !n.IsRef("postgres_catalogs") {
+		if len(v.PostgresCatalogs) > 0 {
+			cn := n.Child("postgres_catalogs")
+			for _, k := range sortedKeys(v.PostgresCatalogs) {
+				if x := v.PostgresCatalogs[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesPostgresCatalog(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.PostgresDatabases) > 0 {
-		cn := n.Child("postgres_databases")
-		for _, k := range sortedKeys(v.PostgresDatabases) {
-			if x := v.PostgresDatabases[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesPostgresDatabase(c, &ch, x)
+	if !n.IsRef("postgres_databases") {
+		if len(v.PostgresDatabases) > 0 {
+			cn := n.Child("postgres_databases")
+			for _, k := range sortedKeys(v.PostgresDatabases) {
+				if x := v.PostgresDatabases[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesPostgresDatabase(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.PostgresRoles) > 0 {
-		cn := n.Child("postgres_roles")
-		for _, k := range sortedKeys(v.PostgresRoles) {
-			if x := v.PostgresRoles[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesPostgresRole(c, &ch, x)
+	if !n.IsRef("postgres_roles") {
+		if len(v.PostgresRoles) > 0 {
+			cn := n.Child("postgres_roles")
+			for _, k := range sortedKeys(v.PostgresRoles) {
+				if x := v.PostgresRoles[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesPostgresRole(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.PostgresSyncedTables) > 0 {
-		cn := n.Child("postgres_synced_tables")
-		for _, k := range sortedKeys(v.PostgresSyncedTables) {
-			if x := v.PostgresSyncedTables[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesPostgresSyncedTable(c, &ch, x)
+	if !n.IsRef("postgres_synced_tables") {
+		if len(v.PostgresSyncedTables) > 0 {
+			cn := n.Child("postgres_synced_tables")
+			for _, k := range sortedKeys(v.PostgresSyncedTables) {
+				if x := v.PostgresSyncedTables[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesPostgresSyncedTable(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.PostgresSnapshotSchedules) > 0 {
-		cn := n.Child("postgres_snapshot_schedules")
-		for _, k := range sortedKeys(v.PostgresSnapshotSchedules) {
-			if x := v.PostgresSnapshotSchedules[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesPostgresSnapshotSchedule(c, &ch, x)
+	if !n.IsRef("postgres_snapshot_schedules") {
+		if len(v.PostgresSnapshotSchedules) > 0 {
+			cn := n.Child("postgres_snapshot_schedules")
+			for _, k := range sortedKeys(v.PostgresSnapshotSchedules) {
+				if x := v.PostgresSnapshotSchedules[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesPostgresSnapshotSchedule(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.VectorSearchEndpoints) > 0 {
-		cn := n.Child("vector_search_endpoints")
-		for _, k := range sortedKeys(v.VectorSearchEndpoints) {
-			if x := v.VectorSearchEndpoints[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesVectorSearchEndpoint(c, &ch, x)
+	if !n.IsRef("vector_search_endpoints") {
+		if len(v.VectorSearchEndpoints) > 0 {
+			cn := n.Child("vector_search_endpoints")
+			for _, k := range sortedKeys(v.VectorSearchEndpoints) {
+				if x := v.VectorSearchEndpoints[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesVectorSearchEndpoint(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.VectorSearchIndexes) > 0 {
-		cn := n.Child("vector_search_indexes")
-		for _, k := range sortedKeys(v.VectorSearchIndexes) {
-			if x := v.VectorSearchIndexes[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesVectorSearchIndex(c, &ch, x)
+	if !n.IsRef("vector_search_indexes") {
+		if len(v.VectorSearchIndexes) > 0 {
+			cn := n.Child("vector_search_indexes")
+			for _, k := range sortedKeys(v.VectorSearchIndexes) {
+				if x := v.VectorSearchIndexes[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesVectorSearchIndex(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.InstancePools) > 0 {
-		cn := n.Child("instance_pools")
-		for _, k := range sortedKeys(v.InstancePools) {
-			if x := v.InstancePools[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesInstancePool(c, &ch, x)
+	if !n.IsRef("instance_pools") {
+		if len(v.InstancePools) > 0 {
+			cn := n.Child("instance_pools")
+			for _, k := range sortedKeys(v.InstancePools) {
+				if x := v.InstancePools[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesInstancePool(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.Secrets) > 0 {
-		cn := n.Child("secrets")
-		for _, k := range sortedKeys(v.Secrets) {
-			if x := v.Secrets[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesSecret(c, &ch, x)
+	if !n.IsRef("secrets") {
+		if len(v.Secrets) > 0 {
+			cn := n.Child("secrets")
+			for _, k := range sortedKeys(v.Secrets) {
+				if x := v.Secrets[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesSecret(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.ClusterPolicies) > 0 {
-		cn := n.Child("cluster_policies")
-		for _, k := range sortedKeys(v.ClusterPolicies) {
-			if x := v.ClusterPolicies[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesClusterPolicy(c, &ch, x)
+	if !n.IsRef("cluster_policies") {
+		if len(v.ClusterPolicies) > 0 {
+			cn := n.Child("cluster_policies")
+			for _, k := range sortedKeys(v.ClusterPolicies) {
+				if x := v.ClusterPolicies[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesClusterPolicy(c, &ch, x)
+				}
 			}
 		}
 	}
-	if len(v.Snapshots) > 0 {
-		cn := n.Child("internal_immutable_snapshots")
-		for _, k := range sortedKeys(v.Snapshots) {
-			if x := v.Snapshots[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsResourcesSnapshot(c, &ch, x)
+	if !n.IsRef("internal_immutable_snapshots") {
+		if len(v.Snapshots) > 0 {
+			cn := n.Child("internal_immutable_snapshots")
+			for _, k := range sortedKeys(v.Snapshots) {
+				if x := v.Snapshots[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesSnapshot(c, &ch, x)
+				}
 			}
 		}
 	}
@@ -773,9 +897,11 @@ func stringsConfigTarget(c *stringsWalk, n *Node, v *config.Target) {
 			v.Mode = config.Mode(r)
 		}
 	}
-	{
-		ch := n.Child("presets")
-		stringsConfigPresets(c, &ch, &v.Presets)
+	if !n.IsRef("presets") {
+		{
+			ch := n.Child("presets")
+			stringsConfigPresets(c, &ch, &v.Presets)
+		}
 	}
 	if s := string(v.ComputeId); c.match(s) {
 		ch := n.Child("compute_id")
@@ -789,89 +915,113 @@ func stringsConfigTarget(c *stringsWalk, n *Node, v *config.Target) {
 			v.ClusterId = (r)
 		}
 	}
-	if x := v.Bundle; x != nil {
-		ch := n.Child("bundle")
-		stringsConfigBundle(c, &ch, x)
+	if !n.IsRef("bundle") {
+		if x := v.Bundle; x != nil {
+			ch := n.Child("bundle")
+			stringsConfigBundle(c, &ch, x)
+		}
 	}
-	if x := v.Workspace; x != nil {
-		ch := n.Child("workspace")
-		stringsConfigWorkspace(c, &ch, x)
+	if !n.IsRef("workspace") {
+		if x := v.Workspace; x != nil {
+			ch := n.Child("workspace")
+			stringsConfigWorkspace(c, &ch, x)
+		}
 	}
-	if len(v.Artifacts) > 0 {
-		cn := n.Child("artifacts")
-		for _, k := range sortedKeys(v.Artifacts) {
-			if x := v.Artifacts[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsConfigArtifact(c, &ch, x)
+	if !n.IsRef("artifacts") {
+		if len(v.Artifacts) > 0 {
+			cn := n.Child("artifacts")
+			for _, k := range sortedKeys(v.Artifacts) {
+				if x := v.Artifacts[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsConfigArtifact(c, &ch, x)
+				}
 			}
 		}
 	}
-	if x := v.Resources; x != nil {
-		ch := n.Child("resources")
-		stringsConfigResources(c, &ch, x)
+	if !n.IsRef("resources") {
+		if x := v.Resources; x != nil {
+			ch := n.Child("resources")
+			stringsConfigResources(c, &ch, x)
+		}
 	}
-	if len(v.Variables) > 0 {
-		cn := n.Child("variables")
-		for _, k := range sortedKeys(v.Variables) {
-			if x := v.Variables[k]; x != nil {
-				ch := cn.Child(string(k))
-				stringsVariableTargetVariable(c, &ch, x)
+	if !n.IsRef("variables") {
+		if len(v.Variables) > 0 {
+			cn := n.Child("variables")
+			for _, k := range sortedKeys(v.Variables) {
+				if x := v.Variables[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsVariableTargetVariable(c, &ch, x)
+				}
 			}
 		}
 	}
-	{
-		ch := n.Child("git")
-		stringsConfigGit(c, &ch, &v.Git)
+	if !n.IsRef("git") {
+		{
+			ch := n.Child("git")
+			stringsConfigGit(c, &ch, &v.Git)
+		}
 	}
-	if x := v.RunAs; x != nil {
-		ch := n.Child("run_as")
-		stringsJobsJobRunAs(c, &ch, x)
+	if !n.IsRef("run_as") {
+		if x := v.RunAs; x != nil {
+			ch := n.Child("run_as")
+			stringsJobsJobRunAs(c, &ch, x)
+		}
 	}
-	if x := v.Sync; x != nil {
-		ch := n.Child("sync")
-		stringsConfigSync(c, &ch, x)
+	if !n.IsRef("sync") {
+		if x := v.Sync; x != nil {
+			ch := n.Child("sync")
+			stringsConfigSync(c, &ch, x)
+		}
 	}
-	if len(v.Permissions) > 0 {
-		cn := n.Child("permissions")
-		for i := range v.Permissions {
-			{
-				ch := cn.Elem(i)
-				stringsResourcesPermission(c, &ch, &v.Permissions[i])
+	if !n.IsRef("permissions") {
+		if len(v.Permissions) > 0 {
+			cn := n.Child("permissions")
+			for i := range v.Permissions {
+				{
+					ch := cn.Elem(i)
+					stringsResourcesPermission(c, &ch, &v.Permissions[i])
+				}
 			}
 		}
 	}
 }
 
 func stringsConfigSync(c *stringsWalk, n *Node, v *config.Sync) {
-	if len(v.Paths) > 0 {
-		cn := n.Child("paths")
-		for i := range v.Paths {
-			if s := string(v.Paths[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Paths[i] = (r)
+	if !n.IsRef("paths") {
+		if len(v.Paths) > 0 {
+			cn := n.Child("paths")
+			for i := range v.Paths {
+				if s := string(v.Paths[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Paths[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.Include) > 0 {
-		cn := n.Child("include")
-		for i := range v.Include {
-			if s := string(v.Include[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Include[i] = (r)
+	if !n.IsRef("include") {
+		if len(v.Include) > 0 {
+			cn := n.Child("include")
+			for i := range v.Include {
+				if s := string(v.Include[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Include[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.Exclude) > 0 {
-		cn := n.Child("exclude")
-		for i := range v.Exclude {
-			if s := string(v.Exclude[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Exclude[i] = (r)
+	if !n.IsRef("exclude") {
+		if len(v.Exclude) > 0 {
+			cn := n.Child("exclude")
+			for i := range v.Exclude {
+				if s := string(v.Exclude[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Exclude[i] = (r)
+					}
 				}
 			}
 		}
@@ -924,13 +1074,15 @@ func stringsConfigPresets(c *stringsWalk, n *Node, v *config.Presets) {
 			v.TriggerPauseStatus = (r)
 		}
 	}
-	if len(v.Tags) > 0 {
-		cn := n.Child("tags")
-		for _, k := range sortedKeys(v.Tags) {
-			if s := string(v.Tags[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.Tags[k] = (r)
+	if !n.IsRef("tags") {
+		if len(v.Tags) > 0 {
+			cn := n.Child("tags")
+			for _, k := range sortedKeys(v.Tags) {
+				if s := string(v.Tags[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.Tags[k] = (r)
+					}
 				}
 			}
 		}
@@ -938,20 +1090,24 @@ func stringsConfigPresets(c *stringsWalk, n *Node, v *config.Presets) {
 }
 
 func stringsConfigExperimental(c *stringsWalk, n *Node, v *config.Experimental) {
-	if len(v.Scripts) > 0 {
-		cn := n.Child("scripts")
-		for _, k := range sortedKeys(v.Scripts) {
-			if s := string(v.Scripts[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.Scripts[k] = config.Command(r)
+	if !n.IsRef("scripts") {
+		if len(v.Scripts) > 0 {
+			cn := n.Child("scripts")
+			for _, k := range sortedKeys(v.Scripts) {
+				if s := string(v.Scripts[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.Scripts[k] = config.Command(r)
+					}
 				}
 			}
 		}
 	}
-	{
-		ch := n.Child("python")
-		stringsConfigPython(c, &ch, &v.Python)
+	if !n.IsRef("python") {
+		{
+			ch := n.Child("python")
+			stringsConfigPython(c, &ch, &v.Python)
+		}
 	}
 }
 
@@ -983,13 +1139,15 @@ func stringsResourcesPermission(c *stringsWalk, n *Node, v *resources.Permission
 }
 
 func stringsLoctableLocations(c *stringsWalk, n *Node, v *loctable.Locations) {
-	if len(v.Files) > 0 {
-		cn := n.Child("files")
-		for i := range v.Files {
-			if s := string(v.Files[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Files[i] = (r)
+	if !n.IsRef("files") {
+		if len(v.Files) > 0 {
+			cn := n.Child("files")
+			for i := range v.Files {
+				if s := string(v.Files[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Files[i] = (r)
+					}
 				}
 			}
 		}
@@ -1003,13 +1161,15 @@ func stringsConfigScript(c *stringsWalk, n *Node, v *config.Script) {
 			v.Content = (r)
 		}
 	}
-	if len(v.Env) > 0 {
-		cn := n.Child("env")
-		for _, k := range sortedKeys(v.Env) {
-			if s := string(v.Env[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.Env[k] = (r)
+	if !n.IsRef("env") {
+		if len(v.Env) > 0 {
+			cn := n.Child("env")
+			for _, k := range sortedKeys(v.Env) {
+				if s := string(v.Env[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.Env[k] = (r)
+					}
 				}
 			}
 		}
@@ -1017,24 +1177,28 @@ func stringsConfigScript(c *stringsWalk, n *Node, v *config.Script) {
 }
 
 func stringsConfigPython(c *stringsWalk, n *Node, v *config.Python) {
-	if len(v.Resources) > 0 {
-		cn := n.Child("resources")
-		for i := range v.Resources {
-			if s := string(v.Resources[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Resources[i] = (r)
+	if !n.IsRef("resources") {
+		if len(v.Resources) > 0 {
+			cn := n.Child("resources")
+			for i := range v.Resources {
+				if s := string(v.Resources[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Resources[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.Mutators) > 0 {
-		cn := n.Child("mutators")
-		for i := range v.Mutators {
-			if s := string(v.Mutators[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Mutators[i] = (r)
+	if !n.IsRef("mutators") {
+		if len(v.Mutators) > 0 {
+			cn := n.Child("mutators")
+			for i := range v.Mutators {
+				if s := string(v.Mutators[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Mutators[i] = (r)
+					}
 				}
 			}
 		}
@@ -1198,7 +1362,7 @@ func stringsConfigUser(c *stringsWalk, n *Node, v *config.User) {
 			}
 		}
 	}
-	if v.User != nil {
+	if v.User != nil && !n.IsRef("emails") {
 		if len(v.User.Emails) > 0 {
 			cn := n.Child("emails")
 			for i := range v.User.Emails {
@@ -1209,7 +1373,7 @@ func stringsConfigUser(c *stringsWalk, n *Node, v *config.User) {
 			}
 		}
 	}
-	if v.User != nil {
+	if v.User != nil && !n.IsRef("entitlements") {
 		if len(v.User.Entitlements) > 0 {
 			cn := n.Child("entitlements")
 			for i := range v.User.Entitlements {
@@ -1232,7 +1396,7 @@ func stringsConfigUser(c *stringsWalk, n *Node, v *config.User) {
 			}
 		}
 	}
-	if v.User != nil {
+	if v.User != nil && !n.IsRef("groups") {
 		if len(v.User.Groups) > 0 {
 			cn := n.Child("groups")
 			for i := range v.User.Groups {
@@ -1255,13 +1419,13 @@ func stringsConfigUser(c *stringsWalk, n *Node, v *config.User) {
 			}
 		}
 	}
-	if v.User != nil {
+	if v.User != nil && !n.IsRef("name") {
 		if x := v.User.Name; x != nil {
 			ch := n.Child("name")
 			stringsIamName(c, &ch, x)
 		}
 	}
-	if v.User != nil {
+	if v.User != nil && !n.IsRef("roles") {
 		if len(v.User.Roles) > 0 {
 			cn := n.Child("roles")
 			for i := range v.User.Roles {
@@ -1272,7 +1436,7 @@ func stringsConfigUser(c *stringsWalk, n *Node, v *config.User) {
 			}
 		}
 	}
-	if v.User != nil {
+	if v.User != nil && !n.IsRef("schemas") {
 		if len(v.User.Schemas) > 0 {
 			cn := n.Child("schemas")
 			for i := range v.User.Schemas {
@@ -1342,12 +1506,14 @@ func stringsResourcesJob(c *stringsWalk, n *Node, v *resources.Job) {
 			v.ID = (r)
 		}
 	}
-	if len(v.Permissions) > 0 {
-		cn := n.Child("permissions")
-		for i := range v.Permissions {
-			{
-				ch := cn.Elem(i)
-				stringsResourcesJobPermission(c, &ch, &v.Permissions[i])
+	if !n.IsRef("permissions") {
+		if len(v.Permissions) > 0 {
+			cn := n.Child("permissions")
+			for i := range v.Permissions {
+				{
+					ch := cn.Elem(i)
+					stringsResourcesJobPermission(c, &ch, &v.Permissions[i])
+				}
 			}
 		}
 	}
@@ -1373,13 +1539,17 @@ func stringsResourcesJob(c *stringsWalk, n *Node, v *resources.Job) {
 			v.JobSettings.BudgetPolicyId = (r)
 		}
 	}
-	if x := v.JobSettings.Continuous; x != nil {
-		ch := n.Child("continuous")
-		stringsJobsContinuous(c, &ch, x)
+	if !n.IsRef("continuous") {
+		if x := v.JobSettings.Continuous; x != nil {
+			ch := n.Child("continuous")
+			stringsJobsContinuous(c, &ch, x)
+		}
 	}
-	if x := v.JobSettings.Deployment; x != nil {
-		ch := n.Child("deployment")
-		stringsJobsJobDeployment(c, &ch, x)
+	if !n.IsRef("deployment") {
+		if x := v.JobSettings.Deployment; x != nil {
+			ch := n.Child("deployment")
+			stringsJobsJobDeployment(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.JobSettings.Description == "" && Forced(v.JobSettings.ForceSendFields, "Description") {
 		ch := n.Child("description")
@@ -1401,25 +1571,31 @@ func stringsResourcesJob(c *stringsWalk, n *Node, v *resources.Job) {
 			v.JobSettings.EditMode = jobs.JobEditMode(r)
 		}
 	}
-	if x := v.JobSettings.EmailNotifications; x != nil {
-		ch := n.Child("email_notifications")
-		stringsJobsJobEmailNotifications(c, &ch, x)
+	if !n.IsRef("email_notifications") {
+		if x := v.JobSettings.EmailNotifications; x != nil {
+			ch := n.Child("email_notifications")
+			stringsJobsJobEmailNotifications(c, &ch, x)
+		}
 	}
-	if len(v.JobSettings.EnvironmentVariables) > 0 {
-		cn := n.Child("environment_variables")
-		for i := range v.JobSettings.EnvironmentVariables {
-			{
-				ch := cn.Elem(i)
-				stringsJobsJobEnvironmentVariables(c, &ch, &v.JobSettings.EnvironmentVariables[i])
+	if !n.IsRef("environment_variables") {
+		if len(v.JobSettings.EnvironmentVariables) > 0 {
+			cn := n.Child("environment_variables")
+			for i := range v.JobSettings.EnvironmentVariables {
+				{
+					ch := cn.Elem(i)
+					stringsJobsJobEnvironmentVariables(c, &ch, &v.JobSettings.EnvironmentVariables[i])
+				}
 			}
 		}
 	}
-	if len(v.JobSettings.Environments) > 0 {
-		cn := n.Child("environments")
-		for i := range v.JobSettings.Environments {
-			{
-				ch := cn.Elem(i)
-				stringsJobsJobEnvironment(c, &ch, &v.JobSettings.Environments[i])
+	if !n.IsRef("environments") {
+		if len(v.JobSettings.Environments) > 0 {
+			cn := n.Child("environments")
+			for i := range v.JobSettings.Environments {
+				{
+					ch := cn.Elem(i)
+					stringsJobsJobEnvironment(c, &ch, &v.JobSettings.Environments[i])
+				}
 			}
 		}
 	}
@@ -1433,20 +1609,26 @@ func stringsResourcesJob(c *stringsWalk, n *Node, v *resources.Job) {
 			v.JobSettings.Format = jobs.Format(r)
 		}
 	}
-	if x := v.JobSettings.GitSource; x != nil {
-		ch := n.Child("git_source")
-		stringsJobsGitSource(c, &ch, x)
+	if !n.IsRef("git_source") {
+		if x := v.JobSettings.GitSource; x != nil {
+			ch := n.Child("git_source")
+			stringsJobsGitSource(c, &ch, x)
+		}
 	}
-	if x := v.JobSettings.Health; x != nil {
-		ch := n.Child("health")
-		stringsJobsJobsHealthRules(c, &ch, x)
+	if !n.IsRef("health") {
+		if x := v.JobSettings.Health; x != nil {
+			ch := n.Child("health")
+			stringsJobsJobsHealthRules(c, &ch, x)
+		}
 	}
-	if len(v.JobSettings.JobClusters) > 0 {
-		cn := n.Child("job_clusters")
-		for i := range v.JobSettings.JobClusters {
-			{
-				ch := cn.Elem(i)
-				stringsJobsJobCluster(c, &ch, &v.JobSettings.JobClusters[i])
+	if !n.IsRef("job_clusters") {
+		if len(v.JobSettings.JobClusters) > 0 {
+			cn := n.Child("job_clusters")
+			for i := range v.JobSettings.JobClusters {
+				{
+					ch := cn.Elem(i)
+					stringsJobsJobCluster(c, &ch, &v.JobSettings.JobClusters[i])
+				}
 			}
 		}
 	}
@@ -1460,12 +1642,14 @@ func stringsResourcesJob(c *stringsWalk, n *Node, v *resources.Job) {
 			v.JobSettings.Name = (r)
 		}
 	}
-	if len(v.JobSettings.Parameters) > 0 {
-		cn := n.Child("parameters")
-		for i := range v.JobSettings.Parameters {
-			{
-				ch := cn.Elem(i)
-				stringsJobsJobParameterDefinition(c, &ch, &v.JobSettings.Parameters[i])
+	if !n.IsRef("parameters") {
+		if len(v.JobSettings.Parameters) > 0 {
+			cn := n.Child("parameters")
+			for i := range v.JobSettings.Parameters {
+				{
+					ch := cn.Elem(i)
+					stringsJobsJobParameterDefinition(c, &ch, &v.JobSettings.Parameters[i])
+				}
 			}
 		}
 	}
@@ -1489,44 +1673,56 @@ func stringsResourcesJob(c *stringsWalk, n *Node, v *resources.Job) {
 			v.JobSettings.PerformanceTarget = jobs.PerformanceTarget(r)
 		}
 	}
-	if x := v.JobSettings.RunAs; x != nil {
-		ch := n.Child("run_as")
-		stringsJobsJobRunAs(c, &ch, x)
+	if !n.IsRef("run_as") {
+		if x := v.JobSettings.RunAs; x != nil {
+			ch := n.Child("run_as")
+			stringsJobsJobRunAs(c, &ch, x)
+		}
 	}
-	if x := v.JobSettings.Schedule; x != nil {
-		ch := n.Child("schedule")
-		stringsJobsCronSchedule(c, &ch, x)
+	if !n.IsRef("schedule") {
+		if x := v.JobSettings.Schedule; x != nil {
+			ch := n.Child("schedule")
+			stringsJobsCronSchedule(c, &ch, x)
+		}
 	}
-	if len(v.JobSettings.Tags) > 0 {
-		cn := n.Child("tags")
-		for _, k := range sortedKeys(v.JobSettings.Tags) {
-			if s := string(v.JobSettings.Tags[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.JobSettings.Tags[k] = (r)
+	if !n.IsRef("tags") {
+		if len(v.JobSettings.Tags) > 0 {
+			cn := n.Child("tags")
+			for _, k := range sortedKeys(v.JobSettings.Tags) {
+				if s := string(v.JobSettings.Tags[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.JobSettings.Tags[k] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.JobSettings.Tasks) > 0 {
-		cn := n.Child("tasks")
-		for i := range v.JobSettings.Tasks {
-			{
-				ch := cn.Elem(i)
-				stringsJobsTask(c, &ch, &v.JobSettings.Tasks[i])
+	if !n.IsRef("tasks") {
+		if len(v.JobSettings.Tasks) > 0 {
+			cn := n.Child("tasks")
+			for i := range v.JobSettings.Tasks {
+				{
+					ch := cn.Elem(i)
+					stringsJobsTask(c, &ch, &v.JobSettings.Tasks[i])
+				}
 			}
 		}
 	}
-	if x := v.JobSettings.Trigger; x != nil {
-		ch := n.Child("trigger")
-		stringsJobsTriggerSettings(c, &ch, x)
+	if !n.IsRef("trigger") {
+		if x := v.JobSettings.Trigger; x != nil {
+			ch := n.Child("trigger")
+			stringsJobsTriggerSettings(c, &ch, x)
+		}
 	}
-	if len(v.JobSettings.Triggers) > 0 {
-		cn := n.Child("triggers")
-		for i := range v.JobSettings.Triggers {
-			{
-				ch := cn.Elem(i)
-				stringsJobsTriggerConfiguration(c, &ch, &v.JobSettings.Triggers[i])
+	if !n.IsRef("triggers") {
+		if len(v.JobSettings.Triggers) > 0 {
+			cn := n.Child("triggers")
+			for i := range v.JobSettings.Triggers {
+				{
+					ch := cn.Elem(i)
+					stringsJobsTriggerConfiguration(c, &ch, &v.JobSettings.Triggers[i])
+				}
 			}
 		}
 	}
@@ -1540,9 +1736,11 @@ func stringsResourcesJob(c *stringsWalk, n *Node, v *resources.Job) {
 			v.JobSettings.UsagePolicyId = (r)
 		}
 	}
-	if x := v.JobSettings.WebhookNotifications; x != nil {
-		ch := n.Child("webhook_notifications")
-		stringsJobsWebhookNotifications(c, &ch, x)
+	if !n.IsRef("webhook_notifications") {
+		if x := v.JobSettings.WebhookNotifications; x != nil {
+			ch := n.Child("webhook_notifications")
+			stringsJobsWebhookNotifications(c, &ch, x)
+		}
 	}
 }
 
@@ -1553,9 +1751,11 @@ func stringsResourcesJobRun(c *stringsWalk, n *Node, v *resources.JobRun) {
 			v.ID = (r)
 		}
 	}
-	if x := v.Lifecycle; x != nil {
-		ch := n.Child("lifecycle")
-		stringsResourcesJobRunLifecycle(c, &ch, x)
+	if !n.IsRef("lifecycle") {
+		if x := v.Lifecycle; x != nil {
+			ch := n.Child("lifecycle")
+			stringsResourcesJobRunLifecycle(c, &ch, x)
+		}
 	}
 	if s := string(v.BaseResource.URL); c.match(s) {
 		ch := n.Child("url")
@@ -1569,13 +1769,15 @@ func stringsResourcesJobRun(c *stringsWalk, n *Node, v *resources.JobRun) {
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
-	if len(v.RunNow.DbtCommands) > 0 {
-		cn := n.Child("dbt_commands")
-		for i := range v.RunNow.DbtCommands {
-			if s := string(v.RunNow.DbtCommands[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.RunNow.DbtCommands[i] = (r)
+	if !n.IsRef("dbt_commands") {
+		if len(v.RunNow.DbtCommands) > 0 {
+			cn := n.Child("dbt_commands")
+			for i := range v.RunNow.DbtCommands {
+				if s := string(v.RunNow.DbtCommands[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.RunNow.DbtCommands[i] = (r)
+					}
 				}
 			}
 		}
@@ -1590,46 +1792,54 @@ func stringsResourcesJobRun(c *stringsWalk, n *Node, v *resources.JobRun) {
 			v.RunNow.IdempotencyToken = (r)
 		}
 	}
-	if len(v.RunNow.JarParams) > 0 {
-		cn := n.Child("jar_params")
-		for i := range v.RunNow.JarParams {
-			if s := string(v.RunNow.JarParams[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.RunNow.JarParams[i] = (r)
+	if !n.IsRef("jar_params") {
+		if len(v.RunNow.JarParams) > 0 {
+			cn := n.Child("jar_params")
+			for i := range v.RunNow.JarParams {
+				if s := string(v.RunNow.JarParams[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.RunNow.JarParams[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.RunNow.JobParameters) > 0 {
-		cn := n.Child("job_parameters")
-		for _, k := range sortedKeys(v.RunNow.JobParameters) {
-			if s := string(v.RunNow.JobParameters[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.RunNow.JobParameters[k] = (r)
+	if !n.IsRef("job_parameters") {
+		if len(v.RunNow.JobParameters) > 0 {
+			cn := n.Child("job_parameters")
+			for _, k := range sortedKeys(v.RunNow.JobParameters) {
+				if s := string(v.RunNow.JobParameters[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.RunNow.JobParameters[k] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.RunNow.NotebookParams) > 0 {
-		cn := n.Child("notebook_params")
-		for _, k := range sortedKeys(v.RunNow.NotebookParams) {
-			if s := string(v.RunNow.NotebookParams[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.RunNow.NotebookParams[k] = (r)
+	if !n.IsRef("notebook_params") {
+		if len(v.RunNow.NotebookParams) > 0 {
+			cn := n.Child("notebook_params")
+			for _, k := range sortedKeys(v.RunNow.NotebookParams) {
+				if s := string(v.RunNow.NotebookParams[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.RunNow.NotebookParams[k] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.RunNow.Only) > 0 {
-		cn := n.Child("only")
-		for i := range v.RunNow.Only {
-			if s := string(v.RunNow.Only[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.RunNow.Only[i] = (r)
+	if !n.IsRef("only") {
+		if len(v.RunNow.Only) > 0 {
+			cn := n.Child("only")
+			for i := range v.RunNow.Only {
+				if s := string(v.RunNow.Only[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.RunNow.Only[i] = (r)
+					}
 				}
 			}
 		}
@@ -1644,50 +1854,60 @@ func stringsResourcesJobRun(c *stringsWalk, n *Node, v *resources.JobRun) {
 			v.RunNow.PerformanceTarget = jobs.PerformanceTarget(r)
 		}
 	}
-	if x := v.RunNow.PipelineParams; x != nil {
-		ch := n.Child("pipeline_params")
-		stringsJobsPipelineParams(c, &ch, x)
+	if !n.IsRef("pipeline_params") {
+		if x := v.RunNow.PipelineParams; x != nil {
+			ch := n.Child("pipeline_params")
+			stringsJobsPipelineParams(c, &ch, x)
+		}
 	}
-	if len(v.RunNow.PythonNamedParams) > 0 {
-		cn := n.Child("python_named_params")
-		for _, k := range sortedKeys(v.RunNow.PythonNamedParams) {
-			if s := string(v.RunNow.PythonNamedParams[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.RunNow.PythonNamedParams[k] = (r)
+	if !n.IsRef("python_named_params") {
+		if len(v.RunNow.PythonNamedParams) > 0 {
+			cn := n.Child("python_named_params")
+			for _, k := range sortedKeys(v.RunNow.PythonNamedParams) {
+				if s := string(v.RunNow.PythonNamedParams[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.RunNow.PythonNamedParams[k] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.RunNow.PythonParams) > 0 {
-		cn := n.Child("python_params")
-		for i := range v.RunNow.PythonParams {
-			if s := string(v.RunNow.PythonParams[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.RunNow.PythonParams[i] = (r)
+	if !n.IsRef("python_params") {
+		if len(v.RunNow.PythonParams) > 0 {
+			cn := n.Child("python_params")
+			for i := range v.RunNow.PythonParams {
+				if s := string(v.RunNow.PythonParams[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.RunNow.PythonParams[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.RunNow.SparkSubmitParams) > 0 {
-		cn := n.Child("spark_submit_params")
-		for i := range v.RunNow.SparkSubmitParams {
-			if s := string(v.RunNow.SparkSubmitParams[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.RunNow.SparkSubmitParams[i] = (r)
+	if !n.IsRef("spark_submit_params") {
+		if len(v.RunNow.SparkSubmitParams) > 0 {
+			cn := n.Child("spark_submit_params")
+			for i := range v.RunNow.SparkSubmitParams {
+				if s := string(v.RunNow.SparkSubmitParams[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.RunNow.SparkSubmitParams[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.RunNow.SqlParams) > 0 {
-		cn := n.Child("sql_params")
-		for _, k := range sortedKeys(v.RunNow.SqlParams) {
-			if s := string(v.RunNow.SqlParams[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.RunNow.SqlParams[k] = (r)
+	if !n.IsRef("sql_params") {
+		if len(v.RunNow.SqlParams) > 0 {
+			cn := n.Child("sql_params")
+			for _, k := range sortedKeys(v.RunNow.SqlParams) {
+				if s := string(v.RunNow.SqlParams[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.RunNow.SqlParams[k] = (r)
+					}
 				}
 			}
 		}
@@ -1701,12 +1921,14 @@ func stringsResourcesPipeline(c *stringsWalk, n *Node, v *resources.Pipeline) {
 			v.ID = (r)
 		}
 	}
-	if len(v.Permissions) > 0 {
-		cn := n.Child("permissions")
-		for i := range v.Permissions {
-			{
-				ch := cn.Elem(i)
-				stringsResourcesPipelinePermission(c, &ch, &v.Permissions[i])
+	if !n.IsRef("permissions") {
+		if len(v.Permissions) > 0 {
+			cn := n.Child("permissions")
+			for i := range v.Permissions {
+				{
+					ch := cn.Elem(i)
+					stringsResourcesPipelinePermission(c, &ch, &v.Permissions[i])
+				}
 			}
 		}
 	}
@@ -1752,29 +1974,35 @@ func stringsResourcesPipeline(c *stringsWalk, n *Node, v *resources.Pipeline) {
 			v.CreatePipeline.Channel = (r)
 		}
 	}
-	if len(v.CreatePipeline.Clusters) > 0 {
-		cn := n.Child("clusters")
-		for i := range v.CreatePipeline.Clusters {
-			{
-				ch := cn.Elem(i)
-				stringsPipelinesPipelineCluster(c, &ch, &v.CreatePipeline.Clusters[i])
-			}
-		}
-	}
-	if len(v.CreatePipeline.Configuration) > 0 {
-		cn := n.Child("configuration")
-		for _, k := range sortedKeys(v.CreatePipeline.Configuration) {
-			if s := string(v.CreatePipeline.Configuration[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.CreatePipeline.Configuration[k] = (r)
+	if !n.IsRef("clusters") {
+		if len(v.CreatePipeline.Clusters) > 0 {
+			cn := n.Child("clusters")
+			for i := range v.CreatePipeline.Clusters {
+				{
+					ch := cn.Elem(i)
+					stringsPipelinesPipelineCluster(c, &ch, &v.CreatePipeline.Clusters[i])
 				}
 			}
 		}
 	}
-	if x := v.CreatePipeline.Deployment; x != nil {
-		ch := n.Child("deployment")
-		stringsPipelinesPipelineDeployment(c, &ch, x)
+	if !n.IsRef("configuration") {
+		if len(v.CreatePipeline.Configuration) > 0 {
+			cn := n.Child("configuration")
+			for _, k := range sortedKeys(v.CreatePipeline.Configuration) {
+				if s := string(v.CreatePipeline.Configuration[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.CreatePipeline.Configuration[k] = (r)
+					}
+				}
+			}
+		}
+	}
+	if !n.IsRef("deployment") {
+		if x := v.CreatePipeline.Deployment; x != nil {
+			ch := n.Child("deployment")
+			stringsPipelinesPipelineDeployment(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.CreatePipeline.Edition == "" && Forced(v.CreatePipeline.ForceSendFields, "Edition") {
 		ch := n.Child("edition")
@@ -1786,32 +2014,44 @@ func stringsResourcesPipeline(c *stringsWalk, n *Node, v *resources.Pipeline) {
 			v.CreatePipeline.Edition = (r)
 		}
 	}
-	if x := v.CreatePipeline.Environment; x != nil {
-		ch := n.Child("environment")
-		stringsPipelinesPipelinesEnvironment(c, &ch, x)
+	if !n.IsRef("environment") {
+		if x := v.CreatePipeline.Environment; x != nil {
+			ch := n.Child("environment")
+			stringsPipelinesPipelinesEnvironment(c, &ch, x)
+		}
 	}
-	if x := v.CreatePipeline.EventLog; x != nil {
-		ch := n.Child("event_log")
-		stringsPipelinesEventLogSpec(c, &ch, x)
+	if !n.IsRef("event_log") {
+		if x := v.CreatePipeline.EventLog; x != nil {
+			ch := n.Child("event_log")
+			stringsPipelinesEventLogSpec(c, &ch, x)
+		}
 	}
-	if x := v.CreatePipeline.Filters; x != nil {
-		ch := n.Child("filters")
-		stringsPipelinesFilters(c, &ch, x)
+	if !n.IsRef("filters") {
+		if x := v.CreatePipeline.Filters; x != nil {
+			ch := n.Child("filters")
+			stringsPipelinesFilters(c, &ch, x)
+		}
 	}
-	if x := v.CreatePipeline.GatewayDefinition; x != nil {
-		ch := n.Child("gateway_definition")
-		stringsPipelinesIngestionGatewayPipelineDefinition(c, &ch, x)
+	if !n.IsRef("gateway_definition") {
+		if x := v.CreatePipeline.GatewayDefinition; x != nil {
+			ch := n.Child("gateway_definition")
+			stringsPipelinesIngestionGatewayPipelineDefinition(c, &ch, x)
+		}
 	}
-	if x := v.CreatePipeline.IngestionDefinition; x != nil {
-		ch := n.Child("ingestion_definition")
-		stringsPipelinesIngestionPipelineDefinition(c, &ch, x)
+	if !n.IsRef("ingestion_definition") {
+		if x := v.CreatePipeline.IngestionDefinition; x != nil {
+			ch := n.Child("ingestion_definition")
+			stringsPipelinesIngestionPipelineDefinition(c, &ch, x)
+		}
 	}
-	if len(v.CreatePipeline.Libraries) > 0 {
-		cn := n.Child("libraries")
-		for i := range v.CreatePipeline.Libraries {
-			{
-				ch := cn.Elem(i)
-				stringsPipelinesPipelineLibrary(c, &ch, &v.CreatePipeline.Libraries[i])
+	if !n.IsRef("libraries") {
+		if len(v.CreatePipeline.Libraries) > 0 {
+			cn := n.Child("libraries")
+			for i := range v.CreatePipeline.Libraries {
+				{
+					ch := cn.Elem(i)
+					stringsPipelinesPipelineLibrary(c, &ch, &v.CreatePipeline.Libraries[i])
+				}
 			}
 		}
 	}
@@ -1825,22 +2065,26 @@ func stringsResourcesPipeline(c *stringsWalk, n *Node, v *resources.Pipeline) {
 			v.CreatePipeline.Name = (r)
 		}
 	}
-	if len(v.CreatePipeline.Notifications) > 0 {
-		cn := n.Child("notifications")
-		for i := range v.CreatePipeline.Notifications {
-			{
-				ch := cn.Elem(i)
-				stringsPipelinesNotifications(c, &ch, &v.CreatePipeline.Notifications[i])
+	if !n.IsRef("notifications") {
+		if len(v.CreatePipeline.Notifications) > 0 {
+			cn := n.Child("notifications")
+			for i := range v.CreatePipeline.Notifications {
+				{
+					ch := cn.Elem(i)
+					stringsPipelinesNotifications(c, &ch, &v.CreatePipeline.Notifications[i])
+				}
 			}
 		}
 	}
-	if len(v.CreatePipeline.Parameters) > 0 {
-		cn := n.Child("parameters")
-		for _, k := range sortedKeys(v.CreatePipeline.Parameters) {
-			if s := string(v.CreatePipeline.Parameters[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.CreatePipeline.Parameters[k] = (r)
+	if !n.IsRef("parameters") {
+		if len(v.CreatePipeline.Parameters) > 0 {
+			cn := n.Child("parameters")
+			for _, k := range sortedKeys(v.CreatePipeline.Parameters) {
+				if s := string(v.CreatePipeline.Parameters[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.CreatePipeline.Parameters[k] = (r)
+					}
 				}
 			}
 		}
@@ -1855,9 +2099,11 @@ func stringsResourcesPipeline(c *stringsWalk, n *Node, v *resources.Pipeline) {
 			v.CreatePipeline.ParentPath = (r)
 		}
 	}
-	if x := v.CreatePipeline.RestartWindow; x != nil {
-		ch := n.Child("restart_window")
-		stringsPipelinesRestartWindow(c, &ch, x)
+	if !n.IsRef("restart_window") {
+		if x := v.CreatePipeline.RestartWindow; x != nil {
+			ch := n.Child("restart_window")
+			stringsPipelinesRestartWindow(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.CreatePipeline.RootPath == "" && Forced(v.CreatePipeline.ForceSendFields, "RootPath") {
 		ch := n.Child("root_path")
@@ -1869,9 +2115,11 @@ func stringsResourcesPipeline(c *stringsWalk, n *Node, v *resources.Pipeline) {
 			v.CreatePipeline.RootPath = (r)
 		}
 	}
-	if x := v.CreatePipeline.RunAs; x != nil {
-		ch := n.Child("run_as")
-		stringsPipelinesRunAs(c, &ch, x)
+	if !n.IsRef("run_as") {
+		if x := v.CreatePipeline.RunAs; x != nil {
+			ch := n.Child("run_as")
+			stringsPipelinesRunAs(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.CreatePipeline.Schema == "" && Forced(v.CreatePipeline.ForceSendFields, "Schema") {
 		ch := n.Child("schema")
@@ -1903,13 +2151,15 @@ func stringsResourcesPipeline(c *stringsWalk, n *Node, v *resources.Pipeline) {
 			v.CreatePipeline.Storage = (r)
 		}
 	}
-	if len(v.CreatePipeline.Tags) > 0 {
-		cn := n.Child("tags")
-		for _, k := range sortedKeys(v.CreatePipeline.Tags) {
-			if s := string(v.CreatePipeline.Tags[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.CreatePipeline.Tags[k] = (r)
+	if !n.IsRef("tags") {
+		if len(v.CreatePipeline.Tags) > 0 {
+			cn := n.Child("tags")
+			for _, k := range sortedKeys(v.CreatePipeline.Tags) {
+				if s := string(v.CreatePipeline.Tags[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.CreatePipeline.Tags[k] = (r)
+					}
 				}
 			}
 		}
@@ -1924,9 +2174,11 @@ func stringsResourcesPipeline(c *stringsWalk, n *Node, v *resources.Pipeline) {
 			v.CreatePipeline.Target = (r)
 		}
 	}
-	if x := v.CreatePipeline.Trigger; x != nil {
-		ch := n.Child("trigger")
-		stringsPipelinesPipelineTrigger(c, &ch, x)
+	if !n.IsRef("trigger") {
+		if x := v.CreatePipeline.Trigger; x != nil {
+			ch := n.Child("trigger")
+			stringsPipelinesPipelineTrigger(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.CreatePipeline.UsagePolicyId == "" && Forced(v.CreatePipeline.ForceSendFields, "UsagePolicyId") {
 		ch := n.Child("usage_policy_id")
@@ -1947,12 +2199,14 @@ func stringsResourcesMlflowModel(c *stringsWalk, n *Node, v *resources.MlflowMod
 			v.ID = (r)
 		}
 	}
-	if len(v.Permissions) > 0 {
-		cn := n.Child("permissions")
-		for i := range v.Permissions {
-			{
-				ch := cn.Elem(i)
-				stringsResourcesMlflowModelPermission(c, &ch, &v.Permissions[i])
+	if !n.IsRef("permissions") {
+		if len(v.Permissions) > 0 {
+			cn := n.Child("permissions")
+			for i := range v.Permissions {
+				{
+					ch := cn.Elem(i)
+					stringsResourcesMlflowModelPermission(c, &ch, &v.Permissions[i])
+				}
 			}
 		}
 	}
@@ -1984,12 +2238,14 @@ func stringsResourcesMlflowModel(c *stringsWalk, n *Node, v *resources.MlflowMod
 			v.CreateModelRequest.Name = (r)
 		}
 	}
-	if len(v.CreateModelRequest.Tags) > 0 {
-		cn := n.Child("tags")
-		for i := range v.CreateModelRequest.Tags {
-			{
-				ch := cn.Elem(i)
-				stringsMlModelTag(c, &ch, &v.CreateModelRequest.Tags[i])
+	if !n.IsRef("tags") {
+		if len(v.CreateModelRequest.Tags) > 0 {
+			cn := n.Child("tags")
+			for i := range v.CreateModelRequest.Tags {
+				{
+					ch := cn.Elem(i)
+					stringsMlModelTag(c, &ch, &v.CreateModelRequest.Tags[i])
+				}
 			}
 		}
 	}
@@ -2002,12 +2258,14 @@ func stringsResourcesMlflowExperiment(c *stringsWalk, n *Node, v *resources.Mlfl
 			v.ID = (r)
 		}
 	}
-	if len(v.Permissions) > 0 {
-		cn := n.Child("permissions")
-		for i := range v.Permissions {
-			{
-				ch := cn.Elem(i)
-				stringsResourcesMlflowExperimentPermission(c, &ch, &v.Permissions[i])
+	if !n.IsRef("permissions") {
+		if len(v.Permissions) > 0 {
+			cn := n.Child("permissions")
+			for i := range v.Permissions {
+				{
+					ch := cn.Elem(i)
+					stringsResourcesMlflowExperimentPermission(c, &ch, &v.Permissions[i])
+				}
 			}
 		}
 	}
@@ -2039,18 +2297,22 @@ func stringsResourcesMlflowExperiment(c *stringsWalk, n *Node, v *resources.Mlfl
 			v.CreateExperiment.Name = (r)
 		}
 	}
-	if len(v.CreateExperiment.Tags) > 0 {
-		cn := n.Child("tags")
-		for i := range v.CreateExperiment.Tags {
-			{
-				ch := cn.Elem(i)
-				stringsMlExperimentTag(c, &ch, &v.CreateExperiment.Tags[i])
+	if !n.IsRef("tags") {
+		if len(v.CreateExperiment.Tags) > 0 {
+			cn := n.Child("tags")
+			for i := range v.CreateExperiment.Tags {
+				{
+					ch := cn.Elem(i)
+					stringsMlExperimentTag(c, &ch, &v.CreateExperiment.Tags[i])
+				}
 			}
 		}
 	}
-	if x := v.CreateExperiment.TraceLocation; x != nil {
-		ch := n.Child("trace_location")
-		stringsMlExperimentTraceLocation(c, &ch, x)
+	if !n.IsRef("trace_location") {
+		if x := v.CreateExperiment.TraceLocation; x != nil {
+			ch := n.Child("trace_location")
+			stringsMlExperimentTraceLocation(c, &ch, x)
+		}
 	}
 }
 
@@ -2061,12 +2323,14 @@ func stringsResourcesModelServingEndpoint(c *stringsWalk, n *Node, v *resources.
 			v.ID = (r)
 		}
 	}
-	if len(v.Permissions) > 0 {
-		cn := n.Child("permissions")
-		for i := range v.Permissions {
-			{
-				ch := cn.Elem(i)
-				stringsResourcesModelServingEndpointPermission(c, &ch, &v.Permissions[i])
+	if !n.IsRef("permissions") {
+		if len(v.Permissions) > 0 {
+			cn := n.Child("permissions")
+			for i := range v.Permissions {
+				{
+					ch := cn.Elem(i)
+					stringsResourcesModelServingEndpointPermission(c, &ch, &v.Permissions[i])
+				}
 			}
 		}
 	}
@@ -2082,9 +2346,11 @@ func stringsResourcesModelServingEndpoint(c *stringsWalk, n *Node, v *resources.
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
-	if x := v.CreateServingEndpoint.AiGateway; x != nil {
-		ch := n.Child("ai_gateway")
-		stringsServingAiGatewayConfig(c, &ch, x)
+	if !n.IsRef("ai_gateway") {
+		if x := v.CreateServingEndpoint.AiGateway; x != nil {
+			ch := n.Child("ai_gateway")
+			stringsServingAiGatewayConfig(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.CreateServingEndpoint.BudgetPolicyId == "" && Forced(v.CreateServingEndpoint.ForceSendFields, "BudgetPolicyId") {
 		ch := n.Child("budget_policy_id")
@@ -2096,9 +2362,11 @@ func stringsResourcesModelServingEndpoint(c *stringsWalk, n *Node, v *resources.
 			v.CreateServingEndpoint.BudgetPolicyId = (r)
 		}
 	}
-	if x := v.CreateServingEndpoint.Config; x != nil {
-		ch := n.Child("config")
-		stringsServingEndpointCoreConfigInput(c, &ch, x)
+	if !n.IsRef("config") {
+		if x := v.CreateServingEndpoint.Config; x != nil {
+			ch := n.Child("config")
+			stringsServingEndpointCoreConfigInput(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.CreateServingEndpoint.Description == "" && Forced(v.CreateServingEndpoint.ForceSendFields, "Description") {
 		ch := n.Child("description")
@@ -2110,9 +2378,11 @@ func stringsResourcesModelServingEndpoint(c *stringsWalk, n *Node, v *resources.
 			v.CreateServingEndpoint.Description = (r)
 		}
 	}
-	if x := v.CreateServingEndpoint.EmailNotifications; x != nil {
-		ch := n.Child("email_notifications")
-		stringsServingEmailNotifications(c, &ch, x)
+	if !n.IsRef("email_notifications") {
+		if x := v.CreateServingEndpoint.EmailNotifications; x != nil {
+			ch := n.Child("email_notifications")
+			stringsServingEmailNotifications(c, &ch, x)
+		}
 	}
 	if s := string(v.CreateServingEndpoint.Name); c.match(s) {
 		ch := n.Child("name")
@@ -2120,27 +2390,33 @@ func stringsResourcesModelServingEndpoint(c *stringsWalk, n *Node, v *resources.
 			v.CreateServingEndpoint.Name = (r)
 		}
 	}
-	if len(v.CreateServingEndpoint.RateLimits) > 0 {
-		cn := n.Child("rate_limits")
-		for i := range v.CreateServingEndpoint.RateLimits {
-			{
-				ch := cn.Elem(i)
-				stringsServingRateLimit(c, &ch, &v.CreateServingEndpoint.RateLimits[i])
+	if !n.IsRef("rate_limits") {
+		if len(v.CreateServingEndpoint.RateLimits) > 0 {
+			cn := n.Child("rate_limits")
+			for i := range v.CreateServingEndpoint.RateLimits {
+				{
+					ch := cn.Elem(i)
+					stringsServingRateLimit(c, &ch, &v.CreateServingEndpoint.RateLimits[i])
+				}
 			}
 		}
 	}
-	if len(v.CreateServingEndpoint.Tags) > 0 {
-		cn := n.Child("tags")
-		for i := range v.CreateServingEndpoint.Tags {
-			{
-				ch := cn.Elem(i)
-				stringsServingEndpointTag(c, &ch, &v.CreateServingEndpoint.Tags[i])
+	if !n.IsRef("tags") {
+		if len(v.CreateServingEndpoint.Tags) > 0 {
+			cn := n.Child("tags")
+			for i := range v.CreateServingEndpoint.Tags {
+				{
+					ch := cn.Elem(i)
+					stringsServingEndpointTag(c, &ch, &v.CreateServingEndpoint.Tags[i])
+				}
 			}
 		}
 	}
-	if x := v.CreateServingEndpoint.TelemetryConfig; x != nil {
-		ch := n.Child("telemetry_config")
-		stringsServingTelemetryConfig(c, &ch, x)
+	if !n.IsRef("telemetry_config") {
+		if x := v.CreateServingEndpoint.TelemetryConfig; x != nil {
+			ch := n.Child("telemetry_config")
+			stringsServingTelemetryConfig(c, &ch, x)
+		}
 	}
 }
 
@@ -2151,12 +2427,14 @@ func stringsResourcesModelService(c *stringsWalk, n *Node, v *resources.ModelSer
 			v.ID = (r)
 		}
 	}
-	if len(v.Grants) > 0 {
-		cn := n.Child("grants")
-		for i := range v.Grants {
-			{
-				ch := cn.Elem(i)
-				stringsCatalogPrivilegeAssignment(c, &ch, &v.Grants[i])
+	if !n.IsRef("grants") {
+		if len(v.Grants) > 0 {
+			cn := n.Child("grants")
+			for i := range v.Grants {
+				{
+					ch := cn.Elem(i)
+					stringsCatalogPrivilegeAssignment(c, &ch, &v.Grants[i])
+				}
 			}
 		}
 	}
@@ -2194,9 +2472,11 @@ func stringsResourcesModelService(c *stringsWalk, n *Node, v *resources.ModelSer
 			v.ModelServiceConfig.Comment = (r)
 		}
 	}
-	if x := v.ModelServiceConfig.Config; x != nil {
-		ch := n.Child("config")
-		stringsCatalogModelServiceConfig(c, &ch, x)
+	if !n.IsRef("config") {
+		if x := v.ModelServiceConfig.Config; x != nil {
+			ch := n.Child("config")
+			stringsCatalogModelServiceConfig(c, &ch, x)
+		}
 	}
 }
 
@@ -2207,12 +2487,14 @@ func stringsResourcesMcpService(c *stringsWalk, n *Node, v *resources.McpService
 			v.ID = (r)
 		}
 	}
-	if len(v.Grants) > 0 {
-		cn := n.Child("grants")
-		for i := range v.Grants {
-			{
-				ch := cn.Elem(i)
-				stringsCatalogPrivilegeAssignment(c, &ch, &v.Grants[i])
+	if !n.IsRef("grants") {
+		if len(v.Grants) > 0 {
+			cn := n.Child("grants")
+			for i := range v.Grants {
+				{
+					ch := cn.Elem(i)
+					stringsCatalogPrivilegeAssignment(c, &ch, &v.Grants[i])
+				}
 			}
 		}
 	}
@@ -2250,9 +2532,11 @@ func stringsResourcesMcpService(c *stringsWalk, n *Node, v *resources.McpService
 			v.McpServiceConfig.Comment = (r)
 		}
 	}
-	if x := v.McpServiceConfig.Config; x != nil {
-		ch := n.Child("config")
-		stringsCatalogMcpServiceConfig(c, &ch, x)
+	if !n.IsRef("config") {
+		if x := v.McpServiceConfig.Config; x != nil {
+			ch := n.Child("config")
+			stringsCatalogMcpServiceConfig(c, &ch, x)
+		}
 	}
 }
 
@@ -2263,12 +2547,14 @@ func stringsResourcesModelProviderService(c *stringsWalk, n *Node, v *resources.
 			v.ID = (r)
 		}
 	}
-	if len(v.Grants) > 0 {
-		cn := n.Child("grants")
-		for i := range v.Grants {
-			{
-				ch := cn.Elem(i)
-				stringsCatalogPrivilegeAssignment(c, &ch, &v.Grants[i])
+	if !n.IsRef("grants") {
+		if len(v.Grants) > 0 {
+			cn := n.Child("grants")
+			for i := range v.Grants {
+				{
+					ch := cn.Elem(i)
+					stringsCatalogPrivilegeAssignment(c, &ch, &v.Grants[i])
+				}
 			}
 		}
 	}
@@ -2306,9 +2592,11 @@ func stringsResourcesModelProviderService(c *stringsWalk, n *Node, v *resources.
 			v.ModelProviderServiceConfig.Comment = (r)
 		}
 	}
-	if x := v.ModelProviderServiceConfig.Config; x != nil {
-		ch := n.Child("config")
-		stringsCatalogModelProviderServiceConfig(c, &ch, x)
+	if !n.IsRef("config") {
+		if x := v.ModelProviderServiceConfig.Config; x != nil {
+			ch := n.Child("config")
+			stringsCatalogModelProviderServiceConfig(c, &ch, x)
+		}
 	}
 }
 
@@ -2319,12 +2607,14 @@ func stringsResourcesRegisteredModel(c *stringsWalk, n *Node, v *resources.Regis
 			v.ID = (r)
 		}
 	}
-	if len(v.Grants) > 0 {
-		cn := n.Child("grants")
-		for i := range v.Grants {
-			{
-				ch := cn.Elem(i)
-				stringsCatalogPrivilegeAssignment(c, &ch, &v.Grants[i])
+	if !n.IsRef("grants") {
+		if len(v.Grants) > 0 {
+			cn := n.Child("grants")
+			for i := range v.Grants {
+				{
+					ch := cn.Elem(i)
+					stringsCatalogPrivilegeAssignment(c, &ch, &v.Grants[i])
+				}
 			}
 		}
 	}
@@ -2340,12 +2630,14 @@ func stringsResourcesRegisteredModel(c *stringsWalk, n *Node, v *resources.Regis
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
-	if len(v.CreateRegisteredModelRequest.Aliases) > 0 {
-		cn := n.Child("aliases")
-		for i := range v.CreateRegisteredModelRequest.Aliases {
-			{
-				ch := cn.Elem(i)
-				stringsCatalogRegisteredModelAlias(c, &ch, &v.CreateRegisteredModelRequest.Aliases[i])
+	if !n.IsRef("aliases") {
+		if len(v.CreateRegisteredModelRequest.Aliases) > 0 {
+			cn := n.Child("aliases")
+			for i := range v.CreateRegisteredModelRequest.Aliases {
+				{
+					ch := cn.Elem(i)
+					stringsCatalogRegisteredModelAlias(c, &ch, &v.CreateRegisteredModelRequest.Aliases[i])
+				}
 			}
 		}
 	}
@@ -2492,18 +2784,22 @@ func stringsResourcesQualityMonitor(c *stringsWalk, n *Node, v *resources.Qualit
 			v.CreateMonitor.BaselineTableName = (r)
 		}
 	}
-	if len(v.CreateMonitor.CustomMetrics) > 0 {
-		cn := n.Child("custom_metrics")
-		for i := range v.CreateMonitor.CustomMetrics {
-			{
-				ch := cn.Elem(i)
-				stringsCatalogMonitorMetric(c, &ch, &v.CreateMonitor.CustomMetrics[i])
+	if !n.IsRef("custom_metrics") {
+		if len(v.CreateMonitor.CustomMetrics) > 0 {
+			cn := n.Child("custom_metrics")
+			for i := range v.CreateMonitor.CustomMetrics {
+				{
+					ch := cn.Elem(i)
+					stringsCatalogMonitorMetric(c, &ch, &v.CreateMonitor.CustomMetrics[i])
+				}
 			}
 		}
 	}
-	if x := v.CreateMonitor.InferenceLog; x != nil {
-		ch := n.Child("inference_log")
-		stringsCatalogMonitorInferenceLog(c, &ch, x)
+	if !n.IsRef("inference_log") {
+		if x := v.CreateMonitor.InferenceLog; x != nil {
+			ch := n.Child("inference_log")
+			stringsCatalogMonitorInferenceLog(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.CreateMonitor.LatestMonitorFailureMsg == "" && Forced(v.CreateMonitor.ForceSendFields, "LatestMonitorFailureMsg") {
 		ch := n.Child("latest_monitor_failure_msg")
@@ -2515,9 +2811,11 @@ func stringsResourcesQualityMonitor(c *stringsWalk, n *Node, v *resources.Qualit
 			v.CreateMonitor.LatestMonitorFailureMsg = (r)
 		}
 	}
-	if x := v.CreateMonitor.Notifications; x != nil {
-		ch := n.Child("notifications")
-		stringsCatalogMonitorNotifications(c, &ch, x)
+	if !n.IsRef("notifications") {
+		if x := v.CreateMonitor.Notifications; x != nil {
+			ch := n.Child("notifications")
+			stringsCatalogMonitorNotifications(c, &ch, x)
+		}
 	}
 	if s := string(v.CreateMonitor.OutputSchemaName); c.match(s) {
 		ch := n.Child("output_schema_name")
@@ -2525,24 +2823,30 @@ func stringsResourcesQualityMonitor(c *stringsWalk, n *Node, v *resources.Qualit
 			v.CreateMonitor.OutputSchemaName = (r)
 		}
 	}
-	if x := v.CreateMonitor.Schedule; x != nil {
-		ch := n.Child("schedule")
-		stringsCatalogMonitorCronSchedule(c, &ch, x)
+	if !n.IsRef("schedule") {
+		if x := v.CreateMonitor.Schedule; x != nil {
+			ch := n.Child("schedule")
+			stringsCatalogMonitorCronSchedule(c, &ch, x)
+		}
 	}
-	if len(v.CreateMonitor.SlicingExprs) > 0 {
-		cn := n.Child("slicing_exprs")
-		for i := range v.CreateMonitor.SlicingExprs {
-			if s := string(v.CreateMonitor.SlicingExprs[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.CreateMonitor.SlicingExprs[i] = (r)
+	if !n.IsRef("slicing_exprs") {
+		if len(v.CreateMonitor.SlicingExprs) > 0 {
+			cn := n.Child("slicing_exprs")
+			for i := range v.CreateMonitor.SlicingExprs {
+				if s := string(v.CreateMonitor.SlicingExprs[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.CreateMonitor.SlicingExprs[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if x := v.CreateMonitor.TimeSeries; x != nil {
-		ch := n.Child("time_series")
-		stringsCatalogMonitorTimeSeries(c, &ch, x)
+	if !n.IsRef("time_series") {
+		if x := v.CreateMonitor.TimeSeries; x != nil {
+			ch := n.Child("time_series")
+			stringsCatalogMonitorTimeSeries(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.CreateMonitor.WarehouseId == "" && Forced(v.CreateMonitor.ForceSendFields, "WarehouseId") {
 		ch := n.Child("warehouse_id")
@@ -2563,12 +2867,14 @@ func stringsResourcesCatalog(c *stringsWalk, n *Node, v *resources.Catalog) {
 			v.ID = (r)
 		}
 	}
-	if len(v.Grants) > 0 {
-		cn := n.Child("grants")
-		for i := range v.Grants {
-			{
-				ch := cn.Elem(i)
-				stringsCatalogPrivilegeAssignment(c, &ch, &v.Grants[i])
+	if !n.IsRef("grants") {
+		if len(v.Grants) > 0 {
+			cn := n.Child("grants")
+			for i := range v.Grants {
+				{
+					ch := cn.Elem(i)
+					stringsCatalogPrivilegeAssignment(c, &ch, &v.Grants[i])
+				}
 			}
 		}
 	}
@@ -2604,9 +2910,11 @@ func stringsResourcesCatalog(c *stringsWalk, n *Node, v *resources.Catalog) {
 			v.CreateCatalog.ConnectionName = (r)
 		}
 	}
-	if x := v.CreateCatalog.ManagedEncryptionSettings; x != nil {
-		ch := n.Child("managed_encryption_settings")
-		stringsCatalogEncryptionSettings(c, &ch, x)
+	if !n.IsRef("managed_encryption_settings") {
+		if x := v.CreateCatalog.ManagedEncryptionSettings; x != nil {
+			ch := n.Child("managed_encryption_settings")
+			stringsCatalogEncryptionSettings(c, &ch, x)
+		}
 	}
 	if s := string(v.CreateCatalog.Name); c.match(s) {
 		ch := n.Child("name")
@@ -2614,24 +2922,28 @@ func stringsResourcesCatalog(c *stringsWalk, n *Node, v *resources.Catalog) {
 			v.CreateCatalog.Name = (r)
 		}
 	}
-	if len(v.CreateCatalog.Options) > 0 {
-		cn := n.Child("options")
-		for _, k := range sortedKeys(v.CreateCatalog.Options) {
-			if s := string(v.CreateCatalog.Options[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.CreateCatalog.Options[k] = (r)
+	if !n.IsRef("options") {
+		if len(v.CreateCatalog.Options) > 0 {
+			cn := n.Child("options")
+			for _, k := range sortedKeys(v.CreateCatalog.Options) {
+				if s := string(v.CreateCatalog.Options[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.CreateCatalog.Options[k] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.CreateCatalog.Properties) > 0 {
-		cn := n.Child("properties")
-		for _, k := range sortedKeys(v.CreateCatalog.Properties) {
-			if s := string(v.CreateCatalog.Properties[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.CreateCatalog.Properties[k] = (r)
+	if !n.IsRef("properties") {
+		if len(v.CreateCatalog.Properties) > 0 {
+			cn := n.Child("properties")
+			for _, k := range sortedKeys(v.CreateCatalog.Properties) {
+				if s := string(v.CreateCatalog.Properties[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.CreateCatalog.Properties[k] = (r)
+					}
 				}
 			}
 		}
@@ -2675,12 +2987,14 @@ func stringsResourcesSchema(c *stringsWalk, n *Node, v *resources.Schema) {
 			v.ID = (r)
 		}
 	}
-	if len(v.Grants) > 0 {
-		cn := n.Child("grants")
-		for i := range v.Grants {
-			{
-				ch := cn.Elem(i)
-				stringsCatalogPrivilegeAssignment(c, &ch, &v.Grants[i])
+	if !n.IsRef("grants") {
+		if len(v.Grants) > 0 {
+			cn := n.Child("grants")
+			for i := range v.Grants {
+				{
+					ch := cn.Elem(i)
+					stringsCatalogPrivilegeAssignment(c, &ch, &v.Grants[i])
+				}
 			}
 		}
 	}
@@ -2718,13 +3032,15 @@ func stringsResourcesSchema(c *stringsWalk, n *Node, v *resources.Schema) {
 			v.CreateSchema.Name = (r)
 		}
 	}
-	if len(v.CreateSchema.Properties) > 0 {
-		cn := n.Child("properties")
-		for _, k := range sortedKeys(v.CreateSchema.Properties) {
-			if s := string(v.CreateSchema.Properties[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.CreateSchema.Properties[k] = (r)
+	if !n.IsRef("properties") {
+		if len(v.CreateSchema.Properties) > 0 {
+			cn := n.Child("properties")
+			for _, k := range sortedKeys(v.CreateSchema.Properties) {
+				if s := string(v.CreateSchema.Properties[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.CreateSchema.Properties[k] = (r)
+					}
 				}
 			}
 		}
@@ -2754,12 +3070,14 @@ func stringsResourcesVolume(c *stringsWalk, n *Node, v *resources.Volume) {
 			v.VolumePath = (r)
 		}
 	}
-	if len(v.Grants) > 0 {
-		cn := n.Child("grants")
-		for i := range v.Grants {
-			{
-				ch := cn.Elem(i)
-				stringsCatalogPrivilegeAssignment(c, &ch, &v.Grants[i])
+	if !n.IsRef("grants") {
+		if len(v.Grants) > 0 {
+			cn := n.Child("grants")
+			for i := range v.Grants {
+				{
+					ch := cn.Elem(i)
+					stringsCatalogPrivilegeAssignment(c, &ch, &v.Grants[i])
+				}
 			}
 		}
 	}
@@ -2834,12 +3152,14 @@ func stringsResourcesExternalLocation(c *stringsWalk, n *Node, v *resources.Exte
 			v.ModifiedStatus = (r)
 		}
 	}
-	if len(v.Grants) > 0 {
-		cn := n.Child("grants")
-		for i := range v.Grants {
-			{
-				ch := cn.Elem(i)
-				stringsCatalogPrivilegeAssignment(c, &ch, &v.Grants[i])
+	if !n.IsRef("grants") {
+		if len(v.Grants) > 0 {
+			cn := n.Child("grants")
+			for i := range v.Grants {
+				{
+					ch := cn.Elem(i)
+					stringsCatalogPrivilegeAssignment(c, &ch, &v.Grants[i])
+				}
 			}
 		}
 	}
@@ -2859,17 +3179,23 @@ func stringsResourcesExternalLocation(c *stringsWalk, n *Node, v *resources.Exte
 			v.CreateExternalLocation.CredentialName = (r)
 		}
 	}
-	if x := v.CreateExternalLocation.EffectiveFileEventQueue; x != nil {
-		ch := n.Child("effective_file_event_queue")
-		stringsCatalogFileEventQueue(c, &ch, x)
+	if !n.IsRef("effective_file_event_queue") {
+		if x := v.CreateExternalLocation.EffectiveFileEventQueue; x != nil {
+			ch := n.Child("effective_file_event_queue")
+			stringsCatalogFileEventQueue(c, &ch, x)
+		}
 	}
-	if x := v.CreateExternalLocation.EncryptionDetails; x != nil {
-		ch := n.Child("encryption_details")
-		stringsCatalogEncryptionDetails(c, &ch, x)
+	if !n.IsRef("encryption_details") {
+		if x := v.CreateExternalLocation.EncryptionDetails; x != nil {
+			ch := n.Child("encryption_details")
+			stringsCatalogEncryptionDetails(c, &ch, x)
+		}
 	}
-	if x := v.CreateExternalLocation.FileEventQueue; x != nil {
-		ch := n.Child("file_event_queue")
-		stringsCatalogFileEventQueue(c, &ch, x)
+	if !n.IsRef("file_event_queue") {
+		if x := v.CreateExternalLocation.FileEventQueue; x != nil {
+			ch := n.Child("file_event_queue")
+			stringsCatalogFileEventQueue(c, &ch, x)
+		}
 	}
 	if s := string(v.CreateExternalLocation.Name); c.match(s) {
 		ch := n.Child("name")
@@ -2892,21 +3218,25 @@ func stringsResourcesCluster(c *stringsWalk, n *Node, v *resources.Cluster) {
 			v.ID = (r)
 		}
 	}
-	if len(v.Libraries) > 0 {
-		cn := n.Child("libraries")
-		for i := range v.Libraries {
-			{
-				ch := cn.Elem(i)
-				stringsComputeLibrary(c, &ch, &v.Libraries[i])
+	if !n.IsRef("libraries") {
+		if len(v.Libraries) > 0 {
+			cn := n.Child("libraries")
+			for i := range v.Libraries {
+				{
+					ch := cn.Elem(i)
+					stringsComputeLibrary(c, &ch, &v.Libraries[i])
+				}
 			}
 		}
 	}
-	if len(v.Permissions) > 0 {
-		cn := n.Child("permissions")
-		for i := range v.Permissions {
-			{
-				ch := cn.Elem(i)
-				stringsResourcesClusterPermission(c, &ch, &v.Permissions[i])
+	if !n.IsRef("permissions") {
+		if len(v.Permissions) > 0 {
+			cn := n.Child("permissions")
+			for i := range v.Permissions {
+				{
+					ch := cn.Elem(i)
+					stringsResourcesClusterPermission(c, &ch, &v.Permissions[i])
+				}
 			}
 		}
 	}
@@ -2922,17 +3252,23 @@ func stringsResourcesCluster(c *stringsWalk, n *Node, v *resources.Cluster) {
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
-	if x := v.ClusterSpec.AwsAttributes; x != nil {
-		ch := n.Child("aws_attributes")
-		stringsComputeAwsAttributes(c, &ch, x)
+	if !n.IsRef("aws_attributes") {
+		if x := v.ClusterSpec.AwsAttributes; x != nil {
+			ch := n.Child("aws_attributes")
+			stringsComputeAwsAttributes(c, &ch, x)
+		}
 	}
-	if x := v.ClusterSpec.AzureAttributes; x != nil {
-		ch := n.Child("azure_attributes")
-		stringsComputeAzureAttributes(c, &ch, x)
+	if !n.IsRef("azure_attributes") {
+		if x := v.ClusterSpec.AzureAttributes; x != nil {
+			ch := n.Child("azure_attributes")
+			stringsComputeAzureAttributes(c, &ch, x)
+		}
 	}
-	if x := v.ClusterSpec.ClusterLogConf; x != nil {
-		ch := n.Child("cluster_log_conf")
-		stringsComputeClusterLogConf(c, &ch, x)
+	if !n.IsRef("cluster_log_conf") {
+		if x := v.ClusterSpec.ClusterLogConf; x != nil {
+			ch := n.Child("cluster_log_conf")
+			stringsComputeClusterLogConf(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.ClusterSpec.ClusterName == "" && Forced(v.ClusterSpec.ForceSendFields, "ClusterName") {
 		ch := n.Child("cluster_name")
@@ -2944,13 +3280,15 @@ func stringsResourcesCluster(c *stringsWalk, n *Node, v *resources.Cluster) {
 			v.ClusterSpec.ClusterName = (r)
 		}
 	}
-	if len(v.ClusterSpec.CustomTags) > 0 {
-		cn := n.Child("custom_tags")
-		for _, k := range sortedKeys(v.ClusterSpec.CustomTags) {
-			if s := string(v.ClusterSpec.CustomTags[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.ClusterSpec.CustomTags[k] = (r)
+	if !n.IsRef("custom_tags") {
+		if len(v.ClusterSpec.CustomTags) > 0 {
+			cn := n.Child("custom_tags")
+			for _, k := range sortedKeys(v.ClusterSpec.CustomTags) {
+				if s := string(v.ClusterSpec.CustomTags[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.ClusterSpec.CustomTags[k] = (r)
+					}
 				}
 			}
 		}
@@ -2975,9 +3313,11 @@ func stringsResourcesCluster(c *stringsWalk, n *Node, v *resources.Cluster) {
 			v.ClusterSpec.DependencyMode = compute.DependencyMode(r)
 		}
 	}
-	if x := v.ClusterSpec.DockerImage; x != nil {
-		ch := n.Child("docker_image")
-		stringsComputeDockerImage(c, &ch, x)
+	if !n.IsRef("docker_image") {
+		if x := v.ClusterSpec.DockerImage; x != nil {
+			ch := n.Child("docker_image")
+			stringsComputeDockerImage(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.ClusterSpec.DriverInstancePoolId == "" && Forced(v.ClusterSpec.ForceSendFields, "DriverInstancePoolId") {
 		ch := n.Child("driver_instance_pool_id")
@@ -2989,9 +3329,11 @@ func stringsResourcesCluster(c *stringsWalk, n *Node, v *resources.Cluster) {
 			v.ClusterSpec.DriverInstancePoolId = (r)
 		}
 	}
-	if x := v.ClusterSpec.DriverNodeTypeFlexibility; x != nil {
-		ch := n.Child("driver_node_type_flexibility")
-		stringsComputeNodeTypeFlexibility(c, &ch, x)
+	if !n.IsRef("driver_node_type_flexibility") {
+		if x := v.ClusterSpec.DriverNodeTypeFlexibility; x != nil {
+			ch := n.Child("driver_node_type_flexibility")
+			stringsComputeNodeTypeFlexibility(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.ClusterSpec.DriverNodeTypeId == "" && Forced(v.ClusterSpec.ForceSendFields, "DriverNodeTypeId") {
 		ch := n.Child("driver_node_type_id")
@@ -3003,16 +3345,20 @@ func stringsResourcesCluster(c *stringsWalk, n *Node, v *resources.Cluster) {
 			v.ClusterSpec.DriverNodeTypeId = (r)
 		}
 	}
-	if x := v.ClusterSpec.GcpAttributes; x != nil {
-		ch := n.Child("gcp_attributes")
-		stringsComputeGcpAttributes(c, &ch, x)
+	if !n.IsRef("gcp_attributes") {
+		if x := v.ClusterSpec.GcpAttributes; x != nil {
+			ch := n.Child("gcp_attributes")
+			stringsComputeGcpAttributes(c, &ch, x)
+		}
 	}
-	if len(v.ClusterSpec.InitScripts) > 0 {
-		cn := n.Child("init_scripts")
-		for i := range v.ClusterSpec.InitScripts {
-			{
-				ch := cn.Elem(i)
-				stringsComputeInitScriptInfo(c, &ch, &v.ClusterSpec.InitScripts[i])
+	if !n.IsRef("init_scripts") {
+		if len(v.ClusterSpec.InitScripts) > 0 {
+			cn := n.Child("init_scripts")
+			for i := range v.ClusterSpec.InitScripts {
+				{
+					ch := cn.Elem(i)
+					stringsComputeInitScriptInfo(c, &ch, &v.ClusterSpec.InitScripts[i])
+				}
 			}
 		}
 	}
@@ -3076,24 +3422,28 @@ func stringsResourcesCluster(c *stringsWalk, n *Node, v *resources.Cluster) {
 			v.ClusterSpec.SingleUserName = (r)
 		}
 	}
-	if len(v.ClusterSpec.SparkConf) > 0 {
-		cn := n.Child("spark_conf")
-		for _, k := range sortedKeys(v.ClusterSpec.SparkConf) {
-			if s := string(v.ClusterSpec.SparkConf[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.ClusterSpec.SparkConf[k] = (r)
+	if !n.IsRef("spark_conf") {
+		if len(v.ClusterSpec.SparkConf) > 0 {
+			cn := n.Child("spark_conf")
+			for _, k := range sortedKeys(v.ClusterSpec.SparkConf) {
+				if s := string(v.ClusterSpec.SparkConf[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.ClusterSpec.SparkConf[k] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.ClusterSpec.SparkEnvVars) > 0 {
-		cn := n.Child("spark_env_vars")
-		for _, k := range sortedKeys(v.ClusterSpec.SparkEnvVars) {
-			if s := string(v.ClusterSpec.SparkEnvVars[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.ClusterSpec.SparkEnvVars[k] = (r)
+	if !n.IsRef("spark_env_vars") {
+		if len(v.ClusterSpec.SparkEnvVars) > 0 {
+			cn := n.Child("spark_env_vars")
+			for _, k := range sortedKeys(v.ClusterSpec.SparkEnvVars) {
+				if s := string(v.ClusterSpec.SparkEnvVars[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.ClusterSpec.SparkEnvVars[k] = (r)
+					}
 				}
 			}
 		}
@@ -3108,20 +3458,24 @@ func stringsResourcesCluster(c *stringsWalk, n *Node, v *resources.Cluster) {
 			v.ClusterSpec.SparkVersion = (r)
 		}
 	}
-	if len(v.ClusterSpec.SshPublicKeys) > 0 {
-		cn := n.Child("ssh_public_keys")
-		for i := range v.ClusterSpec.SshPublicKeys {
-			if s := string(v.ClusterSpec.SshPublicKeys[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.ClusterSpec.SshPublicKeys[i] = (r)
+	if !n.IsRef("ssh_public_keys") {
+		if len(v.ClusterSpec.SshPublicKeys) > 0 {
+			cn := n.Child("ssh_public_keys")
+			for i := range v.ClusterSpec.SshPublicKeys {
+				if s := string(v.ClusterSpec.SshPublicKeys[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.ClusterSpec.SshPublicKeys[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if x := v.ClusterSpec.WorkerNodeTypeFlexibility; x != nil {
-		ch := n.Child("worker_node_type_flexibility")
-		stringsComputeNodeTypeFlexibility(c, &ch, x)
+	if !n.IsRef("worker_node_type_flexibility") {
+		if x := v.ClusterSpec.WorkerNodeTypeFlexibility; x != nil {
+			ch := n.Child("worker_node_type_flexibility")
+			stringsComputeNodeTypeFlexibility(c, &ch, x)
+		}
 	}
 }
 
@@ -3132,12 +3486,14 @@ func stringsResourcesDashboard(c *stringsWalk, n *Node, v *resources.Dashboard) 
 			v.ID = (r)
 		}
 	}
-	if len(v.Permissions) > 0 {
-		cn := n.Child("permissions")
-		for i := range v.Permissions {
-			{
-				ch := cn.Elem(i)
-				stringsResourcesPermission(c, &ch, &v.Permissions[i])
+	if !n.IsRef("permissions") {
+		if len(v.Permissions) > 0 {
+			cn := n.Child("permissions")
+			for i := range v.Permissions {
+				{
+					ch := cn.Elem(i)
+					stringsResourcesPermission(c, &ch, &v.Permissions[i])
+				}
 			}
 		}
 	}
@@ -3286,12 +3642,14 @@ func stringsResourcesGenieSpace(c *stringsWalk, n *Node, v *resources.GenieSpace
 			v.ID = (r)
 		}
 	}
-	if len(v.Permissions) > 0 {
-		cn := n.Child("permissions")
-		for i := range v.Permissions {
-			{
-				ch := cn.Elem(i)
-				stringsResourcesPermission(c, &ch, &v.Permissions[i])
+	if !n.IsRef("permissions") {
+		if len(v.Permissions) > 0 {
+			cn := n.Child("permissions")
+			for i := range v.Permissions {
+				{
+					ch := cn.Elem(i)
+					stringsResourcesPermission(c, &ch, &v.Permissions[i])
+				}
 			}
 		}
 	}
@@ -3386,16 +3744,20 @@ func stringsResourcesApp(c *stringsWalk, n *Node, v *resources.App) {
 			v.URL = (r)
 		}
 	}
-	if x := v.Config; x != nil {
-		ch := n.Child("config")
-		stringsResourcesAppConfig(c, &ch, x)
+	if !n.IsRef("config") {
+		if x := v.Config; x != nil {
+			ch := n.Child("config")
+			stringsResourcesAppConfig(c, &ch, x)
+		}
 	}
-	if len(v.Permissions) > 0 {
-		cn := n.Child("permissions")
-		for i := range v.Permissions {
-			{
-				ch := cn.Elem(i)
-				stringsResourcesAppPermission(c, &ch, &v.Permissions[i])
+	if !n.IsRef("permissions") {
+		if len(v.Permissions) > 0 {
+			cn := n.Child("permissions")
+			for i := range v.Permissions {
+				{
+					ch := cn.Elem(i)
+					stringsResourcesAppPermission(c, &ch, &v.Permissions[i])
+				}
 			}
 		}
 	}
@@ -3405,13 +3767,17 @@ func stringsResourcesApp(c *stringsWalk, n *Node, v *resources.App) {
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
-	if x := v.App.ActiveDeployment; x != nil {
-		ch := n.Child("active_deployment")
-		stringsAppsAppDeployment(c, &ch, x)
+	if !n.IsRef("active_deployment") {
+		if x := v.App.ActiveDeployment; x != nil {
+			ch := n.Child("active_deployment")
+			stringsAppsAppDeployment(c, &ch, x)
+		}
 	}
-	if x := v.App.AppStatus; x != nil {
-		ch := n.Child("app_status")
-		stringsAppsApplicationStatus(c, &ch, x)
+	if !n.IsRef("app_status") {
+		if x := v.App.AppStatus; x != nil {
+			ch := n.Child("app_status")
+			stringsAppsApplicationStatus(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.App.BudgetPolicyId == "" && Forced(v.App.ForceSendFields, "BudgetPolicyId") {
 		ch := n.Child("budget_policy_id")
@@ -3433,9 +3799,11 @@ func stringsResourcesApp(c *stringsWalk, n *Node, v *resources.App) {
 			v.App.ComputeSize = apps.ComputeSize(r)
 		}
 	}
-	if x := v.App.ComputeStatus; x != nil {
-		ch := n.Child("compute_status")
-		stringsAppsComputeStatus(c, &ch, x)
+	if !n.IsRef("compute_status") {
+		if x := v.App.ComputeStatus; x != nil {
+			ch := n.Child("compute_status")
+			stringsAppsComputeStatus(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.App.CreateTime == "" && Forced(v.App.ForceSendFields, "CreateTime") {
 		ch := n.Child("create_time")
@@ -3457,9 +3825,11 @@ func stringsResourcesApp(c *stringsWalk, n *Node, v *resources.App) {
 			v.App.Creator = (r)
 		}
 	}
-	if x := v.App.DefaultGitSource; x != nil {
-		ch := n.Child("default_git_source")
-		stringsAppsGitSource(c, &ch, x)
+	if !n.IsRef("default_git_source") {
+		if x := v.App.DefaultGitSource; x != nil {
+			ch := n.Child("default_git_source")
+			stringsAppsGitSource(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.App.DefaultSourceCodePath == "" && Forced(v.App.ForceSendFields, "DefaultSourceCodePath") {
 		ch := n.Child("default_source_code_path")
@@ -3501,24 +3871,30 @@ func stringsResourcesApp(c *stringsWalk, n *Node, v *resources.App) {
 			v.App.EffectiveUsagePolicyId = (r)
 		}
 	}
-	if len(v.App.EffectiveUserApiScopes) > 0 {
-		cn := n.Child("effective_user_api_scopes")
-		for i := range v.App.EffectiveUserApiScopes {
-			if s := string(v.App.EffectiveUserApiScopes[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.App.EffectiveUserApiScopes[i] = (r)
+	if !n.IsRef("effective_user_api_scopes") {
+		if len(v.App.EffectiveUserApiScopes) > 0 {
+			cn := n.Child("effective_user_api_scopes")
+			for i := range v.App.EffectiveUserApiScopes {
+				if s := string(v.App.EffectiveUserApiScopes[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.App.EffectiveUserApiScopes[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if x := v.App.GitRepository; x != nil {
-		ch := n.Child("git_repository")
-		stringsAppsGitRepository(c, &ch, x)
+	if !n.IsRef("git_repository") {
+		if x := v.App.GitRepository; x != nil {
+			ch := n.Child("git_repository")
+			stringsAppsGitRepository(c, &ch, x)
+		}
 	}
-	if x := v.App.GitSource; x != nil {
-		ch := n.Child("git_source")
-		stringsAppsGitSource(c, &ch, x)
+	if !n.IsRef("git_source") {
+		if x := v.App.GitSource; x != nil {
+			ch := n.Child("git_source")
+			stringsAppsGitSource(c, &ch, x)
+		}
 	}
 	if s := string(v.App.Name); c.match(s) {
 		ch := n.Child("name")
@@ -3546,16 +3922,20 @@ func stringsResourcesApp(c *stringsWalk, n *Node, v *resources.App) {
 			v.App.Oauth2AppIntegrationId = (r)
 		}
 	}
-	if x := v.App.PendingDeployment; x != nil {
-		ch := n.Child("pending_deployment")
-		stringsAppsAppDeployment(c, &ch, x)
+	if !n.IsRef("pending_deployment") {
+		if x := v.App.PendingDeployment; x != nil {
+			ch := n.Child("pending_deployment")
+			stringsAppsAppDeployment(c, &ch, x)
+		}
 	}
-	if len(v.App.Resources) > 0 {
-		cn := n.Child("resources")
-		for i := range v.App.Resources {
-			{
-				ch := cn.Elem(i)
-				stringsAppsAppResource(c, &ch, &v.App.Resources[i])
+	if !n.IsRef("resources") {
+		if len(v.App.Resources) > 0 {
+			cn := n.Child("resources")
+			for i := range v.App.Resources {
+				{
+					ch := cn.Elem(i)
+					stringsAppsAppResource(c, &ch, &v.App.Resources[i])
+				}
 			}
 		}
 	}
@@ -3599,12 +3979,14 @@ func stringsResourcesApp(c *stringsWalk, n *Node, v *resources.App) {
 			v.App.Space = (r)
 		}
 	}
-	if len(v.App.TelemetryExportDestinations) > 0 {
-		cn := n.Child("telemetry_export_destinations")
-		for i := range v.App.TelemetryExportDestinations {
-			{
-				ch := cn.Elem(i)
-				stringsAppsTelemetryExportDestination(c, &ch, &v.App.TelemetryExportDestinations[i])
+	if !n.IsRef("telemetry_export_destinations") {
+		if len(v.App.TelemetryExportDestinations) > 0 {
+			cn := n.Child("telemetry_export_destinations")
+			for i := range v.App.TelemetryExportDestinations {
+				{
+					ch := cn.Elem(i)
+					stringsAppsTelemetryExportDestination(c, &ch, &v.App.TelemetryExportDestinations[i])
+				}
 			}
 		}
 	}
@@ -3648,13 +4030,15 @@ func stringsResourcesApp(c *stringsWalk, n *Node, v *resources.App) {
 			v.App.UsagePolicyId = (r)
 		}
 	}
-	if len(v.App.UserApiScopes) > 0 {
-		cn := n.Child("user_api_scopes")
-		for i := range v.App.UserApiScopes {
-			if s := string(v.App.UserApiScopes[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.App.UserApiScopes[i] = (r)
+	if !n.IsRef("user_api_scopes") {
+		if len(v.App.UserApiScopes) > 0 {
+			cn := n.Child("user_api_scopes")
+			for i := range v.App.UserApiScopes {
+				if s := string(v.App.UserApiScopes[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.App.UserApiScopes[i] = (r)
+					}
 				}
 			}
 		}
@@ -3674,12 +4058,14 @@ func stringsResourcesSecretScope(c *stringsWalk, n *Node, v *resources.SecretSco
 			v.Name = (r)
 		}
 	}
-	if len(v.Permissions) > 0 {
-		cn := n.Child("permissions")
-		for i := range v.Permissions {
-			{
-				ch := cn.Elem(i)
-				stringsResourcesSecretScopePermission(c, &ch, &v.Permissions[i])
+	if !n.IsRef("permissions") {
+		if len(v.Permissions) > 0 {
+			cn := n.Child("permissions")
+			for i := range v.Permissions {
+				{
+					ch := cn.Elem(i)
+					stringsResourcesSecretScopePermission(c, &ch, &v.Permissions[i])
+				}
 			}
 		}
 	}
@@ -3689,9 +4075,11 @@ func stringsResourcesSecretScope(c *stringsWalk, n *Node, v *resources.SecretSco
 			v.BackendType = workspace.ScopeBackendType(r)
 		}
 	}
-	if x := v.KeyvaultMetadata; x != nil {
-		ch := n.Child("keyvault_metadata")
-		stringsWorkspaceAzureKeyVaultSecretScopeMetadata(c, &ch, x)
+	if !n.IsRef("keyvault_metadata") {
+		if x := v.KeyvaultMetadata; x != nil {
+			ch := n.Child("keyvault_metadata")
+			stringsWorkspaceAzureKeyVaultSecretScopeMetadata(c, &ch, x)
+		}
 	}
 	if s := string(v.BaseResource.URL); c.match(s) {
 		ch := n.Child("url")
@@ -3714,12 +4102,14 @@ func stringsResourcesAlert(c *stringsWalk, n *Node, v *resources.Alert) {
 			v.ID = (r)
 		}
 	}
-	if len(v.Permissions) > 0 {
-		cn := n.Child("permissions")
-		for i := range v.Permissions {
-			{
-				ch := cn.Elem(i)
-				stringsResourcesPermission(c, &ch, &v.Permissions[i])
+	if !n.IsRef("permissions") {
+		if len(v.Permissions) > 0 {
+			cn := n.Child("permissions")
+			for i := range v.Permissions {
+				{
+					ch := cn.Elem(i)
+					stringsResourcesPermission(c, &ch, &v.Permissions[i])
+				}
 			}
 		}
 	}
@@ -3787,13 +4177,17 @@ func stringsResourcesAlert(c *stringsWalk, n *Node, v *resources.Alert) {
 			v.AlertV2.DisplayName = (r)
 		}
 	}
-	if x := v.AlertV2.EffectiveRunAs; x != nil {
-		ch := n.Child("effective_run_as")
-		stringsSqlAlertV2RunAs(c, &ch, x)
+	if !n.IsRef("effective_run_as") {
+		if x := v.AlertV2.EffectiveRunAs; x != nil {
+			ch := n.Child("effective_run_as")
+			stringsSqlAlertV2RunAs(c, &ch, x)
+		}
 	}
-	{
-		ch := n.Child("evaluation")
-		stringsSqlAlertV2Evaluation(c, &ch, &v.AlertV2.Evaluation)
+	if !n.IsRef("evaluation") {
+		{
+			ch := n.Child("evaluation")
+			stringsSqlAlertV2Evaluation(c, &ch, &v.AlertV2.Evaluation)
+		}
 	}
 	if c.mode == EmptyFields && v.AlertV2.LifecycleState == "" && Forced(v.AlertV2.ForceSendFields, "LifecycleState") {
 		ch := n.Child("lifecycle_state")
@@ -3815,12 +4209,14 @@ func stringsResourcesAlert(c *stringsWalk, n *Node, v *resources.Alert) {
 			v.AlertV2.OwnerUserName = (r)
 		}
 	}
-	if len(v.AlertV2.Parameters) > 0 {
-		cn := n.Child("parameters")
-		for i := range v.AlertV2.Parameters {
-			{
-				ch := cn.Elem(i)
-				stringsSqlAlertStatementParameter(c, &ch, &v.AlertV2.Parameters[i])
+	if !n.IsRef("parameters") {
+		if len(v.AlertV2.Parameters) > 0 {
+			cn := n.Child("parameters")
+			for i := range v.AlertV2.Parameters {
+				{
+					ch := cn.Elem(i)
+					stringsSqlAlertStatementParameter(c, &ch, &v.AlertV2.Parameters[i])
+				}
 			}
 		}
 	}
@@ -3840,9 +4236,11 @@ func stringsResourcesAlert(c *stringsWalk, n *Node, v *resources.Alert) {
 			v.AlertV2.QueryText = (r)
 		}
 	}
-	if x := v.AlertV2.RunAs; x != nil {
-		ch := n.Child("run_as")
-		stringsSqlAlertV2RunAs(c, &ch, x)
+	if !n.IsRef("run_as") {
+		if x := v.AlertV2.RunAs; x != nil {
+			ch := n.Child("run_as")
+			stringsSqlAlertV2RunAs(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.AlertV2.RunAsUserName == "" && Forced(v.AlertV2.ForceSendFields, "RunAsUserName") {
 		ch := n.Child("run_as_user_name")
@@ -3854,9 +4252,11 @@ func stringsResourcesAlert(c *stringsWalk, n *Node, v *resources.Alert) {
 			v.AlertV2.RunAsUserName = (r)
 		}
 	}
-	{
-		ch := n.Child("schedule")
-		stringsSqlCronSchedule(c, &ch, &v.AlertV2.Schedule)
+	if !n.IsRef("schedule") {
+		{
+			ch := n.Child("schedule")
+			stringsSqlCronSchedule(c, &ch, &v.AlertV2.Schedule)
+		}
 	}
 	if c.mode == EmptyFields && v.AlertV2.UpdateTime == "" && Forced(v.AlertV2.ForceSendFields, "UpdateTime") {
 		ch := n.Child("update_time")
@@ -3883,12 +4283,14 @@ func stringsResourcesSqlWarehouse(c *stringsWalk, n *Node, v *resources.SqlWareh
 			v.ID = (r)
 		}
 	}
-	if len(v.Permissions) > 0 {
-		cn := n.Child("permissions")
-		for i := range v.Permissions {
-			{
-				ch := cn.Elem(i)
-				stringsResourcesSqlWarehousePermission(c, &ch, &v.Permissions[i])
+	if !n.IsRef("permissions") {
+		if len(v.Permissions) > 0 {
+			cn := n.Child("permissions")
+			for i := range v.Permissions {
+				{
+					ch := cn.Elem(i)
+					stringsResourcesSqlWarehousePermission(c, &ch, &v.Permissions[i])
+				}
 			}
 		}
 	}
@@ -3904,9 +4306,11 @@ func stringsResourcesSqlWarehouse(c *stringsWalk, n *Node, v *resources.SqlWareh
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
-	if x := v.CreateWarehouseRequest.Channel; x != nil {
-		ch := n.Child("channel")
-		stringsSqlChannel(c, &ch, x)
+	if !n.IsRef("channel") {
+		if x := v.CreateWarehouseRequest.Channel; x != nil {
+			ch := n.Child("channel")
+			stringsSqlChannel(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.CreateWarehouseRequest.ClusterSize == "" && Forced(v.CreateWarehouseRequest.ForceSendFields, "ClusterSize") {
 		ch := n.Child("cluster_size")
@@ -3958,9 +4362,11 @@ func stringsResourcesSqlWarehouse(c *stringsWalk, n *Node, v *resources.SqlWareh
 			v.CreateWarehouseRequest.SpotInstancePolicy = sql.SpotInstancePolicy(r)
 		}
 	}
-	if x := v.CreateWarehouseRequest.Tags; x != nil {
-		ch := n.Child("tags")
-		stringsSqlEndpointTags(c, &ch, x)
+	if !n.IsRef("tags") {
+		if x := v.CreateWarehouseRequest.Tags; x != nil {
+			ch := n.Child("tags")
+			stringsSqlEndpointTags(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.CreateWarehouseRequest.WarehouseType == "" && Forced(v.CreateWarehouseRequest.ForceSendFields, "WarehouseType") {
 		ch := n.Child("warehouse_type")
@@ -3981,12 +4387,14 @@ func stringsResourcesDatabaseInstance(c *stringsWalk, n *Node, v *resources.Data
 			v.ID = (r)
 		}
 	}
-	if len(v.Permissions) > 0 {
-		cn := n.Child("permissions")
-		for i := range v.Permissions {
-			{
-				ch := cn.Elem(i)
-				stringsResourcesPermission(c, &ch, &v.Permissions[i])
+	if !n.IsRef("permissions") {
+		if len(v.Permissions) > 0 {
+			cn := n.Child("permissions")
+			for i := range v.Permissions {
+				{
+					ch := cn.Elem(i)
+					stringsResourcesPermission(c, &ch, &v.Permissions[i])
+				}
 			}
 		}
 	}
@@ -4012,12 +4420,14 @@ func stringsResourcesDatabaseInstance(c *stringsWalk, n *Node, v *resources.Data
 			v.DatabaseInstance.Capacity = (r)
 		}
 	}
-	if len(v.DatabaseInstance.ChildInstanceRefs) > 0 {
-		cn := n.Child("child_instance_refs")
-		for i := range v.DatabaseInstance.ChildInstanceRefs {
-			{
-				ch := cn.Elem(i)
-				stringsDatabaseDatabaseInstanceRef(c, &ch, &v.DatabaseInstance.ChildInstanceRefs[i])
+	if !n.IsRef("child_instance_refs") {
+		if len(v.DatabaseInstance.ChildInstanceRefs) > 0 {
+			cn := n.Child("child_instance_refs")
+			for i := range v.DatabaseInstance.ChildInstanceRefs {
+				{
+					ch := cn.Elem(i)
+					stringsDatabaseDatabaseInstanceRef(c, &ch, &v.DatabaseInstance.ChildInstanceRefs[i])
+				}
 			}
 		}
 	}
@@ -4041,12 +4451,14 @@ func stringsResourcesDatabaseInstance(c *stringsWalk, n *Node, v *resources.Data
 			v.DatabaseInstance.Creator = (r)
 		}
 	}
-	if len(v.DatabaseInstance.CustomTags) > 0 {
-		cn := n.Child("custom_tags")
-		for i := range v.DatabaseInstance.CustomTags {
-			{
-				ch := cn.Elem(i)
-				stringsDatabaseCustomTag(c, &ch, &v.DatabaseInstance.CustomTags[i])
+	if !n.IsRef("custom_tags") {
+		if len(v.DatabaseInstance.CustomTags) > 0 {
+			cn := n.Child("custom_tags")
+			for i := range v.DatabaseInstance.CustomTags {
+				{
+					ch := cn.Elem(i)
+					stringsDatabaseCustomTag(c, &ch, &v.DatabaseInstance.CustomTags[i])
+				}
 			}
 		}
 	}
@@ -4060,12 +4472,14 @@ func stringsResourcesDatabaseInstance(c *stringsWalk, n *Node, v *resources.Data
 			v.DatabaseInstance.EffectiveCapacity = (r)
 		}
 	}
-	if len(v.DatabaseInstance.EffectiveCustomTags) > 0 {
-		cn := n.Child("effective_custom_tags")
-		for i := range v.DatabaseInstance.EffectiveCustomTags {
-			{
-				ch := cn.Elem(i)
-				stringsDatabaseCustomTag(c, &ch, &v.DatabaseInstance.EffectiveCustomTags[i])
+	if !n.IsRef("effective_custom_tags") {
+		if len(v.DatabaseInstance.EffectiveCustomTags) > 0 {
+			cn := n.Child("effective_custom_tags")
+			for i := range v.DatabaseInstance.EffectiveCustomTags {
+				{
+					ch := cn.Elem(i)
+					stringsDatabaseCustomTag(c, &ch, &v.DatabaseInstance.EffectiveCustomTags[i])
+				}
 			}
 		}
 	}
@@ -4085,9 +4499,11 @@ func stringsResourcesDatabaseInstance(c *stringsWalk, n *Node, v *resources.Data
 			v.DatabaseInstance.Name = (r)
 		}
 	}
-	if x := v.DatabaseInstance.ParentInstanceRef; x != nil {
-		ch := n.Child("parent_instance_ref")
-		stringsDatabaseDatabaseInstanceRef(c, &ch, x)
+	if !n.IsRef("parent_instance_ref") {
+		if x := v.DatabaseInstance.ParentInstanceRef; x != nil {
+			ch := n.Child("parent_instance_ref")
+			stringsDatabaseDatabaseInstanceRef(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.DatabaseInstance.PgVersion == "" && Forced(v.DatabaseInstance.ForceSendFields, "PgVersion") {
 		ch := n.Child("pg_version")
@@ -4219,9 +4635,11 @@ func stringsResourcesSyncedDatabaseTable(c *stringsWalk, n *Node, v *resources.S
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
-	if x := v.SyncedDatabaseTable.DataSynchronizationStatus; x != nil {
-		ch := n.Child("data_synchronization_status")
-		stringsDatabaseSyncedTableStatus(c, &ch, x)
+	if !n.IsRef("data_synchronization_status") {
+		if x := v.SyncedDatabaseTable.DataSynchronizationStatus; x != nil {
+			ch := n.Child("data_synchronization_status")
+			stringsDatabaseSyncedTableStatus(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.SyncedDatabaseTable.DatabaseInstanceName == "" && Forced(v.SyncedDatabaseTable.ForceSendFields, "DatabaseInstanceName") {
 		ch := n.Child("database_instance_name")
@@ -4269,9 +4687,11 @@ func stringsResourcesSyncedDatabaseTable(c *stringsWalk, n *Node, v *resources.S
 			v.SyncedDatabaseTable.Name = (r)
 		}
 	}
-	if x := v.SyncedDatabaseTable.Spec; x != nil {
-		ch := n.Child("spec")
-		stringsDatabaseSyncedTableSpec(c, &ch, x)
+	if !n.IsRef("spec") {
+		if x := v.SyncedDatabaseTable.Spec; x != nil {
+			ch := n.Child("spec")
+			stringsDatabaseSyncedTableSpec(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.SyncedDatabaseTable.UnityCatalogProvisioningState == "" && Forced(v.SyncedDatabaseTable.ForceSendFields, "UnityCatalogProvisioningState") {
 		ch := n.Child("unity_catalog_provisioning_state")
@@ -4292,12 +4712,14 @@ func stringsResourcesPostgresProject(c *stringsWalk, n *Node, v *resources.Postg
 			v.ID = (r)
 		}
 	}
-	if len(v.Permissions) > 0 {
-		cn := n.Child("permissions")
-		for i := range v.Permissions {
-			{
-				ch := cn.Elem(i)
-				stringsResourcesPermission(c, &ch, &v.Permissions[i])
+	if !n.IsRef("permissions") {
+		if len(v.Permissions) > 0 {
+			cn := n.Child("permissions")
+			for i := range v.Permissions {
+				{
+					ch := cn.Elem(i)
+					stringsResourcesPermission(c, &ch, &v.Permissions[i])
+				}
 			}
 		}
 	}
@@ -4329,12 +4751,14 @@ func stringsResourcesPostgresProject(c *stringsWalk, n *Node, v *resources.Postg
 			v.PostgresProjectConfig.ProjectSpec.BudgetPolicyId = (r)
 		}
 	}
-	if len(v.PostgresProjectConfig.ProjectSpec.CustomTags) > 0 {
-		cn := n.Child("custom_tags")
-		for i := range v.PostgresProjectConfig.ProjectSpec.CustomTags {
-			{
-				ch := cn.Elem(i)
-				stringsPostgresProjectCustomTag(c, &ch, &v.PostgresProjectConfig.ProjectSpec.CustomTags[i])
+	if !n.IsRef("custom_tags") {
+		if len(v.PostgresProjectConfig.ProjectSpec.CustomTags) > 0 {
+			cn := n.Child("custom_tags")
+			for i := range v.PostgresProjectConfig.ProjectSpec.CustomTags {
+				{
+					ch := cn.Elem(i)
+					stringsPostgresProjectCustomTag(c, &ch, &v.PostgresProjectConfig.ProjectSpec.CustomTags[i])
+				}
 			}
 		}
 	}
@@ -4348,9 +4772,11 @@ func stringsResourcesPostgresProject(c *stringsWalk, n *Node, v *resources.Postg
 			v.PostgresProjectConfig.ProjectSpec.DefaultBranch = (r)
 		}
 	}
-	if x := v.PostgresProjectConfig.ProjectSpec.DefaultEndpointSettings; x != nil {
-		ch := n.Child("default_endpoint_settings")
-		stringsPostgresProjectDefaultEndpointSettings(c, &ch, x)
+	if !n.IsRef("default_endpoint_settings") {
+		if x := v.PostgresProjectConfig.ProjectSpec.DefaultEndpointSettings; x != nil {
+			ch := n.Child("default_endpoint_settings")
+			stringsPostgresProjectDefaultEndpointSettings(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.PostgresProjectConfig.ProjectSpec.DisplayName == "" && Forced(v.PostgresProjectConfig.ProjectSpec.ForceSendFields, "DisplayName") {
 		ch := n.Child("display_name")
@@ -4464,9 +4890,11 @@ func stringsResourcesPostgresEndpoint(c *stringsWalk, n *Node, v *resources.Post
 			v.PostgresEndpointConfig.EndpointSpec.EndpointType = postgres.EndpointType(r)
 		}
 	}
-	if x := v.PostgresEndpointConfig.EndpointSpec.Settings; x != nil {
-		ch := n.Child("settings")
-		stringsPostgresEndpointSettings(c, &ch, x)
+	if !n.IsRef("settings") {
+		if x := v.PostgresEndpointConfig.EndpointSpec.Settings; x != nil {
+			ch := n.Child("settings")
+			stringsPostgresEndpointSettings(c, &ch, x)
+		}
 	}
 }
 
@@ -4613,13 +5041,15 @@ func stringsResourcesPostgresRole(c *stringsWalk, n *Node, v *resources.Postgres
 			v.PostgresRoleConfig.RoleRoleSpec.IdentityType = postgres.RoleIdentityType(r)
 		}
 	}
-	if len(v.PostgresRoleConfig.RoleRoleSpec.MembershipRoles) > 0 {
-		cn := n.Child("membership_roles")
-		for i := range v.PostgresRoleConfig.RoleRoleSpec.MembershipRoles {
-			if s := string(v.PostgresRoleConfig.RoleRoleSpec.MembershipRoles[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.PostgresRoleConfig.RoleRoleSpec.MembershipRoles[i] = postgres.RoleMembershipRole(r)
+	if !n.IsRef("membership_roles") {
+		if len(v.PostgresRoleConfig.RoleRoleSpec.MembershipRoles) > 0 {
+			cn := n.Child("membership_roles")
+			for i := range v.PostgresRoleConfig.RoleRoleSpec.MembershipRoles {
+				if s := string(v.PostgresRoleConfig.RoleRoleSpec.MembershipRoles[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.PostgresRoleConfig.RoleRoleSpec.MembershipRoles[i] = postgres.RoleMembershipRole(r)
+					}
 				}
 			}
 		}
@@ -4681,18 +5111,22 @@ func stringsResourcesPostgresSyncedTable(c *stringsWalk, n *Node, v *resources.P
 			v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.ExistingPipelineId = (r)
 		}
 	}
-	if len(v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.ExtraColumns) > 0 {
-		cn := n.Child("extra_columns")
-		for i := range v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.ExtraColumns {
-			{
-				ch := cn.Elem(i)
-				stringsPostgresSyncedTableSyncedTableSpecExtraColumn(c, &ch, &v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.ExtraColumns[i])
+	if !n.IsRef("extra_columns") {
+		if len(v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.ExtraColumns) > 0 {
+			cn := n.Child("extra_columns")
+			for i := range v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.ExtraColumns {
+				{
+					ch := cn.Elem(i)
+					stringsPostgresSyncedTableSyncedTableSpecExtraColumn(c, &ch, &v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.ExtraColumns[i])
+				}
 			}
 		}
 	}
-	if x := v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.NewPipelineSpec; x != nil {
-		ch := n.Child("new_pipeline_spec")
-		stringsPostgresNewPipelineSpec(c, &ch, x)
+	if !n.IsRef("new_pipeline_spec") {
+		if x := v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.NewPipelineSpec; x != nil {
+			ch := n.Child("new_pipeline_spec")
+			stringsPostgresNewPipelineSpec(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.PostgresDatabase == "" && Forced(v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.ForceSendFields, "PostgresDatabase") {
 		ch := n.Child("postgres_database")
@@ -4704,13 +5138,15 @@ func stringsResourcesPostgresSyncedTable(c *stringsWalk, n *Node, v *resources.P
 			v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.PostgresDatabase = (r)
 		}
 	}
-	if len(v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.PrimaryKeyColumns) > 0 {
-		cn := n.Child("primary_key_columns")
-		for i := range v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.PrimaryKeyColumns {
-			if s := string(v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.PrimaryKeyColumns[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.PrimaryKeyColumns[i] = (r)
+	if !n.IsRef("primary_key_columns") {
+		if len(v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.PrimaryKeyColumns) > 0 {
+			cn := n.Child("primary_key_columns")
+			for i := range v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.PrimaryKeyColumns {
+				if s := string(v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.PrimaryKeyColumns[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.PrimaryKeyColumns[i] = (r)
+					}
 				}
 			}
 		}
@@ -4745,12 +5181,14 @@ func stringsResourcesPostgresSyncedTable(c *stringsWalk, n *Node, v *resources.P
 			v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.TimeseriesKey = (r)
 		}
 	}
-	if len(v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.TypeOverrides) > 0 {
-		cn := n.Child("type_overrides")
-		for i := range v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.TypeOverrides {
-			{
-				ch := cn.Elem(i)
-				stringsPostgresSyncedTableSyncedTableSpecTypeOverride(c, &ch, &v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.TypeOverrides[i])
+	if !n.IsRef("type_overrides") {
+		if len(v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.TypeOverrides) > 0 {
+			cn := n.Child("type_overrides")
+			for i := range v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.TypeOverrides {
+				{
+					ch := cn.Elem(i)
+					stringsPostgresSyncedTableSyncedTableSpecTypeOverride(c, &ch, &v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.TypeOverrides[i])
+				}
 			}
 		}
 	}
@@ -4781,12 +5219,14 @@ func stringsResourcesPostgresSnapshotSchedule(c *stringsWalk, n *Node, v *resour
 			v.PostgresSnapshotScheduleConfig.Branch = (r)
 		}
 	}
-	if len(v.PostgresSnapshotScheduleConfig.Schedule) > 0 {
-		cn := n.Child("schedule")
-		for i := range v.PostgresSnapshotScheduleConfig.Schedule {
-			{
-				ch := cn.Elem(i)
-				stringsPostgresScheduleCadence(c, &ch, &v.PostgresSnapshotScheduleConfig.Schedule[i])
+	if !n.IsRef("schedule") {
+		if len(v.PostgresSnapshotScheduleConfig.Schedule) > 0 {
+			cn := n.Child("schedule")
+			for i := range v.PostgresSnapshotScheduleConfig.Schedule {
+				{
+					ch := cn.Elem(i)
+					stringsPostgresScheduleCadence(c, &ch, &v.PostgresSnapshotScheduleConfig.Schedule[i])
+				}
 			}
 		}
 	}
@@ -4799,12 +5239,14 @@ func stringsResourcesVectorSearchEndpoint(c *stringsWalk, n *Node, v *resources.
 			v.ID = (r)
 		}
 	}
-	if len(v.Permissions) > 0 {
-		cn := n.Child("permissions")
-		for i := range v.Permissions {
-			{
-				ch := cn.Elem(i)
-				stringsResourcesVectorSearchEndpointPermission(c, &ch, &v.Permissions[i])
+	if !n.IsRef("permissions") {
+		if len(v.Permissions) > 0 {
+			cn := n.Child("permissions")
+			for i := range v.Permissions {
+				{
+					ch := cn.Elem(i)
+					stringsResourcesVectorSearchEndpointPermission(c, &ch, &v.Permissions[i])
+				}
 			}
 		}
 	}
@@ -4861,12 +5303,14 @@ func stringsResourcesVectorSearchIndex(c *stringsWalk, n *Node, v *resources.Vec
 			v.ID = (r)
 		}
 	}
-	if len(v.Grants) > 0 {
-		cn := n.Child("grants")
-		for i := range v.Grants {
-			{
-				ch := cn.Elem(i)
-				stringsCatalogPrivilegeAssignment(c, &ch, &v.Grants[i])
+	if !n.IsRef("grants") {
+		if len(v.Grants) > 0 {
+			cn := n.Child("grants")
+			for i := range v.Grants {
+				{
+					ch := cn.Elem(i)
+					stringsCatalogPrivilegeAssignment(c, &ch, &v.Grants[i])
+				}
 			}
 		}
 	}
@@ -4882,13 +5326,17 @@ func stringsResourcesVectorSearchIndex(c *stringsWalk, n *Node, v *resources.Vec
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
-	if x := v.CreateVectorIndexRequest.DeltaSyncIndexSpec; x != nil {
-		ch := n.Child("delta_sync_index_spec")
-		stringsVectorsearchDeltaSyncVectorIndexSpecRequest(c, &ch, x)
+	if !n.IsRef("delta_sync_index_spec") {
+		if x := v.CreateVectorIndexRequest.DeltaSyncIndexSpec; x != nil {
+			ch := n.Child("delta_sync_index_spec")
+			stringsVectorsearchDeltaSyncVectorIndexSpecRequest(c, &ch, x)
+		}
 	}
-	if x := v.CreateVectorIndexRequest.DirectAccessIndexSpec; x != nil {
-		ch := n.Child("direct_access_index_spec")
-		stringsVectorsearchDirectAccessVectorIndexSpec(c, &ch, x)
+	if !n.IsRef("direct_access_index_spec") {
+		if x := v.CreateVectorIndexRequest.DirectAccessIndexSpec; x != nil {
+			ch := n.Child("direct_access_index_spec")
+			stringsVectorsearchDirectAccessVectorIndexSpec(c, &ch, x)
+		}
 	}
 	if s := string(v.CreateVectorIndexRequest.EndpointName); c.match(s) {
 		ch := n.Child("endpoint_name")
@@ -4929,12 +5377,14 @@ func stringsResourcesInstancePool(c *stringsWalk, n *Node, v *resources.Instance
 			v.ID = (r)
 		}
 	}
-	if len(v.Permissions) > 0 {
-		cn := n.Child("permissions")
-		for i := range v.Permissions {
-			{
-				ch := cn.Elem(i)
-				stringsResourcesInstancePoolPermission(c, &ch, &v.Permissions[i])
+	if !n.IsRef("permissions") {
+		if len(v.Permissions) > 0 {
+			cn := n.Child("permissions")
+			for i := range v.Permissions {
+				{
+					ch := cn.Elem(i)
+					stringsResourcesInstancePoolPermission(c, &ch, &v.Permissions[i])
+				}
 			}
 		}
 	}
@@ -4950,32 +5400,42 @@ func stringsResourcesInstancePool(c *stringsWalk, n *Node, v *resources.Instance
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
-	if x := v.CreateInstancePool.AwsAttributes; x != nil {
-		ch := n.Child("aws_attributes")
-		stringsComputeInstancePoolAwsAttributes(c, &ch, x)
+	if !n.IsRef("aws_attributes") {
+		if x := v.CreateInstancePool.AwsAttributes; x != nil {
+			ch := n.Child("aws_attributes")
+			stringsComputeInstancePoolAwsAttributes(c, &ch, x)
+		}
 	}
-	if x := v.CreateInstancePool.AzureAttributes; x != nil {
-		ch := n.Child("azure_attributes")
-		stringsComputeInstancePoolAzureAttributes(c, &ch, x)
+	if !n.IsRef("azure_attributes") {
+		if x := v.CreateInstancePool.AzureAttributes; x != nil {
+			ch := n.Child("azure_attributes")
+			stringsComputeInstancePoolAzureAttributes(c, &ch, x)
+		}
 	}
-	if len(v.CreateInstancePool.CustomTags) > 0 {
-		cn := n.Child("custom_tags")
-		for _, k := range sortedKeys(v.CreateInstancePool.CustomTags) {
-			if s := string(v.CreateInstancePool.CustomTags[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.CreateInstancePool.CustomTags[k] = (r)
+	if !n.IsRef("custom_tags") {
+		if len(v.CreateInstancePool.CustomTags) > 0 {
+			cn := n.Child("custom_tags")
+			for _, k := range sortedKeys(v.CreateInstancePool.CustomTags) {
+				if s := string(v.CreateInstancePool.CustomTags[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.CreateInstancePool.CustomTags[k] = (r)
+					}
 				}
 			}
 		}
 	}
-	if x := v.CreateInstancePool.DiskSpec; x != nil {
-		ch := n.Child("disk_spec")
-		stringsComputeDiskSpec(c, &ch, x)
+	if !n.IsRef("disk_spec") {
+		if x := v.CreateInstancePool.DiskSpec; x != nil {
+			ch := n.Child("disk_spec")
+			stringsComputeDiskSpec(c, &ch, x)
+		}
 	}
-	if x := v.CreateInstancePool.GcpAttributes; x != nil {
-		ch := n.Child("gcp_attributes")
-		stringsComputeInstancePoolGcpAttributes(c, &ch, x)
+	if !n.IsRef("gcp_attributes") {
+		if x := v.CreateInstancePool.GcpAttributes; x != nil {
+			ch := n.Child("gcp_attributes")
+			stringsComputeInstancePoolGcpAttributes(c, &ch, x)
+		}
 	}
 	if s := string(v.CreateInstancePool.InstancePoolName); c.match(s) {
 		ch := n.Child("instance_pool_name")
@@ -4983,9 +5443,11 @@ func stringsResourcesInstancePool(c *stringsWalk, n *Node, v *resources.Instance
 			v.CreateInstancePool.InstancePoolName = (r)
 		}
 	}
-	if x := v.CreateInstancePool.NodeTypeFlexibility; x != nil {
-		ch := n.Child("node_type_flexibility")
-		stringsComputeNodeTypeFlexibility(c, &ch, x)
+	if !n.IsRef("node_type_flexibility") {
+		if x := v.CreateInstancePool.NodeTypeFlexibility; x != nil {
+			ch := n.Child("node_type_flexibility")
+			stringsComputeNodeTypeFlexibility(c, &ch, x)
+		}
 	}
 	if s := string(v.CreateInstancePool.NodeTypeId); c.match(s) {
 		ch := n.Child("node_type_id")
@@ -4993,22 +5455,26 @@ func stringsResourcesInstancePool(c *stringsWalk, n *Node, v *resources.Instance
 			v.CreateInstancePool.NodeTypeId = (r)
 		}
 	}
-	if len(v.CreateInstancePool.PreloadedDockerImages) > 0 {
-		cn := n.Child("preloaded_docker_images")
-		for i := range v.CreateInstancePool.PreloadedDockerImages {
-			{
-				ch := cn.Elem(i)
-				stringsComputeDockerImage(c, &ch, &v.CreateInstancePool.PreloadedDockerImages[i])
+	if !n.IsRef("preloaded_docker_images") {
+		if len(v.CreateInstancePool.PreloadedDockerImages) > 0 {
+			cn := n.Child("preloaded_docker_images")
+			for i := range v.CreateInstancePool.PreloadedDockerImages {
+				{
+					ch := cn.Elem(i)
+					stringsComputeDockerImage(c, &ch, &v.CreateInstancePool.PreloadedDockerImages[i])
+				}
 			}
 		}
 	}
-	if len(v.CreateInstancePool.PreloadedSparkVersions) > 0 {
-		cn := n.Child("preloaded_spark_versions")
-		for i := range v.CreateInstancePool.PreloadedSparkVersions {
-			if s := string(v.CreateInstancePool.PreloadedSparkVersions[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.CreateInstancePool.PreloadedSparkVersions[i] = (r)
+	if !n.IsRef("preloaded_spark_versions") {
+		if len(v.CreateInstancePool.PreloadedSparkVersions) > 0 {
+			cn := n.Child("preloaded_spark_versions")
+			for i := range v.CreateInstancePool.PreloadedSparkVersions {
+				if s := string(v.CreateInstancePool.PreloadedSparkVersions[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.CreateInstancePool.PreloadedSparkVersions[i] = (r)
+					}
 				}
 			}
 		}
@@ -5022,12 +5488,14 @@ func stringsResourcesSecret(c *stringsWalk, n *Node, v *resources.Secret) {
 			v.ID = (r)
 		}
 	}
-	if len(v.Grants) > 0 {
-		cn := n.Child("grants")
-		for i := range v.Grants {
-			{
-				ch := cn.Elem(i)
-				stringsCatalogPrivilegeAssignment(c, &ch, &v.Grants[i])
+	if !n.IsRef("grants") {
+		if len(v.Grants) > 0 {
+			cn := n.Child("grants")
+			for i := range v.Grants {
+				{
+					ch := cn.Elem(i)
+					stringsCatalogPrivilegeAssignment(c, &ch, &v.Grants[i])
+				}
 			}
 		}
 	}
@@ -5172,12 +5640,14 @@ func stringsResourcesClusterPolicy(c *stringsWalk, n *Node, v *resources.Cluster
 		ch := n.Child("policy_family_definition_overrides")
 		c.any(&ch, &v.PolicyFamilyDefinitionOverrides)
 	}
-	if len(v.Permissions) > 0 {
-		cn := n.Child("permissions")
-		for i := range v.Permissions {
-			{
-				ch := cn.Elem(i)
-				stringsResourcesClusterPolicyPermission(c, &ch, &v.Permissions[i])
+	if !n.IsRef("permissions") {
+		if len(v.Permissions) > 0 {
+			cn := n.Child("permissions")
+			for i := range v.Permissions {
+				{
+					ch := cn.Elem(i)
+					stringsResourcesClusterPolicyPermission(c, &ch, &v.Permissions[i])
+				}
 			}
 		}
 	}
@@ -5203,12 +5673,14 @@ func stringsResourcesClusterPolicy(c *stringsWalk, n *Node, v *resources.Cluster
 			v.CreatePolicy.Description = (r)
 		}
 	}
-	if len(v.CreatePolicy.Libraries) > 0 {
-		cn := n.Child("libraries")
-		for i := range v.CreatePolicy.Libraries {
-			{
-				ch := cn.Elem(i)
-				stringsComputeLibrary(c, &ch, &v.CreatePolicy.Libraries[i])
+	if !n.IsRef("libraries") {
+		if len(v.CreatePolicy.Libraries) > 0 {
+			cn := n.Child("libraries")
+			for i := range v.CreatePolicy.Libraries {
+				{
+					ch := cn.Elem(i)
+					stringsComputeLibrary(c, &ch, &v.CreatePolicy.Libraries[i])
+				}
 			}
 		}
 	}
@@ -5241,12 +5713,14 @@ func stringsResourcesSnapshot(c *stringsWalk, n *Node, v *resources.Snapshot) {
 			v.BundleID = (r)
 		}
 	}
-	if len(v.ACL) > 0 {
-		cn := n.Child("acl")
-		for i := range v.ACL {
-			{
-				ch := cn.Elem(i)
-				stringsSnapshotACLEntry(c, &ch, &v.ACL[i])
+	if !n.IsRef("acl") {
+		if len(v.ACL) > 0 {
+			cn := n.Child("acl")
+			for i := range v.ACL {
+				{
+					ch := cn.Elem(i)
+					stringsSnapshotACLEntry(c, &ch, &v.ACL[i])
+				}
 			}
 		}
 	}
@@ -5293,9 +5767,11 @@ func stringsVariableTargetVariable(c *stringsWalk, n *Node, v *variable.TargetVa
 		ch := n.Child("value")
 		c.any(&ch, &v.Value)
 	}
-	if x := v.Lookup; x != nil {
-		ch := n.Child("lookup")
-		stringsVariableLookup(c, &ch, x)
+	if !n.IsRef("lookup") {
+		if x := v.Lookup; x != nil {
+			ch := n.Child("lookup")
+			stringsVariableLookup(c, &ch, x)
+		}
 	}
 }
 
@@ -5393,9 +5869,11 @@ func stringsResourcesJobPermission(c *stringsWalk, n *Node, v *resources.JobPerm
 }
 
 func stringsJobsContinuous(c *stringsWalk, n *Node, v *jobs.Continuous) {
-	if x := v.MaintenanceWindow; x != nil {
-		ch := n.Child("maintenance_window")
-		stringsJobsMaintenanceWindow(c, &ch, x)
+	if !n.IsRef("maintenance_window") {
+		if x := v.MaintenanceWindow; x != nil {
+			ch := n.Child("maintenance_window")
+			stringsJobsMaintenanceWindow(c, &ch, x)
+		}
 	}
 	if s := string(v.PauseStatus); c.match(s) {
 		ch := n.Child("pause_status")
@@ -5451,79 +5929,93 @@ func stringsJobsJobDeployment(c *stringsWalk, n *Node, v *jobs.JobDeployment) {
 }
 
 func stringsJobsJobEmailNotifications(c *stringsWalk, n *Node, v *jobs.JobEmailNotifications) {
-	if len(v.OnDurationWarningThresholdExceeded) > 0 {
-		cn := n.Child("on_duration_warning_threshold_exceeded")
-		for i := range v.OnDurationWarningThresholdExceeded {
-			if s := string(v.OnDurationWarningThresholdExceeded[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.OnDurationWarningThresholdExceeded[i] = (r)
+	if !n.IsRef("on_duration_warning_threshold_exceeded") {
+		if len(v.OnDurationWarningThresholdExceeded) > 0 {
+			cn := n.Child("on_duration_warning_threshold_exceeded")
+			for i := range v.OnDurationWarningThresholdExceeded {
+				if s := string(v.OnDurationWarningThresholdExceeded[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.OnDurationWarningThresholdExceeded[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.OnFailure) > 0 {
-		cn := n.Child("on_failure")
-		for i := range v.OnFailure {
-			if s := string(v.OnFailure[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.OnFailure[i] = (r)
+	if !n.IsRef("on_failure") {
+		if len(v.OnFailure) > 0 {
+			cn := n.Child("on_failure")
+			for i := range v.OnFailure {
+				if s := string(v.OnFailure[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.OnFailure[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.OnMaintenanceComplete) > 0 {
-		cn := n.Child("on_maintenance_complete")
-		for i := range v.OnMaintenanceComplete {
-			if s := string(v.OnMaintenanceComplete[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.OnMaintenanceComplete[i] = (r)
+	if !n.IsRef("on_maintenance_complete") {
+		if len(v.OnMaintenanceComplete) > 0 {
+			cn := n.Child("on_maintenance_complete")
+			for i := range v.OnMaintenanceComplete {
+				if s := string(v.OnMaintenanceComplete[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.OnMaintenanceComplete[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.OnMaintenanceStart) > 0 {
-		cn := n.Child("on_maintenance_start")
-		for i := range v.OnMaintenanceStart {
-			if s := string(v.OnMaintenanceStart[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.OnMaintenanceStart[i] = (r)
+	if !n.IsRef("on_maintenance_start") {
+		if len(v.OnMaintenanceStart) > 0 {
+			cn := n.Child("on_maintenance_start")
+			for i := range v.OnMaintenanceStart {
+				if s := string(v.OnMaintenanceStart[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.OnMaintenanceStart[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.OnStart) > 0 {
-		cn := n.Child("on_start")
-		for i := range v.OnStart {
-			if s := string(v.OnStart[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.OnStart[i] = (r)
+	if !n.IsRef("on_start") {
+		if len(v.OnStart) > 0 {
+			cn := n.Child("on_start")
+			for i := range v.OnStart {
+				if s := string(v.OnStart[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.OnStart[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.OnStreamingBacklogExceeded) > 0 {
-		cn := n.Child("on_streaming_backlog_exceeded")
-		for i := range v.OnStreamingBacklogExceeded {
-			if s := string(v.OnStreamingBacklogExceeded[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.OnStreamingBacklogExceeded[i] = (r)
+	if !n.IsRef("on_streaming_backlog_exceeded") {
+		if len(v.OnStreamingBacklogExceeded) > 0 {
+			cn := n.Child("on_streaming_backlog_exceeded")
+			for i := range v.OnStreamingBacklogExceeded {
+				if s := string(v.OnStreamingBacklogExceeded[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.OnStreamingBacklogExceeded[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.OnSuccess) > 0 {
-		cn := n.Child("on_success")
-		for i := range v.OnSuccess {
-			if s := string(v.OnSuccess[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.OnSuccess[i] = (r)
+	if !n.IsRef("on_success") {
+		if len(v.OnSuccess) > 0 {
+			cn := n.Child("on_success")
+			for i := range v.OnSuccess {
+				if s := string(v.OnSuccess[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.OnSuccess[i] = (r)
+					}
 				}
 			}
 		}
@@ -5537,9 +6029,11 @@ func stringsJobsJobEnvironmentVariables(c *stringsWalk, n *Node, v *jobs.JobEnvi
 			v.EnvironmentVariablesKey = (r)
 		}
 	}
-	if x := v.Spec; x != nil {
-		ch := n.Child("spec")
-		stringsJobsJobEnvironmentVariablesSpec(c, &ch, x)
+	if !n.IsRef("spec") {
+		if x := v.Spec; x != nil {
+			ch := n.Child("spec")
+			stringsJobsJobEnvironmentVariablesSpec(c, &ch, x)
+		}
 	}
 }
 
@@ -5550,9 +6044,11 @@ func stringsJobsJobEnvironment(c *stringsWalk, n *Node, v *jobs.JobEnvironment) 
 			v.EnvironmentKey = (r)
 		}
 	}
-	if x := v.Spec; x != nil {
-		ch := n.Child("spec")
-		stringsComputeEnvironment(c, &ch, x)
+	if !n.IsRef("spec") {
+		if x := v.Spec; x != nil {
+			ch := n.Child("spec")
+			stringsComputeEnvironment(c, &ch, x)
+		}
 	}
 }
 
@@ -5583,9 +6079,11 @@ func stringsJobsGitSource(c *stringsWalk, n *Node, v *jobs.GitSource) {
 			v.GitProvider = jobs.GitProvider(r)
 		}
 	}
-	if x := v.GitSnapshot; x != nil {
-		ch := n.Child("git_snapshot")
-		stringsJobsGitSnapshot(c, &ch, x)
+	if !n.IsRef("git_snapshot") {
+		if x := v.GitSnapshot; x != nil {
+			ch := n.Child("git_snapshot")
+			stringsJobsGitSnapshot(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.GitTag == "" && Forced(v.ForceSendFields, "GitTag") {
 		ch := n.Child("git_tag")
@@ -5603,23 +6101,29 @@ func stringsJobsGitSource(c *stringsWalk, n *Node, v *jobs.GitSource) {
 			v.GitUrl = (r)
 		}
 	}
-	if x := v.JobSource; x != nil {
-		ch := n.Child("job_source")
-		stringsJobsJobSource(c, &ch, x)
+	if !n.IsRef("job_source") {
+		if x := v.JobSource; x != nil {
+			ch := n.Child("job_source")
+			stringsJobsJobSource(c, &ch, x)
+		}
 	}
-	if x := v.SparseCheckout; x != nil {
-		ch := n.Child("sparse_checkout")
-		stringsJobsSparseCheckout(c, &ch, x)
+	if !n.IsRef("sparse_checkout") {
+		if x := v.SparseCheckout; x != nil {
+			ch := n.Child("sparse_checkout")
+			stringsJobsSparseCheckout(c, &ch, x)
+		}
 	}
 }
 
 func stringsJobsJobsHealthRules(c *stringsWalk, n *Node, v *jobs.JobsHealthRules) {
-	if len(v.Rules) > 0 {
-		cn := n.Child("rules")
-		for i := range v.Rules {
-			{
-				ch := cn.Elem(i)
-				stringsJobsJobsHealthRule(c, &ch, &v.Rules[i])
+	if !n.IsRef("rules") {
+		if len(v.Rules) > 0 {
+			cn := n.Child("rules")
+			for i := range v.Rules {
+				{
+					ch := cn.Elem(i)
+					stringsJobsJobsHealthRule(c, &ch, &v.Rules[i])
+				}
 			}
 		}
 	}
@@ -5632,9 +6136,11 @@ func stringsJobsJobCluster(c *stringsWalk, n *Node, v *jobs.JobCluster) {
 			v.JobClusterKey = (r)
 		}
 	}
-	if x := v.NewCluster; x != nil {
-		ch := n.Child("new_cluster")
-		stringsComputeClusterSpec(c, &ch, x)
+	if !n.IsRef("new_cluster") {
+		if x := v.NewCluster; x != nil {
+			ch := n.Child("new_cluster")
+			stringsComputeClusterSpec(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.ServerlessComputeId == "" && Forced(v.ForceSendFields, "ServerlessComputeId") {
 		ch := n.Child("serverless_compute_id")
@@ -5676,9 +6182,11 @@ func stringsJobsCronSchedule(c *stringsWalk, n *Node, v *jobs.CronSchedule) {
 			v.QuartzCronExpression = (r)
 		}
 	}
-	if x := v.SqlCondition; x != nil {
-		ch := n.Child("sql_condition")
-		stringsJobsSqlConditionConfiguration(c, &ch, x)
+	if !n.IsRef("sql_condition") {
+		if x := v.SqlCondition; x != nil {
+			ch := n.Child("sql_condition")
+			stringsJobsSqlConditionConfiguration(c, &ch, x)
+		}
 	}
 	if s := string(v.TimezoneId); c.match(s) {
 		ch := n.Child("timezone_id")
@@ -5689,48 +6197,68 @@ func stringsJobsCronSchedule(c *stringsWalk, n *Node, v *jobs.CronSchedule) {
 }
 
 func stringsJobsTask(c *stringsWalk, n *Node, v *jobs.Task) {
-	if x := v.AiRuntimeTask; x != nil {
-		ch := n.Child("ai_runtime_task")
-		stringsJobsAiRuntimeTask(c, &ch, x)
+	if !n.IsRef("ai_runtime_task") {
+		if x := v.AiRuntimeTask; x != nil {
+			ch := n.Child("ai_runtime_task")
+			stringsJobsAiRuntimeTask(c, &ch, x)
+		}
 	}
-	if x := v.AlertTask; x != nil {
-		ch := n.Child("alert_task")
-		stringsJobsAlertTask(c, &ch, x)
+	if !n.IsRef("alert_task") {
+		if x := v.AlertTask; x != nil {
+			ch := n.Child("alert_task")
+			stringsJobsAlertTask(c, &ch, x)
+		}
 	}
-	if x := v.CleanRoomsNotebookTask; x != nil {
-		ch := n.Child("clean_rooms_notebook_task")
-		stringsJobsCleanRoomsNotebookTask(c, &ch, x)
+	if !n.IsRef("clean_rooms_notebook_task") {
+		if x := v.CleanRoomsNotebookTask; x != nil {
+			ch := n.Child("clean_rooms_notebook_task")
+			stringsJobsCleanRoomsNotebookTask(c, &ch, x)
+		}
 	}
-	if x := v.Compute; x != nil {
-		ch := n.Child("compute")
-		stringsJobsCompute(c, &ch, x)
+	if !n.IsRef("compute") {
+		if x := v.Compute; x != nil {
+			ch := n.Child("compute")
+			stringsJobsCompute(c, &ch, x)
+		}
 	}
-	if x := v.ConditionTask; x != nil {
-		ch := n.Child("condition_task")
-		stringsJobsConditionTask(c, &ch, x)
+	if !n.IsRef("condition_task") {
+		if x := v.ConditionTask; x != nil {
+			ch := n.Child("condition_task")
+			stringsJobsConditionTask(c, &ch, x)
+		}
 	}
-	if x := v.DashboardTask; x != nil {
-		ch := n.Child("dashboard_task")
-		stringsJobsDashboardTask(c, &ch, x)
+	if !n.IsRef("dashboard_task") {
+		if x := v.DashboardTask; x != nil {
+			ch := n.Child("dashboard_task")
+			stringsJobsDashboardTask(c, &ch, x)
+		}
 	}
-	if x := v.DbtCloudTask; x != nil {
-		ch := n.Child("dbt_cloud_task")
-		stringsJobsDbtCloudTask(c, &ch, x)
+	if !n.IsRef("dbt_cloud_task") {
+		if x := v.DbtCloudTask; x != nil {
+			ch := n.Child("dbt_cloud_task")
+			stringsJobsDbtCloudTask(c, &ch, x)
+		}
 	}
-	if x := v.DbtPlatformTask; x != nil {
-		ch := n.Child("dbt_platform_task")
-		stringsJobsDbtPlatformTask(c, &ch, x)
+	if !n.IsRef("dbt_platform_task") {
+		if x := v.DbtPlatformTask; x != nil {
+			ch := n.Child("dbt_platform_task")
+			stringsJobsDbtPlatformTask(c, &ch, x)
+		}
 	}
-	if x := v.DbtTask; x != nil {
-		ch := n.Child("dbt_task")
-		stringsJobsDbtTask(c, &ch, x)
+	if !n.IsRef("dbt_task") {
+		if x := v.DbtTask; x != nil {
+			ch := n.Child("dbt_task")
+			stringsJobsDbtTask(c, &ch, x)
+		}
 	}
-	if len(v.DependsOn) > 0 {
-		cn := n.Child("depends_on")
-		for i := range v.DependsOn {
-			{
-				ch := cn.Elem(i)
-				stringsJobsTaskDependency(c, &ch, &v.DependsOn[i])
+	if !n.IsRef("depends_on") {
+		if len(v.DependsOn) > 0 {
+			cn := n.Child("depends_on")
+			for i := range v.DependsOn {
+				{
+					ch := cn.Elem(i)
+					stringsJobsTaskDependency(c, &ch, &v.DependsOn[i])
+				}
 			}
 		}
 	}
@@ -5744,9 +6272,11 @@ func stringsJobsTask(c *stringsWalk, n *Node, v *jobs.Task) {
 			v.Description = (r)
 		}
 	}
-	if x := v.EmailNotifications; x != nil {
-		ch := n.Child("email_notifications")
-		stringsJobsTaskEmailNotifications(c, &ch, x)
+	if !n.IsRef("email_notifications") {
+		if x := v.EmailNotifications; x != nil {
+			ch := n.Child("email_notifications")
+			stringsJobsTaskEmailNotifications(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.EnvironmentKey == "" && Forced(v.ForceSendFields, "EnvironmentKey") {
 		ch := n.Child("environment_key")
@@ -5778,17 +6308,23 @@ func stringsJobsTask(c *stringsWalk, n *Node, v *jobs.Task) {
 			v.ExistingClusterId = (r)
 		}
 	}
-	if x := v.ForEachTask; x != nil {
-		ch := n.Child("for_each_task")
-		stringsJobsForEachTask(c, &ch, x)
+	if !n.IsRef("for_each_task") {
+		if x := v.ForEachTask; x != nil {
+			ch := n.Child("for_each_task")
+			stringsJobsForEachTask(c, &ch, x)
+		}
 	}
-	if x := v.GenAiComputeTask; x != nil {
-		ch := n.Child("gen_ai_compute_task")
-		stringsJobsGenAiComputeTask(c, &ch, x)
+	if !n.IsRef("gen_ai_compute_task") {
+		if x := v.GenAiComputeTask; x != nil {
+			ch := n.Child("gen_ai_compute_task")
+			stringsJobsGenAiComputeTask(c, &ch, x)
+		}
 	}
-	if x := v.Health; x != nil {
-		ch := n.Child("health")
-		stringsJobsJobsHealthRules(c, &ch, x)
+	if !n.IsRef("health") {
+		if x := v.Health; x != nil {
+			ch := n.Child("health")
+			stringsJobsJobsHealthRules(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.JobClusterKey == "" && Forced(v.ForceSendFields, "JobClusterKey") {
 		ch := n.Child("job_cluster_key")
@@ -5800,38 +6336,52 @@ func stringsJobsTask(c *stringsWalk, n *Node, v *jobs.Task) {
 			v.JobClusterKey = (r)
 		}
 	}
-	if len(v.Libraries) > 0 {
-		cn := n.Child("libraries")
-		for i := range v.Libraries {
-			{
-				ch := cn.Elem(i)
-				stringsComputeLibrary(c, &ch, &v.Libraries[i])
+	if !n.IsRef("libraries") {
+		if len(v.Libraries) > 0 {
+			cn := n.Child("libraries")
+			for i := range v.Libraries {
+				{
+					ch := cn.Elem(i)
+					stringsComputeLibrary(c, &ch, &v.Libraries[i])
+				}
 			}
 		}
 	}
-	if x := v.NewCluster; x != nil {
-		ch := n.Child("new_cluster")
-		stringsComputeClusterSpec(c, &ch, x)
+	if !n.IsRef("new_cluster") {
+		if x := v.NewCluster; x != nil {
+			ch := n.Child("new_cluster")
+			stringsComputeClusterSpec(c, &ch, x)
+		}
 	}
-	if x := v.NotebookTask; x != nil {
-		ch := n.Child("notebook_task")
-		stringsJobsNotebookTask(c, &ch, x)
+	if !n.IsRef("notebook_task") {
+		if x := v.NotebookTask; x != nil {
+			ch := n.Child("notebook_task")
+			stringsJobsNotebookTask(c, &ch, x)
+		}
 	}
-	if x := v.PipelineTask; x != nil {
-		ch := n.Child("pipeline_task")
-		stringsJobsPipelineTask(c, &ch, x)
+	if !n.IsRef("pipeline_task") {
+		if x := v.PipelineTask; x != nil {
+			ch := n.Child("pipeline_task")
+			stringsJobsPipelineTask(c, &ch, x)
+		}
 	}
-	if x := v.PowerBiTask; x != nil {
-		ch := n.Child("power_bi_task")
-		stringsJobsPowerBiTask(c, &ch, x)
+	if !n.IsRef("power_bi_task") {
+		if x := v.PowerBiTask; x != nil {
+			ch := n.Child("power_bi_task")
+			stringsJobsPowerBiTask(c, &ch, x)
+		}
 	}
-	if x := v.PythonOperatorTask; x != nil {
-		ch := n.Child("python_operator_task")
-		stringsJobsPythonOperatorTask(c, &ch, x)
+	if !n.IsRef("python_operator_task") {
+		if x := v.PythonOperatorTask; x != nil {
+			ch := n.Child("python_operator_task")
+			stringsJobsPythonOperatorTask(c, &ch, x)
+		}
 	}
-	if x := v.PythonWheelTask; x != nil {
-		ch := n.Child("python_wheel_task")
-		stringsJobsPythonWheelTask(c, &ch, x)
+	if !n.IsRef("python_wheel_task") {
+		if x := v.PythonWheelTask; x != nil {
+			ch := n.Child("python_wheel_task")
+			stringsJobsPythonWheelTask(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.RunIf == "" && Forced(v.ForceSendFields, "RunIf") {
 		ch := n.Child("run_if")
@@ -5843,25 +6393,35 @@ func stringsJobsTask(c *stringsWalk, n *Node, v *jobs.Task) {
 			v.RunIf = jobs.RunIf(r)
 		}
 	}
-	if x := v.RunJobTask; x != nil {
-		ch := n.Child("run_job_task")
-		stringsJobsRunJobTask(c, &ch, x)
+	if !n.IsRef("run_job_task") {
+		if x := v.RunJobTask; x != nil {
+			ch := n.Child("run_job_task")
+			stringsJobsRunJobTask(c, &ch, x)
+		}
 	}
-	if x := v.SparkJarTask; x != nil {
-		ch := n.Child("spark_jar_task")
-		stringsJobsSparkJarTask(c, &ch, x)
+	if !n.IsRef("spark_jar_task") {
+		if x := v.SparkJarTask; x != nil {
+			ch := n.Child("spark_jar_task")
+			stringsJobsSparkJarTask(c, &ch, x)
+		}
 	}
-	if x := v.SparkPythonTask; x != nil {
-		ch := n.Child("spark_python_task")
-		stringsJobsSparkPythonTask(c, &ch, x)
+	if !n.IsRef("spark_python_task") {
+		if x := v.SparkPythonTask; x != nil {
+			ch := n.Child("spark_python_task")
+			stringsJobsSparkPythonTask(c, &ch, x)
+		}
 	}
-	if x := v.SparkSubmitTask; x != nil {
-		ch := n.Child("spark_submit_task")
-		stringsJobsSparkSubmitTask(c, &ch, x)
+	if !n.IsRef("spark_submit_task") {
+		if x := v.SparkSubmitTask; x != nil {
+			ch := n.Child("spark_submit_task")
+			stringsJobsSparkSubmitTask(c, &ch, x)
+		}
 	}
-	if x := v.SqlTask; x != nil {
-		ch := n.Child("sql_task")
-		stringsJobsSqlTask(c, &ch, x)
+	if !n.IsRef("sql_task") {
+		if x := v.SqlTask; x != nil {
+			ch := n.Child("sql_task")
+			stringsJobsSqlTask(c, &ch, x)
+		}
 	}
 	if s := string(v.TaskKey); c.match(s) {
 		ch := n.Child("task_key")
@@ -5869,20 +6429,26 @@ func stringsJobsTask(c *stringsWalk, n *Node, v *jobs.Task) {
 			v.TaskKey = (r)
 		}
 	}
-	if x := v.WebhookNotifications; x != nil {
-		ch := n.Child("webhook_notifications")
-		stringsJobsWebhookNotifications(c, &ch, x)
+	if !n.IsRef("webhook_notifications") {
+		if x := v.WebhookNotifications; x != nil {
+			ch := n.Child("webhook_notifications")
+			stringsJobsWebhookNotifications(c, &ch, x)
+		}
 	}
 }
 
 func stringsJobsTriggerSettings(c *stringsWalk, n *Node, v *jobs.TriggerSettings) {
-	if x := v.FileArrival; x != nil {
-		ch := n.Child("file_arrival")
-		stringsJobsFileArrivalTriggerConfiguration(c, &ch, x)
+	if !n.IsRef("file_arrival") {
+		if x := v.FileArrival; x != nil {
+			ch := n.Child("file_arrival")
+			stringsJobsFileArrivalTriggerConfiguration(c, &ch, x)
+		}
 	}
-	if x := v.Model; x != nil {
-		ch := n.Child("model")
-		stringsJobsModelTriggerConfiguration(c, &ch, x)
+	if !n.IsRef("model") {
+		if x := v.Model; x != nil {
+			ch := n.Child("model")
+			stringsJobsModelTriggerConfiguration(c, &ch, x)
+		}
 	}
 	if s := string(v.PauseStatus); c.match(s) {
 		ch := n.Child("pause_status")
@@ -5890,32 +6456,44 @@ func stringsJobsTriggerSettings(c *stringsWalk, n *Node, v *jobs.TriggerSettings
 			v.PauseStatus = jobs.PauseStatus(r)
 		}
 	}
-	if x := v.Periodic; x != nil {
-		ch := n.Child("periodic")
-		stringsJobsPeriodicTriggerConfiguration(c, &ch, x)
+	if !n.IsRef("periodic") {
+		if x := v.Periodic; x != nil {
+			ch := n.Child("periodic")
+			stringsJobsPeriodicTriggerConfiguration(c, &ch, x)
+		}
 	}
-	if x := v.SqlCondition; x != nil {
-		ch := n.Child("sql_condition")
-		stringsJobsSqlConditionConfiguration(c, &ch, x)
+	if !n.IsRef("sql_condition") {
+		if x := v.SqlCondition; x != nil {
+			ch := n.Child("sql_condition")
+			stringsJobsSqlConditionConfiguration(c, &ch, x)
+		}
 	}
-	if x := v.TableUpdate; x != nil {
-		ch := n.Child("table_update")
-		stringsJobsTableUpdateTriggerConfiguration(c, &ch, x)
+	if !n.IsRef("table_update") {
+		if x := v.TableUpdate; x != nil {
+			ch := n.Child("table_update")
+			stringsJobsTableUpdateTriggerConfiguration(c, &ch, x)
+		}
 	}
 }
 
 func stringsJobsTriggerConfiguration(c *stringsWalk, n *Node, v *jobs.TriggerConfiguration) {
-	if x := v.Continuous; x != nil {
-		ch := n.Child("continuous")
-		stringsJobsContinuousTriggerConfiguration(c, &ch, x)
+	if !n.IsRef("continuous") {
+		if x := v.Continuous; x != nil {
+			ch := n.Child("continuous")
+			stringsJobsContinuousTriggerConfiguration(c, &ch, x)
+		}
 	}
-	if x := v.FileArrival; x != nil {
-		ch := n.Child("file_arrival")
-		stringsJobsFileArrivalTriggerConfiguration(c, &ch, x)
+	if !n.IsRef("file_arrival") {
+		if x := v.FileArrival; x != nil {
+			ch := n.Child("file_arrival")
+			stringsJobsFileArrivalTriggerConfiguration(c, &ch, x)
+		}
 	}
-	if x := v.Model; x != nil {
-		ch := n.Child("model")
-		stringsJobsModelTriggerConfiguration(c, &ch, x)
+	if !n.IsRef("model") {
+		if x := v.Model; x != nil {
+			ch := n.Child("model")
+			stringsJobsModelTriggerConfiguration(c, &ch, x)
+		}
 	}
 	if s := string(v.PauseStatus); c.match(s) {
 		ch := n.Child("pause_status")
@@ -5923,147 +6501,181 @@ func stringsJobsTriggerConfiguration(c *stringsWalk, n *Node, v *jobs.TriggerCon
 			v.PauseStatus = jobs.PauseStatus(r)
 		}
 	}
-	if x := v.Periodic; x != nil {
-		ch := n.Child("periodic")
-		stringsJobsPeriodicTriggerConfiguration(c, &ch, x)
+	if !n.IsRef("periodic") {
+		if x := v.Periodic; x != nil {
+			ch := n.Child("periodic")
+			stringsJobsPeriodicTriggerConfiguration(c, &ch, x)
+		}
 	}
-	if x := v.Schedule; x != nil {
-		ch := n.Child("schedule")
-		stringsJobsCronTriggerConfiguration(c, &ch, x)
+	if !n.IsRef("schedule") {
+		if x := v.Schedule; x != nil {
+			ch := n.Child("schedule")
+			stringsJobsCronTriggerConfiguration(c, &ch, x)
+		}
 	}
-	if x := v.SqlCondition; x != nil {
-		ch := n.Child("sql_condition")
-		stringsJobsSqlConditionConfiguration(c, &ch, x)
+	if !n.IsRef("sql_condition") {
+		if x := v.SqlCondition; x != nil {
+			ch := n.Child("sql_condition")
+			stringsJobsSqlConditionConfiguration(c, &ch, x)
+		}
 	}
-	if x := v.TableUpdate; x != nil {
-		ch := n.Child("table_update")
-		stringsJobsTableUpdateTriggerConfiguration(c, &ch, x)
+	if !n.IsRef("table_update") {
+		if x := v.TableUpdate; x != nil {
+			ch := n.Child("table_update")
+			stringsJobsTableUpdateTriggerConfiguration(c, &ch, x)
+		}
 	}
 }
 
 func stringsJobsWebhookNotifications(c *stringsWalk, n *Node, v *jobs.WebhookNotifications) {
-	if len(v.OnDurationWarningThresholdExceeded) > 0 {
-		cn := n.Child("on_duration_warning_threshold_exceeded")
-		for i := range v.OnDurationWarningThresholdExceeded {
-			{
-				ch := cn.Elem(i)
-				stringsJobsWebhook(c, &ch, &v.OnDurationWarningThresholdExceeded[i])
+	if !n.IsRef("on_duration_warning_threshold_exceeded") {
+		if len(v.OnDurationWarningThresholdExceeded) > 0 {
+			cn := n.Child("on_duration_warning_threshold_exceeded")
+			for i := range v.OnDurationWarningThresholdExceeded {
+				{
+					ch := cn.Elem(i)
+					stringsJobsWebhook(c, &ch, &v.OnDurationWarningThresholdExceeded[i])
+				}
 			}
 		}
 	}
-	if len(v.OnFailure) > 0 {
-		cn := n.Child("on_failure")
-		for i := range v.OnFailure {
-			{
-				ch := cn.Elem(i)
-				stringsJobsWebhook(c, &ch, &v.OnFailure[i])
+	if !n.IsRef("on_failure") {
+		if len(v.OnFailure) > 0 {
+			cn := n.Child("on_failure")
+			for i := range v.OnFailure {
+				{
+					ch := cn.Elem(i)
+					stringsJobsWebhook(c, &ch, &v.OnFailure[i])
+				}
 			}
 		}
 	}
-	if len(v.OnMaintenanceComplete) > 0 {
-		cn := n.Child("on_maintenance_complete")
-		for i := range v.OnMaintenanceComplete {
-			{
-				ch := cn.Elem(i)
-				stringsJobsWebhook(c, &ch, &v.OnMaintenanceComplete[i])
+	if !n.IsRef("on_maintenance_complete") {
+		if len(v.OnMaintenanceComplete) > 0 {
+			cn := n.Child("on_maintenance_complete")
+			for i := range v.OnMaintenanceComplete {
+				{
+					ch := cn.Elem(i)
+					stringsJobsWebhook(c, &ch, &v.OnMaintenanceComplete[i])
+				}
 			}
 		}
 	}
-	if len(v.OnMaintenanceStart) > 0 {
-		cn := n.Child("on_maintenance_start")
-		for i := range v.OnMaintenanceStart {
-			{
-				ch := cn.Elem(i)
-				stringsJobsWebhook(c, &ch, &v.OnMaintenanceStart[i])
+	if !n.IsRef("on_maintenance_start") {
+		if len(v.OnMaintenanceStart) > 0 {
+			cn := n.Child("on_maintenance_start")
+			for i := range v.OnMaintenanceStart {
+				{
+					ch := cn.Elem(i)
+					stringsJobsWebhook(c, &ch, &v.OnMaintenanceStart[i])
+				}
 			}
 		}
 	}
-	if len(v.OnStart) > 0 {
-		cn := n.Child("on_start")
-		for i := range v.OnStart {
-			{
-				ch := cn.Elem(i)
-				stringsJobsWebhook(c, &ch, &v.OnStart[i])
+	if !n.IsRef("on_start") {
+		if len(v.OnStart) > 0 {
+			cn := n.Child("on_start")
+			for i := range v.OnStart {
+				{
+					ch := cn.Elem(i)
+					stringsJobsWebhook(c, &ch, &v.OnStart[i])
+				}
 			}
 		}
 	}
-	if len(v.OnStreamingBacklogExceeded) > 0 {
-		cn := n.Child("on_streaming_backlog_exceeded")
-		for i := range v.OnStreamingBacklogExceeded {
-			{
-				ch := cn.Elem(i)
-				stringsJobsWebhook(c, &ch, &v.OnStreamingBacklogExceeded[i])
+	if !n.IsRef("on_streaming_backlog_exceeded") {
+		if len(v.OnStreamingBacklogExceeded) > 0 {
+			cn := n.Child("on_streaming_backlog_exceeded")
+			for i := range v.OnStreamingBacklogExceeded {
+				{
+					ch := cn.Elem(i)
+					stringsJobsWebhook(c, &ch, &v.OnStreamingBacklogExceeded[i])
+				}
 			}
 		}
 	}
-	if len(v.OnSuccess) > 0 {
-		cn := n.Child("on_success")
-		for i := range v.OnSuccess {
-			{
-				ch := cn.Elem(i)
-				stringsJobsWebhook(c, &ch, &v.OnSuccess[i])
+	if !n.IsRef("on_success") {
+		if len(v.OnSuccess) > 0 {
+			cn := n.Child("on_success")
+			for i := range v.OnSuccess {
+				{
+					ch := cn.Elem(i)
+					stringsJobsWebhook(c, &ch, &v.OnSuccess[i])
+				}
 			}
 		}
 	}
 }
 
 func stringsResourcesJobRunLifecycle(c *stringsWalk, n *Node, v *resources.JobRunLifecycle) {
-	if len(v.Triggers) > 0 {
-		cn := n.Child("triggers")
-		for i := range v.Triggers {
-			{
-				ch := cn.Elem(i)
-				stringsResourcesJobRunTrigger(c, &ch, &v.Triggers[i])
+	if !n.IsRef("triggers") {
+		if len(v.Triggers) > 0 {
+			cn := n.Child("triggers")
+			for i := range v.Triggers {
+				{
+					ch := cn.Elem(i)
+					stringsResourcesJobRunTrigger(c, &ch, &v.Triggers[i])
+				}
 			}
 		}
 	}
-	if x := v.TriggersState; x != nil {
-		ch := n.Child("triggers_state")
-		stringsResourcesJobRunTriggersState(c, &ch, x)
+	if !n.IsRef("triggers_state") {
+		if x := v.TriggersState; x != nil {
+			ch := n.Child("triggers_state")
+			stringsResourcesJobRunTriggersState(c, &ch, x)
+		}
 	}
 }
 
 func stringsJobsPipelineParams(c *stringsWalk, n *Node, v *jobs.PipelineParams) {
-	if len(v.FullRefreshSelection) > 0 {
-		cn := n.Child("full_refresh_selection")
-		for i := range v.FullRefreshSelection {
-			if s := string(v.FullRefreshSelection[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.FullRefreshSelection[i] = (r)
+	if !n.IsRef("full_refresh_selection") {
+		if len(v.FullRefreshSelection) > 0 {
+			cn := n.Child("full_refresh_selection")
+			for i := range v.FullRefreshSelection {
+				if s := string(v.FullRefreshSelection[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.FullRefreshSelection[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.RefreshFlowSelection) > 0 {
-		cn := n.Child("refresh_flow_selection")
-		for i := range v.RefreshFlowSelection {
-			if s := string(v.RefreshFlowSelection[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.RefreshFlowSelection[i] = (r)
+	if !n.IsRef("refresh_flow_selection") {
+		if len(v.RefreshFlowSelection) > 0 {
+			cn := n.Child("refresh_flow_selection")
+			for i := range v.RefreshFlowSelection {
+				if s := string(v.RefreshFlowSelection[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.RefreshFlowSelection[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.RefreshSelection) > 0 {
-		cn := n.Child("refresh_selection")
-		for i := range v.RefreshSelection {
-			if s := string(v.RefreshSelection[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.RefreshSelection[i] = (r)
+	if !n.IsRef("refresh_selection") {
+		if len(v.RefreshSelection) > 0 {
+			cn := n.Child("refresh_selection")
+			for i := range v.RefreshSelection {
+				if s := string(v.RefreshSelection[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.RefreshSelection[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.ResetCheckpointSelection) > 0 {
-		cn := n.Child("reset_checkpoint_selection")
-		for i := range v.ResetCheckpointSelection {
-			if s := string(v.ResetCheckpointSelection[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.ResetCheckpointSelection[i] = (r)
+	if !n.IsRef("reset_checkpoint_selection") {
+		if len(v.ResetCheckpointSelection) > 0 {
+			cn := n.Child("reset_checkpoint_selection")
+			for i := range v.ResetCheckpointSelection {
+				if s := string(v.ResetCheckpointSelection[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.ResetCheckpointSelection[i] = (r)
+					}
 				}
 			}
 		}
@@ -6098,29 +6710,39 @@ func stringsResourcesPipelinePermission(c *stringsWalk, n *Node, v *resources.Pi
 }
 
 func stringsPipelinesPipelineCluster(c *stringsWalk, n *Node, v *pipelines.PipelineCluster) {
-	if x := v.Autoscale; x != nil {
-		ch := n.Child("autoscale")
-		stringsPipelinesPipelineClusterAutoscale(c, &ch, x)
+	if !n.IsRef("autoscale") {
+		if x := v.Autoscale; x != nil {
+			ch := n.Child("autoscale")
+			stringsPipelinesPipelineClusterAutoscale(c, &ch, x)
+		}
 	}
-	if x := v.AwsAttributes; x != nil {
-		ch := n.Child("aws_attributes")
-		stringsComputeAwsAttributes(c, &ch, x)
+	if !n.IsRef("aws_attributes") {
+		if x := v.AwsAttributes; x != nil {
+			ch := n.Child("aws_attributes")
+			stringsComputeAwsAttributes(c, &ch, x)
+		}
 	}
-	if x := v.AzureAttributes; x != nil {
-		ch := n.Child("azure_attributes")
-		stringsComputeAzureAttributes(c, &ch, x)
+	if !n.IsRef("azure_attributes") {
+		if x := v.AzureAttributes; x != nil {
+			ch := n.Child("azure_attributes")
+			stringsComputeAzureAttributes(c, &ch, x)
+		}
 	}
-	if x := v.ClusterLogConf; x != nil {
-		ch := n.Child("cluster_log_conf")
-		stringsComputeClusterLogConf(c, &ch, x)
+	if !n.IsRef("cluster_log_conf") {
+		if x := v.ClusterLogConf; x != nil {
+			ch := n.Child("cluster_log_conf")
+			stringsComputeClusterLogConf(c, &ch, x)
+		}
 	}
-	if len(v.CustomTags) > 0 {
-		cn := n.Child("custom_tags")
-		for _, k := range sortedKeys(v.CustomTags) {
-			if s := string(v.CustomTags[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.CustomTags[k] = (r)
+	if !n.IsRef("custom_tags") {
+		if len(v.CustomTags) > 0 {
+			cn := n.Child("custom_tags")
+			for _, k := range sortedKeys(v.CustomTags) {
+				if s := string(v.CustomTags[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.CustomTags[k] = (r)
+					}
 				}
 			}
 		}
@@ -6145,16 +6767,20 @@ func stringsPipelinesPipelineCluster(c *stringsWalk, n *Node, v *pipelines.Pipel
 			v.DriverNodeTypeId = (r)
 		}
 	}
-	if x := v.GcpAttributes; x != nil {
-		ch := n.Child("gcp_attributes")
-		stringsComputeGcpAttributes(c, &ch, x)
+	if !n.IsRef("gcp_attributes") {
+		if x := v.GcpAttributes; x != nil {
+			ch := n.Child("gcp_attributes")
+			stringsComputeGcpAttributes(c, &ch, x)
+		}
 	}
-	if len(v.InitScripts) > 0 {
-		cn := n.Child("init_scripts")
-		for i := range v.InitScripts {
-			{
-				ch := cn.Elem(i)
-				stringsComputeInitScriptInfo(c, &ch, &v.InitScripts[i])
+	if !n.IsRef("init_scripts") {
+		if len(v.InitScripts) > 0 {
+			cn := n.Child("init_scripts")
+			for i := range v.InitScripts {
+				{
+					ch := cn.Elem(i)
+					stringsComputeInitScriptInfo(c, &ch, &v.InitScripts[i])
+				}
 			}
 		}
 	}
@@ -6198,35 +6824,41 @@ func stringsPipelinesPipelineCluster(c *stringsWalk, n *Node, v *pipelines.Pipel
 			v.PolicyId = (r)
 		}
 	}
-	if len(v.SparkConf) > 0 {
-		cn := n.Child("spark_conf")
-		for _, k := range sortedKeys(v.SparkConf) {
-			if s := string(v.SparkConf[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.SparkConf[k] = (r)
+	if !n.IsRef("spark_conf") {
+		if len(v.SparkConf) > 0 {
+			cn := n.Child("spark_conf")
+			for _, k := range sortedKeys(v.SparkConf) {
+				if s := string(v.SparkConf[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.SparkConf[k] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.SparkEnvVars) > 0 {
-		cn := n.Child("spark_env_vars")
-		for _, k := range sortedKeys(v.SparkEnvVars) {
-			if s := string(v.SparkEnvVars[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.SparkEnvVars[k] = (r)
+	if !n.IsRef("spark_env_vars") {
+		if len(v.SparkEnvVars) > 0 {
+			cn := n.Child("spark_env_vars")
+			for _, k := range sortedKeys(v.SparkEnvVars) {
+				if s := string(v.SparkEnvVars[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.SparkEnvVars[k] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.SshPublicKeys) > 0 {
-		cn := n.Child("ssh_public_keys")
-		for i := range v.SshPublicKeys {
-			if s := string(v.SshPublicKeys[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.SshPublicKeys[i] = (r)
+	if !n.IsRef("ssh_public_keys") {
+		if len(v.SshPublicKeys) > 0 {
+			cn := n.Child("ssh_public_keys")
+			for i := range v.SshPublicKeys {
+				if s := string(v.SshPublicKeys[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.SshPublicKeys[i] = (r)
+					}
 				}
 			}
 		}
@@ -6273,13 +6905,15 @@ func stringsPipelinesPipelineDeployment(c *stringsWalk, n *Node, v *pipelines.Pi
 }
 
 func stringsPipelinesPipelinesEnvironment(c *stringsWalk, n *Node, v *pipelines.PipelinesEnvironment) {
-	if len(v.Dependencies) > 0 {
-		cn := n.Child("dependencies")
-		for i := range v.Dependencies {
-			if s := string(v.Dependencies[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Dependencies[i] = (r)
+	if !n.IsRef("dependencies") {
+		if len(v.Dependencies) > 0 {
+			cn := n.Child("dependencies")
+			for i := range v.Dependencies {
+				if s := string(v.Dependencies[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Dependencies[i] = (r)
+					}
 				}
 			}
 		}
@@ -6330,24 +6964,28 @@ func stringsPipelinesEventLogSpec(c *stringsWalk, n *Node, v *pipelines.EventLog
 }
 
 func stringsPipelinesFilters(c *stringsWalk, n *Node, v *pipelines.Filters) {
-	if len(v.Exclude) > 0 {
-		cn := n.Child("exclude")
-		for i := range v.Exclude {
-			if s := string(v.Exclude[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Exclude[i] = (r)
+	if !n.IsRef("exclude") {
+		if len(v.Exclude) > 0 {
+			cn := n.Child("exclude")
+			for i := range v.Exclude {
+				if s := string(v.Exclude[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Exclude[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.Include) > 0 {
-		cn := n.Child("include")
-		for i := range v.Include {
-			if s := string(v.Include[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Include[i] = (r)
+	if !n.IsRef("include") {
+		if len(v.Include) > 0 {
+			cn := n.Child("include")
+			for i := range v.Include {
+				if s := string(v.Include[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Include[i] = (r)
+					}
 				}
 			}
 		}
@@ -6371,9 +7009,11 @@ func stringsPipelinesIngestionGatewayPipelineDefinition(c *stringsWalk, n *Node,
 			v.ConnectionName = (r)
 		}
 	}
-	if x := v.ConnectionParameters; x != nil {
-		ch := n.Child("connection_parameters")
-		stringsPipelinesConnectionParameters(c, &ch, x)
+	if !n.IsRef("connection_parameters") {
+		if x := v.ConnectionParameters; x != nil {
+			ch := n.Child("connection_parameters")
+			stringsPipelinesConnectionParameters(c, &ch, x)
+		}
 	}
 	if s := string(v.GatewayStorageCatalog); c.match(s) {
 		ch := n.Child("gateway_storage_catalog")
@@ -6420,13 +7060,17 @@ func stringsPipelinesIngestionPipelineDefinition(c *stringsWalk, n *Node, v *pip
 			v.ConnectorType = pipelines.ConnectorType(r)
 		}
 	}
-	if x := v.DataStagingOptions; x != nil {
-		ch := n.Child("data_staging_options")
-		stringsPipelinesDataStagingOptions(c, &ch, x)
+	if !n.IsRef("data_staging_options") {
+		if x := v.DataStagingOptions; x != nil {
+			ch := n.Child("data_staging_options")
+			stringsPipelinesDataStagingOptions(c, &ch, x)
+		}
 	}
-	if x := v.FullRefreshWindow; x != nil {
-		ch := n.Child("full_refresh_window")
-		stringsPipelinesOperationTimeWindow(c, &ch, x)
+	if !n.IsRef("full_refresh_window") {
+		if x := v.FullRefreshWindow; x != nil {
+			ch := n.Child("full_refresh_window")
+			stringsPipelinesOperationTimeWindow(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.IngestionGatewayId == "" && Forced(v.ForceSendFields, "IngestionGatewayId") {
 		ch := n.Child("ingestion_gateway_id")
@@ -6448,21 +7092,25 @@ func stringsPipelinesIngestionPipelineDefinition(c *stringsWalk, n *Node, v *pip
 			v.NetsuiteJarPath = (r)
 		}
 	}
-	if len(v.Objects) > 0 {
-		cn := n.Child("objects")
-		for i := range v.Objects {
-			{
-				ch := cn.Elem(i)
-				stringsPipelinesIngestionConfig(c, &ch, &v.Objects[i])
+	if !n.IsRef("objects") {
+		if len(v.Objects) > 0 {
+			cn := n.Child("objects")
+			for i := range v.Objects {
+				{
+					ch := cn.Elem(i)
+					stringsPipelinesIngestionConfig(c, &ch, &v.Objects[i])
+				}
 			}
 		}
 	}
-	if len(v.SourceConfigurations) > 0 {
-		cn := n.Child("source_configurations")
-		for i := range v.SourceConfigurations {
-			{
-				ch := cn.Elem(i)
-				stringsPipelinesSourceConfig(c, &ch, &v.SourceConfigurations[i])
+	if !n.IsRef("source_configurations") {
+		if len(v.SourceConfigurations) > 0 {
+			cn := n.Child("source_configurations")
+			for i := range v.SourceConfigurations {
+				{
+					ch := cn.Elem(i)
+					stringsPipelinesSourceConfig(c, &ch, &v.SourceConfigurations[i])
+				}
 			}
 		}
 	}
@@ -6476,20 +7124,26 @@ func stringsPipelinesIngestionPipelineDefinition(c *stringsWalk, n *Node, v *pip
 			v.SourceType = pipelines.IngestionSourceType(r)
 		}
 	}
-	if x := v.TableConfiguration; x != nil {
-		ch := n.Child("table_configuration")
-		stringsPipelinesTableSpecificConfig(c, &ch, x)
+	if !n.IsRef("table_configuration") {
+		if x := v.TableConfiguration; x != nil {
+			ch := n.Child("table_configuration")
+			stringsPipelinesTableSpecificConfig(c, &ch, x)
+		}
 	}
 }
 
 func stringsPipelinesPipelineLibrary(c *stringsWalk, n *Node, v *pipelines.PipelineLibrary) {
-	if x := v.File; x != nil {
-		ch := n.Child("file")
-		stringsPipelinesFileLibrary(c, &ch, x)
+	if !n.IsRef("file") {
+		if x := v.File; x != nil {
+			ch := n.Child("file")
+			stringsPipelinesFileLibrary(c, &ch, x)
+		}
 	}
-	if x := v.Glob; x != nil {
-		ch := n.Child("glob")
-		stringsPipelinesPathPattern(c, &ch, x)
+	if !n.IsRef("glob") {
+		if x := v.Glob; x != nil {
+			ch := n.Child("glob")
+			stringsPipelinesPathPattern(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.Jar == "" && Forced(v.ForceSendFields, "Jar") {
 		ch := n.Child("jar")
@@ -6501,13 +7155,17 @@ func stringsPipelinesPipelineLibrary(c *stringsWalk, n *Node, v *pipelines.Pipel
 			v.Jar = (r)
 		}
 	}
-	if x := v.Maven; x != nil {
-		ch := n.Child("maven")
-		stringsComputeMavenLibrary(c, &ch, x)
+	if !n.IsRef("maven") {
+		if x := v.Maven; x != nil {
+			ch := n.Child("maven")
+			stringsComputeMavenLibrary(c, &ch, x)
+		}
 	}
-	if x := v.Notebook; x != nil {
-		ch := n.Child("notebook")
-		stringsPipelinesNotebookLibrary(c, &ch, x)
+	if !n.IsRef("notebook") {
+		if x := v.Notebook; x != nil {
+			ch := n.Child("notebook")
+			stringsPipelinesNotebookLibrary(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.Whl == "" && Forced(v.ForceSendFields, "Whl") {
 		ch := n.Child("whl")
@@ -6522,24 +7180,28 @@ func stringsPipelinesPipelineLibrary(c *stringsWalk, n *Node, v *pipelines.Pipel
 }
 
 func stringsPipelinesNotifications(c *stringsWalk, n *Node, v *pipelines.Notifications) {
-	if len(v.Alerts) > 0 {
-		cn := n.Child("alerts")
-		for i := range v.Alerts {
-			if s := string(v.Alerts[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Alerts[i] = (r)
+	if !n.IsRef("alerts") {
+		if len(v.Alerts) > 0 {
+			cn := n.Child("alerts")
+			for i := range v.Alerts {
+				if s := string(v.Alerts[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Alerts[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.EmailRecipients) > 0 {
-		cn := n.Child("email_recipients")
-		for i := range v.EmailRecipients {
-			if s := string(v.EmailRecipients[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.EmailRecipients[i] = (r)
+	if !n.IsRef("email_recipients") {
+		if len(v.EmailRecipients) > 0 {
+			cn := n.Child("email_recipients")
+			for i := range v.EmailRecipients {
+				if s := string(v.EmailRecipients[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.EmailRecipients[i] = (r)
+					}
 				}
 			}
 		}
@@ -6547,13 +7209,15 @@ func stringsPipelinesNotifications(c *stringsWalk, n *Node, v *pipelines.Notific
 }
 
 func stringsPipelinesRestartWindow(c *stringsWalk, n *Node, v *pipelines.RestartWindow) {
-	if len(v.DaysOfWeek) > 0 {
-		cn := n.Child("days_of_week")
-		for i := range v.DaysOfWeek {
-			if s := string(v.DaysOfWeek[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.DaysOfWeek[i] = pipelines.DayOfWeek(r)
+	if !n.IsRef("days_of_week") {
+		if len(v.DaysOfWeek) > 0 {
+			cn := n.Child("days_of_week")
+			for i := range v.DaysOfWeek {
+				if s := string(v.DaysOfWeek[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.DaysOfWeek[i] = pipelines.DayOfWeek(r)
+					}
 				}
 			}
 		}
@@ -6604,9 +7268,11 @@ func stringsPipelinesRunAs(c *stringsWalk, n *Node, v *pipelines.RunAs) {
 }
 
 func stringsPipelinesPipelineTrigger(c *stringsWalk, n *Node, v *pipelines.PipelineTrigger) {
-	if x := v.Cron; x != nil {
-		ch := n.Child("cron")
-		stringsPipelinesCronTrigger(c, &ch, x)
+	if !n.IsRef("cron") {
+		if x := v.Cron; x != nil {
+			ch := n.Child("cron")
+			stringsPipelinesCronTrigger(c, &ch, x)
+		}
 	}
 }
 
@@ -6711,9 +7377,11 @@ func stringsMlExperimentTag(c *stringsWalk, n *Node, v *ml.ExperimentTag) {
 }
 
 func stringsMlExperimentTraceLocation(c *stringsWalk, n *Node, v *ml.ExperimentTraceLocation) {
-	if x := v.UcTraceLocation; x != nil {
-		ch := n.Child("uc_trace_location")
-		stringsMlUcTraceLocation(c, &ch, x)
+	if !n.IsRef("uc_trace_location") {
+		if x := v.UcTraceLocation; x != nil {
+			ch := n.Child("uc_trace_location")
+			stringsMlUcTraceLocation(c, &ch, x)
+		}
 	}
 }
 
@@ -6745,73 +7413,91 @@ func stringsResourcesModelServingEndpointPermission(c *stringsWalk, n *Node, v *
 }
 
 func stringsServingAiGatewayConfig(c *stringsWalk, n *Node, v *serving.AiGatewayConfig) {
-	if x := v.Guardrails; x != nil {
-		ch := n.Child("guardrails")
-		stringsServingAiGatewayGuardrails(c, &ch, x)
+	if !n.IsRef("guardrails") {
+		if x := v.Guardrails; x != nil {
+			ch := n.Child("guardrails")
+			stringsServingAiGatewayGuardrails(c, &ch, x)
+		}
 	}
-	if x := v.InferenceTableConfig; x != nil {
-		ch := n.Child("inference_table_config")
-		stringsServingAiGatewayInferenceTableConfig(c, &ch, x)
+	if !n.IsRef("inference_table_config") {
+		if x := v.InferenceTableConfig; x != nil {
+			ch := n.Child("inference_table_config")
+			stringsServingAiGatewayInferenceTableConfig(c, &ch, x)
+		}
 	}
-	if len(v.RateLimits) > 0 {
-		cn := n.Child("rate_limits")
-		for i := range v.RateLimits {
-			{
-				ch := cn.Elem(i)
-				stringsServingAiGatewayRateLimit(c, &ch, &v.RateLimits[i])
+	if !n.IsRef("rate_limits") {
+		if len(v.RateLimits) > 0 {
+			cn := n.Child("rate_limits")
+			for i := range v.RateLimits {
+				{
+					ch := cn.Elem(i)
+					stringsServingAiGatewayRateLimit(c, &ch, &v.RateLimits[i])
+				}
 			}
 		}
 	}
 }
 
 func stringsServingEndpointCoreConfigInput(c *stringsWalk, n *Node, v *serving.EndpointCoreConfigInput) {
-	if x := v.AutoCaptureConfig; x != nil {
-		ch := n.Child("auto_capture_config")
-		stringsServingAutoCaptureConfigInput(c, &ch, x)
-	}
-	if len(v.ServedEntities) > 0 {
-		cn := n.Child("served_entities")
-		for i := range v.ServedEntities {
-			{
-				ch := cn.Elem(i)
-				stringsServingServedEntityInput(c, &ch, &v.ServedEntities[i])
-			}
+	if !n.IsRef("auto_capture_config") {
+		if x := v.AutoCaptureConfig; x != nil {
+			ch := n.Child("auto_capture_config")
+			stringsServingAutoCaptureConfigInput(c, &ch, x)
 		}
 	}
-	if len(v.ServedModels) > 0 {
-		cn := n.Child("served_models")
-		for i := range v.ServedModels {
-			{
-				ch := cn.Elem(i)
-				stringsServingServedModelInput(c, &ch, &v.ServedModels[i])
-			}
-		}
-	}
-	if x := v.TrafficConfig; x != nil {
-		ch := n.Child("traffic_config")
-		stringsServingTrafficConfig(c, &ch, x)
-	}
-}
-
-func stringsServingEmailNotifications(c *stringsWalk, n *Node, v *serving.EmailNotifications) {
-	if len(v.OnUpdateFailure) > 0 {
-		cn := n.Child("on_update_failure")
-		for i := range v.OnUpdateFailure {
-			if s := string(v.OnUpdateFailure[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.OnUpdateFailure[i] = (r)
+	if !n.IsRef("served_entities") {
+		if len(v.ServedEntities) > 0 {
+			cn := n.Child("served_entities")
+			for i := range v.ServedEntities {
+				{
+					ch := cn.Elem(i)
+					stringsServingServedEntityInput(c, &ch, &v.ServedEntities[i])
 				}
 			}
 		}
 	}
-	if len(v.OnUpdateSuccess) > 0 {
-		cn := n.Child("on_update_success")
-		for i := range v.OnUpdateSuccess {
-			if s := string(v.OnUpdateSuccess[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.OnUpdateSuccess[i] = (r)
+	if !n.IsRef("served_models") {
+		if len(v.ServedModels) > 0 {
+			cn := n.Child("served_models")
+			for i := range v.ServedModels {
+				{
+					ch := cn.Elem(i)
+					stringsServingServedModelInput(c, &ch, &v.ServedModels[i])
+				}
+			}
+		}
+	}
+	if !n.IsRef("traffic_config") {
+		if x := v.TrafficConfig; x != nil {
+			ch := n.Child("traffic_config")
+			stringsServingTrafficConfig(c, &ch, x)
+		}
+	}
+}
+
+func stringsServingEmailNotifications(c *stringsWalk, n *Node, v *serving.EmailNotifications) {
+	if !n.IsRef("on_update_failure") {
+		if len(v.OnUpdateFailure) > 0 {
+			cn := n.Child("on_update_failure")
+			for i := range v.OnUpdateFailure {
+				if s := string(v.OnUpdateFailure[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.OnUpdateFailure[i] = (r)
+					}
+				}
+			}
+		}
+	}
+	if !n.IsRef("on_update_success") {
+		if len(v.OnUpdateSuccess) > 0 {
+			cn := n.Child("on_update_success")
+			for i := range v.OnUpdateSuccess {
+				if s := string(v.OnUpdateSuccess[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.OnUpdateSuccess[i] = (r)
+					}
 				}
 			}
 		}
@@ -6853,24 +7539,30 @@ func stringsServingEndpointTag(c *stringsWalk, n *Node, v *serving.EndpointTag) 
 }
 
 func stringsServingTelemetryConfig(c *stringsWalk, n *Node, v *serving.TelemetryConfig) {
-	if len(v.EnabledTelemetryFeatures) > 0 {
-		cn := n.Child("enabled_telemetry_features")
-		for i := range v.EnabledTelemetryFeatures {
-			if s := string(v.EnabledTelemetryFeatures[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.EnabledTelemetryFeatures[i] = serving.TelemetryFeature(r)
+	if !n.IsRef("enabled_telemetry_features") {
+		if len(v.EnabledTelemetryFeatures) > 0 {
+			cn := n.Child("enabled_telemetry_features")
+			for i := range v.EnabledTelemetryFeatures {
+				if s := string(v.EnabledTelemetryFeatures[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.EnabledTelemetryFeatures[i] = serving.TelemetryFeature(r)
+					}
 				}
 			}
 		}
 	}
-	if x := v.InferenceTableConfig; x != nil {
-		ch := n.Child("inference_table_config")
-		stringsServingTelemetryInferenceTableConfig(c, &ch, x)
+	if !n.IsRef("inference_table_config") {
+		if x := v.InferenceTableConfig; x != nil {
+			ch := n.Child("inference_table_config")
+			stringsServingTelemetryInferenceTableConfig(c, &ch, x)
+		}
 	}
-	if x := v.TableNames; x != nil {
-		ch := n.Child("table_names")
-		stringsServingUnityCatalogTableNames(c, &ch, x)
+	if !n.IsRef("table_names") {
+		if x := v.TableNames; x != nil {
+			ch := n.Child("table_names")
+			stringsServingUnityCatalogTableNames(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.TelemetryProfileId == "" && Forced(v.ForceSendFields, "TelemetryProfileId") {
 		ch := n.Child("telemetry_profile_id")
@@ -6895,13 +7587,15 @@ func stringsCatalogPrivilegeAssignment(c *stringsWalk, n *Node, v *catalog.Privi
 			v.Principal = (r)
 		}
 	}
-	if len(v.Privileges) > 0 {
-		cn := n.Child("privileges")
-		for i := range v.Privileges {
-			if s := string(v.Privileges[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Privileges[i] = catalog.Privilege(r)
+	if !n.IsRef("privileges") {
+		if len(v.Privileges) > 0 {
+			cn := n.Child("privileges")
+			for i := range v.Privileges {
+				if s := string(v.Privileges[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Privileges[i] = catalog.Privilege(r)
+					}
 				}
 			}
 		}
@@ -6909,88 +7603,118 @@ func stringsCatalogPrivilegeAssignment(c *stringsWalk, n *Node, v *catalog.Privi
 }
 
 func stringsCatalogModelServiceConfig(c *stringsWalk, n *Node, v *catalog.ModelServiceConfig) {
-	if x := v.InferenceTable; x != nil {
-		ch := n.Child("inference_table")
-		stringsCatalogInferenceTableConfig(c, &ch, x)
-	}
-	if len(v.RateLimits) > 0 {
-		cn := n.Child("rate_limits")
-		for i := range v.RateLimits {
-			{
-				ch := cn.Elem(i)
-				stringsCatalogRateLimit(c, &ch, &v.RateLimits[i])
-			}
+	if !n.IsRef("inference_table") {
+		if x := v.InferenceTable; x != nil {
+			ch := n.Child("inference_table")
+			stringsCatalogInferenceTableConfig(c, &ch, x)
 		}
 	}
-	if x := v.Routing; x != nil {
-		ch := n.Child("routing")
-		stringsCatalogModelServiceConfigRoutingConfig(c, &ch, x)
-	}
-}
-
-func stringsCatalogMcpServiceConfig(c *stringsWalk, n *Node, v *catalog.McpServiceConfig) {
-	if len(v.IncludeToolSelectors) > 0 {
-		cn := n.Child("include_tool_selectors")
-		for i := range v.IncludeToolSelectors {
-			if s := string(v.IncludeToolSelectors[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.IncludeToolSelectors[i] = (r)
+	if !n.IsRef("rate_limits") {
+		if len(v.RateLimits) > 0 {
+			cn := n.Child("rate_limits")
+			for i := range v.RateLimits {
+				{
+					ch := cn.Elem(i)
+					stringsCatalogRateLimit(c, &ch, &v.RateLimits[i])
 				}
 			}
 		}
 	}
-	if len(v.RateLimits) > 0 {
-		cn := n.Child("rate_limits")
-		for i := range v.RateLimits {
-			{
-				ch := cn.Elem(i)
-				stringsCatalogRateLimit(c, &ch, &v.RateLimits[i])
+	if !n.IsRef("routing") {
+		if x := v.Routing; x != nil {
+			ch := n.Child("routing")
+			stringsCatalogModelServiceConfigRoutingConfig(c, &ch, x)
+		}
+	}
+}
+
+func stringsCatalogMcpServiceConfig(c *stringsWalk, n *Node, v *catalog.McpServiceConfig) {
+	if !n.IsRef("include_tool_selectors") {
+		if len(v.IncludeToolSelectors) > 0 {
+			cn := n.Child("include_tool_selectors")
+			for i := range v.IncludeToolSelectors {
+				if s := string(v.IncludeToolSelectors[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.IncludeToolSelectors[i] = (r)
+					}
+				}
 			}
 		}
 	}
-	if x := v.SourceConnection; x != nil {
-		ch := n.Child("source_connection")
-		stringsCatalogMcpServiceConfigSourceConnection(c, &ch, x)
+	if !n.IsRef("rate_limits") {
+		if len(v.RateLimits) > 0 {
+			cn := n.Child("rate_limits")
+			for i := range v.RateLimits {
+				{
+					ch := cn.Elem(i)
+					stringsCatalogRateLimit(c, &ch, &v.RateLimits[i])
+				}
+			}
+		}
+	}
+	if !n.IsRef("source_connection") {
+		if x := v.SourceConnection; x != nil {
+			ch := n.Child("source_connection")
+			stringsCatalogMcpServiceConfigSourceConnection(c, &ch, x)
+		}
 	}
 }
 
 func stringsCatalogModelProviderServiceConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfig) {
-	if x := v.AmazonBedrock; x != nil {
-		ch := n.Child("amazon_bedrock")
-		stringsCatalogModelProviderServiceConfigAmazonBedrockProviderConfig(c, &ch, x)
+	if !n.IsRef("amazon_bedrock") {
+		if x := v.AmazonBedrock; x != nil {
+			ch := n.Child("amazon_bedrock")
+			stringsCatalogModelProviderServiceConfigAmazonBedrockProviderConfig(c, &ch, x)
+		}
 	}
-	if x := v.Anthropic; x != nil {
-		ch := n.Child("anthropic")
-		stringsCatalogModelProviderServiceConfigAnthropicProviderConfig(c, &ch, x)
+	if !n.IsRef("anthropic") {
+		if x := v.Anthropic; x != nil {
+			ch := n.Child("anthropic")
+			stringsCatalogModelProviderServiceConfigAnthropicProviderConfig(c, &ch, x)
+		}
 	}
-	if x := v.AzureOpenai; x != nil {
-		ch := n.Child("azure_openai")
-		stringsCatalogModelProviderServiceConfigAzureOpenAiProviderConfig(c, &ch, x)
+	if !n.IsRef("azure_openai") {
+		if x := v.AzureOpenai; x != nil {
+			ch := n.Child("azure_openai")
+			stringsCatalogModelProviderServiceConfigAzureOpenAiProviderConfig(c, &ch, x)
+		}
 	}
-	if x := v.BedrockMantle; x != nil {
-		ch := n.Child("bedrock_mantle")
-		stringsCatalogModelProviderServiceConfigAmazonBedrockProviderConfig(c, &ch, x)
+	if !n.IsRef("bedrock_mantle") {
+		if x := v.BedrockMantle; x != nil {
+			ch := n.Child("bedrock_mantle")
+			stringsCatalogModelProviderServiceConfigAmazonBedrockProviderConfig(c, &ch, x)
+		}
 	}
-	if x := v.Custom; x != nil {
-		ch := n.Child("custom")
-		stringsCatalogModelProviderServiceConfigCustomProviderConfig(c, &ch, x)
+	if !n.IsRef("custom") {
+		if x := v.Custom; x != nil {
+			ch := n.Child("custom")
+			stringsCatalogModelProviderServiceConfigCustomProviderConfig(c, &ch, x)
+		}
 	}
-	if x := v.GeminiEnterprise; x != nil {
-		ch := n.Child("gemini_enterprise")
-		stringsCatalogModelProviderServiceConfigGeminiEnterpriseProviderConfig(c, &ch, x)
+	if !n.IsRef("gemini_enterprise") {
+		if x := v.GeminiEnterprise; x != nil {
+			ch := n.Child("gemini_enterprise")
+			stringsCatalogModelProviderServiceConfigGeminiEnterpriseProviderConfig(c, &ch, x)
+		}
 	}
-	if x := v.InferenceTable; x != nil {
-		ch := n.Child("inference_table")
-		stringsCatalogInferenceTableConfig(c, &ch, x)
+	if !n.IsRef("inference_table") {
+		if x := v.InferenceTable; x != nil {
+			ch := n.Child("inference_table")
+			stringsCatalogInferenceTableConfig(c, &ch, x)
+		}
 	}
-	if x := v.MicrosoftFoundry; x != nil {
-		ch := n.Child("microsoft_foundry")
-		stringsCatalogModelProviderServiceConfigMicrosoftFoundryProviderConfig(c, &ch, x)
+	if !n.IsRef("microsoft_foundry") {
+		if x := v.MicrosoftFoundry; x != nil {
+			ch := n.Child("microsoft_foundry")
+			stringsCatalogModelProviderServiceConfigMicrosoftFoundryProviderConfig(c, &ch, x)
+		}
 	}
-	if x := v.Openai; x != nil {
-		ch := n.Child("openai")
-		stringsCatalogModelProviderServiceConfigOpenAiProviderConfig(c, &ch, x)
+	if !n.IsRef("openai") {
+		if x := v.Openai; x != nil {
+			ch := n.Child("openai")
+			stringsCatalogModelProviderServiceConfigOpenAiProviderConfig(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.ProviderType == "" && Forced(v.ForceSendFields, "ProviderType") {
 		ch := n.Child("provider_type")
@@ -7002,21 +7726,25 @@ func stringsCatalogModelProviderServiceConfig(c *stringsWalk, n *Node, v *catalo
 			v.ProviderType = catalog.ModelProviderServiceConfigExternalModelProviderType(r)
 		}
 	}
-	if len(v.RateLimits) > 0 {
-		cn := n.Child("rate_limits")
-		for i := range v.RateLimits {
-			{
-				ch := cn.Elem(i)
-				stringsCatalogRateLimit(c, &ch, &v.RateLimits[i])
+	if !n.IsRef("rate_limits") {
+		if len(v.RateLimits) > 0 {
+			cn := n.Child("rate_limits")
+			for i := range v.RateLimits {
+				{
+					ch := cn.Elem(i)
+					stringsCatalogRateLimit(c, &ch, &v.RateLimits[i])
+				}
 			}
 		}
 	}
-	if len(v.Targets) > 0 {
-		cn := n.Child("targets")
-		for i := range v.Targets {
-			{
-				ch := cn.Elem(i)
-				stringsCatalogModelProviderServiceConfigModelTargetConfig(c, &ch, &v.Targets[i])
+	if !n.IsRef("targets") {
+		if len(v.Targets) > 0 {
+			cn := n.Child("targets")
+			for i := range v.Targets {
+				{
+					ch := cn.Elem(i)
+					stringsCatalogModelProviderServiceConfigModelTargetConfig(c, &ch, &v.Targets[i])
+				}
 			}
 		}
 	}
@@ -7082,13 +7810,15 @@ func stringsCatalogMonitorMetric(c *stringsWalk, n *Node, v *catalog.MonitorMetr
 			v.Definition = (r)
 		}
 	}
-	if len(v.InputColumns) > 0 {
-		cn := n.Child("input_columns")
-		for i := range v.InputColumns {
-			if s := string(v.InputColumns[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.InputColumns[i] = (r)
+	if !n.IsRef("input_columns") {
+		if len(v.InputColumns) > 0 {
+			cn := n.Child("input_columns")
+			for i := range v.InputColumns {
+				if s := string(v.InputColumns[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.InputColumns[i] = (r)
+					}
 				}
 			}
 		}
@@ -7114,13 +7844,15 @@ func stringsCatalogMonitorMetric(c *stringsWalk, n *Node, v *catalog.MonitorMetr
 }
 
 func stringsCatalogMonitorInferenceLog(c *stringsWalk, n *Node, v *catalog.MonitorInferenceLog) {
-	if len(v.Granularities) > 0 {
-		cn := n.Child("granularities")
-		for i := range v.Granularities {
-			if s := string(v.Granularities[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Granularities[i] = (r)
+	if !n.IsRef("granularities") {
+		if len(v.Granularities) > 0 {
+			cn := n.Child("granularities")
+			for i := range v.Granularities {
+				if s := string(v.Granularities[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Granularities[i] = (r)
+					}
 				}
 			}
 		}
@@ -7172,13 +7904,17 @@ func stringsCatalogMonitorInferenceLog(c *stringsWalk, n *Node, v *catalog.Monit
 }
 
 func stringsCatalogMonitorNotifications(c *stringsWalk, n *Node, v *catalog.MonitorNotifications) {
-	if x := v.OnFailure; x != nil {
-		ch := n.Child("on_failure")
-		stringsCatalogMonitorDestination(c, &ch, x)
+	if !n.IsRef("on_failure") {
+		if x := v.OnFailure; x != nil {
+			ch := n.Child("on_failure")
+			stringsCatalogMonitorDestination(c, &ch, x)
+		}
 	}
-	if x := v.OnNewClassificationTagDetected; x != nil {
-		ch := n.Child("on_new_classification_tag_detected")
-		stringsCatalogMonitorDestination(c, &ch, x)
+	if !n.IsRef("on_new_classification_tag_detected") {
+		if x := v.OnNewClassificationTagDetected; x != nil {
+			ch := n.Child("on_new_classification_tag_detected")
+			stringsCatalogMonitorDestination(c, &ch, x)
+		}
 	}
 }
 
@@ -7204,13 +7940,15 @@ func stringsCatalogMonitorCronSchedule(c *stringsWalk, n *Node, v *catalog.Monit
 }
 
 func stringsCatalogMonitorTimeSeries(c *stringsWalk, n *Node, v *catalog.MonitorTimeSeries) {
-	if len(v.Granularities) > 0 {
-		cn := n.Child("granularities")
-		for i := range v.Granularities {
-			if s := string(v.Granularities[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Granularities[i] = (r)
+	if !n.IsRef("granularities") {
+		if len(v.Granularities) > 0 {
+			cn := n.Child("granularities")
+			for i := range v.Granularities {
+				if s := string(v.Granularities[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Granularities[i] = (r)
+					}
 				}
 			}
 		}
@@ -7224,9 +7962,11 @@ func stringsCatalogMonitorTimeSeries(c *stringsWalk, n *Node, v *catalog.Monitor
 }
 
 func stringsCatalogEncryptionSettings(c *stringsWalk, n *Node, v *catalog.EncryptionSettings) {
-	if x := v.AzureEncryptionSettings; x != nil {
-		ch := n.Child("azure_encryption_settings")
-		stringsCatalogAzureEncryptionSettings(c, &ch, x)
+	if !n.IsRef("azure_encryption_settings") {
+		if x := v.AzureEncryptionSettings; x != nil {
+			ch := n.Child("azure_encryption_settings")
+			stringsCatalogAzureEncryptionSettings(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.AzureKeyVaultKeyId == "" && Forced(v.ForceSendFields, "AzureKeyVaultKeyId") {
 		ch := n.Child("azure_key_vault_key_id")
@@ -7251,43 +7991,59 @@ func stringsCatalogEncryptionSettings(c *stringsWalk, n *Node, v *catalog.Encryp
 }
 
 func stringsCatalogFileEventQueue(c *stringsWalk, n *Node, v *catalog.FileEventQueue) {
-	if x := v.ManagedAqs; x != nil {
-		ch := n.Child("managed_aqs")
-		stringsCatalogAzureQueueStorage(c, &ch, x)
+	if !n.IsRef("managed_aqs") {
+		if x := v.ManagedAqs; x != nil {
+			ch := n.Child("managed_aqs")
+			stringsCatalogAzureQueueStorage(c, &ch, x)
+		}
 	}
-	if x := v.ManagedPubsub; x != nil {
-		ch := n.Child("managed_pubsub")
-		stringsCatalogGcpPubsub(c, &ch, x)
+	if !n.IsRef("managed_pubsub") {
+		if x := v.ManagedPubsub; x != nil {
+			ch := n.Child("managed_pubsub")
+			stringsCatalogGcpPubsub(c, &ch, x)
+		}
 	}
-	if x := v.ManagedSqs; x != nil {
-		ch := n.Child("managed_sqs")
-		stringsCatalogAwsSqsQueue(c, &ch, x)
+	if !n.IsRef("managed_sqs") {
+		if x := v.ManagedSqs; x != nil {
+			ch := n.Child("managed_sqs")
+			stringsCatalogAwsSqsQueue(c, &ch, x)
+		}
 	}
-	if x := v.ProvidedAqs; x != nil {
-		ch := n.Child("provided_aqs")
-		stringsCatalogAzureQueueStorage(c, &ch, x)
+	if !n.IsRef("provided_aqs") {
+		if x := v.ProvidedAqs; x != nil {
+			ch := n.Child("provided_aqs")
+			stringsCatalogAzureQueueStorage(c, &ch, x)
+		}
 	}
-	if x := v.ProvidedPubsub; x != nil {
-		ch := n.Child("provided_pubsub")
-		stringsCatalogGcpPubsub(c, &ch, x)
+	if !n.IsRef("provided_pubsub") {
+		if x := v.ProvidedPubsub; x != nil {
+			ch := n.Child("provided_pubsub")
+			stringsCatalogGcpPubsub(c, &ch, x)
+		}
 	}
-	if x := v.ProvidedSqs; x != nil {
-		ch := n.Child("provided_sqs")
-		stringsCatalogAwsSqsQueue(c, &ch, x)
+	if !n.IsRef("provided_sqs") {
+		if x := v.ProvidedSqs; x != nil {
+			ch := n.Child("provided_sqs")
+			stringsCatalogAwsSqsQueue(c, &ch, x)
+		}
 	}
 }
 
 func stringsCatalogEncryptionDetails(c *stringsWalk, n *Node, v *catalog.EncryptionDetails) {
-	if x := v.SseEncryptionDetails; x != nil {
-		ch := n.Child("sse_encryption_details")
-		stringsCatalogSseEncryptionDetails(c, &ch, x)
+	if !n.IsRef("sse_encryption_details") {
+		if x := v.SseEncryptionDetails; x != nil {
+			ch := n.Child("sse_encryption_details")
+			stringsCatalogSseEncryptionDetails(c, &ch, x)
+		}
 	}
 }
 
 func stringsComputeLibrary(c *stringsWalk, n *Node, v *compute.Library) {
-	if x := v.Cran; x != nil {
-		ch := n.Child("cran")
-		stringsComputeRCranLibrary(c, &ch, x)
+	if !n.IsRef("cran") {
+		if x := v.Cran; x != nil {
+			ch := n.Child("cran")
+			stringsComputeRCranLibrary(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.Egg == "" && Forced(v.ForceSendFields, "Egg") {
 		ch := n.Child("egg")
@@ -7309,13 +8065,17 @@ func stringsComputeLibrary(c *stringsWalk, n *Node, v *compute.Library) {
 			v.Jar = (r)
 		}
 	}
-	if x := v.Maven; x != nil {
-		ch := n.Child("maven")
-		stringsComputeMavenLibrary(c, &ch, x)
+	if !n.IsRef("maven") {
+		if x := v.Maven; x != nil {
+			ch := n.Child("maven")
+			stringsComputeMavenLibrary(c, &ch, x)
+		}
 	}
-	if x := v.Pypi; x != nil {
-		ch := n.Child("pypi")
-		stringsComputePythonPyPiLibrary(c, &ch, x)
+	if !n.IsRef("pypi") {
+		if x := v.Pypi; x != nil {
+			ch := n.Child("pypi")
+			stringsComputePythonPyPiLibrary(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.Requirements == "" && Forced(v.ForceSendFields, "Requirements") {
 		ch := n.Child("requirements")
@@ -7430,31 +8190,41 @@ func stringsComputeAzureAttributes(c *stringsWalk, n *Node, v *compute.AzureAttr
 			v.CapacityReservationGroup = (r)
 		}
 	}
-	if x := v.LogAnalyticsInfo; x != nil {
-		ch := n.Child("log_analytics_info")
-		stringsComputeLogAnalyticsInfo(c, &ch, x)
+	if !n.IsRef("log_analytics_info") {
+		if x := v.LogAnalyticsInfo; x != nil {
+			ch := n.Child("log_analytics_info")
+			stringsComputeLogAnalyticsInfo(c, &ch, x)
+		}
 	}
 }
 
 func stringsComputeClusterLogConf(c *stringsWalk, n *Node, v *compute.ClusterLogConf) {
-	if x := v.Dbfs; x != nil {
-		ch := n.Child("dbfs")
-		stringsComputeDbfsStorageInfo(c, &ch, x)
+	if !n.IsRef("dbfs") {
+		if x := v.Dbfs; x != nil {
+			ch := n.Child("dbfs")
+			stringsComputeDbfsStorageInfo(c, &ch, x)
+		}
 	}
-	if x := v.S3; x != nil {
-		ch := n.Child("s3")
-		stringsComputeS3StorageInfo(c, &ch, x)
+	if !n.IsRef("s3") {
+		if x := v.S3; x != nil {
+			ch := n.Child("s3")
+			stringsComputeS3StorageInfo(c, &ch, x)
+		}
 	}
-	if x := v.Volumes; x != nil {
-		ch := n.Child("volumes")
-		stringsComputeVolumesStorageInfo(c, &ch, x)
+	if !n.IsRef("volumes") {
+		if x := v.Volumes; x != nil {
+			ch := n.Child("volumes")
+			stringsComputeVolumesStorageInfo(c, &ch, x)
+		}
 	}
 }
 
 func stringsComputeDockerImage(c *stringsWalk, n *Node, v *compute.DockerImage) {
-	if x := v.BasicAuth; x != nil {
-		ch := n.Child("basic_auth")
-		stringsComputeDockerBasicAuth(c, &ch, x)
+	if !n.IsRef("basic_auth") {
+		if x := v.BasicAuth; x != nil {
+			ch := n.Child("basic_auth")
+			stringsComputeDockerBasicAuth(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.Url == "" && Forced(v.ForceSendFields, "Url") {
 		ch := n.Child("url")
@@ -7469,13 +8239,15 @@ func stringsComputeDockerImage(c *stringsWalk, n *Node, v *compute.DockerImage) 
 }
 
 func stringsComputeNodeTypeFlexibility(c *stringsWalk, n *Node, v *compute.NodeTypeFlexibility) {
-	if len(v.AlternateNodeTypeIds) > 0 {
-		cn := n.Child("alternate_node_type_ids")
-		for i := range v.AlternateNodeTypeIds {
-			if s := string(v.AlternateNodeTypeIds[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.AlternateNodeTypeIds[i] = (r)
+	if !n.IsRef("alternate_node_type_ids") {
+		if len(v.AlternateNodeTypeIds) > 0 {
+			cn := n.Child("alternate_node_type_ids")
+			for i := range v.AlternateNodeTypeIds {
+				if s := string(v.AlternateNodeTypeIds[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.AlternateNodeTypeIds[i] = (r)
+					}
 				}
 			}
 		}
@@ -7536,54 +8308,72 @@ func stringsComputeGcpAttributes(c *stringsWalk, n *Node, v *compute.GcpAttribut
 }
 
 func stringsComputeInitScriptInfo(c *stringsWalk, n *Node, v *compute.InitScriptInfo) {
-	if x := v.Abfss; x != nil {
-		ch := n.Child("abfss")
-		stringsComputeAdlsgen2Info(c, &ch, x)
+	if !n.IsRef("abfss") {
+		if x := v.Abfss; x != nil {
+			ch := n.Child("abfss")
+			stringsComputeAdlsgen2Info(c, &ch, x)
+		}
 	}
-	if x := v.Dbfs; x != nil {
-		ch := n.Child("dbfs")
-		stringsComputeDbfsStorageInfo(c, &ch, x)
+	if !n.IsRef("dbfs") {
+		if x := v.Dbfs; x != nil {
+			ch := n.Child("dbfs")
+			stringsComputeDbfsStorageInfo(c, &ch, x)
+		}
 	}
-	if x := v.File; x != nil {
-		ch := n.Child("file")
-		stringsComputeLocalFileInfo(c, &ch, x)
+	if !n.IsRef("file") {
+		if x := v.File; x != nil {
+			ch := n.Child("file")
+			stringsComputeLocalFileInfo(c, &ch, x)
+		}
 	}
-	if x := v.Gcs; x != nil {
-		ch := n.Child("gcs")
-		stringsComputeGcsStorageInfo(c, &ch, x)
+	if !n.IsRef("gcs") {
+		if x := v.Gcs; x != nil {
+			ch := n.Child("gcs")
+			stringsComputeGcsStorageInfo(c, &ch, x)
+		}
 	}
-	if x := v.S3; x != nil {
-		ch := n.Child("s3")
-		stringsComputeS3StorageInfo(c, &ch, x)
+	if !n.IsRef("s3") {
+		if x := v.S3; x != nil {
+			ch := n.Child("s3")
+			stringsComputeS3StorageInfo(c, &ch, x)
+		}
 	}
-	if x := v.Volumes; x != nil {
-		ch := n.Child("volumes")
-		stringsComputeVolumesStorageInfo(c, &ch, x)
+	if !n.IsRef("volumes") {
+		if x := v.Volumes; x != nil {
+			ch := n.Child("volumes")
+			stringsComputeVolumesStorageInfo(c, &ch, x)
+		}
 	}
-	if x := v.Workspace; x != nil {
-		ch := n.Child("workspace")
-		stringsComputeWorkspaceStorageInfo(c, &ch, x)
+	if !n.IsRef("workspace") {
+		if x := v.Workspace; x != nil {
+			ch := n.Child("workspace")
+			stringsComputeWorkspaceStorageInfo(c, &ch, x)
+		}
 	}
 }
 
 func stringsResourcesAppConfig(c *stringsWalk, n *Node, v *resources.AppConfig) {
-	if len(v.Command) > 0 {
-		cn := n.Child("command")
-		for i := range v.Command {
-			if s := string(v.Command[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Command[i] = (r)
+	if !n.IsRef("command") {
+		if len(v.Command) > 0 {
+			cn := n.Child("command")
+			for i := range v.Command {
+				if s := string(v.Command[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Command[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.Env) > 0 {
-		cn := n.Child("env")
-		for i := range v.Env {
-			{
-				ch := cn.Elem(i)
-				stringsResourcesAppEnvVar(c, &ch, &v.Env[i])
+	if !n.IsRef("env") {
+		if len(v.Env) > 0 {
+			cn := n.Child("env")
+			for i := range v.Env {
+				{
+					ch := cn.Elem(i)
+					stringsResourcesAppEnvVar(c, &ch, &v.Env[i])
+				}
 			}
 		}
 	}
@@ -7617,13 +8407,15 @@ func stringsResourcesAppPermission(c *stringsWalk, n *Node, v *resources.AppPerm
 }
 
 func stringsAppsAppDeployment(c *stringsWalk, n *Node, v *apps.AppDeployment) {
-	if len(v.Command) > 0 {
-		cn := n.Child("command")
-		for i := range v.Command {
-			if s := string(v.Command[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Command[i] = (r)
+	if !n.IsRef("command") {
+		if len(v.Command) > 0 {
+			cn := n.Child("command")
+			for i := range v.Command {
+				if s := string(v.Command[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Command[i] = (r)
+					}
 				}
 			}
 		}
@@ -7648,9 +8440,11 @@ func stringsAppsAppDeployment(c *stringsWalk, n *Node, v *apps.AppDeployment) {
 			v.Creator = (r)
 		}
 	}
-	if x := v.DeploymentArtifacts; x != nil {
-		ch := n.Child("deployment_artifacts")
-		stringsAppsAppDeploymentArtifacts(c, &ch, x)
+	if !n.IsRef("deployment_artifacts") {
+		if x := v.DeploymentArtifacts; x != nil {
+			ch := n.Child("deployment_artifacts")
+			stringsAppsAppDeploymentArtifacts(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.DeploymentId == "" && Forced(v.ForceSendFields, "DeploymentId") {
 		ch := n.Child("deployment_id")
@@ -7662,22 +8456,28 @@ func stringsAppsAppDeployment(c *stringsWalk, n *Node, v *apps.AppDeployment) {
 			v.DeploymentId = (r)
 		}
 	}
-	if len(v.EnvVars) > 0 {
-		cn := n.Child("env_vars")
-		for i := range v.EnvVars {
-			{
-				ch := cn.Elem(i)
-				stringsAppsEnvVar(c, &ch, &v.EnvVars[i])
+	if !n.IsRef("env_vars") {
+		if len(v.EnvVars) > 0 {
+			cn := n.Child("env_vars")
+			for i := range v.EnvVars {
+				{
+					ch := cn.Elem(i)
+					stringsAppsEnvVar(c, &ch, &v.EnvVars[i])
+				}
 			}
 		}
 	}
-	if x := v.GitSource; x != nil {
-		ch := n.Child("git_source")
-		stringsAppsGitSource(c, &ch, x)
+	if !n.IsRef("git_source") {
+		if x := v.GitSource; x != nil {
+			ch := n.Child("git_source")
+			stringsAppsGitSource(c, &ch, x)
+		}
 	}
-	if x := v.HealthCheck; x != nil {
-		ch := n.Child("health_check")
-		stringsAppsAppHealthCheck(c, &ch, x)
+	if !n.IsRef("health_check") {
+		if x := v.HealthCheck; x != nil {
+			ch := n.Child("health_check")
+			stringsAppsAppHealthCheck(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.Mode == "" && Forced(v.ForceSendFields, "Mode") {
 		ch := n.Child("mode")
@@ -7699,9 +8499,11 @@ func stringsAppsAppDeployment(c *stringsWalk, n *Node, v *apps.AppDeployment) {
 			v.SourceCodePath = (r)
 		}
 	}
-	if x := v.Status; x != nil {
-		ch := n.Child("status")
-		stringsAppsAppDeploymentStatus(c, &ch, x)
+	if !n.IsRef("status") {
+		if x := v.Status; x != nil {
+			ch := n.Child("status")
+			stringsAppsAppDeploymentStatus(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.UpdateTime == "" && Forced(v.ForceSendFields, "UpdateTime") {
 		ch := n.Child("update_time")
@@ -7782,9 +8584,11 @@ func stringsAppsGitSource(c *stringsWalk, n *Node, v *apps.GitSource) {
 			v.Commit = (r)
 		}
 	}
-	if x := v.GitRepository; x != nil {
-		ch := n.Child("git_repository")
-		stringsAppsGitRepository(c, &ch, x)
+	if !n.IsRef("git_repository") {
+		if x := v.GitRepository; x != nil {
+			ch := n.Child("git_repository")
+			stringsAppsGitRepository(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.ResolvedCommit == "" && Forced(v.ForceSendFields, "ResolvedCommit") {
 		ch := n.Child("resolved_commit")
@@ -7834,13 +8638,17 @@ func stringsAppsGitRepository(c *stringsWalk, n *Node, v *apps.GitRepository) {
 }
 
 func stringsAppsAppResource(c *stringsWalk, n *Node, v *apps.AppResource) {
-	if x := v.App; x != nil {
-		ch := n.Child("app")
-		stringsAppsAppResourceApp(c, &ch, x)
+	if !n.IsRef("app") {
+		if x := v.App; x != nil {
+			ch := n.Child("app")
+			stringsAppsAppResourceApp(c, &ch, x)
+		}
 	}
-	if x := v.Database; x != nil {
-		ch := n.Child("database")
-		stringsAppsAppResourceDatabase(c, &ch, x)
+	if !n.IsRef("database") {
+		if x := v.Database; x != nil {
+			ch := n.Child("database")
+			stringsAppsAppResourceDatabase(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.Description == "" && Forced(v.ForceSendFields, "Description") {
 		ch := n.Child("description")
@@ -7852,17 +8660,23 @@ func stringsAppsAppResource(c *stringsWalk, n *Node, v *apps.AppResource) {
 			v.Description = (r)
 		}
 	}
-	if x := v.Experiment; x != nil {
-		ch := n.Child("experiment")
-		stringsAppsAppResourceExperiment(c, &ch, x)
+	if !n.IsRef("experiment") {
+		if x := v.Experiment; x != nil {
+			ch := n.Child("experiment")
+			stringsAppsAppResourceExperiment(c, &ch, x)
+		}
 	}
-	if x := v.GenieSpace; x != nil {
-		ch := n.Child("genie_space")
-		stringsAppsAppResourceGenieSpace(c, &ch, x)
+	if !n.IsRef("genie_space") {
+		if x := v.GenieSpace; x != nil {
+			ch := n.Child("genie_space")
+			stringsAppsAppResourceGenieSpace(c, &ch, x)
+		}
 	}
-	if x := v.Job; x != nil {
-		ch := n.Child("job")
-		stringsAppsAppResourceJob(c, &ch, x)
+	if !n.IsRef("job") {
+		if x := v.Job; x != nil {
+			ch := n.Child("job")
+			stringsAppsAppResourceJob(c, &ch, x)
+		}
 	}
 	if s := string(v.Name); c.match(s) {
 		ch := n.Child("name")
@@ -7870,32 +8684,44 @@ func stringsAppsAppResource(c *stringsWalk, n *Node, v *apps.AppResource) {
 			v.Name = (r)
 		}
 	}
-	if x := v.Postgres; x != nil {
-		ch := n.Child("postgres")
-		stringsAppsAppResourcePostgres(c, &ch, x)
+	if !n.IsRef("postgres") {
+		if x := v.Postgres; x != nil {
+			ch := n.Child("postgres")
+			stringsAppsAppResourcePostgres(c, &ch, x)
+		}
 	}
-	if x := v.Secret; x != nil {
-		ch := n.Child("secret")
-		stringsAppsAppResourceSecret(c, &ch, x)
+	if !n.IsRef("secret") {
+		if x := v.Secret; x != nil {
+			ch := n.Child("secret")
+			stringsAppsAppResourceSecret(c, &ch, x)
+		}
 	}
-	if x := v.ServingEndpoint; x != nil {
-		ch := n.Child("serving_endpoint")
-		stringsAppsAppResourceServingEndpoint(c, &ch, x)
+	if !n.IsRef("serving_endpoint") {
+		if x := v.ServingEndpoint; x != nil {
+			ch := n.Child("serving_endpoint")
+			stringsAppsAppResourceServingEndpoint(c, &ch, x)
+		}
 	}
-	if x := v.SqlWarehouse; x != nil {
-		ch := n.Child("sql_warehouse")
-		stringsAppsAppResourceSqlWarehouse(c, &ch, x)
+	if !n.IsRef("sql_warehouse") {
+		if x := v.SqlWarehouse; x != nil {
+			ch := n.Child("sql_warehouse")
+			stringsAppsAppResourceSqlWarehouse(c, &ch, x)
+		}
 	}
-	if x := v.UcSecurable; x != nil {
-		ch := n.Child("uc_securable")
-		stringsAppsAppResourceUcSecurable(c, &ch, x)
+	if !n.IsRef("uc_securable") {
+		if x := v.UcSecurable; x != nil {
+			ch := n.Child("uc_securable")
+			stringsAppsAppResourceUcSecurable(c, &ch, x)
+		}
 	}
 }
 
 func stringsAppsTelemetryExportDestination(c *stringsWalk, n *Node, v *apps.TelemetryExportDestination) {
-	if x := v.UnityCatalog; x != nil {
-		ch := n.Child("unity_catalog")
-		stringsAppsUnityCatalog(c, &ch, x)
+	if !n.IsRef("unity_catalog") {
+		if x := v.UnityCatalog; x != nil {
+			ch := n.Child("unity_catalog")
+			stringsAppsUnityCatalog(c, &ch, x)
+		}
 	}
 }
 
@@ -7991,13 +8817,17 @@ func stringsSqlAlertV2Evaluation(c *stringsWalk, n *Node, v *sql.AlertV2Evaluati
 			v.LastEvaluatedAt = (r)
 		}
 	}
-	if x := v.Notification; x != nil {
-		ch := n.Child("notification")
-		stringsSqlAlertV2Notification(c, &ch, x)
+	if !n.IsRef("notification") {
+		if x := v.Notification; x != nil {
+			ch := n.Child("notification")
+			stringsSqlAlertV2Notification(c, &ch, x)
+		}
 	}
-	{
-		ch := n.Child("source")
-		stringsSqlAlertV2OperandColumn(c, &ch, &v.Source)
+	if !n.IsRef("source") {
+		{
+			ch := n.Child("source")
+			stringsSqlAlertV2OperandColumn(c, &ch, &v.Source)
+		}
 	}
 	if c.mode == EmptyFields && v.State == "" && Forced(v.ForceSendFields, "State") {
 		ch := n.Child("state")
@@ -8009,9 +8839,11 @@ func stringsSqlAlertV2Evaluation(c *stringsWalk, n *Node, v *sql.AlertV2Evaluati
 			v.State = sql.AlertEvaluationState(r)
 		}
 	}
-	if x := v.Threshold; x != nil {
-		ch := n.Child("threshold")
-		stringsSqlAlertV2Operand(c, &ch, x)
+	if !n.IsRef("threshold") {
+		if x := v.Threshold; x != nil {
+			ch := n.Child("threshold")
+			stringsSqlAlertV2Operand(c, &ch, x)
+		}
 	}
 }
 
@@ -8116,12 +8948,14 @@ func stringsSqlChannel(c *stringsWalk, n *Node, v *sql.Channel) {
 }
 
 func stringsSqlEndpointTags(c *stringsWalk, n *Node, v *sql.EndpointTags) {
-	if len(v.CustomTags) > 0 {
-		cn := n.Child("custom_tags")
-		for i := range v.CustomTags {
-			{
-				ch := cn.Elem(i)
-				stringsSqlEndpointTagPair(c, &ch, &v.CustomTags[i])
+	if !n.IsRef("custom_tags") {
+		if len(v.CustomTags) > 0 {
+			cn := n.Child("custom_tags")
+			for i := range v.CustomTags {
+				{
+					ch := cn.Elem(i)
+					stringsSqlEndpointTagPair(c, &ch, &v.CustomTags[i])
+				}
 			}
 		}
 	}
@@ -8204,9 +9038,11 @@ func stringsDatabaseCustomTag(c *stringsWalk, n *Node, v *database.CustomTag) {
 }
 
 func stringsDatabaseSyncedTableStatus(c *stringsWalk, n *Node, v *database.SyncedTableStatus) {
-	if x := v.ContinuousUpdateStatus; x != nil {
-		ch := n.Child("continuous_update_status")
-		stringsDatabaseSyncedTableContinuousUpdateStatus(c, &ch, x)
+	if !n.IsRef("continuous_update_status") {
+		if x := v.ContinuousUpdateStatus; x != nil {
+			ch := n.Child("continuous_update_status")
+			stringsDatabaseSyncedTableContinuousUpdateStatus(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.DetailedState == "" && Forced(v.ForceSendFields, "DetailedState") {
 		ch := n.Child("detailed_state")
@@ -8218,13 +9054,17 @@ func stringsDatabaseSyncedTableStatus(c *stringsWalk, n *Node, v *database.Synce
 			v.DetailedState = database.SyncedTableState(r)
 		}
 	}
-	if x := v.FailedStatus; x != nil {
-		ch := n.Child("failed_status")
-		stringsDatabaseSyncedTableFailedStatus(c, &ch, x)
+	if !n.IsRef("failed_status") {
+		if x := v.FailedStatus; x != nil {
+			ch := n.Child("failed_status")
+			stringsDatabaseSyncedTableFailedStatus(c, &ch, x)
+		}
 	}
-	if x := v.LastSync; x != nil {
-		ch := n.Child("last_sync")
-		stringsDatabaseSyncedTablePosition(c, &ch, x)
+	if !n.IsRef("last_sync") {
+		if x := v.LastSync; x != nil {
+			ch := n.Child("last_sync")
+			stringsDatabaseSyncedTablePosition(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.Message == "" && Forced(v.ForceSendFields, "Message") {
 		ch := n.Child("message")
@@ -8246,13 +9086,17 @@ func stringsDatabaseSyncedTableStatus(c *stringsWalk, n *Node, v *database.Synce
 			v.PipelineId = (r)
 		}
 	}
-	if x := v.ProvisioningStatus; x != nil {
-		ch := n.Child("provisioning_status")
-		stringsDatabaseSyncedTableProvisioningStatus(c, &ch, x)
+	if !n.IsRef("provisioning_status") {
+		if x := v.ProvisioningStatus; x != nil {
+			ch := n.Child("provisioning_status")
+			stringsDatabaseSyncedTableProvisioningStatus(c, &ch, x)
+		}
 	}
-	if x := v.TriggeredUpdateStatus; x != nil {
-		ch := n.Child("triggered_update_status")
-		stringsDatabaseSyncedTableTriggeredUpdateStatus(c, &ch, x)
+	if !n.IsRef("triggered_update_status") {
+		if x := v.TriggeredUpdateStatus; x != nil {
+			ch := n.Child("triggered_update_status")
+			stringsDatabaseSyncedTableTriggeredUpdateStatus(c, &ch, x)
+		}
 	}
 }
 
@@ -8267,17 +9111,21 @@ func stringsDatabaseSyncedTableSpec(c *stringsWalk, n *Node, v *database.SyncedT
 			v.ExistingPipelineId = (r)
 		}
 	}
-	if x := v.NewPipelineSpec; x != nil {
-		ch := n.Child("new_pipeline_spec")
-		stringsDatabaseNewPipelineSpec(c, &ch, x)
+	if !n.IsRef("new_pipeline_spec") {
+		if x := v.NewPipelineSpec; x != nil {
+			ch := n.Child("new_pipeline_spec")
+			stringsDatabaseNewPipelineSpec(c, &ch, x)
+		}
 	}
-	if len(v.PrimaryKeyColumns) > 0 {
-		cn := n.Child("primary_key_columns")
-		for i := range v.PrimaryKeyColumns {
-			if s := string(v.PrimaryKeyColumns[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.PrimaryKeyColumns[i] = (r)
+	if !n.IsRef("primary_key_columns") {
+		if len(v.PrimaryKeyColumns) > 0 {
+			cn := n.Child("primary_key_columns")
+			for i := range v.PrimaryKeyColumns {
+				if s := string(v.PrimaryKeyColumns[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.PrimaryKeyColumns[i] = (r)
+					}
 				}
 			}
 		}
@@ -8312,12 +9160,14 @@ func stringsDatabaseSyncedTableSpec(c *stringsWalk, n *Node, v *database.SyncedT
 			v.TimeseriesKey = (r)
 		}
 	}
-	if len(v.TypeOverrides) > 0 {
-		cn := n.Child("type_overrides")
-		for i := range v.TypeOverrides {
-			{
-				ch := cn.Elem(i)
-				stringsDatabaseSyncedTableSpecTypeOverride(c, &ch, &v.TypeOverrides[i])
+	if !n.IsRef("type_overrides") {
+		if len(v.TypeOverrides) > 0 {
+			cn := n.Child("type_overrides")
+			for i := range v.TypeOverrides {
+				{
+					ch := cn.Elem(i)
+					stringsDatabaseSyncedTableSpecTypeOverride(c, &ch, &v.TypeOverrides[i])
+				}
 			}
 		}
 	}
@@ -8347,13 +9197,15 @@ func stringsPostgresProjectCustomTag(c *stringsWalk, n *Node, v *postgres.Projec
 }
 
 func stringsPostgresProjectDefaultEndpointSettings(c *stringsWalk, n *Node, v *postgres.ProjectDefaultEndpointSettings) {
-	if len(v.PgSettings) > 0 {
-		cn := n.Child("pg_settings")
-		for _, k := range sortedKeys(v.PgSettings) {
-			if s := string(v.PgSettings[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.PgSettings[k] = (r)
+	if !n.IsRef("pg_settings") {
+		if len(v.PgSettings) > 0 {
+			cn := n.Child("pg_settings")
+			for _, k := range sortedKeys(v.PgSettings) {
+				if s := string(v.PgSettings[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.PgSettings[k] = (r)
+					}
 				}
 			}
 		}
@@ -8361,13 +9213,15 @@ func stringsPostgresProjectDefaultEndpointSettings(c *stringsWalk, n *Node, v *p
 }
 
 func stringsPostgresEndpointSettings(c *stringsWalk, n *Node, v *postgres.EndpointSettings) {
-	if len(v.PgSettings) > 0 {
-		cn := n.Child("pg_settings")
-		for _, k := range sortedKeys(v.PgSettings) {
-			if s := string(v.PgSettings[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.PgSettings[k] = (r)
+	if !n.IsRef("pg_settings") {
+		if len(v.PgSettings) > 0 {
+			cn := n.Child("pg_settings")
+			for _, k := range sortedKeys(v.PgSettings) {
+				if s := string(v.PgSettings[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.PgSettings[k] = (r)
+					}
 				}
 			}
 		}
@@ -8468,9 +9322,11 @@ func stringsPostgresSyncedTableSyncedTableSpecTypeOverride(c *stringsWalk, n *No
 }
 
 func stringsPostgresScheduleCadence(c *stringsWalk, n *Node, v *postgres.ScheduleCadence) {
-	if x := v.WeeklySchedule; x != nil {
-		ch := n.Child("weekly_schedule")
-		stringsPostgresWeeklySchedule(c, &ch, x)
+	if !n.IsRef("weekly_schedule") {
+		if x := v.WeeklySchedule; x != nil {
+			ch := n.Child("weekly_schedule")
+			stringsPostgresWeeklySchedule(c, &ch, x)
+		}
 	}
 }
 
@@ -8502,43 +9358,51 @@ func stringsResourcesVectorSearchEndpointPermission(c *stringsWalk, n *Node, v *
 }
 
 func stringsVectorsearchDeltaSyncVectorIndexSpecRequest(c *stringsWalk, n *Node, v *vectorsearch.DeltaSyncVectorIndexSpecRequest) {
-	if len(v.ColumnsToIndex) > 0 {
-		cn := n.Child("columns_to_index")
-		for i := range v.ColumnsToIndex {
-			if s := string(v.ColumnsToIndex[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.ColumnsToIndex[i] = (r)
+	if !n.IsRef("columns_to_index") {
+		if len(v.ColumnsToIndex) > 0 {
+			cn := n.Child("columns_to_index")
+			for i := range v.ColumnsToIndex {
+				if s := string(v.ColumnsToIndex[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.ColumnsToIndex[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.ColumnsToSync) > 0 {
-		cn := n.Child("columns_to_sync")
-		for i := range v.ColumnsToSync {
-			if s := string(v.ColumnsToSync[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.ColumnsToSync[i] = (r)
+	if !n.IsRef("columns_to_sync") {
+		if len(v.ColumnsToSync) > 0 {
+			cn := n.Child("columns_to_sync")
+			for i := range v.ColumnsToSync {
+				if s := string(v.ColumnsToSync[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.ColumnsToSync[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.EmbeddingSourceColumns) > 0 {
-		cn := n.Child("embedding_source_columns")
-		for i := range v.EmbeddingSourceColumns {
-			{
-				ch := cn.Elem(i)
-				stringsVectorsearchEmbeddingSourceColumn(c, &ch, &v.EmbeddingSourceColumns[i])
+	if !n.IsRef("embedding_source_columns") {
+		if len(v.EmbeddingSourceColumns) > 0 {
+			cn := n.Child("embedding_source_columns")
+			for i := range v.EmbeddingSourceColumns {
+				{
+					ch := cn.Elem(i)
+					stringsVectorsearchEmbeddingSourceColumn(c, &ch, &v.EmbeddingSourceColumns[i])
+				}
 			}
 		}
 	}
-	if len(v.EmbeddingVectorColumns) > 0 {
-		cn := n.Child("embedding_vector_columns")
-		for i := range v.EmbeddingVectorColumns {
-			{
-				ch := cn.Elem(i)
-				stringsVectorsearchEmbeddingVectorColumn(c, &ch, &v.EmbeddingVectorColumns[i])
+	if !n.IsRef("embedding_vector_columns") {
+		if len(v.EmbeddingVectorColumns) > 0 {
+			cn := n.Child("embedding_vector_columns")
+			for i := range v.EmbeddingVectorColumns {
+				{
+					ch := cn.Elem(i)
+					stringsVectorsearchEmbeddingVectorColumn(c, &ch, &v.EmbeddingVectorColumns[i])
+				}
 			}
 		}
 	}
@@ -8575,21 +9439,25 @@ func stringsVectorsearchDeltaSyncVectorIndexSpecRequest(c *stringsWalk, n *Node,
 }
 
 func stringsVectorsearchDirectAccessVectorIndexSpec(c *stringsWalk, n *Node, v *vectorsearch.DirectAccessVectorIndexSpec) {
-	if len(v.EmbeddingSourceColumns) > 0 {
-		cn := n.Child("embedding_source_columns")
-		for i := range v.EmbeddingSourceColumns {
-			{
-				ch := cn.Elem(i)
-				stringsVectorsearchEmbeddingSourceColumn(c, &ch, &v.EmbeddingSourceColumns[i])
+	if !n.IsRef("embedding_source_columns") {
+		if len(v.EmbeddingSourceColumns) > 0 {
+			cn := n.Child("embedding_source_columns")
+			for i := range v.EmbeddingSourceColumns {
+				{
+					ch := cn.Elem(i)
+					stringsVectorsearchEmbeddingSourceColumn(c, &ch, &v.EmbeddingSourceColumns[i])
+				}
 			}
 		}
 	}
-	if len(v.EmbeddingVectorColumns) > 0 {
-		cn := n.Child("embedding_vector_columns")
-		for i := range v.EmbeddingVectorColumns {
-			{
-				ch := cn.Elem(i)
-				stringsVectorsearchEmbeddingVectorColumn(c, &ch, &v.EmbeddingVectorColumns[i])
+	if !n.IsRef("embedding_vector_columns") {
+		if len(v.EmbeddingVectorColumns) > 0 {
+			cn := n.Child("embedding_vector_columns")
+			for i := range v.EmbeddingVectorColumns {
+				{
+					ch := cn.Elem(i)
+					stringsVectorsearchEmbeddingVectorColumn(c, &ch, &v.EmbeddingVectorColumns[i])
+				}
 			}
 		}
 	}
@@ -8689,9 +9557,11 @@ func stringsComputeInstancePoolAzureAttributes(c *stringsWalk, n *Node, v *compu
 }
 
 func stringsComputeDiskSpec(c *stringsWalk, n *Node, v *compute.DiskSpec) {
-	if x := v.DiskType; x != nil {
-		ch := n.Child("disk_type")
-		stringsComputeDiskType(c, &ch, x)
+	if !n.IsRef("disk_type") {
+		if x := v.DiskType; x != nil {
+			ch := n.Child("disk_type")
+			stringsComputeDiskType(c, &ch, x)
+		}
 	}
 }
 
@@ -8788,24 +9658,28 @@ func stringsJobsMaintenanceWindow(c *stringsWalk, n *Node, v *jobs.MaintenanceWi
 }
 
 func stringsJobsJobEnvironmentVariablesSpec(c *stringsWalk, n *Node, v *jobs.JobEnvironmentVariablesSpec) {
-	if len(v.Files) > 0 {
-		cn := n.Child("files")
-		for i := range v.Files {
-			if s := string(v.Files[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Files[i] = (r)
+	if !n.IsRef("files") {
+		if len(v.Files) > 0 {
+			cn := n.Child("files")
+			for i := range v.Files {
+				if s := string(v.Files[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Files[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.Variables) > 0 {
-		cn := n.Child("variables")
-		for _, k := range sortedKeys(v.Variables) {
-			if s := string(v.Variables[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.Variables[k] = (r)
+	if !n.IsRef("variables") {
+		if len(v.Variables) > 0 {
+			cn := n.Child("variables")
+			for _, k := range sortedKeys(v.Variables) {
+				if s := string(v.Variables[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.Variables[k] = (r)
+					}
 				}
 			}
 		}
@@ -8833,13 +9707,15 @@ func stringsComputeEnvironment(c *stringsWalk, n *Node, v *compute.Environment) 
 			v.Client = (r)
 		}
 	}
-	if len(v.Dependencies) > 0 {
-		cn := n.Child("dependencies")
-		for i := range v.Dependencies {
-			if s := string(v.Dependencies[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Dependencies[i] = (r)
+	if !n.IsRef("dependencies") {
+		if len(v.Dependencies) > 0 {
+			cn := n.Child("dependencies")
+			for i := range v.Dependencies {
+				if s := string(v.Dependencies[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Dependencies[i] = (r)
+					}
 				}
 			}
 		}
@@ -8854,13 +9730,15 @@ func stringsComputeEnvironment(c *stringsWalk, n *Node, v *compute.Environment) 
 			v.EnvironmentVersion = (r)
 		}
 	}
-	if len(v.JavaDependencies) > 0 {
-		cn := n.Child("java_dependencies")
-		for i := range v.JavaDependencies {
-			if s := string(v.JavaDependencies[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.JavaDependencies[i] = (r)
+	if !n.IsRef("java_dependencies") {
+		if len(v.JavaDependencies) > 0 {
+			cn := n.Child("java_dependencies")
+			for i := range v.JavaDependencies {
+				if s := string(v.JavaDependencies[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.JavaDependencies[i] = (r)
+					}
 				}
 			}
 		}
@@ -8912,13 +9790,15 @@ func stringsJobsJobSource(c *stringsWalk, n *Node, v *jobs.JobSource) {
 }
 
 func stringsJobsSparseCheckout(c *stringsWalk, n *Node, v *jobs.SparseCheckout) {
-	if len(v.Patterns) > 0 {
-		cn := n.Child("patterns")
-		for i := range v.Patterns {
-			if s := string(v.Patterns[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Patterns[i] = (r)
+	if !n.IsRef("patterns") {
+		if len(v.Patterns) > 0 {
+			cn := n.Child("patterns")
+			for i := range v.Patterns {
+				if s := string(v.Patterns[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Patterns[i] = (r)
+					}
 				}
 			}
 		}
@@ -8941,17 +9821,23 @@ func stringsJobsJobsHealthRule(c *stringsWalk, n *Node, v *jobs.JobsHealthRule) 
 }
 
 func stringsComputeClusterSpec(c *stringsWalk, n *Node, v *compute.ClusterSpec) {
-	if x := v.AwsAttributes; x != nil {
-		ch := n.Child("aws_attributes")
-		stringsComputeAwsAttributes(c, &ch, x)
+	if !n.IsRef("aws_attributes") {
+		if x := v.AwsAttributes; x != nil {
+			ch := n.Child("aws_attributes")
+			stringsComputeAwsAttributes(c, &ch, x)
+		}
 	}
-	if x := v.AzureAttributes; x != nil {
-		ch := n.Child("azure_attributes")
-		stringsComputeAzureAttributes(c, &ch, x)
+	if !n.IsRef("azure_attributes") {
+		if x := v.AzureAttributes; x != nil {
+			ch := n.Child("azure_attributes")
+			stringsComputeAzureAttributes(c, &ch, x)
+		}
 	}
-	if x := v.ClusterLogConf; x != nil {
-		ch := n.Child("cluster_log_conf")
-		stringsComputeClusterLogConf(c, &ch, x)
+	if !n.IsRef("cluster_log_conf") {
+		if x := v.ClusterLogConf; x != nil {
+			ch := n.Child("cluster_log_conf")
+			stringsComputeClusterLogConf(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.ClusterName == "" && Forced(v.ForceSendFields, "ClusterName") {
 		ch := n.Child("cluster_name")
@@ -8963,13 +9849,15 @@ func stringsComputeClusterSpec(c *stringsWalk, n *Node, v *compute.ClusterSpec) 
 			v.ClusterName = (r)
 		}
 	}
-	if len(v.CustomTags) > 0 {
-		cn := n.Child("custom_tags")
-		for _, k := range sortedKeys(v.CustomTags) {
-			if s := string(v.CustomTags[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.CustomTags[k] = (r)
+	if !n.IsRef("custom_tags") {
+		if len(v.CustomTags) > 0 {
+			cn := n.Child("custom_tags")
+			for _, k := range sortedKeys(v.CustomTags) {
+				if s := string(v.CustomTags[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.CustomTags[k] = (r)
+					}
 				}
 			}
 		}
@@ -8994,9 +9882,11 @@ func stringsComputeClusterSpec(c *stringsWalk, n *Node, v *compute.ClusterSpec) 
 			v.DependencyMode = compute.DependencyMode(r)
 		}
 	}
-	if x := v.DockerImage; x != nil {
-		ch := n.Child("docker_image")
-		stringsComputeDockerImage(c, &ch, x)
+	if !n.IsRef("docker_image") {
+		if x := v.DockerImage; x != nil {
+			ch := n.Child("docker_image")
+			stringsComputeDockerImage(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.DriverInstancePoolId == "" && Forced(v.ForceSendFields, "DriverInstancePoolId") {
 		ch := n.Child("driver_instance_pool_id")
@@ -9008,9 +9898,11 @@ func stringsComputeClusterSpec(c *stringsWalk, n *Node, v *compute.ClusterSpec) 
 			v.DriverInstancePoolId = (r)
 		}
 	}
-	if x := v.DriverNodeTypeFlexibility; x != nil {
-		ch := n.Child("driver_node_type_flexibility")
-		stringsComputeNodeTypeFlexibility(c, &ch, x)
+	if !n.IsRef("driver_node_type_flexibility") {
+		if x := v.DriverNodeTypeFlexibility; x != nil {
+			ch := n.Child("driver_node_type_flexibility")
+			stringsComputeNodeTypeFlexibility(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.DriverNodeTypeId == "" && Forced(v.ForceSendFields, "DriverNodeTypeId") {
 		ch := n.Child("driver_node_type_id")
@@ -9022,16 +9914,20 @@ func stringsComputeClusterSpec(c *stringsWalk, n *Node, v *compute.ClusterSpec) 
 			v.DriverNodeTypeId = (r)
 		}
 	}
-	if x := v.GcpAttributes; x != nil {
-		ch := n.Child("gcp_attributes")
-		stringsComputeGcpAttributes(c, &ch, x)
+	if !n.IsRef("gcp_attributes") {
+		if x := v.GcpAttributes; x != nil {
+			ch := n.Child("gcp_attributes")
+			stringsComputeGcpAttributes(c, &ch, x)
+		}
 	}
-	if len(v.InitScripts) > 0 {
-		cn := n.Child("init_scripts")
-		for i := range v.InitScripts {
-			{
-				ch := cn.Elem(i)
-				stringsComputeInitScriptInfo(c, &ch, &v.InitScripts[i])
+	if !n.IsRef("init_scripts") {
+		if len(v.InitScripts) > 0 {
+			cn := n.Child("init_scripts")
+			for i := range v.InitScripts {
+				{
+					ch := cn.Elem(i)
+					stringsComputeInitScriptInfo(c, &ch, &v.InitScripts[i])
+				}
 			}
 		}
 	}
@@ -9095,24 +9991,28 @@ func stringsComputeClusterSpec(c *stringsWalk, n *Node, v *compute.ClusterSpec) 
 			v.SingleUserName = (r)
 		}
 	}
-	if len(v.SparkConf) > 0 {
-		cn := n.Child("spark_conf")
-		for _, k := range sortedKeys(v.SparkConf) {
-			if s := string(v.SparkConf[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.SparkConf[k] = (r)
+	if !n.IsRef("spark_conf") {
+		if len(v.SparkConf) > 0 {
+			cn := n.Child("spark_conf")
+			for _, k := range sortedKeys(v.SparkConf) {
+				if s := string(v.SparkConf[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.SparkConf[k] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.SparkEnvVars) > 0 {
-		cn := n.Child("spark_env_vars")
-		for _, k := range sortedKeys(v.SparkEnvVars) {
-			if s := string(v.SparkEnvVars[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.SparkEnvVars[k] = (r)
+	if !n.IsRef("spark_env_vars") {
+		if len(v.SparkEnvVars) > 0 {
+			cn := n.Child("spark_env_vars")
+			for _, k := range sortedKeys(v.SparkEnvVars) {
+				if s := string(v.SparkEnvVars[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.SparkEnvVars[k] = (r)
+					}
 				}
 			}
 		}
@@ -9127,20 +10027,24 @@ func stringsComputeClusterSpec(c *stringsWalk, n *Node, v *compute.ClusterSpec) 
 			v.SparkVersion = (r)
 		}
 	}
-	if len(v.SshPublicKeys) > 0 {
-		cn := n.Child("ssh_public_keys")
-		for i := range v.SshPublicKeys {
-			if s := string(v.SshPublicKeys[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.SshPublicKeys[i] = (r)
+	if !n.IsRef("ssh_public_keys") {
+		if len(v.SshPublicKeys) > 0 {
+			cn := n.Child("ssh_public_keys")
+			for i := range v.SshPublicKeys {
+				if s := string(v.SshPublicKeys[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.SshPublicKeys[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if x := v.WorkerNodeTypeFlexibility; x != nil {
-		ch := n.Child("worker_node_type_flexibility")
-		stringsComputeNodeTypeFlexibility(c, &ch, x)
+	if !n.IsRef("worker_node_type_flexibility") {
+		if x := v.WorkerNodeTypeFlexibility; x != nil {
+			ch := n.Child("worker_node_type_flexibility")
+			stringsComputeNodeTypeFlexibility(c, &ch, x)
+		}
 	}
 }
 
@@ -9176,12 +10080,14 @@ func stringsJobsAiRuntimeTask(c *stringsWalk, n *Node, v *jobs.AiRuntimeTask) {
 			v.CodeSourcePath = (r)
 		}
 	}
-	if len(v.Deployments) > 0 {
-		cn := n.Child("deployments")
-		for i := range v.Deployments {
-			{
-				ch := cn.Elem(i)
-				stringsJobsDeploymentSpec(c, &ch, &v.Deployments[i])
+	if !n.IsRef("deployments") {
+		if len(v.Deployments) > 0 {
+			cn := n.Child("deployments")
+			for i := range v.Deployments {
+				{
+					ch := cn.Elem(i)
+					stringsJobsDeploymentSpec(c, &ch, &v.Deployments[i])
+				}
 			}
 		}
 	}
@@ -9264,23 +10170,27 @@ func stringsJobsAlertTask(c *stringsWalk, n *Node, v *jobs.AlertTask) {
 			v.AlertId = (r)
 		}
 	}
-	if len(v.Parameters) > 0 {
-		cn := n.Child("parameters")
-		for _, k := range sortedKeys(v.Parameters) {
-			if s := string(v.Parameters[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.Parameters[k] = (r)
+	if !n.IsRef("parameters") {
+		if len(v.Parameters) > 0 {
+			cn := n.Child("parameters")
+			for _, k := range sortedKeys(v.Parameters) {
+				if s := string(v.Parameters[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.Parameters[k] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.Subscribers) > 0 {
-		cn := n.Child("subscribers")
-		for i := range v.Subscribers {
-			{
-				ch := cn.Elem(i)
-				stringsJobsAlertTaskSubscriber(c, &ch, &v.Subscribers[i])
+	if !n.IsRef("subscribers") {
+		if len(v.Subscribers) > 0 {
+			cn := n.Child("subscribers")
+			for i := range v.Subscribers {
+				{
+					ch := cn.Elem(i)
+					stringsJobsAlertTaskSubscriber(c, &ch, &v.Subscribers[i])
+				}
 			}
 		}
 	}
@@ -9323,13 +10233,15 @@ func stringsJobsCleanRoomsNotebookTask(c *stringsWalk, n *Node, v *jobs.CleanRoo
 			v.Etag = (r)
 		}
 	}
-	if len(v.NotebookBaseParameters) > 0 {
-		cn := n.Child("notebook_base_parameters")
-		for _, k := range sortedKeys(v.NotebookBaseParameters) {
-			if s := string(v.NotebookBaseParameters[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.NotebookBaseParameters[k] = (r)
+	if !n.IsRef("notebook_base_parameters") {
+		if len(v.NotebookBaseParameters) > 0 {
+			cn := n.Child("notebook_base_parameters")
+			for _, k := range sortedKeys(v.NotebookBaseParameters) {
+				if s := string(v.NotebookBaseParameters[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.NotebookBaseParameters[k] = (r)
+					}
 				}
 			}
 		}
@@ -9383,20 +10295,24 @@ func stringsJobsDashboardTask(c *stringsWalk, n *Node, v *jobs.DashboardTask) {
 			v.DashboardId = (r)
 		}
 	}
-	if len(v.Filters) > 0 {
-		cn := n.Child("filters")
-		for _, k := range sortedKeys(v.Filters) {
-			if s := string(v.Filters[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.Filters[k] = (r)
+	if !n.IsRef("filters") {
+		if len(v.Filters) > 0 {
+			cn := n.Child("filters")
+			for _, k := range sortedKeys(v.Filters) {
+				if s := string(v.Filters[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.Filters[k] = (r)
+					}
 				}
 			}
 		}
 	}
-	if x := v.Subscription; x != nil {
-		ch := n.Child("subscription")
-		stringsJobsSubscription(c, &ch, x)
+	if !n.IsRef("subscription") {
+		if x := v.Subscription; x != nil {
+			ch := n.Child("subscription")
+			stringsJobsSubscription(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.WarehouseId == "" && Forced(v.ForceSendFields, "WarehouseId") {
 		ch := n.Child("warehouse_id")
@@ -9457,13 +10373,15 @@ func stringsJobsDbtTask(c *stringsWalk, n *Node, v *jobs.DbtTask) {
 			v.Catalog = (r)
 		}
 	}
-	if len(v.Commands) > 0 {
-		cn := n.Child("commands")
-		for i := range v.Commands {
-			if s := string(v.Commands[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Commands[i] = (r)
+	if !n.IsRef("commands") {
+		if len(v.Commands) > 0 {
+			cn := n.Child("commands")
+			for i := range v.Commands {
+				if s := string(v.Commands[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Commands[i] = (r)
+					}
 				}
 			}
 		}
@@ -9540,79 +10458,93 @@ func stringsJobsTaskDependency(c *stringsWalk, n *Node, v *jobs.TaskDependency) 
 }
 
 func stringsJobsTaskEmailNotifications(c *stringsWalk, n *Node, v *jobs.TaskEmailNotifications) {
-	if len(v.OnDurationWarningThresholdExceeded) > 0 {
-		cn := n.Child("on_duration_warning_threshold_exceeded")
-		for i := range v.OnDurationWarningThresholdExceeded {
-			if s := string(v.OnDurationWarningThresholdExceeded[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.OnDurationWarningThresholdExceeded[i] = (r)
+	if !n.IsRef("on_duration_warning_threshold_exceeded") {
+		if len(v.OnDurationWarningThresholdExceeded) > 0 {
+			cn := n.Child("on_duration_warning_threshold_exceeded")
+			for i := range v.OnDurationWarningThresholdExceeded {
+				if s := string(v.OnDurationWarningThresholdExceeded[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.OnDurationWarningThresholdExceeded[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.OnFailure) > 0 {
-		cn := n.Child("on_failure")
-		for i := range v.OnFailure {
-			if s := string(v.OnFailure[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.OnFailure[i] = (r)
+	if !n.IsRef("on_failure") {
+		if len(v.OnFailure) > 0 {
+			cn := n.Child("on_failure")
+			for i := range v.OnFailure {
+				if s := string(v.OnFailure[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.OnFailure[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.OnMaintenanceComplete) > 0 {
-		cn := n.Child("on_maintenance_complete")
-		for i := range v.OnMaintenanceComplete {
-			if s := string(v.OnMaintenanceComplete[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.OnMaintenanceComplete[i] = (r)
+	if !n.IsRef("on_maintenance_complete") {
+		if len(v.OnMaintenanceComplete) > 0 {
+			cn := n.Child("on_maintenance_complete")
+			for i := range v.OnMaintenanceComplete {
+				if s := string(v.OnMaintenanceComplete[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.OnMaintenanceComplete[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.OnMaintenanceStart) > 0 {
-		cn := n.Child("on_maintenance_start")
-		for i := range v.OnMaintenanceStart {
-			if s := string(v.OnMaintenanceStart[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.OnMaintenanceStart[i] = (r)
+	if !n.IsRef("on_maintenance_start") {
+		if len(v.OnMaintenanceStart) > 0 {
+			cn := n.Child("on_maintenance_start")
+			for i := range v.OnMaintenanceStart {
+				if s := string(v.OnMaintenanceStart[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.OnMaintenanceStart[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.OnStart) > 0 {
-		cn := n.Child("on_start")
-		for i := range v.OnStart {
-			if s := string(v.OnStart[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.OnStart[i] = (r)
+	if !n.IsRef("on_start") {
+		if len(v.OnStart) > 0 {
+			cn := n.Child("on_start")
+			for i := range v.OnStart {
+				if s := string(v.OnStart[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.OnStart[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.OnStreamingBacklogExceeded) > 0 {
-		cn := n.Child("on_streaming_backlog_exceeded")
-		for i := range v.OnStreamingBacklogExceeded {
-			if s := string(v.OnStreamingBacklogExceeded[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.OnStreamingBacklogExceeded[i] = (r)
+	if !n.IsRef("on_streaming_backlog_exceeded") {
+		if len(v.OnStreamingBacklogExceeded) > 0 {
+			cn := n.Child("on_streaming_backlog_exceeded")
+			for i := range v.OnStreamingBacklogExceeded {
+				if s := string(v.OnStreamingBacklogExceeded[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.OnStreamingBacklogExceeded[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.OnSuccess) > 0 {
-		cn := n.Child("on_success")
-		for i := range v.OnSuccess {
-			if s := string(v.OnSuccess[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.OnSuccess[i] = (r)
+	if !n.IsRef("on_success") {
+		if len(v.OnSuccess) > 0 {
+			cn := n.Child("on_success")
+			for i := range v.OnSuccess {
+				if s := string(v.OnSuccess[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.OnSuccess[i] = (r)
+					}
 				}
 			}
 		}
@@ -9626,9 +10558,11 @@ func stringsJobsForEachTask(c *stringsWalk, n *Node, v *jobs.ForEachTask) {
 			v.Inputs = (r)
 		}
 	}
-	{
-		ch := n.Child("task")
-		stringsJobsTask(c, &ch, &v.Task)
+	if !n.IsRef("task") {
+		{
+			ch := n.Child("task")
+			stringsJobsTask(c, &ch, &v.Task)
+		}
 	}
 }
 
@@ -9643,9 +10577,11 @@ func stringsJobsGenAiComputeTask(c *stringsWalk, n *Node, v *jobs.GenAiComputeTa
 			v.Command = (r)
 		}
 	}
-	if x := v.Compute; x != nil {
-		ch := n.Child("compute")
-		stringsJobsComputeConfig(c, &ch, x)
+	if !n.IsRef("compute") {
+		if x := v.Compute; x != nil {
+			ch := n.Child("compute")
+			stringsJobsComputeConfig(c, &ch, x)
+		}
 	}
 	if s := string(v.DlRuntimeImage); c.match(s) {
 		ch := n.Child("dl_runtime_image")
@@ -9706,13 +10642,15 @@ func stringsJobsGenAiComputeTask(c *stringsWalk, n *Node, v *jobs.GenAiComputeTa
 }
 
 func stringsJobsNotebookTask(c *stringsWalk, n *Node, v *jobs.NotebookTask) {
-	if len(v.BaseParameters) > 0 {
-		cn := n.Child("base_parameters")
-		for _, k := range sortedKeys(v.BaseParameters) {
-			if s := string(v.BaseParameters[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.BaseParameters[k] = (r)
+	if !n.IsRef("base_parameters") {
+		if len(v.BaseParameters) > 0 {
+			cn := n.Child("base_parameters")
+			for _, k := range sortedKeys(v.BaseParameters) {
+				if s := string(v.BaseParameters[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.BaseParameters[k] = (r)
+					}
 				}
 			}
 		}
@@ -9746,24 +10684,28 @@ func stringsJobsNotebookTask(c *stringsWalk, n *Node, v *jobs.NotebookTask) {
 }
 
 func stringsJobsPipelineTask(c *stringsWalk, n *Node, v *jobs.PipelineTask) {
-	if len(v.FullRefreshSelection) > 0 {
-		cn := n.Child("full_refresh_selection")
-		for i := range v.FullRefreshSelection {
-			if s := string(v.FullRefreshSelection[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.FullRefreshSelection[i] = (r)
+	if !n.IsRef("full_refresh_selection") {
+		if len(v.FullRefreshSelection) > 0 {
+			cn := n.Child("full_refresh_selection")
+			for i := range v.FullRefreshSelection {
+				if s := string(v.FullRefreshSelection[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.FullRefreshSelection[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.Parameters) > 0 {
-		cn := n.Child("parameters")
-		for _, k := range sortedKeys(v.Parameters) {
-			if s := string(v.Parameters[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.Parameters[k] = (r)
+	if !n.IsRef("parameters") {
+		if len(v.Parameters) > 0 {
+			cn := n.Child("parameters")
+			for _, k := range sortedKeys(v.Parameters) {
+				if s := string(v.Parameters[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.Parameters[k] = (r)
+					}
 				}
 			}
 		}
@@ -9774,35 +10716,41 @@ func stringsJobsPipelineTask(c *stringsWalk, n *Node, v *jobs.PipelineTask) {
 			v.PipelineId = (r)
 		}
 	}
-	if len(v.RefreshFlowSelection) > 0 {
-		cn := n.Child("refresh_flow_selection")
-		for i := range v.RefreshFlowSelection {
-			if s := string(v.RefreshFlowSelection[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.RefreshFlowSelection[i] = (r)
+	if !n.IsRef("refresh_flow_selection") {
+		if len(v.RefreshFlowSelection) > 0 {
+			cn := n.Child("refresh_flow_selection")
+			for i := range v.RefreshFlowSelection {
+				if s := string(v.RefreshFlowSelection[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.RefreshFlowSelection[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.RefreshSelection) > 0 {
-		cn := n.Child("refresh_selection")
-		for i := range v.RefreshSelection {
-			if s := string(v.RefreshSelection[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.RefreshSelection[i] = (r)
+	if !n.IsRef("refresh_selection") {
+		if len(v.RefreshSelection) > 0 {
+			cn := n.Child("refresh_selection")
+			for i := range v.RefreshSelection {
+				if s := string(v.RefreshSelection[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.RefreshSelection[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.ResetCheckpointSelection) > 0 {
-		cn := n.Child("reset_checkpoint_selection")
-		for i := range v.ResetCheckpointSelection {
-			if s := string(v.ResetCheckpointSelection[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.ResetCheckpointSelection[i] = (r)
+	if !n.IsRef("reset_checkpoint_selection") {
+		if len(v.ResetCheckpointSelection) > 0 {
+			cn := n.Child("reset_checkpoint_selection")
+			for i := range v.ResetCheckpointSelection {
+				if s := string(v.ResetCheckpointSelection[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.ResetCheckpointSelection[i] = (r)
+					}
 				}
 			}
 		}
@@ -9820,16 +10768,20 @@ func stringsJobsPowerBiTask(c *stringsWalk, n *Node, v *jobs.PowerBiTask) {
 			v.ConnectionResourceName = (r)
 		}
 	}
-	if x := v.PowerBiModel; x != nil {
-		ch := n.Child("power_bi_model")
-		stringsJobsPowerBiModel(c, &ch, x)
+	if !n.IsRef("power_bi_model") {
+		if x := v.PowerBiModel; x != nil {
+			ch := n.Child("power_bi_model")
+			stringsJobsPowerBiModel(c, &ch, x)
+		}
 	}
-	if len(v.Tables) > 0 {
-		cn := n.Child("tables")
-		for i := range v.Tables {
-			{
-				ch := cn.Elem(i)
-				stringsJobsPowerBiTable(c, &ch, &v.Tables[i])
+	if !n.IsRef("tables") {
+		if len(v.Tables) > 0 {
+			cn := n.Child("tables")
+			for i := range v.Tables {
+				{
+					ch := cn.Elem(i)
+					stringsJobsPowerBiTable(c, &ch, &v.Tables[i])
+				}
 			}
 		}
 	}
@@ -9856,12 +10808,14 @@ func stringsJobsPythonOperatorTask(c *stringsWalk, n *Node, v *jobs.PythonOperat
 			v.Main = (r)
 		}
 	}
-	if len(v.Parameters) > 0 {
-		cn := n.Child("parameters")
-		for i := range v.Parameters {
-			{
-				ch := cn.Elem(i)
-				stringsJobsPythonOperatorTaskParameter(c, &ch, &v.Parameters[i])
+	if !n.IsRef("parameters") {
+		if len(v.Parameters) > 0 {
+			cn := n.Child("parameters")
+			for i := range v.Parameters {
+				{
+					ch := cn.Elem(i)
+					stringsJobsPythonOperatorTaskParameter(c, &ch, &v.Parameters[i])
+				}
 			}
 		}
 	}
@@ -9874,13 +10828,15 @@ func stringsJobsPythonWheelTask(c *stringsWalk, n *Node, v *jobs.PythonWheelTask
 			v.EntryPoint = (r)
 		}
 	}
-	if len(v.NamedParameters) > 0 {
-		cn := n.Child("named_parameters")
-		for _, k := range sortedKeys(v.NamedParameters) {
-			if s := string(v.NamedParameters[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.NamedParameters[k] = (r)
+	if !n.IsRef("named_parameters") {
+		if len(v.NamedParameters) > 0 {
+			cn := n.Child("named_parameters")
+			for _, k := range sortedKeys(v.NamedParameters) {
+				if s := string(v.NamedParameters[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.NamedParameters[k] = (r)
+					}
 				}
 			}
 		}
@@ -9891,13 +10847,15 @@ func stringsJobsPythonWheelTask(c *stringsWalk, n *Node, v *jobs.PythonWheelTask
 			v.PackageName = (r)
 		}
 	}
-	if len(v.Parameters) > 0 {
-		cn := n.Child("parameters")
-		for i := range v.Parameters {
-			if s := string(v.Parameters[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Parameters[i] = (r)
+	if !n.IsRef("parameters") {
+		if len(v.Parameters) > 0 {
+			cn := n.Child("parameters")
+			for i := range v.Parameters {
+				if s := string(v.Parameters[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Parameters[i] = (r)
+					}
 				}
 			}
 		}
@@ -9905,94 +10863,112 @@ func stringsJobsPythonWheelTask(c *stringsWalk, n *Node, v *jobs.PythonWheelTask
 }
 
 func stringsJobsRunJobTask(c *stringsWalk, n *Node, v *jobs.RunJobTask) {
-	if len(v.DbtCommands) > 0 {
-		cn := n.Child("dbt_commands")
-		for i := range v.DbtCommands {
-			if s := string(v.DbtCommands[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.DbtCommands[i] = (r)
+	if !n.IsRef("dbt_commands") {
+		if len(v.DbtCommands) > 0 {
+			cn := n.Child("dbt_commands")
+			for i := range v.DbtCommands {
+				if s := string(v.DbtCommands[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.DbtCommands[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.JarParams) > 0 {
-		cn := n.Child("jar_params")
-		for i := range v.JarParams {
-			if s := string(v.JarParams[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.JarParams[i] = (r)
+	if !n.IsRef("jar_params") {
+		if len(v.JarParams) > 0 {
+			cn := n.Child("jar_params")
+			for i := range v.JarParams {
+				if s := string(v.JarParams[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.JarParams[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.JobParameters) > 0 {
-		cn := n.Child("job_parameters")
-		for _, k := range sortedKeys(v.JobParameters) {
-			if s := string(v.JobParameters[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.JobParameters[k] = (r)
+	if !n.IsRef("job_parameters") {
+		if len(v.JobParameters) > 0 {
+			cn := n.Child("job_parameters")
+			for _, k := range sortedKeys(v.JobParameters) {
+				if s := string(v.JobParameters[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.JobParameters[k] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.NotebookParams) > 0 {
-		cn := n.Child("notebook_params")
-		for _, k := range sortedKeys(v.NotebookParams) {
-			if s := string(v.NotebookParams[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.NotebookParams[k] = (r)
+	if !n.IsRef("notebook_params") {
+		if len(v.NotebookParams) > 0 {
+			cn := n.Child("notebook_params")
+			for _, k := range sortedKeys(v.NotebookParams) {
+				if s := string(v.NotebookParams[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.NotebookParams[k] = (r)
+					}
 				}
 			}
 		}
 	}
-	if x := v.PipelineParams; x != nil {
-		ch := n.Child("pipeline_params")
-		stringsJobsPipelineParams(c, &ch, x)
+	if !n.IsRef("pipeline_params") {
+		if x := v.PipelineParams; x != nil {
+			ch := n.Child("pipeline_params")
+			stringsJobsPipelineParams(c, &ch, x)
+		}
 	}
-	if len(v.PythonNamedParams) > 0 {
-		cn := n.Child("python_named_params")
-		for _, k := range sortedKeys(v.PythonNamedParams) {
-			if s := string(v.PythonNamedParams[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.PythonNamedParams[k] = (r)
+	if !n.IsRef("python_named_params") {
+		if len(v.PythonNamedParams) > 0 {
+			cn := n.Child("python_named_params")
+			for _, k := range sortedKeys(v.PythonNamedParams) {
+				if s := string(v.PythonNamedParams[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.PythonNamedParams[k] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.PythonParams) > 0 {
-		cn := n.Child("python_params")
-		for i := range v.PythonParams {
-			if s := string(v.PythonParams[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.PythonParams[i] = (r)
+	if !n.IsRef("python_params") {
+		if len(v.PythonParams) > 0 {
+			cn := n.Child("python_params")
+			for i := range v.PythonParams {
+				if s := string(v.PythonParams[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.PythonParams[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.SparkSubmitParams) > 0 {
-		cn := n.Child("spark_submit_params")
-		for i := range v.SparkSubmitParams {
-			if s := string(v.SparkSubmitParams[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.SparkSubmitParams[i] = (r)
+	if !n.IsRef("spark_submit_params") {
+		if len(v.SparkSubmitParams) > 0 {
+			cn := n.Child("spark_submit_params")
+			for i := range v.SparkSubmitParams {
+				if s := string(v.SparkSubmitParams[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.SparkSubmitParams[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.SqlParams) > 0 {
-		cn := n.Child("sql_params")
-		for _, k := range sortedKeys(v.SqlParams) {
-			if s := string(v.SqlParams[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.SqlParams[k] = (r)
+	if !n.IsRef("sql_params") {
+		if len(v.SqlParams) > 0 {
+			cn := n.Child("sql_params")
+			for _, k := range sortedKeys(v.SqlParams) {
+				if s := string(v.SqlParams[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.SqlParams[k] = (r)
+					}
 				}
 			}
 		}
@@ -10020,13 +10996,15 @@ func stringsJobsSparkJarTask(c *stringsWalk, n *Node, v *jobs.SparkJarTask) {
 			v.MainClassName = (r)
 		}
 	}
-	if len(v.Parameters) > 0 {
-		cn := n.Child("parameters")
-		for i := range v.Parameters {
-			if s := string(v.Parameters[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Parameters[i] = (r)
+	if !n.IsRef("parameters") {
+		if len(v.Parameters) > 0 {
+			cn := n.Child("parameters")
+			for i := range v.Parameters {
+				if s := string(v.Parameters[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Parameters[i] = (r)
+					}
 				}
 			}
 		}
@@ -10034,13 +11012,15 @@ func stringsJobsSparkJarTask(c *stringsWalk, n *Node, v *jobs.SparkJarTask) {
 }
 
 func stringsJobsSparkPythonTask(c *stringsWalk, n *Node, v *jobs.SparkPythonTask) {
-	if len(v.Parameters) > 0 {
-		cn := n.Child("parameters")
-		for i := range v.Parameters {
-			if s := string(v.Parameters[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Parameters[i] = (r)
+	if !n.IsRef("parameters") {
+		if len(v.Parameters) > 0 {
+			cn := n.Child("parameters")
+			for i := range v.Parameters {
+				if s := string(v.Parameters[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Parameters[i] = (r)
+					}
 				}
 			}
 		}
@@ -10060,13 +11040,15 @@ func stringsJobsSparkPythonTask(c *stringsWalk, n *Node, v *jobs.SparkPythonTask
 }
 
 func stringsJobsSparkSubmitTask(c *stringsWalk, n *Node, v *jobs.SparkSubmitTask) {
-	if len(v.Parameters) > 0 {
-		cn := n.Child("parameters")
-		for i := range v.Parameters {
-			if s := string(v.Parameters[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Parameters[i] = (r)
+	if !n.IsRef("parameters") {
+		if len(v.Parameters) > 0 {
+			cn := n.Child("parameters")
+			for i := range v.Parameters {
+				if s := string(v.Parameters[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Parameters[i] = (r)
+					}
 				}
 			}
 		}
@@ -10074,32 +11056,42 @@ func stringsJobsSparkSubmitTask(c *stringsWalk, n *Node, v *jobs.SparkSubmitTask
 }
 
 func stringsJobsSqlTask(c *stringsWalk, n *Node, v *jobs.SqlTask) {
-	if x := v.Alert; x != nil {
-		ch := n.Child("alert")
-		stringsJobsSqlTaskAlert(c, &ch, x)
+	if !n.IsRef("alert") {
+		if x := v.Alert; x != nil {
+			ch := n.Child("alert")
+			stringsJobsSqlTaskAlert(c, &ch, x)
+		}
 	}
-	if x := v.Dashboard; x != nil {
-		ch := n.Child("dashboard")
-		stringsJobsSqlTaskDashboard(c, &ch, x)
+	if !n.IsRef("dashboard") {
+		if x := v.Dashboard; x != nil {
+			ch := n.Child("dashboard")
+			stringsJobsSqlTaskDashboard(c, &ch, x)
+		}
 	}
-	if x := v.File; x != nil {
-		ch := n.Child("file")
-		stringsJobsSqlTaskFile(c, &ch, x)
+	if !n.IsRef("file") {
+		if x := v.File; x != nil {
+			ch := n.Child("file")
+			stringsJobsSqlTaskFile(c, &ch, x)
+		}
 	}
-	if len(v.Parameters) > 0 {
-		cn := n.Child("parameters")
-		for _, k := range sortedKeys(v.Parameters) {
-			if s := string(v.Parameters[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.Parameters[k] = (r)
+	if !n.IsRef("parameters") {
+		if len(v.Parameters) > 0 {
+			cn := n.Child("parameters")
+			for _, k := range sortedKeys(v.Parameters) {
+				if s := string(v.Parameters[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.Parameters[k] = (r)
+					}
 				}
 			}
 		}
 	}
-	if x := v.Query; x != nil {
-		ch := n.Child("query")
-		stringsJobsSqlTaskQuery(c, &ch, x)
+	if !n.IsRef("query") {
+		if x := v.Query; x != nil {
+			ch := n.Child("query")
+			stringsJobsSqlTaskQuery(c, &ch, x)
+		}
 	}
 	if s := string(v.WarehouseId); c.match(s) {
 		ch := n.Child("warehouse_id")
@@ -10119,13 +11111,15 @@ func stringsJobsFileArrivalTriggerConfiguration(c *stringsWalk, n *Node, v *jobs
 }
 
 func stringsJobsModelTriggerConfiguration(c *stringsWalk, n *Node, v *jobs.ModelTriggerConfiguration) {
-	if len(v.Aliases) > 0 {
-		cn := n.Child("aliases")
-		for i := range v.Aliases {
-			if s := string(v.Aliases[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Aliases[i] = (r)
+	if !n.IsRef("aliases") {
+		if len(v.Aliases) > 0 {
+			cn := n.Child("aliases")
+			for i := range v.Aliases {
+				if s := string(v.Aliases[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Aliases[i] = (r)
+					}
 				}
 			}
 		}
@@ -10168,13 +11162,15 @@ func stringsJobsTableUpdateTriggerConfiguration(c *stringsWalk, n *Node, v *jobs
 			v.Condition = jobs.Condition(r)
 		}
 	}
-	if len(v.TableNames) > 0 {
-		cn := n.Child("table_names")
-		for i := range v.TableNames {
-			if s := string(v.TableNames[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.TableNames[i] = (r)
+	if !n.IsRef("table_names") {
+		if len(v.TableNames) > 0 {
+			cn := n.Child("table_names")
+			for i := range v.TableNames {
+				if s := string(v.TableNames[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.TableNames[i] = (r)
+					}
 				}
 			}
 		}
@@ -10182,9 +11178,11 @@ func stringsJobsTableUpdateTriggerConfiguration(c *stringsWalk, n *Node, v *jobs
 }
 
 func stringsJobsContinuousTriggerConfiguration(c *stringsWalk, n *Node, v *jobs.ContinuousTriggerConfiguration) {
-	if x := v.MaintenanceWindow; x != nil {
-		ch := n.Child("maintenance_window")
-		stringsJobsMaintenanceWindow(c, &ch, x)
+	if !n.IsRef("maintenance_window") {
+		if x := v.MaintenanceWindow; x != nil {
+			ch := n.Child("maintenance_window")
+			stringsJobsMaintenanceWindow(c, &ch, x)
+		}
 	}
 	if s := string(v.TaskRetryMode); c.match(s) {
 		ch := n.Child("task_retry_mode")
@@ -10219,15 +11217,17 @@ func stringsJobsWebhook(c *stringsWalk, n *Node, v *jobs.Webhook) {
 }
 
 func stringsResourcesJobRunTrigger(c *stringsWalk, n *Node, v *resources.JobRunTrigger) {
-	if c.mode == EmptyFields && v.OnFileChange != nil && *v.OnFileChange == "" {
-		ch := n.Child("on_file_change")
-		c.fn(&ch, "")
-	}
-	if x := v.OnFileChange; x != nil {
-		if s := string(*x); c.match(s) {
+	if !n.IsRef("on_file_change") {
+		if c.mode == EmptyFields && v.OnFileChange != nil && *v.OnFileChange == "" {
 			ch := n.Child("on_file_change")
-			if r, ok := c.fn(&ch, s); ok {
-				*x = (r)
+			c.fn(&ch, "")
+		}
+		if x := v.OnFileChange; x != nil {
+			if s := string(*x); c.match(s) {
+				ch := n.Child("on_file_change")
+				if r, ok := c.fn(&ch, s); ok {
+					*x = (r)
+				}
 			}
 		}
 	}
@@ -10240,13 +11240,15 @@ func stringsResourcesJobRunTriggersState(c *stringsWalk, n *Node, v *resources.J
 			v.OnBundleDeploy = (r)
 		}
 	}
-	if len(v.OnFileChange) > 0 {
-		cn := n.Child("on_file_change")
-		for _, k := range sortedKeys(v.OnFileChange) {
-			if s := string(v.OnFileChange[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.OnFileChange[k] = (r)
+	if !n.IsRef("on_file_change") {
+		if len(v.OnFileChange) > 0 {
+			cn := n.Child("on_file_change")
+			for _, k := range sortedKeys(v.OnFileChange) {
+				if s := string(v.OnFileChange[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.OnFileChange[k] = (r)
+					}
 				}
 			}
 		}
@@ -10301,13 +11303,15 @@ func stringsPipelinesDataStagingOptions(c *stringsWalk, n *Node, v *pipelines.Da
 }
 
 func stringsPipelinesOperationTimeWindow(c *stringsWalk, n *Node, v *pipelines.OperationTimeWindow) {
-	if len(v.DaysOfWeek) > 0 {
-		cn := n.Child("days_of_week")
-		for i := range v.DaysOfWeek {
-			if s := string(v.DaysOfWeek[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.DaysOfWeek[i] = pipelines.DayOfWeek(r)
+	if !n.IsRef("days_of_week") {
+		if len(v.DaysOfWeek) > 0 {
+			cn := n.Child("days_of_week")
+			for i := range v.DaysOfWeek {
+				if s := string(v.DaysOfWeek[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.DaysOfWeek[i] = pipelines.DayOfWeek(r)
+					}
 				}
 			}
 		}
@@ -10325,83 +11329,105 @@ func stringsPipelinesOperationTimeWindow(c *stringsWalk, n *Node, v *pipelines.O
 }
 
 func stringsPipelinesIngestionConfig(c *stringsWalk, n *Node, v *pipelines.IngestionConfig) {
-	if x := v.Report; x != nil {
-		ch := n.Child("report")
-		stringsPipelinesReportSpec(c, &ch, x)
+	if !n.IsRef("report") {
+		if x := v.Report; x != nil {
+			ch := n.Child("report")
+			stringsPipelinesReportSpec(c, &ch, x)
+		}
 	}
-	if x := v.Schema; x != nil {
-		ch := n.Child("schema")
-		stringsPipelinesSchemaSpec(c, &ch, x)
+	if !n.IsRef("schema") {
+		if x := v.Schema; x != nil {
+			ch := n.Child("schema")
+			stringsPipelinesSchemaSpec(c, &ch, x)
+		}
 	}
-	if x := v.Table; x != nil {
-		ch := n.Child("table")
-		stringsPipelinesTableSpec(c, &ch, x)
+	if !n.IsRef("table") {
+		if x := v.Table; x != nil {
+			ch := n.Child("table")
+			stringsPipelinesTableSpec(c, &ch, x)
+		}
 	}
 }
 
 func stringsPipelinesSourceConfig(c *stringsWalk, n *Node, v *pipelines.SourceConfig) {
-	if x := v.ApiSourceConnectorConfig; x != nil {
-		ch := n.Child("api_source_connector_config")
-		stringsPipelinesApiSourceConnectorConfig(c, &ch, x)
+	if !n.IsRef("api_source_connector_config") {
+		if x := v.ApiSourceConnectorConfig; x != nil {
+			ch := n.Child("api_source_connector_config")
+			stringsPipelinesApiSourceConnectorConfig(c, &ch, x)
+		}
 	}
-	if x := v.Catalog; x != nil {
-		ch := n.Child("catalog")
-		stringsPipelinesSourceCatalogConfig(c, &ch, x)
+	if !n.IsRef("catalog") {
+		if x := v.Catalog; x != nil {
+			ch := n.Child("catalog")
+			stringsPipelinesSourceCatalogConfig(c, &ch, x)
+		}
 	}
-	if x := v.GoogleAdsConfig; x != nil {
-		ch := n.Child("google_ads_config")
-		stringsPipelinesGoogleAdsConfig(c, &ch, x)
+	if !n.IsRef("google_ads_config") {
+		if x := v.GoogleAdsConfig; x != nil {
+			ch := n.Child("google_ads_config")
+			stringsPipelinesGoogleAdsConfig(c, &ch, x)
+		}
 	}
 }
 
 func stringsPipelinesTableSpecificConfig(c *stringsWalk, n *Node, v *pipelines.TableSpecificConfig) {
-	if len(v.ClusteringColumns) > 0 {
-		cn := n.Child("clustering_columns")
-		for i := range v.ClusteringColumns {
-			if s := string(v.ClusteringColumns[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.ClusteringColumns[i] = (r)
+	if !n.IsRef("clustering_columns") {
+		if len(v.ClusteringColumns) > 0 {
+			cn := n.Child("clustering_columns")
+			for i := range v.ClusteringColumns {
+				if s := string(v.ClusteringColumns[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.ClusteringColumns[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.ExcludeColumns) > 0 {
-		cn := n.Child("exclude_columns")
-		for i := range v.ExcludeColumns {
-			if s := string(v.ExcludeColumns[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.ExcludeColumns[i] = (r)
+	if !n.IsRef("exclude_columns") {
+		if len(v.ExcludeColumns) > 0 {
+			cn := n.Child("exclude_columns")
+			for i := range v.ExcludeColumns {
+				if s := string(v.ExcludeColumns[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.ExcludeColumns[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.IncludeColumns) > 0 {
-		cn := n.Child("include_columns")
-		for i := range v.IncludeColumns {
-			if s := string(v.IncludeColumns[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.IncludeColumns[i] = (r)
+	if !n.IsRef("include_columns") {
+		if len(v.IncludeColumns) > 0 {
+			cn := n.Child("include_columns")
+			for i := range v.IncludeColumns {
+				if s := string(v.IncludeColumns[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.IncludeColumns[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.PrimaryKeys) > 0 {
-		cn := n.Child("primary_keys")
-		for i := range v.PrimaryKeys {
-			if s := string(v.PrimaryKeys[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.PrimaryKeys[i] = (r)
+	if !n.IsRef("primary_keys") {
+		if len(v.PrimaryKeys) > 0 {
+			cn := n.Child("primary_keys")
+			for i := range v.PrimaryKeys {
+				if s := string(v.PrimaryKeys[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.PrimaryKeys[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if x := v.QueryBasedConnectorConfig; x != nil {
-		ch := n.Child("query_based_connector_config")
-		stringsPipelinesIngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig(c, &ch, x)
+	if !n.IsRef("query_based_connector_config") {
+		if x := v.QueryBasedConnectorConfig; x != nil {
+			ch := n.Child("query_based_connector_config")
+			stringsPipelinesIngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.RowFilter == "" && Forced(v.ForceSendFields, "RowFilter") {
 		ch := n.Child("row_filter")
@@ -10423,13 +11449,15 @@ func stringsPipelinesTableSpecificConfig(c *stringsWalk, n *Node, v *pipelines.T
 			v.ScdType = pipelines.TableSpecificConfigScdType(r)
 		}
 	}
-	if len(v.SequenceBy) > 0 {
-		cn := n.Child("sequence_by")
-		for i := range v.SequenceBy {
-			if s := string(v.SequenceBy[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.SequenceBy[i] = (r)
+	if !n.IsRef("sequence_by") {
+		if len(v.SequenceBy) > 0 {
+			cn := n.Child("sequence_by")
+			for i := range v.SequenceBy {
+				if s := string(v.SequenceBy[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.SequenceBy[i] = (r)
+					}
 				}
 			}
 		}
@@ -10444,20 +11472,24 @@ func stringsPipelinesTableSpecificConfig(c *stringsWalk, n *Node, v *pipelines.T
 			v.SourceMetadataColumn = (r)
 		}
 	}
-	if len(v.TableProperties) > 0 {
-		cn := n.Child("table_properties")
-		for _, k := range sortedKeys(v.TableProperties) {
-			if s := string(v.TableProperties[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.TableProperties[k] = (r)
+	if !n.IsRef("table_properties") {
+		if len(v.TableProperties) > 0 {
+			cn := n.Child("table_properties")
+			for _, k := range sortedKeys(v.TableProperties) {
+				if s := string(v.TableProperties[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.TableProperties[k] = (r)
+					}
 				}
 			}
 		}
 	}
-	if x := v.WorkdayReportParameters; x != nil {
-		ch := n.Child("workday_report_parameters")
-		stringsPipelinesIngestionPipelineDefinitionWorkdayReportParameters(c, &ch, x)
+	if !n.IsRef("workday_report_parameters") {
+		if x := v.WorkdayReportParameters; x != nil {
+			ch := n.Child("workday_report_parameters")
+			stringsPipelinesIngestionPipelineDefinitionWorkdayReportParameters(c, &ch, x)
+		}
 	}
 }
 
@@ -10494,13 +11526,15 @@ func stringsComputeMavenLibrary(c *stringsWalk, n *Node, v *compute.MavenLibrary
 			v.Coordinates = (r)
 		}
 	}
-	if len(v.Exclusions) > 0 {
-		cn := n.Child("exclusions")
-		for i := range v.Exclusions {
-			if s := string(v.Exclusions[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Exclusions[i] = (r)
+	if !n.IsRef("exclusions") {
+		if len(v.Exclusions) > 0 {
+			cn := n.Child("exclusions")
+			for i := range v.Exclusions {
+				if s := string(v.Exclusions[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Exclusions[i] = (r)
+					}
 				}
 			}
 		}
@@ -10589,13 +11623,17 @@ func stringsMlUcTraceLocation(c *stringsWalk, n *Node, v *ml.UcTraceLocation) {
 }
 
 func stringsServingAiGatewayGuardrails(c *stringsWalk, n *Node, v *serving.AiGatewayGuardrails) {
-	if x := v.Input; x != nil {
-		ch := n.Child("input")
-		stringsServingAiGatewayGuardrailParameters(c, &ch, x)
+	if !n.IsRef("input") {
+		if x := v.Input; x != nil {
+			ch := n.Child("input")
+			stringsServingAiGatewayGuardrailParameters(c, &ch, x)
+		}
 	}
-	if x := v.Output; x != nil {
-		ch := n.Child("output")
-		stringsServingAiGatewayGuardrailParameters(c, &ch, x)
+	if !n.IsRef("output") {
+		if x := v.Output; x != nil {
+			ch := n.Child("output")
+			stringsServingAiGatewayGuardrailParameters(c, &ch, x)
+		}
 	}
 }
 
@@ -10715,20 +11753,24 @@ func stringsServingServedEntityInput(c *stringsWalk, n *Node, v *serving.ServedE
 			v.EntityVersion = (r)
 		}
 	}
-	if len(v.EnvironmentVars) > 0 {
-		cn := n.Child("environment_vars")
-		for _, k := range sortedKeys(v.EnvironmentVars) {
-			if s := string(v.EnvironmentVars[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.EnvironmentVars[k] = (r)
+	if !n.IsRef("environment_vars") {
+		if len(v.EnvironmentVars) > 0 {
+			cn := n.Child("environment_vars")
+			for _, k := range sortedKeys(v.EnvironmentVars) {
+				if s := string(v.EnvironmentVars[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.EnvironmentVars[k] = (r)
+					}
 				}
 			}
 		}
 	}
-	if x := v.ExternalModel; x != nil {
-		ch := n.Child("external_model")
-		stringsServingExternalModel(c, &ch, x)
+	if !n.IsRef("external_model") {
+		if x := v.ExternalModel; x != nil {
+			ch := n.Child("external_model")
+			stringsServingExternalModel(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.InstanceProfileArn == "" && Forced(v.ForceSendFields, "InstanceProfileArn") {
 		ch := n.Child("instance_profile_arn")
@@ -10773,13 +11815,15 @@ func stringsServingServedEntityInput(c *stringsWalk, n *Node, v *serving.ServedE
 }
 
 func stringsServingServedModelInput(c *stringsWalk, n *Node, v *serving.ServedModelInput) {
-	if len(v.EnvironmentVars) > 0 {
-		cn := n.Child("environment_vars")
-		for _, k := range sortedKeys(v.EnvironmentVars) {
-			if s := string(v.EnvironmentVars[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.EnvironmentVars[k] = (r)
+	if !n.IsRef("environment_vars") {
+		if len(v.EnvironmentVars) > 0 {
+			cn := n.Child("environment_vars")
+			for _, k := range sortedKeys(v.EnvironmentVars) {
+				if s := string(v.EnvironmentVars[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.EnvironmentVars[k] = (r)
+					}
 				}
 			}
 		}
@@ -10839,12 +11883,14 @@ func stringsServingServedModelInput(c *stringsWalk, n *Node, v *serving.ServedMo
 }
 
 func stringsServingTrafficConfig(c *stringsWalk, n *Node, v *serving.TrafficConfig) {
-	if len(v.Routes) > 0 {
-		cn := n.Child("routes")
-		for i := range v.Routes {
-			{
-				ch := cn.Elem(i)
-				stringsServingRoute(c, &ch, &v.Routes[i])
+	if !n.IsRef("routes") {
+		if len(v.Routes) > 0 {
+			cn := n.Child("routes")
+			for i := range v.Routes {
+				{
+					ch := cn.Elem(i)
+					stringsServingRoute(c, &ch, &v.Routes[i])
+				}
 			}
 		}
 	}
@@ -10961,18 +12007,22 @@ func stringsCatalogRateLimit(c *stringsWalk, n *Node, v *catalog.RateLimit) {
 }
 
 func stringsCatalogModelServiceConfigRoutingConfig(c *stringsWalk, n *Node, v *catalog.ModelServiceConfigRoutingConfig) {
-	if len(v.Destinations) > 0 {
-		cn := n.Child("destinations")
-		for i := range v.Destinations {
-			{
-				ch := cn.Elem(i)
-				stringsCatalogModelServiceConfigDestinationConfig(c, &ch, &v.Destinations[i])
+	if !n.IsRef("destinations") {
+		if len(v.Destinations) > 0 {
+			cn := n.Child("destinations")
+			for i := range v.Destinations {
+				{
+					ch := cn.Elem(i)
+					stringsCatalogModelServiceConfigDestinationConfig(c, &ch, &v.Destinations[i])
+				}
 			}
 		}
 	}
-	if x := v.Fallback; x != nil {
-		ch := n.Child("fallback")
-		stringsCatalogModelServiceConfigFallbackConfig(c, &ch, x)
+	if !n.IsRef("fallback") {
+		if x := v.Fallback; x != nil {
+			ch := n.Child("fallback")
+			stringsCatalogModelServiceConfigFallbackConfig(c, &ch, x)
+		}
 	}
 }
 
@@ -10983,13 +12033,15 @@ func stringsCatalogMcpServiceConfigSourceConnection(c *stringsWalk, n *Node, v *
 			v.Name = (r)
 		}
 	}
-	if len(v.Options) > 0 {
-		cn := n.Child("options")
-		for _, k := range sortedKeys(v.Options) {
-			if s := string(v.Options[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.Options[k] = (r)
+	if !n.IsRef("options") {
+		if len(v.Options) > 0 {
+			cn := n.Child("options")
+			for _, k := range sortedKeys(v.Options) {
+				if s := string(v.Options[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.Options[k] = (r)
+					}
 				}
 			}
 		}
@@ -10997,51 +12049,65 @@ func stringsCatalogMcpServiceConfigSourceConnection(c *stringsWalk, n *Node, v *
 }
 
 func stringsCatalogModelProviderServiceConfigAmazonBedrockProviderConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigAmazonBedrockProviderConfig) {
-	if x := v.Direct; x != nil {
-		ch := n.Child("direct")
-		stringsCatalogModelProviderServiceConfigAmazonBedrockProviderDirectConfig(c, &ch, x)
+	if !n.IsRef("direct") {
+		if x := v.Direct; x != nil {
+			ch := n.Child("direct")
+			stringsCatalogModelProviderServiceConfigAmazonBedrockProviderDirectConfig(c, &ch, x)
+		}
 	}
 }
 
 func stringsCatalogModelProviderServiceConfigAnthropicProviderConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigAnthropicProviderConfig) {
-	if x := v.Direct; x != nil {
-		ch := n.Child("direct")
-		stringsCatalogModelProviderServiceConfigAnthropicProviderDirectConfig(c, &ch, x)
+	if !n.IsRef("direct") {
+		if x := v.Direct; x != nil {
+			ch := n.Child("direct")
+			stringsCatalogModelProviderServiceConfigAnthropicProviderDirectConfig(c, &ch, x)
+		}
 	}
 }
 
 func stringsCatalogModelProviderServiceConfigAzureOpenAiProviderConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigAzureOpenAiProviderConfig) {
-	if x := v.Direct; x != nil {
-		ch := n.Child("direct")
-		stringsCatalogModelProviderServiceConfigAzureOpenAiProviderDirectConfig(c, &ch, x)
+	if !n.IsRef("direct") {
+		if x := v.Direct; x != nil {
+			ch := n.Child("direct")
+			stringsCatalogModelProviderServiceConfigAzureOpenAiProviderDirectConfig(c, &ch, x)
+		}
 	}
 }
 
 func stringsCatalogModelProviderServiceConfigCustomProviderConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigCustomProviderConfig) {
-	if x := v.Direct; x != nil {
-		ch := n.Child("direct")
-		stringsCatalogModelProviderServiceConfigCustomProviderDirectConfig(c, &ch, x)
+	if !n.IsRef("direct") {
+		if x := v.Direct; x != nil {
+			ch := n.Child("direct")
+			stringsCatalogModelProviderServiceConfigCustomProviderDirectConfig(c, &ch, x)
+		}
 	}
 }
 
 func stringsCatalogModelProviderServiceConfigGeminiEnterpriseProviderConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigGeminiEnterpriseProviderConfig) {
-	if x := v.Direct; x != nil {
-		ch := n.Child("direct")
-		stringsCatalogModelProviderServiceConfigGeminiEnterpriseProviderDirectConfig(c, &ch, x)
+	if !n.IsRef("direct") {
+		if x := v.Direct; x != nil {
+			ch := n.Child("direct")
+			stringsCatalogModelProviderServiceConfigGeminiEnterpriseProviderDirectConfig(c, &ch, x)
+		}
 	}
 }
 
 func stringsCatalogModelProviderServiceConfigMicrosoftFoundryProviderConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigMicrosoftFoundryProviderConfig) {
-	if x := v.Direct; x != nil {
-		ch := n.Child("direct")
-		stringsCatalogModelProviderServiceConfigMicrosoftFoundryProviderDirectConfig(c, &ch, x)
+	if !n.IsRef("direct") {
+		if x := v.Direct; x != nil {
+			ch := n.Child("direct")
+			stringsCatalogModelProviderServiceConfigMicrosoftFoundryProviderDirectConfig(c, &ch, x)
+		}
 	}
 }
 
 func stringsCatalogModelProviderServiceConfigOpenAiProviderConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigOpenAiProviderConfig) {
-	if x := v.Direct; x != nil {
-		ch := n.Child("direct")
-		stringsCatalogModelProviderServiceConfigOpenAiProviderDirectConfig(c, &ch, x)
+	if !n.IsRef("direct") {
+		if x := v.Direct; x != nil {
+			ch := n.Child("direct")
+			stringsCatalogModelProviderServiceConfigOpenAiProviderDirectConfig(c, &ch, x)
+		}
 	}
 }
 
@@ -11062,13 +12128,15 @@ func stringsCatalogModelProviderServiceConfigModelTargetConfig(c *stringsWalk, n
 			v.Model = (r)
 		}
 	}
-	if len(v.NativeApiTypes) > 0 {
-		cn := n.Child("native_api_types")
-		for i := range v.NativeApiTypes {
-			if s := string(v.NativeApiTypes[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.NativeApiTypes[i] = (r)
+	if !n.IsRef("native_api_types") {
+		if len(v.NativeApiTypes) > 0 {
+			cn := n.Child("native_api_types")
+			for i := range v.NativeApiTypes {
+				if s := string(v.NativeApiTypes[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.NativeApiTypes[i] = (r)
+					}
 				}
 			}
 		}
@@ -11076,13 +12144,15 @@ func stringsCatalogModelProviderServiceConfigModelTargetConfig(c *stringsWalk, n
 }
 
 func stringsCatalogMonitorDestination(c *stringsWalk, n *Node, v *catalog.MonitorDestination) {
-	if len(v.EmailAddresses) > 0 {
-		cn := n.Child("email_addresses")
-		for i := range v.EmailAddresses {
-			if s := string(v.EmailAddresses[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.EmailAddresses[i] = (r)
+	if !n.IsRef("email_addresses") {
+		if len(v.EmailAddresses) > 0 {
+			cn := n.Child("email_addresses")
+			for i := range v.EmailAddresses {
+				if s := string(v.EmailAddresses[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.EmailAddresses[i] = (r)
+					}
 				}
 			}
 		}
@@ -11762,12 +12832,14 @@ func stringsAppsUnityCatalog(c *stringsWalk, n *Node, v *apps.UnityCatalog) {
 }
 
 func stringsSqlAlertV2Notification(c *stringsWalk, n *Node, v *sql.AlertV2Notification) {
-	if len(v.Subscriptions) > 0 {
-		cn := n.Child("subscriptions")
-		for i := range v.Subscriptions {
-			{
-				ch := cn.Elem(i)
-				stringsSqlAlertV2Subscription(c, &ch, &v.Subscriptions[i])
+	if !n.IsRef("subscriptions") {
+		if len(v.Subscriptions) > 0 {
+			cn := n.Child("subscriptions")
+			for i := range v.Subscriptions {
+				{
+					ch := cn.Elem(i)
+					stringsSqlAlertV2Subscription(c, &ch, &v.Subscriptions[i])
+				}
 			}
 		}
 	}
@@ -11803,13 +12875,17 @@ func stringsSqlAlertV2OperandColumn(c *stringsWalk, n *Node, v *sql.AlertV2Opera
 }
 
 func stringsSqlAlertV2Operand(c *stringsWalk, n *Node, v *sql.AlertV2Operand) {
-	if x := v.Column; x != nil {
-		ch := n.Child("column")
-		stringsSqlAlertV2OperandColumn(c, &ch, x)
+	if !n.IsRef("column") {
+		if x := v.Column; x != nil {
+			ch := n.Child("column")
+			stringsSqlAlertV2OperandColumn(c, &ch, x)
+		}
 	}
-	if x := v.Value; x != nil {
-		ch := n.Child("value")
-		stringsSqlAlertV2OperandValue(c, &ch, x)
+	if !n.IsRef("value") {
+		if x := v.Value; x != nil {
+			ch := n.Child("value")
+			stringsSqlAlertV2OperandValue(c, &ch, x)
+		}
 	}
 }
 
@@ -11837,9 +12913,11 @@ func stringsSqlEndpointTagPair(c *stringsWalk, n *Node, v *sql.EndpointTagPair) 
 }
 
 func stringsDatabaseSyncedTableContinuousUpdateStatus(c *stringsWalk, n *Node, v *database.SyncedTableContinuousUpdateStatus) {
-	if x := v.InitialPipelineSyncProgress; x != nil {
-		ch := n.Child("initial_pipeline_sync_progress")
-		stringsDatabaseSyncedTablePipelineProgress(c, &ch, x)
+	if !n.IsRef("initial_pipeline_sync_progress") {
+		if x := v.InitialPipelineSyncProgress; x != nil {
+			ch := n.Child("initial_pipeline_sync_progress")
+			stringsDatabaseSyncedTablePipelineProgress(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.Timestamp == "" && Forced(v.ForceSendFields, "Timestamp") {
 		ch := n.Child("timestamp")
@@ -11867,9 +12945,11 @@ func stringsDatabaseSyncedTableFailedStatus(c *stringsWalk, n *Node, v *database
 }
 
 func stringsDatabaseSyncedTablePosition(c *stringsWalk, n *Node, v *database.SyncedTablePosition) {
-	if x := v.DeltaTableSyncInfo; x != nil {
-		ch := n.Child("delta_table_sync_info")
-		stringsDatabaseDeltaTableSyncInfo(c, &ch, x)
+	if !n.IsRef("delta_table_sync_info") {
+		if x := v.DeltaTableSyncInfo; x != nil {
+			ch := n.Child("delta_table_sync_info")
+			stringsDatabaseDeltaTableSyncInfo(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.SyncEndTimestamp == "" && Forced(v.ForceSendFields, "SyncEndTimestamp") {
 		ch := n.Child("sync_end_timestamp")
@@ -11894,9 +12974,11 @@ func stringsDatabaseSyncedTablePosition(c *stringsWalk, n *Node, v *database.Syn
 }
 
 func stringsDatabaseSyncedTableProvisioningStatus(c *stringsWalk, n *Node, v *database.SyncedTableProvisioningStatus) {
-	if x := v.InitialPipelineSyncProgress; x != nil {
-		ch := n.Child("initial_pipeline_sync_progress")
-		stringsDatabaseSyncedTablePipelineProgress(c, &ch, x)
+	if !n.IsRef("initial_pipeline_sync_progress") {
+		if x := v.InitialPipelineSyncProgress; x != nil {
+			ch := n.Child("initial_pipeline_sync_progress")
+			stringsDatabaseSyncedTablePipelineProgress(c, &ch, x)
+		}
 	}
 }
 
@@ -11911,9 +12993,11 @@ func stringsDatabaseSyncedTableTriggeredUpdateStatus(c *stringsWalk, n *Node, v 
 			v.Timestamp = (r)
 		}
 	}
-	if x := v.TriggeredUpdateProgress; x != nil {
-		ch := n.Child("triggered_update_progress")
-		stringsDatabaseSyncedTablePipelineProgress(c, &ch, x)
+	if !n.IsRef("triggered_update_progress") {
+		if x := v.TriggeredUpdateProgress; x != nil {
+			ch := n.Child("triggered_update_progress")
+			stringsDatabaseSyncedTablePipelineProgress(c, &ch, x)
+		}
 	}
 }
 
@@ -12046,9 +13130,11 @@ func stringsJobsDeploymentSpec(c *stringsWalk, n *Node, v *jobs.DeploymentSpec) 
 			v.CommandPath = (r)
 		}
 	}
-	{
-		ch := n.Child("compute")
-		stringsJobsComputeSpec(c, &ch, &v.Compute)
+	if !n.IsRef("compute") {
+		{
+			ch := n.Child("compute")
+			stringsJobsComputeSpec(c, &ch, &v.Compute)
+		}
 	}
 	if c.mode == EmptyFields && v.Name == "" && Forced(v.ForceSendFields, "Name") {
 		ch := n.Child("name")
@@ -12096,12 +13182,14 @@ func stringsJobsSubscription(c *stringsWalk, n *Node, v *jobs.Subscription) {
 			v.CustomSubject = (r)
 		}
 	}
-	if len(v.Subscribers) > 0 {
-		cn := n.Child("subscribers")
-		for i := range v.Subscribers {
-			{
-				ch := cn.Elem(i)
-				stringsJobsSubscriptionSubscriber(c, &ch, &v.Subscribers[i])
+	if !n.IsRef("subscribers") {
+		if len(v.Subscribers) > 0 {
+			cn := n.Child("subscribers")
+			for i := range v.Subscribers {
+				{
+					ch := cn.Elem(i)
+					stringsJobsSubscriptionSubscriber(c, &ch, &v.Subscribers[i])
+				}
 			}
 		}
 	}
@@ -12246,12 +13334,14 @@ func stringsJobsSqlTaskAlert(c *stringsWalk, n *Node, v *jobs.SqlTaskAlert) {
 			v.AlertId = (r)
 		}
 	}
-	if len(v.Subscriptions) > 0 {
-		cn := n.Child("subscriptions")
-		for i := range v.Subscriptions {
-			{
-				ch := cn.Elem(i)
-				stringsJobsSqlTaskSubscription(c, &ch, &v.Subscriptions[i])
+	if !n.IsRef("subscriptions") {
+		if len(v.Subscriptions) > 0 {
+			cn := n.Child("subscriptions")
+			for i := range v.Subscriptions {
+				{
+					ch := cn.Elem(i)
+					stringsJobsSqlTaskSubscription(c, &ch, &v.Subscriptions[i])
+				}
 			}
 		}
 	}
@@ -12274,12 +13364,14 @@ func stringsJobsSqlTaskDashboard(c *stringsWalk, n *Node, v *jobs.SqlTaskDashboa
 			v.DashboardId = (r)
 		}
 	}
-	if len(v.Subscriptions) > 0 {
-		cn := n.Child("subscriptions")
-		for i := range v.Subscriptions {
-			{
-				ch := cn.Elem(i)
-				stringsJobsSqlTaskSubscription(c, &ch, &v.Subscriptions[i])
+	if !n.IsRef("subscriptions") {
+		if len(v.Subscriptions) > 0 {
+			cn := n.Child("subscriptions")
+			for i := range v.Subscriptions {
+				{
+					ch := cn.Elem(i)
+					stringsJobsSqlTaskSubscription(c, &ch, &v.Subscriptions[i])
+				}
 			}
 		}
 	}
@@ -12338,16 +13430,20 @@ func stringsPipelinesReportSpec(c *stringsWalk, n *Node, v *pipelines.ReportSpec
 			v.SourceUrl = (r)
 		}
 	}
-	if x := v.TableConfiguration; x != nil {
-		ch := n.Child("table_configuration")
-		stringsPipelinesTableSpecificConfig(c, &ch, x)
+	if !n.IsRef("table_configuration") {
+		if x := v.TableConfiguration; x != nil {
+			ch := n.Child("table_configuration")
+			stringsPipelinesTableSpecificConfig(c, &ch, x)
+		}
 	}
 }
 
 func stringsPipelinesSchemaSpec(c *stringsWalk, n *Node, v *pipelines.SchemaSpec) {
-	if x := v.ConnectorOptions; x != nil {
-		ch := n.Child("connector_options")
-		stringsPipelinesConnectorOptions(c, &ch, x)
+	if !n.IsRef("connector_options") {
+		if x := v.ConnectorOptions; x != nil {
+			ch := n.Child("connector_options")
+			stringsPipelinesConnectorOptions(c, &ch, x)
+		}
 	}
 	if s := string(v.DestinationCatalog); c.match(s) {
 		ch := n.Child("destination_catalog")
@@ -12361,9 +13457,11 @@ func stringsPipelinesSchemaSpec(c *stringsWalk, n *Node, v *pipelines.SchemaSpec
 			v.DestinationSchema = (r)
 		}
 	}
-	if x := v.FanoutOptions; x != nil {
-		ch := n.Child("fanout_options")
-		stringsPipelinesIngestionPipelineDefinitionFanoutOptions(c, &ch, x)
+	if !n.IsRef("fanout_options") {
+		if x := v.FanoutOptions; x != nil {
+			ch := n.Child("fanout_options")
+			stringsPipelinesIngestionPipelineDefinitionFanoutOptions(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.SourceCatalog == "" && Forced(v.ForceSendFields, "SourceCatalog") {
 		ch := n.Child("source_catalog")
@@ -12385,16 +13483,20 @@ func stringsPipelinesSchemaSpec(c *stringsWalk, n *Node, v *pipelines.SchemaSpec
 			v.SourceSchema = (r)
 		}
 	}
-	if x := v.TableConfiguration; x != nil {
-		ch := n.Child("table_configuration")
-		stringsPipelinesTableSpecificConfig(c, &ch, x)
+	if !n.IsRef("table_configuration") {
+		if x := v.TableConfiguration; x != nil {
+			ch := n.Child("table_configuration")
+			stringsPipelinesTableSpecificConfig(c, &ch, x)
+		}
 	}
 }
 
 func stringsPipelinesTableSpec(c *stringsWalk, n *Node, v *pipelines.TableSpec) {
-	if x := v.ConnectorOptions; x != nil {
-		ch := n.Child("connector_options")
-		stringsPipelinesConnectorOptions(c, &ch, x)
+	if !n.IsRef("connector_options") {
+		if x := v.ConnectorOptions; x != nil {
+			ch := n.Child("connector_options")
+			stringsPipelinesConnectorOptions(c, &ch, x)
+		}
 	}
 	if s := string(v.DestinationCatalog); c.match(s) {
 		ch := n.Child("destination_catalog")
@@ -12448,20 +13550,24 @@ func stringsPipelinesTableSpec(c *stringsWalk, n *Node, v *pipelines.TableSpec) 
 			v.SourceTable = (r)
 		}
 	}
-	if x := v.TableConfiguration; x != nil {
-		ch := n.Child("table_configuration")
-		stringsPipelinesTableSpecificConfig(c, &ch, x)
+	if !n.IsRef("table_configuration") {
+		if x := v.TableConfiguration; x != nil {
+			ch := n.Child("table_configuration")
+			stringsPipelinesTableSpecificConfig(c, &ch, x)
+		}
 	}
 }
 
 func stringsPipelinesApiSourceConnectorConfig(c *stringsWalk, n *Node, v *pipelines.ApiSourceConnectorConfig) {
-	if len(v.Configs) > 0 {
-		cn := n.Child("configs")
-		for _, k := range sortedKeys(v.Configs) {
-			if s := string(v.Configs[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.Configs[k] = (r)
+	if !n.IsRef("configs") {
+		if len(v.Configs) > 0 {
+			cn := n.Child("configs")
+			for _, k := range sortedKeys(v.Configs) {
+				if s := string(v.Configs[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.Configs[k] = (r)
+					}
 				}
 			}
 		}
@@ -12469,9 +13575,11 @@ func stringsPipelinesApiSourceConnectorConfig(c *stringsWalk, n *Node, v *pipeli
 }
 
 func stringsPipelinesSourceCatalogConfig(c *stringsWalk, n *Node, v *pipelines.SourceCatalogConfig) {
-	if x := v.Postgres; x != nil {
-		ch := n.Child("postgres")
-		stringsPipelinesPostgresCatalogConfig(c, &ch, x)
+	if !n.IsRef("postgres") {
+		if x := v.Postgres; x != nil {
+			ch := n.Child("postgres")
+			stringsPipelinesPostgresCatalogConfig(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.SourceCatalog == "" && Forced(v.ForceSendFields, "SourceCatalog") {
 		ch := n.Child("source_catalog")
@@ -12499,13 +13607,15 @@ func stringsPipelinesGoogleAdsConfig(c *stringsWalk, n *Node, v *pipelines.Googl
 }
 
 func stringsPipelinesIngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig(c *stringsWalk, n *Node, v *pipelines.IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig) {
-	if len(v.CursorColumns) > 0 {
-		cn := n.Child("cursor_columns")
-		for i := range v.CursorColumns {
-			if s := string(v.CursorColumns[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.CursorColumns[i] = (r)
+	if !n.IsRef("cursor_columns") {
+		if len(v.CursorColumns) > 0 {
+			cn := n.Child("cursor_columns")
+			for i := range v.CursorColumns {
+				if s := string(v.CursorColumns[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.CursorColumns[i] = (r)
+					}
 				}
 			}
 		}
@@ -12523,51 +13633,61 @@ func stringsPipelinesIngestionPipelineDefinitionTableSpecificConfigQueryBasedCon
 }
 
 func stringsPipelinesIngestionPipelineDefinitionWorkdayReportParameters(c *stringsWalk, n *Node, v *pipelines.IngestionPipelineDefinitionWorkdayReportParameters) {
-	if len(v.Parameters) > 0 {
-		cn := n.Child("parameters")
-		for _, k := range sortedKeys(v.Parameters) {
-			if s := string(v.Parameters[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.Parameters[k] = (r)
+	if !n.IsRef("parameters") {
+		if len(v.Parameters) > 0 {
+			cn := n.Child("parameters")
+			for _, k := range sortedKeys(v.Parameters) {
+				if s := string(v.Parameters[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.Parameters[k] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.ReportParameters) > 0 {
-		cn := n.Child("report_parameters")
-		for i := range v.ReportParameters {
-			{
-				ch := cn.Elem(i)
-				stringsPipelinesIngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue(c, &ch, &v.ReportParameters[i])
+	if !n.IsRef("report_parameters") {
+		if len(v.ReportParameters) > 0 {
+			cn := n.Child("report_parameters")
+			for i := range v.ReportParameters {
+				{
+					ch := cn.Elem(i)
+					stringsPipelinesIngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue(c, &ch, &v.ReportParameters[i])
+				}
 			}
 		}
 	}
 }
 
 func stringsServingAiGatewayGuardrailParameters(c *stringsWalk, n *Node, v *serving.AiGatewayGuardrailParameters) {
-	if len(v.InvalidKeywords) > 0 {
-		cn := n.Child("invalid_keywords")
-		for i := range v.InvalidKeywords {
-			if s := string(v.InvalidKeywords[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.InvalidKeywords[i] = (r)
+	if !n.IsRef("invalid_keywords") {
+		if len(v.InvalidKeywords) > 0 {
+			cn := n.Child("invalid_keywords")
+			for i := range v.InvalidKeywords {
+				if s := string(v.InvalidKeywords[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.InvalidKeywords[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if x := v.Pii; x != nil {
-		ch := n.Child("pii")
-		stringsServingAiGatewayGuardrailPiiBehavior(c, &ch, x)
+	if !n.IsRef("pii") {
+		if x := v.Pii; x != nil {
+			ch := n.Child("pii")
+			stringsServingAiGatewayGuardrailPiiBehavior(c, &ch, x)
+		}
 	}
-	if len(v.ValidTopics) > 0 {
-		cn := n.Child("valid_topics")
-		for i := range v.ValidTopics {
-			if s := string(v.ValidTopics[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.ValidTopics[i] = (r)
+	if !n.IsRef("valid_topics") {
+		if len(v.ValidTopics) > 0 {
+			cn := n.Child("valid_topics")
+			for i := range v.ValidTopics {
+				if s := string(v.ValidTopics[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.ValidTopics[i] = (r)
+					}
 				}
 			}
 		}
@@ -12575,33 +13695,47 @@ func stringsServingAiGatewayGuardrailParameters(c *stringsWalk, n *Node, v *serv
 }
 
 func stringsServingExternalModel(c *stringsWalk, n *Node, v *serving.ExternalModel) {
-	if x := v.Ai21labsConfig; x != nil {
-		ch := n.Child("ai21labs_config")
-		stringsServingAi21LabsConfig(c, &ch, x)
+	if !n.IsRef("ai21labs_config") {
+		if x := v.Ai21labsConfig; x != nil {
+			ch := n.Child("ai21labs_config")
+			stringsServingAi21LabsConfig(c, &ch, x)
+		}
 	}
-	if x := v.AmazonBedrockConfig; x != nil {
-		ch := n.Child("amazon_bedrock_config")
-		stringsServingAmazonBedrockConfig(c, &ch, x)
+	if !n.IsRef("amazon_bedrock_config") {
+		if x := v.AmazonBedrockConfig; x != nil {
+			ch := n.Child("amazon_bedrock_config")
+			stringsServingAmazonBedrockConfig(c, &ch, x)
+		}
 	}
-	if x := v.AnthropicConfig; x != nil {
-		ch := n.Child("anthropic_config")
-		stringsServingAnthropicConfig(c, &ch, x)
+	if !n.IsRef("anthropic_config") {
+		if x := v.AnthropicConfig; x != nil {
+			ch := n.Child("anthropic_config")
+			stringsServingAnthropicConfig(c, &ch, x)
+		}
 	}
-	if x := v.CohereConfig; x != nil {
-		ch := n.Child("cohere_config")
-		stringsServingCohereConfig(c, &ch, x)
+	if !n.IsRef("cohere_config") {
+		if x := v.CohereConfig; x != nil {
+			ch := n.Child("cohere_config")
+			stringsServingCohereConfig(c, &ch, x)
+		}
 	}
-	if x := v.CustomProviderConfig; x != nil {
-		ch := n.Child("custom_provider_config")
-		stringsServingCustomProviderConfig(c, &ch, x)
+	if !n.IsRef("custom_provider_config") {
+		if x := v.CustomProviderConfig; x != nil {
+			ch := n.Child("custom_provider_config")
+			stringsServingCustomProviderConfig(c, &ch, x)
+		}
 	}
-	if x := v.DatabricksModelServingConfig; x != nil {
-		ch := n.Child("databricks_model_serving_config")
-		stringsServingDatabricksModelServingConfig(c, &ch, x)
+	if !n.IsRef("databricks_model_serving_config") {
+		if x := v.DatabricksModelServingConfig; x != nil {
+			ch := n.Child("databricks_model_serving_config")
+			stringsServingDatabricksModelServingConfig(c, &ch, x)
+		}
 	}
-	if x := v.GoogleCloudVertexAiConfig; x != nil {
-		ch := n.Child("google_cloud_vertex_ai_config")
-		stringsServingGoogleCloudVertexAiConfig(c, &ch, x)
+	if !n.IsRef("google_cloud_vertex_ai_config") {
+		if x := v.GoogleCloudVertexAiConfig; x != nil {
+			ch := n.Child("google_cloud_vertex_ai_config")
+			stringsServingGoogleCloudVertexAiConfig(c, &ch, x)
+		}
 	}
 	if s := string(v.Name); c.match(s) {
 		ch := n.Child("name")
@@ -12609,13 +13743,17 @@ func stringsServingExternalModel(c *stringsWalk, n *Node, v *serving.ExternalMod
 			v.Name = (r)
 		}
 	}
-	if x := v.OpenaiConfig; x != nil {
-		ch := n.Child("openai_config")
-		stringsServingOpenAiConfig(c, &ch, x)
+	if !n.IsRef("openai_config") {
+		if x := v.OpenaiConfig; x != nil {
+			ch := n.Child("openai_config")
+			stringsServingOpenAiConfig(c, &ch, x)
+		}
 	}
-	if x := v.PalmConfig; x != nil {
-		ch := n.Child("palm_config")
-		stringsServingPaLmConfig(c, &ch, x)
+	if !n.IsRef("palm_config") {
+		if x := v.PalmConfig; x != nil {
+			ch := n.Child("palm_config")
+			stringsServingPaLmConfig(c, &ch, x)
+		}
 	}
 	if s := string(v.Provider); c.match(s) {
 		ch := n.Child("provider")
@@ -12661,9 +13799,11 @@ func stringsCatalogModelServiceConfigDestinationConfig(c *stringsWalk, n *Node, 
 			v.DestinationType = catalog.ModelServiceConfigDestinationConfigDestinationType(r)
 		}
 	}
-	if x := v.ExternalModelConfig; x != nil {
-		ch := n.Child("external_model_config")
-		stringsCatalogModelServiceConfigExternalModelConfig(c, &ch, x)
+	if !n.IsRef("external_model_config") {
+		if x := v.ExternalModelConfig; x != nil {
+			ch := n.Child("external_model_config")
+			stringsCatalogModelServiceConfigExternalModelConfig(c, &ch, x)
+		}
 	}
 	if s := string(v.Name); c.match(s) {
 		ch := n.Child("name")
@@ -12671,32 +13811,40 @@ func stringsCatalogModelServiceConfigDestinationConfig(c *stringsWalk, n *Node, 
 			v.Name = (r)
 		}
 	}
-	if x := v.PayPerTokenConfig; x != nil {
-		ch := n.Child("pay_per_token_config")
-		stringsCatalogModelServiceConfigPayPerTokenConfig(c, &ch, x)
+	if !n.IsRef("pay_per_token_config") {
+		if x := v.PayPerTokenConfig; x != nil {
+			ch := n.Child("pay_per_token_config")
+			stringsCatalogModelServiceConfigPayPerTokenConfig(c, &ch, x)
+		}
 	}
-	if x := v.ProvisionedThroughputConfig; x != nil {
-		ch := n.Child("provisioned_throughput_config")
-		stringsCatalogModelServiceConfigProvisionedThroughputConfig(c, &ch, x)
+	if !n.IsRef("provisioned_throughput_config") {
+		if x := v.ProvisionedThroughputConfig; x != nil {
+			ch := n.Child("provisioned_throughput_config")
+			stringsCatalogModelServiceConfigProvisionedThroughputConfig(c, &ch, x)
+		}
 	}
 }
 
 func stringsCatalogModelServiceConfigFallbackConfig(c *stringsWalk, n *Node, v *catalog.ModelServiceConfigFallbackConfig) {
-	if len(v.Destinations) > 0 {
-		cn := n.Child("destinations")
-		for i := range v.Destinations {
-			{
-				ch := cn.Elem(i)
-				stringsCatalogModelServiceConfigDestinationConfig(c, &ch, &v.Destinations[i])
+	if !n.IsRef("destinations") {
+		if len(v.Destinations) > 0 {
+			cn := n.Child("destinations")
+			for i := range v.Destinations {
+				{
+					ch := cn.Elem(i)
+					stringsCatalogModelServiceConfigDestinationConfig(c, &ch, &v.Destinations[i])
+				}
 			}
 		}
 	}
 }
 
 func stringsCatalogModelProviderServiceConfigAmazonBedrockProviderDirectConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigAmazonBedrockProviderDirectConfig) {
-	if x := v.AwsAccessKey; x != nil {
-		ch := n.Child("aws_access_key")
-		stringsCatalogModelProviderServiceConfigAwsAccessKey(c, &ch, x)
+	if !n.IsRef("aws_access_key") {
+		if x := v.AwsAccessKey; x != nil {
+			ch := n.Child("aws_access_key")
+			stringsCatalogModelProviderServiceConfigAwsAccessKey(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.Region == "" && Forced(v.ForceSendFields, "Region") {
 		ch := n.Child("region")
@@ -12708,23 +13856,29 @@ func stringsCatalogModelProviderServiceConfigAmazonBedrockProviderDirectConfig(c
 			v.Region = (r)
 		}
 	}
-	if x := v.ServiceCredential; x != nil {
-		ch := n.Child("service_credential")
-		stringsCatalogModelProviderServiceConfigServiceCredential(c, &ch, x)
+	if !n.IsRef("service_credential") {
+		if x := v.ServiceCredential; x != nil {
+			ch := n.Child("service_credential")
+			stringsCatalogModelProviderServiceConfigServiceCredential(c, &ch, x)
+		}
 	}
 }
 
 func stringsCatalogModelProviderServiceConfigAnthropicProviderDirectConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigAnthropicProviderDirectConfig) {
-	if x := v.ApiKey; x != nil {
-		ch := n.Child("api_key")
-		stringsCatalogModelProviderServiceConfigProviderSecret(c, &ch, x)
+	if !n.IsRef("api_key") {
+		if x := v.ApiKey; x != nil {
+			ch := n.Child("api_key")
+			stringsCatalogModelProviderServiceConfigProviderSecret(c, &ch, x)
+		}
 	}
 }
 
 func stringsCatalogModelProviderServiceConfigAzureOpenAiProviderDirectConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigAzureOpenAiProviderDirectConfig) {
-	if x := v.ApiKey; x != nil {
-		ch := n.Child("api_key")
-		stringsCatalogModelProviderServiceConfigProviderSecret(c, &ch, x)
+	if !n.IsRef("api_key") {
+		if x := v.ApiKey; x != nil {
+			ch := n.Child("api_key")
+			stringsCatalogModelProviderServiceConfigProviderSecret(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.BaseUrl == "" && Forced(v.ForceSendFields, "BaseUrl") {
 		ch := n.Child("base_url")
@@ -12736,20 +13890,26 @@ func stringsCatalogModelProviderServiceConfigAzureOpenAiProviderDirectConfig(c *
 			v.BaseUrl = (r)
 		}
 	}
-	if x := v.EntraServicePrincipal; x != nil {
-		ch := n.Child("entra_service_principal")
-		stringsCatalogModelProviderServiceConfigEntraServicePrincipal(c, &ch, x)
+	if !n.IsRef("entra_service_principal") {
+		if x := v.EntraServicePrincipal; x != nil {
+			ch := n.Child("entra_service_principal")
+			stringsCatalogModelProviderServiceConfigEntraServicePrincipal(c, &ch, x)
+		}
 	}
-	if x := v.ServiceCredential; x != nil {
-		ch := n.Child("service_credential")
-		stringsCatalogModelProviderServiceConfigServiceCredential(c, &ch, x)
+	if !n.IsRef("service_credential") {
+		if x := v.ServiceCredential; x != nil {
+			ch := n.Child("service_credential")
+			stringsCatalogModelProviderServiceConfigServiceCredential(c, &ch, x)
+		}
 	}
 }
 
 func stringsCatalogModelProviderServiceConfigCustomProviderDirectConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigCustomProviderDirectConfig) {
-	if x := v.ApiKey; x != nil {
-		ch := n.Child("api_key")
-		stringsCatalogModelProviderServiceConfigProviderSecret(c, &ch, x)
+	if !n.IsRef("api_key") {
+		if x := v.ApiKey; x != nil {
+			ch := n.Child("api_key")
+			stringsCatalogModelProviderServiceConfigProviderSecret(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.BaseUrl == "" && Forced(v.ForceSendFields, "BaseUrl") {
 		ch := n.Child("base_url")
@@ -12761,16 +13921,20 @@ func stringsCatalogModelProviderServiceConfigCustomProviderDirectConfig(c *strin
 			v.BaseUrl = (r)
 		}
 	}
-	if x := v.HeaderAuth; x != nil {
-		ch := n.Child("header_auth")
-		stringsCatalogModelProviderServiceConfigCustomProviderApiKeyHeaderAuth(c, &ch, x)
+	if !n.IsRef("header_auth") {
+		if x := v.HeaderAuth; x != nil {
+			ch := n.Child("header_auth")
+			stringsCatalogModelProviderServiceConfigCustomProviderApiKeyHeaderAuth(c, &ch, x)
+		}
 	}
 }
 
 func stringsCatalogModelProviderServiceConfigGeminiEnterpriseProviderDirectConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigGeminiEnterpriseProviderDirectConfig) {
-	if x := v.ApiKey; x != nil {
-		ch := n.Child("api_key")
-		stringsCatalogModelProviderServiceConfigProviderSecret(c, &ch, x)
+	if !n.IsRef("api_key") {
+		if x := v.ApiKey; x != nil {
+			ch := n.Child("api_key")
+			stringsCatalogModelProviderServiceConfigProviderSecret(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.ProjectId == "" && Forced(v.ForceSendFields, "ProjectId") {
 		ch := n.Child("project_id")
@@ -12792,16 +13956,20 @@ func stringsCatalogModelProviderServiceConfigGeminiEnterpriseProviderDirectConfi
 			v.Region = (r)
 		}
 	}
-	if x := v.ServiceCredential; x != nil {
-		ch := n.Child("service_credential")
-		stringsCatalogModelProviderServiceConfigServiceCredential(c, &ch, x)
+	if !n.IsRef("service_credential") {
+		if x := v.ServiceCredential; x != nil {
+			ch := n.Child("service_credential")
+			stringsCatalogModelProviderServiceConfigServiceCredential(c, &ch, x)
+		}
 	}
 }
 
 func stringsCatalogModelProviderServiceConfigMicrosoftFoundryProviderDirectConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigMicrosoftFoundryProviderDirectConfig) {
-	if x := v.ApiKey; x != nil {
-		ch := n.Child("api_key")
-		stringsCatalogModelProviderServiceConfigProviderSecret(c, &ch, x)
+	if !n.IsRef("api_key") {
+		if x := v.ApiKey; x != nil {
+			ch := n.Child("api_key")
+			stringsCatalogModelProviderServiceConfigProviderSecret(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.BaseUrl == "" && Forced(v.ForceSendFields, "BaseUrl") {
 		ch := n.Child("base_url")
@@ -12813,20 +13981,26 @@ func stringsCatalogModelProviderServiceConfigMicrosoftFoundryProviderDirectConfi
 			v.BaseUrl = (r)
 		}
 	}
-	if x := v.EntraServicePrincipal; x != nil {
-		ch := n.Child("entra_service_principal")
-		stringsCatalogModelProviderServiceConfigEntraServicePrincipal(c, &ch, x)
+	if !n.IsRef("entra_service_principal") {
+		if x := v.EntraServicePrincipal; x != nil {
+			ch := n.Child("entra_service_principal")
+			stringsCatalogModelProviderServiceConfigEntraServicePrincipal(c, &ch, x)
+		}
 	}
-	if x := v.ServiceCredential; x != nil {
-		ch := n.Child("service_credential")
-		stringsCatalogModelProviderServiceConfigServiceCredential(c, &ch, x)
+	if !n.IsRef("service_credential") {
+		if x := v.ServiceCredential; x != nil {
+			ch := n.Child("service_credential")
+			stringsCatalogModelProviderServiceConfigServiceCredential(c, &ch, x)
+		}
 	}
 }
 
 func stringsCatalogModelProviderServiceConfigOpenAiProviderDirectConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigOpenAiProviderDirectConfig) {
-	if x := v.ApiKey; x != nil {
-		ch := n.Child("api_key")
-		stringsCatalogModelProviderServiceConfigProviderSecret(c, &ch, x)
+	if !n.IsRef("api_key") {
+		if x := v.ApiKey; x != nil {
+			ch := n.Child("api_key")
+			stringsCatalogModelProviderServiceConfigProviderSecret(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.BaseUrl == "" && Forced(v.ForceSendFields, "BaseUrl") {
 		ch := n.Child("base_url")
@@ -12978,65 +14152,95 @@ func stringsJobsSqlTaskSubscription(c *stringsWalk, n *Node, v *jobs.SqlTaskSubs
 }
 
 func stringsPipelinesConnectorOptions(c *stringsWalk, n *Node, v *pipelines.ConnectorOptions) {
-	if x := v.ApiSourceConnectorOptions; x != nil {
-		ch := n.Child("api_source_connector_options")
-		stringsPipelinesApiSourceConnectorOptions(c, &ch, x)
+	if !n.IsRef("api_source_connector_options") {
+		if x := v.ApiSourceConnectorOptions; x != nil {
+			ch := n.Child("api_source_connector_options")
+			stringsPipelinesApiSourceConnectorOptions(c, &ch, x)
+		}
 	}
-	if x := v.ConfluenceOptions; x != nil {
-		ch := n.Child("confluence_options")
-		stringsPipelinesConfluenceConnectorOptions(c, &ch, x)
+	if !n.IsRef("confluence_options") {
+		if x := v.ConfluenceOptions; x != nil {
+			ch := n.Child("confluence_options")
+			stringsPipelinesConfluenceConnectorOptions(c, &ch, x)
+		}
 	}
-	if x := v.GdriveOptions; x != nil {
-		ch := n.Child("gdrive_options")
-		stringsPipelinesGoogleDriveOptions(c, &ch, x)
+	if !n.IsRef("gdrive_options") {
+		if x := v.GdriveOptions; x != nil {
+			ch := n.Child("gdrive_options")
+			stringsPipelinesGoogleDriveOptions(c, &ch, x)
+		}
 	}
-	if x := v.GoogleAdsOptions; x != nil {
-		ch := n.Child("google_ads_options")
-		stringsPipelinesGoogleAdsOptions(c, &ch, x)
+	if !n.IsRef("google_ads_options") {
+		if x := v.GoogleAdsOptions; x != nil {
+			ch := n.Child("google_ads_options")
+			stringsPipelinesGoogleAdsOptions(c, &ch, x)
+		}
 	}
-	if x := v.JiraOptions; x != nil {
-		ch := n.Child("jira_options")
-		stringsPipelinesJiraConnectorOptions(c, &ch, x)
+	if !n.IsRef("jira_options") {
+		if x := v.JiraOptions; x != nil {
+			ch := n.Child("jira_options")
+			stringsPipelinesJiraConnectorOptions(c, &ch, x)
+		}
 	}
-	if x := v.KafkaOptions; x != nil {
-		ch := n.Child("kafka_options")
-		stringsPipelinesKafkaOptions(c, &ch, x)
+	if !n.IsRef("kafka_options") {
+		if x := v.KafkaOptions; x != nil {
+			ch := n.Child("kafka_options")
+			stringsPipelinesKafkaOptions(c, &ch, x)
+		}
 	}
-	if x := v.LinkedinAdsOptions; x != nil {
-		ch := n.Child("linkedin_ads_options")
-		stringsPipelinesLinkedInAdsOptions(c, &ch, x)
+	if !n.IsRef("linkedin_ads_options") {
+		if x := v.LinkedinAdsOptions; x != nil {
+			ch := n.Child("linkedin_ads_options")
+			stringsPipelinesLinkedInAdsOptions(c, &ch, x)
+		}
 	}
-	if x := v.MarketoOptions; x != nil {
-		ch := n.Child("marketo_options")
-		stringsPipelinesMarketoOptions(c, &ch, x)
+	if !n.IsRef("marketo_options") {
+		if x := v.MarketoOptions; x != nil {
+			ch := n.Child("marketo_options")
+			stringsPipelinesMarketoOptions(c, &ch, x)
+		}
 	}
-	if x := v.MetaAdsOptions; x != nil {
-		ch := n.Child("meta_ads_options")
-		stringsPipelinesMetaMarketingOptions(c, &ch, x)
+	if !n.IsRef("meta_ads_options") {
+		if x := v.MetaAdsOptions; x != nil {
+			ch := n.Child("meta_ads_options")
+			stringsPipelinesMetaMarketingOptions(c, &ch, x)
+		}
 	}
-	if x := v.OutlookOptions; x != nil {
-		ch := n.Child("outlook_options")
-		stringsPipelinesOutlookOptions(c, &ch, x)
+	if !n.IsRef("outlook_options") {
+		if x := v.OutlookOptions; x != nil {
+			ch := n.Child("outlook_options")
+			stringsPipelinesOutlookOptions(c, &ch, x)
+		}
 	}
-	if x := v.RabbitmqOptions; x != nil {
-		ch := n.Child("rabbitmq_options")
-		stringsPipelinesRabbitmqOptions(c, &ch, x)
+	if !n.IsRef("rabbitmq_options") {
+		if x := v.RabbitmqOptions; x != nil {
+			ch := n.Child("rabbitmq_options")
+			stringsPipelinesRabbitmqOptions(c, &ch, x)
+		}
 	}
-	if x := v.RedditAdsOptions; x != nil {
-		ch := n.Child("reddit_ads_options")
-		stringsPipelinesRedditAdsOptions(c, &ch, x)
+	if !n.IsRef("reddit_ads_options") {
+		if x := v.RedditAdsOptions; x != nil {
+			ch := n.Child("reddit_ads_options")
+			stringsPipelinesRedditAdsOptions(c, &ch, x)
+		}
 	}
-	if x := v.SharepointOptions; x != nil {
-		ch := n.Child("sharepoint_options")
-		stringsPipelinesSharepointOptions(c, &ch, x)
+	if !n.IsRef("sharepoint_options") {
+		if x := v.SharepointOptions; x != nil {
+			ch := n.Child("sharepoint_options")
+			stringsPipelinesSharepointOptions(c, &ch, x)
+		}
 	}
-	if x := v.TiktokAdsOptions; x != nil {
-		ch := n.Child("tiktok_ads_options")
-		stringsPipelinesTikTokAdsOptions(c, &ch, x)
+	if !n.IsRef("tiktok_ads_options") {
+		if x := v.TiktokAdsOptions; x != nil {
+			ch := n.Child("tiktok_ads_options")
+			stringsPipelinesTikTokAdsOptions(c, &ch, x)
+		}
 	}
-	if x := v.ZendeskSupportOptions; x != nil {
-		ch := n.Child("zendesk_support_options")
-		stringsPipelinesZendeskSupportOptions(c, &ch, x)
+	if !n.IsRef("zendesk_support_options") {
+		if x := v.ZendeskSupportOptions; x != nil {
+			ch := n.Child("zendesk_support_options")
+			stringsPipelinesZendeskSupportOptions(c, &ch, x)
+		}
 	}
 }
 
@@ -13051,21 +14255,25 @@ func stringsPipelinesIngestionPipelineDefinitionFanoutOptions(c *stringsWalk, n 
 			v.FanoutBy = (r)
 		}
 	}
-	if len(v.Transforms) > 0 {
-		cn := n.Child("transforms")
-		for i := range v.Transforms {
-			{
-				ch := cn.Elem(i)
-				stringsPipelinesTransformer(c, &ch, &v.Transforms[i])
+	if !n.IsRef("transforms") {
+		if len(v.Transforms) > 0 {
+			cn := n.Child("transforms")
+			for i := range v.Transforms {
+				{
+					ch := cn.Elem(i)
+					stringsPipelinesTransformer(c, &ch, &v.Transforms[i])
+				}
 			}
 		}
 	}
 }
 
 func stringsPipelinesPostgresCatalogConfig(c *stringsWalk, n *Node, v *pipelines.PostgresCatalogConfig) {
-	if x := v.SlotConfig; x != nil {
-		ch := n.Child("slot_config")
-		stringsPipelinesPostgresSlotConfig(c, &ch, x)
+	if !n.IsRef("slot_config") {
+		if x := v.SlotConfig; x != nil {
+			ch := n.Child("slot_config")
+			stringsPipelinesPostgresSlotConfig(c, &ch, x)
+		}
 	}
 }
 
@@ -13256,13 +14464,17 @@ func stringsServingCohereConfig(c *stringsWalk, n *Node, v *serving.CohereConfig
 }
 
 func stringsServingCustomProviderConfig(c *stringsWalk, n *Node, v *serving.CustomProviderConfig) {
-	if x := v.ApiKeyAuth; x != nil {
-		ch := n.Child("api_key_auth")
-		stringsServingApiKeyAuth(c, &ch, x)
+	if !n.IsRef("api_key_auth") {
+		if x := v.ApiKeyAuth; x != nil {
+			ch := n.Child("api_key_auth")
+			stringsServingApiKeyAuth(c, &ch, x)
+		}
 	}
-	if x := v.BearerTokenAuth; x != nil {
-		ch := n.Child("bearer_token_auth")
-		stringsServingBearerTokenAuth(c, &ch, x)
+	if !n.IsRef("bearer_token_auth") {
+		if x := v.BearerTokenAuth; x != nil {
+			ch := n.Child("bearer_token_auth")
+			stringsServingBearerTokenAuth(c, &ch, x)
+		}
 	}
 	if s := string(v.CustomProviderUrl); c.match(s) {
 		ch := n.Child("custom_provider_url")
@@ -13479,9 +14691,11 @@ func stringsCatalogModelServiceConfigExternalModelConfig(c *stringsWalk, n *Node
 			v.ModelProviderService = (r)
 		}
 	}
-	{
-		ch := n.Child("target")
-		stringsCatalogModelProviderServiceConfigModelTargetConfig(c, &ch, &v.Target)
+	if !n.IsRef("target") {
+		{
+			ch := n.Child("target")
+			stringsCatalogModelProviderServiceConfigModelTargetConfig(c, &ch, &v.Target)
+		}
 	}
 }
 
@@ -13524,9 +14738,11 @@ func stringsCatalogModelProviderServiceConfigAwsAccessKey(c *stringsWalk, n *Nod
 			v.AccessKeyId = (r)
 		}
 	}
-	if x := v.SecretAccessKey; x != nil {
-		ch := n.Child("secret_access_key")
-		stringsCatalogModelProviderServiceConfigProviderSecret(c, &ch, x)
+	if !n.IsRef("secret_access_key") {
+		if x := v.SecretAccessKey; x != nil {
+			ch := n.Child("secret_access_key")
+			stringsCatalogModelProviderServiceConfigProviderSecret(c, &ch, x)
+		}
 	}
 }
 
@@ -13550,9 +14766,11 @@ func stringsCatalogModelProviderServiceConfigProviderSecret(c *stringsWalk, n *N
 			v.Plaintext = (r)
 		}
 	}
-	if x := v.SecretReference; x != nil {
-		ch := n.Child("secret_reference")
-		stringsCatalogModelProviderServiceConfigSecretReference(c, &ch, x)
+	if !n.IsRef("secret_reference") {
+		if x := v.SecretReference; x != nil {
+			ch := n.Child("secret_reference")
+			stringsCatalogModelProviderServiceConfigSecretReference(c, &ch, x)
+		}
 	}
 }
 
@@ -13567,9 +14785,11 @@ func stringsCatalogModelProviderServiceConfigEntraServicePrincipal(c *stringsWal
 			v.ClientId = (r)
 		}
 	}
-	if x := v.ClientSecret; x != nil {
-		ch := n.Child("client_secret")
-		stringsCatalogModelProviderServiceConfigProviderSecret(c, &ch, x)
+	if !n.IsRef("client_secret") {
+		if x := v.ClientSecret; x != nil {
+			ch := n.Child("client_secret")
+			stringsCatalogModelProviderServiceConfigProviderSecret(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.TenantId == "" && Forced(v.ForceSendFields, "TenantId") {
 		ch := n.Child("tenant_id")
@@ -13594,20 +14814,24 @@ func stringsCatalogModelProviderServiceConfigCustomProviderApiKeyHeaderAuth(c *s
 			v.ApiKeyName = (r)
 		}
 	}
-	if x := v.ApiKeyValue; x != nil {
-		ch := n.Child("api_key_value")
-		stringsCatalogModelProviderServiceConfigProviderSecret(c, &ch, x)
+	if !n.IsRef("api_key_value") {
+		if x := v.ApiKeyValue; x != nil {
+			ch := n.Child("api_key_value")
+			stringsCatalogModelProviderServiceConfigProviderSecret(c, &ch, x)
+		}
 	}
 }
 
 func stringsPipelinesApiSourceConnectorOptions(c *stringsWalk, n *Node, v *pipelines.ApiSourceConnectorOptions) {
-	if len(v.Options) > 0 {
-		cn := n.Child("options")
-		for _, k := range sortedKeys(v.Options) {
-			if s := string(v.Options[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.Options[k] = (r)
+	if !n.IsRef("options") {
+		if len(v.Options) > 0 {
+			cn := n.Child("options")
+			for _, k := range sortedKeys(v.Options) {
+				if s := string(v.Options[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.Options[k] = (r)
+					}
 				}
 			}
 		}
@@ -13615,13 +14839,15 @@ func stringsPipelinesApiSourceConnectorOptions(c *stringsWalk, n *Node, v *pipel
 }
 
 func stringsPipelinesConfluenceConnectorOptions(c *stringsWalk, n *Node, v *pipelines.ConfluenceConnectorOptions) {
-	if len(v.IncludeConfluenceSpaces) > 0 {
-		cn := n.Child("include_confluence_spaces")
-		for i := range v.IncludeConfluenceSpaces {
-			if s := string(v.IncludeConfluenceSpaces[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.IncludeConfluenceSpaces[i] = (r)
+	if !n.IsRef("include_confluence_spaces") {
+		if len(v.IncludeConfluenceSpaces) > 0 {
+			cn := n.Child("include_confluence_spaces")
+			for i := range v.IncludeConfluenceSpaces {
+				if s := string(v.IncludeConfluenceSpaces[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.IncludeConfluenceSpaces[i] = (r)
+					}
 				}
 			}
 		}
@@ -13639,9 +14865,11 @@ func stringsPipelinesGoogleDriveOptions(c *stringsWalk, n *Node, v *pipelines.Go
 			v.EntityType = pipelines.GoogleDriveOptionsGoogleDriveEntityType(r)
 		}
 	}
-	if x := v.FileIngestionOptions; x != nil {
-		ch := n.Child("file_ingestion_options")
-		stringsPipelinesFileIngestionOptions(c, &ch, x)
+	if !n.IsRef("file_ingestion_options") {
+		if x := v.FileIngestionOptions; x != nil {
+			ch := n.Child("file_ingestion_options")
+			stringsPipelinesFileIngestionOptions(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.Url == "" && Forced(v.ForceSendFields, "Url") {
 		ch := n.Child("url")
@@ -13656,9 +14884,11 @@ func stringsPipelinesGoogleDriveOptions(c *stringsWalk, n *Node, v *pipelines.Go
 }
 
 func stringsPipelinesGoogleAdsOptions(c *stringsWalk, n *Node, v *pipelines.GoogleAdsOptions) {
-	if x := v.CustomReportOptions; x != nil {
-		ch := n.Child("custom_report_options")
-		stringsPipelinesGoogleAdsCustomReportOptions(c, &ch, x)
+	if !n.IsRef("custom_report_options") {
+		if x := v.CustomReportOptions; x != nil {
+			ch := n.Child("custom_report_options")
+			stringsPipelinesGoogleAdsCustomReportOptions(c, &ch, x)
+		}
 	}
 	if s := string(v.ManagerAccountId); c.match(s) {
 		ch := n.Child("manager_account_id")
@@ -13679,13 +14909,15 @@ func stringsPipelinesGoogleAdsOptions(c *stringsWalk, n *Node, v *pipelines.Goog
 }
 
 func stringsPipelinesJiraConnectorOptions(c *stringsWalk, n *Node, v *pipelines.JiraConnectorOptions) {
-	if len(v.IncludeJiraSpaces) > 0 {
-		cn := n.Child("include_jira_spaces")
-		for i := range v.IncludeJiraSpaces {
-			if s := string(v.IncludeJiraSpaces[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.IncludeJiraSpaces[i] = (r)
+	if !n.IsRef("include_jira_spaces") {
+		if len(v.IncludeJiraSpaces) > 0 {
+			cn := n.Child("include_jira_spaces")
+			for i := range v.IncludeJiraSpaces {
+				if s := string(v.IncludeJiraSpaces[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.IncludeJiraSpaces[i] = (r)
+					}
 				}
 			}
 		}
@@ -13693,20 +14925,24 @@ func stringsPipelinesJiraConnectorOptions(c *stringsWalk, n *Node, v *pipelines.
 }
 
 func stringsPipelinesKafkaOptions(c *stringsWalk, n *Node, v *pipelines.KafkaOptions) {
-	if len(v.ClientConfig) > 0 {
-		cn := n.Child("client_config")
-		for _, k := range sortedKeys(v.ClientConfig) {
-			if s := string(v.ClientConfig[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.ClientConfig[k] = (r)
+	if !n.IsRef("client_config") {
+		if len(v.ClientConfig) > 0 {
+			cn := n.Child("client_config")
+			for _, k := range sortedKeys(v.ClientConfig) {
+				if s := string(v.ClientConfig[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.ClientConfig[k] = (r)
+					}
 				}
 			}
 		}
 	}
-	if x := v.KeyTransformer; x != nil {
-		ch := n.Child("key_transformer")
-		stringsPipelinesTransformer(c, &ch, x)
+	if !n.IsRef("key_transformer") {
+		if x := v.KeyTransformer; x != nil {
+			ch := n.Child("key_transformer")
+			stringsPipelinesTransformer(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.StartingOffset == "" && Forced(v.ForceSendFields, "StartingOffset") {
 		ch := n.Child("starting_offset")
@@ -13728,27 +14964,33 @@ func stringsPipelinesKafkaOptions(c *stringsWalk, n *Node, v *pipelines.KafkaOpt
 			v.TopicPattern = (r)
 		}
 	}
-	if len(v.Topics) > 0 {
-		cn := n.Child("topics")
-		for i := range v.Topics {
-			if s := string(v.Topics[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Topics[i] = (r)
+	if !n.IsRef("topics") {
+		if len(v.Topics) > 0 {
+			cn := n.Child("topics")
+			for i := range v.Topics {
+				if s := string(v.Topics[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Topics[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if x := v.ValueTransformer; x != nil {
-		ch := n.Child("value_transformer")
-		stringsPipelinesTransformer(c, &ch, x)
+	if !n.IsRef("value_transformer") {
+		if x := v.ValueTransformer; x != nil {
+			ch := n.Child("value_transformer")
+			stringsPipelinesTransformer(c, &ch, x)
+		}
 	}
 }
 
 func stringsPipelinesLinkedInAdsOptions(c *stringsWalk, n *Node, v *pipelines.LinkedInAdsOptions) {
-	if x := v.CustomReportOptions; x != nil {
-		ch := n.Child("custom_report_options")
-		stringsPipelinesLinkedInAdsOptionsLinkedInAdsCustomReportOptions(c, &ch, x)
+	if !n.IsRef("custom_report_options") {
+		if x := v.CustomReportOptions; x != nil {
+			ch := n.Child("custom_report_options")
+			stringsPipelinesLinkedInAdsOptionsLinkedInAdsCustomReportOptions(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.SyncStartDate == "" && Forced(v.ForceSendFields, "SyncStartDate") {
 		ch := n.Child("sync_start_date")
@@ -13776,24 +15018,28 @@ func stringsPipelinesMarketoOptions(c *stringsWalk, n *Node, v *pipelines.Market
 }
 
 func stringsPipelinesMetaMarketingOptions(c *stringsWalk, n *Node, v *pipelines.MetaMarketingOptions) {
-	if len(v.ActionAttributionWindows) > 0 {
-		cn := n.Child("action_attribution_windows")
-		for i := range v.ActionAttributionWindows {
-			if s := string(v.ActionAttributionWindows[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.ActionAttributionWindows[i] = (r)
+	if !n.IsRef("action_attribution_windows") {
+		if len(v.ActionAttributionWindows) > 0 {
+			cn := n.Child("action_attribution_windows")
+			for i := range v.ActionAttributionWindows {
+				if s := string(v.ActionAttributionWindows[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.ActionAttributionWindows[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.ActionBreakdowns) > 0 {
-		cn := n.Child("action_breakdowns")
-		for i := range v.ActionBreakdowns {
-			if s := string(v.ActionBreakdowns[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.ActionBreakdowns[i] = (r)
+	if !n.IsRef("action_breakdowns") {
+		if len(v.ActionBreakdowns) > 0 {
+			cn := n.Child("action_breakdowns")
+			for i := range v.ActionBreakdowns {
+				if s := string(v.ActionBreakdowns[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.ActionBreakdowns[i] = (r)
+					}
 				}
 			}
 		}
@@ -13808,20 +15054,24 @@ func stringsPipelinesMetaMarketingOptions(c *stringsWalk, n *Node, v *pipelines.
 			v.ActionReportTime = (r)
 		}
 	}
-	if len(v.Breakdowns) > 0 {
-		cn := n.Child("breakdowns")
-		for i := range v.Breakdowns {
-			if s := string(v.Breakdowns[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Breakdowns[i] = (r)
+	if !n.IsRef("breakdowns") {
+		if len(v.Breakdowns) > 0 {
+			cn := n.Child("breakdowns")
+			for i := range v.Breakdowns {
+				if s := string(v.Breakdowns[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Breakdowns[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if x := v.CustomReportOptions; x != nil {
-		ch := n.Child("custom_report_options")
-		stringsPipelinesMetaMarketingOptionsMetaMarketingCustomReportOptions(c, &ch, x)
+	if !n.IsRef("custom_report_options") {
+		if x := v.CustomReportOptions; x != nil {
+			ch := n.Child("custom_report_options")
+			stringsPipelinesMetaMarketingOptionsMetaMarketingCustomReportOptions(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.Level == "" && Forced(v.ForceSendFields, "Level") {
 		ch := n.Child("level")
@@ -13876,68 +15126,80 @@ func stringsPipelinesOutlookOptions(c *stringsWalk, n *Node, v *pipelines.Outloo
 			v.BodyFormat = pipelines.OutlookBodyFormat(r)
 		}
 	}
-	if len(v.FolderFilter) > 0 {
-		cn := n.Child("folder_filter")
-		for i := range v.FolderFilter {
-			if s := string(v.FolderFilter[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.FolderFilter[i] = (r)
+	if !n.IsRef("folder_filter") {
+		if len(v.FolderFilter) > 0 {
+			cn := n.Child("folder_filter")
+			for i := range v.FolderFilter {
+				if s := string(v.FolderFilter[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.FolderFilter[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.IncludeFolders) > 0 {
-		cn := n.Child("include_folders")
-		for i := range v.IncludeFolders {
-			if s := string(v.IncludeFolders[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.IncludeFolders[i] = (r)
+	if !n.IsRef("include_folders") {
+		if len(v.IncludeFolders) > 0 {
+			cn := n.Child("include_folders")
+			for i := range v.IncludeFolders {
+				if s := string(v.IncludeFolders[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.IncludeFolders[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.IncludeMailboxes) > 0 {
-		cn := n.Child("include_mailboxes")
-		for i := range v.IncludeMailboxes {
-			if s := string(v.IncludeMailboxes[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.IncludeMailboxes[i] = (r)
+	if !n.IsRef("include_mailboxes") {
+		if len(v.IncludeMailboxes) > 0 {
+			cn := n.Child("include_mailboxes")
+			for i := range v.IncludeMailboxes {
+				if s := string(v.IncludeMailboxes[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.IncludeMailboxes[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.IncludeSenders) > 0 {
-		cn := n.Child("include_senders")
-		for i := range v.IncludeSenders {
-			if s := string(v.IncludeSenders[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.IncludeSenders[i] = (r)
+	if !n.IsRef("include_senders") {
+		if len(v.IncludeSenders) > 0 {
+			cn := n.Child("include_senders")
+			for i := range v.IncludeSenders {
+				if s := string(v.IncludeSenders[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.IncludeSenders[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.IncludeSubjects) > 0 {
-		cn := n.Child("include_subjects")
-		for i := range v.IncludeSubjects {
-			if s := string(v.IncludeSubjects[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.IncludeSubjects[i] = (r)
+	if !n.IsRef("include_subjects") {
+		if len(v.IncludeSubjects) > 0 {
+			cn := n.Child("include_subjects")
+			for i := range v.IncludeSubjects {
+				if s := string(v.IncludeSubjects[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.IncludeSubjects[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.SenderFilter) > 0 {
-		cn := n.Child("sender_filter")
-		for i := range v.SenderFilter {
-			if s := string(v.SenderFilter[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.SenderFilter[i] = (r)
+	if !n.IsRef("sender_filter") {
+		if len(v.SenderFilter) > 0 {
+			cn := n.Child("sender_filter")
+			for i := range v.SenderFilter {
+				if s := string(v.SenderFilter[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.SenderFilter[i] = (r)
+					}
 				}
 			}
 		}
@@ -13952,13 +15214,15 @@ func stringsPipelinesOutlookOptions(c *stringsWalk, n *Node, v *pipelines.Outloo
 			v.StartDate = (r)
 		}
 	}
-	if len(v.SubjectFilter) > 0 {
-		cn := n.Child("subject_filter")
-		for i := range v.SubjectFilter {
-			if s := string(v.SubjectFilter[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.SubjectFilter[i] = (r)
+	if !n.IsRef("subject_filter") {
+		if len(v.SubjectFilter) > 0 {
+			cn := n.Child("subject_filter")
+			for i := range v.SubjectFilter {
+				if s := string(v.SubjectFilter[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.SubjectFilter[i] = (r)
+					}
 				}
 			}
 		}
@@ -13975,9 +15239,11 @@ func stringsPipelinesRabbitmqOptions(c *stringsWalk, n *Node, v *pipelines.Rabbi
 }
 
 func stringsPipelinesRedditAdsOptions(c *stringsWalk, n *Node, v *pipelines.RedditAdsOptions) {
-	if x := v.CustomReportOptions; x != nil {
-		ch := n.Child("custom_report_options")
-		stringsPipelinesRedditAdsOptionsRedditAdsCustomReportOptions(c, &ch, x)
+	if !n.IsRef("custom_report_options") {
+		if x := v.CustomReportOptions; x != nil {
+			ch := n.Child("custom_report_options")
+			stringsPipelinesRedditAdsOptionsRedditAdsCustomReportOptions(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.SyncStartDate == "" && Forced(v.ForceSendFields, "SyncStartDate") {
 		ch := n.Child("sync_start_date")
@@ -14002,9 +15268,11 @@ func stringsPipelinesSharepointOptions(c *stringsWalk, n *Node, v *pipelines.Sha
 			v.EntityType = pipelines.SharepointOptionsSharepointEntityType(r)
 		}
 	}
-	if x := v.FileIngestionOptions; x != nil {
-		ch := n.Child("file_ingestion_options")
-		stringsPipelinesFileIngestionOptions(c, &ch, x)
+	if !n.IsRef("file_ingestion_options") {
+		if x := v.FileIngestionOptions; x != nil {
+			ch := n.Child("file_ingestion_options")
+			stringsPipelinesFileIngestionOptions(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.Url == "" && Forced(v.ForceSendFields, "Url") {
 		ch := n.Child("url")
@@ -14019,9 +15287,11 @@ func stringsPipelinesSharepointOptions(c *stringsWalk, n *Node, v *pipelines.Sha
 }
 
 func stringsPipelinesTikTokAdsOptions(c *stringsWalk, n *Node, v *pipelines.TikTokAdsOptions) {
-	if x := v.CustomReportOptions; x != nil {
-		ch := n.Child("custom_report_options")
-		stringsPipelinesTikTokAdsOptionsTikTokAdsCustomReportOptions(c, &ch, x)
+	if !n.IsRef("custom_report_options") {
+		if x := v.CustomReportOptions; x != nil {
+			ch := n.Child("custom_report_options")
+			stringsPipelinesTikTokAdsOptionsTikTokAdsCustomReportOptions(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.DataLevel == "" && Forced(v.ForceSendFields, "DataLevel") {
 		ch := n.Child("data_level")
@@ -14033,24 +15303,28 @@ func stringsPipelinesTikTokAdsOptions(c *stringsWalk, n *Node, v *pipelines.TikT
 			v.DataLevel = pipelines.TikTokAdsOptionsTikTokDataLevel(r)
 		}
 	}
-	if len(v.Dimensions) > 0 {
-		cn := n.Child("dimensions")
-		for i := range v.Dimensions {
-			if s := string(v.Dimensions[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Dimensions[i] = (r)
+	if !n.IsRef("dimensions") {
+		if len(v.Dimensions) > 0 {
+			cn := n.Child("dimensions")
+			for i := range v.Dimensions {
+				if s := string(v.Dimensions[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Dimensions[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.Metrics) > 0 {
-		cn := n.Child("metrics")
-		for i := range v.Metrics {
-			if s := string(v.Metrics[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Metrics[i] = (r)
+	if !n.IsRef("metrics") {
+		if len(v.Metrics) > 0 {
+			cn := n.Child("metrics")
+			for i := range v.Metrics {
+				if s := string(v.Metrics[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Metrics[i] = (r)
+					}
 				}
 			}
 		}
@@ -14091,9 +15365,11 @@ func stringsPipelinesZendeskSupportOptions(c *stringsWalk, n *Node, v *pipelines
 }
 
 func stringsPipelinesTransformer(c *stringsWalk, n *Node, v *pipelines.Transformer) {
-	if x := v.AvroOptions; x != nil {
-		ch := n.Child("avro_options")
-		stringsPipelinesAvroTransformerOptions(c, &ch, x)
+	if !n.IsRef("avro_options") {
+		if x := v.AvroOptions; x != nil {
+			ch := n.Child("avro_options")
+			stringsPipelinesAvroTransformerOptions(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.Format == "" && Forced(v.ForceSendFields, "Format") {
 		ch := n.Child("format")
@@ -14115,9 +15391,11 @@ func stringsPipelinesTransformer(c *stringsWalk, n *Node, v *pipelines.Transform
 			v.InputColumn = (r)
 		}
 	}
-	if x := v.JsonOptions; x != nil {
-		ch := n.Child("json_options")
-		stringsPipelinesJsonTransformerOptions(c, &ch, x)
+	if !n.IsRef("json_options") {
+		if x := v.JsonOptions; x != nil {
+			ch := n.Child("json_options")
+			stringsPipelinesJsonTransformerOptions(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.OutputColumn == "" && Forced(v.ForceSendFields, "OutputColumn") {
 		ch := n.Child("output_column")
@@ -14129,9 +15407,11 @@ func stringsPipelinesTransformer(c *stringsWalk, n *Node, v *pipelines.Transform
 			v.OutputColumn = (r)
 		}
 	}
-	if x := v.ProtobufOptions; x != nil {
-		ch := n.Child("protobuf_options")
-		stringsPipelinesProtobufTransformerOptions(c, &ch, x)
+	if !n.IsRef("protobuf_options") {
+		if x := v.ProtobufOptions; x != nil {
+			ch := n.Child("protobuf_options")
+			stringsPipelinesProtobufTransformerOptions(c, &ch, x)
+		}
 	}
 }
 
@@ -14230,12 +15510,14 @@ func stringsPipelinesFileIngestionOptions(c *stringsWalk, n *Node, v *pipelines.
 			v.CorruptRecordColumn = (r)
 		}
 	}
-	if len(v.FileFilters) > 0 {
-		cn := n.Child("file_filters")
-		for i := range v.FileFilters {
-			{
-				ch := cn.Elem(i)
-				stringsPipelinesFileFilter(c, &ch, &v.FileFilters[i])
+	if !n.IsRef("file_filters") {
+		if len(v.FileFilters) > 0 {
+			cn := n.Child("file_filters")
+			for i := range v.FileFilters {
+				{
+					ch := cn.Elem(i)
+					stringsPipelinesFileFilter(c, &ch, &v.FileFilters[i])
+				}
 			}
 		}
 	}
@@ -14249,13 +15531,15 @@ func stringsPipelinesFileIngestionOptions(c *stringsWalk, n *Node, v *pipelines.
 			v.Format = pipelines.FileIngestionOptionsFileFormat(r)
 		}
 	}
-	if len(v.FormatOptions) > 0 {
-		cn := n.Child("format_options")
-		for _, k := range sortedKeys(v.FormatOptions) {
-			if s := string(v.FormatOptions[k]); c.match(s) {
-				ch := cn.Child(string(k))
-				if r, ok := c.fn(&ch, s); ok {
-					v.FormatOptions[k] = (r)
+	if !n.IsRef("format_options") {
+		if len(v.FormatOptions) > 0 {
+			cn := n.Child("format_options")
+			for _, k := range sortedKeys(v.FormatOptions) {
+				if s := string(v.FormatOptions[k]); c.match(s) {
+					ch := cn.Child(string(k))
+					if r, ok := c.fn(&ch, s); ok {
+						v.FormatOptions[k] = (r)
+					}
 				}
 			}
 		}
@@ -14303,13 +15587,15 @@ func stringsPipelinesFileIngestionOptions(c *stringsWalk, n *Node, v *pipelines.
 }
 
 func stringsPipelinesGoogleAdsCustomReportOptions(c *stringsWalk, n *Node, v *pipelines.GoogleAdsCustomReportOptions) {
-	if len(v.Metrics) > 0 {
-		cn := n.Child("metrics")
-		for i := range v.Metrics {
-			if s := string(v.Metrics[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Metrics[i] = (r)
+	if !n.IsRef("metrics") {
+		if len(v.Metrics) > 0 {
+			cn := n.Child("metrics")
+			for i := range v.Metrics {
+				if s := string(v.Metrics[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Metrics[i] = (r)
+					}
 				}
 			}
 		}
@@ -14320,24 +15606,28 @@ func stringsPipelinesGoogleAdsCustomReportOptions(c *stringsWalk, n *Node, v *pi
 			v.Resource = (r)
 		}
 	}
-	if len(v.ResourceFields) > 0 {
-		cn := n.Child("resource_fields")
-		for i := range v.ResourceFields {
-			if s := string(v.ResourceFields[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.ResourceFields[i] = (r)
+	if !n.IsRef("resource_fields") {
+		if len(v.ResourceFields) > 0 {
+			cn := n.Child("resource_fields")
+			for i := range v.ResourceFields {
+				if s := string(v.ResourceFields[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.ResourceFields[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.Segments) > 0 {
-		cn := n.Child("segments")
-		for i := range v.Segments {
-			if s := string(v.Segments[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Segments[i] = (r)
+	if !n.IsRef("segments") {
+		if len(v.Segments) > 0 {
+			cn := n.Child("segments")
+			for i := range v.Segments {
+				if s := string(v.Segments[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Segments[i] = (r)
+					}
 				}
 			}
 		}
@@ -14345,13 +15635,15 @@ func stringsPipelinesGoogleAdsCustomReportOptions(c *stringsWalk, n *Node, v *pi
 }
 
 func stringsPipelinesLinkedInAdsOptionsLinkedInAdsCustomReportOptions(c *stringsWalk, n *Node, v *pipelines.LinkedInAdsOptionsLinkedInAdsCustomReportOptions) {
-	if len(v.EntityGranularity) > 0 {
-		cn := n.Child("entity_granularity")
-		for i := range v.EntityGranularity {
-			if s := string(v.EntityGranularity[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.EntityGranularity[i] = pipelines.LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsEntityGranularity(r)
+	if !n.IsRef("entity_granularity") {
+		if len(v.EntityGranularity) > 0 {
+			cn := n.Child("entity_granularity")
+			for i := range v.EntityGranularity {
+				if s := string(v.EntityGranularity[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.EntityGranularity[i] = pipelines.LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsEntityGranularity(r)
+					}
 				}
 			}
 		}
@@ -14362,13 +15654,15 @@ func stringsPipelinesLinkedInAdsOptionsLinkedInAdsCustomReportOptions(c *strings
 			v.Finder = pipelines.LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsFinder(r)
 		}
 	}
-	if len(v.Metrics) > 0 {
-		cn := n.Child("metrics")
-		for i := range v.Metrics {
-			if s := string(v.Metrics[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Metrics[i] = (r)
+	if !n.IsRef("metrics") {
+		if len(v.Metrics) > 0 {
+			cn := n.Child("metrics")
+			for i := range v.Metrics {
+				if s := string(v.Metrics[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Metrics[i] = (r)
+					}
 				}
 			}
 		}
@@ -14382,24 +15676,28 @@ func stringsPipelinesLinkedInAdsOptionsLinkedInAdsCustomReportOptions(c *strings
 }
 
 func stringsPipelinesMetaMarketingOptionsMetaMarketingCustomReportOptions(c *stringsWalk, n *Node, v *pipelines.MetaMarketingOptionsMetaMarketingCustomReportOptions) {
-	if len(v.ActionAttributionWindows) > 0 {
-		cn := n.Child("action_attribution_windows")
-		for i := range v.ActionAttributionWindows {
-			if s := string(v.ActionAttributionWindows[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.ActionAttributionWindows[i] = (r)
+	if !n.IsRef("action_attribution_windows") {
+		if len(v.ActionAttributionWindows) > 0 {
+			cn := n.Child("action_attribution_windows")
+			for i := range v.ActionAttributionWindows {
+				if s := string(v.ActionAttributionWindows[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.ActionAttributionWindows[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.ActionBreakdowns) > 0 {
-		cn := n.Child("action_breakdowns")
-		for i := range v.ActionBreakdowns {
-			if s := string(v.ActionBreakdowns[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.ActionBreakdowns[i] = (r)
+	if !n.IsRef("action_breakdowns") {
+		if len(v.ActionBreakdowns) > 0 {
+			cn := n.Child("action_breakdowns")
+			for i := range v.ActionBreakdowns {
+				if s := string(v.ActionBreakdowns[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.ActionBreakdowns[i] = (r)
+					}
 				}
 			}
 		}
@@ -14414,13 +15712,15 @@ func stringsPipelinesMetaMarketingOptionsMetaMarketingCustomReportOptions(c *str
 			v.ActionReportTime = (r)
 		}
 	}
-	if len(v.Breakdowns) > 0 {
-		cn := n.Child("breakdowns")
-		for i := range v.Breakdowns {
-			if s := string(v.Breakdowns[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Breakdowns[i] = (r)
+	if !n.IsRef("breakdowns") {
+		if len(v.Breakdowns) > 0 {
+			cn := n.Child("breakdowns")
+			for i := range v.Breakdowns {
+				if s := string(v.Breakdowns[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Breakdowns[i] = (r)
+					}
 				}
 			}
 		}
@@ -14448,24 +15748,28 @@ func stringsPipelinesMetaMarketingOptionsMetaMarketingCustomReportOptions(c *str
 }
 
 func stringsPipelinesRedditAdsOptionsRedditAdsCustomReportOptions(c *stringsWalk, n *Node, v *pipelines.RedditAdsOptionsRedditAdsCustomReportOptions) {
-	if len(v.Breakdowns) > 0 {
-		cn := n.Child("breakdowns")
-		for i := range v.Breakdowns {
-			if s := string(v.Breakdowns[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Breakdowns[i] = (r)
+	if !n.IsRef("breakdowns") {
+		if len(v.Breakdowns) > 0 {
+			cn := n.Child("breakdowns")
+			for i := range v.Breakdowns {
+				if s := string(v.Breakdowns[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Breakdowns[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.Fields) > 0 {
-		cn := n.Child("fields")
-		for i := range v.Fields {
-			if s := string(v.Fields[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Fields[i] = (r)
+	if !n.IsRef("fields") {
+		if len(v.Fields) > 0 {
+			cn := n.Child("fields")
+			for i := range v.Fields {
+				if s := string(v.Fields[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Fields[i] = (r)
+					}
 				}
 			}
 		}
@@ -14483,24 +15787,28 @@ func stringsPipelinesTikTokAdsOptionsTikTokAdsCustomReportOptions(c *stringsWalk
 			v.DataLevel = pipelines.TikTokAdsOptionsTikTokDataLevel(r)
 		}
 	}
-	if len(v.Dimensions) > 0 {
-		cn := n.Child("dimensions")
-		for i := range v.Dimensions {
-			if s := string(v.Dimensions[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Dimensions[i] = (r)
+	if !n.IsRef("dimensions") {
+		if len(v.Dimensions) > 0 {
+			cn := n.Child("dimensions")
+			for i := range v.Dimensions {
+				if s := string(v.Dimensions[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Dimensions[i] = (r)
+					}
 				}
 			}
 		}
 	}
-	if len(v.Metrics) > 0 {
-		cn := n.Child("metrics")
-		for i := range v.Metrics {
-			if s := string(v.Metrics[i]); c.match(s) {
-				ch := cn.Elem(i)
-				if r, ok := c.fn(&ch, s); ok {
-					v.Metrics[i] = (r)
+	if !n.IsRef("metrics") {
+		if len(v.Metrics) > 0 {
+			cn := n.Child("metrics")
+			for i := range v.Metrics {
+				if s := string(v.Metrics[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Metrics[i] = (r)
+					}
 				}
 			}
 		}
@@ -14548,9 +15856,11 @@ func stringsPipelinesAvroTransformerOptions(c *stringsWalk, n *Node, v *pipeline
 			v.SchemaFilePath = (r)
 		}
 	}
-	if x := v.SchemaRegistry; x != nil {
-		ch := n.Child("schema_registry")
-		stringsPipelinesSchemaRegistryConfig(c, &ch, x)
+	if !n.IsRef("schema_registry") {
+		if x := v.SchemaRegistry; x != nil {
+			ch := n.Child("schema_registry")
+			stringsPipelinesSchemaRegistryConfig(c, &ch, x)
+		}
 	}
 }
 
@@ -14628,9 +15938,11 @@ func stringsPipelinesProtobufTransformerOptions(c *stringsWalk, n *Node, v *pipe
 			v.ParseMode = pipelines.ParseMode(r)
 		}
 	}
-	if x := v.SchemaRegistry; x != nil {
-		ch := n.Child("schema_registry")
-		stringsPipelinesSchemaRegistryConfig(c, &ch, x)
+	if !n.IsRef("schema_registry") {
+		if x := v.SchemaRegistry; x != nil {
+			ch := n.Child("schema_registry")
+			stringsPipelinesSchemaRegistryConfig(c, &ch, x)
+		}
 	}
 }
 
@@ -14668,9 +15980,11 @@ func stringsPipelinesFileFilter(c *stringsWalk, n *Node, v *pipelines.FileFilter
 }
 
 func stringsPipelinesSchemaRegistryConfig(c *stringsWalk, n *Node, v *pipelines.SchemaRegistryConfig) {
-	if x := v.ConfluentOptions; x != nil {
-		ch := n.Child("confluent_options")
-		stringsPipelinesConfluentSchemaRegistryOptions(c, &ch, x)
+	if !n.IsRef("confluent_options") {
+		if x := v.ConfluentOptions; x != nil {
+			ch := n.Child("confluent_options")
+			stringsPipelinesConfluentSchemaRegistryOptions(c, &ch, x)
+		}
 	}
 	if c.mode == EmptyFields && v.ConnectionName == "" && Forced(v.ForceSendFields, "ConnectionName") {
 		ch := n.Child("connection_name")

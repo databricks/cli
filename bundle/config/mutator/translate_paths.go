@@ -342,7 +342,8 @@ func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContex
 		// value would be silently discarded during path translation, so we error early.
 		// DefineDefaultWorkspacePaths sets the snapshot location, or root/files if
 		// immutable_folder was a reference not resolved yet; any other value is the user's.
-		if fp := b.Config.Workspace.FilePath; fp != resources.SnapshotFullPathRef+"/files" && fp != path.Join(b.Config.Workspace.RootPath, "files") {
+		// Clean: the default is joined before root_path's references are resolved.
+		if fp := path.Clean(b.Config.Workspace.FilePath); fp != resources.SnapshotFullPathRef+"/files" && fp != path.Join(b.Config.Workspace.RootPath, "files") {
 			return diag.Diagnostics{{
 				Severity:  diag.Error,
 				Summary:   "workspace.file_path cannot be configured when experimental.immutable_folder is enabled",

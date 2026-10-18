@@ -88,6 +88,13 @@ func (g *stringsGen) emitStringsStruct(t reflect.Type) {
 			// See walk.StringsWithoutResources.
 			guards = append(guards, "!c.skipResources")
 		}
+		switch ft.Kind() {
+		case reflect.String, reflect.Interface:
+		default:
+			// A field replaced by a pure reference hides what is below it, as in the
+			// view; the reference itself is in config.Root.References.
+			guards = append(guards, fmt.Sprintf("!n.IsRef(%q)", f.Key))
+		}
 		if len(guards) > 0 {
 			fmt.Fprintf(&g.out, "\tif %s {\n", strings.Join(guards, " && "))
 		}

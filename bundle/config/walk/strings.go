@@ -38,21 +38,21 @@ type StringFunc func(n *Node, s string) (string, bool)
 // paying for the traversal once. Phase ordering limits which ones can be combined.
 func Strings(root *config.Root, mode Mode, fn StringFunc) {
 	c := &stringsWalk{mode: mode, fn: fn}
-	n := Root(root)
+	n := RootWithReferences(root)
 	stringsConfigRoot(c, &n, root)
 }
 
 // StringsWithoutResources is [Strings] for the configuration outside "resources".
 func StringsWithoutResources(root *config.Root, mode Mode, fn StringFunc) {
 	c := &stringsWalk{mode: mode, fn: fn, skipResources: true}
-	n := Root(root)
+	n := RootWithReferences(root)
 	stringsConfigRoot(c, &n, root)
 }
 
 // ResourceStrings is [Strings] for "resources" only.
 func ResourceStrings(root *config.Root, mode Mode, fn StringFunc) {
 	c := &stringsWalk{mode: mode, fn: fn}
-	n := Root(root)
+	n := RootWithReferences(root)
 	ch := n.Child("resources")
 	stringsConfigResources(c, &ch, &root.Resources)
 }
@@ -60,7 +60,7 @@ func ResourceStrings(root *config.Root, mode Mode, fn StringFunc) {
 // ResourceStringsOf is [Strings] for the resource name of type typ.
 func ResourceStringsOf(root *config.Root, typ, name string, mode Mode, fn StringFunc) {
 	c := &stringsWalk{mode: mode, fn: fn}
-	n := Root(root)
+	n := RootWithReferences(root)
 	rn := n.Child("resources")
 	stringsResource(c, &rn, &root.Resources, typ, name)
 }
@@ -69,7 +69,7 @@ func ResourceStringsOf(root *config.Root, typ, name string, mode Mode, fn String
 // ("variables.*.lookup"), in the order of the variable names.
 func VariableLookupStrings(root *config.Root, mode Mode, fn StringFunc) {
 	c := &stringsWalk{mode: mode, fn: fn}
-	n := Root(root)
+	n := RootWithReferences(root)
 	vn := n.Child("variables")
 	for _, k := range sortedKeys(root.Variables) {
 		v := root.Variables[k]
@@ -121,7 +121,8 @@ func (c *stringsWalk) any(n *Node, v *any) {
 			ch := n.Elem(i)
 			c.any(&ch, &x[i])
 		}
-	case nil:
+	case nil, bool, int, int64, float64:
+		// Scalars decoded into a dynamic value hold no strings.
 	default:
 		// Other values set from code (typed maps, slices, structs, named strings).
 		rv := reflect.ValueOf(v).Elem()
