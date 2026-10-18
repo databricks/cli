@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resourcedefaults"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 )
@@ -26,8 +27,15 @@ type tnode struct {
 	typ      reflect.Type // the declared type of the value at this node
 	required []string     // required fields (JSON names) of the struct at this node
 	enum     []string     // valid values if the value at this node is an enum
+	defaults []defaultKey // fields of the struct at this node that have a default
 	children map[string]*tnode
 	sig      string
+}
+
+// defaultKey is a field (JSON name) with a default, the index of the default.
+type defaultKey struct {
+	key   string
+	index int
 }
 
 func newTnode(typ reflect.Type) *tnode {
@@ -90,7 +98,7 @@ func (t *tnode) signature() string {
 		return t.sig
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "%s|r=%v|e=%v|", t.typ, t.required, t.enum)
+	fmt.Fprintf(&b, "%s|r=%v|e=%v|d=%v|", t.typ, t.required, t.enum, t.defaults)
 	for _, k := range sortedKeys(t.children) {
 		fmt.Fprintf(&b, "%s{%s}", k, t.children[k].signature())
 	}
@@ -121,6 +129,9 @@ type gen struct {
 	// pendingTypes are the struct types whose functions are still to be written
 	// (strings walker).
 	pendingTypes []reflect.Type
+
+	// walkerType is the name of the type of the walker state (first parameter).
+	walkerType string
 
 	// refBranches visits nil pointer fields that are present (in ForceSendFields, or
 	// written without omitempty) or hold a pure reference as nodes without fields, so
@@ -250,7 +261,7 @@ func (f field) forcedCond() string {
 	if f.fsf == "" {
 		return ""
 	}
-	return fmt.Sprintf(" || forced(%s, %q)", f.fsf, f.goName)
+	return fmt.Sprintf(" || walk.Forced(%s, %q)", f.fsf, f.goName)
 }
 
 // writtenCond returns the condition that a zero value of the field counts as present
@@ -278,16 +289,28 @@ func (f field) present() string {
 	case reflect.Bool:
 		return guarded(f.guards, f.expr+f.forcedCond()) + f.writtenCond() + ref
 	case reflect.Struct:
-		return guarded(f.guards, fmt.Sprintf("!isZeroStruct(&%s)", f.expr)+f.forcedCond()) + f.writtenCond() + ref
+		return guarded(f.guards, fmt.Sprintf("!walk.IsZeroStruct(&%s)", f.expr)+f.forcedCond()) + f.writtenCond() + ref
 	default:
 		return guarded(f.guards, f.expr+" != 0"+f.forcedCond()) + f.writtenCond() + ref
+	}
+}
+
+// isSet returns the condition under which the field is set as [structvar.View.Get]
+// finds it valid: like [field.present], and a nil pointer, slice or map is also set if
+// it is in ForceSendFields or (without omitempty) written in the source.
+func (f field) isSet() string {
+	switch f.typ.Kind() {
+	case reflect.Pointer, reflect.Slice, reflect.Map, reflect.Interface:
+		return guarded(f.guards, f.expr+" != nil"+f.forcedCond()) + f.writtenCond() + fmt.Sprintf(" || n.IsRef(%q)", f.key)
+	default:
+		return f.present()
 	}
 }
 
 // emitStruct writes the function walking struct node t.
 func (g *gen) emitStruct(t *tnode) {
 	st := deref(t.typ)
-	fmt.Fprintf(&g.out, "\nfunc %s(w *walker, n *walk.Node, v *%s) {\n", g.funcFor(t), g.typeName(st))
+	fmt.Fprintf(&g.out, "\nfunc %s(w *%s, n *walk.Node, v *%s) {\n", g.funcFor(t), g.walkerType, g.typeName(st))
 	fmt.Fprintf(&g.out, "\tif v == nil {\n")
 	for _, k := range t.required {
 		fmt.Fprintf(&g.out, "\t\tw.missing(n, %q)\n", k)
@@ -296,6 +319,10 @@ func (g *gen) emitStruct(t *tnode) {
 	for _, k := range t.required {
 		f := structField("v", st, k)
 		fmt.Fprintf(&g.out, "\tif !(%s) {\n\t\tw.missing(n, %q)\n\t}\n", f.present(), k)
+	}
+	for _, d := range t.defaults {
+		f := structField("v", st, d.key)
+		fmt.Fprintf(&g.out, "\tif !(%s) {\n\t\tc := n.Child(%q)\n\t\tw.unset(&c, %d)\n\t}\n", f.isSet(), d.key, d.index)
 	}
 	for _, k := range sortedKeys(t.children) {
 		g.emitField(structField("v", st, k), t.children[k])
@@ -322,7 +349,7 @@ func (g *gen) emitField(f field, child *tnode) {
 		}
 		fmt.Fprintf(&g.out, "\n")
 	case f.typ.Kind() == reflect.Struct:
-		fmt.Fprintf(&g.out, "\tif x := &%s; !isZeroStruct(x)%s || n.Locations().Key(%q) != nil {\n\t\tc := n.Child(%q)\n\t\t%s(w, &c, x)\n\t}\n", f.expr, f.forcedCond(), f.key, f.key, g.funcFor(child))
+		fmt.Fprintf(&g.out, "\tif x := &%s; !walk.IsZeroStruct(x)%s || n.Locations().Key(%q) != nil {\n\t\tc := n.Child(%q)\n\t\t%s(w, &c, x)\n\t}\n", f.expr, f.forcedCond(), f.key, f.key, g.funcFor(child))
 	case f.typ.Kind() == reflect.Slice || f.typ.Kind() == reflect.Map:
 		fmt.Fprintf(&g.out, "\tif len(%s) > 0 {\n\t\tc := n.Child(%q)\n", f.expr, f.key)
 		g.emitContainer("\t\t", f.expr, f.typ, child)
@@ -374,24 +401,49 @@ func (g *gen) emitElem(indent, expr string, typ reflect.Type, t *tnode) {
 
 // generateWalker writes the walker for the patterns to file; fn is the name of the
 // entry point.
-func generateWalker(file, prefix, doc string, required, enums map[string][]string) error {
+// walkerSpec describes a generated walker.
+type walkerSpec struct {
+	file, pkg, prefix, doc string
+	walkerType            string
+	required, enums       map[string][]string
+	defaults              []string // patterns of fields with a default, in order
+}
+
+func generateWalker(spec walkerSpec) error {
+	file, prefix, doc := spec.file, spec.prefix, spec.doc
 	root := newTnode(reflect.TypeFor[config.Root]())
-	for _, p := range sortedKeys(required) {
+	for _, p := range sortedKeys(spec.required) {
 		n, err := root.insert(p)
 		if err != nil {
 			return err
 		}
-		n.required = required[p]
+		n.required = spec.required[p]
 	}
-	for _, p := range sortedKeys(enums) {
+	for _, p := range sortedKeys(spec.enums) {
 		n, err := root.insert(p)
 		if err != nil {
 			return err
 		}
-		n.enum = enums[p]
+		n.enum = spec.enums[p]
+	}
+	for i, p := range spec.defaults {
+		pattern, err := structpath.ParsePattern(p)
+		if err != nil {
+			return err
+		}
+		key, ok := pattern.StringKey()
+		if !ok {
+			return fmt.Errorf("default %s: the last component must be a key", p)
+		}
+		n, err := root.insert(pattern.Parent().String())
+		if err != nil {
+			return err
+		}
+		n.defaults = append(n.defaults, defaultKey{key, i})
 	}
 
-	g := newGen(prefix, required != nil)
+	g := newGen(prefix, spec.required != nil)
+	g.walkerType = spec.walkerType
 	g.funcFor(root)
 	for len(g.pending) > 0 {
 		t := g.pending[0]
@@ -400,7 +452,7 @@ func generateWalker(file, prefix, doc string, required, enums map[string][]strin
 	}
 
 	var src bytes.Buffer
-	fmt.Fprintf(&src, "// Code generated by bundle/internal/validation. DO NOT EDIT.\n\n// %s\n\npackage validate\n\nimport (\n\t\"github.com/databricks/cli/bundle/config/walk\"\n", doc)
+	fmt.Fprintf(&src, "// Code generated by bundle/internal/validation. DO NOT EDIT.\n\n// %s\n\npackage %s\n\nimport (\n\t\"github.com/databricks/cli/bundle/config/walk\"\n", doc, spec.pkg)
 	paths := make([]string, 0, len(g.imports))
 	for p := range g.imports {
 		paths = append(paths, p)
@@ -468,11 +520,24 @@ func generateWalkers(dir string) error {
 	if err != nil {
 		return err
 	}
-	err = generateWalker(dir+"/required_walk.go", "required", "requiredWalk reports required fields that are not set.", required, nil)
+	err = generateWalker(walkerSpec{
+		file: dir + "/required_walk.go", pkg: "validate", prefix: "required", walkerType: "walker",
+		doc: "requiredWalk reports required fields that are not set.", required: required,
+	})
 	if err != nil {
 		return err
 	}
-	err = generateWalker(dir+"/enum_walk.go", "enum", "enumWalk reports enum fields with invalid values.", nil, enums)
+	err = generateWalker(walkerSpec{
+		file: dir + "/enum_walk.go", pkg: "validate", prefix: "enum", walkerType: "walker",
+		doc: "enumWalk reports enum fields with invalid values.", enums: enums,
+	})
+	if err != nil {
+		return err
+	}
+	err = generateWalker(walkerSpec{
+		file: "bundle/config/mutator/resourcemutator/defaults_walk.go", pkg: "resourcemutator", prefix: "defaults", walkerType: "defaultsWalker",
+		doc: "defaultsWalk calls unset for the fields with a default (resourcedefaults.Defaults) that are not set.", defaults: resourcedefaults.Patterns(),
+	})
 	if err != nil {
 		return err
 	}

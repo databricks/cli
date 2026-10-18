@@ -2,7 +2,6 @@ package validate
 
 import (
 	"fmt"
-	"reflect"
 	"slices"
 
 	"github.com/databricks/cli/bundle/config"
@@ -52,15 +51,4 @@ func (w *walker) enumValue(n *walk.Node, s string, valid []string) {
 		Locations: n.Locations().Get(),
 		Paths:     []*structpath.PathNode{n.Path()},
 	})
-}
-
-// forced reports whether name is listed in the ForceSendFields fsf.
-func forced(fsf []string, name string) bool {
-	return slices.Contains(fsf, name)
-}
-
-// isZeroStruct reports whether the struct *v is the zero value. Only the few struct
-// fields that are not pointers need it.
-func isZeroStruct[T any](v *T) bool {
-	return reflect.ValueOf(v).Elem().IsZero()
 }

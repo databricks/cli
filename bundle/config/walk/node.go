@@ -3,6 +3,9 @@
 package walk
 
 import (
+	"reflect"
+	"slices"
+
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -24,7 +27,7 @@ type Node struct {
 // Root returns the root node of the configuration r. Its nodes do not follow the pure
 // references: use [RootWithReferences] for [Node.IsRef].
 func Root(r *config.Root) Node {
-	return Node{index: -2, locs: r.View().Locs()}
+	return Node{index: -2, locs: r.LocationTree()}
 }
 
 // RootWithReferences is [Root] whose nodes also follow the pure references.
@@ -132,4 +135,16 @@ func newRefTree(root *config.Root) *refNode {
 		n.ref = true
 	}
 	return out
+}
+
+// Forced reports whether name is listed in the ForceSendFields fsf. Generated walkers
+// use it to decide whether a zero value is set.
+func Forced(fsf []string, name string) bool {
+	return slices.Contains(fsf, name)
+}
+
+// IsZeroStruct reports whether the struct *v is the zero value. Generated walkers only
+// need it for the few struct fields that are not pointers.
+func IsZeroStruct[T any](v *T) bool {
+	return reflect.ValueOf(v).Elem().IsZero()
 }
