@@ -43,11 +43,17 @@ func (v *pipelineDevelopmentDeprecated) Apply(_ context.Context, b *bundle.Bundl
 
 		p := structpath.NewPath(nil, "resources", "pipelines", key, "development")
 
-		// Only user-written values have a location; the value set by "mode: development" does not.
-		locs := b.Config.GetLocationsOfExact(p)
-		if len(locs) == 0 {
+		// The property is set if it is forced (an explicit value: decoding records a
+		// written false, and the preset keeps the record when it sets true), a
+		// reference, or true without the preset. A true from the preset
+		// ("mode: development") is not reported; a "development: true" written in the
+		// configuration is then indistinguishable from it.
+		development := pipeline.Development //nolint:staticcheck // SA1019: see apply_presets.go
+		forced := slices.Contains(pipeline.ForceSendFields, "Development")
+		if !forced && !b.Config.IsReferenceAt(p) && (!development || presetEnabled) {
 			continue
 		}
+		locs := b.Config.GetLocationsOfExact(p)
 
 		diags = append(diags, diag.Diagnostic{
 			Severity:  diag.Warning,
