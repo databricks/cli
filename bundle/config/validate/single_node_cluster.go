@@ -135,13 +135,13 @@ func showSingleNodeClusterWarning(ctx context.Context, b *bundle.Bundle, p *stru
 }
 
 func (m *singleNodeCluster) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	var specs clusterSpecs
+	c := clusterCheck{b: b, diags: diag.Diagnostics{}}
 	r := &b.Config.Resources
 
 	// Interactive clusters
 	for _, name := range slices.Sorted(maps.Keys(r.Clusters)) {
-		if c := r.Clusters[name]; c != nil {
-			specs.add(structpath.NewPath(nil, "resources", "clusters", name), computeClusterSpec(&c.ClusterSpec))
+		if cl := r.Clusters[name]; cl != nil {
+			c.cluster(ctx, structpath.NewPath(nil, "resources", "clusters", name), computeClusterSpec(&cl.ClusterSpec))
 		}
 	}
 	// Job clusters
@@ -149,54 +149,45 @@ func (m *singleNodeCluster) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		if job := r.Jobs[name]; job != nil {
 			for i := range job.JobClusters {
 				if nc := job.JobClusters[i].NewCluster; nc != nil {
-					specs.add(structpath.NewPath(nil, "resources", "jobs", name, "job_clusters", i, "new_cluster"), computeClusterSpec(nc))
+					c.cluster(ctx, structpath.NewPath(nil, "resources", "jobs", name, "job_clusters", i, "new_cluster"), computeClusterSpec(nc))
 				}
 			}
 		}
 	}
 	// Job task clusters, then the clusters of tasks in for_each_task
 	for _, nested := range []bool{false, true} {
-		r.IterateJobTasks(nested, specs.task)
+		r.IterateJobTasks(nested, func(p *structpath.PathNode, task *jobs.Task) bool {
+			if task.NewCluster != nil {
+				c.cluster(ctx, structpath.NewPath(p, "new_cluster"), computeClusterSpec(task.NewCluster))
+			}
+			return true
+		})
 	}
 	// Pipeline clusters
 	for _, name := range slices.Sorted(maps.Keys(r.Pipelines)) {
 		if pl := r.Pipelines[name]; pl != nil {
 			for i := range pl.Clusters {
-				specs.add(structpath.NewPath(nil, "resources", "pipelines", name, "clusters", i), pipelineClusterSpec(&pl.Clusters[i]))
+				c.cluster(ctx, structpath.NewPath(nil, "resources", "pipelines", name, "clusters", i), pipelineClusterSpec(&pl.Clusters[i]))
 			}
 		}
 	}
-	diags := diag.Diagnostics{}
-	for _, c := range specs {
-		if showSingleNodeClusterWarning(ctx, b, c.path, c.spec) {
-			diags = append(diags, diag.Diagnostic{
-				Severity:  diag.Warning,
-				Summary:   singleNodeWarningSummary,
-				Detail:    singleNodeWarningDetail,
-				Locations: b.Config.GetLocationsOfExact(c.path),
-				Paths:     []*structpath.PathNode{c.path},
-			})
-		}
+	return c.diags
+}
+
+// clusterCheck collects the single node cluster warnings.
+type clusterCheck struct {
+	b     *bundle.Bundle
+	diags diag.Diagnostics
+}
+
+func (c *clusterCheck) cluster(ctx context.Context, p *structpath.PathNode, spec clusterSpec) {
+	if showSingleNodeClusterWarning(ctx, c.b, p, spec) {
+		c.diags = append(c.diags, diag.Diagnostic{
+			Severity:  diag.Warning,
+			Summary:   singleNodeWarningSummary,
+			Detail:    singleNodeWarningDetail,
+			Locations: c.b.Config.GetLocationsOfExact(p),
+			Paths:     []*structpath.PathNode{p},
+		})
 	}
-	return diags
-}
-
-// clusterSpecAt is a cluster spec to check and its path.
-type clusterSpecAt struct {
-	path *structpath.PathNode
-	spec clusterSpec
-}
-
-// clusterSpecs collects the cluster specs to check, in the order of the diagnostics.
-type clusterSpecs []clusterSpecAt
-
-func (c *clusterSpecs) add(p *structpath.PathNode, spec clusterSpec) {
-	*c = append(*c, clusterSpecAt{p, spec})
-}
-
-func (c *clusterSpecs) task(p *structpath.PathNode, task *jobs.Task) bool {
-	if task.NewCluster != nil {
-		c.add(structpath.NewPath(p, "new_cluster"), computeClusterSpec(task.NewCluster))
-	}
-	return true
 }

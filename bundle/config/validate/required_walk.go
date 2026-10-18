@@ -32,7 +32,7 @@ func requiredConfigRoot(w *walker, n *walk.Node, v *config.Root) {
 			requiredConfigArtifact(w, &e, x)
 		}
 	}
-	if x := &v.Bundle; !walk.IsZeroStruct(x) {
+	if x := &v.Bundle; !walk.IsZeroStruct(x) || n.HasRefs("bundle") {
 		c := n.Child("bundle")
 		requiredConfigBundle(w, &c, x)
 	}
@@ -43,7 +43,7 @@ func requiredConfigRoot(w *walker, n *walk.Node, v *config.Root) {
 			requiredResourcesPermission(w, &e, &v.Permissions[i])
 		}
 	}
-	if x := &v.Resources; !walk.IsZeroStruct(x) {
+	if x := &v.Resources; !walk.IsZeroStruct(x) || n.HasRefs("resources") {
 		c := n.Child("resources")
 		requiredConfigResources(w, &c, x)
 	}
@@ -383,22 +383,22 @@ func requiredResourcesAlert(w *walker, n *walk.Node, v *resources.Alert) {
 		w.missing(n, "warehouse_id")
 		return
 	}
-	if !(v.AlertV2.DisplayName != "") {
+	if !(v.AlertV2.DisplayName != "" || walk.Forced(v.AlertV2.ForceSendFields, "DisplayName")) {
 		w.missing(n, "display_name")
 	}
-	if !(!walk.IsZeroStruct(&v.AlertV2.Evaluation) || walk.Forced(v.AlertV2.ForceSendFields, "Evaluation") || n.IsRef("evaluation")) {
+	if !(!walk.IsZeroStruct(&v.AlertV2.Evaluation) || walk.Forced(v.AlertV2.ForceSendFields, "Evaluation") || n.HasRefs("evaluation")) {
 		w.missing(n, "evaluation")
 	}
-	if !(v.AlertV2.QueryText != "") {
+	if !(v.AlertV2.QueryText != "" || walk.Forced(v.AlertV2.ForceSendFields, "QueryText")) {
 		w.missing(n, "query_text")
 	}
-	if !(!walk.IsZeroStruct(&v.AlertV2.Schedule) || walk.Forced(v.AlertV2.ForceSendFields, "Schedule") || n.IsRef("schedule")) {
+	if !(!walk.IsZeroStruct(&v.AlertV2.Schedule) || walk.Forced(v.AlertV2.ForceSendFields, "Schedule") || n.HasRefs("schedule")) {
 		w.missing(n, "schedule")
 	}
-	if !(v.AlertV2.WarehouseId != "") {
+	if !(v.AlertV2.WarehouseId != "" || walk.Forced(v.AlertV2.ForceSendFields, "WarehouseId")) {
 		w.missing(n, "warehouse_id")
 	}
-	if x := &v.AlertV2.Evaluation; !walk.IsZeroStruct(x) || walk.Forced(v.AlertV2.ForceSendFields, "Evaluation") {
+	if x := &v.AlertV2.Evaluation; !walk.IsZeroStruct(x) || walk.Forced(v.AlertV2.ForceSendFields, "Evaluation") || n.HasRefs("evaluation") {
 		c := n.Child("evaluation")
 		requiredSqlAlertV2Evaluation(w, &c, x)
 	}
@@ -416,7 +416,7 @@ func requiredResourcesAlert(w *walker, n *walk.Node, v *resources.Alert) {
 			requiredResourcesPermission(w, &e, &v.Permissions[i])
 		}
 	}
-	if x := &v.AlertV2.Schedule; !walk.IsZeroStruct(x) || walk.Forced(v.AlertV2.ForceSendFields, "Schedule") {
+	if x := &v.AlertV2.Schedule; !walk.IsZeroStruct(x) || walk.Forced(v.AlertV2.ForceSendFields, "Schedule") || n.HasRefs("schedule") {
 		c := n.Child("schedule")
 		requiredSqlCronSchedule(w, &c, x)
 	}
@@ -427,7 +427,7 @@ func requiredResourcesApp(w *walker, n *walk.Node, v *resources.App) {
 		w.missing(n, "name")
 		return
 	}
-	if !(v.App.Name != "") {
+	if !(v.App.Name != "" || walk.Forced(v.App.ForceSendFields, "Name")) {
 		w.missing(n, "name")
 	}
 	if x := v.App.ActiveDeployment; x != nil {
@@ -500,7 +500,7 @@ func requiredResourcesCatalog(w *walker, n *walk.Node, v *resources.Catalog) {
 		w.missing(n, "name")
 		return
 	}
-	if !(v.CreateCatalog.Name != "") {
+	if !(v.CreateCatalog.Name != "" || walk.Forced(v.CreateCatalog.ForceSendFields, "Name")) {
 		w.missing(n, "name")
 	}
 	if x := v.CreateCatalog.ManagedEncryptionSettings; x != nil {
@@ -593,13 +593,13 @@ func requiredResourcesDatabaseCatalog(w *walker, n *walk.Node, v *resources.Data
 		w.missing(n, "name")
 		return
 	}
-	if !(v.DatabaseCatalog.DatabaseInstanceName != "") {
+	if !(v.DatabaseCatalog.DatabaseInstanceName != "" || walk.Forced(v.DatabaseCatalog.ForceSendFields, "DatabaseInstanceName")) {
 		w.missing(n, "database_instance_name")
 	}
-	if !(v.DatabaseCatalog.DatabaseName != "") {
+	if !(v.DatabaseCatalog.DatabaseName != "" || walk.Forced(v.DatabaseCatalog.ForceSendFields, "DatabaseName")) {
 		w.missing(n, "database_name")
 	}
-	if !(v.DatabaseCatalog.Name != "") {
+	if !(v.DatabaseCatalog.Name != "" || walk.Forced(v.DatabaseCatalog.ForceSendFields, "Name")) {
 		w.missing(n, "name")
 	}
 }
@@ -609,7 +609,7 @@ func requiredResourcesDatabaseInstance(w *walker, n *walk.Node, v *resources.Dat
 		w.missing(n, "name")
 		return
 	}
-	if !(v.DatabaseInstance.Name != "") {
+	if !(v.DatabaseInstance.Name != "" || walk.Forced(v.DatabaseInstance.ForceSendFields, "Name")) {
 		w.missing(n, "name")
 	}
 	if len(v.Permissions) > 0 {
@@ -626,7 +626,7 @@ func requiredResourcesMlflowExperiment(w *walker, n *walk.Node, v *resources.Mlf
 		w.missing(n, "name")
 		return
 	}
-	if !(v.CreateExperiment.Name != "") {
+	if !(v.CreateExperiment.Name != "" || walk.Forced(v.CreateExperiment.ForceSendFields, "Name")) {
 		w.missing(n, "name")
 	}
 	if len(v.Permissions) > 0 {
@@ -652,13 +652,13 @@ func requiredResourcesExternalLocation(w *walker, n *walk.Node, v *resources.Ext
 		w.missing(n, "url")
 		return
 	}
-	if !(v.CreateExternalLocation.CredentialName != "") {
+	if !(v.CreateExternalLocation.CredentialName != "" || walk.Forced(v.CreateExternalLocation.ForceSendFields, "CredentialName")) {
 		w.missing(n, "credential_name")
 	}
-	if !(v.CreateExternalLocation.Name != "") {
+	if !(v.CreateExternalLocation.Name != "" || walk.Forced(v.CreateExternalLocation.ForceSendFields, "Name")) {
 		w.missing(n, "name")
 	}
-	if !(v.CreateExternalLocation.Url != "") {
+	if !(v.CreateExternalLocation.Url != "" || walk.Forced(v.CreateExternalLocation.ForceSendFields, "Url")) {
 		w.missing(n, "url")
 	}
 }
@@ -682,10 +682,10 @@ func requiredResourcesInstancePool(w *walker, n *walk.Node, v *resources.Instanc
 		w.missing(n, "node_type_id")
 		return
 	}
-	if !(v.CreateInstancePool.InstancePoolName != "") {
+	if !(v.CreateInstancePool.InstancePoolName != "" || walk.Forced(v.CreateInstancePool.ForceSendFields, "InstancePoolName")) {
 		w.missing(n, "instance_pool_name")
 	}
-	if !(v.CreateInstancePool.NodeTypeId != "") {
+	if !(v.CreateInstancePool.NodeTypeId != "" || walk.Forced(v.CreateInstancePool.ForceSendFields, "NodeTypeId")) {
 		w.missing(n, "node_type_id")
 	}
 	if len(v.Permissions) > 0 {
@@ -831,10 +831,10 @@ func requiredResourcesMcpService(w *walker, n *walk.Node, v *resources.McpServic
 		w.missing(n, "mcp_service_id")
 		return
 	}
-	if !(v.McpServiceConfig.Parent != "") {
+	if !(v.McpServiceConfig.Parent != "" || walk.Forced(v.McpServiceConfig.ForceSendFields, "Parent")) {
 		w.missing(n, "parent")
 	}
-	if !(v.McpServiceConfig.McpServiceId != "") {
+	if !(v.McpServiceConfig.McpServiceId != "" || walk.Forced(v.McpServiceConfig.ForceSendFields, "McpServiceId")) {
 		w.missing(n, "mcp_service_id")
 	}
 	if x := v.McpServiceConfig.Config; x != nil {
@@ -852,10 +852,10 @@ func requiredResourcesModelProviderService(w *walker, n *walk.Node, v *resources
 		w.missing(n, "model_provider_service_id")
 		return
 	}
-	if !(v.ModelProviderServiceConfig.Parent != "") {
+	if !(v.ModelProviderServiceConfig.Parent != "" || walk.Forced(v.ModelProviderServiceConfig.ForceSendFields, "Parent")) {
 		w.missing(n, "parent")
 	}
-	if !(v.ModelProviderServiceConfig.ModelProviderServiceId != "") {
+	if !(v.ModelProviderServiceConfig.ModelProviderServiceId != "" || walk.Forced(v.ModelProviderServiceConfig.ForceSendFields, "ModelProviderServiceId")) {
 		w.missing(n, "model_provider_service_id")
 	}
 	if x := v.ModelProviderServiceConfig.Config; x != nil {
@@ -873,10 +873,10 @@ func requiredResourcesModelService(w *walker, n *walk.Node, v *resources.ModelSe
 		w.missing(n, "model_service_id")
 		return
 	}
-	if !(v.ModelServiceConfig.Parent != "") {
+	if !(v.ModelServiceConfig.Parent != "" || walk.Forced(v.ModelServiceConfig.ForceSendFields, "Parent")) {
 		w.missing(n, "parent")
 	}
-	if !(v.ModelServiceConfig.ModelServiceId != "") {
+	if !(v.ModelServiceConfig.ModelServiceId != "" || walk.Forced(v.ModelServiceConfig.ForceSendFields, "ModelServiceId")) {
 		w.missing(n, "model_service_id")
 	}
 	if x := v.ModelServiceConfig.Config; x != nil {
@@ -893,7 +893,7 @@ func requiredResourcesModelServingEndpoint(w *walker, n *walk.Node, v *resources
 		w.missing(n, "name")
 		return
 	}
-	if !(v.CreateServingEndpoint.Name != "") {
+	if !(v.CreateServingEndpoint.Name != "" || walk.Forced(v.CreateServingEndpoint.ForceSendFields, "Name")) {
 		w.missing(n, "name")
 	}
 	if x := v.CreateServingEndpoint.AiGateway; x != nil {
@@ -938,7 +938,7 @@ func requiredResourcesMlflowModel(w *walker, n *walk.Node, v *resources.MlflowMo
 		w.missing(n, "name")
 		return
 	}
-	if !(v.CreateModelRequest.Name != "") {
+	if !(v.CreateModelRequest.Name != "" || walk.Forced(v.CreateModelRequest.ForceSendFields, "Name")) {
 		w.missing(n, "name")
 	}
 	if len(v.Permissions) > 0 {
@@ -1011,10 +1011,10 @@ func requiredResourcesPostgresBranch(w *walker, n *walk.Node, v *resources.Postg
 		w.missing(n, "parent")
 		return
 	}
-	if !(v.PostgresBranchConfig.BranchId != "") {
+	if !(v.PostgresBranchConfig.BranchId != "" || walk.Forced(v.PostgresBranchConfig.ForceSendFields, "BranchId")) {
 		w.missing(n, "branch_id")
 	}
-	if !(v.PostgresBranchConfig.Parent != "") {
+	if !(v.PostgresBranchConfig.Parent != "" || walk.Forced(v.PostgresBranchConfig.ForceSendFields, "Parent")) {
 		w.missing(n, "parent")
 	}
 }
@@ -1025,7 +1025,7 @@ func requiredResourcesPostgresCatalog(w *walker, n *walk.Node, v *resources.Post
 		w.missing(n, "catalog_id")
 		return
 	}
-	if !(v.PostgresCatalogConfig.CatalogCatalogSpec.PostgresDatabase != "") {
+	if !(v.PostgresCatalogConfig.CatalogCatalogSpec.PostgresDatabase != "" || walk.Forced(v.PostgresCatalogConfig.CatalogCatalogSpec.ForceSendFields, "PostgresDatabase")) {
 		w.missing(n, "postgres_database")
 	}
 	if !(v.PostgresCatalogConfig.CatalogId != "") {
@@ -1040,7 +1040,7 @@ func requiredResourcesPostgresDatabase(w *walker, n *walk.Node, v *resources.Pos
 		w.missing(n, "parent")
 		return
 	}
-	if !(v.PostgresDatabaseConfig.DatabaseDatabaseSpec.Role != "") {
+	if !(v.PostgresDatabaseConfig.DatabaseDatabaseSpec.Role != "" || walk.Forced(v.PostgresDatabaseConfig.DatabaseDatabaseSpec.ForceSendFields, "Role")) {
 		w.missing(n, "role")
 	}
 	if !(v.PostgresDatabaseConfig.DatabaseId != "") {
@@ -1058,7 +1058,7 @@ func requiredResourcesPostgresEndpoint(w *walker, n *walk.Node, v *resources.Pos
 		w.missing(n, "parent")
 		return
 	}
-	if !(v.PostgresEndpointConfig.EndpointSpec.EndpointType != "") {
+	if !(v.PostgresEndpointConfig.EndpointSpec.EndpointType != "" || walk.Forced(v.PostgresEndpointConfig.EndpointSpec.ForceSendFields, "EndpointType")) {
 		w.missing(n, "endpoint_type")
 	}
 	if !(v.PostgresEndpointConfig.EndpointId != "") {
@@ -1081,7 +1081,7 @@ func requiredResourcesPostgresProject(w *walker, n *walk.Node, v *resources.Post
 		w.missing(n, "project_id")
 		return
 	}
-	if !(v.PostgresProjectConfig.ProjectId != "") {
+	if !(v.PostgresProjectConfig.ProjectId != "" || walk.Forced(v.PostgresProjectConfig.ForceSendFields, "ProjectId")) {
 		w.missing(n, "project_id")
 	}
 	if len(v.Permissions) > 0 {
@@ -1112,7 +1112,7 @@ func requiredResourcesPostgresSnapshotSchedule(w *walker, n *walk.Node, v *resou
 		w.missing(n, "branch")
 		return
 	}
-	if !(v.PostgresSnapshotScheduleConfig.Branch != "") {
+	if !(v.PostgresSnapshotScheduleConfig.Branch != "" || walk.Forced(v.PostgresSnapshotScheduleConfig.ForceSendFields, "Branch")) {
 		w.missing(n, "branch")
 	}
 	if len(v.PostgresSnapshotScheduleConfig.Schedule) > 0 {
@@ -1155,10 +1155,10 @@ func requiredResourcesQualityMonitor(w *walker, n *walk.Node, v *resources.Quali
 		w.missing(n, "table_name")
 		return
 	}
-	if !(v.CreateMonitor.AssetsDir != "") {
+	if !(v.CreateMonitor.AssetsDir != "" || walk.Forced(v.CreateMonitor.ForceSendFields, "AssetsDir")) {
 		w.missing(n, "assets_dir")
 	}
-	if !(v.CreateMonitor.OutputSchemaName != "") {
+	if !(v.CreateMonitor.OutputSchemaName != "" || walk.Forced(v.CreateMonitor.ForceSendFields, "OutputSchemaName")) {
 		w.missing(n, "output_schema_name")
 	}
 	if !(v.TableName != "") {
@@ -1200,10 +1200,10 @@ func requiredResourcesSchema(w *walker, n *walk.Node, v *resources.Schema) {
 		w.missing(n, "name")
 		return
 	}
-	if !(v.CreateSchema.CatalogName != "") {
+	if !(v.CreateSchema.CatalogName != "" || walk.Forced(v.CreateSchema.ForceSendFields, "CatalogName")) {
 		w.missing(n, "catalog_name")
 	}
-	if !(v.CreateSchema.Name != "") {
+	if !(v.CreateSchema.Name != "" || walk.Forced(v.CreateSchema.ForceSendFields, "Name")) {
 		w.missing(n, "name")
 	}
 }
@@ -1240,16 +1240,16 @@ func requiredResourcesSecret(w *walker, n *walk.Node, v *resources.Secret) {
 		w.missing(n, "value")
 		return
 	}
-	if !(v.Secret.CatalogName != "") {
+	if !(v.Secret.CatalogName != "" || walk.Forced(v.Secret.ForceSendFields, "CatalogName")) {
 		w.missing(n, "catalog_name")
 	}
-	if !(v.Secret.Name != "") {
+	if !(v.Secret.Name != "" || walk.Forced(v.Secret.ForceSendFields, "Name")) {
 		w.missing(n, "name")
 	}
-	if !(v.Secret.SchemaName != "") {
+	if !(v.Secret.SchemaName != "" || walk.Forced(v.Secret.ForceSendFields, "SchemaName")) {
 		w.missing(n, "schema_name")
 	}
-	if !(v.Secret.Value != "") {
+	if !(v.Secret.Value != "" || walk.Forced(v.Secret.ForceSendFields, "Value")) {
 		w.missing(n, "value")
 	}
 }
@@ -1272,7 +1272,7 @@ func requiredResourcesSyncedDatabaseTable(w *walker, n *walk.Node, v *resources.
 		w.missing(n, "name")
 		return
 	}
-	if !(v.SyncedDatabaseTable.Name != "") {
+	if !(v.SyncedDatabaseTable.Name != "" || walk.Forced(v.SyncedDatabaseTable.ForceSendFields, "Name")) {
 		w.missing(n, "name")
 	}
 	if x := v.SyncedDatabaseTable.Spec; x != nil {
@@ -1290,10 +1290,10 @@ func requiredResourcesVectorSearchEndpoint(w *walker, n *walk.Node, v *resources
 		w.missing(n, "name")
 		return
 	}
-	if !(v.CreateEndpoint.EndpointType != "") {
+	if !(v.CreateEndpoint.EndpointType != "" || walk.Forced(v.CreateEndpoint.ForceSendFields, "EndpointType")) {
 		w.missing(n, "endpoint_type")
 	}
-	if !(v.CreateEndpoint.Name != "") {
+	if !(v.CreateEndpoint.Name != "" || walk.Forced(v.CreateEndpoint.ForceSendFields, "Name")) {
 		w.missing(n, "name")
 	}
 	if len(v.Permissions) > 0 {
@@ -1335,16 +1335,16 @@ func requiredResourcesVolume(w *walker, n *walk.Node, v *resources.Volume) {
 		w.missing(n, "volume_type")
 		return
 	}
-	if !(v.CreateVolumeRequestContent.CatalogName != "") {
+	if !(v.CreateVolumeRequestContent.CatalogName != "" || walk.Forced(v.CreateVolumeRequestContent.ForceSendFields, "CatalogName")) {
 		w.missing(n, "catalog_name")
 	}
-	if !(v.CreateVolumeRequestContent.Name != "") {
+	if !(v.CreateVolumeRequestContent.Name != "" || walk.Forced(v.CreateVolumeRequestContent.ForceSendFields, "Name")) {
 		w.missing(n, "name")
 	}
-	if !(v.CreateVolumeRequestContent.SchemaName != "") {
+	if !(v.CreateVolumeRequestContent.SchemaName != "" || walk.Forced(v.CreateVolumeRequestContent.ForceSendFields, "SchemaName")) {
 		w.missing(n, "schema_name")
 	}
-	if !(v.CreateVolumeRequestContent.VolumeType != "") {
+	if !(v.CreateVolumeRequestContent.VolumeType != "" || walk.Forced(v.CreateVolumeRequestContent.ForceSendFields, "VolumeType")) {
 		w.missing(n, "volume_type")
 	}
 }
@@ -1355,13 +1355,13 @@ func requiredSqlAlertV2Evaluation(w *walker, n *walk.Node, v *sql.AlertV2Evaluat
 		w.missing(n, "source")
 		return
 	}
-	if !(v.ComparisonOperator != "") {
+	if !(v.ComparisonOperator != "" || walk.Forced(v.ForceSendFields, "ComparisonOperator")) {
 		w.missing(n, "comparison_operator")
 	}
-	if !(!walk.IsZeroStruct(&v.Source) || walk.Forced(v.ForceSendFields, "Source") || n.IsRef("source")) {
+	if !(!walk.IsZeroStruct(&v.Source) || walk.Forced(v.ForceSendFields, "Source") || n.HasRefs("source")) {
 		w.missing(n, "source")
 	}
-	if x := &v.Source; !walk.IsZeroStruct(x) || walk.Forced(v.ForceSendFields, "Source") {
+	if x := &v.Source; !walk.IsZeroStruct(x) || walk.Forced(v.ForceSendFields, "Source") || n.HasRefs("source") {
 		c := n.Child("source")
 		requiredSqlAlertV2OperandColumn(w, &c, x)
 	}
@@ -1379,7 +1379,7 @@ func requiredSqlAlertStatementParameter(w *walker, n *walk.Node, v *sql.AlertSta
 		w.missing(n, "name")
 		return
 	}
-	if !(v.Name != "") {
+	if !(v.Name != "" || walk.Forced(v.ForceSendFields, "Name")) {
 		w.missing(n, "name")
 	}
 }
@@ -1443,10 +1443,10 @@ func requiredAppsGitRepository(w *walker, n *walk.Node, v *apps.GitRepository) {
 		w.missing(n, "url")
 		return
 	}
-	if !(v.Provider != "") {
+	if !(v.Provider != "" || walk.Forced(v.ForceSendFields, "Provider")) {
 		w.missing(n, "provider")
 	}
-	if !(v.Url != "") {
+	if !(v.Url != "" || walk.Forced(v.ForceSendFields, "Url")) {
 		w.missing(n, "url")
 	}
 }
@@ -1466,7 +1466,7 @@ func requiredAppsAppResource(w *walker, n *walk.Node, v *apps.AppResource) {
 		w.missing(n, "name")
 		return
 	}
-	if !(v.Name != "") {
+	if !(v.Name != "" || walk.Forced(v.ForceSendFields, "Name")) {
 		w.missing(n, "name")
 	}
 	if x := v.Database; x != nil {
@@ -1687,7 +1687,7 @@ func requiredComputeWorkloadType(w *walker, n *walk.Node, v *compute.WorkloadTyp
 		w.missing(n, "clients")
 		return
 	}
-	if !(!walk.IsZeroStruct(&v.Clients) || n.IsRef("clients")) {
+	if !(!walk.IsZeroStruct(&v.Clients) || n.HasRefs("clients")) {
 		w.missing(n, "clients")
 	}
 }
@@ -1753,7 +1753,7 @@ func requiredJobsJobDeployment(w *walker, n *walk.Node, v *jobs.JobDeployment) {
 		w.missing(n, "kind")
 		return
 	}
-	if !(v.Kind != "") {
+	if !(v.Kind != "" || walk.Forced(v.ForceSendFields, "Kind")) {
 		w.missing(n, "kind")
 	}
 }
@@ -1784,10 +1784,10 @@ func requiredJobsGitSource(w *walker, n *walk.Node, v *jobs.GitSource) {
 		w.missing(n, "git_url")
 		return
 	}
-	if !(v.GitProvider != "") {
+	if !(v.GitProvider != "" || walk.Forced(v.ForceSendFields, "GitProvider")) {
 		w.missing(n, "git_provider")
 	}
-	if !(v.GitUrl != "") {
+	if !(v.GitUrl != "" || walk.Forced(v.ForceSendFields, "GitUrl")) {
 		w.missing(n, "git_url")
 	}
 	if x := v.JobSource; x != nil {
@@ -1817,7 +1817,7 @@ func requiredJobsJobCluster(w *walker, n *walk.Node, v *jobs.JobCluster) {
 		w.missing(n, "job_cluster_key")
 		return
 	}
-	if !(v.JobClusterKey != "") {
+	if !(v.JobClusterKey != "" || walk.Forced(v.ForceSendFields, "JobClusterKey")) {
 		w.missing(n, "job_cluster_key")
 	}
 	if x := v.NewCluster; x != nil {
@@ -1834,9 +1834,6 @@ func requiredJobsJobParameterDefinition(w *walker, n *walk.Node, v *jobs.JobPara
 		w.missing(n, "default")
 		w.missing(n, "name")
 		return
-	}
-	if !(v.Default != "") {
-		w.missing(n, "default")
 	}
 	if !(v.Name != "") {
 		w.missing(n, "name")
@@ -1879,7 +1876,7 @@ func requiredJobsTask(w *walker, n *walk.Node, v *jobs.Task) {
 		w.missing(n, "task_key")
 		return
 	}
-	if !(v.TaskKey != "") {
+	if !(v.TaskKey != "" || walk.Forced(v.ForceSendFields, "TaskKey")) {
 		w.missing(n, "task_key")
 	}
 	if x := v.AiRuntimeTask; x != nil {
@@ -2360,7 +2357,7 @@ func requiredServingEndpointTag(w *walker, n *walk.Node, v *serving.EndpointTag)
 		w.missing(n, "key")
 		return
 	}
-	if !(v.Key != "") {
+	if !(v.Key != "" || walk.Forced(v.ForceSendFields, "Key")) {
 		w.missing(n, "key")
 	}
 }
@@ -2407,7 +2404,7 @@ func requiredPipelinesPipelineDeployment(w *walker, n *walk.Node, v *pipelines.P
 		w.missing(n, "kind")
 		return
 	}
-	if !(v.Kind != "") {
+	if !(v.Kind != "" || walk.Forced(v.ForceSendFields, "Kind")) {
 		w.missing(n, "kind")
 	}
 }
@@ -2419,13 +2416,13 @@ func requiredPipelinesIngestionGatewayPipelineDefinition(w *walker, n *walk.Node
 		w.missing(n, "gateway_storage_schema")
 		return
 	}
-	if !(v.ConnectionName != "") {
+	if !(v.ConnectionName != "" || walk.Forced(v.ForceSendFields, "ConnectionName")) {
 		w.missing(n, "connection_name")
 	}
-	if !(v.GatewayStorageCatalog != "") {
+	if !(v.GatewayStorageCatalog != "" || walk.Forced(v.ForceSendFields, "GatewayStorageCatalog")) {
 		w.missing(n, "gateway_storage_catalog")
 	}
-	if !(v.GatewayStorageSchema != "") {
+	if !(v.GatewayStorageSchema != "" || walk.Forced(v.ForceSendFields, "GatewayStorageSchema")) {
 		w.missing(n, "gateway_storage_schema")
 	}
 }
@@ -2516,7 +2513,7 @@ func requiredPostgresScheduleCadence(w *walker, n *walk.Node, v *postgres.Schedu
 		w.missing(n, "retention")
 		return
 	}
-	if !(!walk.IsZeroStruct(&v.Retention) || n.IsRef("retention")) {
+	if !(!walk.IsZeroStruct(&v.Retention) || n.HasRefs("retention")) {
 		w.missing(n, "retention")
 	}
 	if x := v.MonthlySchedule; x != nil {
@@ -2541,10 +2538,10 @@ func requiredPostgresSyncedTableSyncedTableSpecExtraColumn(w *walker, n *walk.No
 		w.missing(n, "column_type")
 		return
 	}
-	if !(v.ColumnName != "") {
+	if !(v.ColumnName != "" || walk.Forced(v.ForceSendFields, "ColumnName")) {
 		w.missing(n, "column_name")
 	}
-	if !(v.ColumnType != "") {
+	if !(v.ColumnType != "" || walk.Forced(v.ForceSendFields, "ColumnType")) {
 		w.missing(n, "column_type")
 	}
 }
@@ -2555,10 +2552,10 @@ func requiredPostgresSyncedTableSyncedTableSpecTypeOverride(w *walker, n *walk.N
 		w.missing(n, "pg_type")
 		return
 	}
-	if !(v.ColumnName != "") {
+	if !(v.ColumnName != "" || walk.Forced(v.ForceSendFields, "ColumnName")) {
 		w.missing(n, "column_name")
 	}
-	if !(v.PgType != "") {
+	if !(v.PgType != "" || walk.Forced(v.ForceSendFields, "PgType")) {
 		w.missing(n, "pg_type")
 	}
 }
@@ -2601,16 +2598,16 @@ func requiredCatalogMonitorInferenceLog(w *walker, n *walk.Node, v *catalog.Moni
 	if !(v.Granularities != nil || n.IsRef("granularities")) {
 		w.missing(n, "granularities")
 	}
-	if !(v.ModelIdCol != "") {
+	if !(v.ModelIdCol != "" || walk.Forced(v.ForceSendFields, "ModelIdCol")) {
 		w.missing(n, "model_id_col")
 	}
-	if !(v.PredictionCol != "") {
+	if !(v.PredictionCol != "" || walk.Forced(v.ForceSendFields, "PredictionCol")) {
 		w.missing(n, "prediction_col")
 	}
-	if !(v.ProblemType != "") {
+	if !(v.ProblemType != "" || walk.Forced(v.ForceSendFields, "ProblemType")) {
 		w.missing(n, "problem_type")
 	}
-	if !(v.TimestampCol != "") {
+	if !(v.TimestampCol != "" || walk.Forced(v.ForceSendFields, "TimestampCol")) {
 		w.missing(n, "timestamp_col")
 	}
 }
@@ -2705,7 +2702,7 @@ func requiredSqlAlertV2OperandColumn(w *walker, n *walk.Node, v *sql.AlertV2Oper
 		w.missing(n, "name")
 		return
 	}
-	if !(v.Name != "") {
+	if !(v.Name != "" || walk.Forced(v.ForceSendFields, "Name")) {
 		w.missing(n, "name")
 	}
 }
@@ -2850,13 +2847,13 @@ func requiredAppsAppResourceUcSecurable(w *walker, n *walk.Node, v *apps.AppReso
 		w.missing(n, "securable_type")
 		return
 	}
-	if !(v.Permission != "") {
+	if !(v.Permission != "" || walk.Forced(v.ForceSendFields, "Permission")) {
 		w.missing(n, "permission")
 	}
-	if !(v.SecurableFullName != "") {
+	if !(v.SecurableFullName != "" || walk.Forced(v.ForceSendFields, "SecurableFullName")) {
 		w.missing(n, "securable_full_name")
 	}
-	if !(v.SecurableType != "") {
+	if !(v.SecurableType != "" || walk.Forced(v.ForceSendFields, "SecurableType")) {
 		w.missing(n, "securable_type")
 	}
 }
@@ -2884,7 +2881,7 @@ func requiredCatalogAzureEncryptionSettings(w *walker, n *walk.Node, v *catalog.
 		w.missing(n, "azure_tenant_id")
 		return
 	}
-	if !(v.AzureTenantId != "") {
+	if !(v.AzureTenantId != "" || walk.Forced(v.ForceSendFields, "AzureTenantId")) {
 		w.missing(n, "azure_tenant_id")
 	}
 }
@@ -2894,7 +2891,7 @@ func requiredComputeRCranLibrary(w *walker, n *walk.Node, v *compute.RCranLibrar
 		w.missing(n, "package")
 		return
 	}
-	if !(v.Package != "") {
+	if !(v.Package != "" || walk.Forced(v.ForceSendFields, "Package")) {
 		w.missing(n, "package")
 	}
 }
@@ -2904,7 +2901,7 @@ func requiredComputeMavenLibrary(w *walker, n *walk.Node, v *compute.MavenLibrar
 		w.missing(n, "coordinates")
 		return
 	}
-	if !(v.Coordinates != "") {
+	if !(v.Coordinates != "" || walk.Forced(v.ForceSendFields, "Coordinates")) {
 		w.missing(n, "coordinates")
 	}
 }
@@ -2914,7 +2911,7 @@ func requiredComputePythonPyPiLibrary(w *walker, n *walk.Node, v *compute.Python
 		w.missing(n, "package")
 		return
 	}
-	if !(v.Package != "") {
+	if !(v.Package != "" || walk.Forced(v.ForceSendFields, "Package")) {
 		w.missing(n, "package")
 	}
 }
@@ -2934,7 +2931,7 @@ func requiredComputeS3StorageInfo(w *walker, n *walk.Node, v *compute.S3StorageI
 		w.missing(n, "destination")
 		return
 	}
-	if !(v.Destination != "") {
+	if !(v.Destination != "" || walk.Forced(v.ForceSendFields, "Destination")) {
 		w.missing(n, "destination")
 	}
 }
@@ -2995,10 +2992,10 @@ func requiredMlUcTraceLocation(w *walker, n *walk.Node, v *ml.UcTraceLocation) {
 		w.missing(n, "schema")
 		return
 	}
-	if !(v.Catalog != "") {
+	if !(v.Catalog != "" || walk.Forced(v.ForceSendFields, "Catalog")) {
 		w.missing(n, "catalog")
 	}
-	if !(v.Schema != "") {
+	if !(v.Schema != "" || walk.Forced(v.ForceSendFields, "Schema")) {
 		w.missing(n, "schema")
 	}
 }
@@ -3103,7 +3100,7 @@ func requiredJobsAiRuntimeTask(w *walker, n *walk.Node, v *jobs.AiRuntimeTask) {
 	if !(v.Deployments != nil || n.IsRef("deployments")) {
 		w.missing(n, "deployments")
 	}
-	if !(v.Experiment != "") {
+	if !(v.Experiment != "" || walk.Forced(v.ForceSendFields, "Experiment")) {
 		w.missing(n, "experiment")
 	}
 	if len(v.Deployments) > 0 {
@@ -3121,10 +3118,10 @@ func requiredJobsCleanRoomsNotebookTask(w *walker, n *walk.Node, v *jobs.CleanRo
 		w.missing(n, "notebook_name")
 		return
 	}
-	if !(v.CleanRoomName != "") {
+	if !(v.CleanRoomName != "" || walk.Forced(v.ForceSendFields, "CleanRoomName")) {
 		w.missing(n, "clean_room_name")
 	}
-	if !(v.NotebookName != "") {
+	if !(v.NotebookName != "" || walk.Forced(v.ForceSendFields, "NotebookName")) {
 		w.missing(n, "notebook_name")
 	}
 }
@@ -3162,7 +3159,7 @@ func requiredJobsTaskDependency(w *walker, n *walk.Node, v *jobs.TaskDependency)
 		w.missing(n, "task_key")
 		return
 	}
-	if !(v.TaskKey != "") {
+	if !(v.TaskKey != "" || walk.Forced(v.ForceSendFields, "TaskKey")) {
 		w.missing(n, "task_key")
 	}
 }
@@ -3173,13 +3170,13 @@ func requiredJobsForEachTask(w *walker, n *walk.Node, v *jobs.ForEachTask) {
 		w.missing(n, "task")
 		return
 	}
-	if !(v.Inputs != "") {
+	if !(v.Inputs != "" || walk.Forced(v.ForceSendFields, "Inputs")) {
 		w.missing(n, "inputs")
 	}
-	if !(!walk.IsZeroStruct(&v.Task) || walk.Forced(v.ForceSendFields, "Task") || n.IsRef("task")) {
+	if !(!walk.IsZeroStruct(&v.Task) || walk.Forced(v.ForceSendFields, "Task") || n.HasRefs("task")) {
 		w.missing(n, "task")
 	}
-	if x := &v.Task; !walk.IsZeroStruct(x) || walk.Forced(v.ForceSendFields, "Task") {
+	if x := &v.Task; !walk.IsZeroStruct(x) || walk.Forced(v.ForceSendFields, "Task") || n.HasRefs("task") {
 		c := n.Child("task")
 		requiredJobsTask2(w, &c, x)
 	}
@@ -3190,7 +3187,7 @@ func requiredJobsGenAiComputeTask(w *walker, n *walk.Node, v *jobs.GenAiComputeT
 		w.missing(n, "dl_runtime_image")
 		return
 	}
-	if !(v.DlRuntimeImage != "") {
+	if !(v.DlRuntimeImage != "" || walk.Forced(v.ForceSendFields, "DlRuntimeImage")) {
 		w.missing(n, "dl_runtime_image")
 	}
 	if x := v.Compute; x != nil {
@@ -3207,7 +3204,7 @@ func requiredJobsNotebookTask(w *walker, n *walk.Node, v *jobs.NotebookTask) {
 		w.missing(n, "notebook_path")
 		return
 	}
-	if !(v.NotebookPath != "") {
+	if !(v.NotebookPath != "" || walk.Forced(v.ForceSendFields, "NotebookPath")) {
 		w.missing(n, "notebook_path")
 	}
 }
@@ -3217,7 +3214,7 @@ func requiredJobsPipelineTask(w *walker, n *walk.Node, v *jobs.PipelineTask) {
 		w.missing(n, "pipeline_id")
 		return
 	}
-	if !(v.PipelineId != "") {
+	if !(v.PipelineId != "" || walk.Forced(v.ForceSendFields, "PipelineId")) {
 		w.missing(n, "pipeline_id")
 	}
 }
@@ -3299,7 +3296,7 @@ func requiredJobsFileArrivalTriggerConfiguration(w *walker, n *walk.Node, v *job
 		w.missing(n, "url")
 		return
 	}
-	if !(v.Url != "") {
+	if !(v.Url != "" || walk.Forced(v.ForceSendFields, "Url")) {
 		w.missing(n, "url")
 	}
 }
@@ -3309,7 +3306,7 @@ func requiredJobsModelTriggerConfiguration(w *walker, n *walk.Node, v *jobs.Mode
 		w.missing(n, "condition")
 		return
 	}
-	if !(v.Condition != "") {
+	if !(v.Condition != "" || walk.Forced(v.ForceSendFields, "Condition")) {
 		w.missing(n, "condition")
 	}
 }
@@ -3381,10 +3378,10 @@ func requiredCatalogRateLimit(w *walker, n *walk.Node, v *catalog.RateLimit) {
 		w.missing(n, "renewal_period")
 		return
 	}
-	if !(v.Key != "") {
+	if !(v.Key != "" || walk.Forced(v.ForceSendFields, "Key")) {
 		w.missing(n, "key")
 	}
-	if !(v.RenewalPeriod != "") {
+	if !(v.RenewalPeriod != "" || walk.Forced(v.ForceSendFields, "RenewalPeriod")) {
 		w.missing(n, "renewal_period")
 	}
 }
@@ -3394,7 +3391,7 @@ func requiredCatalogMcpServiceConfigSourceConnection(w *walker, n *walk.Node, v 
 		w.missing(n, "name")
 		return
 	}
-	if !(v.Name != "") {
+	if !(v.Name != "" || walk.Forced(v.ForceSendFields, "Name")) {
 		w.missing(n, "name")
 	}
 }
@@ -3469,7 +3466,7 @@ func requiredCatalogInferenceTableConfig(w *walker, n *walk.Node, v *catalog.Inf
 		w.missing(n, "parent")
 		return
 	}
-	if !(v.Parent != "") {
+	if !(v.Parent != "" || walk.Forced(v.ForceSendFields, "Parent")) {
 		w.missing(n, "parent")
 	}
 }
@@ -3505,7 +3502,7 @@ func requiredCatalogModelProviderServiceConfigModelTargetConfig(w *walker, n *wa
 		w.missing(n, "model")
 		return
 	}
-	if !(v.Model != "") {
+	if !(v.Model != "" || walk.Forced(v.ForceSendFields, "Model")) {
 		w.missing(n, "model")
 	}
 }
@@ -3545,7 +3542,7 @@ func requiredServingAiGatewayRateLimit(w *walker, n *walk.Node, v *serving.AiGat
 		w.missing(n, "renewal_period")
 		return
 	}
-	if !(v.RenewalPeriod != "") {
+	if !(v.RenewalPeriod != "" || walk.Forced(v.ForceSendFields, "RenewalPeriod")) {
 		w.missing(n, "renewal_period")
 	}
 }
@@ -3570,10 +3567,10 @@ func requiredServingServedModelInput(w *walker, n *walk.Node, v *serving.ServedM
 		w.missing(n, "scale_to_zero_enabled")
 		return
 	}
-	if !(v.ModelName != "") {
+	if !(v.ModelName != "" || walk.Forced(v.ForceSendFields, "ModelName")) {
 		w.missing(n, "model_name")
 	}
-	if !(v.ModelVersion != "") {
+	if !(v.ModelVersion != "" || walk.Forced(v.ForceSendFields, "ModelVersion")) {
 		w.missing(n, "model_version")
 	}
 	if !(v.ScaleToZeroEnabled || walk.Forced(v.ForceSendFields, "ScaleToZeroEnabled") || n.IsRef("scale_to_zero_enabled")) {
@@ -3614,10 +3611,10 @@ func requiredPipelinesDataStagingOptions(w *walker, n *walk.Node, v *pipelines.D
 		w.missing(n, "schema_name")
 		return
 	}
-	if !(v.CatalogName != "") {
+	if !(v.CatalogName != "" || walk.Forced(v.ForceSendFields, "CatalogName")) {
 		w.missing(n, "catalog_name")
 	}
-	if !(v.SchemaName != "") {
+	if !(v.SchemaName != "" || walk.Forced(v.ForceSendFields, "SchemaName")) {
 		w.missing(n, "schema_name")
 	}
 }
@@ -3687,7 +3684,7 @@ func requiredPostgresWeeklySchedule(w *walker, n *walk.Node, v *postgres.WeeklyS
 		w.missing(n, "day_of_week")
 		return
 	}
-	if !(v.DayOfWeek != "") {
+	if !(v.DayOfWeek != "" || walk.Forced(v.ForceSendFields, "DayOfWeek")) {
 		w.missing(n, "day_of_week")
 	}
 }
@@ -3698,10 +3695,10 @@ func requiredDatabaseSyncedTableSpecTypeOverride(w *walker, n *walk.Node, v *dat
 		w.missing(n, "pg_type")
 		return
 	}
-	if !(v.ColumnName != "") {
+	if !(v.ColumnName != "" || walk.Forced(v.ForceSendFields, "ColumnName")) {
 		w.missing(n, "column_name")
 	}
-	if !(v.PgType != "") {
+	if !(v.PgType != "" || walk.Forced(v.ForceSendFields, "PgType")) {
 		w.missing(n, "pg_type")
 	}
 }
@@ -3711,7 +3708,7 @@ func requiredSqlAlertV2OperandColumn2(w *walker, n *walk.Node, v *sql.AlertV2Ope
 		w.missing(n, "name")
 		return
 	}
-	if !(v.Name != "") {
+	if !(v.Name != "" || walk.Forced(v.ForceSendFields, "Name")) {
 		w.missing(n, "name")
 	}
 }
@@ -3721,10 +3718,10 @@ func requiredJobsDeploymentSpec(w *walker, n *walk.Node, v *jobs.DeploymentSpec)
 		w.missing(n, "compute")
 		return
 	}
-	if !(!walk.IsZeroStruct(&v.Compute) || walk.Forced(v.ForceSendFields, "Compute") || n.IsRef("compute")) {
+	if !(!walk.IsZeroStruct(&v.Compute) || walk.Forced(v.ForceSendFields, "Compute") || n.HasRefs("compute")) {
 		w.missing(n, "compute")
 	}
-	if x := &v.Compute; !walk.IsZeroStruct(x) || walk.Forced(v.ForceSendFields, "Compute") {
+	if x := &v.Compute; !walk.IsZeroStruct(x) || walk.Forced(v.ForceSendFields, "Compute") || n.HasRefs("compute") {
 		c := n.Child("compute")
 		requiredJobsComputeSpec(w, &c, x)
 	}
@@ -3735,7 +3732,7 @@ func requiredJobsTask2(w *walker, n *walk.Node, v *jobs.Task) {
 		w.missing(n, "task_key")
 		return
 	}
-	if !(v.TaskKey != "") {
+	if !(v.TaskKey != "" || walk.Forced(v.ForceSendFields, "TaskKey")) {
 		w.missing(n, "task_key")
 	}
 	if x := v.AiRuntimeTask; x != nil {
@@ -3874,7 +3871,7 @@ func requiredJobsSqlTaskAlert(w *walker, n *walk.Node, v *jobs.SqlTaskAlert) {
 		w.missing(n, "alert_id")
 		return
 	}
-	if !(v.AlertId != "") {
+	if !(v.AlertId != "" || walk.Forced(v.ForceSendFields, "AlertId")) {
 		w.missing(n, "alert_id")
 	}
 }
@@ -3884,7 +3881,7 @@ func requiredJobsSqlTaskDashboard(w *walker, n *walk.Node, v *jobs.SqlTaskDashbo
 		w.missing(n, "dashboard_id")
 		return
 	}
-	if !(v.DashboardId != "") {
+	if !(v.DashboardId != "" || walk.Forced(v.ForceSendFields, "DashboardId")) {
 		w.missing(n, "dashboard_id")
 	}
 }
@@ -4055,10 +4052,10 @@ func requiredCatalogModelServiceConfigDestinationConfig(w *walker, n *walk.Node,
 		w.missing(n, "name")
 		return
 	}
-	if !(v.DestinationType != "") {
+	if !(v.DestinationType != "" || walk.Forced(v.ForceSendFields, "DestinationType")) {
 		w.missing(n, "destination_type")
 	}
-	if !(v.Name != "") {
+	if !(v.Name != "" || walk.Forced(v.ForceSendFields, "Name")) {
 		w.missing(n, "name")
 	}
 	if x := v.ExternalModelConfig; x != nil {
@@ -4160,13 +4157,13 @@ func requiredPipelinesReportSpec(w *walker, n *walk.Node, v *pipelines.ReportSpe
 		w.missing(n, "source_url")
 		return
 	}
-	if !(v.DestinationCatalog != "") {
+	if !(v.DestinationCatalog != "" || walk.Forced(v.ForceSendFields, "DestinationCatalog")) {
 		w.missing(n, "destination_catalog")
 	}
-	if !(v.DestinationSchema != "") {
+	if !(v.DestinationSchema != "" || walk.Forced(v.ForceSendFields, "DestinationSchema")) {
 		w.missing(n, "destination_schema")
 	}
-	if !(v.SourceUrl != "") {
+	if !(v.SourceUrl != "" || walk.Forced(v.ForceSendFields, "SourceUrl")) {
 		w.missing(n, "source_url")
 	}
 	if x := v.TableConfiguration; x != nil {
@@ -4184,10 +4181,10 @@ func requiredPipelinesSchemaSpec(w *walker, n *walk.Node, v *pipelines.SchemaSpe
 		w.missing(n, "destination_schema")
 		return
 	}
-	if !(v.DestinationCatalog != "") {
+	if !(v.DestinationCatalog != "" || walk.Forced(v.ForceSendFields, "DestinationCatalog")) {
 		w.missing(n, "destination_catalog")
 	}
-	if !(v.DestinationSchema != "") {
+	if !(v.DestinationSchema != "" || walk.Forced(v.ForceSendFields, "DestinationSchema")) {
 		w.missing(n, "destination_schema")
 	}
 	if x := v.ConnectorOptions; x != nil {
@@ -4212,10 +4209,10 @@ func requiredPipelinesTableSpec(w *walker, n *walk.Node, v *pipelines.TableSpec)
 		w.missing(n, "destination_schema")
 		return
 	}
-	if !(v.DestinationCatalog != "") {
+	if !(v.DestinationCatalog != "" || walk.Forced(v.ForceSendFields, "DestinationCatalog")) {
 		w.missing(n, "destination_catalog")
 	}
-	if !(v.DestinationSchema != "") {
+	if !(v.DestinationSchema != "" || walk.Forced(v.ForceSendFields, "DestinationSchema")) {
 		w.missing(n, "destination_schema")
 	}
 	if x := v.ConnectorOptions; x != nil {
@@ -4253,7 +4250,7 @@ func requiredJobsComputeSpec(w *walker, n *walk.Node, v *jobs.ComputeSpec) {
 	if !(v.AcceleratorCount != 0 || walk.Forced(v.ForceSendFields, "AcceleratorCount") || n.IsRef("accelerator_count")) {
 		w.missing(n, "accelerator_count")
 	}
-	if !(v.AcceleratorType != "") {
+	if !(v.AcceleratorType != "" || walk.Forced(v.ForceSendFields, "AcceleratorType")) {
 		w.missing(n, "accelerator_type")
 	}
 }
@@ -4264,10 +4261,10 @@ func requiredJobsForEachTask2(w *walker, n *walk.Node, v *jobs.ForEachTask) {
 		w.missing(n, "task")
 		return
 	}
-	if !(v.Inputs != "") {
+	if !(v.Inputs != "" || walk.Forced(v.ForceSendFields, "Inputs")) {
 		w.missing(n, "inputs")
 	}
-	if !(!walk.IsZeroStruct(&v.Task) || walk.Forced(v.ForceSendFields, "Task") || n.IsRef("task")) {
+	if !(!walk.IsZeroStruct(&v.Task) || walk.Forced(v.ForceSendFields, "Task") || n.HasRefs("task")) {
 		w.missing(n, "task")
 	}
 }
@@ -4343,10 +4340,10 @@ func requiredCatalogModelServiceConfigExternalModelConfig(w *walker, n *walk.Nod
 	if !(v.ModelProviderService != "") {
 		w.missing(n, "model_provider_service")
 	}
-	if !(!walk.IsZeroStruct(&v.Target) || n.IsRef("target")) {
+	if !(!walk.IsZeroStruct(&v.Target) || n.HasRefs("target")) {
 		w.missing(n, "target")
 	}
-	if x := &v.Target; !walk.IsZeroStruct(x) {
+	if x := &v.Target; !walk.IsZeroStruct(x) || n.HasRefs("target") {
 		c := n.Child("target")
 		requiredCatalogModelProviderServiceConfigModelTargetConfig(w, &c, x)
 	}
@@ -4367,7 +4364,7 @@ func requiredCatalogModelServiceConfigProvisionedThroughputConfig(w *walker, n *
 		w.missing(n, "model_serving_endpoint")
 		return
 	}
-	if !(v.ModelServingEndpoint != "") {
+	if !(v.ModelServingEndpoint != "" || walk.Forced(v.ForceSendFields, "ModelServingEndpoint")) {
 		w.missing(n, "model_serving_endpoint")
 	}
 }
@@ -4378,10 +4375,10 @@ func requiredServingAmazonBedrockConfig(w *walker, n *walk.Node, v *serving.Amaz
 		w.missing(n, "bedrock_provider")
 		return
 	}
-	if !(v.AwsRegion != "") {
+	if !(v.AwsRegion != "" || walk.Forced(v.ForceSendFields, "AwsRegion")) {
 		w.missing(n, "aws_region")
 	}
-	if !(v.BedrockProvider != "") {
+	if !(v.BedrockProvider != "" || walk.Forced(v.ForceSendFields, "BedrockProvider")) {
 		w.missing(n, "bedrock_provider")
 	}
 }
@@ -4408,7 +4405,7 @@ func requiredServingDatabricksModelServingConfig(w *walker, n *walk.Node, v *ser
 		w.missing(n, "databricks_workspace_url")
 		return
 	}
-	if !(v.DatabricksWorkspaceUrl != "") {
+	if !(v.DatabricksWorkspaceUrl != "" || walk.Forced(v.ForceSendFields, "DatabricksWorkspaceUrl")) {
 		w.missing(n, "databricks_workspace_url")
 	}
 }
@@ -4419,10 +4416,10 @@ func requiredServingGoogleCloudVertexAiConfig(w *walker, n *walk.Node, v *servin
 		w.missing(n, "region")
 		return
 	}
-	if !(v.ProjectId != "") {
+	if !(v.ProjectId != "" || walk.Forced(v.ForceSendFields, "ProjectId")) {
 		w.missing(n, "project_id")
 	}
-	if !(v.Region != "") {
+	if !(v.Region != "" || walk.Forced(v.ForceSendFields, "Region")) {
 		w.missing(n, "region")
 	}
 }
@@ -4469,7 +4466,7 @@ func requiredServingApiKeyAuth(w *walker, n *walk.Node, v *serving.ApiKeyAuth) {
 		w.missing(n, "key")
 		return
 	}
-	if !(v.Key != "") {
+	if !(v.Key != "" || walk.Forced(v.ForceSendFields, "Key")) {
 		w.missing(n, "key")
 	}
 }
@@ -4479,7 +4476,7 @@ func requiredPipelinesGoogleAdsOptions(w *walker, n *walk.Node, v *pipelines.Goo
 		w.missing(n, "manager_account_id")
 		return
 	}
-	if !(v.ManagerAccountId != "") {
+	if !(v.ManagerAccountId != "" || walk.Forced(v.ForceSendFields, "ManagerAccountId")) {
 		w.missing(n, "manager_account_id")
 	}
 	if x := v.CustomReportOptions; x != nil {

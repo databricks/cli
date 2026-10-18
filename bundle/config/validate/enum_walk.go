@@ -285,7 +285,7 @@ func enumConfigRoot(w *walker, n *walk.Node, v *config.Root) {
 			enumResourcesPermission(w, &e, &v.Permissions[i])
 		}
 	}
-	if x := &v.Resources; !walk.IsZeroStruct(x) {
+	if x := &v.Resources; !walk.IsZeroStruct(x) || n.HasRefs("resources") {
 		c := n.Child("resources")
 		enumConfigResources(w, &c, x)
 	}
@@ -584,7 +584,7 @@ func enumResourcesAlert(w *walker, n *walk.Node, v *resources.Alert) {
 		c := n.Child("custom_template_format")
 		w.enumValue(&c, s, enumValues4)
 	}
-	if x := &v.AlertV2.Evaluation; !walk.IsZeroStruct(x) || walk.Forced(v.AlertV2.ForceSendFields, "Evaluation") {
+	if x := &v.AlertV2.Evaluation; !walk.IsZeroStruct(x) || walk.Forced(v.AlertV2.ForceSendFields, "Evaluation") || n.HasRefs("evaluation") {
 		c := n.Child("evaluation")
 		enumSqlAlertV2Evaluation(w, &c, x)
 	}
@@ -599,7 +599,7 @@ func enumResourcesAlert(w *walker, n *walk.Node, v *resources.Alert) {
 			enumResourcesPermission(w, &e, &v.Permissions[i])
 		}
 	}
-	if x := &v.AlertV2.Schedule; !walk.IsZeroStruct(x) || walk.Forced(v.AlertV2.ForceSendFields, "Schedule") {
+	if x := &v.AlertV2.Schedule; !walk.IsZeroStruct(x) || walk.Forced(v.AlertV2.ForceSendFields, "Schedule") || n.HasRefs("schedule") {
 		c := n.Child("schedule")
 		enumSqlCronSchedule(w, &c, x)
 	}
@@ -1302,7 +1302,7 @@ func enumSqlAlertV2Evaluation(w *walker, n *walk.Node, v *sql.AlertV2Evaluation)
 		c := n.Child("empty_result_state")
 		w.enumValue(&c, s, enumValues30)
 	}
-	if x := &v.Source; !walk.IsZeroStruct(x) || walk.Forced(v.ForceSendFields, "Source") {
+	if x := &v.Source; !walk.IsZeroStruct(x) || walk.Forced(v.ForceSendFields, "Source") || n.HasRefs("source") {
 		c := n.Child("source")
 		enumSqlAlertV2OperandColumn(w, &c, x)
 	}
@@ -2421,7 +2421,7 @@ func enumJobsForEachTask(w *walker, n *walk.Node, v *jobs.ForEachTask) {
 	if v == nil {
 		return
 	}
-	if x := &v.Task; !walk.IsZeroStruct(x) || walk.Forced(v.ForceSendFields, "Task") {
+	if x := &v.Task; !walk.IsZeroStruct(x) || walk.Forced(v.ForceSendFields, "Task") || n.HasRefs("task") {
 		c := n.Child("task")
 		enumJobsTask2(w, &c, x)
 	}
@@ -2726,7 +2726,7 @@ func enumJobsDeploymentSpec(w *walker, n *walk.Node, v *jobs.DeploymentSpec) {
 	if v == nil {
 		return
 	}
-	if x := &v.Compute; !walk.IsZeroStruct(x) || walk.Forced(v.ForceSendFields, "Compute") {
+	if x := &v.Compute; !walk.IsZeroStruct(x) || walk.Forced(v.ForceSendFields, "Compute") || n.HasRefs("compute") {
 		c := n.Child("compute")
 		enumJobsComputeSpec(w, &c, x)
 	}

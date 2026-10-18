@@ -80,6 +80,12 @@ func (n *Node) IsRef(k string) bool {
 	return r != nil && r.ref
 }
 
+// HasRefs reports whether the key k of n holds a pure variable reference or has one
+// below it (e.g. a struct whose only set field is a reference).
+func (n *Node) HasRefs(k string) bool {
+	return n.refs.key(k) != nil
+}
+
 // refNode is a tree of the paths that hold pure variable references.
 type refNode struct {
 	ref   bool

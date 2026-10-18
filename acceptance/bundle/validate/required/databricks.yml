@@ -12,7 +12,7 @@ resources:
     my_model_1:
       description: "hello"
 
-    # An empty string does not satisfy a required field.
+    # Empty string should not trigger a warning.
     my_model_2:
       name: ""
 

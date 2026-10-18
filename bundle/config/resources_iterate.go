@@ -2005,49 +2005,6 @@ func (r *Resources) GetOrCreateState(typ, name string) (id *string, status *stri
 	}
 }
 
-// IsZero reports whether no resource map is set.
-func (r *Resources) IsZero() bool {
-	return r.Alerts == nil &&
-		r.Apps == nil &&
-		r.Catalogs == nil &&
-		r.ClusterPolicies == nil &&
-		r.Clusters == nil &&
-		r.Dashboards == nil &&
-		r.DatabaseCatalogs == nil &&
-		r.DatabaseInstances == nil &&
-		r.Experiments == nil &&
-		r.ExternalLocations == nil &&
-		r.GenieSpaces == nil &&
-		r.InstancePools == nil &&
-		r.Snapshots == nil &&
-		r.JobRuns == nil &&
-		r.Jobs == nil &&
-		r.McpServices == nil &&
-		r.ModelProviderServices == nil &&
-		r.ModelServices == nil &&
-		r.ModelServingEndpoints == nil &&
-		r.Models == nil &&
-		r.Pipelines == nil &&
-		r.PostgresBranches == nil &&
-		r.PostgresCatalogs == nil &&
-		r.PostgresDatabases == nil &&
-		r.PostgresEndpoints == nil &&
-		r.PostgresProjects == nil &&
-		r.PostgresRoles == nil &&
-		r.PostgresSnapshotSchedules == nil &&
-		r.PostgresSyncedTables == nil &&
-		r.QualityMonitors == nil &&
-		r.RegisteredModels == nil &&
-		r.Schemas == nil &&
-		r.SecretScopes == nil &&
-		r.Secrets == nil &&
-		r.SqlWarehouses == nil &&
-		r.SyncedDatabaseTables == nil &&
-		r.VectorSearchEndpoints == nil &&
-		r.VectorSearchIndexes == nil &&
-		r.Volumes == nil
-}
-
 // IterateAllGrants calls fn for the grants of every resource that can have them, in
 // the order of IterateAllResources, until fn returns false.
 func (r *Resources) IterateAllGrants(fn func(typ, name string, grants *[]catalog.PrivilegeAssignment) bool) {

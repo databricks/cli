@@ -16,7 +16,7 @@ func defaultsConfigRoot(w *defaultsWalker, n *walk.Node, v *config.Root) {
 	if v == nil {
 		return
 	}
-	if x := &v.Resources; !walk.IsZeroStruct(x) {
+	if x := &v.Resources; !walk.IsZeroStruct(x) || n.HasRefs("resources") {
 		c := n.Child("resources")
 		defaultsConfigResources(w, &c, x)
 	}
@@ -236,7 +236,7 @@ func defaultsComputeWorkloadType(w *defaultsWalker, n *walk.Node, v *compute.Wor
 	if v == nil {
 		return
 	}
-	if x := &v.Clients; !walk.IsZeroStruct(x) {
+	if x := &v.Clients; !walk.IsZeroStruct(x) || n.HasRefs("clients") {
 		c := n.Child("clients")
 		defaultsComputeClientsTypes(w, &c, x)
 	}
@@ -310,7 +310,7 @@ func defaultsComputeWorkloadType2(w *defaultsWalker, n *walk.Node, v *compute.Wo
 	if v == nil {
 		return
 	}
-	if x := &v.Clients; !walk.IsZeroStruct(x) {
+	if x := &v.Clients; !walk.IsZeroStruct(x) || n.HasRefs("clients") {
 		c := n.Child("clients")
 		defaultsComputeClientsTypes2(w, &c, x)
 	}
