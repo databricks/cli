@@ -87,6 +87,10 @@ func (m *expandPipelineGlobPaths) Apply(ctx context.Context, b *bundle.Bundle) d
 		if b.Config.IsReferenceAt(path) {
 			return diag.FromErr(errors.New("expected sequence, got string"))
 		}
+		// An explicit `libraries: null` is forced; an omitted one is not.
+		if pipeline.Libraries == nil && slices.Contains(pipeline.ForceSendFields, "Libraries") {
+			return diag.FromErr(errors.New("expected sequence, got nil"))
+		}
 		if len(pipeline.Libraries) == 0 {
 			continue
 		}
