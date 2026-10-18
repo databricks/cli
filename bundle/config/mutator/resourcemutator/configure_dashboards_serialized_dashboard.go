@@ -72,7 +72,7 @@ func (c configureDashboardSerializedDashboard) Apply(_ context.Context, b *bundl
 		if kind != "" {
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
-				Summary:   fmt.Sprintf("serialized_dashboard must be a string or map, got %s", kind),
+				Summary:   "serialized_dashboard must be a string or map, got " + kind,
 				Locations: b.Config.GetLocationsOfExact(sdPath),
 			})
 			continue
