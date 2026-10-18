@@ -35,17 +35,15 @@ func (sv *StructVar) Set(path *structpath.PathNode, value any) error {
 		return err
 	}
 	sv.Refs = withoutRefs(sv.Refs, path)
-	// The node marks the value as present even if it is zero (e.g. an empty struct).
-	// A leaf node is already what we would write; skip rewriting the tree, which clones
-	// every ancestor (e.g. the map of all jobs).
+	// The value keeps its own locations; those of the values it replaced below it are
+	// dropped. Rewriting the tree clones every ancestor (e.g. the map of all jobs), so
+	// it is skipped when there is nothing to drop.
 	cur := sv.Locations.Sub(path)
-	if value == nil {
-		if cur != nil {
-			sv.Locations = sv.Locations.With(path, nil)
-		}
-		return nil
-	}
-	if cur == nil || len(cur.keys) > 0 || len(cur.elems) > 0 {
+	switch {
+	case cur == nil:
+	case value == nil:
+		sv.Locations = sv.Locations.With(path, nil)
+	case len(cur.keys) > 0 || len(cur.elems) > 0:
 		sv.Locations = sv.Locations.With(path, (*Locations)(nil).WithLocations(cur.Get()))
 	}
 	return nil
