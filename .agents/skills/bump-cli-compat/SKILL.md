@@ -107,16 +107,16 @@ If validation fails, show the errors and fix them before proceeding.
 
 ```bash
 # Create a new branch from the current branch (or main)
-git checkout -b bump-cli-compat-appkit-{appkit_version}-skills-{skills_version}
+git checkout -b bump-cli-compat-appkit-{appkit_version}-skills-fallback-{skills_version}
 
 # Stage and commit
 git add internal/build/cli-compat.json internal/build/clicompat.go
-git commit -s -m "Bump cli-compat to appkit {appkit_version}, skills {skills_version}"
+git commit -s -m "Bump cli-compat to appkit {appkit_version}, skills fallback {skills_version}"
 
 # Push and create PR
 git push -u origin HEAD
 gh pr create \
-  --title "Bump cli-compat to appkit {appkit_version}, skills {skills_version}" \
+  --title "Bump cli-compat to appkit {appkit_version}, skills fallback {skills_version}" \
   --body "$(cat <<'EOF'
 ## Summary
 Bump `cli-compat.json` to use:

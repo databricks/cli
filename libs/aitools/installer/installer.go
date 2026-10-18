@@ -92,7 +92,7 @@ var latestSkillsReleaseRefFn = fetchLatestSkillsReleaseRef
 const skillsLatestSentinel = clicompat.AgentSkillsLatest
 
 // GetSkillsRef returns the skills repo ref to use and whether it was explicitly
-// pinned (as opposed to tracking latest).
+// pinned (as opposed to tracking latest). An unresolved latest release is an error.
 //
 // By default we track the latest skills release tag, not the skills repo's main
 // branch. cli-compat.json is the remote control for this: its newest range
@@ -102,7 +102,7 @@ const skillsLatestSentinel = clicompat.AgentSkillsLatest
 // overrides everything for eval/reproducibility. (AppKit version resolution is
 // unaffected; cli-compat still manages it via its own field.)
 func GetSkillsRef(ctx context.Context) (ref string, explicit bool, err error) {
-	return getSkillsRef(ctx, true)
+	return getSkillsRef(ctx, false)
 }
 
 func getSkillsRef(ctx context.Context, allowFallback bool) (ref string, explicit bool, err error) {

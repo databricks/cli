@@ -19,6 +19,8 @@ Each key is a CLI version in semver format. Each entry defines a **range floor**
 
 `skills` is an exact pin for its CLI range or `"latest"` to install the skills repository's latest published GitHub release. When the latest-release lookup fails or the selected skills manifest is missing, ranges tracking latest use `AgentSkillsFallbackVersion` from `internal/build/clicompat.go`. Pinned ranges use their embedded manifest's skills version as the fallback. Changing either fallback takes effect in the next CLI build. Released binaries keep the fallback they shipped with.
 
+This skills fallback only applies to raw-file delivery. Version checks omit update availability when latest is unknown, and plugin operations don't substitute the fallback version.
+
 Raw-skills updates and reinstalls reject automatic downgrades, including with `--force`: the fallback must be at least as new as the installed release. Existing installs without a comparable release require a successful latest-release fetch. Explicit `DATABRICKS_SKILLS_REF` overrides and compatibility pins can still select an older release.
 
 CLIs before `1.6.0` reject the whole remote manifest when any entry uses `"latest"`, even an entry they never resolve to. They use a valid cached manifest or their embedded manifest without returning a parse error. These CLIs stop receiving remote compatibility updates for both AppKit and skills.

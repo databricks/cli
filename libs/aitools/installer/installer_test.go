@@ -1366,14 +1366,18 @@ func TestGetSkillsRefDefaultManifest(t *testing.T) {
 				}
 				switch {
 				case tc.latest && offline:
-					wantRef = "v" + build.AgentSkillsFallbackVersion
+					wantRef = ""
 				case tc.latest:
 					wantRef = "v9.9.9"
 				}
 				stubLatestSkillsReleaseRef(t, "v9.9.9", latestErr)
 
 				ref, explicit, err := GetSkillsRef(t.Context())
-				require.NoError(t, err)
+				if tc.latest && offline {
+					require.ErrorIs(t, err, latestErr)
+				} else {
+					require.NoError(t, err)
+				}
 				assert.Equal(t, wantRef, ref)
 				assert.Equal(t, !tc.latest, explicit)
 			})
@@ -1381,16 +1385,17 @@ func TestGetSkillsRefDefaultManifest(t *testing.T) {
 	}
 }
 
-func TestGetSkillsRefLatestReleaseFallsBackToEmbeddedPin(t *testing.T) {
+func TestGetSkillsRefLatestReleaseLookupFails(t *testing.T) {
 	setBuildVersion(t, "1.22.0")
 	t.Setenv("DATABRICKS_SKILLS_REF", "")
 	withCachedCompat(t, skillsLatestSentinel)
-	stubLatestSkillsReleaseRef(t, "", errors.New("network down"))
+	latestErr := errors.New("network down")
+	stubLatestSkillsReleaseRef(t, "", latestErr)
 
 	ref, explicit, err := GetSkillsRef(t.Context())
-	require.NoError(t, err)
-	assert.Equal(t, "v"+build.AgentSkillsFallbackVersion, ref)
-	assert.False(t, explicit, "an embedded fallback is not a user pin")
+	require.ErrorIs(t, err, latestErr)
+	assert.Empty(t, ref, "the embedded fallback is not the latest release")
+	assert.False(t, explicit)
 }
 
 func TestFetchSkillsManifestWithFallback(t *testing.T) {
