@@ -16,6 +16,7 @@ type taskRule struct {
 // taskCursor is the task being visited. It is reused for all tasks so visiting does
 // not allocate; the path is only built for values that are visited.
 type taskCursor struct {
+	root   *config.Root
 	name   string
 	index  int
 	nested bool
@@ -25,7 +26,7 @@ type taskCursor struct {
 
 // yield visits the value s at the parts below the task.
 func (c *taskCursor) yield(s *string, parts ...any) error {
-	return visit(s, c.rule.mode, c.rule.skip, c.fn, func() *structpath.PathNode {
+	return visit(c.root, s, c.rule.mode, c.rule.skip, c.fn, func() *structpath.PathNode {
 		p := structpath.NewPath(resourcePath("jobs", c.name), "tasks", c.index)
 		if c.nested {
 			p = structpath.NewPath(p, "for_each_task", "task")
@@ -101,7 +102,7 @@ func visitTasks(root *config.Root, rules []taskRule, fn VisitFunc) error {
 // visitTasksAt applies the rules, one at a time, to the tasks of all jobs, or (nested)
 // to the tasks in their for_each_task.
 func visitTasksAt(root *config.Root, nested bool, rules []taskRule, fn VisitFunc) error {
-	c := &taskCursor{nested: nested, fn: fn}
+	c := &taskCursor{root: root, nested: nested, fn: fn}
 	names := sortedKeys(root.Resources.Jobs)
 	for r := range rules {
 		c.rule = &rules[r]
@@ -144,7 +145,7 @@ func VisitJobPaths(root *config.Root, fn VisitFunc) error {
 				continue
 			}
 			for j := range ev.Spec.Files {
-				if err := visit(&ev.Spec.Files[j], TranslateModeFile, nil, fn, func() *structpath.PathNode {
+				if err := visit(root, &ev.Spec.Files[j], TranslateModeFile, nil, fn, func() *structpath.PathNode {
 					return structpath.NewPath(resourcePath("jobs", name), "environment_variables", i, "spec", "files", j)
 				}); err != nil {
 					return err
@@ -161,7 +162,7 @@ func VisitJobPaths(root *config.Root, fn VisitFunc) error {
 			if env.Spec == nil {
 				continue
 			}
-			if err := visit(&env.Spec.ProjectEnvironment, TranslateModeFile, nil, fn, func() *structpath.PathNode {
+			if err := visit(root, &env.Spec.ProjectEnvironment, TranslateModeFile, nil, fn, func() *structpath.PathNode {
 				return structpath.NewPath(resourcePath("jobs", name), "environments", i, "spec", "project_environment")
 			}); err != nil {
 				return err
