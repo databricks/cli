@@ -56,7 +56,7 @@ func VisitJobLibrariesPaths(root *config.Root, fn VisitFunc) error {
 					continue
 				}
 				for j := range env.Spec.Dependencies {
-					if err := visit(&env.Spec.Dependencies[j], rule.mode, rule.skip, fn, func() *structpath.PathNode {
+					if err := visit(root, &env.Spec.Dependencies[j], rule.mode, rule.skip, fn, func() *structpath.PathNode {
 						return structpath.NewPath(resourcePath("jobs", name), "environments", i, "spec", "dependencies", j)
 					}); err != nil {
 						return err
