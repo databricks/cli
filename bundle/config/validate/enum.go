@@ -23,7 +23,7 @@ func (f *enum) Name() string {
 // Apply reports enum fields with invalid values. The walker is generated
 // (enum_walk.go) by bundle/internal/validation.
 func (f *enum) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	diags := walk(&b.Config, enumConfigRoot)
+	diags := walkConfig(&b.Config, enumConfigRoot)
 
 	// Sort diagnostics to make them deterministic
 	slices.SortFunc(diags, func(a, b diag.Diagnostic) int {
