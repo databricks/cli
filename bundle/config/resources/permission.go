@@ -94,3 +94,14 @@ func GetMaxLevel(a, b string) string {
 	}
 	return b
 }
+
+// PermissionFields is the struct underlying every resource permission type
+// (PermissionT and the named types defined from it, SecretScopePermission), so generic
+// code can convert between them with P(PermissionFields[L]{...}).
+type PermissionFields[L ~string] = struct {
+	Level L `json:"level"`
+
+	UserName             string `json:"user_name,omitempty"`
+	ServicePrincipalName string `json:"service_principal_name,omitempty"`
+	GroupName            string `json:"group_name,omitempty"`
+}
