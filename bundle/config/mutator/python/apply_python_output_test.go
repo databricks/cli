@@ -150,7 +150,7 @@ func TestApplyPythonOutput(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			input := loadRoot(t, tc.input)
 			output := loadRoot(t, tc.output)
-			plan, state, err := applyPythonOutput(input.View(), output.View())
+			plan, state, err := applyPythonOutput(input, output)
 			require.NoError(t, err)
 
 			require.NoError(t, input.Override(plan))
@@ -167,7 +167,7 @@ func TestMergeOutput_disallowDelete(t *testing.T) {
 	input := loadRoot(t, mapOf("bundle", mapOf("name", "value")))
 	output := loadRoot(t, emptyMap())
 
-	_, _, err := applyPythonOutput(input.View(), output.View())
+	_, _, err := applyPythonOutput(input, output)
 
 	assert.EqualError(t, err, `unexpected change at "bundle" (delete)`)
 }
@@ -176,7 +176,7 @@ func TestMergeOutput_disallowInsert(t *testing.T) {
 	output := loadRoot(t, mapOf("bundle", mapOf("name", "value")))
 	input := loadRoot(t, emptyMap())
 
-	_, _, err := applyPythonOutput(input.View(), output.View())
+	_, _, err := applyPythonOutput(input, output)
 
 	assert.EqualError(t, err, `unexpected change at "bundle" (insert)`)
 }
@@ -185,7 +185,7 @@ func TestMergeOutput_disallowUpdate(t *testing.T) {
 	output := loadRoot(t, mapOf("bundle", mapOf("name", "value")))
 	input := loadRoot(t, mapOf("bundle", mapOf("name", "new value")))
 
-	_, _, err := applyPythonOutput(input.View(), output.View())
+	_, _, err := applyPythonOutput(input, output)
 
 	assert.EqualError(t, err, `unexpected change at "bundle.name" (update)`)
 }
@@ -253,7 +253,7 @@ func TestCreateOverrideVisitor_omitempty(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, visitor := createOverrideVisitor(structvar.View{}, structvar.View{})
+			_, visitor := createOverrideVisitor(nil, nil)
 
 			err := visitor.VisitDelete(tc.path, structvar.NewView(tc.left, nil, nil))
 

@@ -1,11 +1,6 @@
 package resourcemutator
 
-import (
-	"errors"
-
-	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structvar"
-)
+import "github.com/databricks/cli/bundle/config"
 
 // ResourceKey uniquely identifies a resource in configuration.
 type ResourceKey struct {
@@ -48,21 +43,21 @@ func (r ResourceKeySet) Size() int {
 	return size
 }
 
-// AddPattern adds all resource keys that match the pattern.
-func (r ResourceKeySet) AddPattern(pattern *structpath.PatternNode, root structvar.View) error {
-	if pattern.Len() != 3 {
-		return errors.New("pattern must have 3 keys")
-	}
+// AddResources adds the keys of all resources in r.
+func (r ResourceKeySet) AddResources(resources *config.Resources) {
+	resources.IterateAllResources(func(typ, name string, _ config.ConfigResource) bool {
+		r.AddResourceKey(ResourceKey{Type: typ, Name: name})
+		return true
+	})
+}
 
-	return structvar.ForEach(root, pattern, func(path *structpath.PathNode, v structvar.View) error {
-		parsed, err := getResourceKey(path)
-		if err != nil {
-			return err
+// AddResourcesOfType adds the keys of the resources of type typ in r.
+func (r ResourceKeySet) AddResourcesOfType(resources *config.Resources, typ string) {
+	resources.IterateAllResources(func(t, name string, _ config.ConfigResource) bool {
+		if t == typ {
+			r.AddResourceKey(ResourceKey{Type: typ, Name: name})
 		}
-
-		r.AddResourceKey(parsed)
-
-		return nil
+		return true
 	})
 }
 
@@ -102,22 +97,4 @@ func (r ResourceKeySet) ToArray() []ResourceKey {
 	}
 
 	return result
-}
-
-func getResourceKey(path *structpath.PathNode) (ResourceKey, error) {
-	if path.KeyAt(0) != "resources" {
-		return ResourceKey{}, errors.New("can't parse resource key")
-	}
-
-	resourceType := path.KeyAt(1)
-	resourceName := path.KeyAt(2)
-
-	if resourceType == "" || resourceName == "" {
-		return ResourceKey{}, errors.New("can't parse resource key")
-	}
-
-	return ResourceKey{
-		Type: resourceType,
-		Name: resourceName,
-	}, nil
 }
