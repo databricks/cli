@@ -118,8 +118,8 @@ type gen struct {
 	out     bytes.Buffer
 	pending []*tnode
 
-	// refBranches visits pointer fields holding a pure reference as nil values, so
-	// their required fields are reported (as [View.Get] finds no fields in them).
+	// refBranches visits nil pointer fields that are written in the source or hold a
+	// pure reference as nodes without fields, so their required fields are reported.
 	refBranches bool
 }
 
@@ -239,26 +239,24 @@ func guarded(guards []string, cond string) string {
 	return "(" + strings.Join(guards, " && ") + " && (" + cond + "))"
 }
 
-// present returns the condition under which a field counts as set: a string is set if
-// it is not empty or is in ForceSendFields; values of other types can also hold a pure
-// variable reference. Structs are set if they were in the source.
+// present returns the condition under which a required field counts as set: it is
+// not the zero value, it is written in the source (required fields have no omitempty,
+// so they are never in ForceSendFields and an explicit zero is only seen in the
+// locations), or, for fields that cannot hold a string, it holds a pure reference.
 func (f field) present() string {
-	forced := ""
-	if f.fsf != "" {
-		forced = fmt.Sprintf(" || forced(%s, %q)", f.fsf, f.goName)
-	}
+	written := fmt.Sprintf(" || n.locs.Key(%q) != nil", f.key)
 	ref := fmt.Sprintf(" || w.isRef(n, %q)", f.key)
 	switch f.typ.Kind() {
 	case reflect.String:
-		return guarded(f.guards, fmt.Sprintf("%s != \"\"%s", f.expr, forced))
+		return guarded(f.guards, f.expr+` != ""`) + written
 	case reflect.Pointer, reflect.Slice, reflect.Map, reflect.Interface:
-		return guarded(f.guards, f.expr+" != nil") + ref
+		return guarded(f.guards, f.expr+" != nil") + written + ref
 	case reflect.Bool:
-		return guarded(f.guards, f.expr+forced) + ref
+		return guarded(f.guards, f.expr) + written + ref
 	case reflect.Struct:
-		return guarded(f.guards, fmt.Sprintf("!isZeroStruct(&%s)%s || n.locs.Key(%q) != nil", f.expr, forced, f.key)) + ref
+		return guarded(f.guards, fmt.Sprintf("!isZeroStruct(&%s)", f.expr)) + written + ref
 	default:
-		return guarded(f.guards, fmt.Sprintf("%s != 0%s", f.expr, forced)) + ref
+		return guarded(f.guards, f.expr+" != 0") + written + ref
 	}
 }
 
@@ -297,7 +295,9 @@ func (g *gen) emitField(f field, child *tnode) {
 		fn := g.funcFor(child)
 		fmt.Fprintf(&g.out, "\tif x := %s; x != nil {\n\t\tc := n.child(%q)\n\t\t%s(w, &c, x)\n\t}", f.expr, f.key, fn)
 		if g.refBranches {
-			fmt.Fprintf(&g.out, " else if w.isRef(n, %q) {\n\t\tc := n.child(%q)\n\t\t%s(w, &c, nil)\n\t}", f.key, f.key, fn)
+			// A nil value written in the source (e.g. "run_job_task:") or replaced by a
+			// pure reference is a node without fields.
+			fmt.Fprintf(&g.out, " else if n.locs.Key(%q) != nil || w.isRef(n, %q) {\n\t\tc := n.child(%q)\n\t\t%s(w, &c, nil)\n\t}", f.key, f.key, f.key, fn)
 		}
 		fmt.Fprintf(&g.out, "\n")
 	case f.typ.Kind() == reflect.Struct:
