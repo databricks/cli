@@ -132,6 +132,10 @@ func stringsConfigRoot(c *stringsWalk, n *Node, v *config.Root) {
 		ch := n.Child("python")
 		stringsConfigPython(c, &ch, &v.Python)
 	}
+	if c.mode == EmptyFields && v.Definitions == "" {
+		ch := n.Child("definitions")
+		c.fn(&ch, "")
+	}
 	if v.Definitions != nil {
 		ch := n.Child("definitions")
 		c.any(&ch, &v.Definitions)
@@ -145,6 +149,10 @@ func stringsVariableVariable(c *stringsWalk, n *Node, v *variable.Variable) {
 			v.Type = variable.VariableType(r)
 		}
 	}
+	if c.mode == EmptyFields && v.Default == "" {
+		ch := n.Child("default")
+		c.fn(&ch, "")
+	}
 	if v.Default != nil {
 		ch := n.Child("default")
 		c.any(&ch, &v.Default)
@@ -154,6 +162,10 @@ func stringsVariableVariable(c *stringsWalk, n *Node, v *variable.Variable) {
 		if r, ok := c.fn(&ch, s); ok {
 			v.Description = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Value == "" {
+		ch := n.Child("value")
+		c.fn(&ch, "")
 	}
 	if v.Value != nil {
 		ch := n.Child("value")
@@ -867,17 +879,29 @@ func stringsConfigSync(c *stringsWalk, n *Node, v *config.Sync) {
 }
 
 func stringsJobsJobRunAs(c *stringsWalk, n *Node, v *jobs.JobRunAs) {
+	if c.mode == EmptyFields && v.GroupName == "" && Forced(v.ForceSendFields, "GroupName") {
+		ch := n.Child("group_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.GroupName); c.match(s) {
 		ch := n.Child("group_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.GroupName = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.ServicePrincipalName == "" && Forced(v.ForceSendFields, "ServicePrincipalName") {
+		ch := n.Child("service_principal_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ServicePrincipalName); c.match(s) {
 		ch := n.Child("service_principal_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.ServicePrincipalName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.UserName == "" && Forced(v.ForceSendFields, "UserName") {
+		ch := n.Child("user_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.UserName); c.match(s) {
 		ch := n.Child("user_name")
@@ -1163,6 +1187,10 @@ func stringsConfigUser(c *stringsWalk, n *Node, v *config.User) {
 		}
 	}
 	if v.User != nil {
+		if c.mode == EmptyFields && v.User.DisplayName == "" && Forced(v.User.ForceSendFields, "DisplayName") {
+			ch := n.Child("displayName")
+			c.fn(&ch, "")
+		}
 		if s := string(v.User.DisplayName); c.match(s) {
 			ch := n.Child("displayName")
 			if r, ok := c.fn(&ch, s); ok {
@@ -1193,6 +1221,10 @@ func stringsConfigUser(c *stringsWalk, n *Node, v *config.User) {
 		}
 	}
 	if v.User != nil {
+		if c.mode == EmptyFields && v.User.ExternalId == "" && Forced(v.User.ForceSendFields, "ExternalId") {
+			ch := n.Child("externalId")
+			c.fn(&ch, "")
+		}
 		if s := string(v.User.ExternalId); c.match(s) {
 			ch := n.Child("externalId")
 			if r, ok := c.fn(&ch, s); ok {
@@ -1212,6 +1244,10 @@ func stringsConfigUser(c *stringsWalk, n *Node, v *config.User) {
 		}
 	}
 	if v.User != nil {
+		if c.mode == EmptyFields && v.User.Id == "" && Forced(v.User.ForceSendFields, "Id") {
+			ch := n.Child("id")
+			c.fn(&ch, "")
+		}
 		if s := string(v.User.Id); c.match(s) {
 			ch := n.Child("id")
 			if r, ok := c.fn(&ch, s); ok {
@@ -1250,6 +1286,10 @@ func stringsConfigUser(c *stringsWalk, n *Node, v *config.User) {
 		}
 	}
 	if v.User != nil {
+		if c.mode == EmptyFields && v.User.UserName == "" && Forced(v.User.ForceSendFields, "UserName") {
+			ch := n.Child("userName")
+			c.fn(&ch, "")
+		}
 		if s := string(v.User.UserName); c.match(s) {
 			ch := n.Child("userName")
 			if r, ok := c.fn(&ch, s); ok {
@@ -1323,6 +1363,10 @@ func stringsResourcesJob(c *stringsWalk, n *Node, v *resources.Job) {
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.JobSettings.BudgetPolicyId == "" && Forced(v.JobSettings.ForceSendFields, "BudgetPolicyId") {
+		ch := n.Child("budget_policy_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.JobSettings.BudgetPolicyId); c.match(s) {
 		ch := n.Child("budget_policy_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -1337,11 +1381,19 @@ func stringsResourcesJob(c *stringsWalk, n *Node, v *resources.Job) {
 		ch := n.Child("deployment")
 		stringsJobsJobDeployment(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.JobSettings.Description == "" && Forced(v.JobSettings.ForceSendFields, "Description") {
+		ch := n.Child("description")
+		c.fn(&ch, "")
+	}
 	if s := string(v.JobSettings.Description); c.match(s) {
 		ch := n.Child("description")
 		if r, ok := c.fn(&ch, s); ok {
 			v.JobSettings.Description = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.JobSettings.EditMode == "" && Forced(v.JobSettings.ForceSendFields, "EditMode") {
+		ch := n.Child("edit_mode")
+		c.fn(&ch, "")
 	}
 	if s := string(v.JobSettings.EditMode); c.match(s) {
 		ch := n.Child("edit_mode")
@@ -1371,6 +1423,10 @@ func stringsResourcesJob(c *stringsWalk, n *Node, v *resources.Job) {
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.JobSettings.Format == "" && Forced(v.JobSettings.ForceSendFields, "Format") {
+		ch := n.Child("format")
+		c.fn(&ch, "")
+	}
 	if s := string(v.JobSettings.Format); c.match(s) {
 		ch := n.Child("format")
 		if r, ok := c.fn(&ch, s); ok {
@@ -1394,6 +1450,10 @@ func stringsResourcesJob(c *stringsWalk, n *Node, v *resources.Job) {
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.JobSettings.Name == "" && Forced(v.JobSettings.ForceSendFields, "Name") {
+		ch := n.Child("name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.JobSettings.Name); c.match(s) {
 		ch := n.Child("name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -1409,11 +1469,19 @@ func stringsResourcesJob(c *stringsWalk, n *Node, v *resources.Job) {
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.JobSettings.ParentPath == "" && Forced(v.JobSettings.ForceSendFields, "ParentPath") {
+		ch := n.Child("parent_path")
+		c.fn(&ch, "")
+	}
 	if s := string(v.JobSettings.ParentPath); c.match(s) {
 		ch := n.Child("parent_path")
 		if r, ok := c.fn(&ch, s); ok {
 			v.JobSettings.ParentPath = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.JobSettings.PerformanceTarget == "" && Forced(v.JobSettings.ForceSendFields, "PerformanceTarget") {
+		ch := n.Child("performance_target")
+		c.fn(&ch, "")
 	}
 	if s := string(v.JobSettings.PerformanceTarget); c.match(s) {
 		ch := n.Child("performance_target")
@@ -1462,6 +1530,10 @@ func stringsResourcesJob(c *stringsWalk, n *Node, v *resources.Job) {
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.JobSettings.UsagePolicyId == "" && Forced(v.JobSettings.ForceSendFields, "UsagePolicyId") {
+		ch := n.Child("usage_policy_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.JobSettings.UsagePolicyId); c.match(s) {
 		ch := n.Child("usage_policy_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -1507,6 +1579,10 @@ func stringsResourcesJobRun(c *stringsWalk, n *Node, v *resources.JobRun) {
 				}
 			}
 		}
+	}
+	if c.mode == EmptyFields && v.RunNow.IdempotencyToken == "" && Forced(v.RunNow.ForceSendFields, "IdempotencyToken") {
+		ch := n.Child("idempotency_token")
+		c.fn(&ch, "")
 	}
 	if s := string(v.RunNow.IdempotencyToken); c.match(s) {
 		ch := n.Child("idempotency_token")
@@ -1557,6 +1633,10 @@ func stringsResourcesJobRun(c *stringsWalk, n *Node, v *resources.JobRun) {
 				}
 			}
 		}
+	}
+	if c.mode == EmptyFields && v.RunNow.PerformanceTarget == "" && Forced(v.RunNow.ForceSendFields, "PerformanceTarget") {
+		ch := n.Child("performance_target")
+		c.fn(&ch, "")
 	}
 	if s := string(v.RunNow.PerformanceTarget); c.match(s) {
 		ch := n.Child("performance_target")
@@ -1642,17 +1722,29 @@ func stringsResourcesPipeline(c *stringsWalk, n *Node, v *resources.Pipeline) {
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.CreatePipeline.BudgetPolicyId == "" && Forced(v.CreatePipeline.ForceSendFields, "BudgetPolicyId") {
+		ch := n.Child("budget_policy_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CreatePipeline.BudgetPolicyId); c.match(s) {
 		ch := n.Child("budget_policy_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.CreatePipeline.BudgetPolicyId = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.CreatePipeline.Catalog == "" && Forced(v.CreatePipeline.ForceSendFields, "Catalog") {
+		ch := n.Child("catalog")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CreatePipeline.Catalog); c.match(s) {
 		ch := n.Child("catalog")
 		if r, ok := c.fn(&ch, s); ok {
 			v.CreatePipeline.Catalog = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.CreatePipeline.Channel == "" && Forced(v.CreatePipeline.ForceSendFields, "Channel") {
+		ch := n.Child("channel")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CreatePipeline.Channel); c.match(s) {
 		ch := n.Child("channel")
@@ -1683,6 +1775,10 @@ func stringsResourcesPipeline(c *stringsWalk, n *Node, v *resources.Pipeline) {
 	if x := v.CreatePipeline.Deployment; x != nil {
 		ch := n.Child("deployment")
 		stringsPipelinesPipelineDeployment(c, &ch, x)
+	}
+	if c.mode == EmptyFields && v.CreatePipeline.Edition == "" && Forced(v.CreatePipeline.ForceSendFields, "Edition") {
+		ch := n.Child("edition")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CreatePipeline.Edition); c.match(s) {
 		ch := n.Child("edition")
@@ -1719,6 +1815,10 @@ func stringsResourcesPipeline(c *stringsWalk, n *Node, v *resources.Pipeline) {
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.CreatePipeline.Name == "" && Forced(v.CreatePipeline.ForceSendFields, "Name") {
+		ch := n.Child("name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CreatePipeline.Name); c.match(s) {
 		ch := n.Child("name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -1745,6 +1845,10 @@ func stringsResourcesPipeline(c *stringsWalk, n *Node, v *resources.Pipeline) {
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.CreatePipeline.ParentPath == "" && Forced(v.CreatePipeline.ForceSendFields, "ParentPath") {
+		ch := n.Child("parent_path")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CreatePipeline.ParentPath); c.match(s) {
 		ch := n.Child("parent_path")
 		if r, ok := c.fn(&ch, s); ok {
@@ -1754,6 +1858,10 @@ func stringsResourcesPipeline(c *stringsWalk, n *Node, v *resources.Pipeline) {
 	if x := v.CreatePipeline.RestartWindow; x != nil {
 		ch := n.Child("restart_window")
 		stringsPipelinesRestartWindow(c, &ch, x)
+	}
+	if c.mode == EmptyFields && v.CreatePipeline.RootPath == "" && Forced(v.CreatePipeline.ForceSendFields, "RootPath") {
+		ch := n.Child("root_path")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CreatePipeline.RootPath); c.match(s) {
 		ch := n.Child("root_path")
@@ -1765,17 +1873,29 @@ func stringsResourcesPipeline(c *stringsWalk, n *Node, v *resources.Pipeline) {
 		ch := n.Child("run_as")
 		stringsPipelinesRunAs(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.CreatePipeline.Schema == "" && Forced(v.CreatePipeline.ForceSendFields, "Schema") {
+		ch := n.Child("schema")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CreatePipeline.Schema); c.match(s) {
 		ch := n.Child("schema")
 		if r, ok := c.fn(&ch, s); ok {
 			v.CreatePipeline.Schema = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.CreatePipeline.ServerlessComputeId == "" && Forced(v.CreatePipeline.ForceSendFields, "ServerlessComputeId") {
+		ch := n.Child("serverless_compute_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CreatePipeline.ServerlessComputeId); c.match(s) {
 		ch := n.Child("serverless_compute_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.CreatePipeline.ServerlessComputeId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.CreatePipeline.Storage == "" && Forced(v.CreatePipeline.ForceSendFields, "Storage") {
+		ch := n.Child("storage")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CreatePipeline.Storage); c.match(s) {
 		ch := n.Child("storage")
@@ -1794,6 +1914,10 @@ func stringsResourcesPipeline(c *stringsWalk, n *Node, v *resources.Pipeline) {
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.CreatePipeline.Target == "" && Forced(v.CreatePipeline.ForceSendFields, "Target") {
+		ch := n.Child("target")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CreatePipeline.Target); c.match(s) {
 		ch := n.Child("target")
 		if r, ok := c.fn(&ch, s); ok {
@@ -1803,6 +1927,10 @@ func stringsResourcesPipeline(c *stringsWalk, n *Node, v *resources.Pipeline) {
 	if x := v.CreatePipeline.Trigger; x != nil {
 		ch := n.Child("trigger")
 		stringsPipelinesPipelineTrigger(c, &ch, x)
+	}
+	if c.mode == EmptyFields && v.CreatePipeline.UsagePolicyId == "" && Forced(v.CreatePipeline.ForceSendFields, "UsagePolicyId") {
+		ch := n.Child("usage_policy_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CreatePipeline.UsagePolicyId); c.match(s) {
 		ch := n.Child("usage_policy_id")
@@ -1839,6 +1967,10 @@ func stringsResourcesMlflowModel(c *stringsWalk, n *Node, v *resources.MlflowMod
 		if r, ok := c.fn(&ch, s); ok {
 			v.BaseResource.ModifiedStatus = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.CreateModelRequest.Description == "" && Forced(v.CreateModelRequest.ForceSendFields, "Description") {
+		ch := n.Child("description")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CreateModelRequest.Description); c.match(s) {
 		ch := n.Child("description")
@@ -1890,6 +2022,10 @@ func stringsResourcesMlflowExperiment(c *stringsWalk, n *Node, v *resources.Mlfl
 		if r, ok := c.fn(&ch, s); ok {
 			v.BaseResource.ModifiedStatus = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.CreateExperiment.ArtifactLocation == "" && Forced(v.CreateExperiment.ForceSendFields, "ArtifactLocation") {
+		ch := n.Child("artifact_location")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CreateExperiment.ArtifactLocation); c.match(s) {
 		ch := n.Child("artifact_location")
@@ -1950,6 +2086,10 @@ func stringsResourcesModelServingEndpoint(c *stringsWalk, n *Node, v *resources.
 		ch := n.Child("ai_gateway")
 		stringsServingAiGatewayConfig(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.CreateServingEndpoint.BudgetPolicyId == "" && Forced(v.CreateServingEndpoint.ForceSendFields, "BudgetPolicyId") {
+		ch := n.Child("budget_policy_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CreateServingEndpoint.BudgetPolicyId); c.match(s) {
 		ch := n.Child("budget_policy_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -1959,6 +2099,10 @@ func stringsResourcesModelServingEndpoint(c *stringsWalk, n *Node, v *resources.
 	if x := v.CreateServingEndpoint.Config; x != nil {
 		ch := n.Child("config")
 		stringsServingEndpointCoreConfigInput(c, &ch, x)
+	}
+	if c.mode == EmptyFields && v.CreateServingEndpoint.Description == "" && Forced(v.CreateServingEndpoint.ForceSendFields, "Description") {
+		ch := n.Child("description")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CreateServingEndpoint.Description); c.match(s) {
 		ch := n.Child("description")
@@ -2040,6 +2184,10 @@ func stringsResourcesModelService(c *stringsWalk, n *Node, v *resources.ModelSer
 			v.ModelServiceConfig.ModelServiceId = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.ModelServiceConfig.Comment == "" && Forced(v.ModelServiceConfig.ForceSendFields, "Comment") {
+		ch := n.Child("comment")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ModelServiceConfig.Comment); c.match(s) {
 		ch := n.Child("comment")
 		if r, ok := c.fn(&ch, s); ok {
@@ -2091,6 +2239,10 @@ func stringsResourcesMcpService(c *stringsWalk, n *Node, v *resources.McpService
 		if r, ok := c.fn(&ch, s); ok {
 			v.McpServiceConfig.McpServiceId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.McpServiceConfig.Comment == "" && Forced(v.McpServiceConfig.ForceSendFields, "Comment") {
+		ch := n.Child("comment")
+		c.fn(&ch, "")
 	}
 	if s := string(v.McpServiceConfig.Comment); c.match(s) {
 		ch := n.Child("comment")
@@ -2144,6 +2296,10 @@ func stringsResourcesModelProviderService(c *stringsWalk, n *Node, v *resources.
 			v.ModelProviderServiceConfig.ModelProviderServiceId = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.ModelProviderServiceConfig.Comment == "" && Forced(v.ModelProviderServiceConfig.ForceSendFields, "Comment") {
+		ch := n.Child("comment")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ModelProviderServiceConfig.Comment); c.match(s) {
 		ch := n.Child("comment")
 		if r, ok := c.fn(&ch, s); ok {
@@ -2193,11 +2349,19 @@ func stringsResourcesRegisteredModel(c *stringsWalk, n *Node, v *resources.Regis
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.CreateRegisteredModelRequest.CatalogName == "" && Forced(v.CreateRegisteredModelRequest.ForceSendFields, "CatalogName") {
+		ch := n.Child("catalog_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CreateRegisteredModelRequest.CatalogName); c.match(s) {
 		ch := n.Child("catalog_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.CreateRegisteredModelRequest.CatalogName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.CreateRegisteredModelRequest.Comment == "" && Forced(v.CreateRegisteredModelRequest.ForceSendFields, "Comment") {
+		ch := n.Child("comment")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CreateRegisteredModelRequest.Comment); c.match(s) {
 		ch := n.Child("comment")
@@ -2205,11 +2369,19 @@ func stringsResourcesRegisteredModel(c *stringsWalk, n *Node, v *resources.Regis
 			v.CreateRegisteredModelRequest.Comment = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.CreateRegisteredModelRequest.CreatedBy == "" && Forced(v.CreateRegisteredModelRequest.ForceSendFields, "CreatedBy") {
+		ch := n.Child("created_by")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CreateRegisteredModelRequest.CreatedBy); c.match(s) {
 		ch := n.Child("created_by")
 		if r, ok := c.fn(&ch, s); ok {
 			v.CreateRegisteredModelRequest.CreatedBy = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.CreateRegisteredModelRequest.FullName == "" && Forced(v.CreateRegisteredModelRequest.ForceSendFields, "FullName") {
+		ch := n.Child("full_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CreateRegisteredModelRequest.FullName); c.match(s) {
 		ch := n.Child("full_name")
@@ -2217,11 +2389,19 @@ func stringsResourcesRegisteredModel(c *stringsWalk, n *Node, v *resources.Regis
 			v.CreateRegisteredModelRequest.FullName = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.CreateRegisteredModelRequest.MetastoreId == "" && Forced(v.CreateRegisteredModelRequest.ForceSendFields, "MetastoreId") {
+		ch := n.Child("metastore_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CreateRegisteredModelRequest.MetastoreId); c.match(s) {
 		ch := n.Child("metastore_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.CreateRegisteredModelRequest.MetastoreId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.CreateRegisteredModelRequest.Name == "" && Forced(v.CreateRegisteredModelRequest.ForceSendFields, "Name") {
+		ch := n.Child("name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CreateRegisteredModelRequest.Name); c.match(s) {
 		ch := n.Child("name")
@@ -2229,11 +2409,19 @@ func stringsResourcesRegisteredModel(c *stringsWalk, n *Node, v *resources.Regis
 			v.CreateRegisteredModelRequest.Name = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.CreateRegisteredModelRequest.Owner == "" && Forced(v.CreateRegisteredModelRequest.ForceSendFields, "Owner") {
+		ch := n.Child("owner")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CreateRegisteredModelRequest.Owner); c.match(s) {
 		ch := n.Child("owner")
 		if r, ok := c.fn(&ch, s); ok {
 			v.CreateRegisteredModelRequest.Owner = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.CreateRegisteredModelRequest.SchemaName == "" && Forced(v.CreateRegisteredModelRequest.ForceSendFields, "SchemaName") {
+		ch := n.Child("schema_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CreateRegisteredModelRequest.SchemaName); c.match(s) {
 		ch := n.Child("schema_name")
@@ -2241,11 +2429,19 @@ func stringsResourcesRegisteredModel(c *stringsWalk, n *Node, v *resources.Regis
 			v.CreateRegisteredModelRequest.SchemaName = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.CreateRegisteredModelRequest.StorageLocation == "" && Forced(v.CreateRegisteredModelRequest.ForceSendFields, "StorageLocation") {
+		ch := n.Child("storage_location")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CreateRegisteredModelRequest.StorageLocation); c.match(s) {
 		ch := n.Child("storage_location")
 		if r, ok := c.fn(&ch, s); ok {
 			v.CreateRegisteredModelRequest.StorageLocation = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.CreateRegisteredModelRequest.UpdatedBy == "" && Forced(v.CreateRegisteredModelRequest.ForceSendFields, "UpdatedBy") {
+		ch := n.Child("updated_by")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CreateRegisteredModelRequest.UpdatedBy); c.match(s) {
 		ch := n.Child("updated_by")
@@ -2286,6 +2482,10 @@ func stringsResourcesQualityMonitor(c *stringsWalk, n *Node, v *resources.Qualit
 			v.CreateMonitor.AssetsDir = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.CreateMonitor.BaselineTableName == "" && Forced(v.CreateMonitor.ForceSendFields, "BaselineTableName") {
+		ch := n.Child("baseline_table_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CreateMonitor.BaselineTableName); c.match(s) {
 		ch := n.Child("baseline_table_name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -2304,6 +2504,10 @@ func stringsResourcesQualityMonitor(c *stringsWalk, n *Node, v *resources.Qualit
 	if x := v.CreateMonitor.InferenceLog; x != nil {
 		ch := n.Child("inference_log")
 		stringsCatalogMonitorInferenceLog(c, &ch, x)
+	}
+	if c.mode == EmptyFields && v.CreateMonitor.LatestMonitorFailureMsg == "" && Forced(v.CreateMonitor.ForceSendFields, "LatestMonitorFailureMsg") {
+		ch := n.Child("latest_monitor_failure_msg")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CreateMonitor.LatestMonitorFailureMsg); c.match(s) {
 		ch := n.Child("latest_monitor_failure_msg")
@@ -2339,6 +2543,10 @@ func stringsResourcesQualityMonitor(c *stringsWalk, n *Node, v *resources.Qualit
 	if x := v.CreateMonitor.TimeSeries; x != nil {
 		ch := n.Child("time_series")
 		stringsCatalogMonitorTimeSeries(c, &ch, x)
+	}
+	if c.mode == EmptyFields && v.CreateMonitor.WarehouseId == "" && Forced(v.CreateMonitor.ForceSendFields, "WarehouseId") {
+		ch := n.Child("warehouse_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CreateMonitor.WarehouseId); c.match(s) {
 		ch := n.Child("warehouse_id")
@@ -2376,11 +2584,19 @@ func stringsResourcesCatalog(c *stringsWalk, n *Node, v *resources.Catalog) {
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.CreateCatalog.Comment == "" && Forced(v.CreateCatalog.ForceSendFields, "Comment") {
+		ch := n.Child("comment")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CreateCatalog.Comment); c.match(s) {
 		ch := n.Child("comment")
 		if r, ok := c.fn(&ch, s); ok {
 			v.CreateCatalog.Comment = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.CreateCatalog.ConnectionName == "" && Forced(v.CreateCatalog.ForceSendFields, "ConnectionName") {
+		ch := n.Child("connection_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CreateCatalog.ConnectionName); c.match(s) {
 		ch := n.Child("connection_name")
@@ -2420,17 +2636,29 @@ func stringsResourcesCatalog(c *stringsWalk, n *Node, v *resources.Catalog) {
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.CreateCatalog.ProviderName == "" && Forced(v.CreateCatalog.ForceSendFields, "ProviderName") {
+		ch := n.Child("provider_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CreateCatalog.ProviderName); c.match(s) {
 		ch := n.Child("provider_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.CreateCatalog.ProviderName = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.CreateCatalog.ShareName == "" && Forced(v.CreateCatalog.ForceSendFields, "ShareName") {
+		ch := n.Child("share_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CreateCatalog.ShareName); c.match(s) {
 		ch := n.Child("share_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.CreateCatalog.ShareName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.CreateCatalog.StorageRoot == "" && Forced(v.CreateCatalog.ForceSendFields, "StorageRoot") {
+		ch := n.Child("storage_root")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CreateCatalog.StorageRoot); c.match(s) {
 		ch := n.Child("storage_root")
@@ -2474,6 +2702,10 @@ func stringsResourcesSchema(c *stringsWalk, n *Node, v *resources.Schema) {
 			v.CreateSchema.CatalogName = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.CreateSchema.Comment == "" && Forced(v.CreateSchema.ForceSendFields, "Comment") {
+		ch := n.Child("comment")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CreateSchema.Comment); c.match(s) {
 		ch := n.Child("comment")
 		if r, ok := c.fn(&ch, s); ok {
@@ -2496,6 +2728,10 @@ func stringsResourcesSchema(c *stringsWalk, n *Node, v *resources.Schema) {
 				}
 			}
 		}
+	}
+	if c.mode == EmptyFields && v.CreateSchema.StorageRoot == "" && Forced(v.CreateSchema.ForceSendFields, "StorageRoot") {
+		ch := n.Child("storage_root")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CreateSchema.StorageRoot); c.match(s) {
 		ch := n.Child("storage_root")
@@ -2545,6 +2781,10 @@ func stringsResourcesVolume(c *stringsWalk, n *Node, v *resources.Volume) {
 			v.CreateVolumeRequestContent.CatalogName = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.CreateVolumeRequestContent.Comment == "" && Forced(v.CreateVolumeRequestContent.ForceSendFields, "Comment") {
+		ch := n.Child("comment")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CreateVolumeRequestContent.Comment); c.match(s) {
 		ch := n.Child("comment")
 		if r, ok := c.fn(&ch, s); ok {
@@ -2562,6 +2802,10 @@ func stringsResourcesVolume(c *stringsWalk, n *Node, v *resources.Volume) {
 		if r, ok := c.fn(&ch, s); ok {
 			v.CreateVolumeRequestContent.SchemaName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.CreateVolumeRequestContent.StorageLocation == "" && Forced(v.CreateVolumeRequestContent.ForceSendFields, "StorageLocation") {
+		ch := n.Child("storage_location")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CreateVolumeRequestContent.StorageLocation); c.match(s) {
 		ch := n.Child("storage_location")
@@ -2598,6 +2842,10 @@ func stringsResourcesExternalLocation(c *stringsWalk, n *Node, v *resources.Exte
 				stringsCatalogPrivilegeAssignment(c, &ch, &v.Grants[i])
 			}
 		}
+	}
+	if c.mode == EmptyFields && v.CreateExternalLocation.Comment == "" && Forced(v.CreateExternalLocation.ForceSendFields, "Comment") {
+		ch := n.Child("comment")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CreateExternalLocation.Comment); c.match(s) {
 		ch := n.Child("comment")
@@ -2686,6 +2934,10 @@ func stringsResourcesCluster(c *stringsWalk, n *Node, v *resources.Cluster) {
 		ch := n.Child("cluster_log_conf")
 		stringsComputeClusterLogConf(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.ClusterSpec.ClusterName == "" && Forced(v.ClusterSpec.ForceSendFields, "ClusterName") {
+		ch := n.Child("cluster_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ClusterSpec.ClusterName); c.match(s) {
 		ch := n.Child("cluster_name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -2703,11 +2955,19 @@ func stringsResourcesCluster(c *stringsWalk, n *Node, v *resources.Cluster) {
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.ClusterSpec.DataSecurityMode == "" && Forced(v.ClusterSpec.ForceSendFields, "DataSecurityMode") {
+		ch := n.Child("data_security_mode")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ClusterSpec.DataSecurityMode); c.match(s) {
 		ch := n.Child("data_security_mode")
 		if r, ok := c.fn(&ch, s); ok {
 			v.ClusterSpec.DataSecurityMode = compute.DataSecurityMode(r)
 		}
+	}
+	if c.mode == EmptyFields && v.ClusterSpec.DependencyMode == "" && Forced(v.ClusterSpec.ForceSendFields, "DependencyMode") {
+		ch := n.Child("dependency_mode")
+		c.fn(&ch, "")
 	}
 	if s := string(v.ClusterSpec.DependencyMode); c.match(s) {
 		ch := n.Child("dependency_mode")
@@ -2719,6 +2979,10 @@ func stringsResourcesCluster(c *stringsWalk, n *Node, v *resources.Cluster) {
 		ch := n.Child("docker_image")
 		stringsComputeDockerImage(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.ClusterSpec.DriverInstancePoolId == "" && Forced(v.ClusterSpec.ForceSendFields, "DriverInstancePoolId") {
+		ch := n.Child("driver_instance_pool_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ClusterSpec.DriverInstancePoolId); c.match(s) {
 		ch := n.Child("driver_instance_pool_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -2728,6 +2992,10 @@ func stringsResourcesCluster(c *stringsWalk, n *Node, v *resources.Cluster) {
 	if x := v.ClusterSpec.DriverNodeTypeFlexibility; x != nil {
 		ch := n.Child("driver_node_type_flexibility")
 		stringsComputeNodeTypeFlexibility(c, &ch, x)
+	}
+	if c.mode == EmptyFields && v.ClusterSpec.DriverNodeTypeId == "" && Forced(v.ClusterSpec.ForceSendFields, "DriverNodeTypeId") {
+		ch := n.Child("driver_node_type_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.ClusterSpec.DriverNodeTypeId); c.match(s) {
 		ch := n.Child("driver_node_type_id")
@@ -2748,11 +3016,19 @@ func stringsResourcesCluster(c *stringsWalk, n *Node, v *resources.Cluster) {
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.ClusterSpec.InstancePoolId == "" && Forced(v.ClusterSpec.ForceSendFields, "InstancePoolId") {
+		ch := n.Child("instance_pool_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ClusterSpec.InstancePoolId); c.match(s) {
 		ch := n.Child("instance_pool_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.ClusterSpec.InstancePoolId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.ClusterSpec.Kind == "" && Forced(v.ClusterSpec.ForceSendFields, "Kind") {
+		ch := n.Child("kind")
+		c.fn(&ch, "")
 	}
 	if s := string(v.ClusterSpec.Kind); c.match(s) {
 		ch := n.Child("kind")
@@ -2760,11 +3036,19 @@ func stringsResourcesCluster(c *stringsWalk, n *Node, v *resources.Cluster) {
 			v.ClusterSpec.Kind = compute.Kind(r)
 		}
 	}
+	if c.mode == EmptyFields && v.ClusterSpec.NodeTypeId == "" && Forced(v.ClusterSpec.ForceSendFields, "NodeTypeId") {
+		ch := n.Child("node_type_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ClusterSpec.NodeTypeId); c.match(s) {
 		ch := n.Child("node_type_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.ClusterSpec.NodeTypeId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.ClusterSpec.PolicyId == "" && Forced(v.ClusterSpec.ForceSendFields, "PolicyId") {
+		ch := n.Child("policy_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.ClusterSpec.PolicyId); c.match(s) {
 		ch := n.Child("policy_id")
@@ -2772,11 +3056,19 @@ func stringsResourcesCluster(c *stringsWalk, n *Node, v *resources.Cluster) {
 			v.ClusterSpec.PolicyId = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.ClusterSpec.RuntimeEngine == "" && Forced(v.ClusterSpec.ForceSendFields, "RuntimeEngine") {
+		ch := n.Child("runtime_engine")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ClusterSpec.RuntimeEngine); c.match(s) {
 		ch := n.Child("runtime_engine")
 		if r, ok := c.fn(&ch, s); ok {
 			v.ClusterSpec.RuntimeEngine = compute.RuntimeEngine(r)
 		}
+	}
+	if c.mode == EmptyFields && v.ClusterSpec.SingleUserName == "" && Forced(v.ClusterSpec.ForceSendFields, "SingleUserName") {
+		ch := n.Child("single_user_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.ClusterSpec.SingleUserName); c.match(s) {
 		ch := n.Child("single_user_name")
@@ -2805,6 +3097,10 @@ func stringsResourcesCluster(c *stringsWalk, n *Node, v *resources.Cluster) {
 				}
 			}
 		}
+	}
+	if c.mode == EmptyFields && v.ClusterSpec.SparkVersion == "" && Forced(v.ClusterSpec.ForceSendFields, "SparkVersion") {
+		ch := n.Child("spark_version")
+		c.fn(&ch, "")
 	}
 	if s := string(v.ClusterSpec.SparkVersion); c.match(s) {
 		ch := n.Child("spark_version")
@@ -2863,11 +3159,19 @@ func stringsResourcesDashboard(c *stringsWalk, n *Node, v *resources.Dashboard) 
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.DashboardConfig.CreateTime == "" && Forced(v.DashboardConfig.ForceSendFields, "CreateTime") {
+		ch := n.Child("create_time")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DashboardConfig.CreateTime); c.match(s) {
 		ch := n.Child("create_time")
 		if r, ok := c.fn(&ch, s); ok {
 			v.DashboardConfig.CreateTime = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.DashboardConfig.DashboardId == "" && Forced(v.DashboardConfig.ForceSendFields, "DashboardId") {
+		ch := n.Child("dashboard_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.DashboardConfig.DashboardId); c.match(s) {
 		ch := n.Child("dashboard_id")
@@ -2875,11 +3179,19 @@ func stringsResourcesDashboard(c *stringsWalk, n *Node, v *resources.Dashboard) 
 			v.DashboardConfig.DashboardId = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.DashboardConfig.DisplayName == "" && Forced(v.DashboardConfig.ForceSendFields, "DisplayName") {
+		ch := n.Child("display_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DashboardConfig.DisplayName); c.match(s) {
 		ch := n.Child("display_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.DashboardConfig.DisplayName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.DashboardConfig.Etag == "" && Forced(v.DashboardConfig.ForceSendFields, "Etag") {
+		ch := n.Child("etag")
+		c.fn(&ch, "")
 	}
 	if s := string(v.DashboardConfig.Etag); c.match(s) {
 		ch := n.Child("etag")
@@ -2887,11 +3199,19 @@ func stringsResourcesDashboard(c *stringsWalk, n *Node, v *resources.Dashboard) 
 			v.DashboardConfig.Etag = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.DashboardConfig.LifecycleState == "" && Forced(v.DashboardConfig.ForceSendFields, "LifecycleState") {
+		ch := n.Child("lifecycle_state")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DashboardConfig.LifecycleState); c.match(s) {
 		ch := n.Child("lifecycle_state")
 		if r, ok := c.fn(&ch, s); ok {
 			v.DashboardConfig.LifecycleState = dashboards.LifecycleState(r)
 		}
+	}
+	if c.mode == EmptyFields && v.DashboardConfig.ParentPath == "" && Forced(v.DashboardConfig.ForceSendFields, "ParentPath") {
+		ch := n.Child("parent_path")
+		c.fn(&ch, "")
 	}
 	if s := string(v.DashboardConfig.ParentPath); c.match(s) {
 		ch := n.Child("parent_path")
@@ -2899,11 +3219,19 @@ func stringsResourcesDashboard(c *stringsWalk, n *Node, v *resources.Dashboard) 
 			v.DashboardConfig.ParentPath = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.DashboardConfig.Path == "" && Forced(v.DashboardConfig.ForceSendFields, "Path") {
+		ch := n.Child("path")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DashboardConfig.Path); c.match(s) {
 		ch := n.Child("path")
 		if r, ok := c.fn(&ch, s); ok {
 			v.DashboardConfig.Path = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.DashboardConfig.UpdateTime == "" && Forced(v.DashboardConfig.ForceSendFields, "UpdateTime") {
+		ch := n.Child("update_time")
+		c.fn(&ch, "")
 	}
 	if s := string(v.DashboardConfig.UpdateTime); c.match(s) {
 		ch := n.Child("update_time")
@@ -2911,21 +3239,37 @@ func stringsResourcesDashboard(c *stringsWalk, n *Node, v *resources.Dashboard) 
 			v.DashboardConfig.UpdateTime = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.DashboardConfig.WarehouseId == "" && Forced(v.DashboardConfig.ForceSendFields, "WarehouseId") {
+		ch := n.Child("warehouse_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DashboardConfig.WarehouseId); c.match(s) {
 		ch := n.Child("warehouse_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.DashboardConfig.WarehouseId = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.DashboardConfig.SerializedDashboard == "" {
+		ch := n.Child("serialized_dashboard")
+		c.fn(&ch, "")
+	}
 	if v.DashboardConfig.SerializedDashboard != nil {
 		ch := n.Child("serialized_dashboard")
 		c.any(&ch, &v.DashboardConfig.SerializedDashboard)
+	}
+	if c.mode == EmptyFields && v.DashboardConfig.DatasetCatalog == "" && Forced(v.DashboardConfig.ForceSendFields, "DatasetCatalog") {
+		ch := n.Child("dataset_catalog")
+		c.fn(&ch, "")
 	}
 	if s := string(v.DashboardConfig.DatasetCatalog); c.match(s) {
 		ch := n.Child("dataset_catalog")
 		if r, ok := c.fn(&ch, s); ok {
 			v.DashboardConfig.DatasetCatalog = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.DashboardConfig.DatasetSchema == "" && Forced(v.DashboardConfig.ForceSendFields, "DatasetSchema") {
+		ch := n.Child("dataset_schema")
+		c.fn(&ch, "")
 	}
 	if s := string(v.DashboardConfig.DatasetSchema); c.match(s) {
 		ch := n.Child("dataset_schema")
@@ -2969,11 +3313,19 @@ func stringsResourcesGenieSpace(c *stringsWalk, n *Node, v *resources.GenieSpace
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.GenieSpaceConfig.Description == "" && Forced(v.GenieSpaceConfig.ForceSendFields, "Description") {
+		ch := n.Child("description")
+		c.fn(&ch, "")
+	}
 	if s := string(v.GenieSpaceConfig.Description); c.match(s) {
 		ch := n.Child("description")
 		if r, ok := c.fn(&ch, s); ok {
 			v.GenieSpaceConfig.Description = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.GenieSpaceConfig.Etag == "" && Forced(v.GenieSpaceConfig.ForceSendFields, "Etag") {
+		ch := n.Child("etag")
+		c.fn(&ch, "")
 	}
 	if s := string(v.GenieSpaceConfig.Etag); c.match(s) {
 		ch := n.Child("etag")
@@ -2981,11 +3333,19 @@ func stringsResourcesGenieSpace(c *stringsWalk, n *Node, v *resources.GenieSpace
 			v.GenieSpaceConfig.Etag = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.GenieSpaceConfig.Title == "" && Forced(v.GenieSpaceConfig.ForceSendFields, "Title") {
+		ch := n.Child("title")
+		c.fn(&ch, "")
+	}
 	if s := string(v.GenieSpaceConfig.Title); c.match(s) {
 		ch := n.Child("title")
 		if r, ok := c.fn(&ch, s); ok {
 			v.GenieSpaceConfig.Title = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.GenieSpaceConfig.WarehouseId == "" && Forced(v.GenieSpaceConfig.ForceSendFields, "WarehouseId") {
+		ch := n.Child("warehouse_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.GenieSpaceConfig.WarehouseId); c.match(s) {
 		ch := n.Child("warehouse_id")
@@ -2993,11 +3353,19 @@ func stringsResourcesGenieSpace(c *stringsWalk, n *Node, v *resources.GenieSpace
 			v.GenieSpaceConfig.WarehouseId = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.GenieSpaceConfig.ParentPath == "" && Forced(v.GenieSpaceConfig.ForceSendFields, "ParentPath") {
+		ch := n.Child("parent_path")
+		c.fn(&ch, "")
+	}
 	if s := string(v.GenieSpaceConfig.ParentPath); c.match(s) {
 		ch := n.Child("parent_path")
 		if r, ok := c.fn(&ch, s); ok {
 			v.GenieSpaceConfig.ParentPath = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.GenieSpaceConfig.SerializedSpace == "" {
+		ch := n.Child("serialized_space")
+		c.fn(&ch, "")
 	}
 	if v.GenieSpaceConfig.SerializedSpace != nil {
 		ch := n.Child("serialized_space")
@@ -3045,11 +3413,19 @@ func stringsResourcesApp(c *stringsWalk, n *Node, v *resources.App) {
 		ch := n.Child("app_status")
 		stringsAppsApplicationStatus(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.App.BudgetPolicyId == "" && Forced(v.App.ForceSendFields, "BudgetPolicyId") {
+		ch := n.Child("budget_policy_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.App.BudgetPolicyId); c.match(s) {
 		ch := n.Child("budget_policy_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.App.BudgetPolicyId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.App.ComputeSize == "" && Forced(v.App.ForceSendFields, "ComputeSize") {
+		ch := n.Child("compute_size")
+		c.fn(&ch, "")
 	}
 	if s := string(v.App.ComputeSize); c.match(s) {
 		ch := n.Child("compute_size")
@@ -3061,11 +3437,19 @@ func stringsResourcesApp(c *stringsWalk, n *Node, v *resources.App) {
 		ch := n.Child("compute_status")
 		stringsAppsComputeStatus(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.App.CreateTime == "" && Forced(v.App.ForceSendFields, "CreateTime") {
+		ch := n.Child("create_time")
+		c.fn(&ch, "")
+	}
 	if s := string(v.App.CreateTime); c.match(s) {
 		ch := n.Child("create_time")
 		if r, ok := c.fn(&ch, s); ok {
 			v.App.CreateTime = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.App.Creator == "" && Forced(v.App.ForceSendFields, "Creator") {
+		ch := n.Child("creator")
+		c.fn(&ch, "")
 	}
 	if s := string(v.App.Creator); c.match(s) {
 		ch := n.Child("creator")
@@ -3077,11 +3461,19 @@ func stringsResourcesApp(c *stringsWalk, n *Node, v *resources.App) {
 		ch := n.Child("default_git_source")
 		stringsAppsGitSource(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.App.DefaultSourceCodePath == "" && Forced(v.App.ForceSendFields, "DefaultSourceCodePath") {
+		ch := n.Child("default_source_code_path")
+		c.fn(&ch, "")
+	}
 	if s := string(v.App.DefaultSourceCodePath); c.match(s) {
 		ch := n.Child("default_source_code_path")
 		if r, ok := c.fn(&ch, s); ok {
 			v.App.DefaultSourceCodePath = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.App.Description == "" && Forced(v.App.ForceSendFields, "Description") {
+		ch := n.Child("description")
+		c.fn(&ch, "")
 	}
 	if s := string(v.App.Description); c.match(s) {
 		ch := n.Child("description")
@@ -3089,11 +3481,19 @@ func stringsResourcesApp(c *stringsWalk, n *Node, v *resources.App) {
 			v.App.Description = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.App.EffectiveBudgetPolicyId == "" && Forced(v.App.ForceSendFields, "EffectiveBudgetPolicyId") {
+		ch := n.Child("effective_budget_policy_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.App.EffectiveBudgetPolicyId); c.match(s) {
 		ch := n.Child("effective_budget_policy_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.App.EffectiveBudgetPolicyId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.App.EffectiveUsagePolicyId == "" && Forced(v.App.ForceSendFields, "EffectiveUsagePolicyId") {
+		ch := n.Child("effective_usage_policy_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.App.EffectiveUsagePolicyId); c.match(s) {
 		ch := n.Child("effective_usage_policy_id")
@@ -3126,11 +3526,19 @@ func stringsResourcesApp(c *stringsWalk, n *Node, v *resources.App) {
 			v.App.Name = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.App.Oauth2AppClientId == "" && Forced(v.App.ForceSendFields, "Oauth2AppClientId") {
+		ch := n.Child("oauth2_app_client_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.App.Oauth2AppClientId); c.match(s) {
 		ch := n.Child("oauth2_app_client_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.App.Oauth2AppClientId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.App.Oauth2AppIntegrationId == "" && Forced(v.App.ForceSendFields, "Oauth2AppIntegrationId") {
+		ch := n.Child("oauth2_app_integration_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.App.Oauth2AppIntegrationId); c.match(s) {
 		ch := n.Child("oauth2_app_integration_id")
@@ -3151,11 +3559,19 @@ func stringsResourcesApp(c *stringsWalk, n *Node, v *resources.App) {
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.App.ServicePrincipalClientId == "" && Forced(v.App.ForceSendFields, "ServicePrincipalClientId") {
+		ch := n.Child("service_principal_client_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.App.ServicePrincipalClientId); c.match(s) {
 		ch := n.Child("service_principal_client_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.App.ServicePrincipalClientId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.App.ServicePrincipalName == "" && Forced(v.App.ForceSendFields, "ServicePrincipalName") {
+		ch := n.Child("service_principal_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.App.ServicePrincipalName); c.match(s) {
 		ch := n.Child("service_principal_name")
@@ -3163,11 +3579,19 @@ func stringsResourcesApp(c *stringsWalk, n *Node, v *resources.App) {
 			v.App.ServicePrincipalName = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.App.SourceCodePath == "" && Forced(v.App.ForceSendFields, "SourceCodePath") {
+		ch := n.Child("source_code_path")
+		c.fn(&ch, "")
+	}
 	if s := string(v.App.SourceCodePath); c.match(s) {
 		ch := n.Child("source_code_path")
 		if r, ok := c.fn(&ch, s); ok {
 			v.App.SourceCodePath = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.App.Space == "" && Forced(v.App.ForceSendFields, "Space") {
+		ch := n.Child("space")
+		c.fn(&ch, "")
 	}
 	if s := string(v.App.Space); c.match(s) {
 		ch := n.Child("space")
@@ -3184,11 +3608,19 @@ func stringsResourcesApp(c *stringsWalk, n *Node, v *resources.App) {
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.App.ThumbnailUrl == "" && Forced(v.App.ForceSendFields, "ThumbnailUrl") {
+		ch := n.Child("thumbnail_url")
+		c.fn(&ch, "")
+	}
 	if s := string(v.App.ThumbnailUrl); c.match(s) {
 		ch := n.Child("thumbnail_url")
 		if r, ok := c.fn(&ch, s); ok {
 			v.App.ThumbnailUrl = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.App.UpdateTime == "" && Forced(v.App.ForceSendFields, "UpdateTime") {
+		ch := n.Child("update_time")
+		c.fn(&ch, "")
 	}
 	if s := string(v.App.UpdateTime); c.match(s) {
 		ch := n.Child("update_time")
@@ -3196,11 +3628,19 @@ func stringsResourcesApp(c *stringsWalk, n *Node, v *resources.App) {
 			v.App.UpdateTime = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.App.Updater == "" && Forced(v.App.ForceSendFields, "Updater") {
+		ch := n.Child("updater")
+		c.fn(&ch, "")
+	}
 	if s := string(v.App.Updater); c.match(s) {
 		ch := n.Child("updater")
 		if r, ok := c.fn(&ch, s); ok {
 			v.App.Updater = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.App.UsagePolicyId == "" && Forced(v.App.ForceSendFields, "UsagePolicyId") {
+		ch := n.Child("usage_policy_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.App.UsagePolicyId); c.match(s) {
 		ch := n.Child("usage_policy_id")
@@ -3301,11 +3741,19 @@ func stringsResourcesAlert(c *stringsWalk, n *Node, v *resources.Alert) {
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.AlertV2.CreateTime == "" && Forced(v.AlertV2.ForceSendFields, "CreateTime") {
+		ch := n.Child("create_time")
+		c.fn(&ch, "")
+	}
 	if s := string(v.AlertV2.CreateTime); c.match(s) {
 		ch := n.Child("create_time")
 		if r, ok := c.fn(&ch, s); ok {
 			v.AlertV2.CreateTime = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.AlertV2.CustomDescription == "" && Forced(v.AlertV2.ForceSendFields, "CustomDescription") {
+		ch := n.Child("custom_description")
+		c.fn(&ch, "")
 	}
 	if s := string(v.AlertV2.CustomDescription); c.match(s) {
 		ch := n.Child("custom_description")
@@ -3313,11 +3761,19 @@ func stringsResourcesAlert(c *stringsWalk, n *Node, v *resources.Alert) {
 			v.AlertV2.CustomDescription = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.AlertV2.CustomSummary == "" && Forced(v.AlertV2.ForceSendFields, "CustomSummary") {
+		ch := n.Child("custom_summary")
+		c.fn(&ch, "")
+	}
 	if s := string(v.AlertV2.CustomSummary); c.match(s) {
 		ch := n.Child("custom_summary")
 		if r, ok := c.fn(&ch, s); ok {
 			v.AlertV2.CustomSummary = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.AlertV2.CustomTemplateFormat == "" && Forced(v.AlertV2.ForceSendFields, "CustomTemplateFormat") {
+		ch := n.Child("custom_template_format")
+		c.fn(&ch, "")
 	}
 	if s := string(v.AlertV2.CustomTemplateFormat); c.match(s) {
 		ch := n.Child("custom_template_format")
@@ -3339,11 +3795,19 @@ func stringsResourcesAlert(c *stringsWalk, n *Node, v *resources.Alert) {
 		ch := n.Child("evaluation")
 		stringsSqlAlertV2Evaluation(c, &ch, &v.AlertV2.Evaluation)
 	}
+	if c.mode == EmptyFields && v.AlertV2.LifecycleState == "" && Forced(v.AlertV2.ForceSendFields, "LifecycleState") {
+		ch := n.Child("lifecycle_state")
+		c.fn(&ch, "")
+	}
 	if s := string(v.AlertV2.LifecycleState); c.match(s) {
 		ch := n.Child("lifecycle_state")
 		if r, ok := c.fn(&ch, s); ok {
 			v.AlertV2.LifecycleState = sql.AlertLifecycleState(r)
 		}
+	}
+	if c.mode == EmptyFields && v.AlertV2.OwnerUserName == "" && Forced(v.AlertV2.ForceSendFields, "OwnerUserName") {
+		ch := n.Child("owner_user_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.AlertV2.OwnerUserName); c.match(s) {
 		ch := n.Child("owner_user_name")
@@ -3359,6 +3823,10 @@ func stringsResourcesAlert(c *stringsWalk, n *Node, v *resources.Alert) {
 				stringsSqlAlertStatementParameter(c, &ch, &v.AlertV2.Parameters[i])
 			}
 		}
+	}
+	if c.mode == EmptyFields && v.AlertV2.ParentPath == "" && Forced(v.AlertV2.ForceSendFields, "ParentPath") {
+		ch := n.Child("parent_path")
+		c.fn(&ch, "")
 	}
 	if s := string(v.AlertV2.ParentPath); c.match(s) {
 		ch := n.Child("parent_path")
@@ -3376,6 +3844,10 @@ func stringsResourcesAlert(c *stringsWalk, n *Node, v *resources.Alert) {
 		ch := n.Child("run_as")
 		stringsSqlAlertV2RunAs(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.AlertV2.RunAsUserName == "" && Forced(v.AlertV2.ForceSendFields, "RunAsUserName") {
+		ch := n.Child("run_as_user_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.AlertV2.RunAsUserName); c.match(s) {
 		ch := n.Child("run_as_user_name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -3385,6 +3857,10 @@ func stringsResourcesAlert(c *stringsWalk, n *Node, v *resources.Alert) {
 	{
 		ch := n.Child("schedule")
 		stringsSqlCronSchedule(c, &ch, &v.AlertV2.Schedule)
+	}
+	if c.mode == EmptyFields && v.AlertV2.UpdateTime == "" && Forced(v.AlertV2.ForceSendFields, "UpdateTime") {
+		ch := n.Child("update_time")
+		c.fn(&ch, "")
 	}
 	if s := string(v.AlertV2.UpdateTime); c.match(s) {
 		ch := n.Child("update_time")
@@ -3432,11 +3908,19 @@ func stringsResourcesSqlWarehouse(c *stringsWalk, n *Node, v *resources.SqlWareh
 		ch := n.Child("channel")
 		stringsSqlChannel(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.CreateWarehouseRequest.ClusterSize == "" && Forced(v.CreateWarehouseRequest.ForceSendFields, "ClusterSize") {
+		ch := n.Child("cluster_size")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CreateWarehouseRequest.ClusterSize); c.match(s) {
 		ch := n.Child("cluster_size")
 		if r, ok := c.fn(&ch, s); ok {
 			v.CreateWarehouseRequest.ClusterSize = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.CreateWarehouseRequest.CreatorName == "" && Forced(v.CreateWarehouseRequest.ForceSendFields, "CreatorName") {
+		ch := n.Child("creator_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CreateWarehouseRequest.CreatorName); c.match(s) {
 		ch := n.Child("creator_name")
@@ -3444,17 +3928,29 @@ func stringsResourcesSqlWarehouse(c *stringsWalk, n *Node, v *resources.SqlWareh
 			v.CreateWarehouseRequest.CreatorName = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.CreateWarehouseRequest.InstanceProfileArn == "" && Forced(v.CreateWarehouseRequest.ForceSendFields, "InstanceProfileArn") {
+		ch := n.Child("instance_profile_arn")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CreateWarehouseRequest.InstanceProfileArn); c.match(s) {
 		ch := n.Child("instance_profile_arn")
 		if r, ok := c.fn(&ch, s); ok {
 			v.CreateWarehouseRequest.InstanceProfileArn = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.CreateWarehouseRequest.Name == "" && Forced(v.CreateWarehouseRequest.ForceSendFields, "Name") {
+		ch := n.Child("name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CreateWarehouseRequest.Name); c.match(s) {
 		ch := n.Child("name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.CreateWarehouseRequest.Name = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.CreateWarehouseRequest.SpotInstancePolicy == "" && Forced(v.CreateWarehouseRequest.ForceSendFields, "SpotInstancePolicy") {
+		ch := n.Child("spot_instance_policy")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CreateWarehouseRequest.SpotInstancePolicy); c.match(s) {
 		ch := n.Child("spot_instance_policy")
@@ -3465,6 +3961,10 @@ func stringsResourcesSqlWarehouse(c *stringsWalk, n *Node, v *resources.SqlWareh
 	if x := v.CreateWarehouseRequest.Tags; x != nil {
 		ch := n.Child("tags")
 		stringsSqlEndpointTags(c, &ch, x)
+	}
+	if c.mode == EmptyFields && v.CreateWarehouseRequest.WarehouseType == "" && Forced(v.CreateWarehouseRequest.ForceSendFields, "WarehouseType") {
+		ch := n.Child("warehouse_type")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CreateWarehouseRequest.WarehouseType); c.match(s) {
 		ch := n.Child("warehouse_type")
@@ -3502,6 +4002,10 @@ func stringsResourcesDatabaseInstance(c *stringsWalk, n *Node, v *resources.Data
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.DatabaseInstance.Capacity == "" && Forced(v.DatabaseInstance.ForceSendFields, "Capacity") {
+		ch := n.Child("capacity")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DatabaseInstance.Capacity); c.match(s) {
 		ch := n.Child("capacity")
 		if r, ok := c.fn(&ch, s); ok {
@@ -3517,11 +4021,19 @@ func stringsResourcesDatabaseInstance(c *stringsWalk, n *Node, v *resources.Data
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.DatabaseInstance.CreationTime == "" && Forced(v.DatabaseInstance.ForceSendFields, "CreationTime") {
+		ch := n.Child("creation_time")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DatabaseInstance.CreationTime); c.match(s) {
 		ch := n.Child("creation_time")
 		if r, ok := c.fn(&ch, s); ok {
 			v.DatabaseInstance.CreationTime = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.DatabaseInstance.Creator == "" && Forced(v.DatabaseInstance.ForceSendFields, "Creator") {
+		ch := n.Child("creator")
+		c.fn(&ch, "")
 	}
 	if s := string(v.DatabaseInstance.Creator); c.match(s) {
 		ch := n.Child("creator")
@@ -3538,6 +4050,10 @@ func stringsResourcesDatabaseInstance(c *stringsWalk, n *Node, v *resources.Data
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.DatabaseInstance.EffectiveCapacity == "" && Forced(v.DatabaseInstance.ForceSendFields, "EffectiveCapacity") {
+		ch := n.Child("effective_capacity")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DatabaseInstance.EffectiveCapacity); c.match(s) {
 		ch := n.Child("effective_capacity")
 		if r, ok := c.fn(&ch, s); ok {
@@ -3552,6 +4068,10 @@ func stringsResourcesDatabaseInstance(c *stringsWalk, n *Node, v *resources.Data
 				stringsDatabaseCustomTag(c, &ch, &v.DatabaseInstance.EffectiveCustomTags[i])
 			}
 		}
+	}
+	if c.mode == EmptyFields && v.DatabaseInstance.EffectiveUsagePolicyId == "" && Forced(v.DatabaseInstance.ForceSendFields, "EffectiveUsagePolicyId") {
+		ch := n.Child("effective_usage_policy_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.DatabaseInstance.EffectiveUsagePolicyId); c.match(s) {
 		ch := n.Child("effective_usage_policy_id")
@@ -3569,11 +4089,19 @@ func stringsResourcesDatabaseInstance(c *stringsWalk, n *Node, v *resources.Data
 		ch := n.Child("parent_instance_ref")
 		stringsDatabaseDatabaseInstanceRef(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.DatabaseInstance.PgVersion == "" && Forced(v.DatabaseInstance.ForceSendFields, "PgVersion") {
+		ch := n.Child("pg_version")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DatabaseInstance.PgVersion); c.match(s) {
 		ch := n.Child("pg_version")
 		if r, ok := c.fn(&ch, s); ok {
 			v.DatabaseInstance.PgVersion = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.DatabaseInstance.ReadOnlyDns == "" && Forced(v.DatabaseInstance.ForceSendFields, "ReadOnlyDns") {
+		ch := n.Child("read_only_dns")
+		c.fn(&ch, "")
 	}
 	if s := string(v.DatabaseInstance.ReadOnlyDns); c.match(s) {
 		ch := n.Child("read_only_dns")
@@ -3581,11 +4109,19 @@ func stringsResourcesDatabaseInstance(c *stringsWalk, n *Node, v *resources.Data
 			v.DatabaseInstance.ReadOnlyDns = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.DatabaseInstance.ReadWriteDns == "" && Forced(v.DatabaseInstance.ForceSendFields, "ReadWriteDns") {
+		ch := n.Child("read_write_dns")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DatabaseInstance.ReadWriteDns); c.match(s) {
 		ch := n.Child("read_write_dns")
 		if r, ok := c.fn(&ch, s); ok {
 			v.DatabaseInstance.ReadWriteDns = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.DatabaseInstance.State == "" && Forced(v.DatabaseInstance.ForceSendFields, "State") {
+		ch := n.Child("state")
+		c.fn(&ch, "")
 	}
 	if s := string(v.DatabaseInstance.State); c.match(s) {
 		ch := n.Child("state")
@@ -3593,11 +4129,19 @@ func stringsResourcesDatabaseInstance(c *stringsWalk, n *Node, v *resources.Data
 			v.DatabaseInstance.State = database.DatabaseInstanceState(r)
 		}
 	}
+	if c.mode == EmptyFields && v.DatabaseInstance.Uid == "" && Forced(v.DatabaseInstance.ForceSendFields, "Uid") {
+		ch := n.Child("uid")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DatabaseInstance.Uid); c.match(s) {
 		ch := n.Child("uid")
 		if r, ok := c.fn(&ch, s); ok {
 			v.DatabaseInstance.Uid = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.DatabaseInstance.UsagePolicyId == "" && Forced(v.DatabaseInstance.ForceSendFields, "UsagePolicyId") {
+		ch := n.Child("usage_policy_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.DatabaseInstance.UsagePolicyId); c.match(s) {
 		ch := n.Child("usage_policy_id")
@@ -3644,6 +4188,10 @@ func stringsResourcesDatabaseCatalog(c *stringsWalk, n *Node, v *resources.Datab
 			v.DatabaseCatalog.Name = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.DatabaseCatalog.Uid == "" && Forced(v.DatabaseCatalog.ForceSendFields, "Uid") {
+		ch := n.Child("uid")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DatabaseCatalog.Uid); c.match(s) {
 		ch := n.Child("uid")
 		if r, ok := c.fn(&ch, s); ok {
@@ -3675,11 +4223,19 @@ func stringsResourcesSyncedDatabaseTable(c *stringsWalk, n *Node, v *resources.S
 		ch := n.Child("data_synchronization_status")
 		stringsDatabaseSyncedTableStatus(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.SyncedDatabaseTable.DatabaseInstanceName == "" && Forced(v.SyncedDatabaseTable.ForceSendFields, "DatabaseInstanceName") {
+		ch := n.Child("database_instance_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.SyncedDatabaseTable.DatabaseInstanceName); c.match(s) {
 		ch := n.Child("database_instance_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.SyncedDatabaseTable.DatabaseInstanceName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.SyncedDatabaseTable.EffectiveDatabaseInstanceName == "" && Forced(v.SyncedDatabaseTable.ForceSendFields, "EffectiveDatabaseInstanceName") {
+		ch := n.Child("effective_database_instance_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.SyncedDatabaseTable.EffectiveDatabaseInstanceName); c.match(s) {
 		ch := n.Child("effective_database_instance_name")
@@ -3687,11 +4243,19 @@ func stringsResourcesSyncedDatabaseTable(c *stringsWalk, n *Node, v *resources.S
 			v.SyncedDatabaseTable.EffectiveDatabaseInstanceName = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.SyncedDatabaseTable.EffectiveLogicalDatabaseName == "" && Forced(v.SyncedDatabaseTable.ForceSendFields, "EffectiveLogicalDatabaseName") {
+		ch := n.Child("effective_logical_database_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.SyncedDatabaseTable.EffectiveLogicalDatabaseName); c.match(s) {
 		ch := n.Child("effective_logical_database_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.SyncedDatabaseTable.EffectiveLogicalDatabaseName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.SyncedDatabaseTable.LogicalDatabaseName == "" && Forced(v.SyncedDatabaseTable.ForceSendFields, "LogicalDatabaseName") {
+		ch := n.Child("logical_database_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.SyncedDatabaseTable.LogicalDatabaseName); c.match(s) {
 		ch := n.Child("logical_database_name")
@@ -3708,6 +4272,10 @@ func stringsResourcesSyncedDatabaseTable(c *stringsWalk, n *Node, v *resources.S
 	if x := v.SyncedDatabaseTable.Spec; x != nil {
 		ch := n.Child("spec")
 		stringsDatabaseSyncedTableSpec(c, &ch, x)
+	}
+	if c.mode == EmptyFields && v.SyncedDatabaseTable.UnityCatalogProvisioningState == "" && Forced(v.SyncedDatabaseTable.ForceSendFields, "UnityCatalogProvisioningState") {
+		ch := n.Child("unity_catalog_provisioning_state")
+		c.fn(&ch, "")
 	}
 	if s := string(v.SyncedDatabaseTable.UnityCatalogProvisioningState); c.match(s) {
 		ch := n.Child("unity_catalog_provisioning_state")
@@ -3751,6 +4319,10 @@ func stringsResourcesPostgresProject(c *stringsWalk, n *Node, v *resources.Postg
 			v.PostgresProjectConfig.ProjectId = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.PostgresProjectConfig.ProjectSpec.BudgetPolicyId == "" && Forced(v.PostgresProjectConfig.ProjectSpec.ForceSendFields, "BudgetPolicyId") {
+		ch := n.Child("budget_policy_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.PostgresProjectConfig.ProjectSpec.BudgetPolicyId); c.match(s) {
 		ch := n.Child("budget_policy_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -3766,6 +4338,10 @@ func stringsResourcesPostgresProject(c *stringsWalk, n *Node, v *resources.Postg
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.PostgresProjectConfig.ProjectSpec.DefaultBranch == "" && Forced(v.PostgresProjectConfig.ProjectSpec.ForceSendFields, "DefaultBranch") {
+		ch := n.Child("default_branch")
+		c.fn(&ch, "")
+	}
 	if s := string(v.PostgresProjectConfig.ProjectSpec.DefaultBranch); c.match(s) {
 		ch := n.Child("default_branch")
 		if r, ok := c.fn(&ch, s); ok {
@@ -3775,6 +4351,10 @@ func stringsResourcesPostgresProject(c *stringsWalk, n *Node, v *resources.Postg
 	if x := v.PostgresProjectConfig.ProjectSpec.DefaultEndpointSettings; x != nil {
 		ch := n.Child("default_endpoint_settings")
 		stringsPostgresProjectDefaultEndpointSettings(c, &ch, x)
+	}
+	if c.mode == EmptyFields && v.PostgresProjectConfig.ProjectSpec.DisplayName == "" && Forced(v.PostgresProjectConfig.ProjectSpec.ForceSendFields, "DisplayName") {
+		ch := n.Child("display_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.PostgresProjectConfig.ProjectSpec.DisplayName); c.match(s) {
 		ch := n.Child("display_name")
@@ -3815,17 +4395,29 @@ func stringsResourcesPostgresBranch(c *stringsWalk, n *Node, v *resources.Postgr
 			v.PostgresBranchConfig.Parent = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.PostgresBranchConfig.BranchSpec.SourceBranch == "" && Forced(v.PostgresBranchConfig.BranchSpec.ForceSendFields, "SourceBranch") {
+		ch := n.Child("source_branch")
+		c.fn(&ch, "")
+	}
 	if s := string(v.PostgresBranchConfig.BranchSpec.SourceBranch); c.match(s) {
 		ch := n.Child("source_branch")
 		if r, ok := c.fn(&ch, s); ok {
 			v.PostgresBranchConfig.BranchSpec.SourceBranch = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.PostgresBranchConfig.BranchSpec.SourceBranchLsn == "" && Forced(v.PostgresBranchConfig.BranchSpec.ForceSendFields, "SourceBranchLsn") {
+		ch := n.Child("source_branch_lsn")
+		c.fn(&ch, "")
+	}
 	if s := string(v.PostgresBranchConfig.BranchSpec.SourceBranchLsn); c.match(s) {
 		ch := n.Child("source_branch_lsn")
 		if r, ok := c.fn(&ch, s); ok {
 			v.PostgresBranchConfig.BranchSpec.SourceBranchLsn = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.PostgresBranchConfig.BranchSpec.SourceSnapshot == "" && Forced(v.PostgresBranchConfig.BranchSpec.ForceSendFields, "SourceSnapshot") {
+		ch := n.Child("source_snapshot")
+		c.fn(&ch, "")
 	}
 	if s := string(v.PostgresBranchConfig.BranchSpec.SourceSnapshot); c.match(s) {
 		ch := n.Child("source_snapshot")
@@ -3903,6 +4495,10 @@ func stringsResourcesPostgresCatalog(c *stringsWalk, n *Node, v *resources.Postg
 			v.PostgresCatalogConfig.CatalogId = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.PostgresCatalogConfig.CatalogCatalogSpec.Branch == "" && Forced(v.PostgresCatalogConfig.CatalogCatalogSpec.ForceSendFields, "Branch") {
+		ch := n.Child("branch")
+		c.fn(&ch, "")
+	}
 	if s := string(v.PostgresCatalogConfig.CatalogCatalogSpec.Branch); c.match(s) {
 		ch := n.Child("branch")
 		if r, ok := c.fn(&ch, s); ok {
@@ -3947,6 +4543,10 @@ func stringsResourcesPostgresDatabase(c *stringsWalk, n *Node, v *resources.Post
 		if r, ok := c.fn(&ch, s); ok {
 			v.PostgresDatabaseConfig.Parent = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.PostgresDatabaseConfig.DatabaseDatabaseSpec.PostgresDatabase == "" && Forced(v.PostgresDatabaseConfig.DatabaseDatabaseSpec.ForceSendFields, "PostgresDatabase") {
+		ch := n.Child("postgres_database")
+		c.fn(&ch, "")
 	}
 	if s := string(v.PostgresDatabaseConfig.DatabaseDatabaseSpec.PostgresDatabase); c.match(s) {
 		ch := n.Child("postgres_database")
@@ -3993,11 +4593,19 @@ func stringsResourcesPostgresRole(c *stringsWalk, n *Node, v *resources.Postgres
 			v.PostgresRoleConfig.Parent = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.PostgresRoleConfig.RoleRoleSpec.AuthMethod == "" && Forced(v.PostgresRoleConfig.RoleRoleSpec.ForceSendFields, "AuthMethod") {
+		ch := n.Child("auth_method")
+		c.fn(&ch, "")
+	}
 	if s := string(v.PostgresRoleConfig.RoleRoleSpec.AuthMethod); c.match(s) {
 		ch := n.Child("auth_method")
 		if r, ok := c.fn(&ch, s); ok {
 			v.PostgresRoleConfig.RoleRoleSpec.AuthMethod = postgres.RoleAuthMethod(r)
 		}
+	}
+	if c.mode == EmptyFields && v.PostgresRoleConfig.RoleRoleSpec.IdentityType == "" && Forced(v.PostgresRoleConfig.RoleRoleSpec.ForceSendFields, "IdentityType") {
+		ch := n.Child("identity_type")
+		c.fn(&ch, "")
 	}
 	if s := string(v.PostgresRoleConfig.RoleRoleSpec.IdentityType); c.match(s) {
 		ch := n.Child("identity_type")
@@ -4015,6 +4623,10 @@ func stringsResourcesPostgresRole(c *stringsWalk, n *Node, v *resources.Postgres
 				}
 			}
 		}
+	}
+	if c.mode == EmptyFields && v.PostgresRoleConfig.RoleRoleSpec.PostgresRole == "" && Forced(v.PostgresRoleConfig.RoleRoleSpec.ForceSendFields, "PostgresRole") {
+		ch := n.Child("postgres_role")
+		c.fn(&ch, "")
 	}
 	if s := string(v.PostgresRoleConfig.RoleRoleSpec.PostgresRole); c.match(s) {
 		ch := n.Child("postgres_role")
@@ -4049,11 +4661,19 @@ func stringsResourcesPostgresSyncedTable(c *stringsWalk, n *Node, v *resources.P
 			v.PostgresSyncedTableConfig.SyncedTableId = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.Branch == "" && Forced(v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.ForceSendFields, "Branch") {
+		ch := n.Child("branch")
+		c.fn(&ch, "")
+	}
 	if s := string(v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.Branch); c.match(s) {
 		ch := n.Child("branch")
 		if r, ok := c.fn(&ch, s); ok {
 			v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.Branch = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.ExistingPipelineId == "" && Forced(v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.ForceSendFields, "ExistingPipelineId") {
+		ch := n.Child("existing_pipeline_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.ExistingPipelineId); c.match(s) {
 		ch := n.Child("existing_pipeline_id")
@@ -4074,6 +4694,10 @@ func stringsResourcesPostgresSyncedTable(c *stringsWalk, n *Node, v *resources.P
 		ch := n.Child("new_pipeline_spec")
 		stringsPostgresNewPipelineSpec(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.PostgresDatabase == "" && Forced(v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.ForceSendFields, "PostgresDatabase") {
+		ch := n.Child("postgres_database")
+		c.fn(&ch, "")
+	}
 	if s := string(v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.PostgresDatabase); c.match(s) {
 		ch := n.Child("postgres_database")
 		if r, ok := c.fn(&ch, s); ok {
@@ -4091,17 +4715,29 @@ func stringsResourcesPostgresSyncedTable(c *stringsWalk, n *Node, v *resources.P
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.SchedulingPolicy == "" && Forced(v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.ForceSendFields, "SchedulingPolicy") {
+		ch := n.Child("scheduling_policy")
+		c.fn(&ch, "")
+	}
 	if s := string(v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.SchedulingPolicy); c.match(s) {
 		ch := n.Child("scheduling_policy")
 		if r, ok := c.fn(&ch, s); ok {
 			v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.SchedulingPolicy = postgres.SyncedTableSyncedTableSpecSyncedTableSchedulingPolicy(r)
 		}
 	}
+	if c.mode == EmptyFields && v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.SourceTableFullName == "" && Forced(v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.ForceSendFields, "SourceTableFullName") {
+		ch := n.Child("source_table_full_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.SourceTableFullName); c.match(s) {
 		ch := n.Child("source_table_full_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.SourceTableFullName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.TimeseriesKey == "" && Forced(v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.ForceSendFields, "TimeseriesKey") {
+		ch := n.Child("timeseries_key")
+		c.fn(&ch, "")
 	}
 	if s := string(v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.TimeseriesKey); c.match(s) {
 		ch := n.Child("timeseries_key")
@@ -4184,6 +4820,10 @@ func stringsResourcesVectorSearchEndpoint(c *stringsWalk, n *Node, v *resources.
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.CreateEndpoint.BudgetPolicyId == "" && Forced(v.CreateEndpoint.ForceSendFields, "BudgetPolicyId") {
+		ch := n.Child("budget_policy_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CreateEndpoint.BudgetPolicyId); c.match(s) {
 		ch := n.Child("budget_policy_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -4201,6 +4841,10 @@ func stringsResourcesVectorSearchEndpoint(c *stringsWalk, n *Node, v *resources.
 		if r, ok := c.fn(&ch, s); ok {
 			v.CreateEndpoint.Name = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.CreateEndpoint.UsagePolicyId == "" && Forced(v.CreateEndpoint.ForceSendFields, "UsagePolicyId") {
+		ch := n.Child("usage_policy_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CreateEndpoint.UsagePolicyId); c.match(s) {
 		ch := n.Child("usage_policy_id")
@@ -4405,11 +5049,19 @@ func stringsResourcesSecret(c *stringsWalk, n *Node, v *resources.Secret) {
 			v.Secret.CatalogName = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.Secret.Comment == "" && Forced(v.Secret.ForceSendFields, "Comment") {
+		ch := n.Child("comment")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Secret.Comment); c.match(s) {
 		ch := n.Child("comment")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Secret.Comment = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Secret.CreatedBy == "" && Forced(v.Secret.ForceSendFields, "CreatedBy") {
+		ch := n.Child("created_by")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Secret.CreatedBy); c.match(s) {
 		ch := n.Child("created_by")
@@ -4417,11 +5069,19 @@ func stringsResourcesSecret(c *stringsWalk, n *Node, v *resources.Secret) {
 			v.Secret.CreatedBy = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.Secret.EffectiveOwner == "" && Forced(v.Secret.ForceSendFields, "EffectiveOwner") {
+		ch := n.Child("effective_owner")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Secret.EffectiveOwner); c.match(s) {
 		ch := n.Child("effective_owner")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Secret.EffectiveOwner = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Secret.EffectiveValue == "" && Forced(v.Secret.ForceSendFields, "EffectiveValue") {
+		ch := n.Child("effective_value")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Secret.EffectiveValue); c.match(s) {
 		ch := n.Child("effective_value")
@@ -4429,11 +5089,19 @@ func stringsResourcesSecret(c *stringsWalk, n *Node, v *resources.Secret) {
 			v.Secret.EffectiveValue = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.Secret.FullName == "" && Forced(v.Secret.ForceSendFields, "FullName") {
+		ch := n.Child("full_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Secret.FullName); c.match(s) {
 		ch := n.Child("full_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Secret.FullName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Secret.MetastoreId == "" && Forced(v.Secret.ForceSendFields, "MetastoreId") {
+		ch := n.Child("metastore_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Secret.MetastoreId); c.match(s) {
 		ch := n.Child("metastore_id")
@@ -4447,6 +5115,10 @@ func stringsResourcesSecret(c *stringsWalk, n *Node, v *resources.Secret) {
 			v.Secret.Name = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.Secret.Owner == "" && Forced(v.Secret.ForceSendFields, "Owner") {
+		ch := n.Child("owner")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Secret.Owner); c.match(s) {
 		ch := n.Child("owner")
 		if r, ok := c.fn(&ch, s); ok {
@@ -4458,6 +5130,10 @@ func stringsResourcesSecret(c *stringsWalk, n *Node, v *resources.Secret) {
 		if r, ok := c.fn(&ch, s); ok {
 			v.Secret.SchemaName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Secret.UpdatedBy == "" && Forced(v.Secret.ForceSendFields, "UpdatedBy") {
+		ch := n.Child("updated_by")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Secret.UpdatedBy); c.match(s) {
 		ch := n.Child("updated_by")
@@ -4480,9 +5156,17 @@ func stringsResourcesClusterPolicy(c *stringsWalk, n *Node, v *resources.Cluster
 			v.ID = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.Definition == "" {
+		ch := n.Child("definition")
+		c.fn(&ch, "")
+	}
 	if v.Definition != nil {
 		ch := n.Child("definition")
 		c.any(&ch, &v.Definition)
+	}
+	if c.mode == EmptyFields && v.PolicyFamilyDefinitionOverrides == "" {
+		ch := n.Child("policy_family_definition_overrides")
+		c.fn(&ch, "")
 	}
 	if v.PolicyFamilyDefinitionOverrides != nil {
 		ch := n.Child("policy_family_definition_overrides")
@@ -4509,6 +5193,10 @@ func stringsResourcesClusterPolicy(c *stringsWalk, n *Node, v *resources.Cluster
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.CreatePolicy.Description == "" && Forced(v.CreatePolicy.ForceSendFields, "Description") {
+		ch := n.Child("description")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CreatePolicy.Description); c.match(s) {
 		ch := n.Child("description")
 		if r, ok := c.fn(&ch, s); ok {
@@ -4524,11 +5212,19 @@ func stringsResourcesClusterPolicy(c *stringsWalk, n *Node, v *resources.Cluster
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.CreatePolicy.Name == "" && Forced(v.CreatePolicy.ForceSendFields, "Name") {
+		ch := n.Child("name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CreatePolicy.Name); c.match(s) {
 		ch := n.Child("name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.CreatePolicy.Name = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.CreatePolicy.PolicyFamilyId == "" && Forced(v.CreatePolicy.ForceSendFields, "PolicyFamilyId") {
+		ch := n.Child("policy_family_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CreatePolicy.PolicyFamilyId); c.match(s) {
 		ch := n.Child("policy_family_id")
@@ -4575,6 +5271,10 @@ func stringsVariableTargetVariable(c *stringsWalk, n *Node, v *variable.TargetVa
 			v.Type = variable.VariableType(r)
 		}
 	}
+	if c.mode == EmptyFields && v.Default == "" {
+		ch := n.Child("default")
+		c.fn(&ch, "")
+	}
 	if v.Default != nil {
 		ch := n.Child("default")
 		c.any(&ch, &v.Default)
@@ -4584,6 +5284,10 @@ func stringsVariableTargetVariable(c *stringsWalk, n *Node, v *variable.TargetVa
 		if r, ok := c.fn(&ch, s); ok {
 			v.Description = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Value == "" {
+		ch := n.Child("value")
+		c.fn(&ch, "")
 	}
 	if v.Value != nil {
 		ch := n.Child("value")
@@ -4596,11 +5300,19 @@ func stringsVariableTargetVariable(c *stringsWalk, n *Node, v *variable.TargetVa
 }
 
 func stringsIamComplexValue(c *stringsWalk, n *Node, v *iam.ComplexValue) {
+	if c.mode == EmptyFields && v.Display == "" && Forced(v.ForceSendFields, "Display") {
+		ch := n.Child("display")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Display); c.match(s) {
 		ch := n.Child("display")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Display = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Ref == "" && Forced(v.ForceSendFields, "Ref") {
+		ch := n.Child("$ref")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Ref); c.match(s) {
 		ch := n.Child("$ref")
@@ -4608,11 +5320,19 @@ func stringsIamComplexValue(c *stringsWalk, n *Node, v *iam.ComplexValue) {
 			v.Ref = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.Type == "" && Forced(v.ForceSendFields, "Type") {
+		ch := n.Child("type")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Type); c.match(s) {
 		ch := n.Child("type")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Type = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Value == "" && Forced(v.ForceSendFields, "Value") {
+		ch := n.Child("value")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Value); c.match(s) {
 		ch := n.Child("value")
@@ -4623,11 +5343,19 @@ func stringsIamComplexValue(c *stringsWalk, n *Node, v *iam.ComplexValue) {
 }
 
 func stringsIamName(c *stringsWalk, n *Node, v *iam.Name) {
+	if c.mode == EmptyFields && v.FamilyName == "" && Forced(v.ForceSendFields, "FamilyName") {
+		ch := n.Child("familyName")
+		c.fn(&ch, "")
+	}
 	if s := string(v.FamilyName); c.match(s) {
 		ch := n.Child("familyName")
 		if r, ok := c.fn(&ch, s); ok {
 			v.FamilyName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.GivenName == "" && Forced(v.ForceSendFields, "GivenName") {
+		ch := n.Child("givenName")
+		c.fn(&ch, "")
 	}
 	if s := string(v.GivenName); c.match(s) {
 		ch := n.Child("givenName")
@@ -4684,6 +5412,10 @@ func stringsJobsContinuous(c *stringsWalk, n *Node, v *jobs.Continuous) {
 }
 
 func stringsJobsJobDeployment(c *stringsWalk, n *Node, v *jobs.JobDeployment) {
+	if c.mode == EmptyFields && v.DeploymentId == "" && Forced(v.ForceSendFields, "DeploymentId") {
+		ch := n.Child("deployment_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DeploymentId); c.match(s) {
 		ch := n.Child("deployment_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -4696,11 +5428,19 @@ func stringsJobsJobDeployment(c *stringsWalk, n *Node, v *jobs.JobDeployment) {
 			v.Kind = jobs.JobDeploymentKind(r)
 		}
 	}
+	if c.mode == EmptyFields && v.MetadataFilePath == "" && Forced(v.ForceSendFields, "MetadataFilePath") {
+		ch := n.Child("metadata_file_path")
+		c.fn(&ch, "")
+	}
 	if s := string(v.MetadataFilePath); c.match(s) {
 		ch := n.Child("metadata_file_path")
 		if r, ok := c.fn(&ch, s); ok {
 			v.MetadataFilePath = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.VersionId == "" && Forced(v.ForceSendFields, "VersionId") {
+		ch := n.Child("version_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.VersionId); c.match(s) {
 		ch := n.Child("version_id")
@@ -4817,11 +5557,19 @@ func stringsJobsJobEnvironment(c *stringsWalk, n *Node, v *jobs.JobEnvironment) 
 }
 
 func stringsJobsGitSource(c *stringsWalk, n *Node, v *jobs.GitSource) {
+	if c.mode == EmptyFields && v.GitBranch == "" && Forced(v.ForceSendFields, "GitBranch") {
+		ch := n.Child("git_branch")
+		c.fn(&ch, "")
+	}
 	if s := string(v.GitBranch); c.match(s) {
 		ch := n.Child("git_branch")
 		if r, ok := c.fn(&ch, s); ok {
 			v.GitBranch = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.GitCommit == "" && Forced(v.ForceSendFields, "GitCommit") {
+		ch := n.Child("git_commit")
+		c.fn(&ch, "")
 	}
 	if s := string(v.GitCommit); c.match(s) {
 		ch := n.Child("git_commit")
@@ -4838,6 +5586,10 @@ func stringsJobsGitSource(c *stringsWalk, n *Node, v *jobs.GitSource) {
 	if x := v.GitSnapshot; x != nil {
 		ch := n.Child("git_snapshot")
 		stringsJobsGitSnapshot(c, &ch, x)
+	}
+	if c.mode == EmptyFields && v.GitTag == "" && Forced(v.ForceSendFields, "GitTag") {
+		ch := n.Child("git_tag")
+		c.fn(&ch, "")
 	}
 	if s := string(v.GitTag); c.match(s) {
 		ch := n.Child("git_tag")
@@ -4883,6 +5635,10 @@ func stringsJobsJobCluster(c *stringsWalk, n *Node, v *jobs.JobCluster) {
 	if x := v.NewCluster; x != nil {
 		ch := n.Child("new_cluster")
 		stringsComputeClusterSpec(c, &ch, x)
+	}
+	if c.mode == EmptyFields && v.ServerlessComputeId == "" && Forced(v.ForceSendFields, "ServerlessComputeId") {
+		ch := n.Child("serverless_compute_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.ServerlessComputeId); c.match(s) {
 		ch := n.Child("serverless_compute_id")
@@ -4978,6 +5734,10 @@ func stringsJobsTask(c *stringsWalk, n *Node, v *jobs.Task) {
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.Description == "" && Forced(v.ForceSendFields, "Description") {
+		ch := n.Child("description")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Description); c.match(s) {
 		ch := n.Child("description")
 		if r, ok := c.fn(&ch, s); ok {
@@ -4988,17 +5748,29 @@ func stringsJobsTask(c *stringsWalk, n *Node, v *jobs.Task) {
 		ch := n.Child("email_notifications")
 		stringsJobsTaskEmailNotifications(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.EnvironmentKey == "" && Forced(v.ForceSendFields, "EnvironmentKey") {
+		ch := n.Child("environment_key")
+		c.fn(&ch, "")
+	}
 	if s := string(v.EnvironmentKey); c.match(s) {
 		ch := n.Child("environment_key")
 		if r, ok := c.fn(&ch, s); ok {
 			v.EnvironmentKey = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.EnvironmentVariablesKey == "" && Forced(v.ForceSendFields, "EnvironmentVariablesKey") {
+		ch := n.Child("environment_variables_key")
+		c.fn(&ch, "")
+	}
 	if s := string(v.EnvironmentVariablesKey); c.match(s) {
 		ch := n.Child("environment_variables_key")
 		if r, ok := c.fn(&ch, s); ok {
 			v.EnvironmentVariablesKey = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.ExistingClusterId == "" && Forced(v.ForceSendFields, "ExistingClusterId") {
+		ch := n.Child("existing_cluster_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.ExistingClusterId); c.match(s) {
 		ch := n.Child("existing_cluster_id")
@@ -5017,6 +5789,10 @@ func stringsJobsTask(c *stringsWalk, n *Node, v *jobs.Task) {
 	if x := v.Health; x != nil {
 		ch := n.Child("health")
 		stringsJobsJobsHealthRules(c, &ch, x)
+	}
+	if c.mode == EmptyFields && v.JobClusterKey == "" && Forced(v.ForceSendFields, "JobClusterKey") {
+		ch := n.Child("job_cluster_key")
+		c.fn(&ch, "")
 	}
 	if s := string(v.JobClusterKey); c.match(s) {
 		ch := n.Child("job_cluster_key")
@@ -5056,6 +5832,10 @@ func stringsJobsTask(c *stringsWalk, n *Node, v *jobs.Task) {
 	if x := v.PythonWheelTask; x != nil {
 		ch := n.Child("python_wheel_task")
 		stringsJobsPythonWheelTask(c, &ch, x)
+	}
+	if c.mode == EmptyFields && v.RunIf == "" && Forced(v.ForceSendFields, "RunIf") {
+		ch := n.Child("run_if")
+		c.fn(&ch, "")
 	}
 	if s := string(v.RunIf); c.match(s) {
 		ch := n.Child("run_if")
@@ -5345,11 +6125,19 @@ func stringsPipelinesPipelineCluster(c *stringsWalk, n *Node, v *pipelines.Pipel
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.DriverInstancePoolId == "" && Forced(v.ForceSendFields, "DriverInstancePoolId") {
+		ch := n.Child("driver_instance_pool_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DriverInstancePoolId); c.match(s) {
 		ch := n.Child("driver_instance_pool_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.DriverInstancePoolId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.DriverNodeTypeId == "" && Forced(v.ForceSendFields, "DriverNodeTypeId") {
+		ch := n.Child("driver_node_type_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.DriverNodeTypeId); c.match(s) {
 		ch := n.Child("driver_node_type_id")
@@ -5370,11 +6158,19 @@ func stringsPipelinesPipelineCluster(c *stringsWalk, n *Node, v *pipelines.Pipel
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.InstancePoolId == "" && Forced(v.ForceSendFields, "InstancePoolId") {
+		ch := n.Child("instance_pool_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.InstancePoolId); c.match(s) {
 		ch := n.Child("instance_pool_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.InstancePoolId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Label == "" && Forced(v.ForceSendFields, "Label") {
+		ch := n.Child("label")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Label); c.match(s) {
 		ch := n.Child("label")
@@ -5382,11 +6178,19 @@ func stringsPipelinesPipelineCluster(c *stringsWalk, n *Node, v *pipelines.Pipel
 			v.Label = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.NodeTypeId == "" && Forced(v.ForceSendFields, "NodeTypeId") {
+		ch := n.Child("node_type_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.NodeTypeId); c.match(s) {
 		ch := n.Child("node_type_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.NodeTypeId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.PolicyId == "" && Forced(v.ForceSendFields, "PolicyId") {
+		ch := n.Child("policy_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.PolicyId); c.match(s) {
 		ch := n.Child("policy_id")
@@ -5430,6 +6234,10 @@ func stringsPipelinesPipelineCluster(c *stringsWalk, n *Node, v *pipelines.Pipel
 }
 
 func stringsPipelinesPipelineDeployment(c *stringsWalk, n *Node, v *pipelines.PipelineDeployment) {
+	if c.mode == EmptyFields && v.DeploymentId == "" && Forced(v.ForceSendFields, "DeploymentId") {
+		ch := n.Child("deployment_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DeploymentId); c.match(s) {
 		ch := n.Child("deployment_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -5442,11 +6250,19 @@ func stringsPipelinesPipelineDeployment(c *stringsWalk, n *Node, v *pipelines.Pi
 			v.Kind = pipelines.DeploymentKind(r)
 		}
 	}
+	if c.mode == EmptyFields && v.MetadataFilePath == "" && Forced(v.ForceSendFields, "MetadataFilePath") {
+		ch := n.Child("metadata_file_path")
+		c.fn(&ch, "")
+	}
 	if s := string(v.MetadataFilePath); c.match(s) {
 		ch := n.Child("metadata_file_path")
 		if r, ok := c.fn(&ch, s); ok {
 			v.MetadataFilePath = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.VersionId == "" && Forced(v.ForceSendFields, "VersionId") {
+		ch := n.Child("version_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.VersionId); c.match(s) {
 		ch := n.Child("version_id")
@@ -5468,6 +6284,10 @@ func stringsPipelinesPipelinesEnvironment(c *stringsWalk, n *Node, v *pipelines.
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.EnvironmentVersion == "" && Forced(v.ForceSendFields, "EnvironmentVersion") {
+		ch := n.Child("environment_version")
+		c.fn(&ch, "")
+	}
 	if s := string(v.EnvironmentVersion); c.match(s) {
 		ch := n.Child("environment_version")
 		if r, ok := c.fn(&ch, s); ok {
@@ -5477,17 +6297,29 @@ func stringsPipelinesPipelinesEnvironment(c *stringsWalk, n *Node, v *pipelines.
 }
 
 func stringsPipelinesEventLogSpec(c *stringsWalk, n *Node, v *pipelines.EventLogSpec) {
+	if c.mode == EmptyFields && v.Catalog == "" && Forced(v.ForceSendFields, "Catalog") {
+		ch := n.Child("catalog")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Catalog); c.match(s) {
 		ch := n.Child("catalog")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Catalog = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.Name == "" && Forced(v.ForceSendFields, "Name") {
+		ch := n.Child("name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Name); c.match(s) {
 		ch := n.Child("name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Name = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Schema == "" && Forced(v.ForceSendFields, "Schema") {
+		ch := n.Child("schema")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Schema); c.match(s) {
 		ch := n.Child("schema")
@@ -5523,6 +6355,10 @@ func stringsPipelinesFilters(c *stringsWalk, n *Node, v *pipelines.Filters) {
 }
 
 func stringsPipelinesIngestionGatewayPipelineDefinition(c *stringsWalk, n *Node, v *pipelines.IngestionGatewayPipelineDefinition) {
+	if c.mode == EmptyFields && v.ConnectionId == "" && Forced(v.ForceSendFields, "ConnectionId") {
+		ch := n.Child("connection_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ConnectionId); c.match(s) {
 		ch := n.Child("connection_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -5545,6 +6381,10 @@ func stringsPipelinesIngestionGatewayPipelineDefinition(c *stringsWalk, n *Node,
 			v.GatewayStorageCatalog = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.GatewayStorageName == "" && Forced(v.ForceSendFields, "GatewayStorageName") {
+		ch := n.Child("gateway_storage_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.GatewayStorageName); c.match(s) {
 		ch := n.Child("gateway_storage_name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -5560,11 +6400,19 @@ func stringsPipelinesIngestionGatewayPipelineDefinition(c *stringsWalk, n *Node,
 }
 
 func stringsPipelinesIngestionPipelineDefinition(c *stringsWalk, n *Node, v *pipelines.IngestionPipelineDefinition) {
+	if c.mode == EmptyFields && v.ConnectionName == "" && Forced(v.ForceSendFields, "ConnectionName") {
+		ch := n.Child("connection_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ConnectionName); c.match(s) {
 		ch := n.Child("connection_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.ConnectionName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.ConnectorType == "" && Forced(v.ForceSendFields, "ConnectorType") {
+		ch := n.Child("connector_type")
+		c.fn(&ch, "")
 	}
 	if s := string(v.ConnectorType); c.match(s) {
 		ch := n.Child("connector_type")
@@ -5580,11 +6428,19 @@ func stringsPipelinesIngestionPipelineDefinition(c *stringsWalk, n *Node, v *pip
 		ch := n.Child("full_refresh_window")
 		stringsPipelinesOperationTimeWindow(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.IngestionGatewayId == "" && Forced(v.ForceSendFields, "IngestionGatewayId") {
+		ch := n.Child("ingestion_gateway_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.IngestionGatewayId); c.match(s) {
 		ch := n.Child("ingestion_gateway_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.IngestionGatewayId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.NetsuiteJarPath == "" && Forced(v.ForceSendFields, "NetsuiteJarPath") {
+		ch := n.Child("netsuite_jar_path")
+		c.fn(&ch, "")
 	}
 	if s := string(v.NetsuiteJarPath); c.match(s) {
 		ch := n.Child("netsuite_jar_path")
@@ -5610,6 +6466,10 @@ func stringsPipelinesIngestionPipelineDefinition(c *stringsWalk, n *Node, v *pip
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.SourceType == "" && Forced(v.ForceSendFields, "SourceType") {
+		ch := n.Child("source_type")
+		c.fn(&ch, "")
+	}
 	if s := string(v.SourceType); c.match(s) {
 		ch := n.Child("source_type")
 		if r, ok := c.fn(&ch, s); ok {
@@ -5631,6 +6491,10 @@ func stringsPipelinesPipelineLibrary(c *stringsWalk, n *Node, v *pipelines.Pipel
 		ch := n.Child("glob")
 		stringsPipelinesPathPattern(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.Jar == "" && Forced(v.ForceSendFields, "Jar") {
+		ch := n.Child("jar")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Jar); c.match(s) {
 		ch := n.Child("jar")
 		if r, ok := c.fn(&ch, s); ok {
@@ -5644,6 +6508,10 @@ func stringsPipelinesPipelineLibrary(c *stringsWalk, n *Node, v *pipelines.Pipel
 	if x := v.Notebook; x != nil {
 		ch := n.Child("notebook")
 		stringsPipelinesNotebookLibrary(c, &ch, x)
+	}
+	if c.mode == EmptyFields && v.Whl == "" && Forced(v.ForceSendFields, "Whl") {
+		ch := n.Child("whl")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Whl); c.match(s) {
 		ch := n.Child("whl")
@@ -5690,6 +6558,10 @@ func stringsPipelinesRestartWindow(c *stringsWalk, n *Node, v *pipelines.Restart
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.TimeZoneId == "" && Forced(v.ForceSendFields, "TimeZoneId") {
+		ch := n.Child("time_zone_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.TimeZoneId); c.match(s) {
 		ch := n.Child("time_zone_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -5699,17 +6571,29 @@ func stringsPipelinesRestartWindow(c *stringsWalk, n *Node, v *pipelines.Restart
 }
 
 func stringsPipelinesRunAs(c *stringsWalk, n *Node, v *pipelines.RunAs) {
+	if c.mode == EmptyFields && v.GroupName == "" && Forced(v.ForceSendFields, "GroupName") {
+		ch := n.Child("group_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.GroupName); c.match(s) {
 		ch := n.Child("group_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.GroupName = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.ServicePrincipalName == "" && Forced(v.ForceSendFields, "ServicePrincipalName") {
+		ch := n.Child("service_principal_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ServicePrincipalName); c.match(s) {
 		ch := n.Child("service_principal_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.ServicePrincipalName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.UserName == "" && Forced(v.ForceSendFields, "UserName") {
+		ch := n.Child("user_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.UserName); c.match(s) {
 		ch := n.Child("user_name")
@@ -5754,11 +6638,19 @@ func stringsResourcesMlflowModelPermission(c *stringsWalk, n *Node, v *resources
 }
 
 func stringsMlModelTag(c *stringsWalk, n *Node, v *ml.ModelTag) {
+	if c.mode == EmptyFields && v.Key == "" && Forced(v.ForceSendFields, "Key") {
+		ch := n.Child("key")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Key); c.match(s) {
 		ch := n.Child("key")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Key = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Value == "" && Forced(v.ForceSendFields, "Value") {
+		ch := n.Child("value")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Value); c.match(s) {
 		ch := n.Child("value")
@@ -5796,11 +6688,19 @@ func stringsResourcesMlflowExperimentPermission(c *stringsWalk, n *Node, v *reso
 }
 
 func stringsMlExperimentTag(c *stringsWalk, n *Node, v *ml.ExperimentTag) {
+	if c.mode == EmptyFields && v.Key == "" && Forced(v.ForceSendFields, "Key") {
+		ch := n.Child("key")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Key); c.match(s) {
 		ch := n.Child("key")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Key = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Value == "" && Forced(v.ForceSendFields, "Value") {
+		ch := n.Child("value")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Value); c.match(s) {
 		ch := n.Child("value")
@@ -5940,6 +6840,10 @@ func stringsServingEndpointTag(c *stringsWalk, n *Node, v *serving.EndpointTag) 
 			v.Key = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.Value == "" && Forced(v.ForceSendFields, "Value") {
+		ch := n.Child("value")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Value); c.match(s) {
 		ch := n.Child("value")
 		if r, ok := c.fn(&ch, s); ok {
@@ -5968,6 +6872,10 @@ func stringsServingTelemetryConfig(c *stringsWalk, n *Node, v *serving.Telemetry
 		ch := n.Child("table_names")
 		stringsServingUnityCatalogTableNames(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.TelemetryProfileId == "" && Forced(v.ForceSendFields, "TelemetryProfileId") {
+		ch := n.Child("telemetry_profile_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.TelemetryProfileId); c.match(s) {
 		ch := n.Child("telemetry_profile_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -5977,6 +6885,10 @@ func stringsServingTelemetryConfig(c *stringsWalk, n *Node, v *serving.Telemetry
 }
 
 func stringsCatalogPrivilegeAssignment(c *stringsWalk, n *Node, v *catalog.PrivilegeAssignment) {
+	if c.mode == EmptyFields && v.Principal == "" && Forced(v.ForceSendFields, "Principal") {
+		ch := n.Child("principal")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Principal); c.match(s) {
 		ch := n.Child("principal")
 		if r, ok := c.fn(&ch, s); ok {
@@ -6080,6 +6992,10 @@ func stringsCatalogModelProviderServiceConfig(c *stringsWalk, n *Node, v *catalo
 		ch := n.Child("openai")
 		stringsCatalogModelProviderServiceConfigOpenAiProviderConfig(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.ProviderType == "" && Forced(v.ForceSendFields, "ProviderType") {
+		ch := n.Child("provider_type")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ProviderType); c.match(s) {
 		ch := n.Child("provider_type")
 		if r, ok := c.fn(&ch, s); ok {
@@ -6107,11 +7023,19 @@ func stringsCatalogModelProviderServiceConfig(c *stringsWalk, n *Node, v *catalo
 }
 
 func stringsCatalogRegisteredModelAlias(c *stringsWalk, n *Node, v *catalog.RegisteredModelAlias) {
+	if c.mode == EmptyFields && v.AliasName == "" && Forced(v.ForceSendFields, "AliasName") {
+		ch := n.Child("alias_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.AliasName); c.match(s) {
 		ch := n.Child("alias_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.AliasName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.CatalogName == "" && Forced(v.ForceSendFields, "CatalogName") {
+		ch := n.Child("catalog_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CatalogName); c.match(s) {
 		ch := n.Child("catalog_name")
@@ -6119,17 +7043,29 @@ func stringsCatalogRegisteredModelAlias(c *stringsWalk, n *Node, v *catalog.Regi
 			v.CatalogName = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.Id == "" && Forced(v.ForceSendFields, "Id") {
+		ch := n.Child("id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Id); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Id = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.ModelName == "" && Forced(v.ForceSendFields, "ModelName") {
+		ch := n.Child("model_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ModelName); c.match(s) {
 		ch := n.Child("model_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.ModelName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.SchemaName == "" && Forced(v.ForceSendFields, "SchemaName") {
+		ch := n.Child("schema_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.SchemaName); c.match(s) {
 		ch := n.Child("schema_name")
@@ -6189,6 +7125,10 @@ func stringsCatalogMonitorInferenceLog(c *stringsWalk, n *Node, v *catalog.Monit
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.LabelCol == "" && Forced(v.ForceSendFields, "LabelCol") {
+		ch := n.Child("label_col")
+		c.fn(&ch, "")
+	}
 	if s := string(v.LabelCol); c.match(s) {
 		ch := n.Child("label_col")
 		if r, ok := c.fn(&ch, s); ok {
@@ -6206,6 +7146,10 @@ func stringsCatalogMonitorInferenceLog(c *stringsWalk, n *Node, v *catalog.Monit
 		if r, ok := c.fn(&ch, s); ok {
 			v.PredictionCol = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.PredictionProbaCol == "" && Forced(v.ForceSendFields, "PredictionProbaCol") {
+		ch := n.Child("prediction_proba_col")
+		c.fn(&ch, "")
 	}
 	if s := string(v.PredictionProbaCol); c.match(s) {
 		ch := n.Child("prediction_proba_col")
@@ -6284,11 +7228,19 @@ func stringsCatalogEncryptionSettings(c *stringsWalk, n *Node, v *catalog.Encryp
 		ch := n.Child("azure_encryption_settings")
 		stringsCatalogAzureEncryptionSettings(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.AzureKeyVaultKeyId == "" && Forced(v.ForceSendFields, "AzureKeyVaultKeyId") {
+		ch := n.Child("azure_key_vault_key_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.AzureKeyVaultKeyId); c.match(s) {
 		ch := n.Child("azure_key_vault_key_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.AzureKeyVaultKeyId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.CustomerManagedKeyId == "" && Forced(v.ForceSendFields, "CustomerManagedKeyId") {
+		ch := n.Child("customer_managed_key_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CustomerManagedKeyId); c.match(s) {
 		ch := n.Child("customer_managed_key_id")
@@ -6337,11 +7289,19 @@ func stringsComputeLibrary(c *stringsWalk, n *Node, v *compute.Library) {
 		ch := n.Child("cran")
 		stringsComputeRCranLibrary(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.Egg == "" && Forced(v.ForceSendFields, "Egg") {
+		ch := n.Child("egg")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Egg); c.match(s) {
 		ch := n.Child("egg")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Egg = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Jar == "" && Forced(v.ForceSendFields, "Jar") {
+		ch := n.Child("jar")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Jar); c.match(s) {
 		ch := n.Child("jar")
@@ -6357,11 +7317,19 @@ func stringsComputeLibrary(c *stringsWalk, n *Node, v *compute.Library) {
 		ch := n.Child("pypi")
 		stringsComputePythonPyPiLibrary(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.Requirements == "" && Forced(v.ForceSendFields, "Requirements") {
+		ch := n.Child("requirements")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Requirements); c.match(s) {
 		ch := n.Child("requirements")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Requirements = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Whl == "" && Forced(v.ForceSendFields, "Whl") {
+		ch := n.Child("whl")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Whl); c.match(s) {
 		ch := n.Child("whl")
@@ -6399,11 +7367,19 @@ func stringsResourcesClusterPermission(c *stringsWalk, n *Node, v *resources.Clu
 }
 
 func stringsComputeAwsAttributes(c *stringsWalk, n *Node, v *compute.AwsAttributes) {
+	if c.mode == EmptyFields && v.Availability == "" && Forced(v.ForceSendFields, "Availability") {
+		ch := n.Child("availability")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Availability); c.match(s) {
 		ch := n.Child("availability")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Availability = compute.AwsAvailability(r)
 		}
+	}
+	if c.mode == EmptyFields && v.EbsVolumeType == "" && Forced(v.ForceSendFields, "EbsVolumeType") {
+		ch := n.Child("ebs_volume_type")
+		c.fn(&ch, "")
 	}
 	if s := string(v.EbsVolumeType); c.match(s) {
 		ch := n.Child("ebs_volume_type")
@@ -6411,11 +7387,19 @@ func stringsComputeAwsAttributes(c *stringsWalk, n *Node, v *compute.AwsAttribut
 			v.EbsVolumeType = compute.EbsVolumeType(r)
 		}
 	}
+	if c.mode == EmptyFields && v.InstanceProfileArn == "" && Forced(v.ForceSendFields, "InstanceProfileArn") {
+		ch := n.Child("instance_profile_arn")
+		c.fn(&ch, "")
+	}
 	if s := string(v.InstanceProfileArn); c.match(s) {
 		ch := n.Child("instance_profile_arn")
 		if r, ok := c.fn(&ch, s); ok {
 			v.InstanceProfileArn = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.ZoneId == "" && Forced(v.ForceSendFields, "ZoneId") {
+		ch := n.Child("zone_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.ZoneId); c.match(s) {
 		ch := n.Child("zone_id")
@@ -6426,11 +7410,19 @@ func stringsComputeAwsAttributes(c *stringsWalk, n *Node, v *compute.AwsAttribut
 }
 
 func stringsComputeAzureAttributes(c *stringsWalk, n *Node, v *compute.AzureAttributes) {
+	if c.mode == EmptyFields && v.Availability == "" && Forced(v.ForceSendFields, "Availability") {
+		ch := n.Child("availability")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Availability); c.match(s) {
 		ch := n.Child("availability")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Availability = compute.AzureAvailability(r)
 		}
+	}
+	if c.mode == EmptyFields && v.CapacityReservationGroup == "" && Forced(v.ForceSendFields, "CapacityReservationGroup") {
+		ch := n.Child("capacity_reservation_group")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CapacityReservationGroup); c.match(s) {
 		ch := n.Child("capacity_reservation_group")
@@ -6464,6 +7456,10 @@ func stringsComputeDockerImage(c *stringsWalk, n *Node, v *compute.DockerImage) 
 		ch := n.Child("basic_auth")
 		stringsComputeDockerBasicAuth(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.Url == "" && Forced(v.ForceSendFields, "Url") {
+		ch := n.Child("url")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Url); c.match(s) {
 		ch := n.Child("url")
 		if r, ok := c.fn(&ch, s); ok {
@@ -6484,6 +7480,10 @@ func stringsComputeNodeTypeFlexibility(c *stringsWalk, n *Node, v *compute.NodeT
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.AwsContextId == "" && Forced(v.ForceSendFields, "AwsContextId") {
+		ch := n.Child("aws_context_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.AwsContextId); c.match(s) {
 		ch := n.Child("aws_context_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -6493,11 +7493,19 @@ func stringsComputeNodeTypeFlexibility(c *stringsWalk, n *Node, v *compute.NodeT
 }
 
 func stringsComputeGcpAttributes(c *stringsWalk, n *Node, v *compute.GcpAttributes) {
+	if c.mode == EmptyFields && v.Availability == "" && Forced(v.ForceSendFields, "Availability") {
+		ch := n.Child("availability")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Availability); c.match(s) {
 		ch := n.Child("availability")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Availability = compute.GcpAvailability(r)
 		}
+	}
+	if c.mode == EmptyFields && v.ConfidentialComputeType == "" && Forced(v.ForceSendFields, "ConfidentialComputeType") {
+		ch := n.Child("confidential_compute_type")
+		c.fn(&ch, "")
 	}
 	if s := string(v.ConfidentialComputeType); c.match(s) {
 		ch := n.Child("confidential_compute_type")
@@ -6505,11 +7513,19 @@ func stringsComputeGcpAttributes(c *stringsWalk, n *Node, v *compute.GcpAttribut
 			v.ConfidentialComputeType = compute.ConfidentialComputeType(r)
 		}
 	}
+	if c.mode == EmptyFields && v.GoogleServiceAccount == "" && Forced(v.ForceSendFields, "GoogleServiceAccount") {
+		ch := n.Child("google_service_account")
+		c.fn(&ch, "")
+	}
 	if s := string(v.GoogleServiceAccount); c.match(s) {
 		ch := n.Child("google_service_account")
 		if r, ok := c.fn(&ch, s); ok {
 			v.GoogleServiceAccount = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.ZoneId == "" && Forced(v.ForceSendFields, "ZoneId") {
+		ch := n.Child("zone_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.ZoneId); c.match(s) {
 		ch := n.Child("zone_id")
@@ -6612,11 +7628,19 @@ func stringsAppsAppDeployment(c *stringsWalk, n *Node, v *apps.AppDeployment) {
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.CreateTime == "" && Forced(v.ForceSendFields, "CreateTime") {
+		ch := n.Child("create_time")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CreateTime); c.match(s) {
 		ch := n.Child("create_time")
 		if r, ok := c.fn(&ch, s); ok {
 			v.CreateTime = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Creator == "" && Forced(v.ForceSendFields, "Creator") {
+		ch := n.Child("creator")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Creator); c.match(s) {
 		ch := n.Child("creator")
@@ -6627,6 +7651,10 @@ func stringsAppsAppDeployment(c *stringsWalk, n *Node, v *apps.AppDeployment) {
 	if x := v.DeploymentArtifacts; x != nil {
 		ch := n.Child("deployment_artifacts")
 		stringsAppsAppDeploymentArtifacts(c, &ch, x)
+	}
+	if c.mode == EmptyFields && v.DeploymentId == "" && Forced(v.ForceSendFields, "DeploymentId") {
+		ch := n.Child("deployment_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.DeploymentId); c.match(s) {
 		ch := n.Child("deployment_id")
@@ -6651,11 +7679,19 @@ func stringsAppsAppDeployment(c *stringsWalk, n *Node, v *apps.AppDeployment) {
 		ch := n.Child("health_check")
 		stringsAppsAppHealthCheck(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.Mode == "" && Forced(v.ForceSendFields, "Mode") {
+		ch := n.Child("mode")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Mode); c.match(s) {
 		ch := n.Child("mode")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Mode = apps.AppDeploymentMode(r)
 		}
+	}
+	if c.mode == EmptyFields && v.SourceCodePath == "" && Forced(v.ForceSendFields, "SourceCodePath") {
+		ch := n.Child("source_code_path")
+		c.fn(&ch, "")
 	}
 	if s := string(v.SourceCodePath); c.match(s) {
 		ch := n.Child("source_code_path")
@@ -6667,6 +7703,10 @@ func stringsAppsAppDeployment(c *stringsWalk, n *Node, v *apps.AppDeployment) {
 		ch := n.Child("status")
 		stringsAppsAppDeploymentStatus(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.UpdateTime == "" && Forced(v.ForceSendFields, "UpdateTime") {
+		ch := n.Child("update_time")
+		c.fn(&ch, "")
+	}
 	if s := string(v.UpdateTime); c.match(s) {
 		ch := n.Child("update_time")
 		if r, ok := c.fn(&ch, s); ok {
@@ -6676,11 +7716,19 @@ func stringsAppsAppDeployment(c *stringsWalk, n *Node, v *apps.AppDeployment) {
 }
 
 func stringsAppsApplicationStatus(c *stringsWalk, n *Node, v *apps.ApplicationStatus) {
+	if c.mode == EmptyFields && v.Message == "" && Forced(v.ForceSendFields, "Message") {
+		ch := n.Child("message")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Message); c.match(s) {
 		ch := n.Child("message")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Message = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.State == "" && Forced(v.ForceSendFields, "State") {
+		ch := n.Child("state")
+		c.fn(&ch, "")
 	}
 	if s := string(v.State); c.match(s) {
 		ch := n.Child("state")
@@ -6691,11 +7739,19 @@ func stringsAppsApplicationStatus(c *stringsWalk, n *Node, v *apps.ApplicationSt
 }
 
 func stringsAppsComputeStatus(c *stringsWalk, n *Node, v *apps.ComputeStatus) {
+	if c.mode == EmptyFields && v.Message == "" && Forced(v.ForceSendFields, "Message") {
+		ch := n.Child("message")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Message); c.match(s) {
 		ch := n.Child("message")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Message = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.State == "" && Forced(v.ForceSendFields, "State") {
+		ch := n.Child("state")
+		c.fn(&ch, "")
 	}
 	if s := string(v.State); c.match(s) {
 		ch := n.Child("state")
@@ -6706,11 +7762,19 @@ func stringsAppsComputeStatus(c *stringsWalk, n *Node, v *apps.ComputeStatus) {
 }
 
 func stringsAppsGitSource(c *stringsWalk, n *Node, v *apps.GitSource) {
+	if c.mode == EmptyFields && v.Branch == "" && Forced(v.ForceSendFields, "Branch") {
+		ch := n.Child("branch")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Branch); c.match(s) {
 		ch := n.Child("branch")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Branch = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Commit == "" && Forced(v.ForceSendFields, "Commit") {
+		ch := n.Child("commit")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Commit); c.match(s) {
 		ch := n.Child("commit")
@@ -6722,17 +7786,29 @@ func stringsAppsGitSource(c *stringsWalk, n *Node, v *apps.GitSource) {
 		ch := n.Child("git_repository")
 		stringsAppsGitRepository(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.ResolvedCommit == "" && Forced(v.ForceSendFields, "ResolvedCommit") {
+		ch := n.Child("resolved_commit")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ResolvedCommit); c.match(s) {
 		ch := n.Child("resolved_commit")
 		if r, ok := c.fn(&ch, s); ok {
 			v.ResolvedCommit = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.SourceCodePath == "" && Forced(v.ForceSendFields, "SourceCodePath") {
+		ch := n.Child("source_code_path")
+		c.fn(&ch, "")
+	}
 	if s := string(v.SourceCodePath); c.match(s) {
 		ch := n.Child("source_code_path")
 		if r, ok := c.fn(&ch, s); ok {
 			v.SourceCodePath = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Tag == "" && Forced(v.ForceSendFields, "Tag") {
+		ch := n.Child("tag")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Tag); c.match(s) {
 		ch := n.Child("tag")
@@ -6765,6 +7841,10 @@ func stringsAppsAppResource(c *stringsWalk, n *Node, v *apps.AppResource) {
 	if x := v.Database; x != nil {
 		ch := n.Child("database")
 		stringsAppsAppResourceDatabase(c, &ch, x)
+	}
+	if c.mode == EmptyFields && v.Description == "" && Forced(v.ForceSendFields, "Description") {
+		ch := n.Child("description")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Description); c.match(s) {
 		ch := n.Child("description")
@@ -6862,11 +7942,19 @@ func stringsWorkspaceAzureKeyVaultSecretScopeMetadata(c *stringsWalk, n *Node, v
 }
 
 func stringsSqlAlertV2RunAs(c *stringsWalk, n *Node, v *sql.AlertV2RunAs) {
+	if c.mode == EmptyFields && v.ServicePrincipalName == "" && Forced(v.ForceSendFields, "ServicePrincipalName") {
+		ch := n.Child("service_principal_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ServicePrincipalName); c.match(s) {
 		ch := n.Child("service_principal_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.ServicePrincipalName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.UserName == "" && Forced(v.ForceSendFields, "UserName") {
+		ch := n.Child("user_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.UserName); c.match(s) {
 		ch := n.Child("user_name")
@@ -6883,11 +7971,19 @@ func stringsSqlAlertV2Evaluation(c *stringsWalk, n *Node, v *sql.AlertV2Evaluati
 			v.ComparisonOperator = sql.ComparisonOperator(r)
 		}
 	}
+	if c.mode == EmptyFields && v.EmptyResultState == "" && Forced(v.ForceSendFields, "EmptyResultState") {
+		ch := n.Child("empty_result_state")
+		c.fn(&ch, "")
+	}
 	if s := string(v.EmptyResultState); c.match(s) {
 		ch := n.Child("empty_result_state")
 		if r, ok := c.fn(&ch, s); ok {
 			v.EmptyResultState = sql.AlertEvaluationState(r)
 		}
+	}
+	if c.mode == EmptyFields && v.LastEvaluatedAt == "" && Forced(v.ForceSendFields, "LastEvaluatedAt") {
+		ch := n.Child("last_evaluated_at")
+		c.fn(&ch, "")
 	}
 	if s := string(v.LastEvaluatedAt); c.match(s) {
 		ch := n.Child("last_evaluated_at")
@@ -6902,6 +7998,10 @@ func stringsSqlAlertV2Evaluation(c *stringsWalk, n *Node, v *sql.AlertV2Evaluati
 	{
 		ch := n.Child("source")
 		stringsSqlAlertV2OperandColumn(c, &ch, &v.Source)
+	}
+	if c.mode == EmptyFields && v.State == "" && Forced(v.ForceSendFields, "State") {
+		ch := n.Child("state")
+		c.fn(&ch, "")
 	}
 	if s := string(v.State); c.match(s) {
 		ch := n.Child("state")
@@ -6922,11 +8022,19 @@ func stringsSqlAlertStatementParameter(c *stringsWalk, n *Node, v *sql.AlertStat
 			v.Name = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.Type == "" && Forced(v.ForceSendFields, "Type") {
+		ch := n.Child("type")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Type); c.match(s) {
 		ch := n.Child("type")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Type = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Value == "" && Forced(v.ForceSendFields, "Value") {
+		ch := n.Child("value")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Value); c.match(s) {
 		ch := n.Child("value")
@@ -6985,11 +8093,19 @@ func stringsResourcesSqlWarehousePermission(c *stringsWalk, n *Node, v *resource
 }
 
 func stringsSqlChannel(c *stringsWalk, n *Node, v *sql.Channel) {
+	if c.mode == EmptyFields && v.DbsqlVersion == "" && Forced(v.ForceSendFields, "DbsqlVersion") {
+		ch := n.Child("dbsql_version")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DbsqlVersion); c.match(s) {
 		ch := n.Child("dbsql_version")
 		if r, ok := c.fn(&ch, s); ok {
 			v.DbsqlVersion = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Name == "" && Forced(v.ForceSendFields, "Name") {
+		ch := n.Child("name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Name); c.match(s) {
 		ch := n.Child("name")
@@ -7012,11 +8128,19 @@ func stringsSqlEndpointTags(c *stringsWalk, n *Node, v *sql.EndpointTags) {
 }
 
 func stringsDatabaseDatabaseInstanceRef(c *stringsWalk, n *Node, v *database.DatabaseInstanceRef) {
+	if c.mode == EmptyFields && v.BranchTime == "" && Forced(v.ForceSendFields, "BranchTime") {
+		ch := n.Child("branch_time")
+		c.fn(&ch, "")
+	}
 	if s := string(v.BranchTime); c.match(s) {
 		ch := n.Child("branch_time")
 		if r, ok := c.fn(&ch, s); ok {
 			v.BranchTime = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.EffectiveLsn == "" && Forced(v.ForceSendFields, "EffectiveLsn") {
+		ch := n.Child("effective_lsn")
+		c.fn(&ch, "")
 	}
 	if s := string(v.EffectiveLsn); c.match(s) {
 		ch := n.Child("effective_lsn")
@@ -7024,17 +8148,29 @@ func stringsDatabaseDatabaseInstanceRef(c *stringsWalk, n *Node, v *database.Dat
 			v.EffectiveLsn = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.Lsn == "" && Forced(v.ForceSendFields, "Lsn") {
+		ch := n.Child("lsn")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Lsn); c.match(s) {
 		ch := n.Child("lsn")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Lsn = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.Name == "" && Forced(v.ForceSendFields, "Name") {
+		ch := n.Child("name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Name); c.match(s) {
 		ch := n.Child("name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Name = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Uid == "" && Forced(v.ForceSendFields, "Uid") {
+		ch := n.Child("uid")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Uid); c.match(s) {
 		ch := n.Child("uid")
@@ -7045,11 +8181,19 @@ func stringsDatabaseDatabaseInstanceRef(c *stringsWalk, n *Node, v *database.Dat
 }
 
 func stringsDatabaseCustomTag(c *stringsWalk, n *Node, v *database.CustomTag) {
+	if c.mode == EmptyFields && v.Key == "" && Forced(v.ForceSendFields, "Key") {
+		ch := n.Child("key")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Key); c.match(s) {
 		ch := n.Child("key")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Key = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Value == "" && Forced(v.ForceSendFields, "Value") {
+		ch := n.Child("value")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Value); c.match(s) {
 		ch := n.Child("value")
@@ -7063,6 +8207,10 @@ func stringsDatabaseSyncedTableStatus(c *stringsWalk, n *Node, v *database.Synce
 	if x := v.ContinuousUpdateStatus; x != nil {
 		ch := n.Child("continuous_update_status")
 		stringsDatabaseSyncedTableContinuousUpdateStatus(c, &ch, x)
+	}
+	if c.mode == EmptyFields && v.DetailedState == "" && Forced(v.ForceSendFields, "DetailedState") {
+		ch := n.Child("detailed_state")
+		c.fn(&ch, "")
 	}
 	if s := string(v.DetailedState); c.match(s) {
 		ch := n.Child("detailed_state")
@@ -7078,11 +8226,19 @@ func stringsDatabaseSyncedTableStatus(c *stringsWalk, n *Node, v *database.Synce
 		ch := n.Child("last_sync")
 		stringsDatabaseSyncedTablePosition(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.Message == "" && Forced(v.ForceSendFields, "Message") {
+		ch := n.Child("message")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Message); c.match(s) {
 		ch := n.Child("message")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Message = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.PipelineId == "" && Forced(v.ForceSendFields, "PipelineId") {
+		ch := n.Child("pipeline_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.PipelineId); c.match(s) {
 		ch := n.Child("pipeline_id")
@@ -7101,6 +8257,10 @@ func stringsDatabaseSyncedTableStatus(c *stringsWalk, n *Node, v *database.Synce
 }
 
 func stringsDatabaseSyncedTableSpec(c *stringsWalk, n *Node, v *database.SyncedTableSpec) {
+	if c.mode == EmptyFields && v.ExistingPipelineId == "" && Forced(v.ForceSendFields, "ExistingPipelineId") {
+		ch := n.Child("existing_pipeline_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ExistingPipelineId); c.match(s) {
 		ch := n.Child("existing_pipeline_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -7122,17 +8282,29 @@ func stringsDatabaseSyncedTableSpec(c *stringsWalk, n *Node, v *database.SyncedT
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.SchedulingPolicy == "" && Forced(v.ForceSendFields, "SchedulingPolicy") {
+		ch := n.Child("scheduling_policy")
+		c.fn(&ch, "")
+	}
 	if s := string(v.SchedulingPolicy); c.match(s) {
 		ch := n.Child("scheduling_policy")
 		if r, ok := c.fn(&ch, s); ok {
 			v.SchedulingPolicy = database.SyncedTableSchedulingPolicy(r)
 		}
 	}
+	if c.mode == EmptyFields && v.SourceTableFullName == "" && Forced(v.ForceSendFields, "SourceTableFullName") {
+		ch := n.Child("source_table_full_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.SourceTableFullName); c.match(s) {
 		ch := n.Child("source_table_full_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.SourceTableFullName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.TimeseriesKey == "" && Forced(v.ForceSendFields, "TimeseriesKey") {
+		ch := n.Child("timeseries_key")
+		c.fn(&ch, "")
 	}
 	if s := string(v.TimeseriesKey); c.match(s) {
 		ch := n.Child("timeseries_key")
@@ -7152,11 +8324,19 @@ func stringsDatabaseSyncedTableSpec(c *stringsWalk, n *Node, v *database.SyncedT
 }
 
 func stringsPostgresProjectCustomTag(c *stringsWalk, n *Node, v *postgres.ProjectCustomTag) {
+	if c.mode == EmptyFields && v.Key == "" && Forced(v.ForceSendFields, "Key") {
+		ch := n.Child("key")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Key); c.match(s) {
 		ch := n.Child("key")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Key = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Value == "" && Forced(v.ForceSendFields, "Value") {
+		ch := n.Child("value")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Value); c.match(s) {
 		ch := n.Child("value")
@@ -7207,11 +8387,19 @@ func stringsPostgresSyncedTableSyncedTableSpecExtraColumn(c *stringsWalk, n *Nod
 			v.ColumnType = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.Compute == "" && Forced(v.ForceSendFields, "Compute") {
+		ch := n.Child("compute")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Compute); c.match(s) {
 		ch := n.Child("compute")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Compute = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Maintenance == "" && Forced(v.ForceSendFields, "Maintenance") {
+		ch := n.Child("maintenance")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Maintenance); c.match(s) {
 		ch := n.Child("maintenance")
@@ -7222,11 +8410,19 @@ func stringsPostgresSyncedTableSyncedTableSpecExtraColumn(c *stringsWalk, n *Nod
 }
 
 func stringsPostgresNewPipelineSpec(c *stringsWalk, n *Node, v *postgres.NewPipelineSpec) {
+	if c.mode == EmptyFields && v.BudgetPolicyId == "" && Forced(v.ForceSendFields, "BudgetPolicyId") {
+		ch := n.Child("budget_policy_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.BudgetPolicyId); c.match(s) {
 		ch := n.Child("budget_policy_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.BudgetPolicyId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.PipelineChannel == "" && Forced(v.ForceSendFields, "PipelineChannel") {
+		ch := n.Child("pipeline_channel")
+		c.fn(&ch, "")
 	}
 	if s := string(v.PipelineChannel); c.match(s) {
 		ch := n.Child("pipeline_channel")
@@ -7234,11 +8430,19 @@ func stringsPostgresNewPipelineSpec(c *stringsWalk, n *Node, v *postgres.NewPipe
 			v.PipelineChannel = postgres.NewPipelineSpecPipelineChannel(r)
 		}
 	}
+	if c.mode == EmptyFields && v.StorageCatalog == "" && Forced(v.ForceSendFields, "StorageCatalog") {
+		ch := n.Child("storage_catalog")
+		c.fn(&ch, "")
+	}
 	if s := string(v.StorageCatalog); c.match(s) {
 		ch := n.Child("storage_catalog")
 		if r, ok := c.fn(&ch, s); ok {
 			v.StorageCatalog = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.StorageSchema == "" && Forced(v.ForceSendFields, "StorageSchema") {
+		ch := n.Child("storage_schema")
+		c.fn(&ch, "")
 	}
 	if s := string(v.StorageSchema); c.match(s) {
 		ch := n.Child("storage_schema")
@@ -7338,17 +8542,29 @@ func stringsVectorsearchDeltaSyncVectorIndexSpecRequest(c *stringsWalk, n *Node,
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.EmbeddingWritebackTable == "" && Forced(v.ForceSendFields, "EmbeddingWritebackTable") {
+		ch := n.Child("embedding_writeback_table")
+		c.fn(&ch, "")
+	}
 	if s := string(v.EmbeddingWritebackTable); c.match(s) {
 		ch := n.Child("embedding_writeback_table")
 		if r, ok := c.fn(&ch, s); ok {
 			v.EmbeddingWritebackTable = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.PipelineType == "" && Forced(v.ForceSendFields, "PipelineType") {
+		ch := n.Child("pipeline_type")
+		c.fn(&ch, "")
+	}
 	if s := string(v.PipelineType); c.match(s) {
 		ch := n.Child("pipeline_type")
 		if r, ok := c.fn(&ch, s); ok {
 			v.PipelineType = vectorsearch.PipelineType(r)
 		}
+	}
+	if c.mode == EmptyFields && v.SourceTable == "" && Forced(v.ForceSendFields, "SourceTable") {
+		ch := n.Child("source_table")
+		c.fn(&ch, "")
 	}
 	if s := string(v.SourceTable); c.match(s) {
 		ch := n.Child("source_table")
@@ -7376,6 +8592,10 @@ func stringsVectorsearchDirectAccessVectorIndexSpec(c *stringsWalk, n *Node, v *
 				stringsVectorsearchEmbeddingVectorColumn(c, &ch, &v.EmbeddingVectorColumns[i])
 			}
 		}
+	}
+	if c.mode == EmptyFields && v.SchemaJson == "" && Forced(v.ForceSendFields, "SchemaJson") {
+		ch := n.Child("schema_json")
+		c.fn(&ch, "")
 	}
 	if s := string(v.SchemaJson); c.match(s) {
 		ch := n.Child("schema_json")
@@ -7413,17 +8633,29 @@ func stringsResourcesInstancePoolPermission(c *stringsWalk, n *Node, v *resource
 }
 
 func stringsComputeInstancePoolAwsAttributes(c *stringsWalk, n *Node, v *compute.InstancePoolAwsAttributes) {
+	if c.mode == EmptyFields && v.Availability == "" && Forced(v.ForceSendFields, "Availability") {
+		ch := n.Child("availability")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Availability); c.match(s) {
 		ch := n.Child("availability")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Availability = compute.InstancePoolAwsAttributesAvailability(r)
 		}
 	}
+	if c.mode == EmptyFields && v.InstanceProfileArn == "" && Forced(v.ForceSendFields, "InstanceProfileArn") {
+		ch := n.Child("instance_profile_arn")
+		c.fn(&ch, "")
+	}
 	if s := string(v.InstanceProfileArn); c.match(s) {
 		ch := n.Child("instance_profile_arn")
 		if r, ok := c.fn(&ch, s); ok {
 			v.InstanceProfileArn = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.ZoneId == "" && Forced(v.ForceSendFields, "ZoneId") {
+		ch := n.Child("zone_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.ZoneId); c.match(s) {
 		ch := n.Child("zone_id")
@@ -7434,11 +8666,19 @@ func stringsComputeInstancePoolAwsAttributes(c *stringsWalk, n *Node, v *compute
 }
 
 func stringsComputeInstancePoolAzureAttributes(c *stringsWalk, n *Node, v *compute.InstancePoolAzureAttributes) {
+	if c.mode == EmptyFields && v.Availability == "" && Forced(v.ForceSendFields, "Availability") {
+		ch := n.Child("availability")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Availability); c.match(s) {
 		ch := n.Child("availability")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Availability = compute.InstancePoolAzureAttributesAvailability(r)
 		}
+	}
+	if c.mode == EmptyFields && v.CapacityReservationGroup == "" && Forced(v.ForceSendFields, "CapacityReservationGroup") {
+		ch := n.Child("capacity_reservation_group")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CapacityReservationGroup); c.match(s) {
 		ch := n.Child("capacity_reservation_group")
@@ -7456,11 +8696,19 @@ func stringsComputeDiskSpec(c *stringsWalk, n *Node, v *compute.DiskSpec) {
 }
 
 func stringsComputeInstancePoolGcpAttributes(c *stringsWalk, n *Node, v *compute.InstancePoolGcpAttributes) {
+	if c.mode == EmptyFields && v.GcpAvailability == "" && Forced(v.ForceSendFields, "GcpAvailability") {
+		ch := n.Child("gcp_availability")
+		c.fn(&ch, "")
+	}
 	if s := string(v.GcpAvailability); c.match(s) {
 		ch := n.Child("gcp_availability")
 		if r, ok := c.fn(&ch, s); ok {
 			v.GcpAvailability = compute.GcpAvailability(r)
 		}
+	}
+	if c.mode == EmptyFields && v.ZoneId == "" && Forced(v.ForceSendFields, "ZoneId") {
+		ch := n.Child("zone_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.ZoneId); c.match(s) {
 		ch := n.Child("zone_id")
@@ -7565,11 +8813,19 @@ func stringsJobsJobEnvironmentVariablesSpec(c *stringsWalk, n *Node, v *jobs.Job
 }
 
 func stringsComputeEnvironment(c *stringsWalk, n *Node, v *compute.Environment) {
+	if c.mode == EmptyFields && v.BaseEnvironment == "" && Forced(v.ForceSendFields, "BaseEnvironment") {
+		ch := n.Child("base_environment")
+		c.fn(&ch, "")
+	}
 	if s := string(v.BaseEnvironment); c.match(s) {
 		ch := n.Child("base_environment")
 		if r, ok := c.fn(&ch, s); ok {
 			v.BaseEnvironment = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Client == "" && Forced(v.ForceSendFields, "Client") {
+		ch := n.Child("client")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Client); c.match(s) {
 		ch := n.Child("client")
@@ -7588,6 +8844,10 @@ func stringsComputeEnvironment(c *stringsWalk, n *Node, v *compute.Environment) 
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.EnvironmentVersion == "" && Forced(v.ForceSendFields, "EnvironmentVersion") {
+		ch := n.Child("environment_version")
+		c.fn(&ch, "")
+	}
 	if s := string(v.EnvironmentVersion); c.match(s) {
 		ch := n.Child("environment_version")
 		if r, ok := c.fn(&ch, s); ok {
@@ -7605,6 +8865,10 @@ func stringsComputeEnvironment(c *stringsWalk, n *Node, v *compute.Environment) 
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.ProjectEnvironment == "" && Forced(v.ForceSendFields, "ProjectEnvironment") {
+		ch := n.Child("project_environment")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ProjectEnvironment); c.match(s) {
 		ch := n.Child("project_environment")
 		if r, ok := c.fn(&ch, s); ok {
@@ -7614,6 +8878,10 @@ func stringsComputeEnvironment(c *stringsWalk, n *Node, v *compute.Environment) 
 }
 
 func stringsJobsGitSnapshot(c *stringsWalk, n *Node, v *jobs.GitSnapshot) {
+	if c.mode == EmptyFields && v.UsedCommit == "" && Forced(v.ForceSendFields, "UsedCommit") {
+		ch := n.Child("used_commit")
+		c.fn(&ch, "")
+	}
 	if s := string(v.UsedCommit); c.match(s) {
 		ch := n.Child("used_commit")
 		if r, ok := c.fn(&ch, s); ok {
@@ -7685,6 +8953,10 @@ func stringsComputeClusterSpec(c *stringsWalk, n *Node, v *compute.ClusterSpec) 
 		ch := n.Child("cluster_log_conf")
 		stringsComputeClusterLogConf(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.ClusterName == "" && Forced(v.ForceSendFields, "ClusterName") {
+		ch := n.Child("cluster_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ClusterName); c.match(s) {
 		ch := n.Child("cluster_name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -7702,11 +8974,19 @@ func stringsComputeClusterSpec(c *stringsWalk, n *Node, v *compute.ClusterSpec) 
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.DataSecurityMode == "" && Forced(v.ForceSendFields, "DataSecurityMode") {
+		ch := n.Child("data_security_mode")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DataSecurityMode); c.match(s) {
 		ch := n.Child("data_security_mode")
 		if r, ok := c.fn(&ch, s); ok {
 			v.DataSecurityMode = compute.DataSecurityMode(r)
 		}
+	}
+	if c.mode == EmptyFields && v.DependencyMode == "" && Forced(v.ForceSendFields, "DependencyMode") {
+		ch := n.Child("dependency_mode")
+		c.fn(&ch, "")
 	}
 	if s := string(v.DependencyMode); c.match(s) {
 		ch := n.Child("dependency_mode")
@@ -7718,6 +8998,10 @@ func stringsComputeClusterSpec(c *stringsWalk, n *Node, v *compute.ClusterSpec) 
 		ch := n.Child("docker_image")
 		stringsComputeDockerImage(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.DriverInstancePoolId == "" && Forced(v.ForceSendFields, "DriverInstancePoolId") {
+		ch := n.Child("driver_instance_pool_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DriverInstancePoolId); c.match(s) {
 		ch := n.Child("driver_instance_pool_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -7727,6 +9011,10 @@ func stringsComputeClusterSpec(c *stringsWalk, n *Node, v *compute.ClusterSpec) 
 	if x := v.DriverNodeTypeFlexibility; x != nil {
 		ch := n.Child("driver_node_type_flexibility")
 		stringsComputeNodeTypeFlexibility(c, &ch, x)
+	}
+	if c.mode == EmptyFields && v.DriverNodeTypeId == "" && Forced(v.ForceSendFields, "DriverNodeTypeId") {
+		ch := n.Child("driver_node_type_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.DriverNodeTypeId); c.match(s) {
 		ch := n.Child("driver_node_type_id")
@@ -7747,11 +9035,19 @@ func stringsComputeClusterSpec(c *stringsWalk, n *Node, v *compute.ClusterSpec) 
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.InstancePoolId == "" && Forced(v.ForceSendFields, "InstancePoolId") {
+		ch := n.Child("instance_pool_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.InstancePoolId); c.match(s) {
 		ch := n.Child("instance_pool_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.InstancePoolId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Kind == "" && Forced(v.ForceSendFields, "Kind") {
+		ch := n.Child("kind")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Kind); c.match(s) {
 		ch := n.Child("kind")
@@ -7759,11 +9055,19 @@ func stringsComputeClusterSpec(c *stringsWalk, n *Node, v *compute.ClusterSpec) 
 			v.Kind = compute.Kind(r)
 		}
 	}
+	if c.mode == EmptyFields && v.NodeTypeId == "" && Forced(v.ForceSendFields, "NodeTypeId") {
+		ch := n.Child("node_type_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.NodeTypeId); c.match(s) {
 		ch := n.Child("node_type_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.NodeTypeId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.PolicyId == "" && Forced(v.ForceSendFields, "PolicyId") {
+		ch := n.Child("policy_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.PolicyId); c.match(s) {
 		ch := n.Child("policy_id")
@@ -7771,11 +9075,19 @@ func stringsComputeClusterSpec(c *stringsWalk, n *Node, v *compute.ClusterSpec) 
 			v.PolicyId = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.RuntimeEngine == "" && Forced(v.ForceSendFields, "RuntimeEngine") {
+		ch := n.Child("runtime_engine")
+		c.fn(&ch, "")
+	}
 	if s := string(v.RuntimeEngine); c.match(s) {
 		ch := n.Child("runtime_engine")
 		if r, ok := c.fn(&ch, s); ok {
 			v.RuntimeEngine = compute.RuntimeEngine(r)
 		}
+	}
+	if c.mode == EmptyFields && v.SingleUserName == "" && Forced(v.ForceSendFields, "SingleUserName") {
+		ch := n.Child("single_user_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.SingleUserName); c.match(s) {
 		ch := n.Child("single_user_name")
@@ -7804,6 +9116,10 @@ func stringsComputeClusterSpec(c *stringsWalk, n *Node, v *compute.ClusterSpec) 
 				}
 			}
 		}
+	}
+	if c.mode == EmptyFields && v.SparkVersion == "" && Forced(v.ForceSendFields, "SparkVersion") {
+		ch := n.Child("spark_version")
+		c.fn(&ch, "")
 	}
 	if s := string(v.SparkVersion); c.match(s) {
 		ch := n.Child("spark_version")
@@ -7850,6 +9166,10 @@ func stringsJobsSqlConditionConfiguration(c *stringsWalk, n *Node, v *jobs.SqlCo
 }
 
 func stringsJobsAiRuntimeTask(c *stringsWalk, n *Node, v *jobs.AiRuntimeTask) {
+	if c.mode == EmptyFields && v.CodeSourcePath == "" && Forced(v.ForceSendFields, "CodeSourcePath") {
+		ch := n.Child("code_source_path")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CodeSourcePath); c.match(s) {
 		ch := n.Child("code_source_path")
 		if r, ok := c.fn(&ch, s); ok {
@@ -7865,6 +9185,10 @@ func stringsJobsAiRuntimeTask(c *stringsWalk, n *Node, v *jobs.AiRuntimeTask) {
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.DockerImageUrl == "" && Forced(v.ForceSendFields, "DockerImageUrl") {
+		ch := n.Child("docker_image_url")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DockerImageUrl); c.match(s) {
 		ch := n.Child("docker_image_url")
 		if r, ok := c.fn(&ch, s); ok {
@@ -7877,11 +9201,19 @@ func stringsJobsAiRuntimeTask(c *stringsWalk, n *Node, v *jobs.AiRuntimeTask) {
 			v.Experiment = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.MlflowArtifactLocation == "" && Forced(v.ForceSendFields, "MlflowArtifactLocation") {
+		ch := n.Child("mlflow_artifact_location")
+		c.fn(&ch, "")
+	}
 	if s := string(v.MlflowArtifactLocation); c.match(s) {
 		ch := n.Child("mlflow_artifact_location")
 		if r, ok := c.fn(&ch, s); ok {
 			v.MlflowArtifactLocation = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.MlflowExperimentDirectory == "" && Forced(v.ForceSendFields, "MlflowExperimentDirectory") {
+		ch := n.Child("mlflow_experiment_directory")
+		c.fn(&ch, "")
 	}
 	if s := string(v.MlflowExperimentDirectory); c.match(s) {
 		ch := n.Child("mlflow_experiment_directory")
@@ -7889,17 +9221,29 @@ func stringsJobsAiRuntimeTask(c *stringsWalk, n *Node, v *jobs.AiRuntimeTask) {
 			v.MlflowExperimentDirectory = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.MlflowRun == "" && Forced(v.ForceSendFields, "MlflowRun") {
+		ch := n.Child("mlflow_run")
+		c.fn(&ch, "")
+	}
 	if s := string(v.MlflowRun); c.match(s) {
 		ch := n.Child("mlflow_run")
 		if r, ok := c.fn(&ch, s); ok {
 			v.MlflowRun = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.PriorityClass == "" && Forced(v.ForceSendFields, "PriorityClass") {
+		ch := n.Child("priority_class")
+		c.fn(&ch, "")
+	}
 	if s := string(v.PriorityClass); c.match(s) {
 		ch := n.Child("priority_class")
 		if r, ok := c.fn(&ch, s); ok {
 			v.PriorityClass = jobs.AiRuntimeTaskPriorityClass(r)
 		}
+	}
+	if c.mode == EmptyFields && v.UnityCatalogImagePath == "" && Forced(v.ForceSendFields, "UnityCatalogImagePath") {
+		ch := n.Child("unity_catalog_image_path")
+		c.fn(&ch, "")
 	}
 	if s := string(v.UnityCatalogImagePath); c.match(s) {
 		ch := n.Child("unity_catalog_image_path")
@@ -7910,6 +9254,10 @@ func stringsJobsAiRuntimeTask(c *stringsWalk, n *Node, v *jobs.AiRuntimeTask) {
 }
 
 func stringsJobsAlertTask(c *stringsWalk, n *Node, v *jobs.AlertTask) {
+	if c.mode == EmptyFields && v.AlertId == "" && Forced(v.ForceSendFields, "AlertId") {
+		ch := n.Child("alert_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.AlertId); c.match(s) {
 		ch := n.Child("alert_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -7936,11 +9284,19 @@ func stringsJobsAlertTask(c *stringsWalk, n *Node, v *jobs.AlertTask) {
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.WarehouseId == "" && Forced(v.ForceSendFields, "WarehouseId") {
+		ch := n.Child("warehouse_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.WarehouseId); c.match(s) {
 		ch := n.Child("warehouse_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.WarehouseId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.WorkspacePath == "" && Forced(v.ForceSendFields, "WorkspacePath") {
+		ch := n.Child("workspace_path")
+		c.fn(&ch, "")
 	}
 	if s := string(v.WorkspacePath); c.match(s) {
 		ch := n.Child("workspace_path")
@@ -7956,6 +9312,10 @@ func stringsJobsCleanRoomsNotebookTask(c *stringsWalk, n *Node, v *jobs.CleanRoo
 		if r, ok := c.fn(&ch, s); ok {
 			v.CleanRoomName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Etag == "" && Forced(v.ForceSendFields, "Etag") {
+		ch := n.Child("etag")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Etag); c.match(s) {
 		ch := n.Child("etag")
@@ -8013,6 +9373,10 @@ func stringsJobsConditionTask(c *stringsWalk, n *Node, v *jobs.ConditionTask) {
 }
 
 func stringsJobsDashboardTask(c *stringsWalk, n *Node, v *jobs.DashboardTask) {
+	if c.mode == EmptyFields && v.DashboardId == "" && Forced(v.ForceSendFields, "DashboardId") {
+		ch := n.Child("dashboard_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DashboardId); c.match(s) {
 		ch := n.Child("dashboard_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -8034,6 +9398,10 @@ func stringsJobsDashboardTask(c *stringsWalk, n *Node, v *jobs.DashboardTask) {
 		ch := n.Child("subscription")
 		stringsJobsSubscription(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.WarehouseId == "" && Forced(v.ForceSendFields, "WarehouseId") {
+		ch := n.Child("warehouse_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.WarehouseId); c.match(s) {
 		ch := n.Child("warehouse_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -8043,6 +9411,10 @@ func stringsJobsDashboardTask(c *stringsWalk, n *Node, v *jobs.DashboardTask) {
 }
 
 func stringsJobsDbtCloudTask(c *stringsWalk, n *Node, v *jobs.DbtCloudTask) {
+	if c.mode == EmptyFields && v.ConnectionResourceName == "" && Forced(v.ForceSendFields, "ConnectionResourceName") {
+		ch := n.Child("connection_resource_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ConnectionResourceName); c.match(s) {
 		ch := n.Child("connection_resource_name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -8052,11 +9424,19 @@ func stringsJobsDbtCloudTask(c *stringsWalk, n *Node, v *jobs.DbtCloudTask) {
 }
 
 func stringsJobsDbtPlatformTask(c *stringsWalk, n *Node, v *jobs.DbtPlatformTask) {
+	if c.mode == EmptyFields && v.ConnectionResourceName == "" && Forced(v.ForceSendFields, "ConnectionResourceName") {
+		ch := n.Child("connection_resource_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ConnectionResourceName); c.match(s) {
 		ch := n.Child("connection_resource_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.ConnectionResourceName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.DbtPlatformJobId == "" && Forced(v.ForceSendFields, "DbtPlatformJobId") {
+		ch := n.Child("dbt_platform_job_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.DbtPlatformJobId); c.match(s) {
 		ch := n.Child("dbt_platform_job_id")
@@ -8067,6 +9447,10 @@ func stringsJobsDbtPlatformTask(c *stringsWalk, n *Node, v *jobs.DbtPlatformTask
 }
 
 func stringsJobsDbtTask(c *stringsWalk, n *Node, v *jobs.DbtTask) {
+	if c.mode == EmptyFields && v.Catalog == "" && Forced(v.ForceSendFields, "Catalog") {
+		ch := n.Child("catalog")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Catalog); c.match(s) {
 		ch := n.Child("catalog")
 		if r, ok := c.fn(&ch, s); ok {
@@ -8084,11 +9468,19 @@ func stringsJobsDbtTask(c *stringsWalk, n *Node, v *jobs.DbtTask) {
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.ProfilesDirectory == "" && Forced(v.ForceSendFields, "ProfilesDirectory") {
+		ch := n.Child("profiles_directory")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ProfilesDirectory); c.match(s) {
 		ch := n.Child("profiles_directory")
 		if r, ok := c.fn(&ch, s); ok {
 			v.ProfilesDirectory = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.ProjectDirectory == "" && Forced(v.ForceSendFields, "ProjectDirectory") {
+		ch := n.Child("project_directory")
+		c.fn(&ch, "")
 	}
 	if s := string(v.ProjectDirectory); c.match(s) {
 		ch := n.Child("project_directory")
@@ -8096,17 +9488,29 @@ func stringsJobsDbtTask(c *stringsWalk, n *Node, v *jobs.DbtTask) {
 			v.ProjectDirectory = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.Schema == "" && Forced(v.ForceSendFields, "Schema") {
+		ch := n.Child("schema")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Schema); c.match(s) {
 		ch := n.Child("schema")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Schema = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.Source == "" && Forced(v.ForceSendFields, "Source") {
+		ch := n.Child("source")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Source); c.match(s) {
 		ch := n.Child("source")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Source = jobs.Source(r)
 		}
+	}
+	if c.mode == EmptyFields && v.WarehouseId == "" && Forced(v.ForceSendFields, "WarehouseId") {
+		ch := n.Child("warehouse_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.WarehouseId); c.match(s) {
 		ch := n.Child("warehouse_id")
@@ -8117,6 +9521,10 @@ func stringsJobsDbtTask(c *stringsWalk, n *Node, v *jobs.DbtTask) {
 }
 
 func stringsJobsTaskDependency(c *stringsWalk, n *Node, v *jobs.TaskDependency) {
+	if c.mode == EmptyFields && v.Outcome == "" && Forced(v.ForceSendFields, "Outcome") {
+		ch := n.Child("outcome")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Outcome); c.match(s) {
 		ch := n.Child("outcome")
 		if r, ok := c.fn(&ch, s); ok {
@@ -8225,6 +9633,10 @@ func stringsJobsForEachTask(c *stringsWalk, n *Node, v *jobs.ForEachTask) {
 }
 
 func stringsJobsGenAiComputeTask(c *stringsWalk, n *Node, v *jobs.GenAiComputeTask) {
+	if c.mode == EmptyFields && v.Command == "" && Forced(v.ForceSendFields, "Command") {
+		ch := n.Child("command")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Command); c.match(s) {
 		ch := n.Child("command")
 		if r, ok := c.fn(&ch, s); ok {
@@ -8241,11 +9653,19 @@ func stringsJobsGenAiComputeTask(c *stringsWalk, n *Node, v *jobs.GenAiComputeTa
 			v.DlRuntimeImage = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.MlflowExperimentName == "" && Forced(v.ForceSendFields, "MlflowExperimentName") {
+		ch := n.Child("mlflow_experiment_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.MlflowExperimentName); c.match(s) {
 		ch := n.Child("mlflow_experiment_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.MlflowExperimentName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Source == "" && Forced(v.ForceSendFields, "Source") {
+		ch := n.Child("source")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Source); c.match(s) {
 		ch := n.Child("source")
@@ -8253,17 +9673,29 @@ func stringsJobsGenAiComputeTask(c *stringsWalk, n *Node, v *jobs.GenAiComputeTa
 			v.Source = jobs.Source(r)
 		}
 	}
+	if c.mode == EmptyFields && v.TrainingScriptPath == "" && Forced(v.ForceSendFields, "TrainingScriptPath") {
+		ch := n.Child("training_script_path")
+		c.fn(&ch, "")
+	}
 	if s := string(v.TrainingScriptPath); c.match(s) {
 		ch := n.Child("training_script_path")
 		if r, ok := c.fn(&ch, s); ok {
 			v.TrainingScriptPath = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.YamlParameters == "" && Forced(v.ForceSendFields, "YamlParameters") {
+		ch := n.Child("yaml_parameters")
+		c.fn(&ch, "")
+	}
 	if s := string(v.YamlParameters); c.match(s) {
 		ch := n.Child("yaml_parameters")
 		if r, ok := c.fn(&ch, s); ok {
 			v.YamlParameters = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.YamlParametersFilePath == "" && Forced(v.ForceSendFields, "YamlParametersFilePath") {
+		ch := n.Child("yaml_parameters_file_path")
+		c.fn(&ch, "")
 	}
 	if s := string(v.YamlParametersFilePath); c.match(s) {
 		ch := n.Child("yaml_parameters_file_path")
@@ -8291,11 +9723,19 @@ func stringsJobsNotebookTask(c *stringsWalk, n *Node, v *jobs.NotebookTask) {
 			v.NotebookPath = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.Source == "" && Forced(v.ForceSendFields, "Source") {
+		ch := n.Child("source")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Source); c.match(s) {
 		ch := n.Child("source")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Source = jobs.Source(r)
 		}
+	}
+	if c.mode == EmptyFields && v.WarehouseId == "" && Forced(v.ForceSendFields, "WarehouseId") {
+		ch := n.Child("warehouse_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.WarehouseId); c.match(s) {
 		ch := n.Child("warehouse_id")
@@ -8370,6 +9810,10 @@ func stringsJobsPipelineTask(c *stringsWalk, n *Node, v *jobs.PipelineTask) {
 }
 
 func stringsJobsPowerBiTask(c *stringsWalk, n *Node, v *jobs.PowerBiTask) {
+	if c.mode == EmptyFields && v.ConnectionResourceName == "" && Forced(v.ForceSendFields, "ConnectionResourceName") {
+		ch := n.Child("connection_resource_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ConnectionResourceName); c.match(s) {
 		ch := n.Child("connection_resource_name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -8389,6 +9833,10 @@ func stringsJobsPowerBiTask(c *stringsWalk, n *Node, v *jobs.PowerBiTask) {
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.WarehouseId == "" && Forced(v.ForceSendFields, "WarehouseId") {
+		ch := n.Child("warehouse_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.WarehouseId); c.match(s) {
 		ch := n.Child("warehouse_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -8398,6 +9846,10 @@ func stringsJobsPowerBiTask(c *stringsWalk, n *Node, v *jobs.PowerBiTask) {
 }
 
 func stringsJobsPythonOperatorTask(c *stringsWalk, n *Node, v *jobs.PythonOperatorTask) {
+	if c.mode == EmptyFields && v.Main == "" && Forced(v.ForceSendFields, "Main") {
+		ch := n.Child("main")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Main); c.match(s) {
 		ch := n.Child("main")
 		if r, ok := c.fn(&ch, s); ok {
@@ -8548,11 +10000,19 @@ func stringsJobsRunJobTask(c *stringsWalk, n *Node, v *jobs.RunJobTask) {
 }
 
 func stringsJobsSparkJarTask(c *stringsWalk, n *Node, v *jobs.SparkJarTask) {
+	if c.mode == EmptyFields && v.JarUri == "" && Forced(v.ForceSendFields, "JarUri") {
+		ch := n.Child("jar_uri")
+		c.fn(&ch, "")
+	}
 	if s := string(v.JarUri); c.match(s) {
 		ch := n.Child("jar_uri")
 		if r, ok := c.fn(&ch, s); ok {
 			v.JarUri = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.MainClassName == "" && Forced(v.ForceSendFields, "MainClassName") {
+		ch := n.Child("main_class_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.MainClassName); c.match(s) {
 		ch := n.Child("main_class_name")
@@ -8676,6 +10136,10 @@ func stringsJobsModelTriggerConfiguration(c *stringsWalk, n *Node, v *jobs.Model
 			v.Condition = jobs.ModelTriggerConfigurationCondition(r)
 		}
 	}
+	if c.mode == EmptyFields && v.SecurableName == "" && Forced(v.ForceSendFields, "SecurableName") {
+		ch := n.Child("securable_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.SecurableName); c.match(s) {
 		ch := n.Child("securable_name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -8694,6 +10158,10 @@ func stringsJobsPeriodicTriggerConfiguration(c *stringsWalk, n *Node, v *jobs.Pe
 }
 
 func stringsJobsTableUpdateTriggerConfiguration(c *stringsWalk, n *Node, v *jobs.TableUpdateTriggerConfiguration) {
+	if c.mode == EmptyFields && v.Condition == "" && Forced(v.ForceSendFields, "Condition") {
+		ch := n.Child("condition")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Condition); c.match(s) {
 		ch := n.Child("condition")
 		if r, ok := c.fn(&ch, s); ok {
@@ -8751,6 +10219,10 @@ func stringsJobsWebhook(c *stringsWalk, n *Node, v *jobs.Webhook) {
 }
 
 func stringsResourcesJobRunTrigger(c *stringsWalk, n *Node, v *resources.JobRunTrigger) {
+	if c.mode == EmptyFields && v.OnFileChange != nil && *v.OnFileChange == "" {
+		ch := n.Child("on_file_change")
+		c.fn(&ch, "")
+	}
 	if x := v.OnFileChange; x != nil {
 		if s := string(*x); c.match(s) {
 			ch := n.Child("on_file_change")
@@ -8791,6 +10263,10 @@ func stringsPipelinesPipelineClusterAutoscale(c *stringsWalk, n *Node, v *pipeli
 }
 
 func stringsPipelinesConnectionParameters(c *stringsWalk, n *Node, v *pipelines.ConnectionParameters) {
+	if c.mode == EmptyFields && v.SourceCatalog == "" && Forced(v.ForceSendFields, "SourceCatalog") {
+		ch := n.Child("source_catalog")
+		c.fn(&ch, "")
+	}
 	if s := string(v.SourceCatalog); c.match(s) {
 		ch := n.Child("source_catalog")
 		if r, ok := c.fn(&ch, s); ok {
@@ -8812,6 +10288,10 @@ func stringsPipelinesDataStagingOptions(c *stringsWalk, n *Node, v *pipelines.Da
 			v.SchemaName = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.VolumeName == "" && Forced(v.ForceSendFields, "VolumeName") {
+		ch := n.Child("volume_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.VolumeName); c.match(s) {
 		ch := n.Child("volume_name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -8831,6 +10311,10 @@ func stringsPipelinesOperationTimeWindow(c *stringsWalk, n *Node, v *pipelines.O
 				}
 			}
 		}
+	}
+	if c.mode == EmptyFields && v.TimeZoneId == "" && Forced(v.ForceSendFields, "TimeZoneId") {
+		ch := n.Child("time_zone_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.TimeZoneId); c.match(s) {
 		ch := n.Child("time_zone_id")
@@ -8919,11 +10403,19 @@ func stringsPipelinesTableSpecificConfig(c *stringsWalk, n *Node, v *pipelines.T
 		ch := n.Child("query_based_connector_config")
 		stringsPipelinesIngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.RowFilter == "" && Forced(v.ForceSendFields, "RowFilter") {
+		ch := n.Child("row_filter")
+		c.fn(&ch, "")
+	}
 	if s := string(v.RowFilter); c.match(s) {
 		ch := n.Child("row_filter")
 		if r, ok := c.fn(&ch, s); ok {
 			v.RowFilter = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.ScdType == "" && Forced(v.ForceSendFields, "ScdType") {
+		ch := n.Child("scd_type")
+		c.fn(&ch, "")
 	}
 	if s := string(v.ScdType); c.match(s) {
 		ch := n.Child("scd_type")
@@ -8941,6 +10433,10 @@ func stringsPipelinesTableSpecificConfig(c *stringsWalk, n *Node, v *pipelines.T
 				}
 			}
 		}
+	}
+	if c.mode == EmptyFields && v.SourceMetadataColumn == "" && Forced(v.ForceSendFields, "SourceMetadataColumn") {
+		ch := n.Child("source_metadata_column")
+		c.fn(&ch, "")
 	}
 	if s := string(v.SourceMetadataColumn); c.match(s) {
 		ch := n.Child("source_metadata_column")
@@ -8966,6 +10462,10 @@ func stringsPipelinesTableSpecificConfig(c *stringsWalk, n *Node, v *pipelines.T
 }
 
 func stringsPipelinesFileLibrary(c *stringsWalk, n *Node, v *pipelines.FileLibrary) {
+	if c.mode == EmptyFields && v.Path == "" && Forced(v.ForceSendFields, "Path") {
+		ch := n.Child("path")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Path); c.match(s) {
 		ch := n.Child("path")
 		if r, ok := c.fn(&ch, s); ok {
@@ -8975,6 +10475,10 @@ func stringsPipelinesFileLibrary(c *stringsWalk, n *Node, v *pipelines.FileLibra
 }
 
 func stringsPipelinesPathPattern(c *stringsWalk, n *Node, v *pipelines.PathPattern) {
+	if c.mode == EmptyFields && v.Include == "" && Forced(v.ForceSendFields, "Include") {
+		ch := n.Child("include")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Include); c.match(s) {
 		ch := n.Child("include")
 		if r, ok := c.fn(&ch, s); ok {
@@ -9001,6 +10505,10 @@ func stringsComputeMavenLibrary(c *stringsWalk, n *Node, v *compute.MavenLibrary
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.Repo == "" && Forced(v.ForceSendFields, "Repo") {
+		ch := n.Child("repo")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Repo); c.match(s) {
 		ch := n.Child("repo")
 		if r, ok := c.fn(&ch, s); ok {
@@ -9010,6 +10518,10 @@ func stringsComputeMavenLibrary(c *stringsWalk, n *Node, v *compute.MavenLibrary
 }
 
 func stringsPipelinesNotebookLibrary(c *stringsWalk, n *Node, v *pipelines.NotebookLibrary) {
+	if c.mode == EmptyFields && v.Path == "" && Forced(v.ForceSendFields, "Path") {
+		ch := n.Child("path")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Path); c.match(s) {
 		ch := n.Child("path")
 		if r, ok := c.fn(&ch, s); ok {
@@ -9019,11 +10531,19 @@ func stringsPipelinesNotebookLibrary(c *stringsWalk, n *Node, v *pipelines.Noteb
 }
 
 func stringsPipelinesCronTrigger(c *stringsWalk, n *Node, v *pipelines.CronTrigger) {
+	if c.mode == EmptyFields && v.QuartzCronSchedule == "" && Forced(v.ForceSendFields, "QuartzCronSchedule") {
+		ch := n.Child("quartz_cron_schedule")
+		c.fn(&ch, "")
+	}
 	if s := string(v.QuartzCronSchedule); c.match(s) {
 		ch := n.Child("quartz_cron_schedule")
 		if r, ok := c.fn(&ch, s); ok {
 			v.QuartzCronSchedule = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.TimezoneId == "" && Forced(v.ForceSendFields, "TimezoneId") {
+		ch := n.Child("timezone_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.TimezoneId); c.match(s) {
 		ch := n.Child("timezone_id")
@@ -9040,6 +10560,10 @@ func stringsMlUcTraceLocation(c *stringsWalk, n *Node, v *ml.UcTraceLocation) {
 			v.Catalog = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.EffectiveTablePrefix == "" && Forced(v.ForceSendFields, "EffectiveTablePrefix") {
+		ch := n.Child("effective_table_prefix")
+		c.fn(&ch, "")
+	}
 	if s := string(v.EffectiveTablePrefix); c.match(s) {
 		ch := n.Child("effective_table_prefix")
 		if r, ok := c.fn(&ch, s); ok {
@@ -9051,6 +10575,10 @@ func stringsMlUcTraceLocation(c *stringsWalk, n *Node, v *ml.UcTraceLocation) {
 		if r, ok := c.fn(&ch, s); ok {
 			v.Schema = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.TablePrefix == "" && Forced(v.ForceSendFields, "TablePrefix") {
+		ch := n.Child("table_prefix")
+		c.fn(&ch, "")
 	}
 	if s := string(v.TablePrefix); c.match(s) {
 		ch := n.Child("table_prefix")
@@ -9072,17 +10600,29 @@ func stringsServingAiGatewayGuardrails(c *stringsWalk, n *Node, v *serving.AiGat
 }
 
 func stringsServingAiGatewayInferenceTableConfig(c *stringsWalk, n *Node, v *serving.AiGatewayInferenceTableConfig) {
+	if c.mode == EmptyFields && v.CatalogName == "" && Forced(v.ForceSendFields, "CatalogName") {
+		ch := n.Child("catalog_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CatalogName); c.match(s) {
 		ch := n.Child("catalog_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.CatalogName = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.SchemaName == "" && Forced(v.ForceSendFields, "SchemaName") {
+		ch := n.Child("schema_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.SchemaName); c.match(s) {
 		ch := n.Child("schema_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.SchemaName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.TableNamePrefix == "" && Forced(v.ForceSendFields, "TableNamePrefix") {
+		ch := n.Child("table_name_prefix")
+		c.fn(&ch, "")
 	}
 	if s := string(v.TableNamePrefix); c.match(s) {
 		ch := n.Child("table_name_prefix")
@@ -9093,11 +10633,19 @@ func stringsServingAiGatewayInferenceTableConfig(c *stringsWalk, n *Node, v *ser
 }
 
 func stringsServingAiGatewayRateLimit(c *stringsWalk, n *Node, v *serving.AiGatewayRateLimit) {
+	if c.mode == EmptyFields && v.Key == "" && Forced(v.ForceSendFields, "Key") {
+		ch := n.Child("key")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Key); c.match(s) {
 		ch := n.Child("key")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Key = serving.AiGatewayRateLimitKey(r)
 		}
+	}
+	if c.mode == EmptyFields && v.Principal == "" && Forced(v.ForceSendFields, "Principal") {
+		ch := n.Child("principal")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Principal); c.match(s) {
 		ch := n.Child("principal")
@@ -9114,17 +10662,29 @@ func stringsServingAiGatewayRateLimit(c *stringsWalk, n *Node, v *serving.AiGate
 }
 
 func stringsServingAutoCaptureConfigInput(c *stringsWalk, n *Node, v *serving.AutoCaptureConfigInput) {
+	if c.mode == EmptyFields && v.CatalogName == "" && Forced(v.ForceSendFields, "CatalogName") {
+		ch := n.Child("catalog_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CatalogName); c.match(s) {
 		ch := n.Child("catalog_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.CatalogName = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.SchemaName == "" && Forced(v.ForceSendFields, "SchemaName") {
+		ch := n.Child("schema_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.SchemaName); c.match(s) {
 		ch := n.Child("schema_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.SchemaName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.TableNamePrefix == "" && Forced(v.ForceSendFields, "TableNamePrefix") {
+		ch := n.Child("table_name_prefix")
+		c.fn(&ch, "")
 	}
 	if s := string(v.TableNamePrefix); c.match(s) {
 		ch := n.Child("table_name_prefix")
@@ -9135,11 +10695,19 @@ func stringsServingAutoCaptureConfigInput(c *stringsWalk, n *Node, v *serving.Au
 }
 
 func stringsServingServedEntityInput(c *stringsWalk, n *Node, v *serving.ServedEntityInput) {
+	if c.mode == EmptyFields && v.EntityName == "" && Forced(v.ForceSendFields, "EntityName") {
+		ch := n.Child("entity_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.EntityName); c.match(s) {
 		ch := n.Child("entity_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.EntityName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.EntityVersion == "" && Forced(v.ForceSendFields, "EntityVersion") {
+		ch := n.Child("entity_version")
+		c.fn(&ch, "")
 	}
 	if s := string(v.EntityVersion); c.match(s) {
 		ch := n.Child("entity_version")
@@ -9162,11 +10730,19 @@ func stringsServingServedEntityInput(c *stringsWalk, n *Node, v *serving.ServedE
 		ch := n.Child("external_model")
 		stringsServingExternalModel(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.InstanceProfileArn == "" && Forced(v.ForceSendFields, "InstanceProfileArn") {
+		ch := n.Child("instance_profile_arn")
+		c.fn(&ch, "")
+	}
 	if s := string(v.InstanceProfileArn); c.match(s) {
 		ch := n.Child("instance_profile_arn")
 		if r, ok := c.fn(&ch, s); ok {
 			v.InstanceProfileArn = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Name == "" && Forced(v.ForceSendFields, "Name") {
+		ch := n.Child("name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Name); c.match(s) {
 		ch := n.Child("name")
@@ -9174,11 +10750,19 @@ func stringsServingServedEntityInput(c *stringsWalk, n *Node, v *serving.ServedE
 			v.Name = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.WorkloadSize == "" && Forced(v.ForceSendFields, "WorkloadSize") {
+		ch := n.Child("workload_size")
+		c.fn(&ch, "")
+	}
 	if s := string(v.WorkloadSize); c.match(s) {
 		ch := n.Child("workload_size")
 		if r, ok := c.fn(&ch, s); ok {
 			v.WorkloadSize = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.WorkloadType == "" && Forced(v.ForceSendFields, "WorkloadType") {
+		ch := n.Child("workload_type")
+		c.fn(&ch, "")
 	}
 	if s := string(v.WorkloadType); c.match(s) {
 		ch := n.Child("workload_type")
@@ -9200,6 +10784,10 @@ func stringsServingServedModelInput(c *stringsWalk, n *Node, v *serving.ServedMo
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.InstanceProfileArn == "" && Forced(v.ForceSendFields, "InstanceProfileArn") {
+		ch := n.Child("instance_profile_arn")
+		c.fn(&ch, "")
+	}
 	if s := string(v.InstanceProfileArn); c.match(s) {
 		ch := n.Child("instance_profile_arn")
 		if r, ok := c.fn(&ch, s); ok {
@@ -9218,17 +10806,29 @@ func stringsServingServedModelInput(c *stringsWalk, n *Node, v *serving.ServedMo
 			v.ModelVersion = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.Name == "" && Forced(v.ForceSendFields, "Name") {
+		ch := n.Child("name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Name); c.match(s) {
 		ch := n.Child("name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Name = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.WorkloadSize == "" && Forced(v.ForceSendFields, "WorkloadSize") {
+		ch := n.Child("workload_size")
+		c.fn(&ch, "")
+	}
 	if s := string(v.WorkloadSize); c.match(s) {
 		ch := n.Child("workload_size")
 		if r, ok := c.fn(&ch, s); ok {
 			v.WorkloadSize = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.WorkloadType == "" && Forced(v.ForceSendFields, "WorkloadType") {
+		ch := n.Child("workload_type")
+		c.fn(&ch, "")
 	}
 	if s := string(v.WorkloadType); c.match(s) {
 		ch := n.Child("workload_type")
@@ -9251,6 +10851,10 @@ func stringsServingTrafficConfig(c *stringsWalk, n *Node, v *serving.TrafficConf
 }
 
 func stringsServingTelemetryInferenceTableConfig(c *stringsWalk, n *Node, v *serving.TelemetryInferenceTableConfig) {
+	if c.mode == EmptyFields && v.Name == "" && Forced(v.ForceSendFields, "Name") {
+		ch := n.Child("name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Name); c.match(s) {
 		ch := n.Child("name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -9260,11 +10864,19 @@ func stringsServingTelemetryInferenceTableConfig(c *stringsWalk, n *Node, v *ser
 }
 
 func stringsServingUnityCatalogTableNames(c *stringsWalk, n *Node, v *serving.UnityCatalogTableNames) {
+	if c.mode == EmptyFields && v.AnnotationsTable == "" && Forced(v.ForceSendFields, "AnnotationsTable") {
+		ch := n.Child("annotations_table")
+		c.fn(&ch, "")
+	}
 	if s := string(v.AnnotationsTable); c.match(s) {
 		ch := n.Child("annotations_table")
 		if r, ok := c.fn(&ch, s); ok {
 			v.AnnotationsTable = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.LogsTable == "" && Forced(v.ForceSendFields, "LogsTable") {
+		ch := n.Child("logs_table")
+		c.fn(&ch, "")
 	}
 	if s := string(v.LogsTable); c.match(s) {
 		ch := n.Child("logs_table")
@@ -9272,11 +10884,19 @@ func stringsServingUnityCatalogTableNames(c *stringsWalk, n *Node, v *serving.Un
 			v.LogsTable = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.MetricsTable == "" && Forced(v.ForceSendFields, "MetricsTable") {
+		ch := n.Child("metrics_table")
+		c.fn(&ch, "")
+	}
 	if s := string(v.MetricsTable); c.match(s) {
 		ch := n.Child("metrics_table")
 		if r, ok := c.fn(&ch, s); ok {
 			v.MetricsTable = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.TracesTable == "" && Forced(v.ForceSendFields, "TracesTable") {
+		ch := n.Child("traces_table")
+		c.fn(&ch, "")
 	}
 	if s := string(v.TracesTable); c.match(s) {
 		ch := n.Child("traces_table")
@@ -9293,11 +10913,19 @@ func stringsCatalogInferenceTableConfig(c *stringsWalk, n *Node, v *catalog.Infe
 			v.Parent = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.Table == "" && Forced(v.ForceSendFields, "Table") {
+		ch := n.Child("table")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Table); c.match(s) {
 		ch := n.Child("table")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Table = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.TableNamePrefix == "" && Forced(v.ForceSendFields, "TableNamePrefix") {
+		ch := n.Child("table_name_prefix")
+		c.fn(&ch, "")
 	}
 	if s := string(v.TableNamePrefix); c.match(s) {
 		ch := n.Child("table_name_prefix")
@@ -9313,6 +10941,10 @@ func stringsCatalogRateLimit(c *stringsWalk, n *Node, v *catalog.RateLimit) {
 		if r, ok := c.fn(&ch, s); ok {
 			v.Key = catalog.RateLimitRateLimitKey(r)
 		}
+	}
+	if c.mode == EmptyFields && v.Principal == "" && Forced(v.ForceSendFields, "Principal") {
+		ch := n.Child("principal")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Principal); c.match(s) {
 		ch := n.Child("principal")
@@ -9414,6 +11046,10 @@ func stringsCatalogModelProviderServiceConfigOpenAiProviderConfig(c *stringsWalk
 }
 
 func stringsCatalogModelProviderServiceConfigModelTargetConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigModelTargetConfig) {
+	if c.mode == EmptyFields && v.EndpointRoute == "" && Forced(v.ForceSendFields, "EndpointRoute") {
+		ch := n.Child("endpoint_route")
+		c.fn(&ch, "")
+	}
 	if s := string(v.EndpointRoute); c.match(s) {
 		ch := n.Child("endpoint_route")
 		if r, ok := c.fn(&ch, s); ok {
@@ -9454,11 +11090,19 @@ func stringsCatalogMonitorDestination(c *stringsWalk, n *Node, v *catalog.Monito
 }
 
 func stringsCatalogAzureEncryptionSettings(c *stringsWalk, n *Node, v *catalog.AzureEncryptionSettings) {
+	if c.mode == EmptyFields && v.AzureCmkAccessConnectorId == "" && Forced(v.ForceSendFields, "AzureCmkAccessConnectorId") {
+		ch := n.Child("azure_cmk_access_connector_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.AzureCmkAccessConnectorId); c.match(s) {
 		ch := n.Child("azure_cmk_access_connector_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.AzureCmkAccessConnectorId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.AzureCmkManagedIdentityId == "" && Forced(v.ForceSendFields, "AzureCmkManagedIdentityId") {
+		ch := n.Child("azure_cmk_managed_identity_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.AzureCmkManagedIdentityId); c.match(s) {
 		ch := n.Child("azure_cmk_managed_identity_id")
@@ -9475,11 +11119,19 @@ func stringsCatalogAzureEncryptionSettings(c *stringsWalk, n *Node, v *catalog.A
 }
 
 func stringsCatalogAzureQueueStorage(c *stringsWalk, n *Node, v *catalog.AzureQueueStorage) {
+	if c.mode == EmptyFields && v.ManagedResourceId == "" && Forced(v.ForceSendFields, "ManagedResourceId") {
+		ch := n.Child("managed_resource_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ManagedResourceId); c.match(s) {
 		ch := n.Child("managed_resource_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.ManagedResourceId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.QueueUrl == "" && Forced(v.ForceSendFields, "QueueUrl") {
+		ch := n.Child("queue_url")
+		c.fn(&ch, "")
 	}
 	if s := string(v.QueueUrl); c.match(s) {
 		ch := n.Child("queue_url")
@@ -9487,11 +11139,19 @@ func stringsCatalogAzureQueueStorage(c *stringsWalk, n *Node, v *catalog.AzureQu
 			v.QueueUrl = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.ResourceGroup == "" && Forced(v.ForceSendFields, "ResourceGroup") {
+		ch := n.Child("resource_group")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ResourceGroup); c.match(s) {
 		ch := n.Child("resource_group")
 		if r, ok := c.fn(&ch, s); ok {
 			v.ResourceGroup = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.SubscriptionId == "" && Forced(v.ForceSendFields, "SubscriptionId") {
+		ch := n.Child("subscription_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.SubscriptionId); c.match(s) {
 		ch := n.Child("subscription_id")
@@ -9502,11 +11162,19 @@ func stringsCatalogAzureQueueStorage(c *stringsWalk, n *Node, v *catalog.AzureQu
 }
 
 func stringsCatalogGcpPubsub(c *stringsWalk, n *Node, v *catalog.GcpPubsub) {
+	if c.mode == EmptyFields && v.ManagedResourceId == "" && Forced(v.ForceSendFields, "ManagedResourceId") {
+		ch := n.Child("managed_resource_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ManagedResourceId); c.match(s) {
 		ch := n.Child("managed_resource_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.ManagedResourceId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.SubscriptionName == "" && Forced(v.ForceSendFields, "SubscriptionName") {
+		ch := n.Child("subscription_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.SubscriptionName); c.match(s) {
 		ch := n.Child("subscription_name")
@@ -9517,11 +11185,19 @@ func stringsCatalogGcpPubsub(c *stringsWalk, n *Node, v *catalog.GcpPubsub) {
 }
 
 func stringsCatalogAwsSqsQueue(c *stringsWalk, n *Node, v *catalog.AwsSqsQueue) {
+	if c.mode == EmptyFields && v.ManagedResourceId == "" && Forced(v.ForceSendFields, "ManagedResourceId") {
+		ch := n.Child("managed_resource_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ManagedResourceId); c.match(s) {
 		ch := n.Child("managed_resource_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.ManagedResourceId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.QueueUrl == "" && Forced(v.ForceSendFields, "QueueUrl") {
+		ch := n.Child("queue_url")
+		c.fn(&ch, "")
 	}
 	if s := string(v.QueueUrl); c.match(s) {
 		ch := n.Child("queue_url")
@@ -9532,11 +11208,19 @@ func stringsCatalogAwsSqsQueue(c *stringsWalk, n *Node, v *catalog.AwsSqsQueue) 
 }
 
 func stringsCatalogSseEncryptionDetails(c *stringsWalk, n *Node, v *catalog.SseEncryptionDetails) {
+	if c.mode == EmptyFields && v.Algorithm == "" && Forced(v.ForceSendFields, "Algorithm") {
+		ch := n.Child("algorithm")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Algorithm); c.match(s) {
 		ch := n.Child("algorithm")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Algorithm = catalog.SseEncryptionDetailsAlgorithm(r)
 		}
+	}
+	if c.mode == EmptyFields && v.AwsKmsKeyArn == "" && Forced(v.ForceSendFields, "AwsKmsKeyArn") {
+		ch := n.Child("aws_kms_key_arn")
+		c.fn(&ch, "")
 	}
 	if s := string(v.AwsKmsKeyArn); c.match(s) {
 		ch := n.Child("aws_kms_key_arn")
@@ -9553,6 +11237,10 @@ func stringsComputeRCranLibrary(c *stringsWalk, n *Node, v *compute.RCranLibrary
 			v.Package = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.Repo == "" && Forced(v.ForceSendFields, "Repo") {
+		ch := n.Child("repo")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Repo); c.match(s) {
 		ch := n.Child("repo")
 		if r, ok := c.fn(&ch, s); ok {
@@ -9568,6 +11256,10 @@ func stringsComputePythonPyPiLibrary(c *stringsWalk, n *Node, v *compute.PythonP
 			v.Package = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.Repo == "" && Forced(v.ForceSendFields, "Repo") {
+		ch := n.Child("repo")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Repo); c.match(s) {
 		ch := n.Child("repo")
 		if r, ok := c.fn(&ch, s); ok {
@@ -9577,11 +11269,19 @@ func stringsComputePythonPyPiLibrary(c *stringsWalk, n *Node, v *compute.PythonP
 }
 
 func stringsComputeLogAnalyticsInfo(c *stringsWalk, n *Node, v *compute.LogAnalyticsInfo) {
+	if c.mode == EmptyFields && v.LogAnalyticsPrimaryKey == "" && Forced(v.ForceSendFields, "LogAnalyticsPrimaryKey") {
+		ch := n.Child("log_analytics_primary_key")
+		c.fn(&ch, "")
+	}
 	if s := string(v.LogAnalyticsPrimaryKey); c.match(s) {
 		ch := n.Child("log_analytics_primary_key")
 		if r, ok := c.fn(&ch, s); ok {
 			v.LogAnalyticsPrimaryKey = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.LogAnalyticsWorkspaceId == "" && Forced(v.ForceSendFields, "LogAnalyticsWorkspaceId") {
+		ch := n.Child("log_analytics_workspace_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.LogAnalyticsWorkspaceId); c.match(s) {
 		ch := n.Child("log_analytics_workspace_id")
@@ -9601,6 +11301,10 @@ func stringsComputeDbfsStorageInfo(c *stringsWalk, n *Node, v *compute.DbfsStora
 }
 
 func stringsComputeS3StorageInfo(c *stringsWalk, n *Node, v *compute.S3StorageInfo) {
+	if c.mode == EmptyFields && v.CannedAcl == "" && Forced(v.ForceSendFields, "CannedAcl") {
+		ch := n.Child("canned_acl")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CannedAcl); c.match(s) {
 		ch := n.Child("canned_acl")
 		if r, ok := c.fn(&ch, s); ok {
@@ -9613,11 +11317,19 @@ func stringsComputeS3StorageInfo(c *stringsWalk, n *Node, v *compute.S3StorageIn
 			v.Destination = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.EncryptionType == "" && Forced(v.ForceSendFields, "EncryptionType") {
+		ch := n.Child("encryption_type")
+		c.fn(&ch, "")
+	}
 	if s := string(v.EncryptionType); c.match(s) {
 		ch := n.Child("encryption_type")
 		if r, ok := c.fn(&ch, s); ok {
 			v.EncryptionType = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Endpoint == "" && Forced(v.ForceSendFields, "Endpoint") {
+		ch := n.Child("endpoint")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Endpoint); c.match(s) {
 		ch := n.Child("endpoint")
@@ -9625,11 +11337,19 @@ func stringsComputeS3StorageInfo(c *stringsWalk, n *Node, v *compute.S3StorageIn
 			v.Endpoint = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.KmsKey == "" && Forced(v.ForceSendFields, "KmsKey") {
+		ch := n.Child("kms_key")
+		c.fn(&ch, "")
+	}
 	if s := string(v.KmsKey); c.match(s) {
 		ch := n.Child("kms_key")
 		if r, ok := c.fn(&ch, s); ok {
 			v.KmsKey = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Region == "" && Forced(v.ForceSendFields, "Region") {
+		ch := n.Child("region")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Region); c.match(s) {
 		ch := n.Child("region")
@@ -9649,11 +11369,19 @@ func stringsComputeVolumesStorageInfo(c *stringsWalk, n *Node, v *compute.Volume
 }
 
 func stringsComputeDockerBasicAuth(c *stringsWalk, n *Node, v *compute.DockerBasicAuth) {
+	if c.mode == EmptyFields && v.Password == "" && Forced(v.ForceSendFields, "Password") {
+		ch := n.Child("password")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Password); c.match(s) {
 		ch := n.Child("password")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Password = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Username == "" && Forced(v.ForceSendFields, "Username") {
+		ch := n.Child("username")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Username); c.match(s) {
 		ch := n.Child("username")
@@ -9721,6 +11449,10 @@ func stringsResourcesAppEnvVar(c *stringsWalk, n *Node, v *resources.AppEnvVar) 
 }
 
 func stringsAppsAppDeploymentArtifacts(c *stringsWalk, n *Node, v *apps.AppDeploymentArtifacts) {
+	if c.mode == EmptyFields && v.SourceCodePath == "" && Forced(v.ForceSendFields, "SourceCodePath") {
+		ch := n.Child("source_code_path")
+		c.fn(&ch, "")
+	}
 	if s := string(v.SourceCodePath); c.match(s) {
 		ch := n.Child("source_code_path")
 		if r, ok := c.fn(&ch, s); ok {
@@ -9730,17 +11462,29 @@ func stringsAppsAppDeploymentArtifacts(c *stringsWalk, n *Node, v *apps.AppDeplo
 }
 
 func stringsAppsEnvVar(c *stringsWalk, n *Node, v *apps.EnvVar) {
+	if c.mode == EmptyFields && v.Name == "" && Forced(v.ForceSendFields, "Name") {
+		ch := n.Child("name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Name); c.match(s) {
 		ch := n.Child("name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Name = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.Value == "" && Forced(v.ForceSendFields, "Value") {
+		ch := n.Child("value")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Value); c.match(s) {
 		ch := n.Child("value")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Value = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.ValueFrom == "" && Forced(v.ForceSendFields, "ValueFrom") {
+		ch := n.Child("value_from")
+		c.fn(&ch, "")
 	}
 	if s := string(v.ValueFrom); c.match(s) {
 		ch := n.Child("value_from")
@@ -9751,6 +11495,10 @@ func stringsAppsEnvVar(c *stringsWalk, n *Node, v *apps.EnvVar) {
 }
 
 func stringsAppsAppHealthCheck(c *stringsWalk, n *Node, v *apps.AppHealthCheck) {
+	if c.mode == EmptyFields && v.Path == "" && Forced(v.ForceSendFields, "Path") {
+		ch := n.Child("path")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Path); c.match(s) {
 		ch := n.Child("path")
 		if r, ok := c.fn(&ch, s); ok {
@@ -9760,11 +11508,19 @@ func stringsAppsAppHealthCheck(c *stringsWalk, n *Node, v *apps.AppHealthCheck) 
 }
 
 func stringsAppsAppDeploymentStatus(c *stringsWalk, n *Node, v *apps.AppDeploymentStatus) {
+	if c.mode == EmptyFields && v.Message == "" && Forced(v.ForceSendFields, "Message") {
+		ch := n.Child("message")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Message); c.match(s) {
 		ch := n.Child("message")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Message = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.State == "" && Forced(v.ForceSendFields, "State") {
+		ch := n.Child("state")
+		c.fn(&ch, "")
 	}
 	if s := string(v.State); c.match(s) {
 		ch := n.Child("state")
@@ -9775,11 +11531,19 @@ func stringsAppsAppDeploymentStatus(c *stringsWalk, n *Node, v *apps.AppDeployme
 }
 
 func stringsAppsAppResourceApp(c *stringsWalk, n *Node, v *apps.AppResourceApp) {
+	if c.mode == EmptyFields && v.Name == "" && Forced(v.ForceSendFields, "Name") {
+		ch := n.Child("name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Name); c.match(s) {
 		ch := n.Child("name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Name = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Permission == "" && Forced(v.ForceSendFields, "Permission") {
+		ch := n.Child("permission")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Permission); c.match(s) {
 		ch := n.Child("permission")
@@ -9862,17 +11626,29 @@ func stringsAppsAppResourceJob(c *stringsWalk, n *Node, v *apps.AppResourceJob) 
 }
 
 func stringsAppsAppResourcePostgres(c *stringsWalk, n *Node, v *apps.AppResourcePostgres) {
+	if c.mode == EmptyFields && v.Branch == "" && Forced(v.ForceSendFields, "Branch") {
+		ch := n.Child("branch")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Branch); c.match(s) {
 		ch := n.Child("branch")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Branch = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.Database == "" && Forced(v.ForceSendFields, "Database") {
+		ch := n.Child("database")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Database); c.match(s) {
 		ch := n.Child("database")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Database = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Permission == "" && Forced(v.ForceSendFields, "Permission") {
+		ch := n.Child("permission")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Permission); c.match(s) {
 		ch := n.Child("permission")
@@ -9946,6 +11722,10 @@ func stringsAppsAppResourceUcSecurable(c *stringsWalk, n *Node, v *apps.AppResou
 			v.SecurableFullName = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.SecurableKind == "" && Forced(v.ForceSendFields, "SecurableKind") {
+		ch := n.Child("securable_kind")
+		c.fn(&ch, "")
+	}
 	if s := string(v.SecurableKind); c.match(s) {
 		ch := n.Child("securable_kind")
 		if r, ok := c.fn(&ch, s); ok {
@@ -9994,11 +11774,19 @@ func stringsSqlAlertV2Notification(c *stringsWalk, n *Node, v *sql.AlertV2Notifi
 }
 
 func stringsSqlAlertV2OperandColumn(c *stringsWalk, n *Node, v *sql.AlertV2OperandColumn) {
+	if c.mode == EmptyFields && v.Aggregation == "" && Forced(v.ForceSendFields, "Aggregation") {
+		ch := n.Child("aggregation")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Aggregation); c.match(s) {
 		ch := n.Child("aggregation")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Aggregation = sql.Aggregation(r)
 		}
+	}
+	if c.mode == EmptyFields && v.Display == "" && Forced(v.ForceSendFields, "Display") {
+		ch := n.Child("display")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Display); c.match(s) {
 		ch := n.Child("display")
@@ -10026,11 +11814,19 @@ func stringsSqlAlertV2Operand(c *stringsWalk, n *Node, v *sql.AlertV2Operand) {
 }
 
 func stringsSqlEndpointTagPair(c *stringsWalk, n *Node, v *sql.EndpointTagPair) {
+	if c.mode == EmptyFields && v.Key == "" && Forced(v.ForceSendFields, "Key") {
+		ch := n.Child("key")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Key); c.match(s) {
 		ch := n.Child("key")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Key = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Value == "" && Forced(v.ForceSendFields, "Value") {
+		ch := n.Child("value")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Value); c.match(s) {
 		ch := n.Child("value")
@@ -10045,6 +11841,10 @@ func stringsDatabaseSyncedTableContinuousUpdateStatus(c *stringsWalk, n *Node, v
 		ch := n.Child("initial_pipeline_sync_progress")
 		stringsDatabaseSyncedTablePipelineProgress(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.Timestamp == "" && Forced(v.ForceSendFields, "Timestamp") {
+		ch := n.Child("timestamp")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Timestamp); c.match(s) {
 		ch := n.Child("timestamp")
 		if r, ok := c.fn(&ch, s); ok {
@@ -10054,6 +11854,10 @@ func stringsDatabaseSyncedTableContinuousUpdateStatus(c *stringsWalk, n *Node, v
 }
 
 func stringsDatabaseSyncedTableFailedStatus(c *stringsWalk, n *Node, v *database.SyncedTableFailedStatus) {
+	if c.mode == EmptyFields && v.Timestamp == "" && Forced(v.ForceSendFields, "Timestamp") {
+		ch := n.Child("timestamp")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Timestamp); c.match(s) {
 		ch := n.Child("timestamp")
 		if r, ok := c.fn(&ch, s); ok {
@@ -10067,11 +11871,19 @@ func stringsDatabaseSyncedTablePosition(c *stringsWalk, n *Node, v *database.Syn
 		ch := n.Child("delta_table_sync_info")
 		stringsDatabaseDeltaTableSyncInfo(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.SyncEndTimestamp == "" && Forced(v.ForceSendFields, "SyncEndTimestamp") {
+		ch := n.Child("sync_end_timestamp")
+		c.fn(&ch, "")
+	}
 	if s := string(v.SyncEndTimestamp); c.match(s) {
 		ch := n.Child("sync_end_timestamp")
 		if r, ok := c.fn(&ch, s); ok {
 			v.SyncEndTimestamp = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.SyncStartTimestamp == "" && Forced(v.ForceSendFields, "SyncStartTimestamp") {
+		ch := n.Child("sync_start_timestamp")
+		c.fn(&ch, "")
 	}
 	if s := string(v.SyncStartTimestamp); c.match(s) {
 		ch := n.Child("sync_start_timestamp")
@@ -10089,6 +11901,10 @@ func stringsDatabaseSyncedTableProvisioningStatus(c *stringsWalk, n *Node, v *da
 }
 
 func stringsDatabaseSyncedTableTriggeredUpdateStatus(c *stringsWalk, n *Node, v *database.SyncedTableTriggeredUpdateStatus) {
+	if c.mode == EmptyFields && v.Timestamp == "" && Forced(v.ForceSendFields, "Timestamp") {
+		ch := n.Child("timestamp")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Timestamp); c.match(s) {
 		ch := n.Child("timestamp")
 		if r, ok := c.fn(&ch, s); ok {
@@ -10102,17 +11918,29 @@ func stringsDatabaseSyncedTableTriggeredUpdateStatus(c *stringsWalk, n *Node, v 
 }
 
 func stringsDatabaseNewPipelineSpec(c *stringsWalk, n *Node, v *database.NewPipelineSpec) {
+	if c.mode == EmptyFields && v.BudgetPolicyId == "" && Forced(v.ForceSendFields, "BudgetPolicyId") {
+		ch := n.Child("budget_policy_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.BudgetPolicyId); c.match(s) {
 		ch := n.Child("budget_policy_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.BudgetPolicyId = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.StorageCatalog == "" && Forced(v.ForceSendFields, "StorageCatalog") {
+		ch := n.Child("storage_catalog")
+		c.fn(&ch, "")
+	}
 	if s := string(v.StorageCatalog); c.match(s) {
 		ch := n.Child("storage_catalog")
 		if r, ok := c.fn(&ch, s); ok {
 			v.StorageCatalog = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.StorageSchema == "" && Forced(v.ForceSendFields, "StorageSchema") {
+		ch := n.Child("storage_schema")
+		c.fn(&ch, "")
 	}
 	if s := string(v.StorageSchema); c.match(s) {
 		ch := n.Child("storage_schema")
@@ -10147,17 +11975,29 @@ func stringsPostgresWeeklySchedule(c *stringsWalk, n *Node, v *postgres.WeeklySc
 }
 
 func stringsVectorsearchEmbeddingSourceColumn(c *stringsWalk, n *Node, v *vectorsearch.EmbeddingSourceColumn) {
+	if c.mode == EmptyFields && v.EmbeddingModelEndpointName == "" && Forced(v.ForceSendFields, "EmbeddingModelEndpointName") {
+		ch := n.Child("embedding_model_endpoint_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.EmbeddingModelEndpointName); c.match(s) {
 		ch := n.Child("embedding_model_endpoint_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.EmbeddingModelEndpointName = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.ModelEndpointNameForQuery == "" && Forced(v.ForceSendFields, "ModelEndpointNameForQuery") {
+		ch := n.Child("model_endpoint_name_for_query")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ModelEndpointNameForQuery); c.match(s) {
 		ch := n.Child("model_endpoint_name_for_query")
 		if r, ok := c.fn(&ch, s); ok {
 			v.ModelEndpointNameForQuery = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Name == "" && Forced(v.ForceSendFields, "Name") {
+		ch := n.Child("name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Name); c.match(s) {
 		ch := n.Child("name")
@@ -10168,6 +12008,10 @@ func stringsVectorsearchEmbeddingSourceColumn(c *stringsWalk, n *Node, v *vector
 }
 
 func stringsVectorsearchEmbeddingVectorColumn(c *stringsWalk, n *Node, v *vectorsearch.EmbeddingVectorColumn) {
+	if c.mode == EmptyFields && v.Name == "" && Forced(v.ForceSendFields, "Name") {
+		ch := n.Child("name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Name); c.match(s) {
 		ch := n.Child("name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -10192,6 +12036,10 @@ func stringsComputeDiskType(c *stringsWalk, n *Node, v *compute.DiskType) {
 }
 
 func stringsJobsDeploymentSpec(c *stringsWalk, n *Node, v *jobs.DeploymentSpec) {
+	if c.mode == EmptyFields && v.CommandPath == "" && Forced(v.ForceSendFields, "CommandPath") {
+		ch := n.Child("command_path")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CommandPath); c.match(s) {
 		ch := n.Child("command_path")
 		if r, ok := c.fn(&ch, s); ok {
@@ -10202,6 +12050,10 @@ func stringsJobsDeploymentSpec(c *stringsWalk, n *Node, v *jobs.DeploymentSpec) 
 		ch := n.Child("compute")
 		stringsJobsComputeSpec(c, &ch, &v.Compute)
 	}
+	if c.mode == EmptyFields && v.Name == "" && Forced(v.ForceSendFields, "Name") {
+		ch := n.Child("name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Name); c.match(s) {
 		ch := n.Child("name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -10211,11 +12063,19 @@ func stringsJobsDeploymentSpec(c *stringsWalk, n *Node, v *jobs.DeploymentSpec) 
 }
 
 func stringsJobsAlertTaskSubscriber(c *stringsWalk, n *Node, v *jobs.AlertTaskSubscriber) {
+	if c.mode == EmptyFields && v.DestinationId == "" && Forced(v.ForceSendFields, "DestinationId") {
+		ch := n.Child("destination_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DestinationId); c.match(s) {
 		ch := n.Child("destination_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.DestinationId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.UserName == "" && Forced(v.ForceSendFields, "UserName") {
+		ch := n.Child("user_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.UserName); c.match(s) {
 		ch := n.Child("user_name")
@@ -10226,6 +12086,10 @@ func stringsJobsAlertTaskSubscriber(c *stringsWalk, n *Node, v *jobs.AlertTaskSu
 }
 
 func stringsJobsSubscription(c *stringsWalk, n *Node, v *jobs.Subscription) {
+	if c.mode == EmptyFields && v.CustomSubject == "" && Forced(v.ForceSendFields, "CustomSubject") {
+		ch := n.Child("custom_subject")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CustomSubject); c.match(s) {
 		ch := n.Child("custom_subject")
 		if r, ok := c.fn(&ch, s); ok {
@@ -10244,11 +12108,19 @@ func stringsJobsSubscription(c *stringsWalk, n *Node, v *jobs.Subscription) {
 }
 
 func stringsJobsComputeConfig(c *stringsWalk, n *Node, v *jobs.ComputeConfig) {
+	if c.mode == EmptyFields && v.GpuNodePoolId == "" && Forced(v.ForceSendFields, "GpuNodePoolId") {
+		ch := n.Child("gpu_node_pool_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.GpuNodePoolId); c.match(s) {
 		ch := n.Child("gpu_node_pool_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.GpuNodePoolId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.GpuType == "" && Forced(v.ForceSendFields, "GpuType") {
+		ch := n.Child("gpu_type")
+		c.fn(&ch, "")
 	}
 	if s := string(v.GpuType); c.match(s) {
 		ch := n.Child("gpu_type")
@@ -10259,11 +12131,19 @@ func stringsJobsComputeConfig(c *stringsWalk, n *Node, v *jobs.ComputeConfig) {
 }
 
 func stringsJobsPowerBiModel(c *stringsWalk, n *Node, v *jobs.PowerBiModel) {
+	if c.mode == EmptyFields && v.AuthenticationMethod == "" && Forced(v.ForceSendFields, "AuthenticationMethod") {
+		ch := n.Child("authentication_method")
+		c.fn(&ch, "")
+	}
 	if s := string(v.AuthenticationMethod); c.match(s) {
 		ch := n.Child("authentication_method")
 		if r, ok := c.fn(&ch, s); ok {
 			v.AuthenticationMethod = jobs.AuthenticationMethod(r)
 		}
+	}
+	if c.mode == EmptyFields && v.ModelName == "" && Forced(v.ForceSendFields, "ModelName") {
+		ch := n.Child("model_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.ModelName); c.match(s) {
 		ch := n.Child("model_name")
@@ -10271,11 +12151,19 @@ func stringsJobsPowerBiModel(c *stringsWalk, n *Node, v *jobs.PowerBiModel) {
 			v.ModelName = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.StorageMode == "" && Forced(v.ForceSendFields, "StorageMode") {
+		ch := n.Child("storage_mode")
+		c.fn(&ch, "")
+	}
 	if s := string(v.StorageMode); c.match(s) {
 		ch := n.Child("storage_mode")
 		if r, ok := c.fn(&ch, s); ok {
 			v.StorageMode = jobs.StorageMode(r)
 		}
+	}
+	if c.mode == EmptyFields && v.WorkspaceName == "" && Forced(v.ForceSendFields, "WorkspaceName") {
+		ch := n.Child("workspace_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.WorkspaceName); c.match(s) {
 		ch := n.Child("workspace_name")
@@ -10286,11 +12174,19 @@ func stringsJobsPowerBiModel(c *stringsWalk, n *Node, v *jobs.PowerBiModel) {
 }
 
 func stringsJobsPowerBiTable(c *stringsWalk, n *Node, v *jobs.PowerBiTable) {
+	if c.mode == EmptyFields && v.Catalog == "" && Forced(v.ForceSendFields, "Catalog") {
+		ch := n.Child("catalog")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Catalog); c.match(s) {
 		ch := n.Child("catalog")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Catalog = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Name == "" && Forced(v.ForceSendFields, "Name") {
+		ch := n.Child("name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Name); c.match(s) {
 		ch := n.Child("name")
@@ -10298,11 +12194,19 @@ func stringsJobsPowerBiTable(c *stringsWalk, n *Node, v *jobs.PowerBiTable) {
 			v.Name = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.Schema == "" && Forced(v.ForceSendFields, "Schema") {
+		ch := n.Child("schema")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Schema); c.match(s) {
 		ch := n.Child("schema")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Schema = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.StorageMode == "" && Forced(v.ForceSendFields, "StorageMode") {
+		ch := n.Child("storage_mode")
+		c.fn(&ch, "")
 	}
 	if s := string(v.StorageMode); c.match(s) {
 		ch := n.Child("storage_mode")
@@ -10313,11 +12217,19 @@ func stringsJobsPowerBiTable(c *stringsWalk, n *Node, v *jobs.PowerBiTable) {
 }
 
 func stringsJobsPythonOperatorTaskParameter(c *stringsWalk, n *Node, v *jobs.PythonOperatorTaskParameter) {
+	if c.mode == EmptyFields && v.Name == "" && Forced(v.ForceSendFields, "Name") {
+		ch := n.Child("name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Name); c.match(s) {
 		ch := n.Child("name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Name = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Value == "" && Forced(v.ForceSendFields, "Value") {
+		ch := n.Child("value")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Value); c.match(s) {
 		ch := n.Child("value")
@@ -10346,6 +12258,10 @@ func stringsJobsSqlTaskAlert(c *stringsWalk, n *Node, v *jobs.SqlTaskAlert) {
 }
 
 func stringsJobsSqlTaskDashboard(c *stringsWalk, n *Node, v *jobs.SqlTaskDashboard) {
+	if c.mode == EmptyFields && v.CustomSubject == "" && Forced(v.ForceSendFields, "CustomSubject") {
+		ch := n.Child("custom_subject")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CustomSubject); c.match(s) {
 		ch := n.Child("custom_subject")
 		if r, ok := c.fn(&ch, s); ok {
@@ -10406,6 +12322,10 @@ func stringsPipelinesReportSpec(c *stringsWalk, n *Node, v *pipelines.ReportSpec
 			v.DestinationSchema = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.DestinationTable == "" && Forced(v.ForceSendFields, "DestinationTable") {
+		ch := n.Child("destination_table")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DestinationTable); c.match(s) {
 		ch := n.Child("destination_table")
 		if r, ok := c.fn(&ch, s); ok {
@@ -10445,11 +12365,19 @@ func stringsPipelinesSchemaSpec(c *stringsWalk, n *Node, v *pipelines.SchemaSpec
 		ch := n.Child("fanout_options")
 		stringsPipelinesIngestionPipelineDefinitionFanoutOptions(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.SourceCatalog == "" && Forced(v.ForceSendFields, "SourceCatalog") {
+		ch := n.Child("source_catalog")
+		c.fn(&ch, "")
+	}
 	if s := string(v.SourceCatalog); c.match(s) {
 		ch := n.Child("source_catalog")
 		if r, ok := c.fn(&ch, s); ok {
 			v.SourceCatalog = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.SourceSchema == "" && Forced(v.ForceSendFields, "SourceSchema") {
+		ch := n.Child("source_schema")
+		c.fn(&ch, "")
 	}
 	if s := string(v.SourceSchema); c.match(s) {
 		ch := n.Child("source_schema")
@@ -10480,11 +12408,19 @@ func stringsPipelinesTableSpec(c *stringsWalk, n *Node, v *pipelines.TableSpec) 
 			v.DestinationSchema = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.DestinationTable == "" && Forced(v.ForceSendFields, "DestinationTable") {
+		ch := n.Child("destination_table")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DestinationTable); c.match(s) {
 		ch := n.Child("destination_table")
 		if r, ok := c.fn(&ch, s); ok {
 			v.DestinationTable = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.SourceCatalog == "" && Forced(v.ForceSendFields, "SourceCatalog") {
+		ch := n.Child("source_catalog")
+		c.fn(&ch, "")
 	}
 	if s := string(v.SourceCatalog); c.match(s) {
 		ch := n.Child("source_catalog")
@@ -10492,11 +12428,19 @@ func stringsPipelinesTableSpec(c *stringsWalk, n *Node, v *pipelines.TableSpec) 
 			v.SourceCatalog = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.SourceSchema == "" && Forced(v.ForceSendFields, "SourceSchema") {
+		ch := n.Child("source_schema")
+		c.fn(&ch, "")
+	}
 	if s := string(v.SourceSchema); c.match(s) {
 		ch := n.Child("source_schema")
 		if r, ok := c.fn(&ch, s); ok {
 			v.SourceSchema = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.SourceTable == "" && Forced(v.ForceSendFields, "SourceTable") {
+		ch := n.Child("source_table")
+		c.fn(&ch, "")
 	}
 	if s := string(v.SourceTable); c.match(s) {
 		ch := n.Child("source_table")
@@ -10529,6 +12473,10 @@ func stringsPipelinesSourceCatalogConfig(c *stringsWalk, n *Node, v *pipelines.S
 		ch := n.Child("postgres")
 		stringsPipelinesPostgresCatalogConfig(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.SourceCatalog == "" && Forced(v.ForceSendFields, "SourceCatalog") {
+		ch := n.Child("source_catalog")
+		c.fn(&ch, "")
+	}
 	if s := string(v.SourceCatalog); c.match(s) {
 		ch := n.Child("source_catalog")
 		if r, ok := c.fn(&ch, s); ok {
@@ -10538,6 +12486,10 @@ func stringsPipelinesSourceCatalogConfig(c *stringsWalk, n *Node, v *pipelines.S
 }
 
 func stringsPipelinesGoogleAdsConfig(c *stringsWalk, n *Node, v *pipelines.GoogleAdsConfig) {
+	if c.mode == EmptyFields && v.ManagerAccountId == "" && Forced(v.ForceSendFields, "ManagerAccountId") {
+		ch := n.Child("manager_account_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ManagerAccountId); c.match(s) {
 		ch := n.Child("manager_account_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -10557,6 +12509,10 @@ func stringsPipelinesIngestionPipelineDefinitionTableSpecificConfigQueryBasedCon
 				}
 			}
 		}
+	}
+	if c.mode == EmptyFields && v.DeletionCondition == "" && Forced(v.ForceSendFields, "DeletionCondition") {
+		ch := n.Child("deletion_condition")
+		c.fn(&ch, "")
 	}
 	if s := string(v.DeletionCondition); c.match(s) {
 		ch := n.Child("deletion_condition")
@@ -10676,11 +12632,19 @@ func stringsServingExternalModel(c *stringsWalk, n *Node, v *serving.ExternalMod
 }
 
 func stringsServingRoute(c *stringsWalk, n *Node, v *serving.Route) {
+	if c.mode == EmptyFields && v.ServedEntityName == "" && Forced(v.ForceSendFields, "ServedEntityName") {
+		ch := n.Child("served_entity_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ServedEntityName); c.match(s) {
 		ch := n.Child("served_entity_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.ServedEntityName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.ServedModelName == "" && Forced(v.ForceSendFields, "ServedModelName") {
+		ch := n.Child("served_model_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.ServedModelName); c.match(s) {
 		ch := n.Child("served_model_name")
@@ -10734,6 +12698,10 @@ func stringsCatalogModelProviderServiceConfigAmazonBedrockProviderDirectConfig(c
 		ch := n.Child("aws_access_key")
 		stringsCatalogModelProviderServiceConfigAwsAccessKey(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.Region == "" && Forced(v.ForceSendFields, "Region") {
+		ch := n.Child("region")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Region); c.match(s) {
 		ch := n.Child("region")
 		if r, ok := c.fn(&ch, s); ok {
@@ -10758,6 +12726,10 @@ func stringsCatalogModelProviderServiceConfigAzureOpenAiProviderDirectConfig(c *
 		ch := n.Child("api_key")
 		stringsCatalogModelProviderServiceConfigProviderSecret(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.BaseUrl == "" && Forced(v.ForceSendFields, "BaseUrl") {
+		ch := n.Child("base_url")
+		c.fn(&ch, "")
+	}
 	if s := string(v.BaseUrl); c.match(s) {
 		ch := n.Child("base_url")
 		if r, ok := c.fn(&ch, s); ok {
@@ -10779,6 +12751,10 @@ func stringsCatalogModelProviderServiceConfigCustomProviderDirectConfig(c *strin
 		ch := n.Child("api_key")
 		stringsCatalogModelProviderServiceConfigProviderSecret(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.BaseUrl == "" && Forced(v.ForceSendFields, "BaseUrl") {
+		ch := n.Child("base_url")
+		c.fn(&ch, "")
+	}
 	if s := string(v.BaseUrl); c.match(s) {
 		ch := n.Child("base_url")
 		if r, ok := c.fn(&ch, s); ok {
@@ -10796,11 +12772,19 @@ func stringsCatalogModelProviderServiceConfigGeminiEnterpriseProviderDirectConfi
 		ch := n.Child("api_key")
 		stringsCatalogModelProviderServiceConfigProviderSecret(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.ProjectId == "" && Forced(v.ForceSendFields, "ProjectId") {
+		ch := n.Child("project_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ProjectId); c.match(s) {
 		ch := n.Child("project_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.ProjectId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Region == "" && Forced(v.ForceSendFields, "Region") {
+		ch := n.Child("region")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Region); c.match(s) {
 		ch := n.Child("region")
@@ -10818,6 +12802,10 @@ func stringsCatalogModelProviderServiceConfigMicrosoftFoundryProviderDirectConfi
 	if x := v.ApiKey; x != nil {
 		ch := n.Child("api_key")
 		stringsCatalogModelProviderServiceConfigProviderSecret(c, &ch, x)
+	}
+	if c.mode == EmptyFields && v.BaseUrl == "" && Forced(v.ForceSendFields, "BaseUrl") {
+		ch := n.Child("base_url")
+		c.fn(&ch, "")
 	}
 	if s := string(v.BaseUrl); c.match(s) {
 		ch := n.Child("base_url")
@@ -10840,11 +12828,19 @@ func stringsCatalogModelProviderServiceConfigOpenAiProviderDirectConfig(c *strin
 		ch := n.Child("api_key")
 		stringsCatalogModelProviderServiceConfigProviderSecret(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.BaseUrl == "" && Forced(v.ForceSendFields, "BaseUrl") {
+		ch := n.Child("base_url")
+		c.fn(&ch, "")
+	}
 	if s := string(v.BaseUrl); c.match(s) {
 		ch := n.Child("base_url")
 		if r, ok := c.fn(&ch, s); ok {
 			v.BaseUrl = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Organization == "" && Forced(v.ForceSendFields, "Organization") {
+		ch := n.Child("organization")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Organization); c.match(s) {
 		ch := n.Child("organization")
@@ -10855,11 +12851,19 @@ func stringsCatalogModelProviderServiceConfigOpenAiProviderDirectConfig(c *strin
 }
 
 func stringsSqlAlertV2Subscription(c *stringsWalk, n *Node, v *sql.AlertV2Subscription) {
+	if c.mode == EmptyFields && v.DestinationId == "" && Forced(v.ForceSendFields, "DestinationId") {
+		ch := n.Child("destination_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DestinationId); c.match(s) {
 		ch := n.Child("destination_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.DestinationId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.UserEmail == "" && Forced(v.ForceSendFields, "UserEmail") {
+		ch := n.Child("user_email")
+		c.fn(&ch, "")
 	}
 	if s := string(v.UserEmail); c.match(s) {
 		ch := n.Child("user_email")
@@ -10870,6 +12874,10 @@ func stringsSqlAlertV2Subscription(c *stringsWalk, n *Node, v *sql.AlertV2Subscr
 }
 
 func stringsSqlAlertV2OperandValue(c *stringsWalk, n *Node, v *sql.AlertV2OperandValue) {
+	if c.mode == EmptyFields && v.StringValue == "" && Forced(v.ForceSendFields, "StringValue") {
+		ch := n.Child("string_value")
+		c.fn(&ch, "")
+	}
 	if s := string(v.StringValue); c.match(s) {
 		ch := n.Child("string_value")
 		if r, ok := c.fn(&ch, s); ok {
@@ -10879,6 +12887,10 @@ func stringsSqlAlertV2OperandValue(c *stringsWalk, n *Node, v *sql.AlertV2Operan
 }
 
 func stringsDatabaseSyncedTablePipelineProgress(c *stringsWalk, n *Node, v *database.SyncedTablePipelineProgress) {
+	if c.mode == EmptyFields && v.ProvisioningPhase == "" && Forced(v.ForceSendFields, "ProvisioningPhase") {
+		ch := n.Child("provisioning_phase")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ProvisioningPhase); c.match(s) {
 		ch := n.Child("provisioning_phase")
 		if r, ok := c.fn(&ch, s); ok {
@@ -10888,6 +12900,10 @@ func stringsDatabaseSyncedTablePipelineProgress(c *stringsWalk, n *Node, v *data
 }
 
 func stringsDatabaseDeltaTableSyncInfo(c *stringsWalk, n *Node, v *database.DeltaTableSyncInfo) {
+	if c.mode == EmptyFields && v.DeltaCommitTimestamp == "" && Forced(v.ForceSendFields, "DeltaCommitTimestamp") {
+		ch := n.Child("delta_commit_timestamp")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DeltaCommitTimestamp); c.match(s) {
 		ch := n.Child("delta_commit_timestamp")
 		if r, ok := c.fn(&ch, s); ok {
@@ -10903,6 +12919,10 @@ func stringsJobsComputeSpec(c *stringsWalk, n *Node, v *jobs.ComputeSpec) {
 			v.AcceleratorType = jobs.ComputeSpecAcceleratorType(r)
 		}
 	}
+	if c.mode == EmptyFields && v.ProvisionedCapacityId == "" && Forced(v.ForceSendFields, "ProvisionedCapacityId") {
+		ch := n.Child("provisioned_capacity_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ProvisionedCapacityId); c.match(s) {
 		ch := n.Child("provisioned_capacity_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -10912,11 +12932,19 @@ func stringsJobsComputeSpec(c *stringsWalk, n *Node, v *jobs.ComputeSpec) {
 }
 
 func stringsJobsSubscriptionSubscriber(c *stringsWalk, n *Node, v *jobs.SubscriptionSubscriber) {
+	if c.mode == EmptyFields && v.DestinationId == "" && Forced(v.ForceSendFields, "DestinationId") {
+		ch := n.Child("destination_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DestinationId); c.match(s) {
 		ch := n.Child("destination_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.DestinationId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.UserName == "" && Forced(v.ForceSendFields, "UserName") {
+		ch := n.Child("user_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.UserName); c.match(s) {
 		ch := n.Child("user_name")
@@ -10927,11 +12955,19 @@ func stringsJobsSubscriptionSubscriber(c *stringsWalk, n *Node, v *jobs.Subscrip
 }
 
 func stringsJobsSqlTaskSubscription(c *stringsWalk, n *Node, v *jobs.SqlTaskSubscription) {
+	if c.mode == EmptyFields && v.DestinationId == "" && Forced(v.ForceSendFields, "DestinationId") {
+		ch := n.Child("destination_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DestinationId); c.match(s) {
 		ch := n.Child("destination_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.DestinationId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.UserName == "" && Forced(v.ForceSendFields, "UserName") {
+		ch := n.Child("user_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.UserName); c.match(s) {
 		ch := n.Child("user_name")
@@ -11005,6 +13041,10 @@ func stringsPipelinesConnectorOptions(c *stringsWalk, n *Node, v *pipelines.Conn
 }
 
 func stringsPipelinesIngestionPipelineDefinitionFanoutOptions(c *stringsWalk, n *Node, v *pipelines.IngestionPipelineDefinitionFanoutOptions) {
+	if c.mode == EmptyFields && v.FanoutBy == "" && Forced(v.ForceSendFields, "FanoutBy") {
+		ch := n.Child("fanout_by")
+		c.fn(&ch, "")
+	}
 	if s := string(v.FanoutBy); c.match(s) {
 		ch := n.Child("fanout_by")
 		if r, ok := c.fn(&ch, s); ok {
@@ -11030,11 +13070,19 @@ func stringsPipelinesPostgresCatalogConfig(c *stringsWalk, n *Node, v *pipelines
 }
 
 func stringsPipelinesIngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue(c *stringsWalk, n *Node, v *pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue) {
+	if c.mode == EmptyFields && v.Key == "" && Forced(v.ForceSendFields, "Key") {
+		ch := n.Child("key")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Key); c.match(s) {
 		ch := n.Child("key")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Key = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Value == "" && Forced(v.ForceSendFields, "Value") {
+		ch := n.Child("value")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Value); c.match(s) {
 		ch := n.Child("value")
@@ -11054,11 +13102,19 @@ func stringsServingAiGatewayGuardrailPiiBehavior(c *stringsWalk, n *Node, v *ser
 }
 
 func stringsServingAi21LabsConfig(c *stringsWalk, n *Node, v *serving.Ai21LabsConfig) {
+	if c.mode == EmptyFields && v.Ai21labsApiKey == "" && Forced(v.ForceSendFields, "Ai21labsApiKey") {
+		ch := n.Child("ai21labs_api_key")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Ai21labsApiKey); c.match(s) {
 		ch := n.Child("ai21labs_api_key")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Ai21labsApiKey = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.Ai21labsApiKeyPlaintext == "" && Forced(v.ForceSendFields, "Ai21labsApiKeyPlaintext") {
+		ch := n.Child("ai21labs_api_key_plaintext")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Ai21labsApiKeyPlaintext); c.match(s) {
 		ch := n.Child("ai21labs_api_key_plaintext")
@@ -11069,11 +13125,19 @@ func stringsServingAi21LabsConfig(c *stringsWalk, n *Node, v *serving.Ai21LabsCo
 }
 
 func stringsServingAmazonBedrockConfig(c *stringsWalk, n *Node, v *serving.AmazonBedrockConfig) {
+	if c.mode == EmptyFields && v.AwsAccessKeyId == "" && Forced(v.ForceSendFields, "AwsAccessKeyId") {
+		ch := n.Child("aws_access_key_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.AwsAccessKeyId); c.match(s) {
 		ch := n.Child("aws_access_key_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.AwsAccessKeyId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.AwsAccessKeyIdPlaintext == "" && Forced(v.ForceSendFields, "AwsAccessKeyIdPlaintext") {
+		ch := n.Child("aws_access_key_id_plaintext")
+		c.fn(&ch, "")
 	}
 	if s := string(v.AwsAccessKeyIdPlaintext); c.match(s) {
 		ch := n.Child("aws_access_key_id_plaintext")
@@ -11087,11 +13151,19 @@ func stringsServingAmazonBedrockConfig(c *stringsWalk, n *Node, v *serving.Amazo
 			v.AwsRegion = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.AwsSecretAccessKey == "" && Forced(v.ForceSendFields, "AwsSecretAccessKey") {
+		ch := n.Child("aws_secret_access_key")
+		c.fn(&ch, "")
+	}
 	if s := string(v.AwsSecretAccessKey); c.match(s) {
 		ch := n.Child("aws_secret_access_key")
 		if r, ok := c.fn(&ch, s); ok {
 			v.AwsSecretAccessKey = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.AwsSecretAccessKeyPlaintext == "" && Forced(v.ForceSendFields, "AwsSecretAccessKeyPlaintext") {
+		ch := n.Child("aws_secret_access_key_plaintext")
+		c.fn(&ch, "")
 	}
 	if s := string(v.AwsSecretAccessKeyPlaintext); c.match(s) {
 		ch := n.Child("aws_secret_access_key_plaintext")
@@ -11105,11 +13177,19 @@ func stringsServingAmazonBedrockConfig(c *stringsWalk, n *Node, v *serving.Amazo
 			v.BedrockProvider = serving.AmazonBedrockConfigBedrockProvider(r)
 		}
 	}
+	if c.mode == EmptyFields && v.InstanceProfileArn == "" && Forced(v.ForceSendFields, "InstanceProfileArn") {
+		ch := n.Child("instance_profile_arn")
+		c.fn(&ch, "")
+	}
 	if s := string(v.InstanceProfileArn); c.match(s) {
 		ch := n.Child("instance_profile_arn")
 		if r, ok := c.fn(&ch, s); ok {
 			v.InstanceProfileArn = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.UcServiceCredentialName == "" && Forced(v.ForceSendFields, "UcServiceCredentialName") {
+		ch := n.Child("uc_service_credential_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.UcServiceCredentialName); c.match(s) {
 		ch := n.Child("uc_service_credential_name")
@@ -11120,11 +13200,19 @@ func stringsServingAmazonBedrockConfig(c *stringsWalk, n *Node, v *serving.Amazo
 }
 
 func stringsServingAnthropicConfig(c *stringsWalk, n *Node, v *serving.AnthropicConfig) {
+	if c.mode == EmptyFields && v.AnthropicApiKey == "" && Forced(v.ForceSendFields, "AnthropicApiKey") {
+		ch := n.Child("anthropic_api_key")
+		c.fn(&ch, "")
+	}
 	if s := string(v.AnthropicApiKey); c.match(s) {
 		ch := n.Child("anthropic_api_key")
 		if r, ok := c.fn(&ch, s); ok {
 			v.AnthropicApiKey = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.AnthropicApiKeyPlaintext == "" && Forced(v.ForceSendFields, "AnthropicApiKeyPlaintext") {
+		ch := n.Child("anthropic_api_key_plaintext")
+		c.fn(&ch, "")
 	}
 	if s := string(v.AnthropicApiKeyPlaintext); c.match(s) {
 		ch := n.Child("anthropic_api_key_plaintext")
@@ -11135,17 +13223,29 @@ func stringsServingAnthropicConfig(c *stringsWalk, n *Node, v *serving.Anthropic
 }
 
 func stringsServingCohereConfig(c *stringsWalk, n *Node, v *serving.CohereConfig) {
+	if c.mode == EmptyFields && v.CohereApiBase == "" && Forced(v.ForceSendFields, "CohereApiBase") {
+		ch := n.Child("cohere_api_base")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CohereApiBase); c.match(s) {
 		ch := n.Child("cohere_api_base")
 		if r, ok := c.fn(&ch, s); ok {
 			v.CohereApiBase = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.CohereApiKey == "" && Forced(v.ForceSendFields, "CohereApiKey") {
+		ch := n.Child("cohere_api_key")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CohereApiKey); c.match(s) {
 		ch := n.Child("cohere_api_key")
 		if r, ok := c.fn(&ch, s); ok {
 			v.CohereApiKey = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.CohereApiKeyPlaintext == "" && Forced(v.ForceSendFields, "CohereApiKeyPlaintext") {
+		ch := n.Child("cohere_api_key_plaintext")
+		c.fn(&ch, "")
 	}
 	if s := string(v.CohereApiKeyPlaintext); c.match(s) {
 		ch := n.Child("cohere_api_key_plaintext")
@@ -11173,11 +13273,19 @@ func stringsServingCustomProviderConfig(c *stringsWalk, n *Node, v *serving.Cust
 }
 
 func stringsServingDatabricksModelServingConfig(c *stringsWalk, n *Node, v *serving.DatabricksModelServingConfig) {
+	if c.mode == EmptyFields && v.DatabricksApiToken == "" && Forced(v.ForceSendFields, "DatabricksApiToken") {
+		ch := n.Child("databricks_api_token")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DatabricksApiToken); c.match(s) {
 		ch := n.Child("databricks_api_token")
 		if r, ok := c.fn(&ch, s); ok {
 			v.DatabricksApiToken = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.DatabricksApiTokenPlaintext == "" && Forced(v.ForceSendFields, "DatabricksApiTokenPlaintext") {
+		ch := n.Child("databricks_api_token_plaintext")
+		c.fn(&ch, "")
 	}
 	if s := string(v.DatabricksApiTokenPlaintext); c.match(s) {
 		ch := n.Child("databricks_api_token_plaintext")
@@ -11194,11 +13302,19 @@ func stringsServingDatabricksModelServingConfig(c *stringsWalk, n *Node, v *serv
 }
 
 func stringsServingGoogleCloudVertexAiConfig(c *stringsWalk, n *Node, v *serving.GoogleCloudVertexAiConfig) {
+	if c.mode == EmptyFields && v.PrivateKey == "" && Forced(v.ForceSendFields, "PrivateKey") {
+		ch := n.Child("private_key")
+		c.fn(&ch, "")
+	}
 	if s := string(v.PrivateKey); c.match(s) {
 		ch := n.Child("private_key")
 		if r, ok := c.fn(&ch, s); ok {
 			v.PrivateKey = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.PrivateKeyPlaintext == "" && Forced(v.ForceSendFields, "PrivateKeyPlaintext") {
+		ch := n.Child("private_key_plaintext")
+		c.fn(&ch, "")
 	}
 	if s := string(v.PrivateKeyPlaintext); c.match(s) {
 		ch := n.Child("private_key_plaintext")
@@ -11221,11 +13337,19 @@ func stringsServingGoogleCloudVertexAiConfig(c *stringsWalk, n *Node, v *serving
 }
 
 func stringsServingOpenAiConfig(c *stringsWalk, n *Node, v *serving.OpenAiConfig) {
+	if c.mode == EmptyFields && v.MicrosoftEntraClientId == "" && Forced(v.ForceSendFields, "MicrosoftEntraClientId") {
+		ch := n.Child("microsoft_entra_client_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.MicrosoftEntraClientId); c.match(s) {
 		ch := n.Child("microsoft_entra_client_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.MicrosoftEntraClientId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.MicrosoftEntraClientSecret == "" && Forced(v.ForceSendFields, "MicrosoftEntraClientSecret") {
+		ch := n.Child("microsoft_entra_client_secret")
+		c.fn(&ch, "")
 	}
 	if s := string(v.MicrosoftEntraClientSecret); c.match(s) {
 		ch := n.Child("microsoft_entra_client_secret")
@@ -11233,11 +13357,19 @@ func stringsServingOpenAiConfig(c *stringsWalk, n *Node, v *serving.OpenAiConfig
 			v.MicrosoftEntraClientSecret = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.MicrosoftEntraClientSecretPlaintext == "" && Forced(v.ForceSendFields, "MicrosoftEntraClientSecretPlaintext") {
+		ch := n.Child("microsoft_entra_client_secret_plaintext")
+		c.fn(&ch, "")
+	}
 	if s := string(v.MicrosoftEntraClientSecretPlaintext); c.match(s) {
 		ch := n.Child("microsoft_entra_client_secret_plaintext")
 		if r, ok := c.fn(&ch, s); ok {
 			v.MicrosoftEntraClientSecretPlaintext = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.MicrosoftEntraTenantId == "" && Forced(v.ForceSendFields, "MicrosoftEntraTenantId") {
+		ch := n.Child("microsoft_entra_tenant_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.MicrosoftEntraTenantId); c.match(s) {
 		ch := n.Child("microsoft_entra_tenant_id")
@@ -11245,11 +13377,19 @@ func stringsServingOpenAiConfig(c *stringsWalk, n *Node, v *serving.OpenAiConfig
 			v.MicrosoftEntraTenantId = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.OpenaiApiBase == "" && Forced(v.ForceSendFields, "OpenaiApiBase") {
+		ch := n.Child("openai_api_base")
+		c.fn(&ch, "")
+	}
 	if s := string(v.OpenaiApiBase); c.match(s) {
 		ch := n.Child("openai_api_base")
 		if r, ok := c.fn(&ch, s); ok {
 			v.OpenaiApiBase = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.OpenaiApiKey == "" && Forced(v.ForceSendFields, "OpenaiApiKey") {
+		ch := n.Child("openai_api_key")
+		c.fn(&ch, "")
 	}
 	if s := string(v.OpenaiApiKey); c.match(s) {
 		ch := n.Child("openai_api_key")
@@ -11257,11 +13397,19 @@ func stringsServingOpenAiConfig(c *stringsWalk, n *Node, v *serving.OpenAiConfig
 			v.OpenaiApiKey = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.OpenaiApiKeyPlaintext == "" && Forced(v.ForceSendFields, "OpenaiApiKeyPlaintext") {
+		ch := n.Child("openai_api_key_plaintext")
+		c.fn(&ch, "")
+	}
 	if s := string(v.OpenaiApiKeyPlaintext); c.match(s) {
 		ch := n.Child("openai_api_key_plaintext")
 		if r, ok := c.fn(&ch, s); ok {
 			v.OpenaiApiKeyPlaintext = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.OpenaiApiType == "" && Forced(v.ForceSendFields, "OpenaiApiType") {
+		ch := n.Child("openai_api_type")
+		c.fn(&ch, "")
 	}
 	if s := string(v.OpenaiApiType); c.match(s) {
 		ch := n.Child("openai_api_type")
@@ -11269,17 +13417,29 @@ func stringsServingOpenAiConfig(c *stringsWalk, n *Node, v *serving.OpenAiConfig
 			v.OpenaiApiType = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.OpenaiApiVersion == "" && Forced(v.ForceSendFields, "OpenaiApiVersion") {
+		ch := n.Child("openai_api_version")
+		c.fn(&ch, "")
+	}
 	if s := string(v.OpenaiApiVersion); c.match(s) {
 		ch := n.Child("openai_api_version")
 		if r, ok := c.fn(&ch, s); ok {
 			v.OpenaiApiVersion = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.OpenaiDeploymentName == "" && Forced(v.ForceSendFields, "OpenaiDeploymentName") {
+		ch := n.Child("openai_deployment_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.OpenaiDeploymentName); c.match(s) {
 		ch := n.Child("openai_deployment_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.OpenaiDeploymentName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.OpenaiOrganization == "" && Forced(v.ForceSendFields, "OpenaiOrganization") {
+		ch := n.Child("openai_organization")
+		c.fn(&ch, "")
 	}
 	if s := string(v.OpenaiOrganization); c.match(s) {
 		ch := n.Child("openai_organization")
@@ -11290,11 +13450,19 @@ func stringsServingOpenAiConfig(c *stringsWalk, n *Node, v *serving.OpenAiConfig
 }
 
 func stringsServingPaLmConfig(c *stringsWalk, n *Node, v *serving.PaLmConfig) {
+	if c.mode == EmptyFields && v.PalmApiKey == "" && Forced(v.ForceSendFields, "PalmApiKey") {
+		ch := n.Child("palm_api_key")
+		c.fn(&ch, "")
+	}
 	if s := string(v.PalmApiKey); c.match(s) {
 		ch := n.Child("palm_api_key")
 		if r, ok := c.fn(&ch, s); ok {
 			v.PalmApiKey = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.PalmApiKeyPlaintext == "" && Forced(v.ForceSendFields, "PalmApiKeyPlaintext") {
+		ch := n.Child("palm_api_key_plaintext")
+		c.fn(&ch, "")
 	}
 	if s := string(v.PalmApiKeyPlaintext); c.match(s) {
 		ch := n.Child("palm_api_key_plaintext")
@@ -11327,6 +13495,10 @@ func stringsCatalogModelServiceConfigPayPerTokenConfig(c *stringsWalk, n *Node, 
 }
 
 func stringsCatalogModelServiceConfigProvisionedThroughputConfig(c *stringsWalk, n *Node, v *catalog.ModelServiceConfigProvisionedThroughputConfig) {
+	if c.mode == EmptyFields && v.Model == "" && Forced(v.ForceSendFields, "Model") {
+		ch := n.Child("model")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Model); c.match(s) {
 		ch := n.Child("model")
 		if r, ok := c.fn(&ch, s); ok {
@@ -11342,6 +13514,10 @@ func stringsCatalogModelServiceConfigProvisionedThroughputConfig(c *stringsWalk,
 }
 
 func stringsCatalogModelProviderServiceConfigAwsAccessKey(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigAwsAccessKey) {
+	if c.mode == EmptyFields && v.AccessKeyId == "" && Forced(v.ForceSendFields, "AccessKeyId") {
+		ch := n.Child("access_key_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.AccessKeyId); c.match(s) {
 		ch := n.Child("access_key_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -11364,6 +13540,10 @@ func stringsCatalogModelProviderServiceConfigServiceCredential(c *stringsWalk, n
 }
 
 func stringsCatalogModelProviderServiceConfigProviderSecret(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigProviderSecret) {
+	if c.mode == EmptyFields && v.Plaintext == "" && Forced(v.ForceSendFields, "Plaintext") {
+		ch := n.Child("plaintext")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Plaintext); c.match(s) {
 		ch := n.Child("plaintext")
 		if r, ok := c.fn(&ch, s); ok {
@@ -11377,6 +13557,10 @@ func stringsCatalogModelProviderServiceConfigProviderSecret(c *stringsWalk, n *N
 }
 
 func stringsCatalogModelProviderServiceConfigEntraServicePrincipal(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigEntraServicePrincipal) {
+	if c.mode == EmptyFields && v.ClientId == "" && Forced(v.ForceSendFields, "ClientId") {
+		ch := n.Child("client_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ClientId); c.match(s) {
 		ch := n.Child("client_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -11387,6 +13571,10 @@ func stringsCatalogModelProviderServiceConfigEntraServicePrincipal(c *stringsWal
 		ch := n.Child("client_secret")
 		stringsCatalogModelProviderServiceConfigProviderSecret(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.TenantId == "" && Forced(v.ForceSendFields, "TenantId") {
+		ch := n.Child("tenant_id")
+		c.fn(&ch, "")
+	}
 	if s := string(v.TenantId); c.match(s) {
 		ch := n.Child("tenant_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -11396,6 +13584,10 @@ func stringsCatalogModelProviderServiceConfigEntraServicePrincipal(c *stringsWal
 }
 
 func stringsCatalogModelProviderServiceConfigCustomProviderApiKeyHeaderAuth(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth) {
+	if c.mode == EmptyFields && v.ApiKeyName == "" && Forced(v.ForceSendFields, "ApiKeyName") {
+		ch := n.Child("api_key_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ApiKeyName); c.match(s) {
 		ch := n.Child("api_key_name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -11437,6 +13629,10 @@ func stringsPipelinesConfluenceConnectorOptions(c *stringsWalk, n *Node, v *pipe
 }
 
 func stringsPipelinesGoogleDriveOptions(c *stringsWalk, n *Node, v *pipelines.GoogleDriveOptions) {
+	if c.mode == EmptyFields && v.EntityType == "" && Forced(v.ForceSendFields, "EntityType") {
+		ch := n.Child("entity_type")
+		c.fn(&ch, "")
+	}
 	if s := string(v.EntityType); c.match(s) {
 		ch := n.Child("entity_type")
 		if r, ok := c.fn(&ch, s); ok {
@@ -11446,6 +13642,10 @@ func stringsPipelinesGoogleDriveOptions(c *stringsWalk, n *Node, v *pipelines.Go
 	if x := v.FileIngestionOptions; x != nil {
 		ch := n.Child("file_ingestion_options")
 		stringsPipelinesFileIngestionOptions(c, &ch, x)
+	}
+	if c.mode == EmptyFields && v.Url == "" && Forced(v.ForceSendFields, "Url") {
+		ch := n.Child("url")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Url); c.match(s) {
 		ch := n.Child("url")
@@ -11465,6 +13665,10 @@ func stringsPipelinesGoogleAdsOptions(c *stringsWalk, n *Node, v *pipelines.Goog
 		if r, ok := c.fn(&ch, s); ok {
 			v.ManagerAccountId = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.SyncStartDate == "" && Forced(v.ForceSendFields, "SyncStartDate") {
+		ch := n.Child("sync_start_date")
+		c.fn(&ch, "")
 	}
 	if s := string(v.SyncStartDate); c.match(s) {
 		ch := n.Child("sync_start_date")
@@ -11504,11 +13708,19 @@ func stringsPipelinesKafkaOptions(c *stringsWalk, n *Node, v *pipelines.KafkaOpt
 		ch := n.Child("key_transformer")
 		stringsPipelinesTransformer(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.StartingOffset == "" && Forced(v.ForceSendFields, "StartingOffset") {
+		ch := n.Child("starting_offset")
+		c.fn(&ch, "")
+	}
 	if s := string(v.StartingOffset); c.match(s) {
 		ch := n.Child("starting_offset")
 		if r, ok := c.fn(&ch, s); ok {
 			v.StartingOffset = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.TopicPattern == "" && Forced(v.ForceSendFields, "TopicPattern") {
+		ch := n.Child("topic_pattern")
+		c.fn(&ch, "")
 	}
 	if s := string(v.TopicPattern); c.match(s) {
 		ch := n.Child("topic_pattern")
@@ -11538,6 +13750,10 @@ func stringsPipelinesLinkedInAdsOptions(c *stringsWalk, n *Node, v *pipelines.Li
 		ch := n.Child("custom_report_options")
 		stringsPipelinesLinkedInAdsOptionsLinkedInAdsCustomReportOptions(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.SyncStartDate == "" && Forced(v.ForceSendFields, "SyncStartDate") {
+		ch := n.Child("sync_start_date")
+		c.fn(&ch, "")
+	}
 	if s := string(v.SyncStartDate); c.match(s) {
 		ch := n.Child("sync_start_date")
 		if r, ok := c.fn(&ch, s); ok {
@@ -11547,6 +13763,10 @@ func stringsPipelinesLinkedInAdsOptions(c *stringsWalk, n *Node, v *pipelines.Li
 }
 
 func stringsPipelinesMarketoOptions(c *stringsWalk, n *Node, v *pipelines.MarketoOptions) {
+	if c.mode == EmptyFields && v.SyncStartDate == "" && Forced(v.ForceSendFields, "SyncStartDate") {
+		ch := n.Child("sync_start_date")
+		c.fn(&ch, "")
+	}
 	if s := string(v.SyncStartDate); c.match(s) {
 		ch := n.Child("sync_start_date")
 		if r, ok := c.fn(&ch, s); ok {
@@ -11578,6 +13798,10 @@ func stringsPipelinesMetaMarketingOptions(c *stringsWalk, n *Node, v *pipelines.
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.ActionReportTime == "" && Forced(v.ForceSendFields, "ActionReportTime") {
+		ch := n.Child("action_report_time")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ActionReportTime); c.match(s) {
 		ch := n.Child("action_report_time")
 		if r, ok := c.fn(&ch, s); ok {
@@ -11599,17 +13823,29 @@ func stringsPipelinesMetaMarketingOptions(c *stringsWalk, n *Node, v *pipelines.
 		ch := n.Child("custom_report_options")
 		stringsPipelinesMetaMarketingOptionsMetaMarketingCustomReportOptions(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.Level == "" && Forced(v.ForceSendFields, "Level") {
+		ch := n.Child("level")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Level); c.match(s) {
 		ch := n.Child("level")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Level = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.StartDate == "" && Forced(v.ForceSendFields, "StartDate") {
+		ch := n.Child("start_date")
+		c.fn(&ch, "")
+	}
 	if s := string(v.StartDate); c.match(s) {
 		ch := n.Child("start_date")
 		if r, ok := c.fn(&ch, s); ok {
 			v.StartDate = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.TimeIncrement == "" && Forced(v.ForceSendFields, "TimeIncrement") {
+		ch := n.Child("time_increment")
+		c.fn(&ch, "")
 	}
 	if s := string(v.TimeIncrement); c.match(s) {
 		ch := n.Child("time_increment")
@@ -11620,11 +13856,19 @@ func stringsPipelinesMetaMarketingOptions(c *stringsWalk, n *Node, v *pipelines.
 }
 
 func stringsPipelinesOutlookOptions(c *stringsWalk, n *Node, v *pipelines.OutlookOptions) {
+	if c.mode == EmptyFields && v.AttachmentMode == "" && Forced(v.ForceSendFields, "AttachmentMode") {
+		ch := n.Child("attachment_mode")
+		c.fn(&ch, "")
+	}
 	if s := string(v.AttachmentMode); c.match(s) {
 		ch := n.Child("attachment_mode")
 		if r, ok := c.fn(&ch, s); ok {
 			v.AttachmentMode = pipelines.OutlookAttachmentMode(r)
 		}
+	}
+	if c.mode == EmptyFields && v.BodyFormat == "" && Forced(v.ForceSendFields, "BodyFormat") {
+		ch := n.Child("body_format")
+		c.fn(&ch, "")
 	}
 	if s := string(v.BodyFormat); c.match(s) {
 		ch := n.Child("body_format")
@@ -11698,6 +13942,10 @@ func stringsPipelinesOutlookOptions(c *stringsWalk, n *Node, v *pipelines.Outloo
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.StartDate == "" && Forced(v.ForceSendFields, "StartDate") {
+		ch := n.Child("start_date")
+		c.fn(&ch, "")
+	}
 	if s := string(v.StartDate); c.match(s) {
 		ch := n.Child("start_date")
 		if r, ok := c.fn(&ch, s); ok {
@@ -11731,6 +13979,10 @@ func stringsPipelinesRedditAdsOptions(c *stringsWalk, n *Node, v *pipelines.Redd
 		ch := n.Child("custom_report_options")
 		stringsPipelinesRedditAdsOptionsRedditAdsCustomReportOptions(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.SyncStartDate == "" && Forced(v.ForceSendFields, "SyncStartDate") {
+		ch := n.Child("sync_start_date")
+		c.fn(&ch, "")
+	}
 	if s := string(v.SyncStartDate); c.match(s) {
 		ch := n.Child("sync_start_date")
 		if r, ok := c.fn(&ch, s); ok {
@@ -11740,6 +13992,10 @@ func stringsPipelinesRedditAdsOptions(c *stringsWalk, n *Node, v *pipelines.Redd
 }
 
 func stringsPipelinesSharepointOptions(c *stringsWalk, n *Node, v *pipelines.SharepointOptions) {
+	if c.mode == EmptyFields && v.EntityType == "" && Forced(v.ForceSendFields, "EntityType") {
+		ch := n.Child("entity_type")
+		c.fn(&ch, "")
+	}
 	if s := string(v.EntityType); c.match(s) {
 		ch := n.Child("entity_type")
 		if r, ok := c.fn(&ch, s); ok {
@@ -11749,6 +14005,10 @@ func stringsPipelinesSharepointOptions(c *stringsWalk, n *Node, v *pipelines.Sha
 	if x := v.FileIngestionOptions; x != nil {
 		ch := n.Child("file_ingestion_options")
 		stringsPipelinesFileIngestionOptions(c, &ch, x)
+	}
+	if c.mode == EmptyFields && v.Url == "" && Forced(v.ForceSendFields, "Url") {
+		ch := n.Child("url")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Url); c.match(s) {
 		ch := n.Child("url")
@@ -11762,6 +14022,10 @@ func stringsPipelinesTikTokAdsOptions(c *stringsWalk, n *Node, v *pipelines.TikT
 	if x := v.CustomReportOptions; x != nil {
 		ch := n.Child("custom_report_options")
 		stringsPipelinesTikTokAdsOptionsTikTokAdsCustomReportOptions(c, &ch, x)
+	}
+	if c.mode == EmptyFields && v.DataLevel == "" && Forced(v.ForceSendFields, "DataLevel") {
+		ch := n.Child("data_level")
+		c.fn(&ch, "")
 	}
 	if s := string(v.DataLevel); c.match(s) {
 		ch := n.Child("data_level")
@@ -11791,11 +14055,19 @@ func stringsPipelinesTikTokAdsOptions(c *stringsWalk, n *Node, v *pipelines.TikT
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.ReportType == "" && Forced(v.ForceSendFields, "ReportType") {
+		ch := n.Child("report_type")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ReportType); c.match(s) {
 		ch := n.Child("report_type")
 		if r, ok := c.fn(&ch, s); ok {
 			v.ReportType = pipelines.TikTokAdsOptionsTikTokReportType(r)
 		}
+	}
+	if c.mode == EmptyFields && v.SyncStartDate == "" && Forced(v.ForceSendFields, "SyncStartDate") {
+		ch := n.Child("sync_start_date")
+		c.fn(&ch, "")
 	}
 	if s := string(v.SyncStartDate); c.match(s) {
 		ch := n.Child("sync_start_date")
@@ -11806,6 +14078,10 @@ func stringsPipelinesTikTokAdsOptions(c *stringsWalk, n *Node, v *pipelines.TikT
 }
 
 func stringsPipelinesZendeskSupportOptions(c *stringsWalk, n *Node, v *pipelines.ZendeskSupportOptions) {
+	if c.mode == EmptyFields && v.StartDate == "" && Forced(v.ForceSendFields, "StartDate") {
+		ch := n.Child("start_date")
+		c.fn(&ch, "")
+	}
 	if s := string(v.StartDate); c.match(s) {
 		ch := n.Child("start_date")
 		if r, ok := c.fn(&ch, s); ok {
@@ -11819,11 +14095,19 @@ func stringsPipelinesTransformer(c *stringsWalk, n *Node, v *pipelines.Transform
 		ch := n.Child("avro_options")
 		stringsPipelinesAvroTransformerOptions(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.Format == "" && Forced(v.ForceSendFields, "Format") {
+		ch := n.Child("format")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Format); c.match(s) {
 		ch := n.Child("format")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Format = pipelines.TransformerFormat(r)
 		}
+	}
+	if c.mode == EmptyFields && v.InputColumn == "" && Forced(v.ForceSendFields, "InputColumn") {
+		ch := n.Child("input_column")
+		c.fn(&ch, "")
 	}
 	if s := string(v.InputColumn); c.match(s) {
 		ch := n.Child("input_column")
@@ -11834,6 +14118,10 @@ func stringsPipelinesTransformer(c *stringsWalk, n *Node, v *pipelines.Transform
 	if x := v.JsonOptions; x != nil {
 		ch := n.Child("json_options")
 		stringsPipelinesJsonTransformerOptions(c, &ch, x)
+	}
+	if c.mode == EmptyFields && v.OutputColumn == "" && Forced(v.ForceSendFields, "OutputColumn") {
+		ch := n.Child("output_column")
+		c.fn(&ch, "")
 	}
 	if s := string(v.OutputColumn); c.match(s) {
 		ch := n.Child("output_column")
@@ -11848,11 +14136,19 @@ func stringsPipelinesTransformer(c *stringsWalk, n *Node, v *pipelines.Transform
 }
 
 func stringsPipelinesPostgresSlotConfig(c *stringsWalk, n *Node, v *pipelines.PostgresSlotConfig) {
+	if c.mode == EmptyFields && v.PublicationName == "" && Forced(v.ForceSendFields, "PublicationName") {
+		ch := n.Child("publication_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.PublicationName); c.match(s) {
 		ch := n.Child("publication_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.PublicationName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.SlotName == "" && Forced(v.ForceSendFields, "SlotName") {
+		ch := n.Child("slot_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.SlotName); c.match(s) {
 		ch := n.Child("slot_name")
@@ -11869,11 +14165,19 @@ func stringsServingApiKeyAuth(c *stringsWalk, n *Node, v *serving.ApiKeyAuth) {
 			v.Key = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.Value == "" && Forced(v.ForceSendFields, "Value") {
+		ch := n.Child("value")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Value); c.match(s) {
 		ch := n.Child("value")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Value = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.ValuePlaintext == "" && Forced(v.ForceSendFields, "ValuePlaintext") {
+		ch := n.Child("value_plaintext")
+		c.fn(&ch, "")
 	}
 	if s := string(v.ValuePlaintext); c.match(s) {
 		ch := n.Child("value_plaintext")
@@ -11884,11 +14188,19 @@ func stringsServingApiKeyAuth(c *stringsWalk, n *Node, v *serving.ApiKeyAuth) {
 }
 
 func stringsServingBearerTokenAuth(c *stringsWalk, n *Node, v *serving.BearerTokenAuth) {
+	if c.mode == EmptyFields && v.Token == "" && Forced(v.ForceSendFields, "Token") {
+		ch := n.Child("token")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Token); c.match(s) {
 		ch := n.Child("token")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Token = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.TokenPlaintext == "" && Forced(v.ForceSendFields, "TokenPlaintext") {
+		ch := n.Child("token_plaintext")
+		c.fn(&ch, "")
 	}
 	if s := string(v.TokenPlaintext); c.match(s) {
 		ch := n.Child("token_plaintext")
@@ -11908,6 +14220,10 @@ func stringsCatalogModelProviderServiceConfigSecretReference(c *stringsWalk, n *
 }
 
 func stringsPipelinesFileIngestionOptions(c *stringsWalk, n *Node, v *pipelines.FileIngestionOptions) {
+	if c.mode == EmptyFields && v.CorruptRecordColumn == "" && Forced(v.ForceSendFields, "CorruptRecordColumn") {
+		ch := n.Child("corrupt_record_column")
+		c.fn(&ch, "")
+	}
 	if s := string(v.CorruptRecordColumn); c.match(s) {
 		ch := n.Child("corrupt_record_column")
 		if r, ok := c.fn(&ch, s); ok {
@@ -11922,6 +14238,10 @@ func stringsPipelinesFileIngestionOptions(c *stringsWalk, n *Node, v *pipelines.
 				stringsPipelinesFileFilter(c, &ch, &v.FileFilters[i])
 			}
 		}
+	}
+	if c.mode == EmptyFields && v.Format == "" && Forced(v.ForceSendFields, "Format") {
+		ch := n.Child("format")
+		c.fn(&ch, "")
 	}
 	if s := string(v.Format); c.match(s) {
 		ch := n.Child("format")
@@ -11940,11 +14260,19 @@ func stringsPipelinesFileIngestionOptions(c *stringsWalk, n *Node, v *pipelines.
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.RescuedDataColumn == "" && Forced(v.ForceSendFields, "RescuedDataColumn") {
+		ch := n.Child("rescued_data_column")
+		c.fn(&ch, "")
+	}
 	if s := string(v.RescuedDataColumn); c.match(s) {
 		ch := n.Child("rescued_data_column")
 		if r, ok := c.fn(&ch, s); ok {
 			v.RescuedDataColumn = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.SchemaEvolutionMode == "" && Forced(v.ForceSendFields, "SchemaEvolutionMode") {
+		ch := n.Child("schema_evolution_mode")
+		c.fn(&ch, "")
 	}
 	if s := string(v.SchemaEvolutionMode); c.match(s) {
 		ch := n.Child("schema_evolution_mode")
@@ -11952,11 +14280,19 @@ func stringsPipelinesFileIngestionOptions(c *stringsWalk, n *Node, v *pipelines.
 			v.SchemaEvolutionMode = pipelines.FileIngestionOptionsSchemaEvolutionMode(r)
 		}
 	}
+	if c.mode == EmptyFields && v.SchemaHints == "" && Forced(v.ForceSendFields, "SchemaHints") {
+		ch := n.Child("schema_hints")
+		c.fn(&ch, "")
+	}
 	if s := string(v.SchemaHints); c.match(s) {
 		ch := n.Child("schema_hints")
 		if r, ok := c.fn(&ch, s); ok {
 			v.SchemaHints = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.SingleVariantColumn == "" && Forced(v.ForceSendFields, "SingleVariantColumn") {
+		ch := n.Child("single_variant_column")
+		c.fn(&ch, "")
 	}
 	if s := string(v.SingleVariantColumn); c.match(s) {
 		ch := n.Child("single_variant_column")
@@ -12068,6 +14404,10 @@ func stringsPipelinesMetaMarketingOptionsMetaMarketingCustomReportOptions(c *str
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.ActionReportTime == "" && Forced(v.ForceSendFields, "ActionReportTime") {
+		ch := n.Child("action_report_time")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ActionReportTime); c.match(s) {
 		ch := n.Child("action_report_time")
 		if r, ok := c.fn(&ch, s); ok {
@@ -12085,11 +14425,19 @@ func stringsPipelinesMetaMarketingOptionsMetaMarketingCustomReportOptions(c *str
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.Level == "" && Forced(v.ForceSendFields, "Level") {
+		ch := n.Child("level")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Level); c.match(s) {
 		ch := n.Child("level")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Level = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.TimeIncrement == "" && Forced(v.ForceSendFields, "TimeIncrement") {
+		ch := n.Child("time_increment")
+		c.fn(&ch, "")
 	}
 	if s := string(v.TimeIncrement); c.match(s) {
 		ch := n.Child("time_increment")
@@ -12125,6 +14473,10 @@ func stringsPipelinesRedditAdsOptionsRedditAdsCustomReportOptions(c *stringsWalk
 }
 
 func stringsPipelinesTikTokAdsOptionsTikTokAdsCustomReportOptions(c *stringsWalk, n *Node, v *pipelines.TikTokAdsOptionsTikTokAdsCustomReportOptions) {
+	if c.mode == EmptyFields && v.DataLevel == "" && Forced(v.ForceSendFields, "DataLevel") {
+		ch := n.Child("data_level")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DataLevel); c.match(s) {
 		ch := n.Child("data_level")
 		if r, ok := c.fn(&ch, s); ok {
@@ -12153,6 +14505,10 @@ func stringsPipelinesTikTokAdsOptionsTikTokAdsCustomReportOptions(c *stringsWalk
 			}
 		}
 	}
+	if c.mode == EmptyFields && v.ReportType == "" && Forced(v.ForceSendFields, "ReportType") {
+		ch := n.Child("report_type")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ReportType); c.match(s) {
 		ch := n.Child("report_type")
 		if r, ok := c.fn(&ch, s); ok {
@@ -12162,17 +14518,29 @@ func stringsPipelinesTikTokAdsOptionsTikTokAdsCustomReportOptions(c *stringsWalk
 }
 
 func stringsPipelinesAvroTransformerOptions(c *stringsWalk, n *Node, v *pipelines.AvroTransformerOptions) {
+	if c.mode == EmptyFields && v.ParseMode == "" && Forced(v.ForceSendFields, "ParseMode") {
+		ch := n.Child("parse_mode")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ParseMode); c.match(s) {
 		ch := n.Child("parse_mode")
 		if r, ok := c.fn(&ch, s); ok {
 			v.ParseMode = pipelines.ParseMode(r)
 		}
 	}
+	if c.mode == EmptyFields && v.Schema == "" && Forced(v.ForceSendFields, "Schema") {
+		ch := n.Child("schema")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Schema); c.match(s) {
 		ch := n.Child("schema")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Schema = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.SchemaFilePath == "" && Forced(v.ForceSendFields, "SchemaFilePath") {
+		ch := n.Child("schema_file_path")
+		c.fn(&ch, "")
 	}
 	if s := string(v.SchemaFilePath); c.match(s) {
 		ch := n.Child("schema_file_path")
@@ -12187,11 +14555,19 @@ func stringsPipelinesAvroTransformerOptions(c *stringsWalk, n *Node, v *pipeline
 }
 
 func stringsPipelinesJsonTransformerOptions(c *stringsWalk, n *Node, v *pipelines.JsonTransformerOptions) {
+	if c.mode == EmptyFields && v.Schema == "" && Forced(v.ForceSendFields, "Schema") {
+		ch := n.Child("schema")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Schema); c.match(s) {
 		ch := n.Child("schema")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Schema = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.SchemaEvolutionMode == "" && Forced(v.ForceSendFields, "SchemaEvolutionMode") {
+		ch := n.Child("schema_evolution_mode")
+		c.fn(&ch, "")
 	}
 	if s := string(v.SchemaEvolutionMode); c.match(s) {
 		ch := n.Child("schema_evolution_mode")
@@ -12199,11 +14575,19 @@ func stringsPipelinesJsonTransformerOptions(c *stringsWalk, n *Node, v *pipeline
 			v.SchemaEvolutionMode = pipelines.FileIngestionOptionsSchemaEvolutionMode(r)
 		}
 	}
+	if c.mode == EmptyFields && v.SchemaFilePath == "" && Forced(v.ForceSendFields, "SchemaFilePath") {
+		ch := n.Child("schema_file_path")
+		c.fn(&ch, "")
+	}
 	if s := string(v.SchemaFilePath); c.match(s) {
 		ch := n.Child("schema_file_path")
 		if r, ok := c.fn(&ch, s); ok {
 			v.SchemaFilePath = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.SchemaHints == "" && Forced(v.ForceSendFields, "SchemaHints") {
+		ch := n.Child("schema_hints")
+		c.fn(&ch, "")
 	}
 	if s := string(v.SchemaHints); c.match(s) {
 		ch := n.Child("schema_hints")
@@ -12214,17 +14598,29 @@ func stringsPipelinesJsonTransformerOptions(c *stringsWalk, n *Node, v *pipeline
 }
 
 func stringsPipelinesProtobufTransformerOptions(c *stringsWalk, n *Node, v *pipelines.ProtobufTransformerOptions) {
+	if c.mode == EmptyFields && v.DescFilePath == "" && Forced(v.ForceSendFields, "DescFilePath") {
+		ch := n.Child("desc_file_path")
+		c.fn(&ch, "")
+	}
 	if s := string(v.DescFilePath); c.match(s) {
 		ch := n.Child("desc_file_path")
 		if r, ok := c.fn(&ch, s); ok {
 			v.DescFilePath = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.MessageName == "" && Forced(v.ForceSendFields, "MessageName") {
+		ch := n.Child("message_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.MessageName); c.match(s) {
 		ch := n.Child("message_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.MessageName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.ParseMode == "" && Forced(v.ForceSendFields, "ParseMode") {
+		ch := n.Child("parse_mode")
+		c.fn(&ch, "")
 	}
 	if s := string(v.ParseMode); c.match(s) {
 		ch := n.Child("parse_mode")
@@ -12239,17 +14635,29 @@ func stringsPipelinesProtobufTransformerOptions(c *stringsWalk, n *Node, v *pipe
 }
 
 func stringsPipelinesFileFilter(c *stringsWalk, n *Node, v *pipelines.FileFilter) {
+	if c.mode == EmptyFields && v.ModifiedAfter == "" && Forced(v.ForceSendFields, "ModifiedAfter") {
+		ch := n.Child("modified_after")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ModifiedAfter); c.match(s) {
 		ch := n.Child("modified_after")
 		if r, ok := c.fn(&ch, s); ok {
 			v.ModifiedAfter = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.ModifiedBefore == "" && Forced(v.ForceSendFields, "ModifiedBefore") {
+		ch := n.Child("modified_before")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ModifiedBefore); c.match(s) {
 		ch := n.Child("modified_before")
 		if r, ok := c.fn(&ch, s); ok {
 			v.ModifiedBefore = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.PathFilter == "" && Forced(v.ForceSendFields, "PathFilter") {
+		ch := n.Child("path_filter")
+		c.fn(&ch, "")
 	}
 	if s := string(v.PathFilter); c.match(s) {
 		ch := n.Child("path_filter")
@@ -12264,11 +14672,19 @@ func stringsPipelinesSchemaRegistryConfig(c *stringsWalk, n *Node, v *pipelines.
 		ch := n.Child("confluent_options")
 		stringsPipelinesConfluentSchemaRegistryOptions(c, &ch, x)
 	}
+	if c.mode == EmptyFields && v.ConnectionName == "" && Forced(v.ForceSendFields, "ConnectionName") {
+		ch := n.Child("connection_name")
+		c.fn(&ch, "")
+	}
 	if s := string(v.ConnectionName); c.match(s) {
 		ch := n.Child("connection_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.ConnectionName = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.ProtobufMessageName == "" && Forced(v.ForceSendFields, "ProtobufMessageName") {
+		ch := n.Child("protobuf_message_name")
+		c.fn(&ch, "")
 	}
 	if s := string(v.ProtobufMessageName); c.match(s) {
 		ch := n.Child("protobuf_message_name")
@@ -12279,10 +14695,253 @@ func stringsPipelinesSchemaRegistryConfig(c *stringsWalk, n *Node, v *pipelines.
 }
 
 func stringsPipelinesConfluentSchemaRegistryOptions(c *stringsWalk, n *Node, v *pipelines.ConfluentSchemaRegistryOptions) {
+	if c.mode == EmptyFields && v.Subject == "" && Forced(v.ForceSendFields, "Subject") {
+		ch := n.Child("subject")
+		c.fn(&ch, "")
+	}
 	if s := string(v.Subject); c.match(s) {
 		ch := n.Child("subject")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Subject = (r)
+		}
+	}
+}
+
+func stringsResource(c *stringsWalk, n *Node, v *config.Resources, typ, name string) {
+	switch typ {
+	case "jobs":
+		if x := v.Jobs[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesJob(c, &rn, x)
+		}
+	case "job_runs":
+		if x := v.JobRuns[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesJobRun(c, &rn, x)
+		}
+	case "pipelines":
+		if x := v.Pipelines[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesPipeline(c, &rn, x)
+		}
+	case "models":
+		if x := v.Models[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesMlflowModel(c, &rn, x)
+		}
+	case "experiments":
+		if x := v.Experiments[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesMlflowExperiment(c, &rn, x)
+		}
+	case "model_serving_endpoints":
+		if x := v.ModelServingEndpoints[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesModelServingEndpoint(c, &rn, x)
+		}
+	case "model_services":
+		if x := v.ModelServices[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesModelService(c, &rn, x)
+		}
+	case "mcp_services":
+		if x := v.McpServices[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesMcpService(c, &rn, x)
+		}
+	case "model_provider_services":
+		if x := v.ModelProviderServices[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesModelProviderService(c, &rn, x)
+		}
+	case "registered_models":
+		if x := v.RegisteredModels[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesRegisteredModel(c, &rn, x)
+		}
+	case "quality_monitors":
+		if x := v.QualityMonitors[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesQualityMonitor(c, &rn, x)
+		}
+	case "catalogs":
+		if x := v.Catalogs[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesCatalog(c, &rn, x)
+		}
+	case "schemas":
+		if x := v.Schemas[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesSchema(c, &rn, x)
+		}
+	case "volumes":
+		if x := v.Volumes[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesVolume(c, &rn, x)
+		}
+	case "external_locations":
+		if x := v.ExternalLocations[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesExternalLocation(c, &rn, x)
+		}
+	case "clusters":
+		if x := v.Clusters[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesCluster(c, &rn, x)
+		}
+	case "dashboards":
+		if x := v.Dashboards[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesDashboard(c, &rn, x)
+		}
+	case "genie_spaces":
+		if x := v.GenieSpaces[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesGenieSpace(c, &rn, x)
+		}
+	case "apps":
+		if x := v.Apps[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesApp(c, &rn, x)
+		}
+	case "secret_scopes":
+		if x := v.SecretScopes[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesSecretScope(c, &rn, x)
+		}
+	case "alerts":
+		if x := v.Alerts[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesAlert(c, &rn, x)
+		}
+	case "sql_warehouses":
+		if x := v.SqlWarehouses[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesSqlWarehouse(c, &rn, x)
+		}
+	case "database_instances":
+		if x := v.DatabaseInstances[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesDatabaseInstance(c, &rn, x)
+		}
+	case "database_catalogs":
+		if x := v.DatabaseCatalogs[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesDatabaseCatalog(c, &rn, x)
+		}
+	case "synced_database_tables":
+		if x := v.SyncedDatabaseTables[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesSyncedDatabaseTable(c, &rn, x)
+		}
+	case "postgres_projects":
+		if x := v.PostgresProjects[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesPostgresProject(c, &rn, x)
+		}
+	case "postgres_branches":
+		if x := v.PostgresBranches[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesPostgresBranch(c, &rn, x)
+		}
+	case "postgres_endpoints":
+		if x := v.PostgresEndpoints[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesPostgresEndpoint(c, &rn, x)
+		}
+	case "postgres_catalogs":
+		if x := v.PostgresCatalogs[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesPostgresCatalog(c, &rn, x)
+		}
+	case "postgres_databases":
+		if x := v.PostgresDatabases[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesPostgresDatabase(c, &rn, x)
+		}
+	case "postgres_roles":
+		if x := v.PostgresRoles[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesPostgresRole(c, &rn, x)
+		}
+	case "postgres_synced_tables":
+		if x := v.PostgresSyncedTables[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesPostgresSyncedTable(c, &rn, x)
+		}
+	case "postgres_snapshot_schedules":
+		if x := v.PostgresSnapshotSchedules[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesPostgresSnapshotSchedule(c, &rn, x)
+		}
+	case "vector_search_endpoints":
+		if x := v.VectorSearchEndpoints[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesVectorSearchEndpoint(c, &rn, x)
+		}
+	case "vector_search_indexes":
+		if x := v.VectorSearchIndexes[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesVectorSearchIndex(c, &rn, x)
+		}
+	case "instance_pools":
+		if x := v.InstancePools[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesInstancePool(c, &rn, x)
+		}
+	case "secrets":
+		if x := v.Secrets[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesSecret(c, &rn, x)
+		}
+	case "cluster_policies":
+		if x := v.ClusterPolicies[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesClusterPolicy(c, &rn, x)
+		}
+	case "internal_immutable_snapshots":
+		if x := v.Snapshots[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesSnapshot(c, &rn, x)
 		}
 	}
 }

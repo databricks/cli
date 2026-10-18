@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
@@ -289,4 +291,52 @@ func TestToStructVarRequiresPointerType(t *testing.T) {
 	sv, err := svJSON.ToStructVar(reflect.TypeFor[*TestObj]())
 	require.NoError(t, err)
 	assert.Equal(t, "test", sv.Value.(*TestObj).Name)
+}
+
+func TestMoveMetadata(t *testing.T) {
+	type obj struct {
+		Old map[string]TestObj `json:"old"`
+		New map[string]TestObj `json:"new"`
+	}
+	sv := structvar.NewStructVar(&obj{}, map[string]string{
+		"old['a'].age": "${var.age}",
+		"older.age":    "${var.other}",
+		"new['b'].age": "${var.replaced}",
+	})
+	loc := diag.Location{File: "a.yml", Line: 1, Column: 1}
+	sv.Locations = sv.Locations.With(structpath.NewStringKey(nil, "old"), (*structvar.Locations)(nil).WithLocations([]diag.Location{loc}))
+
+	sv.MoveMetadata(structpath.NewStringKey(nil, "old"), structpath.NewStringKey(nil, "new"))
+
+	assert.Equal(t, map[string]string{
+		"new['a'].age": "${var.age}",
+		"older.age":    "${var.other}",
+	}, sv.Refs)
+	assert.Equal(t, []diag.Location{loc}, sv.Locations.Exact(structpath.NewStringKey(nil, "new")))
+	assert.Nil(t, sv.Locations.Sub(structpath.NewStringKey(nil, "old")))
+}
+
+func TestCopyMetadata(t *testing.T) {
+	type obj struct {
+		Items map[string]TestObj `json:"items"`
+	}
+	dst := structvar.NewStructVar(&obj{}, map[string]string{
+		"items.a.age": "${var.old}",
+		"items.b.age": "${var.kept}",
+	})
+	src := structvar.NewStructVar(&obj{}, map[string]string{
+		"items.a.name": "${var.new}",
+		"items.b.age":  "${var.ignored}",
+	})
+	loc := diag.Location{File: "a.yml", Line: 2, Column: 3}
+	a := structpath.NewPath(nil, "items", "a")
+	src.Locations = src.Locations.With(a, (*structvar.Locations)(nil).WithLocations([]diag.Location{loc}))
+
+	dst.CopyMetadata(src, a)
+
+	assert.Equal(t, map[string]string{
+		"items.a.name": "${var.new}",
+		"items.b.age":  "${var.kept}",
+	}, dst.Refs)
+	assert.Equal(t, []diag.Location{loc}, dst.Locations.Exact(a))
 }

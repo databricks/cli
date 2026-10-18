@@ -41,7 +41,7 @@ resources:
 	root, diags := config.LoadFromBytes("test", []byte(yml))
 	require.NoError(t, diags.Error())
 
-	refs, err := extractReferences(root.View(), "resources.volumes.v", stateType)
+	refs, err := extractReferences(root, "resources.volumes.v", stateType)
 	require.NoError(t, err)
 
 	assert.Equal(t, map[string]string{

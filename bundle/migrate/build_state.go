@@ -57,7 +57,6 @@ func BuildStateFromTF(
 	warningsSeen := false
 	// Collect all resource nodes (same patterns as makePlan).
 	nodes := configRoot.ResourceNodes()
-	rootView := configRoot.View()
 
 	for _, node := range nodes {
 		id, ok := tfIDs[node]
@@ -94,7 +93,7 @@ func BuildStateFromTF(
 			return warningsSeen, fmt.Errorf("%s: PrepareState: %w", node, err)
 		}
 
-		refs, err := direct.ExtractReferences(rootView, node, adapter.StateType())
+		refs, err := direct.ExtractReferences(configRoot, node, adapter.StateType())
 		if err != nil {
 			return warningsSeen, fmt.Errorf("%s: extracting references: %w", node, err)
 		}

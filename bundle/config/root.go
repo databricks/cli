@@ -543,6 +543,22 @@ func (r *Root) SetLocations(path *structpath.PathNode, locs []diag.Location) {
 	r.store(sv)
 }
 
+// CopyMetadata replaces the locations and references of the value at path with those in
+// src (see [structvar.StructVar.CopyMetadata]).
+func (r *Root) CopyMetadata(src *Root, path *structpath.PathNode) {
+	sv := r.vars()
+	sv.CopyMetadata(src.vars(), path)
+	r.store(sv)
+}
+
+// MoveMetadata moves the locations and references of the value at path from to the
+// path to (see [structvar.StructVar.MoveMetadata]).
+func (r *Root) MoveMetadata(from, to *structpath.PathNode) {
+	sv := r.vars()
+	sv.MoveMetadata(from, to)
+	r.store(sv)
+}
+
 // SetLocationTree replaces the locations of the value at path and of the values below it.
 func (r *Root) SetLocationTree(path *structpath.PathNode, tree *structvar.Locations) {
 	r.locations = r.locations.With(path, tree)
@@ -677,11 +693,38 @@ func (r Root) IsReferenceAt(path *structpath.PathNode) bool {
 	return ok
 }
 
+// ReferenceAt returns the pure variable reference held by the field at path that
+// cannot hold a string, or "" if there is none.
+func (r Root) ReferenceAt(path *structpath.PathNode) string {
+	return r.refs[path.String()]
+}
+
 // References returns all pure variable references in fields that cannot hold a string,
 // keyed by path. References in string fields are part of their value.
 func (r Root) References() iter.Seq2[*structpath.PathNode, string] {
 	return func(yield func(*structpath.PathNode, string) bool) {
 		for _, k := range slices.Sorted(maps.Keys(r.refs)) {
+			p, err := structpath.ParsePath(k)
+			if err == nil && !yield(p, r.refs[k]) {
+				return
+			}
+		}
+	}
+}
+
+// ReferencesUnder returns the pure variable references (see [Root.References]) at path
+// and below it, in path order.
+func (r Root) ReferencesUnder(path *structpath.PathNode) iter.Seq2[*structpath.PathNode, string] {
+	return func(yield func(*structpath.PathNode, string) bool) {
+		prefix := path.String()
+		var keys []string
+		for k := range r.refs {
+			if k == prefix || strings.HasPrefix(k, prefix+".") || strings.HasPrefix(k, prefix+"[") {
+				keys = append(keys, k)
+			}
+		}
+		slices.Sort(keys)
+		for _, k := range keys {
 			p, err := structpath.ParsePath(k)
 			if err == nil && !yield(p, r.refs[k]) {
 				return

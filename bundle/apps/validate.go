@@ -6,10 +6,10 @@ import (
 	"regexp"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 )
 
@@ -92,20 +92,12 @@ type appResourceReference struct {
 	permission   string
 }
 
-// hasPermissions checks if a bundle resource has a non-empty permissions list.
-func hasPermissions(resource structvar.View) bool {
-	for range resource.Get("permissions").Sequence() {
-		return true
-	}
-	return false
-}
-
 // hasAppSPInPermissions checks if any permission entry for the given resource
 // references the app's service principal via variable interpolation.
-func hasAppSPInPermissions(resource structvar.View, appKey string) bool {
+func hasAppSPInPermissions(perms config.PermissionList, appKey string) bool {
 	appSPRef := fmt.Sprintf("${resources.apps.%s.service_principal_client_id}", appKey)
-	for _, entry := range resource.Get("permissions").Sequence() {
-		if str, ok := entry.Get("service_principal_name").AsString(); ok && str == appSPRef {
+	for i := range perms.Len() {
+		if perms.At(i).ServicePrincipalName == appSPRef {
 			return true
 		}
 	}
@@ -132,12 +124,12 @@ func warnForAppResourcePermissions(b *bundle.Bundle, appKey string, app *resourc
 		}
 		refType, resourceKey := matches[1], matches[2]
 
-		resource := b.Config.View().Get("resources").Get(refType).Get(resourceKey)
-		if !hasPermissions(resource) {
+		perms, ok := b.Config.Resources.PermissionsOf(refType, resourceKey)
+		if !ok || perms.Len() == 0 {
 			continue
 		}
 
-		if hasAppSPInPermissions(resource, appKey) {
+		if hasAppSPInPermissions(perms, appKey) {
 			continue
 		}
 

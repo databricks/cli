@@ -2,9 +2,6 @@ package resourcemutator
 
 import (
 	"context"
-	"fmt"
-	"reflect"
-	"strings"
 
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
@@ -181,10 +178,7 @@ func NormalizeAndInitializeResources(
 	}
 
 	// after mutators, we merge updated resources back to the snapshot to preserve non-selected resources
-	err := restore()
-	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("failed to merge resources: %w", err))
-	}
+	restore()
 }
 
 // NormalizeResources normalizes resources specified resources,
@@ -217,81 +211,31 @@ func NormalizeResources(
 	}
 
 	// after mutators, we merge updated resources back to the snapshot to preserve non-selected resources
-	err := restore()
-	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("failed to merge resources: %w", err))
-	}
-}
-
-// resourceTypeFields returns the fields of resources that hold the resources of each type,
-// by the name of the type (e.g. "jobs").
-func resourceTypeFields(resources reflect.Value) map[string]reflect.Value {
-	fields := map[string]reflect.Value{}
-	t := resources.Type()
-	for i := range t.NumField() {
-		name, _, _ := strings.Cut(t.Field(i).Tag.Get("json"), ",")
-		if name == "" || name == "-" || resources.Field(i).Kind() != reflect.Map {
-			continue
-		}
-		fields[name] = resources.Field(i)
-	}
-	return fields
+	restore()
 }
 
 // selectResources removes all resources except the ones in resourceKeys from the bundle
 // configuration. It returns a function that restores the removed resources: it puts the
 // configuration back to what it was before, except for the selected resources, which take
 // the values they have at that point. Any other changes to the configuration are discarded.
-func selectResources(b *bundle.Bundle, resourceKeys ResourceKeySet) func() error {
+func selectResources(b *bundle.Bundle, resourceKeys ResourceKeySet) func() {
 	// A shallow copy of the configuration: the resources maps are replaced below, not
 	// modified, so the copy keeps all resources.
 	snapshot := b.Config
+	b.Config.Resources = b.Config.Resources.Select(resourceKeys)
 
-	for resourceType, field := range resourceTypeFields(reflect.ValueOf(&b.Config.Resources).Elem()) {
-		if _, ok := resourceKeys[resourceType]; !ok {
-			field.SetZero()
-			continue
-		}
-
-		selected := reflect.MakeMap(field.Type())
-		for _, name := range resourceKeys.Names(resourceType) {
-			v := field.MapIndex(reflect.ValueOf(name))
-			if v.IsValid() {
-				selected.SetMapIndex(reflect.ValueOf(name), v)
-			}
-		}
-		field.Set(selected)
-	}
-
-	return func() error {
+	return func() {
 		updated := b.Config
-		updatedView := updated.View()
-		updatedFields := resourceTypeFields(reflect.ValueOf(&updated.Resources).Elem())
-
 		b.Config = snapshot
-		fields := resourceTypeFields(reflect.ValueOf(&b.Config.Resources).Elem())
 
 		for resourceType, names := range resourceKeys {
 			for name := range names {
-				v := updatedFields[resourceType].MapIndex(reflect.ValueOf(name))
-				if !v.IsValid() {
+				// Keep the resource that was updated, it may have more than the configuration describes.
+				if !b.Config.Resources.CopyResource(&updated.Resources, resourceType, name) {
 					continue
 				}
-
-				path := structpath.NewPath(nil, "resources", resourceType, name)
-				err := b.Config.Assign(path, updatedView.Lookup(path))
-				if err != nil {
-					return err
-				}
-
-				// Keep the resource that was updated, it may have more than the configuration describes.
-				field := fields[resourceType]
-				if field.IsNil() {
-					field.Set(reflect.MakeMap(field.Type()))
-				}
-				field.SetMapIndex(reflect.ValueOf(name), v)
+				b.Config.CopyMetadata(&updated, structpath.NewPath(nil, "resources", resourceType, name))
 			}
 		}
-		return nil
 	}
 }

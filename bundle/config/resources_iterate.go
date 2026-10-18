@@ -373,6 +373,887 @@ func (r *Resources) IterateAllResources(fn func(typ, name string, res ConfigReso
 	}
 }
 
+// Select returns the resources of r whose names are in keys (by type): new maps that
+// share the resources. Types not in keys are nil.
+func (r *Resources) Select(keys map[string]map[string]struct{}) Resources {
+	var out Resources
+	if names, ok := keys["alerts"]; ok {
+		out.Alerts = make(map[string]*resources.Alert, len(names))
+		for name := range names {
+			if x, ok := r.Alerts[name]; ok {
+				out.Alerts[name] = x
+			}
+		}
+	}
+	if names, ok := keys["apps"]; ok {
+		out.Apps = make(map[string]*resources.App, len(names))
+		for name := range names {
+			if x, ok := r.Apps[name]; ok {
+				out.Apps[name] = x
+			}
+		}
+	}
+	if names, ok := keys["catalogs"]; ok {
+		out.Catalogs = make(map[string]*resources.Catalog, len(names))
+		for name := range names {
+			if x, ok := r.Catalogs[name]; ok {
+				out.Catalogs[name] = x
+			}
+		}
+	}
+	if names, ok := keys["cluster_policies"]; ok {
+		out.ClusterPolicies = make(map[string]*resources.ClusterPolicy, len(names))
+		for name := range names {
+			if x, ok := r.ClusterPolicies[name]; ok {
+				out.ClusterPolicies[name] = x
+			}
+		}
+	}
+	if names, ok := keys["clusters"]; ok {
+		out.Clusters = make(map[string]*resources.Cluster, len(names))
+		for name := range names {
+			if x, ok := r.Clusters[name]; ok {
+				out.Clusters[name] = x
+			}
+		}
+	}
+	if names, ok := keys["dashboards"]; ok {
+		out.Dashboards = make(map[string]*resources.Dashboard, len(names))
+		for name := range names {
+			if x, ok := r.Dashboards[name]; ok {
+				out.Dashboards[name] = x
+			}
+		}
+	}
+	if names, ok := keys["database_catalogs"]; ok {
+		out.DatabaseCatalogs = make(map[string]*resources.DatabaseCatalog, len(names))
+		for name := range names {
+			if x, ok := r.DatabaseCatalogs[name]; ok {
+				out.DatabaseCatalogs[name] = x
+			}
+		}
+	}
+	if names, ok := keys["database_instances"]; ok {
+		out.DatabaseInstances = make(map[string]*resources.DatabaseInstance, len(names))
+		for name := range names {
+			if x, ok := r.DatabaseInstances[name]; ok {
+				out.DatabaseInstances[name] = x
+			}
+		}
+	}
+	if names, ok := keys["experiments"]; ok {
+		out.Experiments = make(map[string]*resources.MlflowExperiment, len(names))
+		for name := range names {
+			if x, ok := r.Experiments[name]; ok {
+				out.Experiments[name] = x
+			}
+		}
+	}
+	if names, ok := keys["external_locations"]; ok {
+		out.ExternalLocations = make(map[string]*resources.ExternalLocation, len(names))
+		for name := range names {
+			if x, ok := r.ExternalLocations[name]; ok {
+				out.ExternalLocations[name] = x
+			}
+		}
+	}
+	if names, ok := keys["genie_spaces"]; ok {
+		out.GenieSpaces = make(map[string]*resources.GenieSpace, len(names))
+		for name := range names {
+			if x, ok := r.GenieSpaces[name]; ok {
+				out.GenieSpaces[name] = x
+			}
+		}
+	}
+	if names, ok := keys["instance_pools"]; ok {
+		out.InstancePools = make(map[string]*resources.InstancePool, len(names))
+		for name := range names {
+			if x, ok := r.InstancePools[name]; ok {
+				out.InstancePools[name] = x
+			}
+		}
+	}
+	if names, ok := keys["internal_immutable_snapshots"]; ok {
+		out.Snapshots = make(map[string]*resources.Snapshot, len(names))
+		for name := range names {
+			if x, ok := r.Snapshots[name]; ok {
+				out.Snapshots[name] = x
+			}
+		}
+	}
+	if names, ok := keys["job_runs"]; ok {
+		out.JobRuns = make(map[string]*resources.JobRun, len(names))
+		for name := range names {
+			if x, ok := r.JobRuns[name]; ok {
+				out.JobRuns[name] = x
+			}
+		}
+	}
+	if names, ok := keys["jobs"]; ok {
+		out.Jobs = make(map[string]*resources.Job, len(names))
+		for name := range names {
+			if x, ok := r.Jobs[name]; ok {
+				out.Jobs[name] = x
+			}
+		}
+	}
+	if names, ok := keys["mcp_services"]; ok {
+		out.McpServices = make(map[string]*resources.McpService, len(names))
+		for name := range names {
+			if x, ok := r.McpServices[name]; ok {
+				out.McpServices[name] = x
+			}
+		}
+	}
+	if names, ok := keys["model_provider_services"]; ok {
+		out.ModelProviderServices = make(map[string]*resources.ModelProviderService, len(names))
+		for name := range names {
+			if x, ok := r.ModelProviderServices[name]; ok {
+				out.ModelProviderServices[name] = x
+			}
+		}
+	}
+	if names, ok := keys["model_services"]; ok {
+		out.ModelServices = make(map[string]*resources.ModelService, len(names))
+		for name := range names {
+			if x, ok := r.ModelServices[name]; ok {
+				out.ModelServices[name] = x
+			}
+		}
+	}
+	if names, ok := keys["model_serving_endpoints"]; ok {
+		out.ModelServingEndpoints = make(map[string]*resources.ModelServingEndpoint, len(names))
+		for name := range names {
+			if x, ok := r.ModelServingEndpoints[name]; ok {
+				out.ModelServingEndpoints[name] = x
+			}
+		}
+	}
+	if names, ok := keys["models"]; ok {
+		out.Models = make(map[string]*resources.MlflowModel, len(names))
+		for name := range names {
+			if x, ok := r.Models[name]; ok {
+				out.Models[name] = x
+			}
+		}
+	}
+	if names, ok := keys["pipelines"]; ok {
+		out.Pipelines = make(map[string]*resources.Pipeline, len(names))
+		for name := range names {
+			if x, ok := r.Pipelines[name]; ok {
+				out.Pipelines[name] = x
+			}
+		}
+	}
+	if names, ok := keys["postgres_branches"]; ok {
+		out.PostgresBranches = make(map[string]*resources.PostgresBranch, len(names))
+		for name := range names {
+			if x, ok := r.PostgresBranches[name]; ok {
+				out.PostgresBranches[name] = x
+			}
+		}
+	}
+	if names, ok := keys["postgres_catalogs"]; ok {
+		out.PostgresCatalogs = make(map[string]*resources.PostgresCatalog, len(names))
+		for name := range names {
+			if x, ok := r.PostgresCatalogs[name]; ok {
+				out.PostgresCatalogs[name] = x
+			}
+		}
+	}
+	if names, ok := keys["postgres_databases"]; ok {
+		out.PostgresDatabases = make(map[string]*resources.PostgresDatabase, len(names))
+		for name := range names {
+			if x, ok := r.PostgresDatabases[name]; ok {
+				out.PostgresDatabases[name] = x
+			}
+		}
+	}
+	if names, ok := keys["postgres_endpoints"]; ok {
+		out.PostgresEndpoints = make(map[string]*resources.PostgresEndpoint, len(names))
+		for name := range names {
+			if x, ok := r.PostgresEndpoints[name]; ok {
+				out.PostgresEndpoints[name] = x
+			}
+		}
+	}
+	if names, ok := keys["postgres_projects"]; ok {
+		out.PostgresProjects = make(map[string]*resources.PostgresProject, len(names))
+		for name := range names {
+			if x, ok := r.PostgresProjects[name]; ok {
+				out.PostgresProjects[name] = x
+			}
+		}
+	}
+	if names, ok := keys["postgres_roles"]; ok {
+		out.PostgresRoles = make(map[string]*resources.PostgresRole, len(names))
+		for name := range names {
+			if x, ok := r.PostgresRoles[name]; ok {
+				out.PostgresRoles[name] = x
+			}
+		}
+	}
+	if names, ok := keys["postgres_snapshot_schedules"]; ok {
+		out.PostgresSnapshotSchedules = make(map[string]*resources.PostgresSnapshotSchedule, len(names))
+		for name := range names {
+			if x, ok := r.PostgresSnapshotSchedules[name]; ok {
+				out.PostgresSnapshotSchedules[name] = x
+			}
+		}
+	}
+	if names, ok := keys["postgres_synced_tables"]; ok {
+		out.PostgresSyncedTables = make(map[string]*resources.PostgresSyncedTable, len(names))
+		for name := range names {
+			if x, ok := r.PostgresSyncedTables[name]; ok {
+				out.PostgresSyncedTables[name] = x
+			}
+		}
+	}
+	if names, ok := keys["quality_monitors"]; ok {
+		out.QualityMonitors = make(map[string]*resources.QualityMonitor, len(names))
+		for name := range names {
+			if x, ok := r.QualityMonitors[name]; ok {
+				out.QualityMonitors[name] = x
+			}
+		}
+	}
+	if names, ok := keys["registered_models"]; ok {
+		out.RegisteredModels = make(map[string]*resources.RegisteredModel, len(names))
+		for name := range names {
+			if x, ok := r.RegisteredModels[name]; ok {
+				out.RegisteredModels[name] = x
+			}
+		}
+	}
+	if names, ok := keys["schemas"]; ok {
+		out.Schemas = make(map[string]*resources.Schema, len(names))
+		for name := range names {
+			if x, ok := r.Schemas[name]; ok {
+				out.Schemas[name] = x
+			}
+		}
+	}
+	if names, ok := keys["secret_scopes"]; ok {
+		out.SecretScopes = make(map[string]*resources.SecretScope, len(names))
+		for name := range names {
+			if x, ok := r.SecretScopes[name]; ok {
+				out.SecretScopes[name] = x
+			}
+		}
+	}
+	if names, ok := keys["secrets"]; ok {
+		out.Secrets = make(map[string]*resources.Secret, len(names))
+		for name := range names {
+			if x, ok := r.Secrets[name]; ok {
+				out.Secrets[name] = x
+			}
+		}
+	}
+	if names, ok := keys["sql_warehouses"]; ok {
+		out.SqlWarehouses = make(map[string]*resources.SqlWarehouse, len(names))
+		for name := range names {
+			if x, ok := r.SqlWarehouses[name]; ok {
+				out.SqlWarehouses[name] = x
+			}
+		}
+	}
+	if names, ok := keys["synced_database_tables"]; ok {
+		out.SyncedDatabaseTables = make(map[string]*resources.SyncedDatabaseTable, len(names))
+		for name := range names {
+			if x, ok := r.SyncedDatabaseTables[name]; ok {
+				out.SyncedDatabaseTables[name] = x
+			}
+		}
+	}
+	if names, ok := keys["vector_search_endpoints"]; ok {
+		out.VectorSearchEndpoints = make(map[string]*resources.VectorSearchEndpoint, len(names))
+		for name := range names {
+			if x, ok := r.VectorSearchEndpoints[name]; ok {
+				out.VectorSearchEndpoints[name] = x
+			}
+		}
+	}
+	if names, ok := keys["vector_search_indexes"]; ok {
+		out.VectorSearchIndexes = make(map[string]*resources.VectorSearchIndex, len(names))
+		for name := range names {
+			if x, ok := r.VectorSearchIndexes[name]; ok {
+				out.VectorSearchIndexes[name] = x
+			}
+		}
+	}
+	if names, ok := keys["volumes"]; ok {
+		out.Volumes = make(map[string]*resources.Volume, len(names))
+		for name := range names {
+			if x, ok := r.Volumes[name]; ok {
+				out.Volumes[name] = x
+			}
+		}
+	}
+	return out
+}
+
+// CopyResource sets the resource name of type typ to the one in src (shared, not
+// copied). It returns false if src has no such resource.
+func (r *Resources) CopyResource(src *Resources, typ, name string) bool {
+	switch typ {
+	case "alerts":
+		x, ok := src.Alerts[name]
+		if !ok {
+			return false
+		}
+		if r.Alerts == nil {
+			r.Alerts = map[string]*resources.Alert{}
+		}
+		r.Alerts[name] = x
+		return true
+	case "apps":
+		x, ok := src.Apps[name]
+		if !ok {
+			return false
+		}
+		if r.Apps == nil {
+			r.Apps = map[string]*resources.App{}
+		}
+		r.Apps[name] = x
+		return true
+	case "catalogs":
+		x, ok := src.Catalogs[name]
+		if !ok {
+			return false
+		}
+		if r.Catalogs == nil {
+			r.Catalogs = map[string]*resources.Catalog{}
+		}
+		r.Catalogs[name] = x
+		return true
+	case "cluster_policies":
+		x, ok := src.ClusterPolicies[name]
+		if !ok {
+			return false
+		}
+		if r.ClusterPolicies == nil {
+			r.ClusterPolicies = map[string]*resources.ClusterPolicy{}
+		}
+		r.ClusterPolicies[name] = x
+		return true
+	case "clusters":
+		x, ok := src.Clusters[name]
+		if !ok {
+			return false
+		}
+		if r.Clusters == nil {
+			r.Clusters = map[string]*resources.Cluster{}
+		}
+		r.Clusters[name] = x
+		return true
+	case "dashboards":
+		x, ok := src.Dashboards[name]
+		if !ok {
+			return false
+		}
+		if r.Dashboards == nil {
+			r.Dashboards = map[string]*resources.Dashboard{}
+		}
+		r.Dashboards[name] = x
+		return true
+	case "database_catalogs":
+		x, ok := src.DatabaseCatalogs[name]
+		if !ok {
+			return false
+		}
+		if r.DatabaseCatalogs == nil {
+			r.DatabaseCatalogs = map[string]*resources.DatabaseCatalog{}
+		}
+		r.DatabaseCatalogs[name] = x
+		return true
+	case "database_instances":
+		x, ok := src.DatabaseInstances[name]
+		if !ok {
+			return false
+		}
+		if r.DatabaseInstances == nil {
+			r.DatabaseInstances = map[string]*resources.DatabaseInstance{}
+		}
+		r.DatabaseInstances[name] = x
+		return true
+	case "experiments":
+		x, ok := src.Experiments[name]
+		if !ok {
+			return false
+		}
+		if r.Experiments == nil {
+			r.Experiments = map[string]*resources.MlflowExperiment{}
+		}
+		r.Experiments[name] = x
+		return true
+	case "external_locations":
+		x, ok := src.ExternalLocations[name]
+		if !ok {
+			return false
+		}
+		if r.ExternalLocations == nil {
+			r.ExternalLocations = map[string]*resources.ExternalLocation{}
+		}
+		r.ExternalLocations[name] = x
+		return true
+	case "genie_spaces":
+		x, ok := src.GenieSpaces[name]
+		if !ok {
+			return false
+		}
+		if r.GenieSpaces == nil {
+			r.GenieSpaces = map[string]*resources.GenieSpace{}
+		}
+		r.GenieSpaces[name] = x
+		return true
+	case "instance_pools":
+		x, ok := src.InstancePools[name]
+		if !ok {
+			return false
+		}
+		if r.InstancePools == nil {
+			r.InstancePools = map[string]*resources.InstancePool{}
+		}
+		r.InstancePools[name] = x
+		return true
+	case "internal_immutable_snapshots":
+		x, ok := src.Snapshots[name]
+		if !ok {
+			return false
+		}
+		if r.Snapshots == nil {
+			r.Snapshots = map[string]*resources.Snapshot{}
+		}
+		r.Snapshots[name] = x
+		return true
+	case "job_runs":
+		x, ok := src.JobRuns[name]
+		if !ok {
+			return false
+		}
+		if r.JobRuns == nil {
+			r.JobRuns = map[string]*resources.JobRun{}
+		}
+		r.JobRuns[name] = x
+		return true
+	case "jobs":
+		x, ok := src.Jobs[name]
+		if !ok {
+			return false
+		}
+		if r.Jobs == nil {
+			r.Jobs = map[string]*resources.Job{}
+		}
+		r.Jobs[name] = x
+		return true
+	case "mcp_services":
+		x, ok := src.McpServices[name]
+		if !ok {
+			return false
+		}
+		if r.McpServices == nil {
+			r.McpServices = map[string]*resources.McpService{}
+		}
+		r.McpServices[name] = x
+		return true
+	case "model_provider_services":
+		x, ok := src.ModelProviderServices[name]
+		if !ok {
+			return false
+		}
+		if r.ModelProviderServices == nil {
+			r.ModelProviderServices = map[string]*resources.ModelProviderService{}
+		}
+		r.ModelProviderServices[name] = x
+		return true
+	case "model_services":
+		x, ok := src.ModelServices[name]
+		if !ok {
+			return false
+		}
+		if r.ModelServices == nil {
+			r.ModelServices = map[string]*resources.ModelService{}
+		}
+		r.ModelServices[name] = x
+		return true
+	case "model_serving_endpoints":
+		x, ok := src.ModelServingEndpoints[name]
+		if !ok {
+			return false
+		}
+		if r.ModelServingEndpoints == nil {
+			r.ModelServingEndpoints = map[string]*resources.ModelServingEndpoint{}
+		}
+		r.ModelServingEndpoints[name] = x
+		return true
+	case "models":
+		x, ok := src.Models[name]
+		if !ok {
+			return false
+		}
+		if r.Models == nil {
+			r.Models = map[string]*resources.MlflowModel{}
+		}
+		r.Models[name] = x
+		return true
+	case "pipelines":
+		x, ok := src.Pipelines[name]
+		if !ok {
+			return false
+		}
+		if r.Pipelines == nil {
+			r.Pipelines = map[string]*resources.Pipeline{}
+		}
+		r.Pipelines[name] = x
+		return true
+	case "postgres_branches":
+		x, ok := src.PostgresBranches[name]
+		if !ok {
+			return false
+		}
+		if r.PostgresBranches == nil {
+			r.PostgresBranches = map[string]*resources.PostgresBranch{}
+		}
+		r.PostgresBranches[name] = x
+		return true
+	case "postgres_catalogs":
+		x, ok := src.PostgresCatalogs[name]
+		if !ok {
+			return false
+		}
+		if r.PostgresCatalogs == nil {
+			r.PostgresCatalogs = map[string]*resources.PostgresCatalog{}
+		}
+		r.PostgresCatalogs[name] = x
+		return true
+	case "postgres_databases":
+		x, ok := src.PostgresDatabases[name]
+		if !ok {
+			return false
+		}
+		if r.PostgresDatabases == nil {
+			r.PostgresDatabases = map[string]*resources.PostgresDatabase{}
+		}
+		r.PostgresDatabases[name] = x
+		return true
+	case "postgres_endpoints":
+		x, ok := src.PostgresEndpoints[name]
+		if !ok {
+			return false
+		}
+		if r.PostgresEndpoints == nil {
+			r.PostgresEndpoints = map[string]*resources.PostgresEndpoint{}
+		}
+		r.PostgresEndpoints[name] = x
+		return true
+	case "postgres_projects":
+		x, ok := src.PostgresProjects[name]
+		if !ok {
+			return false
+		}
+		if r.PostgresProjects == nil {
+			r.PostgresProjects = map[string]*resources.PostgresProject{}
+		}
+		r.PostgresProjects[name] = x
+		return true
+	case "postgres_roles":
+		x, ok := src.PostgresRoles[name]
+		if !ok {
+			return false
+		}
+		if r.PostgresRoles == nil {
+			r.PostgresRoles = map[string]*resources.PostgresRole{}
+		}
+		r.PostgresRoles[name] = x
+		return true
+	case "postgres_snapshot_schedules":
+		x, ok := src.PostgresSnapshotSchedules[name]
+		if !ok {
+			return false
+		}
+		if r.PostgresSnapshotSchedules == nil {
+			r.PostgresSnapshotSchedules = map[string]*resources.PostgresSnapshotSchedule{}
+		}
+		r.PostgresSnapshotSchedules[name] = x
+		return true
+	case "postgres_synced_tables":
+		x, ok := src.PostgresSyncedTables[name]
+		if !ok {
+			return false
+		}
+		if r.PostgresSyncedTables == nil {
+			r.PostgresSyncedTables = map[string]*resources.PostgresSyncedTable{}
+		}
+		r.PostgresSyncedTables[name] = x
+		return true
+	case "quality_monitors":
+		x, ok := src.QualityMonitors[name]
+		if !ok {
+			return false
+		}
+		if r.QualityMonitors == nil {
+			r.QualityMonitors = map[string]*resources.QualityMonitor{}
+		}
+		r.QualityMonitors[name] = x
+		return true
+	case "registered_models":
+		x, ok := src.RegisteredModels[name]
+		if !ok {
+			return false
+		}
+		if r.RegisteredModels == nil {
+			r.RegisteredModels = map[string]*resources.RegisteredModel{}
+		}
+		r.RegisteredModels[name] = x
+		return true
+	case "schemas":
+		x, ok := src.Schemas[name]
+		if !ok {
+			return false
+		}
+		if r.Schemas == nil {
+			r.Schemas = map[string]*resources.Schema{}
+		}
+		r.Schemas[name] = x
+		return true
+	case "secret_scopes":
+		x, ok := src.SecretScopes[name]
+		if !ok {
+			return false
+		}
+		if r.SecretScopes == nil {
+			r.SecretScopes = map[string]*resources.SecretScope{}
+		}
+		r.SecretScopes[name] = x
+		return true
+	case "secrets":
+		x, ok := src.Secrets[name]
+		if !ok {
+			return false
+		}
+		if r.Secrets == nil {
+			r.Secrets = map[string]*resources.Secret{}
+		}
+		r.Secrets[name] = x
+		return true
+	case "sql_warehouses":
+		x, ok := src.SqlWarehouses[name]
+		if !ok {
+			return false
+		}
+		if r.SqlWarehouses == nil {
+			r.SqlWarehouses = map[string]*resources.SqlWarehouse{}
+		}
+		r.SqlWarehouses[name] = x
+		return true
+	case "synced_database_tables":
+		x, ok := src.SyncedDatabaseTables[name]
+		if !ok {
+			return false
+		}
+		if r.SyncedDatabaseTables == nil {
+			r.SyncedDatabaseTables = map[string]*resources.SyncedDatabaseTable{}
+		}
+		r.SyncedDatabaseTables[name] = x
+		return true
+	case "vector_search_endpoints":
+		x, ok := src.VectorSearchEndpoints[name]
+		if !ok {
+			return false
+		}
+		if r.VectorSearchEndpoints == nil {
+			r.VectorSearchEndpoints = map[string]*resources.VectorSearchEndpoint{}
+		}
+		r.VectorSearchEndpoints[name] = x
+		return true
+	case "vector_search_indexes":
+		x, ok := src.VectorSearchIndexes[name]
+		if !ok {
+			return false
+		}
+		if r.VectorSearchIndexes == nil {
+			r.VectorSearchIndexes = map[string]*resources.VectorSearchIndex{}
+		}
+		r.VectorSearchIndexes[name] = x
+		return true
+	case "volumes":
+		x, ok := src.Volumes[name]
+		if !ok {
+			return false
+		}
+		if r.Volumes == nil {
+			r.Volumes = map[string]*resources.Volume{}
+		}
+		r.Volumes[name] = x
+		return true
+	}
+	return false
+}
+
+// GetResource returns the resource name of type typ. ok is false if there is no such
+// resource or it is defined as null.
+func (r *Resources) GetResource(typ, name string) (res ConfigResource, ok bool) {
+	switch typ {
+	case "alerts":
+		if x := r.Alerts[name]; x != nil {
+			return x, true
+		}
+	case "apps":
+		if x := r.Apps[name]; x != nil {
+			return x, true
+		}
+	case "catalogs":
+		if x := r.Catalogs[name]; x != nil {
+			return x, true
+		}
+	case "cluster_policies":
+		if x := r.ClusterPolicies[name]; x != nil {
+			return x, true
+		}
+	case "clusters":
+		if x := r.Clusters[name]; x != nil {
+			return x, true
+		}
+	case "dashboards":
+		if x := r.Dashboards[name]; x != nil {
+			return x, true
+		}
+	case "database_catalogs":
+		if x := r.DatabaseCatalogs[name]; x != nil {
+			return x, true
+		}
+	case "database_instances":
+		if x := r.DatabaseInstances[name]; x != nil {
+			return x, true
+		}
+	case "experiments":
+		if x := r.Experiments[name]; x != nil {
+			return x, true
+		}
+	case "external_locations":
+		if x := r.ExternalLocations[name]; x != nil {
+			return x, true
+		}
+	case "genie_spaces":
+		if x := r.GenieSpaces[name]; x != nil {
+			return x, true
+		}
+	case "instance_pools":
+		if x := r.InstancePools[name]; x != nil {
+			return x, true
+		}
+	case "internal_immutable_snapshots":
+		if x := r.Snapshots[name]; x != nil {
+			return x, true
+		}
+	case "job_runs":
+		if x := r.JobRuns[name]; x != nil {
+			return x, true
+		}
+	case "jobs":
+		if x := r.Jobs[name]; x != nil {
+			return x, true
+		}
+	case "mcp_services":
+		if x := r.McpServices[name]; x != nil {
+			return x, true
+		}
+	case "model_provider_services":
+		if x := r.ModelProviderServices[name]; x != nil {
+			return x, true
+		}
+	case "model_services":
+		if x := r.ModelServices[name]; x != nil {
+			return x, true
+		}
+	case "model_serving_endpoints":
+		if x := r.ModelServingEndpoints[name]; x != nil {
+			return x, true
+		}
+	case "models":
+		if x := r.Models[name]; x != nil {
+			return x, true
+		}
+	case "pipelines":
+		if x := r.Pipelines[name]; x != nil {
+			return x, true
+		}
+	case "postgres_branches":
+		if x := r.PostgresBranches[name]; x != nil {
+			return x, true
+		}
+	case "postgres_catalogs":
+		if x := r.PostgresCatalogs[name]; x != nil {
+			return x, true
+		}
+	case "postgres_databases":
+		if x := r.PostgresDatabases[name]; x != nil {
+			return x, true
+		}
+	case "postgres_endpoints":
+		if x := r.PostgresEndpoints[name]; x != nil {
+			return x, true
+		}
+	case "postgres_projects":
+		if x := r.PostgresProjects[name]; x != nil {
+			return x, true
+		}
+	case "postgres_roles":
+		if x := r.PostgresRoles[name]; x != nil {
+			return x, true
+		}
+	case "postgres_snapshot_schedules":
+		if x := r.PostgresSnapshotSchedules[name]; x != nil {
+			return x, true
+		}
+	case "postgres_synced_tables":
+		if x := r.PostgresSyncedTables[name]; x != nil {
+			return x, true
+		}
+	case "quality_monitors":
+		if x := r.QualityMonitors[name]; x != nil {
+			return x, true
+		}
+	case "registered_models":
+		if x := r.RegisteredModels[name]; x != nil {
+			return x, true
+		}
+	case "schemas":
+		if x := r.Schemas[name]; x != nil {
+			return x, true
+		}
+	case "secret_scopes":
+		if x := r.SecretScopes[name]; x != nil {
+			return x, true
+		}
+	case "secrets":
+		if x := r.Secrets[name]; x != nil {
+			return x, true
+		}
+	case "sql_warehouses":
+		if x := r.SqlWarehouses[name]; x != nil {
+			return x, true
+		}
+	case "synced_database_tables":
+		if x := r.SyncedDatabaseTables[name]; x != nil {
+			return x, true
+		}
+	case "vector_search_endpoints":
+		if x := r.VectorSearchEndpoints[name]; x != nil {
+			return x, true
+		}
+	case "vector_search_indexes":
+		if x := r.VectorSearchIndexes[name]; x != nil {
+			return x, true
+		}
+	case "volumes":
+		if x := r.Volumes[name]; x != nil {
+			return x, true
+		}
+	}
+	return nil, false
+}
+
 // IterateAllPermissions calls fn for the permissions of every resource that can have
 // them, in the order of IterateAllResources, until fn returns false.
 func (r *Resources) IterateAllPermissions(fn func(typ, name string, perms PermissionList) bool) {
@@ -461,6 +1342,82 @@ func (r *Resources) IterateAllPermissions(fn func(typ, name string, perms Permis
 			return
 		}
 	}
+}
+
+// PermissionsOf returns the permissions of the resource name of type typ. ok is false
+// if there is no such resource or resources of type typ have no permissions.
+func (r *Resources) PermissionsOf(typ, name string) (perms PermissionList, ok bool) {
+	switch typ {
+	case "alerts":
+		if x := r.Alerts[name]; x != nil {
+			return permissionList[resources.Permission, iam.PermissionLevel]{&x.Permissions}, true
+		}
+	case "apps":
+		if x := r.Apps[name]; x != nil {
+			return permissionList[resources.AppPermission, apps.AppPermissionLevel]{&x.Permissions}, true
+		}
+	case "cluster_policies":
+		if x := r.ClusterPolicies[name]; x != nil {
+			return permissionList[resources.ClusterPolicyPermission, compute.ClusterPolicyPermissionLevel]{&x.Permissions}, true
+		}
+	case "clusters":
+		if x := r.Clusters[name]; x != nil {
+			return permissionList[resources.ClusterPermission, compute.ClusterPermissionLevel]{&x.Permissions}, true
+		}
+	case "dashboards":
+		if x := r.Dashboards[name]; x != nil {
+			return permissionList[resources.Permission, iam.PermissionLevel]{&x.Permissions}, true
+		}
+	case "database_instances":
+		if x := r.DatabaseInstances[name]; x != nil {
+			return permissionList[resources.Permission, iam.PermissionLevel]{&x.Permissions}, true
+		}
+	case "experiments":
+		if x := r.Experiments[name]; x != nil {
+			return permissionList[resources.MlflowExperimentPermission, ml.ExperimentPermissionLevel]{&x.Permissions}, true
+		}
+	case "genie_spaces":
+		if x := r.GenieSpaces[name]; x != nil {
+			return permissionList[resources.Permission, iam.PermissionLevel]{&x.Permissions}, true
+		}
+	case "instance_pools":
+		if x := r.InstancePools[name]; x != nil {
+			return permissionList[resources.InstancePoolPermission, compute.InstancePoolPermissionLevel]{&x.Permissions}, true
+		}
+	case "jobs":
+		if x := r.Jobs[name]; x != nil {
+			return permissionList[resources.JobPermission, jobs.JobPermissionLevel]{&x.Permissions}, true
+		}
+	case "model_serving_endpoints":
+		if x := r.ModelServingEndpoints[name]; x != nil {
+			return permissionList[resources.ModelServingEndpointPermission, serving.ServingEndpointPermissionLevel]{&x.Permissions}, true
+		}
+	case "models":
+		if x := r.Models[name]; x != nil {
+			return permissionList[resources.MlflowModelPermission, ml.RegisteredModelPermissionLevel]{&x.Permissions}, true
+		}
+	case "pipelines":
+		if x := r.Pipelines[name]; x != nil {
+			return permissionList[resources.PipelinePermission, pipelines.PipelinePermissionLevel]{&x.Permissions}, true
+		}
+	case "postgres_projects":
+		if x := r.PostgresProjects[name]; x != nil {
+			return permissionList[resources.Permission, iam.PermissionLevel]{&x.Permissions}, true
+		}
+	case "secret_scopes":
+		if x := r.SecretScopes[name]; x != nil {
+			return permissionList[resources.SecretScopePermission, resources.SecretScopePermissionLevel]{&x.Permissions}, true
+		}
+	case "sql_warehouses":
+		if x := r.SqlWarehouses[name]; x != nil {
+			return permissionList[resources.SqlWarehousePermission, sql.WarehousePermissionLevel]{&x.Permissions}, true
+		}
+	case "vector_search_endpoints":
+		if x := r.VectorSearchEndpoints[name]; x != nil {
+			return permissionList[resources.VectorSearchEndpointPermission, vectorsearch.VectorSearchEndpointPermissionLevel]{&x.Permissions}, true
+		}
+	}
+	return nil, false
 }
 
 // IterateAllResourceStates calls fn for the deployed id and modified status of every

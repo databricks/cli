@@ -12,6 +12,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/config/walk"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
@@ -1159,11 +1160,6 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 
 	existingKeys := maps.Clone(db.State)
 
-	var rootView structvar.View
-	if configRoot != nil {
-		rootView = configRoot.View()
-	}
-
 	if configRoot != nil {
 		for _, s := range configRoot.ResourceNodes() {
 			resourceType := config.GetResourceTypeFromKey(s)
@@ -1229,7 +1225,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		// This means input and state must be compatible: input can have more fields, but existing fields should not be moved
 		// This means one cannot refer to fields not present in state (e.g. ${resources.jobs.foo.permissions})
 
-		refs, err := extractReferences(rootView, node, adapter.StateType())
+		refs, err := extractReferences(configRoot, node, adapter.StateType())
 		if err != nil {
 			return nil, fmt.Errorf("failed to read references from config for %s: %w", node, err)
 		}
@@ -1351,11 +1347,11 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 // keeping only those whose field path exists in stateType (references in input-only or
 // bundle:"readonly" fields, such as volumes' computed volume_path, are skipped).
 // Returns a map from structpath string (field path within the resource) to template string.
-func ExtractReferences(root structvar.View, node string, stateType reflect.Type) (map[string]string, error) {
+func ExtractReferences(root *config.Root, node string, stateType reflect.Type) (map[string]string, error) {
 	return extractReferences(root, node, stateType)
 }
 
-func extractReferences(root structvar.View, node string, stateType reflect.Type) (map[string]string, error) {
+func extractReferences(root *config.Root, node string, stateType reflect.Type) (map[string]string, error) {
 	nodeType := config.GetResourceTypeFromKey(node)
 	refs := make(map[string]string)
 
@@ -1364,50 +1360,54 @@ func extractReferences(root structvar.View, node string, stateType reflect.Type)
 		return nil, fmt.Errorf("internal error: bad node key: %q: %w", node, err)
 	}
 
-	val := root.Lookup(path)
-	if !val.IsValid() {
+	if _, ok := root.Resources.GetResource(path.KeyAt(1), path.KeyAt(2)); !ok {
 		return nil, fmt.Errorf("no value at %s", node)
 	}
 
-	err = structvar.Walk(val, func(p *structpath.PathNode, v structvar.View) error {
-		fullPath := structpath.Join(path, p.AsSlice()...)
-		targetType := config.GetResourceTypeFromKey(fullPath.String())
-		if targetType != nodeType {
-			// Make sure these are associated with different nodes:
-			// resources.jobs.foo...
-			// resources.jobs.foo.permissions...
-			// resources.jobs.foo.grants...
-			return nil
-		}
-		str, ok := v.AsString()
-		if !ok {
-			return nil
-		}
-		ref, ok := structvar.NewRef(str)
-		if !ok {
-			return nil
-		}
-		// ValidatePath and the refs keys both operate on structpath (keys are
-		// re-parsed and applied to the typed state in structvar.ResolveRef).
-		// structpath's bracket notation (['key.with.dots']) also round-trips
-		// keys with dots.
-		fieldPath := p
-
-		// References resolve against the state type, not the input config (see PlanResources
-		// and dresources.TestInputSubset). A field in input but not in state — e.g. a
-		// bundle:"readonly" field like volumes' volume_path — is dropped before deploy, so a
-		// reference it carries cannot resolve into state and is not a dependency here. Such
-		// references are still resolved earlier during initialize.
-		if structaccess.ValidatePath(stateType, fieldPath) == nil {
-			// Store the original string that contains references, not individual references.
-			refs[fieldPath.String()] = ref.Str
-		}
-		return nil
+	// The walk covers the whole resource: keep the strings under node.
+	walk.ResourceStringsOf(root, path.KeyAt(1), path.KeyAt(2), walk.WithReferences, func(n *walk.Node, s string) (string, bool) {
+		addReference(refs, path, nodeType, n.Path(), s, stateType)
+		return "", false
 	})
-	if err != nil {
-		return nil, fmt.Errorf("parsing refs: %w", err)
+	for p, ref := range root.ReferencesUnder(path) {
+		addReference(refs, path, nodeType, p, ref, stateType)
 	}
 	return refs, nil
+}
+
+// addReference records in refs the string s with references at fullPath, keyed by its
+// path relative to the node at path, if it belongs to that node.
+func addReference(refs map[string]string, path *structpath.PathNode, nodeType string, fullPath *structpath.PathNode, s string, stateType reflect.Type) {
+	if !fullPath.HasPrefix(path) {
+		return
+	}
+	targetType := config.GetResourceTypeFromKey(fullPath.String())
+	if targetType != nodeType {
+		// Make sure these are associated with different nodes:
+		// resources.jobs.foo...
+		// resources.jobs.foo.permissions...
+		// resources.jobs.foo.grants...
+		return
+	}
+	ref, ok := structvar.NewRef(s)
+	if !ok {
+		return
+	}
+	// ValidatePath and the refs keys both operate on structpath (keys are
+	// re-parsed and applied to the typed state in structvar.ResolveRef).
+	// structpath's bracket notation (['key.with.dots']) also round-trips
+	// keys with dots.
+	fieldPath := fullPath.SkipPrefix(path.Len())
+
+	// References resolve against the state type, not the input config (see PlanResources
+	// and dresources.TestInputSubset). A field in input but not in state — e.g. a
+	// bundle:"readonly" field like volumes' volume_path — is dropped before deploy, so a
+	// reference it carries cannot resolve into state and is not a dependency here. Such
+	// references are still resolved earlier during initialize.
+	if structaccess.ValidatePath(stateType, fieldPath) == nil {
+		// Store the original string that contains references, not individual references.
+		refs[fieldPath.String()] = ref.Str
+	}
 }
 
 func (b *DeploymentBundle) getAdapterForKey(resourceKey string) (*dresources.Adapter, error) {

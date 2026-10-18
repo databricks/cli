@@ -121,6 +121,44 @@ func (sv *StructVar) Delete(path *structpath.PathNode) error {
 	return nil
 }
 
+// MoveMetadata moves the locations and references of the value at from and below it
+// to to, replacing those at to. Values are not changed: the caller moves them.
+func (sv *StructVar) MoveMetadata(from, to *structpath.PathNode) {
+	sv.Locations = sv.Locations.With(to, sv.Locations.Sub(from)).With(from, nil)
+	if len(sv.Refs) == 0 {
+		return
+	}
+	fromKey, toKey := from.String(), to.String()
+	refs := withoutRefs(sv.Refs, to)
+	for k, v := range sv.Refs {
+		if isUnder(k, fromKey) {
+			delete(refs, k)
+			refs[toKey+strings.TrimPrefix(k, fromKey)] = v
+		}
+	}
+	sv.Refs = refs
+}
+
+// CopyMetadata replaces the locations and references of the value at path and below it
+// with those in src. Values are not changed: the caller copies them.
+func (sv *StructVar) CopyMetadata(src *StructVar, path *structpath.PathNode) {
+	sv.Locations = sv.Locations.With(path, src.Locations.Sub(path))
+	if len(sv.Refs) == 0 && len(src.Refs) == 0 {
+		return
+	}
+	prefix := path.String()
+	refs := withoutRefs(sv.Refs, path)
+	if len(refs) == 0 {
+		refs = map[string]string{}
+	}
+	for k, v := range src.Refs {
+		if isUnder(k, prefix) {
+			refs[k] = v
+		}
+	}
+	sv.Refs = refs
+}
+
 // SetLocations sets the locations of the value at path and of every value below it,
 // including values that have no locations yet (e.g. set in Go code).
 func (sv *StructVar) SetLocations(path *structpath.PathNode, locs []diag.Location) {

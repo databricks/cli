@@ -33,7 +33,7 @@ func TestSelectResources(t *testing.T) {
 	assert.Equal(t, map[string]*resources.Job{"job_1": job1}, b.Config.Resources.Jobs)
 	assert.Nil(t, b.Config.Resources.Pipelines)
 
-	require.NoError(t, restore())
+	restore()
 	assert.Equal(t, map[string]*resources.Job{"job_1": job1, "job_2": job2}, b.Config.Resources.Jobs)
 	assert.Len(t, b.Config.Resources.Pipelines, 1)
 }
@@ -55,7 +55,7 @@ func TestSelectResourcesRestoreMergesUpdates(t *testing.T) {
 	require.NoError(t, b.Config.Set(structpath.MustParsePath("resources.jobs.job_1.name"), "updated"))
 	b.Config.Bundle.Name = "after"
 
-	require.NoError(t, restore())
+	restore()
 	assert.Equal(t, "updated", b.Config.Resources.Jobs["job_1"].Name)
 	assert.Equal(t, "job_2", b.Config.Resources.Jobs["job_2"].Name)
 	assert.Equal(t, "before", b.Config.Bundle.Name)
@@ -72,7 +72,7 @@ func TestSelectResourcesRestoreKeepsResourceType(t *testing.T) {
 	keys.AddResourceKey(ResourceKey{Type: "jobs", Name: "job_1"})
 
 	restore := selectResources(b, keys)
-	require.NoError(t, restore())
+	restore()
 	assert.Equal(t, "job_1", b.Config.Resources.Jobs["job_1"].Name)
 	assert.Nil(t, b.Config.Resources.Pipelines)
 }

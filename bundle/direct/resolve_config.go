@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/walk"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
@@ -28,11 +29,11 @@ var resourcesPrefix = structpath.NewPath(nil, "resources")
 // The state DB holds fields like the immutable snapshot's full_path that never reach the
 // config, so it must be open.
 func (b *DeploymentBundle) ResolveConfigAgainstState(cfg *config.Root, target *structpath.PathNode) error {
-	view := cfg.View()
-	resource := view.Lookup(target)
-	if !resource.IsValid() {
+	typ, name := target.KeyAt(1), target.KeyAt(2)
+	if _, ok := cfg.Resources.GetResource(typ, name); !ok {
 		return fmt.Errorf("resource %s not found in configuration", target)
 	}
+	view := cfg.View()
 
 	// Collect every reference string first: resolving them in one call shares the
 	// lookups, and writing back changes the view.
@@ -57,21 +58,12 @@ func (b *DeploymentBundle) ResolveConfigAgainstState(cfg *config.Root, target *s
 		return structvar.NewView(&got, nil, nil), nil
 	}
 
-	err := structvar.Walk(resource, func(p *structpath.PathNode, v structvar.View) error {
-		s, ok := v.AsString()
-		if !ok {
-			return nil
-		}
-		if _, ok := structvar.NewRef(s); !ok {
-			return nil
-		}
-		key := p.String()
-		templates[key] = structvar.Template{Value: s}
-		paths[key] = structpath.Join(target, p.AsSlice()...)
-		return nil
+	walk.ResourceStringsOf(cfg, typ, name, walk.WithReferences, func(n *walk.Node, s string) (string, bool) {
+		addTemplate(templates, paths, target, n.Path(), s)
+		return "", false
 	})
-	if err != nil {
-		return err
+	for p, ref := range cfg.ReferencesUnder(target) {
+		addTemplate(templates, paths, target, p, ref)
 	}
 
 	resolved, err := structvar.Resolve(templates, lookup)
@@ -96,6 +88,17 @@ func (b *DeploymentBundle) ResolveConfigAgainstState(cfg *config.Root, target *s
 		}
 	}
 	return nil
+}
+
+// addTemplate adds the string s at path to templates if it has references, keyed by its
+// path relative to target.
+func addTemplate(templates map[string]structvar.Template, paths map[string]*structpath.PathNode, target, path *structpath.PathNode, s string) {
+	if _, ok := structvar.NewRef(s); !ok {
+		return
+	}
+	key := path.SkipPrefix(target.Len()).String()
+	templates[key] = structvar.Template{Value: s}
+	paths[key] = path
 }
 
 // lookupStateField returns the value at resources.<group>.<name>.<field...> from the

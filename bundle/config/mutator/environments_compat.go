@@ -26,26 +26,20 @@ func (m *environmentsToTargets) Apply(ctx context.Context, b *bundle.Bundle) dia
 	}
 
 	// The "environments" key is set; validate and rewrite it to "targets".
-	view := b.Config.View()
-	environments := view.Get("environments")
-	targets := view.Get("targets")
+	environmentsPath := structpath.NewStringKey(nil, "environments")
+	targetsPath := structpath.NewStringKey(nil, "targets")
 
 	// Return an error if both "environments" and "targets" are set.
-	if environments.IsValid() && targets.IsValid() {
+	if b.Config.Targets != nil || b.Config.IsReferenceAt(targetsPath) {
 		return diag.Errorf(
 			"both 'environments' and 'targets' are specified; only 'targets' should be used: %s",
-			environments.Location().String(),
+			b.Config.GetLocationOfExact(environmentsPath).String(),
 		)
 	}
 
 	// Rewrite "environments" to "targets" and drop the "environments" key.
-	if environments.IsValid() && !targets.IsValid() {
-		err := b.Config.Assign(structpath.NewStringKey(nil, "targets"), environments)
-		if err != nil {
-			return diag.FromErr(err)
-		}
-		return diag.FromErr(b.Config.Delete(structpath.NewStringKey(nil, "environments")))
-	}
-
+	b.Config.Targets = b.Config.Environments
+	b.Config.Environments = nil
+	b.Config.MoveMetadata(environmentsPath, targetsPath)
 	return nil
 }

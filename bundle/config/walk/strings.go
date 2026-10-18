@@ -16,6 +16,11 @@ type Mode int
 const (
 	// WithReferences visits the strings that contain a variable reference ("${").
 	WithReferences Mode = iota
+	// NonEmpty visits every non-empty string.
+	NonEmpty
+	// EmptyFields visits the struct fields with omitempty that hold an empty string
+	// and are still present: forced, or a pointer or interface holding "".
+	EmptyFields
 )
 
 // StringFunc is called for a visited string s at n. It returns a replacement and
@@ -52,6 +57,14 @@ func ResourceStrings(root *config.Root, mode Mode, fn StringFunc) {
 	stringsConfigResources(c, &ch, &root.Resources)
 }
 
+// ResourceStringsOf is [Strings] for the resource name of type typ.
+func ResourceStringsOf(root *config.Root, typ, name string, mode Mode, fn StringFunc) {
+	c := &stringsWalk{mode: mode, fn: fn}
+	n := Root(root)
+	rn := n.Child("resources")
+	stringsResource(c, &rn, &root.Resources, typ, name)
+}
+
 // VariableLookupStrings is [Strings] for the lookups of the variables
 // ("variables.*.lookup"), in the order of the variable names.
 func VariableLookupStrings(root *config.Root, mode Mode, fn StringFunc) {
@@ -76,7 +89,14 @@ type stringsWalk struct {
 }
 
 func (c *stringsWalk) match(s string) bool {
-	return strings.Contains(s, "${")
+	switch c.mode {
+	case WithReferences:
+		return strings.Contains(s, "${")
+	case NonEmpty:
+		return s != ""
+	default:
+		return false
+	}
 }
 
 // any visits the strings of a dynamic value (e.g. a variable value): the maps, slices
