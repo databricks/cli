@@ -10,15 +10,17 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/patchwheel"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structvar"
 )
 
-func createGlobError(v structvar.View, p *structpath.PathNode, message string) diag.Diagnostic {
-	// The pattern contained in v is an absolute path.
+func createGlobError(source string, locs []diag.Location, p *structpath.PathNode, message string) diag.Diagnostic {
+	var loc diag.Location
+	if len(locs) > 0 {
+		loc = locs[0]
+	}
+	// The pattern is an absolute path.
 	// Make it relative to the value's location to make it more readable.
-	source, _ := v.AsString()
-	if l := v.Location(); l.File != "" {
-		rel, err := filepath.Rel(filepath.Dir(l.File), source)
+	if loc.File != "" {
+		rel, err := filepath.Rel(filepath.Dir(loc.File), source)
 		if err == nil {
 			source = rel
 		}
@@ -27,7 +29,7 @@ func createGlobError(v structvar.View, p *structpath.PathNode, message string) d
 	return diag.Diagnostic{
 		Severity:  diag.Error,
 		Summary:   fmt.Sprintf("%s: %s", source, message),
-		Locations: []diag.Location{v.Location()},
+		Locations: []diag.Location{loc},
 		Paths:     []*structpath.PathNode{p},
 	}
 }
@@ -45,9 +47,6 @@ func (e expandGlobs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	// This path is set with the list of expanded globs when done.
 	base := structpath.NewPath(nil, "artifacts", e.name, "files")
 
-	// Pattern to match the source key in the files sequence.
-	pattern := structpath.NewPattern(nil, "artifacts", e.name, "files", structpath.AnyIndex, "source")
-
 	artifact := b.Config.Artifacts[e.name]
 	if artifact == nil {
 		return nil
@@ -57,21 +56,22 @@ func (e expandGlobs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	var output []config.ArtifactFile
 	var sources [][]int
 	var locations [][]diag.Location
-	err := structvar.ForEach(b.Config.View(), pattern, func(np *structpath.PathNode, v structvar.View) error {
-		if v.Kind() != structvar.KindString {
-			return nil
+	for index, f := range artifact.Files {
+		np := structpath.NewPath(base, index, "source")
+		locs := b.Config.GetLocationsOfExact(np)
+		// source has no omitempty: an explicit empty value is present too.
+		if f.Source == "" && len(locs) == 0 {
+			continue
 		}
-
-		index, _ := np.Parent().Index()
-		source, _ := v.AsString()
+		source := f.Source
 
 		// Expand any glob reference in files source path
 		matches, err := filepath.Glob(source)
 		if err != nil {
-			diags = diags.Append(createGlobError(v, np, err.Error()))
+			diags = diags.Append(createGlobError(source, locs, np, err.Error()))
 
 			// Drop this value from the list; this does not matter since we've raised an error anyway
-			return nil
+			continue
 		}
 
 		// Note, we're applying this for all artifact types, not just "whl".
@@ -86,26 +86,24 @@ func (e expandGlobs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 			output = append(output, artifact.Files[index])
 			sources = append(sources, []int{index})
 			locations = append(locations, nil)
-			return nil
+			continue
 		}
 
 		if len(matches) == 0 {
-			diags = diags.Append(createGlobError(v, np, "no matching files"))
+			diags = diags.Append(createGlobError(source, locs, np, "no matching files"))
 
 			// Drop this value from the list; this does not matter since we've raised an error anyway
-			return nil
+			continue
 		}
 
 		for _, match := range matches {
 			output = append(output, config.ArtifactFile{Source: match})
 			sources = append(sources, []int{index})
-			locations = append(locations, v.Locations())
+			locations = append(locations, locs)
 		}
-
-		return nil
-	})
-	if err != nil || diags.HasError() {
-		return diags.Extend(diag.FromErr(err))
+	}
+	if diags.HasError() {
+		return diags
 	}
 
 	// Set the expanded globs back into the configuration.
