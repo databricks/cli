@@ -5,13 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"reflect"
 	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/variable"
+	"github.com/databricks/cli/bundle/config/walk"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
@@ -46,17 +46,29 @@ var defaultPrefixes = []string{
 
 var artifactPath = structpath.NewPath(nil, "artifacts")
 
+// resolveScope is the part of the configuration a [resolveVariableReferences] resolves.
+type resolveScope int
+
+const (
+	// scopeConfig is the whole configuration ("resources" only if includeResources).
+	scopeConfig resolveScope = iota
+	// scopeResources is "resources".
+	scopeResources
+	// scopeVariableLookups is "variables.*.lookup", each lookup resolved separately.
+	scopeVariableLookups
+)
+
 type resolveVariableReferences struct {
 	// prefixes are top-level config keys.
 	prefixes    []string
-	pattern     *structpath.PatternNode
+	scope       resolveScope
 	lookupFn    func(structvar.View, *structpath.PathNode, *bundle.Bundle) (structvar.View, error)
 	allowPathFn func(*structpath.PathNode) bool
 	extraRounds int
 
 	// includeResources allows resolving variables in 'resources', otherwise, they are excluded.
 	//
-	// includeResources can be used with appropriate pattern to avoid resolving variables
+	// includeResources can be used with scopeResources to avoid resolving variables
 	// outside of 'resources'.
 	includeResources bool
 
@@ -76,7 +88,7 @@ func ResolveVariableReferencesOnlyResources(prefixes ...string) bundle.Mutator {
 		prefixes:         prefixes,
 		lookupFn:         lookup,
 		extraRounds:      maxResolutionRounds - 1,
-		pattern:          structpath.NewPattern(nil, "resources"),
+		scope:            scopeResources,
 		includeResources: true,
 	}
 }
@@ -95,7 +107,7 @@ func ResolveVariableReferencesWithoutResources(prefixes ...string) bundle.Mutato
 func ResolveVariableReferencesInLookup() bundle.Mutator {
 	return &resolveVariableReferences{
 		prefixes:    defaultPrefixes,
-		pattern:     structpath.NewPattern(nil, "variables", structpath.AnyKey, "lookup"),
+		scope:       scopeVariableLookups,
 		lookupFn:    lookupForVariables,
 		extraRounds: maxResolutionRounds - 1,
 	}
@@ -225,56 +237,75 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 }
 
 // hasReferencesToResolve reports whether the configuration in scope of this mutator
-// has a reference with one of the prefixes. It is conservative: the scope is all of
-// the configuration outside "resources" (or only "resources"), regardless of the pattern.
-// Like resolution itself, it records whether "artifacts" is referenced.
+// has a reference with one of the prefixes. Like resolution itself, it records whether
+// "artifacts" is referenced.
 func (m *resolveVariableReferences) hasReferencesToResolve(b *bundle.Bundle, prefixes []*structpath.PathNode, varPath *structpath.PathNode) bool {
-	onlyResources := m.includeResources && m.pattern != nil
-	inScope := func(path string) bool {
-		isResources := path == "resources" || strings.HasPrefix(path, "resources.")
-		return (m.includeResources || !isResources) && (!onlyResources || isResources)
-	}
-
 	found := false
-	check := func(s string) {
-		ref, ok := structvar.NewRef(s)
-		if !ok {
-			return
-		}
-		for _, r := range ref.References() {
-			path, err := structpath.ParsePath(r)
-			if err != nil {
-				// Let resolution report it.
-				found = true
-				return
-			}
-			if path.HasPrefix(varPath) {
-				path = structpath.Join(structpath.NewStringKey(nil, "variables"), path.SkipPrefix(1).AsSlice()...)
-			}
-			if path.HasPrefix(artifactPath) {
-				m.artifactsReferenceUsed = true
-			}
-			if slices.ContainsFunc(prefixes, path.HasPrefix) {
-				found = true
-			}
-		}
-	}
-
-	root := reflect.ValueOf(&b.Config).Elem()
-	rootType := root.Type()
-	for i := range rootType.NumField() {
-		name, _, _ := strings.Cut(rootType.Field(i).Tag.Get("json"), ",")
-		if name == "" || name == "-" || !inScope(name) {
-			continue
-		}
-		walkStrings(root.Field(i), check)
-	}
+	m.walkStrings(&b.Config, func(_ *walk.Node, s string) (string, bool) {
+		// Every string is checked: each can record the "artifacts" reference.
+		found = m.referencesPrefix(s, prefixes, varPath) || found
+		return "", false
+	})
 	for path, ref := range b.Config.References() {
-		if inScope(path.String()) {
-			check(ref)
+		if m.inScope(path) {
+			found = m.referencesPrefix(ref, prefixes, varPath) || found
 		}
 	}
 	return found
+}
+
+// referencesPrefix reports whether s has a reference with one of the prefixes (or one
+// that does not parse, to let resolution report it), and records an "artifacts" reference.
+func (m *resolveVariableReferences) referencesPrefix(s string, prefixes []*structpath.PathNode, varPath *structpath.PathNode) bool {
+	ref, ok := structvar.NewRef(s)
+	if !ok {
+		return false
+	}
+	found := false
+	for _, r := range ref.References() {
+		path, err := structpath.ParsePath(r)
+		if err != nil {
+			return true
+		}
+		if path.HasPrefix(varPath) {
+			path = structpath.Join(structpath.NewStringKey(nil, "variables"), path.SkipPrefix(1).AsSlice()...)
+		}
+		if path.HasPrefix(artifactPath) {
+			m.artifactsReferenceUsed = true
+		}
+		if slices.ContainsFunc(prefixes, path.HasPrefix) {
+			found = true
+		}
+	}
+	return found
+}
+
+// walkStrings calls fn for the strings with references in the scope of this mutator.
+func (m *resolveVariableReferences) walkStrings(r *config.Root, fn walk.StringFunc) {
+	switch m.scope {
+	case scopeConfig:
+		if m.includeResources {
+			walk.Strings(r, walk.WithReferences, fn)
+		} else {
+			walk.StringsWithoutResources(r, walk.WithReferences, fn)
+		}
+	case scopeResources:
+		walk.ResourceStrings(r, walk.WithReferences, fn)
+	case scopeVariableLookups:
+		walk.VariableLookupStrings(r, walk.WithReferences, fn)
+	}
+}
+
+// inScope reports whether path is in the part of the configuration this mutator resolves.
+func (m *resolveVariableReferences) inScope(path *structpath.PathNode) bool {
+	switch m.scope {
+	case scopeResources:
+		return path.KeyAt(0) == "resources"
+	case scopeVariableLookups:
+		return path.KeyAt(0) == "variables" && path.KeyAt(2) == "lookup"
+	default:
+		return m.includeResources || path.KeyAt(0) != "resources"
+	}
 }
 
 func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []*structpath.PathNode, varPath *structpath.PathNode) (bool, diag.Diagnostics) {
@@ -310,9 +341,9 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []*st
 		return structvar.View{}, structvar.ErrSkipResolution
 	}
 
-	// Resolve the references in each value matching the pattern (the whole configuration
-	// if the pattern is nil). Template keys are relative to that value, like the paths
-	// in cycle errors. The results are applied after all of them are resolved.
+	// Resolve the references in each value of the scope: the whole configuration,
+	// "resources", or each variable lookup. Template keys are relative to that value, like
+	// the paths in cycle errors. The results are applied after all of them are resolved.
 	type update struct {
 		path  *structpath.PathNode
 		value structvar.View
@@ -322,9 +353,9 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []*st
 		templates := map[string]structvar.Template{}
 		paths := map[string]*structpath.PathNode{}
 		for _, ref := range refs {
-			key := ref.path.String()
+			key := ref.path.SkipPrefix(ref.base.Len()).String()
 			templates[key] = structvar.Template{Value: ref.value, Locations: ref.locs}
-			paths[key] = structpath.Join(p, ref.path.AsSlice()...)
+			paths[key] = ref.path
 		}
 		out, err := structvar.Resolve(templates, lookupFn)
 		if err != nil {
@@ -337,15 +368,10 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []*st
 	}
 
 	var err error
-	if m.pattern == nil {
-		err = resolveIn(nil, m.referencesInScope(root))
-	} else {
-		err = structvar.ForEach(root, m.pattern, func(np *structpath.PathNode, v structvar.View) error {
-			if !m.inScope(np) {
-				return nil
-			}
-			return resolveIn(np, collectReferenceStrings(v))
-		})
+	for _, refs := range m.referenceStrings(&b.Config) {
+		if err = resolveIn(refs[0].base, refs); err != nil {
+			break
+		}
 	}
 	if err != nil {
 		return hasUpdates, diags.Extend(resolveErrorDiags(err))
@@ -361,52 +387,55 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []*st
 	return hasUpdates, diags
 }
 
-// inScope reports whether path is in the part of the configuration this mutator resolves.
-func (m *resolveVariableReferences) inScope(path *structpath.PathNode) bool {
-	return m.includeResources || path.KeyAt(0) != "resources"
-}
-
-// referencesInScope returns the reference strings in the whole configuration,
-// excluding "resources" unless resources are included.
-func (m *resolveVariableReferences) referencesInScope(root structvar.View) []referenceString {
-	if m.includeResources {
-		return collectReferenceStrings(root)
-	}
-	var out []referenceString
-	for k, v := range root.MapItems() {
-		if !m.inScope(structpath.NewStringKey(nil, k)) {
-			continue
-		}
-		p := structpath.NewStringKey(nil, k)
-		for _, ref := range collectReferenceStrings(v) {
-			ref.path = structpath.Join(p, ref.path.AsSlice()...)
-			out = append(out, ref)
-		}
-	}
-	return out
-}
-
-// referenceString is a string with a variable reference at path (relative to the
-// value being resolved).
+// referenceString is a string with a variable reference at path. Strings with the same
+// base (the scope value they are in) are resolved together.
 type referenceString struct {
+	base  *structpath.PathNode
 	path  *structpath.PathNode
 	value string
 	locs  []diag.Location
 }
 
-// collectReferenceStrings returns the strings in v that contain variable references.
-// Pure references in fields that cannot hold a string are strings in the view.
-func collectReferenceStrings(v structvar.View) []referenceString {
+// referenceStrings returns the strings with variable references in the scope of this
+// mutator, grouped by base in the order of the bases. Pure references in fields that
+// cannot hold a string are included as their reference strings.
+func (m *resolveVariableReferences) referenceStrings(r *config.Root) [][]referenceString {
 	var out []referenceString
-	_ = structvar.Walk(v, func(p *structpath.PathNode, v structvar.View) error {
-		if s, ok := v.AsString(); ok {
-			if _, ok := structvar.NewRef(s); ok {
-				out = append(out, referenceString{path: p, value: s, locs: v.Locations()})
-			}
+	m.walkStrings(r, func(n *walk.Node, s string) (string, bool) {
+		if _, ok := structvar.NewRef(s); ok {
+			out = append(out, referenceString{path: n.Path(), value: s, locs: n.Locations().Get()})
 		}
-		return nil
+		return "", false
 	})
-	return out
+	for path, ref := range r.References() {
+		if m.inScope(path) {
+			out = append(out, referenceString{path: path, value: ref, locs: r.GetLocationsOfExact(path)})
+		}
+	}
+
+	groups := map[string][]referenceString{}
+	for _, ref := range out {
+		ref.base = m.base(ref.path)
+		key := ref.base.String()
+		groups[key] = append(groups[key], ref)
+	}
+	result := make([][]referenceString, 0, len(groups))
+	for _, key := range slices.Sorted(maps.Keys(groups)) {
+		result = append(result, groups[key])
+	}
+	return result
+}
+
+// base returns the scope value path is in.
+func (m *resolveVariableReferences) base(path *structpath.PathNode) *structpath.PathNode {
+	switch m.scope {
+	case scopeResources:
+		return path.Prefix(1)
+	case scopeVariableLookups:
+		return path.Prefix(3)
+	default:
+		return nil
+	}
 }
 
 // resolveErrorDiags renders "did you mean" suggestions as a diagnostic Detail so

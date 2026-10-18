@@ -84,6 +84,10 @@ func (g *stringsGen) emitStringsStruct(t reflect.Type) {
 			continue
 		}
 		expr, guards := selector("v", t, f.Index)
+		if t == reflect.TypeFor[config.Root]() && f.Key == "resources" {
+			// See walk.StringsWithoutResources.
+			guards = append(guards, "!c.skipResources")
+		}
 		if len(guards) > 0 {
 			fmt.Fprintf(&g.out, "\tif %s {\n", strings.Join(guards, " && "))
 		}
