@@ -18,7 +18,6 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 // translateOptions control path translation behavior.
@@ -315,22 +314,22 @@ func (t *translateContext) rewriteValue(ctx context.Context, p *structpath.PathN
 	return out, nil
 }
 
-// setRewritten stores the rewritten path at p (keeping its locations) unless the path was not rewritten.
-func (t *translateContext) setRewritten(p *structpath.PathNode, out string) error {
-	if out == "" {
-		return nil
+// setRewritten stores the rewritten path in s (the value keeps its locations) unless
+// the path was not rewritten.
+func setRewritten(s *string, out string) {
+	if out != "" {
+		*s = out
 	}
-	return t.b.Config.Set(p, out)
 }
 
-// rewriteAt rewrites the string value v found at p relative to the bundle root and stores the result.
-func (t *translateContext) rewriteAt(ctx context.Context, p *structpath.PathNode, v structvar.View, opts translateOptions) error {
-	input, _ := v.AsString()
-	out, err := t.rewriteValue(ctx, p, input, t.b.BundleRootPath, opts)
+// rewriteAt rewrites the path value s found at p relative to the bundle root.
+func (t *translateContext) rewriteAt(ctx context.Context, p *structpath.PathNode, s *string, opts translateOptions) error {
+	out, err := t.rewriteValue(ctx, p, *s, t.b.BundleRootPath, opts)
 	if err != nil {
 		return err
 	}
-	return t.setRewritten(p, out)
+	setRewritten(s, out)
+	return nil
 }
 
 func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContext, translations []translateFunc) diag.Diagnostics {
@@ -354,7 +353,7 @@ func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContex
 	}
 
 	for _, fn := range translations {
-		if err := fn(ctx, b.Config.View()); err != nil {
+		if err := fn(ctx, &b.Config); err != nil {
 			return diag.FromErr(err)
 		}
 	}
