@@ -39,7 +39,7 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 	for _, artifactName := range slices.Sorted(maps.Keys(b.Config.Artifacts)) {
 		artifact := b.Config.Artifacts[artifactName]
 		if artifact == nil {
-			l := b.Config.NearestLocation(structpath.NewPath(nil, "artifacts", artifactName))
+			l := b.Config.GetLocationOf(structpath.NewPath(nil, "artifacts", artifactName))
 			logdiag.LogDiag(ctx, diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "Artifact not properly configured",
@@ -62,7 +62,7 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 			logdiag.LogError(ctx, fmt.Errorf("artifact %q: a tgz artifact needs a `files` entry naming the output path", artifactName))
 		}
 
-		l := b.Config.ExactLocation(structpath.NewPath(nil, "artifacts", artifactName))
+		l := b.Config.GetLocationOfExact(structpath.NewPath(nil, "artifacts", artifactName))
 		dirPath := filepath.Dir(l.File)
 
 		// Check if source paths are absolute, if not, make them absolute

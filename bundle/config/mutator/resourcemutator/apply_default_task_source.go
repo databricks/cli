@@ -89,7 +89,7 @@ func setGitTaskSource(b *bundle.Bundle, taskPath *structpath.PathNode, task *job
 		// An explicit `source: ""` is set by the user, although the typed value is
 		// empty; not every task type has ForceSendFields to record it, but it is
 		// defined in the configuration.
-		if *s.source != "" || b.Config.ExactLocation(structpath.NewPath(taskPath, s.path...)).File != "" {
+		if *s.source != "" || b.Config.GetLocationOfExact(structpath.NewPath(taskPath, s.path...)).File != "" {
 			continue
 		}
 		*s.source = jobs.SourceGit

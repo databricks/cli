@@ -38,7 +38,7 @@ func (m *validateVolumePath) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 				Severity:  diag.Error,
 				Summary:   fmt.Sprintf("%s %s starts with /Volumes. /Volumes can only be used with workspace.artifact_path.", check.configPath, check.path),
 				Detail:    "For more information, see https://docs.databricks.com/aws/en/dev-tools/bundles/settings#workspace",
-				Locations: b.Config.NearestLocations(check.configPath),
+				Locations: b.Config.GetLocationsOf(check.configPath),
 				Paths:     []*structpath.PathNode{check.configPath},
 			})
 

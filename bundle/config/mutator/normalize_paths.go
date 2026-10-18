@@ -48,7 +48,7 @@ func (a normalizePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnost
 			return nil
 		}
 
-		newValue, err := normalizePath(*s, b.Config.ExactLocation(path), b.BundleRootPath)
+		newValue, err := normalizePath(*s, b.Config.GetLocationOfExact(path), b.BundleRootPath)
 		if err != nil {
 			return err
 		}

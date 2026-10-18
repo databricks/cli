@@ -386,7 +386,7 @@ func TestRunAsIdentities(t *testing.T) {
 			diags = bundle.Apply(t.Context(), b, SetRunAs())
 			if tc.wantError {
 				require.ErrorContains(t, diags.Error(), "run_as section must specify exactly one non-empty identity: user_name, service_principal_name, or group_name")
-				assert.Equal(t, []diag.Location{r.NearestLocation(structpath.NewPath(nil, "run_as"))}, diags[0].Locations)
+				assert.Equal(t, []diag.Location{r.GetLocationOf(structpath.NewPath(nil, "run_as"))}, diags[0].Locations)
 			} else {
 				require.NoError(t, diags.Error())
 			}

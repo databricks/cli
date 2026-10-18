@@ -80,7 +80,7 @@ func TestPrependWorkspacePrefixPreservesLocations(t *testing.T) {
 	diags := bundle.Apply(t.Context(), b, PrependWorkspacePrefix())
 	require.Empty(t, diags)
 	require.Equal(t, "/Workspace/Users/test", b.Config.Workspace.RootPath)
-	require.Equal(t, locations, b.Config.NearestLocations(structpath.NewPath(nil, "workspace", "root_path")))
+	require.Equal(t, locations, b.Config.GetLocationsOf(structpath.NewPath(nil, "workspace", "root_path")))
 }
 
 func TestPrependWorkspaceForDefaultConfig(t *testing.T) {
