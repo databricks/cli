@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type selectTarget struct {
@@ -59,8 +60,12 @@ func (m *selectTarget) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnosti
 
 	// Cleanup the original targets and environments sections since they
 	// show up in the JSON output of the 'summary' and 'validate' commands.
-	b.Config.Targets = nil
-	b.Config.Environments = nil
+	// Delete (not just clear) them so their locations go too.
+	for _, k := range []string{"targets", "environments"} {
+		if err := b.Config.Delete(structpath.NewPath(nil, k)); err != nil {
+			return diag.FromErr(err)
+		}
+	}
 
 	return nil
 }
