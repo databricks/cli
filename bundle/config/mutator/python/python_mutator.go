@@ -158,33 +158,30 @@ func getOpts(b *bundle.Bundle, phase phase) (opts, error) {
 //
 // Later version of Python package should reject 'experimental.python' unless 'python' section
 // is set to equivalent value, and after that reject 'experimental.python' altogether.
-func applyBackwardsCompatibilityFixes(b *bundle.Bundle) error {
-	root := b.Config.View()
-
+func applyBackwardsCompatibilityFixes(b *bundle.Bundle) {
 	// if 'python' section doesn't exist, nothing to do
-	pythonValue := root.Get("python")
-	if !pythonValue.IsValid() {
-		return nil
+	if reflect.DeepEqual(b.Config.Python, config.Python{}) {
+		return
 	}
 
 	// if 'experimental.python' section exists, nothing to do
-	experimentalPythonPath := structpath.NewPath(nil, "experimental", "python")
-	if root.Lookup(experimentalPythonPath).IsValid() {
-		return nil
+	locs := b.Config.LocationTree()
+	experimental := b.Config.Experimental
+	if experimental != nil && (!reflect.DeepEqual(experimental.Python, config.Python{}) || locs.Key("experimental").Key("python") != nil) {
+		return
 	}
 
-	// move 'python' section to 'experimental.python' (creating 'experimental' if needed)
-	if err := b.Config.Assign(experimentalPythonPath, pythonValue); err != nil {
-		return fmt.Errorf("failed to set 'experimental.python' section: %w", err)
+	// copy 'python' section to 'experimental.python' (creating 'experimental' if needed)
+	if experimental == nil {
+		experimental = &config.Experimental{}
+		b.Config.Experimental = experimental
 	}
-	return nil
+	experimental.Python = b.Config.Python
+	b.Config.SetLocationTree(structpath.NewPath(nil, "experimental", "python"), locs.Key("python"))
 }
 
 func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	err := applyBackwardsCompatibilityFixes(b)
-	if err != nil {
-		return diag.FromErr(fmt.Errorf("failed to apply backwards compatibility fixes: %w", err))
-	}
+	applyBackwardsCompatibilityFixes(b)
 
 	opts, err := getOpts(b, m.phase)
 	if err != nil {
@@ -255,7 +252,7 @@ func (m *pythonMutator) run(ctx context.Context, b *bundle.Bundle, opts opts, au
 		return result, diags
 	}
 
-	plan, result, err := applyPythonOutput(leftRoot, rightRoot.View())
+	plan, result, err := applyPythonOutput(&b.Config, rightRoot)
 	if err != nil {
 		return result, diags.Extend(diag.FromErr(fmt.Errorf("internal error when merging output of Python mutator: %w", err)))
 	}
