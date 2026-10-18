@@ -2,15 +2,16 @@ package resourcemutator
 
 import (
 	"context"
-	"fmt"
+	"errors"
+	"maps"
 	"path/filepath"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/patchwheel"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
@@ -76,25 +77,27 @@ func (m *expandPipelineGlobPaths) expandLibrary(ctx context.Context, dir string,
 }
 
 func (m *expandPipelineGlobPaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	p := structpath.NewPattern(nil, "resources", "pipelines", structpath.AnyKey, "libraries")
-
-	// Visit each pipeline's "libraries" field and expand any glob patterns.
-	err := structvar.ForEach(b.Config.View(), p, func(path *structpath.PathNode, value structvar.View) error {
-		if value.Kind() != structvar.KindSequence {
-			return fmt.Errorf("expected sequence, got %s", value.Kind())
+	pls := b.Config.Resources.Pipelines
+	for _, name := range slices.Sorted(maps.Keys(pls)) {
+		pipeline := pls[name]
+		if pipeline == nil {
+			continue
 		}
-
-		pipeline := b.Config.Resources.Pipelines[path.KeyAt(2)]
+		path := structpath.NewPath(nil, "resources", "pipelines", name, "libraries")
+		if b.Config.IsReferenceAt(path) {
+			return diag.FromErr(errors.New("expected sequence, got string"))
+		}
 		if len(pipeline.Libraries) == 0 {
-			return nil
+			continue
 		}
 
+		// Expand any glob patterns in the pipeline's libraries.
 		var expanded []pipelines.PipelineLibrary
 		var sources [][]int
 		for i, lib := range pipeline.Libraries {
 			libs, err := m.expandLibrary(ctx, b.BundleRootPath, lib)
 			if err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 
 			expanded = append(expanded, libs...)
@@ -105,10 +108,9 @@ func (m *expandPipelineGlobPaths) Apply(ctx context.Context, b *bundle.Bundle) d
 
 		pipeline.Libraries = expanded
 		b.Config.UpdateSequence(path, sources)
-		return nil
-	})
+	}
 
-	return diag.FromErr(err)
+	return nil
 }
 
 func (*expandPipelineGlobPaths) Name() string {

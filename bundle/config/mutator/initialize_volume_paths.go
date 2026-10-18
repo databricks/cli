@@ -3,6 +3,8 @@ package mutator
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -35,24 +37,30 @@ func (m *initializeVolumePaths) Apply(_ context.Context, b *bundle.Bundle) diag.
 		return nil
 	}
 
+	// References are resolved against the configuration tree (they can point anywhere).
 	view := b.Config.View()
-	pattern := structpath.NewPattern(nil, "resources", "volumes", structpath.AnyKey)
-	err := structvar.ForEach(view, pattern, func(p *structpath.PathNode, v structvar.View) error {
+	volumes := b.Config.Resources.Volumes
+	for _, name := range slices.Sorted(maps.Keys(volumes)) {
+		v := volumes[name]
+		if v == nil {
+			continue
+		}
+		p := structpath.NewPath(nil, "resources", "volumes", name)
+
 		// volume_path is computed and read-only; reject a user-provided value instead of overwriting it.
-		if existing, ok := v.Get("volume_path").AsString(); ok && existing != "" {
-			return fmt.Errorf("%s.volume_path is computed and read-only; remove it from the configuration", p.String())
+		if v.VolumePath != "" {
+			return diag.FromErr(fmt.Errorf("%s.volume_path is computed and read-only; remove it from the configuration", p.String()))
 		}
 
 		// Resolve references to compute the path only; the field values are left untouched.
-		vol := *b.Config.Resources.Volumes[p.KeyAt(2)]
+		vol := *v
 		vol.CatalogName = resolveResourceReference(view, vol.CatalogName)
 		vol.SchemaName = resolveResourceReference(view, vol.SchemaName)
 		vol.Name = resolveResourceReference(view, vol.Name)
 
-		return b.Config.Set(structpath.NewStringKey(p, "volume_path"), vol.ComputeVolumePath())
-	})
-	if err != nil {
-		return diag.FromErr(err)
+		if err := b.Config.Set(structpath.NewStringKey(p, "volume_path"), vol.ComputeVolumePath()); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 	return nil
 }

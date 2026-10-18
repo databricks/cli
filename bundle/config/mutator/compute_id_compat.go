@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type computeIdToClusterId struct{}
@@ -33,40 +32,37 @@ func (m *computeIdToClusterId) Apply(ctx context.Context, b *bundle.Bundle) diag
 	}
 
 	// The "compute_id" key is set; rewrite it to "cluster_id".
-	view := b.Config.View()
-	bundlePath := structpath.NewStringKey(nil, "bundle")
-	diags = diags.Extend(rewriteComputeIdToClusterId(b, bundlePath, view.Get("bundle")))
+	b2 := &b.Config.Bundle
+	diags = diags.Extend(rewriteComputeIdToClusterId(b, structpath.NewStringKey(nil, "bundle"), &b2.ComputeId, &b2.ClusterId))
 
 	// Check if the "compute_id" key is set in any target overrides.
-	err := structvar.ForEach(view, structpath.NewPattern(nil, "targets", structpath.AnyKey), func(p *structpath.PathNode, v structvar.View) error {
-		diags = diags.Extend(rewriteComputeIdToClusterId(b, p, v))
-		return nil
-	})
-
-	diags = diags.Extend(diag.FromErr(err))
+	for _, name := range slices.Sorted(maps.Keys(b.Config.Targets)) {
+		if t := b.Config.Targets[name]; t != nil {
+			diags = diags.Extend(rewriteComputeIdToClusterId(b, structpath.NewPath(nil, "targets", name), &t.ComputeId, &t.ClusterId))
+		}
+	}
 	return diags
 }
 
-// rewriteComputeIdToClusterId rewrites the "compute_id" key of the map v at path p to "cluster_id".
-func rewriteComputeIdToClusterId(b *bundle.Bundle, p *structpath.PathNode, v structvar.View) diag.Diagnostics {
-	var diags diag.Diagnostics
-	computeId := v.Get("compute_id")
+// rewriteComputeIdToClusterId moves the compute_id of the value at p to its cluster_id,
+// with its locations.
+func rewriteComputeIdToClusterId(b *bundle.Bundle, p *structpath.PathNode, computeId, clusterId *string) diag.Diagnostics {
 	// If the "compute_id" key is not set, we don't need to do anything.
-	if !computeId.IsValid() {
+	if *computeId == "" {
 		return nil
 	}
 
-	diags = diags.Append(diag.Diagnostic{
+	computeIdPath := structpath.NewStringKey(p, "compute_id")
+	locs := b.Config.GetLocationsOfExact(computeIdPath)
+	diags := diag.Diagnostics{{
 		Severity:  diag.Warning,
 		Summary:   "compute_id is deprecated, please use cluster_id instead",
-		Locations: computeId.Locations(),
-		Paths:     []*structpath.PathNode{structpath.NewStringKey(p, "compute_id")},
-	})
+		Locations: locs,
+		Paths:     []*structpath.PathNode{computeIdPath},
+	}}
 
-	err := b.Config.Assign(structpath.NewStringKey(p, "cluster_id"), computeId)
-	if err != nil {
-		return diags.Extend(diag.FromErr(err))
-	}
+	*clusterId = *computeId
+	b.Config.SetLocations(structpath.NewStringKey(p, "cluster_id"), locs)
 	// Drop the "compute_id" key.
-	return diags.Extend(diag.FromErr(b.Config.Delete(structpath.NewStringKey(p, "compute_id"))))
+	return diags.Extend(diag.FromErr(b.Config.Delete(computeIdPath)))
 }
