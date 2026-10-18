@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/config/variable"
+	"github.com/databricks/cli/bundle/config/walk"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -266,2934 +267,2934 @@ var enumValues98 = []string{"RATE_LIMIT_RENEWAL_PERIOD_HOUR", "RATE_LIMIT_RENEWA
 
 var enumValues99 = []string{"endpoint", "service_principal", "user", "user_group"}
 
-func enumConfigRoot(w *walker, n *node, v *config.Root) {
+func enumConfigRoot(w *walker, n *walk.Node, v *config.Root) {
 	if v == nil {
 		return
 	}
 	if len(v.Artifacts) > 0 {
-		c := n.child("artifacts")
+		c := n.Child("artifacts")
 		for k, x := range v.Artifacts {
-			e := c.child(k)
+			e := c.Child(k)
 			enumConfigArtifact(w, &e, x)
 		}
 	}
 	if len(v.Permissions) > 0 {
-		c := n.child("permissions")
+		c := n.Child("permissions")
 		for i := range v.Permissions {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumResourcesPermission(w, &e, &v.Permissions[i])
 		}
 	}
-	if x := &v.Resources; !isZeroStruct(x) || n.locs.Key("resources") != nil {
-		c := n.child("resources")
+	if x := &v.Resources; !isZeroStruct(x) || n.Written("resources") {
+		c := n.Child("resources")
 		enumConfigResources(w, &c, x)
 	}
 	if len(v.Variables) > 0 {
-		c := n.child("variables")
+		c := n.Child("variables")
 		for k, x := range v.Variables {
-			e := c.child(k)
+			e := c.Child(k)
 			enumVariableVariable(w, &e, x)
 		}
 	}
 }
 
-func enumConfigArtifact(w *walker, n *node, v *config.Artifact) {
+func enumConfigArtifact(w *walker, n *walk.Node, v *config.Artifact) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Executable); s != "" {
-		c := n.child("executable")
+		c := n.Child("executable")
 		w.enumValue(&c, s, enumValues0)
 	}
 	if s := string(v.Type); s != "" {
-		c := n.child("type")
+		c := n.Child("type")
 		w.enumValue(&c, s, enumValues1)
 	}
 }
 
-func enumResourcesPermission(w *walker, n *node, v *resources.Permission) {
+func enumResourcesPermission(w *walker, n *walk.Node, v *resources.Permission) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Level); s != "" {
-		c := n.child("level")
+		c := n.Child("level")
 		w.enumValue(&c, s, enumValues2)
 	}
 }
 
-func enumConfigResources(w *walker, n *node, v *config.Resources) {
+func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if v == nil {
 		return
 	}
 	if len(v.Alerts) > 0 {
-		c := n.child("alerts")
+		c := n.Child("alerts")
 		for k, x := range v.Alerts {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesAlert(w, &e, x)
 		}
 	}
 	if len(v.Apps) > 0 {
-		c := n.child("apps")
+		c := n.Child("apps")
 		for k, x := range v.Apps {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesApp(w, &e, x)
 		}
 	}
 	if len(v.Catalogs) > 0 {
-		c := n.child("catalogs")
+		c := n.Child("catalogs")
 		for k, x := range v.Catalogs {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesCatalog(w, &e, x)
 		}
 	}
 	if len(v.ClusterPolicies) > 0 {
-		c := n.child("cluster_policies")
+		c := n.Child("cluster_policies")
 		for k, x := range v.ClusterPolicies {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesClusterPolicy(w, &e, x)
 		}
 	}
 	if len(v.Clusters) > 0 {
-		c := n.child("clusters")
+		c := n.Child("clusters")
 		for k, x := range v.Clusters {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesCluster(w, &e, x)
 		}
 	}
 	if len(v.Dashboards) > 0 {
-		c := n.child("dashboards")
+		c := n.Child("dashboards")
 		for k, x := range v.Dashboards {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesDashboard(w, &e, x)
 		}
 	}
 	if len(v.DatabaseInstances) > 0 {
-		c := n.child("database_instances")
+		c := n.Child("database_instances")
 		for k, x := range v.DatabaseInstances {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesDatabaseInstance(w, &e, x)
 		}
 	}
 	if len(v.Experiments) > 0 {
-		c := n.child("experiments")
+		c := n.Child("experiments")
 		for k, x := range v.Experiments {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesMlflowExperiment(w, &e, x)
 		}
 	}
 	if len(v.ExternalLocations) > 0 {
-		c := n.child("external_locations")
+		c := n.Child("external_locations")
 		for k, x := range v.ExternalLocations {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesExternalLocation(w, &e, x)
 		}
 	}
 	if len(v.GenieSpaces) > 0 {
-		c := n.child("genie_spaces")
+		c := n.Child("genie_spaces")
 		for k, x := range v.GenieSpaces {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesGenieSpace(w, &e, x)
 		}
 	}
 	if len(v.InstancePools) > 0 {
-		c := n.child("instance_pools")
+		c := n.Child("instance_pools")
 		for k, x := range v.InstancePools {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesInstancePool(w, &e, x)
 		}
 	}
 	if len(v.JobRuns) > 0 {
-		c := n.child("job_runs")
+		c := n.Child("job_runs")
 		for k, x := range v.JobRuns {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesJobRun(w, &e, x)
 		}
 	}
 	if len(v.Jobs) > 0 {
-		c := n.child("jobs")
+		c := n.Child("jobs")
 		for k, x := range v.Jobs {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesJob(w, &e, x)
 		}
 	}
 	if len(v.McpServices) > 0 {
-		c := n.child("mcp_services")
+		c := n.Child("mcp_services")
 		for k, x := range v.McpServices {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesMcpService(w, &e, x)
 		}
 	}
 	if len(v.ModelProviderServices) > 0 {
-		c := n.child("model_provider_services")
+		c := n.Child("model_provider_services")
 		for k, x := range v.ModelProviderServices {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesModelProviderService(w, &e, x)
 		}
 	}
 	if len(v.ModelServices) > 0 {
-		c := n.child("model_services")
+		c := n.Child("model_services")
 		for k, x := range v.ModelServices {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesModelService(w, &e, x)
 		}
 	}
 	if len(v.ModelServingEndpoints) > 0 {
-		c := n.child("model_serving_endpoints")
+		c := n.Child("model_serving_endpoints")
 		for k, x := range v.ModelServingEndpoints {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesModelServingEndpoint(w, &e, x)
 		}
 	}
 	if len(v.Models) > 0 {
-		c := n.child("models")
+		c := n.Child("models")
 		for k, x := range v.Models {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesMlflowModel(w, &e, x)
 		}
 	}
 	if len(v.Pipelines) > 0 {
-		c := n.child("pipelines")
+		c := n.Child("pipelines")
 		for k, x := range v.Pipelines {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesPipeline(w, &e, x)
 		}
 	}
 	if len(v.PostgresEndpoints) > 0 {
-		c := n.child("postgres_endpoints")
+		c := n.Child("postgres_endpoints")
 		for k, x := range v.PostgresEndpoints {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesPostgresEndpoint(w, &e, x)
 		}
 	}
 	if len(v.PostgresProjects) > 0 {
-		c := n.child("postgres_projects")
+		c := n.Child("postgres_projects")
 		for k, x := range v.PostgresProjects {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesPostgresProject(w, &e, x)
 		}
 	}
 	if len(v.PostgresRoles) > 0 {
-		c := n.child("postgres_roles")
+		c := n.Child("postgres_roles")
 		for k, x := range v.PostgresRoles {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesPostgresRole(w, &e, x)
 		}
 	}
 	if len(v.PostgresSnapshotSchedules) > 0 {
-		c := n.child("postgres_snapshot_schedules")
+		c := n.Child("postgres_snapshot_schedules")
 		for k, x := range v.PostgresSnapshotSchedules {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesPostgresSnapshotSchedule(w, &e, x)
 		}
 	}
 	if len(v.PostgresSyncedTables) > 0 {
-		c := n.child("postgres_synced_tables")
+		c := n.Child("postgres_synced_tables")
 		for k, x := range v.PostgresSyncedTables {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesPostgresSyncedTable(w, &e, x)
 		}
 	}
 	if len(v.QualityMonitors) > 0 {
-		c := n.child("quality_monitors")
+		c := n.Child("quality_monitors")
 		for k, x := range v.QualityMonitors {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesQualityMonitor(w, &e, x)
 		}
 	}
 	if len(v.RegisteredModels) > 0 {
-		c := n.child("registered_models")
+		c := n.Child("registered_models")
 		for k, x := range v.RegisteredModels {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesRegisteredModel(w, &e, x)
 		}
 	}
 	if len(v.Schemas) > 0 {
-		c := n.child("schemas")
+		c := n.Child("schemas")
 		for k, x := range v.Schemas {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesSchema(w, &e, x)
 		}
 	}
 	if len(v.SecretScopes) > 0 {
-		c := n.child("secret_scopes")
+		c := n.Child("secret_scopes")
 		for k, x := range v.SecretScopes {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesSecretScope(w, &e, x)
 		}
 	}
 	if len(v.Secrets) > 0 {
-		c := n.child("secrets")
+		c := n.Child("secrets")
 		for k, x := range v.Secrets {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesSecret(w, &e, x)
 		}
 	}
 	if len(v.SqlWarehouses) > 0 {
-		c := n.child("sql_warehouses")
+		c := n.Child("sql_warehouses")
 		for k, x := range v.SqlWarehouses {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesSqlWarehouse(w, &e, x)
 		}
 	}
 	if len(v.SyncedDatabaseTables) > 0 {
-		c := n.child("synced_database_tables")
+		c := n.Child("synced_database_tables")
 		for k, x := range v.SyncedDatabaseTables {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesSyncedDatabaseTable(w, &e, x)
 		}
 	}
 	if len(v.VectorSearchEndpoints) > 0 {
-		c := n.child("vector_search_endpoints")
+		c := n.Child("vector_search_endpoints")
 		for k, x := range v.VectorSearchEndpoints {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesVectorSearchEndpoint(w, &e, x)
 		}
 	}
 	if len(v.VectorSearchIndexes) > 0 {
-		c := n.child("vector_search_indexes")
+		c := n.Child("vector_search_indexes")
 		for k, x := range v.VectorSearchIndexes {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesVectorSearchIndex(w, &e, x)
 		}
 	}
 	if len(v.Volumes) > 0 {
-		c := n.child("volumes")
+		c := n.Child("volumes")
 		for k, x := range v.Volumes {
-			e := c.child(k)
+			e := c.Child(k)
 			enumResourcesVolume(w, &e, x)
 		}
 	}
 }
 
-func enumVariableVariable(w *walker, n *node, v *variable.Variable) {
+func enumVariableVariable(w *walker, n *walk.Node, v *variable.Variable) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Type); s != "" {
-		c := n.child("type")
+		c := n.Child("type")
 		w.enumValue(&c, s, enumValues3)
 	}
 }
 
-func enumResourcesAlert(w *walker, n *node, v *resources.Alert) {
+func enumResourcesAlert(w *walker, n *walk.Node, v *resources.Alert) {
 	if v == nil {
 		return
 	}
 	if s := string(v.AlertV2.CustomTemplateFormat); s != "" || forced(v.AlertV2.ForceSendFields, "CustomTemplateFormat") {
-		c := n.child("custom_template_format")
+		c := n.Child("custom_template_format")
 		w.enumValue(&c, s, enumValues4)
 	}
-	if x := &v.AlertV2.Evaluation; !isZeroStruct(x) || forced(v.AlertV2.ForceSendFields, "Evaluation") || n.locs.Key("evaluation") != nil {
-		c := n.child("evaluation")
+	if x := &v.AlertV2.Evaluation; !isZeroStruct(x) || forced(v.AlertV2.ForceSendFields, "Evaluation") || n.Written("evaluation") {
+		c := n.Child("evaluation")
 		enumSqlAlertV2Evaluation(w, &c, x)
 	}
 	if s := string(v.AlertV2.LifecycleState); s != "" || forced(v.AlertV2.ForceSendFields, "LifecycleState") {
-		c := n.child("lifecycle_state")
+		c := n.Child("lifecycle_state")
 		w.enumValue(&c, s, enumValues5)
 	}
 	if len(v.Permissions) > 0 {
-		c := n.child("permissions")
+		c := n.Child("permissions")
 		for i := range v.Permissions {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumResourcesPermission(w, &e, &v.Permissions[i])
 		}
 	}
-	if x := &v.AlertV2.Schedule; !isZeroStruct(x) || forced(v.AlertV2.ForceSendFields, "Schedule") || n.locs.Key("schedule") != nil {
-		c := n.child("schedule")
+	if x := &v.AlertV2.Schedule; !isZeroStruct(x) || forced(v.AlertV2.ForceSendFields, "Schedule") || n.Written("schedule") {
+		c := n.Child("schedule")
 		enumSqlCronSchedule(w, &c, x)
 	}
 }
 
-func enumResourcesApp(w *walker, n *node, v *resources.App) {
+func enumResourcesApp(w *walker, n *walk.Node, v *resources.App) {
 	if v == nil {
 		return
 	}
 	if x := v.App.ActiveDeployment; x != nil {
-		c := n.child("active_deployment")
+		c := n.Child("active_deployment")
 		enumAppsAppDeployment(w, &c, x)
 	}
 	if x := v.App.AppStatus; x != nil {
-		c := n.child("app_status")
+		c := n.Child("app_status")
 		enumAppsApplicationStatus(w, &c, x)
 	}
 	if s := string(v.App.ComputeSize); s != "" || forced(v.App.ForceSendFields, "ComputeSize") {
-		c := n.child("compute_size")
+		c := n.Child("compute_size")
 		w.enumValue(&c, s, enumValues6)
 	}
 	if x := v.App.ComputeStatus; x != nil {
-		c := n.child("compute_status")
+		c := n.Child("compute_status")
 		enumAppsComputeStatus(w, &c, x)
 	}
 	if x := v.App.PendingDeployment; x != nil {
-		c := n.child("pending_deployment")
+		c := n.Child("pending_deployment")
 		enumAppsAppDeployment(w, &c, x)
 	}
 	if len(v.Permissions) > 0 {
-		c := n.child("permissions")
+		c := n.Child("permissions")
 		for i := range v.Permissions {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumResourcesAppPermission(w, &e, &v.Permissions[i])
 		}
 	}
 	if len(v.App.Resources) > 0 {
-		c := n.child("resources")
+		c := n.Child("resources")
 		for i := range v.App.Resources {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumAppsAppResource(w, &e, &v.App.Resources[i])
 		}
 	}
 }
 
-func enumResourcesCatalog(w *walker, n *node, v *resources.Catalog) {
+func enumResourcesCatalog(w *walker, n *walk.Node, v *resources.Catalog) {
 	if v == nil {
 		return
 	}
 	if len(v.Grants) > 0 {
-		c := n.child("grants")
+		c := n.Child("grants")
 		for i := range v.Grants {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumCatalogPrivilegeAssignment(w, &e, &v.Grants[i])
 		}
 	}
 }
 
-func enumResourcesClusterPolicy(w *walker, n *node, v *resources.ClusterPolicy) {
+func enumResourcesClusterPolicy(w *walker, n *walk.Node, v *resources.ClusterPolicy) {
 	if v == nil {
 		return
 	}
 	if len(v.Permissions) > 0 {
-		c := n.child("permissions")
+		c := n.Child("permissions")
 		for i := range v.Permissions {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumResourcesClusterPolicyPermission(w, &e, &v.Permissions[i])
 		}
 	}
 }
 
-func enumResourcesCluster(w *walker, n *node, v *resources.Cluster) {
+func enumResourcesCluster(w *walker, n *walk.Node, v *resources.Cluster) {
 	if v == nil {
 		return
 	}
 	if x := v.ClusterSpec.AwsAttributes; x != nil {
-		c := n.child("aws_attributes")
+		c := n.Child("aws_attributes")
 		enumComputeAwsAttributes(w, &c, x)
 	}
 	if x := v.ClusterSpec.AzureAttributes; x != nil {
-		c := n.child("azure_attributes")
+		c := n.Child("azure_attributes")
 		enumComputeAzureAttributes(w, &c, x)
 	}
 	if s := string(v.ClusterSpec.DataSecurityMode); s != "" || forced(v.ClusterSpec.ForceSendFields, "DataSecurityMode") {
-		c := n.child("data_security_mode")
+		c := n.Child("data_security_mode")
 		w.enumValue(&c, s, enumValues7)
 	}
 	if s := string(v.ClusterSpec.DependencyMode); s != "" || forced(v.ClusterSpec.ForceSendFields, "DependencyMode") {
-		c := n.child("dependency_mode")
+		c := n.Child("dependency_mode")
 		w.enumValue(&c, s, enumValues8)
 	}
 	if x := v.ClusterSpec.GcpAttributes; x != nil {
-		c := n.child("gcp_attributes")
+		c := n.Child("gcp_attributes")
 		enumComputeGcpAttributes(w, &c, x)
 	}
 	if s := string(v.ClusterSpec.Kind); s != "" || forced(v.ClusterSpec.ForceSendFields, "Kind") {
-		c := n.child("kind")
+		c := n.Child("kind")
 		w.enumValue(&c, s, enumValues9)
 	}
 	if len(v.Permissions) > 0 {
-		c := n.child("permissions")
+		c := n.Child("permissions")
 		for i := range v.Permissions {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumResourcesClusterPermission(w, &e, &v.Permissions[i])
 		}
 	}
 	if s := string(v.ClusterSpec.RuntimeEngine); s != "" || forced(v.ClusterSpec.ForceSendFields, "RuntimeEngine") {
-		c := n.child("runtime_engine")
+		c := n.Child("runtime_engine")
 		w.enumValue(&c, s, enumValues10)
 	}
 }
 
-func enumResourcesDashboard(w *walker, n *node, v *resources.Dashboard) {
+func enumResourcesDashboard(w *walker, n *walk.Node, v *resources.Dashboard) {
 	if v == nil {
 		return
 	}
 	if s := string(v.DashboardConfig.LifecycleState); s != "" || forced(v.DashboardConfig.ForceSendFields, "LifecycleState") {
-		c := n.child("lifecycle_state")
+		c := n.Child("lifecycle_state")
 		w.enumValue(&c, s, enumValues11)
 	}
 	if len(v.Permissions) > 0 {
-		c := n.child("permissions")
+		c := n.Child("permissions")
 		for i := range v.Permissions {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumResourcesPermission(w, &e, &v.Permissions[i])
 		}
 	}
 }
 
-func enumResourcesDatabaseInstance(w *walker, n *node, v *resources.DatabaseInstance) {
+func enumResourcesDatabaseInstance(w *walker, n *walk.Node, v *resources.DatabaseInstance) {
 	if v == nil {
 		return
 	}
 	if len(v.Permissions) > 0 {
-		c := n.child("permissions")
+		c := n.Child("permissions")
 		for i := range v.Permissions {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumResourcesPermission(w, &e, &v.Permissions[i])
 		}
 	}
 	if s := string(v.DatabaseInstance.State); s != "" || forced(v.DatabaseInstance.ForceSendFields, "State") {
-		c := n.child("state")
+		c := n.Child("state")
 		w.enumValue(&c, s, enumValues12)
 	}
 }
 
-func enumResourcesMlflowExperiment(w *walker, n *node, v *resources.MlflowExperiment) {
+func enumResourcesMlflowExperiment(w *walker, n *walk.Node, v *resources.MlflowExperiment) {
 	if v == nil {
 		return
 	}
 	if len(v.Permissions) > 0 {
-		c := n.child("permissions")
+		c := n.Child("permissions")
 		for i := range v.Permissions {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumResourcesMlflowExperimentPermission(w, &e, &v.Permissions[i])
 		}
 	}
 }
 
-func enumResourcesExternalLocation(w *walker, n *node, v *resources.ExternalLocation) {
+func enumResourcesExternalLocation(w *walker, n *walk.Node, v *resources.ExternalLocation) {
 	if v == nil {
 		return
 	}
 	if x := v.CreateExternalLocation.EncryptionDetails; x != nil {
-		c := n.child("encryption_details")
+		c := n.Child("encryption_details")
 		enumCatalogEncryptionDetails(w, &c, x)
 	}
 	if len(v.Grants) > 0 {
-		c := n.child("grants")
+		c := n.Child("grants")
 		for i := range v.Grants {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumCatalogPrivilegeAssignment(w, &e, &v.Grants[i])
 		}
 	}
 }
 
-func enumResourcesGenieSpace(w *walker, n *node, v *resources.GenieSpace) {
+func enumResourcesGenieSpace(w *walker, n *walk.Node, v *resources.GenieSpace) {
 	if v == nil {
 		return
 	}
 	if len(v.Permissions) > 0 {
-		c := n.child("permissions")
+		c := n.Child("permissions")
 		for i := range v.Permissions {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumResourcesPermission(w, &e, &v.Permissions[i])
 		}
 	}
 }
 
-func enumResourcesInstancePool(w *walker, n *node, v *resources.InstancePool) {
+func enumResourcesInstancePool(w *walker, n *walk.Node, v *resources.InstancePool) {
 	if v == nil {
 		return
 	}
 	if x := v.CreateInstancePool.AwsAttributes; x != nil {
-		c := n.child("aws_attributes")
+		c := n.Child("aws_attributes")
 		enumComputeInstancePoolAwsAttributes(w, &c, x)
 	}
 	if x := v.CreateInstancePool.AzureAttributes; x != nil {
-		c := n.child("azure_attributes")
+		c := n.Child("azure_attributes")
 		enumComputeInstancePoolAzureAttributes(w, &c, x)
 	}
 	if x := v.CreateInstancePool.DiskSpec; x != nil {
-		c := n.child("disk_spec")
+		c := n.Child("disk_spec")
 		enumComputeDiskSpec(w, &c, x)
 	}
 	if x := v.CreateInstancePool.GcpAttributes; x != nil {
-		c := n.child("gcp_attributes")
+		c := n.Child("gcp_attributes")
 		enumComputeInstancePoolGcpAttributes(w, &c, x)
 	}
 	if len(v.Permissions) > 0 {
-		c := n.child("permissions")
+		c := n.Child("permissions")
 		for i := range v.Permissions {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumResourcesInstancePoolPermission(w, &e, &v.Permissions[i])
 		}
 	}
 }
 
-func enumResourcesJobRun(w *walker, n *node, v *resources.JobRun) {
+func enumResourcesJobRun(w *walker, n *walk.Node, v *resources.JobRun) {
 	if v == nil {
 		return
 	}
 	if s := string(v.RunNow.PerformanceTarget); s != "" || forced(v.RunNow.ForceSendFields, "PerformanceTarget") {
-		c := n.child("performance_target")
+		c := n.Child("performance_target")
 		w.enumValue(&c, s, enumValues13)
 	}
 }
 
-func enumResourcesJob(w *walker, n *node, v *resources.Job) {
+func enumResourcesJob(w *walker, n *walk.Node, v *resources.Job) {
 	if v == nil {
 		return
 	}
 	if x := v.JobSettings.Continuous; x != nil {
-		c := n.child("continuous")
+		c := n.Child("continuous")
 		enumJobsContinuous(w, &c, x)
 	}
 	if x := v.JobSettings.Deployment; x != nil {
-		c := n.child("deployment")
+		c := n.Child("deployment")
 		enumJobsJobDeployment(w, &c, x)
 	}
 	if s := string(v.JobSettings.EditMode); s != "" || forced(v.JobSettings.ForceSendFields, "EditMode") {
-		c := n.child("edit_mode")
+		c := n.Child("edit_mode")
 		w.enumValue(&c, s, enumValues14)
 	}
 	if s := string(v.JobSettings.Format); s != "" || forced(v.JobSettings.ForceSendFields, "Format") {
-		c := n.child("format")
+		c := n.Child("format")
 		w.enumValue(&c, s, enumValues15)
 	}
 	if x := v.JobSettings.GitSource; x != nil {
-		c := n.child("git_source")
+		c := n.Child("git_source")
 		enumJobsGitSource(w, &c, x)
 	}
 	if x := v.JobSettings.Health; x != nil {
-		c := n.child("health")
+		c := n.Child("health")
 		enumJobsJobsHealthRules(w, &c, x)
 	}
 	if len(v.JobSettings.JobClusters) > 0 {
-		c := n.child("job_clusters")
+		c := n.Child("job_clusters")
 		for i := range v.JobSettings.JobClusters {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumJobsJobCluster(w, &e, &v.JobSettings.JobClusters[i])
 		}
 	}
 	if s := string(v.JobSettings.PerformanceTarget); s != "" || forced(v.JobSettings.ForceSendFields, "PerformanceTarget") {
-		c := n.child("performance_target")
+		c := n.Child("performance_target")
 		w.enumValue(&c, s, enumValues13)
 	}
 	if len(v.Permissions) > 0 {
-		c := n.child("permissions")
+		c := n.Child("permissions")
 		for i := range v.Permissions {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumResourcesJobPermission(w, &e, &v.Permissions[i])
 		}
 	}
 	if x := v.JobSettings.Schedule; x != nil {
-		c := n.child("schedule")
+		c := n.Child("schedule")
 		enumJobsCronSchedule(w, &c, x)
 	}
 	if len(v.JobSettings.Tasks) > 0 {
-		c := n.child("tasks")
+		c := n.Child("tasks")
 		for i := range v.JobSettings.Tasks {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumJobsTask(w, &e, &v.JobSettings.Tasks[i])
 		}
 	}
 	if x := v.JobSettings.Trigger; x != nil {
-		c := n.child("trigger")
+		c := n.Child("trigger")
 		enumJobsTriggerSettings(w, &c, x)
 	}
 	if len(v.JobSettings.Triggers) > 0 {
-		c := n.child("triggers")
+		c := n.Child("triggers")
 		for i := range v.JobSettings.Triggers {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumJobsTriggerConfiguration(w, &e, &v.JobSettings.Triggers[i])
 		}
 	}
 }
 
-func enumResourcesMcpService(w *walker, n *node, v *resources.McpService) {
+func enumResourcesMcpService(w *walker, n *walk.Node, v *resources.McpService) {
 	if v == nil {
 		return
 	}
 	if x := v.McpServiceConfig.Config; x != nil {
-		c := n.child("config")
+		c := n.Child("config")
 		enumCatalogMcpServiceConfig(w, &c, x)
 	}
 	if len(v.Grants) > 0 {
-		c := n.child("grants")
+		c := n.Child("grants")
 		for i := range v.Grants {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumCatalogPrivilegeAssignment(w, &e, &v.Grants[i])
 		}
 	}
 }
 
-func enumResourcesModelProviderService(w *walker, n *node, v *resources.ModelProviderService) {
+func enumResourcesModelProviderService(w *walker, n *walk.Node, v *resources.ModelProviderService) {
 	if v == nil {
 		return
 	}
 	if x := v.ModelProviderServiceConfig.Config; x != nil {
-		c := n.child("config")
+		c := n.Child("config")
 		enumCatalogModelProviderServiceConfig(w, &c, x)
 	}
 	if len(v.Grants) > 0 {
-		c := n.child("grants")
+		c := n.Child("grants")
 		for i := range v.Grants {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumCatalogPrivilegeAssignment(w, &e, &v.Grants[i])
 		}
 	}
 }
 
-func enumResourcesModelService(w *walker, n *node, v *resources.ModelService) {
+func enumResourcesModelService(w *walker, n *walk.Node, v *resources.ModelService) {
 	if v == nil {
 		return
 	}
 	if x := v.ModelServiceConfig.Config; x != nil {
-		c := n.child("config")
+		c := n.Child("config")
 		enumCatalogModelServiceConfig(w, &c, x)
 	}
 	if len(v.Grants) > 0 {
-		c := n.child("grants")
+		c := n.Child("grants")
 		for i := range v.Grants {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumCatalogPrivilegeAssignment(w, &e, &v.Grants[i])
 		}
 	}
 }
 
-func enumResourcesModelServingEndpoint(w *walker, n *node, v *resources.ModelServingEndpoint) {
+func enumResourcesModelServingEndpoint(w *walker, n *walk.Node, v *resources.ModelServingEndpoint) {
 	if v == nil {
 		return
 	}
 	if x := v.CreateServingEndpoint.AiGateway; x != nil {
-		c := n.child("ai_gateway")
+		c := n.Child("ai_gateway")
 		enumServingAiGatewayConfig(w, &c, x)
 	}
 	if x := v.CreateServingEndpoint.Config; x != nil {
-		c := n.child("config")
+		c := n.Child("config")
 		enumServingEndpointCoreConfigInput(w, &c, x)
 	}
 	if len(v.Permissions) > 0 {
-		c := n.child("permissions")
+		c := n.Child("permissions")
 		for i := range v.Permissions {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumResourcesModelServingEndpointPermission(w, &e, &v.Permissions[i])
 		}
 	}
 	if len(v.CreateServingEndpoint.RateLimits) > 0 {
-		c := n.child("rate_limits")
+		c := n.Child("rate_limits")
 		for i := range v.CreateServingEndpoint.RateLimits {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumServingRateLimit(w, &e, &v.CreateServingEndpoint.RateLimits[i])
 		}
 	}
 	if x := v.CreateServingEndpoint.TelemetryConfig; x != nil {
-		c := n.child("telemetry_config")
+		c := n.Child("telemetry_config")
 		enumServingTelemetryConfig(w, &c, x)
 	}
 }
 
-func enumResourcesMlflowModel(w *walker, n *node, v *resources.MlflowModel) {
+func enumResourcesMlflowModel(w *walker, n *walk.Node, v *resources.MlflowModel) {
 	if v == nil {
 		return
 	}
 	if len(v.Permissions) > 0 {
-		c := n.child("permissions")
+		c := n.Child("permissions")
 		for i := range v.Permissions {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumResourcesMlflowModelPermission(w, &e, &v.Permissions[i])
 		}
 	}
 }
 
-func enumResourcesPipeline(w *walker, n *node, v *resources.Pipeline) {
+func enumResourcesPipeline(w *walker, n *walk.Node, v *resources.Pipeline) {
 	if v == nil {
 		return
 	}
 	if len(v.CreatePipeline.Clusters) > 0 {
-		c := n.child("clusters")
+		c := n.Child("clusters")
 		for i := range v.CreatePipeline.Clusters {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumPipelinesPipelineCluster(w, &e, &v.CreatePipeline.Clusters[i])
 		}
 	}
 	if x := v.CreatePipeline.Deployment; x != nil {
-		c := n.child("deployment")
+		c := n.Child("deployment")
 		enumPipelinesPipelineDeployment(w, &c, x)
 	}
 	if x := v.CreatePipeline.IngestionDefinition; x != nil {
-		c := n.child("ingestion_definition")
+		c := n.Child("ingestion_definition")
 		enumPipelinesIngestionPipelineDefinition(w, &c, x)
 	}
 	if len(v.Permissions) > 0 {
-		c := n.child("permissions")
+		c := n.Child("permissions")
 		for i := range v.Permissions {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumResourcesPipelinePermission(w, &e, &v.Permissions[i])
 		}
 	}
 	if x := v.CreatePipeline.RestartWindow; x != nil {
-		c := n.child("restart_window")
+		c := n.Child("restart_window")
 		enumPipelinesRestartWindow(w, &c, x)
 	}
 }
 
-func enumResourcesPostgresEndpoint(w *walker, n *node, v *resources.PostgresEndpoint) {
+func enumResourcesPostgresEndpoint(w *walker, n *walk.Node, v *resources.PostgresEndpoint) {
 	if v == nil {
 		return
 	}
 	if s := string(v.PostgresEndpointConfig.EndpointSpec.EndpointType); s != "" || forced(v.PostgresEndpointConfig.EndpointSpec.ForceSendFields, "EndpointType") {
-		c := n.child("endpoint_type")
+		c := n.Child("endpoint_type")
 		w.enumValue(&c, s, enumValues16)
 	}
 }
 
-func enumResourcesPostgresProject(w *walker, n *node, v *resources.PostgresProject) {
+func enumResourcesPostgresProject(w *walker, n *walk.Node, v *resources.PostgresProject) {
 	if v == nil {
 		return
 	}
 	if len(v.Permissions) > 0 {
-		c := n.child("permissions")
+		c := n.Child("permissions")
 		for i := range v.Permissions {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumResourcesPermission(w, &e, &v.Permissions[i])
 		}
 	}
 }
 
-func enumResourcesPostgresRole(w *walker, n *node, v *resources.PostgresRole) {
+func enumResourcesPostgresRole(w *walker, n *walk.Node, v *resources.PostgresRole) {
 	if v == nil {
 		return
 	}
 	if s := string(v.PostgresRoleConfig.RoleRoleSpec.AuthMethod); s != "" || forced(v.PostgresRoleConfig.RoleRoleSpec.ForceSendFields, "AuthMethod") {
-		c := n.child("auth_method")
+		c := n.Child("auth_method")
 		w.enumValue(&c, s, enumValues17)
 	}
 	if s := string(v.PostgresRoleConfig.RoleRoleSpec.IdentityType); s != "" || forced(v.PostgresRoleConfig.RoleRoleSpec.ForceSendFields, "IdentityType") {
-		c := n.child("identity_type")
+		c := n.Child("identity_type")
 		w.enumValue(&c, s, enumValues18)
 	}
 	if len(v.PostgresRoleConfig.RoleRoleSpec.MembershipRoles) > 0 {
-		c := n.child("membership_roles")
+		c := n.Child("membership_roles")
 		for i := range v.PostgresRoleConfig.RoleRoleSpec.MembershipRoles {
-			e := c.elem(i)
+			e := c.Elem(i)
 			w.enumValue(&e, string(v.PostgresRoleConfig.RoleRoleSpec.MembershipRoles[i]), enumValues19)
 		}
 	}
 }
 
-func enumResourcesPostgresSnapshotSchedule(w *walker, n *node, v *resources.PostgresSnapshotSchedule) {
+func enumResourcesPostgresSnapshotSchedule(w *walker, n *walk.Node, v *resources.PostgresSnapshotSchedule) {
 	if v == nil {
 		return
 	}
 	if len(v.PostgresSnapshotScheduleConfig.Schedule) > 0 {
-		c := n.child("schedule")
+		c := n.Child("schedule")
 		for i := range v.PostgresSnapshotScheduleConfig.Schedule {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumPostgresScheduleCadence(w, &e, &v.PostgresSnapshotScheduleConfig.Schedule[i])
 		}
 	}
 }
 
-func enumResourcesPostgresSyncedTable(w *walker, n *node, v *resources.PostgresSyncedTable) {
+func enumResourcesPostgresSyncedTable(w *walker, n *walk.Node, v *resources.PostgresSyncedTable) {
 	if v == nil {
 		return
 	}
 	if len(v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.ExtraColumns) > 0 {
-		c := n.child("extra_columns")
+		c := n.Child("extra_columns")
 		for i := range v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.ExtraColumns {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumPostgresSyncedTableSyncedTableSpecExtraColumn(w, &e, &v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.ExtraColumns[i])
 		}
 	}
 	if x := v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.NewPipelineSpec; x != nil {
-		c := n.child("new_pipeline_spec")
+		c := n.Child("new_pipeline_spec")
 		enumPostgresNewPipelineSpec(w, &c, x)
 	}
 	if s := string(v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.SchedulingPolicy); s != "" || forced(v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.ForceSendFields, "SchedulingPolicy") {
-		c := n.child("scheduling_policy")
+		c := n.Child("scheduling_policy")
 		w.enumValue(&c, s, enumValues20)
 	}
 	if len(v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.TypeOverrides) > 0 {
-		c := n.child("type_overrides")
+		c := n.Child("type_overrides")
 		for i := range v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.TypeOverrides {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumPostgresSyncedTableSyncedTableSpecTypeOverride(w, &e, &v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.TypeOverrides[i])
 		}
 	}
 }
 
-func enumResourcesQualityMonitor(w *walker, n *node, v *resources.QualityMonitor) {
+func enumResourcesQualityMonitor(w *walker, n *walk.Node, v *resources.QualityMonitor) {
 	if v == nil {
 		return
 	}
 	if len(v.CreateMonitor.CustomMetrics) > 0 {
-		c := n.child("custom_metrics")
+		c := n.Child("custom_metrics")
 		for i := range v.CreateMonitor.CustomMetrics {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumCatalogMonitorMetric(w, &e, &v.CreateMonitor.CustomMetrics[i])
 		}
 	}
 	if x := v.CreateMonitor.InferenceLog; x != nil {
-		c := n.child("inference_log")
+		c := n.Child("inference_log")
 		enumCatalogMonitorInferenceLog(w, &c, x)
 	}
 	if x := v.CreateMonitor.Schedule; x != nil {
-		c := n.child("schedule")
+		c := n.Child("schedule")
 		enumCatalogMonitorCronSchedule(w, &c, x)
 	}
 }
 
-func enumResourcesRegisteredModel(w *walker, n *node, v *resources.RegisteredModel) {
+func enumResourcesRegisteredModel(w *walker, n *walk.Node, v *resources.RegisteredModel) {
 	if v == nil {
 		return
 	}
 	if len(v.Grants) > 0 {
-		c := n.child("grants")
+		c := n.Child("grants")
 		for i := range v.Grants {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumCatalogPrivilegeAssignment(w, &e, &v.Grants[i])
 		}
 	}
 }
 
-func enumResourcesSchema(w *walker, n *node, v *resources.Schema) {
+func enumResourcesSchema(w *walker, n *walk.Node, v *resources.Schema) {
 	if v == nil {
 		return
 	}
 	if len(v.Grants) > 0 {
-		c := n.child("grants")
+		c := n.Child("grants")
 		for i := range v.Grants {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumCatalogPrivilegeAssignment(w, &e, &v.Grants[i])
 		}
 	}
 }
 
-func enumResourcesSecretScope(w *walker, n *node, v *resources.SecretScope) {
+func enumResourcesSecretScope(w *walker, n *walk.Node, v *resources.SecretScope) {
 	if v == nil {
 		return
 	}
 	if s := string(v.BackendType); s != "" {
-		c := n.child("backend_type")
+		c := n.Child("backend_type")
 		w.enumValue(&c, s, enumValues21)
 	}
 	if len(v.Permissions) > 0 {
-		c := n.child("permissions")
+		c := n.Child("permissions")
 		for i := range v.Permissions {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumResourcesSecretScopePermission(w, &e, &v.Permissions[i])
 		}
 	}
 }
 
-func enumResourcesSecret(w *walker, n *node, v *resources.Secret) {
+func enumResourcesSecret(w *walker, n *walk.Node, v *resources.Secret) {
 	if v == nil {
 		return
 	}
 	if len(v.Grants) > 0 {
-		c := n.child("grants")
+		c := n.Child("grants")
 		for i := range v.Grants {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumCatalogPrivilegeAssignment(w, &e, &v.Grants[i])
 		}
 	}
 }
 
-func enumResourcesSqlWarehouse(w *walker, n *node, v *resources.SqlWarehouse) {
+func enumResourcesSqlWarehouse(w *walker, n *walk.Node, v *resources.SqlWarehouse) {
 	if v == nil {
 		return
 	}
 	if x := v.CreateWarehouseRequest.Channel; x != nil {
-		c := n.child("channel")
+		c := n.Child("channel")
 		enumSqlChannel(w, &c, x)
 	}
 	if len(v.Permissions) > 0 {
-		c := n.child("permissions")
+		c := n.Child("permissions")
 		for i := range v.Permissions {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumResourcesSqlWarehousePermission(w, &e, &v.Permissions[i])
 		}
 	}
 	if s := string(v.CreateWarehouseRequest.SpotInstancePolicy); s != "" || forced(v.CreateWarehouseRequest.ForceSendFields, "SpotInstancePolicy") {
-		c := n.child("spot_instance_policy")
+		c := n.Child("spot_instance_policy")
 		w.enumValue(&c, s, enumValues22)
 	}
 	if s := string(v.CreateWarehouseRequest.WarehouseType); s != "" || forced(v.CreateWarehouseRequest.ForceSendFields, "WarehouseType") {
-		c := n.child("warehouse_type")
+		c := n.Child("warehouse_type")
 		w.enumValue(&c, s, enumValues23)
 	}
 }
 
-func enumResourcesSyncedDatabaseTable(w *walker, n *node, v *resources.SyncedDatabaseTable) {
+func enumResourcesSyncedDatabaseTable(w *walker, n *walk.Node, v *resources.SyncedDatabaseTable) {
 	if v == nil {
 		return
 	}
 	if x := v.SyncedDatabaseTable.DataSynchronizationStatus; x != nil {
-		c := n.child("data_synchronization_status")
+		c := n.Child("data_synchronization_status")
 		enumDatabaseSyncedTableStatus(w, &c, x)
 	}
 	if x := v.SyncedDatabaseTable.Spec; x != nil {
-		c := n.child("spec")
+		c := n.Child("spec")
 		enumDatabaseSyncedTableSpec(w, &c, x)
 	}
 	if s := string(v.SyncedDatabaseTable.UnityCatalogProvisioningState); s != "" || forced(v.SyncedDatabaseTable.ForceSendFields, "UnityCatalogProvisioningState") {
-		c := n.child("unity_catalog_provisioning_state")
+		c := n.Child("unity_catalog_provisioning_state")
 		w.enumValue(&c, s, enumValues24)
 	}
 }
 
-func enumResourcesVectorSearchEndpoint(w *walker, n *node, v *resources.VectorSearchEndpoint) {
+func enumResourcesVectorSearchEndpoint(w *walker, n *walk.Node, v *resources.VectorSearchEndpoint) {
 	if v == nil {
 		return
 	}
 	if s := string(v.CreateEndpoint.EndpointType); s != "" || forced(v.CreateEndpoint.ForceSendFields, "EndpointType") {
-		c := n.child("endpoint_type")
+		c := n.Child("endpoint_type")
 		w.enumValue(&c, s, enumValues25)
 	}
 	if len(v.Permissions) > 0 {
-		c := n.child("permissions")
+		c := n.Child("permissions")
 		for i := range v.Permissions {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumResourcesVectorSearchEndpointPermission(w, &e, &v.Permissions[i])
 		}
 	}
 }
 
-func enumResourcesVectorSearchIndex(w *walker, n *node, v *resources.VectorSearchIndex) {
+func enumResourcesVectorSearchIndex(w *walker, n *walk.Node, v *resources.VectorSearchIndex) {
 	if v == nil {
 		return
 	}
 	if x := v.CreateVectorIndexRequest.DeltaSyncIndexSpec; x != nil {
-		c := n.child("delta_sync_index_spec")
+		c := n.Child("delta_sync_index_spec")
 		enumVectorsearchDeltaSyncVectorIndexSpecRequest(w, &c, x)
 	}
 	if len(v.Grants) > 0 {
-		c := n.child("grants")
+		c := n.Child("grants")
 		for i := range v.Grants {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumCatalogPrivilegeAssignment(w, &e, &v.Grants[i])
 		}
 	}
 	if s := string(v.CreateVectorIndexRequest.IndexSubtype); s != "" {
-		c := n.child("index_subtype")
+		c := n.Child("index_subtype")
 		w.enumValue(&c, s, enumValues26)
 	}
 	if s := string(v.CreateVectorIndexRequest.IndexType); s != "" {
-		c := n.child("index_type")
+		c := n.Child("index_type")
 		w.enumValue(&c, s, enumValues27)
 	}
 }
 
-func enumResourcesVolume(w *walker, n *node, v *resources.Volume) {
+func enumResourcesVolume(w *walker, n *walk.Node, v *resources.Volume) {
 	if v == nil {
 		return
 	}
 	if len(v.Grants) > 0 {
-		c := n.child("grants")
+		c := n.Child("grants")
 		for i := range v.Grants {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumCatalogPrivilegeAssignment(w, &e, &v.Grants[i])
 		}
 	}
 	if s := string(v.CreateVolumeRequestContent.VolumeType); s != "" || forced(v.CreateVolumeRequestContent.ForceSendFields, "VolumeType") {
-		c := n.child("volume_type")
+		c := n.Child("volume_type")
 		w.enumValue(&c, s, enumValues28)
 	}
 }
 
-func enumSqlAlertV2Evaluation(w *walker, n *node, v *sql.AlertV2Evaluation) {
+func enumSqlAlertV2Evaluation(w *walker, n *walk.Node, v *sql.AlertV2Evaluation) {
 	if v == nil {
 		return
 	}
 	if s := string(v.ComparisonOperator); s != "" || forced(v.ForceSendFields, "ComparisonOperator") {
-		c := n.child("comparison_operator")
+		c := n.Child("comparison_operator")
 		w.enumValue(&c, s, enumValues29)
 	}
 	if s := string(v.EmptyResultState); s != "" || forced(v.ForceSendFields, "EmptyResultState") {
-		c := n.child("empty_result_state")
+		c := n.Child("empty_result_state")
 		w.enumValue(&c, s, enumValues30)
 	}
-	if x := &v.Source; !isZeroStruct(x) || forced(v.ForceSendFields, "Source") || n.locs.Key("source") != nil {
-		c := n.child("source")
+	if x := &v.Source; !isZeroStruct(x) || forced(v.ForceSendFields, "Source") || n.Written("source") {
+		c := n.Child("source")
 		enumSqlAlertV2OperandColumn(w, &c, x)
 	}
 	if s := string(v.State); s != "" || forced(v.ForceSendFields, "State") {
-		c := n.child("state")
+		c := n.Child("state")
 		w.enumValue(&c, s, enumValues30)
 	}
 	if x := v.Threshold; x != nil {
-		c := n.child("threshold")
+		c := n.Child("threshold")
 		enumSqlAlertV2Operand(w, &c, x)
 	}
 }
 
-func enumSqlCronSchedule(w *walker, n *node, v *sql.CronSchedule) {
+func enumSqlCronSchedule(w *walker, n *walk.Node, v *sql.CronSchedule) {
 	if v == nil {
 		return
 	}
 	if s := string(v.PauseStatus); s != "" {
-		c := n.child("pause_status")
+		c := n.Child("pause_status")
 		w.enumValue(&c, s, enumValues31)
 	}
 }
 
-func enumAppsAppDeployment(w *walker, n *node, v *apps.AppDeployment) {
+func enumAppsAppDeployment(w *walker, n *walk.Node, v *apps.AppDeployment) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Mode); s != "" || forced(v.ForceSendFields, "Mode") {
-		c := n.child("mode")
+		c := n.Child("mode")
 		w.enumValue(&c, s, enumValues32)
 	}
 	if x := v.Status; x != nil {
-		c := n.child("status")
+		c := n.Child("status")
 		enumAppsAppDeploymentStatus(w, &c, x)
 	}
 }
 
-func enumAppsApplicationStatus(w *walker, n *node, v *apps.ApplicationStatus) {
+func enumAppsApplicationStatus(w *walker, n *walk.Node, v *apps.ApplicationStatus) {
 	if v == nil {
 		return
 	}
 	if s := string(v.State); s != "" || forced(v.ForceSendFields, "State") {
-		c := n.child("state")
+		c := n.Child("state")
 		w.enumValue(&c, s, enumValues33)
 	}
 }
 
-func enumAppsComputeStatus(w *walker, n *node, v *apps.ComputeStatus) {
+func enumAppsComputeStatus(w *walker, n *walk.Node, v *apps.ComputeStatus) {
 	if v == nil {
 		return
 	}
 	if s := string(v.State); s != "" || forced(v.ForceSendFields, "State") {
-		c := n.child("state")
+		c := n.Child("state")
 		w.enumValue(&c, s, enumValues34)
 	}
 }
 
-func enumResourcesAppPermission(w *walker, n *node, v *resources.AppPermission) {
+func enumResourcesAppPermission(w *walker, n *walk.Node, v *resources.AppPermission) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Level); s != "" {
-		c := n.child("level")
+		c := n.Child("level")
 		w.enumValue(&c, s, enumValues35)
 	}
 }
 
-func enumAppsAppResource(w *walker, n *node, v *apps.AppResource) {
+func enumAppsAppResource(w *walker, n *walk.Node, v *apps.AppResource) {
 	if v == nil {
 		return
 	}
 	if x := v.App; x != nil {
-		c := n.child("app")
+		c := n.Child("app")
 		enumAppsAppResourceApp(w, &c, x)
 	}
 	if x := v.Database; x != nil {
-		c := n.child("database")
+		c := n.Child("database")
 		enumAppsAppResourceDatabase(w, &c, x)
 	}
 	if x := v.Experiment; x != nil {
-		c := n.child("experiment")
+		c := n.Child("experiment")
 		enumAppsAppResourceExperiment(w, &c, x)
 	}
 	if x := v.GenieSpace; x != nil {
-		c := n.child("genie_space")
+		c := n.Child("genie_space")
 		enumAppsAppResourceGenieSpace(w, &c, x)
 	}
 	if x := v.Job; x != nil {
-		c := n.child("job")
+		c := n.Child("job")
 		enumAppsAppResourceJob(w, &c, x)
 	}
 	if x := v.Postgres; x != nil {
-		c := n.child("postgres")
+		c := n.Child("postgres")
 		enumAppsAppResourcePostgres(w, &c, x)
 	}
 	if x := v.Secret; x != nil {
-		c := n.child("secret")
+		c := n.Child("secret")
 		enumAppsAppResourceSecret(w, &c, x)
 	}
 	if x := v.ServingEndpoint; x != nil {
-		c := n.child("serving_endpoint")
+		c := n.Child("serving_endpoint")
 		enumAppsAppResourceServingEndpoint(w, &c, x)
 	}
 	if x := v.SqlWarehouse; x != nil {
-		c := n.child("sql_warehouse")
+		c := n.Child("sql_warehouse")
 		enumAppsAppResourceSqlWarehouse(w, &c, x)
 	}
 	if x := v.UcSecurable; x != nil {
-		c := n.child("uc_securable")
+		c := n.Child("uc_securable")
 		enumAppsAppResourceUcSecurable(w, &c, x)
 	}
 }
 
-func enumCatalogPrivilegeAssignment(w *walker, n *node, v *catalog.PrivilegeAssignment) {
+func enumCatalogPrivilegeAssignment(w *walker, n *walk.Node, v *catalog.PrivilegeAssignment) {
 	if v == nil {
 		return
 	}
 	if len(v.Privileges) > 0 {
-		c := n.child("privileges")
+		c := n.Child("privileges")
 		for i := range v.Privileges {
-			e := c.elem(i)
+			e := c.Elem(i)
 			w.enumValue(&e, string(v.Privileges[i]), enumValues36)
 		}
 	}
 }
 
-func enumResourcesClusterPolicyPermission(w *walker, n *node, v *resources.ClusterPolicyPermission) {
+func enumResourcesClusterPolicyPermission(w *walker, n *walk.Node, v *resources.ClusterPolicyPermission) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Level); s != "" {
-		c := n.child("level")
+		c := n.Child("level")
 		w.enumValue(&c, s, enumValues37)
 	}
 }
 
-func enumComputeAwsAttributes(w *walker, n *node, v *compute.AwsAttributes) {
+func enumComputeAwsAttributes(w *walker, n *walk.Node, v *compute.AwsAttributes) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Availability); s != "" || forced(v.ForceSendFields, "Availability") {
-		c := n.child("availability")
+		c := n.Child("availability")
 		w.enumValue(&c, s, enumValues38)
 	}
 	if s := string(v.EbsVolumeType); s != "" || forced(v.ForceSendFields, "EbsVolumeType") {
-		c := n.child("ebs_volume_type")
+		c := n.Child("ebs_volume_type")
 		w.enumValue(&c, s, enumValues39)
 	}
 }
 
-func enumComputeAzureAttributes(w *walker, n *node, v *compute.AzureAttributes) {
+func enumComputeAzureAttributes(w *walker, n *walk.Node, v *compute.AzureAttributes) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Availability); s != "" || forced(v.ForceSendFields, "Availability") {
-		c := n.child("availability")
+		c := n.Child("availability")
 		w.enumValue(&c, s, enumValues40)
 	}
 }
 
-func enumComputeGcpAttributes(w *walker, n *node, v *compute.GcpAttributes) {
+func enumComputeGcpAttributes(w *walker, n *walk.Node, v *compute.GcpAttributes) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Availability); s != "" || forced(v.ForceSendFields, "Availability") {
-		c := n.child("availability")
+		c := n.Child("availability")
 		w.enumValue(&c, s, enumValues41)
 	}
 	if s := string(v.ConfidentialComputeType); s != "" || forced(v.ForceSendFields, "ConfidentialComputeType") {
-		c := n.child("confidential_compute_type")
+		c := n.Child("confidential_compute_type")
 		w.enumValue(&c, s, enumValues42)
 	}
 }
 
-func enumResourcesClusterPermission(w *walker, n *node, v *resources.ClusterPermission) {
+func enumResourcesClusterPermission(w *walker, n *walk.Node, v *resources.ClusterPermission) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Level); s != "" {
-		c := n.child("level")
+		c := n.Child("level")
 		w.enumValue(&c, s, enumValues43)
 	}
 }
 
-func enumResourcesMlflowExperimentPermission(w *walker, n *node, v *resources.MlflowExperimentPermission) {
+func enumResourcesMlflowExperimentPermission(w *walker, n *walk.Node, v *resources.MlflowExperimentPermission) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Level); s != "" {
-		c := n.child("level")
+		c := n.Child("level")
 		w.enumValue(&c, s, enumValues44)
 	}
 }
 
-func enumCatalogEncryptionDetails(w *walker, n *node, v *catalog.EncryptionDetails) {
+func enumCatalogEncryptionDetails(w *walker, n *walk.Node, v *catalog.EncryptionDetails) {
 	if v == nil {
 		return
 	}
 	if x := v.SseEncryptionDetails; x != nil {
-		c := n.child("sse_encryption_details")
+		c := n.Child("sse_encryption_details")
 		enumCatalogSseEncryptionDetails(w, &c, x)
 	}
 }
 
-func enumComputeInstancePoolAwsAttributes(w *walker, n *node, v *compute.InstancePoolAwsAttributes) {
+func enumComputeInstancePoolAwsAttributes(w *walker, n *walk.Node, v *compute.InstancePoolAwsAttributes) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Availability); s != "" || forced(v.ForceSendFields, "Availability") {
-		c := n.child("availability")
+		c := n.Child("availability")
 		w.enumValue(&c, s, enumValues45)
 	}
 }
 
-func enumComputeInstancePoolAzureAttributes(w *walker, n *node, v *compute.InstancePoolAzureAttributes) {
+func enumComputeInstancePoolAzureAttributes(w *walker, n *walk.Node, v *compute.InstancePoolAzureAttributes) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Availability); s != "" || forced(v.ForceSendFields, "Availability") {
-		c := n.child("availability")
+		c := n.Child("availability")
 		w.enumValue(&c, s, enumValues46)
 	}
 }
 
-func enumComputeDiskSpec(w *walker, n *node, v *compute.DiskSpec) {
+func enumComputeDiskSpec(w *walker, n *walk.Node, v *compute.DiskSpec) {
 	if v == nil {
 		return
 	}
 	if x := v.DiskType; x != nil {
-		c := n.child("disk_type")
+		c := n.Child("disk_type")
 		enumComputeDiskType(w, &c, x)
 	}
 }
 
-func enumComputeInstancePoolGcpAttributes(w *walker, n *node, v *compute.InstancePoolGcpAttributes) {
+func enumComputeInstancePoolGcpAttributes(w *walker, n *walk.Node, v *compute.InstancePoolGcpAttributes) {
 	if v == nil {
 		return
 	}
 	if s := string(v.GcpAvailability); s != "" || forced(v.ForceSendFields, "GcpAvailability") {
-		c := n.child("gcp_availability")
+		c := n.Child("gcp_availability")
 		w.enumValue(&c, s, enumValues41)
 	}
 }
 
-func enumResourcesInstancePoolPermission(w *walker, n *node, v *resources.InstancePoolPermission) {
+func enumResourcesInstancePoolPermission(w *walker, n *walk.Node, v *resources.InstancePoolPermission) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Level); s != "" {
-		c := n.child("level")
+		c := n.Child("level")
 		w.enumValue(&c, s, enumValues47)
 	}
 }
 
-func enumJobsContinuous(w *walker, n *node, v *jobs.Continuous) {
+func enumJobsContinuous(w *walker, n *walk.Node, v *jobs.Continuous) {
 	if v == nil {
 		return
 	}
 	if x := v.MaintenanceWindow; x != nil {
-		c := n.child("maintenance_window")
+		c := n.Child("maintenance_window")
 		enumJobsMaintenanceWindow(w, &c, x)
 	}
 	if s := string(v.PauseStatus); s != "" {
-		c := n.child("pause_status")
+		c := n.Child("pause_status")
 		w.enumValue(&c, s, enumValues31)
 	}
 	if s := string(v.TaskRetryMode); s != "" {
-		c := n.child("task_retry_mode")
+		c := n.Child("task_retry_mode")
 		w.enumValue(&c, s, enumValues48)
 	}
 }
 
-func enumJobsJobDeployment(w *walker, n *node, v *jobs.JobDeployment) {
+func enumJobsJobDeployment(w *walker, n *walk.Node, v *jobs.JobDeployment) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Kind); s != "" || forced(v.ForceSendFields, "Kind") {
-		c := n.child("kind")
+		c := n.Child("kind")
 		w.enumValue(&c, s, enumValues49)
 	}
 }
 
-func enumJobsGitSource(w *walker, n *node, v *jobs.GitSource) {
+func enumJobsGitSource(w *walker, n *walk.Node, v *jobs.GitSource) {
 	if v == nil {
 		return
 	}
 	if s := string(v.GitProvider); s != "" || forced(v.ForceSendFields, "GitProvider") {
-		c := n.child("git_provider")
+		c := n.Child("git_provider")
 		w.enumValue(&c, s, enumValues50)
 	}
 	if x := v.JobSource; x != nil {
-		c := n.child("job_source")
+		c := n.Child("job_source")
 		enumJobsJobSource(w, &c, x)
 	}
 }
 
-func enumJobsJobsHealthRules(w *walker, n *node, v *jobs.JobsHealthRules) {
+func enumJobsJobsHealthRules(w *walker, n *walk.Node, v *jobs.JobsHealthRules) {
 	if v == nil {
 		return
 	}
 	if len(v.Rules) > 0 {
-		c := n.child("rules")
+		c := n.Child("rules")
 		for i := range v.Rules {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumJobsJobsHealthRule(w, &e, &v.Rules[i])
 		}
 	}
 }
 
-func enumJobsJobCluster(w *walker, n *node, v *jobs.JobCluster) {
+func enumJobsJobCluster(w *walker, n *walk.Node, v *jobs.JobCluster) {
 	if v == nil {
 		return
 	}
 	if x := v.NewCluster; x != nil {
-		c := n.child("new_cluster")
+		c := n.Child("new_cluster")
 		enumComputeClusterSpec(w, &c, x)
 	}
 }
 
-func enumResourcesJobPermission(w *walker, n *node, v *resources.JobPermission) {
+func enumResourcesJobPermission(w *walker, n *walk.Node, v *resources.JobPermission) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Level); s != "" {
-		c := n.child("level")
+		c := n.Child("level")
 		w.enumValue(&c, s, enumValues51)
 	}
 }
 
-func enumJobsCronSchedule(w *walker, n *node, v *jobs.CronSchedule) {
+func enumJobsCronSchedule(w *walker, n *walk.Node, v *jobs.CronSchedule) {
 	if v == nil {
 		return
 	}
 	if s := string(v.PauseStatus); s != "" {
-		c := n.child("pause_status")
+		c := n.Child("pause_status")
 		w.enumValue(&c, s, enumValues31)
 	}
 	if x := v.SqlCondition; x != nil {
-		c := n.child("sql_condition")
+		c := n.Child("sql_condition")
 		enumJobsSqlConditionConfiguration(w, &c, x)
 	}
 }
 
-func enumJobsTask(w *walker, n *node, v *jobs.Task) {
+func enumJobsTask(w *walker, n *walk.Node, v *jobs.Task) {
 	if v == nil {
 		return
 	}
 	if x := v.AiRuntimeTask; x != nil {
-		c := n.child("ai_runtime_task")
+		c := n.Child("ai_runtime_task")
 		enumJobsAiRuntimeTask(w, &c, x)
 	}
 	if x := v.Compute; x != nil {
-		c := n.child("compute")
+		c := n.Child("compute")
 		enumJobsCompute(w, &c, x)
 	}
 	if x := v.ConditionTask; x != nil {
-		c := n.child("condition_task")
+		c := n.Child("condition_task")
 		enumJobsConditionTask(w, &c, x)
 	}
 	if x := v.DbtTask; x != nil {
-		c := n.child("dbt_task")
+		c := n.Child("dbt_task")
 		enumJobsDbtTask(w, &c, x)
 	}
 	if x := v.ForEachTask; x != nil {
-		c := n.child("for_each_task")
+		c := n.Child("for_each_task")
 		enumJobsForEachTask(w, &c, x)
 	}
 	if x := v.GenAiComputeTask; x != nil {
-		c := n.child("gen_ai_compute_task")
+		c := n.Child("gen_ai_compute_task")
 		enumJobsGenAiComputeTask(w, &c, x)
 	}
 	if x := v.Health; x != nil {
-		c := n.child("health")
+		c := n.Child("health")
 		enumJobsJobsHealthRules(w, &c, x)
 	}
 	if x := v.NewCluster; x != nil {
-		c := n.child("new_cluster")
+		c := n.Child("new_cluster")
 		enumComputeClusterSpec(w, &c, x)
 	}
 	if x := v.NotebookTask; x != nil {
-		c := n.child("notebook_task")
+		c := n.Child("notebook_task")
 		enumJobsNotebookTask(w, &c, x)
 	}
 	if x := v.PowerBiTask; x != nil {
-		c := n.child("power_bi_task")
+		c := n.Child("power_bi_task")
 		enumJobsPowerBiTask(w, &c, x)
 	}
 	if s := string(v.RunIf); s != "" || forced(v.ForceSendFields, "RunIf") {
-		c := n.child("run_if")
+		c := n.Child("run_if")
 		w.enumValue(&c, s, enumValues52)
 	}
 	if x := v.SparkPythonTask; x != nil {
-		c := n.child("spark_python_task")
+		c := n.Child("spark_python_task")
 		enumJobsSparkPythonTask(w, &c, x)
 	}
 	if x := v.SqlTask; x != nil {
-		c := n.child("sql_task")
+		c := n.Child("sql_task")
 		enumJobsSqlTask(w, &c, x)
 	}
 }
 
-func enumJobsTriggerSettings(w *walker, n *node, v *jobs.TriggerSettings) {
+func enumJobsTriggerSettings(w *walker, n *walk.Node, v *jobs.TriggerSettings) {
 	if v == nil {
 		return
 	}
 	if x := v.Model; x != nil {
-		c := n.child("model")
+		c := n.Child("model")
 		enumJobsModelTriggerConfiguration(w, &c, x)
 	}
 	if s := string(v.PauseStatus); s != "" {
-		c := n.child("pause_status")
+		c := n.Child("pause_status")
 		w.enumValue(&c, s, enumValues31)
 	}
 	if x := v.Periodic; x != nil {
-		c := n.child("periodic")
+		c := n.Child("periodic")
 		enumJobsPeriodicTriggerConfiguration(w, &c, x)
 	}
 	if x := v.SqlCondition; x != nil {
-		c := n.child("sql_condition")
+		c := n.Child("sql_condition")
 		enumJobsSqlConditionConfiguration(w, &c, x)
 	}
 	if x := v.TableUpdate; x != nil {
-		c := n.child("table_update")
+		c := n.Child("table_update")
 		enumJobsTableUpdateTriggerConfiguration(w, &c, x)
 	}
 }
 
-func enumJobsTriggerConfiguration(w *walker, n *node, v *jobs.TriggerConfiguration) {
+func enumJobsTriggerConfiguration(w *walker, n *walk.Node, v *jobs.TriggerConfiguration) {
 	if v == nil {
 		return
 	}
 	if x := v.Continuous; x != nil {
-		c := n.child("continuous")
+		c := n.Child("continuous")
 		enumJobsContinuousTriggerConfiguration(w, &c, x)
 	}
 	if x := v.Model; x != nil {
-		c := n.child("model")
+		c := n.Child("model")
 		enumJobsModelTriggerConfiguration(w, &c, x)
 	}
 	if s := string(v.PauseStatus); s != "" {
-		c := n.child("pause_status")
+		c := n.Child("pause_status")
 		w.enumValue(&c, s, enumValues31)
 	}
 	if x := v.Periodic; x != nil {
-		c := n.child("periodic")
+		c := n.Child("periodic")
 		enumJobsPeriodicTriggerConfiguration(w, &c, x)
 	}
 	if x := v.SqlCondition; x != nil {
-		c := n.child("sql_condition")
+		c := n.Child("sql_condition")
 		enumJobsSqlConditionConfiguration(w, &c, x)
 	}
 	if x := v.TableUpdate; x != nil {
-		c := n.child("table_update")
+		c := n.Child("table_update")
 		enumJobsTableUpdateTriggerConfiguration(w, &c, x)
 	}
 }
 
-func enumCatalogMcpServiceConfig(w *walker, n *node, v *catalog.McpServiceConfig) {
+func enumCatalogMcpServiceConfig(w *walker, n *walk.Node, v *catalog.McpServiceConfig) {
 	if v == nil {
 		return
 	}
 	if len(v.RateLimits) > 0 {
-		c := n.child("rate_limits")
+		c := n.Child("rate_limits")
 		for i := range v.RateLimits {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumCatalogRateLimit(w, &e, &v.RateLimits[i])
 		}
 	}
 }
 
-func enumCatalogModelProviderServiceConfig(w *walker, n *node, v *catalog.ModelProviderServiceConfig) {
+func enumCatalogModelProviderServiceConfig(w *walker, n *walk.Node, v *catalog.ModelProviderServiceConfig) {
 	if v == nil {
 		return
 	}
 	if s := string(v.ProviderType); s != "" || forced(v.ForceSendFields, "ProviderType") {
-		c := n.child("provider_type")
+		c := n.Child("provider_type")
 		w.enumValue(&c, s, enumValues53)
 	}
 	if len(v.RateLimits) > 0 {
-		c := n.child("rate_limits")
+		c := n.Child("rate_limits")
 		for i := range v.RateLimits {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumCatalogRateLimit(w, &e, &v.RateLimits[i])
 		}
 	}
 }
 
-func enumCatalogModelServiceConfig(w *walker, n *node, v *catalog.ModelServiceConfig) {
+func enumCatalogModelServiceConfig(w *walker, n *walk.Node, v *catalog.ModelServiceConfig) {
 	if v == nil {
 		return
 	}
 	if len(v.RateLimits) > 0 {
-		c := n.child("rate_limits")
+		c := n.Child("rate_limits")
 		for i := range v.RateLimits {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumCatalogRateLimit(w, &e, &v.RateLimits[i])
 		}
 	}
 	if x := v.Routing; x != nil {
-		c := n.child("routing")
+		c := n.Child("routing")
 		enumCatalogModelServiceConfigRoutingConfig(w, &c, x)
 	}
 }
 
-func enumServingAiGatewayConfig(w *walker, n *node, v *serving.AiGatewayConfig) {
+func enumServingAiGatewayConfig(w *walker, n *walk.Node, v *serving.AiGatewayConfig) {
 	if v == nil {
 		return
 	}
 	if x := v.Guardrails; x != nil {
-		c := n.child("guardrails")
+		c := n.Child("guardrails")
 		enumServingAiGatewayGuardrails(w, &c, x)
 	}
 	if len(v.RateLimits) > 0 {
-		c := n.child("rate_limits")
+		c := n.Child("rate_limits")
 		for i := range v.RateLimits {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumServingAiGatewayRateLimit(w, &e, &v.RateLimits[i])
 		}
 	}
 }
 
-func enumServingEndpointCoreConfigInput(w *walker, n *node, v *serving.EndpointCoreConfigInput) {
+func enumServingEndpointCoreConfigInput(w *walker, n *walk.Node, v *serving.EndpointCoreConfigInput) {
 	if v == nil {
 		return
 	}
 	if len(v.ServedEntities) > 0 {
-		c := n.child("served_entities")
+		c := n.Child("served_entities")
 		for i := range v.ServedEntities {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumServingServedEntityInput(w, &e, &v.ServedEntities[i])
 		}
 	}
 	if len(v.ServedModels) > 0 {
-		c := n.child("served_models")
+		c := n.Child("served_models")
 		for i := range v.ServedModels {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumServingServedModelInput(w, &e, &v.ServedModels[i])
 		}
 	}
 }
 
-func enumResourcesModelServingEndpointPermission(w *walker, n *node, v *resources.ModelServingEndpointPermission) {
+func enumResourcesModelServingEndpointPermission(w *walker, n *walk.Node, v *resources.ModelServingEndpointPermission) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Level); s != "" {
-		c := n.child("level")
+		c := n.Child("level")
 		w.enumValue(&c, s, enumValues54)
 	}
 }
 
-func enumServingRateLimit(w *walker, n *node, v *serving.RateLimit) {
+func enumServingRateLimit(w *walker, n *walk.Node, v *serving.RateLimit) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Key); s != "" {
-		c := n.child("key")
+		c := n.Child("key")
 		w.enumValue(&c, s, enumValues55)
 	}
 	if s := string(v.RenewalPeriod); s != "" {
-		c := n.child("renewal_period")
+		c := n.Child("renewal_period")
 		w.enumValue(&c, s, enumValues56)
 	}
 }
 
-func enumServingTelemetryConfig(w *walker, n *node, v *serving.TelemetryConfig) {
+func enumServingTelemetryConfig(w *walker, n *walk.Node, v *serving.TelemetryConfig) {
 	if v == nil {
 		return
 	}
 	if len(v.EnabledTelemetryFeatures) > 0 {
-		c := n.child("enabled_telemetry_features")
+		c := n.Child("enabled_telemetry_features")
 		for i := range v.EnabledTelemetryFeatures {
-			e := c.elem(i)
+			e := c.Elem(i)
 			w.enumValue(&e, string(v.EnabledTelemetryFeatures[i]), enumValues57)
 		}
 	}
 }
 
-func enumResourcesMlflowModelPermission(w *walker, n *node, v *resources.MlflowModelPermission) {
+func enumResourcesMlflowModelPermission(w *walker, n *walk.Node, v *resources.MlflowModelPermission) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Level); s != "" {
-		c := n.child("level")
+		c := n.Child("level")
 		w.enumValue(&c, s, enumValues58)
 	}
 }
 
-func enumPipelinesPipelineCluster(w *walker, n *node, v *pipelines.PipelineCluster) {
+func enumPipelinesPipelineCluster(w *walker, n *walk.Node, v *pipelines.PipelineCluster) {
 	if v == nil {
 		return
 	}
 	if x := v.Autoscale; x != nil {
-		c := n.child("autoscale")
+		c := n.Child("autoscale")
 		enumPipelinesPipelineClusterAutoscale(w, &c, x)
 	}
 	if x := v.AwsAttributes; x != nil {
-		c := n.child("aws_attributes")
+		c := n.Child("aws_attributes")
 		enumComputeAwsAttributes(w, &c, x)
 	}
 	if x := v.AzureAttributes; x != nil {
-		c := n.child("azure_attributes")
+		c := n.Child("azure_attributes")
 		enumComputeAzureAttributes(w, &c, x)
 	}
 	if x := v.GcpAttributes; x != nil {
-		c := n.child("gcp_attributes")
+		c := n.Child("gcp_attributes")
 		enumComputeGcpAttributes(w, &c, x)
 	}
 }
 
-func enumPipelinesPipelineDeployment(w *walker, n *node, v *pipelines.PipelineDeployment) {
+func enumPipelinesPipelineDeployment(w *walker, n *walk.Node, v *pipelines.PipelineDeployment) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Kind); s != "" || forced(v.ForceSendFields, "Kind") {
-		c := n.child("kind")
+		c := n.Child("kind")
 		w.enumValue(&c, s, enumValues59)
 	}
 }
 
-func enumPipelinesIngestionPipelineDefinition(w *walker, n *node, v *pipelines.IngestionPipelineDefinition) {
+func enumPipelinesIngestionPipelineDefinition(w *walker, n *walk.Node, v *pipelines.IngestionPipelineDefinition) {
 	if v == nil {
 		return
 	}
 	if s := string(v.ConnectorType); s != "" || forced(v.ForceSendFields, "ConnectorType") {
-		c := n.child("connector_type")
+		c := n.Child("connector_type")
 		w.enumValue(&c, s, enumValues60)
 	}
 	if x := v.FullRefreshWindow; x != nil {
-		c := n.child("full_refresh_window")
+		c := n.Child("full_refresh_window")
 		enumPipelinesOperationTimeWindow(w, &c, x)
 	}
 	if len(v.Objects) > 0 {
-		c := n.child("objects")
+		c := n.Child("objects")
 		for i := range v.Objects {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumPipelinesIngestionConfig(w, &e, &v.Objects[i])
 		}
 	}
 	if s := string(v.SourceType); s != "" || forced(v.ForceSendFields, "SourceType") {
-		c := n.child("source_type")
+		c := n.Child("source_type")
 		w.enumValue(&c, s, enumValues61)
 	}
 	if x := v.TableConfiguration; x != nil {
-		c := n.child("table_configuration")
+		c := n.Child("table_configuration")
 		enumPipelinesTableSpecificConfig(w, &c, x)
 	}
 }
 
-func enumResourcesPipelinePermission(w *walker, n *node, v *resources.PipelinePermission) {
+func enumResourcesPipelinePermission(w *walker, n *walk.Node, v *resources.PipelinePermission) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Level); s != "" {
-		c := n.child("level")
+		c := n.Child("level")
 		w.enumValue(&c, s, enumValues62)
 	}
 }
 
-func enumPipelinesRestartWindow(w *walker, n *node, v *pipelines.RestartWindow) {
+func enumPipelinesRestartWindow(w *walker, n *walk.Node, v *pipelines.RestartWindow) {
 	if v == nil {
 		return
 	}
 	if len(v.DaysOfWeek) > 0 {
-		c := n.child("days_of_week")
+		c := n.Child("days_of_week")
 		for i := range v.DaysOfWeek {
-			e := c.elem(i)
+			e := c.Elem(i)
 			w.enumValue(&e, string(v.DaysOfWeek[i]), enumValues63)
 		}
 	}
 }
 
-func enumPostgresScheduleCadence(w *walker, n *node, v *postgres.ScheduleCadence) {
+func enumPostgresScheduleCadence(w *walker, n *walk.Node, v *postgres.ScheduleCadence) {
 	if v == nil {
 		return
 	}
 	if x := v.WeeklySchedule; x != nil {
-		c := n.child("weekly_schedule")
+		c := n.Child("weekly_schedule")
 		enumPostgresWeeklySchedule(w, &c, x)
 	}
 }
 
-func enumPostgresSyncedTableSyncedTableSpecExtraColumn(w *walker, n *node, v *postgres.SyncedTableSyncedTableSpecExtraColumn) {
+func enumPostgresSyncedTableSyncedTableSpecExtraColumn(w *walker, n *walk.Node, v *postgres.SyncedTableSyncedTableSpecExtraColumn) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Maintenance); s != "" || forced(v.ForceSendFields, "Maintenance") {
-		c := n.child("maintenance")
+		c := n.Child("maintenance")
 		w.enumValue(&c, s, enumValues64)
 	}
 }
 
-func enumPostgresNewPipelineSpec(w *walker, n *node, v *postgres.NewPipelineSpec) {
+func enumPostgresNewPipelineSpec(w *walker, n *walk.Node, v *postgres.NewPipelineSpec) {
 	if v == nil {
 		return
 	}
 	if s := string(v.PipelineChannel); s != "" || forced(v.ForceSendFields, "PipelineChannel") {
-		c := n.child("pipeline_channel")
+		c := n.Child("pipeline_channel")
 		w.enumValue(&c, s, enumValues65)
 	}
 }
 
-func enumPostgresSyncedTableSyncedTableSpecTypeOverride(w *walker, n *node, v *postgres.SyncedTableSyncedTableSpecTypeOverride) {
+func enumPostgresSyncedTableSyncedTableSpecTypeOverride(w *walker, n *walk.Node, v *postgres.SyncedTableSyncedTableSpecTypeOverride) {
 	if v == nil {
 		return
 	}
 	if s := string(v.PgType); s != "" || forced(v.ForceSendFields, "PgType") {
-		c := n.child("pg_type")
+		c := n.Child("pg_type")
 		w.enumValue(&c, s, enumValues66)
 	}
 }
 
-func enumCatalogMonitorMetric(w *walker, n *node, v *catalog.MonitorMetric) {
+func enumCatalogMonitorMetric(w *walker, n *walk.Node, v *catalog.MonitorMetric) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Type); s != "" {
-		c := n.child("type")
+		c := n.Child("type")
 		w.enumValue(&c, s, enumValues67)
 	}
 }
 
-func enumCatalogMonitorInferenceLog(w *walker, n *node, v *catalog.MonitorInferenceLog) {
+func enumCatalogMonitorInferenceLog(w *walker, n *walk.Node, v *catalog.MonitorInferenceLog) {
 	if v == nil {
 		return
 	}
 	if s := string(v.ProblemType); s != "" || forced(v.ForceSendFields, "ProblemType") {
-		c := n.child("problem_type")
+		c := n.Child("problem_type")
 		w.enumValue(&c, s, enumValues68)
 	}
 }
 
-func enumCatalogMonitorCronSchedule(w *walker, n *node, v *catalog.MonitorCronSchedule) {
+func enumCatalogMonitorCronSchedule(w *walker, n *walk.Node, v *catalog.MonitorCronSchedule) {
 	if v == nil {
 		return
 	}
 	if s := string(v.PauseStatus); s != "" {
-		c := n.child("pause_status")
+		c := n.Child("pause_status")
 		w.enumValue(&c, s, enumValues69)
 	}
 }
 
-func enumResourcesSecretScopePermission(w *walker, n *node, v *resources.SecretScopePermission) {
+func enumResourcesSecretScopePermission(w *walker, n *walk.Node, v *resources.SecretScopePermission) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Level); s != "" {
-		c := n.child("level")
+		c := n.Child("level")
 		w.enumValue(&c, s, enumValues70)
 	}
 }
 
-func enumSqlChannel(w *walker, n *node, v *sql.Channel) {
+func enumSqlChannel(w *walker, n *walk.Node, v *sql.Channel) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Name); s != "" || forced(v.ForceSendFields, "Name") {
-		c := n.child("name")
+		c := n.Child("name")
 		w.enumValue(&c, s, enumValues71)
 	}
 }
 
-func enumResourcesSqlWarehousePermission(w *walker, n *node, v *resources.SqlWarehousePermission) {
+func enumResourcesSqlWarehousePermission(w *walker, n *walk.Node, v *resources.SqlWarehousePermission) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Level); s != "" {
-		c := n.child("level")
+		c := n.Child("level")
 		w.enumValue(&c, s, enumValues72)
 	}
 }
 
-func enumDatabaseSyncedTableStatus(w *walker, n *node, v *database.SyncedTableStatus) {
+func enumDatabaseSyncedTableStatus(w *walker, n *walk.Node, v *database.SyncedTableStatus) {
 	if v == nil {
 		return
 	}
 	if x := v.ContinuousUpdateStatus; x != nil {
-		c := n.child("continuous_update_status")
+		c := n.Child("continuous_update_status")
 		enumDatabaseSyncedTableContinuousUpdateStatus(w, &c, x)
 	}
 	if s := string(v.DetailedState); s != "" || forced(v.ForceSendFields, "DetailedState") {
-		c := n.child("detailed_state")
+		c := n.Child("detailed_state")
 		w.enumValue(&c, s, enumValues73)
 	}
 	if x := v.ProvisioningStatus; x != nil {
-		c := n.child("provisioning_status")
+		c := n.Child("provisioning_status")
 		enumDatabaseSyncedTableProvisioningStatus(w, &c, x)
 	}
 	if x := v.TriggeredUpdateStatus; x != nil {
-		c := n.child("triggered_update_status")
+		c := n.Child("triggered_update_status")
 		enumDatabaseSyncedTableTriggeredUpdateStatus(w, &c, x)
 	}
 }
 
-func enumDatabaseSyncedTableSpec(w *walker, n *node, v *database.SyncedTableSpec) {
+func enumDatabaseSyncedTableSpec(w *walker, n *walk.Node, v *database.SyncedTableSpec) {
 	if v == nil {
 		return
 	}
 	if s := string(v.SchedulingPolicy); s != "" || forced(v.ForceSendFields, "SchedulingPolicy") {
-		c := n.child("scheduling_policy")
+		c := n.Child("scheduling_policy")
 		w.enumValue(&c, s, enumValues20)
 	}
 	if len(v.TypeOverrides) > 0 {
-		c := n.child("type_overrides")
+		c := n.Child("type_overrides")
 		for i := range v.TypeOverrides {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumDatabaseSyncedTableSpecTypeOverride(w, &e, &v.TypeOverrides[i])
 		}
 	}
 }
 
-func enumResourcesVectorSearchEndpointPermission(w *walker, n *node, v *resources.VectorSearchEndpointPermission) {
+func enumResourcesVectorSearchEndpointPermission(w *walker, n *walk.Node, v *resources.VectorSearchEndpointPermission) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Level); s != "" {
-		c := n.child("level")
+		c := n.Child("level")
 		w.enumValue(&c, s, enumValues74)
 	}
 }
 
-func enumVectorsearchDeltaSyncVectorIndexSpecRequest(w *walker, n *node, v *vectorsearch.DeltaSyncVectorIndexSpecRequest) {
+func enumVectorsearchDeltaSyncVectorIndexSpecRequest(w *walker, n *walk.Node, v *vectorsearch.DeltaSyncVectorIndexSpecRequest) {
 	if v == nil {
 		return
 	}
 	if s := string(v.PipelineType); s != "" || forced(v.ForceSendFields, "PipelineType") {
-		c := n.child("pipeline_type")
+		c := n.Child("pipeline_type")
 		w.enumValue(&c, s, enumValues75)
 	}
 }
 
-func enumSqlAlertV2OperandColumn(w *walker, n *node, v *sql.AlertV2OperandColumn) {
+func enumSqlAlertV2OperandColumn(w *walker, n *walk.Node, v *sql.AlertV2OperandColumn) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Aggregation); s != "" || forced(v.ForceSendFields, "Aggregation") {
-		c := n.child("aggregation")
+		c := n.Child("aggregation")
 		w.enumValue(&c, s, enumValues76)
 	}
 }
 
-func enumSqlAlertV2Operand(w *walker, n *node, v *sql.AlertV2Operand) {
+func enumSqlAlertV2Operand(w *walker, n *walk.Node, v *sql.AlertV2Operand) {
 	if v == nil {
 		return
 	}
 	if x := v.Column; x != nil {
-		c := n.child("column")
+		c := n.Child("column")
 		enumSqlAlertV2OperandColumn2(w, &c, x)
 	}
 }
 
-func enumAppsAppDeploymentStatus(w *walker, n *node, v *apps.AppDeploymentStatus) {
+func enumAppsAppDeploymentStatus(w *walker, n *walk.Node, v *apps.AppDeploymentStatus) {
 	if v == nil {
 		return
 	}
 	if s := string(v.State); s != "" || forced(v.ForceSendFields, "State") {
-		c := n.child("state")
+		c := n.Child("state")
 		w.enumValue(&c, s, enumValues77)
 	}
 }
 
-func enumAppsAppResourceApp(w *walker, n *node, v *apps.AppResourceApp) {
+func enumAppsAppResourceApp(w *walker, n *walk.Node, v *apps.AppResourceApp) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Permission); s != "" || forced(v.ForceSendFields, "Permission") {
-		c := n.child("permission")
+		c := n.Child("permission")
 		w.enumValue(&c, s, enumValues37)
 	}
 }
 
-func enumAppsAppResourceDatabase(w *walker, n *node, v *apps.AppResourceDatabase) {
+func enumAppsAppResourceDatabase(w *walker, n *walk.Node, v *apps.AppResourceDatabase) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Permission); s != "" {
-		c := n.child("permission")
+		c := n.Child("permission")
 		w.enumValue(&c, s, enumValues78)
 	}
 }
 
-func enumAppsAppResourceExperiment(w *walker, n *node, v *apps.AppResourceExperiment) {
+func enumAppsAppResourceExperiment(w *walker, n *walk.Node, v *apps.AppResourceExperiment) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Permission); s != "" {
-		c := n.child("permission")
+		c := n.Child("permission")
 		w.enumValue(&c, s, enumValues44)
 	}
 }
 
-func enumAppsAppResourceGenieSpace(w *walker, n *node, v *apps.AppResourceGenieSpace) {
+func enumAppsAppResourceGenieSpace(w *walker, n *walk.Node, v *apps.AppResourceGenieSpace) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Permission); s != "" {
-		c := n.child("permission")
+		c := n.Child("permission")
 		w.enumValue(&c, s, enumValues79)
 	}
 }
 
-func enumAppsAppResourceJob(w *walker, n *node, v *apps.AppResourceJob) {
+func enumAppsAppResourceJob(w *walker, n *walk.Node, v *apps.AppResourceJob) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Permission); s != "" {
-		c := n.child("permission")
+		c := n.Child("permission")
 		w.enumValue(&c, s, enumValues51)
 	}
 }
 
-func enumAppsAppResourcePostgres(w *walker, n *node, v *apps.AppResourcePostgres) {
+func enumAppsAppResourcePostgres(w *walker, n *walk.Node, v *apps.AppResourcePostgres) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Permission); s != "" || forced(v.ForceSendFields, "Permission") {
-		c := n.child("permission")
+		c := n.Child("permission")
 		w.enumValue(&c, s, enumValues78)
 	}
 }
 
-func enumAppsAppResourceSecret(w *walker, n *node, v *apps.AppResourceSecret) {
+func enumAppsAppResourceSecret(w *walker, n *walk.Node, v *apps.AppResourceSecret) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Permission); s != "" {
-		c := n.child("permission")
+		c := n.Child("permission")
 		w.enumValue(&c, s, enumValues80)
 	}
 }
 
-func enumAppsAppResourceServingEndpoint(w *walker, n *node, v *apps.AppResourceServingEndpoint) {
+func enumAppsAppResourceServingEndpoint(w *walker, n *walk.Node, v *apps.AppResourceServingEndpoint) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Permission); s != "" {
-		c := n.child("permission")
+		c := n.Child("permission")
 		w.enumValue(&c, s, enumValues54)
 	}
 }
 
-func enumAppsAppResourceSqlWarehouse(w *walker, n *node, v *apps.AppResourceSqlWarehouse) {
+func enumAppsAppResourceSqlWarehouse(w *walker, n *walk.Node, v *apps.AppResourceSqlWarehouse) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Permission); s != "" {
-		c := n.child("permission")
+		c := n.Child("permission")
 		w.enumValue(&c, s, enumValues81)
 	}
 }
 
-func enumAppsAppResourceUcSecurable(w *walker, n *node, v *apps.AppResourceUcSecurable) {
+func enumAppsAppResourceUcSecurable(w *walker, n *walk.Node, v *apps.AppResourceUcSecurable) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Permission); s != "" || forced(v.ForceSendFields, "Permission") {
-		c := n.child("permission")
+		c := n.Child("permission")
 		w.enumValue(&c, s, enumValues82)
 	}
 	if s := string(v.SecurableType); s != "" || forced(v.ForceSendFields, "SecurableType") {
-		c := n.child("securable_type")
+		c := n.Child("securable_type")
 		w.enumValue(&c, s, enumValues83)
 	}
 }
 
-func enumCatalogSseEncryptionDetails(w *walker, n *node, v *catalog.SseEncryptionDetails) {
+func enumCatalogSseEncryptionDetails(w *walker, n *walk.Node, v *catalog.SseEncryptionDetails) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Algorithm); s != "" || forced(v.ForceSendFields, "Algorithm") {
-		c := n.child("algorithm")
+		c := n.Child("algorithm")
 		w.enumValue(&c, s, enumValues84)
 	}
 }
 
-func enumComputeDiskType(w *walker, n *node, v *compute.DiskType) {
+func enumComputeDiskType(w *walker, n *walk.Node, v *compute.DiskType) {
 	if v == nil {
 		return
 	}
 	if s := string(v.AzureDiskVolumeType); s != "" {
-		c := n.child("azure_disk_volume_type")
+		c := n.Child("azure_disk_volume_type")
 		w.enumValue(&c, s, enumValues85)
 	}
 	if s := string(v.EbsVolumeType); s != "" {
-		c := n.child("ebs_volume_type")
+		c := n.Child("ebs_volume_type")
 		w.enumValue(&c, s, enumValues39)
 	}
 }
 
-func enumJobsMaintenanceWindow(w *walker, n *node, v *jobs.MaintenanceWindow) {
+func enumJobsMaintenanceWindow(w *walker, n *walk.Node, v *jobs.MaintenanceWindow) {
 	if v == nil {
 		return
 	}
 	if s := string(v.DayOfWeek); s != "" {
-		c := n.child("day_of_week")
+		c := n.Child("day_of_week")
 		w.enumValue(&c, s, enumValues63)
 	}
 }
 
-func enumJobsJobSource(w *walker, n *node, v *jobs.JobSource) {
+func enumJobsJobSource(w *walker, n *walk.Node, v *jobs.JobSource) {
 	if v == nil {
 		return
 	}
 	if s := string(v.DirtyState); s != "" {
-		c := n.child("dirty_state")
+		c := n.Child("dirty_state")
 		w.enumValue(&c, s, enumValues86)
 	}
 }
 
-func enumJobsJobsHealthRule(w *walker, n *node, v *jobs.JobsHealthRule) {
+func enumJobsJobsHealthRule(w *walker, n *walk.Node, v *jobs.JobsHealthRule) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Metric); s != "" {
-		c := n.child("metric")
+		c := n.Child("metric")
 		w.enumValue(&c, s, enumValues87)
 	}
 	if s := string(v.Op); s != "" {
-		c := n.child("op")
+		c := n.Child("op")
 		w.enumValue(&c, s, enumValues88)
 	}
 }
 
-func enumComputeClusterSpec(w *walker, n *node, v *compute.ClusterSpec) {
+func enumComputeClusterSpec(w *walker, n *walk.Node, v *compute.ClusterSpec) {
 	if v == nil {
 		return
 	}
 	if x := v.AwsAttributes; x != nil {
-		c := n.child("aws_attributes")
+		c := n.Child("aws_attributes")
 		enumComputeAwsAttributes(w, &c, x)
 	}
 	if x := v.AzureAttributes; x != nil {
-		c := n.child("azure_attributes")
+		c := n.Child("azure_attributes")
 		enumComputeAzureAttributes(w, &c, x)
 	}
 	if s := string(v.DataSecurityMode); s != "" || forced(v.ForceSendFields, "DataSecurityMode") {
-		c := n.child("data_security_mode")
+		c := n.Child("data_security_mode")
 		w.enumValue(&c, s, enumValues7)
 	}
 	if s := string(v.DependencyMode); s != "" || forced(v.ForceSendFields, "DependencyMode") {
-		c := n.child("dependency_mode")
+		c := n.Child("dependency_mode")
 		w.enumValue(&c, s, enumValues8)
 	}
 	if x := v.GcpAttributes; x != nil {
-		c := n.child("gcp_attributes")
+		c := n.Child("gcp_attributes")
 		enumComputeGcpAttributes(w, &c, x)
 	}
 	if s := string(v.Kind); s != "" || forced(v.ForceSendFields, "Kind") {
-		c := n.child("kind")
+		c := n.Child("kind")
 		w.enumValue(&c, s, enumValues9)
 	}
 	if s := string(v.RuntimeEngine); s != "" || forced(v.ForceSendFields, "RuntimeEngine") {
-		c := n.child("runtime_engine")
+		c := n.Child("runtime_engine")
 		w.enumValue(&c, s, enumValues10)
 	}
 }
 
-func enumJobsSqlConditionConfiguration(w *walker, n *node, v *jobs.SqlConditionConfiguration) {
+func enumJobsSqlConditionConfiguration(w *walker, n *walk.Node, v *jobs.SqlConditionConfiguration) {
 	if v == nil {
 		return
 	}
 	if s := string(v.TriggerMode); s != "" {
-		c := n.child("trigger_mode")
+		c := n.Child("trigger_mode")
 		w.enumValue(&c, s, enumValues89)
 	}
 }
 
-func enumJobsAiRuntimeTask(w *walker, n *node, v *jobs.AiRuntimeTask) {
+func enumJobsAiRuntimeTask(w *walker, n *walk.Node, v *jobs.AiRuntimeTask) {
 	if v == nil {
 		return
 	}
 	if len(v.Deployments) > 0 {
-		c := n.child("deployments")
+		c := n.Child("deployments")
 		for i := range v.Deployments {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumJobsDeploymentSpec(w, &e, &v.Deployments[i])
 		}
 	}
 	if s := string(v.PriorityClass); s != "" || forced(v.ForceSendFields, "PriorityClass") {
-		c := n.child("priority_class")
+		c := n.Child("priority_class")
 		w.enumValue(&c, s, enumValues90)
 	}
 }
 
-func enumJobsCompute(w *walker, n *node, v *jobs.Compute) {
+func enumJobsCompute(w *walker, n *walk.Node, v *jobs.Compute) {
 	if v == nil {
 		return
 	}
 	if s := string(v.HardwareAccelerator); s != "" {
-		c := n.child("hardware_accelerator")
+		c := n.Child("hardware_accelerator")
 		w.enumValue(&c, s, enumValues91)
 	}
 }
 
-func enumJobsConditionTask(w *walker, n *node, v *jobs.ConditionTask) {
+func enumJobsConditionTask(w *walker, n *walk.Node, v *jobs.ConditionTask) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Op); s != "" {
-		c := n.child("op")
+		c := n.Child("op")
 		w.enumValue(&c, s, enumValues92)
 	}
 }
 
-func enumJobsDbtTask(w *walker, n *node, v *jobs.DbtTask) {
+func enumJobsDbtTask(w *walker, n *walk.Node, v *jobs.DbtTask) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Source); s != "" || forced(v.ForceSendFields, "Source") {
-		c := n.child("source")
+		c := n.Child("source")
 		w.enumValue(&c, s, enumValues93)
 	}
 }
 
-func enumJobsForEachTask(w *walker, n *node, v *jobs.ForEachTask) {
+func enumJobsForEachTask(w *walker, n *walk.Node, v *jobs.ForEachTask) {
 	if v == nil {
 		return
 	}
-	if x := &v.Task; !isZeroStruct(x) || forced(v.ForceSendFields, "Task") || n.locs.Key("task") != nil {
-		c := n.child("task")
+	if x := &v.Task; !isZeroStruct(x) || forced(v.ForceSendFields, "Task") || n.Written("task") {
+		c := n.Child("task")
 		enumJobsTask2(w, &c, x)
 	}
 }
 
-func enumJobsGenAiComputeTask(w *walker, n *node, v *jobs.GenAiComputeTask) {
+func enumJobsGenAiComputeTask(w *walker, n *walk.Node, v *jobs.GenAiComputeTask) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Source); s != "" || forced(v.ForceSendFields, "Source") {
-		c := n.child("source")
+		c := n.Child("source")
 		w.enumValue(&c, s, enumValues93)
 	}
 }
 
-func enumJobsNotebookTask(w *walker, n *node, v *jobs.NotebookTask) {
+func enumJobsNotebookTask(w *walker, n *walk.Node, v *jobs.NotebookTask) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Source); s != "" || forced(v.ForceSendFields, "Source") {
-		c := n.child("source")
+		c := n.Child("source")
 		w.enumValue(&c, s, enumValues93)
 	}
 }
 
-func enumJobsPowerBiTask(w *walker, n *node, v *jobs.PowerBiTask) {
+func enumJobsPowerBiTask(w *walker, n *walk.Node, v *jobs.PowerBiTask) {
 	if v == nil {
 		return
 	}
 	if x := v.PowerBiModel; x != nil {
-		c := n.child("power_bi_model")
+		c := n.Child("power_bi_model")
 		enumJobsPowerBiModel(w, &c, x)
 	}
 	if len(v.Tables) > 0 {
-		c := n.child("tables")
+		c := n.Child("tables")
 		for i := range v.Tables {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumJobsPowerBiTable(w, &e, &v.Tables[i])
 		}
 	}
 }
 
-func enumJobsSparkPythonTask(w *walker, n *node, v *jobs.SparkPythonTask) {
+func enumJobsSparkPythonTask(w *walker, n *walk.Node, v *jobs.SparkPythonTask) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Source); s != "" {
-		c := n.child("source")
+		c := n.Child("source")
 		w.enumValue(&c, s, enumValues93)
 	}
 }
 
-func enumJobsSqlTask(w *walker, n *node, v *jobs.SqlTask) {
+func enumJobsSqlTask(w *walker, n *walk.Node, v *jobs.SqlTask) {
 	if v == nil {
 		return
 	}
 	if x := v.File; x != nil {
-		c := n.child("file")
+		c := n.Child("file")
 		enumJobsSqlTaskFile(w, &c, x)
 	}
 }
 
-func enumJobsModelTriggerConfiguration(w *walker, n *node, v *jobs.ModelTriggerConfiguration) {
+func enumJobsModelTriggerConfiguration(w *walker, n *walk.Node, v *jobs.ModelTriggerConfiguration) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Condition); s != "" || forced(v.ForceSendFields, "Condition") {
-		c := n.child("condition")
+		c := n.Child("condition")
 		w.enumValue(&c, s, enumValues94)
 	}
 }
 
-func enumJobsPeriodicTriggerConfiguration(w *walker, n *node, v *jobs.PeriodicTriggerConfiguration) {
+func enumJobsPeriodicTriggerConfiguration(w *walker, n *walk.Node, v *jobs.PeriodicTriggerConfiguration) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Unit); s != "" {
-		c := n.child("unit")
+		c := n.Child("unit")
 		w.enumValue(&c, s, enumValues95)
 	}
 }
 
-func enumJobsTableUpdateTriggerConfiguration(w *walker, n *node, v *jobs.TableUpdateTriggerConfiguration) {
+func enumJobsTableUpdateTriggerConfiguration(w *walker, n *walk.Node, v *jobs.TableUpdateTriggerConfiguration) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Condition); s != "" || forced(v.ForceSendFields, "Condition") {
-		c := n.child("condition")
+		c := n.Child("condition")
 		w.enumValue(&c, s, enumValues96)
 	}
 }
 
-func enumJobsContinuousTriggerConfiguration(w *walker, n *node, v *jobs.ContinuousTriggerConfiguration) {
+func enumJobsContinuousTriggerConfiguration(w *walker, n *walk.Node, v *jobs.ContinuousTriggerConfiguration) {
 	if v == nil {
 		return
 	}
 	if x := v.MaintenanceWindow; x != nil {
-		c := n.child("maintenance_window")
+		c := n.Child("maintenance_window")
 		enumJobsMaintenanceWindow(w, &c, x)
 	}
 	if s := string(v.TaskRetryMode); s != "" {
-		c := n.child("task_retry_mode")
+		c := n.Child("task_retry_mode")
 		w.enumValue(&c, s, enumValues48)
 	}
 }
 
-func enumCatalogRateLimit(w *walker, n *node, v *catalog.RateLimit) {
+func enumCatalogRateLimit(w *walker, n *walk.Node, v *catalog.RateLimit) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Key); s != "" || forced(v.ForceSendFields, "Key") {
-		c := n.child("key")
+		c := n.Child("key")
 		w.enumValue(&c, s, enumValues97)
 	}
 	if s := string(v.RenewalPeriod); s != "" || forced(v.ForceSendFields, "RenewalPeriod") {
-		c := n.child("renewal_period")
+		c := n.Child("renewal_period")
 		w.enumValue(&c, s, enumValues98)
 	}
 }
 
-func enumCatalogModelServiceConfigRoutingConfig(w *walker, n *node, v *catalog.ModelServiceConfigRoutingConfig) {
+func enumCatalogModelServiceConfigRoutingConfig(w *walker, n *walk.Node, v *catalog.ModelServiceConfigRoutingConfig) {
 	if v == nil {
 		return
 	}
 	if len(v.Destinations) > 0 {
-		c := n.child("destinations")
+		c := n.Child("destinations")
 		for i := range v.Destinations {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumCatalogModelServiceConfigDestinationConfig(w, &e, &v.Destinations[i])
 		}
 	}
 	if x := v.Fallback; x != nil {
-		c := n.child("fallback")
+		c := n.Child("fallback")
 		enumCatalogModelServiceConfigFallbackConfig(w, &c, x)
 	}
 }
 
-func enumServingAiGatewayGuardrails(w *walker, n *node, v *serving.AiGatewayGuardrails) {
+func enumServingAiGatewayGuardrails(w *walker, n *walk.Node, v *serving.AiGatewayGuardrails) {
 	if v == nil {
 		return
 	}
 	if x := v.Input; x != nil {
-		c := n.child("input")
+		c := n.Child("input")
 		enumServingAiGatewayGuardrailParameters(w, &c, x)
 	}
 	if x := v.Output; x != nil {
-		c := n.child("output")
+		c := n.Child("output")
 		enumServingAiGatewayGuardrailParameters(w, &c, x)
 	}
 }
 
-func enumServingAiGatewayRateLimit(w *walker, n *node, v *serving.AiGatewayRateLimit) {
+func enumServingAiGatewayRateLimit(w *walker, n *walk.Node, v *serving.AiGatewayRateLimit) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Key); s != "" || forced(v.ForceSendFields, "Key") {
-		c := n.child("key")
+		c := n.Child("key")
 		w.enumValue(&c, s, enumValues99)
 	}
 	if s := string(v.RenewalPeriod); s != "" || forced(v.ForceSendFields, "RenewalPeriod") {
-		c := n.child("renewal_period")
+		c := n.Child("renewal_period")
 		w.enumValue(&c, s, enumValues56)
 	}
 }
 
-func enumServingServedEntityInput(w *walker, n *node, v *serving.ServedEntityInput) {
+func enumServingServedEntityInput(w *walker, n *walk.Node, v *serving.ServedEntityInput) {
 	if v == nil {
 		return
 	}
 	if x := v.ExternalModel; x != nil {
-		c := n.child("external_model")
+		c := n.Child("external_model")
 		enumServingExternalModel(w, &c, x)
 	}
 	if s := string(v.WorkloadType); s != "" || forced(v.ForceSendFields, "WorkloadType") {
-		c := n.child("workload_type")
+		c := n.Child("workload_type")
 		w.enumValue(&c, s, enumValues100)
 	}
 }
 
-func enumServingServedModelInput(w *walker, n *node, v *serving.ServedModelInput) {
+func enumServingServedModelInput(w *walker, n *walk.Node, v *serving.ServedModelInput) {
 	if v == nil {
 		return
 	}
 	if s := string(v.WorkloadType); s != "" || forced(v.ForceSendFields, "WorkloadType") {
-		c := n.child("workload_type")
+		c := n.Child("workload_type")
 		w.enumValue(&c, s, enumValues100)
 	}
 }
 
-func enumPipelinesPipelineClusterAutoscale(w *walker, n *node, v *pipelines.PipelineClusterAutoscale) {
+func enumPipelinesPipelineClusterAutoscale(w *walker, n *walk.Node, v *pipelines.PipelineClusterAutoscale) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Mode); s != "" {
-		c := n.child("mode")
+		c := n.Child("mode")
 		w.enumValue(&c, s, enumValues101)
 	}
 }
 
-func enumPipelinesOperationTimeWindow(w *walker, n *node, v *pipelines.OperationTimeWindow) {
+func enumPipelinesOperationTimeWindow(w *walker, n *walk.Node, v *pipelines.OperationTimeWindow) {
 	if v == nil {
 		return
 	}
 	if len(v.DaysOfWeek) > 0 {
-		c := n.child("days_of_week")
+		c := n.Child("days_of_week")
 		for i := range v.DaysOfWeek {
-			e := c.elem(i)
+			e := c.Elem(i)
 			w.enumValue(&e, string(v.DaysOfWeek[i]), enumValues63)
 		}
 	}
 }
 
-func enumPipelinesIngestionConfig(w *walker, n *node, v *pipelines.IngestionConfig) {
+func enumPipelinesIngestionConfig(w *walker, n *walk.Node, v *pipelines.IngestionConfig) {
 	if v == nil {
 		return
 	}
 	if x := v.Report; x != nil {
-		c := n.child("report")
+		c := n.Child("report")
 		enumPipelinesReportSpec(w, &c, x)
 	}
 	if x := v.Schema; x != nil {
-		c := n.child("schema")
+		c := n.Child("schema")
 		enumPipelinesSchemaSpec(w, &c, x)
 	}
 	if x := v.Table; x != nil {
-		c := n.child("table")
+		c := n.Child("table")
 		enumPipelinesTableSpec(w, &c, x)
 	}
 }
 
-func enumPipelinesTableSpecificConfig(w *walker, n *node, v *pipelines.TableSpecificConfig) {
+func enumPipelinesTableSpecificConfig(w *walker, n *walk.Node, v *pipelines.TableSpecificConfig) {
 	if v == nil {
 		return
 	}
 	if s := string(v.ScdType); s != "" || forced(v.ForceSendFields, "ScdType") {
-		c := n.child("scd_type")
+		c := n.Child("scd_type")
 		w.enumValue(&c, s, enumValues102)
 	}
 }
 
-func enumPostgresWeeklySchedule(w *walker, n *node, v *postgres.WeeklySchedule) {
+func enumPostgresWeeklySchedule(w *walker, n *walk.Node, v *postgres.WeeklySchedule) {
 	if v == nil {
 		return
 	}
 	if s := string(v.DayOfWeek); s != "" || forced(v.ForceSendFields, "DayOfWeek") {
-		c := n.child("day_of_week")
+		c := n.Child("day_of_week")
 		w.enumValue(&c, s, enumValues63)
 	}
 }
 
-func enumDatabaseSyncedTableContinuousUpdateStatus(w *walker, n *node, v *database.SyncedTableContinuousUpdateStatus) {
+func enumDatabaseSyncedTableContinuousUpdateStatus(w *walker, n *walk.Node, v *database.SyncedTableContinuousUpdateStatus) {
 	if v == nil {
 		return
 	}
 	if x := v.InitialPipelineSyncProgress; x != nil {
-		c := n.child("initial_pipeline_sync_progress")
+		c := n.Child("initial_pipeline_sync_progress")
 		enumDatabaseSyncedTablePipelineProgress(w, &c, x)
 	}
 }
 
-func enumDatabaseSyncedTableProvisioningStatus(w *walker, n *node, v *database.SyncedTableProvisioningStatus) {
+func enumDatabaseSyncedTableProvisioningStatus(w *walker, n *walk.Node, v *database.SyncedTableProvisioningStatus) {
 	if v == nil {
 		return
 	}
 	if x := v.InitialPipelineSyncProgress; x != nil {
-		c := n.child("initial_pipeline_sync_progress")
+		c := n.Child("initial_pipeline_sync_progress")
 		enumDatabaseSyncedTablePipelineProgress(w, &c, x)
 	}
 }
 
-func enumDatabaseSyncedTableTriggeredUpdateStatus(w *walker, n *node, v *database.SyncedTableTriggeredUpdateStatus) {
+func enumDatabaseSyncedTableTriggeredUpdateStatus(w *walker, n *walk.Node, v *database.SyncedTableTriggeredUpdateStatus) {
 	if v == nil {
 		return
 	}
 	if x := v.TriggeredUpdateProgress; x != nil {
-		c := n.child("triggered_update_progress")
+		c := n.Child("triggered_update_progress")
 		enumDatabaseSyncedTablePipelineProgress(w, &c, x)
 	}
 }
 
-func enumDatabaseSyncedTableSpecTypeOverride(w *walker, n *node, v *database.SyncedTableSpecTypeOverride) {
+func enumDatabaseSyncedTableSpecTypeOverride(w *walker, n *walk.Node, v *database.SyncedTableSpecTypeOverride) {
 	if v == nil {
 		return
 	}
 	if s := string(v.PgType); s != "" || forced(v.ForceSendFields, "PgType") {
-		c := n.child("pg_type")
+		c := n.Child("pg_type")
 		w.enumValue(&c, s, enumValues66)
 	}
 }
 
-func enumSqlAlertV2OperandColumn2(w *walker, n *node, v *sql.AlertV2OperandColumn) {
+func enumSqlAlertV2OperandColumn2(w *walker, n *walk.Node, v *sql.AlertV2OperandColumn) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Aggregation); s != "" || forced(v.ForceSendFields, "Aggregation") {
-		c := n.child("aggregation")
+		c := n.Child("aggregation")
 		w.enumValue(&c, s, enumValues76)
 	}
 }
 
-func enumJobsDeploymentSpec(w *walker, n *node, v *jobs.DeploymentSpec) {
+func enumJobsDeploymentSpec(w *walker, n *walk.Node, v *jobs.DeploymentSpec) {
 	if v == nil {
 		return
 	}
-	if x := &v.Compute; !isZeroStruct(x) || forced(v.ForceSendFields, "Compute") || n.locs.Key("compute") != nil {
-		c := n.child("compute")
+	if x := &v.Compute; !isZeroStruct(x) || forced(v.ForceSendFields, "Compute") || n.Written("compute") {
+		c := n.Child("compute")
 		enumJobsComputeSpec(w, &c, x)
 	}
 }
 
-func enumJobsTask2(w *walker, n *node, v *jobs.Task) {
+func enumJobsTask2(w *walker, n *walk.Node, v *jobs.Task) {
 	if v == nil {
 		return
 	}
 	if x := v.AiRuntimeTask; x != nil {
-		c := n.child("ai_runtime_task")
+		c := n.Child("ai_runtime_task")
 		enumJobsAiRuntimeTask(w, &c, x)
 	}
 	if x := v.Compute; x != nil {
-		c := n.child("compute")
+		c := n.Child("compute")
 		enumJobsCompute(w, &c, x)
 	}
 	if x := v.ConditionTask; x != nil {
-		c := n.child("condition_task")
+		c := n.Child("condition_task")
 		enumJobsConditionTask(w, &c, x)
 	}
 	if x := v.DbtTask; x != nil {
-		c := n.child("dbt_task")
+		c := n.Child("dbt_task")
 		enumJobsDbtTask(w, &c, x)
 	}
 	if x := v.GenAiComputeTask; x != nil {
-		c := n.child("gen_ai_compute_task")
+		c := n.Child("gen_ai_compute_task")
 		enumJobsGenAiComputeTask(w, &c, x)
 	}
 	if x := v.Health; x != nil {
-		c := n.child("health")
+		c := n.Child("health")
 		enumJobsJobsHealthRules(w, &c, x)
 	}
 	if x := v.NewCluster; x != nil {
-		c := n.child("new_cluster")
+		c := n.Child("new_cluster")
 		enumComputeClusterSpec(w, &c, x)
 	}
 	if x := v.NotebookTask; x != nil {
-		c := n.child("notebook_task")
+		c := n.Child("notebook_task")
 		enumJobsNotebookTask(w, &c, x)
 	}
 	if x := v.PowerBiTask; x != nil {
-		c := n.child("power_bi_task")
+		c := n.Child("power_bi_task")
 		enumJobsPowerBiTask(w, &c, x)
 	}
 	if s := string(v.RunIf); s != "" || forced(v.ForceSendFields, "RunIf") {
-		c := n.child("run_if")
+		c := n.Child("run_if")
 		w.enumValue(&c, s, enumValues52)
 	}
 	if x := v.SparkPythonTask; x != nil {
-		c := n.child("spark_python_task")
+		c := n.Child("spark_python_task")
 		enumJobsSparkPythonTask(w, &c, x)
 	}
 	if x := v.SqlTask; x != nil {
-		c := n.child("sql_task")
+		c := n.Child("sql_task")
 		enumJobsSqlTask(w, &c, x)
 	}
 }
 
-func enumJobsPowerBiModel(w *walker, n *node, v *jobs.PowerBiModel) {
+func enumJobsPowerBiModel(w *walker, n *walk.Node, v *jobs.PowerBiModel) {
 	if v == nil {
 		return
 	}
 	if s := string(v.AuthenticationMethod); s != "" || forced(v.ForceSendFields, "AuthenticationMethod") {
-		c := n.child("authentication_method")
+		c := n.Child("authentication_method")
 		w.enumValue(&c, s, enumValues103)
 	}
 	if s := string(v.StorageMode); s != "" || forced(v.ForceSendFields, "StorageMode") {
-		c := n.child("storage_mode")
+		c := n.Child("storage_mode")
 		w.enumValue(&c, s, enumValues104)
 	}
 }
 
-func enumJobsPowerBiTable(w *walker, n *node, v *jobs.PowerBiTable) {
+func enumJobsPowerBiTable(w *walker, n *walk.Node, v *jobs.PowerBiTable) {
 	if v == nil {
 		return
 	}
 	if s := string(v.StorageMode); s != "" || forced(v.ForceSendFields, "StorageMode") {
-		c := n.child("storage_mode")
+		c := n.Child("storage_mode")
 		w.enumValue(&c, s, enumValues104)
 	}
 }
 
-func enumJobsSqlTaskFile(w *walker, n *node, v *jobs.SqlTaskFile) {
+func enumJobsSqlTaskFile(w *walker, n *walk.Node, v *jobs.SqlTaskFile) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Source); s != "" {
-		c := n.child("source")
+		c := n.Child("source")
 		w.enumValue(&c, s, enumValues93)
 	}
 }
 
-func enumCatalogModelServiceConfigDestinationConfig(w *walker, n *node, v *catalog.ModelServiceConfigDestinationConfig) {
+func enumCatalogModelServiceConfigDestinationConfig(w *walker, n *walk.Node, v *catalog.ModelServiceConfigDestinationConfig) {
 	if v == nil {
 		return
 	}
 	if s := string(v.DestinationType); s != "" || forced(v.ForceSendFields, "DestinationType") {
-		c := n.child("destination_type")
+		c := n.Child("destination_type")
 		w.enumValue(&c, s, enumValues105)
 	}
 }
 
-func enumCatalogModelServiceConfigFallbackConfig(w *walker, n *node, v *catalog.ModelServiceConfigFallbackConfig) {
+func enumCatalogModelServiceConfigFallbackConfig(w *walker, n *walk.Node, v *catalog.ModelServiceConfigFallbackConfig) {
 	if v == nil {
 		return
 	}
 	if len(v.Destinations) > 0 {
-		c := n.child("destinations")
+		c := n.Child("destinations")
 		for i := range v.Destinations {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumCatalogModelServiceConfigDestinationConfig(w, &e, &v.Destinations[i])
 		}
 	}
 }
 
-func enumServingAiGatewayGuardrailParameters(w *walker, n *node, v *serving.AiGatewayGuardrailParameters) {
+func enumServingAiGatewayGuardrailParameters(w *walker, n *walk.Node, v *serving.AiGatewayGuardrailParameters) {
 	if v == nil {
 		return
 	}
 	if x := v.Pii; x != nil {
-		c := n.child("pii")
+		c := n.Child("pii")
 		enumServingAiGatewayGuardrailPiiBehavior(w, &c, x)
 	}
 }
 
-func enumServingExternalModel(w *walker, n *node, v *serving.ExternalModel) {
+func enumServingExternalModel(w *walker, n *walk.Node, v *serving.ExternalModel) {
 	if v == nil {
 		return
 	}
 	if x := v.AmazonBedrockConfig; x != nil {
-		c := n.child("amazon_bedrock_config")
+		c := n.Child("amazon_bedrock_config")
 		enumServingAmazonBedrockConfig(w, &c, x)
 	}
 	if s := string(v.Provider); s != "" {
-		c := n.child("provider")
+		c := n.Child("provider")
 		w.enumValue(&c, s, enumValues106)
 	}
 }
 
-func enumPipelinesReportSpec(w *walker, n *node, v *pipelines.ReportSpec) {
+func enumPipelinesReportSpec(w *walker, n *walk.Node, v *pipelines.ReportSpec) {
 	if v == nil {
 		return
 	}
 	if x := v.TableConfiguration; x != nil {
-		c := n.child("table_configuration")
+		c := n.Child("table_configuration")
 		enumPipelinesTableSpecificConfig(w, &c, x)
 	}
 }
 
-func enumPipelinesSchemaSpec(w *walker, n *node, v *pipelines.SchemaSpec) {
+func enumPipelinesSchemaSpec(w *walker, n *walk.Node, v *pipelines.SchemaSpec) {
 	if v == nil {
 		return
 	}
 	if x := v.ConnectorOptions; x != nil {
-		c := n.child("connector_options")
+		c := n.Child("connector_options")
 		enumPipelinesConnectorOptions(w, &c, x)
 	}
 	if x := v.FanoutOptions; x != nil {
-		c := n.child("fanout_options")
+		c := n.Child("fanout_options")
 		enumPipelinesIngestionPipelineDefinitionFanoutOptions(w, &c, x)
 	}
 	if x := v.TableConfiguration; x != nil {
-		c := n.child("table_configuration")
+		c := n.Child("table_configuration")
 		enumPipelinesTableSpecificConfig(w, &c, x)
 	}
 }
 
-func enumPipelinesTableSpec(w *walker, n *node, v *pipelines.TableSpec) {
+func enumPipelinesTableSpec(w *walker, n *walk.Node, v *pipelines.TableSpec) {
 	if v == nil {
 		return
 	}
 	if x := v.ConnectorOptions; x != nil {
-		c := n.child("connector_options")
+		c := n.Child("connector_options")
 		enumPipelinesConnectorOptions(w, &c, x)
 	}
 	if x := v.TableConfiguration; x != nil {
-		c := n.child("table_configuration")
+		c := n.Child("table_configuration")
 		enumPipelinesTableSpecificConfig(w, &c, x)
 	}
 }
 
-func enumDatabaseSyncedTablePipelineProgress(w *walker, n *node, v *database.SyncedTablePipelineProgress) {
+func enumDatabaseSyncedTablePipelineProgress(w *walker, n *walk.Node, v *database.SyncedTablePipelineProgress) {
 	if v == nil {
 		return
 	}
 	if s := string(v.ProvisioningPhase); s != "" || forced(v.ForceSendFields, "ProvisioningPhase") {
-		c := n.child("provisioning_phase")
+		c := n.Child("provisioning_phase")
 		w.enumValue(&c, s, enumValues107)
 	}
 }
 
-func enumJobsComputeSpec(w *walker, n *node, v *jobs.ComputeSpec) {
+func enumJobsComputeSpec(w *walker, n *walk.Node, v *jobs.ComputeSpec) {
 	if v == nil {
 		return
 	}
 	if s := string(v.AcceleratorType); s != "" || forced(v.ForceSendFields, "AcceleratorType") {
-		c := n.child("accelerator_type")
+		c := n.Child("accelerator_type")
 		w.enumValue(&c, s, enumValues91)
 	}
 }
 
-func enumServingAiGatewayGuardrailPiiBehavior(w *walker, n *node, v *serving.AiGatewayGuardrailPiiBehavior) {
+func enumServingAiGatewayGuardrailPiiBehavior(w *walker, n *walk.Node, v *serving.AiGatewayGuardrailPiiBehavior) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Behavior); s != "" {
-		c := n.child("behavior")
+		c := n.Child("behavior")
 		w.enumValue(&c, s, enumValues108)
 	}
 }
 
-func enumServingAmazonBedrockConfig(w *walker, n *node, v *serving.AmazonBedrockConfig) {
+func enumServingAmazonBedrockConfig(w *walker, n *walk.Node, v *serving.AmazonBedrockConfig) {
 	if v == nil {
 		return
 	}
 	if s := string(v.BedrockProvider); s != "" || forced(v.ForceSendFields, "BedrockProvider") {
-		c := n.child("bedrock_provider")
+		c := n.Child("bedrock_provider")
 		w.enumValue(&c, s, enumValues109)
 	}
 }
 
-func enumPipelinesConnectorOptions(w *walker, n *node, v *pipelines.ConnectorOptions) {
+func enumPipelinesConnectorOptions(w *walker, n *walk.Node, v *pipelines.ConnectorOptions) {
 	if v == nil {
 		return
 	}
 	if x := v.GdriveOptions; x != nil {
-		c := n.child("gdrive_options")
+		c := n.Child("gdrive_options")
 		enumPipelinesGoogleDriveOptions(w, &c, x)
 	}
 	if x := v.KafkaOptions; x != nil {
-		c := n.child("kafka_options")
+		c := n.Child("kafka_options")
 		enumPipelinesKafkaOptions(w, &c, x)
 	}
 	if x := v.LinkedinAdsOptions; x != nil {
-		c := n.child("linkedin_ads_options")
+		c := n.Child("linkedin_ads_options")
 		enumPipelinesLinkedInAdsOptions(w, &c, x)
 	}
 	if x := v.OutlookOptions; x != nil {
-		c := n.child("outlook_options")
+		c := n.Child("outlook_options")
 		enumPipelinesOutlookOptions(w, &c, x)
 	}
 	if x := v.SharepointOptions; x != nil {
-		c := n.child("sharepoint_options")
+		c := n.Child("sharepoint_options")
 		enumPipelinesSharepointOptions(w, &c, x)
 	}
 	if x := v.TiktokAdsOptions; x != nil {
-		c := n.child("tiktok_ads_options")
+		c := n.Child("tiktok_ads_options")
 		enumPipelinesTikTokAdsOptions(w, &c, x)
 	}
 }
 
-func enumPipelinesIngestionPipelineDefinitionFanoutOptions(w *walker, n *node, v *pipelines.IngestionPipelineDefinitionFanoutOptions) {
+func enumPipelinesIngestionPipelineDefinitionFanoutOptions(w *walker, n *walk.Node, v *pipelines.IngestionPipelineDefinitionFanoutOptions) {
 	if v == nil {
 		return
 	}
 	if len(v.Transforms) > 0 {
-		c := n.child("transforms")
+		c := n.Child("transforms")
 		for i := range v.Transforms {
-			e := c.elem(i)
+			e := c.Elem(i)
 			enumPipelinesTransformer(w, &e, &v.Transforms[i])
 		}
 	}
 }
 
-func enumPipelinesGoogleDriveOptions(w *walker, n *node, v *pipelines.GoogleDriveOptions) {
+func enumPipelinesGoogleDriveOptions(w *walker, n *walk.Node, v *pipelines.GoogleDriveOptions) {
 	if v == nil {
 		return
 	}
 	if s := string(v.EntityType); s != "" || forced(v.ForceSendFields, "EntityType") {
-		c := n.child("entity_type")
+		c := n.Child("entity_type")
 		w.enumValue(&c, s, enumValues110)
 	}
 	if x := v.FileIngestionOptions; x != nil {
-		c := n.child("file_ingestion_options")
+		c := n.Child("file_ingestion_options")
 		enumPipelinesFileIngestionOptions(w, &c, x)
 	}
 }
 
-func enumPipelinesKafkaOptions(w *walker, n *node, v *pipelines.KafkaOptions) {
+func enumPipelinesKafkaOptions(w *walker, n *walk.Node, v *pipelines.KafkaOptions) {
 	if v == nil {
 		return
 	}
 	if x := v.KeyTransformer; x != nil {
-		c := n.child("key_transformer")
+		c := n.Child("key_transformer")
 		enumPipelinesTransformer2(w, &c, x)
 	}
 	if x := v.ValueTransformer; x != nil {
-		c := n.child("value_transformer")
+		c := n.Child("value_transformer")
 		enumPipelinesTransformer2(w, &c, x)
 	}
 }
 
-func enumPipelinesLinkedInAdsOptions(w *walker, n *node, v *pipelines.LinkedInAdsOptions) {
+func enumPipelinesLinkedInAdsOptions(w *walker, n *walk.Node, v *pipelines.LinkedInAdsOptions) {
 	if v == nil {
 		return
 	}
 	if x := v.CustomReportOptions; x != nil {
-		c := n.child("custom_report_options")
+		c := n.Child("custom_report_options")
 		enumPipelinesLinkedInAdsOptionsLinkedInAdsCustomReportOptions(w, &c, x)
 	}
 }
 
-func enumPipelinesOutlookOptions(w *walker, n *node, v *pipelines.OutlookOptions) {
+func enumPipelinesOutlookOptions(w *walker, n *walk.Node, v *pipelines.OutlookOptions) {
 	if v == nil {
 		return
 	}
 	if s := string(v.AttachmentMode); s != "" || forced(v.ForceSendFields, "AttachmentMode") {
-		c := n.child("attachment_mode")
+		c := n.Child("attachment_mode")
 		w.enumValue(&c, s, enumValues111)
 	}
 	if s := string(v.BodyFormat); s != "" || forced(v.ForceSendFields, "BodyFormat") {
-		c := n.child("body_format")
+		c := n.Child("body_format")
 		w.enumValue(&c, s, enumValues112)
 	}
 }
 
-func enumPipelinesSharepointOptions(w *walker, n *node, v *pipelines.SharepointOptions) {
+func enumPipelinesSharepointOptions(w *walker, n *walk.Node, v *pipelines.SharepointOptions) {
 	if v == nil {
 		return
 	}
 	if s := string(v.EntityType); s != "" || forced(v.ForceSendFields, "EntityType") {
-		c := n.child("entity_type")
+		c := n.Child("entity_type")
 		w.enumValue(&c, s, enumValues113)
 	}
 	if x := v.FileIngestionOptions; x != nil {
-		c := n.child("file_ingestion_options")
+		c := n.Child("file_ingestion_options")
 		enumPipelinesFileIngestionOptions(w, &c, x)
 	}
 }
 
-func enumPipelinesTikTokAdsOptions(w *walker, n *node, v *pipelines.TikTokAdsOptions) {
+func enumPipelinesTikTokAdsOptions(w *walker, n *walk.Node, v *pipelines.TikTokAdsOptions) {
 	if v == nil {
 		return
 	}
 	if x := v.CustomReportOptions; x != nil {
-		c := n.child("custom_report_options")
+		c := n.Child("custom_report_options")
 		enumPipelinesTikTokAdsOptionsTikTokAdsCustomReportOptions(w, &c, x)
 	}
 	if s := string(v.DataLevel); s != "" || forced(v.ForceSendFields, "DataLevel") {
-		c := n.child("data_level")
+		c := n.Child("data_level")
 		w.enumValue(&c, s, enumValues114)
 	}
 	if s := string(v.ReportType); s != "" || forced(v.ForceSendFields, "ReportType") {
-		c := n.child("report_type")
+		c := n.Child("report_type")
 		w.enumValue(&c, s, enumValues115)
 	}
 }
 
-func enumPipelinesTransformer(w *walker, n *node, v *pipelines.Transformer) {
+func enumPipelinesTransformer(w *walker, n *walk.Node, v *pipelines.Transformer) {
 	if v == nil {
 		return
 	}
 	if x := v.AvroOptions; x != nil {
-		c := n.child("avro_options")
+		c := n.Child("avro_options")
 		enumPipelinesAvroTransformerOptions(w, &c, x)
 	}
 	if s := string(v.Format); s != "" || forced(v.ForceSendFields, "Format") {
-		c := n.child("format")
+		c := n.Child("format")
 		w.enumValue(&c, s, enumValues116)
 	}
 	if x := v.JsonOptions; x != nil {
-		c := n.child("json_options")
+		c := n.Child("json_options")
 		enumPipelinesJsonTransformerOptions(w, &c, x)
 	}
 	if x := v.ProtobufOptions; x != nil {
-		c := n.child("protobuf_options")
+		c := n.Child("protobuf_options")
 		enumPipelinesProtobufTransformerOptions(w, &c, x)
 	}
 }
 
-func enumPipelinesFileIngestionOptions(w *walker, n *node, v *pipelines.FileIngestionOptions) {
+func enumPipelinesFileIngestionOptions(w *walker, n *walk.Node, v *pipelines.FileIngestionOptions) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Format); s != "" || forced(v.ForceSendFields, "Format") {
-		c := n.child("format")
+		c := n.Child("format")
 		w.enumValue(&c, s, enumValues117)
 	}
 	if s := string(v.SchemaEvolutionMode); s != "" || forced(v.ForceSendFields, "SchemaEvolutionMode") {
-		c := n.child("schema_evolution_mode")
+		c := n.Child("schema_evolution_mode")
 		w.enumValue(&c, s, enumValues118)
 	}
 }
 
-func enumPipelinesTransformer2(w *walker, n *node, v *pipelines.Transformer) {
+func enumPipelinesTransformer2(w *walker, n *walk.Node, v *pipelines.Transformer) {
 	if v == nil {
 		return
 	}
 	if x := v.AvroOptions; x != nil {
-		c := n.child("avro_options")
+		c := n.Child("avro_options")
 		enumPipelinesAvroTransformerOptions(w, &c, x)
 	}
 	if s := string(v.Format); s != "" || forced(v.ForceSendFields, "Format") {
-		c := n.child("format")
+		c := n.Child("format")
 		w.enumValue(&c, s, enumValues116)
 	}
 	if x := v.JsonOptions; x != nil {
-		c := n.child("json_options")
+		c := n.Child("json_options")
 		enumPipelinesJsonTransformerOptions(w, &c, x)
 	}
 	if x := v.ProtobufOptions; x != nil {
-		c := n.child("protobuf_options")
+		c := n.Child("protobuf_options")
 		enumPipelinesProtobufTransformerOptions(w, &c, x)
 	}
 }
 
-func enumPipelinesLinkedInAdsOptionsLinkedInAdsCustomReportOptions(w *walker, n *node, v *pipelines.LinkedInAdsOptionsLinkedInAdsCustomReportOptions) {
+func enumPipelinesLinkedInAdsOptionsLinkedInAdsCustomReportOptions(w *walker, n *walk.Node, v *pipelines.LinkedInAdsOptionsLinkedInAdsCustomReportOptions) {
 	if v == nil {
 		return
 	}
 	if len(v.EntityGranularity) > 0 {
-		c := n.child("entity_granularity")
+		c := n.Child("entity_granularity")
 		for i := range v.EntityGranularity {
-			e := c.elem(i)
+			e := c.Elem(i)
 			w.enumValue(&e, string(v.EntityGranularity[i]), enumValues119)
 		}
 	}
 	if s := string(v.Finder); s != "" {
-		c := n.child("finder")
+		c := n.Child("finder")
 		w.enumValue(&c, s, enumValues120)
 	}
 	if s := string(v.TimeGranularity); s != "" {
-		c := n.child("time_granularity")
+		c := n.Child("time_granularity")
 		w.enumValue(&c, s, enumValues121)
 	}
 }
 
-func enumPipelinesTikTokAdsOptionsTikTokAdsCustomReportOptions(w *walker, n *node, v *pipelines.TikTokAdsOptionsTikTokAdsCustomReportOptions) {
+func enumPipelinesTikTokAdsOptionsTikTokAdsCustomReportOptions(w *walker, n *walk.Node, v *pipelines.TikTokAdsOptionsTikTokAdsCustomReportOptions) {
 	if v == nil {
 		return
 	}
 	if s := string(v.DataLevel); s != "" || forced(v.ForceSendFields, "DataLevel") {
-		c := n.child("data_level")
+		c := n.Child("data_level")
 		w.enumValue(&c, s, enumValues114)
 	}
 	if s := string(v.ReportType); s != "" || forced(v.ForceSendFields, "ReportType") {
-		c := n.child("report_type")
+		c := n.Child("report_type")
 		w.enumValue(&c, s, enumValues115)
 	}
 }
 
-func enumPipelinesAvroTransformerOptions(w *walker, n *node, v *pipelines.AvroTransformerOptions) {
+func enumPipelinesAvroTransformerOptions(w *walker, n *walk.Node, v *pipelines.AvroTransformerOptions) {
 	if v == nil {
 		return
 	}
 	if s := string(v.ParseMode); s != "" || forced(v.ForceSendFields, "ParseMode") {
-		c := n.child("parse_mode")
+		c := n.Child("parse_mode")
 		w.enumValue(&c, s, enumValues122)
 	}
 }
 
-func enumPipelinesJsonTransformerOptions(w *walker, n *node, v *pipelines.JsonTransformerOptions) {
+func enumPipelinesJsonTransformerOptions(w *walker, n *walk.Node, v *pipelines.JsonTransformerOptions) {
 	if v == nil {
 		return
 	}
 	if s := string(v.SchemaEvolutionMode); s != "" || forced(v.ForceSendFields, "SchemaEvolutionMode") {
-		c := n.child("schema_evolution_mode")
+		c := n.Child("schema_evolution_mode")
 		w.enumValue(&c, s, enumValues118)
 	}
 }
 
-func enumPipelinesProtobufTransformerOptions(w *walker, n *node, v *pipelines.ProtobufTransformerOptions) {
+func enumPipelinesProtobufTransformerOptions(w *walker, n *walk.Node, v *pipelines.ProtobufTransformerOptions) {
 	if v == nil {
 		return
 	}
 	if s := string(v.ParseMode); s != "" || forced(v.ForceSendFields, "ParseMode") {
-		c := n.child("parse_mode")
+		c := n.Child("parse_mode")
 		w.enumValue(&c, s, enumValues122)
 	}
 }
