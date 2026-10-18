@@ -2,16 +2,15 @@ package resourcemutator
 
 import (
 	"context"
-	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structvar"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 const (
@@ -192,55 +191,38 @@ func (m *fixPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	}
 	currentUser := b.Config.Workspace.CurrentUser.UserName
 
-	err := structvar.ForEach(b.Config.View(), structpath.NewPattern(nil, "resources", structpath.AnyKey, structpath.AnyKey, "permissions"), func(p *structpath.PathNode, v structvar.View) error {
-		// Extract resource type from path: resources.<resource_type>.<resource_name>.permissions
-		resourceType := p.KeyAt(1)
-		if ignoredResources[resourceType] || v.Kind() != structvar.KindSequence {
-			return nil
+	b.Config.Resources.IterateAllPermissions(func(typ, name string, perms config.PermissionList) bool {
+		if ignoredResources[typ] || perms.IsNil() {
+			return true
 		}
 
-		var permissions []permission
-		for _, pv := range v.Sequence() {
-			var perm permission
-			perm.level, _ = pv.Get("level").AsString()
-			perm.userName, _ = pv.Get("user_name").AsString()
-			perm.servicePrincipalName, _ = pv.Get("service_principal_name").AsString()
-			perm.groupName, _ = pv.Get("group_name").AsString()
-			permissions = append(permissions, perm)
+		permissions := make([]permission, 0, perms.Len())
+		for i := range perms.Len() {
+			p := perms.At(i)
+			permissions = append(permissions, permission{
+				level:                string(p.Level),
+				userName:             p.UserName,
+				servicePrincipalName: p.ServicePrincipalName,
+				groupName:            p.GroupName,
+			})
 		}
 
-		err := setPermissions(v, processPermissions(currentUser, resourceType, permissions))
-		if err != nil {
-			return err
+		processed := processPermissions(currentUser, typ, permissions)
+		out := make([]resources.Permission, 0, len(processed))
+		for _, p := range processed {
+			out = append(out, resources.Permission{
+				Level:                iam.PermissionLevel(p.level),
+				UserName:             p.userName,
+				ServicePrincipalName: p.servicePrincipalName,
+				GroupName:            p.groupName,
+			})
 		}
+		perms.Set(out)
 
 		// The permissions are rebuilt without locations.
-		b.Config.SetLocations(p, nil)
-		return nil
+		b.Config.SetLocations(structpath.NewPath(nil, "resources", typ, name, "permissions"), nil)
+		return true
 	})
 
-	return diag.FromErr(err)
-}
-
-// setPermissions replaces the permissions described by v. The type of the permissions
-// differs between resources, but all have the same fields.
-func setPermissions(v structvar.View, permissions []permission) error {
-	field := v.Reflect()
-	for field.Kind() == reflect.Pointer || field.Kind() == reflect.Interface {
-		field = field.Elem()
-	}
-	if !field.CanSet() || field.Kind() != reflect.Slice {
-		return fmt.Errorf("cannot set permissions of type %s", field.Type())
-	}
-
-	out := reflect.MakeSlice(field.Type(), len(permissions), len(permissions))
-	for i, p := range permissions {
-		elem := out.Index(i)
-		elem.FieldByName("Level").SetString(p.level)
-		elem.FieldByName("UserName").SetString(p.userName)
-		elem.FieldByName("ServicePrincipalName").SetString(p.servicePrincipalName)
-		elem.FieldByName("GroupName").SetString(p.groupName)
-	}
-	field.Set(out)
 	return nil
 }

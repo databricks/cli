@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 
@@ -11,10 +12,9 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structvar"
 )
 
-func validateFileFormat(configRoot structvar.View, filePath string) diag.Diagnostics {
+func validateFileFormat(configRoot *config.Root, filePath string) diag.Diagnostics {
 	for _, resourceDescription := range config.SupportedResources() {
 		singularName := resourceDescription.SingularName
 
@@ -29,49 +29,38 @@ func validateFileFormat(configRoot structvar.View, filePath string) diag.Diagnos
 	return nil
 }
 
-func validateSingleResourceDefined(configRoot structvar.View, ext, typ string) diag.Diagnostics {
+func validateSingleResourceDefined(configRoot *config.Root, ext, typ string) diag.Diagnostics {
 	type resource struct {
-		path  *structpath.PathNode
-		value structvar.View
-		typ   string
-		key   string
+		path *structpath.PathNode
+		typ  string
+		key  string
 	}
 
 	var resources []resource
 	supportedResources := config.SupportedResources()
 
-	// Gather all resources defined in the resources block.
-	err := structvar.ForEach(
-		configRoot,
-		structpath.NewPattern(nil, "resources", structpath.AnyKey, structpath.AnyKey),
-		func(np *structpath.PathNode, v structvar.View) error {
-			// The key for the resource, e.g. "my_job" for jobs.my_job.
-			k := np.KeyAt(2)
-			// The type of the resource, e.g. "job" for jobs.my_job.
-			typ := supportedResources[np.KeyAt(1)].SingularName
-
-			resources = append(resources, resource{path: np, value: v, typ: typ, key: k})
-			return nil
+	// Gather all resources defined in the resources block, and in target blocks.
+	configRoot.Resources.IterateAllResources(func(group, name string, _ config.ConfigResource) bool {
+		resources = append(resources, resource{
+			path: structpath.NewPath(nil, "resources", group, name),
+			typ:  supportedResources[group].SingularName,
+			key:  name,
 		})
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	// Gather all resources defined in a target block.
-	err = structvar.ForEach(
-		configRoot,
-		structpath.NewPattern(nil, "targets", structpath.AnyKey, "resources", structpath.AnyKey, structpath.AnyKey),
-		func(np *structpath.PathNode, v structvar.View) error {
-			// The key for the resource, e.g. "my_job" for jobs.my_job.
-			k := np.KeyAt(4)
-			// The type of the resource, e.g. "job" for jobs.my_job.
-			typ := supportedResources[np.KeyAt(3)].SingularName
-
-			resources = append(resources, resource{path: np, value: v, typ: typ, key: k})
-			return nil
+		return true
+	})
+	for _, target := range slices.Sorted(maps.Keys(configRoot.Targets)) {
+		t := configRoot.Targets[target]
+		if t == nil || t.Resources == nil {
+			continue
+		}
+		t.Resources.IterateAllResources(func(group, name string, _ config.ConfigResource) bool {
+			resources = append(resources, resource{
+				path: structpath.NewPath(nil, "targets", target, "resources", group, name),
+				typ:  supportedResources[group].SingularName,
+				key:  name,
+			})
+			return true
 		})
-	if err != nil {
-		return diag.FromErr(err)
 	}
 
 	typeMatch := true
@@ -111,7 +100,7 @@ func validateSingleResourceDefined(configRoot structvar.View, ext, typ string) d
 	var locations []diag.Location
 	var paths []*structpath.PathNode
 	for _, rr := range resources {
-		locations = append(locations, rr.value.Locations()...)
+		locations = append(locations, configRoot.GetLocationsOfExact(rr.path)...)
 		paths = append(paths, rr.path)
 	}
 	// Sort the locations and paths to make the output deterministic.
@@ -171,7 +160,7 @@ func (m *processInclude) load() (*config.Root, diag.Diagnostics) {
 	}
 
 	// Add any diagnostics associated with the file format.
-	diags = append(diags, validateFileFormat(this.View(), m.relPath)...)
+	diags = append(diags, validateFileFormat(this, m.relPath)...)
 	if diags.HasError() {
 		return nil, diags
 	}
