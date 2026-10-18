@@ -404,9 +404,9 @@ func (g *gen) emitElem(indent, expr string, typ reflect.Type, t *tnode) {
 // walkerSpec describes a generated walker.
 type walkerSpec struct {
 	file, pkg, prefix, doc string
-	walkerType            string
-	required, enums       map[string][]string
-	defaults              []string // patterns of fields with a default, in order
+	walkerType             string
+	required, enums        map[string][]string
+	defaults               []string // patterns of fields with a default, in order
 }
 
 func generateWalker(spec walkerSpec) error {

@@ -69,7 +69,7 @@ func (c configureGenieSpaceSerializedSpace) Apply(_ context.Context, b *bundle.B
 		if kind != "" {
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
-				Summary:   fmt.Sprintf("serialized_space must be a string or map, got %s", kind),
+				Summary:   "serialized_space must be a string or map, got " + kind,
 				Locations: b.Config.GetLocationsOfExact(ssPath),
 			})
 			continue

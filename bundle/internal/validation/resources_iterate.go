@@ -105,7 +105,7 @@ func generateResourcesIterate(file string) error {
 		fmt.Fprintf(out, "\tcase %q:\n\t\tx, exists := r.%s[name]\n\t\tif x == nil {\n\t\t\tif r.%s == nil {\n\t\t\t\tr.%s = map[string]*%s{}\n\t\t\t}\n\t\t\tx = &%s{}\n\t\t\tr.%s[name] = x\n\t\t}\n\t\treturn &x.%s, &x.ModifiedStatus, !exists, true\n",
 			t.key, t.field, t.field, t.field, g.typeName(t.elem), g.typeName(t.elem), t.field, t.id)
 	}
-	fmt.Fprintf(out, "\tdefault:\n\t\treturn nil, nil, false, false\n\t}\n}\n")
+	fmt.Fprintf(out, "\tdefault:\n\t\treturn nil, nil, false, false\n\t}\n}\n") //nolint:dupword
 
 	fmt.Fprintf(out, "\n// IsZero reports whether no resource map is set.\n")
 	fmt.Fprintf(out, "func (r *Resources) IsZero() bool {\n\treturn ")
