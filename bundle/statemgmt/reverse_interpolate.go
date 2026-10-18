@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/walk"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
@@ -52,36 +53,53 @@ func reverseInterpolateConfig(cfg *config.Root) (*config.Root, error) {
 		return nil, err
 	}
 
-	type update struct {
-		path *structpath.PathNode
-		s    string
-	}
-	var updates []update
-	err := structvar.Walk(cfg.View(), func(p *structpath.PathNode, v structvar.View) error {
-		s, ok := v.AsString()
-		if !ok {
-			return nil
-		}
-		if _, ok := structvar.NewRef(s); !ok {
-			return nil
-		}
-		rs, err := reverseInterpolate(s)
-		if err != nil {
-			return err
-		}
-		if rs != s {
-			updates = append(updates, update{p, rs})
-		}
-		return nil
+	var u reverseUpdates
+	walk.Strings(cfg, walk.WithReferences, func(n *walk.Node, s string) (string, bool) {
+		u.add(n.Path, s)
+		return "", false
 	})
-	if err != nil {
-		return nil, err
+	for p, ref := range cfg.References() {
+		u.add(func() *structpath.PathNode { return p }, ref)
+	}
+	if u.err != nil {
+		return nil, u.err
 	}
 
-	for _, u := range updates {
-		if err := out.SetReference(u.path, u.s); err != nil {
+	for _, up := range u.updates {
+		if err := out.SetReference(up.path, up.s); err != nil {
 			return nil, err
 		}
 	}
 	return out, nil
+}
+
+type reverseUpdate struct {
+	path *structpath.PathNode
+	s    string
+}
+
+// reverseUpdates collects the strings of a configuration that change when reverse
+// interpolated, and the first error.
+type reverseUpdates struct {
+	updates []reverseUpdate
+	err     error
+}
+
+// add records the reverse interpolation of s, a value at path, if it has references
+// and changes. path is only called then.
+func (u *reverseUpdates) add(path func() *structpath.PathNode, s string) {
+	if u.err != nil {
+		return
+	}
+	if _, ok := structvar.NewRef(s); !ok {
+		return
+	}
+	rs, err := reverseInterpolate(s)
+	if err != nil {
+		u.err = err
+		return
+	}
+	if rs != s {
+		u.updates = append(u.updates, reverseUpdate{path(), rs})
+	}
 }
