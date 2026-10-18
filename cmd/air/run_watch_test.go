@@ -185,6 +185,45 @@ func TestRunWatchFailedRunExitsNonZero(t *testing.T) {
 	assert.Contains(t, buf.String(), "step 1\nstep 2")
 }
 
+// watchServerCompleted serves a run that Jobs still reports RUNNING but whose
+// single node has printed the entry script's success summary.
+func watchServerCompleted(t *testing.T) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/jobs/runs/submit"):
+			_, _ = w.Write([]byte(`{"run_id": 777}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/get":
+			_, _ = w.Write([]byte(runningRunBody))
+		case strings.HasPrefix(r.URL.Path, "/api/2.0/ai-training/workflows/by-run-id/"):
+			_, _ = w.Write([]byte(logsBody(t, append([]string{"step 1"}, successSummary...))))
+		default:
+			_, _ = w.Write([]byte(`{"userName": "u@example.com", "workspace_id": 1}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestRunWatchExitsOnCompletionSummary(t *testing.T) {
+	var buf bytes.Buffer
+	err := runWatchCmd(t, flags.OutputText, &buf, watchServerCompleted(t).URL)
+	require.NoError(t, err)
+	assert.Contains(t, buf.String(), "step 1\n")
+	assert.Contains(t, buf.String(), "Completed at ")
+}
+
+func TestRunWatchJSONCompletionSummaryTerminalEnvelope(t *testing.T) {
+	var buf bytes.Buffer
+	err := runWatchCmd(t, flags.OutputJSON, &buf, watchServerCompleted(t).URL)
+	require.NoError(t, err)
+	// Jobs still reports RUNNING, but the closing envelope reflects the
+	// completed user command.
+	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
+	assert.Contains(t, lines[len(lines)-1], `"status":"SUCCESS"`)
+	assert.Contains(t, lines[len(lines)-1], `"run_id":"777"`)
+}
+
 func TestHandleWatchResultPrintsProfileAwareResumeCommand(t *testing.T) {
 	var buf bytes.Buffer
 	err := handleWatchResult(&buf, "team profile", "777", fmt.Errorf("stream logs: %w", context.Canceled))
