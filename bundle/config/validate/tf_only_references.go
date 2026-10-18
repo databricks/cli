@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/walk"
 	"github.com/databricks/cli/bundle/terraform_dabs_map"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -28,31 +29,38 @@ func (m *tfOnlyReferences) Name() string {
 func (m *tfOnlyReferences) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	// Walk the entire config looking for ${resources.*} references.
-	_ = structvar.Walk(b.Config.View(), func(_ *structpath.PathNode, v structvar.View) error {
-		s, ok := v.AsString()
-		if !ok {
-			return nil
-		}
-		ref, ok := structvar.NewRef(s)
-		if !ok {
-			return nil
-		}
-		for _, r := range ref.References() {
-			if !strings.HasPrefix(r, "resources.") {
-				continue
-			}
-			if d := checkTFOnlyReference(r, v.Location()); d != nil {
-				diags = append(diags, *d)
-			}
-		}
-		return nil
+	// Look for ${resources.*} references in strings and in fields that hold a pure
+	// reference.
+	walk.Strings(&b.Config, walk.WithReferences, func(n *walk.Node, s string) (string, bool) {
+		diags = append(diags, checkTFOnlyReferences(s, n.Location())...)
+		return "", false
 	})
+	for p, ref := range b.Config.References() {
+		diags = append(diags, checkTFOnlyReferences(ref, b.Config.ExactLocation(p))...)
+	}
 
 	if len(diags) > 0 {
 		b.Metrics.AddBoolValue("has_tf_only_references", true)
 	}
 
+	return diags
+}
+
+// checkTFOnlyReferences checks the ${resources.*} references in s.
+func checkTFOnlyReferences(s string, loc diag.Location) diag.Diagnostics {
+	ref, ok := structvar.NewRef(s)
+	if !ok {
+		return nil
+	}
+	var diags diag.Diagnostics
+	for _, r := range ref.References() {
+		if !strings.HasPrefix(r, "resources.") {
+			continue
+		}
+		if d := checkTFOnlyReference(r, loc); d != nil {
+			diags = append(diags, *d)
+		}
+	}
 	return diags
 }
 
