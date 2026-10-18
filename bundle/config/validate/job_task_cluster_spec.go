@@ -92,7 +92,7 @@ func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath *structpath.Path
 				Severity:  diag.Error,
 				Summary:   "Missing required cluster or environment settings",
 				Detail:    detail,
-				Locations: b.Config.NearestLocations(taskPath),
+				Locations: b.Config.GetLocationsOf(taskPath),
 				Paths:     []*structpath.PathNode{taskPath},
 			})
 		}

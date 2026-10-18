@@ -130,7 +130,7 @@ func TestLoadOutput(t *testing.T) {
 	)
 
 	assert.Equal(t, diag.Diagnostics{}, diags)
-	require.Equal(t, []diag.Location{location}, root.ExactLocations(structpath.MustParsePath("resources.jobs.my_job.name")))
+	require.Equal(t, []diag.Location{location}, root.GetLocationsOfExact(structpath.MustParsePath("resources.jobs.my_job.name")))
 }
 
 func TestParsePythonLocations_absolutePath(t *testing.T) {

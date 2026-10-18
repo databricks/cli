@@ -40,7 +40,7 @@ func (v *validateEngine) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 		return diags
 	}
 
-	loc := b.Config.NearestLocation(structpath.NewPath(nil, "bundle", "engine"))
+	loc := b.Config.GetLocationOf(structpath.NewPath(nil, "bundle", "engine"))
 
 	parsed, ok := engine.Parse(string(configEngine))
 	if !ok {

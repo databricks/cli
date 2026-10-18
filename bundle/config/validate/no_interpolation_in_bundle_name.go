@@ -28,7 +28,7 @@ func (m *noInterpolationInBundleName) Apply(ctx context.Context, b *bundle.Bundl
 is a part of the path at which your bundle state is stored at by default. Parameterizing it at
 runtime can have unexpected consequences like duplicate deployments or resources not being
 cleaned up during bundle destroy.`,
-			Locations: b.Config.NearestLocations(structpath.NewPath(nil, "bundle", "name")),
+			Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "bundle", "name")),
 			Paths:     structpath.NewPathSlice("bundle", "name"),
 		})
 	}

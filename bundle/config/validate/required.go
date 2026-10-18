@@ -62,11 +62,11 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	for key, dashboard := range b.Config.Resources.Dashboards {
 		path := structpath.NewPath(nil, "resources", "dashboards", key)
 		if dashboard.DisplayName == "" {
-			nameLocations = append(nameLocations, b.Config.NearestLocations(path)...)
+			nameLocations = append(nameLocations, b.Config.GetLocationsOf(path)...)
 			namePaths = append(namePaths, path)
 		}
 		if dashboard.WarehouseId == "" {
-			warehouseIdLocations = append(warehouseIdLocations, b.Config.NearestLocations(path)...)
+			warehouseIdLocations = append(warehouseIdLocations, b.Config.GetLocationsOf(path)...)
 			warehouseIdPaths = append(warehouseIdPaths, path)
 		}
 	}
@@ -96,7 +96,7 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "sql_warehouse name is required",
-				Locations: b.Config.NearestLocations(path),
+				Locations: b.Config.GetLocationsOf(path),
 				Paths:     []*structpath.PathNode{path},
 			})
 		}
@@ -165,7 +165,7 @@ func errorForInvalidSecretScopePermissions(ctx context.Context, b *bundle.Bundle
 				Severity:  diag.Error,
 				Summary:   "secret scope permission principal is required",
 				Detail:    "Set one of user_name, group_name or service_principal_name",
-				Locations: b.Config.NearestLocations(scopePath),
+				Locations: b.Config.GetLocationsOf(scopePath),
 				Paths:     []*structpath.PathNode{path},
 			})
 		}

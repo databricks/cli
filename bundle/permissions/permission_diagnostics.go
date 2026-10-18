@@ -59,7 +59,7 @@ func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) dia
 			identityType,
 			b.Config.Workspace.CurrentUser.UserName,
 		),
-		Locations: []diag.Location{b.Config.NearestLocation(structpath.NewPath(nil, "permissions"))},
+		Locations: []diag.Location{b.Config.GetLocationOf(structpath.NewPath(nil, "permissions"))},
 		ID:        diag.PermissionNotIncluded,
 	}}
 }
