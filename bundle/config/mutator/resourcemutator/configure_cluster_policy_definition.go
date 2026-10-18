@@ -30,40 +30,41 @@ func (c configureClusterPolicyDefinition) Apply(_ context.Context, b *bundle.Bun
 		if policy == nil {
 			continue
 		}
-		fields := []struct {
-			key   string
-			value any
-		}{
-			{"definition", policy.Definition},
-			{"policy_family_definition_overrides", policy.PolicyFamilyDefinitionOverrides},
+		d, err := inlinePolicyField(b, name, "definition", policy.Definition)
+		diags = diags.Extend(d)
+		if err != nil {
+			return diags.Extend(diag.FromErr(err))
 		}
-		for _, f := range fields {
-			fieldPath := structpath.NewPath(nil, "resources", "cluster_policies", name, f.key)
-
-			// Marshal an inline structured value to a JSON string so both
-			// config-side and state-side carry the same plain string. Otherwise
-			// YAML decodes small ints as Go `int` while state JSON round-trip
-			// decodes them as `float64`, and structdiff reports false drift.
-			// An absent value is left for backend validation.
-			s, ok, kind, err := inlineJSON(f.value)
-			if err != nil {
-				return diags.Extend(diag.FromErr(fmt.Errorf("failed to marshal inline %s: %w", f.key, err)))
-			}
-			if kind != "" {
-				diags = diags.Append(diag.Diagnostic{
-					Severity:  diag.Error,
-					Summary:   fmt.Sprintf("%s must be a string or map, got %s", f.key, kind),
-					Locations: b.Config.GetLocationsOfExact(fieldPath),
-				})
-				continue
-			}
-			if ok {
-				if err := b.Config.Set(fieldPath, s); err != nil {
-					return diags.Extend(diag.FromErr(err))
-				}
-			}
+		d, err = inlinePolicyField(b, name, "policy_family_definition_overrides", policy.PolicyFamilyDefinitionOverrides)
+		diags = diags.Extend(d)
+		if err != nil {
+			return diags.Extend(diag.FromErr(err))
 		}
 	}
 
 	return diags
+}
+
+// inlinePolicyField marshals the inline structured value of the field key of the
+// cluster policy name to a JSON string, so both config-side and state-side carry the
+// same plain string. Otherwise YAML decodes small ints as Go `int` while state JSON
+// round-trip decodes them as `float64`, and structdiff reports false drift. An absent
+// value is left for backend validation.
+func inlinePolicyField(b *bundle.Bundle, name, key string, value any) (diag.Diagnostics, error) {
+	fieldPath := structpath.NewPath(nil, "resources", "cluster_policies", name, key)
+	s, ok, kind, err := inlineJSON(value)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal inline %s: %w", key, err)
+	}
+	if kind != "" {
+		return diag.Diagnostics{{
+			Severity:  diag.Error,
+			Summary:   fmt.Sprintf("%s must be a string or map, got %s", key, kind),
+			Locations: b.Config.GetLocationsOfExact(fieldPath),
+		}}, nil
+	}
+	if !ok {
+		return nil, nil
+	}
+	return nil, b.Config.Set(fieldPath, s)
 }
