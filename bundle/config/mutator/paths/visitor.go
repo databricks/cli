@@ -36,13 +36,21 @@ func VisitPaths(root *config.Root, fn VisitFunc) error {
 	return nil
 }
 
-// visit calls fn for the path value *s unless it is empty or skip reports true for it.
-// The path is only built for values that are visited.
-func visit(s *string, mode TranslateMode, skip func(string) bool, fn VisitFunc, path func() *structpath.PathNode) error {
-	if *s == "" || (skip != nil && skip(*s)) {
+// visit calls fn for the path value *s unless skip reports true for it or it is empty
+// and not written in the source (an explicit "" is translated too). The path is only
+// built for values that are visited or empty.
+func visit(root *config.Root, s *string, mode TranslateMode, skip func(string) bool, fn VisitFunc, path func() *structpath.PathNode) error {
+	if skip != nil && skip(*s) {
 		return nil
 	}
-	return fn(path(), mode, s)
+	if *s != "" {
+		return fn(path(), mode, s)
+	}
+	p := path()
+	if len(root.ExactLocations(p)) == 0 {
+		return nil
+	}
+	return fn(p, mode, s)
 }
 
 // sortedKeys returns the keys of a resource map in the order the paths are visited.
