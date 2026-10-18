@@ -136,12 +136,6 @@ func (r *Resources) GetOrCreateState(typ, name string) (id *string, status *{{.M
 	}
 }
 
-// IsZero reports whether no resource map is set.
-func (r *Resources) IsZero() bool {
-	return {{range $i, $t := .Types}}{{if $i}} &&
-		{{end}}r.{{$t.Field}} == nil{{end}}
-}
-
 // IterateAllGrants calls fn for the grants of every resource that can have them, in
 // the order of IterateAllResources, until fn returns false.
 func (r *Resources) IterateAllGrants(fn func(typ, name string, grants *[]{{.Grant}}) bool) {
