@@ -25,12 +25,12 @@ func (v *validateEngine) Name() string {
 
 func (v *validateEngine) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
-	tf := b.Config.View().Lookup(structpath.NewPath(nil, "bundle", "terraform"))
-	if tf.IsValid() {
+	// A reference to a variable also allocates the section.
+	if b.Config.Bundle.Terraform != nil {
 		diags = diags.Append(diag.Diagnostic{
 			Severity:  diag.Warning,
 			Summary:   "bundle.terraform is deprecated and has no effect: " + engine.TerraformRemovedSummary,
-			Locations: tf.Locations(),
+			Locations: b.Config.GetLocationsOfExact(structpath.NewPath(nil, "bundle", "terraform")),
 			Paths:     structpath.NewPathSlice("bundle", "terraform"),
 		})
 	}

@@ -3,19 +3,27 @@ package main
 import (
 	"bytes"
 	"cmp"
+	_ "embed"
 	"fmt"
 	"go/format"
 	"os"
 	"path"
 	"reflect"
 	"slices"
+	"strconv"
 	"strings"
+	"text/template"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
+
+//go:embed resources_iterate.go.tmpl
+var resourcesIterateSource string
+
+var resourcesIterateTemplate = template.Must(template.New("resources_iterate").Parse(resourcesIterateSource))
 
 // generateResourcesIterate writes bundle/config/resources_iterate.go: typed iterators
 // over all resources, their permissions and their grants, generated from the fields of
@@ -67,90 +75,56 @@ func generateResourcesIterate(file string) error {
 	}
 	slices.SortFunc(types, func(a, b resourceType) int { return cmp.Compare(a.key, b.key) })
 
-	out := &g.out
-	fmt.Fprintf(out, "\n// IterateAllResources calls fn for every resource, in the order of the resource type\n// and then of the name, until fn returns false. Resources defined as null are\n// visited with a nil res.\n")
-	fmt.Fprintf(out, "func (r *Resources) IterateAllResources(fn func(typ, name string, res ConfigResource) bool) {\n")
+	// Type names register their imports, so the data is built before the header.
+	type typeData struct {
+		Key, Field, Elem           string
+		Perms, PermElem, PermLevel string
+		Grants, ID                 string
+		HasState                   bool
+	}
+	data := struct {
+		Imports               []string
+		Types                 []typeData
+		ModifiedStatus, Grant string
+	}{
+		ModifiedStatus: g.typeName(reflect.TypeFor[resources.ModifiedStatus]()),
+		Grant:          g.typeName(grantsType.Elem()),
+	}
 	for _, t := range types {
-		fmt.Fprintf(out, "\tfor _, name := range sortedKeys(r.%s) {\n\t\tvar res ConfigResource\n\t\tif x := r.%s[name]; x != nil {\n\t\t\tres = x\n\t\t}\n\t\tif !fn(%q, name, res) {\n\t\t\treturn\n\t\t}\n\t}\n", t.field, t.field, t.key)
-	}
-	fmt.Fprintf(out, "}\n")
-
-	fmt.Fprintf(out, "\n// IterateAllPermissions calls fn for the permissions of every resource that can have\n// them, in the order of IterateAllResources, until fn returns false.\n")
-	fmt.Fprintf(out, "func (r *Resources) IterateAllPermissions(fn func(typ, name string, perms PermissionList) bool) {\n")
-	for _, t := range types {
-		if t.perms == "" {
-			continue
+		d := typeData{Key: t.key, Field: t.field, Elem: g.typeName(t.elem), Perms: t.perms, Grants: t.grants, ID: t.id, HasState: t.id != "" && t.status}
+		if t.perms != "" {
+			d.PermElem = g.typeName(t.permElem)
+			d.PermLevel = g.typeName(t.permElem.Field(0).Type)
 		}
-		fmt.Fprintf(out, "\tfor _, name := range sortedKeys(r.%s) {\n\t\tif x := r.%s[name]; x != nil && !fn(%q, name, permissionList[%s, %s]{&x.%s}) {\n\t\t\treturn\n\t\t}\n\t}\n",
-			t.field, t.field, t.key, g.typeName(t.permElem), g.typeName(t.permElem.Field(0).Type), t.perms)
+		data.Types = append(data.Types, d)
 	}
-	fmt.Fprintf(out, "}\n")
-
-	fmt.Fprintf(out, "\n// IterateAllResourceStates calls fn for the deployed id and modified status of every\n// resource that has them, in the order of IterateAllResources, until fn returns false.\n")
-	fmt.Fprintf(out, "func (r *Resources) IterateAllResourceStates(fn func(typ, name string, id *string, status *%s) bool) {\n", g.typeName(reflect.TypeFor[resources.ModifiedStatus]()))
-	for _, t := range types {
-		if t.id == "" || !t.status {
-			continue
+	for p, alias := range g.imports {
+		switch {
+		case p == "github.com/databricks/cli/bundle/config":
+		case path.Base(p) == alias:
+			data.Imports = append(data.Imports, strconv.Quote(p))
+		default:
+			data.Imports = append(data.Imports, alias+" "+strconv.Quote(p))
 		}
-		fmt.Fprintf(out, "\tfor _, name := range sortedKeys(r.%s) {\n\t\tif x := r.%s[name]; x != nil && !fn(%q, name, &x.%s, &x.ModifiedStatus) {\n\t\t\treturn\n\t\t}\n\t}\n", t.field, t.field, t.key, t.id)
 	}
-	fmt.Fprintf(out, "}\n")
-
-	fmt.Fprintf(out, "\n// GetOrCreateState returns the deployed id and modified status of the resource name of\n// type typ, creating the resource if it does not exist (created is then true). ok is\n// false if resources of type typ have no state.\n")
-	fmt.Fprintf(out, "func (r *Resources) GetOrCreateState(typ, name string) (id *string, status *%s, created, ok bool) {\n\tswitch typ {\n", g.typeName(reflect.TypeFor[resources.ModifiedStatus]()))
-	for _, t := range types {
-		if t.id == "" || !t.status {
-			continue
-		}
-		fmt.Fprintf(out, "\tcase %q:\n\t\tx, exists := r.%s[name]\n\t\tif x == nil {\n\t\t\tif r.%s == nil {\n\t\t\t\tr.%s = map[string]*%s{}\n\t\t\t}\n\t\t\tx = &%s{}\n\t\t\tr.%s[name] = x\n\t\t}\n\t\treturn &x.%s, &x.ModifiedStatus, !exists, true\n",
-			t.key, t.field, t.field, t.field, g.typeName(t.elem), g.typeName(t.elem), t.field, t.id)
-	}
-	fmt.Fprintf(out, "\tdefault:\n\t\treturn nil, nil, false, false\n\t}\n}\n") //nolint:dupword
-
-	fmt.Fprintf(out, "\n// IsZero reports whether no resource map is set.\n")
-	fmt.Fprintf(out, "func (r *Resources) IsZero() bool {\n\treturn ")
-	for i, t := range types {
-		if i > 0 {
-			fmt.Fprintf(out, " &&\n\t\t")
-		}
-		fmt.Fprintf(out, "r.%s == nil", t.field)
-	}
-	fmt.Fprintf(out, "\n}\n")
-
-	fmt.Fprintf(out, "\n// IterateAllGrants calls fn for the grants of every resource that can have them, in\n// the order of IterateAllResources, until fn returns false.\n")
-	fmt.Fprintf(out, "func (r *Resources) IterateAllGrants(fn func(typ, name string, grants *[]%s) bool) {\n", g.typeName(grantsType.Elem()))
-	for _, t := range types {
-		if t.grants == "" {
-			continue
-		}
-		fmt.Fprintf(out, "\tfor _, name := range sortedKeys(r.%s) {\n\t\tif x := r.%s[name]; x != nil && !fn(%q, name, &x.%s) {\n\t\t\treturn\n\t\t}\n\t}\n", t.field, t.field, t.key, t.grants)
-	}
-	fmt.Fprintf(out, "}\n")
+	slices.SortFunc(data.Imports, func(a, b string) int { return cmp.Compare(importPath(a), importPath(b)) })
 
 	var src bytes.Buffer
-	fmt.Fprintf(&src, "// Code generated by bundle/internal/validation. DO NOT EDIT.\n\npackage config\n\nimport (\n")
-	paths := make([]string, 0, len(g.imports))
-	for p := range g.imports {
-		if p != "github.com/databricks/cli/bundle/config" {
-			paths = append(paths, p)
-		}
+	if err := resourcesIterateTemplate.Execute(&src, data); err != nil {
+		return err
 	}
-	slices.SortFunc(paths, cmp.Compare)
-	for _, p := range paths {
-		if path.Base(p) == g.imports[p] {
-			fmt.Fprintf(&src, "\t%q\n", p)
-		} else {
-			fmt.Fprintf(&src, "\t%s %q\n", g.imports[p], p)
-		}
-	}
-	fmt.Fprintf(&src, ")\n")
-	src.Write(out.Bytes())
 	formatted, err := format.Source(src.Bytes())
 	if err != nil {
 		_ = os.WriteFile(file+".broken", src.Bytes(), 0o644)
 		return fmt.Errorf("failed to format %s: %w", file, err)
 	}
 	return os.WriteFile(file, formatted, 0o644)
+}
+
+// importPath returns the quoted path of an import line (with or without an alias).
+func importPath(line string) string {
+	_, p, _ := strings.Cut(line, `"`)
+	return p
 }
 
 // isPermissionsSlice reports whether t is a slice of a struct with the fields of
