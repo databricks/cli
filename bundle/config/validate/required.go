@@ -26,7 +26,7 @@ func (f *required) Name() string {
 // Warn for missing fields, based on annotations in the Go SDK / OpenAPI spec.
 // The walker is generated (required_walk.go) by bundle/internal/validation.
 func warnForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	diags := walk(&b.Config, requiredConfigRoot)
+	diags := walkConfig(&b.Config, requiredConfigRoot)
 	sortDiagnostics(diags)
 	return diags
 }
