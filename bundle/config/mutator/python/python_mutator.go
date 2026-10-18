@@ -29,7 +29,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/process"
-	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 )
@@ -107,17 +106,6 @@ type runPythonMutatorOpts struct {
 	authEnv        map[string]string
 }
 
-// addResourceCounts adds the number of resources in set to counts, per resource type.
-func addResourceCounts(counts map[string]int64, set resourcemutator.ResourceKeySet) map[string]int64 {
-	for resourceType, names := range set {
-		if counts == nil {
-			counts = make(map[string]int64)
-		}
-		counts[resourceType] += int64(len(names))
-	}
-	return counts
-}
-
 // getOpts adapts deprecated PyDABs and upcoming Python configuration
 // into a common structure.
 func getOpts(b *bundle.Bundle, phase phase) (opts, error) {
@@ -162,23 +150,6 @@ func getOpts(b *bundle.Bundle, phase phase) (opts, error) {
 	}
 }
 
-// pythonConfigSection reports which section the user declared Python support in.
-func pythonConfigSection(b *bundle.Bundle) protos.PydabsConfigSection {
-	pythonEnabled := !reflect.DeepEqual(b.Config.Python, config.Python{})
-	experimentalPythonEnabled := b.Config.Experimental != nil && !reflect.DeepEqual(b.Config.Experimental.Python, config.Python{})
-
-	switch {
-	case pythonEnabled && experimentalPythonEnabled:
-		return protos.PydabsConfigSectionBoth
-	case pythonEnabled:
-		return protos.PydabsConfigSectionPython
-	case experimentalPythonEnabled:
-		return protos.PydabsConfigSectionExperimentalPython
-	default:
-		return protos.PydabsConfigSectionUnspecified
-	}
-}
-
 // applyBackwardsCompatibilityFixes applies fixes to bundle configuration
 // so that older version of databricks-bundles Python library continue to see
 // 'experimental.python' section even if bundle configuration uses 'python' section.
@@ -187,39 +158,30 @@ func pythonConfigSection(b *bundle.Bundle) protos.PydabsConfigSection {
 //
 // Later version of Python package should reject 'experimental.python' unless 'python' section
 // is set to equivalent value, and after that reject 'experimental.python' altogether.
-func applyBackwardsCompatibilityFixes(b *bundle.Bundle) error {
-	root := b.Config.View()
-
+func applyBackwardsCompatibilityFixes(b *bundle.Bundle) {
 	// if 'python' section doesn't exist, nothing to do
-	pythonValue := root.Get("python")
-	if !pythonValue.IsValid() {
-		return nil
+	if reflect.DeepEqual(b.Config.Python, config.Python{}) {
+		return
 	}
 
 	// if 'experimental.python' section exists, nothing to do
-	experimentalPythonPath := structpath.NewPath(nil, "experimental", "python")
-	if root.Lookup(experimentalPythonPath).IsValid() {
-		return nil
+	locs := b.Config.LocationTree()
+	experimental := b.Config.Experimental
+	if experimental != nil && (!reflect.DeepEqual(experimental.Python, config.Python{}) || locs.Key("experimental").Key("python") != nil) {
+		return
 	}
 
-	// move 'python' section to 'experimental.python' (creating 'experimental' if needed)
-	if err := b.Config.Assign(experimentalPythonPath, pythonValue); err != nil {
-		return fmt.Errorf("failed to set 'experimental.python' section: %w", err)
+	// copy 'python' section to 'experimental.python' (creating 'experimental' if needed)
+	if experimental == nil {
+		experimental = &config.Experimental{}
+		b.Config.Experimental = experimental
 	}
-	return nil
+	experimental.Python = b.Config.Python
+	b.Config.SetLocationTree(structpath.NewPath(nil, "experimental", "python"), locs.Key("python"))
 }
 
 func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	// Record before applyBackwardsCompatibilityFixes copies 'python' into 'experimental/python',
-	// which makes the sections indistinguishable. The load_resources phase runs first.
-	if m.phase == PythonMutatorPhaseLoadResources {
-		b.Metrics.PythonConfigSection = pythonConfigSection(b)
-	}
-
-	err := applyBackwardsCompatibilityFixes(b)
-	if err != nil {
-		return diag.FromErr(fmt.Errorf("failed to apply backwards compatibility fixes: %w", err))
-	}
+	applyBackwardsCompatibilityFixes(b)
 
 	opts, err := getOpts(b, m.phase)
 	if err != nil {
@@ -246,8 +208,8 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 
 	result, diags := m.run(ctx, b, opts, authEnv)
 	// we can precisely track resources that are added/updated, so sum doesn't double-count
-	b.Metrics.PythonUpdatedResources = addResourceCounts(b.Metrics.PythonUpdatedResources, result.UpdatedResources)
-	b.Metrics.PythonAddedResources = addResourceCounts(b.Metrics.PythonAddedResources, result.AddedResources)
+	b.Metrics.PythonUpdatedResourcesCount += int64(result.UpdatedResources.Size())
+	b.Metrics.PythonAddedResourcesCount += int64(result.AddedResources.Size())
 
 	if diags.HasError() {
 		return diags
@@ -290,7 +252,7 @@ func (m *pythonMutator) run(ctx context.Context, b *bundle.Bundle, opts opts, au
 		return result, diags
 	}
 
-	plan, result, err := applyPythonOutput(leftRoot, rightRoot.View())
+	plan, result, err := applyPythonOutput(&b.Config, rightRoot)
 	if err != nil {
 		return result, diags.Extend(diag.FromErr(fmt.Errorf("internal error when merging output of Python mutator: %w", err)))
 	}
