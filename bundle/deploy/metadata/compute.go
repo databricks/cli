@@ -55,7 +55,7 @@ func (m *compute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 	for name, job := range b.Config.Resources.Jobs {
 		// Compute config file path the job is defined in, relative to the bundle
 		// root
-		l := b.Config.ExactLocation(structpath.NewPath(nil, "resources", "jobs", name))
+		l := b.Config.GetLocationOfExact(structpath.NewPath(nil, "resources", "jobs", name))
 		if l.File == "" {
 			// Skip resources that exist only in the deployment state: statemgmt.Load,
 			// which runs before this mutator, injects them into the config without a
@@ -82,7 +82,7 @@ func (m *compute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 	for name, pipeline := range b.Config.Resources.Pipelines {
 		// Compute config file path the pipeline is defined in, relative to the bundle
 		// root
-		l := b.Config.ExactLocation(structpath.NewPath(nil, "resources", "pipelines", name))
+		l := b.Config.GetLocationOfExact(structpath.NewPath(nil, "resources", "pipelines", name))
 		if l.File == "" {
 			// Skip resources that exist only in the deployment state: statemgmt.Load,
 			// which runs before this mutator, injects them into the config without a
@@ -107,7 +107,7 @@ func (m *compute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 	for name, dashboard := range b.Config.Resources.Dashboards {
 		// Compute config file path the dashboard is defined in, relative to the bundle
 		// root
-		l := b.Config.ExactLocation(structpath.NewPath(nil, "resources", "dashboards", name))
+		l := b.Config.GetLocationOfExact(structpath.NewPath(nil, "resources", "dashboards", name))
 		if l.File == "" {
 			// Skip resources that exist only in the deployment state: statemgmt.Load,
 			// which runs before this mutator, injects them into the config without a

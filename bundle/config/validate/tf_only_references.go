@@ -36,7 +36,7 @@ func (m *tfOnlyReferences) Apply(_ context.Context, b *bundle.Bundle) diag.Diagn
 		return "", false
 	})
 	for p, ref := range b.Config.References() {
-		diags = append(diags, checkTFOnlyReferences(ref, b.Config.ExactLocation(p))...)
+		diags = append(diags, checkTFOnlyReferences(ref, b.Config.GetLocationOfExact(p))...)
 	}
 
 	if len(diags) > 0 {

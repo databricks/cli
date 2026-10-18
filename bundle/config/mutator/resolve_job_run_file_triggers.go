@@ -120,7 +120,7 @@ func resolveFileTrigger(b *bundle.Bundle, loc *structpath.PathNode, pattern stri
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   fileTriggerPrefix + fmt.Sprintf("invalid pattern %q: %s", pattern, err),
-				Locations: b.Config.NearestLocations(loc),
+				Locations: b.Config.GetLocationsOf(loc),
 			})
 			continue
 		}
@@ -132,7 +132,7 @@ func resolveFileTrigger(b *bundle.Bundle, loc *structpath.PathNode, pattern stri
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   fileTriggerPrefix + fmt.Sprintf("hash %q: %s", rel, err),
-				Locations: b.Config.NearestLocations(loc),
+				Locations: b.Config.GetLocationsOf(loc),
 			})
 			continue
 		}
@@ -146,7 +146,7 @@ func resolveFileTrigger(b *bundle.Bundle, loc *structpath.PathNode, pattern stri
 		diags = diags.Append(diag.Diagnostic{
 			Severity:  diag.Warning,
 			Summary:   fileTriggerPrefix + fmt.Sprintf("no synced files match %q", pattern),
-			Locations: b.Config.NearestLocations(loc),
+			Locations: b.Config.GetLocationsOf(loc),
 		})
 	}
 	return relPattern, hex.EncodeToString(h.Sum(nil)), diags
@@ -159,7 +159,7 @@ func validateFileTriggerPattern(b *bundle.Bundle, loc *structpath.PathNode, patt
 		return "", diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   fileTriggerPrefix + fmt.Sprintf("** in %q is not supported; use * for a single directory level", pattern),
-			Locations: b.Config.NearestLocations(loc),
+			Locations: b.Config.GetLocationsOf(loc),
 		})
 	}
 	// Reject a genuinely absolute path; Join would otherwise silently reinterpret it
@@ -171,7 +171,7 @@ func validateFileTriggerPattern(b *bundle.Bundle, loc *structpath.PathNode, patt
 		return "", diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   fileTriggerPrefix + fmt.Sprintf("pattern %q must be relative to the defining YAML file", pattern),
-			Locations: b.Config.NearestLocations(loc),
+			Locations: b.Config.GetLocationsOf(loc),
 		})
 	}
 	// NormalizePaths has already rewritten YAML-relative globs to be bundle-root
@@ -183,7 +183,7 @@ func validateFileTriggerPattern(b *bundle.Bundle, loc *structpath.PathNode, patt
 		return "", diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   fileTriggerPrefix + fmt.Sprintf("pattern %q is not under the sync root", pattern),
-			Locations: b.Config.NearestLocations(loc),
+			Locations: b.Config.GetLocationsOf(loc),
 		})
 	}
 	relPattern = filepath.ToSlash(relPattern)
@@ -192,7 +192,7 @@ func validateFileTriggerPattern(b *bundle.Bundle, loc *structpath.PathNode, patt
 		return "", diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   fileTriggerPrefix + fmt.Sprintf("invalid pattern %q: %s", pattern, err),
-			Locations: b.Config.NearestLocations(loc),
+			Locations: b.Config.GetLocationsOf(loc),
 		})
 	}
 	return relPattern, diags

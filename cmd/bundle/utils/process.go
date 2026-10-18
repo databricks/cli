@@ -721,7 +721,7 @@ func isNewerVersion(stateVersion, currentVersion string) bool {
 
 func rejectDefinitions(ctx context.Context, b *bundle.Bundle) {
 	if b.Config.Definitions != nil {
-		loc := b.Config.NearestLocations(structpath.NewPath(nil, "definitions"))
+		loc := b.Config.GetLocationsOf(structpath.NewPath(nil, "definitions"))
 		filename := "input yaml"
 		if len(loc) > 0 {
 			filename = filepath.ToSlash(loc[0].File)

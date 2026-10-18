@@ -78,7 +78,7 @@ from "content" with $NAME:
       env:
         MY_VAR: ${var.foo}
       content: echo "$MY_VAR"`,
-		Locations: b.Config.ExactLocations(p),
+		Locations: b.Config.GetLocationsOfExact(p),
 		Paths:     []*structpath.PathNode{p},
 	}}
 }
@@ -102,7 +102,7 @@ func validateScriptEnv(b *bundle.Bundle, key string, env map[string]string) diag
 			diags = append(diags, diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   fmt.Sprintf("${%s} cannot be used in scripts.%s.env.%s; only ${bundle.*}, ${workspace.*}, and ${var.*} are resolved before scripts execute", refPath, key, name),
-				Locations: b.Config.ExactLocations(envValuePath),
+				Locations: b.Config.GetLocationsOfExact(envValuePath),
 				Paths:     []*structpath.PathNode{envValuePath},
 			})
 		}
