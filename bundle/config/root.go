@@ -559,9 +559,12 @@ func (r *Root) MoveMetadata(from, to *structpath.PathNode) {
 	r.store(sv)
 }
 
-// SetLocationTree replaces the locations of the value at path and of the values below it.
-func (r *Root) SetLocationTree(path *structpath.PathNode, tree *structvar.Locations) {
-	r.locations = r.locations.With(path, tree)
+// CopyMetadataAt copies the locations and references of the value at path from to the
+// path to (see [structvar.StructVar.CopyMetadataAt]).
+func (r *Root) CopyMetadataAt(from, to *structpath.PathNode) {
+	sv := r.vars()
+	sv.CopyMetadataAt(from, to)
+	r.store(sv)
 }
 
 // UpdateSequence records that the elements of the sequence at path were rebuilt from
@@ -676,17 +679,6 @@ func (r *Root) GetResourceConfig(path string) (any, error) {
 	return typedConfigPtr.Interface(), nil
 }
 
-// IsReference reports whether the value at path is a pure variable reference in a
-// field that cannot hold a string (its typed value is the zero value).
-func (r Root) IsReference(path string) bool {
-	p, err := structpath.ParsePath(path)
-	if err != nil {
-		return false
-	}
-	_, ok := r.refs[p.String()]
-	return ok
-}
-
 // IsReferenceAt is [Root.IsReference] for a path node.
 func (r Root) IsReferenceAt(path *structpath.PathNode) bool {
 	_, ok := r.refs[path.String()]
@@ -719,7 +711,7 @@ func (r Root) ReferencesUnder(path *structpath.PathNode) iter.Seq2[*structpath.P
 		prefix := path.String()
 		var keys []string
 		for k := range r.refs {
-			if k == prefix || strings.HasPrefix(k, prefix+".") || strings.HasPrefix(k, prefix+"[") {
+			if prefix == "" || k == prefix || strings.HasPrefix(k, prefix+".") || strings.HasPrefix(k, prefix+"[") {
 				keys = append(keys, k)
 			}
 		}

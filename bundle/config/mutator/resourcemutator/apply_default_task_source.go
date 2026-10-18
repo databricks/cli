@@ -44,7 +44,7 @@ func (a *applyDefaultTaskSource) Apply(ctx context.Context, b *bundle.Bundle) di
 		// matching the typed nil pointer TranslatePaths keys off; otherwise we would
 		// set source: GIT on a job whose paths get translated to workspace paths.
 		// A reference is not absent, although the typed field is nil.
-		if job == nil || (job.GitSource == nil && !b.Config.IsReference("resources.jobs."+name+".git_source")) {
+		if job == nil || (job.GitSource == nil && !b.Config.IsReferenceAt(structpath.NewPath(nil, "resources", "jobs", name, "git_source"))) {
 			continue
 		}
 

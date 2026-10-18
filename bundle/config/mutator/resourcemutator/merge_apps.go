@@ -33,7 +33,7 @@ func (m *mergeApps) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 			continue
 		}
 		path := structpath.NewPath(nil, "resources", "apps", name, "resources")
-		if keyedMergeIsNoop(b, "resources.apps."+name+".resources", app.Resources, func(r apps.AppResource) string { return r.Name }, false) {
+		if keyedMergeIsNoop(b, path, app.Resources, func(r apps.AppResource) string { return r.Name }, false) {
 			continue
 		}
 

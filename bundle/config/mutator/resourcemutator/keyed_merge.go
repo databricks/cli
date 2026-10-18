@@ -32,10 +32,10 @@ func mergeByKey[R, E any](
 		if r == nil {
 			continue
 		}
-		if keyedMergeIsNoop(b, "resources."+resourceType+"."+name+"."+field, elems(r), noopKey, sortKeys) {
+		path := structpath.NewPath(nil, "resources", resourceType, name, field)
+		if keyedMergeIsNoop(b, path, elems(r), noopKey, sortKeys) {
 			continue
 		}
-		path := structpath.NewPath(nil, "resources", resourceType, name, field)
 		if err := b.Config.MergeElementsByKey(path, keyField, keyFn, sortKeys); err != nil {
 			return err
 		}
@@ -64,8 +64,8 @@ func stringKey(what string) func(structvar.View) string {
 // unique (and sorted, if the merge sorts by key). The merge operates on the dynamic
 // configuration, which is built from the whole typed configuration, so mutators skip
 // it when it would have no effect.
-func keyedMergeIsNoop[T any](b *bundle.Bundle, path string, elems []T, key func(T) string, sorted bool) bool {
-	if b.Config.IsReference(path) {
+func keyedMergeIsNoop[T any](b *bundle.Bundle, path *structpath.PathNode, elems []T, key func(T) string, sorted bool) bool {
+	if b.Config.IsReferenceAt(path) {
 		return false
 	}
 	keys := make([]string, 0, len(elems))

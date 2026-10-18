@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
@@ -176,8 +177,12 @@ func applyBackwardsCompatibilityFixes(b *bundle.Bundle) {
 		experimental = &config.Experimental{}
 		b.Config.Experimental = experimental
 	}
-	experimental.Python = b.Config.Python
-	b.Config.SetLocationTree(structpath.NewPath(nil, "experimental", "python"), locs.Key("python"))
+	experimental.Python = config.Python{
+		Resources: slices.Clone(b.Config.Python.Resources),
+		Mutators:  slices.Clone(b.Config.Python.Mutators),
+		VEnvPath:  b.Config.Python.VEnvPath,
+	}
+	b.Config.CopyMetadataAt(structpath.NewStringKey(nil, "python"), structpath.NewPath(nil, "experimental", "python"))
 }
 
 func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
