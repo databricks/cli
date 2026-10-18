@@ -14,10 +14,10 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
 	github.com/charmbracelet/x/ansi v0.11.8 // MIT
 	github.com/databricks/databricks-sdk-go v0.188.0 // Apache-2.0
-	github.com/databricks/sdk-go/auth v0.0.1-dev.8 // Apache-2.0
-	github.com/databricks/sdk-go/core v0.0.1-dev.8 // Apache-2.0
-	github.com/databricks/sdk-go/files v0.0.1-dev.10 // Apache-2.0
-	github.com/databricks/sdk-go/options v0.0.1-dev.9 // Apache-2.0
+	github.com/databricks/sdk-go/auth v0.1.0 // Apache-2.0
+	github.com/databricks/sdk-go/core v0.1.0 // Apache-2.0
+	github.com/databricks/sdk-go/files v0.1.0 // Apache-2.0
+	github.com/databricks/sdk-go/options v0.1.0 // Apache-2.0
 	github.com/google/jsonschema-go v0.4.3 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/gorilla/websocket v1.5.3 // BSD-2-Clause
