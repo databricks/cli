@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -710,12 +709,15 @@ func (r Root) ReferencesUnder(path *structpath.PathNode) iter.Seq2[*structpath.P
 			}
 		}
 		slices.Sort(keys)
+		view := r.View()
 		for _, k := range keys {
 			p, err := structpath.ParsePath(k)
 			if err != nil {
 				continue
 			}
-			if _, err := structaccess.Get(&r, p); err != nil {
+			// The view's presence rules: a reference below (or at) a nil pointer, a
+			// missing map key or an index out of range is gone.
+			if !view.Lookup(p).IsValid() {
 				continue
 			}
 			if !yield(p, r.refs[k]) {
