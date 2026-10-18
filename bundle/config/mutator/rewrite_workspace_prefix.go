@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/walk"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type rewriteWorkspacePrefix struct{}
@@ -47,12 +47,7 @@ func (m *rewriteWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) di
 
 	// Walk through the bundle configuration, check all the string leafs and
 	// see if any of the prefixes are used in the remote path.
-	err := structvar.Walk(b.Config.View(), func(p *structpath.PathNode, v structvar.View) error {
-		vv, ok := v.AsString()
-		if !ok {
-			return nil
-		}
-
+	walk.Strings(&b.Config, walk.WithReferences, func(n *walk.Node, vv string) (string, bool) {
 		newPath := vv
 		for _, rewrite := range paths {
 			if !strings.Contains(newPath, rewrite.pattern) {
@@ -64,21 +59,14 @@ func (m *rewriteWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) di
 				Severity:  diag.Warning,
 				Summary:   fmt.Sprintf("substring %q found in %q. Please update this to %q.", rewrite.pattern, vv, newPath),
 				Detail:    "For more information, please refer to: https://docs.databricks.com/en/release-notes/dev-tools/bundles.html#workspace-paths",
-				Locations: v.Locations(),
-				Paths:     []*structpath.PathNode{p},
+				Locations: n.Locations().Get(),
+				Paths:     []*structpath.PathNode{n.Path()},
 			})
 		}
 
-		if newPath == vv {
-			return nil
-		}
-
 		// Remove the workspace prefix from the string.
-		return b.Config.Set(p, newPath)
+		return newPath, newPath != vv
 	})
-	if err != nil {
-		return diag.FromErr(err)
-	}
 
 	return diags
 }

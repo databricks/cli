@@ -118,6 +118,10 @@ type gen struct {
 	out     bytes.Buffer
 	pending []*tnode
 
+	// pendingTypes are the struct types whose functions are still to be written
+	// (strings walker).
+	pendingTypes []reflect.Type
+
 	// refBranches visits nil pointer fields that are written in the source or hold a
 	// pure reference as nodes without fields, so their required fields are reported.
 	refBranches bool
@@ -459,5 +463,9 @@ func generateWalkers(dir string) error {
 	if err != nil {
 		return err
 	}
-	return generateWalker(dir+"/enum_walk.go", "enum", "enumWalk reports enum fields with invalid values.", nil, enums)
+	err = generateWalker(dir+"/enum_walk.go", "enum", "enumWalk reports enum fields with invalid values.", nil, enums)
+	if err != nil {
+		return err
+	}
+	return generateStringsWalker("bundle/config/walk/strings_walk.go")
 }
