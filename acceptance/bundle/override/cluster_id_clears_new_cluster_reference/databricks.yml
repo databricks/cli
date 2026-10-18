@@ -2,6 +2,14 @@ bundle:
   name: test-bundle
   cluster_id: existing-cluster
 
+variables:
+  cluster:
+    type: complex
+    default:
+      spark_version: 15.4.x-scala2.12
+      node_type_id: i3.xlarge
+      num_workers: 1
+
 resources:
   clusters:
     source:
@@ -21,3 +29,8 @@ resources:
             spark_version: 15.4.x-scala2.12
             node_type_id: i3.xlarge
             num_workers: ${resources.clusters.source.num_workers}
+        - task_key: task_var
+          notebook_task:
+            notebook_path: /Workspace/notebook
+          # A reference at new_cluster must not bring it back either.
+          new_cluster: ${var.cluster}
