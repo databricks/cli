@@ -269,7 +269,7 @@ func (s *yamlSource) pairs() ([]sourcePair, error) {
 		if err != nil {
 			return nil, err
 		}
-		acc.set(sourcePair{key: key.Value, keyLocs: []diag.Location{s.loc(key)}, value: v})
+		acc.set(sourcePair{key: key.Value, keyLoc: s.loc(key), value: v})
 	}
 
 	if merge == nil {
@@ -321,18 +321,40 @@ type pairSet struct {
 	index map[string]int
 }
 
+// pairSetIndexMin is the size from which a pairSet indexes its keys; smaller sets (most
+// mappings) are searched linearly, which allocates nothing.
+const pairSetIndexMin = 16
+
 // set adds p, or replaces the value of the pair with the same key (keeping its key
 // location and position).
 func (s *pairSet) set(p sourcePair) {
-	if i, ok := s.index[p.key]; ok {
+	if i, ok := s.find(p.key); ok {
 		s.pairs[i].value = p.value
 		return
 	}
-	if s.index == nil {
-		s.index = map[string]int{}
+	if s.index != nil {
+		s.index[p.key] = len(s.pairs)
 	}
-	s.index[p.key] = len(s.pairs)
 	s.pairs = append(s.pairs, p)
+	if s.index == nil && len(s.pairs) >= pairSetIndexMin {
+		s.index = make(map[string]int, 2*len(s.pairs))
+		for i, q := range s.pairs {
+			s.index[q.key] = i
+		}
+	}
+}
+
+func (s *pairSet) find(key string) (int, bool) {
+	if s.index != nil {
+		i, ok := s.index[key]
+		return i, ok
+	}
+	for i := range s.pairs {
+		if s.pairs[i].key == key {
+			return i, true
+		}
+	}
+	return 0, false
 }
 
 func (s *yamlSource) elems() ([]source, error) {

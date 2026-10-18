@@ -26,9 +26,18 @@ type source interface {
 }
 
 type sourcePair struct {
-	key     string
-	keyLocs []diag.Location
-	value   source
+	key string
+	// keyLoc is the location of the key, if any.
+	keyLoc diag.Location
+	value  source
+}
+
+// keyLocations returns the locations of the key for a diagnostic.
+func (p sourcePair) keyLocations() []diag.Location {
+	if p.keyLoc == (diag.Location{}) {
+		return nil
+	}
+	return []diag.Location{p.keyLoc}
 }
 
 // DecodeYAML decodes the YAML document in r (read from file) into dst, a pointer to a
@@ -440,7 +449,7 @@ func (d *decoder) decodeStruct(dst reflect.Value, src source, path *structpath.P
 					Severity:  diag.Warning,
 					Summary:   "Use 'value_from' instead of 'valueFrom'",
 					Detail:    "The field 'valueFrom' should be 'value_from' (snake_case). The 'valueFrom' field will be ignored.",
-					Locations: p.keyLocs,
+					Locations: p.keyLocations(),
 					Paths:     []*structpath.PathNode{path},
 				})
 				continue
@@ -448,7 +457,7 @@ func (d *decoder) decodeStruct(dst reflect.Value, src source, path *structpath.P
 			d.diags = d.diags.Append(diag.Diagnostic{
 				Severity:  diag.Warning,
 				Summary:   "unknown field: " + p.key,
-				Locations: p.keyLocs,
+				Locations: p.keyLocations(),
 				Paths:     []*structpath.PathNode{path},
 			})
 			continue
