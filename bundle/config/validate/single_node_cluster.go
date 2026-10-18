@@ -2,13 +2,17 @@ package validate
 
 import (
 	"context"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structvar"
+	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
 // Validates that any single node clusters defined in the bundle are correctly configured.
@@ -36,61 +40,68 @@ are correctly set in the cluster specification:
 
 const singleNodeWarningSummary = `Single node cluster is not correctly configured`
 
-// stringMap reads a view of a map of strings. It returns false if v is not a map.
-func stringMap(v structvar.View) (map[string]string, bool) {
-	switch v.Kind() {
-	case structvar.KindInvalid, structvar.KindNil:
-		return nil, true
-	case structvar.KindMap:
-	default:
-		return nil, false
-	}
-	out := map[string]string{}
-	for k, c := range v.MapItems() {
-		s, ok := c.AsString()
-		if !ok {
-			return nil, false
-		}
-		out[k] = s
-	}
-	return out, true
+// clusterSpec holds the fields of compute.ClusterSpec and pipelines.PipelineCluster
+// that the validation reads.
+type clusterSpec struct {
+	numWorkers    int
+	numWorkersSet bool
+	isSingleNode  bool
+	sparkConf     map[string]string
+	customTags    map[string]string
+	policyId      string
 }
 
-func showSingleNodeClusterWarning(ctx context.Context, v structvar.View) bool {
+func computeClusterSpec(c *compute.ClusterSpec) clusterSpec {
+	return clusterSpec{
+		numWorkers:    c.NumWorkers,
+		numWorkersSet: c.NumWorkers != 0 || slices.Contains(c.ForceSendFields, "NumWorkers"),
+		isSingleNode:  c.IsSingleNode,
+		sparkConf:     c.SparkConf,
+		customTags:    c.CustomTags,
+		policyId:      c.PolicyId,
+	}
+}
+
+func pipelineClusterSpec(c *pipelines.PipelineCluster) clusterSpec {
+	return clusterSpec{
+		numWorkers:    c.NumWorkers,
+		numWorkersSet: c.NumWorkers != 0 || slices.Contains(c.ForceSendFields, "NumWorkers"),
+		sparkConf:     c.SparkConf,
+		customTags:    c.CustomTags,
+		policyId:      c.PolicyId,
+	}
+}
+
+// showSingleNodeClusterWarning reports whether the cluster c at p sets num_workers to
+// 0 without configuring a single node cluster.
+func showSingleNodeClusterWarning(ctx context.Context, b *bundle.Bundle, p *structpath.PathNode, c clusterSpec) bool {
 	// Check if the user has explicitly set the num_workers to 0. Skip the warning
 	// if that's not the case.
-	numWorkers, ok := v.Get("num_workers").AsInt()
-	if !ok || numWorkers > 0 {
+	if !c.numWorkersSet || c.numWorkers > 0 {
 		return false
 	}
 
 	// If is_single_node is set to true, the cluster is correctly configured automatically.
 	// No need to show the warning.
-	isSingleNode, ok := v.Get("is_single_node").AsBool()
-	if ok && isSingleNode {
+	if c.isSingleNode {
 		return false
 	}
 
-	// Read the common fields from compute.ClusterSpec and pipelines.PipelineCluster
-	// that we are interested in.
-	sparkConf, ok := stringMap(v.Get("spark_conf"))
-	if !ok {
-		return false
+	// Values that are pure references are not resolved yet.
+	for _, k := range []string{"num_workers", "spark_conf", "custom_tags"} {
+		if b.Config.IsReferenceAt(structpath.NewStringKey(p, k)) {
+			return false
+		}
 	}
-	customTags, ok := stringMap(v.Get("custom_tags"))
-	if !ok {
-		return false
-	}
-	policyId, _ := v.Get("policy_id").AsString()
 
 	// If the policy id is set, we don't want to show the warning. This is because
 	// the user might have configured `spark_conf` and `custom_tags` correctly
 	// in their cluster policy.
-	if policyId != "" {
+	if c.policyId != "" {
 		return false
 	}
 
-	profile, ok := sparkConf["spark.databricks.cluster.profile"]
+	profile, ok := c.sparkConf["spark.databricks.cluster.profile"]
 	if !ok {
 		log.Debugf(ctx, "spark_conf spark.databricks.cluster.profile not found in single-node cluster spec")
 		return true
@@ -100,7 +111,7 @@ func showSingleNodeClusterWarning(ctx context.Context, v structvar.View) bool {
 		return true
 	}
 
-	master, ok := sparkConf["spark.master"]
+	master, ok := c.sparkConf["spark.master"]
 	if !ok {
 		log.Debugf(ctx, "spark_conf spark.master not found in single-node cluster spec")
 		return true
@@ -110,7 +121,7 @@ func showSingleNodeClusterWarning(ctx context.Context, v structvar.View) bool {
 		return true
 	}
 
-	resourceClass, ok := customTags["ResourceClass"]
+	resourceClass, ok := c.customTags["ResourceClass"]
 	if !ok {
 		log.Debugf(ctx, "custom_tag ResourceClass not found in single-node cluster spec")
 		return true
@@ -125,39 +136,62 @@ func showSingleNodeClusterWarning(ctx context.Context, v structvar.View) bool {
 
 func (m *singleNodeCluster) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
+	check := clusterCheck{ctx: ctx, b: b, diags: &diags}
+	r := &b.Config.Resources
 
-	patterns := []*structpath.PatternNode{
-		// Interactive clusters
-		structpath.NewPattern(nil, "resources", "clusters", structpath.AnyKey),
-		// Job clusters
-		structpath.NewPattern(nil, "resources", "jobs", structpath.AnyKey, "job_clusters", structpath.AnyIndex, "new_cluster"),
-		// Job task clusters
-		structpath.NewPattern(nil, "resources", "jobs", structpath.AnyKey, "tasks", structpath.AnyIndex, "new_cluster"),
-		// Job for each task clusters
-		structpath.NewPattern(nil, "resources", "jobs", structpath.AnyKey, "tasks", structpath.AnyIndex, "for_each_task", "task", "new_cluster"),
-		// Pipeline clusters
-		structpath.NewPattern(nil, "resources", "pipelines", structpath.AnyKey, "clusters", structpath.AnyIndex),
+	// Interactive clusters
+	for _, name := range slices.Sorted(maps.Keys(r.Clusters)) {
+		if c := r.Clusters[name]; c != nil {
+			check.cluster(structpath.NewPath(nil, "resources", "clusters", name), computeClusterSpec(&c.ClusterSpec))
+		}
 	}
-
-	root := b.Config.View()
-	for _, p := range patterns {
-		err := structvar.ForEach(root, p, func(np *structpath.PathNode, v structvar.View) error {
-			warning := diag.Diagnostic{
-				Severity:  diag.Warning,
-				Summary:   singleNodeWarningSummary,
-				Detail:    singleNodeWarningDetail,
-				Locations: v.Locations(),
-				Paths:     []*structpath.PathNode{np},
+	// Job clusters
+	for _, name := range slices.Sorted(maps.Keys(r.Jobs)) {
+		if job := r.Jobs[name]; job != nil {
+			for i := range job.JobClusters {
+				if nc := job.JobClusters[i].NewCluster; nc != nil {
+					check.cluster(structpath.NewPath(nil, "resources", "jobs", name, "job_clusters", i, "new_cluster"), computeClusterSpec(nc))
+				}
 			}
-
-			if showSingleNodeClusterWarning(ctx, v) {
-				diags = append(diags, warning)
+		}
+	}
+	// Job task clusters, then the clusters of tasks in for_each_task
+	for _, nested := range []bool{false, true} {
+		r.IterateJobTasks(nested, check.task)
+	}
+	// Pipeline clusters
+	for _, name := range slices.Sorted(maps.Keys(r.Pipelines)) {
+		if pl := r.Pipelines[name]; pl != nil {
+			for i := range pl.Clusters {
+				check.cluster(structpath.NewPath(nil, "resources", "pipelines", name, "clusters", i), pipelineClusterSpec(&pl.Clusters[i]))
 			}
-			return nil
-		})
-		if err != nil {
-			log.Debugf(ctx, "Error while applying single node cluster validation: %s", err)
 		}
 	}
 	return diags
+}
+
+// clusterCheck collects the single node cluster warnings.
+type clusterCheck struct {
+	ctx   context.Context
+	b     *bundle.Bundle
+	diags *diag.Diagnostics
+}
+
+func (c clusterCheck) cluster(p *structpath.PathNode, spec clusterSpec) {
+	if showSingleNodeClusterWarning(c.ctx, c.b, p, spec) {
+		*c.diags = append(*c.diags, diag.Diagnostic{
+			Severity:  diag.Warning,
+			Summary:   singleNodeWarningSummary,
+			Detail:    singleNodeWarningDetail,
+			Locations: c.b.Config.GetLocationsOfExact(p),
+			Paths:     []*structpath.PathNode{p},
+		})
+	}
+}
+
+func (c clusterCheck) task(p *structpath.PathNode, task *jobs.Task) bool {
+	if task.NewCluster != nil {
+		c.cluster(structpath.NewPath(p, "new_cluster"), computeClusterSpec(task.NewCluster))
+	}
+	return true
 }

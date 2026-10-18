@@ -61,11 +61,6 @@ func TestSafeMutatorName(t *testing.T) {
 			expected: "bundle.(funcMutator)",
 		},
 		{
-			name:     "setDefaults mutator",
-			mutator:  &setDefaults{},
-			expected: "bundle.(setDefaults)",
-		},
-		{
 			name:     "funcMutator as pointer",
 			mutator:  &funcMutator{fn: nil},
 			expected: "bundle.(funcMutator)",
