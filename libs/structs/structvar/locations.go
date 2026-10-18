@@ -1,6 +1,7 @@
 package structvar
 
 import (
+	"iter"
 	"maps"
 	"slices"
 
@@ -61,6 +62,35 @@ func (l *Locations) Key(k string) *Locations {
 // Index returns the locations of sequence element i.
 func (l *Locations) Index(i int) *Locations {
 	return l.child(pathComponent{index: i})
+}
+
+// KeyItems returns the keys of l that have locations recorded below them, and their trees.
+func (l *Locations) KeyItems() iter.Seq2[string, *Locations] {
+	return func(yield func(string, *Locations) bool) {
+		if l == nil {
+			return
+		}
+		for k, c := range l.keys {
+			if c != nil && !yield(k, c) {
+				return
+			}
+		}
+	}
+}
+
+// Elems returns the sequence indices of l that have locations recorded below them, and
+// their trees.
+func (l *Locations) Elems() iter.Seq2[int, *Locations] {
+	return func(yield func(int, *Locations) bool) {
+		if l == nil {
+			return
+		}
+		for i, c := range l.elems {
+			if c != nil && !yield(i, c) {
+				return
+			}
+		}
+	}
 }
 
 // Get returns the locations recorded for the value itself.

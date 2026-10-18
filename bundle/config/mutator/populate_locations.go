@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/loctable"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -24,15 +25,6 @@ func (m *populateLocations) Name() string {
 	return "PopulateLocations"
 }
 
-// locationPatterns are the paths for which locations are recorded.
-var locationPatterns = []*structpath.PatternNode{
-	structpath.NewPattern(nil, structpath.AnyKey),                                                    // Top level fields
-	structpath.NewPattern(nil, "resources", structpath.AnyKey),                                       // Resource groups ("resources.jobs")
-	structpath.NewPattern(nil, "resources", structpath.AnyKey, structpath.AnyKey),                    // Resources for all types ("resources.jobs.my_job")
-	structpath.NewPattern(nil, "resources", "jobs", structpath.AnyKey, "tasks"),                      // Job tasks ("resources.jobs.my_job.tasks")
-	structpath.NewPattern(nil, "resources", "jobs", structpath.AnyKey, "tasks", structpath.AnyIndex), // Job task items ("resources.jobs.my_job.tasks[2]")
-}
-
 // pathString returns the path with keys separated by dots, whatever characters they contain.
 func pathString(p *structpath.PathNode) string {
 	var b strings.Builder
@@ -49,25 +41,48 @@ func pathString(p *structpath.PathNode) string {
 	return b.String()
 }
 
-func gatherLocations(v structvar.View) (map[string][]diag.Location, error) {
-	locs := map[string][]diag.Location{}
-	for _, pattern := range locationPatterns {
-		err := structvar.ForEach(v, pattern, func(p *structpath.PathNode, v structvar.View) error {
-			locs[pathString(p)] = v.Locations()
-			return nil
-		})
-		if err != nil {
-			return nil, err
-		}
+// gatherLocations returns the locations of the top level fields, the resource groups
+// ("resources.jobs"), the resources ("resources.jobs.my_job"), and job tasks
+// ("resources.jobs.my_job.tasks", "resources.jobs.my_job.tasks[2]"). Resources and tasks
+// come from the configuration, their locations from the locations tree (values without
+// locations have no entry).
+func gatherLocations(r *config.Root) map[string][]diag.Location {
+	out := map[string][]diag.Location{}
+	tree := r.LocationTree()
+	for k, top := range tree.KeyItems() {
+		addLocations(out, structpath.NewPath(nil, k), top)
 	}
-	return locs, nil
+	groups := tree.Key("resources")
+	for group, g := range groups.KeyItems() {
+		addLocations(out, structpath.NewPath(nil, "resources", group), g)
+	}
+	r.Resources.IterateAllResources(func(group, name string, _ config.ConfigResource) bool {
+		rp := structpath.NewPath(nil, "resources", group, name)
+		res := groups.Key(group).Key(name)
+		addLocations(out, rp, res)
+		if group == "jobs" {
+			if job := r.Resources.Jobs[name]; job != nil {
+				tasks := res.Key("tasks")
+				addLocations(out, structpath.NewPath(rp, "tasks"), tasks)
+				for i := range job.Tasks {
+					addLocations(out, structpath.NewPath(rp, "tasks", i), tasks.Index(i))
+				}
+			}
+		}
+		return true
+	})
+	return out
+}
+
+// addLocations records the locations of the value at p (from its tree l), if any.
+func addLocations(out map[string][]diag.Location, p *structpath.PathNode, l *structvar.Locations) {
+	if locs := l.Get(); len(locs) > 0 {
+		out[pathString(p)] = locs
+	}
 }
 
 func (m *populateLocations) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	pathToLocations, err := gatherLocations(b.Config.View())
-	if err != nil {
-		return diag.FromErr(err)
-	}
+	pathToLocations := gatherLocations(&b.Config)
 
 	locs, err := loctable.Build(
 		pathToLocations,
