@@ -2,10 +2,12 @@ package walk
 
 import (
 	"maps"
+	"reflect"
 	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 // Mode selects the strings [Strings] visits.
@@ -65,6 +67,61 @@ func (c *stringsWalk) any(n *Node, v *any) {
 		for i := range x {
 			ch := n.Elem(i)
 			c.any(&ch, &x[i])
+		}
+	case nil:
+	default:
+		// Other values set from code (typed maps, slices, structs, named strings).
+		rv := reflect.ValueOf(v).Elem()
+		c.value(n, rv)
+	}
+}
+
+// value visits the strings of the dynamic value v, which is settable.
+func (c *stringsWalk) value(n *Node, v reflect.Value) {
+	switch v.Kind() {
+	case reflect.Interface, reflect.Pointer:
+		if v.IsNil() {
+			return
+		}
+		e := v.Elem()
+		if v.Kind() == reflect.Interface {
+			// Interface values are not settable: visit a copy and store it back.
+			cp := reflect.New(e.Type()).Elem()
+			cp.Set(e)
+			c.value(n, cp)
+			v.Set(cp)
+			return
+		}
+		c.value(n, e)
+	case reflect.String:
+		if s := v.String(); c.match(s) {
+			if r, ok := c.fn(n, s); ok {
+				v.SetString(r)
+			}
+		}
+	case reflect.Slice, reflect.Array:
+		for i := range v.Len() {
+			ch := n.Elem(i)
+			c.value(&ch, v.Index(i))
+		}
+	case reflect.Map:
+		if v.Type().Key().Kind() != reflect.String {
+			return
+		}
+		keys := v.MapKeys()
+		slices.SortFunc(keys, func(a, b reflect.Value) int { return strings.Compare(a.String(), b.String()) })
+		for _, k := range keys {
+			e := reflect.New(v.Type().Elem()).Elem()
+			e.Set(v.MapIndex(k))
+			ch := n.Child(k.String())
+			c.value(&ch, e)
+			v.SetMapIndex(k, e)
+		}
+	case reflect.Struct:
+		info := structvar.GetStructInfo(v.Type())
+		for _, f := range info.List {
+			ch := n.Child(f.Key)
+			c.value(&ch, structvar.FieldByIndex(v, f.Index))
 		}
 	default:
 	}

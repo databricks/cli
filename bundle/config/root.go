@@ -666,6 +666,12 @@ func (r Root) IsReference(path string) bool {
 	return ok
 }
 
+// IsReferenceAt is [Root.IsReference] for a path node.
+func (r Root) IsReferenceAt(path *structpath.PathNode) bool {
+	_, ok := r.refs[path.String()]
+	return ok
+}
+
 // References returns all pure variable references in fields that cannot hold a string,
 // keyed by path. References in string fields are part of their value.
 func (r Root) References() iter.Seq2[*structpath.PathNode, string] {

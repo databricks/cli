@@ -10,27 +10,27 @@ import (
 type pipelineLibraryRule struct {
 	mode  TranslateMode
 	keys  []any
-	field func(*pipelines.PipelineLibrary) *string
+	field func(*pipelines.PipelineLibrary) (owner any, s *string)
 }
 
 var pipelineLibraryRules = []pipelineLibraryRule{
-	{TranslateModeNotebook, []any{"notebook", "path"}, func(l *pipelines.PipelineLibrary) *string {
+	{TranslateModeNotebook, []any{"notebook", "path"}, func(l *pipelines.PipelineLibrary) (any, *string) {
 		if l.Notebook == nil {
-			return nil
+			return nil, nil
 		}
-		return &l.Notebook.Path
+		return l.Notebook, &l.Notebook.Path
 	}},
-	{TranslateModeFile, []any{"file", "path"}, func(l *pipelines.PipelineLibrary) *string {
+	{TranslateModeFile, []any{"file", "path"}, func(l *pipelines.PipelineLibrary) (any, *string) {
 		if l.File == nil {
-			return nil
+			return nil, nil
 		}
-		return &l.File.Path
+		return l.File, &l.File.Path
 	}},
-	{TranslateModeGlob, []any{"glob", "include"}, func(l *pipelines.PipelineLibrary) *string {
+	{TranslateModeGlob, []any{"glob", "include"}, func(l *pipelines.PipelineLibrary) (any, *string) {
 		if l.Glob == nil {
-			return nil
+			return nil, nil
 		}
-		return &l.Glob.Include
+		return l.Glob, &l.Glob.Include
 	}},
 }
 
@@ -42,11 +42,11 @@ func VisitPipelinePaths(root *config.Root, fn VisitFunc) error {
 				continue
 			}
 			for i := range pl.Libraries {
-				s := rule.field(&pl.Libraries[i])
+				owner, s := rule.field(&pl.Libraries[i])
 				if s == nil {
 					continue
 				}
-				if err := visit(root, s, rule.mode, nil, fn, func() *structpath.PathNode {
+				if err := visit(owner, rule.keys[len(rule.keys)-1].(string), s, rule.mode, nil, fn, func() *structpath.PathNode {
 					return structpath.NewPath(structpath.NewPath(resourcePath("pipelines", name), "libraries", i), rule.keys...)
 				}); err != nil {
 					return err
@@ -56,7 +56,7 @@ func VisitPipelinePaths(root *config.Root, fn VisitFunc) error {
 	}
 	for _, name := range sortedKeys(root.Resources.Pipelines) {
 		if pl := root.Resources.Pipelines[name]; pl != nil {
-			if err := visit(root, &pl.RootPath, TranslateModeDirectory, nil, fn, func() *structpath.PathNode { return structpath.NewPath(resourcePath("pipelines", name), "root_path") }); err != nil {
+			if err := visit(pl, "root_path", &pl.RootPath, TranslateModeDirectory, nil, fn, func() *structpath.PathNode { return structpath.NewPath(resourcePath("pipelines", name), "root_path") }); err != nil {
 				return err
 			}
 		}
@@ -78,7 +78,7 @@ func VisitPipelineLibrariesPaths(root *config.Root, fn VisitFunc) error {
 				continue
 			}
 			for i := range pl.Environment.Dependencies {
-				if err := visit(root, &pl.Environment.Dependencies[i], rule.mode, rule.skip, fn, func() *structpath.PathNode {
+				if err := visit(nil, "", &pl.Environment.Dependencies[i], rule.mode, rule.skip, fn, func() *structpath.PathNode {
 					return structpath.NewPath(resourcePath("pipelines", name), "environment", "dependencies", i)
 				}); err != nil {
 					return err

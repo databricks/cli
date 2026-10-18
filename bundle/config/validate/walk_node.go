@@ -18,10 +18,14 @@ type walker struct {
 	diags diag.Diagnostics
 }
 
-// walkConfig runs the generated walker fn over the configuration of root.
-func walkConfig(root *config.Root, fn func(*walker, *walk.Node, *config.Root)) diag.Diagnostics {
+// walkConfig runs the generated walker fn over the configuration of root; refs makes
+// the nodes follow the pure references.
+func walkConfig(root *config.Root, refs bool, fn func(*walker, *walk.Node, *config.Root)) diag.Diagnostics {
 	w := &walker{}
 	n := walk.Root(root)
+	if refs {
+		n = walk.RootWithReferences(root)
+	}
 	fn(w, &n, root)
 	return w.diags
 }
