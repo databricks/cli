@@ -64,9 +64,11 @@ func stringsConfigRoot(c *stringsWalk, n *Node, v *config.Root) {
 			}
 		}
 	}
-	{
-		ch := n.Child("resources")
-		stringsConfigResources(c, &ch, &v.Resources)
+	if !c.skipResources {
+		{
+			ch := n.Child("resources")
+			stringsConfigResources(c, &ch, &v.Resources)
+		}
 	}
 	if len(v.Targets) > 0 {
 		cn := n.Child("targets")

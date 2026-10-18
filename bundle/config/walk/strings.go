@@ -37,9 +37,42 @@ func Strings(root *config.Root, mode Mode, fn StringFunc) {
 	stringsConfigRoot(c, &n, root)
 }
 
+// StringsWithoutResources is [Strings] for the configuration outside "resources".
+func StringsWithoutResources(root *config.Root, mode Mode, fn StringFunc) {
+	c := &stringsWalk{mode: mode, fn: fn, skipResources: true}
+	n := Root(root)
+	stringsConfigRoot(c, &n, root)
+}
+
+// ResourceStrings is [Strings] for "resources" only.
+func ResourceStrings(root *config.Root, mode Mode, fn StringFunc) {
+	c := &stringsWalk{mode: mode, fn: fn}
+	n := Root(root)
+	ch := n.Child("resources")
+	stringsConfigResources(c, &ch, &root.Resources)
+}
+
+// VariableLookupStrings is [Strings] for the lookups of the variables
+// ("variables.*.lookup"), in the order of the variable names.
+func VariableLookupStrings(root *config.Root, mode Mode, fn StringFunc) {
+	c := &stringsWalk{mode: mode, fn: fn}
+	n := Root(root)
+	vn := n.Child("variables")
+	for _, k := range sortedKeys(root.Variables) {
+		v := root.Variables[k]
+		if v == nil || v.Lookup == nil {
+			continue
+		}
+		ch := vn.Child(k)
+		ln := ch.Child("lookup")
+		stringsVariableLookup(c, &ln, v.Lookup)
+	}
+}
+
 type stringsWalk struct {
-	mode Mode
-	fn   StringFunc
+	mode          Mode
+	fn            StringFunc
+	skipResources bool
 }
 
 func (c *stringsWalk) match(s string) bool {
