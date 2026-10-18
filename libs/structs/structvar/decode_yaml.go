@@ -1,6 +1,7 @@
 package structvar
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -49,7 +50,7 @@ type yamlSource struct {
 func ParseYAML(r io.Reader) (*yaml.Node, error) {
 	var doc yaml.Node
 	err := yaml.NewDecoder(r).Decode(&doc)
-	if err == io.EOF {
+	if errors.Is(err, io.EOF) {
 		return nil, nil
 	}
 	if err != nil {
