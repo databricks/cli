@@ -343,32 +343,10 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []*st
 	// Resolve the references in each value of the scope: the whole configuration,
 	// "resources", or each variable lookup. Template keys are relative to that value, like
 	// the paths in cycle errors. The results are applied after all of them are resolved.
-	type update struct {
-		path  *structpath.PathNode
-		value structvar.View
-	}
-	var updates []update
-	resolveIn := func(p *structpath.PathNode, refs []referenceString) error {
-		templates := map[string]structvar.Template{}
-		paths := map[string]*structpath.PathNode{}
-		for _, ref := range refs {
-			key := ref.path.SkipPrefix(ref.base.Len()).String()
-			templates[key] = structvar.Template{Value: ref.value, Locations: ref.locs}
-			paths[key] = ref.path
-		}
-		out, err := structvar.Resolve(templates, lookupFn)
-		if err != nil {
-			return err
-		}
-		for _, key := range slices.Sorted(maps.Keys(out)) {
-			updates = append(updates, update{path: paths[key], value: out[key]})
-		}
-		return nil
-	}
-
+	var updates []resolvedValue
 	var err error
 	for _, refs := range m.referenceStrings(&b.Config) {
-		if err = resolveIn(refs[0].base, refs); err != nil {
+		if updates, err = resolveReferenceStrings(updates, refs, lookupFn); err != nil {
 			break
 		}
 	}
@@ -384,6 +362,32 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []*st
 	}
 
 	return hasUpdates, diags
+}
+
+// resolvedValue is the value a reference string at path resolved to.
+type resolvedValue struct {
+	path  *structpath.PathNode
+	value structvar.View
+}
+
+// resolveReferenceStrings resolves the reference strings of one base together and
+// appends the results to out, in path order. Template keys are relative to the base.
+func resolveReferenceStrings(out []resolvedValue, refs []referenceString, lookup structvar.Lookup) ([]resolvedValue, error) {
+	templates := map[string]structvar.Template{}
+	paths := map[string]*structpath.PathNode{}
+	for _, ref := range refs {
+		key := ref.path.SkipPrefix(ref.base.Len()).String()
+		templates[key] = structvar.Template{Value: ref.value, Locations: ref.locs}
+		paths[key] = ref.path
+	}
+	resolved, err := structvar.Resolve(templates, lookup)
+	if err != nil {
+		return out, err
+	}
+	for _, key := range slices.Sorted(maps.Keys(resolved)) {
+		out = append(out, resolvedValue{path: paths[key], value: resolved[key]})
+	}
+	return out, nil
 }
 
 // referenceString is a string with a variable reference at path. Strings with the same

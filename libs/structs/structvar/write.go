@@ -124,7 +124,15 @@ func (sv *StructVar) Delete(path *structpath.PathNode) error {
 // MoveMetadata moves the locations and references of the value at from and below it
 // to to, replacing those at to. Values are not changed: the caller moves them.
 func (sv *StructVar) MoveMetadata(from, to *structpath.PathNode) {
-	sv.Locations = sv.Locations.With(to, sv.Locations.Sub(from)).With(from, nil)
+	sv.CopyMetadataAt(from, to)
+	sv.Locations = sv.Locations.With(from, nil)
+	sv.Refs = withoutRefs(sv.Refs, from)
+}
+
+// CopyMetadataAt copies the locations and references of the value at from and below
+// it to to, replacing those at to. Values are not changed: the caller copies them.
+func (sv *StructVar) CopyMetadataAt(from, to *structpath.PathNode) {
+	sv.Locations = sv.Locations.With(to, sv.Locations.Sub(from))
 	if len(sv.Refs) == 0 {
 		return
 	}
@@ -132,7 +140,6 @@ func (sv *StructVar) MoveMetadata(from, to *structpath.PathNode) {
 	refs := withoutRefs(sv.Refs, to)
 	for k, v := range sv.Refs {
 		if isUnder(k, fromKey) {
-			delete(refs, k)
 			refs[toKey+strings.TrimPrefix(k, fromKey)] = v
 		}
 	}
