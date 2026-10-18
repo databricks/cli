@@ -1002,6 +1002,7 @@ tasks:
       - "{{.EMBED_SOURCES}}"
     generates:
       - bundle/config/validate/*_walk.go
+      - bundle/config/walk/*_walk.go
     cmds:
       - "go run ./bundle/internal/validation/."
 

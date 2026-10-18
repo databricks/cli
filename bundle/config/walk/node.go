@@ -4,6 +4,7 @@ package walk
 
 import (
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 )
@@ -50,6 +51,15 @@ func (n *Node) Path() *structpath.PathNode {
 // Locations returns the locations of the value at n.
 func (n *Node) Locations() *structvar.Locations {
 	return n.locs
+}
+
+// Location returns the first location of the value at n.
+func (n *Node) Location() diag.Location {
+	locs := n.locs.Get()
+	if len(locs) == 0 {
+		return diag.Location{}
+	}
+	return locs[0]
 }
 
 // Written reports whether the key k of n is written in the source.
