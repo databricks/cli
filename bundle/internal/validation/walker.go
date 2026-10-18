@@ -476,5 +476,9 @@ func generateWalkers(dir string) error {
 	if err != nil {
 		return err
 	}
-	return generateStringsWalker("bundle/config/walk/strings_walk.go")
+	err = generateStringsWalker("bundle/config/walk/strings_walk.go")
+	if err != nil {
+		return err
+	}
+	return generateResourcesIterate("bundle/config/resources_iterate.go")
 }
