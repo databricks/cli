@@ -999,6 +999,7 @@ tasks:
     generates:
       - bundle/config/validate/*_walk.go
       - bundle/config/walk/*_walk.go
+      - bundle/config/resources_iterate.go
     cmds:
       - "go run ./bundle/internal/validation/."
 
