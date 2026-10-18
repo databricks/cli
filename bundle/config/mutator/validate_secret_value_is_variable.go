@@ -28,9 +28,8 @@ func (v *validateSecretValueIsVariable) Apply(ctx context.Context, b *bundle.Bun
 	for key, secret := range b.Config.Resources.Secrets {
 		p := structpath.NewPath(nil, "resources", "secrets", key, "value")
 		locs := b.Config.GetLocationsOfExact(p)
-		// The value is required (no omitempty): an empty value counts as set if it is
-		// written or forced.
-		if secret == nil || (secret.Value == "" && b.Config.LocationTree().Sub(p) == nil && !walk.Forced(secret.ForceSendFields, "Value")) {
+		// An explicit empty value is forced (it is not a reference either, below).
+		if secret == nil || (secret.Value == "" && !walk.Forced(secret.ForceSendFields, "Value")) {
 			diags = append(diags, diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "Secret value must be a string",

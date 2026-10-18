@@ -71,7 +71,7 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 		}
 	}
 
-	if len(nameLocations) > 0 {
+	if len(namePaths) > 0 {
 		diags = diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   "dashboard display_name is required",
@@ -79,7 +79,7 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 			Paths:     namePaths,
 		})
 	}
-	if len(warehouseIdLocations) > 0 {
+	if len(warehouseIdPaths) > 0 {
 		diags = diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   "dashboard warehouse_id is required",

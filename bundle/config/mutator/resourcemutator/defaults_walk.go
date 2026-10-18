@@ -16,7 +16,7 @@ func defaultsConfigRoot(w *defaultsWalker, n *walk.Node, v *config.Root) {
 	if v == nil {
 		return
 	}
-	if x := &v.Resources; !walk.IsZeroStruct(x) || n.Locations().Key("resources") != nil {
+	if x := &v.Resources; !walk.IsZeroStruct(x) {
 		c := n.Child("resources")
 		defaultsConfigResources(w, &c, x)
 	}
@@ -226,7 +226,7 @@ func defaultsResourcesVolume(w *defaultsWalker, n *walk.Node, v *resources.Volum
 	if v == nil {
 		return
 	}
-	if !(v.CreateVolumeRequestContent.VolumeType != "" || walk.Forced(v.CreateVolumeRequestContent.ForceSendFields, "VolumeType") || n.Written("volume_type")) {
+	if !(v.CreateVolumeRequestContent.VolumeType != "" || walk.Forced(v.CreateVolumeRequestContent.ForceSendFields, "VolumeType")) {
 		c := n.Child("volume_type")
 		w.unset(&c, 3)
 	}
@@ -236,7 +236,7 @@ func defaultsComputeWorkloadType(w *defaultsWalker, n *walk.Node, v *compute.Wor
 	if v == nil {
 		return
 	}
-	if x := &v.Clients; !walk.IsZeroStruct(x) || n.Locations().Key("clients") != nil {
+	if x := &v.Clients; !walk.IsZeroStruct(x) {
 		c := n.Child("clients")
 		defaultsComputeClientsTypes(w, &c, x)
 	}
@@ -310,7 +310,7 @@ func defaultsComputeWorkloadType2(w *defaultsWalker, n *walk.Node, v *compute.Wo
 	if v == nil {
 		return
 	}
-	if x := &v.Clients; !walk.IsZeroStruct(x) || n.Locations().Key("clients") != nil {
+	if x := &v.Clients; !walk.IsZeroStruct(x) {
 		c := n.Child("clients")
 		defaultsComputeClientsTypes2(w, &c, x)
 	}

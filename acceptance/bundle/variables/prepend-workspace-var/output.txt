@@ -7,6 +7,10 @@ Warning: required field "package_name" is not set
   at resources.jobs.my_job.tasks[0].python_wheel_task
   in databricks.yml:26:13
 
+Warning: required field "task_key" is not set
+  at resources.jobs.my_job.tasks[0]
+  in databricks.yml:24:11
+
 {
   "bundle": {
     "environment": "dev",

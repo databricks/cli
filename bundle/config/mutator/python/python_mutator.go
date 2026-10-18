@@ -166,9 +166,8 @@ func applyBackwardsCompatibilityFixes(b *bundle.Bundle) {
 	}
 
 	// if 'experimental.python' section exists, nothing to do
-	locs := b.Config.LocationTree()
 	experimental := b.Config.Experimental
-	if experimental != nil && (!reflect.DeepEqual(experimental.Python, config.Python{}) || locs.Key("experimental").Key("python") != nil) {
+	if experimental != nil && !reflect.DeepEqual(experimental.Python, config.Python{}) {
 		return
 	}
 

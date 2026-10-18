@@ -59,8 +59,9 @@ func (e expandGlobs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	for index, f := range artifact.Files {
 		np := structpath.NewPath(base, index, "source")
 		locs := b.Config.GetLocationsOfExact(np)
-		// source has no omitempty: an explicit empty value is present too.
-		if f.Source == "" && len(locs) == 0 {
+		// An empty source is missing (ArtifactFile has no ForceSendFields), which the
+		// required-field validation reports.
+		if f.Source == "" {
 			continue
 		}
 		source := f.Source

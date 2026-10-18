@@ -11,10 +11,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator/paths"
-	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/libraries"
+
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -335,18 +337,9 @@ func (t *translateContext) rewriteAt(ctx context.Context, p *structpath.PathNode
 func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContext, translations []translateFunc) diag.Diagnostics {
 	switch {
 	case b.IsImmutableFolder():
-		// Reject an explicit workspace.file_path: immutable bundles set it
-		// automatically to the content-addressed snapshot location. A user-supplied
-		// value would be silently discarded during path translation, so we error early.
-		if loc := b.Config.GetLocationOfExact(structpath.NewPath(nil, "workspace", "file_path")); loc.File != "" {
-			return diag.Diagnostics{{
-				Severity:  diag.Error,
-				Summary:   "workspace.file_path cannot be configured when workspace.sync_mode is immutable",
-				Locations: []diag.Location{loc},
-			}}
-		}
+		// An explicit workspace.file_path is rejected by DefineDefaultWorkspacePaths.
 		t.remoteRoot = resources.SnapshotFullPathRef + "/files"
-	case t.b.IsSourceLinkedDeployment():
+	case config.IsExplicitlyEnabled(t.b.Config.Presets.SourceLinkedDeployment):
 		t.remoteRoot = t.b.SyncRootPath
 	default:
 		t.remoteRoot = t.b.Config.Workspace.FilePath
