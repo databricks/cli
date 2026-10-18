@@ -685,6 +685,11 @@ func (r Root) References() iter.Seq2[*structpath.PathNode, string] {
 	}
 }
 
+// LocationTree returns the tree of the source locations of the configuration values.
+func (r *Root) LocationTree() *structvar.Locations {
+	return r.locations
+}
+
 // View returns the read-only view of the configuration tree.
 func (r *Root) View() structvar.View {
 	return structvar.NewView(r, r.refs, r.locations)
