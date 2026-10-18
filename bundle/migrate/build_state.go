@@ -56,27 +56,8 @@ func BuildStateFromTF(
 ) (bool, error) {
 	warningsSeen := false
 	// Collect all resource nodes (same patterns as makePlan).
-	var nodes []string
+	nodes := configRoot.ResourceNodes()
 	rootView := configRoot.View()
-
-	patterns := []*structpath.PatternNode{
-		structpath.NewPattern(nil, "resources", structpath.AnyKey, structpath.AnyKey),
-		structpath.NewPattern(nil, "resources", structpath.AnyKey, structpath.AnyKey, "permissions"),
-		structpath.NewPattern(nil, "resources", structpath.AnyKey, structpath.AnyKey, "grants"),
-	}
-	for _, pat := range patterns {
-		err := structvar.ForEach(
-			rootView,
-			pat,
-			func(p *structpath.PathNode, _ structvar.View) error {
-				nodes = append(nodes, p.String())
-				return nil
-			},
-		)
-		if err != nil {
-			return warningsSeen, err
-		}
-	}
 
 	for _, node := range nodes {
 		id, ok := tfIDs[node]

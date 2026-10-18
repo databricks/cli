@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -31,6 +32,8 @@ func generateResourcesIterate(file string) error {
 		perms      string       // Go field of the permissions, if any
 		permElem   reflect.Type
 		grants     string // Go field of the grants, if any
+		id         string // Go field of the deployed id, if any
+		status     bool   // the resource has a modified_status
 	}
 	var types []resourceType
 	grantsType := reflect.TypeFor[[]catalog.PrivilegeAssignment]()
@@ -56,15 +59,19 @@ func generateResourcesIterate(file string) error {
 			}
 			t.grants = gf.Name
 		}
+		if idx, ok := ei.Fields["id"]; ok && t.elem.FieldByIndex(idx).Type.Kind() == reflect.String {
+			t.id = t.elem.FieldByIndex(idx).Name
+		}
+		_, t.status = ei.Fields["modified_status"]
 		types = append(types, t)
 	}
 	slices.SortFunc(types, func(a, b resourceType) int { return cmp.Compare(a.key, b.key) })
 
 	out := &g.out
-	fmt.Fprintf(out, "\n// IterateAllResources calls fn for every resource, in the order of the resource type\n// and then of the name, until fn returns false.\n")
+	fmt.Fprintf(out, "\n// IterateAllResources calls fn for every resource, in the order of the resource type\n// and then of the name, until fn returns false. Resources defined as null are\n// visited with a nil res.\n")
 	fmt.Fprintf(out, "func (r *Resources) IterateAllResources(fn func(typ, name string, res ConfigResource) bool) {\n")
 	for _, t := range types {
-		fmt.Fprintf(out, "\tfor _, name := range sortedKeys(r.%s) {\n\t\tif x := r.%s[name]; x != nil && !fn(%q, name, x) {\n\t\t\treturn\n\t\t}\n\t}\n", t.field, t.field, t.key)
+		fmt.Fprintf(out, "\tfor _, name := range sortedKeys(r.%s) {\n\t\tvar res ConfigResource\n\t\tif x := r.%s[name]; x != nil {\n\t\t\tres = x\n\t\t}\n\t\tif !fn(%q, name, res) {\n\t\t\treturn\n\t\t}\n\t}\n", t.field, t.field, t.key)
 	}
 	fmt.Fprintf(out, "}\n")
 
@@ -78,6 +85,37 @@ func generateResourcesIterate(file string) error {
 			t.field, t.field, t.key, g.typeName(t.permElem), g.typeName(t.permElem.Field(0).Type), t.perms)
 	}
 	fmt.Fprintf(out, "}\n")
+
+	fmt.Fprintf(out, "\n// IterateAllResourceStates calls fn for the deployed id and modified status of every\n// resource that has them, in the order of IterateAllResources, until fn returns false.\n")
+	fmt.Fprintf(out, "func (r *Resources) IterateAllResourceStates(fn func(typ, name string, id *string, status *%s) bool) {\n", g.typeName(reflect.TypeFor[resources.ModifiedStatus]()))
+	for _, t := range types {
+		if t.id == "" || !t.status {
+			continue
+		}
+		fmt.Fprintf(out, "\tfor _, name := range sortedKeys(r.%s) {\n\t\tif x := r.%s[name]; x != nil && !fn(%q, name, &x.%s, &x.ModifiedStatus) {\n\t\t\treturn\n\t\t}\n\t}\n", t.field, t.field, t.key, t.id)
+	}
+	fmt.Fprintf(out, "}\n")
+
+	fmt.Fprintf(out, "\n// GetOrCreateState returns the deployed id and modified status of the resource name of\n// type typ, creating the resource if it does not exist (created is then true). ok is\n// false if resources of type typ have no state.\n")
+	fmt.Fprintf(out, "func (r *Resources) GetOrCreateState(typ, name string) (id *string, status *%s, created, ok bool) {\n\tswitch typ {\n", g.typeName(reflect.TypeFor[resources.ModifiedStatus]()))
+	for _, t := range types {
+		if t.id == "" || !t.status {
+			continue
+		}
+		fmt.Fprintf(out, "\tcase %q:\n\t\tx, exists := r.%s[name]\n\t\tif x == nil {\n\t\t\tif r.%s == nil {\n\t\t\t\tr.%s = map[string]*%s{}\n\t\t\t}\n\t\t\tx = &%s{}\n\t\t\tr.%s[name] = x\n\t\t}\n\t\treturn &x.%s, &x.ModifiedStatus, !exists, true\n",
+			t.key, t.field, t.field, t.field, g.typeName(t.elem), g.typeName(t.elem), t.field, t.id)
+	}
+	fmt.Fprintf(out, "\tdefault:\n\t\treturn nil, nil, false, false\n\t}\n}\n")
+
+	fmt.Fprintf(out, "\n// IsZero reports whether no resource map is set.\n")
+	fmt.Fprintf(out, "func (r *Resources) IsZero() bool {\n\treturn ")
+	for i, t := range types {
+		if i > 0 {
+			fmt.Fprintf(out, " &&\n\t\t")
+		}
+		fmt.Fprintf(out, "r.%s == nil", t.field)
+	}
+	fmt.Fprintf(out, "\n}\n")
 
 	fmt.Fprintf(out, "\n// IterateAllGrants calls fn for the grants of every resource that can have them, in\n// the order of IterateAllResources, until fn returns false.\n")
 	fmt.Fprintf(out, "func (r *Resources) IterateAllGrants(fn func(typ, name string, grants *[]%s) bool) {\n", g.typeName(grantsType.Elem()))

@@ -12,7 +12,6 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type (
@@ -95,7 +94,7 @@ func applyState(ctx context.Context, b *bundle.Bundle, state ExportedResourcesMa
 
 func StateToBundle(ctx context.Context, state ExportedResourcesMap, cfg *config.Root) error {
 	resourcesPath := structpath.NewStringKey(nil, "resources")
-	if !cfg.View().Lookup(resourcesPath).IsValid() {
+	if cfg.Resources.IsZero() && len(cfg.GetLocationsOfExact(resourcesPath)) == 0 {
 		if err := cfg.Set(resourcesPath, config.Resources{}); err != nil {
 			return err
 		}
@@ -120,24 +119,23 @@ func StateToBundle(ctx context.Context, state ExportedResourcesMap, cfg *config.
 			continue
 		}
 
-		path := structpath.NewPath(resourcesPath, groupName, resourceName)
-		if !cfg.View().Lookup(path).IsValid() {
-			if err := cfg.Set(structpath.NewStringKey(path, "modified_status"), resources.ModifiedStatusDeleted); err != nil {
-				return err
-			}
+		id, status, created, ok := cfg.Resources.GetOrCreateState(groupName, resourceName)
+		if !ok {
+			continue
 		}
-		if err := cfg.Set(structpath.NewStringKey(path, "id"), attrs.ID); err != nil {
-			return err
+		if created {
+			*status = resources.ModifiedStatusDeleted
 		}
+		*id = attrs.ID
 	}
 
-	return structvar.ForEach(cfg.View(), structpath.NewPattern(nil, "resources", structpath.AnyKey, structpath.AnyKey), func(p *structpath.PathNode, inner structvar.View) error {
-		group, _ := p.Parent().StringKey()
-		if !hasID(group) || inner.Get("id").IsValid() || inner.Get("modified_status").IsValid() {
-			return nil
+	cfg.Resources.IterateAllResourceStates(func(typ, _ string, id *string, status *resources.ModifiedStatus) bool {
+		if hasID(typ) && *id == "" && *status == "" {
+			*status = resources.ModifiedStatusCreated
 		}
-		return cfg.Set(structpath.NewStringKey(p, "modified_status"), resources.ModifiedStatusCreated)
+		return true
 	})
+	return nil
 }
 
 // hasID reports whether resources of group can hold the deployed id and status. Groups

@@ -17,200 +17,357 @@ import (
 )
 
 // IterateAllResources calls fn for every resource, in the order of the resource type
-// and then of the name, until fn returns false.
+// and then of the name, until fn returns false. Resources defined as null are
+// visited with a nil res.
 func (r *Resources) IterateAllResources(fn func(typ, name string, res ConfigResource) bool) {
 	for _, name := range sortedKeys(r.Alerts) {
-		if x := r.Alerts[name]; x != nil && !fn("alerts", name, x) {
+		var res ConfigResource
+		if x := r.Alerts[name]; x != nil {
+			res = x
+		}
+		if !fn("alerts", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.Apps) {
-		if x := r.Apps[name]; x != nil && !fn("apps", name, x) {
+		var res ConfigResource
+		if x := r.Apps[name]; x != nil {
+			res = x
+		}
+		if !fn("apps", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.Catalogs) {
-		if x := r.Catalogs[name]; x != nil && !fn("catalogs", name, x) {
+		var res ConfigResource
+		if x := r.Catalogs[name]; x != nil {
+			res = x
+		}
+		if !fn("catalogs", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.ClusterPolicies) {
-		if x := r.ClusterPolicies[name]; x != nil && !fn("cluster_policies", name, x) {
+		var res ConfigResource
+		if x := r.ClusterPolicies[name]; x != nil {
+			res = x
+		}
+		if !fn("cluster_policies", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.Clusters) {
-		if x := r.Clusters[name]; x != nil && !fn("clusters", name, x) {
+		var res ConfigResource
+		if x := r.Clusters[name]; x != nil {
+			res = x
+		}
+		if !fn("clusters", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.Dashboards) {
-		if x := r.Dashboards[name]; x != nil && !fn("dashboards", name, x) {
+		var res ConfigResource
+		if x := r.Dashboards[name]; x != nil {
+			res = x
+		}
+		if !fn("dashboards", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.DatabaseCatalogs) {
-		if x := r.DatabaseCatalogs[name]; x != nil && !fn("database_catalogs", name, x) {
+		var res ConfigResource
+		if x := r.DatabaseCatalogs[name]; x != nil {
+			res = x
+		}
+		if !fn("database_catalogs", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.DatabaseInstances) {
-		if x := r.DatabaseInstances[name]; x != nil && !fn("database_instances", name, x) {
+		var res ConfigResource
+		if x := r.DatabaseInstances[name]; x != nil {
+			res = x
+		}
+		if !fn("database_instances", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.Experiments) {
-		if x := r.Experiments[name]; x != nil && !fn("experiments", name, x) {
+		var res ConfigResource
+		if x := r.Experiments[name]; x != nil {
+			res = x
+		}
+		if !fn("experiments", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.ExternalLocations) {
-		if x := r.ExternalLocations[name]; x != nil && !fn("external_locations", name, x) {
+		var res ConfigResource
+		if x := r.ExternalLocations[name]; x != nil {
+			res = x
+		}
+		if !fn("external_locations", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.GenieSpaces) {
-		if x := r.GenieSpaces[name]; x != nil && !fn("genie_spaces", name, x) {
+		var res ConfigResource
+		if x := r.GenieSpaces[name]; x != nil {
+			res = x
+		}
+		if !fn("genie_spaces", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.InstancePools) {
-		if x := r.InstancePools[name]; x != nil && !fn("instance_pools", name, x) {
+		var res ConfigResource
+		if x := r.InstancePools[name]; x != nil {
+			res = x
+		}
+		if !fn("instance_pools", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.Snapshots) {
-		if x := r.Snapshots[name]; x != nil && !fn("internal_immutable_snapshots", name, x) {
+		var res ConfigResource
+		if x := r.Snapshots[name]; x != nil {
+			res = x
+		}
+		if !fn("internal_immutable_snapshots", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.JobRuns) {
-		if x := r.JobRuns[name]; x != nil && !fn("job_runs", name, x) {
+		var res ConfigResource
+		if x := r.JobRuns[name]; x != nil {
+			res = x
+		}
+		if !fn("job_runs", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.Jobs) {
-		if x := r.Jobs[name]; x != nil && !fn("jobs", name, x) {
+		var res ConfigResource
+		if x := r.Jobs[name]; x != nil {
+			res = x
+		}
+		if !fn("jobs", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.McpServices) {
-		if x := r.McpServices[name]; x != nil && !fn("mcp_services", name, x) {
+		var res ConfigResource
+		if x := r.McpServices[name]; x != nil {
+			res = x
+		}
+		if !fn("mcp_services", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.ModelProviderServices) {
-		if x := r.ModelProviderServices[name]; x != nil && !fn("model_provider_services", name, x) {
+		var res ConfigResource
+		if x := r.ModelProviderServices[name]; x != nil {
+			res = x
+		}
+		if !fn("model_provider_services", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.ModelServices) {
-		if x := r.ModelServices[name]; x != nil && !fn("model_services", name, x) {
+		var res ConfigResource
+		if x := r.ModelServices[name]; x != nil {
+			res = x
+		}
+		if !fn("model_services", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.ModelServingEndpoints) {
-		if x := r.ModelServingEndpoints[name]; x != nil && !fn("model_serving_endpoints", name, x) {
+		var res ConfigResource
+		if x := r.ModelServingEndpoints[name]; x != nil {
+			res = x
+		}
+		if !fn("model_serving_endpoints", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.Models) {
-		if x := r.Models[name]; x != nil && !fn("models", name, x) {
+		var res ConfigResource
+		if x := r.Models[name]; x != nil {
+			res = x
+		}
+		if !fn("models", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.Pipelines) {
-		if x := r.Pipelines[name]; x != nil && !fn("pipelines", name, x) {
+		var res ConfigResource
+		if x := r.Pipelines[name]; x != nil {
+			res = x
+		}
+		if !fn("pipelines", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.PostgresBranches) {
-		if x := r.PostgresBranches[name]; x != nil && !fn("postgres_branches", name, x) {
+		var res ConfigResource
+		if x := r.PostgresBranches[name]; x != nil {
+			res = x
+		}
+		if !fn("postgres_branches", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.PostgresCatalogs) {
-		if x := r.PostgresCatalogs[name]; x != nil && !fn("postgres_catalogs", name, x) {
+		var res ConfigResource
+		if x := r.PostgresCatalogs[name]; x != nil {
+			res = x
+		}
+		if !fn("postgres_catalogs", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.PostgresDatabases) {
-		if x := r.PostgresDatabases[name]; x != nil && !fn("postgres_databases", name, x) {
+		var res ConfigResource
+		if x := r.PostgresDatabases[name]; x != nil {
+			res = x
+		}
+		if !fn("postgres_databases", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.PostgresEndpoints) {
-		if x := r.PostgresEndpoints[name]; x != nil && !fn("postgres_endpoints", name, x) {
+		var res ConfigResource
+		if x := r.PostgresEndpoints[name]; x != nil {
+			res = x
+		}
+		if !fn("postgres_endpoints", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.PostgresProjects) {
-		if x := r.PostgresProjects[name]; x != nil && !fn("postgres_projects", name, x) {
+		var res ConfigResource
+		if x := r.PostgresProjects[name]; x != nil {
+			res = x
+		}
+		if !fn("postgres_projects", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.PostgresRoles) {
-		if x := r.PostgresRoles[name]; x != nil && !fn("postgres_roles", name, x) {
+		var res ConfigResource
+		if x := r.PostgresRoles[name]; x != nil {
+			res = x
+		}
+		if !fn("postgres_roles", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.PostgresSnapshotSchedules) {
-		if x := r.PostgresSnapshotSchedules[name]; x != nil && !fn("postgres_snapshot_schedules", name, x) {
+		var res ConfigResource
+		if x := r.PostgresSnapshotSchedules[name]; x != nil {
+			res = x
+		}
+		if !fn("postgres_snapshot_schedules", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.PostgresSyncedTables) {
-		if x := r.PostgresSyncedTables[name]; x != nil && !fn("postgres_synced_tables", name, x) {
+		var res ConfigResource
+		if x := r.PostgresSyncedTables[name]; x != nil {
+			res = x
+		}
+		if !fn("postgres_synced_tables", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.QualityMonitors) {
-		if x := r.QualityMonitors[name]; x != nil && !fn("quality_monitors", name, x) {
+		var res ConfigResource
+		if x := r.QualityMonitors[name]; x != nil {
+			res = x
+		}
+		if !fn("quality_monitors", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.RegisteredModels) {
-		if x := r.RegisteredModels[name]; x != nil && !fn("registered_models", name, x) {
+		var res ConfigResource
+		if x := r.RegisteredModels[name]; x != nil {
+			res = x
+		}
+		if !fn("registered_models", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.Schemas) {
-		if x := r.Schemas[name]; x != nil && !fn("schemas", name, x) {
+		var res ConfigResource
+		if x := r.Schemas[name]; x != nil {
+			res = x
+		}
+		if !fn("schemas", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.SecretScopes) {
-		if x := r.SecretScopes[name]; x != nil && !fn("secret_scopes", name, x) {
+		var res ConfigResource
+		if x := r.SecretScopes[name]; x != nil {
+			res = x
+		}
+		if !fn("secret_scopes", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.Secrets) {
-		if x := r.Secrets[name]; x != nil && !fn("secrets", name, x) {
+		var res ConfigResource
+		if x := r.Secrets[name]; x != nil {
+			res = x
+		}
+		if !fn("secrets", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.SqlWarehouses) {
-		if x := r.SqlWarehouses[name]; x != nil && !fn("sql_warehouses", name, x) {
+		var res ConfigResource
+		if x := r.SqlWarehouses[name]; x != nil {
+			res = x
+		}
+		if !fn("sql_warehouses", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.SyncedDatabaseTables) {
-		if x := r.SyncedDatabaseTables[name]; x != nil && !fn("synced_database_tables", name, x) {
+		var res ConfigResource
+		if x := r.SyncedDatabaseTables[name]; x != nil {
+			res = x
+		}
+		if !fn("synced_database_tables", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.VectorSearchEndpoints) {
-		if x := r.VectorSearchEndpoints[name]; x != nil && !fn("vector_search_endpoints", name, x) {
+		var res ConfigResource
+		if x := r.VectorSearchEndpoints[name]; x != nil {
+			res = x
+		}
+		if !fn("vector_search_endpoints", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.VectorSearchIndexes) {
-		if x := r.VectorSearchIndexes[name]; x != nil && !fn("vector_search_indexes", name, x) {
+		var res ConfigResource
+		if x := r.VectorSearchIndexes[name]; x != nil {
+			res = x
+		}
+		if !fn("vector_search_indexes", name, res) {
 			return
 		}
 	}
 	for _, name := range sortedKeys(r.Volumes) {
-		if x := r.Volumes[name]; x != nil && !fn("volumes", name, x) {
+		var res ConfigResource
+		if x := r.Volumes[name]; x != nil {
+			res = x
+		}
+		if !fn("volumes", name, res) {
 			return
 		}
 	}
@@ -304,6 +461,634 @@ func (r *Resources) IterateAllPermissions(fn func(typ, name string, perms Permis
 			return
 		}
 	}
+}
+
+// IterateAllResourceStates calls fn for the deployed id and modified status of every
+// resource that has them, in the order of IterateAllResources, until fn returns false.
+func (r *Resources) IterateAllResourceStates(fn func(typ, name string, id *string, status *string) bool) {
+	for _, name := range sortedKeys(r.Alerts) {
+		if x := r.Alerts[name]; x != nil && !fn("alerts", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.Apps) {
+		if x := r.Apps[name]; x != nil && !fn("apps", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.Catalogs) {
+		if x := r.Catalogs[name]; x != nil && !fn("catalogs", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.ClusterPolicies) {
+		if x := r.ClusterPolicies[name]; x != nil && !fn("cluster_policies", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.Clusters) {
+		if x := r.Clusters[name]; x != nil && !fn("clusters", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.Dashboards) {
+		if x := r.Dashboards[name]; x != nil && !fn("dashboards", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.DatabaseCatalogs) {
+		if x := r.DatabaseCatalogs[name]; x != nil && !fn("database_catalogs", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.DatabaseInstances) {
+		if x := r.DatabaseInstances[name]; x != nil && !fn("database_instances", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.Experiments) {
+		if x := r.Experiments[name]; x != nil && !fn("experiments", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.ExternalLocations) {
+		if x := r.ExternalLocations[name]; x != nil && !fn("external_locations", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.GenieSpaces) {
+		if x := r.GenieSpaces[name]; x != nil && !fn("genie_spaces", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.InstancePools) {
+		if x := r.InstancePools[name]; x != nil && !fn("instance_pools", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.JobRuns) {
+		if x := r.JobRuns[name]; x != nil && !fn("job_runs", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.Jobs) {
+		if x := r.Jobs[name]; x != nil && !fn("jobs", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.McpServices) {
+		if x := r.McpServices[name]; x != nil && !fn("mcp_services", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.ModelProviderServices) {
+		if x := r.ModelProviderServices[name]; x != nil && !fn("model_provider_services", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.ModelServices) {
+		if x := r.ModelServices[name]; x != nil && !fn("model_services", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.ModelServingEndpoints) {
+		if x := r.ModelServingEndpoints[name]; x != nil && !fn("model_serving_endpoints", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.Models) {
+		if x := r.Models[name]; x != nil && !fn("models", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.Pipelines) {
+		if x := r.Pipelines[name]; x != nil && !fn("pipelines", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.PostgresBranches) {
+		if x := r.PostgresBranches[name]; x != nil && !fn("postgres_branches", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.PostgresCatalogs) {
+		if x := r.PostgresCatalogs[name]; x != nil && !fn("postgres_catalogs", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.PostgresDatabases) {
+		if x := r.PostgresDatabases[name]; x != nil && !fn("postgres_databases", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.PostgresEndpoints) {
+		if x := r.PostgresEndpoints[name]; x != nil && !fn("postgres_endpoints", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.PostgresProjects) {
+		if x := r.PostgresProjects[name]; x != nil && !fn("postgres_projects", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.PostgresRoles) {
+		if x := r.PostgresRoles[name]; x != nil && !fn("postgres_roles", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.PostgresSnapshotSchedules) {
+		if x := r.PostgresSnapshotSchedules[name]; x != nil && !fn("postgres_snapshot_schedules", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.PostgresSyncedTables) {
+		if x := r.PostgresSyncedTables[name]; x != nil && !fn("postgres_synced_tables", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.QualityMonitors) {
+		if x := r.QualityMonitors[name]; x != nil && !fn("quality_monitors", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.RegisteredModels) {
+		if x := r.RegisteredModels[name]; x != nil && !fn("registered_models", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.Schemas) {
+		if x := r.Schemas[name]; x != nil && !fn("schemas", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.SecretScopes) {
+		if x := r.SecretScopes[name]; x != nil && !fn("secret_scopes", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.Secrets) {
+		if x := r.Secrets[name]; x != nil && !fn("secrets", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.SqlWarehouses) {
+		if x := r.SqlWarehouses[name]; x != nil && !fn("sql_warehouses", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.SyncedDatabaseTables) {
+		if x := r.SyncedDatabaseTables[name]; x != nil && !fn("synced_database_tables", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.VectorSearchEndpoints) {
+		if x := r.VectorSearchEndpoints[name]; x != nil && !fn("vector_search_endpoints", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.VectorSearchIndexes) {
+		if x := r.VectorSearchIndexes[name]; x != nil && !fn("vector_search_indexes", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.Volumes) {
+		if x := r.Volumes[name]; x != nil && !fn("volumes", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+}
+
+// GetOrCreateState returns the deployed id and modified status of the resource name of
+// type typ, creating the resource if it does not exist (created is then true). ok is
+// false if resources of type typ have no state.
+func (r *Resources) GetOrCreateState(typ, name string) (id *string, status *string, created, ok bool) {
+	switch typ {
+	case "alerts":
+		x, exists := r.Alerts[name]
+		if x == nil {
+			if r.Alerts == nil {
+				r.Alerts = map[string]*resources.Alert{}
+			}
+			x = &resources.Alert{}
+			r.Alerts[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "apps":
+		x, exists := r.Apps[name]
+		if x == nil {
+			if r.Apps == nil {
+				r.Apps = map[string]*resources.App{}
+			}
+			x = &resources.App{}
+			r.Apps[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "catalogs":
+		x, exists := r.Catalogs[name]
+		if x == nil {
+			if r.Catalogs == nil {
+				r.Catalogs = map[string]*resources.Catalog{}
+			}
+			x = &resources.Catalog{}
+			r.Catalogs[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "cluster_policies":
+		x, exists := r.ClusterPolicies[name]
+		if x == nil {
+			if r.ClusterPolicies == nil {
+				r.ClusterPolicies = map[string]*resources.ClusterPolicy{}
+			}
+			x = &resources.ClusterPolicy{}
+			r.ClusterPolicies[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "clusters":
+		x, exists := r.Clusters[name]
+		if x == nil {
+			if r.Clusters == nil {
+				r.Clusters = map[string]*resources.Cluster{}
+			}
+			x = &resources.Cluster{}
+			r.Clusters[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "dashboards":
+		x, exists := r.Dashboards[name]
+		if x == nil {
+			if r.Dashboards == nil {
+				r.Dashboards = map[string]*resources.Dashboard{}
+			}
+			x = &resources.Dashboard{}
+			r.Dashboards[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "database_catalogs":
+		x, exists := r.DatabaseCatalogs[name]
+		if x == nil {
+			if r.DatabaseCatalogs == nil {
+				r.DatabaseCatalogs = map[string]*resources.DatabaseCatalog{}
+			}
+			x = &resources.DatabaseCatalog{}
+			r.DatabaseCatalogs[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "database_instances":
+		x, exists := r.DatabaseInstances[name]
+		if x == nil {
+			if r.DatabaseInstances == nil {
+				r.DatabaseInstances = map[string]*resources.DatabaseInstance{}
+			}
+			x = &resources.DatabaseInstance{}
+			r.DatabaseInstances[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "experiments":
+		x, exists := r.Experiments[name]
+		if x == nil {
+			if r.Experiments == nil {
+				r.Experiments = map[string]*resources.MlflowExperiment{}
+			}
+			x = &resources.MlflowExperiment{}
+			r.Experiments[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "external_locations":
+		x, exists := r.ExternalLocations[name]
+		if x == nil {
+			if r.ExternalLocations == nil {
+				r.ExternalLocations = map[string]*resources.ExternalLocation{}
+			}
+			x = &resources.ExternalLocation{}
+			r.ExternalLocations[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "genie_spaces":
+		x, exists := r.GenieSpaces[name]
+		if x == nil {
+			if r.GenieSpaces == nil {
+				r.GenieSpaces = map[string]*resources.GenieSpace{}
+			}
+			x = &resources.GenieSpace{}
+			r.GenieSpaces[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "instance_pools":
+		x, exists := r.InstancePools[name]
+		if x == nil {
+			if r.InstancePools == nil {
+				r.InstancePools = map[string]*resources.InstancePool{}
+			}
+			x = &resources.InstancePool{}
+			r.InstancePools[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "job_runs":
+		x, exists := r.JobRuns[name]
+		if x == nil {
+			if r.JobRuns == nil {
+				r.JobRuns = map[string]*resources.JobRun{}
+			}
+			x = &resources.JobRun{}
+			r.JobRuns[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "jobs":
+		x, exists := r.Jobs[name]
+		if x == nil {
+			if r.Jobs == nil {
+				r.Jobs = map[string]*resources.Job{}
+			}
+			x = &resources.Job{}
+			r.Jobs[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "mcp_services":
+		x, exists := r.McpServices[name]
+		if x == nil {
+			if r.McpServices == nil {
+				r.McpServices = map[string]*resources.McpService{}
+			}
+			x = &resources.McpService{}
+			r.McpServices[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "model_provider_services":
+		x, exists := r.ModelProviderServices[name]
+		if x == nil {
+			if r.ModelProviderServices == nil {
+				r.ModelProviderServices = map[string]*resources.ModelProviderService{}
+			}
+			x = &resources.ModelProviderService{}
+			r.ModelProviderServices[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "model_services":
+		x, exists := r.ModelServices[name]
+		if x == nil {
+			if r.ModelServices == nil {
+				r.ModelServices = map[string]*resources.ModelService{}
+			}
+			x = &resources.ModelService{}
+			r.ModelServices[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "model_serving_endpoints":
+		x, exists := r.ModelServingEndpoints[name]
+		if x == nil {
+			if r.ModelServingEndpoints == nil {
+				r.ModelServingEndpoints = map[string]*resources.ModelServingEndpoint{}
+			}
+			x = &resources.ModelServingEndpoint{}
+			r.ModelServingEndpoints[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "models":
+		x, exists := r.Models[name]
+		if x == nil {
+			if r.Models == nil {
+				r.Models = map[string]*resources.MlflowModel{}
+			}
+			x = &resources.MlflowModel{}
+			r.Models[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "pipelines":
+		x, exists := r.Pipelines[name]
+		if x == nil {
+			if r.Pipelines == nil {
+				r.Pipelines = map[string]*resources.Pipeline{}
+			}
+			x = &resources.Pipeline{}
+			r.Pipelines[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "postgres_branches":
+		x, exists := r.PostgresBranches[name]
+		if x == nil {
+			if r.PostgresBranches == nil {
+				r.PostgresBranches = map[string]*resources.PostgresBranch{}
+			}
+			x = &resources.PostgresBranch{}
+			r.PostgresBranches[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "postgres_catalogs":
+		x, exists := r.PostgresCatalogs[name]
+		if x == nil {
+			if r.PostgresCatalogs == nil {
+				r.PostgresCatalogs = map[string]*resources.PostgresCatalog{}
+			}
+			x = &resources.PostgresCatalog{}
+			r.PostgresCatalogs[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "postgres_databases":
+		x, exists := r.PostgresDatabases[name]
+		if x == nil {
+			if r.PostgresDatabases == nil {
+				r.PostgresDatabases = map[string]*resources.PostgresDatabase{}
+			}
+			x = &resources.PostgresDatabase{}
+			r.PostgresDatabases[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "postgres_endpoints":
+		x, exists := r.PostgresEndpoints[name]
+		if x == nil {
+			if r.PostgresEndpoints == nil {
+				r.PostgresEndpoints = map[string]*resources.PostgresEndpoint{}
+			}
+			x = &resources.PostgresEndpoint{}
+			r.PostgresEndpoints[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "postgres_projects":
+		x, exists := r.PostgresProjects[name]
+		if x == nil {
+			if r.PostgresProjects == nil {
+				r.PostgresProjects = map[string]*resources.PostgresProject{}
+			}
+			x = &resources.PostgresProject{}
+			r.PostgresProjects[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "postgres_roles":
+		x, exists := r.PostgresRoles[name]
+		if x == nil {
+			if r.PostgresRoles == nil {
+				r.PostgresRoles = map[string]*resources.PostgresRole{}
+			}
+			x = &resources.PostgresRole{}
+			r.PostgresRoles[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "postgres_snapshot_schedules":
+		x, exists := r.PostgresSnapshotSchedules[name]
+		if x == nil {
+			if r.PostgresSnapshotSchedules == nil {
+				r.PostgresSnapshotSchedules = map[string]*resources.PostgresSnapshotSchedule{}
+			}
+			x = &resources.PostgresSnapshotSchedule{}
+			r.PostgresSnapshotSchedules[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "postgres_synced_tables":
+		x, exists := r.PostgresSyncedTables[name]
+		if x == nil {
+			if r.PostgresSyncedTables == nil {
+				r.PostgresSyncedTables = map[string]*resources.PostgresSyncedTable{}
+			}
+			x = &resources.PostgresSyncedTable{}
+			r.PostgresSyncedTables[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "quality_monitors":
+		x, exists := r.QualityMonitors[name]
+		if x == nil {
+			if r.QualityMonitors == nil {
+				r.QualityMonitors = map[string]*resources.QualityMonitor{}
+			}
+			x = &resources.QualityMonitor{}
+			r.QualityMonitors[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "registered_models":
+		x, exists := r.RegisteredModels[name]
+		if x == nil {
+			if r.RegisteredModels == nil {
+				r.RegisteredModels = map[string]*resources.RegisteredModel{}
+			}
+			x = &resources.RegisteredModel{}
+			r.RegisteredModels[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "schemas":
+		x, exists := r.Schemas[name]
+		if x == nil {
+			if r.Schemas == nil {
+				r.Schemas = map[string]*resources.Schema{}
+			}
+			x = &resources.Schema{}
+			r.Schemas[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "secret_scopes":
+		x, exists := r.SecretScopes[name]
+		if x == nil {
+			if r.SecretScopes == nil {
+				r.SecretScopes = map[string]*resources.SecretScope{}
+			}
+			x = &resources.SecretScope{}
+			r.SecretScopes[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "secrets":
+		x, exists := r.Secrets[name]
+		if x == nil {
+			if r.Secrets == nil {
+				r.Secrets = map[string]*resources.Secret{}
+			}
+			x = &resources.Secret{}
+			r.Secrets[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "sql_warehouses":
+		x, exists := r.SqlWarehouses[name]
+		if x == nil {
+			if r.SqlWarehouses == nil {
+				r.SqlWarehouses = map[string]*resources.SqlWarehouse{}
+			}
+			x = &resources.SqlWarehouse{}
+			r.SqlWarehouses[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "synced_database_tables":
+		x, exists := r.SyncedDatabaseTables[name]
+		if x == nil {
+			if r.SyncedDatabaseTables == nil {
+				r.SyncedDatabaseTables = map[string]*resources.SyncedDatabaseTable{}
+			}
+			x = &resources.SyncedDatabaseTable{}
+			r.SyncedDatabaseTables[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "vector_search_endpoints":
+		x, exists := r.VectorSearchEndpoints[name]
+		if x == nil {
+			if r.VectorSearchEndpoints == nil {
+				r.VectorSearchEndpoints = map[string]*resources.VectorSearchEndpoint{}
+			}
+			x = &resources.VectorSearchEndpoint{}
+			r.VectorSearchEndpoints[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "vector_search_indexes":
+		x, exists := r.VectorSearchIndexes[name]
+		if x == nil {
+			if r.VectorSearchIndexes == nil {
+				r.VectorSearchIndexes = map[string]*resources.VectorSearchIndex{}
+			}
+			x = &resources.VectorSearchIndex{}
+			r.VectorSearchIndexes[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "volumes":
+		x, exists := r.Volumes[name]
+		if x == nil {
+			if r.Volumes == nil {
+				r.Volumes = map[string]*resources.Volume{}
+			}
+			x = &resources.Volume{}
+			r.Volumes[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	default:
+		return nil, nil, false, false
+	}
+}
+
+// IsZero reports whether no resource map is set.
+func (r *Resources) IsZero() bool {
+	return r.Alerts == nil &&
+		r.Apps == nil &&
+		r.Catalogs == nil &&
+		r.ClusterPolicies == nil &&
+		r.Clusters == nil &&
+		r.Dashboards == nil &&
+		r.DatabaseCatalogs == nil &&
+		r.DatabaseInstances == nil &&
+		r.Experiments == nil &&
+		r.ExternalLocations == nil &&
+		r.GenieSpaces == nil &&
+		r.InstancePools == nil &&
+		r.Snapshots == nil &&
+		r.JobRuns == nil &&
+		r.Jobs == nil &&
+		r.McpServices == nil &&
+		r.ModelProviderServices == nil &&
+		r.ModelServices == nil &&
+		r.ModelServingEndpoints == nil &&
+		r.Models == nil &&
+		r.Pipelines == nil &&
+		r.PostgresBranches == nil &&
+		r.PostgresCatalogs == nil &&
+		r.PostgresDatabases == nil &&
+		r.PostgresEndpoints == nil &&
+		r.PostgresProjects == nil &&
+		r.PostgresRoles == nil &&
+		r.PostgresSnapshotSchedules == nil &&
+		r.PostgresSyncedTables == nil &&
+		r.QualityMonitors == nil &&
+		r.RegisteredModels == nil &&
+		r.Schemas == nil &&
+		r.SecretScopes == nil &&
+		r.Secrets == nil &&
+		r.SqlWarehouses == nil &&
+		r.SyncedDatabaseTables == nil &&
+		r.VectorSearchEndpoints == nil &&
+		r.VectorSearchIndexes == nil &&
+		r.Volumes == nil
 }
 
 // IterateAllGrants calls fn for the grants of every resource that can have them, in

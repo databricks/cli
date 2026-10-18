@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 type required struct{}
@@ -115,32 +116,29 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 func errorForInvalidGrants(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
-	err := structvar.ForEach(
-		b.Config.View(),
-		structpath.NewPattern(nil, "resources", structpath.AnyKey, structpath.AnyKey, "grants", structpath.AnyIndex),
-		func(np *structpath.PathNode, v structvar.View) error {
-			if isMissingOrEmptyString(v.Get("principal")) {
+	b.Config.Resources.IterateAllGrants(func(typ, name string, grants *[]catalog.PrivilegeAssignment) bool {
+		for i, g := range *grants {
+			np := structpath.NewPath(nil, "resources", typ, name, "grants", i)
+			if g.Principal == "" {
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
 					Summary:   "grant principal is required",
-					Locations: v.Locations(),
+					Locations: b.Config.GetLocationsOfExact(np),
 					Paths:     []*structpath.PathNode{np},
 				})
 			}
-			if isMissingOrEmptySequence(v.Get("privileges")) {
+			// A pure reference stands for the privileges until it is resolved.
+			if len(g.Privileges) == 0 && !b.Config.IsReferenceAt(structpath.NewPath(np, "privileges")) {
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
 					Summary:   "grant privileges is required",
-					Locations: v.Locations(),
+					Locations: b.Config.GetLocationsOfExact(np),
 					Paths:     []*structpath.PathNode{np},
 				})
 			}
-			return nil
-		},
-	)
-	if err != nil {
-		return diag.FromErr(err)
-	}
+		}
+		return true
+	})
 
 	sortDiagnostics(diags)
 
