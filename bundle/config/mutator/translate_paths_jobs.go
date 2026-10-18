@@ -4,18 +4,18 @@ import (
 	"context"
 	"slices"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator/paths"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type (
-	visitFunc     func(structvar.View, paths.VisitFunc) error
-	translateFunc func(ctx context.Context, v structvar.View) error
+	visitFunc     func(*config.Root, paths.VisitFunc) error
+	translateFunc func(ctx context.Context, r *config.Root) error
 )
 
 func (t *translateContext) applyJobTranslations(visitor visitFunc, allowOutsideSyncRoot bool) translateFunc {
-	return func(ctx context.Context, v structvar.View) error {
+	return func(ctx context.Context, r *config.Root) error {
 		// Do not translate job task paths if using Git source
 		var ignore []string
 		for key, job := range t.b.Config.Resources.Jobs {
@@ -24,9 +24,9 @@ func (t *translateContext) applyJobTranslations(visitor visitFunc, allowOutsideS
 			}
 		}
 
-		return visitor(v, func(p *structpath.PathNode, mode paths.TranslateMode, v structvar.View) error {
+		return visitor(r, func(p *structpath.PathNode, mode paths.TranslateMode, s *string) error {
 			key := p.KeyAt(2)
-			input, _ := v.AsString()
+			input := *s
 
 			// Skip path translation if the job is using git source.
 			if slices.Contains(ignore, key) {
@@ -41,7 +41,8 @@ func (t *translateContext) applyJobTranslations(visitor visitFunc, allowOutsideS
 			// Handle path as if it's relative to the bundle root
 			nv, err := t.rewriteValue(ctx, p, input, t.b.BundleRootPath, opts)
 			if err == nil {
-				return t.setRewritten(p, nv)
+				setRewritten(s, nv)
+				return nil
 			}
 
 			return err

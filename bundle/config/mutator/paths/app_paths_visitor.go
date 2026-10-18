@@ -1,14 +1,17 @@
 package paths
 
 import (
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structvar"
 )
 
-func VisitAppPaths(root structvar.View, fn VisitFunc) error {
-	pattern := structpath.NewPattern(nil, "resources", "apps", structpath.AnyKey, "source_code_path")
-
-	return structvar.ForEach(root, pattern, func(path *structpath.PathNode, value structvar.View) error {
-		return fn(path, TranslateModeDirectory, value)
-	})
+func VisitAppPaths(root *config.Root, fn VisitFunc) error {
+	for _, name := range sortedKeys(root.Resources.Apps) {
+		if a := root.Resources.Apps[name]; a != nil {
+			if err := visit(&a.SourceCodePath, TranslateModeDirectory, nil, fn, func() *structpath.PathNode { return structpath.NewPath(resourcePath("apps", name), "source_code_path") }); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
