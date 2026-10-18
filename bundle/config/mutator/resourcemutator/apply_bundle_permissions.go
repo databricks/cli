@@ -185,7 +185,8 @@ func applyToAll[R any, P ~resources.PermissionFields[L], L ~string](ctx context.
 // resource name of type key.
 func applyToResource[P ~resources.PermissionFields[L], L ~string](ctx context.Context, b *bundle.Bundle, key, name string, perms *[]P) error {
 	path := structpath.NewPath(nil, "resources", key, name, "permissions")
-	had := *perms != nil || len(b.Config.ExactLocations(path)) > 0
+	// Present as [structvar.View] decides: a non-nil list or a pure reference.
+	had := *perms != nil || b.Config.IsReferenceAt(path)
 
 	existing := make([]resources.Permission, 0, len(*perms))
 	for _, p := range *perms {

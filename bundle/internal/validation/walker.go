@@ -122,8 +122,9 @@ type gen struct {
 	// (strings walker).
 	pendingTypes []reflect.Type
 
-	// refBranches visits nil pointer fields that are written in the source or hold a
-	// pure reference as nodes without fields, so their required fields are reported.
+	// refBranches visits nil pointer fields that are present (in ForceSendFields, or
+	// written without omitempty) or hold a pure reference as nodes without fields, so
+	// their required fields are reported.
 	refBranches bool
 }
 
@@ -224,12 +225,13 @@ type field struct {
 	expr        string
 	guards      []string
 	fsf         string // selector of the governing ForceSendFields, if any
+	forceEmpty  bool   // the field has no omitempty
 }
 
 func structField(v string, st reflect.Type, k string) field {
 	info := structvar.GetStructInfo(st)
 	expr, guards := selector(v, st, info.Fields[k])
-	f := field{key: k, goName: info.GolangNames[k], typ: st.FieldByIndex(info.Fields[k]).Type, expr: expr, guards: guards}
+	f := field{key: k, goName: info.GolangNames[k], typ: st.FieldByIndex(info.Fields[k]).Type, expr: expr, guards: guards, forceEmpty: info.ForceEmpty[k]}
 	if index, ok := info.ForceSendFieldsIndex[k]; ok {
 		f.fsf, _ = selector(v, st, index)
 	}
@@ -243,24 +245,42 @@ func guarded(guards []string, cond string) string {
 	return "(" + strings.Join(guards, " && ") + " && (" + cond + "))"
 }
 
-// present returns the condition under which a required field counts as set: it is
-// not the zero value, it is written in the source (required fields have no omitempty,
-// so they are never in ForceSendFields and an explicit zero is only seen in the
-// locations), or, for fields that cannot hold a string, it holds a pure reference.
+// forcedCond returns the condition that the field is listed in its ForceSendFields.
+func (f field) forcedCond() string {
+	if f.fsf == "" {
+		return ""
+	}
+	return fmt.Sprintf(" || forced(%s, %q)", f.fsf, f.goName)
+}
+
+// writtenCond returns the condition that a zero value of the field counts as present
+// because it is written in the source: only for fields without omitempty, as
+// [structvar.View] does.
+func (f field) writtenCond() string {
+	if !f.forceEmpty {
+		return ""
+	}
+	return fmt.Sprintf(" || n.Written(%q)", f.key)
+}
+
+// present returns the condition under which a required field counts as set, as
+// [structvar.View.Get] decides it: a scalar or struct is set if it is not zero, is in
+// ForceSendFields, or (without omitempty) is written in the source; a pointer, slice,
+// map or interface is set if it is not nil. A value that cannot hold a string can also
+// be replaced by a pure reference.
 func (f field) present() string {
-	written := fmt.Sprintf(" || n.Written(%q)", f.key)
 	ref := fmt.Sprintf(" || n.IsRef(%q)", f.key)
 	switch f.typ.Kind() {
 	case reflect.String:
-		return guarded(f.guards, f.expr+` != ""`) + written
+		return guarded(f.guards, f.expr+` != ""`+f.forcedCond()) + f.writtenCond()
 	case reflect.Pointer, reflect.Slice, reflect.Map, reflect.Interface:
-		return guarded(f.guards, f.expr+" != nil") + written + ref
+		return guarded(f.guards, f.expr+" != nil") + ref
 	case reflect.Bool:
-		return guarded(f.guards, f.expr) + written + ref
+		return guarded(f.guards, f.expr+f.forcedCond()) + f.writtenCond() + ref
 	case reflect.Struct:
-		return guarded(f.guards, fmt.Sprintf("!isZeroStruct(&%s)", f.expr)) + written + ref
+		return guarded(f.guards, fmt.Sprintf("!isZeroStruct(&%s)", f.expr)+f.forcedCond()) + f.writtenCond() + ref
 	default:
-		return guarded(f.guards, f.expr+" != 0") + written + ref
+		return guarded(f.guards, f.expr+" != 0"+f.forcedCond()) + f.writtenCond() + ref
 	}
 }
 
@@ -290,26 +310,19 @@ func (g *gen) emitField(f field, child *tnode) {
 	}
 	switch {
 	case child.enum != nil:
-		forced := ""
-		if f.fsf != "" {
-			forced = fmt.Sprintf(" || forced(%s, %q)", f.fsf, f.goName)
-		}
-		fmt.Fprintf(&g.out, "\tif s := string(%s); s != \"\"%s {\n\t\tc := n.Child(%q)\n\t\tw.enumValue(&c, s, %s)\n\t}\n", f.expr, forced, f.key, g.enumVar(child.enum))
+		fmt.Fprintf(&g.out, "\tif s := string(%s); s != \"\"%s%s {\n\t\tc := n.Child(%q)\n\t\tw.enumValue(&c, s, %s)\n\t}\n", f.expr, f.forcedCond(), f.writtenCond(), f.key, g.enumVar(child.enum))
 	case f.typ.Kind() == reflect.Pointer:
 		fn := g.funcFor(child)
 		fmt.Fprintf(&g.out, "\tif x := %s; x != nil {\n\t\tc := n.Child(%q)\n\t\t%s(w, &c, x)\n\t}", f.expr, f.key, fn)
 		if g.refBranches {
 			// A nil value written in the source (e.g. "run_job_task:") or replaced by a
 			// pure reference is a node without fields.
-			fmt.Fprintf(&g.out, " else if n.Written(%q) || n.IsRef(%q) {\n\t\tc := n.Child(%q)\n\t\t%s(w, &c, nil)\n\t}", f.key, f.key, f.key, fn)
+			cond := strings.TrimPrefix(f.forcedCond()+f.writtenCond()+fmt.Sprintf(" || n.IsRef(%q)", f.key), " || ")
+			fmt.Fprintf(&g.out, " else if %s {\n\t\tc := n.Child(%q)\n\t\t%s(w, &c, nil)\n\t}", cond, f.key, fn)
 		}
 		fmt.Fprintf(&g.out, "\n")
 	case f.typ.Kind() == reflect.Struct:
-		forced := ""
-		if f.fsf != "" {
-			forced = fmt.Sprintf(" || forced(%s, %q)", f.fsf, f.goName)
-		}
-		fmt.Fprintf(&g.out, "\tif x := &%s; !isZeroStruct(x)%s || n.Written(%q) {\n\t\tc := n.Child(%q)\n\t\t%s(w, &c, x)\n\t}\n", f.expr, forced, f.key, f.key, g.funcFor(child))
+		fmt.Fprintf(&g.out, "\tif x := &%s; !isZeroStruct(x)%s || n.Locations().Key(%q) != nil {\n\t\tc := n.Child(%q)\n\t\t%s(w, &c, x)\n\t}\n", f.expr, f.forcedCond(), f.key, f.key, g.funcFor(child))
 	case f.typ.Kind() == reflect.Slice || f.typ.Kind() == reflect.Map:
 		fmt.Fprintf(&g.out, "\tif len(%s) > 0 {\n\t\tc := n.Child(%q)\n", f.expr, f.key)
 		g.emitContainer("\t\t", f.expr, f.typ, child)
@@ -333,27 +346,23 @@ func (g *gen) emitContainer(indent, expr string, typ reflect.Type, t *tnode) {
 	}
 	if typ.Kind() == reflect.Slice {
 		fmt.Fprintf(&g.out, "%sfor i := range %s {\n%s\te := c.Elem(i)\n", indent, expr, indent)
-		g.emitElem(indent+"\t", expr+"[i]", typ.Elem(), elem, true)
+		g.emitElem(indent+"\t", expr+"[i]", typ.Elem(), elem)
 	} else {
 		fmt.Fprintf(&g.out, "%sfor k, x := range %s {\n%s\te := c.Child(k)\n", indent, expr, indent)
-		g.emitElem(indent+"\t", "x", typ.Elem(), elem, false)
+		g.emitElem(indent+"\t", "x", typ.Elem(), elem)
 	}
 	fmt.Fprintf(&g.out, "%s}\n", indent)
 }
 
 // emitElem writes the code visiting the element expr (node e) of type typ.
-func (g *gen) emitElem(indent, expr string, typ reflect.Type, t *tnode, addressable bool) {
+func (g *gen) emitElem(indent, expr string, typ reflect.Type, t *tnode) {
 	switch {
 	case t.enum != nil:
 		fmt.Fprintf(&g.out, "%sw.enumValue(&e, string(%s), %s)\n", indent, expr, g.enumVar(t.enum))
 	case typ.Kind() == reflect.Pointer:
 		fmt.Fprintf(&g.out, "%s%s(w, &e, %s)\n", indent, g.funcFor(t), expr)
 	case typ.Kind() == reflect.Struct:
-		if addressable {
-			fmt.Fprintf(&g.out, "%s%s(w, &e, &%s)\n", indent, g.funcFor(t), expr)
-		} else {
-			fmt.Fprintf(&g.out, "%s%s(w, &e, &%s)\n", indent, g.funcFor(t), expr)
-		}
+		fmt.Fprintf(&g.out, "%s%s(w, &e, &%s)\n", indent, g.funcFor(t), expr)
 	case typ.Kind() == reflect.Slice || typ.Kind() == reflect.Map:
 		fmt.Fprintf(&g.out, "%s{\n%s\tc := e\n", indent, indent)
 		g.emitContainer(indent+"\t", expr, typ, t)
