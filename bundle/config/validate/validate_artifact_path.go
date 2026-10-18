@@ -69,7 +69,7 @@ func findVolumeInBundle(r config.Root, catalogName, schemaName, volumeName strin
 			continue
 		}
 		volumePath := structpath.NewPath(nil, "resources", "volumes", k)
-		return volumePath, r.NearestLocations(volumePath), true
+		return volumePath, r.GetLocationsOf(volumePath), true
 	}
 	return nil, nil, false
 }
@@ -85,7 +85,7 @@ func (v *validateArtifactPath) Apply(ctx context.Context, b *bundle.Bundle) diag
 			{
 				Summary:   s,
 				Severity:  diag.Error,
-				Locations: b.Config.NearestLocations(structpath.NewPath(nil, "workspace", "artifact_path")),
+				Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "workspace", "artifact_path")),
 				Paths:     structpath.NewPathSlice("workspace", "artifact_path"),
 			},
 		}
@@ -117,7 +117,7 @@ func (v *validateArtifactPath) Apply(ctx context.Context, b *bundle.Bundle) diag
 this bundle but which has not been deployed yet. Please first deploy
 the volume using 'bundle deploy' and then switch over to using it in
 the artifact_path.`,
-			Locations: slices.Concat(b.Config.NearestLocations(structpath.NewPath(nil, "workspace", "artifact_path")), locations),
+			Locations: slices.Concat(b.Config.GetLocationsOf(structpath.NewPath(nil, "workspace", "artifact_path")), locations),
 			Paths:     []*structpath.PathNode{structpath.NewPath(nil, "workspace", "artifact_path"), path},
 		}}
 

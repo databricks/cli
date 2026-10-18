@@ -32,7 +32,7 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
 					Summary:   "lifecycle.triggers entry must set on_bundle_deploy or on_file_change",
-					Locations: b.Config.NearestLocations(path),
+					Locations: b.Config.GetLocationsOf(path),
 				})
 				continue
 			}
@@ -40,7 +40,7 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
 					Summary:   "lifecycle.triggers entry must set only one of on_bundle_deploy or on_file_change",
-					Locations: b.Config.NearestLocations(path),
+					Locations: b.Config.GetLocationsOf(path),
 				})
 				continue
 			}
@@ -48,7 +48,7 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
 					Summary:   "lifecycle.triggers.on_bundle_deploy must be true when set",
-					Locations: b.Config.NearestLocations(structpath.NewPath(path, "on_bundle_deploy")),
+					Locations: b.Config.GetLocationsOf(structpath.NewPath(path, "on_bundle_deploy")),
 				})
 			}
 			if t.OnFileChange != nil {
@@ -57,7 +57,7 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 					diags = diags.Append(diag.Diagnostic{
 						Severity:  diag.Error,
 						Summary:   "lifecycle.triggers.on_file_change must be non-empty when set",
-						Locations: b.Config.NearestLocations(onFileChange),
+						Locations: b.Config.GetLocationsOf(onFileChange),
 					})
 					continue
 				}

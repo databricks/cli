@@ -90,7 +90,7 @@ func (v *validateSecretValueIsVariable) checkVariableDefault(b *bundle.Bundle, s
 
 	// The default path in the dynamic config for the variable's default field.
 	defaultPath := structpath.NewPath(nil, "variables", varName, "default")
-	locations := append(b.Config.ExactLocations(defaultPath), val.Locations()...)
+	locations := append(b.Config.GetLocationsOfExact(defaultPath), val.Locations()...)
 
 	return diag.Diagnostics{{
 		Severity: diag.Error,

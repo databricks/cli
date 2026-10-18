@@ -38,7 +38,7 @@ func (m *noVariableReferenceInResourceKey) Apply(_ context.Context, b *bundle.Bu
 				diags = append(diags, diag.Diagnostic{
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf("resource key %q must not contain variable references", key),
-					Locations: b.Config.ExactLocations(p),
+					Locations: b.Config.GetLocationsOfExact(p),
 					Paths:     []*structpath.PathNode{p},
 				})
 			}

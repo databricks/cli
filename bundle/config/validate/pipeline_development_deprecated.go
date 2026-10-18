@@ -44,7 +44,7 @@ func (v *pipelineDevelopmentDeprecated) Apply(_ context.Context, b *bundle.Bundl
 		p := structpath.NewPath(nil, "resources", "pipelines", key, "development")
 
 		// Only user-written values have a location; the value set by "mode: development" does not.
-		locs := b.Config.ExactLocations(p)
+		locs := b.Config.GetLocationsOfExact(p)
 		if len(locs) == 0 {
 			continue
 		}

@@ -551,28 +551,28 @@ func (r *Root) UpdateSequence(path *structpath.PathNode, sources [][]int) {
 	r.store(sv)
 }
 
-// NearestLocations returns the locations of the configuration value at path or, if it
+// GetLocationsOf returns the locations of the configuration value at path or, if it
 // has none (e.g. it was set by a mutator), those of its closest ancestor that has some.
 // Use it to point diagnostics at the most specific place there is; use
-// [Root.ExactLocations] to find where a value is written.
-func (r Root) NearestLocations(path *structpath.PathNode) []diag.Location {
+// [Root.GetLocationsOfExact] to find where a value is written.
+func (r Root) GetLocationsOf(path *structpath.PathNode) []diag.Location {
 	return r.locations.Nearest(path)
 }
 
-// NearestLocation returns the primary location of [Root.NearestLocations].
-func (r Root) NearestLocation(path *structpath.PathNode) diag.Location {
-	return firstLocation(r.NearestLocations(path))
+// GetLocationOf returns the primary location of [Root.GetLocationsOf].
+func (r Root) GetLocationOf(path *structpath.PathNode) diag.Location {
+	return firstLocation(r.GetLocationsOf(path))
 }
 
-// ExactLocations returns the locations the configuration value at path is written at,
+// GetLocationsOfExact returns the locations the configuration value at path is written at,
 // or none if it was set by a mutator.
-func (r Root) ExactLocations(path *structpath.PathNode) []diag.Location {
+func (r Root) GetLocationsOfExact(path *structpath.PathNode) []diag.Location {
 	return r.locations.Exact(path)
 }
 
-// ExactLocation returns the primary location of [Root.ExactLocations].
-func (r Root) ExactLocation(path *structpath.PathNode) diag.Location {
-	return firstLocation(r.ExactLocations(path))
+// GetLocationOfExact returns the primary location of [Root.GetLocationsOfExact].
+func (r Root) GetLocationOfExact(path *structpath.PathNode) diag.Location {
+	return firstLocation(r.GetLocationsOfExact(path))
 }
 
 func firstLocation(locs []diag.Location) diag.Location {

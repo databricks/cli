@@ -283,19 +283,19 @@ func TestExpandGlobReferencesPreservesLocations(t *testing.T) {
 	diags := bundle.Apply(t.Context(), b, ExpandGlobReferences())
 	require.Empty(t, diags)
 
-	libs := b.Config.ExactLocations(structpath.MustParsePath("resources.jobs.job.tasks[0].libraries"))
+	libs := b.Config.GetLocationsOfExact(structpath.MustParsePath("resources.jobs.job.tasks[0].libraries"))
 	require.NotEmpty(t, libs)
 	assert.Equal(t, loc.File, libs[0].File)
 
-	lib := b.Config.ExactLocations(structpath.MustParsePath("resources.jobs.job.tasks[0].libraries[0].whl"))
+	lib := b.Config.GetLocationsOfExact(structpath.MustParsePath("resources.jobs.job.tasks[0].libraries[0].whl"))
 	require.NotEmpty(t, lib)
 	assert.Equal(t, loc.File, lib[0].File)
 
-	deps := b.Config.ExactLocations(structpath.MustParsePath("resources.pipelines.pipeline.environment.dependencies"))
+	deps := b.Config.GetLocationsOfExact(structpath.MustParsePath("resources.pipelines.pipeline.environment.dependencies"))
 	require.NotEmpty(t, deps)
 	assert.Equal(t, loc.File, deps[0].File)
 
-	dep := b.Config.ExactLocations(structpath.MustParsePath("resources.pipelines.pipeline.environment.dependencies[0]"))
+	dep := b.Config.GetLocationsOfExact(structpath.MustParsePath("resources.pipelines.pipeline.environment.dependencies[0]"))
 	require.NotEmpty(t, dep)
 	assert.Equal(t, loc.File, dep[0].File)
 }

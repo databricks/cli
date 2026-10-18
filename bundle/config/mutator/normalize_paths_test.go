@@ -45,7 +45,7 @@ func TestNormalizePaths(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	require.Equal(t, "src/notebook.py", b.Config.Resources.Jobs["job1"].Tasks[0].NotebookTask.NotebookPath)
-	require.Equal(t, []diag.Location{location}, b.Config.ExactLocations(path))
+	require.Equal(t, []diag.Location{location}, b.Config.GetLocationsOfExact(path))
 }
 
 func TestNormalizePaths_jobRunOnFileChange(t *testing.T) {
@@ -78,7 +78,7 @@ func TestNormalizePaths_jobRunOnFileChange(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	require.Equal(t, "data/*.txt", *b.Config.Resources.JobRuns["run1"].Lifecycle.Triggers[0].OnFileChange)
-	require.Equal(t, []diag.Location{location}, b.Config.ExactLocations(path))
+	require.Equal(t, []diag.Location{location}, b.Config.GetLocationsOfExact(path))
 }
 
 func TestNormalizePath_absolutePath(t *testing.T) {

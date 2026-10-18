@@ -51,7 +51,7 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 		}
 
 		mv.paths = append(mv.paths, fullPath)
-		mv.locations = append(mv.locations, b.Config.ExactLocations(fullPath)...)
+		mv.locations = append(mv.locations, b.Config.GetLocationsOfExact(fullPath)...)
 
 		resourceAndScriptMetadata[k] = mv
 	}

@@ -182,7 +182,7 @@ func (m *processInclude) load() (*config.Root, diag.Diagnostics) {
 			Summary:  "Include section is defined outside root file",
 			Detail: `An include section is defined in a file that is not databricks.yml.
 Only includes defined in databricks.yml are applied.`,
-			Locations: this.NearestLocations(structpath.NewPath(nil, "include")),
+			Locations: this.GetLocationsOf(structpath.NewPath(nil, "include")),
 			Paths:     structpath.NewPathSlice("include"),
 		})
 	}

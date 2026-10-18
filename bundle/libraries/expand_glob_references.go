@@ -93,7 +93,7 @@ func expandSequence[T any](ctx context.Context, b *bundle.Bundle, p *structpath.
 		ip := structpath.NewIndex(p, i)
 		expanded, relocate, d := fn(ctx, b, ip, item)
 		diags = diags.Extend(d)
-		locs := b.Config.ExactLocations(ip)
+		locs := b.Config.GetLocationsOfExact(ip)
 		for _, e := range expanded {
 			output = append(output, e)
 			sources = append(sources, []int{i})
@@ -139,7 +139,7 @@ func expandLibraries(ctx context.Context, lv structvar.View, p *structpath.PathN
 
 		matches, err := findMatches(ctx, b, path)
 		if err != nil {
-			return nil, "", diag.Diagnostics{matchError(structpath.NewStringKey(ip, libType), b.Config.ExactLocations(ip), err.Error())}
+			return nil, "", diag.Diagnostics{matchError(structpath.NewStringKey(ip, libType), b.Config.GetLocationsOfExact(ip), err.Error())}
 		}
 
 		var output []compute.Library
@@ -165,7 +165,7 @@ func expandEnvironmentDeps(ctx context.Context, lv structvar.View, p *structpath
 
 		matches, err := findMatches(ctx, b, path)
 		if err != nil {
-			return nil, "", diag.Diagnostics{matchError(ip, b.Config.ExactLocations(ip), err.Error())}
+			return nil, "", diag.Diagnostics{matchError(ip, b.Config.GetLocationsOfExact(ip), err.Error())}
 		}
 
 		var output []string
