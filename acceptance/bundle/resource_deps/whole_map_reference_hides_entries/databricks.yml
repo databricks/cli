@@ -14,5 +14,5 @@ resources:
   jobs:
     j:
       name: j
-      # The whole tags map is a reference, so the preset tag above is not added to it.
+      # A whole-map reference: the preset's tags added to the typed map stay hidden.
       tags: ${resources.schemas.s.properties}
