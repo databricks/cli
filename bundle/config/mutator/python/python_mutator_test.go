@@ -411,9 +411,8 @@ func TestApplyBackwardCompatibilityFixes(t *testing.T) {
 		},
 	}
 
-	err := applyBackwardsCompatibilityFixes(b)
+	applyBackwardsCompatibilityFixes(b)
 
-	assert.NoError(t, err)
 	assert.Equal(t, config.Python{VEnvPath: ".venv"}, b.Config.Experimental.Python)
 }
 
@@ -431,9 +430,8 @@ func TestApplyBackwardCompatibilityFixes_unchanged(t *testing.T) {
 		},
 	}
 
-	err := applyBackwardsCompatibilityFixes(b)
+	applyBackwardsCompatibilityFixes(b)
 
-	assert.NoError(t, err)
 	assert.Equal(t, config.Python{VEnvPath: "should_remain_unchanged"}, b.Config.Experimental.Python)
 }
 

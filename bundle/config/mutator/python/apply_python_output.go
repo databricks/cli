@@ -3,6 +3,7 @@ package python
 import (
 	"fmt"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
@@ -23,9 +24,9 @@ type applyPythonOutputResult struct {
 // Return value is equivalent to output except for:
 // - if property is unchanged in output, it's original location will be preserved
 // - if empty sequence/mapping is deleted in output, it's original value will be preserved
-func applyPythonOutput(root, output structvar.View) (*structvar.OverridePlan, applyPythonOutputResult, error) {
+func applyPythonOutput(root, output *config.Root) (*structvar.OverridePlan, applyPythonOutputResult, error) {
 	result, visitor := createOverrideVisitor(root, output)
-	plan, err := structvar.PlanOverride(root, output, visitor)
+	plan, err := structvar.PlanOverride(root.View(), output.View(), visitor)
 	if err != nil {
 		return nil, result, err
 	}
@@ -33,7 +34,7 @@ func applyPythonOutput(root, output structvar.View) (*structvar.OverridePlan, ap
 	return plan, result, nil
 }
 
-func createOverrideVisitor(leftRoot, rightRoot structvar.View) (applyPythonOutputResult, structvar.OverrideVisitor) {
+func createOverrideVisitor(leftRoot, rightRoot *config.Root) (applyPythonOutputResult, structvar.OverrideVisitor) {
 	resourcesPath := structpath.NewPath(nil, "resources")
 	deleted := resourcemutator.NewResourceKeySet()
 	updated := resourcemutator.NewResourceKeySet()
@@ -58,10 +59,8 @@ func createOverrideVisitor(leftRoot, rightRoot structvar.View) (applyPythonOutpu
 				// leftRoot:  {"bundle": ..., "resources": ...},
 				// rightRoot: {"bundle": ...}
 
-				return deleted.AddPattern(
-					structpath.NewPattern(nil, "resources", structpath.AnyKey, structpath.AnyKey),
-					leftRoot,
-				)
+				deleted.AddResources(&leftRoot.Resources)
+				return nil
 			} else if np.Len() == 2 {
 				// Example:
 				//
@@ -69,10 +68,8 @@ func createOverrideVisitor(leftRoot, rightRoot structvar.View) (applyPythonOutpu
 				// leftRoot:  {"resources": { "jobs": ..., "pipeline": ...}}},
 				// rightRoot: {"resources": { "jobs": ...}}},
 
-				return deleted.AddPattern(
-					structpath.NewPattern(nil, "resources", np.KeyAt(1), structpath.AnyKey),
-					leftRoot,
-				)
+				deleted.AddResourcesOfType(&leftRoot.Resources, np.KeyAt(1))
+				return nil
 			} else if np.Len() == 3 {
 				// Example: "resources.jobs.job_0"
 				resourceKey := resourcemutator.ResourceKey{Type: np.KeyAt(1), Name: np.KeyAt(2)}
@@ -101,10 +98,8 @@ func createOverrideVisitor(leftRoot, rightRoot structvar.View) (applyPythonOutpu
 				// leftRoot:  {"bundle": ...,                    }
 				// rightRoot: {"bundle": ..., "resources": {...} }
 
-				return added.AddPattern(
-					structpath.NewPattern(nil, "resources", structpath.AnyKey, structpath.AnyKey),
-					rightRoot,
-				)
+				added.AddResources(&rightRoot.Resources)
+				return nil
 			} else if np.Len() == 2 {
 				// Example:
 				//
@@ -112,10 +107,8 @@ func createOverrideVisitor(leftRoot, rightRoot structvar.View) (applyPythonOutpu
 				// leftRoot:  {"resources": {               }}
 				// rightRoot: {"resources": { "jobs": {...} }}
 
-				return added.AddPattern(
-					structpath.NewPattern(nil, "resources", np.KeyAt(1), structpath.AnyKey),
-					rightRoot,
-				)
+				added.AddResourcesOfType(&rightRoot.Resources, np.KeyAt(1))
+				return nil
 			} else if np.Len() == 3 {
 				// Example:
 				//
@@ -148,10 +141,8 @@ func createOverrideVisitor(leftRoot, rightRoot structvar.View) (applyPythonOutpu
 				// leftRoot:  {"bundle": ..., "resources": null  }
 				// rightRoot: {"bundle": ..., "resources": {...} }
 
-				return added.AddPattern(
-					structpath.NewPattern(nil, "resources", structpath.AnyKey, structpath.AnyKey),
-					rightRoot,
-				)
+				added.AddResources(&rightRoot.Resources)
+				return nil
 			} else if np.Len() == 2 {
 				// Example:
 				//
@@ -159,10 +150,8 @@ func createOverrideVisitor(leftRoot, rightRoot structvar.View) (applyPythonOutpu
 				// leftRoot:  {"resources": { "jobs": null  }}
 				// rightRoot: {"resources": { "jobs": {...} }}
 
-				return added.AddPattern(
-					structpath.NewPattern(nil, "resources", np.KeyAt(1), structpath.AnyKey),
-					rightRoot,
-				)
+				added.AddResourcesOfType(&rightRoot.Resources, np.KeyAt(1))
+				return nil
 			} else if np.Len() == 3 {
 				// Example:
 				//

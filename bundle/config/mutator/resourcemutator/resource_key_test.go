@@ -5,107 +5,34 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 )
 
-type getResourceKeyTestCase struct {
-	path string
-	key  ResourceKey
-	err  bool
-}
-
-func TestGetResourceKey(t *testing.T) {
-	testCases := []getResourceKeyTestCase{
-		{
-			path: "resources.jobs.job_1",
-			key: ResourceKey{
-				Type: "jobs",
-				Name: "job_1",
-			},
-		},
-		{
-			path: "resources.jobs.job_1.name",
-			key: ResourceKey{
-				Type: "jobs",
-				Name: "job_1",
-			},
-		},
-		{
-			path: "resources.jobs",
-			err:  true,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.path, func(t *testing.T) {
-			key, err := getResourceKey(structpath.MustParsePath(tc.path))
-			if tc.err {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tc.key, key)
-			}
-		})
-	}
-}
-
-type resourceKeySetAddTestCase struct {
-	name     string
-	pattern  *structpath.PatternNode
-	root     structvar.View
-	expected []ResourceKey
-}
-
-func TestResourceKeySet_AddPattern(t *testing.T) {
-	var cfg config.Root
-	cfg.Resources.Jobs = map[string]*resources.Job{
+func TestResourceKeySet_AddResources(t *testing.T) {
+	var r config.Resources
+	r.Jobs = map[string]*resources.Job{
 		"job_1": {JobSettings: jobs.JobSettings{Name: "job_1"}},
-		"job_2": {JobSettings: jobs.JobSettings{Name: "job_2"}},
+		"job_2": nil,
 	}
-	root := cfg.View()
-
-	testCases := []resourceKeySetAddTestCase{
-		{
-			name:    "one job pattern",
-			pattern: structpath.MustParsePattern("resources.jobs.job_1"),
-			root:    root,
-			expected: []ResourceKey{
-				{
-					Type: "jobs",
-					Name: "job_1",
-				},
-			},
-		},
-		{
-			name:    "all resources pattern",
-			pattern: structpath.MustParsePattern("resources.*.*"),
-			root:    root,
-			expected: []ResourceKey{
-				{
-					Type: "jobs",
-					Name: "job_1",
-				},
-				{
-					Type: "jobs",
-					Name: "job_2",
-				},
-			},
-		},
+	r.Pipelines = map[string]*resources.Pipeline{
+		"pipeline_1": {},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			set := NewResourceKeySet()
+	all := NewResourceKeySet()
+	all.AddResources(&r)
+	assert.ElementsMatch(t, []ResourceKey{
+		{Type: "jobs", Name: "job_1"},
+		{Type: "jobs", Name: "job_2"},
+		{Type: "pipelines", Name: "pipeline_1"},
+	}, all.ToArray())
 
-			err := set.AddPattern(tc.pattern, tc.root)
-
-			assert.NoError(t, err)
-			assert.ElementsMatch(t, tc.expected, set.ToArray())
-		})
-	}
+	jobKeys := NewResourceKeySet()
+	jobKeys.AddResourcesOfType(&r, "jobs")
+	assert.ElementsMatch(t, []ResourceKey{
+		{Type: "jobs", Name: "job_1"},
+		{Type: "jobs", Name: "job_2"},
+	}, jobKeys.ToArray())
 }
 
 func TestResourceKeySet_AddResourceKey(t *testing.T) {

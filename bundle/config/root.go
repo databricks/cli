@@ -543,6 +543,11 @@ func (r *Root) SetLocations(path *structpath.PathNode, locs []diag.Location) {
 	r.store(sv)
 }
 
+// SetLocationTree replaces the locations of the value at path and of the values below it.
+func (r *Root) SetLocationTree(path *structpath.PathNode, tree *structvar.Locations) {
+	r.locations = r.locations.With(path, tree)
+}
+
 // UpdateSequence records that the elements of the sequence at path were rebuilt from
 // the old ones (see [structvar.StructVar.UpdateSequence]).
 func (r *Root) UpdateSequence(path *structpath.PathNode, sources [][]int) {
