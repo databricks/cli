@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"iter"
-	"maps"
 	"os"
 	"reflect"
 	"slices"
@@ -16,6 +15,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -694,18 +694,12 @@ func (r Root) ReferenceAt(path *structpath.PathNode) string {
 // References returns all pure variable references in fields that cannot hold a string,
 // keyed by path. References in string fields are part of their value.
 func (r Root) References() iter.Seq2[*structpath.PathNode, string] {
-	return func(yield func(*structpath.PathNode, string) bool) {
-		for _, k := range slices.Sorted(maps.Keys(r.refs)) {
-			p, err := structpath.ParsePath(k)
-			if err == nil && !yield(p, r.refs[k]) {
-				return
-			}
-		}
-	}
+	return r.ReferencesUnder(nil)
 }
 
 // ReferencesUnder returns the pure variable references (see [Root.References]) at path
-// and below it, in path order.
+// and below it, in path order. References below a value that a mutator removed (e.g. a
+// cleared new_cluster) are skipped: only those in the typed value are returned.
 func (r Root) ReferencesUnder(path *structpath.PathNode) iter.Seq2[*structpath.PathNode, string] {
 	return func(yield func(*structpath.PathNode, string) bool) {
 		prefix := path.String()
@@ -718,7 +712,13 @@ func (r Root) ReferencesUnder(path *structpath.PathNode) iter.Seq2[*structpath.P
 		slices.Sort(keys)
 		for _, k := range keys {
 			p, err := structpath.ParsePath(k)
-			if err == nil && !yield(p, r.refs[k]) {
+			if err != nil {
+				continue
+			}
+			if _, err := structaccess.Get(&r, p); err != nil {
+				continue
+			}
+			if !yield(p, r.refs[k]) {
 				return
 			}
 		}

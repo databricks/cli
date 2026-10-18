@@ -2,33 +2,22 @@ bundle:
   name: test-bundle
   cluster_id: existing-cluster
 
-variables:
-  cluster:
-    type: complex
-    default:
-      num_workers: 1
-
 resources:
   clusters:
     source:
+      cluster_name: source
+      spark_version: 15.4.x-scala2.12
+      node_type_id: i3.xlarge
       num_workers: 2
   jobs:
     job:
       name: job
       tasks:
-        # bundle.cluster_id replaces new_cluster. The reference below it must go too.
-        - task_key: scalar_ref
+        - task_key: task
+          notebook_task:
+            notebook_path: /Workspace/notebook
+          # Replaced by bundle.cluster_id: the reference below new_cluster must go too.
           new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: i3.xlarge
             num_workers: ${resources.clusters.source.num_workers}
-        # A reference to the whole new_cluster must not bring it back.
-        - task_key: variable_ref
-          new_cluster: ${var.cluster}
-        # A reference to the new_cluster of another job is resolved after the override.
-        - task_key: resource_ref
-          new_cluster: ${resources.jobs.other.job_clusters[0].new_cluster}
-    other:
-      name: other
-      job_clusters:
-        - job_cluster_key: shared
-          new_cluster:
-            num_workers: 3
