@@ -21,9 +21,17 @@ type Node struct {
 	refs   *refNode
 }
 
-// Root returns the root node of the configuration r.
+// Root returns the root node of the configuration r. Its nodes do not follow the pure
+// references: use [RootWithReferences] for [Node.IsRef].
 func Root(r *config.Root) Node {
-	return Node{index: -2, locs: r.View().Locs(), refs: newRefTree(r)}
+	return Node{index: -2, locs: r.View().Locs()}
+}
+
+// RootWithReferences is [Root] whose nodes also follow the pure references.
+func RootWithReferences(r *config.Root) Node {
+	n := Root(r)
+	n.refs = newRefTree(r)
+	return n
 }
 
 // Child returns the node of the key k of n.

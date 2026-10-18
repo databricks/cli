@@ -16,7 +16,6 @@ type taskRule struct {
 // taskCursor is the task being visited. It is reused for all tasks so visiting does
 // not allocate; the path is only built for values that are visited.
 type taskCursor struct {
-	root   *config.Root
 	name   string
 	index  int
 	nested bool
@@ -24,9 +23,9 @@ type taskCursor struct {
 	fn     VisitFunc
 }
 
-// yield visits the value s at the parts below the task.
-func (c *taskCursor) yield(s *string, parts ...any) error {
-	return visit(c.root, s, c.rule.mode, c.rule.skip, c.fn, func() *structpath.PathNode {
+// yield visits the value s, the field key of owner, at the parts below the task.
+func (c *taskCursor) yield(owner any, key string, s *string, parts ...any) error {
+	return visit(owner, key, s, c.rule.mode, c.rule.skip, c.fn, func() *structpath.PathNode {
 		p := structpath.NewPath(resourcePath("jobs", c.name), "tasks", c.index)
 		if c.nested {
 			p = structpath.NewPath(p, "for_each_task", "task")
@@ -40,35 +39,35 @@ var jobTaskRules = []taskRule{
 		if t.NotebookTask == nil {
 			return nil
 		}
-		return c.yield(&t.NotebookTask.NotebookPath, "notebook_task", "notebook_path")
+		return c.yield(t.NotebookTask, "notebook_path", &t.NotebookTask.NotebookPath, "notebook_task", "notebook_path")
 	}},
 	{TranslateModeFile, nil, func(t *jobs.Task, c *taskCursor) error {
 		if t.SparkPythonTask == nil {
 			return nil
 		}
-		return c.yield(&t.SparkPythonTask.PythonFile, "spark_python_task", "python_file")
+		return c.yield(t.SparkPythonTask, "python_file", &t.SparkPythonTask.PythonFile, "spark_python_task", "python_file")
 	}},
 	{TranslateModeDirectory, nil, func(t *jobs.Task, c *taskCursor) error {
 		if t.DbtTask == nil {
 			return nil
 		}
-		return c.yield(&t.DbtTask.ProjectDirectory, "dbt_task", "project_directory")
+		return c.yield(t.DbtTask, "project_directory", &t.DbtTask.ProjectDirectory, "dbt_task", "project_directory")
 	}},
 	{TranslateModeFile, nil, func(t *jobs.Task, c *taskCursor) error {
 		if t.SqlTask == nil || t.SqlTask.File == nil {
 			return nil
 		}
-		return c.yield(&t.SqlTask.File.Path, "sql_task", "file", "path")
+		return c.yield(t.SqlTask.File, "path", &t.SqlTask.File.Path, "sql_task", "file", "path")
 	}},
 	{TranslateModeFile, nil, func(t *jobs.Task, c *taskCursor) error {
 		if t.AlertTask == nil {
 			return nil
 		}
-		return c.yield(&t.AlertTask.WorkspacePath, "alert_task", "workspace_path")
+		return c.yield(t.AlertTask, "workspace_path", &t.AlertTask.WorkspacePath, "alert_task", "workspace_path")
 	}},
 	{TranslateModeFile, nil, func(t *jobs.Task, c *taskCursor) error {
 		for i := range t.Libraries {
-			if err := c.yield(&t.Libraries[i].Requirements, "libraries", i, "requirements"); err != nil {
+			if err := c.yield(&t.Libraries[i], "requirements", &t.Libraries[i].Requirements, "libraries", i, "requirements"); err != nil {
 				return err
 			}
 		}
@@ -82,7 +81,7 @@ var jobTaskRules = []taskRule{
 			return nil
 		}
 		for i := range t.AiRuntimeTask.Deployments {
-			if err := c.yield(&t.AiRuntimeTask.Deployments[i].CommandPath, "ai_runtime_task", "deployments", i, "command_path"); err != nil {
+			if err := c.yield(&t.AiRuntimeTask.Deployments[i], "command_path", &t.AiRuntimeTask.Deployments[i].CommandPath, "ai_runtime_task", "deployments", i, "command_path"); err != nil {
 				return err
 			}
 		}
@@ -102,7 +101,7 @@ func visitTasks(root *config.Root, rules []taskRule, fn VisitFunc) error {
 // visitTasksAt applies the rules, one at a time, to the tasks of all jobs, or (nested)
 // to the tasks in their for_each_task.
 func visitTasksAt(root *config.Root, nested bool, rules []taskRule, fn VisitFunc) error {
-	c := &taskCursor{root: root, nested: nested, fn: fn}
+	c := &taskCursor{nested: nested, fn: fn}
 	names := sortedKeys(root.Resources.Jobs)
 	for r := range rules {
 		c.rule = &rules[r]
@@ -145,7 +144,7 @@ func VisitJobPaths(root *config.Root, fn VisitFunc) error {
 				continue
 			}
 			for j := range ev.Spec.Files {
-				if err := visit(root, &ev.Spec.Files[j], TranslateModeFile, nil, fn, func() *structpath.PathNode {
+				if err := visit(nil, "", &ev.Spec.Files[j], TranslateModeFile, nil, fn, func() *structpath.PathNode {
 					return structpath.NewPath(resourcePath("jobs", name), "environment_variables", i, "spec", "files", j)
 				}); err != nil {
 					return err
@@ -162,7 +161,7 @@ func VisitJobPaths(root *config.Root, fn VisitFunc) error {
 			if env.Spec == nil {
 				continue
 			}
-			if err := visit(root, &env.Spec.ProjectEnvironment, TranslateModeFile, nil, fn, func() *structpath.PathNode {
+			if err := visit(env.Spec, "project_environment", &env.Spec.ProjectEnvironment, TranslateModeFile, nil, fn, func() *structpath.PathNode {
 				return structpath.NewPath(resourcePath("jobs", name), "environments", i, "spec", "project_environment")
 			}); err != nil {
 				return err

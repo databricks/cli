@@ -32,7 +32,7 @@ func requiredConfigRoot(w *walker, n *walk.Node, v *config.Root) {
 			requiredConfigArtifact(w, &e, x)
 		}
 	}
-	if x := &v.Bundle; !isZeroStruct(x) || n.Written("bundle") {
+	if x := &v.Bundle; !isZeroStruct(x) || n.Locations().Key("bundle") != nil {
 		c := n.Child("bundle")
 		requiredConfigBundle(w, &c, x)
 	}
@@ -43,7 +43,7 @@ func requiredConfigRoot(w *walker, n *walk.Node, v *config.Root) {
 			requiredResourcesPermission(w, &e, &v.Permissions[i])
 		}
 	}
-	if x := &v.Resources; !isZeroStruct(x) || n.Written("resources") {
+	if x := &v.Resources; !isZeroStruct(x) || n.Locations().Key("resources") != nil {
 		c := n.Child("resources")
 		requiredConfigResources(w, &c, x)
 	}
@@ -383,22 +383,22 @@ func requiredResourcesAlert(w *walker, n *walk.Node, v *resources.Alert) {
 		w.missing(n, "warehouse_id")
 		return
 	}
-	if !(v.AlertV2.DisplayName != "" || n.Written("display_name")) {
+	if !(v.AlertV2.DisplayName != "" || forced(v.AlertV2.ForceSendFields, "DisplayName") || n.Written("display_name")) {
 		w.missing(n, "display_name")
 	}
-	if !(!isZeroStruct(&v.AlertV2.Evaluation) || n.Written("evaluation") || n.IsRef("evaluation")) {
+	if !(!isZeroStruct(&v.AlertV2.Evaluation) || forced(v.AlertV2.ForceSendFields, "Evaluation") || n.Written("evaluation") || n.IsRef("evaluation")) {
 		w.missing(n, "evaluation")
 	}
-	if !(v.AlertV2.QueryText != "" || n.Written("query_text")) {
+	if !(v.AlertV2.QueryText != "" || forced(v.AlertV2.ForceSendFields, "QueryText") || n.Written("query_text")) {
 		w.missing(n, "query_text")
 	}
-	if !(!isZeroStruct(&v.AlertV2.Schedule) || n.Written("schedule") || n.IsRef("schedule")) {
+	if !(!isZeroStruct(&v.AlertV2.Schedule) || forced(v.AlertV2.ForceSendFields, "Schedule") || n.Written("schedule") || n.IsRef("schedule")) {
 		w.missing(n, "schedule")
 	}
-	if !(v.AlertV2.WarehouseId != "" || n.Written("warehouse_id")) {
+	if !(v.AlertV2.WarehouseId != "" || forced(v.AlertV2.ForceSendFields, "WarehouseId") || n.Written("warehouse_id")) {
 		w.missing(n, "warehouse_id")
 	}
-	if x := &v.AlertV2.Evaluation; !isZeroStruct(x) || forced(v.AlertV2.ForceSendFields, "Evaluation") || n.Written("evaluation") {
+	if x := &v.AlertV2.Evaluation; !isZeroStruct(x) || forced(v.AlertV2.ForceSendFields, "Evaluation") || n.Locations().Key("evaluation") != nil {
 		c := n.Child("evaluation")
 		requiredSqlAlertV2Evaluation(w, &c, x)
 	}
@@ -416,7 +416,7 @@ func requiredResourcesAlert(w *walker, n *walk.Node, v *resources.Alert) {
 			requiredResourcesPermission(w, &e, &v.Permissions[i])
 		}
 	}
-	if x := &v.AlertV2.Schedule; !isZeroStruct(x) || forced(v.AlertV2.ForceSendFields, "Schedule") || n.Written("schedule") {
+	if x := &v.AlertV2.Schedule; !isZeroStruct(x) || forced(v.AlertV2.ForceSendFields, "Schedule") || n.Locations().Key("schedule") != nil {
 		c := n.Child("schedule")
 		requiredSqlCronSchedule(w, &c, x)
 	}
@@ -427,48 +427,48 @@ func requiredResourcesApp(w *walker, n *walk.Node, v *resources.App) {
 		w.missing(n, "name")
 		return
 	}
-	if !(v.App.Name != "" || n.Written("name")) {
+	if !(v.App.Name != "" || forced(v.App.ForceSendFields, "Name") || n.Written("name")) {
 		w.missing(n, "name")
 	}
 	if x := v.App.ActiveDeployment; x != nil {
 		c := n.Child("active_deployment")
 		requiredAppsAppDeployment(w, &c, x)
-	} else if n.Written("active_deployment") || n.IsRef("active_deployment") {
+	} else if forced(v.App.ForceSendFields, "ActiveDeployment") || n.IsRef("active_deployment") {
 		c := n.Child("active_deployment")
 		requiredAppsAppDeployment(w, &c, nil)
 	}
 	if x := v.Config; x != nil {
 		c := n.Child("config")
 		requiredResourcesAppConfig(w, &c, x)
-	} else if n.Written("config") || n.IsRef("config") {
+	} else if n.IsRef("config") {
 		c := n.Child("config")
 		requiredResourcesAppConfig(w, &c, nil)
 	}
 	if x := v.App.DefaultGitSource; x != nil {
 		c := n.Child("default_git_source")
 		requiredAppsGitSource(w, &c, x)
-	} else if n.Written("default_git_source") || n.IsRef("default_git_source") {
+	} else if forced(v.App.ForceSendFields, "DefaultGitSource") || n.IsRef("default_git_source") {
 		c := n.Child("default_git_source")
 		requiredAppsGitSource(w, &c, nil)
 	}
 	if x := v.App.GitRepository; x != nil {
 		c := n.Child("git_repository")
 		requiredAppsGitRepository(w, &c, x)
-	} else if n.Written("git_repository") || n.IsRef("git_repository") {
+	} else if forced(v.App.ForceSendFields, "GitRepository") || n.IsRef("git_repository") {
 		c := n.Child("git_repository")
 		requiredAppsGitRepository(w, &c, nil)
 	}
 	if x := v.App.GitSource; x != nil {
 		c := n.Child("git_source")
 		requiredAppsGitSource(w, &c, x)
-	} else if n.Written("git_source") || n.IsRef("git_source") {
+	} else if forced(v.App.ForceSendFields, "GitSource") || n.IsRef("git_source") {
 		c := n.Child("git_source")
 		requiredAppsGitSource(w, &c, nil)
 	}
 	if x := v.App.PendingDeployment; x != nil {
 		c := n.Child("pending_deployment")
 		requiredAppsAppDeployment(w, &c, x)
-	} else if n.Written("pending_deployment") || n.IsRef("pending_deployment") {
+	} else if forced(v.App.ForceSendFields, "PendingDeployment") || n.IsRef("pending_deployment") {
 		c := n.Child("pending_deployment")
 		requiredAppsAppDeployment(w, &c, nil)
 	}
@@ -500,13 +500,13 @@ func requiredResourcesCatalog(w *walker, n *walk.Node, v *resources.Catalog) {
 		w.missing(n, "name")
 		return
 	}
-	if !(v.CreateCatalog.Name != "" || n.Written("name")) {
+	if !(v.CreateCatalog.Name != "" || forced(v.CreateCatalog.ForceSendFields, "Name") || n.Written("name")) {
 		w.missing(n, "name")
 	}
 	if x := v.CreateCatalog.ManagedEncryptionSettings; x != nil {
 		c := n.Child("managed_encryption_settings")
 		requiredCatalogEncryptionSettings(w, &c, x)
-	} else if n.Written("managed_encryption_settings") || n.IsRef("managed_encryption_settings") {
+	} else if forced(v.CreateCatalog.ForceSendFields, "ManagedEncryptionSettings") || n.IsRef("managed_encryption_settings") {
 		c := n.Child("managed_encryption_settings")
 		requiredCatalogEncryptionSettings(w, &c, nil)
 	}
@@ -539,7 +539,7 @@ func requiredResourcesCluster(w *walker, n *walk.Node, v *resources.Cluster) {
 	if x := v.ClusterSpec.ClusterLogConf; x != nil {
 		c := n.Child("cluster_log_conf")
 		requiredComputeClusterLogConf(w, &c, x)
-	} else if n.Written("cluster_log_conf") || n.IsRef("cluster_log_conf") {
+	} else if forced(v.ClusterSpec.ForceSendFields, "ClusterLogConf") || n.IsRef("cluster_log_conf") {
 		c := n.Child("cluster_log_conf")
 		requiredComputeClusterLogConf(w, &c, nil)
 	}
@@ -567,7 +567,7 @@ func requiredResourcesCluster(w *walker, n *walk.Node, v *resources.Cluster) {
 	if x := v.ClusterSpec.WorkloadType; x != nil {
 		c := n.Child("workload_type")
 		requiredComputeWorkloadType(w, &c, x)
-	} else if n.Written("workload_type") || n.IsRef("workload_type") {
+	} else if forced(v.ClusterSpec.ForceSendFields, "WorkloadType") || n.IsRef("workload_type") {
 		c := n.Child("workload_type")
 		requiredComputeWorkloadType(w, &c, nil)
 	}
@@ -593,13 +593,13 @@ func requiredResourcesDatabaseCatalog(w *walker, n *walk.Node, v *resources.Data
 		w.missing(n, "name")
 		return
 	}
-	if !(v.DatabaseCatalog.DatabaseInstanceName != "" || n.Written("database_instance_name")) {
+	if !(v.DatabaseCatalog.DatabaseInstanceName != "" || forced(v.DatabaseCatalog.ForceSendFields, "DatabaseInstanceName") || n.Written("database_instance_name")) {
 		w.missing(n, "database_instance_name")
 	}
-	if !(v.DatabaseCatalog.DatabaseName != "" || n.Written("database_name")) {
+	if !(v.DatabaseCatalog.DatabaseName != "" || forced(v.DatabaseCatalog.ForceSendFields, "DatabaseName") || n.Written("database_name")) {
 		w.missing(n, "database_name")
 	}
-	if !(v.DatabaseCatalog.Name != "" || n.Written("name")) {
+	if !(v.DatabaseCatalog.Name != "" || forced(v.DatabaseCatalog.ForceSendFields, "Name") || n.Written("name")) {
 		w.missing(n, "name")
 	}
 }
@@ -609,7 +609,7 @@ func requiredResourcesDatabaseInstance(w *walker, n *walk.Node, v *resources.Dat
 		w.missing(n, "name")
 		return
 	}
-	if !(v.DatabaseInstance.Name != "" || n.Written("name")) {
+	if !(v.DatabaseInstance.Name != "" || forced(v.DatabaseInstance.ForceSendFields, "Name") || n.Written("name")) {
 		w.missing(n, "name")
 	}
 	if len(v.Permissions) > 0 {
@@ -626,7 +626,7 @@ func requiredResourcesMlflowExperiment(w *walker, n *walk.Node, v *resources.Mlf
 		w.missing(n, "name")
 		return
 	}
-	if !(v.CreateExperiment.Name != "" || n.Written("name")) {
+	if !(v.CreateExperiment.Name != "" || forced(v.CreateExperiment.ForceSendFields, "Name") || n.Written("name")) {
 		w.missing(n, "name")
 	}
 	if len(v.Permissions) > 0 {
@@ -639,7 +639,7 @@ func requiredResourcesMlflowExperiment(w *walker, n *walk.Node, v *resources.Mlf
 	if x := v.CreateExperiment.TraceLocation; x != nil {
 		c := n.Child("trace_location")
 		requiredMlExperimentTraceLocation(w, &c, x)
-	} else if n.Written("trace_location") || n.IsRef("trace_location") {
+	} else if forced(v.CreateExperiment.ForceSendFields, "TraceLocation") || n.IsRef("trace_location") {
 		c := n.Child("trace_location")
 		requiredMlExperimentTraceLocation(w, &c, nil)
 	}
@@ -652,13 +652,13 @@ func requiredResourcesExternalLocation(w *walker, n *walk.Node, v *resources.Ext
 		w.missing(n, "url")
 		return
 	}
-	if !(v.CreateExternalLocation.CredentialName != "" || n.Written("credential_name")) {
+	if !(v.CreateExternalLocation.CredentialName != "" || forced(v.CreateExternalLocation.ForceSendFields, "CredentialName") || n.Written("credential_name")) {
 		w.missing(n, "credential_name")
 	}
-	if !(v.CreateExternalLocation.Name != "" || n.Written("name")) {
+	if !(v.CreateExternalLocation.Name != "" || forced(v.CreateExternalLocation.ForceSendFields, "Name") || n.Written("name")) {
 		w.missing(n, "name")
 	}
-	if !(v.CreateExternalLocation.Url != "" || n.Written("url")) {
+	if !(v.CreateExternalLocation.Url != "" || forced(v.CreateExternalLocation.ForceSendFields, "Url") || n.Written("url")) {
 		w.missing(n, "url")
 	}
 }
@@ -682,10 +682,10 @@ func requiredResourcesInstancePool(w *walker, n *walk.Node, v *resources.Instanc
 		w.missing(n, "node_type_id")
 		return
 	}
-	if !(v.CreateInstancePool.InstancePoolName != "" || n.Written("instance_pool_name")) {
+	if !(v.CreateInstancePool.InstancePoolName != "" || forced(v.CreateInstancePool.ForceSendFields, "InstancePoolName") || n.Written("instance_pool_name")) {
 		w.missing(n, "instance_pool_name")
 	}
-	if !(v.CreateInstancePool.NodeTypeId != "" || n.Written("node_type_id")) {
+	if !(v.CreateInstancePool.NodeTypeId != "" || forced(v.CreateInstancePool.ForceSendFields, "NodeTypeId") || n.Written("node_type_id")) {
 		w.missing(n, "node_type_id")
 	}
 	if len(v.Permissions) > 0 {
@@ -702,13 +702,13 @@ func requiredResourcesJobRun(w *walker, n *walk.Node, v *resources.JobRun) {
 		w.missing(n, "job_id")
 		return
 	}
-	if !(v.RunNow.JobId != 0 || n.Written("job_id") || n.IsRef("job_id")) {
+	if !(v.RunNow.JobId != 0 || forced(v.RunNow.ForceSendFields, "JobId") || n.Written("job_id") || n.IsRef("job_id")) {
 		w.missing(n, "job_id")
 	}
 	if x := v.RunNow.Queue; x != nil {
 		c := n.Child("queue")
 		requiredJobsQueueSettings(w, &c, x)
-	} else if n.Written("queue") || n.IsRef("queue") {
+	} else if forced(v.RunNow.ForceSendFields, "Queue") || n.IsRef("queue") {
 		c := n.Child("queue")
 		requiredJobsQueueSettings(w, &c, nil)
 	}
@@ -721,14 +721,14 @@ func requiredResourcesJob(w *walker, n *walk.Node, v *resources.Job) {
 	if x := v.JobSettings.Continuous; x != nil {
 		c := n.Child("continuous")
 		requiredJobsContinuous(w, &c, x)
-	} else if n.Written("continuous") || n.IsRef("continuous") {
+	} else if forced(v.JobSettings.ForceSendFields, "Continuous") || n.IsRef("continuous") {
 		c := n.Child("continuous")
 		requiredJobsContinuous(w, &c, nil)
 	}
 	if x := v.JobSettings.Deployment; x != nil {
 		c := n.Child("deployment")
 		requiredJobsJobDeployment(w, &c, x)
-	} else if n.Written("deployment") || n.IsRef("deployment") {
+	} else if forced(v.JobSettings.ForceSendFields, "Deployment") || n.IsRef("deployment") {
 		c := n.Child("deployment")
 		requiredJobsJobDeployment(w, &c, nil)
 	}
@@ -749,14 +749,14 @@ func requiredResourcesJob(w *walker, n *walk.Node, v *resources.Job) {
 	if x := v.JobSettings.GitSource; x != nil {
 		c := n.Child("git_source")
 		requiredJobsGitSource(w, &c, x)
-	} else if n.Written("git_source") || n.IsRef("git_source") {
+	} else if forced(v.JobSettings.ForceSendFields, "GitSource") || n.IsRef("git_source") {
 		c := n.Child("git_source")
 		requiredJobsGitSource(w, &c, nil)
 	}
 	if x := v.JobSettings.Health; x != nil {
 		c := n.Child("health")
 		requiredJobsJobsHealthRules(w, &c, x)
-	} else if n.Written("health") || n.IsRef("health") {
+	} else if forced(v.JobSettings.ForceSendFields, "Health") || n.IsRef("health") {
 		c := n.Child("health")
 		requiredJobsJobsHealthRules(w, &c, nil)
 	}
@@ -784,14 +784,14 @@ func requiredResourcesJob(w *walker, n *walk.Node, v *resources.Job) {
 	if x := v.JobSettings.Queue; x != nil {
 		c := n.Child("queue")
 		requiredJobsQueueSettings(w, &c, x)
-	} else if n.Written("queue") || n.IsRef("queue") {
+	} else if forced(v.JobSettings.ForceSendFields, "Queue") || n.IsRef("queue") {
 		c := n.Child("queue")
 		requiredJobsQueueSettings(w, &c, nil)
 	}
 	if x := v.JobSettings.Schedule; x != nil {
 		c := n.Child("schedule")
 		requiredJobsCronSchedule(w, &c, x)
-	} else if n.Written("schedule") || n.IsRef("schedule") {
+	} else if forced(v.JobSettings.ForceSendFields, "Schedule") || n.IsRef("schedule") {
 		c := n.Child("schedule")
 		requiredJobsCronSchedule(w, &c, nil)
 	}
@@ -805,7 +805,7 @@ func requiredResourcesJob(w *walker, n *walk.Node, v *resources.Job) {
 	if x := v.JobSettings.Trigger; x != nil {
 		c := n.Child("trigger")
 		requiredJobsTriggerSettings(w, &c, x)
-	} else if n.Written("trigger") || n.IsRef("trigger") {
+	} else if forced(v.JobSettings.ForceSendFields, "Trigger") || n.IsRef("trigger") {
 		c := n.Child("trigger")
 		requiredJobsTriggerSettings(w, &c, nil)
 	}
@@ -819,7 +819,7 @@ func requiredResourcesJob(w *walker, n *walk.Node, v *resources.Job) {
 	if x := v.JobSettings.WebhookNotifications; x != nil {
 		c := n.Child("webhook_notifications")
 		requiredJobsWebhookNotifications(w, &c, x)
-	} else if n.Written("webhook_notifications") || n.IsRef("webhook_notifications") {
+	} else if forced(v.JobSettings.ForceSendFields, "WebhookNotifications") || n.IsRef("webhook_notifications") {
 		c := n.Child("webhook_notifications")
 		requiredJobsWebhookNotifications(w, &c, nil)
 	}
@@ -831,16 +831,16 @@ func requiredResourcesMcpService(w *walker, n *walk.Node, v *resources.McpServic
 		w.missing(n, "mcp_service_id")
 		return
 	}
-	if !(v.McpServiceConfig.Parent != "" || n.Written("parent")) {
+	if !(v.McpServiceConfig.Parent != "" || forced(v.McpServiceConfig.ForceSendFields, "Parent") || n.Written("parent")) {
 		w.missing(n, "parent")
 	}
-	if !(v.McpServiceConfig.McpServiceId != "" || n.Written("mcp_service_id")) {
+	if !(v.McpServiceConfig.McpServiceId != "" || forced(v.McpServiceConfig.ForceSendFields, "McpServiceId") || n.Written("mcp_service_id")) {
 		w.missing(n, "mcp_service_id")
 	}
 	if x := v.McpServiceConfig.Config; x != nil {
 		c := n.Child("config")
 		requiredCatalogMcpServiceConfig(w, &c, x)
-	} else if n.Written("config") || n.IsRef("config") {
+	} else if forced(v.McpServiceConfig.ForceSendFields, "Config") || n.IsRef("config") {
 		c := n.Child("config")
 		requiredCatalogMcpServiceConfig(w, &c, nil)
 	}
@@ -852,16 +852,16 @@ func requiredResourcesModelProviderService(w *walker, n *walk.Node, v *resources
 		w.missing(n, "model_provider_service_id")
 		return
 	}
-	if !(v.ModelProviderServiceConfig.Parent != "" || n.Written("parent")) {
+	if !(v.ModelProviderServiceConfig.Parent != "" || forced(v.ModelProviderServiceConfig.ForceSendFields, "Parent") || n.Written("parent")) {
 		w.missing(n, "parent")
 	}
-	if !(v.ModelProviderServiceConfig.ModelProviderServiceId != "" || n.Written("model_provider_service_id")) {
+	if !(v.ModelProviderServiceConfig.ModelProviderServiceId != "" || forced(v.ModelProviderServiceConfig.ForceSendFields, "ModelProviderServiceId") || n.Written("model_provider_service_id")) {
 		w.missing(n, "model_provider_service_id")
 	}
 	if x := v.ModelProviderServiceConfig.Config; x != nil {
 		c := n.Child("config")
 		requiredCatalogModelProviderServiceConfig(w, &c, x)
-	} else if n.Written("config") || n.IsRef("config") {
+	} else if forced(v.ModelProviderServiceConfig.ForceSendFields, "Config") || n.IsRef("config") {
 		c := n.Child("config")
 		requiredCatalogModelProviderServiceConfig(w, &c, nil)
 	}
@@ -873,16 +873,16 @@ func requiredResourcesModelService(w *walker, n *walk.Node, v *resources.ModelSe
 		w.missing(n, "model_service_id")
 		return
 	}
-	if !(v.ModelServiceConfig.Parent != "" || n.Written("parent")) {
+	if !(v.ModelServiceConfig.Parent != "" || forced(v.ModelServiceConfig.ForceSendFields, "Parent") || n.Written("parent")) {
 		w.missing(n, "parent")
 	}
-	if !(v.ModelServiceConfig.ModelServiceId != "" || n.Written("model_service_id")) {
+	if !(v.ModelServiceConfig.ModelServiceId != "" || forced(v.ModelServiceConfig.ForceSendFields, "ModelServiceId") || n.Written("model_service_id")) {
 		w.missing(n, "model_service_id")
 	}
 	if x := v.ModelServiceConfig.Config; x != nil {
 		c := n.Child("config")
 		requiredCatalogModelServiceConfig(w, &c, x)
-	} else if n.Written("config") || n.IsRef("config") {
+	} else if forced(v.ModelServiceConfig.ForceSendFields, "Config") || n.IsRef("config") {
 		c := n.Child("config")
 		requiredCatalogModelServiceConfig(w, &c, nil)
 	}
@@ -893,20 +893,20 @@ func requiredResourcesModelServingEndpoint(w *walker, n *walk.Node, v *resources
 		w.missing(n, "name")
 		return
 	}
-	if !(v.CreateServingEndpoint.Name != "" || n.Written("name")) {
+	if !(v.CreateServingEndpoint.Name != "" || forced(v.CreateServingEndpoint.ForceSendFields, "Name") || n.Written("name")) {
 		w.missing(n, "name")
 	}
 	if x := v.CreateServingEndpoint.AiGateway; x != nil {
 		c := n.Child("ai_gateway")
 		requiredServingAiGatewayConfig(w, &c, x)
-	} else if n.Written("ai_gateway") || n.IsRef("ai_gateway") {
+	} else if forced(v.CreateServingEndpoint.ForceSendFields, "AiGateway") || n.IsRef("ai_gateway") {
 		c := n.Child("ai_gateway")
 		requiredServingAiGatewayConfig(w, &c, nil)
 	}
 	if x := v.CreateServingEndpoint.Config; x != nil {
 		c := n.Child("config")
 		requiredServingEndpointCoreConfigInput(w, &c, x)
-	} else if n.Written("config") || n.IsRef("config") {
+	} else if forced(v.CreateServingEndpoint.ForceSendFields, "Config") || n.IsRef("config") {
 		c := n.Child("config")
 		requiredServingEndpointCoreConfigInput(w, &c, nil)
 	}
@@ -938,7 +938,7 @@ func requiredResourcesMlflowModel(w *walker, n *walk.Node, v *resources.MlflowMo
 		w.missing(n, "name")
 		return
 	}
-	if !(v.CreateModelRequest.Name != "" || n.Written("name")) {
+	if !(v.CreateModelRequest.Name != "" || forced(v.CreateModelRequest.ForceSendFields, "Name") || n.Written("name")) {
 		w.missing(n, "name")
 	}
 	if len(v.Permissions) > 0 {
@@ -964,21 +964,21 @@ func requiredResourcesPipeline(w *walker, n *walk.Node, v *resources.Pipeline) {
 	if x := v.CreatePipeline.Deployment; x != nil {
 		c := n.Child("deployment")
 		requiredPipelinesPipelineDeployment(w, &c, x)
-	} else if n.Written("deployment") || n.IsRef("deployment") {
+	} else if forced(v.CreatePipeline.ForceSendFields, "Deployment") || n.IsRef("deployment") {
 		c := n.Child("deployment")
 		requiredPipelinesPipelineDeployment(w, &c, nil)
 	}
 	if x := v.CreatePipeline.GatewayDefinition; x != nil {
 		c := n.Child("gateway_definition")
 		requiredPipelinesIngestionGatewayPipelineDefinition(w, &c, x)
-	} else if n.Written("gateway_definition") || n.IsRef("gateway_definition") {
+	} else if forced(v.CreatePipeline.ForceSendFields, "GatewayDefinition") || n.IsRef("gateway_definition") {
 		c := n.Child("gateway_definition")
 		requiredPipelinesIngestionGatewayPipelineDefinition(w, &c, nil)
 	}
 	if x := v.CreatePipeline.IngestionDefinition; x != nil {
 		c := n.Child("ingestion_definition")
 		requiredPipelinesIngestionPipelineDefinition(w, &c, x)
-	} else if n.Written("ingestion_definition") || n.IsRef("ingestion_definition") {
+	} else if forced(v.CreatePipeline.ForceSendFields, "IngestionDefinition") || n.IsRef("ingestion_definition") {
 		c := n.Child("ingestion_definition")
 		requiredPipelinesIngestionPipelineDefinition(w, &c, nil)
 	}
@@ -999,7 +999,7 @@ func requiredResourcesPipeline(w *walker, n *walk.Node, v *resources.Pipeline) {
 	if x := v.CreatePipeline.RestartWindow; x != nil {
 		c := n.Child("restart_window")
 		requiredPipelinesRestartWindow(w, &c, x)
-	} else if n.Written("restart_window") || n.IsRef("restart_window") {
+	} else if forced(v.CreatePipeline.ForceSendFields, "RestartWindow") || n.IsRef("restart_window") {
 		c := n.Child("restart_window")
 		requiredPipelinesRestartWindow(w, &c, nil)
 	}
@@ -1011,10 +1011,10 @@ func requiredResourcesPostgresBranch(w *walker, n *walk.Node, v *resources.Postg
 		w.missing(n, "parent")
 		return
 	}
-	if !(v.PostgresBranchConfig.BranchId != "" || n.Written("branch_id")) {
+	if !(v.PostgresBranchConfig.BranchId != "" || forced(v.PostgresBranchConfig.ForceSendFields, "BranchId") || n.Written("branch_id")) {
 		w.missing(n, "branch_id")
 	}
-	if !(v.PostgresBranchConfig.Parent != "" || n.Written("parent")) {
+	if !(v.PostgresBranchConfig.Parent != "" || forced(v.PostgresBranchConfig.ForceSendFields, "Parent") || n.Written("parent")) {
 		w.missing(n, "parent")
 	}
 }
@@ -1025,7 +1025,7 @@ func requiredResourcesPostgresCatalog(w *walker, n *walk.Node, v *resources.Post
 		w.missing(n, "catalog_id")
 		return
 	}
-	if !(v.PostgresCatalogConfig.CatalogCatalogSpec.PostgresDatabase != "" || n.Written("postgres_database")) {
+	if !(v.PostgresCatalogConfig.CatalogCatalogSpec.PostgresDatabase != "" || forced(v.PostgresCatalogConfig.CatalogCatalogSpec.ForceSendFields, "PostgresDatabase") || n.Written("postgres_database")) {
 		w.missing(n, "postgres_database")
 	}
 	if !(v.PostgresCatalogConfig.CatalogId != "" || n.Written("catalog_id")) {
@@ -1040,7 +1040,7 @@ func requiredResourcesPostgresDatabase(w *walker, n *walk.Node, v *resources.Pos
 		w.missing(n, "parent")
 		return
 	}
-	if !(v.PostgresDatabaseConfig.DatabaseDatabaseSpec.Role != "" || n.Written("role")) {
+	if !(v.PostgresDatabaseConfig.DatabaseDatabaseSpec.Role != "" || forced(v.PostgresDatabaseConfig.DatabaseDatabaseSpec.ForceSendFields, "Role") || n.Written("role")) {
 		w.missing(n, "role")
 	}
 	if !(v.PostgresDatabaseConfig.DatabaseId != "" || n.Written("database_id")) {
@@ -1058,7 +1058,7 @@ func requiredResourcesPostgresEndpoint(w *walker, n *walk.Node, v *resources.Pos
 		w.missing(n, "parent")
 		return
 	}
-	if !(v.PostgresEndpointConfig.EndpointSpec.EndpointType != "" || n.Written("endpoint_type")) {
+	if !(v.PostgresEndpointConfig.EndpointSpec.EndpointType != "" || forced(v.PostgresEndpointConfig.EndpointSpec.ForceSendFields, "EndpointType") || n.Written("endpoint_type")) {
 		w.missing(n, "endpoint_type")
 	}
 	if !(v.PostgresEndpointConfig.EndpointId != "" || n.Written("endpoint_id")) {
@@ -1070,7 +1070,7 @@ func requiredResourcesPostgresEndpoint(w *walker, n *walk.Node, v *resources.Pos
 	if x := v.PostgresEndpointConfig.EndpointSpec.Group; x != nil {
 		c := n.Child("group")
 		requiredPostgresEndpointGroupSpec(w, &c, x)
-	} else if n.Written("group") || n.IsRef("group") {
+	} else if forced(v.PostgresEndpointConfig.EndpointSpec.ForceSendFields, "Group") || n.IsRef("group") {
 		c := n.Child("group")
 		requiredPostgresEndpointGroupSpec(w, &c, nil)
 	}
@@ -1081,7 +1081,7 @@ func requiredResourcesPostgresProject(w *walker, n *walk.Node, v *resources.Post
 		w.missing(n, "project_id")
 		return
 	}
-	if !(v.PostgresProjectConfig.ProjectId != "" || n.Written("project_id")) {
+	if !(v.PostgresProjectConfig.ProjectId != "" || forced(v.PostgresProjectConfig.ForceSendFields, "ProjectId") || n.Written("project_id")) {
 		w.missing(n, "project_id")
 	}
 	if len(v.Permissions) > 0 {
@@ -1112,7 +1112,7 @@ func requiredResourcesPostgresSnapshotSchedule(w *walker, n *walk.Node, v *resou
 		w.missing(n, "branch")
 		return
 	}
-	if !(v.PostgresSnapshotScheduleConfig.Branch != "" || n.Written("branch")) {
+	if !(v.PostgresSnapshotScheduleConfig.Branch != "" || forced(v.PostgresSnapshotScheduleConfig.ForceSendFields, "Branch") || n.Written("branch")) {
 		w.missing(n, "branch")
 	}
 	if len(v.PostgresSnapshotScheduleConfig.Schedule) > 0 {
@@ -1155,10 +1155,10 @@ func requiredResourcesQualityMonitor(w *walker, n *walk.Node, v *resources.Quali
 		w.missing(n, "table_name")
 		return
 	}
-	if !(v.CreateMonitor.AssetsDir != "" || n.Written("assets_dir")) {
+	if !(v.CreateMonitor.AssetsDir != "" || forced(v.CreateMonitor.ForceSendFields, "AssetsDir") || n.Written("assets_dir")) {
 		w.missing(n, "assets_dir")
 	}
-	if !(v.CreateMonitor.OutputSchemaName != "" || n.Written("output_schema_name")) {
+	if !(v.CreateMonitor.OutputSchemaName != "" || forced(v.CreateMonitor.ForceSendFields, "OutputSchemaName") || n.Written("output_schema_name")) {
 		w.missing(n, "output_schema_name")
 	}
 	if !(v.TableName != "" || n.Written("table_name")) {
@@ -1174,21 +1174,21 @@ func requiredResourcesQualityMonitor(w *walker, n *walk.Node, v *resources.Quali
 	if x := v.CreateMonitor.InferenceLog; x != nil {
 		c := n.Child("inference_log")
 		requiredCatalogMonitorInferenceLog(w, &c, x)
-	} else if n.Written("inference_log") || n.IsRef("inference_log") {
+	} else if forced(v.CreateMonitor.ForceSendFields, "InferenceLog") || n.IsRef("inference_log") {
 		c := n.Child("inference_log")
 		requiredCatalogMonitorInferenceLog(w, &c, nil)
 	}
 	if x := v.CreateMonitor.Schedule; x != nil {
 		c := n.Child("schedule")
 		requiredCatalogMonitorCronSchedule(w, &c, x)
-	} else if n.Written("schedule") || n.IsRef("schedule") {
+	} else if forced(v.CreateMonitor.ForceSendFields, "Schedule") || n.IsRef("schedule") {
 		c := n.Child("schedule")
 		requiredCatalogMonitorCronSchedule(w, &c, nil)
 	}
 	if x := v.CreateMonitor.TimeSeries; x != nil {
 		c := n.Child("time_series")
 		requiredCatalogMonitorTimeSeries(w, &c, x)
-	} else if n.Written("time_series") || n.IsRef("time_series") {
+	} else if forced(v.CreateMonitor.ForceSendFields, "TimeSeries") || n.IsRef("time_series") {
 		c := n.Child("time_series")
 		requiredCatalogMonitorTimeSeries(w, &c, nil)
 	}
@@ -1200,10 +1200,10 @@ func requiredResourcesSchema(w *walker, n *walk.Node, v *resources.Schema) {
 		w.missing(n, "name")
 		return
 	}
-	if !(v.CreateSchema.CatalogName != "" || n.Written("catalog_name")) {
+	if !(v.CreateSchema.CatalogName != "" || forced(v.CreateSchema.ForceSendFields, "CatalogName") || n.Written("catalog_name")) {
 		w.missing(n, "catalog_name")
 	}
-	if !(v.CreateSchema.Name != "" || n.Written("name")) {
+	if !(v.CreateSchema.Name != "" || forced(v.CreateSchema.ForceSendFields, "Name") || n.Written("name")) {
 		w.missing(n, "name")
 	}
 }
@@ -1219,7 +1219,7 @@ func requiredResourcesSecretScope(w *walker, n *walk.Node, v *resources.SecretSc
 	if x := v.KeyvaultMetadata; x != nil {
 		c := n.Child("keyvault_metadata")
 		requiredWorkspaceAzureKeyVaultSecretScopeMetadata(w, &c, x)
-	} else if n.Written("keyvault_metadata") || n.IsRef("keyvault_metadata") {
+	} else if n.IsRef("keyvault_metadata") {
 		c := n.Child("keyvault_metadata")
 		requiredWorkspaceAzureKeyVaultSecretScopeMetadata(w, &c, nil)
 	}
@@ -1240,16 +1240,16 @@ func requiredResourcesSecret(w *walker, n *walk.Node, v *resources.Secret) {
 		w.missing(n, "value")
 		return
 	}
-	if !(v.Secret.CatalogName != "" || n.Written("catalog_name")) {
+	if !(v.Secret.CatalogName != "" || forced(v.Secret.ForceSendFields, "CatalogName") || n.Written("catalog_name")) {
 		w.missing(n, "catalog_name")
 	}
-	if !(v.Secret.Name != "" || n.Written("name")) {
+	if !(v.Secret.Name != "" || forced(v.Secret.ForceSendFields, "Name") || n.Written("name")) {
 		w.missing(n, "name")
 	}
-	if !(v.Secret.SchemaName != "" || n.Written("schema_name")) {
+	if !(v.Secret.SchemaName != "" || forced(v.Secret.ForceSendFields, "SchemaName") || n.Written("schema_name")) {
 		w.missing(n, "schema_name")
 	}
-	if !(v.Secret.Value != "" || n.Written("value")) {
+	if !(v.Secret.Value != "" || forced(v.Secret.ForceSendFields, "Value") || n.Written("value")) {
 		w.missing(n, "value")
 	}
 }
@@ -1272,13 +1272,13 @@ func requiredResourcesSyncedDatabaseTable(w *walker, n *walk.Node, v *resources.
 		w.missing(n, "name")
 		return
 	}
-	if !(v.SyncedDatabaseTable.Name != "" || n.Written("name")) {
+	if !(v.SyncedDatabaseTable.Name != "" || forced(v.SyncedDatabaseTable.ForceSendFields, "Name") || n.Written("name")) {
 		w.missing(n, "name")
 	}
 	if x := v.SyncedDatabaseTable.Spec; x != nil {
 		c := n.Child("spec")
 		requiredDatabaseSyncedTableSpec(w, &c, x)
-	} else if n.Written("spec") || n.IsRef("spec") {
+	} else if forced(v.SyncedDatabaseTable.ForceSendFields, "Spec") || n.IsRef("spec") {
 		c := n.Child("spec")
 		requiredDatabaseSyncedTableSpec(w, &c, nil)
 	}
@@ -1290,10 +1290,10 @@ func requiredResourcesVectorSearchEndpoint(w *walker, n *walk.Node, v *resources
 		w.missing(n, "name")
 		return
 	}
-	if !(v.CreateEndpoint.EndpointType != "" || n.Written("endpoint_type")) {
+	if !(v.CreateEndpoint.EndpointType != "" || forced(v.CreateEndpoint.ForceSendFields, "EndpointType") || n.Written("endpoint_type")) {
 		w.missing(n, "endpoint_type")
 	}
-	if !(v.CreateEndpoint.Name != "" || n.Written("name")) {
+	if !(v.CreateEndpoint.Name != "" || forced(v.CreateEndpoint.ForceSendFields, "Name") || n.Written("name")) {
 		w.missing(n, "name")
 	}
 	if len(v.Permissions) > 0 {
@@ -1335,16 +1335,16 @@ func requiredResourcesVolume(w *walker, n *walk.Node, v *resources.Volume) {
 		w.missing(n, "volume_type")
 		return
 	}
-	if !(v.CreateVolumeRequestContent.CatalogName != "" || n.Written("catalog_name")) {
+	if !(v.CreateVolumeRequestContent.CatalogName != "" || forced(v.CreateVolumeRequestContent.ForceSendFields, "CatalogName") || n.Written("catalog_name")) {
 		w.missing(n, "catalog_name")
 	}
-	if !(v.CreateVolumeRequestContent.Name != "" || n.Written("name")) {
+	if !(v.CreateVolumeRequestContent.Name != "" || forced(v.CreateVolumeRequestContent.ForceSendFields, "Name") || n.Written("name")) {
 		w.missing(n, "name")
 	}
-	if !(v.CreateVolumeRequestContent.SchemaName != "" || n.Written("schema_name")) {
+	if !(v.CreateVolumeRequestContent.SchemaName != "" || forced(v.CreateVolumeRequestContent.ForceSendFields, "SchemaName") || n.Written("schema_name")) {
 		w.missing(n, "schema_name")
 	}
-	if !(v.CreateVolumeRequestContent.VolumeType != "" || n.Written("volume_type")) {
+	if !(v.CreateVolumeRequestContent.VolumeType != "" || forced(v.CreateVolumeRequestContent.ForceSendFields, "VolumeType") || n.Written("volume_type")) {
 		w.missing(n, "volume_type")
 	}
 }
@@ -1355,20 +1355,20 @@ func requiredSqlAlertV2Evaluation(w *walker, n *walk.Node, v *sql.AlertV2Evaluat
 		w.missing(n, "source")
 		return
 	}
-	if !(v.ComparisonOperator != "" || n.Written("comparison_operator")) {
+	if !(v.ComparisonOperator != "" || forced(v.ForceSendFields, "ComparisonOperator") || n.Written("comparison_operator")) {
 		w.missing(n, "comparison_operator")
 	}
-	if !(!isZeroStruct(&v.Source) || n.Written("source") || n.IsRef("source")) {
+	if !(!isZeroStruct(&v.Source) || forced(v.ForceSendFields, "Source") || n.Written("source") || n.IsRef("source")) {
 		w.missing(n, "source")
 	}
-	if x := &v.Source; !isZeroStruct(x) || forced(v.ForceSendFields, "Source") || n.Written("source") {
+	if x := &v.Source; !isZeroStruct(x) || forced(v.ForceSendFields, "Source") || n.Locations().Key("source") != nil {
 		c := n.Child("source")
 		requiredSqlAlertV2OperandColumn(w, &c, x)
 	}
 	if x := v.Threshold; x != nil {
 		c := n.Child("threshold")
 		requiredSqlAlertV2Operand(w, &c, x)
-	} else if n.Written("threshold") || n.IsRef("threshold") {
+	} else if forced(v.ForceSendFields, "Threshold") || n.IsRef("threshold") {
 		c := n.Child("threshold")
 		requiredSqlAlertV2Operand(w, &c, nil)
 	}
@@ -1379,7 +1379,7 @@ func requiredSqlAlertStatementParameter(w *walker, n *walk.Node, v *sql.AlertSta
 		w.missing(n, "name")
 		return
 	}
-	if !(v.Name != "" || n.Written("name")) {
+	if !(v.Name != "" || forced(v.ForceSendFields, "Name") || n.Written("name")) {
 		w.missing(n, "name")
 	}
 }
@@ -1405,7 +1405,7 @@ func requiredAppsAppDeployment(w *walker, n *walk.Node, v *apps.AppDeployment) {
 	if x := v.GitSource; x != nil {
 		c := n.Child("git_source")
 		requiredAppsGitSource(w, &c, x)
-	} else if n.Written("git_source") || n.IsRef("git_source") {
+	} else if forced(v.ForceSendFields, "GitSource") || n.IsRef("git_source") {
 		c := n.Child("git_source")
 		requiredAppsGitSource(w, &c, nil)
 	}
@@ -1431,7 +1431,7 @@ func requiredAppsGitSource(w *walker, n *walk.Node, v *apps.GitSource) {
 	if x := v.GitRepository; x != nil {
 		c := n.Child("git_repository")
 		requiredAppsGitRepository(w, &c, x)
-	} else if n.Written("git_repository") || n.IsRef("git_repository") {
+	} else if forced(v.ForceSendFields, "GitRepository") || n.IsRef("git_repository") {
 		c := n.Child("git_repository")
 		requiredAppsGitRepository(w, &c, nil)
 	}
@@ -1443,10 +1443,10 @@ func requiredAppsGitRepository(w *walker, n *walk.Node, v *apps.GitRepository) {
 		w.missing(n, "url")
 		return
 	}
-	if !(v.Provider != "" || n.Written("provider")) {
+	if !(v.Provider != "" || forced(v.ForceSendFields, "Provider") || n.Written("provider")) {
 		w.missing(n, "provider")
 	}
-	if !(v.Url != "" || n.Written("url")) {
+	if !(v.Url != "" || forced(v.ForceSendFields, "Url") || n.Written("url")) {
 		w.missing(n, "url")
 	}
 }
@@ -1466,62 +1466,62 @@ func requiredAppsAppResource(w *walker, n *walk.Node, v *apps.AppResource) {
 		w.missing(n, "name")
 		return
 	}
-	if !(v.Name != "" || n.Written("name")) {
+	if !(v.Name != "" || forced(v.ForceSendFields, "Name") || n.Written("name")) {
 		w.missing(n, "name")
 	}
 	if x := v.Database; x != nil {
 		c := n.Child("database")
 		requiredAppsAppResourceDatabase(w, &c, x)
-	} else if n.Written("database") || n.IsRef("database") {
+	} else if forced(v.ForceSendFields, "Database") || n.IsRef("database") {
 		c := n.Child("database")
 		requiredAppsAppResourceDatabase(w, &c, nil)
 	}
 	if x := v.Experiment; x != nil {
 		c := n.Child("experiment")
 		requiredAppsAppResourceExperiment(w, &c, x)
-	} else if n.Written("experiment") || n.IsRef("experiment") {
+	} else if forced(v.ForceSendFields, "Experiment") || n.IsRef("experiment") {
 		c := n.Child("experiment")
 		requiredAppsAppResourceExperiment(w, &c, nil)
 	}
 	if x := v.GenieSpace; x != nil {
 		c := n.Child("genie_space")
 		requiredAppsAppResourceGenieSpace(w, &c, x)
-	} else if n.Written("genie_space") || n.IsRef("genie_space") {
+	} else if forced(v.ForceSendFields, "GenieSpace") || n.IsRef("genie_space") {
 		c := n.Child("genie_space")
 		requiredAppsAppResourceGenieSpace(w, &c, nil)
 	}
 	if x := v.Job; x != nil {
 		c := n.Child("job")
 		requiredAppsAppResourceJob(w, &c, x)
-	} else if n.Written("job") || n.IsRef("job") {
+	} else if forced(v.ForceSendFields, "Job") || n.IsRef("job") {
 		c := n.Child("job")
 		requiredAppsAppResourceJob(w, &c, nil)
 	}
 	if x := v.Secret; x != nil {
 		c := n.Child("secret")
 		requiredAppsAppResourceSecret(w, &c, x)
-	} else if n.Written("secret") || n.IsRef("secret") {
+	} else if forced(v.ForceSendFields, "Secret") || n.IsRef("secret") {
 		c := n.Child("secret")
 		requiredAppsAppResourceSecret(w, &c, nil)
 	}
 	if x := v.ServingEndpoint; x != nil {
 		c := n.Child("serving_endpoint")
 		requiredAppsAppResourceServingEndpoint(w, &c, x)
-	} else if n.Written("serving_endpoint") || n.IsRef("serving_endpoint") {
+	} else if forced(v.ForceSendFields, "ServingEndpoint") || n.IsRef("serving_endpoint") {
 		c := n.Child("serving_endpoint")
 		requiredAppsAppResourceServingEndpoint(w, &c, nil)
 	}
 	if x := v.SqlWarehouse; x != nil {
 		c := n.Child("sql_warehouse")
 		requiredAppsAppResourceSqlWarehouse(w, &c, x)
-	} else if n.Written("sql_warehouse") || n.IsRef("sql_warehouse") {
+	} else if forced(v.ForceSendFields, "SqlWarehouse") || n.IsRef("sql_warehouse") {
 		c := n.Child("sql_warehouse")
 		requiredAppsAppResourceSqlWarehouse(w, &c, nil)
 	}
 	if x := v.UcSecurable; x != nil {
 		c := n.Child("uc_securable")
 		requiredAppsAppResourceUcSecurable(w, &c, x)
-	} else if n.Written("uc_securable") || n.IsRef("uc_securable") {
+	} else if forced(v.ForceSendFields, "UcSecurable") || n.IsRef("uc_securable") {
 		c := n.Child("uc_securable")
 		requiredAppsAppResourceUcSecurable(w, &c, nil)
 	}
@@ -1534,7 +1534,7 @@ func requiredAppsTelemetryExportDestination(w *walker, n *walk.Node, v *apps.Tel
 	if x := v.UnityCatalog; x != nil {
 		c := n.Child("unity_catalog")
 		requiredAppsUnityCatalog(w, &c, x)
-	} else if n.Written("unity_catalog") || n.IsRef("unity_catalog") {
+	} else if n.IsRef("unity_catalog") {
 		c := n.Child("unity_catalog")
 		requiredAppsUnityCatalog(w, &c, nil)
 	}
@@ -1547,7 +1547,7 @@ func requiredCatalogEncryptionSettings(w *walker, n *walk.Node, v *catalog.Encry
 	if x := v.AzureEncryptionSettings; x != nil {
 		c := n.Child("azure_encryption_settings")
 		requiredCatalogAzureEncryptionSettings(w, &c, x)
-	} else if n.Written("azure_encryption_settings") || n.IsRef("azure_encryption_settings") {
+	} else if forced(v.ForceSendFields, "AzureEncryptionSettings") || n.IsRef("azure_encryption_settings") {
 		c := n.Child("azure_encryption_settings")
 		requiredCatalogAzureEncryptionSettings(w, &c, nil)
 	}
@@ -1560,21 +1560,21 @@ func requiredComputeLibrary(w *walker, n *walk.Node, v *compute.Library) {
 	if x := v.Cran; x != nil {
 		c := n.Child("cran")
 		requiredComputeRCranLibrary(w, &c, x)
-	} else if n.Written("cran") || n.IsRef("cran") {
+	} else if forced(v.ForceSendFields, "Cran") || n.IsRef("cran") {
 		c := n.Child("cran")
 		requiredComputeRCranLibrary(w, &c, nil)
 	}
 	if x := v.Maven; x != nil {
 		c := n.Child("maven")
 		requiredComputeMavenLibrary(w, &c, x)
-	} else if n.Written("maven") || n.IsRef("maven") {
+	} else if forced(v.ForceSendFields, "Maven") || n.IsRef("maven") {
 		c := n.Child("maven")
 		requiredComputeMavenLibrary(w, &c, nil)
 	}
 	if x := v.Pypi; x != nil {
 		c := n.Child("pypi")
 		requiredComputePythonPyPiLibrary(w, &c, x)
-	} else if n.Written("pypi") || n.IsRef("pypi") {
+	} else if forced(v.ForceSendFields, "Pypi") || n.IsRef("pypi") {
 		c := n.Child("pypi")
 		requiredComputePythonPyPiLibrary(w, &c, nil)
 	}
@@ -1597,21 +1597,21 @@ func requiredComputeClusterLogConf(w *walker, n *walk.Node, v *compute.ClusterLo
 	if x := v.Dbfs; x != nil {
 		c := n.Child("dbfs")
 		requiredComputeDbfsStorageInfo(w, &c, x)
-	} else if n.Written("dbfs") || n.IsRef("dbfs") {
+	} else if n.IsRef("dbfs") {
 		c := n.Child("dbfs")
 		requiredComputeDbfsStorageInfo(w, &c, nil)
 	}
 	if x := v.S3; x != nil {
 		c := n.Child("s3")
 		requiredComputeS3StorageInfo(w, &c, x)
-	} else if n.Written("s3") || n.IsRef("s3") {
+	} else if n.IsRef("s3") {
 		c := n.Child("s3")
 		requiredComputeS3StorageInfo(w, &c, nil)
 	}
 	if x := v.Volumes; x != nil {
 		c := n.Child("volumes")
 		requiredComputeVolumesStorageInfo(w, &c, x)
-	} else if n.Written("volumes") || n.IsRef("volumes") {
+	} else if n.IsRef("volumes") {
 		c := n.Child("volumes")
 		requiredComputeVolumesStorageInfo(w, &c, nil)
 	}
@@ -1624,49 +1624,49 @@ func requiredComputeInitScriptInfo(w *walker, n *walk.Node, v *compute.InitScrip
 	if x := v.Abfss; x != nil {
 		c := n.Child("abfss")
 		requiredComputeAdlsgen2Info(w, &c, x)
-	} else if n.Written("abfss") || n.IsRef("abfss") {
+	} else if n.IsRef("abfss") {
 		c := n.Child("abfss")
 		requiredComputeAdlsgen2Info(w, &c, nil)
 	}
 	if x := v.Dbfs; x != nil {
 		c := n.Child("dbfs")
 		requiredComputeDbfsStorageInfo(w, &c, x)
-	} else if n.Written("dbfs") || n.IsRef("dbfs") {
+	} else if n.IsRef("dbfs") {
 		c := n.Child("dbfs")
 		requiredComputeDbfsStorageInfo(w, &c, nil)
 	}
 	if x := v.File; x != nil {
 		c := n.Child("file")
 		requiredComputeLocalFileInfo(w, &c, x)
-	} else if n.Written("file") || n.IsRef("file") {
+	} else if n.IsRef("file") {
 		c := n.Child("file")
 		requiredComputeLocalFileInfo(w, &c, nil)
 	}
 	if x := v.Gcs; x != nil {
 		c := n.Child("gcs")
 		requiredComputeGcsStorageInfo(w, &c, x)
-	} else if n.Written("gcs") || n.IsRef("gcs") {
+	} else if n.IsRef("gcs") {
 		c := n.Child("gcs")
 		requiredComputeGcsStorageInfo(w, &c, nil)
 	}
 	if x := v.S3; x != nil {
 		c := n.Child("s3")
 		requiredComputeS3StorageInfo(w, &c, x)
-	} else if n.Written("s3") || n.IsRef("s3") {
+	} else if n.IsRef("s3") {
 		c := n.Child("s3")
 		requiredComputeS3StorageInfo(w, &c, nil)
 	}
 	if x := v.Volumes; x != nil {
 		c := n.Child("volumes")
 		requiredComputeVolumesStorageInfo(w, &c, x)
-	} else if n.Written("volumes") || n.IsRef("volumes") {
+	} else if n.IsRef("volumes") {
 		c := n.Child("volumes")
 		requiredComputeVolumesStorageInfo(w, &c, nil)
 	}
 	if x := v.Workspace; x != nil {
 		c := n.Child("workspace")
 		requiredComputeWorkspaceStorageInfo(w, &c, x)
-	} else if n.Written("workspace") || n.IsRef("workspace") {
+	} else if n.IsRef("workspace") {
 		c := n.Child("workspace")
 		requiredComputeWorkspaceStorageInfo(w, &c, nil)
 	}
@@ -1709,7 +1709,7 @@ func requiredMlExperimentTraceLocation(w *walker, n *walk.Node, v *ml.Experiment
 	if x := v.UcTraceLocation; x != nil {
 		c := n.Child("uc_trace_location")
 		requiredMlUcTraceLocation(w, &c, x)
-	} else if n.Written("uc_trace_location") || n.IsRef("uc_trace_location") {
+	} else if n.IsRef("uc_trace_location") {
 		c := n.Child("uc_trace_location")
 		requiredMlUcTraceLocation(w, &c, nil)
 	}
@@ -1742,7 +1742,7 @@ func requiredJobsContinuous(w *walker, n *walk.Node, v *jobs.Continuous) {
 	if x := v.MaintenanceWindow; x != nil {
 		c := n.Child("maintenance_window")
 		requiredJobsMaintenanceWindow(w, &c, x)
-	} else if n.Written("maintenance_window") || n.IsRef("maintenance_window") {
+	} else if n.IsRef("maintenance_window") {
 		c := n.Child("maintenance_window")
 		requiredJobsMaintenanceWindow(w, &c, nil)
 	}
@@ -1753,7 +1753,7 @@ func requiredJobsJobDeployment(w *walker, n *walk.Node, v *jobs.JobDeployment) {
 		w.missing(n, "kind")
 		return
 	}
-	if !(v.Kind != "" || n.Written("kind")) {
+	if !(v.Kind != "" || forced(v.ForceSendFields, "Kind") || n.Written("kind")) {
 		w.missing(n, "kind")
 	}
 }
@@ -1784,16 +1784,16 @@ func requiredJobsGitSource(w *walker, n *walk.Node, v *jobs.GitSource) {
 		w.missing(n, "git_url")
 		return
 	}
-	if !(v.GitProvider != "" || n.Written("git_provider")) {
+	if !(v.GitProvider != "" || forced(v.ForceSendFields, "GitProvider") || n.Written("git_provider")) {
 		w.missing(n, "git_provider")
 	}
-	if !(v.GitUrl != "" || n.Written("git_url")) {
+	if !(v.GitUrl != "" || forced(v.ForceSendFields, "GitUrl") || n.Written("git_url")) {
 		w.missing(n, "git_url")
 	}
 	if x := v.JobSource; x != nil {
 		c := n.Child("job_source")
 		requiredJobsJobSource(w, &c, x)
-	} else if n.Written("job_source") || n.IsRef("job_source") {
+	} else if forced(v.ForceSendFields, "JobSource") || n.IsRef("job_source") {
 		c := n.Child("job_source")
 		requiredJobsJobSource(w, &c, nil)
 	}
@@ -1817,13 +1817,13 @@ func requiredJobsJobCluster(w *walker, n *walk.Node, v *jobs.JobCluster) {
 		w.missing(n, "job_cluster_key")
 		return
 	}
-	if !(v.JobClusterKey != "" || n.Written("job_cluster_key")) {
+	if !(v.JobClusterKey != "" || forced(v.ForceSendFields, "JobClusterKey") || n.Written("job_cluster_key")) {
 		w.missing(n, "job_cluster_key")
 	}
 	if x := v.NewCluster; x != nil {
 		c := n.Child("new_cluster")
 		requiredComputeClusterSpec(w, &c, x)
-	} else if n.Written("new_cluster") || n.IsRef("new_cluster") {
+	} else if forced(v.ForceSendFields, "NewCluster") || n.IsRef("new_cluster") {
 		c := n.Child("new_cluster")
 		requiredComputeClusterSpec(w, &c, nil)
 	}
@@ -1868,7 +1868,7 @@ func requiredJobsCronSchedule(w *walker, n *walk.Node, v *jobs.CronSchedule) {
 	if x := v.SqlCondition; x != nil {
 		c := n.Child("sql_condition")
 		requiredJobsSqlConditionConfiguration(w, &c, x)
-	} else if n.Written("sql_condition") || n.IsRef("sql_condition") {
+	} else if n.IsRef("sql_condition") {
 		c := n.Child("sql_condition")
 		requiredJobsSqlConditionConfiguration(w, &c, nil)
 	}
@@ -1879,34 +1879,34 @@ func requiredJobsTask(w *walker, n *walk.Node, v *jobs.Task) {
 		w.missing(n, "task_key")
 		return
 	}
-	if !(v.TaskKey != "" || n.Written("task_key")) {
+	if !(v.TaskKey != "" || forced(v.ForceSendFields, "TaskKey") || n.Written("task_key")) {
 		w.missing(n, "task_key")
 	}
 	if x := v.AiRuntimeTask; x != nil {
 		c := n.Child("ai_runtime_task")
 		requiredJobsAiRuntimeTask(w, &c, x)
-	} else if n.Written("ai_runtime_task") || n.IsRef("ai_runtime_task") {
+	} else if forced(v.ForceSendFields, "AiRuntimeTask") || n.IsRef("ai_runtime_task") {
 		c := n.Child("ai_runtime_task")
 		requiredJobsAiRuntimeTask(w, &c, nil)
 	}
 	if x := v.CleanRoomsNotebookTask; x != nil {
 		c := n.Child("clean_rooms_notebook_task")
 		requiredJobsCleanRoomsNotebookTask(w, &c, x)
-	} else if n.Written("clean_rooms_notebook_task") || n.IsRef("clean_rooms_notebook_task") {
+	} else if forced(v.ForceSendFields, "CleanRoomsNotebookTask") || n.IsRef("clean_rooms_notebook_task") {
 		c := n.Child("clean_rooms_notebook_task")
 		requiredJobsCleanRoomsNotebookTask(w, &c, nil)
 	}
 	if x := v.ConditionTask; x != nil {
 		c := n.Child("condition_task")
 		requiredJobsConditionTask(w, &c, x)
-	} else if n.Written("condition_task") || n.IsRef("condition_task") {
+	} else if forced(v.ForceSendFields, "ConditionTask") || n.IsRef("condition_task") {
 		c := n.Child("condition_task")
 		requiredJobsConditionTask(w, &c, nil)
 	}
 	if x := v.DbtTask; x != nil {
 		c := n.Child("dbt_task")
 		requiredJobsDbtTask(w, &c, x)
-	} else if n.Written("dbt_task") || n.IsRef("dbt_task") {
+	} else if forced(v.ForceSendFields, "DbtTask") || n.IsRef("dbt_task") {
 		c := n.Child("dbt_task")
 		requiredJobsDbtTask(w, &c, nil)
 	}
@@ -1920,21 +1920,21 @@ func requiredJobsTask(w *walker, n *walk.Node, v *jobs.Task) {
 	if x := v.ForEachTask; x != nil {
 		c := n.Child("for_each_task")
 		requiredJobsForEachTask(w, &c, x)
-	} else if n.Written("for_each_task") || n.IsRef("for_each_task") {
+	} else if forced(v.ForceSendFields, "ForEachTask") || n.IsRef("for_each_task") {
 		c := n.Child("for_each_task")
 		requiredJobsForEachTask(w, &c, nil)
 	}
 	if x := v.GenAiComputeTask; x != nil {
 		c := n.Child("gen_ai_compute_task")
 		requiredJobsGenAiComputeTask(w, &c, x)
-	} else if n.Written("gen_ai_compute_task") || n.IsRef("gen_ai_compute_task") {
+	} else if forced(v.ForceSendFields, "GenAiComputeTask") || n.IsRef("gen_ai_compute_task") {
 		c := n.Child("gen_ai_compute_task")
 		requiredJobsGenAiComputeTask(w, &c, nil)
 	}
 	if x := v.Health; x != nil {
 		c := n.Child("health")
 		requiredJobsJobsHealthRules(w, &c, x)
-	} else if n.Written("health") || n.IsRef("health") {
+	} else if forced(v.ForceSendFields, "Health") || n.IsRef("health") {
 		c := n.Child("health")
 		requiredJobsJobsHealthRules(w, &c, nil)
 	}
@@ -1948,56 +1948,56 @@ func requiredJobsTask(w *walker, n *walk.Node, v *jobs.Task) {
 	if x := v.NewCluster; x != nil {
 		c := n.Child("new_cluster")
 		requiredComputeClusterSpec(w, &c, x)
-	} else if n.Written("new_cluster") || n.IsRef("new_cluster") {
+	} else if forced(v.ForceSendFields, "NewCluster") || n.IsRef("new_cluster") {
 		c := n.Child("new_cluster")
 		requiredComputeClusterSpec(w, &c, nil)
 	}
 	if x := v.NotebookTask; x != nil {
 		c := n.Child("notebook_task")
 		requiredJobsNotebookTask(w, &c, x)
-	} else if n.Written("notebook_task") || n.IsRef("notebook_task") {
+	} else if forced(v.ForceSendFields, "NotebookTask") || n.IsRef("notebook_task") {
 		c := n.Child("notebook_task")
 		requiredJobsNotebookTask(w, &c, nil)
 	}
 	if x := v.PipelineTask; x != nil {
 		c := n.Child("pipeline_task")
 		requiredJobsPipelineTask(w, &c, x)
-	} else if n.Written("pipeline_task") || n.IsRef("pipeline_task") {
+	} else if forced(v.ForceSendFields, "PipelineTask") || n.IsRef("pipeline_task") {
 		c := n.Child("pipeline_task")
 		requiredJobsPipelineTask(w, &c, nil)
 	}
 	if x := v.PythonWheelTask; x != nil {
 		c := n.Child("python_wheel_task")
 		requiredJobsPythonWheelTask(w, &c, x)
-	} else if n.Written("python_wheel_task") || n.IsRef("python_wheel_task") {
+	} else if forced(v.ForceSendFields, "PythonWheelTask") || n.IsRef("python_wheel_task") {
 		c := n.Child("python_wheel_task")
 		requiredJobsPythonWheelTask(w, &c, nil)
 	}
 	if x := v.RunJobTask; x != nil {
 		c := n.Child("run_job_task")
 		requiredJobsRunJobTask(w, &c, x)
-	} else if n.Written("run_job_task") || n.IsRef("run_job_task") {
+	} else if forced(v.ForceSendFields, "RunJobTask") || n.IsRef("run_job_task") {
 		c := n.Child("run_job_task")
 		requiredJobsRunJobTask(w, &c, nil)
 	}
 	if x := v.SparkPythonTask; x != nil {
 		c := n.Child("spark_python_task")
 		requiredJobsSparkPythonTask(w, &c, x)
-	} else if n.Written("spark_python_task") || n.IsRef("spark_python_task") {
+	} else if forced(v.ForceSendFields, "SparkPythonTask") || n.IsRef("spark_python_task") {
 		c := n.Child("spark_python_task")
 		requiredJobsSparkPythonTask(w, &c, nil)
 	}
 	if x := v.SqlTask; x != nil {
 		c := n.Child("sql_task")
 		requiredJobsSqlTask(w, &c, x)
-	} else if n.Written("sql_task") || n.IsRef("sql_task") {
+	} else if forced(v.ForceSendFields, "SqlTask") || n.IsRef("sql_task") {
 		c := n.Child("sql_task")
 		requiredJobsSqlTask(w, &c, nil)
 	}
 	if x := v.WebhookNotifications; x != nil {
 		c := n.Child("webhook_notifications")
 		requiredJobsWebhookNotifications(w, &c, x)
-	} else if n.Written("webhook_notifications") || n.IsRef("webhook_notifications") {
+	} else if forced(v.ForceSendFields, "WebhookNotifications") || n.IsRef("webhook_notifications") {
 		c := n.Child("webhook_notifications")
 		requiredJobsWebhookNotifications(w, &c, nil)
 	}
@@ -2010,35 +2010,35 @@ func requiredJobsTriggerSettings(w *walker, n *walk.Node, v *jobs.TriggerSetting
 	if x := v.FileArrival; x != nil {
 		c := n.Child("file_arrival")
 		requiredJobsFileArrivalTriggerConfiguration(w, &c, x)
-	} else if n.Written("file_arrival") || n.IsRef("file_arrival") {
+	} else if n.IsRef("file_arrival") {
 		c := n.Child("file_arrival")
 		requiredJobsFileArrivalTriggerConfiguration(w, &c, nil)
 	}
 	if x := v.Model; x != nil {
 		c := n.Child("model")
 		requiredJobsModelTriggerConfiguration(w, &c, x)
-	} else if n.Written("model") || n.IsRef("model") {
+	} else if n.IsRef("model") {
 		c := n.Child("model")
 		requiredJobsModelTriggerConfiguration(w, &c, nil)
 	}
 	if x := v.Periodic; x != nil {
 		c := n.Child("periodic")
 		requiredJobsPeriodicTriggerConfiguration(w, &c, x)
-	} else if n.Written("periodic") || n.IsRef("periodic") {
+	} else if n.IsRef("periodic") {
 		c := n.Child("periodic")
 		requiredJobsPeriodicTriggerConfiguration(w, &c, nil)
 	}
 	if x := v.SqlCondition; x != nil {
 		c := n.Child("sql_condition")
 		requiredJobsSqlConditionConfiguration(w, &c, x)
-	} else if n.Written("sql_condition") || n.IsRef("sql_condition") {
+	} else if n.IsRef("sql_condition") {
 		c := n.Child("sql_condition")
 		requiredJobsSqlConditionConfiguration(w, &c, nil)
 	}
 	if x := v.TableUpdate; x != nil {
 		c := n.Child("table_update")
 		requiredJobsTableUpdateTriggerConfiguration(w, &c, x)
-	} else if n.Written("table_update") || n.IsRef("table_update") {
+	} else if n.IsRef("table_update") {
 		c := n.Child("table_update")
 		requiredJobsTableUpdateTriggerConfiguration(w, &c, nil)
 	}
@@ -2051,49 +2051,49 @@ func requiredJobsTriggerConfiguration(w *walker, n *walk.Node, v *jobs.TriggerCo
 	if x := v.Continuous; x != nil {
 		c := n.Child("continuous")
 		requiredJobsContinuousTriggerConfiguration(w, &c, x)
-	} else if n.Written("continuous") || n.IsRef("continuous") {
+	} else if n.IsRef("continuous") {
 		c := n.Child("continuous")
 		requiredJobsContinuousTriggerConfiguration(w, &c, nil)
 	}
 	if x := v.FileArrival; x != nil {
 		c := n.Child("file_arrival")
 		requiredJobsFileArrivalTriggerConfiguration(w, &c, x)
-	} else if n.Written("file_arrival") || n.IsRef("file_arrival") {
+	} else if n.IsRef("file_arrival") {
 		c := n.Child("file_arrival")
 		requiredJobsFileArrivalTriggerConfiguration(w, &c, nil)
 	}
 	if x := v.Model; x != nil {
 		c := n.Child("model")
 		requiredJobsModelTriggerConfiguration(w, &c, x)
-	} else if n.Written("model") || n.IsRef("model") {
+	} else if n.IsRef("model") {
 		c := n.Child("model")
 		requiredJobsModelTriggerConfiguration(w, &c, nil)
 	}
 	if x := v.Periodic; x != nil {
 		c := n.Child("periodic")
 		requiredJobsPeriodicTriggerConfiguration(w, &c, x)
-	} else if n.Written("periodic") || n.IsRef("periodic") {
+	} else if n.IsRef("periodic") {
 		c := n.Child("periodic")
 		requiredJobsPeriodicTriggerConfiguration(w, &c, nil)
 	}
 	if x := v.Schedule; x != nil {
 		c := n.Child("schedule")
 		requiredJobsCronTriggerConfiguration(w, &c, x)
-	} else if n.Written("schedule") || n.IsRef("schedule") {
+	} else if n.IsRef("schedule") {
 		c := n.Child("schedule")
 		requiredJobsCronTriggerConfiguration(w, &c, nil)
 	}
 	if x := v.SqlCondition; x != nil {
 		c := n.Child("sql_condition")
 		requiredJobsSqlConditionConfiguration(w, &c, x)
-	} else if n.Written("sql_condition") || n.IsRef("sql_condition") {
+	} else if n.IsRef("sql_condition") {
 		c := n.Child("sql_condition")
 		requiredJobsSqlConditionConfiguration(w, &c, nil)
 	}
 	if x := v.TableUpdate; x != nil {
 		c := n.Child("table_update")
 		requiredJobsTableUpdateTriggerConfiguration(w, &c, x)
-	} else if n.Written("table_update") || n.IsRef("table_update") {
+	} else if n.IsRef("table_update") {
 		c := n.Child("table_update")
 		requiredJobsTableUpdateTriggerConfiguration(w, &c, nil)
 	}
@@ -2168,7 +2168,7 @@ func requiredCatalogMcpServiceConfig(w *walker, n *walk.Node, v *catalog.McpServ
 	if x := v.SourceConnection; x != nil {
 		c := n.Child("source_connection")
 		requiredCatalogMcpServiceConfigSourceConnection(w, &c, x)
-	} else if n.Written("source_connection") || n.IsRef("source_connection") {
+	} else if n.IsRef("source_connection") {
 		c := n.Child("source_connection")
 		requiredCatalogMcpServiceConfigSourceConnection(w, &c, nil)
 	}
@@ -2181,63 +2181,63 @@ func requiredCatalogModelProviderServiceConfig(w *walker, n *walk.Node, v *catal
 	if x := v.AmazonBedrock; x != nil {
 		c := n.Child("amazon_bedrock")
 		requiredCatalogModelProviderServiceConfigAmazonBedrockProviderConfig(w, &c, x)
-	} else if n.Written("amazon_bedrock") || n.IsRef("amazon_bedrock") {
+	} else if forced(v.ForceSendFields, "AmazonBedrock") || n.IsRef("amazon_bedrock") {
 		c := n.Child("amazon_bedrock")
 		requiredCatalogModelProviderServiceConfigAmazonBedrockProviderConfig(w, &c, nil)
 	}
 	if x := v.Anthropic; x != nil {
 		c := n.Child("anthropic")
 		requiredCatalogModelProviderServiceConfigAnthropicProviderConfig(w, &c, x)
-	} else if n.Written("anthropic") || n.IsRef("anthropic") {
+	} else if forced(v.ForceSendFields, "Anthropic") || n.IsRef("anthropic") {
 		c := n.Child("anthropic")
 		requiredCatalogModelProviderServiceConfigAnthropicProviderConfig(w, &c, nil)
 	}
 	if x := v.AzureOpenai; x != nil {
 		c := n.Child("azure_openai")
 		requiredCatalogModelProviderServiceConfigAzureOpenAiProviderConfig(w, &c, x)
-	} else if n.Written("azure_openai") || n.IsRef("azure_openai") {
+	} else if forced(v.ForceSendFields, "AzureOpenai") || n.IsRef("azure_openai") {
 		c := n.Child("azure_openai")
 		requiredCatalogModelProviderServiceConfigAzureOpenAiProviderConfig(w, &c, nil)
 	}
 	if x := v.BedrockMantle; x != nil {
 		c := n.Child("bedrock_mantle")
 		requiredCatalogModelProviderServiceConfigAmazonBedrockProviderConfig(w, &c, x)
-	} else if n.Written("bedrock_mantle") || n.IsRef("bedrock_mantle") {
+	} else if forced(v.ForceSendFields, "BedrockMantle") || n.IsRef("bedrock_mantle") {
 		c := n.Child("bedrock_mantle")
 		requiredCatalogModelProviderServiceConfigAmazonBedrockProviderConfig(w, &c, nil)
 	}
 	if x := v.Custom; x != nil {
 		c := n.Child("custom")
 		requiredCatalogModelProviderServiceConfigCustomProviderConfig(w, &c, x)
-	} else if n.Written("custom") || n.IsRef("custom") {
+	} else if forced(v.ForceSendFields, "Custom") || n.IsRef("custom") {
 		c := n.Child("custom")
 		requiredCatalogModelProviderServiceConfigCustomProviderConfig(w, &c, nil)
 	}
 	if x := v.GeminiEnterprise; x != nil {
 		c := n.Child("gemini_enterprise")
 		requiredCatalogModelProviderServiceConfigGeminiEnterpriseProviderConfig(w, &c, x)
-	} else if n.Written("gemini_enterprise") || n.IsRef("gemini_enterprise") {
+	} else if forced(v.ForceSendFields, "GeminiEnterprise") || n.IsRef("gemini_enterprise") {
 		c := n.Child("gemini_enterprise")
 		requiredCatalogModelProviderServiceConfigGeminiEnterpriseProviderConfig(w, &c, nil)
 	}
 	if x := v.InferenceTable; x != nil {
 		c := n.Child("inference_table")
 		requiredCatalogInferenceTableConfig(w, &c, x)
-	} else if n.Written("inference_table") || n.IsRef("inference_table") {
+	} else if forced(v.ForceSendFields, "InferenceTable") || n.IsRef("inference_table") {
 		c := n.Child("inference_table")
 		requiredCatalogInferenceTableConfig(w, &c, nil)
 	}
 	if x := v.MicrosoftFoundry; x != nil {
 		c := n.Child("microsoft_foundry")
 		requiredCatalogModelProviderServiceConfigMicrosoftFoundryProviderConfig(w, &c, x)
-	} else if n.Written("microsoft_foundry") || n.IsRef("microsoft_foundry") {
+	} else if forced(v.ForceSendFields, "MicrosoftFoundry") || n.IsRef("microsoft_foundry") {
 		c := n.Child("microsoft_foundry")
 		requiredCatalogModelProviderServiceConfigMicrosoftFoundryProviderConfig(w, &c, nil)
 	}
 	if x := v.Openai; x != nil {
 		c := n.Child("openai")
 		requiredCatalogModelProviderServiceConfigOpenAiProviderConfig(w, &c, x)
-	} else if n.Written("openai") || n.IsRef("openai") {
+	} else if forced(v.ForceSendFields, "Openai") || n.IsRef("openai") {
 		c := n.Child("openai")
 		requiredCatalogModelProviderServiceConfigOpenAiProviderConfig(w, &c, nil)
 	}
@@ -2264,7 +2264,7 @@ func requiredCatalogModelServiceConfig(w *walker, n *walk.Node, v *catalog.Model
 	if x := v.InferenceTable; x != nil {
 		c := n.Child("inference_table")
 		requiredCatalogInferenceTableConfig(w, &c, x)
-	} else if n.Written("inference_table") || n.IsRef("inference_table") {
+	} else if n.IsRef("inference_table") {
 		c := n.Child("inference_table")
 		requiredCatalogInferenceTableConfig(w, &c, nil)
 	}
@@ -2278,7 +2278,7 @@ func requiredCatalogModelServiceConfig(w *walker, n *walk.Node, v *catalog.Model
 	if x := v.Routing; x != nil {
 		c := n.Child("routing")
 		requiredCatalogModelServiceConfigRoutingConfig(w, &c, x)
-	} else if n.Written("routing") || n.IsRef("routing") {
+	} else if n.IsRef("routing") {
 		c := n.Child("routing")
 		requiredCatalogModelServiceConfigRoutingConfig(w, &c, nil)
 	}
@@ -2291,7 +2291,7 @@ func requiredServingAiGatewayConfig(w *walker, n *walk.Node, v *serving.AiGatewa
 	if x := v.FallbackConfig; x != nil {
 		c := n.Child("fallback_config")
 		requiredServingFallbackConfig(w, &c, x)
-	} else if n.Written("fallback_config") || n.IsRef("fallback_config") {
+	} else if n.IsRef("fallback_config") {
 		c := n.Child("fallback_config")
 		requiredServingFallbackConfig(w, &c, nil)
 	}
@@ -2325,7 +2325,7 @@ func requiredServingEndpointCoreConfigInput(w *walker, n *walk.Node, v *serving.
 	if x := v.TrafficConfig; x != nil {
 		c := n.Child("traffic_config")
 		requiredServingTrafficConfig(w, &c, x)
-	} else if n.Written("traffic_config") || n.IsRef("traffic_config") {
+	} else if n.IsRef("traffic_config") {
 		c := n.Child("traffic_config")
 		requiredServingTrafficConfig(w, &c, nil)
 	}
@@ -2360,7 +2360,7 @@ func requiredServingEndpointTag(w *walker, n *walk.Node, v *serving.EndpointTag)
 		w.missing(n, "key")
 		return
 	}
-	if !(v.Key != "" || n.Written("key")) {
+	if !(v.Key != "" || forced(v.ForceSendFields, "Key") || n.Written("key")) {
 		w.missing(n, "key")
 	}
 }
@@ -2382,14 +2382,14 @@ func requiredPipelinesPipelineCluster(w *walker, n *walk.Node, v *pipelines.Pipe
 	if x := v.Autoscale; x != nil {
 		c := n.Child("autoscale")
 		requiredPipelinesPipelineClusterAutoscale(w, &c, x)
-	} else if n.Written("autoscale") || n.IsRef("autoscale") {
+	} else if forced(v.ForceSendFields, "Autoscale") || n.IsRef("autoscale") {
 		c := n.Child("autoscale")
 		requiredPipelinesPipelineClusterAutoscale(w, &c, nil)
 	}
 	if x := v.ClusterLogConf; x != nil {
 		c := n.Child("cluster_log_conf")
 		requiredComputeClusterLogConf(w, &c, x)
-	} else if n.Written("cluster_log_conf") || n.IsRef("cluster_log_conf") {
+	} else if forced(v.ForceSendFields, "ClusterLogConf") || n.IsRef("cluster_log_conf") {
 		c := n.Child("cluster_log_conf")
 		requiredComputeClusterLogConf(w, &c, nil)
 	}
@@ -2407,7 +2407,7 @@ func requiredPipelinesPipelineDeployment(w *walker, n *walk.Node, v *pipelines.P
 		w.missing(n, "kind")
 		return
 	}
-	if !(v.Kind != "" || n.Written("kind")) {
+	if !(v.Kind != "" || forced(v.ForceSendFields, "Kind") || n.Written("kind")) {
 		w.missing(n, "kind")
 	}
 }
@@ -2419,13 +2419,13 @@ func requiredPipelinesIngestionGatewayPipelineDefinition(w *walker, n *walk.Node
 		w.missing(n, "gateway_storage_schema")
 		return
 	}
-	if !(v.ConnectionName != "" || n.Written("connection_name")) {
+	if !(v.ConnectionName != "" || forced(v.ForceSendFields, "ConnectionName") || n.Written("connection_name")) {
 		w.missing(n, "connection_name")
 	}
-	if !(v.GatewayStorageCatalog != "" || n.Written("gateway_storage_catalog")) {
+	if !(v.GatewayStorageCatalog != "" || forced(v.ForceSendFields, "GatewayStorageCatalog") || n.Written("gateway_storage_catalog")) {
 		w.missing(n, "gateway_storage_catalog")
 	}
-	if !(v.GatewayStorageSchema != "" || n.Written("gateway_storage_schema")) {
+	if !(v.GatewayStorageSchema != "" || forced(v.ForceSendFields, "GatewayStorageSchema") || n.Written("gateway_storage_schema")) {
 		w.missing(n, "gateway_storage_schema")
 	}
 }
@@ -2437,14 +2437,14 @@ func requiredPipelinesIngestionPipelineDefinition(w *walker, n *walk.Node, v *pi
 	if x := v.DataStagingOptions; x != nil {
 		c := n.Child("data_staging_options")
 		requiredPipelinesDataStagingOptions(w, &c, x)
-	} else if n.Written("data_staging_options") || n.IsRef("data_staging_options") {
+	} else if forced(v.ForceSendFields, "DataStagingOptions") || n.IsRef("data_staging_options") {
 		c := n.Child("data_staging_options")
 		requiredPipelinesDataStagingOptions(w, &c, nil)
 	}
 	if x := v.FullRefreshWindow; x != nil {
 		c := n.Child("full_refresh_window")
 		requiredPipelinesOperationTimeWindow(w, &c, x)
-	} else if n.Written("full_refresh_window") || n.IsRef("full_refresh_window") {
+	} else if forced(v.ForceSendFields, "FullRefreshWindow") || n.IsRef("full_refresh_window") {
 		c := n.Child("full_refresh_window")
 		requiredPipelinesOperationTimeWindow(w, &c, nil)
 	}
@@ -2458,7 +2458,7 @@ func requiredPipelinesIngestionPipelineDefinition(w *walker, n *walk.Node, v *pi
 	if x := v.TableConfiguration; x != nil {
 		c := n.Child("table_configuration")
 		requiredPipelinesTableSpecificConfig(w, &c, x)
-	} else if n.Written("table_configuration") || n.IsRef("table_configuration") {
+	} else if forced(v.ForceSendFields, "TableConfiguration") || n.IsRef("table_configuration") {
 		c := n.Child("table_configuration")
 		requiredPipelinesTableSpecificConfig(w, &c, nil)
 	}
@@ -2471,7 +2471,7 @@ func requiredPipelinesPipelineLibrary(w *walker, n *walk.Node, v *pipelines.Pipe
 	if x := v.Maven; x != nil {
 		c := n.Child("maven")
 		requiredComputeMavenLibrary(w, &c, x)
-	} else if n.Written("maven") || n.IsRef("maven") {
+	} else if forced(v.ForceSendFields, "Maven") || n.IsRef("maven") {
 		c := n.Child("maven")
 		requiredComputeMavenLibrary(w, &c, nil)
 	}
@@ -2492,7 +2492,7 @@ func requiredPipelinesRestartWindow(w *walker, n *walk.Node, v *pipelines.Restar
 		w.missing(n, "start_hour")
 		return
 	}
-	if !(v.StartHour != 0 || n.Written("start_hour") || n.IsRef("start_hour")) {
+	if !(v.StartHour != 0 || forced(v.ForceSendFields, "StartHour") || n.Written("start_hour") || n.IsRef("start_hour")) {
 		w.missing(n, "start_hour")
 	}
 }
@@ -2503,10 +2503,10 @@ func requiredPostgresEndpointGroupSpec(w *walker, n *walk.Node, v *postgres.Endp
 		w.missing(n, "min")
 		return
 	}
-	if !(v.Max != 0 || n.Written("max") || n.IsRef("max")) {
+	if !(v.Max != 0 || forced(v.ForceSendFields, "Max") || n.Written("max") || n.IsRef("max")) {
 		w.missing(n, "max")
 	}
-	if !(v.Min != 0 || n.Written("min") || n.IsRef("min")) {
+	if !(v.Min != 0 || forced(v.ForceSendFields, "Min") || n.Written("min") || n.IsRef("min")) {
 		w.missing(n, "min")
 	}
 }
@@ -2522,14 +2522,14 @@ func requiredPostgresScheduleCadence(w *walker, n *walk.Node, v *postgres.Schedu
 	if x := v.MonthlySchedule; x != nil {
 		c := n.Child("monthly_schedule")
 		requiredPostgresMonthlySchedule(w, &c, x)
-	} else if n.Written("monthly_schedule") || n.IsRef("monthly_schedule") {
+	} else if n.IsRef("monthly_schedule") {
 		c := n.Child("monthly_schedule")
 		requiredPostgresMonthlySchedule(w, &c, nil)
 	}
 	if x := v.WeeklySchedule; x != nil {
 		c := n.Child("weekly_schedule")
 		requiredPostgresWeeklySchedule(w, &c, x)
-	} else if n.Written("weekly_schedule") || n.IsRef("weekly_schedule") {
+	} else if n.IsRef("weekly_schedule") {
 		c := n.Child("weekly_schedule")
 		requiredPostgresWeeklySchedule(w, &c, nil)
 	}
@@ -2541,10 +2541,10 @@ func requiredPostgresSyncedTableSyncedTableSpecExtraColumn(w *walker, n *walk.No
 		w.missing(n, "column_type")
 		return
 	}
-	if !(v.ColumnName != "" || n.Written("column_name")) {
+	if !(v.ColumnName != "" || forced(v.ForceSendFields, "ColumnName") || n.Written("column_name")) {
 		w.missing(n, "column_name")
 	}
-	if !(v.ColumnType != "" || n.Written("column_type")) {
+	if !(v.ColumnType != "" || forced(v.ForceSendFields, "ColumnType") || n.Written("column_type")) {
 		w.missing(n, "column_type")
 	}
 }
@@ -2555,10 +2555,10 @@ func requiredPostgresSyncedTableSyncedTableSpecTypeOverride(w *walker, n *walk.N
 		w.missing(n, "pg_type")
 		return
 	}
-	if !(v.ColumnName != "" || n.Written("column_name")) {
+	if !(v.ColumnName != "" || forced(v.ForceSendFields, "ColumnName") || n.Written("column_name")) {
 		w.missing(n, "column_name")
 	}
-	if !(v.PgType != "" || n.Written("pg_type")) {
+	if !(v.PgType != "" || forced(v.ForceSendFields, "PgType") || n.Written("pg_type")) {
 		w.missing(n, "pg_type")
 	}
 }
@@ -2575,7 +2575,7 @@ func requiredCatalogMonitorMetric(w *walker, n *walk.Node, v *catalog.MonitorMet
 	if !(v.Definition != "" || n.Written("definition")) {
 		w.missing(n, "definition")
 	}
-	if !(v.InputColumns != nil || n.Written("input_columns") || n.IsRef("input_columns")) {
+	if !(v.InputColumns != nil || n.IsRef("input_columns")) {
 		w.missing(n, "input_columns")
 	}
 	if !(v.Name != "" || n.Written("name")) {
@@ -2598,19 +2598,19 @@ func requiredCatalogMonitorInferenceLog(w *walker, n *walk.Node, v *catalog.Moni
 		w.missing(n, "timestamp_col")
 		return
 	}
-	if !(v.Granularities != nil || n.Written("granularities") || n.IsRef("granularities")) {
+	if !(v.Granularities != nil || n.IsRef("granularities")) {
 		w.missing(n, "granularities")
 	}
-	if !(v.ModelIdCol != "" || n.Written("model_id_col")) {
+	if !(v.ModelIdCol != "" || forced(v.ForceSendFields, "ModelIdCol") || n.Written("model_id_col")) {
 		w.missing(n, "model_id_col")
 	}
-	if !(v.PredictionCol != "" || n.Written("prediction_col")) {
+	if !(v.PredictionCol != "" || forced(v.ForceSendFields, "PredictionCol") || n.Written("prediction_col")) {
 		w.missing(n, "prediction_col")
 	}
-	if !(v.ProblemType != "" || n.Written("problem_type")) {
+	if !(v.ProblemType != "" || forced(v.ForceSendFields, "ProblemType") || n.Written("problem_type")) {
 		w.missing(n, "problem_type")
 	}
-	if !(v.TimestampCol != "" || n.Written("timestamp_col")) {
+	if !(v.TimestampCol != "" || forced(v.ForceSendFields, "TimestampCol") || n.Written("timestamp_col")) {
 		w.missing(n, "timestamp_col")
 	}
 }
@@ -2635,7 +2635,7 @@ func requiredCatalogMonitorTimeSeries(w *walker, n *walk.Node, v *catalog.Monito
 		w.missing(n, "timestamp_col")
 		return
 	}
-	if !(v.Granularities != nil || n.Written("granularities") || n.IsRef("granularities")) {
+	if !(v.Granularities != nil || n.IsRef("granularities")) {
 		w.missing(n, "granularities")
 	}
 	if !(v.TimestampCol != "" || n.Written("timestamp_col")) {
@@ -2705,7 +2705,7 @@ func requiredSqlAlertV2OperandColumn(w *walker, n *walk.Node, v *sql.AlertV2Oper
 		w.missing(n, "name")
 		return
 	}
-	if !(v.Name != "" || n.Written("name")) {
+	if !(v.Name != "" || forced(v.ForceSendFields, "Name") || n.Written("name")) {
 		w.missing(n, "name")
 	}
 }
@@ -2717,7 +2717,7 @@ func requiredSqlAlertV2Operand(w *walker, n *walk.Node, v *sql.AlertV2Operand) {
 	if x := v.Column; x != nil {
 		c := n.Child("column")
 		requiredSqlAlertV2OperandColumn2(w, &c, x)
-	} else if n.Written("column") || n.IsRef("column") {
+	} else if n.IsRef("column") {
 		c := n.Child("column")
 		requiredSqlAlertV2OperandColumn2(w, &c, nil)
 	}
@@ -2850,13 +2850,13 @@ func requiredAppsAppResourceUcSecurable(w *walker, n *walk.Node, v *apps.AppReso
 		w.missing(n, "securable_type")
 		return
 	}
-	if !(v.Permission != "" || n.Written("permission")) {
+	if !(v.Permission != "" || forced(v.ForceSendFields, "Permission") || n.Written("permission")) {
 		w.missing(n, "permission")
 	}
-	if !(v.SecurableFullName != "" || n.Written("securable_full_name")) {
+	if !(v.SecurableFullName != "" || forced(v.ForceSendFields, "SecurableFullName") || n.Written("securable_full_name")) {
 		w.missing(n, "securable_full_name")
 	}
-	if !(v.SecurableType != "" || n.Written("securable_type")) {
+	if !(v.SecurableType != "" || forced(v.ForceSendFields, "SecurableType") || n.Written("securable_type")) {
 		w.missing(n, "securable_type")
 	}
 }
@@ -2884,7 +2884,7 @@ func requiredCatalogAzureEncryptionSettings(w *walker, n *walk.Node, v *catalog.
 		w.missing(n, "azure_tenant_id")
 		return
 	}
-	if !(v.AzureTenantId != "" || n.Written("azure_tenant_id")) {
+	if !(v.AzureTenantId != "" || forced(v.ForceSendFields, "AzureTenantId") || n.Written("azure_tenant_id")) {
 		w.missing(n, "azure_tenant_id")
 	}
 }
@@ -2894,7 +2894,7 @@ func requiredComputeRCranLibrary(w *walker, n *walk.Node, v *compute.RCranLibrar
 		w.missing(n, "package")
 		return
 	}
-	if !(v.Package != "" || n.Written("package")) {
+	if !(v.Package != "" || forced(v.ForceSendFields, "Package") || n.Written("package")) {
 		w.missing(n, "package")
 	}
 }
@@ -2904,7 +2904,7 @@ func requiredComputeMavenLibrary(w *walker, n *walk.Node, v *compute.MavenLibrar
 		w.missing(n, "coordinates")
 		return
 	}
-	if !(v.Coordinates != "" || n.Written("coordinates")) {
+	if !(v.Coordinates != "" || forced(v.ForceSendFields, "Coordinates") || n.Written("coordinates")) {
 		w.missing(n, "coordinates")
 	}
 }
@@ -2914,7 +2914,7 @@ func requiredComputePythonPyPiLibrary(w *walker, n *walk.Node, v *compute.Python
 		w.missing(n, "package")
 		return
 	}
-	if !(v.Package != "" || n.Written("package")) {
+	if !(v.Package != "" || forced(v.ForceSendFields, "Package") || n.Written("package")) {
 		w.missing(n, "package")
 	}
 }
@@ -2934,7 +2934,7 @@ func requiredComputeS3StorageInfo(w *walker, n *walk.Node, v *compute.S3StorageI
 		w.missing(n, "destination")
 		return
 	}
-	if !(v.Destination != "" || n.Written("destination")) {
+	if !(v.Destination != "" || forced(v.ForceSendFields, "Destination") || n.Written("destination")) {
 		w.missing(n, "destination")
 	}
 }
@@ -2995,10 +2995,10 @@ func requiredMlUcTraceLocation(w *walker, n *walk.Node, v *ml.UcTraceLocation) {
 		w.missing(n, "schema")
 		return
 	}
-	if !(v.Catalog != "" || n.Written("catalog")) {
+	if !(v.Catalog != "" || forced(v.ForceSendFields, "Catalog") || n.Written("catalog")) {
 		w.missing(n, "catalog")
 	}
-	if !(v.Schema != "" || n.Written("schema")) {
+	if !(v.Schema != "" || forced(v.ForceSendFields, "Schema") || n.Written("schema")) {
 		w.missing(n, "schema")
 	}
 }
@@ -3060,7 +3060,7 @@ func requiredComputeClusterSpec(w *walker, n *walk.Node, v *compute.ClusterSpec)
 	if x := v.ClusterLogConf; x != nil {
 		c := n.Child("cluster_log_conf")
 		requiredComputeClusterLogConf(w, &c, x)
-	} else if n.Written("cluster_log_conf") || n.IsRef("cluster_log_conf") {
+	} else if forced(v.ForceSendFields, "ClusterLogConf") || n.IsRef("cluster_log_conf") {
 		c := n.Child("cluster_log_conf")
 		requiredComputeClusterLogConf(w, &c, nil)
 	}
@@ -3074,7 +3074,7 @@ func requiredComputeClusterSpec(w *walker, n *walk.Node, v *compute.ClusterSpec)
 	if x := v.WorkloadType; x != nil {
 		c := n.Child("workload_type")
 		requiredComputeWorkloadType(w, &c, x)
-	} else if n.Written("workload_type") || n.IsRef("workload_type") {
+	} else if forced(v.ForceSendFields, "WorkloadType") || n.IsRef("workload_type") {
 		c := n.Child("workload_type")
 		requiredComputeWorkloadType(w, &c, nil)
 	}
@@ -3100,10 +3100,10 @@ func requiredJobsAiRuntimeTask(w *walker, n *walk.Node, v *jobs.AiRuntimeTask) {
 		w.missing(n, "experiment")
 		return
 	}
-	if !(v.Deployments != nil || n.Written("deployments") || n.IsRef("deployments")) {
+	if !(v.Deployments != nil || n.IsRef("deployments")) {
 		w.missing(n, "deployments")
 	}
-	if !(v.Experiment != "" || n.Written("experiment")) {
+	if !(v.Experiment != "" || forced(v.ForceSendFields, "Experiment") || n.Written("experiment")) {
 		w.missing(n, "experiment")
 	}
 	if len(v.Deployments) > 0 {
@@ -3121,10 +3121,10 @@ func requiredJobsCleanRoomsNotebookTask(w *walker, n *walk.Node, v *jobs.CleanRo
 		w.missing(n, "notebook_name")
 		return
 	}
-	if !(v.CleanRoomName != "" || n.Written("clean_room_name")) {
+	if !(v.CleanRoomName != "" || forced(v.ForceSendFields, "CleanRoomName") || n.Written("clean_room_name")) {
 		w.missing(n, "clean_room_name")
 	}
-	if !(v.NotebookName != "" || n.Written("notebook_name")) {
+	if !(v.NotebookName != "" || forced(v.ForceSendFields, "NotebookName") || n.Written("notebook_name")) {
 		w.missing(n, "notebook_name")
 	}
 }
@@ -3152,7 +3152,7 @@ func requiredJobsDbtTask(w *walker, n *walk.Node, v *jobs.DbtTask) {
 		w.missing(n, "commands")
 		return
 	}
-	if !(v.Commands != nil || n.Written("commands") || n.IsRef("commands")) {
+	if !(v.Commands != nil || n.IsRef("commands")) {
 		w.missing(n, "commands")
 	}
 }
@@ -3162,7 +3162,7 @@ func requiredJobsTaskDependency(w *walker, n *walk.Node, v *jobs.TaskDependency)
 		w.missing(n, "task_key")
 		return
 	}
-	if !(v.TaskKey != "" || n.Written("task_key")) {
+	if !(v.TaskKey != "" || forced(v.ForceSendFields, "TaskKey") || n.Written("task_key")) {
 		w.missing(n, "task_key")
 	}
 }
@@ -3173,13 +3173,13 @@ func requiredJobsForEachTask(w *walker, n *walk.Node, v *jobs.ForEachTask) {
 		w.missing(n, "task")
 		return
 	}
-	if !(v.Inputs != "" || n.Written("inputs")) {
+	if !(v.Inputs != "" || forced(v.ForceSendFields, "Inputs") || n.Written("inputs")) {
 		w.missing(n, "inputs")
 	}
-	if !(!isZeroStruct(&v.Task) || n.Written("task") || n.IsRef("task")) {
+	if !(!isZeroStruct(&v.Task) || forced(v.ForceSendFields, "Task") || n.Written("task") || n.IsRef("task")) {
 		w.missing(n, "task")
 	}
-	if x := &v.Task; !isZeroStruct(x) || forced(v.ForceSendFields, "Task") || n.Written("task") {
+	if x := &v.Task; !isZeroStruct(x) || forced(v.ForceSendFields, "Task") || n.Locations().Key("task") != nil {
 		c := n.Child("task")
 		requiredJobsTask2(w, &c, x)
 	}
@@ -3190,13 +3190,13 @@ func requiredJobsGenAiComputeTask(w *walker, n *walk.Node, v *jobs.GenAiComputeT
 		w.missing(n, "dl_runtime_image")
 		return
 	}
-	if !(v.DlRuntimeImage != "" || n.Written("dl_runtime_image")) {
+	if !(v.DlRuntimeImage != "" || forced(v.ForceSendFields, "DlRuntimeImage") || n.Written("dl_runtime_image")) {
 		w.missing(n, "dl_runtime_image")
 	}
 	if x := v.Compute; x != nil {
 		c := n.Child("compute")
 		requiredJobsComputeConfig(w, &c, x)
-	} else if n.Written("compute") || n.IsRef("compute") {
+	} else if forced(v.ForceSendFields, "Compute") || n.IsRef("compute") {
 		c := n.Child("compute")
 		requiredJobsComputeConfig(w, &c, nil)
 	}
@@ -3207,7 +3207,7 @@ func requiredJobsNotebookTask(w *walker, n *walk.Node, v *jobs.NotebookTask) {
 		w.missing(n, "notebook_path")
 		return
 	}
-	if !(v.NotebookPath != "" || n.Written("notebook_path")) {
+	if !(v.NotebookPath != "" || forced(v.ForceSendFields, "NotebookPath") || n.Written("notebook_path")) {
 		w.missing(n, "notebook_path")
 	}
 }
@@ -3217,7 +3217,7 @@ func requiredJobsPipelineTask(w *walker, n *walk.Node, v *jobs.PipelineTask) {
 		w.missing(n, "pipeline_id")
 		return
 	}
-	if !(v.PipelineId != "" || n.Written("pipeline_id")) {
+	if !(v.PipelineId != "" || forced(v.ForceSendFields, "PipelineId") || n.Written("pipeline_id")) {
 		w.missing(n, "pipeline_id")
 	}
 }
@@ -3267,28 +3267,28 @@ func requiredJobsSqlTask(w *walker, n *walk.Node, v *jobs.SqlTask) {
 	if x := v.Alert; x != nil {
 		c := n.Child("alert")
 		requiredJobsSqlTaskAlert(w, &c, x)
-	} else if n.Written("alert") || n.IsRef("alert") {
+	} else if n.IsRef("alert") {
 		c := n.Child("alert")
 		requiredJobsSqlTaskAlert(w, &c, nil)
 	}
 	if x := v.Dashboard; x != nil {
 		c := n.Child("dashboard")
 		requiredJobsSqlTaskDashboard(w, &c, x)
-	} else if n.Written("dashboard") || n.IsRef("dashboard") {
+	} else if n.IsRef("dashboard") {
 		c := n.Child("dashboard")
 		requiredJobsSqlTaskDashboard(w, &c, nil)
 	}
 	if x := v.File; x != nil {
 		c := n.Child("file")
 		requiredJobsSqlTaskFile(w, &c, x)
-	} else if n.Written("file") || n.IsRef("file") {
+	} else if n.IsRef("file") {
 		c := n.Child("file")
 		requiredJobsSqlTaskFile(w, &c, nil)
 	}
 	if x := v.Query; x != nil {
 		c := n.Child("query")
 		requiredJobsSqlTaskQuery(w, &c, x)
-	} else if n.Written("query") || n.IsRef("query") {
+	} else if n.IsRef("query") {
 		c := n.Child("query")
 		requiredJobsSqlTaskQuery(w, &c, nil)
 	}
@@ -3299,7 +3299,7 @@ func requiredJobsFileArrivalTriggerConfiguration(w *walker, n *walk.Node, v *job
 		w.missing(n, "url")
 		return
 	}
-	if !(v.Url != "" || n.Written("url")) {
+	if !(v.Url != "" || forced(v.ForceSendFields, "Url") || n.Written("url")) {
 		w.missing(n, "url")
 	}
 }
@@ -3309,7 +3309,7 @@ func requiredJobsModelTriggerConfiguration(w *walker, n *walk.Node, v *jobs.Mode
 		w.missing(n, "condition")
 		return
 	}
-	if !(v.Condition != "" || n.Written("condition")) {
+	if !(v.Condition != "" || forced(v.ForceSendFields, "Condition") || n.Written("condition")) {
 		w.missing(n, "condition")
 	}
 }
@@ -3333,7 +3333,7 @@ func requiredJobsTableUpdateTriggerConfiguration(w *walker, n *walk.Node, v *job
 		w.missing(n, "table_names")
 		return
 	}
-	if !(v.TableNames != nil || n.Written("table_names") || n.IsRef("table_names")) {
+	if !(v.TableNames != nil || n.IsRef("table_names")) {
 		w.missing(n, "table_names")
 	}
 }
@@ -3345,7 +3345,7 @@ func requiredJobsContinuousTriggerConfiguration(w *walker, n *walk.Node, v *jobs
 	if x := v.MaintenanceWindow; x != nil {
 		c := n.Child("maintenance_window")
 		requiredJobsMaintenanceWindow(w, &c, x)
-	} else if n.Written("maintenance_window") || n.IsRef("maintenance_window") {
+	} else if n.IsRef("maintenance_window") {
 		c := n.Child("maintenance_window")
 		requiredJobsMaintenanceWindow(w, &c, nil)
 	}
@@ -3381,10 +3381,10 @@ func requiredCatalogRateLimit(w *walker, n *walk.Node, v *catalog.RateLimit) {
 		w.missing(n, "renewal_period")
 		return
 	}
-	if !(v.Key != "" || n.Written("key")) {
+	if !(v.Key != "" || forced(v.ForceSendFields, "Key") || n.Written("key")) {
 		w.missing(n, "key")
 	}
-	if !(v.RenewalPeriod != "" || n.Written("renewal_period")) {
+	if !(v.RenewalPeriod != "" || forced(v.ForceSendFields, "RenewalPeriod") || n.Written("renewal_period")) {
 		w.missing(n, "renewal_period")
 	}
 }
@@ -3394,7 +3394,7 @@ func requiredCatalogMcpServiceConfigSourceConnection(w *walker, n *walk.Node, v 
 		w.missing(n, "name")
 		return
 	}
-	if !(v.Name != "" || n.Written("name")) {
+	if !(v.Name != "" || forced(v.ForceSendFields, "Name") || n.Written("name")) {
 		w.missing(n, "name")
 	}
 }
@@ -3406,7 +3406,7 @@ func requiredCatalogModelProviderServiceConfigAmazonBedrockProviderConfig(w *wal
 	if x := v.Direct; x != nil {
 		c := n.Child("direct")
 		requiredCatalogModelProviderServiceConfigAmazonBedrockProviderDirectConfig(w, &c, x)
-	} else if n.Written("direct") || n.IsRef("direct") {
+	} else if n.IsRef("direct") {
 		c := n.Child("direct")
 		requiredCatalogModelProviderServiceConfigAmazonBedrockProviderDirectConfig(w, &c, nil)
 	}
@@ -3419,7 +3419,7 @@ func requiredCatalogModelProviderServiceConfigAnthropicProviderConfig(w *walker,
 	if x := v.Direct; x != nil {
 		c := n.Child("direct")
 		requiredCatalogModelProviderServiceConfigAnthropicProviderDirectConfig(w, &c, x)
-	} else if n.Written("direct") || n.IsRef("direct") {
+	} else if n.IsRef("direct") {
 		c := n.Child("direct")
 		requiredCatalogModelProviderServiceConfigAnthropicProviderDirectConfig(w, &c, nil)
 	}
@@ -3432,7 +3432,7 @@ func requiredCatalogModelProviderServiceConfigAzureOpenAiProviderConfig(w *walke
 	if x := v.Direct; x != nil {
 		c := n.Child("direct")
 		requiredCatalogModelProviderServiceConfigAzureOpenAiProviderDirectConfig(w, &c, x)
-	} else if n.Written("direct") || n.IsRef("direct") {
+	} else if n.IsRef("direct") {
 		c := n.Child("direct")
 		requiredCatalogModelProviderServiceConfigAzureOpenAiProviderDirectConfig(w, &c, nil)
 	}
@@ -3445,7 +3445,7 @@ func requiredCatalogModelProviderServiceConfigCustomProviderConfig(w *walker, n 
 	if x := v.Direct; x != nil {
 		c := n.Child("direct")
 		requiredCatalogModelProviderServiceConfigCustomProviderDirectConfig(w, &c, x)
-	} else if n.Written("direct") || n.IsRef("direct") {
+	} else if n.IsRef("direct") {
 		c := n.Child("direct")
 		requiredCatalogModelProviderServiceConfigCustomProviderDirectConfig(w, &c, nil)
 	}
@@ -3458,7 +3458,7 @@ func requiredCatalogModelProviderServiceConfigGeminiEnterpriseProviderConfig(w *
 	if x := v.Direct; x != nil {
 		c := n.Child("direct")
 		requiredCatalogModelProviderServiceConfigGeminiEnterpriseProviderDirectConfig(w, &c, x)
-	} else if n.Written("direct") || n.IsRef("direct") {
+	} else if n.IsRef("direct") {
 		c := n.Child("direct")
 		requiredCatalogModelProviderServiceConfigGeminiEnterpriseProviderDirectConfig(w, &c, nil)
 	}
@@ -3469,7 +3469,7 @@ func requiredCatalogInferenceTableConfig(w *walker, n *walk.Node, v *catalog.Inf
 		w.missing(n, "parent")
 		return
 	}
-	if !(v.Parent != "" || n.Written("parent")) {
+	if !(v.Parent != "" || forced(v.ForceSendFields, "Parent") || n.Written("parent")) {
 		w.missing(n, "parent")
 	}
 }
@@ -3481,7 +3481,7 @@ func requiredCatalogModelProviderServiceConfigMicrosoftFoundryProviderConfig(w *
 	if x := v.Direct; x != nil {
 		c := n.Child("direct")
 		requiredCatalogModelProviderServiceConfigMicrosoftFoundryProviderDirectConfig(w, &c, x)
-	} else if n.Written("direct") || n.IsRef("direct") {
+	} else if n.IsRef("direct") {
 		c := n.Child("direct")
 		requiredCatalogModelProviderServiceConfigMicrosoftFoundryProviderDirectConfig(w, &c, nil)
 	}
@@ -3494,7 +3494,7 @@ func requiredCatalogModelProviderServiceConfigOpenAiProviderConfig(w *walker, n 
 	if x := v.Direct; x != nil {
 		c := n.Child("direct")
 		requiredCatalogModelProviderServiceConfigOpenAiProviderDirectConfig(w, &c, x)
-	} else if n.Written("direct") || n.IsRef("direct") {
+	} else if n.IsRef("direct") {
 		c := n.Child("direct")
 		requiredCatalogModelProviderServiceConfigOpenAiProviderDirectConfig(w, &c, nil)
 	}
@@ -3505,7 +3505,7 @@ func requiredCatalogModelProviderServiceConfigModelTargetConfig(w *walker, n *wa
 		w.missing(n, "model")
 		return
 	}
-	if !(v.Model != "" || n.Written("model")) {
+	if !(v.Model != "" || forced(v.ForceSendFields, "Model") || n.Written("model")) {
 		w.missing(n, "model")
 	}
 }
@@ -3524,7 +3524,7 @@ func requiredCatalogModelServiceConfigRoutingConfig(w *walker, n *walk.Node, v *
 	if x := v.Fallback; x != nil {
 		c := n.Child("fallback")
 		requiredCatalogModelServiceConfigFallbackConfig(w, &c, x)
-	} else if n.Written("fallback") || n.IsRef("fallback") {
+	} else if n.IsRef("fallback") {
 		c := n.Child("fallback")
 		requiredCatalogModelServiceConfigFallbackConfig(w, &c, nil)
 	}
@@ -3545,7 +3545,7 @@ func requiredServingAiGatewayRateLimit(w *walker, n *walk.Node, v *serving.AiGat
 		w.missing(n, "renewal_period")
 		return
 	}
-	if !(v.RenewalPeriod != "" || n.Written("renewal_period")) {
+	if !(v.RenewalPeriod != "" || forced(v.ForceSendFields, "RenewalPeriod") || n.Written("renewal_period")) {
 		w.missing(n, "renewal_period")
 	}
 }
@@ -3557,7 +3557,7 @@ func requiredServingServedEntityInput(w *walker, n *walk.Node, v *serving.Served
 	if x := v.ExternalModel; x != nil {
 		c := n.Child("external_model")
 		requiredServingExternalModel(w, &c, x)
-	} else if n.Written("external_model") || n.IsRef("external_model") {
+	} else if forced(v.ForceSendFields, "ExternalModel") || n.IsRef("external_model") {
 		c := n.Child("external_model")
 		requiredServingExternalModel(w, &c, nil)
 	}
@@ -3570,13 +3570,13 @@ func requiredServingServedModelInput(w *walker, n *walk.Node, v *serving.ServedM
 		w.missing(n, "scale_to_zero_enabled")
 		return
 	}
-	if !(v.ModelName != "" || n.Written("model_name")) {
+	if !(v.ModelName != "" || forced(v.ForceSendFields, "ModelName") || n.Written("model_name")) {
 		w.missing(n, "model_name")
 	}
-	if !(v.ModelVersion != "" || n.Written("model_version")) {
+	if !(v.ModelVersion != "" || forced(v.ForceSendFields, "ModelVersion") || n.Written("model_version")) {
 		w.missing(n, "model_version")
 	}
-	if !(v.ScaleToZeroEnabled || n.Written("scale_to_zero_enabled") || n.IsRef("scale_to_zero_enabled")) {
+	if !(v.ScaleToZeroEnabled || forced(v.ForceSendFields, "ScaleToZeroEnabled") || n.Written("scale_to_zero_enabled") || n.IsRef("scale_to_zero_enabled")) {
 		w.missing(n, "scale_to_zero_enabled")
 	}
 }
@@ -3614,10 +3614,10 @@ func requiredPipelinesDataStagingOptions(w *walker, n *walk.Node, v *pipelines.D
 		w.missing(n, "schema_name")
 		return
 	}
-	if !(v.CatalogName != "" || n.Written("catalog_name")) {
+	if !(v.CatalogName != "" || forced(v.ForceSendFields, "CatalogName") || n.Written("catalog_name")) {
 		w.missing(n, "catalog_name")
 	}
-	if !(v.SchemaName != "" || n.Written("schema_name")) {
+	if !(v.SchemaName != "" || forced(v.ForceSendFields, "SchemaName") || n.Written("schema_name")) {
 		w.missing(n, "schema_name")
 	}
 }
@@ -3627,7 +3627,7 @@ func requiredPipelinesOperationTimeWindow(w *walker, n *walk.Node, v *pipelines.
 		w.missing(n, "start_hour")
 		return
 	}
-	if !(v.StartHour != 0 || n.Written("start_hour") || n.IsRef("start_hour")) {
+	if !(v.StartHour != 0 || forced(v.ForceSendFields, "StartHour") || n.Written("start_hour") || n.IsRef("start_hour")) {
 		w.missing(n, "start_hour")
 	}
 }
@@ -3639,21 +3639,21 @@ func requiredPipelinesIngestionConfig(w *walker, n *walk.Node, v *pipelines.Inge
 	if x := v.Report; x != nil {
 		c := n.Child("report")
 		requiredPipelinesReportSpec(w, &c, x)
-	} else if n.Written("report") || n.IsRef("report") {
+	} else if n.IsRef("report") {
 		c := n.Child("report")
 		requiredPipelinesReportSpec(w, &c, nil)
 	}
 	if x := v.Schema; x != nil {
 		c := n.Child("schema")
 		requiredPipelinesSchemaSpec(w, &c, x)
-	} else if n.Written("schema") || n.IsRef("schema") {
+	} else if n.IsRef("schema") {
 		c := n.Child("schema")
 		requiredPipelinesSchemaSpec(w, &c, nil)
 	}
 	if x := v.Table; x != nil {
 		c := n.Child("table")
 		requiredPipelinesTableSpec(w, &c, x)
-	} else if n.Written("table") || n.IsRef("table") {
+	} else if n.IsRef("table") {
 		c := n.Child("table")
 		requiredPipelinesTableSpec(w, &c, nil)
 	}
@@ -3666,7 +3666,7 @@ func requiredPipelinesTableSpecificConfig(w *walker, n *walk.Node, v *pipelines.
 	if x := v.AutoFullRefreshPolicy; x != nil {
 		c := n.Child("auto_full_refresh_policy")
 		requiredPipelinesAutoFullRefreshPolicy(w, &c, x)
-	} else if n.Written("auto_full_refresh_policy") || n.IsRef("auto_full_refresh_policy") {
+	} else if forced(v.ForceSendFields, "AutoFullRefreshPolicy") || n.IsRef("auto_full_refresh_policy") {
 		c := n.Child("auto_full_refresh_policy")
 		requiredPipelinesAutoFullRefreshPolicy(w, &c, nil)
 	}
@@ -3677,7 +3677,7 @@ func requiredPostgresMonthlySchedule(w *walker, n *walk.Node, v *postgres.Monthl
 		w.missing(n, "day")
 		return
 	}
-	if !(v.Day != 0 || n.Written("day") || n.IsRef("day")) {
+	if !(v.Day != 0 || forced(v.ForceSendFields, "Day") || n.Written("day") || n.IsRef("day")) {
 		w.missing(n, "day")
 	}
 }
@@ -3687,7 +3687,7 @@ func requiredPostgresWeeklySchedule(w *walker, n *walk.Node, v *postgres.WeeklyS
 		w.missing(n, "day_of_week")
 		return
 	}
-	if !(v.DayOfWeek != "" || n.Written("day_of_week")) {
+	if !(v.DayOfWeek != "" || forced(v.ForceSendFields, "DayOfWeek") || n.Written("day_of_week")) {
 		w.missing(n, "day_of_week")
 	}
 }
@@ -3698,10 +3698,10 @@ func requiredDatabaseSyncedTableSpecTypeOverride(w *walker, n *walk.Node, v *dat
 		w.missing(n, "pg_type")
 		return
 	}
-	if !(v.ColumnName != "" || n.Written("column_name")) {
+	if !(v.ColumnName != "" || forced(v.ForceSendFields, "ColumnName") || n.Written("column_name")) {
 		w.missing(n, "column_name")
 	}
-	if !(v.PgType != "" || n.Written("pg_type")) {
+	if !(v.PgType != "" || forced(v.ForceSendFields, "PgType") || n.Written("pg_type")) {
 		w.missing(n, "pg_type")
 	}
 }
@@ -3711,7 +3711,7 @@ func requiredSqlAlertV2OperandColumn2(w *walker, n *walk.Node, v *sql.AlertV2Ope
 		w.missing(n, "name")
 		return
 	}
-	if !(v.Name != "" || n.Written("name")) {
+	if !(v.Name != "" || forced(v.ForceSendFields, "Name") || n.Written("name")) {
 		w.missing(n, "name")
 	}
 }
@@ -3721,10 +3721,10 @@ func requiredJobsDeploymentSpec(w *walker, n *walk.Node, v *jobs.DeploymentSpec)
 		w.missing(n, "compute")
 		return
 	}
-	if !(!isZeroStruct(&v.Compute) || n.Written("compute") || n.IsRef("compute")) {
+	if !(!isZeroStruct(&v.Compute) || forced(v.ForceSendFields, "Compute") || n.Written("compute") || n.IsRef("compute")) {
 		w.missing(n, "compute")
 	}
-	if x := &v.Compute; !isZeroStruct(x) || forced(v.ForceSendFields, "Compute") || n.Written("compute") {
+	if x := &v.Compute; !isZeroStruct(x) || forced(v.ForceSendFields, "Compute") || n.Locations().Key("compute") != nil {
 		c := n.Child("compute")
 		requiredJobsComputeSpec(w, &c, x)
 	}
@@ -3735,34 +3735,34 @@ func requiredJobsTask2(w *walker, n *walk.Node, v *jobs.Task) {
 		w.missing(n, "task_key")
 		return
 	}
-	if !(v.TaskKey != "" || n.Written("task_key")) {
+	if !(v.TaskKey != "" || forced(v.ForceSendFields, "TaskKey") || n.Written("task_key")) {
 		w.missing(n, "task_key")
 	}
 	if x := v.AiRuntimeTask; x != nil {
 		c := n.Child("ai_runtime_task")
 		requiredJobsAiRuntimeTask(w, &c, x)
-	} else if n.Written("ai_runtime_task") || n.IsRef("ai_runtime_task") {
+	} else if forced(v.ForceSendFields, "AiRuntimeTask") || n.IsRef("ai_runtime_task") {
 		c := n.Child("ai_runtime_task")
 		requiredJobsAiRuntimeTask(w, &c, nil)
 	}
 	if x := v.CleanRoomsNotebookTask; x != nil {
 		c := n.Child("clean_rooms_notebook_task")
 		requiredJobsCleanRoomsNotebookTask(w, &c, x)
-	} else if n.Written("clean_rooms_notebook_task") || n.IsRef("clean_rooms_notebook_task") {
+	} else if forced(v.ForceSendFields, "CleanRoomsNotebookTask") || n.IsRef("clean_rooms_notebook_task") {
 		c := n.Child("clean_rooms_notebook_task")
 		requiredJobsCleanRoomsNotebookTask(w, &c, nil)
 	}
 	if x := v.ConditionTask; x != nil {
 		c := n.Child("condition_task")
 		requiredJobsConditionTask(w, &c, x)
-	} else if n.Written("condition_task") || n.IsRef("condition_task") {
+	} else if forced(v.ForceSendFields, "ConditionTask") || n.IsRef("condition_task") {
 		c := n.Child("condition_task")
 		requiredJobsConditionTask(w, &c, nil)
 	}
 	if x := v.DbtTask; x != nil {
 		c := n.Child("dbt_task")
 		requiredJobsDbtTask(w, &c, x)
-	} else if n.Written("dbt_task") || n.IsRef("dbt_task") {
+	} else if forced(v.ForceSendFields, "DbtTask") || n.IsRef("dbt_task") {
 		c := n.Child("dbt_task")
 		requiredJobsDbtTask(w, &c, nil)
 	}
@@ -3776,21 +3776,21 @@ func requiredJobsTask2(w *walker, n *walk.Node, v *jobs.Task) {
 	if x := v.ForEachTask; x != nil {
 		c := n.Child("for_each_task")
 		requiredJobsForEachTask2(w, &c, x)
-	} else if n.Written("for_each_task") || n.IsRef("for_each_task") {
+	} else if forced(v.ForceSendFields, "ForEachTask") || n.IsRef("for_each_task") {
 		c := n.Child("for_each_task")
 		requiredJobsForEachTask2(w, &c, nil)
 	}
 	if x := v.GenAiComputeTask; x != nil {
 		c := n.Child("gen_ai_compute_task")
 		requiredJobsGenAiComputeTask(w, &c, x)
-	} else if n.Written("gen_ai_compute_task") || n.IsRef("gen_ai_compute_task") {
+	} else if forced(v.ForceSendFields, "GenAiComputeTask") || n.IsRef("gen_ai_compute_task") {
 		c := n.Child("gen_ai_compute_task")
 		requiredJobsGenAiComputeTask(w, &c, nil)
 	}
 	if x := v.Health; x != nil {
 		c := n.Child("health")
 		requiredJobsJobsHealthRules(w, &c, x)
-	} else if n.Written("health") || n.IsRef("health") {
+	} else if forced(v.ForceSendFields, "Health") || n.IsRef("health") {
 		c := n.Child("health")
 		requiredJobsJobsHealthRules(w, &c, nil)
 	}
@@ -3804,56 +3804,56 @@ func requiredJobsTask2(w *walker, n *walk.Node, v *jobs.Task) {
 	if x := v.NewCluster; x != nil {
 		c := n.Child("new_cluster")
 		requiredComputeClusterSpec(w, &c, x)
-	} else if n.Written("new_cluster") || n.IsRef("new_cluster") {
+	} else if forced(v.ForceSendFields, "NewCluster") || n.IsRef("new_cluster") {
 		c := n.Child("new_cluster")
 		requiredComputeClusterSpec(w, &c, nil)
 	}
 	if x := v.NotebookTask; x != nil {
 		c := n.Child("notebook_task")
 		requiredJobsNotebookTask(w, &c, x)
-	} else if n.Written("notebook_task") || n.IsRef("notebook_task") {
+	} else if forced(v.ForceSendFields, "NotebookTask") || n.IsRef("notebook_task") {
 		c := n.Child("notebook_task")
 		requiredJobsNotebookTask(w, &c, nil)
 	}
 	if x := v.PipelineTask; x != nil {
 		c := n.Child("pipeline_task")
 		requiredJobsPipelineTask(w, &c, x)
-	} else if n.Written("pipeline_task") || n.IsRef("pipeline_task") {
+	} else if forced(v.ForceSendFields, "PipelineTask") || n.IsRef("pipeline_task") {
 		c := n.Child("pipeline_task")
 		requiredJobsPipelineTask(w, &c, nil)
 	}
 	if x := v.PythonWheelTask; x != nil {
 		c := n.Child("python_wheel_task")
 		requiredJobsPythonWheelTask(w, &c, x)
-	} else if n.Written("python_wheel_task") || n.IsRef("python_wheel_task") {
+	} else if forced(v.ForceSendFields, "PythonWheelTask") || n.IsRef("python_wheel_task") {
 		c := n.Child("python_wheel_task")
 		requiredJobsPythonWheelTask(w, &c, nil)
 	}
 	if x := v.RunJobTask; x != nil {
 		c := n.Child("run_job_task")
 		requiredJobsRunJobTask(w, &c, x)
-	} else if n.Written("run_job_task") || n.IsRef("run_job_task") {
+	} else if forced(v.ForceSendFields, "RunJobTask") || n.IsRef("run_job_task") {
 		c := n.Child("run_job_task")
 		requiredJobsRunJobTask(w, &c, nil)
 	}
 	if x := v.SparkPythonTask; x != nil {
 		c := n.Child("spark_python_task")
 		requiredJobsSparkPythonTask(w, &c, x)
-	} else if n.Written("spark_python_task") || n.IsRef("spark_python_task") {
+	} else if forced(v.ForceSendFields, "SparkPythonTask") || n.IsRef("spark_python_task") {
 		c := n.Child("spark_python_task")
 		requiredJobsSparkPythonTask(w, &c, nil)
 	}
 	if x := v.SqlTask; x != nil {
 		c := n.Child("sql_task")
 		requiredJobsSqlTask(w, &c, x)
-	} else if n.Written("sql_task") || n.IsRef("sql_task") {
+	} else if forced(v.ForceSendFields, "SqlTask") || n.IsRef("sql_task") {
 		c := n.Child("sql_task")
 		requiredJobsSqlTask(w, &c, nil)
 	}
 	if x := v.WebhookNotifications; x != nil {
 		c := n.Child("webhook_notifications")
 		requiredJobsWebhookNotifications(w, &c, x)
-	} else if n.Written("webhook_notifications") || n.IsRef("webhook_notifications") {
+	} else if forced(v.ForceSendFields, "WebhookNotifications") || n.IsRef("webhook_notifications") {
 		c := n.Child("webhook_notifications")
 		requiredJobsWebhookNotifications(w, &c, nil)
 	}
@@ -3864,7 +3864,7 @@ func requiredJobsComputeConfig(w *walker, n *walk.Node, v *jobs.ComputeConfig) {
 		w.missing(n, "num_gpus")
 		return
 	}
-	if !(v.NumGpus != 0 || n.Written("num_gpus") || n.IsRef("num_gpus")) {
+	if !(v.NumGpus != 0 || forced(v.ForceSendFields, "NumGpus") || n.Written("num_gpus") || n.IsRef("num_gpus")) {
 		w.missing(n, "num_gpus")
 	}
 }
@@ -3874,7 +3874,7 @@ func requiredJobsSqlTaskAlert(w *walker, n *walk.Node, v *jobs.SqlTaskAlert) {
 		w.missing(n, "alert_id")
 		return
 	}
-	if !(v.AlertId != "" || n.Written("alert_id")) {
+	if !(v.AlertId != "" || forced(v.ForceSendFields, "AlertId") || n.Written("alert_id")) {
 		w.missing(n, "alert_id")
 	}
 }
@@ -3884,7 +3884,7 @@ func requiredJobsSqlTaskDashboard(w *walker, n *walk.Node, v *jobs.SqlTaskDashbo
 		w.missing(n, "dashboard_id")
 		return
 	}
-	if !(v.DashboardId != "" || n.Written("dashboard_id")) {
+	if !(v.DashboardId != "" || forced(v.ForceSendFields, "DashboardId") || n.Written("dashboard_id")) {
 		w.missing(n, "dashboard_id")
 	}
 }
@@ -3916,14 +3916,14 @@ func requiredCatalogModelProviderServiceConfigAmazonBedrockProviderDirectConfig(
 	if x := v.AwsAccessKey; x != nil {
 		c := n.Child("aws_access_key")
 		requiredCatalogModelProviderServiceConfigAwsAccessKey(w, &c, x)
-	} else if n.Written("aws_access_key") || n.IsRef("aws_access_key") {
+	} else if forced(v.ForceSendFields, "AwsAccessKey") || n.IsRef("aws_access_key") {
 		c := n.Child("aws_access_key")
 		requiredCatalogModelProviderServiceConfigAwsAccessKey(w, &c, nil)
 	}
 	if x := v.ServiceCredential; x != nil {
 		c := n.Child("service_credential")
 		requiredCatalogModelProviderServiceConfigServiceCredential(w, &c, x)
-	} else if n.Written("service_credential") || n.IsRef("service_credential") {
+	} else if forced(v.ForceSendFields, "ServiceCredential") || n.IsRef("service_credential") {
 		c := n.Child("service_credential")
 		requiredCatalogModelProviderServiceConfigServiceCredential(w, &c, nil)
 	}
@@ -3936,7 +3936,7 @@ func requiredCatalogModelProviderServiceConfigAnthropicProviderDirectConfig(w *w
 	if x := v.ApiKey; x != nil {
 		c := n.Child("api_key")
 		requiredCatalogModelProviderServiceConfigProviderSecret(w, &c, x)
-	} else if n.Written("api_key") || n.IsRef("api_key") {
+	} else if n.IsRef("api_key") {
 		c := n.Child("api_key")
 		requiredCatalogModelProviderServiceConfigProviderSecret(w, &c, nil)
 	}
@@ -3949,21 +3949,21 @@ func requiredCatalogModelProviderServiceConfigAzureOpenAiProviderDirectConfig(w 
 	if x := v.ApiKey; x != nil {
 		c := n.Child("api_key")
 		requiredCatalogModelProviderServiceConfigProviderSecret(w, &c, x)
-	} else if n.Written("api_key") || n.IsRef("api_key") {
+	} else if forced(v.ForceSendFields, "ApiKey") || n.IsRef("api_key") {
 		c := n.Child("api_key")
 		requiredCatalogModelProviderServiceConfigProviderSecret(w, &c, nil)
 	}
 	if x := v.EntraServicePrincipal; x != nil {
 		c := n.Child("entra_service_principal")
 		requiredCatalogModelProviderServiceConfigEntraServicePrincipal(w, &c, x)
-	} else if n.Written("entra_service_principal") || n.IsRef("entra_service_principal") {
+	} else if forced(v.ForceSendFields, "EntraServicePrincipal") || n.IsRef("entra_service_principal") {
 		c := n.Child("entra_service_principal")
 		requiredCatalogModelProviderServiceConfigEntraServicePrincipal(w, &c, nil)
 	}
 	if x := v.ServiceCredential; x != nil {
 		c := n.Child("service_credential")
 		requiredCatalogModelProviderServiceConfigServiceCredential(w, &c, x)
-	} else if n.Written("service_credential") || n.IsRef("service_credential") {
+	} else if forced(v.ForceSendFields, "ServiceCredential") || n.IsRef("service_credential") {
 		c := n.Child("service_credential")
 		requiredCatalogModelProviderServiceConfigServiceCredential(w, &c, nil)
 	}
@@ -3976,14 +3976,14 @@ func requiredCatalogModelProviderServiceConfigCustomProviderDirectConfig(w *walk
 	if x := v.ApiKey; x != nil {
 		c := n.Child("api_key")
 		requiredCatalogModelProviderServiceConfigProviderSecret(w, &c, x)
-	} else if n.Written("api_key") || n.IsRef("api_key") {
+	} else if forced(v.ForceSendFields, "ApiKey") || n.IsRef("api_key") {
 		c := n.Child("api_key")
 		requiredCatalogModelProviderServiceConfigProviderSecret(w, &c, nil)
 	}
 	if x := v.HeaderAuth; x != nil {
 		c := n.Child("header_auth")
 		requiredCatalogModelProviderServiceConfigCustomProviderApiKeyHeaderAuth(w, &c, x)
-	} else if n.Written("header_auth") || n.IsRef("header_auth") {
+	} else if forced(v.ForceSendFields, "HeaderAuth") || n.IsRef("header_auth") {
 		c := n.Child("header_auth")
 		requiredCatalogModelProviderServiceConfigCustomProviderApiKeyHeaderAuth(w, &c, nil)
 	}
@@ -3996,14 +3996,14 @@ func requiredCatalogModelProviderServiceConfigGeminiEnterpriseProviderDirectConf
 	if x := v.ApiKey; x != nil {
 		c := n.Child("api_key")
 		requiredCatalogModelProviderServiceConfigProviderSecret(w, &c, x)
-	} else if n.Written("api_key") || n.IsRef("api_key") {
+	} else if forced(v.ForceSendFields, "ApiKey") || n.IsRef("api_key") {
 		c := n.Child("api_key")
 		requiredCatalogModelProviderServiceConfigProviderSecret(w, &c, nil)
 	}
 	if x := v.ServiceCredential; x != nil {
 		c := n.Child("service_credential")
 		requiredCatalogModelProviderServiceConfigServiceCredential(w, &c, x)
-	} else if n.Written("service_credential") || n.IsRef("service_credential") {
+	} else if forced(v.ForceSendFields, "ServiceCredential") || n.IsRef("service_credential") {
 		c := n.Child("service_credential")
 		requiredCatalogModelProviderServiceConfigServiceCredential(w, &c, nil)
 	}
@@ -4016,21 +4016,21 @@ func requiredCatalogModelProviderServiceConfigMicrosoftFoundryProviderDirectConf
 	if x := v.ApiKey; x != nil {
 		c := n.Child("api_key")
 		requiredCatalogModelProviderServiceConfigProviderSecret(w, &c, x)
-	} else if n.Written("api_key") || n.IsRef("api_key") {
+	} else if forced(v.ForceSendFields, "ApiKey") || n.IsRef("api_key") {
 		c := n.Child("api_key")
 		requiredCatalogModelProviderServiceConfigProviderSecret(w, &c, nil)
 	}
 	if x := v.EntraServicePrincipal; x != nil {
 		c := n.Child("entra_service_principal")
 		requiredCatalogModelProviderServiceConfigEntraServicePrincipal(w, &c, x)
-	} else if n.Written("entra_service_principal") || n.IsRef("entra_service_principal") {
+	} else if forced(v.ForceSendFields, "EntraServicePrincipal") || n.IsRef("entra_service_principal") {
 		c := n.Child("entra_service_principal")
 		requiredCatalogModelProviderServiceConfigEntraServicePrincipal(w, &c, nil)
 	}
 	if x := v.ServiceCredential; x != nil {
 		c := n.Child("service_credential")
 		requiredCatalogModelProviderServiceConfigServiceCredential(w, &c, x)
-	} else if n.Written("service_credential") || n.IsRef("service_credential") {
+	} else if forced(v.ForceSendFields, "ServiceCredential") || n.IsRef("service_credential") {
 		c := n.Child("service_credential")
 		requiredCatalogModelProviderServiceConfigServiceCredential(w, &c, nil)
 	}
@@ -4043,7 +4043,7 @@ func requiredCatalogModelProviderServiceConfigOpenAiProviderDirectConfig(w *walk
 	if x := v.ApiKey; x != nil {
 		c := n.Child("api_key")
 		requiredCatalogModelProviderServiceConfigProviderSecret(w, &c, x)
-	} else if n.Written("api_key") || n.IsRef("api_key") {
+	} else if forced(v.ForceSendFields, "ApiKey") || n.IsRef("api_key") {
 		c := n.Child("api_key")
 		requiredCatalogModelProviderServiceConfigProviderSecret(w, &c, nil)
 	}
@@ -4055,30 +4055,30 @@ func requiredCatalogModelServiceConfigDestinationConfig(w *walker, n *walk.Node,
 		w.missing(n, "name")
 		return
 	}
-	if !(v.DestinationType != "" || n.Written("destination_type")) {
+	if !(v.DestinationType != "" || forced(v.ForceSendFields, "DestinationType") || n.Written("destination_type")) {
 		w.missing(n, "destination_type")
 	}
-	if !(v.Name != "" || n.Written("name")) {
+	if !(v.Name != "" || forced(v.ForceSendFields, "Name") || n.Written("name")) {
 		w.missing(n, "name")
 	}
 	if x := v.ExternalModelConfig; x != nil {
 		c := n.Child("external_model_config")
 		requiredCatalogModelServiceConfigExternalModelConfig(w, &c, x)
-	} else if n.Written("external_model_config") || n.IsRef("external_model_config") {
+	} else if forced(v.ForceSendFields, "ExternalModelConfig") || n.IsRef("external_model_config") {
 		c := n.Child("external_model_config")
 		requiredCatalogModelServiceConfigExternalModelConfig(w, &c, nil)
 	}
 	if x := v.PayPerTokenConfig; x != nil {
 		c := n.Child("pay_per_token_config")
 		requiredCatalogModelServiceConfigPayPerTokenConfig(w, &c, x)
-	} else if n.Written("pay_per_token_config") || n.IsRef("pay_per_token_config") {
+	} else if forced(v.ForceSendFields, "PayPerTokenConfig") || n.IsRef("pay_per_token_config") {
 		c := n.Child("pay_per_token_config")
 		requiredCatalogModelServiceConfigPayPerTokenConfig(w, &c, nil)
 	}
 	if x := v.ProvisionedThroughputConfig; x != nil {
 		c := n.Child("provisioned_throughput_config")
 		requiredCatalogModelServiceConfigProvisionedThroughputConfig(w, &c, x)
-	} else if n.Written("provisioned_throughput_config") || n.IsRef("provisioned_throughput_config") {
+	} else if forced(v.ForceSendFields, "ProvisionedThroughputConfig") || n.IsRef("provisioned_throughput_config") {
 		c := n.Child("provisioned_throughput_config")
 		requiredCatalogModelServiceConfigProvisionedThroughputConfig(w, &c, nil)
 	}
@@ -4116,28 +4116,28 @@ func requiredServingExternalModel(w *walker, n *walk.Node, v *serving.ExternalMo
 	if x := v.AmazonBedrockConfig; x != nil {
 		c := n.Child("amazon_bedrock_config")
 		requiredServingAmazonBedrockConfig(w, &c, x)
-	} else if n.Written("amazon_bedrock_config") || n.IsRef("amazon_bedrock_config") {
+	} else if n.IsRef("amazon_bedrock_config") {
 		c := n.Child("amazon_bedrock_config")
 		requiredServingAmazonBedrockConfig(w, &c, nil)
 	}
 	if x := v.CustomProviderConfig; x != nil {
 		c := n.Child("custom_provider_config")
 		requiredServingCustomProviderConfig(w, &c, x)
-	} else if n.Written("custom_provider_config") || n.IsRef("custom_provider_config") {
+	} else if n.IsRef("custom_provider_config") {
 		c := n.Child("custom_provider_config")
 		requiredServingCustomProviderConfig(w, &c, nil)
 	}
 	if x := v.DatabricksModelServingConfig; x != nil {
 		c := n.Child("databricks_model_serving_config")
 		requiredServingDatabricksModelServingConfig(w, &c, x)
-	} else if n.Written("databricks_model_serving_config") || n.IsRef("databricks_model_serving_config") {
+	} else if n.IsRef("databricks_model_serving_config") {
 		c := n.Child("databricks_model_serving_config")
 		requiredServingDatabricksModelServingConfig(w, &c, nil)
 	}
 	if x := v.GoogleCloudVertexAiConfig; x != nil {
 		c := n.Child("google_cloud_vertex_ai_config")
 		requiredServingGoogleCloudVertexAiConfig(w, &c, x)
-	} else if n.Written("google_cloud_vertex_ai_config") || n.IsRef("google_cloud_vertex_ai_config") {
+	} else if n.IsRef("google_cloud_vertex_ai_config") {
 		c := n.Child("google_cloud_vertex_ai_config")
 		requiredServingGoogleCloudVertexAiConfig(w, &c, nil)
 	}
@@ -4148,7 +4148,7 @@ func requiredServingRoute(w *walker, n *walk.Node, v *serving.Route) {
 		w.missing(n, "traffic_percentage")
 		return
 	}
-	if !(v.TrafficPercentage != 0 || n.Written("traffic_percentage") || n.IsRef("traffic_percentage")) {
+	if !(v.TrafficPercentage != 0 || forced(v.ForceSendFields, "TrafficPercentage") || n.Written("traffic_percentage") || n.IsRef("traffic_percentage")) {
 		w.missing(n, "traffic_percentage")
 	}
 }
@@ -4160,19 +4160,19 @@ func requiredPipelinesReportSpec(w *walker, n *walk.Node, v *pipelines.ReportSpe
 		w.missing(n, "source_url")
 		return
 	}
-	if !(v.DestinationCatalog != "" || n.Written("destination_catalog")) {
+	if !(v.DestinationCatalog != "" || forced(v.ForceSendFields, "DestinationCatalog") || n.Written("destination_catalog")) {
 		w.missing(n, "destination_catalog")
 	}
-	if !(v.DestinationSchema != "" || n.Written("destination_schema")) {
+	if !(v.DestinationSchema != "" || forced(v.ForceSendFields, "DestinationSchema") || n.Written("destination_schema")) {
 		w.missing(n, "destination_schema")
 	}
-	if !(v.SourceUrl != "" || n.Written("source_url")) {
+	if !(v.SourceUrl != "" || forced(v.ForceSendFields, "SourceUrl") || n.Written("source_url")) {
 		w.missing(n, "source_url")
 	}
 	if x := v.TableConfiguration; x != nil {
 		c := n.Child("table_configuration")
 		requiredPipelinesTableSpecificConfig(w, &c, x)
-	} else if n.Written("table_configuration") || n.IsRef("table_configuration") {
+	} else if forced(v.ForceSendFields, "TableConfiguration") || n.IsRef("table_configuration") {
 		c := n.Child("table_configuration")
 		requiredPipelinesTableSpecificConfig(w, &c, nil)
 	}
@@ -4184,23 +4184,23 @@ func requiredPipelinesSchemaSpec(w *walker, n *walk.Node, v *pipelines.SchemaSpe
 		w.missing(n, "destination_schema")
 		return
 	}
-	if !(v.DestinationCatalog != "" || n.Written("destination_catalog")) {
+	if !(v.DestinationCatalog != "" || forced(v.ForceSendFields, "DestinationCatalog") || n.Written("destination_catalog")) {
 		w.missing(n, "destination_catalog")
 	}
-	if !(v.DestinationSchema != "" || n.Written("destination_schema")) {
+	if !(v.DestinationSchema != "" || forced(v.ForceSendFields, "DestinationSchema") || n.Written("destination_schema")) {
 		w.missing(n, "destination_schema")
 	}
 	if x := v.ConnectorOptions; x != nil {
 		c := n.Child("connector_options")
 		requiredPipelinesConnectorOptions(w, &c, x)
-	} else if n.Written("connector_options") || n.IsRef("connector_options") {
+	} else if forced(v.ForceSendFields, "ConnectorOptions") || n.IsRef("connector_options") {
 		c := n.Child("connector_options")
 		requiredPipelinesConnectorOptions(w, &c, nil)
 	}
 	if x := v.TableConfiguration; x != nil {
 		c := n.Child("table_configuration")
 		requiredPipelinesTableSpecificConfig(w, &c, x)
-	} else if n.Written("table_configuration") || n.IsRef("table_configuration") {
+	} else if forced(v.ForceSendFields, "TableConfiguration") || n.IsRef("table_configuration") {
 		c := n.Child("table_configuration")
 		requiredPipelinesTableSpecificConfig(w, &c, nil)
 	}
@@ -4212,23 +4212,23 @@ func requiredPipelinesTableSpec(w *walker, n *walk.Node, v *pipelines.TableSpec)
 		w.missing(n, "destination_schema")
 		return
 	}
-	if !(v.DestinationCatalog != "" || n.Written("destination_catalog")) {
+	if !(v.DestinationCatalog != "" || forced(v.ForceSendFields, "DestinationCatalog") || n.Written("destination_catalog")) {
 		w.missing(n, "destination_catalog")
 	}
-	if !(v.DestinationSchema != "" || n.Written("destination_schema")) {
+	if !(v.DestinationSchema != "" || forced(v.ForceSendFields, "DestinationSchema") || n.Written("destination_schema")) {
 		w.missing(n, "destination_schema")
 	}
 	if x := v.ConnectorOptions; x != nil {
 		c := n.Child("connector_options")
 		requiredPipelinesConnectorOptions(w, &c, x)
-	} else if n.Written("connector_options") || n.IsRef("connector_options") {
+	} else if forced(v.ForceSendFields, "ConnectorOptions") || n.IsRef("connector_options") {
 		c := n.Child("connector_options")
 		requiredPipelinesConnectorOptions(w, &c, nil)
 	}
 	if x := v.TableConfiguration; x != nil {
 		c := n.Child("table_configuration")
 		requiredPipelinesTableSpecificConfig(w, &c, x)
-	} else if n.Written("table_configuration") || n.IsRef("table_configuration") {
+	} else if forced(v.ForceSendFields, "TableConfiguration") || n.IsRef("table_configuration") {
 		c := n.Child("table_configuration")
 		requiredPipelinesTableSpecificConfig(w, &c, nil)
 	}
@@ -4239,7 +4239,7 @@ func requiredPipelinesAutoFullRefreshPolicy(w *walker, n *walk.Node, v *pipeline
 		w.missing(n, "enabled")
 		return
 	}
-	if !(v.Enabled || n.Written("enabled") || n.IsRef("enabled")) {
+	if !(v.Enabled || forced(v.ForceSendFields, "Enabled") || n.Written("enabled") || n.IsRef("enabled")) {
 		w.missing(n, "enabled")
 	}
 }
@@ -4250,10 +4250,10 @@ func requiredJobsComputeSpec(w *walker, n *walk.Node, v *jobs.ComputeSpec) {
 		w.missing(n, "accelerator_type")
 		return
 	}
-	if !(v.AcceleratorCount != 0 || n.Written("accelerator_count") || n.IsRef("accelerator_count")) {
+	if !(v.AcceleratorCount != 0 || forced(v.ForceSendFields, "AcceleratorCount") || n.Written("accelerator_count") || n.IsRef("accelerator_count")) {
 		w.missing(n, "accelerator_count")
 	}
-	if !(v.AcceleratorType != "" || n.Written("accelerator_type")) {
+	if !(v.AcceleratorType != "" || forced(v.ForceSendFields, "AcceleratorType") || n.Written("accelerator_type")) {
 		w.missing(n, "accelerator_type")
 	}
 }
@@ -4264,10 +4264,10 @@ func requiredJobsForEachTask2(w *walker, n *walk.Node, v *jobs.ForEachTask) {
 		w.missing(n, "task")
 		return
 	}
-	if !(v.Inputs != "" || n.Written("inputs")) {
+	if !(v.Inputs != "" || forced(v.ForceSendFields, "Inputs") || n.Written("inputs")) {
 		w.missing(n, "inputs")
 	}
-	if !(!isZeroStruct(&v.Task) || n.Written("task") || n.IsRef("task")) {
+	if !(!isZeroStruct(&v.Task) || forced(v.ForceSendFields, "Task") || n.Written("task") || n.IsRef("task")) {
 		w.missing(n, "task")
 	}
 }
@@ -4279,7 +4279,7 @@ func requiredCatalogModelProviderServiceConfigAwsAccessKey(w *walker, n *walk.No
 	if x := v.SecretAccessKey; x != nil {
 		c := n.Child("secret_access_key")
 		requiredCatalogModelProviderServiceConfigProviderSecret(w, &c, x)
-	} else if n.Written("secret_access_key") || n.IsRef("secret_access_key") {
+	} else if forced(v.ForceSendFields, "SecretAccessKey") || n.IsRef("secret_access_key") {
 		c := n.Child("secret_access_key")
 		requiredCatalogModelProviderServiceConfigProviderSecret(w, &c, nil)
 	}
@@ -4302,7 +4302,7 @@ func requiredCatalogModelProviderServiceConfigProviderSecret(w *walker, n *walk.
 	if x := v.SecretReference; x != nil {
 		c := n.Child("secret_reference")
 		requiredCatalogModelProviderServiceConfigSecretReference(w, &c, x)
-	} else if n.Written("secret_reference") || n.IsRef("secret_reference") {
+	} else if forced(v.ForceSendFields, "SecretReference") || n.IsRef("secret_reference") {
 		c := n.Child("secret_reference")
 		requiredCatalogModelProviderServiceConfigSecretReference(w, &c, nil)
 	}
@@ -4315,7 +4315,7 @@ func requiredCatalogModelProviderServiceConfigEntraServicePrincipal(w *walker, n
 	if x := v.ClientSecret; x != nil {
 		c := n.Child("client_secret")
 		requiredCatalogModelProviderServiceConfigProviderSecret(w, &c, x)
-	} else if n.Written("client_secret") || n.IsRef("client_secret") {
+	} else if forced(v.ForceSendFields, "ClientSecret") || n.IsRef("client_secret") {
 		c := n.Child("client_secret")
 		requiredCatalogModelProviderServiceConfigProviderSecret(w, &c, nil)
 	}
@@ -4328,7 +4328,7 @@ func requiredCatalogModelProviderServiceConfigCustomProviderApiKeyHeaderAuth(w *
 	if x := v.ApiKeyValue; x != nil {
 		c := n.Child("api_key_value")
 		requiredCatalogModelProviderServiceConfigProviderSecret(w, &c, x)
-	} else if n.Written("api_key_value") || n.IsRef("api_key_value") {
+	} else if forced(v.ForceSendFields, "ApiKeyValue") || n.IsRef("api_key_value") {
 		c := n.Child("api_key_value")
 		requiredCatalogModelProviderServiceConfigProviderSecret(w, &c, nil)
 	}
@@ -4346,7 +4346,7 @@ func requiredCatalogModelServiceConfigExternalModelConfig(w *walker, n *walk.Nod
 	if !(!isZeroStruct(&v.Target) || n.Written("target") || n.IsRef("target")) {
 		w.missing(n, "target")
 	}
-	if x := &v.Target; !isZeroStruct(x) || n.Written("target") {
+	if x := &v.Target; !isZeroStruct(x) || n.Locations().Key("target") != nil {
 		c := n.Child("target")
 		requiredCatalogModelProviderServiceConfigModelTargetConfig(w, &c, x)
 	}
@@ -4367,7 +4367,7 @@ func requiredCatalogModelServiceConfigProvisionedThroughputConfig(w *walker, n *
 		w.missing(n, "model_serving_endpoint")
 		return
 	}
-	if !(v.ModelServingEndpoint != "" || n.Written("model_serving_endpoint")) {
+	if !(v.ModelServingEndpoint != "" || forced(v.ForceSendFields, "ModelServingEndpoint") || n.Written("model_serving_endpoint")) {
 		w.missing(n, "model_serving_endpoint")
 	}
 }
@@ -4378,10 +4378,10 @@ func requiredServingAmazonBedrockConfig(w *walker, n *walk.Node, v *serving.Amaz
 		w.missing(n, "bedrock_provider")
 		return
 	}
-	if !(v.AwsRegion != "" || n.Written("aws_region")) {
+	if !(v.AwsRegion != "" || forced(v.ForceSendFields, "AwsRegion") || n.Written("aws_region")) {
 		w.missing(n, "aws_region")
 	}
-	if !(v.BedrockProvider != "" || n.Written("bedrock_provider")) {
+	if !(v.BedrockProvider != "" || forced(v.ForceSendFields, "BedrockProvider") || n.Written("bedrock_provider")) {
 		w.missing(n, "bedrock_provider")
 	}
 }
@@ -4397,7 +4397,7 @@ func requiredServingCustomProviderConfig(w *walker, n *walk.Node, v *serving.Cus
 	if x := v.ApiKeyAuth; x != nil {
 		c := n.Child("api_key_auth")
 		requiredServingApiKeyAuth(w, &c, x)
-	} else if n.Written("api_key_auth") || n.IsRef("api_key_auth") {
+	} else if n.IsRef("api_key_auth") {
 		c := n.Child("api_key_auth")
 		requiredServingApiKeyAuth(w, &c, nil)
 	}
@@ -4408,7 +4408,7 @@ func requiredServingDatabricksModelServingConfig(w *walker, n *walk.Node, v *ser
 		w.missing(n, "databricks_workspace_url")
 		return
 	}
-	if !(v.DatabricksWorkspaceUrl != "" || n.Written("databricks_workspace_url")) {
+	if !(v.DatabricksWorkspaceUrl != "" || forced(v.ForceSendFields, "DatabricksWorkspaceUrl") || n.Written("databricks_workspace_url")) {
 		w.missing(n, "databricks_workspace_url")
 	}
 }
@@ -4419,10 +4419,10 @@ func requiredServingGoogleCloudVertexAiConfig(w *walker, n *walk.Node, v *servin
 		w.missing(n, "region")
 		return
 	}
-	if !(v.ProjectId != "" || n.Written("project_id")) {
+	if !(v.ProjectId != "" || forced(v.ForceSendFields, "ProjectId") || n.Written("project_id")) {
 		w.missing(n, "project_id")
 	}
-	if !(v.Region != "" || n.Written("region")) {
+	if !(v.Region != "" || forced(v.ForceSendFields, "Region") || n.Written("region")) {
 		w.missing(n, "region")
 	}
 }
@@ -4434,21 +4434,21 @@ func requiredPipelinesConnectorOptions(w *walker, n *walk.Node, v *pipelines.Con
 	if x := v.GoogleAdsOptions; x != nil {
 		c := n.Child("google_ads_options")
 		requiredPipelinesGoogleAdsOptions(w, &c, x)
-	} else if n.Written("google_ads_options") || n.IsRef("google_ads_options") {
+	} else if n.IsRef("google_ads_options") {
 		c := n.Child("google_ads_options")
 		requiredPipelinesGoogleAdsOptions(w, &c, nil)
 	}
 	if x := v.LinkedinAdsOptions; x != nil {
 		c := n.Child("linkedin_ads_options")
 		requiredPipelinesLinkedInAdsOptions(w, &c, x)
-	} else if n.Written("linkedin_ads_options") || n.IsRef("linkedin_ads_options") {
+	} else if n.IsRef("linkedin_ads_options") {
 		c := n.Child("linkedin_ads_options")
 		requiredPipelinesLinkedInAdsOptions(w, &c, nil)
 	}
 	if x := v.RabbitmqOptions; x != nil {
 		c := n.Child("rabbitmq_options")
 		requiredPipelinesRabbitmqOptions(w, &c, x)
-	} else if n.Written("rabbitmq_options") || n.IsRef("rabbitmq_options") {
+	} else if n.IsRef("rabbitmq_options") {
 		c := n.Child("rabbitmq_options")
 		requiredPipelinesRabbitmqOptions(w, &c, nil)
 	}
@@ -4469,7 +4469,7 @@ func requiredServingApiKeyAuth(w *walker, n *walk.Node, v *serving.ApiKeyAuth) {
 		w.missing(n, "key")
 		return
 	}
-	if !(v.Key != "" || n.Written("key")) {
+	if !(v.Key != "" || forced(v.ForceSendFields, "Key") || n.Written("key")) {
 		w.missing(n, "key")
 	}
 }
@@ -4479,13 +4479,13 @@ func requiredPipelinesGoogleAdsOptions(w *walker, n *walk.Node, v *pipelines.Goo
 		w.missing(n, "manager_account_id")
 		return
 	}
-	if !(v.ManagerAccountId != "" || n.Written("manager_account_id")) {
+	if !(v.ManagerAccountId != "" || forced(v.ForceSendFields, "ManagerAccountId") || n.Written("manager_account_id")) {
 		w.missing(n, "manager_account_id")
 	}
 	if x := v.CustomReportOptions; x != nil {
 		c := n.Child("custom_report_options")
 		requiredPipelinesGoogleAdsCustomReportOptions(w, &c, x)
-	} else if n.Written("custom_report_options") || n.IsRef("custom_report_options") {
+	} else if forced(v.ForceSendFields, "CustomReportOptions") || n.IsRef("custom_report_options") {
 		c := n.Child("custom_report_options")
 		requiredPipelinesGoogleAdsCustomReportOptions(w, &c, nil)
 	}
@@ -4498,7 +4498,7 @@ func requiredPipelinesLinkedInAdsOptions(w *walker, n *walk.Node, v *pipelines.L
 	if x := v.CustomReportOptions; x != nil {
 		c := n.Child("custom_report_options")
 		requiredPipelinesLinkedInAdsOptionsLinkedInAdsCustomReportOptions(w, &c, x)
-	} else if n.Written("custom_report_options") || n.IsRef("custom_report_options") {
+	} else if forced(v.ForceSendFields, "CustomReportOptions") || n.IsRef("custom_report_options") {
 		c := n.Child("custom_report_options")
 		requiredPipelinesLinkedInAdsOptionsLinkedInAdsCustomReportOptions(w, &c, nil)
 	}
