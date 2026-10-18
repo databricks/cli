@@ -12,14 +12,14 @@ resources:
     my_model_1:
       description: "hello"
 
-    # Empty string should not trigger a warning.
+    # An empty string does not satisfy a required field.
     my_model_2:
       name: ""
 
   jobs:
     my_job_1:
       tasks:
-        # job_id being 0 should not trigger a warning.
+        # job_id 0 is not set either: RunJobTask has no ForceSendFields to record it.
         - task_key: "task_key1"
           run_job_task:
             job_id: 0

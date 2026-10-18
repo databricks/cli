@@ -73,11 +73,6 @@ func (n *Node) Location() diag.Location {
 	return locs[0]
 }
 
-// Written reports whether the key k of n is written in the source.
-func (n *Node) Written(k string) bool {
-	return n.locs.Key(k) != nil
-}
-
 // IsRef reports whether the key k of n holds a pure variable reference. Only fields
 // that cannot hold a string can.
 func (n *Node) IsRef(k string) bool {
