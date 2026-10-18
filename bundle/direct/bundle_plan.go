@@ -1158,41 +1158,22 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 
 	existingKeys := maps.Clone(db.State)
 
-	patterns := []*structpath.PatternNode{
-		structpath.NewPattern(nil, "resources", structpath.AnyKey, structpath.AnyKey),
-		structpath.NewPattern(nil, "resources", structpath.AnyKey, structpath.AnyKey, "permissions"),
-		structpath.NewPattern(nil, "resources", structpath.AnyKey, structpath.AnyKey, "grants"),
-	}
-
 	var rootView structvar.View
 	if configRoot != nil {
 		rootView = configRoot.View()
 	}
 
-	// Walk?
 	if configRoot != nil {
-		for _, pat := range patterns {
-			err := structvar.ForEach(
-				rootView,
-				pat,
-				func(p *structpath.PathNode, _ structvar.View) error {
-					s := p.String()
-					resourceType := config.GetResourceTypeFromKey(s)
-					if resourceType == "" {
-						return fmt.Errorf("cannot parse resource key: %q", s)
-					}
-					_, ok := dresources.SupportedResources[resourceType]
-					if !ok {
-						return fmt.Errorf("unsupported resource type: %s", resourceType)
-					}
-
-					nodes = append(nodes, s)
-					return nil
-				},
-			)
-			if err != nil {
-				return nil, err
+		for _, s := range configRoot.ResourceNodes() {
+			resourceType := config.GetResourceTypeFromKey(s)
+			if resourceType == "" {
+				return nil, fmt.Errorf("cannot parse resource key: %q", s)
 			}
+			_, ok := dresources.SupportedResources[resourceType]
+			if !ok {
+				return nil, fmt.Errorf("unsupported resource type: %s", resourceType)
+			}
+			nodes = append(nodes, s)
 		}
 	}
 
