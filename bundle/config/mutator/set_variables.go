@@ -3,8 +3,10 @@ package mutator
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -49,7 +51,7 @@ func setVariable(ctx context.Context, cfg *config.Root, variable *variable.Varia
 
 		err := cfg.Set(valuePath, val)
 		if err != nil {
-			return fmt.Errorf(`failed to assign value "%s" to variable %s from environment variable %s with error: %v`, val, name, envVarName, err) //nolint:errorlint // runs inside dyn.Map, which drops wrapped no-such-key errors
+			return fmt.Errorf(`failed to assign value "%s" to variable %s from environment variable %s with error: %v`, val, name, envVarName, err)
 		}
 		return nil
 	}
@@ -74,7 +76,7 @@ func setVariable(ctx context.Context, cfg *config.Root, variable *variable.Varia
 
 		err := cfg.Assign(valuePath, fileDefault)
 		if err != nil {
-			return fmt.Errorf(`failed to assign default value from variable file to variable %s with error: %v`, name, err) //nolint:errorlint // runs inside dyn.Map, which drops wrapped no-such-key errors
+			return fmt.Errorf(`failed to assign default value from variable file to variable %s with error: %v`, name, err)
 		}
 
 		return nil
@@ -82,14 +84,12 @@ func setVariable(ctx context.Context, cfg *config.Root, variable *variable.Varia
 
 	// case: Set the variable to its default value
 	if variable.HasDefault() {
-		vDefault := cfg.View().Lookup(structpath.NewStringKey(variablePath, "default"))
-		if !vDefault.IsValid() {
-			return fmt.Errorf(`failed to get default value from config "%s" for variable %s with error: no such key: default`, variable.Default, name) //nolint:errorlint // runs inside dyn.Map, which drops wrapped no-such-key errors
-		}
-
-		err := cfg.Assign(valuePath, vDefault)
+		// Assign copies the default (maps and slices are resolved in place later) with
+		// its locations.
+		defaultLocs := cfg.LocationTree().Sub(structpath.NewStringKey(variablePath, "default"))
+		err := cfg.Assign(valuePath, structvar.NewView(&variable.Default, nil, defaultLocs))
 		if err != nil {
-			return fmt.Errorf(`failed to assign default value from config "%s" to variable %s with error: %v`, variable.Default, name, err) //nolint:errorlint // runs inside dyn.Map, which drops wrapped no-such-key errors
+			return fmt.Errorf(`failed to assign default value from config "%s" to variable %s with error: %v`, variable.Default, name, err)
 		}
 		return nil
 	}
@@ -138,12 +138,8 @@ func (m *setVariables) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	if diags.HasError() {
 		return diags
 	}
-	for name := range b.Config.View().Get("variables").MapItems() {
-		v, ok := b.Config.Variables[name]
-		if !ok {
-			return diags.Extend(diag.Errorf(`variable "%s" is not defined`, name))
-		}
-
+	for _, name := range slices.Sorted(maps.Keys(b.Config.Variables)) {
+		v := b.Config.Variables[name]
 		fileDefault := defaults.Get(name)
 		err := setVariable(ctx, &b.Config, v, name, fileDefault)
 		if err != nil {

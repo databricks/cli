@@ -52,7 +52,6 @@ func pipelineDeletionCascades(b *bundle.Bundle, action deployplan.Action) (bool,
 // checkForPreventDestroy checks if the resource has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed.
 // If it does, it returns an error.
 func checkForPreventDestroy(b *bundle.Bundle, actions []deployplan.Action) error {
-	root := b.Config.View()
 	var errs []error
 	for _, action := range actions {
 		if action.ActionType != deployplan.Recreate && action.ActionType != deployplan.Delete {
@@ -64,18 +63,19 @@ func checkForPreventDestroy(b *bundle.Bundle, actions []deployplan.Action) error
 			return fmt.Errorf("failed to parse %q", action.ResourceKey)
 		}
 
-		path = structpath.NewPath(path, "lifecycle", "prevent_destroy")
-
-		preventDestroyV := root.Lookup(path)
-		if !preventDestroyV.IsValid() {
+		// Only resources have a lifecycle (not e.g. resources.jobs.foo.permissions).
+		if path.Len() != 3 {
+			continue
+		}
+		res, ok := b.Config.Resources.GetResource(path.KeyAt(1), path.KeyAt(2))
+		if !ok {
 			continue
 		}
 
-		preventDestroy, ok := preventDestroyV.AsBool()
-		if !ok {
+		if b.Config.IsReferenceAt(structpath.NewPath(path, "lifecycle", "prevent_destroy")) {
 			return fmt.Errorf("internal error: prevent_destroy is not a boolean for %s", action.ResourceKey)
 		}
-		if preventDestroy {
+		if res.GetLifecycle().HasPreventDestroy() {
 			errs = append(errs, fmt.Errorf("%s has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed. To avoid this error, disable lifecycle.prevent_destroy for %s", action.ResourceKey, action.ResourceKey))
 		}
 	}
