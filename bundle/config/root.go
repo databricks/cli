@@ -715,9 +715,10 @@ func (r Root) ReferencesUnder(path *structpath.PathNode) iter.Seq2[*structpath.P
 			if err != nil {
 				continue
 			}
-			// The view's presence rules: a reference below (or at) a nil pointer, a
-			// missing map key or an index out of range is gone.
-			if !view.Lookup(p).IsValid() {
+			// The view shows a present reference as a string. A reference below or at a
+			// nil pointer (even a forced one), a missing map key or an index out of range
+			// is gone.
+			if view.Lookup(p).Kind() != structvar.KindString {
 				continue
 			}
 			if !yield(p, r.refs[k]) {
