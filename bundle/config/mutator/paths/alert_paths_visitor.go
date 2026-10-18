@@ -1,14 +1,17 @@
 package paths
 
 import (
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structvar"
 )
 
-func VisitAlertPaths(root structvar.View, fn VisitFunc) error {
-	pattern := structpath.NewPattern(nil, "resources", "alerts", structpath.AnyKey, "file_path")
-
-	return structvar.ForEach(root, pattern, func(path *structpath.PathNode, value structvar.View) error {
-		return fn(path, TranslateModeLocalRelative, value)
-	})
+func VisitAlertPaths(root *config.Root, fn VisitFunc) error {
+	for _, name := range sortedKeys(root.Resources.Alerts) {
+		if a := root.Resources.Alerts[name]; a != nil {
+			if err := visit(&a.FilePath, TranslateModeLocalRelative, nil, fn, func() *structpath.PathNode { return structpath.NewPath(resourcePath("alerts", name), "file_path") }); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
