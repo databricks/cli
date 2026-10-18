@@ -4,14 +4,12 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"reflect"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/patchwheel"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
@@ -78,12 +76,7 @@ type expandFunc[T any] func(ctx context.Context, b *bundle.Bundle, p *structpath
 
 // expandSequence replaces the items of the sequence at path p with the items expandFunc returns for them.
 // New items keep the locations of the item they were expanded from.
-func expandSequence[T any](ctx context.Context, b *bundle.Bundle, p *structpath.PathNode, lv structvar.View, fn expandFunc[T]) diag.Diagnostics {
-	items, ok := sequencePointer[T](lv)
-	if !ok {
-		return nil
-	}
-
+func expandSequence[T any](ctx context.Context, b *bundle.Bundle, p *structpath.PathNode, items *[]T, fn expandFunc[T]) diag.Diagnostics {
 	var diags diag.Diagnostics
 	output := make([]T, 0, len(*items))
 	var sources [][]int
@@ -113,25 +106,8 @@ func expandSequence[T any](ctx context.Context, b *bundle.Bundle, p *structpath.
 	return diags
 }
 
-// sequencePointer returns a pointer to the typed sequence the view is based on.
-func sequencePointer[T any](lv structvar.View) (*[]T, bool) {
-	if lv.Kind() != structvar.KindSequence {
-		return nil, false
-	}
-
-	v := lv.Reflect()
-	for v.Kind() == reflect.Pointer || v.Kind() == reflect.Interface {
-		v = v.Elem()
-	}
-	if !v.CanAddr() {
-		return nil, false
-	}
-
-	return reflect.TypeAssert[*[]T](v.Addr())
-}
-
-func expandLibraries(ctx context.Context, lv structvar.View, p *structpath.PathNode, b *bundle.Bundle) diag.Diagnostics {
-	return expandSequence(ctx, b, p, lv, func(ctx context.Context, b *bundle.Bundle, ip *structpath.PathNode, lib compute.Library) ([]compute.Library, string, diag.Diagnostics) {
+func expandLibraries(ctx context.Context, b *bundle.Bundle, p *structpath.PathNode, libs *[]compute.Library) diag.Diagnostics {
+	return expandSequence(ctx, b, p, libs, func(ctx context.Context, b *bundle.Bundle, ip *structpath.PathNode, lib compute.Library) ([]compute.Library, string, diag.Diagnostics) {
 		path, libType, supported := getLibDetails(lib)
 		if !supported || !IsLibraryLocal(path) {
 			return []compute.Library{lib}, "", nil
@@ -154,8 +130,8 @@ func expandLibraries(ctx context.Context, lv structvar.View, p *structpath.PathN
 	})
 }
 
-func expandEnvironmentDeps(ctx context.Context, lv structvar.View, p *structpath.PathNode, b *bundle.Bundle) diag.Diagnostics {
-	return expandSequence(ctx, b, p, lv, func(ctx context.Context, b *bundle.Bundle, ip *structpath.PathNode, path string) ([]string, string, diag.Diagnostics) {
+func expandEnvironmentDeps(ctx context.Context, b *bundle.Bundle, p *structpath.PathNode, deps *[]string) diag.Diagnostics {
+	return expandSequence(ctx, b, p, deps, func(ctx context.Context, b *bundle.Bundle, ip *structpath.PathNode, path string) ([]string, string, diag.Diagnostics) {
 		if !IsLibraryLocal(path) {
 			return []string{path}, "", nil
 		}
@@ -176,57 +152,30 @@ func expandEnvironmentDeps(ctx context.Context, lv structvar.View, p *structpath
 	})
 }
 
-type expandPattern struct {
-	pattern *structpath.PatternNode
-	fn      func(ctx context.Context, lv structvar.View, p *structpath.PathNode, b *bundle.Bundle) diag.Diagnostics
-}
-
-var (
-	taskLibrariesPattern              = structpath.NewPattern(nil, "resources", "jobs", structpath.AnyKey, "tasks", structpath.AnyIndex, "libraries")
-	forEachTaskLibrariesPattern       = structpath.NewPattern(nil, "resources", "jobs", structpath.AnyKey, "tasks", structpath.AnyIndex, "for_each_task", "task", "libraries")
-	aiRuntimeCodeSourcePattern        = structpath.NewPattern(nil, "resources", "jobs", structpath.AnyKey, "tasks", structpath.AnyIndex, "ai_runtime_task", "code_source_path")
-	forEachAiRuntimeCodeSourcePattern = structpath.NewPattern(nil, "resources", "jobs", structpath.AnyKey, "tasks", structpath.AnyIndex, "for_each_task", "task", "ai_runtime_task", "code_source_path")
-	envDepsPattern                    = structpath.NewPattern(nil, "resources", "jobs", structpath.AnyKey, "environments", structpath.AnyIndex, "spec", "dependencies")
-	pipelineEnvDepsPattern            = structpath.NewPattern(nil, "resources", "pipelines", structpath.AnyKey, "environment", "dependencies")
-	clusterLibrariesPattern           = structpath.NewPattern(nil, "resources", "clusters", structpath.AnyKey, "libraries")
-)
-
 func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	expanders := []expandPattern{
-		{
-			pattern: taskLibrariesPattern,
-			fn:      expandLibraries,
-		},
-		{
-			pattern: forEachTaskLibrariesPattern,
-			fn:      expandLibraries,
-		},
-		{
-			pattern: envDepsPattern,
-			fn:      expandEnvironmentDeps,
-		},
-		{
-			pattern: pipelineEnvDepsPattern,
-			fn:      expandEnvironmentDeps,
-		},
-		{
-			pattern: clusterLibrariesPattern,
-			fn:      expandLibraries,
-		},
-	}
-
 	var diags diag.Diagnostics
+	r := &b.Config.Resources
 
-	for _, expander := range expanders {
-		err := structvar.ForEach(b.Config.View(), expander.pattern, func(p *structpath.PathNode, lv structvar.View) error {
-			diags = diags.Extend(expander.fn(ctx, lv, p, b))
-			return nil
+	// Task libraries, the libraries of tasks in for_each_task, job and pipeline
+	// environment dependencies, then cluster libraries.
+	for _, nested := range []bool{false, true} {
+		r.IterateTaskLibraries(nested, func(p *structpath.PathNode, libs *[]compute.Library) bool {
+			diags = diags.Extend(expandLibraries(ctx, b, p, libs))
+			return true
 		})
-		if err != nil {
-			diags = diags.Extend(diag.FromErr(err))
-			break
-		}
 	}
+	r.IterateJobEnvironmentDependencies(func(p *structpath.PathNode, deps *[]string) bool {
+		diags = diags.Extend(expandEnvironmentDeps(ctx, b, p, deps))
+		return true
+	})
+	r.IteratePipelineEnvironmentDependencies(func(p *structpath.PathNode, deps *[]string) bool {
+		diags = diags.Extend(expandEnvironmentDeps(ctx, b, p, deps))
+		return true
+	})
+	r.IterateClusterLibraries(func(p *structpath.PathNode, libs *[]compute.Library) bool {
+		diags = diags.Extend(expandLibraries(ctx, b, p, libs))
+		return true
+	})
 
 	return diags
 }

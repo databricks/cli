@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/patchwheel"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 // LocalLibraryPaths returns the local file paths of all libraries in the bundle
@@ -130,82 +129,51 @@ func ReplaceWithRemotePath(ctx context.Context, b *bundle.Bundle) (map[string][]
 func collectLocalLibraries(b *bundle.Bundle) (map[string][]LocationToUpdate, error) {
 	libs := make(map[string]([]LocationToUpdate))
 
-	patterns := []*structpath.PatternNode{
-		structpath.NewPattern(taskLibrariesPattern, structpath.AnyIndex, "whl"),
-		structpath.NewPattern(taskLibrariesPattern, structpath.AnyIndex, "jar"),
-		structpath.NewPattern(forEachTaskLibrariesPattern, structpath.AnyIndex, "whl"),
-		structpath.NewPattern(forEachTaskLibrariesPattern, structpath.AnyIndex, "jar"),
-		structpath.NewPattern(clusterLibrariesPattern, structpath.AnyIndex, "whl"),
-		structpath.NewPattern(clusterLibrariesPattern, structpath.AnyIndex, "jar"),
-		structpath.NewPattern(envDepsPattern, structpath.AnyIndex),
-		structpath.NewPattern(pipelineEnvDepsPattern, structpath.AnyIndex),
-		// The AI Runtime task's code_source_path is a local archive (typically an
-		// artifact-built .tar.gz) that must be uploaded and referenced by its remote
-		// path, exactly like a wheel or jar library.
-		aiRuntimeCodeSourcePattern,
-		forEachAiRuntimeCodeSourcePattern,
-	}
-
-	root := b.Config.View()
-	for _, pattern := range patterns {
-		err := structvar.ForEach(root, pattern, func(p *structpath.PathNode, v structvar.View) error {
-			source, ok := v.AsString()
-			if !ok {
-				return fmt.Errorf("expected string, got %s", v.Kind())
-			}
-
-			if !IsLibraryLocal(source) {
-				return nil
-			}
-
-			// Split off any pip extras suffix so the upload targets the real
-			// file; the suffix is re-appended to the remote path afterwards.
-			source, extras := patchwheel.SplitWheelExtras(source)
-
-			source = filepath.Join(b.SyncRootPath, source)
-			libs[source] = append(libs[source], LocationToUpdate{
-				configPath: p,
-				location:   v.Location(),
-				extras:     extras,
-			})
-
-			return nil
-		})
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	artifactPattern := structpath.NewPattern(nil, "artifacts", structpath.AnyKey, "files", structpath.AnyIndex)
-
-	err := structvar.ForEach(root, artifactPattern, func(p *structpath.PathNode, v structvar.View) error {
-		if v.Kind() != structvar.KindMap {
-			return fmt.Errorf("expected map, got %s", v.Kind())
-		}
-
-		sv := v.Get("source")
-		if !sv.IsValid() {
+	// The AI Runtime task's code_source_path is a local archive (typically an
+	// artifact-built .tar.gz) that must be uploaded and referenced by its remote path,
+	// exactly like a wheel or jar library.
+	err := visitLibraryValues(&b.Config.Resources, true, func(p *structpath.PathNode, s *string) error {
+		source := *s
+		if !IsLibraryLocal(source) {
 			return nil
 		}
 
-		source, ok := sv.AsString()
-		if !ok {
-			return fmt.Errorf("expected string, got %s", v.Kind())
-		}
+		// Split off any pip extras suffix so the upload targets the real
+		// file; the suffix is re-appended to the remote path afterwards.
+		source, extras := patchwheel.SplitWheelExtras(source)
 
-		if patched, ok := v.Get("patched").AsString(); ok && patched != "" {
-			source = patched
-		}
-
+		source = filepath.Join(b.SyncRootPath, source)
 		libs[source] = append(libs[source], LocationToUpdate{
-			configPath: structpath.NewStringKey(p, "remote_path"),
-			location:   v.Location(),
+			configPath: p,
+			location:   b.Config.GetLocationOfExact(p),
+			extras:     extras,
 		})
-
 		return nil
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	for _, name := range slices.Sorted(maps.Keys(b.Config.Artifacts)) {
+		a := b.Config.Artifacts[name]
+		if a == nil {
+			continue
+		}
+		for i, f := range a.Files {
+			p := structpath.NewPath(nil, "artifacts", name, "files", i)
+			// source has no omitempty: an explicit empty value is present too.
+			if f.Source == "" && len(b.Config.GetLocationsOfExact(structpath.NewStringKey(p, "source"))) == 0 {
+				continue
+			}
+			source := f.Source
+			if f.Patched != "" {
+				source = f.Patched
+			}
+			libs[source] = append(libs[source], LocationToUpdate{
+				configPath: structpath.NewStringKey(p, "remote_path"),
+				location:   b.Config.GetLocationOfExact(p),
+			})
+		}
 	}
 
 	return libs, nil
