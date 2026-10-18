@@ -1,17 +1,20 @@
 package paths
 
 import (
+	"maps"
+	"slices"
+
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structvar"
 )
 
-// VisitFunc is called for every matching value. It may change the configuration
-// at path (e.g. with [config.Root.Set]).
-type VisitFunc func(path *structpath.PathNode, mode TranslateMode, value structvar.View) error
+// VisitFunc is called for every path value. It may rewrite the value through the
+// pointer; the value keeps its locations.
+type VisitFunc func(path *structpath.PathNode, mode TranslateMode, value *string) error
 
 // VisitPaths visits all paths in bundle configuration
-func VisitPaths(root structvar.View, fn VisitFunc) error {
-	visitors := []func(structvar.View, VisitFunc) error{
+func VisitPaths(root *config.Root, fn VisitFunc) error {
+	visitors := []func(*config.Root, VisitFunc) error{
 		VisitJobPaths,
 		VisitJobRunPaths,
 		VisitJobLibrariesPaths,
@@ -33,14 +36,21 @@ func VisitPaths(root structvar.View, fn VisitFunc) error {
 	return nil
 }
 
-// visitString calls fn for every string value matching pattern unless skip reports true for it.
-// Values that are not strings are not visited.
-func visitString(root structvar.View, pattern *structpath.PatternNode, mode TranslateMode, skip func(string) bool, fn VisitFunc) error {
-	return structvar.ForEach(root, pattern, func(p *structpath.PathNode, v structvar.View) error {
-		s, ok := v.AsString()
-		if !ok || skip(s) {
-			return nil
-		}
-		return fn(p, mode, v)
-	})
+// visit calls fn for the path value *s unless it is empty or skip reports true for it.
+// The path is only built for values that are visited.
+func visit(s *string, mode TranslateMode, skip func(string) bool, fn VisitFunc, path func() *structpath.PathNode) error {
+	if *s == "" || (skip != nil && skip(*s)) {
+		return nil
+	}
+	return fn(path(), mode, s)
+}
+
+// sortedKeys returns the keys of a resource map in the order the paths are visited.
+func sortedKeys[V any](m map[string]V) []string {
+	return slices.Sorted(maps.Keys(m))
+}
+
+// resourcePath returns the path of the resource name of the given type.
+func resourcePath(typ, name string) *structpath.PathNode {
+	return structpath.NewPath(nil, "resources", typ, name)
 }

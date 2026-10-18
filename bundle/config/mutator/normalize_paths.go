@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type normalizePaths struct{}
@@ -44,22 +43,18 @@ func (a normalizePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnost
 	// Do not normalize job task paths if using git source
 	gitSourcePaths := collectGitSourcePaths(b)
 
-	err := paths.VisitPaths(b.Config.View(), func(path *structpath.PathNode, kind paths.TranslateMode, v structvar.View) error {
+	err := paths.VisitPaths(&b.Config, func(path *structpath.PathNode, kind paths.TranslateMode, s *string) error {
 		if slices.ContainsFunc(gitSourcePaths, path.HasPrefix) {
 			return nil
 		}
 
-		value, ok := v.AsString()
-		if !ok {
-			return fmt.Errorf("value at %s is not a string", path.String())
-		}
-
-		newValue, err := normalizePath(value, v.Location(), b.BundleRootPath)
+		newValue, err := normalizePath(*s, b.Config.ExactLocation(path), b.BundleRootPath)
 		if err != nil {
 			return err
 		}
 
-		return b.Config.Set(path, newValue)
+		*s = newValue
+		return nil
 	})
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("failed to normalize paths: %w", err))

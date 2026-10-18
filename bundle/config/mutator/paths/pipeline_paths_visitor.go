@@ -1,94 +1,90 @@
 package paths
 
 import (
-	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structvar"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
-type pipelineRewritePattern struct {
-	pattern *structpath.PatternNode
-	mode    TranslateMode
-
-	// If function defined in skipRewrite returns true, we skip rewriting the path.
-	// For example, for environment dependencies, we skip rewriting if the path is not a local library.
-	skipRewrite func(string) bool
+// pipelineLibraryRule visits one kind of path value of the libraries of a pipeline.
+type pipelineLibraryRule struct {
+	mode  TranslateMode
+	keys  []any
+	field func(*pipelines.PipelineLibrary) *string
 }
 
-// Base pattern to match all libraries in all pipelines.
-var base = structpath.NewPattern(nil, "resources", "pipelines", structpath.AnyKey)
-
-func pipelineRewritePatterns() []pipelineRewritePattern {
-	// Compile list of configuration paths to rewrite.
-	allPatterns := []pipelineRewritePattern{
-		{
-			pattern:     structpath.NewPattern(base, "libraries", structpath.AnyIndex, "notebook", "path"),
-			mode:        TranslateModeNotebook,
-			skipRewrite: noSkipRewrite,
-		},
-		{
-			pattern:     structpath.NewPattern(base, "libraries", structpath.AnyIndex, "file", "path"),
-			mode:        TranslateModeFile,
-			skipRewrite: noSkipRewrite,
-		},
-		{
-			pattern:     structpath.NewPattern(base, "libraries", structpath.AnyIndex, "glob", "include"),
-			mode:        TranslateModeGlob,
-			skipRewrite: noSkipRewrite,
-		},
-		{
-			pattern:     structpath.NewPattern(base, "root_path"),
-			mode:        TranslateModeDirectory,
-			skipRewrite: noSkipRewrite,
-		},
-	}
-
-	return allPatterns
+var pipelineLibraryRules = []pipelineLibraryRule{
+	{TranslateModeNotebook, []any{"notebook", "path"}, func(l *pipelines.PipelineLibrary) *string {
+		if l.Notebook == nil {
+			return nil
+		}
+		return &l.Notebook.Path
+	}},
+	{TranslateModeFile, []any{"file", "path"}, func(l *pipelines.PipelineLibrary) *string {
+		if l.File == nil {
+			return nil
+		}
+		return &l.File.Path
+	}},
+	{TranslateModeGlob, []any{"glob", "include"}, func(l *pipelines.PipelineLibrary) *string {
+		if l.Glob == nil {
+			return nil
+		}
+		return &l.Glob.Include
+	}},
 }
 
-func pipelineLibrariesRewritePatterns() []pipelineRewritePattern {
-	pipelineEnvironmentsPatterns := []pipelineRewritePattern{
-		{
-			pattern: structpath.NewPattern(nil, "resources", "pipelines", structpath.AnyKey, "environment", "dependencies", structpath.AnyIndex),
-			mode:    TranslateModeLocalRelativeWithPrefix,
-			skipRewrite: func(s string) bool {
-				return !libraries.IsLibraryLocal(s)
-			},
-		},
-	}
-
-	pipelineEnvironmentsPatternsWithPipFlags := []pipelineRewritePattern{
-		{
-			structpath.NewPattern(nil, "resources", "pipelines", structpath.AnyKey, "environment", "dependencies", structpath.AnyIndex),
-			TranslateModeEnvironmentPipFlag,
-			func(s string) bool {
-				_, _, ok := libraries.IsLocalPathInPipFlag(s)
-				return !ok
-			},
-		},
-	}
-
-	return append(pipelineEnvironmentsPatterns, pipelineEnvironmentsPatternsWithPipFlags...)
-}
-
-func VisitPipelinePaths(root structvar.View, fn VisitFunc) error {
-	for _, rewritePattern := range pipelineRewritePatterns() {
-		err := visitString(root, rewritePattern.pattern, rewritePattern.mode, rewritePattern.skipRewrite, fn)
-		if err != nil {
-			return err
+func VisitPipelinePaths(root *config.Root, fn VisitFunc) error {
+	for _, rule := range pipelineLibraryRules {
+		for _, name := range sortedKeys(root.Resources.Pipelines) {
+			pl := root.Resources.Pipelines[name]
+			if pl == nil {
+				continue
+			}
+			for i := range pl.Libraries {
+				s := rule.field(&pl.Libraries[i])
+				if s == nil {
+					continue
+				}
+				if err := visit(s, rule.mode, nil, fn, func() *structpath.PathNode {
+					return structpath.NewPath(structpath.NewPath(resourcePath("pipelines", name), "libraries", i), rule.keys...)
+				}); err != nil {
+					return err
+				}
+			}
 		}
 	}
-
+	for _, name := range sortedKeys(root.Resources.Pipelines) {
+		if pl := root.Resources.Pipelines[name]; pl != nil {
+			if err := visit(&pl.RootPath, TranslateModeDirectory, nil, fn, func() *structpath.PathNode { return structpath.NewPath(resourcePath("pipelines", name), "root_path") }); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
-func VisitPipelineLibrariesPaths(root structvar.View, fn VisitFunc) error {
-	for _, rewritePattern := range pipelineLibrariesRewritePatterns() {
-		err := visitString(root, rewritePattern.pattern, rewritePattern.mode, rewritePattern.skipRewrite, fn)
-		if err != nil {
-			return err
+func VisitPipelineLibrariesPaths(root *config.Root, fn VisitFunc) error {
+	for _, rule := range []struct {
+		mode TranslateMode
+		skip func(string) bool
+	}{
+		{TranslateModeLocalRelativeWithPrefix, notLocalLibrary},
+		{TranslateModeEnvironmentPipFlag, noLocalPathInPipFlag},
+	} {
+		for _, name := range sortedKeys(root.Resources.Pipelines) {
+			pl := root.Resources.Pipelines[name]
+			if pl == nil || pl.Environment == nil {
+				continue
+			}
+			for i := range pl.Environment.Dependencies {
+				if err := visit(&pl.Environment.Dependencies[i], rule.mode, rule.skip, fn, func() *structpath.PathNode {
+					return structpath.NewPath(resourcePath("pipelines", name), "environment", "dependencies", i)
+				}); err != nil {
+					return err
+				}
+			}
 		}
 	}
-
 	return nil
 }
