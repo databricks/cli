@@ -416,6 +416,22 @@ func TestApplyBackwardCompatibilityFixes(t *testing.T) {
 	assert.Equal(t, config.Python{VEnvPath: ".venv"}, b.Config.Experimental.Python)
 }
 
+func TestApplyBackwardCompatibilityFixes_references(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Python: config.Python{
+				VEnvPath: ".venv",
+			},
+		},
+	}
+	require.NoError(t, b.Config.SetReference(structpath.NewPath(nil, "python", "resources"), "${var.loaders}"))
+
+	applyBackwardsCompatibilityFixes(b)
+
+	assert.Equal(t, "${var.loaders}", b.Config.ReferenceAt(structpath.NewPath(nil, "experimental", "python", "resources")))
+	assert.Equal(t, "${var.loaders}", b.Config.ReferenceAt(structpath.NewPath(nil, "python", "resources")))
+}
+
 func TestApplyBackwardCompatibilityFixes_unchanged(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{

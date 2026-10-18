@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type syncDefaultPath struct{}
@@ -21,7 +22,7 @@ func (m *syncDefaultPath) Name() string {
 func (m *syncDefaultPath) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// If the sync paths field is already set, do nothing.
 	// We know it is set if it is a sequence (empty or not) or a reference.
-	if b.Config.Sync.Paths != nil || b.Config.IsReference("sync.paths") {
+	if b.Config.Sync.Paths != nil || b.Config.IsReferenceAt(structpath.NewPath(nil, "sync", "paths")) {
 		return nil
 	}
 
