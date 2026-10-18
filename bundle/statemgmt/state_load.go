@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type (
@@ -93,13 +92,6 @@ func applyState(ctx context.Context, b *bundle.Bundle, state ExportedResourcesMa
 }
 
 func StateToBundle(ctx context.Context, state ExportedResourcesMap, cfg *config.Root) error {
-	resourcesPath := structpath.NewStringKey(nil, "resources")
-	if cfg.Resources.IsZero() && len(cfg.GetLocationsOfExact(resourcesPath)) == 0 {
-		if err := cfg.Set(resourcesPath, config.Resources{}); err != nil {
-			return err
-		}
-	}
-
 	for resourceKey, attrs := range state {
 		// Parse resource key like "resources.jobs.foo" or "resources.jobs.foo.permissions"
 		parts := strings.Split(resourceKey, ".")
