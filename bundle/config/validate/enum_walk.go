@@ -285,7 +285,7 @@ func enumConfigRoot(w *walker, n *walk.Node, v *config.Root) {
 			enumResourcesPermission(w, &e, &v.Permissions[i])
 		}
 	}
-	if x := &v.Resources; !walk.IsZeroStruct(x) || n.Locations().Key("resources") != nil {
+	if x := &v.Resources; !walk.IsZeroStruct(x) {
 		c := n.Child("resources")
 		enumConfigResources(w, &c, x)
 	}
@@ -316,7 +316,7 @@ func enumResourcesPermission(w *walker, n *walk.Node, v *resources.Permission) {
 	if v == nil {
 		return
 	}
-	if s := string(v.Level); s != "" || n.Written("level") {
+	if s := string(v.Level); s != "" {
 		c := n.Child("level")
 		w.enumValue(&c, s, enumValues2)
 	}
@@ -584,7 +584,7 @@ func enumResourcesAlert(w *walker, n *walk.Node, v *resources.Alert) {
 		c := n.Child("custom_template_format")
 		w.enumValue(&c, s, enumValues4)
 	}
-	if x := &v.AlertV2.Evaluation; !walk.IsZeroStruct(x) || walk.Forced(v.AlertV2.ForceSendFields, "Evaluation") || n.Locations().Key("evaluation") != nil {
+	if x := &v.AlertV2.Evaluation; !walk.IsZeroStruct(x) || walk.Forced(v.AlertV2.ForceSendFields, "Evaluation") {
 		c := n.Child("evaluation")
 		enumSqlAlertV2Evaluation(w, &c, x)
 	}
@@ -599,7 +599,7 @@ func enumResourcesAlert(w *walker, n *walk.Node, v *resources.Alert) {
 			enumResourcesPermission(w, &e, &v.Permissions[i])
 		}
 	}
-	if x := &v.AlertV2.Schedule; !walk.IsZeroStruct(x) || walk.Forced(v.AlertV2.ForceSendFields, "Schedule") || n.Locations().Key("schedule") != nil {
+	if x := &v.AlertV2.Schedule; !walk.IsZeroStruct(x) || walk.Forced(v.AlertV2.ForceSendFields, "Schedule") {
 		c := n.Child("schedule")
 		enumSqlCronSchedule(w, &c, x)
 	}
@@ -1030,7 +1030,7 @@ func enumResourcesPostgresEndpoint(w *walker, n *walk.Node, v *resources.Postgre
 	if v == nil {
 		return
 	}
-	if s := string(v.PostgresEndpointConfig.EndpointSpec.EndpointType); s != "" || walk.Forced(v.PostgresEndpointConfig.EndpointSpec.ForceSendFields, "EndpointType") || n.Written("endpoint_type") {
+	if s := string(v.PostgresEndpointConfig.EndpointSpec.EndpointType); s != "" || walk.Forced(v.PostgresEndpointConfig.EndpointSpec.ForceSendFields, "EndpointType") {
 		c := n.Child("endpoint_type")
 		w.enumValue(&c, s, enumValues16)
 	}
@@ -1235,7 +1235,7 @@ func enumResourcesVectorSearchEndpoint(w *walker, n *walk.Node, v *resources.Vec
 	if v == nil {
 		return
 	}
-	if s := string(v.CreateEndpoint.EndpointType); s != "" || walk.Forced(v.CreateEndpoint.ForceSendFields, "EndpointType") || n.Written("endpoint_type") {
+	if s := string(v.CreateEndpoint.EndpointType); s != "" || walk.Forced(v.CreateEndpoint.ForceSendFields, "EndpointType") {
 		c := n.Child("endpoint_type")
 		w.enumValue(&c, s, enumValues25)
 	}
@@ -1267,7 +1267,7 @@ func enumResourcesVectorSearchIndex(w *walker, n *walk.Node, v *resources.Vector
 		c := n.Child("index_subtype")
 		w.enumValue(&c, s, enumValues26)
 	}
-	if s := string(v.CreateVectorIndexRequest.IndexType); s != "" || n.Written("index_type") {
+	if s := string(v.CreateVectorIndexRequest.IndexType); s != "" {
 		c := n.Child("index_type")
 		w.enumValue(&c, s, enumValues27)
 	}
@@ -1284,7 +1284,7 @@ func enumResourcesVolume(w *walker, n *walk.Node, v *resources.Volume) {
 			enumCatalogPrivilegeAssignment(w, &e, &v.Grants[i])
 		}
 	}
-	if s := string(v.CreateVolumeRequestContent.VolumeType); s != "" || walk.Forced(v.CreateVolumeRequestContent.ForceSendFields, "VolumeType") || n.Written("volume_type") {
+	if s := string(v.CreateVolumeRequestContent.VolumeType); s != "" || walk.Forced(v.CreateVolumeRequestContent.ForceSendFields, "VolumeType") {
 		c := n.Child("volume_type")
 		w.enumValue(&c, s, enumValues28)
 	}
@@ -1294,7 +1294,7 @@ func enumSqlAlertV2Evaluation(w *walker, n *walk.Node, v *sql.AlertV2Evaluation)
 	if v == nil {
 		return
 	}
-	if s := string(v.ComparisonOperator); s != "" || walk.Forced(v.ForceSendFields, "ComparisonOperator") || n.Written("comparison_operator") {
+	if s := string(v.ComparisonOperator); s != "" || walk.Forced(v.ForceSendFields, "ComparisonOperator") {
 		c := n.Child("comparison_operator")
 		w.enumValue(&c, s, enumValues29)
 	}
@@ -1302,7 +1302,7 @@ func enumSqlAlertV2Evaluation(w *walker, n *walk.Node, v *sql.AlertV2Evaluation)
 		c := n.Child("empty_result_state")
 		w.enumValue(&c, s, enumValues30)
 	}
-	if x := &v.Source; !walk.IsZeroStruct(x) || walk.Forced(v.ForceSendFields, "Source") || n.Locations().Key("source") != nil {
+	if x := &v.Source; !walk.IsZeroStruct(x) || walk.Forced(v.ForceSendFields, "Source") {
 		c := n.Child("source")
 		enumSqlAlertV2OperandColumn(w, &c, x)
 	}
@@ -1364,7 +1364,7 @@ func enumResourcesAppPermission(w *walker, n *walk.Node, v *resources.AppPermiss
 	if v == nil {
 		return
 	}
-	if s := string(v.Level); s != "" || n.Written("level") {
+	if s := string(v.Level); s != "" {
 		c := n.Child("level")
 		w.enumValue(&c, s, enumValues35)
 	}
@@ -1433,7 +1433,7 @@ func enumResourcesClusterPolicyPermission(w *walker, n *walk.Node, v *resources.
 	if v == nil {
 		return
 	}
-	if s := string(v.Level); s != "" || n.Written("level") {
+	if s := string(v.Level); s != "" {
 		c := n.Child("level")
 		w.enumValue(&c, s, enumValues37)
 	}
@@ -1481,7 +1481,7 @@ func enumResourcesClusterPermission(w *walker, n *walk.Node, v *resources.Cluste
 	if v == nil {
 		return
 	}
-	if s := string(v.Level); s != "" || n.Written("level") {
+	if s := string(v.Level); s != "" {
 		c := n.Child("level")
 		w.enumValue(&c, s, enumValues43)
 	}
@@ -1491,7 +1491,7 @@ func enumResourcesMlflowExperimentPermission(w *walker, n *walk.Node, v *resourc
 	if v == nil {
 		return
 	}
-	if s := string(v.Level); s != "" || n.Written("level") {
+	if s := string(v.Level); s != "" {
 		c := n.Child("level")
 		w.enumValue(&c, s, enumValues44)
 	}
@@ -1551,7 +1551,7 @@ func enumResourcesInstancePoolPermission(w *walker, n *walk.Node, v *resources.I
 	if v == nil {
 		return
 	}
-	if s := string(v.Level); s != "" || n.Written("level") {
+	if s := string(v.Level); s != "" {
 		c := n.Child("level")
 		w.enumValue(&c, s, enumValues47)
 	}
@@ -1579,7 +1579,7 @@ func enumJobsJobDeployment(w *walker, n *walk.Node, v *jobs.JobDeployment) {
 	if v == nil {
 		return
 	}
-	if s := string(v.Kind); s != "" || walk.Forced(v.ForceSendFields, "Kind") || n.Written("kind") {
+	if s := string(v.Kind); s != "" || walk.Forced(v.ForceSendFields, "Kind") {
 		c := n.Child("kind")
 		w.enumValue(&c, s, enumValues49)
 	}
@@ -1589,7 +1589,7 @@ func enumJobsGitSource(w *walker, n *walk.Node, v *jobs.GitSource) {
 	if v == nil {
 		return
 	}
-	if s := string(v.GitProvider); s != "" || walk.Forced(v.ForceSendFields, "GitProvider") || n.Written("git_provider") {
+	if s := string(v.GitProvider); s != "" || walk.Forced(v.ForceSendFields, "GitProvider") {
 		c := n.Child("git_provider")
 		w.enumValue(&c, s, enumValues50)
 	}
@@ -1626,7 +1626,7 @@ func enumResourcesJobPermission(w *walker, n *walk.Node, v *resources.JobPermiss
 	if v == nil {
 		return
 	}
-	if s := string(v.Level); s != "" || n.Written("level") {
+	if s := string(v.Level); s != "" {
 		c := n.Child("level")
 		w.enumValue(&c, s, enumValues51)
 	}
@@ -1848,7 +1848,7 @@ func enumResourcesModelServingEndpointPermission(w *walker, n *walk.Node, v *res
 	if v == nil {
 		return
 	}
-	if s := string(v.Level); s != "" || n.Written("level") {
+	if s := string(v.Level); s != "" {
 		c := n.Child("level")
 		w.enumValue(&c, s, enumValues54)
 	}
@@ -1862,7 +1862,7 @@ func enumServingRateLimit(w *walker, n *walk.Node, v *serving.RateLimit) {
 		c := n.Child("key")
 		w.enumValue(&c, s, enumValues55)
 	}
-	if s := string(v.RenewalPeriod); s != "" || n.Written("renewal_period") {
+	if s := string(v.RenewalPeriod); s != "" {
 		c := n.Child("renewal_period")
 		w.enumValue(&c, s, enumValues56)
 	}
@@ -1885,7 +1885,7 @@ func enumResourcesMlflowModelPermission(w *walker, n *walk.Node, v *resources.Ml
 	if v == nil {
 		return
 	}
-	if s := string(v.Level); s != "" || n.Written("level") {
+	if s := string(v.Level); s != "" {
 		c := n.Child("level")
 		w.enumValue(&c, s, enumValues58)
 	}
@@ -1917,7 +1917,7 @@ func enumPipelinesPipelineDeployment(w *walker, n *walk.Node, v *pipelines.Pipel
 	if v == nil {
 		return
 	}
-	if s := string(v.Kind); s != "" || walk.Forced(v.ForceSendFields, "Kind") || n.Written("kind") {
+	if s := string(v.Kind); s != "" || walk.Forced(v.ForceSendFields, "Kind") {
 		c := n.Child("kind")
 		w.enumValue(&c, s, enumValues59)
 	}
@@ -1956,7 +1956,7 @@ func enumResourcesPipelinePermission(w *walker, n *walk.Node, v *resources.Pipel
 	if v == nil {
 		return
 	}
-	if s := string(v.Level); s != "" || n.Written("level") {
+	if s := string(v.Level); s != "" {
 		c := n.Child("level")
 		w.enumValue(&c, s, enumValues62)
 	}
@@ -2009,7 +2009,7 @@ func enumPostgresSyncedTableSyncedTableSpecTypeOverride(w *walker, n *walk.Node,
 	if v == nil {
 		return
 	}
-	if s := string(v.PgType); s != "" || walk.Forced(v.ForceSendFields, "PgType") || n.Written("pg_type") {
+	if s := string(v.PgType); s != "" || walk.Forced(v.ForceSendFields, "PgType") {
 		c := n.Child("pg_type")
 		w.enumValue(&c, s, enumValues66)
 	}
@@ -2019,7 +2019,7 @@ func enumCatalogMonitorMetric(w *walker, n *walk.Node, v *catalog.MonitorMetric)
 	if v == nil {
 		return
 	}
-	if s := string(v.Type); s != "" || n.Written("type") {
+	if s := string(v.Type); s != "" {
 		c := n.Child("type")
 		w.enumValue(&c, s, enumValues67)
 	}
@@ -2029,7 +2029,7 @@ func enumCatalogMonitorInferenceLog(w *walker, n *walk.Node, v *catalog.MonitorI
 	if v == nil {
 		return
 	}
-	if s := string(v.ProblemType); s != "" || walk.Forced(v.ForceSendFields, "ProblemType") || n.Written("problem_type") {
+	if s := string(v.ProblemType); s != "" || walk.Forced(v.ForceSendFields, "ProblemType") {
 		c := n.Child("problem_type")
 		w.enumValue(&c, s, enumValues68)
 	}
@@ -2049,7 +2049,7 @@ func enumResourcesSecretScopePermission(w *walker, n *walk.Node, v *resources.Se
 	if v == nil {
 		return
 	}
-	if s := string(v.Level); s != "" || n.Written("level") {
+	if s := string(v.Level); s != "" {
 		c := n.Child("level")
 		w.enumValue(&c, s, enumValues70)
 	}
@@ -2069,7 +2069,7 @@ func enumResourcesSqlWarehousePermission(w *walker, n *walk.Node, v *resources.S
 	if v == nil {
 		return
 	}
-	if s := string(v.Level); s != "" || n.Written("level") {
+	if s := string(v.Level); s != "" {
 		c := n.Child("level")
 		w.enumValue(&c, s, enumValues72)
 	}
@@ -2118,7 +2118,7 @@ func enumResourcesVectorSearchEndpointPermission(w *walker, n *walk.Node, v *res
 	if v == nil {
 		return
 	}
-	if s := string(v.Level); s != "" || n.Written("level") {
+	if s := string(v.Level); s != "" {
 		c := n.Child("level")
 		w.enumValue(&c, s, enumValues74)
 	}
@@ -2178,7 +2178,7 @@ func enumAppsAppResourceDatabase(w *walker, n *walk.Node, v *apps.AppResourceDat
 	if v == nil {
 		return
 	}
-	if s := string(v.Permission); s != "" || n.Written("permission") {
+	if s := string(v.Permission); s != "" {
 		c := n.Child("permission")
 		w.enumValue(&c, s, enumValues78)
 	}
@@ -2188,7 +2188,7 @@ func enumAppsAppResourceExperiment(w *walker, n *walk.Node, v *apps.AppResourceE
 	if v == nil {
 		return
 	}
-	if s := string(v.Permission); s != "" || n.Written("permission") {
+	if s := string(v.Permission); s != "" {
 		c := n.Child("permission")
 		w.enumValue(&c, s, enumValues44)
 	}
@@ -2198,7 +2198,7 @@ func enumAppsAppResourceGenieSpace(w *walker, n *walk.Node, v *apps.AppResourceG
 	if v == nil {
 		return
 	}
-	if s := string(v.Permission); s != "" || n.Written("permission") {
+	if s := string(v.Permission); s != "" {
 		c := n.Child("permission")
 		w.enumValue(&c, s, enumValues79)
 	}
@@ -2208,7 +2208,7 @@ func enumAppsAppResourceJob(w *walker, n *walk.Node, v *apps.AppResourceJob) {
 	if v == nil {
 		return
 	}
-	if s := string(v.Permission); s != "" || n.Written("permission") {
+	if s := string(v.Permission); s != "" {
 		c := n.Child("permission")
 		w.enumValue(&c, s, enumValues51)
 	}
@@ -2228,7 +2228,7 @@ func enumAppsAppResourceSecret(w *walker, n *walk.Node, v *apps.AppResourceSecre
 	if v == nil {
 		return
 	}
-	if s := string(v.Permission); s != "" || n.Written("permission") {
+	if s := string(v.Permission); s != "" {
 		c := n.Child("permission")
 		w.enumValue(&c, s, enumValues80)
 	}
@@ -2238,7 +2238,7 @@ func enumAppsAppResourceServingEndpoint(w *walker, n *walk.Node, v *apps.AppReso
 	if v == nil {
 		return
 	}
-	if s := string(v.Permission); s != "" || n.Written("permission") {
+	if s := string(v.Permission); s != "" {
 		c := n.Child("permission")
 		w.enumValue(&c, s, enumValues54)
 	}
@@ -2248,7 +2248,7 @@ func enumAppsAppResourceSqlWarehouse(w *walker, n *walk.Node, v *apps.AppResourc
 	if v == nil {
 		return
 	}
-	if s := string(v.Permission); s != "" || n.Written("permission") {
+	if s := string(v.Permission); s != "" {
 		c := n.Child("permission")
 		w.enumValue(&c, s, enumValues81)
 	}
@@ -2258,11 +2258,11 @@ func enumAppsAppResourceUcSecurable(w *walker, n *walk.Node, v *apps.AppResource
 	if v == nil {
 		return
 	}
-	if s := string(v.Permission); s != "" || walk.Forced(v.ForceSendFields, "Permission") || n.Written("permission") {
+	if s := string(v.Permission); s != "" || walk.Forced(v.ForceSendFields, "Permission") {
 		c := n.Child("permission")
 		w.enumValue(&c, s, enumValues82)
 	}
-	if s := string(v.SecurableType); s != "" || walk.Forced(v.ForceSendFields, "SecurableType") || n.Written("securable_type") {
+	if s := string(v.SecurableType); s != "" || walk.Forced(v.ForceSendFields, "SecurableType") {
 		c := n.Child("securable_type")
 		w.enumValue(&c, s, enumValues83)
 	}
@@ -2296,7 +2296,7 @@ func enumJobsMaintenanceWindow(w *walker, n *walk.Node, v *jobs.MaintenanceWindo
 	if v == nil {
 		return
 	}
-	if s := string(v.DayOfWeek); s != "" || n.Written("day_of_week") {
+	if s := string(v.DayOfWeek); s != "" {
 		c := n.Child("day_of_week")
 		w.enumValue(&c, s, enumValues63)
 	}
@@ -2316,11 +2316,11 @@ func enumJobsJobsHealthRule(w *walker, n *walk.Node, v *jobs.JobsHealthRule) {
 	if v == nil {
 		return
 	}
-	if s := string(v.Metric); s != "" || n.Written("metric") {
+	if s := string(v.Metric); s != "" {
 		c := n.Child("metric")
 		w.enumValue(&c, s, enumValues87)
 	}
-	if s := string(v.Op); s != "" || n.Written("op") {
+	if s := string(v.Op); s != "" {
 		c := n.Child("op")
 		w.enumValue(&c, s, enumValues88)
 	}
@@ -2401,7 +2401,7 @@ func enumJobsConditionTask(w *walker, n *walk.Node, v *jobs.ConditionTask) {
 	if v == nil {
 		return
 	}
-	if s := string(v.Op); s != "" || n.Written("op") {
+	if s := string(v.Op); s != "" {
 		c := n.Child("op")
 		w.enumValue(&c, s, enumValues92)
 	}
@@ -2421,7 +2421,7 @@ func enumJobsForEachTask(w *walker, n *walk.Node, v *jobs.ForEachTask) {
 	if v == nil {
 		return
 	}
-	if x := &v.Task; !walk.IsZeroStruct(x) || walk.Forced(v.ForceSendFields, "Task") || n.Locations().Key("task") != nil {
+	if x := &v.Task; !walk.IsZeroStruct(x) || walk.Forced(v.ForceSendFields, "Task") {
 		c := n.Child("task")
 		enumJobsTask2(w, &c, x)
 	}
@@ -2488,7 +2488,7 @@ func enumJobsModelTriggerConfiguration(w *walker, n *walk.Node, v *jobs.ModelTri
 	if v == nil {
 		return
 	}
-	if s := string(v.Condition); s != "" || walk.Forced(v.ForceSendFields, "Condition") || n.Written("condition") {
+	if s := string(v.Condition); s != "" || walk.Forced(v.ForceSendFields, "Condition") {
 		c := n.Child("condition")
 		w.enumValue(&c, s, enumValues94)
 	}
@@ -2498,7 +2498,7 @@ func enumJobsPeriodicTriggerConfiguration(w *walker, n *walk.Node, v *jobs.Perio
 	if v == nil {
 		return
 	}
-	if s := string(v.Unit); s != "" || n.Written("unit") {
+	if s := string(v.Unit); s != "" {
 		c := n.Child("unit")
 		w.enumValue(&c, s, enumValues95)
 	}
@@ -2532,11 +2532,11 @@ func enumCatalogRateLimit(w *walker, n *walk.Node, v *catalog.RateLimit) {
 	if v == nil {
 		return
 	}
-	if s := string(v.Key); s != "" || walk.Forced(v.ForceSendFields, "Key") || n.Written("key") {
+	if s := string(v.Key); s != "" || walk.Forced(v.ForceSendFields, "Key") {
 		c := n.Child("key")
 		w.enumValue(&c, s, enumValues97)
 	}
-	if s := string(v.RenewalPeriod); s != "" || walk.Forced(v.ForceSendFields, "RenewalPeriod") || n.Written("renewal_period") {
+	if s := string(v.RenewalPeriod); s != "" || walk.Forced(v.ForceSendFields, "RenewalPeriod") {
 		c := n.Child("renewal_period")
 		w.enumValue(&c, s, enumValues98)
 	}
@@ -2581,7 +2581,7 @@ func enumServingAiGatewayRateLimit(w *walker, n *walk.Node, v *serving.AiGateway
 		c := n.Child("key")
 		w.enumValue(&c, s, enumValues99)
 	}
-	if s := string(v.RenewalPeriod); s != "" || walk.Forced(v.ForceSendFields, "RenewalPeriod") || n.Written("renewal_period") {
+	if s := string(v.RenewalPeriod); s != "" || walk.Forced(v.ForceSendFields, "RenewalPeriod") {
 		c := n.Child("renewal_period")
 		w.enumValue(&c, s, enumValues56)
 	}
@@ -2666,7 +2666,7 @@ func enumPostgresWeeklySchedule(w *walker, n *walk.Node, v *postgres.WeeklySched
 	if v == nil {
 		return
 	}
-	if s := string(v.DayOfWeek); s != "" || walk.Forced(v.ForceSendFields, "DayOfWeek") || n.Written("day_of_week") {
+	if s := string(v.DayOfWeek); s != "" || walk.Forced(v.ForceSendFields, "DayOfWeek") {
 		c := n.Child("day_of_week")
 		w.enumValue(&c, s, enumValues63)
 	}
@@ -2706,7 +2706,7 @@ func enumDatabaseSyncedTableSpecTypeOverride(w *walker, n *walk.Node, v *databas
 	if v == nil {
 		return
 	}
-	if s := string(v.PgType); s != "" || walk.Forced(v.ForceSendFields, "PgType") || n.Written("pg_type") {
+	if s := string(v.PgType); s != "" || walk.Forced(v.ForceSendFields, "PgType") {
 		c := n.Child("pg_type")
 		w.enumValue(&c, s, enumValues66)
 	}
@@ -2726,7 +2726,7 @@ func enumJobsDeploymentSpec(w *walker, n *walk.Node, v *jobs.DeploymentSpec) {
 	if v == nil {
 		return
 	}
-	if x := &v.Compute; !walk.IsZeroStruct(x) || walk.Forced(v.ForceSendFields, "Compute") || n.Locations().Key("compute") != nil {
+	if x := &v.Compute; !walk.IsZeroStruct(x) || walk.Forced(v.ForceSendFields, "Compute") {
 		c := n.Child("compute")
 		enumJobsComputeSpec(w, &c, x)
 	}
@@ -2824,7 +2824,7 @@ func enumCatalogModelServiceConfigDestinationConfig(w *walker, n *walk.Node, v *
 	if v == nil {
 		return
 	}
-	if s := string(v.DestinationType); s != "" || walk.Forced(v.ForceSendFields, "DestinationType") || n.Written("destination_type") {
+	if s := string(v.DestinationType); s != "" || walk.Forced(v.ForceSendFields, "DestinationType") {
 		c := n.Child("destination_type")
 		w.enumValue(&c, s, enumValues105)
 	}
@@ -2861,7 +2861,7 @@ func enumServingExternalModel(w *walker, n *walk.Node, v *serving.ExternalModel)
 		c := n.Child("amazon_bedrock_config")
 		enumServingAmazonBedrockConfig(w, &c, x)
 	}
-	if s := string(v.Provider); s != "" || n.Written("provider") {
+	if s := string(v.Provider); s != "" {
 		c := n.Child("provider")
 		w.enumValue(&c, s, enumValues106)
 	}
@@ -2923,7 +2923,7 @@ func enumJobsComputeSpec(w *walker, n *walk.Node, v *jobs.ComputeSpec) {
 	if v == nil {
 		return
 	}
-	if s := string(v.AcceleratorType); s != "" || walk.Forced(v.ForceSendFields, "AcceleratorType") || n.Written("accelerator_type") {
+	if s := string(v.AcceleratorType); s != "" || walk.Forced(v.ForceSendFields, "AcceleratorType") {
 		c := n.Child("accelerator_type")
 		w.enumValue(&c, s, enumValues91)
 	}
@@ -2943,7 +2943,7 @@ func enumServingAmazonBedrockConfig(w *walker, n *walk.Node, v *serving.AmazonBe
 	if v == nil {
 		return
 	}
-	if s := string(v.BedrockProvider); s != "" || walk.Forced(v.ForceSendFields, "BedrockProvider") || n.Written("bedrock_provider") {
+	if s := string(v.BedrockProvider); s != "" || walk.Forced(v.ForceSendFields, "BedrockProvider") {
 		c := n.Child("bedrock_provider")
 		w.enumValue(&c, s, enumValues109)
 	}
@@ -3145,7 +3145,7 @@ func enumPipelinesLinkedInAdsOptionsLinkedInAdsCustomReportOptions(w *walker, n 
 			w.enumValue(&e, string(v.EntityGranularity[i]), enumValues119)
 		}
 	}
-	if s := string(v.Finder); s != "" || n.Written("finder") {
+	if s := string(v.Finder); s != "" {
 		c := n.Child("finder")
 		w.enumValue(&c, s, enumValues120)
 	}

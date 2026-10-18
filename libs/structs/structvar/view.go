@@ -23,10 +23,14 @@ const (
 )
 
 // View is a read-only view of a typed value with its references and locations, as the
-// configuration tree they describe. It is what [convert.FromTyped] would return for the typed value given
-// the source tree as reference, without building that tree: it decides presence the
-// same way (zero values are absent unless forced, present in the source, behind a
-// pointer, or a map value or slice element) and keeps pure references.
+// configuration tree they describe.
+//
+// Presence is decided by the value and ForceSendFields only, never by locations: a
+// value is present if it is not zero, is listed in its struct's ForceSendFields, holds
+// a pure reference, or is behind a pointer, a map value or a slice element. Decoding
+// records an explicitly written zero value in ForceSendFields, so it stays present.
+// Unlike libs/dyn, a written zero value in a struct without ForceSendFields (e.g.
+// `level: ""` of a permission) and an empty struct value (e.g. `presets: {}`) are absent.
 //
 // The zero View is invalid and represents an absent value.
 type View struct {
@@ -166,8 +170,9 @@ func (x View) Kind() Kind {
 			}
 			return KindNil
 		}
-		// A struct is present if it was present in the source, even if empty.
-		if opts&includeZero != 0 || x.loc != nil || x.hasFields(v) {
+		// A struct is present if a field is, or if it is kept (e.g. behind a pointer).
+		// Locations never make a value present: an empty struct is absent.
+		if opts&includeZero != 0 || x.hasFields(v) {
 			return KindMap
 		}
 		return KindNil
@@ -191,8 +196,8 @@ func (x View) Kind() Kind {
 		if ref != "" {
 			return KindString
 		}
-		// A zero value is absent unless it was present in the source or is kept.
-		if v.IsZero() && opts&includeZero == 0 && x.loc == nil {
+		// A zero value is absent unless it is kept (forced, or behind a pointer).
+		if v.IsZero() && opts&includeZero == 0 {
 			return KindNil
 		}
 		switch v.Kind() {
@@ -264,9 +269,8 @@ func (x View) field(info *StructInfo, sv reflect.Value, k string, fv reflect.Val
 	child := x.childKey(fv, k, opts)
 	kind := child.Kind()
 
-	// The field was present in the source (it has a node in the locations tree), it is
-	// not zero-valued, or it's forced.
-	if child.loc == nil && kind == KindNil && !isForced {
+	// The field is not zero-valued, or it's forced. Locations do not make it present.
+	if kind == KindNil && !isForced {
 		return View{}, false
 	}
 
@@ -349,16 +353,13 @@ func containsString(s reflect.Value, name string) bool {
 
 // isAbsentZeroField reports whether the zero, unforced field fv (key k) is absent
 // without building its view: [View.field] would find it absent, because it is neither
-// a struct nor an interface (whose presence depends on their contents), has no
-// location and holds no reference.
+// a struct nor an interface (whose presence depends on their contents) and holds no
+// reference.
 func (x View) isAbsentZeroField(fv reflect.Value, k string) bool {
 	switch fv.Kind() {
 	case reflect.Struct, reflect.Interface:
 		return false
 	default:
-	}
-	if x.loc.Key(k) != nil {
-		return false
 	}
 	return len(x.refs) == 0 || x.refs[structpath.NewStringKey(x.path, k).String()] == ""
 }

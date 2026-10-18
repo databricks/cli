@@ -200,4 +200,4 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 4 deleted
 
 >>> [CLI] bundle summary -o json
-{}
+null
