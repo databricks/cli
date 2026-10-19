@@ -39,6 +39,7 @@ var dmsUpdatableOperationFields = []string{"state", "error_message", "resource_i
 // and prefix mapping in parser/ResourceTypes.java in Universe.
 // TODO: Add internal_immutable_snapshots to Universe (databricks-eng/universe#2810194).
 var dmsResourceTypes = []string{
+	"agent_services",
 	"alerts",
 	"apps",
 	"catalogs",
@@ -51,6 +52,7 @@ var dmsResourceTypes = []string{
 	"external_locations",
 	"genie_spaces",
 	"instance_pools",
+	"internal_immutable_folders",
 	"internal_immutable_snapshots",
 	"job_runs",
 	"jobs",
