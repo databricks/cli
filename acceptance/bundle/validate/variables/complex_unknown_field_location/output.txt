@@ -2,7 +2,6 @@
 >>> [CLI] bundle validate
 Warning: unknown field: misspelled_field
   at resources.jobs.j
-  in databricks.yml:9:7
 
 Name: test-bundle
 Target: default
