@@ -1,0 +1,18 @@
+bundle:
+  name: test-bundle
+
+variables:
+  x:
+    default: base
+
+definitions:
+  a: &a
+    x: first
+  b: &b
+    x: second
+
+targets:
+  dev:
+    variables:
+      <<: *a
+      <<: *b

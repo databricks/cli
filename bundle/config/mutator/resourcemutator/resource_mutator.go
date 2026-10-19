@@ -73,10 +73,6 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 			"enabled": dyn.V(true),
 		}},
 
-		// This is converted from single-task to multi-task
-		{"resources.jobs.*.task[*].dbt_task.schema", "default"},
-		{"resources.jobs.*.task[*].for_each_task.task.dbt_task.schema", "default"},
-
 		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/clusters/resource_cluster.go
 		{"resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.notebooks", true},
 		{"resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.jobs", true},
@@ -232,7 +228,7 @@ func NormalizeAndInitializeResources(
 		return selectResources(root, addedResources)
 	})
 	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("failed to select resources: %s", err))
+		logdiag.LogError(ctx, fmt.Errorf("failed to select resources: %w", err))
 		return
 	}
 
@@ -251,7 +247,7 @@ func NormalizeAndInitializeResources(
 		return mergeResources(root, snapshot)
 	})
 	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("failed to merge resources: %s", err))
+		logdiag.LogError(ctx, fmt.Errorf("failed to merge resources: %w", err))
 	}
 }
 
@@ -274,7 +270,7 @@ func NormalizeResources(
 		return selectResources(root, updatedResources)
 	})
 	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("failed to select resources: %s", err))
+		logdiag.LogError(ctx, fmt.Errorf("failed to select resources: %w", err))
 		return
 	}
 
@@ -299,7 +295,7 @@ func NormalizeResources(
 		return mergeResources(root, snapshot)
 	})
 	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("failed to merge resources: %s", err))
+		logdiag.LogError(ctx, fmt.Errorf("failed to merge resources: %w", err))
 	}
 }
 

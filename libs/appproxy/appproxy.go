@@ -2,6 +2,7 @@ package appproxy
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -113,7 +114,7 @@ func (p *Proxy) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	err = <-errc
 	if err != nil {
 		// If the error is not EOF, then there was a problem
-		if err != io.EOF {
+		if !errors.Is(err, io.EOF) {
 			// Log the error and perform cleanup
 			log.Warnf(r.Context(), "error copying messages: %v", err)
 			middlewareConn.Close()

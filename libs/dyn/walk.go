@@ -25,7 +25,7 @@ func Walk(v Value, fn func(p Path, v Value) (Value, error)) (Value, error) {
 func walk(v Value, p Path, fn func(p Path, v Value) (Value, error)) (Value, error) {
 	v, err := fn(p, v)
 	if err != nil {
-		if err == ErrSkip {
+		if errors.Is(err, ErrSkip) {
 			return v, nil
 		}
 		return InvalidValue, err
@@ -39,7 +39,7 @@ func walk(v Value, p Path, fn func(p Path, v Value) (Value, error)) (Value, erro
 			pk := pair.Key
 			pv := pair.Value
 			nv, err := walk(pv, append(p, Key(pk.MustString())), fn)
-			if err == ErrDrop {
+			if errors.Is(err, ErrDrop) {
 				continue
 			}
 			if err != nil {
@@ -53,7 +53,7 @@ func walk(v Value, p Path, fn func(p Path, v Value) (Value, error)) (Value, erro
 		out := make([]Value, 0, len(s))
 		for i := range s {
 			nv, err := walk(s[i], append(p, Index(i)), fn)
-			if err == ErrDrop {
+			if errors.Is(err, ErrDrop) {
 				continue
 			}
 			if err != nil {

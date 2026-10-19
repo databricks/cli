@@ -1,0 +1,1 @@
+* Fix `databricks aitools install` overwriting newer raw skills with an older pinned release. CLI 1.22.0 and newer now install the latest published skills and prevent automatic downgrades. ([#7069](https://github.com/databricks/cli/pull/7069))

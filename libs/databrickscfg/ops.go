@@ -353,7 +353,7 @@ func matchOrCreateSection(ctx context.Context, configFile *config.File, cfg *con
 		// Check if this section matches the normalized host
 		return normalizeHost(host) == normalizeHost(cfg.Host)
 	})
-	if err == errNoMatchingProfiles {
+	if errors.Is(err, errNoMatchingProfiles) {
 		section, err = configFile.NewSection(cfg.Profile)
 		if err != nil {
 			return nil, fmt.Errorf("cannot create new profile: %w", err)

@@ -1,0 +1,1 @@
+Badness = "The YAML merge key spec allows a single mapping as the value of the merge key, but it is rejected."

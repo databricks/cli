@@ -74,7 +74,7 @@ func getAllResources(b *bundle.Bundle) (ResourceKeySet, error) {
 		return root, nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to collect resources: %s", err)
+		return nil, fmt.Errorf("failed to collect resources: %w", err)
 	}
 
 	return set, nil

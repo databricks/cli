@@ -1,0 +1,2 @@
+# Defaults are not applied under an explicitly null block (schedule stays null).
+trace $CLI bundle validate -o json | jq '.resources.jobs.j | {schedule}'

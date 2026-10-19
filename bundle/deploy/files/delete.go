@@ -66,7 +66,7 @@ func deleteSnapshotFile(ctx context.Context, b *bundle.Bundle) error {
 	}
 	err = os.Remove(sp)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("failed to destroy sync snapshot file: %s", err)
+		return fmt.Errorf("failed to destroy sync snapshot file: %w", err)
 	}
 	return nil
 }

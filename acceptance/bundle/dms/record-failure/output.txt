@@ -90,6 +90,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
  "state_version": 3,
  "cli_version": "[CLI_VERSION]",
  "lineage": "[UUID]",
+ "serial": 1,
  "features": {
   "deployment_history": {}
  },
