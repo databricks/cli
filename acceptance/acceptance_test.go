@@ -152,6 +152,10 @@ var Scripts = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
+	if RegrMain || RegrRelease {
+		runRegression(t)
+		return
+	}
 	testAccept(t, InprocessMode, nil, false)
 }
 
