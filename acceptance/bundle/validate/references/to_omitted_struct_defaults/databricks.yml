@@ -2,6 +2,6 @@ bundle:
   name: test-bundle
 
 variables:
-  snapshot:
+  git_info:
     type: complex
-    default: ${bundle.deployment.lock}
+    default: ${bundle.git}
