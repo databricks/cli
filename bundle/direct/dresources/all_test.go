@@ -967,8 +967,9 @@ func TestAll(t *testing.T) {
 
 // testIgnoreFilter encapsulates the logic for filtering fields based on ignore_remote_changes config.
 type testIgnoreFilter struct {
-	ignoreFields map[string]bool
-	adapter      *Adapter
+	ignoreFields   map[string]bool
+	ignorePatterns []*structpath.PatternNode
+	adapter        *Adapter
 }
 
 // newTestIgnoreFilter creates a filter from the adapter's resource configs.
@@ -977,12 +978,14 @@ type testIgnoreFilter struct {
 // and RemapState cannot populate them from remote state.
 func newTestIgnoreFilter(adapter *Adapter) *testIgnoreFilter {
 	ignoreFields := make(map[string]bool)
+	var ignorePatterns []*structpath.PatternNode
 	for _, cfg := range []*ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
 		if cfg == nil {
 			continue
 		}
 		for _, p := range cfg.IgnoreRemoteChanges {
 			ignoreFields[p.Field.String()] = true
+			ignorePatterns = append(ignorePatterns, p.Field)
 		}
 	}
 	// Auto-include fields present in StateType but absent from RemoteType.
@@ -996,7 +999,7 @@ func newTestIgnoreFilter(adapter *Adapter) *testIgnoreFilter {
 		}
 		return true
 	})
-	return &testIgnoreFilter{ignoreFields: ignoreFields, adapter: adapter}
+	return &testIgnoreFilter{ignoreFields: ignoreFields, ignorePatterns: ignorePatterns, adapter: adapter}
 }
 
 // shouldIgnore returns true if the field at the given path should be ignored.
@@ -1015,7 +1018,22 @@ func (f *testIgnoreFilter) shouldIgnore(path string) bool {
 		topLevelField = parts[0]
 	}
 
-	return f.ignoreFields[topLevelField]
+	if f.ignoreFields[topLevelField] {
+		return true
+	}
+
+	// A rule inside a slice is written as a pattern (foo[*].bar) while a walked path is indexed
+	// (foo[0].bar), so the lookups above never match one. Compare with the pattern matcher.
+	parsed, err := structpath.ParsePath(path)
+	if err != nil {
+		return false
+	}
+	for _, pattern := range f.ignorePatterns {
+		if parsed.HasPatternPrefix(pattern) {
+			return true
+		}
+	}
+	return false
 }
 
 // filterChanges returns only the changes that should not be ignored.

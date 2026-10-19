@@ -27,7 +27,10 @@ resources:
         # One feature with both destinations: the offline member a delete cascades from, and the
         # online member it cascades to.
         - feature_name: main.myschema.batchfeat
-          offline_store_config: {}
+          offline_store_config:
+            catalog_name: main
+            schema_name: myschema
+            table_name_prefix: offline
           cron_schedule_trigger:
             mode: MANUAL
             cron_expression: "0 0 * * * ?"

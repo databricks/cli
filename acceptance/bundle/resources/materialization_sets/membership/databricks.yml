@@ -6,7 +6,10 @@ resources:
     set1:
       materialized_features:
         - feature_name: main.myschema.featA
-          offline_store_config: {}
+          offline_store_config:
+            catalog_name: main
+            schema_name: myschema
+            table_name_prefix: offline
         - feature_name: main.myschema.featA
           online_store_config:
             online_store_name: danielb
@@ -14,4 +17,7 @@ resources:
             schema_name: myschema
             table_name_prefix: feata
         - feature_name: main.myschema.featB
-          offline_store_config: {}
+          offline_store_config:
+            catalog_name: main
+            schema_name: myschema
+            table_name_prefix: offline

@@ -365,12 +365,79 @@ func TestCaptureUCDependenciesNilResources(t *testing.T) {
 				QualityMonitors:       map[string]*resources.QualityMonitor{"nil": nil, "empty": {}},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{"nil": nil, "empty": {}},
 				VectorSearchIndexes:   map[string]*resources.VectorSearchIndex{"nil": nil, "empty": {}},
+				MaterializationSets:   map[string]*resources.MaterializationSet{"nil": nil, "empty": {}},
 			},
 		},
 	}
 
 	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
 	require.Nil(t, d)
+}
+
+func TestCaptureUCDependenciesMaterializationSet(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Catalogs: map[string]*resources.Catalog{
+					"my_catalog": {CreateCatalog: catalog.CreateCatalog{Name: "mycatalog"}},
+				},
+				Schemas: map[string]*resources.Schema{
+					"my_schema": {CreateSchema: catalog.CreateSchema{CatalogName: "mycatalog", Name: "myschema"}},
+				},
+				MaterializationSets: map[string]*resources.MaterializationSet{
+					"set1": {MaterializationSet: ml.MaterializationSet{
+						MaterializedFeatures: []ml.MaterializedFeature{
+							{
+								FeatureName: "mycatalog.myschema.feat",
+								OfflineStoreConfig: &ml.OfflineStoreConfig{
+									CatalogName: "mycatalog", SchemaName: "myschema", TableNamePrefix: "feat_off",
+								},
+							},
+							{
+								FeatureName: "mycatalog.myschema.feat",
+								OnlineStoreConfig: &ml.OnlineStoreConfig{
+									OnlineStoreName: "store", CatalogName: "mycatalog",
+									SchemaName: "myschema", TableNamePrefix: "feat",
+								},
+							},
+							// Neither destination declared in the bundle, so both pass through.
+							{
+								FeatureName: "other.other.feat",
+								OfflineStoreConfig: &ml.OfflineStoreConfig{
+									CatalogName: "other", SchemaName: "other", TableNamePrefix: "feat_off",
+								},
+							},
+							// A member with no destination at all.
+							{FeatureName: "mycatalog.myschema.feat"},
+						},
+					}},
+					"nil_set": nil,
+				},
+			},
+		},
+	}
+
+	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
+	require.Nil(t, d)
+
+	schemaRef := "${resources.schemas.my_schema.name}"
+	catalogRef := "${resources.catalogs.my_catalog.name}"
+	members := b.Config.Resources.MaterializationSets["set1"].MaterializedFeatures
+
+	assert.Equal(t, catalogRef, members[0].OfflineStoreConfig.CatalogName)
+	assert.Equal(t, schemaRef, members[0].OfflineStoreConfig.SchemaName)
+	assert.Equal(t, "feat_off", members[0].OfflineStoreConfig.TableNamePrefix)
+
+	assert.Equal(t, catalogRef, members[1].OnlineStoreConfig.CatalogName)
+	assert.Equal(t, schemaRef, members[1].OnlineStoreConfig.SchemaName)
+	assert.Equal(t, "store", members[1].OnlineStoreConfig.OnlineStoreName)
+
+	assert.Equal(t, "other", members[2].OfflineStoreConfig.CatalogName)
+	assert.Equal(t, "other", members[2].OfflineStoreConfig.SchemaName)
+
+	assert.Nil(t, members[3].OfflineStoreConfig)
+	assert.Nil(t, members[3].OnlineStoreConfig)
+	assert.Nil(t, b.Config.Resources.MaterializationSets["nil_set"])
 }
 
 func TestSplitUCName(t *testing.T) {

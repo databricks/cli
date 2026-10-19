@@ -26,7 +26,10 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
             mode: MANUAL
             cron_expression: "0 0 * * * ?"
         - feature_name: main.myschema.featB
-          offline_store_config: {}
+          offline_store_config:
+            catalog_name: main
+            schema_name: myschema
+            table_name_prefix: offline
 
 >>> [CLI] bundle plan -o json
 

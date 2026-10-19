@@ -33,9 +33,9 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
       {
         "feature_name": "main.myschema.featA",
         "offline_store_config": {
-          "catalog_name": "",
-          "schema_name": "",
-          "table_name_prefix": ""
+          "catalog_name": "main",
+          "schema_name": "myschema",
+          "table_name_prefix": "offline"
         },
         "pipeline_schedule_state": "ACTIVE"
       },
@@ -63,9 +63,9 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
       {
         "feature_name": "main.myschema.featA",
         "offline_store_config": {
-          "catalog_name": "",
-          "schema_name": "",
-          "table_name_prefix": ""
+          "catalog_name": "main",
+          "schema_name": "myschema",
+          "table_name_prefix": "offline"
         },
         "pipeline_schedule_state": "PAUSED"
       },

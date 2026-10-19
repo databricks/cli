@@ -15,7 +15,10 @@ trace print_requests.py //materialization-sets
 
 title "Removing a whole feature's members plans as update, not recreate, and leaves the sibling"
 trace update_file.py databricks.yml '        - feature_name: main.myschema.featA
-          offline_store_config: {}
+          offline_store_config:
+            catalog_name: main
+            schema_name: myschema
+            table_name_prefix: offline
 ' ''
 trace $CLI bundle plan -o json > out.plan.json
 trace jq '.plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action)' out.plan.json

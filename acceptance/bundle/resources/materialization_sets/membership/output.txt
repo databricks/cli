@@ -17,9 +17,9 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
       {
         "feature_name": "main.myschema.featA",
         "offline_store_config": {
-          "catalog_name": "",
-          "schema_name": "",
-          "table_name_prefix": ""
+          "catalog_name": "main",
+          "schema_name": "myschema",
+          "table_name_prefix": "offline"
         }
       },
       {
@@ -34,9 +34,9 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
       {
         "feature_name": "main.myschema.featB",
         "offline_store_config": {
-          "catalog_name": "",
-          "schema_name": "",
-          "table_name_prefix": ""
+          "catalog_name": "main",
+          "schema_name": "myschema",
+          "table_name_prefix": "offline"
         }
       }
     ]
@@ -77,17 +77,17 @@ Files: 1 uploaded, 0 deleted
       {
         "feature_name": "main.myschema.featA",
         "offline_store_config": {
-          "catalog_name": "",
-          "schema_name": "",
-          "table_name_prefix": ""
+          "catalog_name": "main",
+          "schema_name": "myschema",
+          "table_name_prefix": "offline"
         }
       },
       {
         "feature_name": "main.myschema.featB",
         "offline_store_config": {
-          "catalog_name": "",
-          "schema_name": "",
-          "table_name_prefix": ""
+          "catalog_name": "main",
+          "schema_name": "myschema",
+          "table_name_prefix": "offline"
         }
       }
     ]
@@ -96,7 +96,10 @@ Files: 1 uploaded, 0 deleted
 
 === Removing a whole feature's members plans as update, not recreate, and leaves the sibling
 >>> update_file.py databricks.yml         - feature_name: main.myschema.featA
-          offline_store_config: {}
+          offline_store_config:
+            catalog_name: main
+            schema_name: myschema
+            table_name_prefix: offline
  
 
 >>> [CLI] bundle plan -o json
@@ -125,9 +128,9 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
       {
         "feature_name": "main.myschema.featB",
         "offline_store_config": {
-          "catalog_name": "",
-          "schema_name": "",
-          "table_name_prefix": ""
+          "catalog_name": "main",
+          "schema_name": "myschema",
+          "table_name_prefix": "offline"
         }
       }
     ]

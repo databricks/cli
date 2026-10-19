@@ -8,7 +8,10 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 === Removing F1's only member is allowed: the cascade is scoped per feature, and F2's pair is
 === untouched because the request asks nothing about it
 >>> update_file.py databricks.yml         - feature_name: main.myschema.featF1
-          offline_store_config: {}
+          offline_store_config:
+            catalog_name: main
+            schema_name: myschema
+            table_name_prefix: offline
  
 
 >>> [CLI] bundle plan -o json
@@ -39,7 +42,10 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 === Removing F2's offline member alone is refused, because that delete cascades to F2's online
 === member, which the request still declares
 >>> update_file.py databricks.yml         - feature_name: main.myschema.featF2
-          offline_store_config: {}
+          offline_store_config:
+            catalog_name: main
+            schema_name: myschema
+            table_name_prefix: offline
  
 
 >>> musterr [CLI] bundle deploy --auto-approve
