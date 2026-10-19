@@ -46,6 +46,8 @@ jobs:
           fi
 
       - name: Run regression tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: go tool -modfile=tools/task/go.mod task regr
 
       - name: Upload report
