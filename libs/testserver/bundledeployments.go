@@ -37,8 +37,7 @@ var dmsUpdatableOperationFields = []string{"state", "error_message", "resource_i
 // dmsResourceTypes lists the resource_key prefixes accepted by DMS.
 // NOTE: When adding a type here, also add the corresponding enum in bundle/metadata-service/service.proto
 // and prefix mapping in parser/ResourceTypes.java in Universe.
-// TODO: Add internal_immutable_snapshots, mcp_services, model_services,
-// model_provider_services, and postgres_snapshot_schedules to the Universe enum and prefix mapping.
+// TODO: Add internal_immutable_snapshots to Universe (databricks-eng/universe#2810194).
 var dmsResourceTypes = []string{
 	"alerts",
 	"apps",
