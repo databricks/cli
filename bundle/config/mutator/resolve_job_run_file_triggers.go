@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/structs/structpath"
 	libsync "github.com/databricks/cli/libs/sync"
 )
 
@@ -66,7 +65,7 @@ func (*resolveJobRunFileTriggers) Apply(ctx context.Context, b *bundle.Bundle) d
 			if t.OnFileChange == nil {
 				continue
 			}
-			path := structpath.NewPath(nil, "resources", "job_runs", name, "lifecycle", "triggers", i, "on_file_change")
+			path := fmt.Sprintf("resources.job_runs.%s.lifecycle.triggers[%d].on_file_change", name, i)
 			pattern, fingerprint, d := resolveFileTrigger(b, path, *t.OnFileChange, syncable)
 			diags = diags.Extend(d)
 			if !d.HasError() {
@@ -106,7 +105,7 @@ func listSyncableRelPaths(ctx context.Context, b *bundle.Bundle) ([]string, erro
 	return out, nil
 }
 
-func resolveFileTrigger(b *bundle.Bundle, loc *structpath.PathNode, pattern string, syncable []string) (string, string, diag.Diagnostics) {
+func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable []string) (string, string, diag.Diagnostics) {
 	relPattern, diags := validateFileTriggerPattern(b, loc, pattern)
 	if diags.HasError() {
 		return "", "", diags
@@ -120,7 +119,7 @@ func resolveFileTrigger(b *bundle.Bundle, loc *structpath.PathNode, pattern stri
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   fileTriggerPrefix + fmt.Sprintf("invalid pattern %q: %s", pattern, err),
-				Locations: b.Config.GetLocationsOf(loc),
+				Locations: b.Config.GetLocations(loc),
 			})
 			continue
 		}
@@ -132,7 +131,7 @@ func resolveFileTrigger(b *bundle.Bundle, loc *structpath.PathNode, pattern stri
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   fileTriggerPrefix + fmt.Sprintf("hash %q: %s", rel, err),
-				Locations: b.Config.GetLocationsOf(loc),
+				Locations: b.Config.GetLocations(loc),
 			})
 			continue
 		}
@@ -146,20 +145,20 @@ func resolveFileTrigger(b *bundle.Bundle, loc *structpath.PathNode, pattern stri
 		diags = diags.Append(diag.Diagnostic{
 			Severity:  diag.Warning,
 			Summary:   fileTriggerPrefix + fmt.Sprintf("no synced files match %q", pattern),
-			Locations: b.Config.GetLocationsOf(loc),
+			Locations: b.Config.GetLocations(loc),
 		})
 	}
 	return relPattern, hex.EncodeToString(h.Sum(nil)), diags
 }
 
-func validateFileTriggerPattern(b *bundle.Bundle, loc *structpath.PathNode, pattern string) (string, diag.Diagnostics) {
+func validateFileTriggerPattern(b *bundle.Bundle, loc, pattern string) (string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	// A double star looks recursive but path.Match treats it as two ordinary stars.
 	if strings.Contains(pattern, "**") {
 		return "", diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   fileTriggerPrefix + fmt.Sprintf("** in %q is not supported; use * for a single directory level", pattern),
-			Locations: b.Config.GetLocationsOf(loc),
+			Locations: b.Config.GetLocations(loc),
 		})
 	}
 	// Reject a genuinely absolute path; Join would otherwise silently reinterpret it
@@ -171,7 +170,7 @@ func validateFileTriggerPattern(b *bundle.Bundle, loc *structpath.PathNode, patt
 		return "", diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   fileTriggerPrefix + fmt.Sprintf("pattern %q must be relative to the defining YAML file", pattern),
-			Locations: b.Config.GetLocationsOf(loc),
+			Locations: b.Config.GetLocations(loc),
 		})
 	}
 	// NormalizePaths has already rewritten YAML-relative globs to be bundle-root
@@ -183,7 +182,7 @@ func validateFileTriggerPattern(b *bundle.Bundle, loc *structpath.PathNode, patt
 		return "", diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   fileTriggerPrefix + fmt.Sprintf("pattern %q is not under the sync root", pattern),
-			Locations: b.Config.GetLocationsOf(loc),
+			Locations: b.Config.GetLocations(loc),
 		})
 	}
 	relPattern = filepath.ToSlash(relPattern)
@@ -192,7 +191,7 @@ func validateFileTriggerPattern(b *bundle.Bundle, loc *structpath.PathNode, patt
 		return "", diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   fileTriggerPrefix + fmt.Sprintf("invalid pattern %q: %s", pattern, err),
-			Locations: b.Config.GetLocationsOf(loc),
+			Locations: b.Config.GetLocations(loc),
 		})
 	}
 	return relPattern, diags

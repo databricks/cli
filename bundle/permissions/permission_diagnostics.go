@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/set"
-	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type permissionDiagnostics struct{}
@@ -59,7 +58,7 @@ func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) dia
 			identityType,
 			b.Config.Workspace.CurrentUser.UserName,
 		),
-		Locations: []diag.Location{b.Config.GetLocationOf(structpath.NewPath(nil, "permissions"))},
+		Locations: []diag.Location{b.Config.GetLocation("permissions")},
 		ID:        diag.PermissionNotIncluded,
 	}}
 }

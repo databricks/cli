@@ -2,11 +2,11 @@ package mutator
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type validateJobRunTriggers struct{}
@@ -27,12 +27,12 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 			continue
 		}
 		for i, t := range jr.Lifecycle.Triggers {
-			path := structpath.NewPath(nil, "resources", "job_runs", name, "lifecycle", "triggers", i)
+			path := fmt.Sprintf("resources.job_runs.%s.lifecycle.triggers[%d]", name, i)
 			if t.OnBundleDeploy == nil && t.OnFileChange == nil {
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
 					Summary:   "lifecycle.triggers entry must set on_bundle_deploy or on_file_change",
-					Locations: b.Config.GetLocationsOf(path),
+					Locations: b.Config.GetLocations(path),
 				})
 				continue
 			}
@@ -40,7 +40,7 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
 					Summary:   "lifecycle.triggers entry must set only one of on_bundle_deploy or on_file_change",
-					Locations: b.Config.GetLocationsOf(path),
+					Locations: b.Config.GetLocations(path),
 				})
 				continue
 			}
@@ -48,21 +48,20 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
 					Summary:   "lifecycle.triggers.on_bundle_deploy must be true when set",
-					Locations: b.Config.GetLocationsOf(structpath.NewPath(path, "on_bundle_deploy")),
+					Locations: b.Config.GetLocations(path + ".on_bundle_deploy"),
 				})
 			}
 			if t.OnFileChange != nil {
-				onFileChange := structpath.NewPath(path, "on_file_change")
 				if strings.TrimSpace(*t.OnFileChange) == "" {
 					diags = diags.Append(diag.Diagnostic{
 						Severity:  diag.Error,
 						Summary:   "lifecycle.triggers.on_file_change must be non-empty when set",
-						Locations: b.Config.GetLocationsOf(onFileChange),
+						Locations: b.Config.GetLocations(path + ".on_file_change"),
 					})
 					continue
 				}
 				// Report bad patterns at validate time; hashing only runs on deploy.
-				_, patternDiags := validateFileTriggerPattern(b, onFileChange, *t.OnFileChange)
+				_, patternDiags := validateFileTriggerPattern(b, path+".on_file_change", *t.OnFileChange)
 				diags = diags.Extend(patternDiags)
 			}
 		}

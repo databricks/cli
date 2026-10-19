@@ -574,6 +574,24 @@ func (r *Root) UpdateSequence(path *structpath.PathNode, sources [][]int) {
 	r.store(sv)
 }
 
+// GetLocation is [Root.GetLocationOf] for a path string, like main's.
+func (r Root) GetLocation(path string) diag.Location {
+	p, err := structpath.ParsePath(path)
+	if err != nil {
+		return diag.Location{}
+	}
+	return r.GetLocationOf(p)
+}
+
+// GetLocations is [Root.GetLocationsOf] for a path string, like main's.
+func (r Root) GetLocations(path string) []diag.Location {
+	p, err := structpath.ParsePath(path)
+	if err != nil {
+		return nil
+	}
+	return r.GetLocationsOf(p)
+}
+
 // GetLocationsOf returns the locations of the configuration value at path or, if it
 // has none (e.g. it was set by a mutator), those of its closest ancestor that has some.
 // Use it to point diagnostics at the most specific place there is; use
