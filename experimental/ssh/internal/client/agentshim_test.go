@@ -723,7 +723,7 @@ func TestRunAgentConfiguration(t *testing.T) {
 		t.Setenv("FAKE_UG_LOG", marker)
 		t.Setenv("PATH", binDir)
 
-		require.NoError(t, runAgentConfiguration(cmdio.MockDiscard(t.Context()), t.TempDir(), agent, "https://example.test"))
+		require.NoError(t, runAgentConfiguration(cmdio.MockDiscard(t.Context()), agent, "https://example.test"))
 
 		out, err := os.ReadFile(marker)
 		require.NoError(t, err)
@@ -735,7 +735,7 @@ func TestRunAgentConfiguration(t *testing.T) {
 		writeFakeExec(t, binDir, ugExecutable, "exit 1")
 		t.Setenv("PATH", binDir)
 
-		err := runAgentConfiguration(cmdio.MockDiscard(t.Context()), t.TempDir(), agent, "https://example.test")
+		err := runAgentConfiguration(cmdio.MockDiscard(t.Context()), agent, "https://example.test")
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to configure claude")
 		assert.Equal(t, protos.SshAgentShimErrorCategoryAgentConfigurationFailed, agentShimOutcome{err: err}.category())
