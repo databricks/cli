@@ -59,7 +59,7 @@ tests/test_orders.py::test_valid_order  PASSED (1.00s)
 }
 
 === Failed, errored, and skipped tests
->>> musterr [CLI] pipelines test my_pipeline tests/test_orders.py
+>>> musterr [CLI] pipelines test my_pipeline tests/test_orders.py --junit-xml out.failures.xml
 Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
@@ -80,9 +80,10 @@ tests/test_orders.py::test_fixture_error
   RuntimeError: fixture 'orders' setup failed
 
 4 tests: 1 passed, 1 failed, 1 skipped, 1 error
+JUnit report: out.failures.xml
 
 === No tests collected
->>> musterr [CLI] pipelines test my_pipeline tests/helpers.py
+>>> musterr [CLI] pipelines test my_pipeline tests/helpers.py --junit-xml out.no-tests.xml
 Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
@@ -93,6 +94,7 @@ Waiting for compute...
 Running tests...
 
 No tests were collected.
+JUnit report: out.no-tests.xml
 
 === The update fails after all tests passed
 >>> musterr [CLI] pipelines test my_pipeline tests/test_delivery.py
@@ -130,7 +132,7 @@ tests/test_late_failure.py::test_backfill_fails
 Error: update [UUID] is FAILED: ResultDeliveryException: Test results could not be verified.
 
 === Compute terminates before all results are received
->>> musterr [CLI] pipelines test my_pipeline tests/test_compute.py
+>>> musterr [CLI] pipelines test my_pipeline tests/test_compute.py --junit-xml out.incomplete.xml
 Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
@@ -143,4 +145,5 @@ tests/test_compute.py::test_small_order  PASSED (1.00s)
 
 RUN INCOMPLETE: the update failed before all test results were received.
 Results received: 1 passed.
+JUnit report: out.incomplete.xml
 Error: update [UUID] is FAILED: ComputeTerminatedException: Compute terminated unexpectedly.

@@ -485,6 +485,22 @@ func testRunError(updateID string, state pipelines.UpdateInfoState, run *testRun
 	return fmt.Errorf("update %s is %s", updateID, state)
 }
 
+// testRunProblem describes why a run that ended did not pass for a reason other than
+// failed tests, or returns "" otherwise.
+func testRunProblem(run *testRun, incompleteReason string, runErr error) string {
+	var lines []string
+	switch {
+	case incompleteReason != "":
+		lines = append(lines, fmt.Sprintf("RUN INCOMPLETE: %s.", incompleteReason))
+	case run.summaries[0].Total == 0:
+		lines = append(lines, "No tests were collected.")
+	}
+	if runErr != nil && !errors.Is(runErr, root.ErrAlreadyPrinted) {
+		lines = append(lines, runErr.Error())
+	}
+	return strings.Join(lines, "\n")
+}
+
 var errTestWaitTimeout = errors.New("test wait timed out")
 
 func testCommand() *cobra.Command {
@@ -514,7 +530,11 @@ and -m are supported, for example:
 The command waits for the results and succeeds only if at least one test ran
 and none failed or errored. --no-wait returns after the update starts.
 --timeout and Ctrl+C stop waiting but not the update; pass its ID to --resume
-to read the results later. To stop the update, run 'pipelines stop'.`,
+to read the results later. To stop the update, run 'pipelines stop'.
+
+--junit-xml writes one entry per test with its outcome and duration. An
+incomplete run, a run without tests, or a timeout adds a failing entry that
+names the cause.`,
 	}
 
 	var pipelineID string
@@ -522,6 +542,7 @@ to read the results later. To stop the update, run 'pipelines stop'.`,
 	var noWait bool
 	var timeout time.Duration
 	var resumeUpdateID string
+	var junitPath string
 
 	testGroup := cmdgroup.NewFlagGroup("Pipeline Test")
 	testGroup.FlagSet().StringVar(&pipelineID, "pipeline-id", "", "ID of the pipeline to test, instead of a PIPELINE_KEY.")
@@ -529,6 +550,7 @@ to read the results later. To stop the update, run 'pipelines stop'.`,
 	testGroup.FlagSet().BoolVar(&noWait, "no-wait", false, "Return after the test update starts, without waiting for results.")
 	testGroup.FlagSet().DurationVar(&timeout, "timeout", 0, "Stop waiting for results after this duration, for example 30m. The update keeps running.")
 	testGroup.FlagSet().StringVar(&resumeUpdateID, "resume", "", "Read the results of an existing test update instead of starting one.")
+	testGroup.FlagSet().StringVar(&junitPath, "junit-xml", "", "Write the results as a JUnit XML report to this file, replacing it.")
 
 	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
 	wrappedCmd.AddFlagGroup(testGroup)
@@ -550,6 +572,9 @@ to read the results later. To stop the update, run 'pipelines stop'.`,
 		}
 		if noWait && timeout > 0 {
 			return errors.New("--timeout cannot be used with --no-wait")
+		}
+		if noWait && junitPath != "" {
+			return errors.New("--junit-xml cannot be used with --no-wait because no results are available when the command returns")
 		}
 		if resumeUpdateID != "" {
 			selectionCount := len(args)
@@ -618,21 +643,44 @@ to read the results later. To stop the update, run 'pipelines stop'.`,
 			waitCtx, cancel = context.WithTimeoutCause(ctx, timeout, errTestWaitTimeout)
 			defer cancel()
 		}
+		suiteName := target.key
+		if suiteName == "" {
+			suiteName = target.pipelineID
+		}
+		writeReport := func(problem string) error {
+			if junitPath == "" {
+				return nil
+			}
+			if err := writeJUnitReport(junitPath, newJUnitReport(suiteName, updateID, watcher.run, problem)); err != nil {
+				return err
+			}
+			fmt.Fprintf(out, "JUnit report: %s\n", junitPath)
+			return nil
+		}
+
 		state, err := watcher.watch(waitCtx)
 		if err != nil {
 			if waitCtx.Err() == nil {
 				return err
 			}
 			resume := target.resumeCommand(cmd, updateID)
+			stopErr := fmt.Errorf("stopped waiting for update %s; the update keeps running, to get its results run: %s", updateID, resume)
 			if errors.Is(context.Cause(waitCtx), errTestWaitTimeout) {
-				return fmt.Errorf("stopped waiting for update %s after %s; the update keeps running, to get its results run: %s", updateID, timeout, resume)
+				stopErr = fmt.Errorf("stopped waiting for update %s after %s; the update keeps running, to get its results run: %s", updateID, timeout, resume)
 			}
-			return fmt.Errorf("stopped waiting for update %s; the update keeps running, to get its results run: %s", updateID, resume)
+			if err := writeReport(stopErr.Error()); err != nil {
+				return err
+			}
+			return stopErr
 		}
 
 		incompleteReason := watcher.run.incompleteReason(state)
 		renderTestResult(out, watcher.run, incompleteReason)
-		return testRunError(updateID, state, watcher.run, incompleteReason)
+		runErr := testRunError(updateID, state, watcher.run, incompleteReason)
+		if err := writeReport(testRunProblem(watcher.run, incompleteReason, runErr)); err != nil {
+			return err
+		}
+		return runErr
 	}
 
 	return cmd

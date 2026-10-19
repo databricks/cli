@@ -15,6 +15,7 @@ trace musterr $CLI pipelines test --pipeline-id 1234 tests --resume 5678
 trace musterr $CLI pipelines test --pipeline-id 1234 --resume 5678 --pytest-arg=-msmoke
 trace musterr $CLI pipelines test --pipeline-id 1234 --resume 5678 --no-wait
 trace musterr $CLI pipelines test --pipeline-id 1234 --no-wait --timeout 10m
+trace musterr $CLI pipelines test --pipeline-id 1234 --no-wait --junit-xml report.xml
 
 title "JSON output is not supported"
 trace musterr $CLI pipelines test --pipeline-id 1234 -o json

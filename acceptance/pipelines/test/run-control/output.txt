@@ -34,12 +34,23 @@ If you've made local changes, run 'databricks pipelines deploy' first to ensure 
 Pipeline: my_pipeline ([UUID])
 Update: [UUID]
 
->>> musterr [CLI] pipelines test my_pipeline --resume [UUID] --timeout 3s
+>>> musterr [CLI] pipelines test my_pipeline --resume [UUID] --timeout 3s --junit-xml out.resumed.xml
 Pipeline: my_pipeline ([UUID])
 Update: [UUID]
 Waiting for compute...
 Running tests...
+JUnit report: out.resumed.xml
 Error: stopped waiting for update [UUID] after 3s; the update keeps running, to get its results run: databricks pipelines test my_pipeline --resume [UUID]
+
+>>> cat out.resumed.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="my_pipeline" tests="1" failures="0" errors="1" skipped="0">
+    <testcase name="update [UUID]">
+      <error message="stopped waiting for update [UUID] after 3s; the update keeps running, to get its results run: databricks pipelines test my_pipeline --resume [UUID]">stopped waiting for update [UUID] after 3s; the update keeps running, to get its results run: databricks pipelines test my_pipeline --resume [UUID]</error>
+    </testcase>
+  </testsuite>
+</testsuites>
 
 === The command to read the results keeps the profile
 >>> musterr [CLI] pipelines test my_pipeline --resume [UUID] --timeout 3s -p run-control
@@ -61,10 +72,11 @@ Error: An active update '[UUID]' already exists for pipeline '[UUID]'.
 Stopping my_pipeline...
 my_pipeline has been stopped.
 
->>> musterr [CLI] pipelines test my_pipeline --resume [UUID]
+>>> musterr [CLI] pipelines test my_pipeline --resume [UUID] --junit-xml out.resumed.xml
 Pipeline: my_pipeline ([UUID])
 Update: [UUID]
 
 RUN INCOMPLETE: the update was canceled before all test results were received.
 Results received: none.
+JUnit report: out.resumed.xml
 Error: update [UUID] is CANCELED

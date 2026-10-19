@@ -25,10 +25,15 @@ and none failed or errored. --no-wait returns after the update starts.
 --timeout and Ctrl+C stop waiting but not the update; pass its ID to --resume
 to read the results later. To stop the update, run 'pipelines stop'.
 
+--junit-xml writes one entry per test with its outcome and duration. An
+incomplete run, a run without tests, or a timeout adds a failing entry that
+names the cause.
+
 Usage:
   databricks pipelines test [PIPELINE_KEY] [TEST_SELECTION...] [flags] [--pytest-arg=ARG ...]
 
 Pipeline Test Flags:
+      --junit-xml string         Write the results as a JUnit XML report to this file, replacing it.
       --no-wait                  Return after the test update starts, without waiting for results.
       --pipeline-id string       ID of the pipeline to test, instead of a PIPELINE_KEY.
       --pytest-arg stringArray   Argument to pass to pytest (repeatable). Only -k and -m are supported.
@@ -77,6 +82,9 @@ Error: --resume cannot be used with --no-wait
 
 >>> musterr [CLI] pipelines test --pipeline-id 1234 --no-wait --timeout 10m
 Error: --timeout cannot be used with --no-wait
+
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --no-wait --junit-xml report.xml
+Error: --junit-xml cannot be used with --no-wait because no results are available when the command returns
 
 === JSON output is not supported
 >>> musterr [CLI] pipelines test --pipeline-id 1234 -o json

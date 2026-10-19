@@ -11,7 +11,8 @@ title "--timeout stops waiting but not the update"
 trace $CLI pipelines test my_pipeline tests/test_slow.py --no-wait | tee submit.txt
 hang_update_id=$(sed -n 's/^Update: //p' submit.txt)
 rm submit.txt
-trace musterr $CLI pipelines test my_pipeline --resume $hang_update_id --timeout 3s
+trace musterr $CLI pipelines test my_pipeline --resume $hang_update_id --timeout 3s --junit-xml out.resumed.xml
+trace cat out.resumed.xml
 
 title "The command to read the results keeps the profile"
 cat > .databrickscfg <<EOF
@@ -29,4 +30,4 @@ trace musterr $CLI pipelines test my_pipeline tests/test_orders.py
 
 title "Stopping the pipeline cancels the test update"
 trace $CLI pipelines stop my_pipeline
-trace musterr $CLI pipelines test my_pipeline --resume $hang_update_id
+trace musterr $CLI pipelines test my_pipeline --resume $hang_update_id --junit-xml out.resumed.xml
