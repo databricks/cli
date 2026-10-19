@@ -5,8 +5,7 @@
         "dbt run",
         "dbt run"
       ],
-      "project_directory": "/Workspace/Users/[USERNAME]/.bundle/nominal/development/files/src/dbt_project",
-      "schema": "default"
+      "project_directory": "/Workspace/Users/[USERNAME]/.bundle/nominal/development/files/src/dbt_project"
     },
     "job_cluster_key": "default",
     "task_key": "dbt_example"

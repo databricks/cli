@@ -22,7 +22,6 @@
           "dbt run"
         ],
         "project_directory": "./dbt_project",
-        "schema": "default",
         "source": "GIT"
       },
       "new_cluster": {
@@ -110,8 +109,7 @@
           "commands": [
             "dbt run"
           ],
-          "project_directory": "/Workspace/Users/[USERNAME]/.bundle/task-source/default/files/dbt_project",
-          "schema": "default"
+          "project_directory": "/Workspace/Users/[USERNAME]/.bundle/task-source/default/files/dbt_project"
         },
         "new_cluster": {
           "custom_tags": {
