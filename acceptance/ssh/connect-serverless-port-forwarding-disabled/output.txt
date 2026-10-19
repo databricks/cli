@@ -7,4 +7,9 @@
 Connecting to port-forwarding-disabled...
 Error: port forwarding to serverless compute is disabled for this workspace (setting port_fwd_serverless_enabled), and the SSH tunnel needs it. Ask a workspace or account admin to enable it, or connect to a dedicated cluster with --cluster
 
+=== Reported error category
+
+>>> jq -r select(.path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.ssh_tunnel_event.error_category [OUTPUT_DIR]/out.requests.txt
+PORT_FORWARDING_DISABLED
+
 >>> print_requests.py //api

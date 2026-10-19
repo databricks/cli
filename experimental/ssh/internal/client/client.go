@@ -359,6 +359,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	// running, so there is no compute left to spare, and every IDE reconnect would repeat the read.
 	if opts.IsServerlessMode() && opts.ServerMetadata == "" {
 		if err := checkPortForwardingToServerless(ctx, client); err != nil {
+			outcome.errorCategory = protos.SshTunnelErrorCategoryPortForwardingDisabled
 			return err
 		}
 	}
@@ -467,6 +468,9 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		userName, serverPort, clusterID, err = ensureSSHServerIsRunning(ctx, client, version, secretScopeName, opts)
 		if err != nil {
 			outcome.errorCategory = protos.SshTunnelErrorCategoryServerStartTimeout
+			if errors.Is(err, errDriverProxyForbidden) {
+				outcome.errorCategory = protos.SshTunnelErrorCategoryDriverProxyForbidden
+			}
 			return fmt.Errorf("failed to ensure that ssh server is running: %w", err)
 		}
 		outcome.serverStartTimeMs = time.Since(serverStartTime).Milliseconds()
