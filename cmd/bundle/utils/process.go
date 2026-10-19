@@ -24,7 +24,6 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/build"
-	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
@@ -235,25 +234,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		stateDesc = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull))
 		if logdiag.HasError(ctx) {
 			return b, stateDesc, root.ErrAlreadyPrinted
-		}
-
-		// For migration, invalidate the selected local state and use remote state as
-		// the source of truth. Relying only on the remote view keeps migration logic
-		// simple and consistent.
-		if opts.Deploy && stateDesc.IsLocal && stateDesc.Engine.IsDirect() && configuresDeploymentHistory(ctx, b) {
-			for _, remoteState := range stateDesc.AllStates {
-				if remoteState.IsLocal || !remoteState.Engine.IsDirect() || (remoteState.IsDMS() && stateDesc.IsDMS()) {
-					continue
-				}
-				_, localPath := b.StateFilenameDirect(ctx)
-				if err := atomicfile.Write(localPath, remoteState.Content, 0o600, atomicfile.MkDir(0o700)); err != nil {
-					logdiag.LogError(ctx, err)
-					return b, stateDesc, root.ErrAlreadyPrinted
-				}
-				remoteState.AllStates = stateDesc.AllStates
-				stateDesc = remoteState
-				break
-			}
 		}
 
 		b.MigratingToDirect = !stateDesc.Engine.IsDirect()

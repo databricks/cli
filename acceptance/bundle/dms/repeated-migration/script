@@ -21,6 +21,7 @@ echo "PASS: names checked"
 
 title "2. Repeat deploy\nExpect: register=4; deploy=5; name=repeated; created=0.\n"
 trace MSYS_NO_PATHCONV=1 $CLI workspace import "$state_path/resources.json" --file .databricks/resources.before-repeat.json --format AUTO --overwrite
+trace cp .databricks/resources.before-repeat.json .databricks/bundle/default/resources.json
 trace update_file.py databricks.yml 'name: updated' 'name: repeated'
 trace $CLI bundle deploy 2>&1 | contains.py 'Deployment history enabled: ' 'Current Deployment Version: ' '?version=4' '?version=5' 'Resources: 0 created' '!Created '
 echo "PASS: repeat deployed"
@@ -49,11 +50,5 @@ trace cat .databricks/resources.backup.repeat.json | contains.py '"name": "updat
 trace cmp .databricks/resources.before-repeat.json .databricks/resources.backup.repeat.json
 trace diff.py .databricks/resources.backup.first.json .databricks/resources.backup.repeat.json
 echo "PASS: backup checked"
-
-title "A remote history marker prevents repeat registration despite a higher unmarked local serial"
-trace cp .databricks/resources.before-repeat.json .databricks/bundle/default/resources.json
-trace update_file.py .databricks/bundle/default/resources.json '"serial": 3' '"serial": 99'
-trace $CLI bundle deploy -qq
-trace $CLI bundle summary -o json | jq -c '.bundle.deployment | {latest_version_id}'
 
 rm -f "$OUT_REQUESTS"

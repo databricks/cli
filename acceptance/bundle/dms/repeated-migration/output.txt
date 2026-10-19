@@ -17,6 +17,8 @@ Expect: register=4; deploy=5; name=repeated; created=0.
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace import /Workspace/Users/[USERNAME]/.bundle/dms-repeated-migration-[UNIQUE_NAME]/default/state/resources.json --file .databricks/resources.before-repeat.json --format AUTO --overwrite
 
+>>> cp .databricks/resources.before-repeat.json .databricks/bundle/default/resources.json
+
 >>> update_file.py databricks.yml name: updated name: repeated
 
 >>> [CLI] bundle deploy
@@ -91,13 +93,3 @@ Expect: backup=updated; bytes match latest and differ from first.
 -}
 +}
 PASS: backup checked
-
-=== A remote history marker prevents repeat registration despite a higher unmarked local serial
->>> cp .databricks/resources.before-repeat.json .databricks/bundle/default/resources.json
-
->>> update_file.py .databricks/bundle/default/resources.json "serial": 3 "serial": 99
-
->>> [CLI] bundle deploy -qq
-
->>> [CLI] bundle summary -o json
-{"latest_version_id":5}
