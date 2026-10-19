@@ -1,0 +1,5 @@
+[workspace_classic]
+host = $CLASSIC_HOST
+
+[workspace_classic_copy]
+host = $CLASSIC_HOST

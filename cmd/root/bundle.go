@@ -71,6 +71,11 @@ func getProfile(cmd *cobra.Command) (value string) {
 func configureProfile(cmd *cobra.Command, b *bundle.Bundle) {
 	profile := getProfile(cmd)
 
+	if _, ok := env.StrictProfileMatch(cmd.Context()); ok {
+		configureStrictProfile(cmd.Context(), b, profile)
+		return
+	}
+
 	// Fall back to [__settings__].default_profile only when the bundle does
 	// not pin its own host. The legacy [DEFAULT] section is intentionally
 	// NOT considered here: a hostless bundle silently routing to whatever
@@ -88,6 +93,33 @@ func configureProfile(cmd *cobra.Command, b *bundle.Bundle) {
 
 	bundle.ApplyFuncContext(cmd.Context(), b, func(ctx context.Context, b *bundle.Bundle) {
 		b.Config.Workspace.Profile = profile
+	})
+}
+
+// configureStrictProfile selects the profile from the target's host and
+// workspace ID. A profile set in the bundle configuration or passed explicitly
+// must be the selected one.
+func configureStrictProfile(ctx context.Context, b *bundle.Bundle, explicitProfile string) {
+	selected, err := b.Config.Workspace.StrictProfile(ctx)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+
+	if bundleProfile := b.Config.Workspace.Profile; bundleProfile != "" && bundleProfile != selected {
+		logdiag.LogError(ctx, fmt.Errorf("strict profile matching: workspace.profile %s does not match profile %s selected for the target; remove workspace.profile or set it to %s", bundleProfile, selected, selected))
+		return
+	}
+
+	// A CLI started from a bundle script receives the selected profile through
+	// DATABRICKS_CONFIG_PROFILE, so only a different profile is an error.
+	if explicitProfile != "" && explicitProfile != selected {
+		logdiag.LogError(ctx, fmt.Errorf("strict profile matching: profile %s does not match profile %s selected for the target", explicitProfile, selected))
+		return
+	}
+
+	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
+		b.Config.Workspace.Profile = selected
 	})
 }
 
@@ -168,6 +200,9 @@ func configureBundle(cmd *cobra.Command, b *bundle.Bundle) {
 
 	// Configure the workspace profile if the flag has been set.
 	configureProfile(cmd, b)
+	if logdiag.HasError(ctx) {
+		return
+	}
 
 	// Set the auth configuration in the command context. This can be used
 	// downstream to initialize a API client.

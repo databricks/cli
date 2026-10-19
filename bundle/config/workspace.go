@@ -2,11 +2,15 @@ package config
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/liteswap"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -213,4 +217,45 @@ func (w *Workspace) Client(ctx context.Context) (*databricks.WorkspaceClient, er
 	}
 
 	return databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+}
+
+// StrictProfile returns the profile that the target must authenticate with when
+// strict profile matching is enabled. Each profile allows one pair of host and
+// workspace ID, and a profile without a workspace_id allows targets without one.
+// The target's pair must match exactly one profile. Anything else is an error,
+// so credentials from the environment only reach a host and workspace that a
+// profile allows.
+func (w *Workspace) StrictProfile(ctx context.Context) (string, error) {
+	// Match the host and workspace ID that Client resolves, without rewriting
+	// the target's configuration.
+	target := *w
+	target.NormalizeHostURL()
+	if target.Host == "" {
+		return "", errors.New("strict profile matching: workspace.host must be set")
+	}
+
+	profiles, err := profile.GetProfiler(ctx).LoadProfiles(ctx, profile.WithHost(target.Host))
+	if err != nil {
+		return "", err
+	}
+	if len(profiles) == 0 {
+		return "", fmt.Errorf("strict profile matching: no profile matches host %s", target.Host)
+	}
+
+	var matches profile.Profiles
+	for _, p := range profiles {
+		if p.WorkspaceID == target.WorkspaceID {
+			matches = append(matches, p)
+		}
+	}
+	switch {
+	case len(matches) == 1:
+		return matches[0].Name, nil
+	case len(matches) > 1:
+		return "", fmt.Errorf("strict profile matching: multiple profiles match host %s: %s", target.Host, strings.Join(matches.Names(), ", "))
+	case target.WorkspaceID == "":
+		return "", fmt.Errorf("strict profile matching: host %s requires a workspace ID; set workspace.workspace_id or add ?o=<workspace-id> to workspace.host", target.Host)
+	default:
+		return "", fmt.Errorf("strict profile matching: no profile for host %s has workspace_id %s", target.Host, target.WorkspaceID)
+	}
 }
