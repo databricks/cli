@@ -7,11 +7,15 @@
   },
   "payload": {
     "default": {
-      "x": "overridden"
+      "x": {
+        "default": "overridden"
+      }
     },
     "type": "complex",
     "value": {
-      "x": "overridden"
+      "x": {
+        "default": "overridden"
+      }
     }
   }
 }

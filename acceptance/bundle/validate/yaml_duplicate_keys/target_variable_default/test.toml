@@ -1,1 +1,1 @@
-Badness = 'The duplicate default key is accepted silently (the later one wins); YAML requires keys to be unique.'
+Badness = "The duplicate default key is accepted silently (the later one wins), and the override is then used as the default value instead of as a full definition."
