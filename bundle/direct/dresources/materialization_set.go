@@ -141,7 +141,7 @@ func (r *ResourceMaterializationSet) DoRead(ctx context.Context, id string) (*ml
 }
 
 // DoCreate submits the set and waits for the long-running operation the create returns. The created
-// set is readable only from that operation's response, which Wait reaches by polling GetOperation.
+// set arrives as that operation's response, which Wait reaches by polling GetOperation.
 func (r *ResourceMaterializationSet) DoCreate(ctx context.Context, config *ml.MaterializationSet) (string, *ml.MaterializationSet, error) {
 	operation, err := r.client.FeatureEngineering.CreateMaterializationSet(ctx, ml.CreateMaterializationSetRequest{
 		MaterializationSet: *config,
@@ -150,15 +150,17 @@ func (r *ResourceMaterializationSet) DoCreate(ctx context.Context, config *ml.Ma
 		return "", nil, err
 	}
 
-	response, err := operation.Wait(ctx)
+	set, err := operation.Wait(ctx)
 	if err != nil {
 		return "", nil, fmt.Errorf("%s: %w", materializationSetCreationTarget(operation), err)
 	}
-	if response.MaterializationSet == nil {
+	// The id is what the engine records the resource under, so an operation that settles without
+	// one is a failure even though the wait succeeded.
+	if set == nil || set.MaterializationSetId == "" {
 		return "", nil, fmt.Errorf("%s: creation finished without returning the set",
 			materializationSetCreationTarget(operation))
 	}
-	return response.MaterializationSet.MaterializationSetId, response.MaterializationSet, nil
+	return set.MaterializationSetId, set, nil
 }
 
 // materializationSetCreationTarget names what a creation was building, taking the set id from the

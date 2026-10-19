@@ -200,7 +200,7 @@ func (s *FakeWorkspace) recordMaterializationSetCreation(set ml.MaterializationS
 	if err != nil {
 		return ml.Operation{}, err
 	}
-	response, err := json.Marshal(ml.CreateMaterializationSetResponse{MaterializationSet: &set})
+	response, err := json.Marshal(set)
 	if err != nil {
 		return ml.Operation{}, err
 	}
