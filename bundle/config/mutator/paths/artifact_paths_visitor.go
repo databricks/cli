@@ -13,7 +13,7 @@ func VisitArtifactPaths(root *config.Root, fn VisitFunc) error {
 				field: "path",
 				value: &a.Path,
 				mode:  TranslateModeLocalAbsoluteDirectory,
-				path:  func() *structpath.PathNode { return structpath.NewPath(nil, "artifacts", name, "path") },
+				path:  structpath.NewPath(nil, "artifacts", name, "path"),
 			}); err != nil {
 				return err
 			}

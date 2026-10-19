@@ -13,7 +13,7 @@ func VisitAlertPaths(root *config.Root, fn VisitFunc) error {
 				field: "file_path",
 				value: &a.FilePath,
 				mode:  TranslateModeLocalRelative,
-				path:  func() *structpath.PathNode { return structpath.NewPath(resourcePath("alerts", name), "file_path") },
+				path:  structpath.NewPath(resourcePath("alerts", name), "file_path"),
 			}); err != nil {
 				return err
 			}

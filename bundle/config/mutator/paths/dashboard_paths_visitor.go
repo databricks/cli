@@ -13,7 +13,7 @@ func VisitDashboardPaths(root *config.Root, fn VisitFunc) error {
 				field: "file_path",
 				value: &d.FilePath,
 				mode:  TranslateModeLocalRelative,
-				path:  func() *structpath.PathNode { return structpath.NewPath(resourcePath("dashboards", name), "file_path") },
+				path:  structpath.NewPath(resourcePath("dashboards", name), "file_path"),
 			}); err != nil {
 				return err
 			}
