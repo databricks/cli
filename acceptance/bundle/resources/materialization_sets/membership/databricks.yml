@@ -5,19 +5,26 @@ resources:
   materialization_sets:
     set1:
       materialized_features:
+        # featA contributes a pair: a delete reaching either member cascades to the other.
         - feature_name: main.myschema.featA
           offline_store_config:
             catalog_name: main
             schema_name: myschema
-            table_name_prefix: offline
+            table_name_prefix: shared
         - feature_name: main.myschema.featA
           online_store_config:
             online_store_name: danielb
             catalog_name: main
             schema_name: myschema
-            table_name_prefix: feata
+            table_name_prefix: shared
+        # featB and featC each contribute one member, so each can be removed on its own.
         - feature_name: main.myschema.featB
           offline_store_config:
             catalog_name: main
             schema_name: myschema
-            table_name_prefix: offline
+            table_name_prefix: shared
+        - feature_name: main.myschema.featC
+          offline_store_config:
+            catalog_name: main
+            schema_name: myschema
+            table_name_prefix: shared

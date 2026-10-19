@@ -1,0 +1,53 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created materialization_sets.set1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Unbinding leaves the set in the workspace and drops it from the bundle's state, which is
+=== the same shape as a set created out of band: the plan reports create, because the bundle
+=== has nothing recorded for it
+>>> [CLI] bundle deployment unbind set1
+
+>>> [CLI] bundle plan -o json
+
+>>> set_plan
+{
+  "resources.materialization_sets.set1": "create"
+}
+
+=== Binding the existing set takes ownership of it again
+>>> [CLI] bundle deployment bind set1 [UUID] --auto-approve
+Successfully bound materialization_set with an id '[UUID]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+=== The first plan after a bind settles. Bind seeds state from the resolved config rather
+=== than from a read, so the destination the read never returns is suppressed here exactly as
+=== it is on a set the bundle created
+>>> [CLI] bundle plan -o json
+
+>>> set_plan
+{
+  "resources.materialization_sets.set1": "skip"
+}
+
+>>> destination_changes
+materialized_features[member='main.myschema.bindfeat|danielb|false'].online_store_config.catalog_name skip input_only_not_returned
+materialized_features[member='main.myschema.bindfeat|danielb|false'].online_store_config.schema_name skip input_only_not_returned
+materialized_features[member='main.myschema.bindfeat|danielb|false'].online_store_config.table_name_prefix skip input_only_not_returned
+materialized_features[member='main.myschema.bindfeat||false'].offline_store_config skip input_only_not_returned
+
+=== And the deploy is a no-op rather than a rebuild
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.materialization_sets.set1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted

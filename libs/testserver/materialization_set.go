@@ -162,7 +162,7 @@ func (s *FakeWorkspace) MaterializationSetsCreate(req Request) Response {
 
 	if len(set.MaterializedFeatures) == 0 {
 		return materializationSetError(http.StatusBadRequest, "INVALID_PARAMETER_VALUE",
-			"materialized_features must not be empty")
+			"A materialization set requires at least one materialized feature.")
 	}
 	if bad := validateBatchPipelineScheduleStates(set.MaterializedFeatures); bad != nil {
 		return *bad
@@ -230,6 +230,9 @@ func (s *FakeWorkspace) OperationsGet(operationID string) Response {
 
 	operation, ok := s.Operations["operations/"+operationID]
 	if !ok {
+		// Unlike every other message here, this wording is not taken from the backend: an unknown
+		// operation is resolved inside the entity-store client rather than from
+		// FeatureStoreMessages. No case reaches this branch, so nothing pins it either way.
 		return materializationSetError(http.StatusNotFound, "NOT_FOUND",
 			fmt.Sprintf("Operation with name 'operations/%s' does not exist.", operationID))
 	}

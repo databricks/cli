@@ -1,0 +1,36 @@
+set_plan() {
+    jq '.plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action)' out.plan.json
+}
+
+destination_changes() {
+    jq -r '.plan["resources.materialization_sets.set1"].changes // {} | to_entries
+           | map(select(.key | test("store_config")))
+           | map("\(.key) \(.value.action) \(.value.reason)") | .[]' out.plan.json
+}
+
+trace $CLI bundle deploy
+set_id=$($CLI bundle summary -o json | jq -r '.resources.materialization_sets.set1.id')
+
+title "Unbinding leaves the set in the workspace and drops it from the bundle's state, which is"
+title "the same shape as a set created out of band: the plan reports create, because the bundle"
+title "has nothing recorded for it"
+trace $CLI bundle deployment unbind set1
+trace $CLI bundle plan -o json > out.plan.json
+trace set_plan
+
+title "Binding the existing set takes ownership of it again"
+trace $CLI bundle deployment bind set1 "$set_id" --auto-approve
+
+title "The first plan after a bind settles. Bind seeds state from the resolved config rather"
+title "than from a read, so the destination the read never returns is suppressed here exactly as"
+title "it is on a set the bundle created"
+trace $CLI bundle plan -o json > out.plan.json
+trace set_plan
+trace destination_changes
+
+title "And the deploy is a no-op rather than a rebuild"
+trace $CLI bundle deploy
+
+trace $CLI bundle destroy --auto-approve
+
+rm -f out.plan.json
