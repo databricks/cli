@@ -386,10 +386,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 
-			// Stamp the deployment and the version this run records onto every job and pipeline so
-			// the plan carries them. The deployment version follows the last recorded version or
-			// the initial registration version; deployment_id does not exist until a first deploy
-			// creates it, so it is left off here and the deploy phase stamps the created id.
 			lastVersionID, err := dms.ParseLastVersionID(dmsDeployment)
 			if err != nil {
 				logdiag.LogError(ctx, err)
@@ -404,6 +400,10 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 			nextVersion := b.DeploymentBundle.StateDB.GetSerial() + 1
+			// Stamp jobs and pipelines for the plan:
+			// 1. Existing: deployment ID is known; version = last recorded + 1.
+			// 2. New: version = 1; only here is the ID stamped later, after deployment creation.
+			// 3. Migrated: deployment ID is known; version = migration version + 1.
 			muts := []bundle.Mutator{metadata.AnnotateDeploymentVersion(nextVersion)}
 			if dmsDeploymentID != "" {
 				bundle.ApplyFuncContext(ctx, b, func(_ context.Context, b *bundle.Bundle) {
