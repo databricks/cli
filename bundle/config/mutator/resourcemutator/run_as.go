@@ -56,7 +56,7 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 	if identityCount != 1 {
 		return diag.Diagnostics{{
 			Summary:   "run_as section must specify exactly one non-empty identity: user_name, service_principal_name, or group_name",
-			Locations: []diag.Location{b.Config.GetLocationOf(structpath.NewPath(nil, "run_as"))},
+			Locations: []diag.Location{b.Config.GetLocation("run_as")},
 			Severity:  diag.Error,
 		}}
 	}
@@ -84,7 +84,7 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 	if len(b.Config.Resources.ModelServingEndpoints) > 0 {
 		diags = diags.Extend(reportRunAsNotSupported(
 			"model_serving_endpoints",
-			b.Config.GetLocationOf(structpath.NewPath(nil, "resources", "model_serving_endpoints")),
+			b.Config.GetLocation("resources.model_serving_endpoints"),
 			b.Config.Workspace.CurrentUser.UserName,
 			identity,
 		))
@@ -94,7 +94,7 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 	if len(b.Config.Resources.QualityMonitors) > 0 {
 		diags = diags.Extend(reportRunAsNotSupported(
 			"quality_monitors",
-			b.Config.GetLocationOf(structpath.NewPath(nil, "resources", "quality_monitors")),
+			b.Config.GetLocation("resources.quality_monitors"),
 			b.Config.Workspace.CurrentUser.UserName,
 			identity,
 		))
@@ -119,7 +119,7 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 	if len(b.Config.Resources.Apps) > 0 {
 		diags = diags.Extend(reportRunAsNotSupported(
 			"apps",
-			b.Config.GetLocationOf(structpath.NewPath(nil, "resources", "apps")),
+			b.Config.GetLocation("resources.apps"),
 			b.Config.Workspace.CurrentUser.UserName,
 			identity,
 		))
@@ -239,7 +239,7 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 				Severity:  diag.Warning,
 				Summary:   "You are using the legacy mode of run_as. The support for this mode is experimental and might be removed in a future release of the CLI. In order to run the pipelines in your DABs project as the run_as user this mode changes the owners of the pipelines to the run_as identity, which requires the user deploying the bundle to be a workspace admin, and also a Metastore admin if the pipeline target is in UC.",
 				Paths:     structpath.NewPathSlice("experimental", "use_legacy_run_as"),
-				Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "experimental", "use_legacy_run_as")),
+				Locations: b.Config.GetLocations("experimental.use_legacy_run_as"),
 			},
 		}
 	}
