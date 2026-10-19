@@ -1,0 +1,14 @@
+bundle:
+  name: test-bundle
+
+variables:
+  x:
+    default: base
+  payload:
+    type: complex
+    default: &overrides
+      x: overridden
+
+targets:
+  dev:
+    variables: *overrides

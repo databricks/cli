@@ -1,0 +1,12 @@
+bundle:
+  name: test-bundle
+
+include:
+  - a.yml
+  - b.yml
+
+variables:
+  x:
+    type: complex
+    default:
+      key: value

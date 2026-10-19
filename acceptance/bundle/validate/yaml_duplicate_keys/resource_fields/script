@@ -1,0 +1,5 @@
+# Duplicate keys in a mapping are accepted without a warning, although YAML requires keys to be unique.
+trace $CLI bundle validate
+
+# The later value replaces the earlier one as a whole: maps are not merged ("a" is gone).
+trace $CLI bundle validate -o json | jq '.resources.jobs.j | {name, max_concurrent_runs, tags}'
