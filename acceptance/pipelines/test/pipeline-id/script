@@ -3,12 +3,12 @@ no_root_pipeline_id=$($CLI pipelines create --json '{"name": "no-root"}' | jq -r
 rm "$OUT_REQUESTS"
 
 title "Relative test selections resolve against the pipeline root_path"
-trace $CLI pipelines test --pipeline-id $pipeline_id tests/test_orders.py::test_backfill /Workspace/Shared/tests
+trace $CLI pipelines test --pipeline-id $pipeline_id tests/test_orders.py::test_backfill /Workspace/Shared/tests --no-wait
 trace print_requests.py //updates
 
 title "Without a root_path, test selections must be workspace paths"
 trace musterr $CLI pipelines test --pipeline-id $no_root_pipeline_id tests
-trace $CLI pipelines test --pipeline-id $no_root_pipeline_id /Workspace/Shared/tests/test_shared.py::test_x
+trace $CLI pipelines test --pipeline-id $no_root_pipeline_id /Workspace/Shared/tests/test_shared.py::test_x --no-wait
 trace print_requests.py //updates
 
 title "Outside a project, --pipeline-id is required"

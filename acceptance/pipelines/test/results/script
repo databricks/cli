@@ -1,0 +1,16 @@
+trace $CLI pipelines deploy
+rm "$OUT_REQUESTS"
+
+title "All selected tests pass"
+trace $CLI pipelines test my_pipeline tests/test_orders.py::test_valid_order
+trace print_requests.py --get //events
+
+title "Failed, errored, and skipped tests"
+trace errcode $CLI pipelines test my_pipeline tests/test_orders.py
+
+title "No tests collected"
+trace errcode $CLI pipelines test my_pipeline tests/helpers.py
+
+title "Compute terminates before all results are received"
+trace errcode $CLI pipelines test my_pipeline tests/test_compute.py
+rm "$OUT_REQUESTS"

@@ -20,12 +20,20 @@ and -m are supported, for example:
 
   databricks pipelines test my_pipeline --pytest-arg=-k --pytest-arg='orders and not slow'
 
+The command waits for the results and succeeds only if at least one test ran
+and none failed or errored. --no-wait returns after the update starts.
+--timeout and Ctrl+C stop waiting but not the update; pass its ID to --resume
+to read the results later. To stop the update, run 'pipelines stop'.
+
 Usage:
   databricks pipelines test [PIPELINE_KEY] [TEST_SELECTION...] [flags] [--pytest-arg=ARG ...]
 
 Pipeline Test Flags:
+      --no-wait                  Return after the test update starts, without waiting for results.
       --pipeline-id string       ID of the pipeline to test, instead of a PIPELINE_KEY.
       --pytest-arg stringArray   Argument to pass to pytest (repeatable). Only -k and -m are supported.
+      --resume string            Read the results of an existing test update instead of starting one.
+      --timeout duration         Stop waiting for results after this duration, for example 30m. The update keeps running.
 
 Flags:
   -h, --help   help for test
@@ -56,6 +64,19 @@ Error: pytest argument -k requires a value: pass it in the next --pytest-arg
 
 >>> musterr [CLI] pipelines test --pipeline-id 1234 --pytest-arg=tests/test_orders.py
 Error: unsupported pytest argument "tests/test_orders.py": pass test paths and test IDs as TEST_SELECTION arguments
+
+=== Incompatible run-control flags
+>>> musterr [CLI] pipelines test --pipeline-id 1234 tests --resume 5678
+Error: --resume cannot be used with test selections
+
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --resume 5678 --pytest-arg=-msmoke
+Error: --resume cannot be used with --pytest-arg
+
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --resume 5678 --no-wait
+Error: --resume cannot be used with --no-wait
+
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --no-wait --timeout 10m
+Error: --timeout cannot be used with --no-wait
 
 === JSON output is not supported
 >>> musterr [CLI] pipelines test --pipeline-id 1234 -o json

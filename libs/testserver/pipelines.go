@@ -143,41 +143,66 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 	return Response{}
 }
 
-func (s *FakeWorkspace) PipelineStartUpdate(pipelineId string) Response {
+func (s *FakeWorkspace) PipelineStartUpdate(pipelineId string, body []byte) Response {
 	defer s.LockUnlock()()
 
-	_, exists := s.Pipelines[pipelineId]
+	pipeline, exists := s.Pipelines[pipelineId]
 	if !exists {
 		return Response{
 			StatusCode: 404,
 			Body:       map[string]string{"message": fmt.Sprintf("The specified pipeline %s was not found.", pipelineId)},
+		}
+	}
+
+	for id, update := range s.PipelineUpdates {
+		if update.pipelineID == pipelineId && update.active() {
+			return Response{
+				StatusCode: 409,
+				Body: map[string]string{
+					"error_code": "INVALID_STATE_TRANSITION",
+					"message":    fmt.Sprintf("An active update '%s' already exists for pipeline '%s'.", id, pipelineId),
+				},
+			}
+		}
+	}
+
+	var test pipelineTestRequest
+	if len(body) > 0 {
+		if err := json.Unmarshal(body, &test); err != nil {
+			return Response{
+				StatusCode: 400,
+				Body:       fmt.Sprintf("cannot unmarshal request body: %s", err),
+			}
+		}
+	}
+	if test.TestOptions != nil && !test.TestOnly {
+		return Response{
+			StatusCode: 400,
+			Body:       map[string]string{"error_code": "INVALID_PARAMETER_VALUE", "message": "test_options requires test_only to be true."},
 		}
 	}
 
 	updateId := nextUUID()
-	s.PipelineUpdates[updateId] = true
+	update := &fakePipelineUpdate{
+		pipelineID: pipelineId,
+		states:     []pipelines.UpdateInfoState{pipelines.UpdateInfoStateCompleted},
+	}
+	if test.TestOnly {
+		var selection []string
+		if test.TestOptions != nil {
+			selection = test.TestOptions.TestSelection
+		}
+		var rootPath string
+		if pipeline.Spec != nil {
+			rootPath = pipeline.Spec.RootPath
+		}
+		update = s.startPipelineTestRun(pipelineId, updateId, s.collectPipelineTests(rootPath, selection))
+	}
+	s.PipelineUpdates[updateId] = update
 
 	return Response{
 		Body: pipelines.StartUpdateResponse{
 			UpdateId: updateId,
-		},
-	}
-}
-
-func (s *FakeWorkspace) PipelineEvents(pipelineId string) Response {
-	defer s.LockUnlock()()
-
-	_, exists := s.Pipelines[pipelineId]
-	if !exists {
-		return Response{
-			StatusCode: 404,
-			Body:       map[string]string{"message": fmt.Sprintf("The specified pipeline %s was not found.", pipelineId)},
-		}
-	}
-
-	return Response{
-		Body: map[string]any{
-			"events": []pipelines.PipelineEvent{},
 		},
 	}
 }
@@ -193,20 +218,20 @@ func (s *FakeWorkspace) PipelineGetUpdate(pipelineId, updateId string) Response 
 		}
 	}
 
-	// Check if the update exists
-	_, updateExists := s.PipelineUpdates[updateId]
-	if !updateExists {
+	update, updateExists := s.PipelineUpdates[updateId]
+	if !updateExists || update.pipelineID != pipelineId {
 		return Response{
 			StatusCode: 404,
 			Body:       map[string]string{"message": fmt.Sprintf("The specified update %s was not found.", updateId)},
 		}
 	}
 
+	update.polls++
 	return Response{
 		Body: pipelines.GetUpdateResponse{
 			Update: &pipelines.UpdateInfo{
 				UpdateId: updateId,
-				State:    pipelines.UpdateInfoStateCompleted,
+				State:    update.states[update.stateIndex()],
 			},
 		},
 	}
@@ -220,6 +245,13 @@ func (s *FakeWorkspace) PipelineStop(pipelineId string) Response {
 		return Response{
 			StatusCode: 404,
 			Body:       map[string]string{"message": fmt.Sprintf("The specified pipeline %s was not found.", pipelineId)},
+		}
+	}
+
+	// Stop is pipeline-wide: it cancels whichever update is active.
+	for _, update := range s.PipelineUpdates {
+		if update.pipelineID == pipelineId && update.active() {
+			update.states = append(update.states, pipelines.UpdateInfoStateCanceled)
 		}
 	}
 

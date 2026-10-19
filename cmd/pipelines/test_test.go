@@ -9,7 +9,8 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-
+	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -237,5 +238,78 @@ func TestNewStartTestUpdateRequest(t *testing.T) {
 		body, err := json.Marshal(newStartTestUpdateRequest(tc.selection, tc.pytestArgs))
 		require.NoError(t, err)
 		assert.JSONEq(t, tc.want, string(body))
+	}
+}
+
+func TestTestRunError(t *testing.T) {
+	tests := []struct {
+		name    string
+		events  func() []testPipelineEvent
+		state   pipelines.UpdateInfoState
+		wantErr string
+	}{
+		{
+			name: "passed",
+			events: func() []testPipelineEvent {
+				return []testPipelineEvent{caseEvent(t, "t::a", "PASSED", ""), summaryEvent(t, 1, 1, 0, 0, 0)}
+			},
+			state: pipelines.UpdateInfoStateCompleted,
+		},
+		{
+			name: "failed tests",
+			events: func() []testPipelineEvent {
+				return []testPipelineEvent{caseEvent(t, "t::a", "FAILED", ""), summaryEvent(t, 1, 0, 1, 0, 0)}
+			},
+			state:   pipelines.UpdateInfoStateFailed,
+			wantErr: root.ErrAlreadyPrinted.Error(),
+		},
+		{
+			name: "no tests",
+			events: func() []testPipelineEvent {
+				return []testPipelineEvent{summaryEvent(t, 0, 0, 0, 0, 0)}
+			},
+			state:   pipelines.UpdateInfoStateFailed,
+			wantErr: root.ErrAlreadyPrinted.Error(),
+		},
+		{
+			name: "incomplete after completion",
+			events: func() []testPipelineEvent {
+				return []testPipelineEvent{caseEvent(t, "t::a", "PASSED", "")}
+			},
+			state:   pipelines.UpdateInfoStateCompleted,
+			wantErr: root.ErrAlreadyPrinted.Error(),
+		},
+		{
+			name: "update failed after the tests passed",
+			events: func() []testPipelineEvent {
+				return []testPipelineEvent{
+					caseEvent(t, "t::a", "PASSED", ""),
+					summaryEvent(t, 1, 1, 0, 0, 0),
+					decodeTestEvent(t, `{"id": "fatal", "error": {"fatal": true, "exceptions": [{"message": "Commit failed."}]}}`),
+				}
+			},
+			state:   pipelines.UpdateInfoStateFailed,
+			wantErr: "update u1 is FAILED: Commit failed.",
+		},
+		{
+			name:    "canceled",
+			events:  func() []testPipelineEvent { return nil },
+			state:   pipelines.UpdateInfoStateCanceled,
+			wantErr: "update u1 is CANCELED",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			run := newTestRun()
+			for _, e := range tc.events() {
+				run.add(e)
+			}
+			err := testRunError("u1", tc.state, run, run.incompleteReason(tc.state))
+			if tc.wantErr == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, err, tc.wantErr)
+			}
+		})
 	}
 }
