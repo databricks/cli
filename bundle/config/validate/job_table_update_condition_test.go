@@ -75,6 +75,78 @@ func TestJobTableUpdateConditionSingleTable(t *testing.T) {
 	require.NoError(t, diags.Error())
 }
 
+func TestJobTableUpdateConditionAllUpdated(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job1": tableUpdateJob(jobs.ConditionAllUpdated, "main.default.table_a", "main.default.table_b"),
+				},
+			},
+		},
+	}
+
+	diags := JobTableUpdateCondition().Apply(t.Context(), b)
+	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
+}
+
+func tableUpdateTriggersJob(entries ...jobs.TriggerConfiguration) *resources.Job {
+	return &resources.Job{
+		Name:     "job1",
+		Triggers: entries,
+	}
+}
+
+func tableUpdateTriggerEntry(condition jobs.Condition, tables ...string) jobs.TriggerConfiguration {
+	return jobs.TriggerConfiguration{
+		TableUpdate: &jobs.TableUpdateTriggerConfiguration{
+			Condition:  condition,
+			TableNames: tables,
+		},
+	}
+}
+
+func TestJobTableUpdateConditionPluralTriggersMissing(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job1": tableUpdateTriggersJob(
+						tableUpdateTriggerEntry("", "main.default.table_a", "main.default.table_b"),
+						tableUpdateTriggerEntry(jobs.ConditionAnyUpdated, "main.default.table_a", "main.default.table_b"),
+					),
+				},
+			},
+		},
+	}
+
+	diags := JobTableUpdateCondition().Apply(t.Context(), b)
+	require.Len(t, diags, 1)
+	require.Equal(t, diag.Error, diags[0].Severity)
+	require.Equal(t, "trigger.table_update.condition is required when table_names lists more than one table", diags[0].Summary)
+	require.Len(t, diags[0].Paths, 1)
+	require.Equal(t, "resources.jobs.job1.triggers[0].table_update", diags[0].Paths[0].String())
+}
+
+func TestJobTableUpdateConditionPluralTriggersSingleTable(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job1": tableUpdateTriggersJob(
+						tableUpdateTriggerEntry("", "main.default.table_a"),
+					),
+				},
+			},
+		},
+	}
+
+	diags := JobTableUpdateCondition().Apply(t.Context(), b)
+	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
+}
+
 func TestJobTableUpdateConditionNoTrigger(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
