@@ -46,8 +46,14 @@ func VisitPipelinePaths(root *config.Root, fn VisitFunc) error {
 				if s == nil {
 					continue
 				}
-				if err := visit(owner, rule.keys[len(rule.keys)-1].(string), s, rule.mode, nil, fn, func() *structpath.PathNode {
-					return structpath.NewPath(structpath.NewPath(resourcePath("pipelines", name), "libraries", i), rule.keys...)
+				if err := visit(fn, visitArgs{
+					owner: owner,
+					field: rule.keys[len(rule.keys)-1].(string),
+					value: s,
+					mode:  rule.mode,
+					path: func() *structpath.PathNode {
+						return structpath.NewPath(structpath.NewPath(resourcePath("pipelines", name), "libraries", i), rule.keys...)
+					},
 				}); err != nil {
 					return err
 				}
@@ -56,7 +62,13 @@ func VisitPipelinePaths(root *config.Root, fn VisitFunc) error {
 	}
 	for _, name := range sortedKeys(root.Resources.Pipelines) {
 		if pl := root.Resources.Pipelines[name]; pl != nil {
-			if err := visit(pl, "root_path", &pl.RootPath, TranslateModeDirectory, nil, fn, func() *structpath.PathNode { return structpath.NewPath(resourcePath("pipelines", name), "root_path") }); err != nil {
+			if err := visit(fn, visitArgs{
+				owner: pl,
+				field: "root_path",
+				value: &pl.RootPath,
+				mode:  TranslateModeDirectory,
+				path:  func() *structpath.PathNode { return structpath.NewPath(resourcePath("pipelines", name), "root_path") },
+			}); err != nil {
 				return err
 			}
 		}
@@ -78,8 +90,13 @@ func VisitPipelineLibrariesPaths(root *config.Root, fn VisitFunc) error {
 				continue
 			}
 			for i := range pl.Environment.Dependencies {
-				if err := visit(nil, "", &pl.Environment.Dependencies[i], rule.mode, rule.skip, fn, func() *structpath.PathNode {
-					return structpath.NewPath(resourcePath("pipelines", name), "environment", "dependencies", i)
+				if err := visit(fn, visitArgs{
+					value: &pl.Environment.Dependencies[i],
+					mode:  rule.mode,
+					skip:  rule.skip,
+					path: func() *structpath.PathNode {
+						return structpath.NewPath(resourcePath("pipelines", name), "environment", "dependencies", i)
+					},
 				}); err != nil {
 					return err
 				}

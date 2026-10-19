@@ -56,8 +56,13 @@ func VisitJobLibrariesPaths(root *config.Root, fn VisitFunc) error {
 					continue
 				}
 				for j := range env.Spec.Dependencies {
-					if err := visit(nil, "", &env.Spec.Dependencies[j], rule.mode, rule.skip, fn, func() *structpath.PathNode {
-						return structpath.NewPath(resourcePath("jobs", name), "environments", i, "spec", "dependencies", j)
+					if err := visit(fn, visitArgs{
+						value: &env.Spec.Dependencies[j],
+						mode:  rule.mode,
+						skip:  rule.skip,
+						path: func() *structpath.PathNode {
+							return structpath.NewPath(resourcePath("jobs", name), "environments", i, "spec", "dependencies", j)
+						},
 					}); err != nil {
 						return err
 					}
