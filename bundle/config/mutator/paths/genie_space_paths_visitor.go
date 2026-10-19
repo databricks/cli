@@ -13,9 +13,7 @@ func VisitGenieSpacePaths(root *config.Root, fn VisitFunc) error {
 				field: "file_path",
 				value: &g.FilePath,
 				mode:  TranslateModeLocalRelative,
-				path: func() *structpath.PathNode {
-					return structpath.NewPath(resourcePath("genie_spaces", name), "file_path")
-				},
+				path:  structpath.NewPath(resourcePath("genie_spaces", name), "file_path"),
 			}); err != nil {
 				return err
 			}

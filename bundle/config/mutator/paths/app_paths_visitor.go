@@ -13,7 +13,7 @@ func VisitAppPaths(root *config.Root, fn VisitFunc) error {
 				field: "source_code_path",
 				value: &a.SourceCodePath,
 				mode:  TranslateModeDirectory,
-				path:  func() *structpath.PathNode { return structpath.NewPath(resourcePath("apps", name), "source_code_path") },
+				path:  structpath.NewPath(resourcePath("apps", name), "source_code_path"),
 			}); err != nil {
 				return err
 			}

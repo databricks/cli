@@ -8,7 +8,7 @@ import (
 )
 
 func libraryRule(key string, field func(*jobs.Task, int) *string) taskRule {
-	return taskRule{TranslateModeLocalRelative, nil, func(t *jobs.Task, c *taskCursor) error {
+	return taskRule{TranslateModeLocalRelative, func(t *jobs.Task, c *taskCursor) error {
 		for i := range t.Libraries {
 			if err := c.yield(&t.Libraries[i], key, field(t, i), "libraries", i, key); err != nil {
 				return err
@@ -56,13 +56,14 @@ func VisitJobLibrariesPaths(root *config.Root, fn VisitFunc) error {
 					continue
 				}
 				for j := range env.Spec.Dependencies {
+					// Most dependencies are not local paths: check before building the path.
+					if rule.skip(env.Spec.Dependencies[j]) {
+						continue
+					}
 					if err := visit(fn, visitArgs{
 						value: &env.Spec.Dependencies[j],
 						mode:  rule.mode,
-						skip:  rule.skip,
-						path: func() *structpath.PathNode {
-							return structpath.NewPath(resourcePath("jobs", name), "environments", i, "spec", "dependencies", j)
-						},
+						path:  structpath.NewPath(resourcePath("jobs", name), "environments", i, "spec", "dependencies", j),
 					}); err != nil {
 						return err
 					}
