@@ -1,6 +1,9 @@
 bundle:
   name: strict-profile-match
 
+include:
+  - scripts.yml
+
 targets:
   classic:
     default: true
@@ -37,7 +40,3 @@ targets:
     workspace:
       host: https://unknown.test
   no_host: {}
-
-scripts:
-  nested_validate:
-    content: $CLI bundle validate -o json | jq -r .workspace.profile

@@ -8,9 +8,9 @@ add_repl "$CUSTOM_HOST" CUSTOM_HOST
 # The workspace ID that the test server reports for its workspace.
 export WORKSPACE_ID=$(curl -s "$DATABRICKS_HOST/.well-known/databricks-config" | jq -r .workspace_id)
 
-# $CLI stays in databricks.yml so the bundle script expands it at run time.
+# scripts.yml is not substituted, so the bundle script expands $CLI at run time.
 for f in databricks.yml .databrickscfg ambiguous.databrickscfg account.databrickscfg; do
-  envsubst '$CLASSIC_HOST $CUSTOM_HOST $WORKSPACE_ID' < $f > out && mv out $f
+  envsubst < $f > out && mv out $f
 done
 
 # Credentials come only from DATABRICKS_TOKEN. Each profile allows one pair of
