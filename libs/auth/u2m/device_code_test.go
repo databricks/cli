@@ -168,6 +168,14 @@ func TestDeviceCodeChallenge_Errors(t *testing.T) {
 			},
 			wantErr: "token exchange: Client is not allowed to use device code (error code: invalid_client)",
 		},
+		{
+			name: "token request rate limited",
+			server: &fakeDeviceServer{
+				tokenStatus: http.StatusTooManyRequests,
+				tokenBody:   `{"error": "invalid_request", "error_description": "Device grant rate limit exceeded"}`,
+			},
+			wantErr: "token exchange: Device grant rate limit exceeded (error code: invalid_request)",
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

@@ -106,9 +106,11 @@ func (a *PersistentAuth) DeviceCodeChallenge(confirm ConfirmFunc) (*oauth2.Token
 			return t, nil
 		}
 		lastErr = oauthError(err)
-		// The server answers a wrong confirmation code with invalid_request.
-		// Any other error cannot be fixed by entering the code again.
-		if errCode, _ := oauthErrorResponse(err); errCode != "invalid_request" {
+		// The server answers a wrong confirmation code with HTTP 400 and
+		// invalid_request. Any other error cannot be fixed by entering the
+		// code again, including invalid_request with HTTP 429 when the server
+		// rate limits the token requests for this device code.
+		if status, errCode, _ := oauthErrorResponse(err); status != http.StatusBadRequest || errCode != "invalid_request" {
 			return nil, fmt.Errorf("token exchange: %w", lastErr)
 		}
 	}
@@ -198,17 +200,18 @@ func normalizeCode(code string) string {
 // oauthError extracts the RFC 6749 §5.2 error response from err so that users
 // see the server's explanation instead of a raw HTTP response body.
 func oauthError(err error) error {
-	code, description := oauthErrorResponse(err)
+	_, code, description := oauthErrorResponse(err)
 	if code == "" {
 		return err
 	}
 	return fmt.Errorf("%s (error code: %s)", description, code)
 }
 
-// oauthErrorResponse returns the error code and description of the RFC 6749
-// §5.2 error response carried by err. The code is empty if err does not carry
-// one.
-func oauthErrorResponse(err error) (code, description string) {
+// oauthErrorResponse returns the HTTP status code, and the error code and
+// description of the RFC 6749 §5.2 error response carried by err. The status
+// is 0 if err does not carry an HTTP response, and the code is empty if err
+// does not carry an error response.
+func oauthErrorResponse(err error) (status int, code, description string) {
 	// The default RoundTripper of httpclient.ApiClient returns an error for
 	// non-2xx responses, so the oauth2 library never parses the body itself.
 	if httpErr, ok := errors.AsType[*httpclient.HttpError](err); ok {
@@ -217,12 +220,12 @@ func oauthErrorResponse(err error) (code, description string) {
 			ErrorDescription string `json:"error_description"`
 		}
 		if json.Unmarshal([]byte(httpErr.Message), &resp) != nil {
-			return "", ""
+			return httpErr.StatusCode, "", ""
 		}
-		return resp.Error, resp.ErrorDescription
+		return httpErr.StatusCode, resp.Error, resp.ErrorDescription
 	}
 	if retrieveErr, ok := errors.AsType[*oauth2.RetrieveError](err); ok {
-		return retrieveErr.ErrorCode, retrieveErr.ErrorDescription
+		return retrieveErr.Response.StatusCode, retrieveErr.ErrorCode, retrieveErr.ErrorDescription
 	}
-	return "", ""
+	return 0, "", ""
 }
