@@ -46,21 +46,51 @@ Env.DATABRICKS_LITESWAP_TARGET = "<liteswap unit>"
 The env var takes the unit name only — `liteswap.Apply` prepends `testenv://liteswap/`. Passing the
 full traffic id routes to base staging instead, where these endpoints do not exist.
 
-Three fixture changes are needed first, because the local names are only valid against the fake:
+Four fixture changes are needed first, because the local names are only valid against the fake:
 
 1. **Catalog and schema.** Declare `catalogs` and `schemas` resources using the harness's
    `UNIQUE_NAME` and reference them from the feature names, so parallel runs do not collide.
 2. **Online store.** `online_store_name` must name a store that exists on the target workspace.
 3. **Features must exist.** Declare the `features` resources the set members reference; the fake
    does not check that a member's feature exists, and the real API does.
+4. **One destination for the whole set.** Every feature in a set must name the same
+   `catalog_name`, `schema_name` and `table_name_prefix`; differing only in the prefix is rejected
+   with `All features must share the same materialization destination.` The fake does not check
+   this, so `membership` and `removal_scope` give each feature its own prefix and would both be
+   refused as written.
 
 The workspace also needs a declarative feature preview enabled — `validateAnyDeclarativePreviewEnabled`
 rejects every create otherwise, with `declarativePreviewsNotEnabled`.
 
+## Verified against a workspace, with no case of their own
+
+These ran against `liteswap-1-4` through the swap but are not committed as cases, because each one
+needs a multi-feature set and the shared-destination rule above means that fixture has to be built
+differently from the local ones.
+
+- **A mixed update whose halves are both legal is applied whole.** Pausing one feature's offline
+  member and removing another feature's members in the same request: both land, the surviving
+  members keep their ids, and the paused feature's online member stays `ACTIVE`.
+- **A mixed update is atomic when either half is rejected.** Two shapes were tried -- a legal pause
+  plus an illegal online pause, and a legal pause plus the illegal removal of one online member --
+  and in both the whole request is refused and a read afterwards shows nothing moved, including the
+  half that would have been accepted on its own.
+- **Out-of-band creation is caught by the server, not by the planner.** The plan says `create`
+  because the bundle has no state for the resource; the deploy then fails with `ALREADY_EXISTS` on
+  the feature, and a set whose feature already has materializations fails with
+  `RESOURCE_ALREADY_EXISTS`. A set has no name to collide on, so that second check is the only thing
+  standing between an unbound set and a duplicate.
+- **Bind and unbind.** Binding an out-of-band feature and set makes the next plan settle to `skip`
+  with no drift; the offline destination is suppressed as `input_only_not_returned` exactly as on a
+  bundle-created set. Unbinding leaves the workspace resource in place and the next plan reports
+  `create` for it again.
+
 ## Not covered yet
 
-- **Bind and unbind.** `Bind` seeds state from the resolved config rather than from a read, so the
-  destination fields should be present and the first plan after a bind should settle. Read, not run.
+- **A set's materialized output tables outlive it.** `bundle destroy` removes the set and its
+  features, leaving each offline materialization's `*_partial_aggregates` table behind. A cloud case
+  that wants a clean schema has to drop those itself.
+
 - **Partial failure.** One member failing does not stop the others, and the error carries what was
   updated, deleted and failed. Reproducing it needs per-member failure injection the fake does not
   have.
