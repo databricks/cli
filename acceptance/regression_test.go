@@ -161,7 +161,7 @@ func isOK(status string) bool {
 
 // classifyRegression says what the status of one test on every CLI means. refs are the
 // non-branch columns in the order they are checked.
-func classifyRegression(branch string, refs []string, refCategories []string) string {
+func classifyRegression(branch string, refs, refCategories []string) string {
 	if !isOK(branch) {
 		return catFailing
 	}
