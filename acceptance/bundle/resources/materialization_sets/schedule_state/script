@@ -1,18 +1,26 @@
 trace $CLI bundle deploy
 
-title "Pausing the offline member is an in-place update"
-trace update_file.py databricks.yml 'pipeline_schedule_state: ACTIVE' 'pipeline_schedule_state: PAUSED'
+title "A member the config leaves unset adopts the state the server set on create, so the next"
+title "plan is empty rather than reporting drift the bundle cannot write"
 trace $CLI bundle plan -o json > out.plan.json
 trace jq '.plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action)' out.plan.json
-trace $CLI bundle deploy
-trace print_requests.py //materialization-sets
-
-title "The change did not cascade: the online member keeps its own state"
 trace $CLI bundle summary -o json | jq '.resources.materialization_sets.set1.materialized_features | map({is_online, pipeline_schedule_state})'
 
-title "Declaring the state on the online member is refused, since the write would land on it"
+title "The state is write-once, so pausing the feature is a recreate rather than the in-place"
+title "update the server would refuse. Every member of the feature has to ask for the same state"
+trace update_file.py databricks.yml 'pipeline_schedule_state: ACTIVE' 'pipeline_schedule_state: PAUSED'
 trace update_file.py databricks.yml '            table_name_prefix: feata' '            table_name_prefix: feata
           pipeline_schedule_state: PAUSED'
-trace musterr $CLI bundle deploy
+trace $CLI bundle plan -o json > out.plan.json
+trace jq '.plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action)' out.plan.json
+trace $CLI bundle deploy --auto-approve
+trace $CLI bundle summary -o json | jq '.resources.materialization_sets.set1.materialized_features | map({is_online, pipeline_schedule_state})'
+
+title "Resuming one member alone plans as a recreate too, and the create endpoint refuses the"
+title "members of one feature disagreeing"
+trace update_file.py databricks.yml '          pipeline_schedule_state: PAUSED
+        - feature_name' '          pipeline_schedule_state: ACTIVE
+        - feature_name'
+trace musterr $CLI bundle deploy --auto-approve
 
 rm -f out.requests.txt out.plan.json

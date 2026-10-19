@@ -11,22 +11,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// memberFieldsTheUpdateEndpointAccepts are the member fields UpdateMaterializationSet can write,
-// so they need no rule to reach the server. Everything else about a member is write-once, and the
-// endpoint ignores it rather than failing, which is why an unclassified field is silent.
-var memberFieldsTheUpdateEndpointAccepts = map[string]bool{
-	"pipeline_schedule_state": true,
-}
-
 // setFieldsWithoutRules are the set's own fields that no rule covers: the member slice, whose
 // elements are diffed by key, and the id, which the generated config already classifies.
 var setFieldsWithoutRules = map[string]bool{
 	"materialized_features": true,
 }
 
-// classifiedFields collects every field pattern either lifecycle config mentions, from both the
-// hand-written and generated halves, since the planner consults them in sequence.
-func classifiedFields(t *testing.T) map[string]bool {
+// classifiedFields collects the field patterns either lifecycle config mentions, from both the
+// hand-written and generated halves, since the planner consults them in sequence. Backend defaults
+// are returned apart: one absorbs a field the config leaves unset and says nothing about a value
+// the config does declare.
+func classifiedFields(t *testing.T) (onDeclaredValue, onlyWhenUndeclared map[string]bool) {
 	t.Helper()
 
 	handWritten := GetResourceConfig("materialization_sets")
@@ -34,7 +29,8 @@ func classifiedFields(t *testing.T) map[string]bool {
 	generated := GetGeneratedResourceConfig("materialization_sets")
 	require.NotNil(t, generated)
 
-	classified := map[string]bool{}
+	onDeclaredValue = map[string]bool{}
+	onlyWhenUndeclared = map[string]bool{}
 	for _, cfg := range []*ResourceLifecycleConfig{handWritten, generated} {
 		for _, rules := range [][]FieldRule{
 			cfg.RecreateOnChanges,
@@ -46,14 +42,14 @@ func classifiedFields(t *testing.T) map[string]bool {
 			cfg.StableOutputFields,
 		} {
 			for _, rule := range rules {
-				classified[rule.Field.String()] = true
+				onDeclaredValue[rule.Field.String()] = true
 			}
 		}
 		for _, rule := range cfg.BackendDefaults {
-			classified[rule.Field.String()] = true
+			onlyWhenUndeclared[rule.Field.String()] = true
 		}
 	}
-	return classified
+	return onDeclaredValue, onlyWhenUndeclared
 }
 
 // memberFieldPath builds the path the planner hands to OverrideChangeDesc for one member field.
@@ -70,17 +66,17 @@ func memberFieldPath(t *testing.T, memberKey, field string) *structpath.PathNode
 // so nothing else holds the line: a member field added to the proto later would be classified as a
 // plain update, and the endpoint would accept the request and write nothing.
 func TestMaterializationSetAllMemberFieldsAreClassified(t *testing.T) {
-	classified := classifiedFields(t)
+	onDeclaredValue, _ := classifiedFields(t)
 
 	for field := range reflect.TypeFor[ml.MaterializedFeature]().Fields() {
 		name, ok := jsonFieldName(field)
-		if !ok || memberFieldsTheUpdateEndpointAccepts[name] {
+		if !ok {
 			continue
 		}
-		assert.Truef(t, classified["materialized_features[*]."+name],
-			"member field %q is declared in neither materialization_sets.yml nor its generated "+
-				"half; add it to recreate_on_changes if the endpoint cannot write it, or to "+
-				"memberFieldsTheUpdateEndpointAccepts if it can",
+		assert.Truef(t, onDeclaredValue["materialized_features[*]."+name],
+			"member field %q has no rule covering a value the config declares; the set update "+
+				"reconciles membership only, so add it to recreate_on_changes. A backend_defaults "+
+				"entry does not count: it fires only while the config leaves the field unset",
 			name,
 		)
 	}
@@ -88,14 +84,14 @@ func TestMaterializationSetAllMemberFieldsAreClassified(t *testing.T) {
 
 // TestMaterializationSetAllSetFieldsAreClassified does the same for the set's own fields.
 func TestMaterializationSetAllSetFieldsAreClassified(t *testing.T) {
-	classified := classifiedFields(t)
+	onDeclaredValue, onlyWhenUndeclared := classifiedFields(t)
 
 	for field := range reflect.TypeFor[ml.MaterializationSet]().Fields() {
 		name, ok := jsonFieldName(field)
 		if !ok || setFieldsWithoutRules[name] {
 			continue
 		}
-		assert.Truef(t, classified[name],
+		assert.Truef(t, onDeclaredValue[name] || onlyWhenUndeclared[name],
 			"set field %q is declared in neither materialization_sets.yml nor its generated half",
 			name,
 		)

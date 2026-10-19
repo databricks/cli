@@ -112,8 +112,9 @@ func (*ResourceMaterializationSet) OverrideChangeDesc(_ context.Context, path *s
 	// A member added to or removed from the set is a two-segment path,
 	// materialized_features[member='<feature name>|<online store name>|<is streaming>'], which an
 	// immutable field rule under materialized_features[*] still matches. That match counts as an
-	// update rather than a destroy-and-recreate, because a whole-member addition or removal is what
-	// the update endpoint handles.
+	// update rather than a destroy-and-recreate, because removing a member is what the update
+	// endpoint reconciles. An addition reaches the same endpoint and is refused there, naming the
+	// feature that matched no member.
 	if path.Len() == 2 && path.HasPatternPrefix(materializedFeaturesPattern) {
 		change.Action = deployplan.Update
 		return nil

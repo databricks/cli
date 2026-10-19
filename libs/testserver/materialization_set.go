@@ -24,6 +24,14 @@ func materializationSetError(statusCode int, errorCode, message string) Response
 	}
 }
 
+// materializedFeatureFieldCannotBeChanged refuses a field the set update cannot write. Every
+// member field is one, so the only change the endpoint applies is a removal.
+func materializedFeatureFieldCannotBeChanged(featureName, fieldPath string) Response {
+	return materializationSetError(http.StatusBadRequest, "INVALID_PARAMETER_VALUE",
+		fmt.Sprintf("The '%s' of feature '%s' cannot be changed after its materialized features "+
+			"are created. Recreate the materialization set instead.", fieldPath, featureName))
+}
+
 // materializationSetMemberKey matches a requested member to a stored one the way the backend does:
 // by feature name, online store and whether the trigger is streaming. Feature name alone is not
 // unique because one feature has an offline member plus one member per online store.
@@ -75,7 +83,8 @@ func validateBatchPipelineScheduleStates(members []ml.MaterializedFeature) *Resp
 	}
 	if len(states) > 1 {
 		response := materializationSetError(http.StatusBadRequest, "INVALID_PARAMETER_VALUE",
-			"All materialized features must have the same pipeline schedule state.")
+			"All materialized features in a BatchCreateMaterializedFeaturesRequest call must "+
+				"have the same pipeline schedule state.")
 		return &response
 	}
 	return nil
@@ -337,38 +346,17 @@ func (s *FakeWorkspace) MaterializationSetsUpdate(req Request, setID string) Res
 					"set instead.", member.FeatureName))
 		}
 		if isCronScheduleChangeRequested(member.CronScheduleTrigger, stored.CronScheduleTrigger) {
-			return materializationSetError(http.StatusBadRequest, "INVALID_PARAMETER_VALUE",
-				fmt.Sprintf("The 'cron_schedule_trigger' of feature '%s' cannot be changed after "+
-					"its materialized features are created. Recreate the materialization set "+
-					"instead.", member.FeatureName))
+			return materializedFeatureFieldCannotBeChanged(member.FeatureName,
+				"cron_schedule_trigger")
+		}
+		// An unset state asks for no change, so the comparison is only against a stated one.
+		if member.PipelineScheduleState != "" &&
+			member.PipelineScheduleState != stored.PipelineScheduleState {
+			return materializedFeatureFieldCannotBeChanged(member.FeatureName,
+				"pipeline_schedule_state")
 		}
 		requestedKeys[materializationSetMemberKey(member)] = true
 		matched = append(matched, stored)
-	}
-
-	// Apply the one mutable field. It is written on the member it is applied to and no other, and
-	// applying it to an online member is refused.
-	scheduleStateChanges := map[string]ml.MaterializedFeaturePipelineScheduleState{}
-	for _, member := range requested.MaterializedFeatures {
-		key := materializationSetMemberKey(member)
-		stored := storedByKey[key]
-		if member.PipelineScheduleState == "" ||
-			member.PipelineScheduleState == stored.PipelineScheduleState {
-			continue
-		}
-		if stored.IsOnline {
-			return materializationSetError(http.StatusBadRequest, "BAD_REQUEST",
-				fmt.Sprintf("The 'pipeline_schedule_state' of feature '%s' cannot be changed, "+
-					"because the change would be written on an online materialized feature.",
-					member.FeatureName))
-		}
-		if member.PipelineScheduleState != ml.MaterializedFeaturePipelineScheduleStateActive &&
-			member.PipelineScheduleState != ml.MaterializedFeaturePipelineScheduleStatePaused {
-			return materializationSetError(http.StatusBadRequest, "INVALID_PARAMETER_VALUE",
-				fmt.Sprintf("Pipeline schedule state cannot be updated to '%s'. It must be ACTIVE "+
-					"or PAUSED.", member.PipelineScheduleState))
-		}
-		scheduleStateChanges[key] = member.PipelineScheduleState
 	}
 
 	// Delete the members the request omits. Because a delete cascades from a feature's offline
@@ -402,15 +390,7 @@ func (s *FakeWorkspace) MaterializationSetsUpdate(req Request, setID string) Res
 		}
 	}
 
-	members := make([]ml.MaterializedFeature, 0, len(matched))
-	for _, member := range matched {
-		if state, changed := scheduleStateChanges[materializationSetMemberKey(member)]; changed {
-			member.PipelineScheduleState = state
-		}
-		members = append(members, member)
-	}
-
-	existing.MaterializedFeatures = members
+	existing.MaterializedFeatures = matched
 	s.MaterializationSets[setID] = existing
 	return Response{Body: existing}
 }

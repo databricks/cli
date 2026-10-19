@@ -36,17 +36,20 @@ trace $CLI bundle plan -o json > out.plan.json
 trace set_actions
 trace jq -r '.plan["resources.materialization_sets.set1"].changes | to_entries | map(select(.value.action == "recreate")) | .[] | "\(.value.reason) old=\(.value.old) new=\(.value.new)"' out.plan.json
 
-title "One request pausing both members. The offline half is a change the endpoint accepts and"
-title "the online half is not, so the whole request is refused."
+title "The schedule state is write-once, so pausing the feature is a recreate rather than the"
+title "in-place update the endpoint would refuse"
 render paused-both.yml.tmpl
 trace $CLI bundle plan -o json > out.plan.json
 trace set_actions
-trace musterr $CLI bundle deploy
-
-title "The offline member paused on its own is applied, and does not cascade to the online one"
-render paused-offline.yml.tmpl
-trace $CLI bundle deploy
+trace $CLI bundle deploy --auto-approve
 trace $CLI bundle plan -o json > out.plan.json
 trace set_actions
+
+title "Pausing the offline member alone plans as a recreate too, and the create refuses the"
+title "members of one feature disagreeing on the state"
+render paused-offline.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_actions
+trace musterr $CLI bundle deploy --auto-approve
 
 rm -f out.requests.txt out.plan.json
