@@ -2,13 +2,11 @@ package phases
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/dmsmigration"
 	"github.com/databricks/cli/bundle/deploy/lock"
-	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -16,8 +14,13 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 )
 
-// MigrateToDMS commits deployment history and returns its state descriptor before ordinary deployment planning begins.
-func MigrateToDMS(ctx context.Context, b *bundle.Bundle) (state *statemgmt.StateDesc) {
+// MigrateToDMS commits the already-open direct state to DMS and updates its descriptor before deployment planning.
+func MigrateToDMS(ctx context.Context, b *bundle.Bundle, state *statemgmt.StateDesc) {
+	if state.IsDMS() {
+		b.MigratingToDirect = false
+		return
+	}
+
 	bundle.ApplyContext(ctx, b, lock.Acquire(lock.GoalDeploy))
 	if logdiag.HasError(ctx) {
 		return
@@ -25,39 +28,15 @@ func MigrateToDMS(ctx context.Context, b *bundle.Bundle) (state *statemgmt.State
 	defer bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 
 	db := &b.DeploymentBundle.StateDB
+	db.AssertOpenedForRead()
 	defer db.Close()
 
-	// Another deploy may have completed since the command's initial state read.
-	state = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true))
-	if logdiag.HasError(ctx) {
-		return
-	}
-	if state.IsDMS() {
-		b.MigratingToDirect = false
-		return
-	}
 	if b.MigratingToDirect {
-		if !state.Engine.IsDirect() {
-			statemgmt.CommitMigration(ctx, b)
-			if logdiag.HasError(ctx) {
-				return
-			}
-			state = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true))
-			if logdiag.HasError(ctx) {
-				return
-			}
+		statemgmt.CommitMigration(ctx, b)
+		if logdiag.HasError(ctx) {
+			return
 		}
 		b.MigratingToDirect = false
-	}
-	db.Close()
-	if !state.Engine.IsDirect() {
-		logdiag.LogError(ctx, fmt.Errorf("deployment state changed to %s while enabling deployment history; retry the deployment", state.Engine))
-		return
-	}
-	_, localPath := b.StateFilenameDirect(ctx)
-	if err := db.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
-		logdiag.LogError(ctx, err)
-		return
 	}
 	deploymentID, deployment, err := dms.ReadDeployment(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 	if err != nil {
@@ -93,5 +72,4 @@ func MigrateToDMS(ctx context.Context, b *bundle.Bundle) (state *statemgmt.State
 	state.SourcePath = filepath.ToSlash(db.Path)
 	state.IsLocal = true
 	state.Content = nil
-	return
 }
