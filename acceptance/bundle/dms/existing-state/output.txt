@@ -16,6 +16,12 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "features": null
 }
 
+=== Remote serial 1 is authoritative despite a newer local serial 99
+>>> update_file.py .databricks/bundle/default/resources.json "serial": 1 "serial": 99
+
+>>> jq -c {serial} .databricks/bundle/default/resources.json
+{"serial":99}
+
 === Config enables recording despite the disabled environment: register version 2, then deploy version 3
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/files...
@@ -28,8 +34,9 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> find.py resources[.]json[.]wal --expect 0
 
->>> jq {features, state} .databricks/bundle/default/resources.json
+>>> jq {serial, features, state} .databricks/bundle/default/resources.json
 {
+  "serial": 3,
   "features": {
     "deployment_history": {}
   },

@@ -6,13 +6,17 @@ replace_ids.py
 trace cp .databricks/bundle/default/resources.json .databricks/resources.before-dms.json
 trace jq '{state_version, serial, features}' .databricks/bundle/default/resources.json
 
+title "Remote serial 1 is authoritative despite a newer local serial 99"
+trace update_file.py .databricks/bundle/default/resources.json '"serial": 1' '"serial": 99'
+trace jq -c '{serial}' .databricks/bundle/default/resources.json
+
 title "Config enables recording despite the disabled environment: register version 2, then deploy version 3"
 export DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false
 update_file.py databricks.yml 'deployment_history: false' 'deployment_history: true'
 update_file.py databricks.yml 'name: one' 'name: updated'
 trace $CLI bundle deploy 2>&1 | contains.py 'Enabling deployment history...' 'Deployment history enabled: ' 'Current Deployment Version: ' '?version=2' '?version=3'
 trace find.py 'resources[.]json[.]wal' --expect 0
-trace jq '{features, state}' .databricks/bundle/default/resources.json
+trace jq '{serial, features, state}' .databricks/bundle/default/resources.json
 
 title "Inspect the remote backup's original pre-migration resource IDs, state, and dependencies"
 trace MSYS_NO_PATHCONV=1 $CLI workspace export "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-existing-state-${UNIQUE_NAME}/default/state/resources.json.backup" --format AUTO --file .databricks/resources.backup.first.json
