@@ -4,17 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
-	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go"
 )
 
 // ErrResourceAlreadyBound is returned when attempting to bind a resource
@@ -36,20 +31,6 @@ func (e ErrResourceAlreadyBound) Error() string {
 		e.ResourceKey, e.ExistingID)
 }
 
-// BindResult contains the result of a bind operation including any detected changes.
-type BindResult struct {
-	// HasChanges is true if deploying after bind would make changes to the resource
-	HasChanges bool
-	// Action is the planned action for the bound resource (e.g., "skip", "update", "recreate")
-	Action deployplan.ActionType
-	// Plan contains the full deployment plan for the bound resource
-	Plan *deployplan.Plan
-	// TempStatePath is the path to the temporary state file
-	TempStatePath string
-	// StatePath is the path to the final state file
-	StatePath string
-}
-
 // copyRemoteEtag copies the etag from remote state for resources that use etag-based drift
 // detection (dashboards and genie spaces). The etag is not provided by the
 // user; it comes from remote. If we don't store it in state, we won't
@@ -62,181 +43,6 @@ func copyRemoteEtag(resourceKey string, remoteState, newState any) {
 				_ = structaccess.Set(newState, structpath.NewStringKey(nil, "etag"), etagStr)
 			}
 		}
-	}
-}
-
-// Bind adds an existing workspace resource to a temporary state and calculates
-// if there will be any changes when deploying.
-//
-// Flow:
-// 1. Load current state file
-// 2. Update id of the target resource
-// 3. Update state path to temp file (state file + ".temp-bind")
-// 4. Perform plan + update to populate state with resolved config
-// 5. Calculate plan again - this is the plan presented to the user
-//
-// Call Finalize to commit the state or Cancel to discard.
-func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath, resourceKey, resourceID string) (*BindResult, error) {
-	// Check if the resource is already managed (bound to a different ID)
-	// The state is opened without a DMS client, so the writes below record nothing;
-	// phases.Bind and phases.Unbind refuse to run at all when recording is enabled.
-	var checkStateDB dstate.DeploymentState
-	if err := checkStateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
-		// State that cannot be read is not the same as state without a binding:
-		// the resource may well be managed already, and binding on top of it
-		// would take over a resource whose ownership was never checked. A state
-		// file that does not exist yet opens successfully as an empty one.
-		return nil, fmt.Errorf("cannot check whether %s is already bound: %w", resourceKey, err)
-	}
-	existingID := checkStateDB.GetResourceID(resourceKey)
-	if _, err := checkStateDB.Finalize(ctx); err != nil {
-		log.Warnf(ctx, "failed to finalize state: %v", err)
-	}
-	if existingID != "" {
-		return nil, ErrResourceAlreadyBound{
-			ResourceKey: resourceKey,
-			ExistingID:  existingID,
-			NewID:       resourceID,
-		}
-	}
-
-	tmpStatePath := statePath + ".temp-bind"
-
-	// Copy existing state to temp location if it exists
-	if data, err := os.ReadFile(statePath); err == nil {
-		if err := os.WriteFile(tmpStatePath, data, 0o600); err != nil {
-			return nil, err
-		}
-	}
-
-	// Open temp state
-	err := b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(false), dstate.WithWrite(true), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{})
-	if err != nil {
-		os.Remove(tmpStatePath)
-		return nil, err
-	}
-
-	// Save state with ID and empty state (like migrate does)
-	err = b.StateDB.SaveState(ctx, resourceKey, resourceID, struct{}{}, nil)
-	if err != nil {
-		os.Remove(tmpStatePath)
-		return nil, err
-	}
-
-	// Finalize to persist temp state to disk
-	_, err = b.StateDB.Finalize(ctx)
-	if err != nil {
-		os.Remove(tmpStatePath)
-		return nil, err
-	}
-
-	log.Infof(ctx, "Bound %s to id=%s (in temp state)", resourceKey, resourceID)
-
-	// First plan + update: populate state with resolved config
-	err = b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{})
-	if err != nil {
-		os.Remove(tmpStatePath)
-		return nil, err
-	}
-	plan, err := b.CalculatePlan(ctx, client, configRoot)
-	if err != nil {
-		os.Remove(tmpStatePath)
-		return nil, err
-	}
-	if _, err := b.StateDB.Finalize(ctx); err != nil {
-		log.Warnf(ctx, "failed to finalize state: %v", err)
-	}
-
-	// Populate the state with the resolved config
-	entry := plan.Plan[resourceKey]
-	sv, ok := b.StateCache.Load(resourceKey)
-	if ok && sv != nil {
-		var dependsOn []deployplan.DependsOnEntry
-		if entry != nil {
-			dependsOn = entry.DependsOn
-		}
-
-		if entry != nil {
-			copyRemoteEtag(resourceKey, entry.RemoteState, sv.Value)
-		}
-
-		// Compact hashed_fields fields so the persisted state stays small. Not needed for
-		// correctness — the next plan (CalculatePlan) compacts the saved state on read.
-		adapter, err := b.getAdapterForKey(resourceKey)
-		if err != nil {
-			os.Remove(tmpStatePath)
-			return nil, err
-		}
-		compacted, err := dresources.CompactState(adapter.ResourceConfig(), sv.Value)
-		if err != nil {
-			os.Remove(tmpStatePath)
-			return nil, fmt.Errorf("compacting state: %w", err)
-		}
-
-		err = b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(true), dstate.WithWrite(true), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{})
-		if err != nil {
-			os.Remove(tmpStatePath)
-			return nil, err
-		}
-
-		err = b.StateDB.SaveState(ctx, resourceKey, resourceID, compacted, dependsOn)
-		if err != nil {
-			os.Remove(tmpStatePath)
-			return nil, err
-		}
-
-		_, err = b.StateDB.Finalize(ctx)
-		if err != nil {
-			os.Remove(tmpStatePath)
-			return nil, err
-		}
-	}
-
-	// Second plan: this is the plan to present to the user (change between remote resource and config)
-	err = b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{})
-	if err != nil {
-		os.Remove(tmpStatePath)
-		return nil, err
-	}
-	plan, err = b.CalculatePlan(ctx, client, configRoot)
-	if _, ferr := b.StateDB.Finalize(ctx); ferr != nil {
-		log.Warnf(ctx, "failed to finalize state: %v", ferr)
-	}
-	if err != nil {
-		os.Remove(tmpStatePath)
-		return nil, err
-	}
-
-	// Check if the bound resource has changes
-	result := &BindResult{
-		HasChanges:    false,
-		Action:        deployplan.Skip,
-		Plan:          plan,
-		TempStatePath: tmpStatePath,
-		StatePath:     statePath,
-	}
-
-	entry = plan.Plan[resourceKey]
-	if entry != nil {
-		result.Action = entry.Action
-		result.HasChanges = result.Action != deployplan.Skip && result.Action != deployplan.Undefined
-	}
-
-	return result, nil
-}
-
-// Finalize completes the bind operation by renaming the temp state to the final location.
-func (result *BindResult) Finalize() error {
-	if result == nil || result.TempStatePath == "" {
-		return nil
-	}
-	return os.Rename(result.TempStatePath, result.StatePath)
-}
-
-// Cancel cleans up temp state without committing changes.
-func (result *BindResult) Cancel() {
-	if result != nil && result.TempStatePath != "" {
-		os.Remove(result.TempStatePath)
 	}
 }
 

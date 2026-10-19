@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
@@ -30,6 +32,14 @@ type BindOptions struct {
 func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *statemgmt.StateDesc) {
 	log.Info(ctx, "Phase: bind")
 	engine := stateDesc.Engine
+
+	// The caller opens the state for read; close it on every path. A no-op once closed below.
+	db := &b.DeploymentBundle.StateDB
+	defer func() {
+		if _, err := db.Finalize(ctx); err != nil {
+			logdiag.LogError(ctx, err)
+		}
+	}()
 
 	bundle.ApplyContext(ctx, b, lock.Acquire(lock.GoalBind))
 	if logdiag.HasError(ctx) {
@@ -52,62 +62,97 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		return
 	}
 
-	// Direct engine: import into temp state, run plan, check for changes.
 	resourceKey := fmt.Sprintf("resources.%s.%s", opts.Group, opts.ResourceKey)
-	_, statePath := b.StateFilenameDirect(ctx)
+	if existingID := db.GetResourceID(resourceKey); existingID != "" {
+		logdiag.LogError(ctx, direct.ErrResourceAlreadyBound{ResourceKey: resourceKey, ExistingID: existingID, NewID: opts.ResourceId})
+		return
+	}
 
-	result, err := b.DeploymentBundle.Bind(ctx, b.WorkspaceClient(ctx), &b.Config, statePath, resourceKey, opts.ResourceId)
+	// Plan the resource as a bind of the existing workspace resource, compared against the config.
+	b.DeploymentBundle.BindKey = resourceKey
+	b.DeploymentBundle.BindID = opts.ResourceId
+	plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
+	if err := selectBindPlan(plan, resourceKey); err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+
+	// Bind changes nothing; this is what the next deploy applies to the bound resource.
+	entry := plan.Plan[resourceKey]
+	action := deployplan.Skip
+	for _, change := range entry.Changes {
+		action = deployplan.GetHigherAction(action, change.Action)
+	}
 
 	// If there are changes and auto-approve is not set, show plan and ask for confirmation
-	if result.HasChanges && !opts.AutoApprove {
+	if action != deployplan.Skip && !opts.AutoApprove {
 		// Display the planned changes for the bound resource
-		cmdio.LogString(ctx, fmt.Sprintf("Plan: %s %s", result.Action, resourceKey))
+		cmdio.LogString(ctx, fmt.Sprintf("Plan: %s %s", action, resourceKey))
 
 		// Show details of what will change
-		if result.Plan != nil {
-			if entry, ok := result.Plan.Plan[resourceKey]; ok && entry != nil && len(entry.Changes) > 0 {
-				cmdio.LogString(ctx, "\nChanges detected:")
-				for _, field := range slices.Sorted(maps.Keys(entry.Changes)) {
-					change := entry.Changes[field]
-					if change.Action != deployplan.Skip {
-						cmdio.LogString(ctx, fmt.Sprintf("  ~ %s: %v -> %v", field, jsonDump(ctx, change.Remote, field), jsonDump(ctx, change.New, field)))
-					}
+		if len(entry.Changes) > 0 {
+			cmdio.LogString(ctx, "\nChanges detected:")
+			for _, field := range slices.Sorted(maps.Keys(entry.Changes)) {
+				change := entry.Changes[field]
+				if change.Action != deployplan.Skip {
+					cmdio.LogString(ctx, fmt.Sprintf("  ~ %s: %v -> %v", field, jsonDump(ctx, change.Remote, field), jsonDump(ctx, change.New, field)))
 				}
-				cmdio.LogString(ctx, "")
 			}
+			cmdio.LogString(ctx, "")
 		}
 
 		if !cmdio.IsPromptSupported(ctx) {
-			result.Cancel()
 			logdiag.LogError(ctx, fmt.Errorf("this bind operation requires user confirmation, but the current console does not support prompting.\nTo proceed, use --auto-approve after reviewing the plan above.%s", agent.AgentNotice()))
 			return
 		}
 
 		ans, err := cmdio.AskYesOrNo(ctx, "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'.")
 		if err != nil {
-			result.Cancel()
 			logdiag.LogError(ctx, err)
 			return
 		}
 		if !ans {
-			result.Cancel()
 			logdiag.LogError(ctx, errors.New("import aborted"))
 			return
 		}
 	}
 
-	// Finalize: rename temp state to final location
-	err = result.Finalize()
-	if err != nil {
+	if err := db.UpgradeToWrite(); err != nil {
 		logdiag.LogError(ctx, err)
+		return
+	}
+	b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, false)
+	if _, err := db.Finalize(ctx); err != nil {
+		logdiag.LogError(ctx, err)
+	}
+	if logdiag.HasError(ctx) {
 		return
 	}
 
 	statemgmt.PushResourcesState(ctx, b)
+}
+
+// selectBindPlan narrows the plan to the bound resource. Its dependencies stay for reference
+// resolution but are not applied, so they must already be deployed. Its permissions and grants
+// are left to the next deploy, like any other config change.
+func selectBindPlan(plan *deployplan.Plan, resourceKey string) error {
+	plan.FilterToSelected([]string{strings.TrimPrefix(resourceKey, "resources.")})
+	for _, action := range plan.GetActions() {
+		switch {
+		case action.ResourceKey == resourceKey:
+		case strings.HasPrefix(action.ResourceKey, resourceKey+"."):
+			delete(plan.Plan, action.ResourceKey)
+		case action.ActionType == deployplan.Create:
+			return fmt.Errorf("cannot bind %s: it depends on %s, which is not deployed yet; deploy or bind it first", resourceKey, action.ResourceKey)
+		default:
+			plan.Plan[action.ResourceKey].Action = deployplan.Skip
+		}
+	}
+	return nil
 }
 
 func jsonDump(ctx context.Context, v any, field string) string {

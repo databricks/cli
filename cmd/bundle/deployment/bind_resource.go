@@ -42,6 +42,13 @@ func BindResource(cmd *cobra.Command, resourceKey, resourceId string, autoApprov
 		return fmt.Errorf("%s with an id '%s' is not found", resource.ResourceDescription().SingularName, resourceId)
 	}
 
+	// Bind plans against the existing state, so open it first; the bind phase closes it.
+	if stateDesc.Engine.IsDirect() {
+		if err := utils.OpenDirectStateForRead(ctx, b, stateDesc); err != nil {
+			return err
+		}
+	}
+
 	phases.Bind(ctx, b, &phases.BindOptions{
 		AutoApprove: autoApprove,
 		Group:       resource.ResourceDescription().PluralName,

@@ -330,6 +330,13 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 			return fmt.Errorf("app '%s' no longer exists in workspace", app.Name)
 		}
 
+		// Bind plans against the existing state, so open it first; the bind phase closes it.
+		if stateDesc.Engine.IsDirect() {
+			if err := bundleutils.OpenDirectStateForRead(ctx, b, stateDesc); err != nil {
+				return err
+			}
+		}
+
 		// Bind the resource
 		phases.Bind(ctx, b, &phases.BindOptions{
 			AutoApprove: true,
