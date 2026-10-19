@@ -5,7 +5,16 @@ trace replay_tfstate.py terraform-requests.json terraform.tfstate
 original_job_id=$(read_id.py test_job)
 rm -f "$OUT_REQUESTS"
 
-title "Terraform migrates to direct deployment with history enabled and preserves the job ID"
+title "Deployment history rejects Terraform state before conversion, for both plan and deploy"
+trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true musterr $CLI bundle plan
+trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true musterr $CLI bundle deploy
+trace find.py 'resources[.]json|tfstate[.]backup' --expect 0
+trace print_requests.py --dms //api/2.0/bundle //jobs
+
+title "First migrate Terraform state to direct with deployment history disabled"
+trace DATABRICKS_BUNDLE_ENGINE=direct DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false $CLI bundle deploy
+
+title "Then enable deployment history on the direct state, preserving the job ID"
 trace DATABRICKS_BUNDLE_ENGINE=direct DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
 trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
 trace find.py 'resources[.]json[.]wal' --expect 0

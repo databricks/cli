@@ -250,6 +250,11 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// Record the engine the resolved state uses now, so deploy telemetry reports
 		// it even when the deploy fails or is cancelled before deployCore runs.
 		b.Metrics.StateEngine = stateDesc.Engine.ThisOrDefault()
+
+		// TODO: Support the full Terraform -> direct -> DMS migration path at GA.
+		if (opts.Deploy || opts.PreDeployChecks) && !stateDesc.Engine.IsDirect() && configuresDeploymentHistory(ctx, b) {
+			return b, stateDesc, phases.ErrDMSRequiresDirectState
+		}
 	}
 
 	// --plan applies a precomputed plan, so it skips Build and PreDeployChecks; a plain

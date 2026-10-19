@@ -2,15 +2,32 @@
 === Replay a prior terraform deployment (captured from a real terraform run)
 >>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
-=== Terraform migrates to direct deployment with history enabled and preserves the job ID
->>> DATABRICKS_BUNDLE_ENGINE=direct DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
+=== Deployment history rejects Terraform state before conversion, for both plan and deploy
+>>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true musterr [CLI] bundle plan
+Error: deployment history is not supported with Terraform state; first migrate to direct deployment with deployment history disabled
+
+>>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true musterr [CLI] bundle deploy
+Error: deployment history is not supported with Terraform state; first migrate to direct deployment with deployment history disabled
+
+>>> find.py resources[.]json|tfstate[.]backup --expect 0
+
+>>> print_requests.py --dms //api/2.0/bundle //jobs
+
+=== First migrate Terraform state to direct with deployment history disabled
+>>> DATABRICKS_BUNDLE_ENGINE=direct DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle deploy
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Migrated 1 resource to direct deployment engine.
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+=== Then enable deployment history on the direct state, preserving the job ID
+>>> DATABRICKS_BUNDLE_ENGINE=direct DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
 Enabling deployment history...
 Deployment history enabled: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=4
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Updated jobs.test_job
-Files: 1 uploaded, 0 deleted
+Files: 0 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)

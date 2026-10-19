@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/statemgmt"
@@ -13,6 +14,20 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestMigrateToDMSRejectsTerraformBeforeLock(t *testing.T) {
+	b := &bundle.Bundle{}
+	ctx := logdiag.InitContext(t.Context())
+	logdiag.SetCollect(ctx, true)
+
+	phases.MigrateToDMS(ctx, b, &statemgmt.StateDesc{Engine: engine.EngineTerraform})
+
+	require.True(t, logdiag.HasError(ctx))
+	diags := logdiag.FlushCollected(ctx)
+	require.Len(t, diags, 1)
+	assert.Equal(t, phases.ErrDMSRequiresDirectState.Error(), diags[0].Summary)
+	assert.Nil(t, b.Locker)
+}
 
 func TestMigrateToDMSAlreadyRecorded(t *testing.T) {
 	b := &bundle.Bundle{
