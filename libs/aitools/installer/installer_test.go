@@ -3,10 +3,13 @@ package installer
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
 	"log/slog"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"sync"
@@ -16,6 +19,7 @@ import (
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/clicompat"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/stretchr/testify/assert"
@@ -444,6 +448,274 @@ func TestInstallSkillsForAgentsWritesState(t *testing.T) {
 	assert.Contains(t, stderr.String(), "Using skills version")
 	assert.Contains(t, stderr.String(), "Fetching skills manifest...")
 	assert.Contains(t, stderr.String(), "Installed 2 skills.")
+}
+
+func setupSkillsFallback(t *testing.T, latestErr error) (ManifestSource, string) {
+	t.Helper()
+	setBuildVersion(t, "1.22.0")
+	t.Setenv("DATABRICKS_SKILLS_REF", "")
+	t.Setenv("DATABRICKS_FORCE_EMBEDDED_COMPAT", "false")
+	t.Setenv("DATABRICKS_CACHE_ENABLED", "true")
+	cacheDir := t.TempDir()
+	t.Setenv("DATABRICKS_CACHE_DIR", cacheDir)
+	require.NoError(t, os.WriteFile(filepath.Join(cacheDir, "compat-manifest.json"), build.CLICompatManifestJSON, 0o600))
+	stubLatestSkillsReleaseRef(t, "v9.9.9", latestErr)
+	fallbackRef := "v" + build.AgentSkillsFallbackVersion
+	body, err := json.Marshal(testManifest())
+	require.NoError(t, err)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/"+fallbackRef+"/manifest.json" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		_, _ = w.Write(body)
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("DATABRICKS_SKILLS_BASE_URL", srv.URL)
+	return &GitHubManifestSource{}, fallbackRef
+}
+
+func testSkillsFallbackVersions(t *testing.T, run func(context.Context, ManifestSource, []*agents.Agent) error) {
+	t.Helper()
+	for _, failure := range []struct {
+		name      string
+		latestErr error
+	}{
+		{name: "release lookup failed", latestErr: errors.New("HTTP 403 fetching latest skills release")},
+		{name: "latest manifest missing"},
+	} {
+		t.Run(failure.name, func(t *testing.T) {
+			for _, tc := range []struct {
+				name          string
+				installedRef  string
+				pluginInstall bool
+				legacyState   bool
+				unknown       bool
+				downgrade     bool
+			}{
+				{name: "newer fallback", installedRef: "v0.0.1"},
+				{name: "equal fallback"},
+				{name: "older fallback", installedRef: "v9.9.8", downgrade: true},
+				{name: "older fallback after plugin install", installedRef: "v9.9.8", pluginInstall: true, downgrade: true},
+				{name: "unknown installed release", installedRef: "main", unknown: true},
+				{name: "unknown release after plugin install", installedRef: "main", pluginInstall: true, unknown: true},
+				{name: "legacy state after plugin install", installedRef: "v9.9.8", pluginInstall: true, legacyState: true, unknown: true},
+			} {
+				t.Run(tc.name, func(t *testing.T) {
+					tmp := setupTestHome(t)
+					ctx := cmdio.MockDiscard(t.Context())
+					setupFetchMock(t)
+					src, fallbackRef := setupSkillsFallback(t, failure.latestErr)
+					installedRef := tc.installedRef
+					if installedRef == "" {
+						installedRef = fallbackRef
+					}
+					t.Setenv("DATABRICKS_SKILLS_REF", installedRef)
+					targetAgents := []*agents.Agent{testAgent(tmp)}
+					installedManifest := testManifest()
+					switch {
+					case tc.downgrade || tc.unknown:
+						installedManifest.Skills["databricks-sql"] = SkillMeta{Version: "0.2.0", Files: []string{"SKILL.md"}}
+						installedManifest.Skills["databricks-new"] = SkillMeta{Version: "0.1.0", Files: []string{"SKILL.md"}}
+					case tc.installedRef != "":
+						installedManifest.Skills["databricks-sql"] = SkillMeta{Version: "0.0.9", Files: []string{"SKILL.md"}}
+					}
+					require.NoError(t, InstallSkillsForAgents(ctx, &mockManifestSource{manifest: installedManifest}, targetAgents, InstallOptions{}))
+					baseDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+					if tc.legacyState {
+						state, err := LoadState(baseDir)
+						require.NoError(t, err)
+						state.Files = nil
+						require.NoError(t, SaveState(baseDir, state))
+					}
+					if tc.pluginInstall {
+						require.NoError(t, RecordPluginInstalls(ctx, ScopeGlobal, map[string]PluginRecord{
+							"claude-code": {Plugin: "databricks", Version: DisplaySkillsVersion(fallbackRef)},
+						}, fallbackRef))
+					}
+					statePath := filepath.Join(baseDir, stateFileName)
+					before, err := os.ReadFile(statePath)
+					require.NoError(t, err)
+
+					t.Setenv("DATABRICKS_SKILLS_REF", "")
+					err = run(ctx, src, targetAgents)
+					switch {
+					case tc.downgrade:
+						require.ErrorContains(t, err, "refusing to downgrade skills from 9.9.8 to "+DisplaySkillsVersion(fallbackRef))
+						require.ErrorContains(t, err, "DATABRICKS_SKILLS_REF="+fallbackRef)
+					case tc.unknown && failure.latestErr != nil:
+						require.ErrorIs(t, err, failure.latestErr)
+					case tc.unknown:
+						require.ErrorIs(t, err, clicompat.ErrNotFound)
+					default:
+						require.NoError(t, err)
+						state, err := LoadState(baseDir)
+						require.NoError(t, err)
+						assert.Equal(t, fallbackRef, state.Release)
+						assert.Equal(t, map[string]string{"databricks-sql": "0.1.0", "databricks-jobs": "0.1.0"}, state.Skills)
+						return
+					}
+
+					after, err := os.ReadFile(statePath)
+					require.NoError(t, err)
+					assert.Equal(t, before, after, "rejected fallback must not rewrite install state")
+					for name := range installedManifest.Skills {
+						for _, dir := range []string{baseDir, filepath.Join(tmp, ".test-agent", "skills")} {
+							content, err := os.ReadFile(filepath.Join(dir, name, "SKILL.md"))
+							require.NoError(t, err)
+							assert.Equal(t, "# "+name+"/SKILL.md", string(content))
+						}
+					}
+				})
+			}
+		})
+	}
+}
+
+func TestInstallSkillsForAgentsFallbackVersions(t *testing.T) {
+	testSkillsFallbackVersions(t, func(ctx context.Context, src ManifestSource, targetAgents []*agents.Agent) error {
+		return InstallSkillsForAgents(ctx, src, targetAgents, InstallOptions{})
+	})
+}
+
+func testSkillsRefSelection(t *testing.T, run func(context.Context, ManifestSource, []*agents.Agent) error) {
+	t.Helper()
+	for _, tc := range []struct {
+		name         string
+		installedRef string
+		selectedRef  string
+		envPin       bool
+		compatPin    bool
+		wantErr      bool
+	}{
+		{name: "environment pin", installedRef: "v9.9.8", selectedRef: testSkillsRef, envPin: true},
+		{name: "compatibility pin", installedRef: "v9.9.8", selectedRef: testSkillsRef, compatPin: true},
+		{name: "latest after branch", installedRef: "main", selectedRef: "v9.9.9"},
+		{name: "older latest release", installedRef: "v9.9.8", selectedRef: testSkillsRef, wantErr: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			tmp := setupTestHome(t)
+			ctx := cmdio.MockDiscard(t.Context())
+			setupFetchMock(t)
+			t.Setenv("DATABRICKS_SKILLS_REF", tc.installedRef)
+			targetAgents := []*agents.Agent{testAgent(tmp)}
+			installedManifest := testManifest()
+			version := "0.2.0"
+			if tc.installedRef == "main" {
+				version = "0.0.9"
+			}
+			installedManifest.Skills["databricks-sql"] = SkillMeta{Version: version, Files: []string{"SKILL.md"}}
+			require.NoError(t, InstallSkillsForAgents(ctx, &mockManifestSource{manifest: installedManifest}, targetAgents, InstallOptions{}))
+
+			t.Setenv("DATABRICKS_SKILLS_REF", "")
+			switch {
+			case tc.envPin:
+				t.Setenv("DATABRICKS_SKILLS_REF", tc.selectedRef)
+			case tc.compatPin:
+				withCachedCompat(t, DisplaySkillsVersion(tc.selectedRef))
+			default:
+				withCachedCompat(t, skillsLatestSentinel)
+			}
+			stubLatestSkillsReleaseRef(t, tc.selectedRef, nil)
+			err := run(ctx, &mockManifestSource{manifest: testManifest()}, targetAgents)
+			if tc.wantErr {
+				require.ErrorContains(t, err, "refusing to downgrade skills")
+			} else {
+				require.NoError(t, err)
+			}
+			state, err := LoadState(filepath.Join(tmp, ".databricks", "aitools", "skills"))
+			require.NoError(t, err)
+			if tc.wantErr {
+				assert.Equal(t, tc.installedRef, state.Release)
+				assert.Equal(t, version, state.Skills["databricks-sql"])
+			} else {
+				assert.Equal(t, tc.selectedRef, state.Release)
+				assert.Equal(t, "0.1.0", state.Skills["databricks-sql"])
+			}
+		})
+	}
+}
+
+func TestInstallSkillsForAgentsRefSelection(t *testing.T) {
+	testSkillsRefSelection(t, func(ctx context.Context, src ManifestSource, targetAgents []*agents.Agent) error {
+		return InstallSkillsForAgents(ctx, src, targetAgents, InstallOptions{})
+	})
+}
+
+func TestCheckSkillsDowngrade(t *testing.T) {
+	for _, tc := range []struct {
+		name         string
+		installedRef string
+		ref          string
+		wantErr      bool
+	}{
+		{name: "fresh install", ref: "v0.2.30"},
+		{name: "same release", installedRef: "v0.2.30", ref: "v0.2.30"},
+		{name: "numeric upgrade", installedRef: "v0.2.9", ref: "v0.2.30"},
+		{name: "numeric downgrade", installedRef: "v0.2.30", ref: "v0.2.9", wantErr: true},
+		{name: "prerelease upgrade", installedRef: "v0.2.30-rc.1", ref: "v0.2.30"},
+		{name: "prerelease downgrade", installedRef: "v0.2.30", ref: "v0.2.30-rc.1", wantErr: true},
+		{name: "build metadata", installedRef: "v0.2.30+test", ref: "v0.2.30"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := checkSkillsDowngrade(tc.installedRef, tc.ref, false)
+			if tc.wantErr {
+				require.ErrorContains(t, err, "refusing to downgrade skills")
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestInstallSkillsForAgentsFallbackForFreshInstall(t *testing.T) {
+	for _, pluginOnly := range []bool{false, true} {
+		for _, missingManifest := range []bool{false, true} {
+			t.Run(fmt.Sprintf("pluginOnly=%t/missingManifest=%t", pluginOnly, missingManifest), func(t *testing.T) {
+				tmp := setupTestHome(t)
+				ctx := cmdio.MockDiscard(t.Context())
+				setupFetchMock(t)
+				if pluginOnly {
+					require.NoError(t, RecordPluginInstalls(ctx, ScopeGlobal, map[string]PluginRecord{
+						"claude-code": {Plugin: "databricks", Version: "9.9.8"},
+					}, "v9.9.8"))
+				}
+				var latestErr error
+				if !missingManifest {
+					latestErr = errors.New("HTTP 403 fetching latest skills release")
+				}
+				src, fallbackRef := setupSkillsFallback(t, latestErr)
+				require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{testAgent(tmp)}, InstallOptions{}))
+				state, err := LoadState(filepath.Join(tmp, ".databricks", "aitools", "skills"))
+				require.NoError(t, err)
+				require.NotNil(t, state)
+				assert.Equal(t, fallbackRef, state.Release)
+				assert.Len(t, state.Skills, 2)
+				if pluginOnly {
+					assert.Contains(t, state.Plugins, "claude-code")
+				}
+			})
+		}
+	}
+}
+
+func TestInstallSkillsForAgentsPreservesLegacySkillsOnFallback(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	baseDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	skillDir := filepath.Join(baseDir, "databricks-sql")
+	require.NoError(t, os.MkdirAll(skillDir, 0o755))
+	skillPath := filepath.Join(skillDir, "SKILL.md")
+	require.NoError(t, os.WriteFile(skillPath, []byte("installed skill"), 0o644))
+	latestErr := errors.New("network down")
+	src, _ := setupSkillsFallback(t, latestErr)
+
+	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{testAgent(tmp)}, InstallOptions{})
+	require.ErrorIs(t, err, latestErr)
+	content, err := os.ReadFile(skillPath)
+	require.NoError(t, err)
+	assert.Equal(t, "installed skill", string(content))
+	assert.NoFileExists(t, filepath.Join(baseDir, stateFileName))
 }
 
 func TestInstallPurgesStaleFileRecordsOnRefetch(t *testing.T) {
@@ -1055,15 +1327,119 @@ func TestGetSkillsRefDefaultsToLatest(t *testing.T) {
 	assert.False(t, explicit, "tracking latest is not an explicit pin")
 }
 
-func TestGetSkillsRefLatestReleaseFallsBackToEmbeddedPin(t *testing.T) {
+func TestGetSkillsRefDefaultManifest(t *testing.T) {
+	var m clicompat.Manifest
+	require.NoError(t, json.Unmarshal(build.CLICompatManifestJSON, &m))
+
+	// The table only records which CLI versions track latest. Pins come from
+	// the embedded manifest so routine skills bumps need no test changes.
+	tests := []struct {
+		version string
+		latest  bool
+	}{
+		{version: "0.299.2"},
+		{version: "1.0.0"},
+		{version: "1.19.9"},
+		{version: "1.20.0"},
+		{version: "1.21.0"},
+		{version: "1.21.9"},
+		{version: "1.22.0", latest: true},
+		{version: "1.23.0", latest: true},
+		{version: "0.0.0-dev+test", latest: true},
+	}
+	for _, tc := range tests {
+		entry, err := clicompat.Resolve(m, tc.version)
+		require.NoError(t, err)
+		pinnedRef := "v" + entry.AgentSkills
+
+		for _, offline := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/offline=%t", tc.version, offline), func(t *testing.T) {
+				t.Setenv("DATABRICKS_SKILLS_REF", "")
+				setBuildVersion(t, tc.version)
+				cacheDir := t.TempDir()
+				t.Setenv("DATABRICKS_CACHE_DIR", cacheDir)
+				require.NoError(t, os.WriteFile(filepath.Join(cacheDir, "compat-manifest.json"), build.CLICompatManifestJSON, 0o600))
+				wantRef := pinnedRef
+				var latestErr error
+				if offline {
+					latestErr = errors.New("network down")
+				}
+				switch {
+				case tc.latest && offline:
+					wantRef = ""
+				case tc.latest:
+					wantRef = "v9.9.9"
+				}
+				stubLatestSkillsReleaseRef(t, "v9.9.9", latestErr)
+
+				ref, explicit, err := GetSkillsRef(t.Context())
+				if tc.latest && offline {
+					require.ErrorIs(t, err, latestErr)
+				} else {
+					require.NoError(t, err)
+				}
+				assert.Equal(t, wantRef, ref)
+				assert.Equal(t, !tc.latest, explicit)
+			})
+		}
+	}
+}
+
+func TestGetSkillsRefLatestReleaseLookupFails(t *testing.T) {
+	setBuildVersion(t, "1.22.0")
 	t.Setenv("DATABRICKS_SKILLS_REF", "")
 	withCachedCompat(t, skillsLatestSentinel)
-	stubLatestSkillsReleaseRef(t, "", errors.New("network down"))
+	latestErr := errors.New("network down")
+	stubLatestSkillsReleaseRef(t, "", latestErr)
 
 	ref, explicit, err := GetSkillsRef(t.Context())
-	require.NoError(t, err)
-	assert.Equal(t, "v0.2.30", ref)
-	assert.False(t, explicit, "an embedded fallback is not a user pin")
+	require.ErrorIs(t, err, latestErr)
+	assert.Empty(t, ref, "the embedded fallback is not the latest release")
+	assert.False(t, explicit)
+}
+
+func TestFetchSkillsManifestWithFallback(t *testing.T) {
+	const missingRef = "v9.9.9"
+	setBuildVersion(t, "1.22.0")
+	fallbackRef := "v" + build.AgentSkillsFallbackVersion
+
+	tests := []struct {
+		name          string
+		status        int
+		allowFallback bool
+		wantRef       string
+		wantErr       bool
+	}{
+		{name: "latest manifest missing", status: http.StatusNotFound, allowFallback: true, wantRef: fallbackRef},
+		{name: "explicit pin missing", status: http.StatusNotFound, wantRef: missingRef, wantErr: true},
+		{name: "server error", status: http.StatusInternalServerError, allowFallback: true, wantRef: missingRef, wantErr: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			body, err := json.Marshal(testManifest())
+			require.NoError(t, err)
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/"+fallbackRef+"/manifest.json" {
+					w.WriteHeader(tc.status)
+					return
+				}
+				_, _ = w.Write(body)
+			}))
+			defer srv.Close()
+			t.Setenv("DATABRICKS_SKILLS_BASE_URL", srv.URL)
+
+			manifest, ref, err := FetchSkillsManifestWithFallback(
+				cmdio.MockDiscard(t.Context()), &GitHubManifestSource{}, missingRef, tc.allowFallback,
+			)
+			assert.Equal(t, tc.wantRef, ref)
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, "1", manifest.Version)
+		})
+	}
 }
 
 func TestGetSkillsRefEnvEscapeHatch(t *testing.T) {
