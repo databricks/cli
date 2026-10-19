@@ -1,0 +1,47 @@
+
+=== Setup (LOG.setup): legacy resources exist; migration would recreate the schema
+=== 1. Planning fails after preparation; no migration is committed
+>>> fault.py GET /api/2.2/jobs/get* 403 0 1
+
+>>> musterr [CLI] bundle deploy -qq
+Error: cannot plan resources.jobs.job: reading id="[JOB_ID]": Fault injected by test. (403 INJECTED)
+
+Endpoint: GET [DATABRICKS_URL]/api/2.2/jobs/get?job_id=[JOB_ID]
+HTTP Status: 403 Forbidden
+API error_code: INJECTED
+API message: Fault injected by test.
+
+Error: planning failed
+
+
+>>> cmp .databricks/resources.before-migration.json .databricks/bundle/default/resources.json
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/dms-migration-not-committed-[UNIQUE_NAME]/default/state/resources.json --format AUTO --file .databricks/resources.after-failure.json
+
+>>> cmp .databricks/resources.before-migration.json .databricks/resources.after-failure.json
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/dms-migration-not-committed-[UNIQUE_NAME]/default/state -o json
+[]
+
+>>> print_requests.py --dms //api/2.0/bundle
+
+=== 2. Destructive deployment is declined; migration stays uncommitted
+>>> musterr [CLI] bundle deploy -qq
+
+This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
+  recreate resources.schemas.schema
+Error: the deployment requires destructive actions, but the current console does not support prompting.
+Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
+To proceed, use --auto-approve after reviewing the plan above.
+
+
+>>> cmp .databricks/resources.before-migration.json .databricks/bundle/default/resources.json
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/dms-migration-not-committed-[UNIQUE_NAME]/default/state/resources.json --format AUTO --file .databricks/resources.after-decline.json
+
+>>> cmp .databricks/resources.before-migration.json .databricks/resources.after-decline.json
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/dms-migration-not-committed-[UNIQUE_NAME]/default/state -o json
+[]
+
+>>> print_requests.py --dms //api/2.0/bundle

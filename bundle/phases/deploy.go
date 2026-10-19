@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deploy"
-	"github.com/databricks/cli/bundle/deploy/dmsmigration"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/metadata"
@@ -295,17 +294,27 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		}
 	}
 
-	if b.MigratingToDMS {
+	if b.MigratingToDMS != nil {
 		if err := statemgmt.BackupRemoteResourcesState(ctx, b); err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}
+	}
+
+	// Create the deployment now that the plan is approved, so a declined deploy leaves none behind.
+	// A first deploy's id did not exist at plan time - the version and any existing id were stamped
+	// then - so stamp the one just created into the plan the apply reads.
+	injectDeploymentIdInPlan := b.DeploymentBundle.StateDB.DeploymentID == ""
+	if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
 		createOrUpdateDeployment(ctx, b, dmsDeployment)
 		if logdiag.HasError(ctx) {
 			return
 		}
+	}
+
+	if b.MigratingToDMS != nil {
 		cmdio.LogString(ctx, "Enabling deployment history...")
-		if err := dmsmigration.Migrate(ctx, &b.DeploymentBundle.StateDB); err != nil {
+		if err := b.MigratingToDMS.Commit(ctx, &b.DeploymentBundle.StateDB); err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}
@@ -339,17 +348,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	// Create the deployment now that the plan is approved, so a declined deploy leaves none behind.
-	// A first deploy's id did not exist at plan time - the version and any existing id were stamped
-	// then - so stamp the one just created into the plan the apply reads.
 	if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
-		injectDeploymentIdInPlan := b.DeploymentBundle.StateDB.DeploymentID == "" || b.MigratingToDMS
-		if !b.MigratingToDMS {
-			createOrUpdateDeployment(ctx, b, dmsDeployment)
-		}
-		if logdiag.HasError(ctx) {
-			return
-		}
 		if injectDeploymentIdInPlan {
 			if err := b.DeploymentBundle.StampDeploymentIdForFirstVersion(b.DeploymentBundle.StateDB.DeploymentID); err != nil {
 				logdiag.LogError(ctx, err)

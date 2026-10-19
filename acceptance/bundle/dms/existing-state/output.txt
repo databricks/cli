@@ -22,6 +22,14 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 >>> jq -c {serial} .databricks/bundle/default/resources.json
 {"serial":2}
 
+=== Preview prepares serial 3 and history in memory without committing migration
+>>> [CLI] bundle plan -o json
+{"serial":3,"features":{"deployment_history":{}}}
+
+>>> cmp .databricks/resources.before-preview.json .databricks/bundle/default/resources.json
+
+>>> print_requests.py --dms //api/2.0/bundle //workspace/import //workspace-files/import-file
+
 === Config enables recording despite the disabled environment: register version 3, then deploy version 4
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/files...

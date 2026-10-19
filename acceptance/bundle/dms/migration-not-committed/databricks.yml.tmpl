@@ -1,0 +1,18 @@
+bundle:
+  name: dms-migration-not-committed-$UNIQUE_NAME
+
+experimental:
+  deployment_history: false
+
+sync:
+  exclude:
+    - LOG.*
+
+resources:
+  jobs:
+    job:
+      name: migration-not-committed
+  schemas:
+    schema:
+      name: dms_migration_not_committed_$UNIQUE_NAME
+      catalog_name: main

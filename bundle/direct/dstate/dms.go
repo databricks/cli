@@ -3,6 +3,7 @@ package dstate
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/dms"
@@ -16,19 +17,20 @@ type RecordedState struct {
 	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
 }
 
-// UseDeploymentHistory persists the DMS marker after all existing resources have been recorded.
-func (db *DeploymentState) UseDeploymentHistory(versionID int) error {
+// PrepareDeploymentHistory enables in-memory DMS planning without persisting its marker.
+// versionID is reserved for registration; the deployment plan follows that version.
+func (db *DeploymentState) PrepareDeploymentHistory(versionID int) {
 	db.AssertOpenedForRead()
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
 	db.recordsHistory = true
 	db.VersionID = versionID
+	db.Data.Features = maps.Clone(db.Data.Features)
 	if db.Data.Features == nil {
 		db.Data.Features = make(map[string]struct{})
 	}
 	db.Data.Features[FeatureDeploymentHistory] = struct{}{}
-	return db.unlockedSave()
 }
 
 // applyDMSState fills in the resource state from what DMS recorded. For a deployment that uses DMS

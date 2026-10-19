@@ -16,6 +16,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/bundle/deploy/dmsmigration"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
@@ -194,8 +195,8 @@ type Bundle struct {
 	// leave the terraform state untouched.
 	MigratingToDirect bool
 
-	// MigratingToDMS registers the existing direct state before deploying with history enabled.
-	MigratingToDMS bool
+	// MigratingToDMS holds deployment-history state prepared before planning and committed after approval.
+	MigratingToDMS *dmsmigration.Migration
 
 	// AllowTerraformEngineConfig reports a terraform bundle.engine as a warning instead
 	// of an error and skips the DATABRICKS_BUNDLE_ENGINE check. Set by read-only commands
