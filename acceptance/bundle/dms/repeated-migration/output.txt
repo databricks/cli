@@ -22,9 +22,9 @@ Expect: register=4; deploy=5; name=repeated; created=0.
 >>> update_file.py databricks.yml name: updated name: repeated
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-repeated-migration-[UNIQUE_NAME]/default/files...
 Enabling deployment history...
 Deployment history enabled: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=4
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-repeated-migration-[UNIQUE_NAME]/default/files...
 Current Deployment Version: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=5
 Updated jobs.one
 Files: 1 uploaded, 0 deleted

@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestPrepareDeploymentHistory(t *testing.T) {
+func TestUseDeploymentHistory(t *testing.T) {
 	statePath := filepath.Join(t.TempDir(), "resources.json")
 	original := NewDatabase("lineage", 2)
 	original.Features = map[string]struct{}{}
@@ -23,17 +23,21 @@ func TestPrepareDeploymentHistory(t *testing.T) {
 	before, err := os.ReadFile(statePath)
 	require.NoError(t, err)
 
-	db.PrepareDeploymentHistory(3)
+	require.NoError(t, db.UseDeploymentHistory(3))
 
 	assert.True(t, db.IsDeploymentMetadataService())
 	assert.Equal(t, 3, db.GetSerial())
 	assert.Contains(t, db.StateFeatures(), FeatureDeploymentHistory)
-	assert.NotContains(t, original.Features, FeatureDeploymentHistory)
 	assert.Equal(t, original.State, db.Data.State)
 	assert.Equal(t, "123", db.GetResourceID("resources.jobs.foo"))
 	after, err := os.ReadFile(statePath)
 	require.NoError(t, err)
-	assert.Equal(t, before, after)
+	assert.NotEqual(t, before, after)
+	var persisted Database
+	require.NoError(t, json.Unmarshal(after, &persisted))
+	assert.Equal(t, 3, persisted.Serial)
+	assert.Contains(t, persisted.Features, FeatureDeploymentHistory)
+	assert.Empty(t, persisted.State)
 	assert.NoFileExists(t, statePath+".wal")
 }
 

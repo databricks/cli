@@ -4,15 +4,22 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/databricks/cli/bundle/deploy/dmsmigration"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/dms"
+	"github.com/databricks/databricks-sdk-go/experimental/mocks"
+	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-func TestPrepareMigration(t *testing.T) {
+func TestMigrate(t *testing.T) {
 	tests := []struct {
 		name         string
 		serial       int
@@ -40,29 +47,43 @@ func TestPrepareMigration(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			statePath := filepath.Join(t.TempDir(), "resources.json")
-			original := dstate.NewDatabase("lineage", tt.serial)
-			original.Features = map[string]struct{}{}
-			original.State["resources.jobs.foo"] = dstate.ResourceEntry{ID: "original-id", State: json.RawMessage(`{"name":"original"}`)}
 			var db dstate.DeploymentState
-			db.OpenWithData(statePath, original)
-			require.NoError(t, db.Persist())
-			before, err := os.ReadFile(statePath)
-			require.NoError(t, err)
+			db.OpenWithData(statePath, dstate.NewDatabase("lineage", tt.serial))
+			db.DeploymentID = "123"
+			db.VersionID = tt.lastVersion
+			m := mocks.NewMockWorkspaceClient(t)
+			api := m.GetMockBundleDeploymentsAPI()
+			previousVersion := ""
+			if tt.lastVersion > 0 {
+				previousVersion = strconv.Itoa(tt.lastVersion)
+			}
+			api.EXPECT().CreateVersion(mock.Anything, bundledeployments.CreateVersionRequest{
+				Parent:    dms.DeploymentName("123"),
+				VersionId: strconv.Itoa(tt.registration),
+				Version: bundledeployments.Version{
+					CliVersion:        build.GetInfo().Version,
+					VersionType:       dms.VersionTypeDeploy,
+					PreviousVersionId: previousVersion,
+					Operations:        []bundledeployments.StagedOperation{},
+				},
+			}).Return(&bundledeployments.Version{}, nil).Once()
+			api.EXPECT().CompleteVersion(mock.Anything, bundledeployments.CompleteVersionRequest{
+				Name:             dms.VersionName("123", tt.registration),
+				CompletionReason: bundledeployments.VersionCompleteVersionCompleteSuccess,
+			}).Return(&bundledeployments.Version{}, nil).Once()
+			ctx := cmdctx.SetWorkspaceClient(t.Context(), m.WorkspaceClient)
 
-			migration := dmsmigration.Prepare(&db, "123", tt.lastVersion)
+			require.NoError(t, dmsmigration.Migrate(ctx, &db))
 
 			assert.True(t, db.IsDeploymentMetadataService())
 			assert.Equal(t, tt.registration, db.GetSerial())
-			assert.Equal(t, "123", db.DeploymentID)
-			assert.Contains(t, db.StateFeatures(), dstate.FeatureDeploymentHistory)
-			assert.NotContains(t, migration.Snapshot.Features, dstate.FeatureDeploymentHistory)
-			assert.Equal(t, tt.serial, migration.Snapshot.Serial)
-			assert.Equal(t, original.State, migration.Snapshot.State)
-			assert.Equal(t, "original-id", db.GetResourceID("resources.jobs.foo"))
-			after, err := os.ReadFile(statePath)
+			content, err := os.ReadFile(statePath)
 			require.NoError(t, err)
-			assert.Equal(t, before, after)
-			assert.NoFileExists(t, statePath+".wal")
+			var persisted dstate.Database
+			require.NoError(t, json.Unmarshal(content, &persisted))
+			assert.Contains(t, persisted.Features, dstate.FeatureDeploymentHistory)
+			assert.Equal(t, tt.registration, persisted.Serial)
+			assert.Empty(t, persisted.State)
 		})
 	}
 }

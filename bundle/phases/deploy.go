@@ -294,37 +294,6 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		}
 	}
 
-	if b.MigratingToDMS != nil {
-		if err := statemgmt.BackupRemoteResourcesState(ctx, b); err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-	}
-
-	// Create the deployment now that the plan is approved, so a declined deploy leaves none behind.
-	// A first deploy's id did not exist at plan time - the version and any existing id were stamped
-	// then - so stamp the one just created into the plan the apply reads.
-	injectDeploymentIdInPlan := b.DeploymentBundle.StateDB.DeploymentID == ""
-	if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
-		createOrUpdateDeployment(ctx, b, dmsDeployment)
-		if logdiag.HasError(ctx) {
-			return
-		}
-	}
-
-	if b.MigratingToDMS != nil {
-		cmdio.LogString(ctx, "Enabling deployment history...")
-		if err := b.MigratingToDMS.Commit(ctx, &b.DeploymentBundle.StateDB); err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-		logDeploymentVersion(ctx, b, "Deployment history enabled")
-		statemgmt.PushResourcesState(ctx, b)
-		if logdiag.HasError(ctx) {
-			return
-		}
-	}
-
 	// Upgrade from read (opened by process.go, or by Migrate) to write mode. After approval
 	// and the migration commit above, so a declined deploy never opens a WAL it must discard,
 	// and the migration's tf+1 push lands before this advances the WAL header to tf+2.
@@ -348,7 +317,15 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
+	// Create the deployment now that the plan is approved, so a declined deploy leaves none behind.
+	// A first deploy's id did not exist at plan time - the version and any existing id were stamped
+	// then - so stamp the one just created into the plan the apply reads.
 	if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
+		injectDeploymentIdInPlan := b.DeploymentBundle.StateDB.DeploymentID == ""
+		createOrUpdateDeployment(ctx, b, dmsDeployment)
+		if logdiag.HasError(ctx) {
+			return
+		}
 		if injectDeploymentIdInPlan {
 			if err := b.DeploymentBundle.StampDeploymentIdForFirstVersion(b.DeploymentBundle.StateDB.DeploymentID); err != nil {
 				logdiag.LogError(ctx, err)

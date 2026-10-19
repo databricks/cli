@@ -1,11 +1,16 @@
 package dms
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"path"
 	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/libs/structs/structdiff"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
@@ -84,6 +89,49 @@ func NextVersion(lastVersionID string) (int, error) {
 // DeploymentNodeName is the workspace node DMS makes for each deployment.
 // Keep it equal to the service's DEPLOYMENT_NODE_NAME.
 const DeploymentNodeName = "resources.deployment.json"
+
+// ReadDeployment looks up the deployment node and its service record.
+//
+// TODO: a deployment is only usable when both the node and the service's record exist, and a
+// half-created one - node present, record missing - blocks the bundle here even though
+// CreateDeployment already recovers from it. Recover here with an empty id and version unless
+// both halves are there, leaving the caller to call
+// CreateDeployment to create or finalize it.
+//
+// TODO: ask the service for a lookup by state path, so this is one round trip rather than two - a
+// workspace lookup to turn the node into an id, then a get by that id.
+func ReadDeployment(ctx context.Context, w *databricks.WorkspaceClient, statePath string) (string, *bundledeployments.Deployment, error) {
+	nodePath := path.Join(statePath, DeploymentNodeName)
+
+	obj, err := w.Workspace.GetStatusByPath(ctx, nodePath)
+	if errors.Is(err, apierr.ErrNotFound) || errors.Is(err, apierr.ErrResourceDoesNotExist) {
+		return "", nil, nil
+	}
+	if err != nil {
+		return "", nil, fmt.Errorf("looking up deployment at %s: %w", nodePath, err)
+	}
+	deploymentID := strconv.FormatInt(obj.ObjectId, 10)
+	deployment, err := w.BundleDeployments.GetDeployment(ctx, bundledeployments.GetDeploymentRequest{
+		Name: DeploymentName(deploymentID),
+	})
+	if err != nil {
+		return "", nil, err
+	}
+	return deploymentID, deployment, nil
+}
+
+// ParseLastVersionID parses the deployment's last recorded version, which the service reports
+// as a string. It returns 0 when the deployment does not exist yet or has no recorded version.
+func ParseLastVersionID(dmsDeployment *bundledeployments.Deployment) (int, error) {
+	if dmsDeployment == nil || dmsDeployment.LastVersionId == "" {
+		return 0, nil
+	}
+	v, err := strconv.Atoi(dmsDeployment.LastVersionId)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse last_version_id %q: %w", dmsDeployment.LastVersionId, err)
+	}
+	return v, nil
+}
 
 // DeploymentName, VersionName and OperationName build the resource names the
 // service uses, so callers pass only ids.

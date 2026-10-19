@@ -5,12 +5,13 @@
 === Terraform migrates to direct deployment with history enabled and preserves the job ID
 >>> DATABRICKS_BUNDLE_ENGINE=direct DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Migrated 1 resource to direct deployment engine.
 Enabling deployment history...
 Deployment history enabled: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=4
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated jobs.test_job
 Files: 1 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
 .databricks/bundle/default/resources.json
@@ -19,7 +20,7 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 >>> find.py resources[.]json[.]wal --expect 0
 
 >>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle summary -o json
-{"job_id":"[TEST_JOB_ID]","version":4}
+{"job_id":"[TEST_JOB_ID]","version":5}
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json --format AUTO
 {"features":{"deployment_history":{}},"state":{}}

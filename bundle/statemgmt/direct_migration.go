@@ -138,15 +138,8 @@ func CleanupTerraformStateAfterMigration(ctx context.Context, b *bundle.Bundle) 
 // this: it commits the migration as part of its teardown (files.Delete owns the remote terraform
 // state, and a destroy that migrates only to tear down is not adoption worth recording).
 func CommitMigration(ctx context.Context, b *bundle.Bundle) {
-	db := &b.DeploymentBundle.StateDB
-	if b.MigratingToDMS != nil {
-		// Commit the converted direct snapshot before DMS registration can replace it.
-		var directState dstate.DeploymentState
-		directState.OpenWithData(db.Path, b.MigratingToDMS.Snapshot)
-		db = &directState
-	}
-	count := len(db.ExportState(ctx))
-	if err := db.Persist(); err != nil {
+	count := len(b.DeploymentBundle.StateDB.ExportState(ctx))
+	if err := b.DeploymentBundle.StateDB.Persist(); err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("persisting migrated direct state: %w", err))
 		return
 	}

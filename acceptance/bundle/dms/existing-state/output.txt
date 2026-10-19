@@ -22,23 +22,16 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 >>> jq -c {serial} .databricks/bundle/default/resources.json
 {"serial":2}
 
-=== Preview prepares serial 3 and history in memory without committing migration
->>> [CLI] bundle plan -o json
-{"serial":3,"features":{"deployment_history":{}}}
-
->>> cmp .databricks/resources.before-preview.json .databricks/bundle/default/resources.json
-
->>> print_requests.py --dms //api/2.0/bundle //workspace/import //workspace-files/import-file
-
 === Config enables recording despite the disabled environment: register version 3, then deploy version 4
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/files...
 Enabling deployment history...
 Deployment history enabled: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=3
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/files...
 Current Deployment Version: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=4
 Updated jobs.one
+Updated jobs.two
 Files: 1 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
 
 >>> find.py resources[.]json[.]wal --expect 0
 
@@ -120,7 +113,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 [{"resource_key":"jobs.one","resource_id":"[ONE_ID]","action_type":"OPERATION_ACTION_TYPE_INITIAL_REGISTER","status":"OPERATION_STATUS_SUCCEEDED"},{"resource_key":"jobs.two","resource_id":"[TWO_ID]","action_type":"OPERATION_ACTION_TYPE_INITIAL_REGISTER","status":"OPERATION_STATUS_SUCCEEDED"}]
 
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-operations deployments/[DEPLOYMENT_ID]/versions/4 -o json
-[{"resource_key":"jobs.one","resource_id":"[ONE_ID]","action_type":"OPERATION_ACTION_TYPE_UPDATE","status":"OPERATION_STATUS_SUCCEEDED"}]
+[{"resource_key":"jobs.one","resource_id":"[ONE_ID]","action_type":"OPERATION_ACTION_TYPE_UPDATE","status":"OPERATION_STATUS_SUCCEEDED"},{"resource_key":"jobs.two","resource_id":"[TWO_ID]","action_type":"OPERATION_ACTION_TYPE_UPDATE","status":"OPERATION_STATUS_SUCCEEDED"}]
 
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[DEPLOYMENT_ID] -o json
-[{"resource_key":"jobs.one","resource_id":"[ONE_ID]","last_action_type":"OPERATION_ACTION_TYPE_UPDATE","last_version_id":"4","state":{"name":"updated","tasks":[],"depends_on":[]}},{"resource_key":"jobs.two","resource_id":"[TWO_ID]","last_action_type":"OPERATION_ACTION_TYPE_INITIAL_REGISTER","last_version_id":"3","state":{"name":"two","tasks":[{"task_key":"run_one","job_id":[ONE_ID]}],"depends_on":[{"node":"resources.jobs.one","label":"${resources.jobs.one.id}"}]}}]
+[{"resource_key":"jobs.one","resource_id":"[ONE_ID]","last_action_type":"OPERATION_ACTION_TYPE_UPDATE","last_version_id":"4","state":{"name":"updated","tasks":[],"depends_on":[]}},{"resource_key":"jobs.two","resource_id":"[TWO_ID]","last_action_type":"OPERATION_ACTION_TYPE_UPDATE","last_version_id":"4","state":{"name":"two","tasks":[{"task_key":"run_one","job_id":[ONE_ID]}],"depends_on":[{"node":"resources.jobs.one","label":"${resources.jobs.one.id}"}]}}]

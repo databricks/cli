@@ -1,5 +1,5 @@
 bundle:
-  name: dms-migration-not-committed-$UNIQUE_NAME
+  name: dms-migration-before-deploy-$UNIQUE_NAME
 
 experimental:
   deployment_history: false
@@ -11,8 +11,8 @@ sync:
 resources:
   jobs:
     job:
-      name: migration-not-committed
+      name: migration-before-deploy
   schemas:
     schema:
-      name: dms_migration_not_committed_$UNIQUE_NAME
+      name: dms_migration_before_deploy_$UNIQUE_NAME
       catalog_name: main

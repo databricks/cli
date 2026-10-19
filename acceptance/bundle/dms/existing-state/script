@@ -14,13 +14,6 @@ export DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false
 update_file.py databricks.yml 'deployment_history: false' 'deployment_history: true'
 update_file.py databricks.yml 'name: one' 'name: updated'
 
-title "Preview prepares serial 3 and history in memory without committing migration"
-cp .databricks/bundle/default/resources.json .databricks/resources.before-preview.json
-rm -f "$OUT_REQUESTS"
-trace $CLI bundle plan -o json | jq -c '{serial, features}'
-trace cmp .databricks/resources.before-preview.json .databricks/bundle/default/resources.json
-trace print_requests.py --dms //api/2.0/bundle //workspace/import //workspace-files/import-file
-
 title "Config enables recording despite the disabled environment: register version 3, then deploy version 4"
 trace $CLI bundle deploy 2>&1 | contains.py 'Enabling deployment history...' 'Deployment history enabled: ' 'Current Deployment Version: ' '?version=3' '?version=4'
 trace find.py 'resources[.]json[.]wal' --expect 0

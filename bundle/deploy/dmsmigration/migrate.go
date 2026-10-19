@@ -17,34 +17,14 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
-// Migration retains the original state until deployment history is committed.
-type Migration struct {
-	Snapshot          dstate.Database
-	previousVersionID int
-	versionID         int
-}
-
-// Prepare switches planning to DMS while leaving the original state unchanged on disk.
-func Prepare(db *dstate.DeploymentState, deploymentID string, lastVersionID int) *Migration {
-	// Migration uses max(state serial, last version)+1; deployment follows at the next version.
-	m := &Migration{
-		Snapshot:          db.Data,
-		previousVersionID: lastVersionID,
-		versionID:         max(db.Data.Serial, lastVersionID) + 1,
-	}
-	db.DeploymentID = deploymentID
-	db.PrepareDeploymentHistory(m.versionID)
-	return m
-}
-
-// Commit records the original state in its reserved initial registration version.
+// Migrate records every resource from the open direct state in an initial registration version.
 // The caller must hold the deployment lock and have created the DMS deployment.
-func (m *Migration) Commit(ctx context.Context, db *dstate.DeploymentState) error {
-	keys := slices.Sorted(maps.Keys(m.Snapshot.State))
+func Migrate(ctx context.Context, db *dstate.DeploymentState) error {
+	keys := slices.Sorted(maps.Keys(db.Data.State))
 	states := make([]json.RawMessage, len(keys))
 	operations := make([]bundledeployments.StagedOperation, len(keys))
 	for i, key := range keys {
-		entry := m.Snapshot.State[key]
+		entry := db.Data.State[key]
 		state, err := json.Marshal(dstate.RecordedState{State: entry.State, DependsOn: entry.DependsOn})
 		if err != nil {
 			return fmt.Errorf("serializing migration state for %s: %w", key, err)
@@ -56,10 +36,11 @@ func (m *Migration) Commit(ctx context.Context, db *dstate.DeploymentState) erro
 		}
 	}
 
-	versionID := m.versionID
+	// Migration uses max(state serial, last version)+1; deployment follows at the next version.
+	versionID := max(db.Data.Serial, db.VersionID) + 1
 	previousVersionID := ""
-	if m.previousVersionID > 0 {
-		previousVersionID = strconv.Itoa(m.previousVersionID)
+	if db.VersionID > 0 {
+		previousVersionID = strconv.Itoa(db.VersionID)
 	}
 	w := cmdctx.WorkspaceClient(ctx)
 	_, err := w.BundleDeployments.CreateVersion(ctx, bundledeployments.CreateVersionRequest{
@@ -78,7 +59,7 @@ func (m *Migration) Commit(ctx context.Context, db *dstate.DeploymentState) erro
 
 	buffer := dms.StartOperationBuffer(ctx, db.DeploymentID, versionID)
 	for i, key := range keys {
-		buffer.RecordOperation(ctx, key, false, m.Snapshot.State[key].ID, states[i])
+		buffer.RecordOperation(ctx, key, false, db.Data.State[key].ID, states[i])
 	}
 	recordErr := buffer.Drain()
 	reason := bundledeployments.VersionCompleteVersionCompleteSuccess
@@ -93,5 +74,5 @@ func (m *Migration) Commit(ctx context.Context, db *dstate.DeploymentState) erro
 		return fmt.Errorf("recording migration version: %w", err)
 	}
 
-	return db.Persist()
+	return db.UseDeploymentHistory(versionID)
 }
