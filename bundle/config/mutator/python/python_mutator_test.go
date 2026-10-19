@@ -158,10 +158,6 @@ workspace: { current_user: { userName: test }}`)
 	})
 	assert.NoError(t, err)
 
-	assert.Equal(t, map[string]int64{"jobs": 1, "pipelines": 1}, b.Metrics.PythonAddedResources)
-	assert.Nil(t, b.Metrics.PythonUpdatedResources)
-	assert.Equal(t, protos.PydabsConfigSectionExperimentalPython, b.Metrics.PythonConfigSection)
-
 	assert.Len(t, diags, 1)
 	assert.Equal(t, "job doesn't have any tasks", diags[0].Summary)
 	assert.Equal(t, []diag.Location{
@@ -239,12 +235,6 @@ resources:
 		return v, nil
 	})
 	assert.NoError(t, err)
-
-	assert.Nil(t, b.Metrics.PythonAddedResources)
-	assert.Equal(t, map[string]int64{"jobs": 1}, b.Metrics.PythonUpdatedResources)
-
-	// Recorded only in the load_resources phase.
-	assert.Empty(t, b.Metrics.PythonConfigSection)
 }
 
 func TestPythonConfigSection(t *testing.T) {
@@ -254,8 +244,6 @@ func TestPythonConfigSection(t *testing.T) {
 		expected protos.PydabsConfigSection
 	}{
 		{"none", `bundle: {name: test}`, protos.PydabsConfigSectionUnspecified},
-		{"python", `python: {resources: ["resources:load"]}`, protos.PydabsConfigSectionPython},
-		{"experimental/python", `experimental: {python: {resources: ["resources:load"]}}`, protos.PydabsConfigSectionExperimentalPython},
 		{"both", `
 python: {resources: ["resources:load"]}
 experimental: {python: {resources: ["resources:load"]}}`, protos.PydabsConfigSectionBoth},

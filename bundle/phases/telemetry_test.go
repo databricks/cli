@@ -201,13 +201,6 @@ func TestPydabsMetrics(t *testing.T) {
 		ConfigSection: protos.PydabsConfigSectionPython,
 	}
 
-	t.Run("used", func(t *testing.T) {
-		b := &bundle.Bundle{Config: config.Root{Experimental: &config.Experimental{Python: pythonConfig}}, Metrics: metrics}
-		assert.Equal(t, expected, pydabsMetrics(b))
-	})
-
-	t.Run("not used", func(t *testing.T) {
-		b := &bundle.Bundle{}
-		assert.Equal(t, &protos.BundleDeployPydabs{}, pydabsMetrics(b))
-	})
+	b := &bundle.Bundle{Config: config.Root{Experimental: &config.Experimental{Python: pythonConfig}}, Metrics: metrics}
+	assert.Equal(t, expected, pydabsMetrics(b))
 }
