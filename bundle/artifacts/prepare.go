@@ -39,7 +39,7 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 	for _, artifactName := range slices.Sorted(maps.Keys(b.Config.Artifacts)) {
 		artifact := b.Config.Artifacts[artifactName]
 		if artifact == nil {
-			l := b.Config.GetLocationOf(structpath.NewPath(nil, "artifacts", artifactName))
+			l := b.Config.GetLocation("artifacts." + artifactName)
 			logdiag.LogDiag(ctx, diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "Artifact not properly configured",
