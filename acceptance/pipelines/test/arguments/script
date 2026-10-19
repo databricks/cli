@@ -1,0 +1,14 @@
+trace $CLI pipelines test --help
+
+title "pytest arguments must be passed with --pytest-arg"
+trace musterr $CLI pipelines test --pipeline-id 1234 -k orders
+trace musterr $CLI pipelines test --pipeline-id 1234 -msmoke
+trace musterr $CLI pipelines test --pipeline-id 1234 -- -k orders
+
+title "Only -k and -m are supported"
+trace musterr $CLI pipelines test --pipeline-id 1234 --pytest-arg=-x
+trace musterr $CLI pipelines test --pipeline-id 1234 --pytest-arg=-k
+trace musterr $CLI pipelines test --pipeline-id 1234 --pytest-arg=tests/test_orders.py
+
+title "JSON output is not supported"
+trace musterr $CLI pipelines test --pipeline-id 1234 -o json

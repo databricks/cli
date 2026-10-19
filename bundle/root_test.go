@@ -110,3 +110,24 @@ func TestRootLookupError(t *testing.T) {
 	require.True(t, diags.HasError())
 	require.Contains(t, diags[0].Summary, "Unable to locate the bundle root")
 }
+
+func TestHasRoot(t *testing.T) {
+	ctx := t.Context()
+
+	// Have to set then unset to allow the testing package to revert it to its original value.
+	t.Setenv(env.RootVariable, "")
+	os.Unsetenv(env.RootVariable)
+
+	dir := t.TempDir()
+	t.Chdir(dir)
+	require.False(t, HasRoot(ctx))
+
+	f, err := os.Create(filepath.Join(dir, config.FileNames[0]))
+	require.NoError(t, err)
+	f.Close()
+	require.True(t, HasRoot(ctx))
+
+	// An invalid environment variable is reported when the bundle is loaded.
+	t.Setenv(env.RootVariable, filepath.Join(dir, "doesntexist"))
+	require.True(t, HasRoot(ctx))
+}
