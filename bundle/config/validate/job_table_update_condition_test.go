@@ -147,6 +147,28 @@ func TestJobTableUpdateConditionPluralTriggersSingleTable(t *testing.T) {
 	require.NoError(t, diags.Error())
 }
 
+func TestJobTableUpdateConditionOtherTriggerShapes(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					// A trigger without a table_update block is out of scope.
+					"job1": {
+						Name:    "job1",
+						Trigger: &jobs.TriggerSettings{PauseStatus: jobs.PauseStatusUnpaused},
+					},
+					// Zero tables cannot violate the multi-table rule.
+					"job2": tableUpdateJob(""),
+				},
+			},
+		},
+	}
+
+	diags := JobTableUpdateCondition().Apply(t.Context(), b)
+	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
+}
+
 func TestJobTableUpdateConditionNoTrigger(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
