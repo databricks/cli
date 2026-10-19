@@ -1,2 +1,5 @@
-# A diagnostic on a field of a duplicated app resource entry points at the first entry.
+# A diagnostic on a field of a duplicated app resource entry points at the first entry when the duplicate's value is the same.
 errcode trace $CLI bundle validate
+
+# The entries are merged by name, the later one wins.
+trace $CLI bundle validate -o json | jq .resources.apps.app.resources

@@ -11,3 +11,18 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Found 1 warning
+
+>>> [CLI] bundle validate -o json
+Warning: invalid value "INVALID" for enum field. Valid values are [CAN_MANAGE CAN_MANAGE_RUN CAN_VIEW IS_OWNER]
+  at resources.apps.app.resources[0].job.permission
+  in databricks.yml:13:25
+
+[
+  {
+    "job": {
+      "id": "2",
+      "permission": "INVALID"
+    },
+    "name": "job"
+  }
+]
