@@ -32,8 +32,14 @@ func Root(r *config.Root) Node {
 
 // RootWithReferences is [Root] whose nodes also follow the pure references.
 func RootWithReferences(r *config.Root) Node {
+	return rootWithReferencesUnder(r, nil)
+}
+
+// rootWithReferencesUnder is [RootWithReferences] following only the references at
+// path and below it, for a walk that stays there.
+func rootWithReferencesUnder(r *config.Root, path *structpath.PathNode) Node {
 	n := Root(r)
-	n.refs = newRefTree(r)
+	n.refs = newRefTree(r, path)
 	return n
 }
 
@@ -73,6 +79,11 @@ func (n *Node) Location() diag.Location {
 	return locs[0]
 }
 
+// isRef reports whether n itself holds a pure variable reference.
+func (n *Node) isRef() bool {
+	return n.refs != nil && n.refs.ref
+}
+
 // IsRef reports whether the key k of n holds a pure variable reference. Only fields
 // that cannot hold a string can.
 func (n *Node) IsRef(k string) bool {
@@ -107,9 +118,9 @@ func (r *refNode) elem(i int) *refNode {
 	return r.elems[i]
 }
 
-func newRefTree(root *config.Root) *refNode {
+func newRefTree(root *config.Root, under *structpath.PathNode) *refNode {
 	var out *refNode
-	for p := range root.References() {
+	for p := range root.ReferencesUnder(under) {
 		if out == nil {
 			out = &refNode{}
 		}
