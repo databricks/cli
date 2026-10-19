@@ -1,38 +1,36 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
-title "Deploy without recording: ordinary direct-engine state tracking one job, unknown to DMS"
-trace $CLI bundle deploy
-dms_plan
-trace print_requests.py --dms //api/2.0/bundle --oneline
-trace jq '{state_version, features}' .databricks/bundle/default/resources.json
+title "Config disables recording even when the environment enables it"
+trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy 2>&1 | contains.py '!Current Deployment Version:' '!Enabling deployment history'
+replace_ids.py
+trace cp .databricks/bundle/default/resources.json .databricks/resources.before-dms.json
+trace jq '{state_version, serial, features}' .databricks/bundle/default/resources.json
 
-title "Enabling recording is refused because the existing deployment is not recorded"
-musterr trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
-trace print_requests.py --dms //api/2.0/bundle --oneline
-
-title "Wiping the local cache still refuses after pulling the non-DMS state from the workspace"
-rm -rf .databricks
-musterr trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
-
-title "A leftover local WAL with the wrong lineage is still refused"
-mkdir -p .databricks/bundle/default
-printf '{"lineage":"stale","serial":99,"state_version":2,"features":{"deployment_history":{}}}\n' > .databricks/bundle/default/resources.json.wal
-musterr trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
-
-title "Destroy clears the deployment. With nothing recorded remotely the bundle is treated as new, so recording can be enabled once the stale WAL is gone"
-# Clear the stale WAL first: it was refused, not deleted, and destroy runs without recording, so it
-# would otherwise try to replay it and fail on the lineage mismatch.
-rm -f .databricks/bundle/default/resources.json.wal
-# Keep the mismatched setting here to verify that destroy ignores configuration and follows state.
-trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle destroy --auto-approve
-trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
-trace print_requests.py --dms //api/2.0/bundle --oneline
+title "Config enables recording despite the disabled environment: register version 2, then deploy version 3"
+export DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false
+update_file.py databricks.yml 'deployment_history: false' 'deployment_history: true'
+update_file.py databricks.yml 'name: one' 'name: updated'
+trace $CLI bundle deploy 2>&1 | contains.py 'Enabling deployment history...' 'Deployment history enabled: ' 'Current Deployment Version: ' '?version=2' '?version=3'
 trace find.py 'resources[.]json[.]wal' --expect 0
-trace jq '{state_version, features}' .databricks/bundle/default/resources.json
-DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true replace_ids.py
-deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-existing-state-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
-add_repl "$deployment_id" DEPLOYMENT_ID
+trace jq '{features, state}' .databricks/bundle/default/resources.json
 
-# The recorded requests are asserted above via print_requests.py; drop whatever the run added after
-# that (telemetry, and the state probes of the non-recording variant) so nothing is left to compare.
+title "Inspect the remote backup's original pre-migration resource IDs, state, and dependencies"
+trace MSYS_NO_PATHCONV=1 $CLI workspace export "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-existing-state-${UNIQUE_NAME}/default/state/resources.json.backup" --format AUTO --file .databricks/resources.backup.first.json
+trace cat .databricks/resources.backup.first.json
+
+title "The backup equals the pre-migration resources.json byte for byte"
+trace cmp .databricks/resources.before-dms.json .databricks/resources.backup.first.json
+
+title "Read back the completed migration and deploy versions with their recorded resource state"
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-existing-state-${UNIQUE_NAME}/default/state/resources.deployment.json" -o json | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+add_repl "$deployment_id" DEPLOYMENT_ID
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-versions "deployments/${deployment_id}" -o json | jq -c 'sort_by(.version_id | tonumber) | map({version_id, previous_version_id, version_type, status, completion_reason})'
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/2" -o json | jq -c 'sort_by(.resource_key) | map({resource_key, resource_id, action_type, status})'
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/3" -o json | jq -c 'sort_by(.resource_key) | map({resource_key, resource_id, action_type, status})'
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -c '
+    sort_by(.resource_key) | map({resource_key, resource_id, last_action_type, last_version_id,
+        state: (.state | fromjson | {name: .state.name,
+            tasks: [.state.tasks[]? | {task_key, job_id: .run_job_task.job_id}],
+            depends_on: (.depends_on // [])})})'
+
 rm -f "$OUT_REQUESTS"

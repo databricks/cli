@@ -1,0 +1,13 @@
+# acceptance/bundle/test.toml removes Current Deployment Version for shared DMS/non-DMS goldens.
+# Inherited Repls append and cannot be disabled here.
+# Mask at Order -1 before the parent's default 0, then restore at +1.
+# This lets these tests assert both migration and deployment links.
+[[Repls]]
+Old = '(?m)^Current Deployment Version: '
+New = '__CURRENT_DEPLOYMENT_VERSION__: '
+Order = -1
+
+[[Repls]]
+Old = '(?m)^__CURRENT_DEPLOYMENT_VERSION__: '
+New = 'Current Deployment Version: '
+Order = 1
