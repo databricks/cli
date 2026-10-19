@@ -237,8 +237,10 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 
+		// For migration, invalidate the selected local state and use remote state as
+		// the source of truth. Relying only on the remote view keeps migration logic
+		// simple and consistent.
 		if opts.Deploy && stateDesc.IsLocal && stateDesc.Engine.IsDirect() && configuresDeploymentHistory(ctx, b) {
-			// Migration follows the remote history marker rather than a conflicting local copy.
 			for _, remoteState := range stateDesc.AllStates {
 				if remoteState.IsLocal || !remoteState.Engine.IsDirect() || (remoteState.IsDMS() && stateDesc.IsDMS()) {
 					continue
