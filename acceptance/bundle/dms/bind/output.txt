@@ -1,0 +1,121 @@
+
+>>> [CLI] schemas create dms_bind_[UNIQUE_NAME] main
+{
+  "full_name": "main.dms_bind_[UNIQUE_NAME]"
+}
+
+=== A missing resource cannot be bound
+>>> musterr [CLI] bundle deployment bind sc main.missing_[UNIQUE_NAME] --auto-approve
+Error: schema with an id 'main.missing_[UNIQUE_NAME]' is not found
+
+=== Bind sc, the first bind: it creates the deployment and records the schema as is
+>>> [CLI] bundle deployment bind sc main.dms_bind_[UNIQUE_NAME]
+Successfully bound schema with an id 'main.dms_bind_[UNIQUE_NAME]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+=== Version 1 records only sc, with the bind action type
+>>> print_requests.py --dms --method POST //versions --nostamp
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions",
+  "q": {
+    "version_id": "1"
+  },
+  "body": {
+    "cli_version": "[CLI_VERSION]",
+    "operations": [
+      {
+        "action_type": "OPERATION_ACTION_TYPE_BIND",
+        "resource_key": "schemas.sc"
+      }
+    ],
+    "version_type": "VERSION_TYPE_DEPLOY"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/complete",
+  "body": {
+    "completion_reason": "VERSION_COMPLETE_SUCCESS"
+  }
+}
+
+=== foo's config differs from the existing job, so binding it asks for approval
+=== Bind foo: version 2 records only foo, and the job is left unchanged
+>>> [CLI] bundle deployment bind foo [FOO_ID] --auto-approve
+Successfully bound job with an id '[FOO_ID]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+>>> print_requests.py --dms --method POST //versions --nostamp
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions",
+  "q": {
+    "version_id": "2"
+  },
+  "body": {
+    "cli_version": "[CLI_VERSION]",
+    "operations": [
+      {
+        "action_type": "OPERATION_ACTION_TYPE_BIND",
+        "resource_key": "jobs.foo"
+      }
+    ],
+    "previous_version_id": "1",
+    "version_type": "VERSION_TYPE_DEPLOY"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/2/complete",
+  "body": {
+    "completion_reason": "VERSION_COMPLETE_SUCCESS"
+  }
+}
+
+>>> [CLI] jobs get [FOO_ID]
+{
+  "name": "bind-target-[UNIQUE_NAME]"
+}
+
+=== An already-bound resource cannot be rebound
+>>> musterr [CLI] bundle deployment bind foo [FOO_ID] --auto-approve
+Error: Resource already managed
+
+The bundle is already managing resource for resources.jobs.foo and it is bound to the requested ID [FOO_ID].
+
+
+=== The next deploy applies foo's config and permissions, and creates bar
+>>> [CLI] bundle plan
+create jobs.bar
+update jobs.foo
+create jobs.foo.permissions
+
+Plan: 2 to add, 1 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-bind-[UNIQUE_NAME]/default/files...
+Created jobs.bar
+Created jobs.foo.permissions
+Updated jobs.foo
+Files: 4 uploaded, 0 deleted
+Resources: 2 created, 1 changed, 0 deleted, 1 unchanged
+
+>>> [CLI] jobs get [FOO_ID]
+{
+  "name": "foo"
+}
+
+=== Test cleanup: the bound resources are now bundle-managed, so destroy removes them
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.bar
+  delete resources.jobs.foo
+  delete resources.schemas.sc
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.sc
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-bind-[UNIQUE_NAME]/default
+
+Destroy: 3 deleted

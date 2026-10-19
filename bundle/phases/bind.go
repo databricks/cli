@@ -12,10 +12,12 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy/lock"
+	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/agent"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -57,15 +59,26 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		return
 	}
 
-	if stateDesc.IsDMS() {
-		logdiag.LogError(ctx, errors.New("bind is not supported for a bundle target that records deployment history"))
-		return
-	}
-
 	resourceKey := fmt.Sprintf("resources.%s.%s", opts.Group, opts.ResourceKey)
 	if existingID := db.GetResourceID(resourceKey); existingID != "" {
 		logdiag.LogError(ctx, direct.ErrResourceAlreadyBound{ResourceKey: resourceKey, ExistingID: existingID, NewID: opts.ResourceId})
 		return
+	}
+
+	if stateDesc.IsDMS() {
+		// Stamp the deployment metadata deploy stamps, so the recorded state matches the config.
+		muts := []bundle.Mutator{metadata.AnnotateDeploymentVersion(db.VersionID + 1)}
+		if db.DeploymentID != "" {
+			muts = append(muts, metadata.AnnotateDeployment(db.DeploymentID))
+		}
+		bundle.ApplySeqContext(ctx, b, muts...)
+		if logdiag.HasError(ctx) {
+			return
+		}
+		// The operation buffer records each state write through the workspace client on the context.
+		if !cmdctx.HasWorkspaceClient(ctx) {
+			ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
+		}
 	}
 
 	// Plan the resource as a bind of the existing workspace resource, compared against the config.
@@ -125,9 +138,21 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		logdiag.LogError(ctx, err)
 		return
 	}
+	// With deployment history the bind is recorded as its own version.
+	if stateDesc.IsDMS() && !startBindVersion(ctx, b, plan) {
+		return
+	}
 	b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, false)
 	if _, err := db.Finalize(ctx); err != nil {
 		logdiag.LogError(ctx, err)
+	}
+	if stateDesc.IsDMS() {
+		// As in deploy, push the state even after a failure, then close the version out.
+		statemgmt.PushResourcesState(ctx, b)
+		if _, err := db.CompleteVersion(ctx, !logdiag.HasError(ctx)); err != nil {
+			logdiag.LogError(ctx, err)
+		}
+		return
 	}
 	if logdiag.HasError(ctx) {
 		return

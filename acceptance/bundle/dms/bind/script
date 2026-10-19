@@ -1,0 +1,39 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+# sc's config matches this existing schema exactly.
+trace $CLI schemas create "dms_bind_$UNIQUE_NAME" main | jq '{full_name}'
+# foo's config ("foo") differs from this existing job.
+foo_id=$($CLI jobs create --json '{"name": "bind-target-'$UNIQUE_NAME'"}' | jq -r '.job_id')
+add_repl "$foo_id" FOO_ID
+
+cleanup() {
+    title "Test cleanup: the bound resources are now bundle-managed, so destroy removes them"
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "A missing resource cannot be bound"
+trace musterr $CLI bundle deployment bind sc "main.missing_$UNIQUE_NAME" --auto-approve
+
+title "Bind sc, the first bind: it creates the deployment and records the schema as is"
+trace $CLI bundle deployment bind sc "main.dms_bind_$UNIQUE_NAME"
+
+title "Version 1 records only sc, with the bind action type"
+trace print_requests.py --dms --method POST //versions --nostamp
+
+title "foo's config differs from the existing job, so binding it asks for approval"
+trace musterr $CLI bundle deployment bind foo "$foo_id" &> LOG.confirm
+contains.py 'requires user confirmation' 'Plan: update resources.jobs.foo' < LOG.confirm > LOG.confirm.checked
+
+title "Bind foo: version 2 records only foo, and the job is left unchanged"
+trace $CLI bundle deployment bind foo "$foo_id" --auto-approve
+trace print_requests.py --dms --method POST //versions --nostamp
+trace $CLI jobs get "$foo_id" | jq '{name: .settings.name}'
+
+title "An already-bound resource cannot be rebound"
+trace musterr $CLI bundle deployment bind foo "$foo_id" --auto-approve
+
+title "The next deploy applies foo's config and permissions, and creates bar"
+trace $CLI bundle plan
+trace $CLI bundle deploy --auto-approve
+trace $CLI jobs get "$foo_id" | jq '{name: .settings.name}'

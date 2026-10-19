@@ -51,6 +51,8 @@ func actionToSDK(a deployplan.ActionType) (bundledeployments.OperationActionType
 	switch a {
 	case deployplan.Create:
 		return bundledeployments.OperationActionTypeOperationActionTypeCreate, nil
+	case deployplan.Bind:
+		return bundledeployments.OperationActionTypeOperationActionTypeBind, nil
 	case deployplan.Update:
 		return bundledeployments.OperationActionTypeOperationActionTypeUpdate, nil
 	case deployplan.UpdateWithID:
@@ -116,6 +118,34 @@ func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bu
 			logdiag.LogError(ctx, err)
 		}
 	}
+}
+
+// startBindVersion creates the deployment on a first bind (or refreshes its metadata) and starts the
+// version that records the bind. It reports whether the version started; on failure it has logged.
+func startBindVersion(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) bool {
+	var current *bundledeployments.Deployment
+	if id := b.DeploymentBundle.StateDB.DeploymentID; id != "" {
+		var err error
+		current, err = b.WorkspaceClient(ctx).BundleDeployments.GetDeployment(ctx, bundledeployments.GetDeploymentRequest{Name: dms.DeploymentName(id)})
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return false
+		}
+	}
+	createOrUpdateDeployment(ctx, b, current)
+	if logdiag.HasError(ctx) {
+		return false
+	}
+	staged, err := stagedOperations(plan)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return false
+	}
+	if err := startVersion(ctx, b, dms.VersionTypeDeploy, staged); err != nil {
+		logdiag.LogError(ctx, err)
+		return false
+	}
+	return true
 }
 
 // startVersion claims the version the run settled on and opens the buffer that records
