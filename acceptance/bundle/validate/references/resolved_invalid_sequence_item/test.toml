@@ -1,0 +1,1 @@
+Badness = "A value of the wrong type is replaced by an empty string instead of being dropped."

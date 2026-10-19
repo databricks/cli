@@ -1,0 +1,1 @@
+Badness = "A second '<<' key in a mapping is accepted silently instead of being rejected as a duplicate key."

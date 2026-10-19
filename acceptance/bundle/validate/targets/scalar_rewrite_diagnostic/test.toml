@@ -1,1 +1,0 @@
-Badness = 'The error names an internal step ("failed to rewrite") and has no location, instead of reporting a type error at targets.'

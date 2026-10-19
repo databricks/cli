@@ -1,9 +1,13 @@
 
 >>> [CLI] bundle validate
+Warning: unknown field: unexpected_after_failure
+  at bundle
+  in b.yml:2:3
+
 Error: cannot merge map with string
 
 Name: test-bundle
 
-Found 1 error
+Found 1 error and 1 warning
 
 Exit code: 1

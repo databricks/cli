@@ -1,10 +1,9 @@
 
 >>> [CLI] bundle validate
-Warn: unable to convert typed configuration to dynamic configuration: cannot convert struct field to dynamic type "time": src=time.Date(2020, time.January, 2, 0, 0, 0, 0, time.UTC) ref=time.Date(2020, time.January, 2, 0, 0, 0, 0, time.UTC)
-Error: exit error: cannot convert struct field to dynamic type "time": src=time.Date(2020, time.January, 2, 0, 0, 0, 0, time.UTC) ref=time.Date(2020, time.January, 2, 0, 0, 0, 0, time.UTC)
-
 Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Found 1 error
-
-Exit code: 1
+Validation OK!
