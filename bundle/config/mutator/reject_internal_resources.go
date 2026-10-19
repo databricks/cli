@@ -27,7 +27,7 @@ func (m *rejectInternalResources) Apply(ctx context.Context, b *bundle.Bundle) d
 			Severity:  diag.Error,
 			Summary:   "Internal resources cannot be set in bundle configuration",
 			Paths:     structpath.NewPathSlice("resources"),
-			Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "resources")),
+			Locations: b.Config.GetLocations("resources"),
 		})
 	}
 

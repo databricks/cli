@@ -347,7 +347,7 @@ func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContex
 			return diag.Diagnostics{{
 				Severity:  diag.Error,
 				Summary:   "workspace.file_path cannot be configured when experimental.immutable_folder is enabled",
-				Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "workspace", "file_path")),
+				Locations: b.Config.GetLocations("workspace.file_path"),
 			}}
 		}
 		t.remoteRoot = resources.SnapshotFullPathRef + "/files"
