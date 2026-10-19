@@ -98,7 +98,7 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 	for i, log := range l.logs {
 		b, err := json.Marshal(log)
 		if err != nil {
-			return fmt.Errorf("failed to marshal log: %s", err)
+			return fmt.Errorf("failed to marshal log: %w", err)
 		}
 		protoLogs[i] = string(b)
 	}
