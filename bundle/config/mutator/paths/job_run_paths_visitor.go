@@ -19,8 +19,12 @@ func VisitJobRunPaths(root *config.Root, fn VisitFunc) error {
 			if s == nil {
 				continue
 			}
-			if err := visit(nil, "", s, TranslateModeLocalRelative, nil, fn, func() *structpath.PathNode {
-				return structpath.NewPath(resourcePath("job_runs", name), "lifecycle", "triggers", i, "on_file_change")
+			if err := visit(fn, visitArgs{
+				value: s,
+				mode:  TranslateModeLocalRelative,
+				path: func() *structpath.PathNode {
+					return structpath.NewPath(resourcePath("job_runs", name), "lifecycle", "triggers", i, "on_file_change")
+				},
 			}); err != nil {
 				return err
 			}
