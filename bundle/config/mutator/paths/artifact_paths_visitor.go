@@ -8,7 +8,13 @@ import (
 func VisitArtifactPaths(root *config.Root, fn VisitFunc) error {
 	for _, name := range sortedKeys(root.Artifacts) {
 		if a := root.Artifacts[name]; a != nil {
-			if err := visit(a, "path", &a.Path, TranslateModeLocalAbsoluteDirectory, nil, fn, func() *structpath.PathNode { return structpath.NewPath(nil, "artifacts", name, "path") }); err != nil {
+			if err := visit(fn, visitArgs{
+				owner: a,
+				field: "path",
+				value: &a.Path,
+				mode:  TranslateModeLocalAbsoluteDirectory,
+				path:  func() *structpath.PathNode { return structpath.NewPath(nil, "artifacts", name, "path") },
+			}); err != nil {
 				return err
 			}
 		}

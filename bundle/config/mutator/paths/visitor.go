@@ -38,18 +38,39 @@ func VisitPaths(root *config.Root, fn VisitFunc) error {
 	return nil
 }
 
-// visit calls fn for the path value *s, the field key of the struct owner, unless skip
-// reports true for it or it is not present: an empty value is present only if it is in
-// the owner's ForceSendFields (as [structvar.View] decides). Elements of lists have no
-// owner and are always present. The path is only built for values that are visited.
-func visit(owner any, key string, s *string, mode TranslateMode, skip func(string) bool, fn VisitFunc, path func() *structpath.PathNode) error {
-	if skip != nil && skip(*s) {
+// visitArgs describes one path value for [visit].
+type visitArgs struct {
+	// owner is the struct that holds the field, for its ForceSendFields; nil for list
+	// elements, which are always present.
+	owner any
+
+	// field is the JSON key of the field in owner.
+	field string
+
+	// value is the path value; fn may rewrite it.
+	value *string
+
+	mode TranslateMode
+
+	// skip, if set, excludes the values it reports true for.
+	skip func(string) bool
+
+	// path builds the path of the value. It is only called for visited values, so the
+	// many values that are not visited cost no allocation.
+	path func() *structpath.PathNode
+}
+
+// visit calls fn for the path value described by a, unless it is skipped or not
+// present: an empty value is present only if it is in the owner's ForceSendFields (as
+// [structvar.View] decides).
+func visit(fn VisitFunc, a visitArgs) error {
+	if a.skip != nil && a.skip(*a.value) {
 		return nil
 	}
-	if *s == "" && owner != nil && !isForced(owner, key) {
+	if *a.value == "" && a.owner != nil && !isForced(a.owner, a.field) {
 		return nil
 	}
-	return fn(path(), mode, s)
+	return fn(a.path(), a.mode, a.value)
 }
 
 // isForced reports whether the field key of the struct *owner is in its ForceSendFields.
