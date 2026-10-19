@@ -9,7 +9,6 @@ import (
 // taskRule visits one kind of path value of a job task.
 type taskRule struct {
 	mode  TranslateMode
-	skip  func(string) bool
 	visit func(task *jobs.Task, c *taskCursor) error
 }
 
@@ -25,54 +24,55 @@ type taskCursor struct {
 
 // yield visits the value s, the field key of owner, at the parts below the task.
 func (c *taskCursor) yield(owner any, key string, s *string, parts ...any) error {
+	// Most candidates (e.g. the whl, jar and requirements of every library) are empty.
+	if !present(owner, key, s) {
+		return nil
+	}
+	p := structpath.NewPath(resourcePath("jobs", c.name), "tasks", c.index)
+	if c.nested {
+		p = structpath.NewPath(p, "for_each_task", "task")
+	}
 	return visit(c.fn, visitArgs{
 		owner: owner,
 		field: key,
 		value: s,
 		mode:  c.rule.mode,
-		skip:  c.rule.skip,
-		path: func() *structpath.PathNode {
-			p := structpath.NewPath(resourcePath("jobs", c.name), "tasks", c.index)
-			if c.nested {
-				p = structpath.NewPath(p, "for_each_task", "task")
-			}
-			return structpath.NewPath(p, parts...)
-		},
+		path:  structpath.NewPath(p, parts...),
 	})
 }
 
 var jobTaskRules = []taskRule{
-	{TranslateModeNotebook, nil, func(t *jobs.Task, c *taskCursor) error {
+	{TranslateModeNotebook, func(t *jobs.Task, c *taskCursor) error {
 		if t.NotebookTask == nil {
 			return nil
 		}
 		return c.yield(t.NotebookTask, "notebook_path", &t.NotebookTask.NotebookPath, "notebook_task", "notebook_path")
 	}},
-	{TranslateModeFile, nil, func(t *jobs.Task, c *taskCursor) error {
+	{TranslateModeFile, func(t *jobs.Task, c *taskCursor) error {
 		if t.SparkPythonTask == nil {
 			return nil
 		}
 		return c.yield(t.SparkPythonTask, "python_file", &t.SparkPythonTask.PythonFile, "spark_python_task", "python_file")
 	}},
-	{TranslateModeDirectory, nil, func(t *jobs.Task, c *taskCursor) error {
+	{TranslateModeDirectory, func(t *jobs.Task, c *taskCursor) error {
 		if t.DbtTask == nil {
 			return nil
 		}
 		return c.yield(t.DbtTask, "project_directory", &t.DbtTask.ProjectDirectory, "dbt_task", "project_directory")
 	}},
-	{TranslateModeFile, nil, func(t *jobs.Task, c *taskCursor) error {
+	{TranslateModeFile, func(t *jobs.Task, c *taskCursor) error {
 		if t.SqlTask == nil || t.SqlTask.File == nil {
 			return nil
 		}
 		return c.yield(t.SqlTask.File, "path", &t.SqlTask.File.Path, "sql_task", "file", "path")
 	}},
-	{TranslateModeFile, nil, func(t *jobs.Task, c *taskCursor) error {
+	{TranslateModeFile, func(t *jobs.Task, c *taskCursor) error {
 		if t.AlertTask == nil {
 			return nil
 		}
 		return c.yield(t.AlertTask, "workspace_path", &t.AlertTask.WorkspacePath, "alert_task", "workspace_path")
 	}},
-	{TranslateModeFile, nil, func(t *jobs.Task, c *taskCursor) error {
+	{TranslateModeFile, func(t *jobs.Task, c *taskCursor) error {
 		for i := range t.Libraries {
 			if err := c.yield(&t.Libraries[i], "requirements", &t.Libraries[i].Requirements, "libraries", i, "requirements"); err != nil {
 				return err
@@ -83,7 +83,7 @@ var jobTaskRules = []taskRule{
 	// The AI Runtime task runs this bash script on each node; the backend reads it as
 	// a workspace file, so translate the local path to its remote (or
 	// immutable-snapshot) location like any other file.
-	{TranslateModeFile, nil, func(t *jobs.Task, c *taskCursor) error {
+	{TranslateModeFile, func(t *jobs.Task, c *taskCursor) error {
 		if t.AiRuntimeTask == nil {
 			return nil
 		}
@@ -154,9 +154,7 @@ func VisitJobPaths(root *config.Root, fn VisitFunc) error {
 				if err := visit(fn, visitArgs{
 					value: &ev.Spec.Files[j],
 					mode:  TranslateModeFile,
-					path: func() *structpath.PathNode {
-						return structpath.NewPath(resourcePath("jobs", name), "environment_variables", i, "spec", "files", j)
-					},
+					path:  structpath.NewPath(resourcePath("jobs", name), "environment_variables", i, "spec", "files", j),
 				}); err != nil {
 					return err
 				}
@@ -177,9 +175,7 @@ func VisitJobPaths(root *config.Root, fn VisitFunc) error {
 				field: "project_environment",
 				value: &env.Spec.ProjectEnvironment,
 				mode:  TranslateModeFile,
-				path: func() *structpath.PathNode {
-					return structpath.NewPath(resourcePath("jobs", name), "environments", i, "spec", "project_environment")
-				},
+				path:  structpath.NewPath(resourcePath("jobs", name), "environments", i, "spec", "project_environment"),
 			}); err != nil {
 				return err
 			}

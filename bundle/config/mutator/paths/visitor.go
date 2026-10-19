@@ -52,25 +52,23 @@ type visitArgs struct {
 
 	mode TranslateMode
 
-	// skip, if set, excludes the values it reports true for.
-	skip func(string) bool
-
-	// path builds the path of the value. It is only called for visited values, so the
-	// many values that are not visited cost no allocation.
-	path func() *structpath.PathNode
+	// path is the path of the value.
+	path *structpath.PathNode
 }
 
-// visit calls fn for the path value described by a, unless it is skipped or not
-// present: an empty value is present only if it is in the owner's ForceSendFields (as
-// [structvar.View] decides).
+// present reports whether the path value is present: an empty value is present only if
+// it is in the owner's ForceSendFields (as [structvar.View] decides). Callers that visit
+// many empty values check it before building the path.
+func present(owner any, field string, value *string) bool {
+	return *value != "" || owner == nil || isForced(owner, field)
+}
+
+// visit calls fn for the path value described by a, unless it is not present.
 func visit(fn VisitFunc, a visitArgs) error {
-	if a.skip != nil && a.skip(*a.value) {
+	if !present(a.owner, a.field, a.value) {
 		return nil
 	}
-	if *a.value == "" && a.owner != nil && !isForced(a.owner, a.field) {
-		return nil
-	}
-	return fn(a.path(), a.mode, a.value)
+	return fn(a.path, a.mode, a.value)
 }
 
 // isForced reports whether the field key of the struct *owner is in its ForceSendFields.

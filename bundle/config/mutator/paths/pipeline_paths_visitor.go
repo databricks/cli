@@ -51,9 +51,7 @@ func VisitPipelinePaths(root *config.Root, fn VisitFunc) error {
 					field: rule.keys[len(rule.keys)-1].(string),
 					value: s,
 					mode:  rule.mode,
-					path: func() *structpath.PathNode {
-						return structpath.NewPath(structpath.NewPath(resourcePath("pipelines", name), "libraries", i), rule.keys...)
-					},
+					path:  structpath.NewPath(structpath.NewPath(resourcePath("pipelines", name), "libraries", i), rule.keys...),
 				}); err != nil {
 					return err
 				}
@@ -67,7 +65,7 @@ func VisitPipelinePaths(root *config.Root, fn VisitFunc) error {
 				field: "root_path",
 				value: &pl.RootPath,
 				mode:  TranslateModeDirectory,
-				path:  func() *structpath.PathNode { return structpath.NewPath(resourcePath("pipelines", name), "root_path") },
+				path:  structpath.NewPath(resourcePath("pipelines", name), "root_path"),
 			}); err != nil {
 				return err
 			}
@@ -90,13 +88,14 @@ func VisitPipelineLibrariesPaths(root *config.Root, fn VisitFunc) error {
 				continue
 			}
 			for i := range pl.Environment.Dependencies {
+				// Most dependencies are not local paths: check before building the path.
+				if rule.skip(pl.Environment.Dependencies[i]) {
+					continue
+				}
 				if err := visit(fn, visitArgs{
 					value: &pl.Environment.Dependencies[i],
 					mode:  rule.mode,
-					skip:  rule.skip,
-					path: func() *structpath.PathNode {
-						return structpath.NewPath(resourcePath("pipelines", name), "environment", "dependencies", i)
-					},
+					path:  structpath.NewPath(resourcePath("pipelines", name), "environment", "dependencies", i),
 				}); err != nil {
 					return err
 				}
