@@ -1,0 +1,6 @@
+
+>>> ls -1 [TESTROOT]/selftest/regression_report_test/../../../tools/regression_test_report.py
+[TESTROOT]/selftest/regression_report_test/../../../tools/regression_test_report.py
+
+>>> [CLI] --version
+Databricks CLI v[DEV_VERSION]
