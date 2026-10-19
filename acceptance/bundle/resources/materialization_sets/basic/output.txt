@@ -22,7 +22,8 @@ Created materialization_sets.set1
 Files: 1 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py //materialization-sets
+=== The create returns a long-running operation, and the created set is read back from it
+>>> print_requests.py --keep //materialization-sets
 {
   "method": "POST",
   "path": "/api/2.0/feature-engineering/materialization-sets",
@@ -58,6 +59,12 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
       }
     ]
   }
+}
+
+>>> print_requests.py --get //feature-engineering/operations
+{
+  "method": "GET",
+  "path": "/api/2.0/feature-engineering/operations/[UUID]"
 }
 
 === The server assigned a set id and a member id per member

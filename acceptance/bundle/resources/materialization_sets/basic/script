@@ -2,7 +2,10 @@ title "Summary before deploy"
 trace $CLI bundle summary -o json | jq '.resources.materialization_sets.set1 | {modified_status, materialized_features: [.materialized_features[] | {feature_name, is_online}]}'
 
 trace $CLI bundle deploy
-trace print_requests.py //materialization-sets
+
+title "The create returns a long-running operation, and the created set is read back from it"
+trace print_requests.py --keep //materialization-sets
+trace print_requests.py --get //feature-engineering/operations
 
 title "The server assigned a set id and a member id per member"
 trace $CLI bundle summary -o json | jq '.resources.materialization_sets.set1 | {id}'

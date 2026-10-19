@@ -855,6 +855,9 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("POST", "/api/2.0/feature-engineering/materialization-sets", func(req Request) any {
 		return req.Workspace.MaterializationSetsCreate(req)
 	})
+	server.Handle("GET", "/api/2.0/feature-engineering/operations/{operation_id}", func(req Request) any {
+		return req.Workspace.OperationsGet(req.Vars["operation_id"])
+	})
 	server.Handle("GET", "/api/2.0/feature-engineering/materialization-sets/{materialization_set_id}", func(req Request) any {
 		return MapGet(req.Workspace, req.Workspace.MaterializationSets, req.Vars["materialization_set_id"])
 	})

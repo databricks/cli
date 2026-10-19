@@ -168,7 +168,63 @@ func (s *FakeWorkspace) MaterializationSetsCreate(req Request) Response {
 	}
 
 	s.MaterializationSets[set.MaterializationSetId] = set
-	return Response{Body: set}
+
+	operation, err := s.recordMaterializationSetCreation(set)
+	if err != nil {
+		return Response{
+			Body:       fmt.Sprintf("internal error: %s", err),
+			StatusCode: http.StatusInternalServerError,
+		}
+	}
+	return Response{Body: operation}
+}
+
+// recordMaterializationSetCreation stores the operation the create returns and hands back a copy.
+// The work is finished by the time the response is written, so the operation is recorded already
+// terminal; a caller still has to poll it, because the created set is reachable only from there.
+func (s *FakeWorkspace) recordMaterializationSetCreation(set ml.MaterializationSet) (ml.Operation, error) {
+	featureNames := map[string]bool{}
+	var featureOrder []string
+	for _, member := range set.MaterializedFeatures {
+		if !featureNames[member.FeatureName] {
+			featureNames[member.FeatureName] = true
+			featureOrder = append(featureOrder, member.FeatureName)
+		}
+	}
+
+	metadata, err := json.Marshal(ml.MaterializationSetCreationMetadata{
+		FeatureFullNames:     featureOrder,
+		MaterializationSetId: set.MaterializationSetId,
+		State:                ml.MaterializationSetCreationMetadataStateSucceeded,
+	})
+	if err != nil {
+		return ml.Operation{}, err
+	}
+	response, err := json.Marshal(ml.CreateMaterializationSetResponse{MaterializationSet: &set})
+	if err != nil {
+		return ml.Operation{}, err
+	}
+
+	operation := ml.Operation{
+		Name:     "operations/" + nextUUID(),
+		Done:     true,
+		Metadata: metadata,
+		Response: response,
+	}
+	s.Operations[operation.Name] = operation
+	return operation, nil
+}
+
+// OperationsGet fakes GET /api/2.0/feature-engineering/operations/{operation_id}.
+func (s *FakeWorkspace) OperationsGet(operationID string) Response {
+	defer s.LockUnlock()()
+
+	operation, ok := s.Operations["operations/"+operationID]
+	if !ok {
+		return materializationSetError(http.StatusNotFound, "NOT_FOUND",
+			fmt.Sprintf("Operation with name 'operations/%s' does not exist.", operationID))
+	}
+	return Response{Body: operation}
 }
 
 // effectiveCronScheduleMode treats an unset mode as MANUAL, so spelling MANUAL out is no change.

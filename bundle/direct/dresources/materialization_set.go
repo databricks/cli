@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -139,14 +140,35 @@ func (r *ResourceMaterializationSet) DoRead(ctx context.Context, id string) (*ml
 	})
 }
 
+// DoCreate submits the set and waits for the long-running operation the create returns. The created
+// set is readable only from that operation's response, which Wait reaches by polling GetOperation.
 func (r *ResourceMaterializationSet) DoCreate(ctx context.Context, config *ml.MaterializationSet) (string, *ml.MaterializationSet, error) {
-	response, err := r.client.FeatureEngineering.CreateMaterializationSet(ctx, ml.CreateMaterializationSetRequest{
+	operation, err := r.client.FeatureEngineering.CreateMaterializationSet(ctx, ml.CreateMaterializationSetRequest{
 		MaterializationSet: *config,
 	})
 	if err != nil {
 		return "", nil, err
 	}
-	return response.MaterializationSetId, response, nil
+
+	response, err := operation.Wait(ctx)
+	if err != nil {
+		return "", nil, fmt.Errorf("%s: %w", materializationSetCreationTarget(operation), err)
+	}
+	if response.MaterializationSet == nil {
+		return "", nil, fmt.Errorf("%s: creation finished without returning the set",
+			materializationSetCreationTarget(operation))
+	}
+	return response.MaterializationSet.MaterializationSetId, response.MaterializationSet, nil
+}
+
+// materializationSetCreationTarget names what a creation was building, taking the set id from the
+// operation metadata when the server supplied it and falling back to the operation name.
+func materializationSetCreationTarget(operation ml.CreateMaterializationSetOperationInterface) string {
+	metadata, err := operation.Metadata()
+	if err == nil && metadata != nil && metadata.MaterializationSetId != "" {
+		return "materialization set " + metadata.MaterializationSetId
+	}
+	return "operation " + operation.Name()
 }
 
 func (r *ResourceMaterializationSet) DoUpdate(ctx context.Context, id string, config *ml.MaterializationSet, _ *PlanEntry) (*ml.MaterializationSet, error) {
