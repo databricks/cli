@@ -396,6 +396,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			}
 			nextVersion := lastVersionID + 1
 			if b.MigratingToDMS {
+				// The migration itself uses +1; the deployment uses the following version (+2).
 				nextVersion = max(b.DeploymentBundle.StateDB.Data.Serial, lastVersionID) + 2
 			}
 			muts := []bundle.Mutator{metadata.AnnotateDeploymentVersion(nextVersion)}
