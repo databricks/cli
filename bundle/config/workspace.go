@@ -220,11 +220,11 @@ func (w *Workspace) Client(ctx context.Context) (*databricks.WorkspaceClient, er
 }
 
 // StrictProfile returns the profile that the target must authenticate with when
-// strict profile matching is enabled. Each profile allows one pair of host and
-// workspace ID, and a profile without a workspace_id allows targets without one.
-// The target's pair must match exactly one profile. Anything else is an error,
-// so credentials from the environment only reach a host and workspace that a
-// profile allows.
+// strict profile matching is enabled. Each workspace profile allows one pair of
+// host and workspace ID, and a profile without a workspace_id allows targets
+// without one. Account profiles are skipped. The target's pair must match exactly
+// one profile. Anything else is an error, so credentials from the environment
+// only reach a host and workspace that a profile allows.
 func (w *Workspace) StrictProfile(ctx context.Context) (string, error) {
 	// Match the host and workspace ID that Client resolves, without rewriting
 	// the target's configuration.
@@ -234,12 +234,15 @@ func (w *Workspace) StrictProfile(ctx context.Context) (string, error) {
 		return "", errors.New("strict profile matching: workspace.host must be set")
 	}
 
-	profiles, err := profile.GetProfiler(ctx).LoadProfiles(ctx, profile.WithHost(target.Host))
+	withHost := profile.WithHost(target.Host)
+	profiles, err := profile.GetProfiler(ctx).LoadProfiles(ctx, func(p profile.Profile) bool {
+		return withHost(p) && profile.MatchWorkspaceProfiles(p)
+	})
 	if err != nil {
 		return "", err
 	}
 	if len(profiles) == 0 {
-		return "", fmt.Errorf("strict profile matching: no profile matches host %s", target.Host)
+		return "", fmt.Errorf("strict profile matching: no workspace profile matches host %s", target.Host)
 	}
 
 	var matches profile.Profiles

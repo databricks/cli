@@ -91,7 +91,7 @@ Exit code: 1
 
 === Strict mode, target unknown_host is rejected
 >>> errcode [CLI] bundle validate -t unknown_host
-Error: strict profile matching: no profile matches host https://unknown.test
+Error: strict profile matching: no workspace profile matches host https://unknown.test
 
 Name: strict-profile-match
 Target: unknown_host
@@ -147,9 +147,38 @@ Exit code: 1
 >>> errcode [CLI] bundle run -t custom_host nested_validate
 workspace_custom_host
 
-=== Strict mode, a target that matches several profiles is rejected
+=== Strict mode, a target that matches several profiles, including [DEFAULT], is rejected
 >>> errcode env DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/ambiguous.databrickscfg [CLI] bundle validate -t classic
-Error: strict profile matching: multiple profiles match host [DATABRICKS_URL]: workspace_classic, workspace_classic_copy
+Error: strict profile matching: multiple profiles match host [DATABRICKS_URL]: DEFAULT, workspace_classic
+
+Name: strict-profile-match
+Target: classic
+Workspace:
+  Host: [DATABRICKS_URL]
+
+Found 1 error
+
+Exit code: 1
+
+=== Strict mode skips account profiles
+>>> errcode env DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/account.databrickscfg [CLI] bundle validate -t custom_host -o json
+"workspace_custom_host"
+
+>>> errcode env DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/account.databrickscfg [CLI] bundle validate -t custom_host_without_workspace_id
+Error: strict profile matching: host [CUSTOM_HOST] requires a workspace ID; set workspace.workspace_id or add ?o=<workspace-id> to workspace.host
+
+Name: strict-profile-match
+Target: custom_host_without_workspace_id
+Workspace:
+  Host: [CUSTOM_HOST]
+
+Found 1 error
+
+Exit code: 1
+
+=== Strict mode, a missing config file is rejected
+>>> errcode env DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/missing.databrickscfg [CLI] bundle validate -t classic
+Error: cannot load Databricks config file: no configuration file found at [TEST_TMP_DIR]/missing.databrickscfg; please create one by running 'databricks auth login'
 
 Name: strict-profile-match
 Target: classic
