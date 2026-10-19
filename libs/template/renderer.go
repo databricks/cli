@@ -311,8 +311,24 @@ func (r *renderer) walk() error {
 				continue
 			}
 
+			entryPath := path.Join(currentDirectory, entry.Name())
+
+			// fs.ReadDir reports entries via Lstat, so IsDir is false for a symlink
+			// pointing at a directory. Such an entry is not readable as a file, and
+			// following it could traverse a symlink cycle, so reject it here rather
+			// than fail partway through materializing the template.
+			if entry.Type()&fs.ModeSymlink != 0 {
+				info, err := fs.Stat(r.srcFS, entryPath)
+				if err != nil {
+					return err
+				}
+				if info.IsDir() {
+					return fmt.Errorf("%s: symbolic links to directories are not supported in templates", entryPath)
+				}
+			}
+
 			// Generate in memory representation of file
-			f, err := r.computeFile(path.Join(currentDirectory, entry.Name()))
+			f, err := r.computeFile(entryPath)
 			if err != nil {
 				return err
 			}
