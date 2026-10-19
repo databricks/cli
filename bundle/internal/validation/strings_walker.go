@@ -76,7 +76,9 @@ func (g *stringsGen) funcName(t reflect.Type) string {
 
 // emitStringsStruct writes the function visiting the strings of struct type t.
 func (g *stringsGen) emitStringsStruct(t reflect.Type) {
-	fmt.Fprintf(&g.out, "\nfunc %s(c *stringsWalk, n *Node, v *%s) {\n", g.funcName(t), g.typeName(t))
+	// A value replaced by a pure reference hides what is below it, as in the view; the
+	// reference itself is in config.Root.References.
+	fmt.Fprintf(&g.out, "\nfunc %s(c *stringsWalk, n *Node, v *%s) {\n\tif n.isRef() {\n\t\treturn\n\t}\n", g.funcName(t), g.typeName(t))
 	info := structvar.GetStructInfo(t)
 	for _, f := range info.List {
 		ft := t.FieldByIndex(f.Index).Type

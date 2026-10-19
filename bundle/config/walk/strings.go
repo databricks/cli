@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 )
 
@@ -52,7 +53,7 @@ func StringsWithoutResources(root *config.Root, mode Mode, fn StringFunc) {
 // ResourceStrings is [Strings] for "resources" only.
 func ResourceStrings(root *config.Root, mode Mode, fn StringFunc) {
 	c := &stringsWalk{mode: mode, fn: fn}
-	n := RootWithReferences(root)
+	n := rootWithReferencesUnder(root, structpath.NewStringKey(nil, "resources"))
 	ch := n.Child("resources")
 	stringsConfigResources(c, &ch, &root.Resources)
 }
@@ -60,7 +61,7 @@ func ResourceStrings(root *config.Root, mode Mode, fn StringFunc) {
 // ResourceStringsOf is [Strings] for the resource name of type typ.
 func ResourceStringsOf(root *config.Root, typ, name string, mode Mode, fn StringFunc) {
 	c := &stringsWalk{mode: mode, fn: fn}
-	n := RootWithReferences(root)
+	n := rootWithReferencesUnder(root, structpath.NewPath(nil, "resources", typ, name))
 	rn := n.Child("resources")
 	stringsResource(c, &rn, &root.Resources, typ, name)
 }
@@ -69,7 +70,7 @@ func ResourceStringsOf(root *config.Root, typ, name string, mode Mode, fn String
 // ("variables.*.lookup"), in the order of the variable names.
 func VariableLookupStrings(root *config.Root, mode Mode, fn StringFunc) {
 	c := &stringsWalk{mode: mode, fn: fn}
-	n := RootWithReferences(root)
+	n := rootWithReferencesUnder(root, structpath.NewStringKey(nil, "variables"))
 	vn := n.Child("variables")
 	for _, k := range sortedKeys(root.Variables) {
 		v := root.Variables[k]

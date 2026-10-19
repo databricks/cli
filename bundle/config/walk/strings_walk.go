@@ -27,6 +27,9 @@ import (
 )
 
 func stringsConfigRoot(c *stringsWalk, n *Node, v *config.Root) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("variables") {
 		if len(v.Variables) > 0 {
 			cn := n.Child("variables")
@@ -173,6 +176,9 @@ func stringsConfigRoot(c *stringsWalk, n *Node, v *config.Root) {
 }
 
 func stringsVariableVariable(c *stringsWalk, n *Node, v *variable.Variable) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Type); c.match(s) {
 		ch := n.Child("type")
 		if r, ok := c.fn(&ch, s); ok {
@@ -210,6 +216,9 @@ func stringsVariableVariable(c *stringsWalk, n *Node, v *variable.Variable) {
 }
 
 func stringsConfigBundle(c *stringsWalk, n *Node, v *config.Bundle) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Name); c.match(s) {
 		ch := n.Child("name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -285,6 +294,9 @@ func stringsConfigBundle(c *stringsWalk, n *Node, v *config.Bundle) {
 }
 
 func stringsConfigWorkspace(c *stringsWalk, n *Node, v *config.Workspace) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Host); c.match(s) {
 		ch := n.Child("host")
 		if r, ok := c.fn(&ch, s); ok {
@@ -402,6 +414,9 @@ func stringsConfigWorkspace(c *stringsWalk, n *Node, v *config.Workspace) {
 }
 
 func stringsConfigArtifact(c *stringsWalk, n *Node, v *config.Artifact) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Type); c.match(s) {
 		ch := n.Child("type")
 		if r, ok := c.fn(&ch, s); ok {
@@ -459,6 +474,9 @@ func stringsConfigArtifact(c *stringsWalk, n *Node, v *config.Artifact) {
 }
 
 func stringsConfigResources(c *stringsWalk, n *Node, v *config.Resources) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("jobs") {
 		if len(v.Jobs) > 0 {
 			cn := n.Child("jobs")
@@ -891,6 +909,9 @@ func stringsConfigResources(c *stringsWalk, n *Node, v *config.Resources) {
 }
 
 func stringsConfigTarget(c *stringsWalk, n *Node, v *config.Target) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Mode); c.match(s) {
 		ch := n.Child("mode")
 		if r, ok := c.fn(&ch, s); ok {
@@ -987,6 +1008,9 @@ func stringsConfigTarget(c *stringsWalk, n *Node, v *config.Target) {
 }
 
 func stringsConfigSync(c *stringsWalk, n *Node, v *config.Sync) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("paths") {
 		if len(v.Paths) > 0 {
 			cn := n.Child("paths")
@@ -1029,6 +1053,9 @@ func stringsConfigSync(c *stringsWalk, n *Node, v *config.Sync) {
 }
 
 func stringsJobsJobRunAs(c *stringsWalk, n *Node, v *jobs.JobRunAs) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.GroupName == "" && Forced(v.ForceSendFields, "GroupName") {
 		ch := n.Child("group_name")
 		c.fn(&ch, "")
@@ -1062,6 +1089,9 @@ func stringsJobsJobRunAs(c *stringsWalk, n *Node, v *jobs.JobRunAs) {
 }
 
 func stringsConfigPresets(c *stringsWalk, n *Node, v *config.Presets) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.NamePrefix); c.match(s) {
 		ch := n.Child("name_prefix")
 		if r, ok := c.fn(&ch, s); ok {
@@ -1090,6 +1120,9 @@ func stringsConfigPresets(c *stringsWalk, n *Node, v *config.Presets) {
 }
 
 func stringsConfigExperimental(c *stringsWalk, n *Node, v *config.Experimental) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("scripts") {
 		if len(v.Scripts) > 0 {
 			cn := n.Child("scripts")
@@ -1112,6 +1145,9 @@ func stringsConfigExperimental(c *stringsWalk, n *Node, v *config.Experimental) 
 }
 
 func stringsResourcesPermission(c *stringsWalk, n *Node, v *resources.Permission) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Level); c.match(s) {
 		ch := n.Child("level")
 		if r, ok := c.fn(&ch, s); ok {
@@ -1139,6 +1175,9 @@ func stringsResourcesPermission(c *stringsWalk, n *Node, v *resources.Permission
 }
 
 func stringsLoctableLocations(c *stringsWalk, n *Node, v *loctable.Locations) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("files") {
 		if len(v.Files) > 0 {
 			cn := n.Child("files")
@@ -1155,6 +1194,9 @@ func stringsLoctableLocations(c *stringsWalk, n *Node, v *loctable.Locations) {
 }
 
 func stringsConfigScript(c *stringsWalk, n *Node, v *config.Script) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Content); c.match(s) {
 		ch := n.Child("content")
 		if r, ok := c.fn(&ch, s); ok {
@@ -1177,6 +1219,9 @@ func stringsConfigScript(c *stringsWalk, n *Node, v *config.Script) {
 }
 
 func stringsConfigPython(c *stringsWalk, n *Node, v *config.Python) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("resources") {
 		if len(v.Resources) > 0 {
 			cn := n.Child("resources")
@@ -1212,6 +1257,9 @@ func stringsConfigPython(c *stringsWalk, n *Node, v *config.Python) {
 }
 
 func stringsVariableLookup(c *stringsWalk, n *Node, v *variable.Lookup) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Alert); c.match(s) {
 		ch := n.Child("alert")
 		if r, ok := c.fn(&ch, s); ok {
@@ -1287,6 +1335,9 @@ func stringsVariableLookup(c *stringsWalk, n *Node, v *variable.Lookup) {
 }
 
 func stringsConfigTerraform(c *stringsWalk, n *Node, v *config.Terraform) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ExecPath); c.match(s) {
 		ch := n.Child("exec_path")
 		if r, ok := c.fn(&ch, s); ok {
@@ -1296,6 +1347,9 @@ func stringsConfigTerraform(c *stringsWalk, n *Node, v *config.Terraform) {
 }
 
 func stringsConfigGit(c *stringsWalk, n *Node, v *config.Git) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Branch); c.match(s) {
 		ch := n.Child("branch")
 		if r, ok := c.fn(&ch, s); ok {
@@ -1329,6 +1383,9 @@ func stringsConfigGit(c *stringsWalk, n *Node, v *config.Git) {
 }
 
 func stringsConfigDeployment(c *stringsWalk, n *Node, v *config.Deployment) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.DeploymentID); c.match(s) {
 		ch := n.Child("deployment_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -1338,6 +1395,9 @@ func stringsConfigDeployment(c *stringsWalk, n *Node, v *config.Deployment) {
 }
 
 func stringsConfigUser(c *stringsWalk, n *Node, v *config.User) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ShortName); c.match(s) {
 		ch := n.Child("short_name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -1464,6 +1524,9 @@ func stringsConfigUser(c *stringsWalk, n *Node, v *config.User) {
 }
 
 func stringsConfigArtifactFile(c *stringsWalk, n *Node, v *config.ArtifactFile) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Source); c.match(s) {
 		ch := n.Child("source")
 		if r, ok := c.fn(&ch, s); ok {
@@ -1485,6 +1548,9 @@ func stringsConfigArtifactFile(c *stringsWalk, n *Node, v *config.ArtifactFile) 
 }
 
 func stringsConfigArtifactGit(c *stringsWalk, n *Node, v *config.ArtifactGit) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Branch); c.match(s) {
 		ch := n.Child("branch")
 		if r, ok := c.fn(&ch, s); ok {
@@ -1500,6 +1566,9 @@ func stringsConfigArtifactGit(c *stringsWalk, n *Node, v *config.ArtifactGit) {
 }
 
 func stringsResourcesJob(c *stringsWalk, n *Node, v *resources.Job) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -1745,6 +1814,9 @@ func stringsResourcesJob(c *stringsWalk, n *Node, v *resources.Job) {
 }
 
 func stringsResourcesJobRun(c *stringsWalk, n *Node, v *resources.JobRun) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -1915,6 +1987,9 @@ func stringsResourcesJobRun(c *stringsWalk, n *Node, v *resources.JobRun) {
 }
 
 func stringsResourcesPipeline(c *stringsWalk, n *Node, v *resources.Pipeline) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -2193,6 +2268,9 @@ func stringsResourcesPipeline(c *stringsWalk, n *Node, v *resources.Pipeline) {
 }
 
 func stringsResourcesMlflowModel(c *stringsWalk, n *Node, v *resources.MlflowModel) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -2252,6 +2330,9 @@ func stringsResourcesMlflowModel(c *stringsWalk, n *Node, v *resources.MlflowMod
 }
 
 func stringsResourcesMlflowExperiment(c *stringsWalk, n *Node, v *resources.MlflowExperiment) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -2317,6 +2398,9 @@ func stringsResourcesMlflowExperiment(c *stringsWalk, n *Node, v *resources.Mlfl
 }
 
 func stringsResourcesModelServingEndpoint(c *stringsWalk, n *Node, v *resources.ModelServingEndpoint) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -2421,6 +2505,9 @@ func stringsResourcesModelServingEndpoint(c *stringsWalk, n *Node, v *resources.
 }
 
 func stringsResourcesModelService(c *stringsWalk, n *Node, v *resources.ModelService) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -2481,6 +2568,9 @@ func stringsResourcesModelService(c *stringsWalk, n *Node, v *resources.ModelSer
 }
 
 func stringsResourcesMcpService(c *stringsWalk, n *Node, v *resources.McpService) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -2541,6 +2631,9 @@ func stringsResourcesMcpService(c *stringsWalk, n *Node, v *resources.McpService
 }
 
 func stringsResourcesModelProviderService(c *stringsWalk, n *Node, v *resources.ModelProviderService) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -2601,6 +2694,9 @@ func stringsResourcesModelProviderService(c *stringsWalk, n *Node, v *resources.
 }
 
 func stringsResourcesRegisteredModel(c *stringsWalk, n *Node, v *resources.RegisteredModel) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -2744,6 +2840,9 @@ func stringsResourcesRegisteredModel(c *stringsWalk, n *Node, v *resources.Regis
 }
 
 func stringsResourcesQualityMonitor(c *stringsWalk, n *Node, v *resources.QualityMonitor) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -2861,6 +2960,9 @@ func stringsResourcesQualityMonitor(c *stringsWalk, n *Node, v *resources.Qualit
 }
 
 func stringsResourcesCatalog(c *stringsWalk, n *Node, v *resources.Catalog) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -2981,6 +3083,9 @@ func stringsResourcesCatalog(c *stringsWalk, n *Node, v *resources.Catalog) {
 }
 
 func stringsResourcesSchema(c *stringsWalk, n *Node, v *resources.Schema) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -3058,6 +3163,9 @@ func stringsResourcesSchema(c *stringsWalk, n *Node, v *resources.Schema) {
 }
 
 func stringsResourcesVolume(c *stringsWalk, n *Node, v *resources.Volume) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -3140,6 +3248,9 @@ func stringsResourcesVolume(c *stringsWalk, n *Node, v *resources.Volume) {
 }
 
 func stringsResourcesExternalLocation(c *stringsWalk, n *Node, v *resources.ExternalLocation) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -3212,6 +3323,9 @@ func stringsResourcesExternalLocation(c *stringsWalk, n *Node, v *resources.Exte
 }
 
 func stringsResourcesCluster(c *stringsWalk, n *Node, v *resources.Cluster) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -3480,6 +3594,9 @@ func stringsResourcesCluster(c *stringsWalk, n *Node, v *resources.Cluster) {
 }
 
 func stringsResourcesDashboard(c *stringsWalk, n *Node, v *resources.Dashboard) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -3636,6 +3753,9 @@ func stringsResourcesDashboard(c *stringsWalk, n *Node, v *resources.Dashboard) 
 }
 
 func stringsResourcesGenieSpace(c *stringsWalk, n *Node, v *resources.GenieSpace) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -3732,6 +3852,9 @@ func stringsResourcesGenieSpace(c *stringsWalk, n *Node, v *resources.GenieSpace
 }
 
 func stringsResourcesApp(c *stringsWalk, n *Node, v *resources.App) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -4046,6 +4169,9 @@ func stringsResourcesApp(c *stringsWalk, n *Node, v *resources.App) {
 }
 
 func stringsResourcesSecretScope(c *stringsWalk, n *Node, v *resources.SecretScope) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -4096,6 +4222,9 @@ func stringsResourcesSecretScope(c *stringsWalk, n *Node, v *resources.SecretSco
 }
 
 func stringsResourcesAlert(c *stringsWalk, n *Node, v *resources.Alert) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -4277,6 +4406,9 @@ func stringsResourcesAlert(c *stringsWalk, n *Node, v *resources.Alert) {
 }
 
 func stringsResourcesSqlWarehouse(c *stringsWalk, n *Node, v *resources.SqlWarehouse) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -4381,6 +4513,9 @@ func stringsResourcesSqlWarehouse(c *stringsWalk, n *Node, v *resources.SqlWareh
 }
 
 func stringsResourcesDatabaseInstance(c *stringsWalk, n *Node, v *resources.DatabaseInstance) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -4568,6 +4703,9 @@ func stringsResourcesDatabaseInstance(c *stringsWalk, n *Node, v *resources.Data
 }
 
 func stringsResourcesDatabaseCatalog(c *stringsWalk, n *Node, v *resources.DatabaseCatalog) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -4617,6 +4755,9 @@ func stringsResourcesDatabaseCatalog(c *stringsWalk, n *Node, v *resources.Datab
 }
 
 func stringsResourcesSyncedDatabaseTable(c *stringsWalk, n *Node, v *resources.SyncedDatabaseTable) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -4706,6 +4847,9 @@ func stringsResourcesSyncedDatabaseTable(c *stringsWalk, n *Node, v *resources.S
 }
 
 func stringsResourcesPostgresProject(c *stringsWalk, n *Node, v *resources.PostgresProject) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -4791,6 +4935,9 @@ func stringsResourcesPostgresProject(c *stringsWalk, n *Node, v *resources.Postg
 }
 
 func stringsResourcesPostgresBranch(c *stringsWalk, n *Node, v *resources.PostgresBranch) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -4854,6 +5001,9 @@ func stringsResourcesPostgresBranch(c *stringsWalk, n *Node, v *resources.Postgr
 }
 
 func stringsResourcesPostgresEndpoint(c *stringsWalk, n *Node, v *resources.PostgresEndpoint) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -4899,6 +5049,9 @@ func stringsResourcesPostgresEndpoint(c *stringsWalk, n *Node, v *resources.Post
 }
 
 func stringsResourcesPostgresCatalog(c *stringsWalk, n *Node, v *resources.PostgresCatalog) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -4942,6 +5095,9 @@ func stringsResourcesPostgresCatalog(c *stringsWalk, n *Node, v *resources.Postg
 }
 
 func stringsResourcesPostgresDatabase(c *stringsWalk, n *Node, v *resources.PostgresDatabase) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -4991,6 +5147,9 @@ func stringsResourcesPostgresDatabase(c *stringsWalk, n *Node, v *resources.Post
 }
 
 func stringsResourcesPostgresRole(c *stringsWalk, n *Node, v *resources.PostgresRole) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -5067,6 +5226,9 @@ func stringsResourcesPostgresRole(c *stringsWalk, n *Node, v *resources.Postgres
 }
 
 func stringsResourcesPostgresSyncedTable(c *stringsWalk, n *Node, v *resources.PostgresSyncedTable) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -5195,6 +5357,9 @@ func stringsResourcesPostgresSyncedTable(c *stringsWalk, n *Node, v *resources.P
 }
 
 func stringsResourcesPostgresSnapshotSchedule(c *stringsWalk, n *Node, v *resources.PostgresSnapshotSchedule) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -5233,6 +5398,9 @@ func stringsResourcesPostgresSnapshotSchedule(c *stringsWalk, n *Node, v *resour
 }
 
 func stringsResourcesVectorSearchEndpoint(c *stringsWalk, n *Node, v *resources.VectorSearchEndpoint) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -5297,6 +5465,9 @@ func stringsResourcesVectorSearchEndpoint(c *stringsWalk, n *Node, v *resources.
 }
 
 func stringsResourcesVectorSearchIndex(c *stringsWalk, n *Node, v *resources.VectorSearchIndex) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -5371,6 +5542,9 @@ func stringsResourcesVectorSearchIndex(c *stringsWalk, n *Node, v *resources.Vec
 }
 
 func stringsResourcesInstancePool(c *stringsWalk, n *Node, v *resources.InstancePool) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -5482,6 +5656,9 @@ func stringsResourcesInstancePool(c *stringsWalk, n *Node, v *resources.Instance
 }
 
 func stringsResourcesSecret(c *stringsWalk, n *Node, v *resources.Secret) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -5618,6 +5795,9 @@ func stringsResourcesSecret(c *stringsWalk, n *Node, v *resources.Secret) {
 }
 
 func stringsResourcesClusterPolicy(c *stringsWalk, n *Node, v *resources.ClusterPolicy) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ID); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -5707,6 +5887,9 @@ func stringsResourcesClusterPolicy(c *stringsWalk, n *Node, v *resources.Cluster
 }
 
 func stringsResourcesSnapshot(c *stringsWalk, n *Node, v *resources.Snapshot) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.BundleID); c.match(s) {
 		ch := n.Child("bundle_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -5739,6 +5922,9 @@ func stringsResourcesSnapshot(c *stringsWalk, n *Node, v *resources.Snapshot) {
 }
 
 func stringsVariableTargetVariable(c *stringsWalk, n *Node, v *variable.TargetVariable) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Type); c.match(s) {
 		ch := n.Child("type")
 		if r, ok := c.fn(&ch, s); ok {
@@ -5776,6 +5962,9 @@ func stringsVariableTargetVariable(c *stringsWalk, n *Node, v *variable.TargetVa
 }
 
 func stringsIamComplexValue(c *stringsWalk, n *Node, v *iam.ComplexValue) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Display == "" && Forced(v.ForceSendFields, "Display") {
 		ch := n.Child("display")
 		c.fn(&ch, "")
@@ -5819,6 +6008,9 @@ func stringsIamComplexValue(c *stringsWalk, n *Node, v *iam.ComplexValue) {
 }
 
 func stringsIamName(c *stringsWalk, n *Node, v *iam.Name) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.FamilyName == "" && Forced(v.ForceSendFields, "FamilyName") {
 		ch := n.Child("familyName")
 		c.fn(&ch, "")
@@ -5842,6 +6034,9 @@ func stringsIamName(c *stringsWalk, n *Node, v *iam.Name) {
 }
 
 func stringsResourcesJobPermission(c *stringsWalk, n *Node, v *resources.JobPermission) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Level); c.match(s) {
 		ch := n.Child("level")
 		if r, ok := c.fn(&ch, s); ok {
@@ -5869,6 +6064,9 @@ func stringsResourcesJobPermission(c *stringsWalk, n *Node, v *resources.JobPerm
 }
 
 func stringsJobsContinuous(c *stringsWalk, n *Node, v *jobs.Continuous) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("maintenance_window") {
 		if x := v.MaintenanceWindow; x != nil {
 			ch := n.Child("maintenance_window")
@@ -5890,6 +6088,9 @@ func stringsJobsContinuous(c *stringsWalk, n *Node, v *jobs.Continuous) {
 }
 
 func stringsJobsJobDeployment(c *stringsWalk, n *Node, v *jobs.JobDeployment) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.DeploymentId == "" && Forced(v.ForceSendFields, "DeploymentId") {
 		ch := n.Child("deployment_id")
 		c.fn(&ch, "")
@@ -5929,6 +6130,9 @@ func stringsJobsJobDeployment(c *stringsWalk, n *Node, v *jobs.JobDeployment) {
 }
 
 func stringsJobsJobEmailNotifications(c *stringsWalk, n *Node, v *jobs.JobEmailNotifications) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("on_duration_warning_threshold_exceeded") {
 		if len(v.OnDurationWarningThresholdExceeded) > 0 {
 			cn := n.Child("on_duration_warning_threshold_exceeded")
@@ -6023,6 +6227,9 @@ func stringsJobsJobEmailNotifications(c *stringsWalk, n *Node, v *jobs.JobEmailN
 }
 
 func stringsJobsJobEnvironmentVariables(c *stringsWalk, n *Node, v *jobs.JobEnvironmentVariables) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.EnvironmentVariablesKey); c.match(s) {
 		ch := n.Child("environment_variables_key")
 		if r, ok := c.fn(&ch, s); ok {
@@ -6038,6 +6245,9 @@ func stringsJobsJobEnvironmentVariables(c *stringsWalk, n *Node, v *jobs.JobEnvi
 }
 
 func stringsJobsJobEnvironment(c *stringsWalk, n *Node, v *jobs.JobEnvironment) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.EnvironmentKey); c.match(s) {
 		ch := n.Child("environment_key")
 		if r, ok := c.fn(&ch, s); ok {
@@ -6053,6 +6263,9 @@ func stringsJobsJobEnvironment(c *stringsWalk, n *Node, v *jobs.JobEnvironment) 
 }
 
 func stringsJobsGitSource(c *stringsWalk, n *Node, v *jobs.GitSource) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.GitBranch == "" && Forced(v.ForceSendFields, "GitBranch") {
 		ch := n.Child("git_branch")
 		c.fn(&ch, "")
@@ -6116,6 +6329,9 @@ func stringsJobsGitSource(c *stringsWalk, n *Node, v *jobs.GitSource) {
 }
 
 func stringsJobsJobsHealthRules(c *stringsWalk, n *Node, v *jobs.JobsHealthRules) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("rules") {
 		if len(v.Rules) > 0 {
 			cn := n.Child("rules")
@@ -6130,6 +6346,9 @@ func stringsJobsJobsHealthRules(c *stringsWalk, n *Node, v *jobs.JobsHealthRules
 }
 
 func stringsJobsJobCluster(c *stringsWalk, n *Node, v *jobs.JobCluster) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.JobClusterKey); c.match(s) {
 		ch := n.Child("job_cluster_key")
 		if r, ok := c.fn(&ch, s); ok {
@@ -6155,6 +6374,9 @@ func stringsJobsJobCluster(c *stringsWalk, n *Node, v *jobs.JobCluster) {
 }
 
 func stringsJobsJobParameterDefinition(c *stringsWalk, n *Node, v *jobs.JobParameterDefinition) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Default); c.match(s) {
 		ch := n.Child("default")
 		if r, ok := c.fn(&ch, s); ok {
@@ -6170,6 +6392,9 @@ func stringsJobsJobParameterDefinition(c *stringsWalk, n *Node, v *jobs.JobParam
 }
 
 func stringsJobsCronSchedule(c *stringsWalk, n *Node, v *jobs.CronSchedule) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.PauseStatus); c.match(s) {
 		ch := n.Child("pause_status")
 		if r, ok := c.fn(&ch, s); ok {
@@ -6197,6 +6422,9 @@ func stringsJobsCronSchedule(c *stringsWalk, n *Node, v *jobs.CronSchedule) {
 }
 
 func stringsJobsTask(c *stringsWalk, n *Node, v *jobs.Task) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("ai_runtime_task") {
 		if x := v.AiRuntimeTask; x != nil {
 			ch := n.Child("ai_runtime_task")
@@ -6438,6 +6666,9 @@ func stringsJobsTask(c *stringsWalk, n *Node, v *jobs.Task) {
 }
 
 func stringsJobsTriggerSettings(c *stringsWalk, n *Node, v *jobs.TriggerSettings) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("file_arrival") {
 		if x := v.FileArrival; x != nil {
 			ch := n.Child("file_arrival")
@@ -6477,6 +6708,9 @@ func stringsJobsTriggerSettings(c *stringsWalk, n *Node, v *jobs.TriggerSettings
 }
 
 func stringsJobsTriggerConfiguration(c *stringsWalk, n *Node, v *jobs.TriggerConfiguration) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("continuous") {
 		if x := v.Continuous; x != nil {
 			ch := n.Child("continuous")
@@ -6528,6 +6762,9 @@ func stringsJobsTriggerConfiguration(c *stringsWalk, n *Node, v *jobs.TriggerCon
 }
 
 func stringsJobsWebhookNotifications(c *stringsWalk, n *Node, v *jobs.WebhookNotifications) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("on_duration_warning_threshold_exceeded") {
 		if len(v.OnDurationWarningThresholdExceeded) > 0 {
 			cn := n.Child("on_duration_warning_threshold_exceeded")
@@ -6608,6 +6845,9 @@ func stringsJobsWebhookNotifications(c *stringsWalk, n *Node, v *jobs.WebhookNot
 }
 
 func stringsResourcesJobRunLifecycle(c *stringsWalk, n *Node, v *resources.JobRunLifecycle) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("triggers") {
 		if len(v.Triggers) > 0 {
 			cn := n.Child("triggers")
@@ -6628,6 +6868,9 @@ func stringsResourcesJobRunLifecycle(c *stringsWalk, n *Node, v *resources.JobRu
 }
 
 func stringsJobsPipelineParams(c *stringsWalk, n *Node, v *jobs.PipelineParams) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("full_refresh_selection") {
 		if len(v.FullRefreshSelection) > 0 {
 			cn := n.Child("full_refresh_selection")
@@ -6683,6 +6926,9 @@ func stringsJobsPipelineParams(c *stringsWalk, n *Node, v *jobs.PipelineParams) 
 }
 
 func stringsResourcesPipelinePermission(c *stringsWalk, n *Node, v *resources.PipelinePermission) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Level); c.match(s) {
 		ch := n.Child("level")
 		if r, ok := c.fn(&ch, s); ok {
@@ -6710,6 +6956,9 @@ func stringsResourcesPipelinePermission(c *stringsWalk, n *Node, v *resources.Pi
 }
 
 func stringsPipelinesPipelineCluster(c *stringsWalk, n *Node, v *pipelines.PipelineCluster) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("autoscale") {
 		if x := v.Autoscale; x != nil {
 			ch := n.Child("autoscale")
@@ -6866,6 +7115,9 @@ func stringsPipelinesPipelineCluster(c *stringsWalk, n *Node, v *pipelines.Pipel
 }
 
 func stringsPipelinesPipelineDeployment(c *stringsWalk, n *Node, v *pipelines.PipelineDeployment) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.DeploymentId == "" && Forced(v.ForceSendFields, "DeploymentId") {
 		ch := n.Child("deployment_id")
 		c.fn(&ch, "")
@@ -6905,6 +7157,9 @@ func stringsPipelinesPipelineDeployment(c *stringsWalk, n *Node, v *pipelines.Pi
 }
 
 func stringsPipelinesPipelinesEnvironment(c *stringsWalk, n *Node, v *pipelines.PipelinesEnvironment) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("dependencies") {
 		if len(v.Dependencies) > 0 {
 			cn := n.Child("dependencies")
@@ -6931,6 +7186,9 @@ func stringsPipelinesPipelinesEnvironment(c *stringsWalk, n *Node, v *pipelines.
 }
 
 func stringsPipelinesEventLogSpec(c *stringsWalk, n *Node, v *pipelines.EventLogSpec) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Catalog == "" && Forced(v.ForceSendFields, "Catalog") {
 		ch := n.Child("catalog")
 		c.fn(&ch, "")
@@ -6964,6 +7222,9 @@ func stringsPipelinesEventLogSpec(c *stringsWalk, n *Node, v *pipelines.EventLog
 }
 
 func stringsPipelinesFilters(c *stringsWalk, n *Node, v *pipelines.Filters) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("exclude") {
 		if len(v.Exclude) > 0 {
 			cn := n.Child("exclude")
@@ -6993,6 +7254,9 @@ func stringsPipelinesFilters(c *stringsWalk, n *Node, v *pipelines.Filters) {
 }
 
 func stringsPipelinesIngestionGatewayPipelineDefinition(c *stringsWalk, n *Node, v *pipelines.IngestionGatewayPipelineDefinition) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.ConnectionId == "" && Forced(v.ForceSendFields, "ConnectionId") {
 		ch := n.Child("connection_id")
 		c.fn(&ch, "")
@@ -7040,6 +7304,9 @@ func stringsPipelinesIngestionGatewayPipelineDefinition(c *stringsWalk, n *Node,
 }
 
 func stringsPipelinesIngestionPipelineDefinition(c *stringsWalk, n *Node, v *pipelines.IngestionPipelineDefinition) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.ConnectionName == "" && Forced(v.ForceSendFields, "ConnectionName") {
 		ch := n.Child("connection_name")
 		c.fn(&ch, "")
@@ -7133,6 +7400,9 @@ func stringsPipelinesIngestionPipelineDefinition(c *stringsWalk, n *Node, v *pip
 }
 
 func stringsPipelinesPipelineLibrary(c *stringsWalk, n *Node, v *pipelines.PipelineLibrary) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("file") {
 		if x := v.File; x != nil {
 			ch := n.Child("file")
@@ -7180,6 +7450,9 @@ func stringsPipelinesPipelineLibrary(c *stringsWalk, n *Node, v *pipelines.Pipel
 }
 
 func stringsPipelinesNotifications(c *stringsWalk, n *Node, v *pipelines.Notifications) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("alerts") {
 		if len(v.Alerts) > 0 {
 			cn := n.Child("alerts")
@@ -7209,6 +7482,9 @@ func stringsPipelinesNotifications(c *stringsWalk, n *Node, v *pipelines.Notific
 }
 
 func stringsPipelinesRestartWindow(c *stringsWalk, n *Node, v *pipelines.RestartWindow) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("days_of_week") {
 		if len(v.DaysOfWeek) > 0 {
 			cn := n.Child("days_of_week")
@@ -7235,6 +7511,9 @@ func stringsPipelinesRestartWindow(c *stringsWalk, n *Node, v *pipelines.Restart
 }
 
 func stringsPipelinesRunAs(c *stringsWalk, n *Node, v *pipelines.RunAs) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.GroupName == "" && Forced(v.ForceSendFields, "GroupName") {
 		ch := n.Child("group_name")
 		c.fn(&ch, "")
@@ -7268,6 +7547,9 @@ func stringsPipelinesRunAs(c *stringsWalk, n *Node, v *pipelines.RunAs) {
 }
 
 func stringsPipelinesPipelineTrigger(c *stringsWalk, n *Node, v *pipelines.PipelineTrigger) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("cron") {
 		if x := v.Cron; x != nil {
 			ch := n.Child("cron")
@@ -7277,6 +7559,9 @@ func stringsPipelinesPipelineTrigger(c *stringsWalk, n *Node, v *pipelines.Pipel
 }
 
 func stringsResourcesMlflowModelPermission(c *stringsWalk, n *Node, v *resources.MlflowModelPermission) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Level); c.match(s) {
 		ch := n.Child("level")
 		if r, ok := c.fn(&ch, s); ok {
@@ -7304,6 +7589,9 @@ func stringsResourcesMlflowModelPermission(c *stringsWalk, n *Node, v *resources
 }
 
 func stringsMlModelTag(c *stringsWalk, n *Node, v *ml.ModelTag) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Key == "" && Forced(v.ForceSendFields, "Key") {
 		ch := n.Child("key")
 		c.fn(&ch, "")
@@ -7327,6 +7615,9 @@ func stringsMlModelTag(c *stringsWalk, n *Node, v *ml.ModelTag) {
 }
 
 func stringsResourcesMlflowExperimentPermission(c *stringsWalk, n *Node, v *resources.MlflowExperimentPermission) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Level); c.match(s) {
 		ch := n.Child("level")
 		if r, ok := c.fn(&ch, s); ok {
@@ -7354,6 +7645,9 @@ func stringsResourcesMlflowExperimentPermission(c *stringsWalk, n *Node, v *reso
 }
 
 func stringsMlExperimentTag(c *stringsWalk, n *Node, v *ml.ExperimentTag) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Key == "" && Forced(v.ForceSendFields, "Key") {
 		ch := n.Child("key")
 		c.fn(&ch, "")
@@ -7377,6 +7671,9 @@ func stringsMlExperimentTag(c *stringsWalk, n *Node, v *ml.ExperimentTag) {
 }
 
 func stringsMlExperimentTraceLocation(c *stringsWalk, n *Node, v *ml.ExperimentTraceLocation) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("uc_trace_location") {
 		if x := v.UcTraceLocation; x != nil {
 			ch := n.Child("uc_trace_location")
@@ -7386,6 +7683,9 @@ func stringsMlExperimentTraceLocation(c *stringsWalk, n *Node, v *ml.ExperimentT
 }
 
 func stringsResourcesModelServingEndpointPermission(c *stringsWalk, n *Node, v *resources.ModelServingEndpointPermission) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Level); c.match(s) {
 		ch := n.Child("level")
 		if r, ok := c.fn(&ch, s); ok {
@@ -7413,6 +7713,9 @@ func stringsResourcesModelServingEndpointPermission(c *stringsWalk, n *Node, v *
 }
 
 func stringsServingAiGatewayConfig(c *stringsWalk, n *Node, v *serving.AiGatewayConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("guardrails") {
 		if x := v.Guardrails; x != nil {
 			ch := n.Child("guardrails")
@@ -7439,6 +7742,9 @@ func stringsServingAiGatewayConfig(c *stringsWalk, n *Node, v *serving.AiGateway
 }
 
 func stringsServingEndpointCoreConfigInput(c *stringsWalk, n *Node, v *serving.EndpointCoreConfigInput) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("auto_capture_config") {
 		if x := v.AutoCaptureConfig; x != nil {
 			ch := n.Child("auto_capture_config")
@@ -7476,6 +7782,9 @@ func stringsServingEndpointCoreConfigInput(c *stringsWalk, n *Node, v *serving.E
 }
 
 func stringsServingEmailNotifications(c *stringsWalk, n *Node, v *serving.EmailNotifications) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("on_update_failure") {
 		if len(v.OnUpdateFailure) > 0 {
 			cn := n.Child("on_update_failure")
@@ -7505,6 +7814,9 @@ func stringsServingEmailNotifications(c *stringsWalk, n *Node, v *serving.EmailN
 }
 
 func stringsServingRateLimit(c *stringsWalk, n *Node, v *serving.RateLimit) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Key); c.match(s) {
 		ch := n.Child("key")
 		if r, ok := c.fn(&ch, s); ok {
@@ -7520,6 +7832,9 @@ func stringsServingRateLimit(c *stringsWalk, n *Node, v *serving.RateLimit) {
 }
 
 func stringsServingEndpointTag(c *stringsWalk, n *Node, v *serving.EndpointTag) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Key); c.match(s) {
 		ch := n.Child("key")
 		if r, ok := c.fn(&ch, s); ok {
@@ -7539,6 +7854,9 @@ func stringsServingEndpointTag(c *stringsWalk, n *Node, v *serving.EndpointTag) 
 }
 
 func stringsServingTelemetryConfig(c *stringsWalk, n *Node, v *serving.TelemetryConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("enabled_telemetry_features") {
 		if len(v.EnabledTelemetryFeatures) > 0 {
 			cn := n.Child("enabled_telemetry_features")
@@ -7577,6 +7895,9 @@ func stringsServingTelemetryConfig(c *stringsWalk, n *Node, v *serving.Telemetry
 }
 
 func stringsCatalogPrivilegeAssignment(c *stringsWalk, n *Node, v *catalog.PrivilegeAssignment) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Principal == "" && Forced(v.ForceSendFields, "Principal") {
 		ch := n.Child("principal")
 		c.fn(&ch, "")
@@ -7603,6 +7924,9 @@ func stringsCatalogPrivilegeAssignment(c *stringsWalk, n *Node, v *catalog.Privi
 }
 
 func stringsCatalogModelServiceConfig(c *stringsWalk, n *Node, v *catalog.ModelServiceConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("inference_table") {
 		if x := v.InferenceTable; x != nil {
 			ch := n.Child("inference_table")
@@ -7629,6 +7953,9 @@ func stringsCatalogModelServiceConfig(c *stringsWalk, n *Node, v *catalog.ModelS
 }
 
 func stringsCatalogMcpServiceConfig(c *stringsWalk, n *Node, v *catalog.McpServiceConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("include_tool_selectors") {
 		if len(v.IncludeToolSelectors) > 0 {
 			cn := n.Child("include_tool_selectors")
@@ -7662,6 +7989,9 @@ func stringsCatalogMcpServiceConfig(c *stringsWalk, n *Node, v *catalog.McpServi
 }
 
 func stringsCatalogModelProviderServiceConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("amazon_bedrock") {
 		if x := v.AmazonBedrock; x != nil {
 			ch := n.Child("amazon_bedrock")
@@ -7751,6 +8081,9 @@ func stringsCatalogModelProviderServiceConfig(c *stringsWalk, n *Node, v *catalo
 }
 
 func stringsCatalogRegisteredModelAlias(c *stringsWalk, n *Node, v *catalog.RegisteredModelAlias) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.AliasName == "" && Forced(v.ForceSendFields, "AliasName") {
 		ch := n.Child("alias_name")
 		c.fn(&ch, "")
@@ -7804,6 +8137,9 @@ func stringsCatalogRegisteredModelAlias(c *stringsWalk, n *Node, v *catalog.Regi
 }
 
 func stringsCatalogMonitorMetric(c *stringsWalk, n *Node, v *catalog.MonitorMetric) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Definition); c.match(s) {
 		ch := n.Child("definition")
 		if r, ok := c.fn(&ch, s); ok {
@@ -7844,6 +8180,9 @@ func stringsCatalogMonitorMetric(c *stringsWalk, n *Node, v *catalog.MonitorMetr
 }
 
 func stringsCatalogMonitorInferenceLog(c *stringsWalk, n *Node, v *catalog.MonitorInferenceLog) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("granularities") {
 		if len(v.Granularities) > 0 {
 			cn := n.Child("granularities")
@@ -7904,6 +8243,9 @@ func stringsCatalogMonitorInferenceLog(c *stringsWalk, n *Node, v *catalog.Monit
 }
 
 func stringsCatalogMonitorNotifications(c *stringsWalk, n *Node, v *catalog.MonitorNotifications) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("on_failure") {
 		if x := v.OnFailure; x != nil {
 			ch := n.Child("on_failure")
@@ -7919,6 +8261,9 @@ func stringsCatalogMonitorNotifications(c *stringsWalk, n *Node, v *catalog.Moni
 }
 
 func stringsCatalogMonitorCronSchedule(c *stringsWalk, n *Node, v *catalog.MonitorCronSchedule) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.PauseStatus); c.match(s) {
 		ch := n.Child("pause_status")
 		if r, ok := c.fn(&ch, s); ok {
@@ -7940,6 +8285,9 @@ func stringsCatalogMonitorCronSchedule(c *stringsWalk, n *Node, v *catalog.Monit
 }
 
 func stringsCatalogMonitorTimeSeries(c *stringsWalk, n *Node, v *catalog.MonitorTimeSeries) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("granularities") {
 		if len(v.Granularities) > 0 {
 			cn := n.Child("granularities")
@@ -7962,6 +8310,9 @@ func stringsCatalogMonitorTimeSeries(c *stringsWalk, n *Node, v *catalog.Monitor
 }
 
 func stringsCatalogEncryptionSettings(c *stringsWalk, n *Node, v *catalog.EncryptionSettings) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("azure_encryption_settings") {
 		if x := v.AzureEncryptionSettings; x != nil {
 			ch := n.Child("azure_encryption_settings")
@@ -7991,6 +8342,9 @@ func stringsCatalogEncryptionSettings(c *stringsWalk, n *Node, v *catalog.Encryp
 }
 
 func stringsCatalogFileEventQueue(c *stringsWalk, n *Node, v *catalog.FileEventQueue) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("managed_aqs") {
 		if x := v.ManagedAqs; x != nil {
 			ch := n.Child("managed_aqs")
@@ -8030,6 +8384,9 @@ func stringsCatalogFileEventQueue(c *stringsWalk, n *Node, v *catalog.FileEventQ
 }
 
 func stringsCatalogEncryptionDetails(c *stringsWalk, n *Node, v *catalog.EncryptionDetails) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("sse_encryption_details") {
 		if x := v.SseEncryptionDetails; x != nil {
 			ch := n.Child("sse_encryption_details")
@@ -8039,6 +8396,9 @@ func stringsCatalogEncryptionDetails(c *stringsWalk, n *Node, v *catalog.Encrypt
 }
 
 func stringsComputeLibrary(c *stringsWalk, n *Node, v *compute.Library) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("cran") {
 		if x := v.Cran; x != nil {
 			ch := n.Child("cran")
@@ -8100,6 +8460,9 @@ func stringsComputeLibrary(c *stringsWalk, n *Node, v *compute.Library) {
 }
 
 func stringsResourcesClusterPermission(c *stringsWalk, n *Node, v *resources.ClusterPermission) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Level); c.match(s) {
 		ch := n.Child("level")
 		if r, ok := c.fn(&ch, s); ok {
@@ -8127,6 +8490,9 @@ func stringsResourcesClusterPermission(c *stringsWalk, n *Node, v *resources.Clu
 }
 
 func stringsComputeAwsAttributes(c *stringsWalk, n *Node, v *compute.AwsAttributes) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Availability == "" && Forced(v.ForceSendFields, "Availability") {
 		ch := n.Child("availability")
 		c.fn(&ch, "")
@@ -8170,6 +8536,9 @@ func stringsComputeAwsAttributes(c *stringsWalk, n *Node, v *compute.AwsAttribut
 }
 
 func stringsComputeAzureAttributes(c *stringsWalk, n *Node, v *compute.AzureAttributes) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Availability == "" && Forced(v.ForceSendFields, "Availability") {
 		ch := n.Child("availability")
 		c.fn(&ch, "")
@@ -8199,6 +8568,9 @@ func stringsComputeAzureAttributes(c *stringsWalk, n *Node, v *compute.AzureAttr
 }
 
 func stringsComputeClusterLogConf(c *stringsWalk, n *Node, v *compute.ClusterLogConf) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("dbfs") {
 		if x := v.Dbfs; x != nil {
 			ch := n.Child("dbfs")
@@ -8220,6 +8592,9 @@ func stringsComputeClusterLogConf(c *stringsWalk, n *Node, v *compute.ClusterLog
 }
 
 func stringsComputeDockerImage(c *stringsWalk, n *Node, v *compute.DockerImage) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("basic_auth") {
 		if x := v.BasicAuth; x != nil {
 			ch := n.Child("basic_auth")
@@ -8239,6 +8614,9 @@ func stringsComputeDockerImage(c *stringsWalk, n *Node, v *compute.DockerImage) 
 }
 
 func stringsComputeNodeTypeFlexibility(c *stringsWalk, n *Node, v *compute.NodeTypeFlexibility) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("alternate_node_type_ids") {
 		if len(v.AlternateNodeTypeIds) > 0 {
 			cn := n.Child("alternate_node_type_ids")
@@ -8265,6 +8643,9 @@ func stringsComputeNodeTypeFlexibility(c *stringsWalk, n *Node, v *compute.NodeT
 }
 
 func stringsComputeGcpAttributes(c *stringsWalk, n *Node, v *compute.GcpAttributes) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Availability == "" && Forced(v.ForceSendFields, "Availability") {
 		ch := n.Child("availability")
 		c.fn(&ch, "")
@@ -8308,6 +8689,9 @@ func stringsComputeGcpAttributes(c *stringsWalk, n *Node, v *compute.GcpAttribut
 }
 
 func stringsComputeInitScriptInfo(c *stringsWalk, n *Node, v *compute.InitScriptInfo) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("abfss") {
 		if x := v.Abfss; x != nil {
 			ch := n.Child("abfss")
@@ -8353,6 +8737,9 @@ func stringsComputeInitScriptInfo(c *stringsWalk, n *Node, v *compute.InitScript
 }
 
 func stringsResourcesAppConfig(c *stringsWalk, n *Node, v *resources.AppConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("command") {
 		if len(v.Command) > 0 {
 			cn := n.Child("command")
@@ -8380,6 +8767,9 @@ func stringsResourcesAppConfig(c *stringsWalk, n *Node, v *resources.AppConfig) 
 }
 
 func stringsResourcesAppPermission(c *stringsWalk, n *Node, v *resources.AppPermission) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Level); c.match(s) {
 		ch := n.Child("level")
 		if r, ok := c.fn(&ch, s); ok {
@@ -8407,6 +8797,9 @@ func stringsResourcesAppPermission(c *stringsWalk, n *Node, v *resources.AppPerm
 }
 
 func stringsAppsAppDeployment(c *stringsWalk, n *Node, v *apps.AppDeployment) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("command") {
 		if len(v.Command) > 0 {
 			cn := n.Child("command")
@@ -8518,6 +8911,9 @@ func stringsAppsAppDeployment(c *stringsWalk, n *Node, v *apps.AppDeployment) {
 }
 
 func stringsAppsApplicationStatus(c *stringsWalk, n *Node, v *apps.ApplicationStatus) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Message == "" && Forced(v.ForceSendFields, "Message") {
 		ch := n.Child("message")
 		c.fn(&ch, "")
@@ -8541,6 +8937,9 @@ func stringsAppsApplicationStatus(c *stringsWalk, n *Node, v *apps.ApplicationSt
 }
 
 func stringsAppsComputeStatus(c *stringsWalk, n *Node, v *apps.ComputeStatus) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Message == "" && Forced(v.ForceSendFields, "Message") {
 		ch := n.Child("message")
 		c.fn(&ch, "")
@@ -8564,6 +8963,9 @@ func stringsAppsComputeStatus(c *stringsWalk, n *Node, v *apps.ComputeStatus) {
 }
 
 func stringsAppsGitSource(c *stringsWalk, n *Node, v *apps.GitSource) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Branch == "" && Forced(v.ForceSendFields, "Branch") {
 		ch := n.Child("branch")
 		c.fn(&ch, "")
@@ -8623,6 +9025,9 @@ func stringsAppsGitSource(c *stringsWalk, n *Node, v *apps.GitSource) {
 }
 
 func stringsAppsGitRepository(c *stringsWalk, n *Node, v *apps.GitRepository) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Provider); c.match(s) {
 		ch := n.Child("provider")
 		if r, ok := c.fn(&ch, s); ok {
@@ -8638,6 +9043,9 @@ func stringsAppsGitRepository(c *stringsWalk, n *Node, v *apps.GitRepository) {
 }
 
 func stringsAppsAppResource(c *stringsWalk, n *Node, v *apps.AppResource) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("app") {
 		if x := v.App; x != nil {
 			ch := n.Child("app")
@@ -8717,6 +9125,9 @@ func stringsAppsAppResource(c *stringsWalk, n *Node, v *apps.AppResource) {
 }
 
 func stringsAppsTelemetryExportDestination(c *stringsWalk, n *Node, v *apps.TelemetryExportDestination) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("unity_catalog") {
 		if x := v.UnityCatalog; x != nil {
 			ch := n.Child("unity_catalog")
@@ -8726,6 +9137,9 @@ func stringsAppsTelemetryExportDestination(c *stringsWalk, n *Node, v *apps.Tele
 }
 
 func stringsResourcesSecretScopePermission(c *stringsWalk, n *Node, v *resources.SecretScopePermission) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Level); c.match(s) {
 		ch := n.Child("level")
 		if r, ok := c.fn(&ch, s); ok {
@@ -8753,6 +9167,9 @@ func stringsResourcesSecretScopePermission(c *stringsWalk, n *Node, v *resources
 }
 
 func stringsWorkspaceAzureKeyVaultSecretScopeMetadata(c *stringsWalk, n *Node, v *workspace.AzureKeyVaultSecretScopeMetadata) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.DnsName); c.match(s) {
 		ch := n.Child("dns_name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -8768,6 +9185,9 @@ func stringsWorkspaceAzureKeyVaultSecretScopeMetadata(c *stringsWalk, n *Node, v
 }
 
 func stringsSqlAlertV2RunAs(c *stringsWalk, n *Node, v *sql.AlertV2RunAs) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.ServicePrincipalName == "" && Forced(v.ForceSendFields, "ServicePrincipalName") {
 		ch := n.Child("service_principal_name")
 		c.fn(&ch, "")
@@ -8791,6 +9211,9 @@ func stringsSqlAlertV2RunAs(c *stringsWalk, n *Node, v *sql.AlertV2RunAs) {
 }
 
 func stringsSqlAlertV2Evaluation(c *stringsWalk, n *Node, v *sql.AlertV2Evaluation) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ComparisonOperator); c.match(s) {
 		ch := n.Child("comparison_operator")
 		if r, ok := c.fn(&ch, s); ok {
@@ -8848,6 +9271,9 @@ func stringsSqlAlertV2Evaluation(c *stringsWalk, n *Node, v *sql.AlertV2Evaluati
 }
 
 func stringsSqlAlertStatementParameter(c *stringsWalk, n *Node, v *sql.AlertStatementParameter) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Name); c.match(s) {
 		ch := n.Child("name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -8877,6 +9303,9 @@ func stringsSqlAlertStatementParameter(c *stringsWalk, n *Node, v *sql.AlertStat
 }
 
 func stringsSqlCronSchedule(c *stringsWalk, n *Node, v *sql.CronSchedule) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.PauseStatus); c.match(s) {
 		ch := n.Child("pause_status")
 		if r, ok := c.fn(&ch, s); ok {
@@ -8898,6 +9327,9 @@ func stringsSqlCronSchedule(c *stringsWalk, n *Node, v *sql.CronSchedule) {
 }
 
 func stringsResourcesSqlWarehousePermission(c *stringsWalk, n *Node, v *resources.SqlWarehousePermission) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Level); c.match(s) {
 		ch := n.Child("level")
 		if r, ok := c.fn(&ch, s); ok {
@@ -8925,6 +9357,9 @@ func stringsResourcesSqlWarehousePermission(c *stringsWalk, n *Node, v *resource
 }
 
 func stringsSqlChannel(c *stringsWalk, n *Node, v *sql.Channel) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.DbsqlVersion == "" && Forced(v.ForceSendFields, "DbsqlVersion") {
 		ch := n.Child("dbsql_version")
 		c.fn(&ch, "")
@@ -8948,6 +9383,9 @@ func stringsSqlChannel(c *stringsWalk, n *Node, v *sql.Channel) {
 }
 
 func stringsSqlEndpointTags(c *stringsWalk, n *Node, v *sql.EndpointTags) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("custom_tags") {
 		if len(v.CustomTags) > 0 {
 			cn := n.Child("custom_tags")
@@ -8962,6 +9400,9 @@ func stringsSqlEndpointTags(c *stringsWalk, n *Node, v *sql.EndpointTags) {
 }
 
 func stringsDatabaseDatabaseInstanceRef(c *stringsWalk, n *Node, v *database.DatabaseInstanceRef) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.BranchTime == "" && Forced(v.ForceSendFields, "BranchTime") {
 		ch := n.Child("branch_time")
 		c.fn(&ch, "")
@@ -9015,6 +9456,9 @@ func stringsDatabaseDatabaseInstanceRef(c *stringsWalk, n *Node, v *database.Dat
 }
 
 func stringsDatabaseCustomTag(c *stringsWalk, n *Node, v *database.CustomTag) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Key == "" && Forced(v.ForceSendFields, "Key") {
 		ch := n.Child("key")
 		c.fn(&ch, "")
@@ -9038,6 +9482,9 @@ func stringsDatabaseCustomTag(c *stringsWalk, n *Node, v *database.CustomTag) {
 }
 
 func stringsDatabaseSyncedTableStatus(c *stringsWalk, n *Node, v *database.SyncedTableStatus) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("continuous_update_status") {
 		if x := v.ContinuousUpdateStatus; x != nil {
 			ch := n.Child("continuous_update_status")
@@ -9101,6 +9548,9 @@ func stringsDatabaseSyncedTableStatus(c *stringsWalk, n *Node, v *database.Synce
 }
 
 func stringsDatabaseSyncedTableSpec(c *stringsWalk, n *Node, v *database.SyncedTableSpec) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.ExistingPipelineId == "" && Forced(v.ForceSendFields, "ExistingPipelineId") {
 		ch := n.Child("existing_pipeline_id")
 		c.fn(&ch, "")
@@ -9174,6 +9624,9 @@ func stringsDatabaseSyncedTableSpec(c *stringsWalk, n *Node, v *database.SyncedT
 }
 
 func stringsPostgresProjectCustomTag(c *stringsWalk, n *Node, v *postgres.ProjectCustomTag) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Key == "" && Forced(v.ForceSendFields, "Key") {
 		ch := n.Child("key")
 		c.fn(&ch, "")
@@ -9197,6 +9650,9 @@ func stringsPostgresProjectCustomTag(c *stringsWalk, n *Node, v *postgres.Projec
 }
 
 func stringsPostgresProjectDefaultEndpointSettings(c *stringsWalk, n *Node, v *postgres.ProjectDefaultEndpointSettings) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("pg_settings") {
 		if len(v.PgSettings) > 0 {
 			cn := n.Child("pg_settings")
@@ -9213,6 +9669,9 @@ func stringsPostgresProjectDefaultEndpointSettings(c *stringsWalk, n *Node, v *p
 }
 
 func stringsPostgresEndpointSettings(c *stringsWalk, n *Node, v *postgres.EndpointSettings) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("pg_settings") {
 		if len(v.PgSettings) > 0 {
 			cn := n.Child("pg_settings")
@@ -9229,6 +9688,9 @@ func stringsPostgresEndpointSettings(c *stringsWalk, n *Node, v *postgres.Endpoi
 }
 
 func stringsPostgresSyncedTableSyncedTableSpecExtraColumn(c *stringsWalk, n *Node, v *postgres.SyncedTableSyncedTableSpecExtraColumn) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ColumnName); c.match(s) {
 		ch := n.Child("column_name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -9264,6 +9726,9 @@ func stringsPostgresSyncedTableSyncedTableSpecExtraColumn(c *stringsWalk, n *Nod
 }
 
 func stringsPostgresNewPipelineSpec(c *stringsWalk, n *Node, v *postgres.NewPipelineSpec) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.BudgetPolicyId == "" && Forced(v.ForceSendFields, "BudgetPolicyId") {
 		ch := n.Child("budget_policy_id")
 		c.fn(&ch, "")
@@ -9307,6 +9772,9 @@ func stringsPostgresNewPipelineSpec(c *stringsWalk, n *Node, v *postgres.NewPipe
 }
 
 func stringsPostgresSyncedTableSyncedTableSpecTypeOverride(c *stringsWalk, n *Node, v *postgres.SyncedTableSyncedTableSpecTypeOverride) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ColumnName); c.match(s) {
 		ch := n.Child("column_name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -9322,6 +9790,9 @@ func stringsPostgresSyncedTableSyncedTableSpecTypeOverride(c *stringsWalk, n *No
 }
 
 func stringsPostgresScheduleCadence(c *stringsWalk, n *Node, v *postgres.ScheduleCadence) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("weekly_schedule") {
 		if x := v.WeeklySchedule; x != nil {
 			ch := n.Child("weekly_schedule")
@@ -9331,6 +9802,9 @@ func stringsPostgresScheduleCadence(c *stringsWalk, n *Node, v *postgres.Schedul
 }
 
 func stringsResourcesVectorSearchEndpointPermission(c *stringsWalk, n *Node, v *resources.VectorSearchEndpointPermission) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Level); c.match(s) {
 		ch := n.Child("level")
 		if r, ok := c.fn(&ch, s); ok {
@@ -9358,6 +9832,9 @@ func stringsResourcesVectorSearchEndpointPermission(c *stringsWalk, n *Node, v *
 }
 
 func stringsVectorsearchDeltaSyncVectorIndexSpecRequest(c *stringsWalk, n *Node, v *vectorsearch.DeltaSyncVectorIndexSpecRequest) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("columns_to_index") {
 		if len(v.ColumnsToIndex) > 0 {
 			cn := n.Child("columns_to_index")
@@ -9439,6 +9916,9 @@ func stringsVectorsearchDeltaSyncVectorIndexSpecRequest(c *stringsWalk, n *Node,
 }
 
 func stringsVectorsearchDirectAccessVectorIndexSpec(c *stringsWalk, n *Node, v *vectorsearch.DirectAccessVectorIndexSpec) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("embedding_source_columns") {
 		if len(v.EmbeddingSourceColumns) > 0 {
 			cn := n.Child("embedding_source_columns")
@@ -9474,6 +9954,9 @@ func stringsVectorsearchDirectAccessVectorIndexSpec(c *stringsWalk, n *Node, v *
 }
 
 func stringsResourcesInstancePoolPermission(c *stringsWalk, n *Node, v *resources.InstancePoolPermission) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Level); c.match(s) {
 		ch := n.Child("level")
 		if r, ok := c.fn(&ch, s); ok {
@@ -9501,6 +9984,9 @@ func stringsResourcesInstancePoolPermission(c *stringsWalk, n *Node, v *resource
 }
 
 func stringsComputeInstancePoolAwsAttributes(c *stringsWalk, n *Node, v *compute.InstancePoolAwsAttributes) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Availability == "" && Forced(v.ForceSendFields, "Availability") {
 		ch := n.Child("availability")
 		c.fn(&ch, "")
@@ -9534,6 +10020,9 @@ func stringsComputeInstancePoolAwsAttributes(c *stringsWalk, n *Node, v *compute
 }
 
 func stringsComputeInstancePoolAzureAttributes(c *stringsWalk, n *Node, v *compute.InstancePoolAzureAttributes) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Availability == "" && Forced(v.ForceSendFields, "Availability") {
 		ch := n.Child("availability")
 		c.fn(&ch, "")
@@ -9557,6 +10046,9 @@ func stringsComputeInstancePoolAzureAttributes(c *stringsWalk, n *Node, v *compu
 }
 
 func stringsComputeDiskSpec(c *stringsWalk, n *Node, v *compute.DiskSpec) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("disk_type") {
 		if x := v.DiskType; x != nil {
 			ch := n.Child("disk_type")
@@ -9566,6 +10058,9 @@ func stringsComputeDiskSpec(c *stringsWalk, n *Node, v *compute.DiskSpec) {
 }
 
 func stringsComputeInstancePoolGcpAttributes(c *stringsWalk, n *Node, v *compute.InstancePoolGcpAttributes) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.GcpAvailability == "" && Forced(v.ForceSendFields, "GcpAvailability") {
 		ch := n.Child("gcp_availability")
 		c.fn(&ch, "")
@@ -9589,6 +10084,9 @@ func stringsComputeInstancePoolGcpAttributes(c *stringsWalk, n *Node, v *compute
 }
 
 func stringsResourcesClusterPolicyPermission(c *stringsWalk, n *Node, v *resources.ClusterPolicyPermission) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Level); c.match(s) {
 		ch := n.Child("level")
 		if r, ok := c.fn(&ch, s); ok {
@@ -9616,6 +10114,9 @@ func stringsResourcesClusterPolicyPermission(c *stringsWalk, n *Node, v *resourc
 }
 
 func stringsSnapshotACLEntry(c *stringsWalk, n *Node, v *snapshot.ACLEntry) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.UserName); c.match(s) {
 		ch := n.Child("user_name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -9643,6 +10144,9 @@ func stringsSnapshotACLEntry(c *stringsWalk, n *Node, v *snapshot.ACLEntry) {
 }
 
 func stringsJobsMaintenanceWindow(c *stringsWalk, n *Node, v *jobs.MaintenanceWindow) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.DayOfWeek); c.match(s) {
 		ch := n.Child("day_of_week")
 		if r, ok := c.fn(&ch, s); ok {
@@ -9658,6 +10162,9 @@ func stringsJobsMaintenanceWindow(c *stringsWalk, n *Node, v *jobs.MaintenanceWi
 }
 
 func stringsJobsJobEnvironmentVariablesSpec(c *stringsWalk, n *Node, v *jobs.JobEnvironmentVariablesSpec) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("files") {
 		if len(v.Files) > 0 {
 			cn := n.Child("files")
@@ -9687,6 +10194,9 @@ func stringsJobsJobEnvironmentVariablesSpec(c *stringsWalk, n *Node, v *jobs.Job
 }
 
 func stringsComputeEnvironment(c *stringsWalk, n *Node, v *compute.Environment) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.BaseEnvironment == "" && Forced(v.ForceSendFields, "BaseEnvironment") {
 		ch := n.Child("base_environment")
 		c.fn(&ch, "")
@@ -9756,6 +10266,9 @@ func stringsComputeEnvironment(c *stringsWalk, n *Node, v *compute.Environment) 
 }
 
 func stringsJobsGitSnapshot(c *stringsWalk, n *Node, v *jobs.GitSnapshot) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.UsedCommit == "" && Forced(v.ForceSendFields, "UsedCommit") {
 		ch := n.Child("used_commit")
 		c.fn(&ch, "")
@@ -9769,6 +10282,9 @@ func stringsJobsGitSnapshot(c *stringsWalk, n *Node, v *jobs.GitSnapshot) {
 }
 
 func stringsJobsJobSource(c *stringsWalk, n *Node, v *jobs.JobSource) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.DirtyState); c.match(s) {
 		ch := n.Child("dirty_state")
 		if r, ok := c.fn(&ch, s); ok {
@@ -9790,6 +10306,9 @@ func stringsJobsJobSource(c *stringsWalk, n *Node, v *jobs.JobSource) {
 }
 
 func stringsJobsSparseCheckout(c *stringsWalk, n *Node, v *jobs.SparseCheckout) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("patterns") {
 		if len(v.Patterns) > 0 {
 			cn := n.Child("patterns")
@@ -9806,6 +10325,9 @@ func stringsJobsSparseCheckout(c *stringsWalk, n *Node, v *jobs.SparseCheckout) 
 }
 
 func stringsJobsJobsHealthRule(c *stringsWalk, n *Node, v *jobs.JobsHealthRule) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Metric); c.match(s) {
 		ch := n.Child("metric")
 		if r, ok := c.fn(&ch, s); ok {
@@ -9821,6 +10343,9 @@ func stringsJobsJobsHealthRule(c *stringsWalk, n *Node, v *jobs.JobsHealthRule) 
 }
 
 func stringsComputeClusterSpec(c *stringsWalk, n *Node, v *compute.ClusterSpec) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("aws_attributes") {
 		if x := v.AwsAttributes; x != nil {
 			ch := n.Child("aws_attributes")
@@ -10049,6 +10574,9 @@ func stringsComputeClusterSpec(c *stringsWalk, n *Node, v *compute.ClusterSpec) 
 }
 
 func stringsJobsSqlConditionConfiguration(c *stringsWalk, n *Node, v *jobs.SqlConditionConfiguration) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.SqlQueryId); c.match(s) {
 		ch := n.Child("sql_query_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -10070,6 +10598,9 @@ func stringsJobsSqlConditionConfiguration(c *stringsWalk, n *Node, v *jobs.SqlCo
 }
 
 func stringsJobsAiRuntimeTask(c *stringsWalk, n *Node, v *jobs.AiRuntimeTask) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.CodeSourcePath == "" && Forced(v.ForceSendFields, "CodeSourcePath") {
 		ch := n.Child("code_source_path")
 		c.fn(&ch, "")
@@ -10160,6 +10691,9 @@ func stringsJobsAiRuntimeTask(c *stringsWalk, n *Node, v *jobs.AiRuntimeTask) {
 }
 
 func stringsJobsAlertTask(c *stringsWalk, n *Node, v *jobs.AlertTask) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.AlertId == "" && Forced(v.ForceSendFields, "AlertId") {
 		ch := n.Child("alert_id")
 		c.fn(&ch, "")
@@ -10217,6 +10751,9 @@ func stringsJobsAlertTask(c *stringsWalk, n *Node, v *jobs.AlertTask) {
 }
 
 func stringsJobsCleanRoomsNotebookTask(c *stringsWalk, n *Node, v *jobs.CleanRoomsNotebookTask) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.CleanRoomName); c.match(s) {
 		ch := n.Child("clean_room_name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -10255,6 +10792,9 @@ func stringsJobsCleanRoomsNotebookTask(c *stringsWalk, n *Node, v *jobs.CleanRoo
 }
 
 func stringsJobsCompute(c *stringsWalk, n *Node, v *jobs.Compute) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.HardwareAccelerator); c.match(s) {
 		ch := n.Child("hardware_accelerator")
 		if r, ok := c.fn(&ch, s); ok {
@@ -10264,6 +10804,9 @@ func stringsJobsCompute(c *stringsWalk, n *Node, v *jobs.Compute) {
 }
 
 func stringsJobsConditionTask(c *stringsWalk, n *Node, v *jobs.ConditionTask) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Left); c.match(s) {
 		ch := n.Child("left")
 		if r, ok := c.fn(&ch, s); ok {
@@ -10285,6 +10828,9 @@ func stringsJobsConditionTask(c *stringsWalk, n *Node, v *jobs.ConditionTask) {
 }
 
 func stringsJobsDashboardTask(c *stringsWalk, n *Node, v *jobs.DashboardTask) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.DashboardId == "" && Forced(v.ForceSendFields, "DashboardId") {
 		ch := n.Child("dashboard_id")
 		c.fn(&ch, "")
@@ -10327,6 +10873,9 @@ func stringsJobsDashboardTask(c *stringsWalk, n *Node, v *jobs.DashboardTask) {
 }
 
 func stringsJobsDbtCloudTask(c *stringsWalk, n *Node, v *jobs.DbtCloudTask) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.ConnectionResourceName == "" && Forced(v.ForceSendFields, "ConnectionResourceName") {
 		ch := n.Child("connection_resource_name")
 		c.fn(&ch, "")
@@ -10340,6 +10889,9 @@ func stringsJobsDbtCloudTask(c *stringsWalk, n *Node, v *jobs.DbtCloudTask) {
 }
 
 func stringsJobsDbtPlatformTask(c *stringsWalk, n *Node, v *jobs.DbtPlatformTask) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.ConnectionResourceName == "" && Forced(v.ForceSendFields, "ConnectionResourceName") {
 		ch := n.Child("connection_resource_name")
 		c.fn(&ch, "")
@@ -10363,6 +10915,9 @@ func stringsJobsDbtPlatformTask(c *stringsWalk, n *Node, v *jobs.DbtPlatformTask
 }
 
 func stringsJobsDbtTask(c *stringsWalk, n *Node, v *jobs.DbtTask) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Catalog == "" && Forced(v.ForceSendFields, "Catalog") {
 		ch := n.Child("catalog")
 		c.fn(&ch, "")
@@ -10439,6 +10994,9 @@ func stringsJobsDbtTask(c *stringsWalk, n *Node, v *jobs.DbtTask) {
 }
 
 func stringsJobsTaskDependency(c *stringsWalk, n *Node, v *jobs.TaskDependency) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Outcome == "" && Forced(v.ForceSendFields, "Outcome") {
 		ch := n.Child("outcome")
 		c.fn(&ch, "")
@@ -10458,6 +11016,9 @@ func stringsJobsTaskDependency(c *stringsWalk, n *Node, v *jobs.TaskDependency) 
 }
 
 func stringsJobsTaskEmailNotifications(c *stringsWalk, n *Node, v *jobs.TaskEmailNotifications) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("on_duration_warning_threshold_exceeded") {
 		if len(v.OnDurationWarningThresholdExceeded) > 0 {
 			cn := n.Child("on_duration_warning_threshold_exceeded")
@@ -10552,6 +11113,9 @@ func stringsJobsTaskEmailNotifications(c *stringsWalk, n *Node, v *jobs.TaskEmai
 }
 
 func stringsJobsForEachTask(c *stringsWalk, n *Node, v *jobs.ForEachTask) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Inputs); c.match(s) {
 		ch := n.Child("inputs")
 		if r, ok := c.fn(&ch, s); ok {
@@ -10567,6 +11131,9 @@ func stringsJobsForEachTask(c *stringsWalk, n *Node, v *jobs.ForEachTask) {
 }
 
 func stringsJobsGenAiComputeTask(c *stringsWalk, n *Node, v *jobs.GenAiComputeTask) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Command == "" && Forced(v.ForceSendFields, "Command") {
 		ch := n.Child("command")
 		c.fn(&ch, "")
@@ -10642,6 +11209,9 @@ func stringsJobsGenAiComputeTask(c *stringsWalk, n *Node, v *jobs.GenAiComputeTa
 }
 
 func stringsJobsNotebookTask(c *stringsWalk, n *Node, v *jobs.NotebookTask) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("base_parameters") {
 		if len(v.BaseParameters) > 0 {
 			cn := n.Child("base_parameters")
@@ -10684,6 +11254,9 @@ func stringsJobsNotebookTask(c *stringsWalk, n *Node, v *jobs.NotebookTask) {
 }
 
 func stringsJobsPipelineTask(c *stringsWalk, n *Node, v *jobs.PipelineTask) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("full_refresh_selection") {
 		if len(v.FullRefreshSelection) > 0 {
 			cn := n.Child("full_refresh_selection")
@@ -10758,6 +11331,9 @@ func stringsJobsPipelineTask(c *stringsWalk, n *Node, v *jobs.PipelineTask) {
 }
 
 func stringsJobsPowerBiTask(c *stringsWalk, n *Node, v *jobs.PowerBiTask) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.ConnectionResourceName == "" && Forced(v.ForceSendFields, "ConnectionResourceName") {
 		ch := n.Child("connection_resource_name")
 		c.fn(&ch, "")
@@ -10798,6 +11374,9 @@ func stringsJobsPowerBiTask(c *stringsWalk, n *Node, v *jobs.PowerBiTask) {
 }
 
 func stringsJobsPythonOperatorTask(c *stringsWalk, n *Node, v *jobs.PythonOperatorTask) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Main == "" && Forced(v.ForceSendFields, "Main") {
 		ch := n.Child("main")
 		c.fn(&ch, "")
@@ -10822,6 +11401,9 @@ func stringsJobsPythonOperatorTask(c *stringsWalk, n *Node, v *jobs.PythonOperat
 }
 
 func stringsJobsPythonWheelTask(c *stringsWalk, n *Node, v *jobs.PythonWheelTask) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.EntryPoint); c.match(s) {
 		ch := n.Child("entry_point")
 		if r, ok := c.fn(&ch, s); ok {
@@ -10863,6 +11445,9 @@ func stringsJobsPythonWheelTask(c *stringsWalk, n *Node, v *jobs.PythonWheelTask
 }
 
 func stringsJobsRunJobTask(c *stringsWalk, n *Node, v *jobs.RunJobTask) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("dbt_commands") {
 		if len(v.DbtCommands) > 0 {
 			cn := n.Child("dbt_commands")
@@ -10976,6 +11561,9 @@ func stringsJobsRunJobTask(c *stringsWalk, n *Node, v *jobs.RunJobTask) {
 }
 
 func stringsJobsSparkJarTask(c *stringsWalk, n *Node, v *jobs.SparkJarTask) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.JarUri == "" && Forced(v.ForceSendFields, "JarUri") {
 		ch := n.Child("jar_uri")
 		c.fn(&ch, "")
@@ -11012,6 +11600,9 @@ func stringsJobsSparkJarTask(c *stringsWalk, n *Node, v *jobs.SparkJarTask) {
 }
 
 func stringsJobsSparkPythonTask(c *stringsWalk, n *Node, v *jobs.SparkPythonTask) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("parameters") {
 		if len(v.Parameters) > 0 {
 			cn := n.Child("parameters")
@@ -11040,6 +11631,9 @@ func stringsJobsSparkPythonTask(c *stringsWalk, n *Node, v *jobs.SparkPythonTask
 }
 
 func stringsJobsSparkSubmitTask(c *stringsWalk, n *Node, v *jobs.SparkSubmitTask) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("parameters") {
 		if len(v.Parameters) > 0 {
 			cn := n.Child("parameters")
@@ -11056,6 +11650,9 @@ func stringsJobsSparkSubmitTask(c *stringsWalk, n *Node, v *jobs.SparkSubmitTask
 }
 
 func stringsJobsSqlTask(c *stringsWalk, n *Node, v *jobs.SqlTask) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("alert") {
 		if x := v.Alert; x != nil {
 			ch := n.Child("alert")
@@ -11102,6 +11699,9 @@ func stringsJobsSqlTask(c *stringsWalk, n *Node, v *jobs.SqlTask) {
 }
 
 func stringsJobsFileArrivalTriggerConfiguration(c *stringsWalk, n *Node, v *jobs.FileArrivalTriggerConfiguration) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Url); c.match(s) {
 		ch := n.Child("url")
 		if r, ok := c.fn(&ch, s); ok {
@@ -11111,6 +11711,9 @@ func stringsJobsFileArrivalTriggerConfiguration(c *stringsWalk, n *Node, v *jobs
 }
 
 func stringsJobsModelTriggerConfiguration(c *stringsWalk, n *Node, v *jobs.ModelTriggerConfiguration) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("aliases") {
 		if len(v.Aliases) > 0 {
 			cn := n.Child("aliases")
@@ -11143,6 +11746,9 @@ func stringsJobsModelTriggerConfiguration(c *stringsWalk, n *Node, v *jobs.Model
 }
 
 func stringsJobsPeriodicTriggerConfiguration(c *stringsWalk, n *Node, v *jobs.PeriodicTriggerConfiguration) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Unit); c.match(s) {
 		ch := n.Child("unit")
 		if r, ok := c.fn(&ch, s); ok {
@@ -11152,6 +11758,9 @@ func stringsJobsPeriodicTriggerConfiguration(c *stringsWalk, n *Node, v *jobs.Pe
 }
 
 func stringsJobsTableUpdateTriggerConfiguration(c *stringsWalk, n *Node, v *jobs.TableUpdateTriggerConfiguration) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Condition == "" && Forced(v.ForceSendFields, "Condition") {
 		ch := n.Child("condition")
 		c.fn(&ch, "")
@@ -11178,6 +11787,9 @@ func stringsJobsTableUpdateTriggerConfiguration(c *stringsWalk, n *Node, v *jobs
 }
 
 func stringsJobsContinuousTriggerConfiguration(c *stringsWalk, n *Node, v *jobs.ContinuousTriggerConfiguration) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("maintenance_window") {
 		if x := v.MaintenanceWindow; x != nil {
 			ch := n.Child("maintenance_window")
@@ -11193,6 +11805,9 @@ func stringsJobsContinuousTriggerConfiguration(c *stringsWalk, n *Node, v *jobs.
 }
 
 func stringsJobsCronTriggerConfiguration(c *stringsWalk, n *Node, v *jobs.CronTriggerConfiguration) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.QuartzCronExpression); c.match(s) {
 		ch := n.Child("quartz_cron_expression")
 		if r, ok := c.fn(&ch, s); ok {
@@ -11208,6 +11823,9 @@ func stringsJobsCronTriggerConfiguration(c *stringsWalk, n *Node, v *jobs.CronTr
 }
 
 func stringsJobsWebhook(c *stringsWalk, n *Node, v *jobs.Webhook) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Id); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -11217,6 +11835,9 @@ func stringsJobsWebhook(c *stringsWalk, n *Node, v *jobs.Webhook) {
 }
 
 func stringsResourcesJobRunTrigger(c *stringsWalk, n *Node, v *resources.JobRunTrigger) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("on_file_change") {
 		if c.mode == EmptyFields && v.OnFileChange != nil && *v.OnFileChange == "" {
 			ch := n.Child("on_file_change")
@@ -11234,6 +11855,9 @@ func stringsResourcesJobRunTrigger(c *stringsWalk, n *Node, v *resources.JobRunT
 }
 
 func stringsResourcesJobRunTriggersState(c *stringsWalk, n *Node, v *resources.JobRunTriggersState) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.OnBundleDeploy); c.match(s) {
 		ch := n.Child("on_bundle_deploy")
 		if r, ok := c.fn(&ch, s); ok {
@@ -11256,6 +11880,9 @@ func stringsResourcesJobRunTriggersState(c *stringsWalk, n *Node, v *resources.J
 }
 
 func stringsPipelinesPipelineClusterAutoscale(c *stringsWalk, n *Node, v *pipelines.PipelineClusterAutoscale) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Mode); c.match(s) {
 		ch := n.Child("mode")
 		if r, ok := c.fn(&ch, s); ok {
@@ -11265,6 +11892,9 @@ func stringsPipelinesPipelineClusterAutoscale(c *stringsWalk, n *Node, v *pipeli
 }
 
 func stringsPipelinesConnectionParameters(c *stringsWalk, n *Node, v *pipelines.ConnectionParameters) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.SourceCatalog == "" && Forced(v.ForceSendFields, "SourceCatalog") {
 		ch := n.Child("source_catalog")
 		c.fn(&ch, "")
@@ -11278,6 +11908,9 @@ func stringsPipelinesConnectionParameters(c *stringsWalk, n *Node, v *pipelines.
 }
 
 func stringsPipelinesDataStagingOptions(c *stringsWalk, n *Node, v *pipelines.DataStagingOptions) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.CatalogName); c.match(s) {
 		ch := n.Child("catalog_name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -11303,6 +11936,9 @@ func stringsPipelinesDataStagingOptions(c *stringsWalk, n *Node, v *pipelines.Da
 }
 
 func stringsPipelinesOperationTimeWindow(c *stringsWalk, n *Node, v *pipelines.OperationTimeWindow) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("days_of_week") {
 		if len(v.DaysOfWeek) > 0 {
 			cn := n.Child("days_of_week")
@@ -11329,6 +11965,9 @@ func stringsPipelinesOperationTimeWindow(c *stringsWalk, n *Node, v *pipelines.O
 }
 
 func stringsPipelinesIngestionConfig(c *stringsWalk, n *Node, v *pipelines.IngestionConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("report") {
 		if x := v.Report; x != nil {
 			ch := n.Child("report")
@@ -11350,6 +11989,9 @@ func stringsPipelinesIngestionConfig(c *stringsWalk, n *Node, v *pipelines.Inges
 }
 
 func stringsPipelinesSourceConfig(c *stringsWalk, n *Node, v *pipelines.SourceConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("api_source_connector_config") {
 		if x := v.ApiSourceConnectorConfig; x != nil {
 			ch := n.Child("api_source_connector_config")
@@ -11371,6 +12013,9 @@ func stringsPipelinesSourceConfig(c *stringsWalk, n *Node, v *pipelines.SourceCo
 }
 
 func stringsPipelinesTableSpecificConfig(c *stringsWalk, n *Node, v *pipelines.TableSpecificConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("clustering_columns") {
 		if len(v.ClusteringColumns) > 0 {
 			cn := n.Child("clustering_columns")
@@ -11494,6 +12139,9 @@ func stringsPipelinesTableSpecificConfig(c *stringsWalk, n *Node, v *pipelines.T
 }
 
 func stringsPipelinesFileLibrary(c *stringsWalk, n *Node, v *pipelines.FileLibrary) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Path == "" && Forced(v.ForceSendFields, "Path") {
 		ch := n.Child("path")
 		c.fn(&ch, "")
@@ -11507,6 +12155,9 @@ func stringsPipelinesFileLibrary(c *stringsWalk, n *Node, v *pipelines.FileLibra
 }
 
 func stringsPipelinesPathPattern(c *stringsWalk, n *Node, v *pipelines.PathPattern) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Include == "" && Forced(v.ForceSendFields, "Include") {
 		ch := n.Child("include")
 		c.fn(&ch, "")
@@ -11520,6 +12171,9 @@ func stringsPipelinesPathPattern(c *stringsWalk, n *Node, v *pipelines.PathPatte
 }
 
 func stringsComputeMavenLibrary(c *stringsWalk, n *Node, v *compute.MavenLibrary) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Coordinates); c.match(s) {
 		ch := n.Child("coordinates")
 		if r, ok := c.fn(&ch, s); ok {
@@ -11552,6 +12206,9 @@ func stringsComputeMavenLibrary(c *stringsWalk, n *Node, v *compute.MavenLibrary
 }
 
 func stringsPipelinesNotebookLibrary(c *stringsWalk, n *Node, v *pipelines.NotebookLibrary) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Path == "" && Forced(v.ForceSendFields, "Path") {
 		ch := n.Child("path")
 		c.fn(&ch, "")
@@ -11565,6 +12222,9 @@ func stringsPipelinesNotebookLibrary(c *stringsWalk, n *Node, v *pipelines.Noteb
 }
 
 func stringsPipelinesCronTrigger(c *stringsWalk, n *Node, v *pipelines.CronTrigger) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.QuartzCronSchedule == "" && Forced(v.ForceSendFields, "QuartzCronSchedule") {
 		ch := n.Child("quartz_cron_schedule")
 		c.fn(&ch, "")
@@ -11588,6 +12248,9 @@ func stringsPipelinesCronTrigger(c *stringsWalk, n *Node, v *pipelines.CronTrigg
 }
 
 func stringsMlUcTraceLocation(c *stringsWalk, n *Node, v *ml.UcTraceLocation) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Catalog); c.match(s) {
 		ch := n.Child("catalog")
 		if r, ok := c.fn(&ch, s); ok {
@@ -11623,6 +12286,9 @@ func stringsMlUcTraceLocation(c *stringsWalk, n *Node, v *ml.UcTraceLocation) {
 }
 
 func stringsServingAiGatewayGuardrails(c *stringsWalk, n *Node, v *serving.AiGatewayGuardrails) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("input") {
 		if x := v.Input; x != nil {
 			ch := n.Child("input")
@@ -11638,6 +12304,9 @@ func stringsServingAiGatewayGuardrails(c *stringsWalk, n *Node, v *serving.AiGat
 }
 
 func stringsServingAiGatewayInferenceTableConfig(c *stringsWalk, n *Node, v *serving.AiGatewayInferenceTableConfig) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.CatalogName == "" && Forced(v.ForceSendFields, "CatalogName") {
 		ch := n.Child("catalog_name")
 		c.fn(&ch, "")
@@ -11671,6 +12340,9 @@ func stringsServingAiGatewayInferenceTableConfig(c *stringsWalk, n *Node, v *ser
 }
 
 func stringsServingAiGatewayRateLimit(c *stringsWalk, n *Node, v *serving.AiGatewayRateLimit) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Key == "" && Forced(v.ForceSendFields, "Key") {
 		ch := n.Child("key")
 		c.fn(&ch, "")
@@ -11700,6 +12372,9 @@ func stringsServingAiGatewayRateLimit(c *stringsWalk, n *Node, v *serving.AiGate
 }
 
 func stringsServingAutoCaptureConfigInput(c *stringsWalk, n *Node, v *serving.AutoCaptureConfigInput) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.CatalogName == "" && Forced(v.ForceSendFields, "CatalogName") {
 		ch := n.Child("catalog_name")
 		c.fn(&ch, "")
@@ -11733,6 +12408,9 @@ func stringsServingAutoCaptureConfigInput(c *stringsWalk, n *Node, v *serving.Au
 }
 
 func stringsServingServedEntityInput(c *stringsWalk, n *Node, v *serving.ServedEntityInput) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.EntityName == "" && Forced(v.ForceSendFields, "EntityName") {
 		ch := n.Child("entity_name")
 		c.fn(&ch, "")
@@ -11815,6 +12493,9 @@ func stringsServingServedEntityInput(c *stringsWalk, n *Node, v *serving.ServedE
 }
 
 func stringsServingServedModelInput(c *stringsWalk, n *Node, v *serving.ServedModelInput) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("environment_vars") {
 		if len(v.EnvironmentVars) > 0 {
 			cn := n.Child("environment_vars")
@@ -11883,6 +12564,9 @@ func stringsServingServedModelInput(c *stringsWalk, n *Node, v *serving.ServedMo
 }
 
 func stringsServingTrafficConfig(c *stringsWalk, n *Node, v *serving.TrafficConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("routes") {
 		if len(v.Routes) > 0 {
 			cn := n.Child("routes")
@@ -11897,6 +12581,9 @@ func stringsServingTrafficConfig(c *stringsWalk, n *Node, v *serving.TrafficConf
 }
 
 func stringsServingTelemetryInferenceTableConfig(c *stringsWalk, n *Node, v *serving.TelemetryInferenceTableConfig) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Name == "" && Forced(v.ForceSendFields, "Name") {
 		ch := n.Child("name")
 		c.fn(&ch, "")
@@ -11910,6 +12597,9 @@ func stringsServingTelemetryInferenceTableConfig(c *stringsWalk, n *Node, v *ser
 }
 
 func stringsServingUnityCatalogTableNames(c *stringsWalk, n *Node, v *serving.UnityCatalogTableNames) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.AnnotationsTable == "" && Forced(v.ForceSendFields, "AnnotationsTable") {
 		ch := n.Child("annotations_table")
 		c.fn(&ch, "")
@@ -11953,6 +12643,9 @@ func stringsServingUnityCatalogTableNames(c *stringsWalk, n *Node, v *serving.Un
 }
 
 func stringsCatalogInferenceTableConfig(c *stringsWalk, n *Node, v *catalog.InferenceTableConfig) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Parent); c.match(s) {
 		ch := n.Child("parent")
 		if r, ok := c.fn(&ch, s); ok {
@@ -11982,6 +12675,9 @@ func stringsCatalogInferenceTableConfig(c *stringsWalk, n *Node, v *catalog.Infe
 }
 
 func stringsCatalogRateLimit(c *stringsWalk, n *Node, v *catalog.RateLimit) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Key); c.match(s) {
 		ch := n.Child("key")
 		if r, ok := c.fn(&ch, s); ok {
@@ -12007,6 +12703,9 @@ func stringsCatalogRateLimit(c *stringsWalk, n *Node, v *catalog.RateLimit) {
 }
 
 func stringsCatalogModelServiceConfigRoutingConfig(c *stringsWalk, n *Node, v *catalog.ModelServiceConfigRoutingConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("destinations") {
 		if len(v.Destinations) > 0 {
 			cn := n.Child("destinations")
@@ -12027,6 +12726,9 @@ func stringsCatalogModelServiceConfigRoutingConfig(c *stringsWalk, n *Node, v *c
 }
 
 func stringsCatalogMcpServiceConfigSourceConnection(c *stringsWalk, n *Node, v *catalog.McpServiceConfigSourceConnection) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Name); c.match(s) {
 		ch := n.Child("name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -12049,6 +12751,9 @@ func stringsCatalogMcpServiceConfigSourceConnection(c *stringsWalk, n *Node, v *
 }
 
 func stringsCatalogModelProviderServiceConfigAmazonBedrockProviderConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigAmazonBedrockProviderConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("direct") {
 		if x := v.Direct; x != nil {
 			ch := n.Child("direct")
@@ -12058,6 +12763,9 @@ func stringsCatalogModelProviderServiceConfigAmazonBedrockProviderConfig(c *stri
 }
 
 func stringsCatalogModelProviderServiceConfigAnthropicProviderConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigAnthropicProviderConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("direct") {
 		if x := v.Direct; x != nil {
 			ch := n.Child("direct")
@@ -12067,6 +12775,9 @@ func stringsCatalogModelProviderServiceConfigAnthropicProviderConfig(c *stringsW
 }
 
 func stringsCatalogModelProviderServiceConfigAzureOpenAiProviderConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigAzureOpenAiProviderConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("direct") {
 		if x := v.Direct; x != nil {
 			ch := n.Child("direct")
@@ -12076,6 +12787,9 @@ func stringsCatalogModelProviderServiceConfigAzureOpenAiProviderConfig(c *string
 }
 
 func stringsCatalogModelProviderServiceConfigCustomProviderConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigCustomProviderConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("direct") {
 		if x := v.Direct; x != nil {
 			ch := n.Child("direct")
@@ -12085,6 +12799,9 @@ func stringsCatalogModelProviderServiceConfigCustomProviderConfig(c *stringsWalk
 }
 
 func stringsCatalogModelProviderServiceConfigGeminiEnterpriseProviderConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigGeminiEnterpriseProviderConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("direct") {
 		if x := v.Direct; x != nil {
 			ch := n.Child("direct")
@@ -12094,6 +12811,9 @@ func stringsCatalogModelProviderServiceConfigGeminiEnterpriseProviderConfig(c *s
 }
 
 func stringsCatalogModelProviderServiceConfigMicrosoftFoundryProviderConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigMicrosoftFoundryProviderConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("direct") {
 		if x := v.Direct; x != nil {
 			ch := n.Child("direct")
@@ -12103,6 +12823,9 @@ func stringsCatalogModelProviderServiceConfigMicrosoftFoundryProviderConfig(c *s
 }
 
 func stringsCatalogModelProviderServiceConfigOpenAiProviderConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigOpenAiProviderConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("direct") {
 		if x := v.Direct; x != nil {
 			ch := n.Child("direct")
@@ -12112,6 +12835,9 @@ func stringsCatalogModelProviderServiceConfigOpenAiProviderConfig(c *stringsWalk
 }
 
 func stringsCatalogModelProviderServiceConfigModelTargetConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigModelTargetConfig) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.EndpointRoute == "" && Forced(v.ForceSendFields, "EndpointRoute") {
 		ch := n.Child("endpoint_route")
 		c.fn(&ch, "")
@@ -12144,6 +12870,9 @@ func stringsCatalogModelProviderServiceConfigModelTargetConfig(c *stringsWalk, n
 }
 
 func stringsCatalogMonitorDestination(c *stringsWalk, n *Node, v *catalog.MonitorDestination) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("email_addresses") {
 		if len(v.EmailAddresses) > 0 {
 			cn := n.Child("email_addresses")
@@ -12160,6 +12889,9 @@ func stringsCatalogMonitorDestination(c *stringsWalk, n *Node, v *catalog.Monito
 }
 
 func stringsCatalogAzureEncryptionSettings(c *stringsWalk, n *Node, v *catalog.AzureEncryptionSettings) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.AzureCmkAccessConnectorId == "" && Forced(v.ForceSendFields, "AzureCmkAccessConnectorId") {
 		ch := n.Child("azure_cmk_access_connector_id")
 		c.fn(&ch, "")
@@ -12189,6 +12921,9 @@ func stringsCatalogAzureEncryptionSettings(c *stringsWalk, n *Node, v *catalog.A
 }
 
 func stringsCatalogAzureQueueStorage(c *stringsWalk, n *Node, v *catalog.AzureQueueStorage) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.ManagedResourceId == "" && Forced(v.ForceSendFields, "ManagedResourceId") {
 		ch := n.Child("managed_resource_id")
 		c.fn(&ch, "")
@@ -12232,6 +12967,9 @@ func stringsCatalogAzureQueueStorage(c *stringsWalk, n *Node, v *catalog.AzureQu
 }
 
 func stringsCatalogGcpPubsub(c *stringsWalk, n *Node, v *catalog.GcpPubsub) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.ManagedResourceId == "" && Forced(v.ForceSendFields, "ManagedResourceId") {
 		ch := n.Child("managed_resource_id")
 		c.fn(&ch, "")
@@ -12255,6 +12993,9 @@ func stringsCatalogGcpPubsub(c *stringsWalk, n *Node, v *catalog.GcpPubsub) {
 }
 
 func stringsCatalogAwsSqsQueue(c *stringsWalk, n *Node, v *catalog.AwsSqsQueue) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.ManagedResourceId == "" && Forced(v.ForceSendFields, "ManagedResourceId") {
 		ch := n.Child("managed_resource_id")
 		c.fn(&ch, "")
@@ -12278,6 +13019,9 @@ func stringsCatalogAwsSqsQueue(c *stringsWalk, n *Node, v *catalog.AwsSqsQueue) 
 }
 
 func stringsCatalogSseEncryptionDetails(c *stringsWalk, n *Node, v *catalog.SseEncryptionDetails) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Algorithm == "" && Forced(v.ForceSendFields, "Algorithm") {
 		ch := n.Child("algorithm")
 		c.fn(&ch, "")
@@ -12301,6 +13045,9 @@ func stringsCatalogSseEncryptionDetails(c *stringsWalk, n *Node, v *catalog.SseE
 }
 
 func stringsComputeRCranLibrary(c *stringsWalk, n *Node, v *compute.RCranLibrary) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Package); c.match(s) {
 		ch := n.Child("package")
 		if r, ok := c.fn(&ch, s); ok {
@@ -12320,6 +13067,9 @@ func stringsComputeRCranLibrary(c *stringsWalk, n *Node, v *compute.RCranLibrary
 }
 
 func stringsComputePythonPyPiLibrary(c *stringsWalk, n *Node, v *compute.PythonPyPiLibrary) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Package); c.match(s) {
 		ch := n.Child("package")
 		if r, ok := c.fn(&ch, s); ok {
@@ -12339,6 +13089,9 @@ func stringsComputePythonPyPiLibrary(c *stringsWalk, n *Node, v *compute.PythonP
 }
 
 func stringsComputeLogAnalyticsInfo(c *stringsWalk, n *Node, v *compute.LogAnalyticsInfo) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.LogAnalyticsPrimaryKey == "" && Forced(v.ForceSendFields, "LogAnalyticsPrimaryKey") {
 		ch := n.Child("log_analytics_primary_key")
 		c.fn(&ch, "")
@@ -12362,6 +13115,9 @@ func stringsComputeLogAnalyticsInfo(c *stringsWalk, n *Node, v *compute.LogAnaly
 }
 
 func stringsComputeDbfsStorageInfo(c *stringsWalk, n *Node, v *compute.DbfsStorageInfo) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Destination); c.match(s) {
 		ch := n.Child("destination")
 		if r, ok := c.fn(&ch, s); ok {
@@ -12371,6 +13127,9 @@ func stringsComputeDbfsStorageInfo(c *stringsWalk, n *Node, v *compute.DbfsStora
 }
 
 func stringsComputeS3StorageInfo(c *stringsWalk, n *Node, v *compute.S3StorageInfo) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.CannedAcl == "" && Forced(v.ForceSendFields, "CannedAcl") {
 		ch := n.Child("canned_acl")
 		c.fn(&ch, "")
@@ -12430,6 +13189,9 @@ func stringsComputeS3StorageInfo(c *stringsWalk, n *Node, v *compute.S3StorageIn
 }
 
 func stringsComputeVolumesStorageInfo(c *stringsWalk, n *Node, v *compute.VolumesStorageInfo) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Destination); c.match(s) {
 		ch := n.Child("destination")
 		if r, ok := c.fn(&ch, s); ok {
@@ -12439,6 +13201,9 @@ func stringsComputeVolumesStorageInfo(c *stringsWalk, n *Node, v *compute.Volume
 }
 
 func stringsComputeDockerBasicAuth(c *stringsWalk, n *Node, v *compute.DockerBasicAuth) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Password == "" && Forced(v.ForceSendFields, "Password") {
 		ch := n.Child("password")
 		c.fn(&ch, "")
@@ -12462,6 +13227,9 @@ func stringsComputeDockerBasicAuth(c *stringsWalk, n *Node, v *compute.DockerBas
 }
 
 func stringsComputeAdlsgen2Info(c *stringsWalk, n *Node, v *compute.Adlsgen2Info) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Destination); c.match(s) {
 		ch := n.Child("destination")
 		if r, ok := c.fn(&ch, s); ok {
@@ -12471,6 +13239,9 @@ func stringsComputeAdlsgen2Info(c *stringsWalk, n *Node, v *compute.Adlsgen2Info
 }
 
 func stringsComputeLocalFileInfo(c *stringsWalk, n *Node, v *compute.LocalFileInfo) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Destination); c.match(s) {
 		ch := n.Child("destination")
 		if r, ok := c.fn(&ch, s); ok {
@@ -12480,6 +13251,9 @@ func stringsComputeLocalFileInfo(c *stringsWalk, n *Node, v *compute.LocalFileIn
 }
 
 func stringsComputeGcsStorageInfo(c *stringsWalk, n *Node, v *compute.GcsStorageInfo) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Destination); c.match(s) {
 		ch := n.Child("destination")
 		if r, ok := c.fn(&ch, s); ok {
@@ -12489,6 +13263,9 @@ func stringsComputeGcsStorageInfo(c *stringsWalk, n *Node, v *compute.GcsStorage
 }
 
 func stringsComputeWorkspaceStorageInfo(c *stringsWalk, n *Node, v *compute.WorkspaceStorageInfo) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Destination); c.match(s) {
 		ch := n.Child("destination")
 		if r, ok := c.fn(&ch, s); ok {
@@ -12498,6 +13275,9 @@ func stringsComputeWorkspaceStorageInfo(c *stringsWalk, n *Node, v *compute.Work
 }
 
 func stringsResourcesAppEnvVar(c *stringsWalk, n *Node, v *resources.AppEnvVar) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Name); c.match(s) {
 		ch := n.Child("name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -12519,6 +13299,9 @@ func stringsResourcesAppEnvVar(c *stringsWalk, n *Node, v *resources.AppEnvVar) 
 }
 
 func stringsAppsAppDeploymentArtifacts(c *stringsWalk, n *Node, v *apps.AppDeploymentArtifacts) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.SourceCodePath == "" && Forced(v.ForceSendFields, "SourceCodePath") {
 		ch := n.Child("source_code_path")
 		c.fn(&ch, "")
@@ -12532,6 +13315,9 @@ func stringsAppsAppDeploymentArtifacts(c *stringsWalk, n *Node, v *apps.AppDeplo
 }
 
 func stringsAppsEnvVar(c *stringsWalk, n *Node, v *apps.EnvVar) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Name == "" && Forced(v.ForceSendFields, "Name") {
 		ch := n.Child("name")
 		c.fn(&ch, "")
@@ -12565,6 +13351,9 @@ func stringsAppsEnvVar(c *stringsWalk, n *Node, v *apps.EnvVar) {
 }
 
 func stringsAppsAppHealthCheck(c *stringsWalk, n *Node, v *apps.AppHealthCheck) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Path == "" && Forced(v.ForceSendFields, "Path") {
 		ch := n.Child("path")
 		c.fn(&ch, "")
@@ -12578,6 +13367,9 @@ func stringsAppsAppHealthCheck(c *stringsWalk, n *Node, v *apps.AppHealthCheck) 
 }
 
 func stringsAppsAppDeploymentStatus(c *stringsWalk, n *Node, v *apps.AppDeploymentStatus) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Message == "" && Forced(v.ForceSendFields, "Message") {
 		ch := n.Child("message")
 		c.fn(&ch, "")
@@ -12601,6 +13393,9 @@ func stringsAppsAppDeploymentStatus(c *stringsWalk, n *Node, v *apps.AppDeployme
 }
 
 func stringsAppsAppResourceApp(c *stringsWalk, n *Node, v *apps.AppResourceApp) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Name == "" && Forced(v.ForceSendFields, "Name") {
 		ch := n.Child("name")
 		c.fn(&ch, "")
@@ -12624,6 +13419,9 @@ func stringsAppsAppResourceApp(c *stringsWalk, n *Node, v *apps.AppResourceApp) 
 }
 
 func stringsAppsAppResourceDatabase(c *stringsWalk, n *Node, v *apps.AppResourceDatabase) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.DatabaseName); c.match(s) {
 		ch := n.Child("database_name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -12645,6 +13443,9 @@ func stringsAppsAppResourceDatabase(c *stringsWalk, n *Node, v *apps.AppResource
 }
 
 func stringsAppsAppResourceExperiment(c *stringsWalk, n *Node, v *apps.AppResourceExperiment) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ExperimentId); c.match(s) {
 		ch := n.Child("experiment_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -12660,6 +13461,9 @@ func stringsAppsAppResourceExperiment(c *stringsWalk, n *Node, v *apps.AppResour
 }
 
 func stringsAppsAppResourceGenieSpace(c *stringsWalk, n *Node, v *apps.AppResourceGenieSpace) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Name); c.match(s) {
 		ch := n.Child("name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -12681,6 +13485,9 @@ func stringsAppsAppResourceGenieSpace(c *stringsWalk, n *Node, v *apps.AppResour
 }
 
 func stringsAppsAppResourceJob(c *stringsWalk, n *Node, v *apps.AppResourceJob) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Id); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -12696,6 +13503,9 @@ func stringsAppsAppResourceJob(c *stringsWalk, n *Node, v *apps.AppResourceJob) 
 }
 
 func stringsAppsAppResourcePostgres(c *stringsWalk, n *Node, v *apps.AppResourcePostgres) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Branch == "" && Forced(v.ForceSendFields, "Branch") {
 		ch := n.Child("branch")
 		c.fn(&ch, "")
@@ -12729,6 +13539,9 @@ func stringsAppsAppResourcePostgres(c *stringsWalk, n *Node, v *apps.AppResource
 }
 
 func stringsAppsAppResourceSecret(c *stringsWalk, n *Node, v *apps.AppResourceSecret) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Key); c.match(s) {
 		ch := n.Child("key")
 		if r, ok := c.fn(&ch, s); ok {
@@ -12750,6 +13563,9 @@ func stringsAppsAppResourceSecret(c *stringsWalk, n *Node, v *apps.AppResourceSe
 }
 
 func stringsAppsAppResourceServingEndpoint(c *stringsWalk, n *Node, v *apps.AppResourceServingEndpoint) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Name); c.match(s) {
 		ch := n.Child("name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -12765,6 +13581,9 @@ func stringsAppsAppResourceServingEndpoint(c *stringsWalk, n *Node, v *apps.AppR
 }
 
 func stringsAppsAppResourceSqlWarehouse(c *stringsWalk, n *Node, v *apps.AppResourceSqlWarehouse) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Id); c.match(s) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -12780,6 +13599,9 @@ func stringsAppsAppResourceSqlWarehouse(c *stringsWalk, n *Node, v *apps.AppReso
 }
 
 func stringsAppsAppResourceUcSecurable(c *stringsWalk, n *Node, v *apps.AppResourceUcSecurable) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Permission); c.match(s) {
 		ch := n.Child("permission")
 		if r, ok := c.fn(&ch, s); ok {
@@ -12811,6 +13633,9 @@ func stringsAppsAppResourceUcSecurable(c *stringsWalk, n *Node, v *apps.AppResou
 }
 
 func stringsAppsUnityCatalog(c *stringsWalk, n *Node, v *apps.UnityCatalog) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.LogsTable); c.match(s) {
 		ch := n.Child("logs_table")
 		if r, ok := c.fn(&ch, s); ok {
@@ -12832,6 +13657,9 @@ func stringsAppsUnityCatalog(c *stringsWalk, n *Node, v *apps.UnityCatalog) {
 }
 
 func stringsSqlAlertV2Notification(c *stringsWalk, n *Node, v *sql.AlertV2Notification) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("subscriptions") {
 		if len(v.Subscriptions) > 0 {
 			cn := n.Child("subscriptions")
@@ -12846,6 +13674,9 @@ func stringsSqlAlertV2Notification(c *stringsWalk, n *Node, v *sql.AlertV2Notifi
 }
 
 func stringsSqlAlertV2OperandColumn(c *stringsWalk, n *Node, v *sql.AlertV2OperandColumn) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Aggregation == "" && Forced(v.ForceSendFields, "Aggregation") {
 		ch := n.Child("aggregation")
 		c.fn(&ch, "")
@@ -12875,6 +13706,9 @@ func stringsSqlAlertV2OperandColumn(c *stringsWalk, n *Node, v *sql.AlertV2Opera
 }
 
 func stringsSqlAlertV2Operand(c *stringsWalk, n *Node, v *sql.AlertV2Operand) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("column") {
 		if x := v.Column; x != nil {
 			ch := n.Child("column")
@@ -12890,6 +13724,9 @@ func stringsSqlAlertV2Operand(c *stringsWalk, n *Node, v *sql.AlertV2Operand) {
 }
 
 func stringsSqlEndpointTagPair(c *stringsWalk, n *Node, v *sql.EndpointTagPair) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Key == "" && Forced(v.ForceSendFields, "Key") {
 		ch := n.Child("key")
 		c.fn(&ch, "")
@@ -12913,6 +13750,9 @@ func stringsSqlEndpointTagPair(c *stringsWalk, n *Node, v *sql.EndpointTagPair) 
 }
 
 func stringsDatabaseSyncedTableContinuousUpdateStatus(c *stringsWalk, n *Node, v *database.SyncedTableContinuousUpdateStatus) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("initial_pipeline_sync_progress") {
 		if x := v.InitialPipelineSyncProgress; x != nil {
 			ch := n.Child("initial_pipeline_sync_progress")
@@ -12932,6 +13772,9 @@ func stringsDatabaseSyncedTableContinuousUpdateStatus(c *stringsWalk, n *Node, v
 }
 
 func stringsDatabaseSyncedTableFailedStatus(c *stringsWalk, n *Node, v *database.SyncedTableFailedStatus) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Timestamp == "" && Forced(v.ForceSendFields, "Timestamp") {
 		ch := n.Child("timestamp")
 		c.fn(&ch, "")
@@ -12945,6 +13788,9 @@ func stringsDatabaseSyncedTableFailedStatus(c *stringsWalk, n *Node, v *database
 }
 
 func stringsDatabaseSyncedTablePosition(c *stringsWalk, n *Node, v *database.SyncedTablePosition) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("delta_table_sync_info") {
 		if x := v.DeltaTableSyncInfo; x != nil {
 			ch := n.Child("delta_table_sync_info")
@@ -12974,6 +13820,9 @@ func stringsDatabaseSyncedTablePosition(c *stringsWalk, n *Node, v *database.Syn
 }
 
 func stringsDatabaseSyncedTableProvisioningStatus(c *stringsWalk, n *Node, v *database.SyncedTableProvisioningStatus) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("initial_pipeline_sync_progress") {
 		if x := v.InitialPipelineSyncProgress; x != nil {
 			ch := n.Child("initial_pipeline_sync_progress")
@@ -12983,6 +13832,9 @@ func stringsDatabaseSyncedTableProvisioningStatus(c *stringsWalk, n *Node, v *da
 }
 
 func stringsDatabaseSyncedTableTriggeredUpdateStatus(c *stringsWalk, n *Node, v *database.SyncedTableTriggeredUpdateStatus) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Timestamp == "" && Forced(v.ForceSendFields, "Timestamp") {
 		ch := n.Child("timestamp")
 		c.fn(&ch, "")
@@ -13002,6 +13854,9 @@ func stringsDatabaseSyncedTableTriggeredUpdateStatus(c *stringsWalk, n *Node, v 
 }
 
 func stringsDatabaseNewPipelineSpec(c *stringsWalk, n *Node, v *database.NewPipelineSpec) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.BudgetPolicyId == "" && Forced(v.ForceSendFields, "BudgetPolicyId") {
 		ch := n.Child("budget_policy_id")
 		c.fn(&ch, "")
@@ -13035,6 +13890,9 @@ func stringsDatabaseNewPipelineSpec(c *stringsWalk, n *Node, v *database.NewPipe
 }
 
 func stringsDatabaseSyncedTableSpecTypeOverride(c *stringsWalk, n *Node, v *database.SyncedTableSpecTypeOverride) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ColumnName); c.match(s) {
 		ch := n.Child("column_name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -13050,6 +13908,9 @@ func stringsDatabaseSyncedTableSpecTypeOverride(c *stringsWalk, n *Node, v *data
 }
 
 func stringsPostgresWeeklySchedule(c *stringsWalk, n *Node, v *postgres.WeeklySchedule) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.DayOfWeek); c.match(s) {
 		ch := n.Child("day_of_week")
 		if r, ok := c.fn(&ch, s); ok {
@@ -13059,6 +13920,9 @@ func stringsPostgresWeeklySchedule(c *stringsWalk, n *Node, v *postgres.WeeklySc
 }
 
 func stringsVectorsearchEmbeddingSourceColumn(c *stringsWalk, n *Node, v *vectorsearch.EmbeddingSourceColumn) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.EmbeddingModelEndpointName == "" && Forced(v.ForceSendFields, "EmbeddingModelEndpointName") {
 		ch := n.Child("embedding_model_endpoint_name")
 		c.fn(&ch, "")
@@ -13092,6 +13956,9 @@ func stringsVectorsearchEmbeddingSourceColumn(c *stringsWalk, n *Node, v *vector
 }
 
 func stringsVectorsearchEmbeddingVectorColumn(c *stringsWalk, n *Node, v *vectorsearch.EmbeddingVectorColumn) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Name == "" && Forced(v.ForceSendFields, "Name") {
 		ch := n.Child("name")
 		c.fn(&ch, "")
@@ -13105,6 +13972,9 @@ func stringsVectorsearchEmbeddingVectorColumn(c *stringsWalk, n *Node, v *vector
 }
 
 func stringsComputeDiskType(c *stringsWalk, n *Node, v *compute.DiskType) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.AzureDiskVolumeType); c.match(s) {
 		ch := n.Child("azure_disk_volume_type")
 		if r, ok := c.fn(&ch, s); ok {
@@ -13120,6 +13990,9 @@ func stringsComputeDiskType(c *stringsWalk, n *Node, v *compute.DiskType) {
 }
 
 func stringsJobsDeploymentSpec(c *stringsWalk, n *Node, v *jobs.DeploymentSpec) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.CommandPath == "" && Forced(v.ForceSendFields, "CommandPath") {
 		ch := n.Child("command_path")
 		c.fn(&ch, "")
@@ -13149,6 +14022,9 @@ func stringsJobsDeploymentSpec(c *stringsWalk, n *Node, v *jobs.DeploymentSpec) 
 }
 
 func stringsJobsAlertTaskSubscriber(c *stringsWalk, n *Node, v *jobs.AlertTaskSubscriber) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.DestinationId == "" && Forced(v.ForceSendFields, "DestinationId") {
 		ch := n.Child("destination_id")
 		c.fn(&ch, "")
@@ -13172,6 +14048,9 @@ func stringsJobsAlertTaskSubscriber(c *stringsWalk, n *Node, v *jobs.AlertTaskSu
 }
 
 func stringsJobsSubscription(c *stringsWalk, n *Node, v *jobs.Subscription) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.CustomSubject == "" && Forced(v.ForceSendFields, "CustomSubject") {
 		ch := n.Child("custom_subject")
 		c.fn(&ch, "")
@@ -13196,6 +14075,9 @@ func stringsJobsSubscription(c *stringsWalk, n *Node, v *jobs.Subscription) {
 }
 
 func stringsJobsComputeConfig(c *stringsWalk, n *Node, v *jobs.ComputeConfig) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.GpuNodePoolId == "" && Forced(v.ForceSendFields, "GpuNodePoolId") {
 		ch := n.Child("gpu_node_pool_id")
 		c.fn(&ch, "")
@@ -13219,6 +14101,9 @@ func stringsJobsComputeConfig(c *stringsWalk, n *Node, v *jobs.ComputeConfig) {
 }
 
 func stringsJobsPowerBiModel(c *stringsWalk, n *Node, v *jobs.PowerBiModel) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.AuthenticationMethod == "" && Forced(v.ForceSendFields, "AuthenticationMethod") {
 		ch := n.Child("authentication_method")
 		c.fn(&ch, "")
@@ -13262,6 +14147,9 @@ func stringsJobsPowerBiModel(c *stringsWalk, n *Node, v *jobs.PowerBiModel) {
 }
 
 func stringsJobsPowerBiTable(c *stringsWalk, n *Node, v *jobs.PowerBiTable) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Catalog == "" && Forced(v.ForceSendFields, "Catalog") {
 		ch := n.Child("catalog")
 		c.fn(&ch, "")
@@ -13305,6 +14193,9 @@ func stringsJobsPowerBiTable(c *stringsWalk, n *Node, v *jobs.PowerBiTable) {
 }
 
 func stringsJobsPythonOperatorTaskParameter(c *stringsWalk, n *Node, v *jobs.PythonOperatorTaskParameter) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Name == "" && Forced(v.ForceSendFields, "Name") {
 		ch := n.Child("name")
 		c.fn(&ch, "")
@@ -13328,6 +14219,9 @@ func stringsJobsPythonOperatorTaskParameter(c *stringsWalk, n *Node, v *jobs.Pyt
 }
 
 func stringsJobsSqlTaskAlert(c *stringsWalk, n *Node, v *jobs.SqlTaskAlert) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.AlertId); c.match(s) {
 		ch := n.Child("alert_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -13348,6 +14242,9 @@ func stringsJobsSqlTaskAlert(c *stringsWalk, n *Node, v *jobs.SqlTaskAlert) {
 }
 
 func stringsJobsSqlTaskDashboard(c *stringsWalk, n *Node, v *jobs.SqlTaskDashboard) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.CustomSubject == "" && Forced(v.ForceSendFields, "CustomSubject") {
 		ch := n.Child("custom_subject")
 		c.fn(&ch, "")
@@ -13378,6 +14275,9 @@ func stringsJobsSqlTaskDashboard(c *stringsWalk, n *Node, v *jobs.SqlTaskDashboa
 }
 
 func stringsJobsSqlTaskFile(c *stringsWalk, n *Node, v *jobs.SqlTaskFile) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Path); c.match(s) {
 		ch := n.Child("path")
 		if r, ok := c.fn(&ch, s); ok {
@@ -13393,6 +14293,9 @@ func stringsJobsSqlTaskFile(c *stringsWalk, n *Node, v *jobs.SqlTaskFile) {
 }
 
 func stringsJobsSqlTaskQuery(c *stringsWalk, n *Node, v *jobs.SqlTaskQuery) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.QueryId); c.match(s) {
 		ch := n.Child("query_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -13402,6 +14305,9 @@ func stringsJobsSqlTaskQuery(c *stringsWalk, n *Node, v *jobs.SqlTaskQuery) {
 }
 
 func stringsPipelinesReportSpec(c *stringsWalk, n *Node, v *pipelines.ReportSpec) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.DestinationCatalog); c.match(s) {
 		ch := n.Child("destination_catalog")
 		if r, ok := c.fn(&ch, s); ok {
@@ -13439,6 +14345,9 @@ func stringsPipelinesReportSpec(c *stringsWalk, n *Node, v *pipelines.ReportSpec
 }
 
 func stringsPipelinesSchemaSpec(c *stringsWalk, n *Node, v *pipelines.SchemaSpec) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("connector_options") {
 		if x := v.ConnectorOptions; x != nil {
 			ch := n.Child("connector_options")
@@ -13492,6 +14401,9 @@ func stringsPipelinesSchemaSpec(c *stringsWalk, n *Node, v *pipelines.SchemaSpec
 }
 
 func stringsPipelinesTableSpec(c *stringsWalk, n *Node, v *pipelines.TableSpec) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("connector_options") {
 		if x := v.ConnectorOptions; x != nil {
 			ch := n.Child("connector_options")
@@ -13559,6 +14471,9 @@ func stringsPipelinesTableSpec(c *stringsWalk, n *Node, v *pipelines.TableSpec) 
 }
 
 func stringsPipelinesApiSourceConnectorConfig(c *stringsWalk, n *Node, v *pipelines.ApiSourceConnectorConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("configs") {
 		if len(v.Configs) > 0 {
 			cn := n.Child("configs")
@@ -13575,6 +14490,9 @@ func stringsPipelinesApiSourceConnectorConfig(c *stringsWalk, n *Node, v *pipeli
 }
 
 func stringsPipelinesSourceCatalogConfig(c *stringsWalk, n *Node, v *pipelines.SourceCatalogConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("postgres") {
 		if x := v.Postgres; x != nil {
 			ch := n.Child("postgres")
@@ -13594,6 +14512,9 @@ func stringsPipelinesSourceCatalogConfig(c *stringsWalk, n *Node, v *pipelines.S
 }
 
 func stringsPipelinesGoogleAdsConfig(c *stringsWalk, n *Node, v *pipelines.GoogleAdsConfig) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.ManagerAccountId == "" && Forced(v.ForceSendFields, "ManagerAccountId") {
 		ch := n.Child("manager_account_id")
 		c.fn(&ch, "")
@@ -13607,6 +14528,9 @@ func stringsPipelinesGoogleAdsConfig(c *stringsWalk, n *Node, v *pipelines.Googl
 }
 
 func stringsPipelinesIngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig(c *stringsWalk, n *Node, v *pipelines.IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("cursor_columns") {
 		if len(v.CursorColumns) > 0 {
 			cn := n.Child("cursor_columns")
@@ -13633,6 +14557,9 @@ func stringsPipelinesIngestionPipelineDefinitionTableSpecificConfigQueryBasedCon
 }
 
 func stringsPipelinesIngestionPipelineDefinitionWorkdayReportParameters(c *stringsWalk, n *Node, v *pipelines.IngestionPipelineDefinitionWorkdayReportParameters) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("parameters") {
 		if len(v.Parameters) > 0 {
 			cn := n.Child("parameters")
@@ -13660,6 +14587,9 @@ func stringsPipelinesIngestionPipelineDefinitionWorkdayReportParameters(c *strin
 }
 
 func stringsServingAiGatewayGuardrailParameters(c *stringsWalk, n *Node, v *serving.AiGatewayGuardrailParameters) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("invalid_keywords") {
 		if len(v.InvalidKeywords) > 0 {
 			cn := n.Child("invalid_keywords")
@@ -13695,6 +14625,9 @@ func stringsServingAiGatewayGuardrailParameters(c *stringsWalk, n *Node, v *serv
 }
 
 func stringsServingExternalModel(c *stringsWalk, n *Node, v *serving.ExternalModel) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("ai21labs_config") {
 		if x := v.Ai21labsConfig; x != nil {
 			ch := n.Child("ai21labs_config")
@@ -13770,6 +14703,9 @@ func stringsServingExternalModel(c *stringsWalk, n *Node, v *serving.ExternalMod
 }
 
 func stringsServingRoute(c *stringsWalk, n *Node, v *serving.Route) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.ServedEntityName == "" && Forced(v.ForceSendFields, "ServedEntityName") {
 		ch := n.Child("served_entity_name")
 		c.fn(&ch, "")
@@ -13793,6 +14729,9 @@ func stringsServingRoute(c *stringsWalk, n *Node, v *serving.Route) {
 }
 
 func stringsCatalogModelServiceConfigDestinationConfig(c *stringsWalk, n *Node, v *catalog.ModelServiceConfigDestinationConfig) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.DestinationType); c.match(s) {
 		ch := n.Child("destination_type")
 		if r, ok := c.fn(&ch, s); ok {
@@ -13826,6 +14765,9 @@ func stringsCatalogModelServiceConfigDestinationConfig(c *stringsWalk, n *Node, 
 }
 
 func stringsCatalogModelServiceConfigFallbackConfig(c *stringsWalk, n *Node, v *catalog.ModelServiceConfigFallbackConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("destinations") {
 		if len(v.Destinations) > 0 {
 			cn := n.Child("destinations")
@@ -13840,6 +14782,9 @@ func stringsCatalogModelServiceConfigFallbackConfig(c *stringsWalk, n *Node, v *
 }
 
 func stringsCatalogModelProviderServiceConfigAmazonBedrockProviderDirectConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigAmazonBedrockProviderDirectConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("aws_access_key") {
 		if x := v.AwsAccessKey; x != nil {
 			ch := n.Child("aws_access_key")
@@ -13865,6 +14810,9 @@ func stringsCatalogModelProviderServiceConfigAmazonBedrockProviderDirectConfig(c
 }
 
 func stringsCatalogModelProviderServiceConfigAnthropicProviderDirectConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigAnthropicProviderDirectConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("api_key") {
 		if x := v.ApiKey; x != nil {
 			ch := n.Child("api_key")
@@ -13874,6 +14822,9 @@ func stringsCatalogModelProviderServiceConfigAnthropicProviderDirectConfig(c *st
 }
 
 func stringsCatalogModelProviderServiceConfigAzureOpenAiProviderDirectConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigAzureOpenAiProviderDirectConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("api_key") {
 		if x := v.ApiKey; x != nil {
 			ch := n.Child("api_key")
@@ -13905,6 +14856,9 @@ func stringsCatalogModelProviderServiceConfigAzureOpenAiProviderDirectConfig(c *
 }
 
 func stringsCatalogModelProviderServiceConfigCustomProviderDirectConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigCustomProviderDirectConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("api_key") {
 		if x := v.ApiKey; x != nil {
 			ch := n.Child("api_key")
@@ -13930,6 +14884,9 @@ func stringsCatalogModelProviderServiceConfigCustomProviderDirectConfig(c *strin
 }
 
 func stringsCatalogModelProviderServiceConfigGeminiEnterpriseProviderDirectConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigGeminiEnterpriseProviderDirectConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("api_key") {
 		if x := v.ApiKey; x != nil {
 			ch := n.Child("api_key")
@@ -13965,6 +14922,9 @@ func stringsCatalogModelProviderServiceConfigGeminiEnterpriseProviderDirectConfi
 }
 
 func stringsCatalogModelProviderServiceConfigMicrosoftFoundryProviderDirectConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigMicrosoftFoundryProviderDirectConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("api_key") {
 		if x := v.ApiKey; x != nil {
 			ch := n.Child("api_key")
@@ -13996,6 +14956,9 @@ func stringsCatalogModelProviderServiceConfigMicrosoftFoundryProviderDirectConfi
 }
 
 func stringsCatalogModelProviderServiceConfigOpenAiProviderDirectConfig(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigOpenAiProviderDirectConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("api_key") {
 		if x := v.ApiKey; x != nil {
 			ch := n.Child("api_key")
@@ -14025,6 +14988,9 @@ func stringsCatalogModelProviderServiceConfigOpenAiProviderDirectConfig(c *strin
 }
 
 func stringsSqlAlertV2Subscription(c *stringsWalk, n *Node, v *sql.AlertV2Subscription) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.DestinationId == "" && Forced(v.ForceSendFields, "DestinationId") {
 		ch := n.Child("destination_id")
 		c.fn(&ch, "")
@@ -14048,6 +15014,9 @@ func stringsSqlAlertV2Subscription(c *stringsWalk, n *Node, v *sql.AlertV2Subscr
 }
 
 func stringsSqlAlertV2OperandValue(c *stringsWalk, n *Node, v *sql.AlertV2OperandValue) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.StringValue == "" && Forced(v.ForceSendFields, "StringValue") {
 		ch := n.Child("string_value")
 		c.fn(&ch, "")
@@ -14061,6 +15030,9 @@ func stringsSqlAlertV2OperandValue(c *stringsWalk, n *Node, v *sql.AlertV2Operan
 }
 
 func stringsDatabaseSyncedTablePipelineProgress(c *stringsWalk, n *Node, v *database.SyncedTablePipelineProgress) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.ProvisioningPhase == "" && Forced(v.ForceSendFields, "ProvisioningPhase") {
 		ch := n.Child("provisioning_phase")
 		c.fn(&ch, "")
@@ -14074,6 +15046,9 @@ func stringsDatabaseSyncedTablePipelineProgress(c *stringsWalk, n *Node, v *data
 }
 
 func stringsDatabaseDeltaTableSyncInfo(c *stringsWalk, n *Node, v *database.DeltaTableSyncInfo) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.DeltaCommitTimestamp == "" && Forced(v.ForceSendFields, "DeltaCommitTimestamp") {
 		ch := n.Child("delta_commit_timestamp")
 		c.fn(&ch, "")
@@ -14087,6 +15062,9 @@ func stringsDatabaseDeltaTableSyncInfo(c *stringsWalk, n *Node, v *database.Delt
 }
 
 func stringsJobsComputeSpec(c *stringsWalk, n *Node, v *jobs.ComputeSpec) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.AcceleratorType); c.match(s) {
 		ch := n.Child("accelerator_type")
 		if r, ok := c.fn(&ch, s); ok {
@@ -14106,6 +15084,9 @@ func stringsJobsComputeSpec(c *stringsWalk, n *Node, v *jobs.ComputeSpec) {
 }
 
 func stringsJobsSubscriptionSubscriber(c *stringsWalk, n *Node, v *jobs.SubscriptionSubscriber) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.DestinationId == "" && Forced(v.ForceSendFields, "DestinationId") {
 		ch := n.Child("destination_id")
 		c.fn(&ch, "")
@@ -14129,6 +15110,9 @@ func stringsJobsSubscriptionSubscriber(c *stringsWalk, n *Node, v *jobs.Subscrip
 }
 
 func stringsJobsSqlTaskSubscription(c *stringsWalk, n *Node, v *jobs.SqlTaskSubscription) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.DestinationId == "" && Forced(v.ForceSendFields, "DestinationId") {
 		ch := n.Child("destination_id")
 		c.fn(&ch, "")
@@ -14152,6 +15136,9 @@ func stringsJobsSqlTaskSubscription(c *stringsWalk, n *Node, v *jobs.SqlTaskSubs
 }
 
 func stringsPipelinesConnectorOptions(c *stringsWalk, n *Node, v *pipelines.ConnectorOptions) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("api_source_connector_options") {
 		if x := v.ApiSourceConnectorOptions; x != nil {
 			ch := n.Child("api_source_connector_options")
@@ -14245,6 +15232,9 @@ func stringsPipelinesConnectorOptions(c *stringsWalk, n *Node, v *pipelines.Conn
 }
 
 func stringsPipelinesIngestionPipelineDefinitionFanoutOptions(c *stringsWalk, n *Node, v *pipelines.IngestionPipelineDefinitionFanoutOptions) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.FanoutBy == "" && Forced(v.ForceSendFields, "FanoutBy") {
 		ch := n.Child("fanout_by")
 		c.fn(&ch, "")
@@ -14269,6 +15259,9 @@ func stringsPipelinesIngestionPipelineDefinitionFanoutOptions(c *stringsWalk, n 
 }
 
 func stringsPipelinesPostgresCatalogConfig(c *stringsWalk, n *Node, v *pipelines.PostgresCatalogConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("slot_config") {
 		if x := v.SlotConfig; x != nil {
 			ch := n.Child("slot_config")
@@ -14278,6 +15271,9 @@ func stringsPipelinesPostgresCatalogConfig(c *stringsWalk, n *Node, v *pipelines
 }
 
 func stringsPipelinesIngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue(c *stringsWalk, n *Node, v *pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Key == "" && Forced(v.ForceSendFields, "Key") {
 		ch := n.Child("key")
 		c.fn(&ch, "")
@@ -14301,6 +15297,9 @@ func stringsPipelinesIngestionPipelineDefinitionWorkdayReportParametersQueryKeyV
 }
 
 func stringsServingAiGatewayGuardrailPiiBehavior(c *stringsWalk, n *Node, v *serving.AiGatewayGuardrailPiiBehavior) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Behavior); c.match(s) {
 		ch := n.Child("behavior")
 		if r, ok := c.fn(&ch, s); ok {
@@ -14310,6 +15309,9 @@ func stringsServingAiGatewayGuardrailPiiBehavior(c *stringsWalk, n *Node, v *ser
 }
 
 func stringsServingAi21LabsConfig(c *stringsWalk, n *Node, v *serving.Ai21LabsConfig) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Ai21labsApiKey == "" && Forced(v.ForceSendFields, "Ai21labsApiKey") {
 		ch := n.Child("ai21labs_api_key")
 		c.fn(&ch, "")
@@ -14333,6 +15335,9 @@ func stringsServingAi21LabsConfig(c *stringsWalk, n *Node, v *serving.Ai21LabsCo
 }
 
 func stringsServingAmazonBedrockConfig(c *stringsWalk, n *Node, v *serving.AmazonBedrockConfig) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.AwsAccessKeyId == "" && Forced(v.ForceSendFields, "AwsAccessKeyId") {
 		ch := n.Child("aws_access_key_id")
 		c.fn(&ch, "")
@@ -14408,6 +15413,9 @@ func stringsServingAmazonBedrockConfig(c *stringsWalk, n *Node, v *serving.Amazo
 }
 
 func stringsServingAnthropicConfig(c *stringsWalk, n *Node, v *serving.AnthropicConfig) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.AnthropicApiKey == "" && Forced(v.ForceSendFields, "AnthropicApiKey") {
 		ch := n.Child("anthropic_api_key")
 		c.fn(&ch, "")
@@ -14431,6 +15439,9 @@ func stringsServingAnthropicConfig(c *stringsWalk, n *Node, v *serving.Anthropic
 }
 
 func stringsServingCohereConfig(c *stringsWalk, n *Node, v *serving.CohereConfig) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.CohereApiBase == "" && Forced(v.ForceSendFields, "CohereApiBase") {
 		ch := n.Child("cohere_api_base")
 		c.fn(&ch, "")
@@ -14464,6 +15475,9 @@ func stringsServingCohereConfig(c *stringsWalk, n *Node, v *serving.CohereConfig
 }
 
 func stringsServingCustomProviderConfig(c *stringsWalk, n *Node, v *serving.CustomProviderConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("api_key_auth") {
 		if x := v.ApiKeyAuth; x != nil {
 			ch := n.Child("api_key_auth")
@@ -14485,6 +15499,9 @@ func stringsServingCustomProviderConfig(c *stringsWalk, n *Node, v *serving.Cust
 }
 
 func stringsServingDatabricksModelServingConfig(c *stringsWalk, n *Node, v *serving.DatabricksModelServingConfig) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.DatabricksApiToken == "" && Forced(v.ForceSendFields, "DatabricksApiToken") {
 		ch := n.Child("databricks_api_token")
 		c.fn(&ch, "")
@@ -14514,6 +15531,9 @@ func stringsServingDatabricksModelServingConfig(c *stringsWalk, n *Node, v *serv
 }
 
 func stringsServingGoogleCloudVertexAiConfig(c *stringsWalk, n *Node, v *serving.GoogleCloudVertexAiConfig) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.PrivateKey == "" && Forced(v.ForceSendFields, "PrivateKey") {
 		ch := n.Child("private_key")
 		c.fn(&ch, "")
@@ -14549,6 +15569,9 @@ func stringsServingGoogleCloudVertexAiConfig(c *stringsWalk, n *Node, v *serving
 }
 
 func stringsServingOpenAiConfig(c *stringsWalk, n *Node, v *serving.OpenAiConfig) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.MicrosoftEntraClientId == "" && Forced(v.ForceSendFields, "MicrosoftEntraClientId") {
 		ch := n.Child("microsoft_entra_client_id")
 		c.fn(&ch, "")
@@ -14662,6 +15685,9 @@ func stringsServingOpenAiConfig(c *stringsWalk, n *Node, v *serving.OpenAiConfig
 }
 
 func stringsServingPaLmConfig(c *stringsWalk, n *Node, v *serving.PaLmConfig) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.PalmApiKey == "" && Forced(v.ForceSendFields, "PalmApiKey") {
 		ch := n.Child("palm_api_key")
 		c.fn(&ch, "")
@@ -14685,6 +15711,9 @@ func stringsServingPaLmConfig(c *stringsWalk, n *Node, v *serving.PaLmConfig) {
 }
 
 func stringsCatalogModelServiceConfigExternalModelConfig(c *stringsWalk, n *Node, v *catalog.ModelServiceConfigExternalModelConfig) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.ModelProviderService); c.match(s) {
 		ch := n.Child("model_provider_service")
 		if r, ok := c.fn(&ch, s); ok {
@@ -14700,6 +15729,9 @@ func stringsCatalogModelServiceConfigExternalModelConfig(c *stringsWalk, n *Node
 }
 
 func stringsCatalogModelServiceConfigPayPerTokenConfig(c *stringsWalk, n *Node, v *catalog.ModelServiceConfigPayPerTokenConfig) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Model); c.match(s) {
 		ch := n.Child("model")
 		if r, ok := c.fn(&ch, s); ok {
@@ -14709,6 +15741,9 @@ func stringsCatalogModelServiceConfigPayPerTokenConfig(c *stringsWalk, n *Node, 
 }
 
 func stringsCatalogModelServiceConfigProvisionedThroughputConfig(c *stringsWalk, n *Node, v *catalog.ModelServiceConfigProvisionedThroughputConfig) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Model == "" && Forced(v.ForceSendFields, "Model") {
 		ch := n.Child("model")
 		c.fn(&ch, "")
@@ -14728,6 +15763,9 @@ func stringsCatalogModelServiceConfigProvisionedThroughputConfig(c *stringsWalk,
 }
 
 func stringsCatalogModelProviderServiceConfigAwsAccessKey(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigAwsAccessKey) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.AccessKeyId == "" && Forced(v.ForceSendFields, "AccessKeyId") {
 		ch := n.Child("access_key_id")
 		c.fn(&ch, "")
@@ -14747,6 +15785,9 @@ func stringsCatalogModelProviderServiceConfigAwsAccessKey(c *stringsWalk, n *Nod
 }
 
 func stringsCatalogModelProviderServiceConfigServiceCredential(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigServiceCredential) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Name); c.match(s) {
 		ch := n.Child("name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -14756,6 +15797,9 @@ func stringsCatalogModelProviderServiceConfigServiceCredential(c *stringsWalk, n
 }
 
 func stringsCatalogModelProviderServiceConfigProviderSecret(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigProviderSecret) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Plaintext == "" && Forced(v.ForceSendFields, "Plaintext") {
 		ch := n.Child("plaintext")
 		c.fn(&ch, "")
@@ -14775,6 +15819,9 @@ func stringsCatalogModelProviderServiceConfigProviderSecret(c *stringsWalk, n *N
 }
 
 func stringsCatalogModelProviderServiceConfigEntraServicePrincipal(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigEntraServicePrincipal) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.ClientId == "" && Forced(v.ForceSendFields, "ClientId") {
 		ch := n.Child("client_id")
 		c.fn(&ch, "")
@@ -14804,6 +15851,9 @@ func stringsCatalogModelProviderServiceConfigEntraServicePrincipal(c *stringsWal
 }
 
 func stringsCatalogModelProviderServiceConfigCustomProviderApiKeyHeaderAuth(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.ApiKeyName == "" && Forced(v.ForceSendFields, "ApiKeyName") {
 		ch := n.Child("api_key_name")
 		c.fn(&ch, "")
@@ -14823,6 +15873,9 @@ func stringsCatalogModelProviderServiceConfigCustomProviderApiKeyHeaderAuth(c *s
 }
 
 func stringsPipelinesApiSourceConnectorOptions(c *stringsWalk, n *Node, v *pipelines.ApiSourceConnectorOptions) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("options") {
 		if len(v.Options) > 0 {
 			cn := n.Child("options")
@@ -14839,6 +15892,9 @@ func stringsPipelinesApiSourceConnectorOptions(c *stringsWalk, n *Node, v *pipel
 }
 
 func stringsPipelinesConfluenceConnectorOptions(c *stringsWalk, n *Node, v *pipelines.ConfluenceConnectorOptions) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("include_confluence_spaces") {
 		if len(v.IncludeConfluenceSpaces) > 0 {
 			cn := n.Child("include_confluence_spaces")
@@ -14855,6 +15911,9 @@ func stringsPipelinesConfluenceConnectorOptions(c *stringsWalk, n *Node, v *pipe
 }
 
 func stringsPipelinesGoogleDriveOptions(c *stringsWalk, n *Node, v *pipelines.GoogleDriveOptions) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.EntityType == "" && Forced(v.ForceSendFields, "EntityType") {
 		ch := n.Child("entity_type")
 		c.fn(&ch, "")
@@ -14884,6 +15943,9 @@ func stringsPipelinesGoogleDriveOptions(c *stringsWalk, n *Node, v *pipelines.Go
 }
 
 func stringsPipelinesGoogleAdsOptions(c *stringsWalk, n *Node, v *pipelines.GoogleAdsOptions) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("custom_report_options") {
 		if x := v.CustomReportOptions; x != nil {
 			ch := n.Child("custom_report_options")
@@ -14909,6 +15971,9 @@ func stringsPipelinesGoogleAdsOptions(c *stringsWalk, n *Node, v *pipelines.Goog
 }
 
 func stringsPipelinesJiraConnectorOptions(c *stringsWalk, n *Node, v *pipelines.JiraConnectorOptions) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("include_jira_spaces") {
 		if len(v.IncludeJiraSpaces) > 0 {
 			cn := n.Child("include_jira_spaces")
@@ -14925,6 +15990,9 @@ func stringsPipelinesJiraConnectorOptions(c *stringsWalk, n *Node, v *pipelines.
 }
 
 func stringsPipelinesKafkaOptions(c *stringsWalk, n *Node, v *pipelines.KafkaOptions) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("client_config") {
 		if len(v.ClientConfig) > 0 {
 			cn := n.Child("client_config")
@@ -14986,6 +16054,9 @@ func stringsPipelinesKafkaOptions(c *stringsWalk, n *Node, v *pipelines.KafkaOpt
 }
 
 func stringsPipelinesLinkedInAdsOptions(c *stringsWalk, n *Node, v *pipelines.LinkedInAdsOptions) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("custom_report_options") {
 		if x := v.CustomReportOptions; x != nil {
 			ch := n.Child("custom_report_options")
@@ -15005,6 +16076,9 @@ func stringsPipelinesLinkedInAdsOptions(c *stringsWalk, n *Node, v *pipelines.Li
 }
 
 func stringsPipelinesMarketoOptions(c *stringsWalk, n *Node, v *pipelines.MarketoOptions) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.SyncStartDate == "" && Forced(v.ForceSendFields, "SyncStartDate") {
 		ch := n.Child("sync_start_date")
 		c.fn(&ch, "")
@@ -15018,6 +16092,9 @@ func stringsPipelinesMarketoOptions(c *stringsWalk, n *Node, v *pipelines.Market
 }
 
 func stringsPipelinesMetaMarketingOptions(c *stringsWalk, n *Node, v *pipelines.MetaMarketingOptions) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("action_attribution_windows") {
 		if len(v.ActionAttributionWindows) > 0 {
 			cn := n.Child("action_attribution_windows")
@@ -15106,6 +16183,9 @@ func stringsPipelinesMetaMarketingOptions(c *stringsWalk, n *Node, v *pipelines.
 }
 
 func stringsPipelinesOutlookOptions(c *stringsWalk, n *Node, v *pipelines.OutlookOptions) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.AttachmentMode == "" && Forced(v.ForceSendFields, "AttachmentMode") {
 		ch := n.Child("attachment_mode")
 		c.fn(&ch, "")
@@ -15230,6 +16310,9 @@ func stringsPipelinesOutlookOptions(c *stringsWalk, n *Node, v *pipelines.Outloo
 }
 
 func stringsPipelinesRabbitmqOptions(c *stringsWalk, n *Node, v *pipelines.RabbitmqOptions) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Queue); c.match(s) {
 		ch := n.Child("queue")
 		if r, ok := c.fn(&ch, s); ok {
@@ -15239,6 +16322,9 @@ func stringsPipelinesRabbitmqOptions(c *stringsWalk, n *Node, v *pipelines.Rabbi
 }
 
 func stringsPipelinesRedditAdsOptions(c *stringsWalk, n *Node, v *pipelines.RedditAdsOptions) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("custom_report_options") {
 		if x := v.CustomReportOptions; x != nil {
 			ch := n.Child("custom_report_options")
@@ -15258,6 +16344,9 @@ func stringsPipelinesRedditAdsOptions(c *stringsWalk, n *Node, v *pipelines.Redd
 }
 
 func stringsPipelinesSharepointOptions(c *stringsWalk, n *Node, v *pipelines.SharepointOptions) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.EntityType == "" && Forced(v.ForceSendFields, "EntityType") {
 		ch := n.Child("entity_type")
 		c.fn(&ch, "")
@@ -15287,6 +16376,9 @@ func stringsPipelinesSharepointOptions(c *stringsWalk, n *Node, v *pipelines.Sha
 }
 
 func stringsPipelinesTikTokAdsOptions(c *stringsWalk, n *Node, v *pipelines.TikTokAdsOptions) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("custom_report_options") {
 		if x := v.CustomReportOptions; x != nil {
 			ch := n.Child("custom_report_options")
@@ -15352,6 +16444,9 @@ func stringsPipelinesTikTokAdsOptions(c *stringsWalk, n *Node, v *pipelines.TikT
 }
 
 func stringsPipelinesZendeskSupportOptions(c *stringsWalk, n *Node, v *pipelines.ZendeskSupportOptions) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.StartDate == "" && Forced(v.ForceSendFields, "StartDate") {
 		ch := n.Child("start_date")
 		c.fn(&ch, "")
@@ -15365,6 +16460,9 @@ func stringsPipelinesZendeskSupportOptions(c *stringsWalk, n *Node, v *pipelines
 }
 
 func stringsPipelinesTransformer(c *stringsWalk, n *Node, v *pipelines.Transformer) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("avro_options") {
 		if x := v.AvroOptions; x != nil {
 			ch := n.Child("avro_options")
@@ -15416,6 +16514,9 @@ func stringsPipelinesTransformer(c *stringsWalk, n *Node, v *pipelines.Transform
 }
 
 func stringsPipelinesPostgresSlotConfig(c *stringsWalk, n *Node, v *pipelines.PostgresSlotConfig) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.PublicationName == "" && Forced(v.ForceSendFields, "PublicationName") {
 		ch := n.Child("publication_name")
 		c.fn(&ch, "")
@@ -15439,6 +16540,9 @@ func stringsPipelinesPostgresSlotConfig(c *stringsWalk, n *Node, v *pipelines.Po
 }
 
 func stringsServingApiKeyAuth(c *stringsWalk, n *Node, v *serving.ApiKeyAuth) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Key); c.match(s) {
 		ch := n.Child("key")
 		if r, ok := c.fn(&ch, s); ok {
@@ -15468,6 +16572,9 @@ func stringsServingApiKeyAuth(c *stringsWalk, n *Node, v *serving.ApiKeyAuth) {
 }
 
 func stringsServingBearerTokenAuth(c *stringsWalk, n *Node, v *serving.BearerTokenAuth) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Token == "" && Forced(v.ForceSendFields, "Token") {
 		ch := n.Child("token")
 		c.fn(&ch, "")
@@ -15491,6 +16598,9 @@ func stringsServingBearerTokenAuth(c *stringsWalk, n *Node, v *serving.BearerTok
 }
 
 func stringsCatalogModelProviderServiceConfigSecretReference(c *stringsWalk, n *Node, v *catalog.ModelProviderServiceConfigSecretReference) {
+	if n.isRef() {
+		return
+	}
 	if s := string(v.Name); c.match(s) {
 		ch := n.Child("name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -15500,6 +16610,9 @@ func stringsCatalogModelProviderServiceConfigSecretReference(c *stringsWalk, n *
 }
 
 func stringsPipelinesFileIngestionOptions(c *stringsWalk, n *Node, v *pipelines.FileIngestionOptions) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.CorruptRecordColumn == "" && Forced(v.ForceSendFields, "CorruptRecordColumn") {
 		ch := n.Child("corrupt_record_column")
 		c.fn(&ch, "")
@@ -15587,6 +16700,9 @@ func stringsPipelinesFileIngestionOptions(c *stringsWalk, n *Node, v *pipelines.
 }
 
 func stringsPipelinesGoogleAdsCustomReportOptions(c *stringsWalk, n *Node, v *pipelines.GoogleAdsCustomReportOptions) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("metrics") {
 		if len(v.Metrics) > 0 {
 			cn := n.Child("metrics")
@@ -15635,6 +16751,9 @@ func stringsPipelinesGoogleAdsCustomReportOptions(c *stringsWalk, n *Node, v *pi
 }
 
 func stringsPipelinesLinkedInAdsOptionsLinkedInAdsCustomReportOptions(c *stringsWalk, n *Node, v *pipelines.LinkedInAdsOptionsLinkedInAdsCustomReportOptions) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("entity_granularity") {
 		if len(v.EntityGranularity) > 0 {
 			cn := n.Child("entity_granularity")
@@ -15676,6 +16795,9 @@ func stringsPipelinesLinkedInAdsOptionsLinkedInAdsCustomReportOptions(c *strings
 }
 
 func stringsPipelinesMetaMarketingOptionsMetaMarketingCustomReportOptions(c *stringsWalk, n *Node, v *pipelines.MetaMarketingOptionsMetaMarketingCustomReportOptions) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("action_attribution_windows") {
 		if len(v.ActionAttributionWindows) > 0 {
 			cn := n.Child("action_attribution_windows")
@@ -15748,6 +16870,9 @@ func stringsPipelinesMetaMarketingOptionsMetaMarketingCustomReportOptions(c *str
 }
 
 func stringsPipelinesRedditAdsOptionsRedditAdsCustomReportOptions(c *stringsWalk, n *Node, v *pipelines.RedditAdsOptionsRedditAdsCustomReportOptions) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("breakdowns") {
 		if len(v.Breakdowns) > 0 {
 			cn := n.Child("breakdowns")
@@ -15777,6 +16902,9 @@ func stringsPipelinesRedditAdsOptionsRedditAdsCustomReportOptions(c *stringsWalk
 }
 
 func stringsPipelinesTikTokAdsOptionsTikTokAdsCustomReportOptions(c *stringsWalk, n *Node, v *pipelines.TikTokAdsOptionsTikTokAdsCustomReportOptions) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.DataLevel == "" && Forced(v.ForceSendFields, "DataLevel") {
 		ch := n.Child("data_level")
 		c.fn(&ch, "")
@@ -15826,6 +16954,9 @@ func stringsPipelinesTikTokAdsOptionsTikTokAdsCustomReportOptions(c *stringsWalk
 }
 
 func stringsPipelinesAvroTransformerOptions(c *stringsWalk, n *Node, v *pipelines.AvroTransformerOptions) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.ParseMode == "" && Forced(v.ForceSendFields, "ParseMode") {
 		ch := n.Child("parse_mode")
 		c.fn(&ch, "")
@@ -15865,6 +16996,9 @@ func stringsPipelinesAvroTransformerOptions(c *stringsWalk, n *Node, v *pipeline
 }
 
 func stringsPipelinesJsonTransformerOptions(c *stringsWalk, n *Node, v *pipelines.JsonTransformerOptions) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Schema == "" && Forced(v.ForceSendFields, "Schema") {
 		ch := n.Child("schema")
 		c.fn(&ch, "")
@@ -15908,6 +17042,9 @@ func stringsPipelinesJsonTransformerOptions(c *stringsWalk, n *Node, v *pipeline
 }
 
 func stringsPipelinesProtobufTransformerOptions(c *stringsWalk, n *Node, v *pipelines.ProtobufTransformerOptions) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.DescFilePath == "" && Forced(v.ForceSendFields, "DescFilePath") {
 		ch := n.Child("desc_file_path")
 		c.fn(&ch, "")
@@ -15947,6 +17084,9 @@ func stringsPipelinesProtobufTransformerOptions(c *stringsWalk, n *Node, v *pipe
 }
 
 func stringsPipelinesFileFilter(c *stringsWalk, n *Node, v *pipelines.FileFilter) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.ModifiedAfter == "" && Forced(v.ForceSendFields, "ModifiedAfter") {
 		ch := n.Child("modified_after")
 		c.fn(&ch, "")
@@ -15980,6 +17120,9 @@ func stringsPipelinesFileFilter(c *stringsWalk, n *Node, v *pipelines.FileFilter
 }
 
 func stringsPipelinesSchemaRegistryConfig(c *stringsWalk, n *Node, v *pipelines.SchemaRegistryConfig) {
+	if n.isRef() {
+		return
+	}
 	if !n.IsRef("confluent_options") {
 		if x := v.ConfluentOptions; x != nil {
 			ch := n.Child("confluent_options")
@@ -16009,6 +17152,9 @@ func stringsPipelinesSchemaRegistryConfig(c *stringsWalk, n *Node, v *pipelines.
 }
 
 func stringsPipelinesConfluentSchemaRegistryOptions(c *stringsWalk, n *Node, v *pipelines.ConfluentSchemaRegistryOptions) {
+	if n.isRef() {
+		return
+	}
 	if c.mode == EmptyFields && v.Subject == "" && Forced(v.ForceSendFields, "Subject") {
 		ch := n.Child("subject")
 		c.fn(&ch, "")
