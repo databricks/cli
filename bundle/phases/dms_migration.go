@@ -3,6 +3,7 @@ package phases
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/dmsmigration"
@@ -15,8 +16,8 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 )
 
-// MigrateToDMS commits deployment history before ordinary deployment planning begins.
-func MigrateToDMS(ctx context.Context, b *bundle.Bundle) {
+// MigrateToDMS commits deployment history and returns its state descriptor before ordinary deployment planning begins.
+func MigrateToDMS(ctx context.Context, b *bundle.Bundle) (state *statemgmt.StateDesc) {
 	bundle.ApplyContext(ctx, b, lock.Acquire(lock.GoalDeploy))
 	if logdiag.HasError(ctx) {
 		return
@@ -24,14 +25,10 @@ func MigrateToDMS(ctx context.Context, b *bundle.Bundle) {
 	defer bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 
 	db := &b.DeploymentBundle.StateDB
-	defer func() {
-		if _, err := db.Finalize(ctx); err != nil {
-			logdiag.LogError(ctx, err)
-		}
-	}()
+	defer db.Close()
 
 	// Another deploy may have completed since the command's initial state read.
-	state := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true))
+	state = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true))
 	if logdiag.HasError(ctx) {
 		return
 	}
@@ -52,10 +49,7 @@ func MigrateToDMS(ctx context.Context, b *bundle.Bundle) {
 		}
 		b.MigratingToDirect = false
 	}
-	if _, err := db.Finalize(ctx); err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
+	db.Close()
 	if !state.Engine.IsDirect() {
 		logdiag.LogError(ctx, fmt.Errorf("deployment state changed to %s while enabling deployment history; retry the deployment", state.Engine))
 		return
@@ -93,4 +87,11 @@ func MigrateToDMS(ctx context.Context, b *bundle.Bundle) {
 	}
 	logDeploymentVersion(ctx, b, "Deployment history enabled")
 	statemgmt.PushResourcesState(ctx, b)
+	state.Serial = db.GetSerial()
+	state.Lineage = db.Data.Lineage
+	state.Features = db.StateFeatures()
+	state.SourcePath = filepath.ToSlash(db.Path)
+	state.IsLocal = true
+	state.Content = nil
+	return
 }

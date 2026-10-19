@@ -352,24 +352,19 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			return b, stateDesc, errors.New("migrating to deployment history does not support --plan; run 'bundle deploy' without --plan")
 		}
 		if migrateToDMS {
-			phases.MigrateToDMS(ctx, b)
+			stateDesc = phases.MigrateToDMS(ctx, b)
 			if logdiag.HasError(ctx) {
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
-			stateDesc = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true))
-			if logdiag.HasError(ctx) {
-				return b, stateDesc, root.ErrAlreadyPrinted
-			}
-			resolveDeploymentHistory(ctx, b, stateDesc)
 		}
 
 		// Open direct engine state once for all subsequent operations (ExportState, CalculatePlan, Apply, etc.)
 		// A migrated-from-Terraform state is already open (seeded in memory above), so skip the disk open.
 		needDirectState := stateDesc.Engine.IsDirect() && needsState
 		var localPath string
-		if needDirectState {
+		if needDirectState && !b.DeploymentBundle.StateDB.IsOpen() {
 			_, localPath = b.StateFilenameDirect(ctx)
-			if !b.DeploymentBundle.StateDB.IsOpen() && !stateDesc.IsDMS() {
+			if !stateDesc.IsDMS() {
 				if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
 					logdiag.LogError(ctx, err)
 					return b, stateDesc, root.ErrAlreadyPrinted

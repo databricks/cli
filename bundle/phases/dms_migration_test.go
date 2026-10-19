@@ -43,9 +43,12 @@ func TestMigrateToDMSAlreadyRecorded(t *testing.T) {
 	require.NoError(t, os.WriteFile(statePath, content, 0o600))
 	b.DeploymentBundle.StateDB.OpenWithData(statePath, dstate.NewDatabase("lineage", 1))
 
-	phases.MigrateToDMS(ctx, b)
+	state := phases.MigrateToDMS(ctx, b)
 
 	require.False(t, logdiag.HasError(ctx), "%v", logdiag.FlushCollected(ctx))
+	require.NotNil(t, state)
+	assert.True(t, state.IsDMS())
+	assert.Equal(t, 2, state.Serial)
 	assert.False(t, b.MigratingToDirect)
 	assert.False(t, b.DeploymentBundle.StateDB.IsOpen())
 	after, err := os.ReadFile(statePath)

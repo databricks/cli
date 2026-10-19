@@ -49,6 +49,37 @@ func TestFinalizeWithNoEntriesDoesNotWriteStateFile(t *testing.T) {
 	assert.ErrorIs(t, err, os.ErrNotExist)
 }
 
+func TestCloseReadState(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "resources.json")
+	var db DeploymentState
+	db.OpenWithData(path, NewDatabase("lineage", 1))
+	require.NoError(t, db.Persist())
+	before, err := os.ReadFile(path)
+	require.NoError(t, err)
+	db.Data.Serial = 99
+
+	db.Close()
+	db.Close()
+
+	assert.False(t, db.IsOpen())
+	after, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Equal(t, before, after)
+	require.NoError(t, db.Open(t.Context(), path, WithRecovery(false), WithWrite(false), WithDeploymentHistory(false), OpenDmsArgs{}))
+	assert.Equal(t, 1, db.GetSerial())
+	db.Close()
+}
+
+func TestCloseRefusesWritableState(t *testing.T) {
+	var db DeploymentState
+	db.OpenWithData(filepath.Join(t.TempDir(), "resources.json"), NewDatabase("lineage", 1))
+	require.NoError(t, db.UpgradeToWrite())
+	defer mustFinalize(t, &db)
+
+	assert.PanicsWithValue(t, "internal error: DeploymentState must be opened in read mode", db.Close)
+	assert.True(t, db.IsOpen())
+}
+
 func TestDataForFileSerial(t *testing.T) {
 	tests := []struct {
 		name       string
