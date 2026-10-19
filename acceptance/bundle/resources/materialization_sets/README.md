@@ -20,7 +20,8 @@ server is a removal.
 |---|---|
 | `basic` | create through the long-running operation, then a redeploy that plans nothing -- the server-assigned schedule state and the output-only member fields must not read as drift |
 | `bind` | unbinding leaves the set in the workspace and the plan reports `create`, which is the out-of-band shape; binding it back settles the first plan to `skip`, with the destination suppressed exactly as on a bundle-created set |
-| `membership` | the delete cascade is per feature and runs both ways -- removing either member of a feature's pair on its own is refused, a feature contributing one member can have it removed alone, and removing a whole pair plans as `update` with the surviving members keeping their ids |
+| `membership` | the delete cascade runs both ways -- removing either member of a feature's pair on its own is refused, while removing a whole pair plans as `update` and the other feature's pair keeps its ids |
+| `removal_scope` | the cascade is scoped per feature: where every feature is materialized offline only, each contributes one member and can have it removed alone |
 | `schedule_state` | a member the config leaves unset adopts the state the server assigned; a declared change to it is a `recreate`, and that recreate still has to satisfy the create endpoint's rule that a feature's members agree |
 | `immutable` | a write-once member field is caught by the planner as `recreate` and never reaches the server; adding a member routes to `update` so the server refuses it by name |
 | `destination` | a destination field the server accepts on write and never returns on read is not drift, while a repoint the config actually asked for still recreates -- the two are told apart by whether the persisted value is recoverable |
@@ -44,45 +45,65 @@ either type fails there with `operations.resource_key must have a known resource
 Select the `DMS=` leg for a cloud run until that allowlist includes them. The local `DMS=true` leg
 does run, because the fake only requires the key to carry a prefix at all.
 
-### The other cases
+### Running a cloud leg
 
-`basic`, `bind`, `destination`, `immutable`, `membership` and `schedule_state` are local only. Two of
-them are planner assertions a workspace cannot strengthen -- `bind` and `destination` both pin a skip
-reason the planner derives with no server involvement -- so converting those buys little. The other
-four do make claims about the server.
+Six cases carry `Cloud = true`: `batch`, `sawtooth`, `streaming`, `immutable`, `membership` and
+`removal_scope`. `basic`, `bind`, `destination` and `schedule_state` stay local, because every
+server-dependent claim they make is already exercised by `batch`.
 
-To convert one, add to `test.toml`:
+The cases default to the shared acceptance schema; override `MATSET_CATALOG`, `MATSET_SCHEMA`,
+`MATSET_ONLINE_STORE` to move them. These reach the script because the harness forwards ambient
+environment to the CLI subprocess, minus the SDK's own auth variables, which it replaces with the
+ones it resolved.
 
-```toml
-Cloud = true
-Env.DATABRICKS_LITESWAP_TARGET = "<liteswap unit>"
+```bash
+TOK=$(databricks auth token -p <profile> -o json | jq -r .access_token)
+DATABRICKS_CONFIG_FILE=/dev/null DATABRICKS_HOST=<workspace host> DATABRICKS_TOKEN="$TOK" CLOUD_ENV=aws TEST_DEFAULT_WAREHOUSE_ID=<warehouse> DATABRICKS_LITESWAP_TARGET=<liteswap unit>   go test . -run 'TestAccept/bundle/resources/materialization_sets/<case>/DMS=$'
 ```
 
-The env var takes the unit name only -- `liteswap.Apply` prepends `testenv://liteswap/`. Passing the
-full traffic id routes to base staging instead, where these endpoints do not exist.
+Four parts of that are load-bearing:
 
-Three fixture changes are needed first, because the local names are only valid against the fake:
+- **`DATABRICKS_CONFIG_FILE=/dev/null`.** With `RecordRequests = true` the harness proxies the run
+  and hands the subprocess a config carrying the *resolved config-file path*. The subprocess then
+  re-reads it and can fall back to `[__settings__] default_profile`, whose credentials have nothing
+  to do with the workspace under test. The symptom is a token refresh against
+  `/oidc/accounts/<some other account>/v1/token`.
+- **A token rather than a profile.** The harness flattens its resolved auth into environment
+  variables, which overrides a `workspace: profile:` pinned in the bundle. A profile whose
+  `auth_type` is `databricks-cli` therefore gets re-resolved in the subprocess without the profile.
+- **`/DMS=$`.** The `DMS=true` leg cannot run against a workspace: the bundle deployments API
+  rejects `features.` and `materialization_sets.` as resource-type prefixes.
+- **The unit name only** in `DATABRICKS_LITESWAP_TARGET` -- `liteswap.Apply` prepends
+  `testenv://liteswap/`. Passing the full traffic id routes to base staging, where these endpoints
+  do not exist.
 
-1. **Catalog and schema.** Declare `catalogs` and `schemas` resources using the harness's
-   `UNIQUE_NAME` and reference them from the feature names, so parallel runs do not collide.
-2. **Online store.** `online_store_name` must name a store that exists on the target workspace.
-3. **Features must exist.** Declare the `features` resources the set members reference, and
-   reference them as `${resources.features.<key>.full_name}` so the engine orders the feature before
-   the set. The fake does not check that a member's feature exists and the real API does; a bare name
-   also leaves the create racing the feature, which is what made `sawtooth` flaky.
-
-A fourth rule used to bite and no longer does: every feature in a set must name the same
-`catalog_name`, `schema_name` and `table_name_prefix`, or the create is refused with
-`All features must share the same materialization destination.` The fake does not check this, so the
-multi-feature fixtures declare one shared destination already.
-
-The workspace also needs a declarative feature preview enabled -- `validateAnyDeclarativePreviewEnabled`
+The workspace needs a declarative feature preview enabled -- `validateAnyDeclarativePreviewEnabled`
 rejects every create otherwise, with `declarativePreviewsNotEnabled`.
+
+### Two destination rules the fixtures have to satisfy
+
+Both are enforced on create by `BatchMaterializationUtils`, and both are now mirrored in the fake,
+so an invalid fixture fails locally instead of only on cloud.
+
+1. **Every feature in a set must ask for an identical destination *pair*.** The compared value is
+   `(offlineStoreConfig, Option[onlineStoreConfig])` per feature, so matching catalog, schema and
+   prefix is not enough: a set cannot mix a feature materialized to both stores with one
+   materialized offline only. That is why `membership` gives every feature a pair and
+   `removal_scope` gives every feature an offline member alone -- the rule makes those two shapes
+   mutually exclusive within one set, which is why they cannot be one case.
+2. **A feature's offline and online destinations must differ** in catalog, schema or prefix. The
+   fixtures suffix the offline prefix with `_off`.
+
+A third thing the fake does not check: that a member's feature exists. Declare the `features`
+resources and reference them as `${resources.features.<key>.full_name}`, which also orders the
+feature before the set -- a bare name leaves the create racing the feature, which is what made
+`sawtooth` flaky.
 
 ## Verified against a workspace, with no case of their own
 
 Run through the `daniel-bai-fs2680` swap on 2026-10-19, against a build carrying the write-once
-schedule state.
+schedule state. Every `Cloud = true` case passed on that run, so their goldens -- including
+`batch`'s recreate carrying `PAUSED` on both members -- are confirmed against the real API.
 
 - **Creation across member kinds.** A batch feature with both destinations; two features sharing one
   destination with a pair each; a sawtooth triple; a lone streaming RTM member. The sad paths too:
@@ -103,10 +124,6 @@ a legal update. With no mutable member field left, the only update is a removal,
 mixed update to construct.
 
 ## Not covered yet
-
-- **A recreate carrying `PAUSED` on every member.** The two server rules it rests on were checked
-  live -- agreeing members create, disagreeing ones are refused -- but not `PAUSED` on create itself.
-  This is the one claim in `batch`'s golden a workspace has not confirmed.
 
 - **A set's materialized output tables outlive it.** `bundle destroy` removes the set and its
   features, leaving each offline materialization's `*_partial_aggregates` table behind. A cloud case

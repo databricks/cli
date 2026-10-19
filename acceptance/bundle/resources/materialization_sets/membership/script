@@ -1,94 +1,52 @@
-set_members() {
-    $CLI bundle summary -o json | jq '.resources.materialization_sets.set1.materialized_features | map({feature_name, is_online})'
+export CATALOG_NAME="${MATSET_CATALOG:-main}"
+export SCHEMA_NAME="${MATSET_SCHEMA:-materialization_set_acceptance_test}"
+export ONLINE_STORE_NAME="${MATSET_ONLINE_STORE:-danielb}"
+export TABLE_NAME="$CATALOG_NAME.$SCHEMA_NAME.src_$UNIQUE_NAME"
+export PREFIX="mat_$UNIQUE_NAME"
+
+# Each phase is its own template rather than a string edit, so the membership a phase declares is
+# readable on its own.
+render() {
+    envsubst < "$1" > databricks.yml
+    [ -n "${MATSET_PROFILE:-}" ] || return 0
+    printf "\nworkspace:\n  profile: %s\n" "$MATSET_PROFILE" >> databricks.yml
 }
 
 set_action() {
     jq '.plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action)' out.plan.json
 }
 
+set_members() {
+    $CLI bundle summary -o json | jq '.resources.materialization_sets.set1.materialized_features | map({feature_name, is_online})'
+}
+
+cleanup() {
+    $CLI bundle destroy --auto-approve > /dev/null 2>&1 || true
+    $CLI tables delete "$TABLE_NAME" > /dev/null 2>&1 || true
+}
+trap cleanup EXIT
+
+trace create_table.py "$TABLE_NAME"
+render databricks.yml.tmpl
+
 trace $CLI bundle deploy
-trace print_requests.py //materialization-sets
 
-title "The cascade is per feature and runs both ways. Removing featA's online member alone is"
+title "The cascade is per feature and runs both ways. Removing feata's online member alone is"
 title "refused, because the delete also reaches the offline member the config still declares"
-trace update_file.py databricks.yml '        - feature_name: main.myschema.featA
-          online_store_config:
-            online_store_name: danielb
-            catalog_name: main
-            schema_name: myschema
-            table_name_prefix: shared
-' ''
+render no-online.yml.tmpl
 trace musterr $CLI bundle deploy --auto-approve
-rm -f "$OUT_REQUESTS"
 
-title "And removing featA's offline member alone is refused for the same reason, from the other"
+title "And removing feata's offline member alone is refused for the same reason, from the other"
 title "direction"
-trace update_file.py databricks.yml '        - feature_name: main.myschema.featA
-          offline_store_config:
-            catalog_name: main
-            schema_name: myschema
-            table_name_prefix: shared
-' '        - feature_name: main.myschema.featA
-          online_store_config:
-            online_store_name: danielb
-            catalog_name: main
-            schema_name: myschema
-            table_name_prefix: shared
-'
+render no-offline.yml.tmpl
 trace musterr $CLI bundle deploy --auto-approve
-rm -f "$OUT_REQUESTS"
 
-title "A feature contributing one member can have it removed alone: the cascade set is that one"
-title "member, and the features the request says nothing about are untouched"
-trace update_file.py databricks.yml '        - feature_name: main.myschema.featA
-          online_store_config:
-            online_store_name: danielb
-            catalog_name: main
-            schema_name: myschema
-            table_name_prefix: shared
-' '        - feature_name: main.myschema.featA
-          offline_store_config:
-            catalog_name: main
-            schema_name: myschema
-            table_name_prefix: shared
-        - feature_name: main.myschema.featA
-          online_store_config:
-            online_store_name: danielb
-            catalog_name: main
-            schema_name: myschema
-            table_name_prefix: shared
-'
-trace update_file.py databricks.yml '        - feature_name: main.myschema.featB
-          offline_store_config:
-            catalog_name: main
-            schema_name: myschema
-            table_name_prefix: shared
-' ''
+title "Removing a whole feature's pair plans as update, not recreate, and the other feature's"
+title "members keep their ids, so the set was reconciled rather than rebuilt"
+render no-feata.yml.tmpl
 trace $CLI bundle plan -o json > out.plan.json
 trace set_action
 trace $CLI bundle deploy --auto-approve
 trace set_members
 
-title "Removing a whole feature's pair plans as update, not recreate, and the surviving member"
-title "keeps its id, so the set was reconciled rather than rebuilt"
-trace update_file.py databricks.yml '        - feature_name: main.myschema.featA
-          offline_store_config:
-            catalog_name: main
-            schema_name: myschema
-            table_name_prefix: shared
-        - feature_name: main.myschema.featA
-          online_store_config:
-            online_store_name: danielb
-            catalog_name: main
-            schema_name: myschema
-            table_name_prefix: shared
-' ''
-trace $CLI bundle plan -o json > out.plan.json
-trace set_action
-trace $CLI bundle deploy --auto-approve
-trace print_requests.py //materialization-sets
-trace set_members
-
-trace $CLI bundle destroy --auto-approve
-
-rm -f out.requests.txt out.plan.json
+rm -f out.plan.json

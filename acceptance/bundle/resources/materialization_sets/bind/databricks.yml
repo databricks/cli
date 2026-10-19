@@ -9,7 +9,7 @@ resources:
           offline_store_config:
             catalog_name: main
             schema_name: myschema
-            table_name_prefix: shared
+            table_name_prefix: shared_off
         - feature_name: main.myschema.bindfeat
           online_store_config:
             online_store_name: danielb

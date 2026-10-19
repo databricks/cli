@@ -1,131 +1,45 @@
 
+>>> create_table.py main.materialization_set_acceptance_test.src_[UNIQUE_NAME]
+Created table main.materialization_set_acceptance_test.src_[UNIQUE_NAME]
+Inserted sample data into main.materialization_set_acceptance_test.src_[UNIQUE_NAME]
+Table main.materialization_set_acceptance_test.src_[UNIQUE_NAME] is now visible (catalog_name=main)
+
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-membership-[UNIQUE_NAME]/default/files...
+Created features.feata
+Created features.featb
 Created materialization_sets.set1
-Files: 1 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+Files: 5 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py //materialization-sets
-{
-  "method": "POST",
-  "path": "/api/2.0/feature-engineering/materialization-sets",
-  "q": {
-    "request_id": "[UUID]"
-  },
-  "body": {
-    "materialized_features": [
-      {
-        "feature_name": "main.myschema.featA",
-        "offline_store_config": {
-          "catalog_name": "main",
-          "schema_name": "myschema",
-          "table_name_prefix": "shared"
-        }
-      },
-      {
-        "feature_name": "main.myschema.featA",
-        "online_store_config": {
-          "catalog_name": "main",
-          "online_store_name": "danielb",
-          "schema_name": "myschema",
-          "table_name_prefix": "shared"
-        }
-      },
-      {
-        "feature_name": "main.myschema.featB",
-        "offline_store_config": {
-          "catalog_name": "main",
-          "schema_name": "myschema",
-          "table_name_prefix": "shared"
-        }
-      },
-      {
-        "feature_name": "main.myschema.featC",
-        "offline_store_config": {
-          "catalog_name": "main",
-          "schema_name": "myschema",
-          "table_name_prefix": "shared"
-        }
-      }
-    ]
-  }
-}
-
-=== The cascade is per feature and runs both ways. Removing featA's online member alone is
+=== The cascade is per feature and runs both ways. Removing feata's online member alone is
 === refused, because the delete also reaches the offline member the config still declares
->>> update_file.py databricks.yml         - feature_name: main.myschema.featA
-          online_store_config:
-            online_store_name: danielb
-            catalog_name: main
-            schema_name: myschema
-            table_name_prefix: shared
- 
-
 >>> musterr [CLI] bundle deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Changing one materialized feature of feature 'main.myschema.featA' also changes '[UUID]', which the request does not change. Apply the same change to every materialized feature of the feature. (400 INVALID_PARAMETER_VALUE)
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-membership-[UNIQUE_NAME]/default/files...
+Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Changing one materialized feature of feature 'main.materialization_set_acceptance_test.feata_[UNIQUE_NAME]' also changes '[UUID]', which the request does not change. Apply the same change to every materialized feature of the feature. (400 INVALID_PARAMETER_VALUE)
 
 Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?update_mask=materialized_features
 HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
-API message: Changing one materialized feature of feature 'main.myschema.featA' also changes '[UUID]', which the request does not change. Apply the same change to every materialized feature of the feature.
+API message: Changing one materialized feature of feature 'main.materialization_set_acceptance_test.feata_[UNIQUE_NAME]' also changes '[UUID]', which the request does not change. Apply the same change to every materialized feature of the feature.
 
 Files: 1 uploaded, 0 deleted
 
-=== And removing featA's offline member alone is refused for the same reason, from the other
+=== And removing feata's offline member alone is refused for the same reason, from the other
 === direction
->>> update_file.py databricks.yml         - feature_name: main.myschema.featA
-          offline_store_config:
-            catalog_name: main
-            schema_name: myschema
-            table_name_prefix: shared
-         - feature_name: main.myschema.featA
-          online_store_config:
-            online_store_name: danielb
-            catalog_name: main
-            schema_name: myschema
-            table_name_prefix: shared
-
-
 >>> musterr [CLI] bundle deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Changing one materialized feature of feature 'main.myschema.featA' also changes '[UUID]', which the request does not change. Apply the same change to every materialized feature of the feature. (400 INVALID_PARAMETER_VALUE)
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-membership-[UNIQUE_NAME]/default/files...
+Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Changing one materialized feature of feature 'main.materialization_set_acceptance_test.feata_[UNIQUE_NAME]' also changes '[UUID]', which the request does not change. Apply the same change to every materialized feature of the feature. (400 INVALID_PARAMETER_VALUE)
 
 Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?update_mask=materialized_features
 HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
-API message: Changing one materialized feature of feature 'main.myschema.featA' also changes '[UUID]', which the request does not change. Apply the same change to every materialized feature of the feature.
+API message: Changing one materialized feature of feature 'main.materialization_set_acceptance_test.feata_[UNIQUE_NAME]' also changes '[UUID]', which the request does not change. Apply the same change to every materialized feature of the feature.
 
 Files: 1 uploaded, 0 deleted
 
-=== A feature contributing one member can have it removed alone: the cascade set is that one
-=== member, and the features the request says nothing about are untouched
->>> update_file.py databricks.yml         - feature_name: main.myschema.featA
-          online_store_config:
-            online_store_name: danielb
-            catalog_name: main
-            schema_name: myschema
-            table_name_prefix: shared
-         - feature_name: main.myschema.featA
-          offline_store_config:
-            catalog_name: main
-            schema_name: myschema
-            table_name_prefix: shared
-        - feature_name: main.myschema.featA
-          online_store_config:
-            online_store_name: danielb
-            catalog_name: main
-            schema_name: myschema
-            table_name_prefix: shared
-
-
->>> update_file.py databricks.yml         - feature_name: main.myschema.featB
-          offline_store_config:
-            catalog_name: main
-            schema_name: myschema
-            table_name_prefix: shared
- 
-
+=== Removing a whole feature's pair plans as update, not recreate, and the other feature's
+=== members keep their ids, so the set was reconciled rather than rebuilt
 >>> [CLI] bundle plan -o json
 
 >>> set_action
@@ -134,126 +48,19 @@ Files: 1 uploaded, 0 deleted
 }
 
 >>> [CLI] bundle deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-membership-[UNIQUE_NAME]/default/files...
 Updated materialization_sets.set1
 Files: 2 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
 
 >>> set_members
 [
   {
-    "feature_name": "main.myschema.featA",
+    "feature_name": "${resources.features.featb.full_name}",
     "is_online": null
   },
   {
-    "feature_name": "main.myschema.featA",
-    "is_online": null
-  },
-  {
-    "feature_name": "main.myschema.featC",
+    "feature_name": "${resources.features.featb.full_name}",
     "is_online": null
   }
 ]
-
-=== Removing a whole feature's pair plans as update, not recreate, and the surviving member
-=== keeps its id, so the set was reconciled rather than rebuilt
->>> update_file.py databricks.yml         - feature_name: main.myschema.featA
-          offline_store_config:
-            catalog_name: main
-            schema_name: myschema
-            table_name_prefix: shared
-        - feature_name: main.myschema.featA
-          online_store_config:
-            online_store_name: danielb
-            catalog_name: main
-            schema_name: myschema
-            table_name_prefix: shared
- 
-
->>> [CLI] bundle plan -o json
-
->>> set_action
-{
-  "resources.materialization_sets.set1": "update"
-}
-
->>> [CLI] bundle deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Updated materialization_sets.set1
-Files: 2 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
-
->>> print_requests.py //materialization-sets
-{
-  "method": "PATCH",
-  "path": "/api/2.0/feature-engineering/materialization-sets/[UUID]",
-  "q": {
-    "update_mask": "materialized_features"
-  },
-  "body": {
-    "materialization_set_id": "[UUID]",
-    "materialized_features": [
-      {
-        "feature_name": "main.myschema.featA",
-        "offline_store_config": {
-          "catalog_name": "main",
-          "schema_name": "myschema",
-          "table_name_prefix": "shared"
-        }
-      },
-      {
-        "feature_name": "main.myschema.featA",
-        "online_store_config": {
-          "catalog_name": "main",
-          "online_store_name": "danielb",
-          "schema_name": "myschema",
-          "table_name_prefix": "shared"
-        }
-      },
-      {
-        "feature_name": "main.myschema.featC",
-        "offline_store_config": {
-          "catalog_name": "main",
-          "schema_name": "myschema",
-          "table_name_prefix": "shared"
-        }
-      }
-    ]
-  }
-}
-{
-  "method": "PATCH",
-  "path": "/api/2.0/feature-engineering/materialization-sets/[UUID]",
-  "q": {
-    "update_mask": "materialized_features"
-  },
-  "body": {
-    "materialization_set_id": "[UUID]",
-    "materialized_features": [
-      {
-        "feature_name": "main.myschema.featC",
-        "offline_store_config": {
-          "catalog_name": "main",
-          "schema_name": "myschema",
-          "table_name_prefix": "shared"
-        }
-      }
-    ]
-  }
-}
-
->>> set_members
-[
-  {
-    "feature_name": "main.myschema.featC",
-    "is_online": null
-  }
-]
-
->>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.materialization_sets.set1
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
-
-Destroy: 1 deleted

@@ -90,6 +90,74 @@ func validateBatchPipelineScheduleStates(members []ml.MaterializedFeature) *Resp
 	return nil
 }
 
+// featureMaterializationDestination renders the destination pair the create compares across
+// features: a feature's offline config plus the online config it is also materialized to, if any.
+func featureMaterializationDestination(members []ml.MaterializedFeature) string {
+	offline, online := "", ""
+	for _, member := range members {
+		if cfg := member.OfflineStoreConfig; cfg != nil {
+			offline = cfg.CatalogName + "." + cfg.SchemaName + "." + cfg.TableNamePrefix
+		}
+		if cfg := member.OnlineStoreConfig; cfg != nil {
+			online = cfg.OnlineStoreName + ":" + cfg.CatalogName + "." + cfg.SchemaName + "." +
+				cfg.TableNamePrefix
+		}
+	}
+	return offline + "|" + online
+}
+
+// validateSharedMaterializationDestination mirrors the create-path rule that every feature in a
+// set asks for an identical destination pair. Because the pair carries the online config, a set
+// cannot mix a feature materialized to both stores with one materialized offline only.
+func validateSharedMaterializationDestination(members []ml.MaterializedFeature) *Response {
+	membersByFeature := map[string][]ml.MaterializedFeature{}
+	featureOrder := []string{}
+	for _, member := range members {
+		if _, seen := membersByFeature[member.FeatureName]; !seen {
+			featureOrder = append(featureOrder, member.FeatureName)
+		}
+		membersByFeature[member.FeatureName] = append(membersByFeature[member.FeatureName], member)
+	}
+
+	destinations := map[string]bool{}
+	for _, featureName := range featureOrder {
+		destinations[featureMaterializationDestination(membersByFeature[featureName])] = true
+	}
+	if len(destinations) > 1 {
+		response := materializationSetError(http.StatusBadRequest, "BAD_REQUEST",
+			"All features must share the same materialization destination.")
+		return &response
+	}
+	return validateOfflineAndOnlineDestinationsDiffer(members)
+}
+
+// validateOfflineAndOnlineDestinationsDiffer mirrors the create-path rule that a feature
+// materialized to both stores must separate them by catalog, schema or prefix.
+func validateOfflineAndOnlineDestinationsDiffer(members []ml.MaterializedFeature) *Response {
+	var offline *ml.OfflineStoreConfig
+	var online *ml.OnlineStoreConfig
+	for _, member := range members {
+		if member.OfflineStoreConfig != nil {
+			offline = member.OfflineStoreConfig
+		}
+		if member.OnlineStoreConfig != nil {
+			online = member.OnlineStoreConfig
+		}
+	}
+	if offline == nil || online == nil {
+		return nil
+	}
+	if online.CatalogName != offline.CatalogName || online.SchemaName != offline.SchemaName ||
+		online.TableNamePrefix != offline.TableNamePrefix {
+		return nil
+	}
+	response := materializationSetError(http.StatusBadRequest, "BAD_REQUEST",
+		fmt.Sprintf("Offline and online materialization destinations must differ. Found "+
+			"identical catalog names '%s', schema names '%s', and table name prefixes '%s'.",
+			offline.CatalogName, offline.SchemaName, offline.TableNamePrefix))
+	return &response
+}
+
 // sawtoothMaterializedFeatureCount is how many materialized features a sawtooth window produces:
 // an offline batch one, an online batch one and an online streaming one.
 const sawtoothMaterializedFeatureCount = 3
@@ -165,6 +233,9 @@ func (s *FakeWorkspace) MaterializationSetsCreate(req Request) Response {
 			"A materialization set requires at least one materialized feature.")
 	}
 	if bad := validateBatchPipelineScheduleStates(set.MaterializedFeatures); bad != nil {
+		return *bad
+	}
+	if bad := validateSharedMaterializationDestination(set.MaterializedFeatures); bad != nil {
 		return *bad
 	}
 	if bad := s.validateSawtoothMaterializedFeatures(set.MaterializedFeatures); bad != nil {
