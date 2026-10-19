@@ -116,17 +116,17 @@ func aiRuntimeJob(extraTask bool) *resources.Job {
 	if extraTask {
 		tasks = append(tasks, jobs.Task{TaskKey: "prep"})
 	}
-	return &resources.Job{JobSettings: jobs.JobSettings{Tasks: tasks}}
+	return &resources.Job{Tasks: tasks}
 }
 
 func TestAiRuntimeTaskMetrics(t *testing.T) {
 	scheduledJob := aiRuntimeJob(false)
 	scheduledJob.Schedule = &jobs.CronSchedule{QuartzCronExpression: "0 0 * * * ?"}
 
-	forEachJob := &resources.Job{JobSettings: jobs.JobSettings{Tasks: []jobs.Task{{
+	forEachJob := &resources.Job{Tasks: []jobs.Task{{
 		TaskKey:     "fanout",
 		ForEachTask: &jobs.ForEachTask{Task: jobs.Task{AiRuntimeTask: &jobs.AiRuntimeTask{Experiment: "exp"}}},
-	}}}}
+	}}}
 
 	tests := []struct {
 		name                          string

@@ -1,8 +1,8 @@
 
 >>> musterr [CLI] bundle deployment migrate
-Warning: the terraform deployment engine is deprecated and will stop working in a future version of the CLI
+Error: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
   in databricks.yml:3:11
 
-See https://docs.databricks.com/aws/en/dev-tools/bundles/direct for how to migrate to the direct deployment engine
+Remove the "bundle.engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, revert to Databricks CLI v1.19.x.
+See https://docs.databricks.com/dev-tools/bundles/direct for details
 
-Error: bundle.engine is set to "terraform". Migration requires "engine: direct" or no engine setting. Change the setting to "engine: direct" and retry

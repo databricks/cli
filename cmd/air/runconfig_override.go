@@ -67,6 +67,9 @@ func checkOverridePath(parts []string, node configField, fullPath string) error 
 	if !ok {
 		names := make([]string, 0, len(node.children))
 		for _, c := range node.children {
+			if c.hidden {
+				continue
+			}
 			names = append(names, configLeafName(c.path))
 		}
 		slices.Sort(names)

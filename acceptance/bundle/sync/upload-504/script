@@ -1,0 +1,7 @@
+# Inject a single 504 on the first file upload. Uploads overwrite, so they are retried and the sync succeeds.
+fault.py "POST /api/2.0/workspace/import" 504 0 1
+
+$CLI bundle sync
+
+# databricks.yml is the only file. Two requests for it should appear: the initial 504 and the successful retry.
+print_requests.py //api/2.0/workspace/import | jq -r .body.multipart_form.path

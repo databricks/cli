@@ -30,7 +30,6 @@ See `Bundle configuration in Python <https://docs.databricks.com/aws/en/dev-tool
    databricks.bundles.model_serving_endpoints
    databricks.bundles.models
    databricks.bundles.pipelines
-   databricks.bundles.postgres_snapshot_schedules
    databricks.bundles.quality_monitors
    databricks.bundles.registered_models
    databricks.bundles.schemas

@@ -400,6 +400,7 @@ func TestUpdateProjectIncludesProjectSkillAgents(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Join(projectRoot, ".pi", "skills", "databricks-core"), 0o755))
 	require.NoError(t, os.MkdirAll(filepath.Join(projectRoot, ".gemini", "skills", "databricks-core"), 0o755))
 	require.NoError(t, os.MkdirAll(filepath.Join(projectRoot, ".goose", "skills", "databricks-core"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(projectRoot, ".kiro", "skills", "databricks-core"), 0o755))
 
 	ctx := cmdio.MockDiscard(t.Context())
 	dir, err := installer.ProjectSkillsDir(ctx)
@@ -433,4 +434,5 @@ func TestUpdateProjectIncludesProjectSkillAgents(t *testing.T) {
 	assert.Contains(t, names, agents.NamePi)
 	assert.Contains(t, names, agents.NameGemini)
 	assert.Contains(t, names, agents.NameGoose)
+	assert.Contains(t, names, agents.NameKiro)
 }

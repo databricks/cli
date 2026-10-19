@@ -1,0 +1,7 @@
+# Record the Accept header too (appended to the inherited list) so the
+# regression guard below can see it.
+IncludeRequestHeaders = ["Accept"]
+
+[[Server]]
+Pattern = "POST /api/2.0/test/req"
+Response.Body = '{}'

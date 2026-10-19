@@ -8,5 +8,4 @@ RecordRequests = false
 # polling — the flag is direct-only). The recreate itself is covered against a real
 # workspace by ../recreate.
 Cloud = false
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 Env.INJECT_STALE_ON_DIRECT = "1"

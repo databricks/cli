@@ -15,11 +15,11 @@ Uploaded hello.py
 >>> print_requests.py --sort //api/
 {
   "method": "POST",
-  "path": "/api/2.0/workspace-files/import-file/Users/[USERNAME]/missing-dir-[UNIQUE_NAME]/.gitignore"
+  "path": "/api/2.0/workspace/import"
 }
 {
   "method": "POST",
-  "path": "/api/2.0/workspace-files/import-file/Users/[USERNAME]/missing-dir-[UNIQUE_NAME]/hello.py"
+  "path": "/api/2.0/workspace/import"
 }
 {
   "method": "POST",

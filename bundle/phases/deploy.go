@@ -9,13 +9,11 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deploy/snapshot"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
@@ -77,32 +75,21 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	return cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 }
 
-func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, stateEngine engine.EngineType) {
-	// Apply resources and capture post-apply state.
-	// For direct: Finalize flushes the WAL to disk and returns the state;
-	// called even if Apply failed so partial progress is saved.
-	// For terraform: ParseResourcesState reads the file written by terraform.Apply.
-	var (
-		state statemgmt.ExportedResourcesMap
-		err   error
-	)
-	if stateEngine.IsDirect() {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, reportPerResource(b))
-		state, err = b.DeploymentBundle.StateDB.Finalize(ctx)
-		// Capture the finalized state for deploy telemetry. It carries each
-		// resource's state-size in bytes (from the WAL replay Finalize just
-		// did), so telemetry needs no extra read or parse of the state file.
-		b.Metrics.ResourceState = state
-	} else {
-		bundle.ApplyContext(ctx, b, terraform.Apply())
-		state, err = terraform.ParseResourcesState(ctx, b)
-	}
+func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
+	// Apply resources and capture post-apply state. Finalize flushes the WAL to disk and
+	// returns the state; called even if Apply failed so partial progress is saved.
+	b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, reportPerResource(b))
+	state, err := b.DeploymentBundle.StateDB.Finalize(ctx)
+	// Capture the finalized state for deploy telemetry. It carries each
+	// resource's state-size in bytes (from the WAL replay Finalize just
+	// did), so telemetry needs no extra read or parse of the state file.
+	b.Metrics.ResourceState = state
 	if err != nil {
 		logdiag.LogError(ctx, err)
 	}
 
 	// Even if deployment failed, there might be updates in states that we need to upload
-	statemgmt.PushResourcesState(ctx, b, stateEngine)
+	statemgmt.PushResourcesState(ctx, b)
 	if logdiag.HasError(ctx) {
 		return
 	}
@@ -112,7 +99,6 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 		statemgmt.Load(state),
 		metadata.Compute(),
 		metadata.Upload(),
-		statemgmt.UploadStateForYamlSync(stateEngine),
 	)
 }
 
@@ -134,26 +120,11 @@ func logFileSummary(ctx context.Context, b *bundle.Bundle) {
 	cmdio.LogString(ctx, fmt.Sprintf("Files: %d uploaded, %d deleted", b.FileCounts.Uploaded, b.FileCounts.Deleted))
 }
 
-// logDeploySummary prints the per-resource actions that were applied followed by the
-// resource summary line. -q drops the per-resource lines, -qq drops the summary too.
-// The direct engine prints its own lines as it goes, so only the terraform engine
-// reports them from the plan here.
-func logDeploySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, stateEngine engine.EngineType) {
+// logDeploySummary prints the resource summary line. -qq drops it too. The direct engine
+// prints each per-resource applied line itself as it goes, so there are none to report here.
+func logDeploySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 	if b.Quiet >= bundle.QuietAll {
 		return
-	}
-
-	// The direct engine already printed these lines as each resource was applied.
-	if reportPerResource(b) && !stateEngine.IsDirect() {
-		for _, action := range plan.GetActions() {
-			if action.ActionType == deployplan.Skip || action.ActionType == deployplan.Undefined {
-				continue
-			}
-			if action.IsStateOnlyDelete() {
-				continue
-			}
-			cmdio.LogString(ctx, deployplan.AppliedLine(action.ResourceKey, action.ActionType))
-		}
 	}
 
 	logFileSummary(ctx, b)
@@ -182,10 +153,7 @@ func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]li
 
 // The deploy phase deploys artifacts and resources.
 // If readPlanPath is provided, the plan is loaded from that file instead of being calculated.
-// stateEngine is the engine the resolved state file uses; requestedEngine is
-// what bundle.engine / DATABRICKS_BUNDLE_ENGINE asked for and may differ (used
-// only by the post-deploy migration check).
-func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler, stateEngine engine.EngineType, requestedEngine engine.EngineSetting, libs map[string][]libraries.LocationToUpdate, plan *deployplan.Plan, dmsDeployment *bundledeployments.Deployment) {
+func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler, libs map[string][]libraries.LocationToUpdate, plan *deployplan.Plan, dmsDeployment *bundledeployments.Deployment) {
 	log.Info(ctx, "Phase: deploy")
 
 	// Core mutators that CRUD resources and modify deployment state. These
@@ -211,10 +179,6 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}()
 
 	immutable := b.IsImmutableFolder()
-	if immutable && !stateEngine.IsDirect() {
-		logdiag.LogError(ctx, errors.New("experimental.immutable_folder is only supported with the direct deployment engine"))
-		return
-	}
 
 	if !immutable {
 		if plan != nil {
@@ -283,8 +247,8 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	planFromFile := plan != nil
 
 	if plan == nil {
-		// State is already open for read by process.go (for direct engine)
-		plan = RunPlan(ctx, b, stateEngine)
+		// State is already open for read by process.go (or by Migrate)
+		plan = RunPlan(ctx, b)
 	}
 
 	// Stop before opening the WAL for write if planning failed. UpgradeToWrite
@@ -302,10 +266,9 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		//
 		// A prepared terraform→direct migration lives only in memory (Migrate wrote nothing
 		// durable and CommitMigration below never ran), so a declined deploy just drops it and
-		// stays on the terraform engine - nothing changes. Gated on the resolved engine being
-		// direct: if the migration fell back to terraform (e.g. its plan check failed), there is
-		// no prepared migration to keep and the deploy declining is just a terraform decline.
-		if b.MigratingToDirect && stateEngine.IsDirect() {
+		// leaves the terraform state on disk untouched - nothing changes, and the next deploy
+		// migrates again.
+		if b.MigratingToDirect {
 			log.Warnf(ctx, "Migration not committed, keeping Terraform state")
 		}
 		if err != nil {
@@ -321,25 +284,22 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// serial tf+1 and retires the terraform state, so from here the bundle is on direct. The
 	// deploy below then advances the state to tf+2. Committing here rather than after the deploy
 	// keeps the model clean (once approved, we are on direct) at the cost of one window: a deploy
-	// that then fails has still migrated, where staying on terraform might have been possible.
-	// Gated on the resolved engine being direct: a migration that fell back to terraform (e.g. a
-	// failed plan check) left the state on terraform and opened nothing, so there is nothing to
-	// commit and the deploy proceeds on terraform.
-	if b.MigratingToDirect && stateEngine.IsDirect() {
-		statemgmt.CommitMigration(ctx, b, requestedEngine)
+	// that then fails has still migrated. A failed migration errored out before this point (the
+	// terraform engine is gone, so there is nothing to fall back to), so reaching here with
+	// MigratingToDirect set means the in-memory migration is ready to commit.
+	if b.MigratingToDirect {
+		statemgmt.CommitMigration(ctx, b)
 		if logdiag.HasError(ctx) {
 			return
 		}
 	}
 
-	if stateEngine.IsDirect() {
-		// Upgrade from read (opened by process.go, or by Migrate) to write mode. After approval
-		// and the migration commit above, so a declined deploy never opens a WAL it must discard,
-		// and the migration's tf+1 push lands before this advances the WAL header to tf+2.
-		if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
+	// Upgrade from read (opened by process.go, or by Migrate) to write mode. After approval
+	// and the migration commit above, so a declined deploy never opens a WAL it must discard,
+	// and the migration's tf+1 push lands before this advances the WAL header to tf+2.
+	if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
+		logdiag.LogError(ctx, err)
+		return
 	}
 
 	if planFromFile {
@@ -360,8 +320,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// Create the deployment now that the plan is approved, so a declined deploy leaves none behind.
 	// A first deploy's id did not exist at plan time - the version and any existing id were stamped
 	// then - so stamp the one just created into the plan the apply reads.
-	// IsDirect first: the state must be open to read its features, and only the direct engine opens it.
-	if stateEngine.IsDirect() && b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
+	if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
 		firstDeploy := b.DeploymentBundle.StateDB.DeploymentID == ""
 		createOrUpdateDeployment(ctx, b, dmsDeployment)
 		if logdiag.HasError(ctx) {
@@ -390,7 +349,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		}
 	}
 
-	deployCore(ctx, b, plan, stateEngine)
+	deployCore(ctx, b, plan)
 
 	if logdiag.HasError(ctx) {
 		return
@@ -404,61 +363,20 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// still propagates. Earlier failures report the files only, since the plan
 	// counts would then describe what was intended rather than what was applied.
 	filesReported = true
-	logDeploySummary(ctx, b, plan, stateEngine)
+	logDeploySummary(ctx, b, plan)
 
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
 }
 
-func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *deployplan.Plan {
-	if engine.IsDirect() {
-		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return nil
-		}
-		if len(b.Select) > 0 {
-			plan.FilterToSelected(b.Select)
-		}
-		return plan
-	}
-
-	// b.Select is rejected for the terraform engine in ProcessBundleRet, so it is
-	// never set here.
-
-	bundle.ApplySeqContext(
-		ctx, b,
-		terraform.Interpolate(),
-		terraform.Write(),
-		terraform.Plan(terraform.PlanGoal("deploy")),
-	)
-
-	if logdiag.HasError(ctx) {
-		return nil
-	}
-
-	tf := b.Terraform
-	if tf == nil {
-		logdiag.LogError(ctx, errors.New("terraform not initialized"))
-		return nil
-	}
-
-	plan, err := terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
+func RunPlan(ctx context.Context, b *bundle.Bundle) *deployplan.Plan {
+	plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return nil
 	}
-
-	for _, group := range b.Config.Resources.AllResources() {
-		for rKey := range group.Resources {
-			resourceKey := "resources." + group.Description.PluralName + "." + rKey
-			if _, ok := plan.Plan[resourceKey]; !ok {
-				plan.Plan[resourceKey] = &deployplan.PlanEntry{
-					Action: deployplan.Skip,
-				}
-			}
-		}
+	if len(b.Select) > 0 {
+		plan.FilterToSelected(b.Select)
 	}
-
 	return plan
 }
 

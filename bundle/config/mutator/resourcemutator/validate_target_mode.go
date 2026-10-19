@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/iamutil"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 )
 
@@ -55,7 +55,7 @@ func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
 		diags = diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   "target with 'mode: development' cannot set trigger pause status to UNPAUSED by default",
-			Locations: []dyn.Location{b.Config.GetLocation("presets.trigger_pause_status")},
+			Locations: []diag.Location{b.Config.GetLocation("presets.trigger_pause_status")},
 		})
 	}
 
@@ -77,7 +77,7 @@ func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
 		diags = diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   "prefix should contain the current username or ${workspace.current_user.short_name} to ensure uniqueness when using 'mode: development'",
-			Locations: []dyn.Location{b.Config.GetLocation("presets.name_prefix")},
+			Locations: []diag.Location{b.Config.GetLocation("presets.name_prefix")},
 		})
 	}
 	return diags
@@ -98,28 +98,36 @@ func namePrefixContainsUserIdentifier(prefix string, u *config.User) bool {
 	return false
 }
 
+// isNonUserPath reports whether path is set and is not unique to the current user.
+func isNonUserPath(path string, u *config.User) bool {
+	if path == "" {
+		return false
+	}
+	// Immutable folder snapshot paths are already unique per deployment: they are
+	// keyed by a hash of state_path (which is checked separately) and the content hash.
+	if strings.HasPrefix(path, resources.SnapshotFullPathRef) {
+		return false
+	}
+	return !strings.Contains(path, u.UserName) && !strings.Contains(path, u.ShortName)
+}
+
 // findNonUserPath finds the first workspace path such as root_path that doesn't
 // contain the current username or current user's shortname.
 func findNonUserPath(b *bundle.Bundle) string {
-	containsName := func(path string) bool {
-		username := b.Config.Workspace.CurrentUser.UserName
-		shortname := b.Config.Workspace.CurrentUser.ShortName
-		return strings.Contains(path, username) || strings.Contains(path, shortname)
-	}
-
-	if b.Config.Workspace.RootPath != "" && !containsName(b.Config.Workspace.RootPath) {
+	u := b.Config.Workspace.CurrentUser
+	if isNonUserPath(b.Config.Workspace.RootPath, u) {
 		return "root_path"
 	}
-	if b.Config.Workspace.FilePath != "" && !containsName(b.Config.Workspace.FilePath) {
+	if isNonUserPath(b.Config.Workspace.FilePath, u) {
 		return "file_path"
 	}
-	if b.Config.Workspace.ResourcePath != "" && !containsName(b.Config.Workspace.ResourcePath) {
+	if isNonUserPath(b.Config.Workspace.ResourcePath, u) {
 		return "resource_path"
 	}
-	if b.Config.Workspace.ArtifactPath != "" && !containsName(b.Config.Workspace.ArtifactPath) {
+	if isNonUserPath(b.Config.Workspace.ArtifactPath, u) {
 		return "artifact_path"
 	}
-	if b.Config.Workspace.StatePath != "" && !containsName(b.Config.Workspace.StatePath) {
+	if isNonUserPath(b.Config.Workspace.StatePath, u) {
 		return "state_path"
 	}
 	return ""
@@ -128,6 +136,7 @@ func findNonUserPath(b *bundle.Bundle) string {
 func validateProductionMode(b *bundle.Bundle, isPrincipalUsed bool) diag.Diagnostics {
 	r := b.Config.Resources
 	for i := range r.Pipelines {
+		//nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 		if r.Pipelines[i].Development {
 			return diag.Errorf("target with 'mode: production' cannot include a pipeline with 'development: true'")
 		}

@@ -33,6 +33,16 @@ class TaskEmailNotifications:
     A list of email addresses to be notified when a run unsuccessfully completes. A run is considered to have completed unsuccessfully if it ends with an `INTERNAL_ERROR` `life_cycle_state` or a `FAILED`, or `TIMED_OUT` result_state. If this is not specified on job creation, reset, or update the list is empty, and notifications are not sent.
     """
 
+    on_maintenance_complete: VariableOrList[str] = field(default_factory=list)
+    """
+    A list of email addresses to notify when platform-initiated maintenance completes for a continuous job.
+    """
+
+    on_maintenance_start: VariableOrList[str] = field(default_factory=list)
+    """
+    A list of email addresses to notify when platform-initiated maintenance starts for a continuous job.
+    """
+
     on_start: VariableOrList[str] = field(default_factory=list)
     """
     A list of email addresses to be notified when a run begins. If not specified on job creation, reset, or update, the list is empty, and notifications are not sent.
@@ -75,6 +85,16 @@ class TaskEmailNotificationsDict(TypedDict, total=False):
     on_failure: VariableOrList[str]
     """
     A list of email addresses to be notified when a run unsuccessfully completes. A run is considered to have completed unsuccessfully if it ends with an `INTERNAL_ERROR` `life_cycle_state` or a `FAILED`, or `TIMED_OUT` result_state. If this is not specified on job creation, reset, or update the list is empty, and notifications are not sent.
+    """
+
+    on_maintenance_complete: VariableOrList[str]
+    """
+    A list of email addresses to notify when platform-initiated maintenance completes for a continuous job.
+    """
+
+    on_maintenance_start: VariableOrList[str]
+    """
+    A list of email addresses to notify when platform-initiated maintenance starts for a continuous job.
     """
 
     on_start: VariableOrList[str]

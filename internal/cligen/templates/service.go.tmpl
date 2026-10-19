@@ -185,6 +185,10 @@ func new{{.PascalName}}() *cobra.Command {
     {{$method := .}}
 	{{ if not .IsJsonOnly }}
 	{{- $hasFieldMask := $request.HasFieldMask -}}
+	{{- /* Whether a page_size field exists; a deprecated `limit` alias is dropped
+	       below when it does, to avoid two flags claiming --page-size. */ -}}
+	{{- $hasPageSize := false -}}
+	{{- range .AllFields }}{{- if and (not .Required) (eq .KebabName "page-size") }}{{- $hasPageSize = true -}}{{- end -}}{{- end -}}
 	{{range .AllFields -}}
 		{{- if not .Required -}}
 			{{- /* clusters/events special case: cli.json models its pagination as
@@ -202,6 +206,9 @@ func new{{.PascalName}}() *cobra.Command {
 				(and (eq $method.Path "/api/2.1/clusters/events") (or (eq .Name "offset") (eq .Name "limit")))
 			) -}}
 			{{- /* Skip pagination fields; they are generated separately below. */ -}}
+			{{else if and $method.Pagination (eq .KebabName "limit") $hasPageSize -}}
+			{{- /* Deprecated `limit` alias for `page_size`: skip when the method also has
+			       a page_size field, which owns --page-size; rendering both collides. */ -}}
 			{{else if and $method.Pagination (eq .KebabName "limit") -}}
 			{{- /* The API field is named "limit" but isn't a declared pagination field
 			       (e.g. jobs.List.Limit). Rename to --page-size to avoid colliding with

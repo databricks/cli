@@ -1,0 +1,5 @@
+﻿{
+  "scripts": {
+    "build": "node -e \"console.log('BOM build ran'); process.exit(17)\""
+  }
+}

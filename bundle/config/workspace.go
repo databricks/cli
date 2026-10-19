@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/cli/libs/liteswap"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -135,12 +136,13 @@ func (w *Workspace) Config(ctx context.Context) *config.Config {
 		AzureClientID:    w.AzureClientID,
 		AzureTenantID:    w.AzureTenantID,
 		AzureEnvironment: w.AzureEnvironment,
-		AzureLoginAppID:  w.AzureLoginAppID,
+		AzureLoginAppID:  w.AzureLoginAppID, //nolint:staticcheck // SA1019: still accepted in bundle config; forwarded until the SDK drops the field
 
 		// Unified host
 		AccountID:   w.AccountID,
 		WorkspaceID: w.WorkspaceID,
 	}
+	liteswap.Apply(ctx, cfg)
 
 	for k := range config.ConfigAttributes {
 		attr := &config.ConfigAttributes[k]

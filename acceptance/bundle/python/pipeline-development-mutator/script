@@ -1,0 +1,13 @@
+cleanup() {
+    rm -fr .databricks __pycache__
+}
+trap cleanup EXIT
+
+title "Mutator sets development: false after mode: development stamped it"
+trace uv run $UV_ARGS -q $CLI bundle validate --output json | jq '.resources.pipelines.my_pipeline.development'
+trace uv run $UV_ARGS -q $CLI bundle deploy
+rm "$OUT_REQUESTS"
+
+title "Run sends development: true from mode: development, ignoring the deployed false"
+trace uv run $UV_ARGS -q $CLI bundle run my_pipeline
+trace print_requests.py //pipelines

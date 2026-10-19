@@ -25,30 +25,16 @@ Env.PYTHONUTF8 = "1"
 # A test that needs the raw order sets SortLinesOn.deploy_actions = false.
 SortLines.deploy_actions = '^(Created|Updated|Deleted|Recreated|Resized) \S+$'
 
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
-EnvMatrixExclude.noplantf = ["DATABRICKS_BUNDLE_ENGINE=terraform", "READPLAN=1"]
-EnvRepl.DATABRICKS_BUNDLE_ENGINE = false
-
 # >>> datetime.datetime.fromtimestamp(18000000000)
 # datetime.datetime(2027, 1, 15, 9, 0)
 # >>> datetime.datetime.fromtimestamp(1900000000)
 # datetime.datetime(2030, 3, 17, 18, 46, 40)
 
 [[Repls]]
-Old = '\d{20,}'
-New = "[NUMID]"
-Order = 10
-
-[[Repls]]
-Old = '1[78]\d{17}'
+Old = '\b1[78]\d{17}\b'
 New = '[UNIX_TIME_NANOS]'
 Order = 10
 Distinct = true
-
-[[Repls]]
-Old = '\d{17,}'
-New = "[NUMID]"
-Order = 10
 
 #[[Repls]]
 # This makes certain integration tests flaky as experiment IDs overlap in range with this regex
@@ -57,29 +43,14 @@ Order = 10
 #Order = 10
 
 [[Repls]]
-Old = '\d{14,}'
-New = "[NUMID]"
-Order = 10
-
-[[Repls]]
-Old = '1[78]\d{11}'
+Old = '\b1[78]\d{11}\b'
 New = '[UNIX_TIME_MILLIS]'
 Order = 10
 Distinct = true
 
 [[Repls]]
-Old = '\d{11,}'
-New = "[NUMID]"
-Order = 10
-
-[[Repls]]
-Old = '1[78]\d{8}'
+Old = '\b1[78]\d{8}\b'
 New = '[UNIX_TIME_S]'
-Order = 10
-
-[[Repls]]
-Old = '\d{8,}'
-New = "[NUMID]"
 Order = 10
 
 [[Repls]]
@@ -107,3 +78,12 @@ New = '"plan_version": [PLAN_VERSION],'
 [[Repls]]
 Old = 'json\.plan_version = 2;'
 New = 'json.plan_version = [PLAN_VERSION];'
+
+# The lineage hash (libs/shortid) is not masked: fixture lineages hash to stable values, and
+# tests with a freshly minted lineage register its hash with read_lineage.py.
+
+# Workspace TreeIDs can be short (for example, in LITE). Match the deployment path
+# rather than arbitrary numbers so version numbers and counts stay visible.
+[[Repls]]
+Old = '\bdeployments/[0-9]+\b'
+New = 'deployments/[DEPLOYMENT_ID]'

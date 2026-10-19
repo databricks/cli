@@ -24,19 +24,19 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "feature-engineering",
-		Short:   `[description].`,
-		Long:    `[description]`,
-		GroupID: "ml",
+		Use:   "feature-engineering",
+		Short: `*Public Preview* Feature Engineering provides APIs for managing features and materialized features.`,
+		Long: `This command is in Public Preview and may change without notice.
 
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+Feature Engineering provides APIs for managing features and materialized
+  features.`,
+		GroupID: "ml",
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newBackfillFeatures())
@@ -95,7 +95,9 @@ func newBackfillFeatures() *cobra.Command {
 
 	cmd.Flags().Var(&backfillFeaturesJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&backfillFeaturesReq.BudgetPolicyId, "budget-policy-id", backfillFeaturesReq.BudgetPolicyId, `The budget policy ID, in UUID format, used to attribute the serverless compute cost of this backfill.`)
 	cmd.Flags().StringVar(&backfillFeaturesReq.RequestId, "request-id", backfillFeaturesReq.RequestId, `Idempotency token for the request.`)
+	// TODO: map via StringToStringVar: tags
 
 	cmd.Use = "backfill-features"
 	cmd.Short = `Backfill features.`
@@ -105,6 +107,9 @@ func newBackfillFeatures() *cobra.Command {
   operation to complete. Use --no-wait to return immediately with the raw
   operation details. The operation's 'name' field can then be used to poll for
   completion using the get-operation command.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
@@ -201,6 +206,9 @@ func newCancelOperation() *cobra.Command {
   Arguments:
     NAME: The name of the operation resource to be cancelled.`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
 	cmd.Annotations["launch_stage_display"] = "Private Preview"
@@ -263,21 +271,21 @@ func newCreateFeature() *cobra.Command {
 	// TODO: complex arg: timeseries_column
 
 	cmd.Use = "create-feature FULL_NAME SOURCE FUNCTION"
-	cmd.Short = `Create a feature.`
-	cmd.Long = `Create a feature.
+	cmd.Short = `*Public Preview* Create a feature.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a feature.
 
   Create a Feature.
 
   Arguments:
-    FULL_NAME: The full three-part name (catalog, schema, name) of the feature. This is
-      the feature's resource identifier; the catalog_name, schema_name, and name
-      fields below are OUTPUT_ONLY decomposed views of this value.
+    FULL_NAME: The full three-part name (catalog, schema, name) of the feature.
     SOURCE: The data source of the feature.
     FUNCTION: The function by which the feature is computed.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -386,6 +394,9 @@ func newCreateKafkaConfig() *cobra.Command {
     SUBSCRIPTION_MODE: Options to configure which Kafka topics to pull data from.
     AUTH_CONFIG: Authentication configuration for connection to topics.`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
 	cmd.Annotations["launch_stage_display"] = "Private Preview"
@@ -482,6 +493,7 @@ func newCreateMaterializedFeature() *cobra.Command {
 	cmd.Flags().StringVar(&createMaterializedFeatureReq.MaterializedFeature.CronSchedule, "cron-schedule", createMaterializedFeatureReq.MaterializedFeature.CronSchedule, ``)
 	// TODO: complex arg: cron_schedule_trigger
 	cmd.Flags().StringVar(&createMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, "materialized-feature-id", createMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, `Server-assigned unique identifier for the materialized feature.`)
+	// TODO: complex arg: notifications
 	// TODO: complex arg: offline_store_config
 	// TODO: complex arg: online_store_config
 	cmd.Flags().Var(&createMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `The schedule state of the materialization pipeline. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`)
@@ -490,15 +502,17 @@ func newCreateMaterializedFeature() *cobra.Command {
 	// TODO: map via StringToStringVar: tags
 
 	cmd.Use = "create-materialized-feature FEATURE_NAME"
-	cmd.Short = `Create a materialized feature.`
-	cmd.Long = `Create a materialized feature.
+	cmd.Short = `*Public Preview* Create a materialized feature.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a materialized feature.
 
   Arguments:
     FEATURE_NAME: The full name of the feature in Unity Catalog.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -576,8 +590,10 @@ func newCreateStream() *cobra.Command {
 	cmd.Flags().StringVar(&createStreamReq.Stream.RecordTypeFilter, "record-type-filter", createStreamReq.Stream.RecordTypeFilter, `Optional SQL predicate to filter which record types from a streaming channel (e.g.`)
 
 	cmd.Use = "create-stream NAME SOURCE_CONFIG CONNECTION_CONFIG SCHEMA_CONFIG INGESTION_CONFIG"
-	cmd.Short = `Create a Stream.`
-	cmd.Long = `Create a Stream.
+	cmd.Short = `*Public Preview* Create a Stream.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a Stream.
 
   Create a Stream, a governed UC entity representing an external streaming data
   source.
@@ -592,8 +608,8 @@ func newCreateStream() *cobra.Command {
       offline copy of forward fill data and optional historical backfill.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -691,8 +707,10 @@ func newDeleteFeature() *cobra.Command {
 	var deleteFeatureReq ml.DeleteFeatureRequest
 
 	cmd.Use = "delete-feature FULL_NAME"
-	cmd.Short = `Delete a feature.`
-	cmd.Long = `Delete a feature.
+	cmd.Short = `*Public Preview* Delete a feature.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete a feature.
 
   Delete a Feature.
 
@@ -700,8 +718,8 @@ func newDeleteFeature() *cobra.Command {
     FULL_NAME: Name of the feature to delete.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -759,6 +777,9 @@ func newDeleteKafkaConfig() *cobra.Command {
   Arguments:
     NAME: Name of the Kafka config to delete.`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
 	cmd.Annotations["launch_stage_display"] = "Private Preview"
@@ -809,15 +830,17 @@ func newDeleteMaterializedFeature() *cobra.Command {
 	var deleteMaterializedFeatureReq ml.DeleteMaterializedFeatureRequest
 
 	cmd.Use = "delete-materialized-feature MATERIALIZED_FEATURE_ID"
-	cmd.Short = `Delete a materialized feature.`
-	cmd.Long = `Delete a materialized feature.
+	cmd.Short = `*Public Preview* Delete a materialized feature.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete a materialized feature.
 
   Arguments:
     MATERIALIZED_FEATURE_ID: The ID of the materialized feature to delete.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -865,8 +888,10 @@ func newDeleteStream() *cobra.Command {
 	var deleteStreamReq ml.DeleteStreamRequest
 
 	cmd.Use = "delete-stream NAME"
-	cmd.Short = `Delete a Stream.`
-	cmd.Long = `Delete a Stream.
+	cmd.Short = `*Public Preview* Delete a Stream.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete a Stream.
 
   Delete a Stream by its full three-part name (catalog.schema.stream).
 
@@ -874,8 +899,8 @@ func newDeleteStream() *cobra.Command {
     NAME: Full three-part name (catalog.schema.stream) of the Stream to delete.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -923,8 +948,10 @@ func newGetFeature() *cobra.Command {
 	var getFeatureReq ml.GetFeatureRequest
 
 	cmd.Use = "get-feature FULL_NAME"
-	cmd.Short = `Get a feature.`
-	cmd.Long = `Get a feature.
+	cmd.Short = `*Public Preview* Get a feature.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get a feature.
 
   Get a Feature.
 
@@ -932,8 +959,8 @@ func newGetFeature() *cobra.Command {
     FULL_NAME: Name of the feature to get.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -992,6 +1019,9 @@ func newGetKafkaConfig() *cobra.Command {
   Arguments:
     NAME: Name of the Kafka config to get.`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
 	cmd.Annotations["launch_stage_display"] = "Private Preview"
@@ -1043,15 +1073,17 @@ func newGetMaterializedFeature() *cobra.Command {
 	var getMaterializedFeatureReq ml.GetMaterializedFeatureRequest
 
 	cmd.Use = "get-materialized-feature MATERIALIZED_FEATURE_ID"
-	cmd.Short = `Get a materialized feature.`
-	cmd.Long = `Get a materialized feature.
+	cmd.Short = `*Public Preview* Get a materialized feature.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get a materialized feature.
 
   Arguments:
     MATERIALIZED_FEATURE_ID: The ID of the materialized feature.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1106,6 +1138,9 @@ func newGetOperation() *cobra.Command {
   Arguments:
     NAME: The name of the operation resource.`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
 	cmd.Annotations["launch_stage_display"] = "Private Preview"
@@ -1157,8 +1192,10 @@ func newGetStream() *cobra.Command {
 	var getStreamReq ml.GetStreamRequest
 
 	cmd.Use = "get-stream NAME"
-	cmd.Short = `Get a Stream.`
-	cmd.Long = `Get a Stream.
+	cmd.Short = `*Public Preview* Get a Stream.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get a Stream.
 
   Get a Stream by its full three-part name (catalog.schema.stream).
 
@@ -1166,8 +1203,8 @@ func newGetStream() *cobra.Command {
     NAME: Full three-part name (catalog.schema.stream) of the Stream to get.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1229,8 +1266,10 @@ func newListFeatures() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-features CATALOG_NAME SCHEMA_NAME"
-	cmd.Short = `List features.`
-	cmd.Long = `List features.
+	cmd.Short = `*Public Preview* List features.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List features.
 
   List Features.
 
@@ -1239,8 +1278,8 @@ func newListFeatures() *cobra.Command {
     SCHEMA_NAME: Name of parent schema relative to its parent catalog.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -1313,6 +1352,9 @@ func newListKafkaConfigs() *cobra.Command {
   creating features under the entire metastore. Only the creator of the Kafka
   config can delete it.`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
 	cmd.Annotations["launch_stage_display"] = "Private Preview"
@@ -1379,12 +1421,14 @@ func newListMaterializedFeatures() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-materialized-features"
-	cmd.Short = `List materialized features.`
-	cmd.Long = `List materialized features.`
+	cmd.Short = `*Public Preview* List materialized features.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List materialized features.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -1448,14 +1492,16 @@ func newListStreams() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-streams"
-	cmd.Short = `List Streams.`
-	cmd.Long = `List Streams.
+	cmd.Short = `*Public Preview* List Streams.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List Streams.
 
   List Streams under a given catalog.schema parent.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -1513,7 +1559,9 @@ func newPurgeFeatureEntities() *cobra.Command {
 
 	cmd.Flags().Var(&purgeFeatureEntitiesJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&purgeFeatureEntitiesReq.BudgetPolicyId, "budget-policy-id", purgeFeatureEntitiesReq.BudgetPolicyId, `The budget policy ID, in UUID format, used to attribute the serverless compute cost of this purge.`)
 	cmd.Flags().StringVar(&purgeFeatureEntitiesReq.RequestId, "request-id", purgeFeatureEntitiesReq.RequestId, `Optional UUID4 idempotency token for the request.`)
+	// TODO: map via StringToStringVar: tags
 
 	cmd.Use = "purge-feature-entities"
 	cmd.Short = `Purge feature values for entities.`
@@ -1525,6 +1573,9 @@ func newPurgeFeatureEntities() *cobra.Command {
   operation to complete. Use --no-wait to return immediately with the raw
   operation details. The operation's 'name' field can then be used to poll for
   completion using the get-operation command.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
@@ -1627,22 +1678,22 @@ func newUpdateFeature() *cobra.Command {
 	// TODO: complex arg: timeseries_column
 
 	cmd.Use = "update-feature FULL_NAME UPDATE_MASK SOURCE FUNCTION"
-	cmd.Short = `Update a feature's description (all other fields are immutable).`
-	cmd.Long = `Update a feature's description (all other fields are immutable).
+	cmd.Short = `*Public Preview* Update a feature's description (all other fields are immutable).`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update a feature's description (all other fields are immutable).
 
   Update a Feature.
 
   Arguments:
-    FULL_NAME: The full three-part name (catalog, schema, name) of the feature. This is
-      the feature's resource identifier; the catalog_name, schema_name, and name
-      fields below are OUTPUT_ONLY decomposed views of this value.
-    UPDATE_MASK: The list of fields to update.
+    FULL_NAME: The full three-part name (catalog, schema, name) of the feature.
+    UPDATE_MASK: Fields to update. The only supported path is description.
     SOURCE: The data source of the feature.
     FUNCTION: The function by which the feature is computed.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -1751,6 +1802,9 @@ func newUpdateKafkaConfig() *cobra.Command {
     SUBSCRIPTION_MODE: Options to configure which Kafka topics to pull data from.
     AUTH_CONFIG: Authentication configuration for connection to topics.`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
 	cmd.Annotations["launch_stage_display"] = "Private Preview"
@@ -1849,6 +1903,7 @@ func newUpdateMaterializedFeature() *cobra.Command {
 	cmd.Flags().StringVar(&updateMaterializedFeatureReq.MaterializedFeature.CronSchedule, "cron-schedule", updateMaterializedFeatureReq.MaterializedFeature.CronSchedule, ``)
 	// TODO: complex arg: cron_schedule_trigger
 	cmd.Flags().StringVar(&updateMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, "materialized-feature-id", updateMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, `Server-assigned unique identifier for the materialized feature.`)
+	// TODO: complex arg: notifications
 	// TODO: complex arg: offline_store_config
 	// TODO: complex arg: online_store_config
 	cmd.Flags().Var(&updateMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `The schedule state of the materialization pipeline. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`)
@@ -1857,8 +1912,10 @@ func newUpdateMaterializedFeature() *cobra.Command {
 	// TODO: map via StringToStringVar: tags
 
 	cmd.Use = "update-materialized-feature MATERIALIZED_FEATURE_ID UPDATE_MASK FEATURE_NAME"
-	cmd.Short = `Update a materialized feature.`
-	cmd.Long = `Update a materialized feature.
+	cmd.Short = `*Public Preview* Update a materialized feature.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update a materialized feature.
 
   Update a materialized feature (pause/resume).
 
@@ -1869,8 +1926,8 @@ func newUpdateMaterializedFeature() *cobra.Command {
     FEATURE_NAME: The full name of the feature in Unity Catalog.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -1950,8 +2007,10 @@ func newUpdateStream() *cobra.Command {
 	cmd.Flags().StringVar(&updateStreamReq.Stream.RecordTypeFilter, "record-type-filter", updateStreamReq.Stream.RecordTypeFilter, `Optional SQL predicate to filter which record types from a streaming channel (e.g.`)
 
 	cmd.Use = "update-stream NAME UPDATE_MASK SOURCE_CONFIG CONNECTION_CONFIG SCHEMA_CONFIG INGESTION_CONFIG"
-	cmd.Short = `Update a Stream.`
-	cmd.Long = `Update a Stream.
+	cmd.Short = `*Public Preview* Update a Stream.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update a Stream.
 
   Update a Stream. Only fields listed in update_mask are mutated.
 
@@ -1966,8 +2025,8 @@ func newUpdateStream() *cobra.Command {
       offline copy of forward fill data and optional historical backfill.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {

@@ -245,7 +245,7 @@ class Cluster(Resource):
 
     libraries: VariableOrList[Library] = field(default_factory=list)
     """
-    A list of libraries to install on the cluster. Installed via the Libraries API after the cluster is created. Only supported in direct deployment mode.
+    A list of libraries to install on the cluster. Installed via the Libraries API after the cluster is created.
     """
 
     lifecycle: VariableOrOptional[LifecycleWithStarted] = None
@@ -538,7 +538,7 @@ class ClusterDict(TypedDict, total=False):
 
     libraries: VariableOrList[LibraryParam]
     """
-    A list of libraries to install on the cluster. Installed via the Libraries API after the cluster is created. Only supported in direct deployment mode.
+    A list of libraries to install on the cluster. Installed via the Libraries API after the cluster is created.
     """
 
     lifecycle: VariableOrOptional[LifecycleWithStartedParam]

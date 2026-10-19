@@ -33,7 +33,7 @@ func (v *validateSecretValueIsVariable) Apply(ctx context.Context, b *bundle.Bun
 				Summary:   "Secret value must be a string",
 				Detail:    fmt.Sprintf(`The secret value for "%s" must be a string.`, key),
 				Locations: val.Locations(),
-				Paths:     []dyn.Path{p},
+				Paths:     dyn.ToStructPaths(p),
 			})
 			continue
 		}
@@ -48,7 +48,7 @@ func (v *validateSecretValueIsVariable) Apply(ctx context.Context, b *bundle.Bun
 				Summary:   "Secret value must be a string",
 				Detail:    fmt.Sprintf(`The secret value for "%s" must be a string.`, key),
 				Locations: val.Locations(),
-				Paths:     []dyn.Path{p},
+				Paths:     dyn.ToStructPaths(p),
 			})
 			continue
 		}
@@ -62,7 +62,7 @@ func (v *validateSecretValueIsVariable) Apply(ctx context.Context, b *bundle.Bun
 Plain text secret values are not allowed to prevent leaking secrets in configuration files.
 Use bundle variables to pass secret values at deployment time.`, key),
 				Locations: val.Locations(),
-				Paths:     []dyn.Path{p},
+				Paths:     dyn.ToStructPaths(p),
 			})
 			continue
 		}
@@ -106,6 +106,6 @@ func (v *validateSecretValueIsVariable) checkVariableDefault(b *bundle.Bundle, s
 A default value is stored in plain text in the configuration file, which defeats the purpose of using a variable reference for a secret.
 Remove the default value and pass the secret value at deployment time using "--var", the BUNDLE_VAR_%s environment variable, or a variable overrides file.`, varName, secretKey, varName),
 		Locations: locations,
-		Paths:     []dyn.Path{p},
+		Paths:     dyn.ToStructPaths(p),
 	}}
 }

@@ -22,6 +22,7 @@ import re
 import subprocess
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 
 import print_state
@@ -43,11 +44,12 @@ TOKEN = os.environ.get("DATABRICKS_TOKEN", "")
 
 # Per resource: which response field carries the new id. Terraform's tfstate stores the same value
 # as the resource's `id`, keyed here by the create path so we can match a create to its tfstate entry.
-ID_FIELDS = ["job_id", "pipeline_id", "dashboard_id", "experiment_id", "full_name", "id", "name"]
+ID_FIELDS = ["job_id", "pipeline_id", "dashboard_id", "experiment_id", "cluster_id", "full_name", "id", "name"]
 
 # A create request is matched to its tfstate resource by a human-supplied identifying field; different
-# resource types name it differently (jobs/pipelines use `name`, dashboards use `display_name`, …).
-NAME_FIELDS = ["name", "display_name", "full_name"]
+# resource types name it differently (jobs/pipelines use `name`, dashboards use `display_name`,
+# clusters use `cluster_name`, …).
+NAME_FIELDS = ["name", "display_name", "full_name", "cluster_name"]
 
 # A backend-minted value that another resource may reference (e.g. a volume's storage_location, which
 # a pipeline tags). We remap these recorded->minted just like ids: a UUID, an s3-style path (which
@@ -128,6 +130,16 @@ def main():
     id_map = {}
     for req in requests:
         path = apply_map(req["path"], id_map)
+        # Reattach recorded query params (the backend reads some required ids from there, e.g.
+        # postgres `?project_id=...`); id-remap the values in case one references a minted id.
+        q = req.get("q")
+        if q:
+            items = [
+                (k, apply_map(str(val), id_map))
+                for k, vals in q.items()
+                for val in (vals if isinstance(vals, list) else [vals])
+            ]
+            path += "?" + urllib.parse.urlencode(items)
         body = req.get("body")
         if body is not None:
             body = json.loads(apply_map(json.dumps(body), id_map))
@@ -140,10 +152,30 @@ def main():
             create_name = next((str(body[nf]) for nf in NAME_FIELDS if body.get(nf)), None)
         if req["method"] == "POST" and create_name in name_to_attrs:
             attrs = name_to_attrs[create_name]
-            new_id = next((str(resp[f]) for f in ID_FIELDS if f in resp), None)
-            if new_id is None:
-                sys.exit(f"replay_tfstate.py: no id in response to {req['path']}: {resp}")
-            id_map[str(attrs["id"])] = new_id
+            if str(attrs["id"]) != create_name:
+                # Backend-minted primary id (jobs, pipelines, volumes): map recorded -> minted.
+                new_id = next((str(resp[f]) for f in ID_FIELDS if f in resp), None)
+                if new_id is None:
+                    sys.exit(f"replay_tfstate.py: no id in response to {req['path']}: {resp}")
+                id_map[str(attrs["id"])] = new_id
+            else:
+                # The primary id is the client-provided name (registered models, serving endpoints),
+                # but the backend still mints a SECONDARY id that permissions target
+                # (serving_endpoint_id, registered_model_id). It rides the create response as `id`,
+                # or - for mlflow models - comes from the databricks GET terraform issues (capture
+                # drops GETs), so fetch it the same way. Map the recorded secondary id -> minted.
+                minted = resp.get("id")
+                if minted is None and req["path"].endswith("/mlflow/registered-models/create"):
+                    g = api(
+                        "GET",
+                        "/api/2.0/mlflow/databricks/registered-models/get?name=" + urllib.parse.quote(create_name),
+                        None,
+                    )
+                    minted = (g.get("registered_model_databricks") or {}).get("id")
+                if minted is not None and is_backend_value(minted):
+                    for k, v in attrs.items():
+                        if k != "id" and is_backend_value(v):
+                            id_map[str(v)] = str(minted)
             # Also remap other backend-minted values a later resource may reference (e.g. a volume's
             # storage_location that a pipeline tags), so those requests and the tfstate stay consistent.
             for k, v in resp.items():

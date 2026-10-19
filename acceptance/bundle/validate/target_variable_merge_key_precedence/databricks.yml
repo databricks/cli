@@ -1,0 +1,16 @@
+bundle:
+  name: test-bundle
+
+variables:
+  x:
+
+definitions:
+  a: &a
+    x: from-a
+  b: &b
+    x: from-b
+
+targets:
+  dev:
+    variables:
+      <<: [*a, *b]

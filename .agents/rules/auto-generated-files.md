@@ -7,8 +7,6 @@ globs:
   - "acceptance/**/output.txt"
   - "acceptance/**/output.*.txt"
   - "acceptance/**/output/**"
-  - "bundle/internal/tf/schema/*.go"
-  - "bundle/terraform_dabs_map/generated.go"
   - "cmd/account/*.go"
   - "cmd/account/**/*.go"
   - "cmd/workspace/*.go"
@@ -28,8 +26,6 @@ paths:
   - "acceptance/**/output.txt"
   - "acceptance/**/output.*.txt"
   - "acceptance/**/output/**"
-  - "bundle/internal/tf/schema/*.go"
-  - "bundle/terraform_dabs_map/generated.go"
   - "cmd/account/*.go"
   - "cmd/account/**/*.go"
   - "cmd/workspace/*.go"
@@ -69,9 +65,6 @@ Files matching this rule's glob pattern are most likely generated artifacts. Aut
   - `./task generate-clijson` — refreshes `.codegen/cli.json` from the OpenAPI spec via genkit (requires universe repo); also updates `internal/genkit/tagging.py`.
 - Direct engine generated YAML:
   - `./task generate-direct` (or `./task generate-direct-apitypes`, `./task generate-direct-resources`)
-- Terraform provider schema and DABs field map:
-  - `./task generate-tf-schema`
-  - `./task generate-schema-map`
 - Bundle schemas:
   - `./task generate-schema`
   - Rewrites `bundle/internal/schema/annotations.yml` in place: upstream docs are sourced from `.codegen/cli.json` at generation time, and the file is synced with the config structure (placeholders added, stale entries dropped).

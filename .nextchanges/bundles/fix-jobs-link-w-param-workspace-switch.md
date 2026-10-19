@@ -1,1 +1,0 @@
-* Error out when a configured `workspace_id` does not match the connected workspace, instead of silently using it in resource URLs emitted by `bundle summary`. ([#6754](https://github.com/databricks/cli/pull/6754))

@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 )
@@ -11,7 +12,7 @@ import (
 func TestValueUnderlyingMap(t *testing.T) {
 	v := dyn.V(
 		map[string]dyn.Value{
-			"key": dyn.NewValue("value", []dyn.Location{{File: "file", Line: 1, Column: 2}}),
+			"key": dyn.NewValue("value", []diag.Location{{File: "file", Line: 1, Column: 2}}),
 		},
 	)
 
@@ -33,7 +34,7 @@ func TestValueUnderlyingMap(t *testing.T) {
 func TestValueUnderlyingSequence(t *testing.T) {
 	v := dyn.V(
 		[]dyn.Value{
-			dyn.NewValue("value", []dyn.Location{{File: "file", Line: 1, Column: 2}}),
+			dyn.NewValue("value", []diag.Location{{File: "file", Line: 1, Column: 2}}),
 		},
 	)
 

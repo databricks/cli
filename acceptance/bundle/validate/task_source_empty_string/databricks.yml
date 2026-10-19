@@ -1,0 +1,16 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    my_job:
+      name: my job
+      git_source:
+        git_url: https://github.com/databricks/cli
+        git_provider: gitHub
+        git_branch: main
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: ./notebook
+            source: ""

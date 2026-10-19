@@ -168,9 +168,9 @@ Usage:
   databricks air logs JOB_RUN_ID [flags]
 
 Examples:
-  databricks air logs [NUMID]
-  databricks air logs [NUMID] --node 1 --retry 0
-  databricks air logs [NUMID] --download-to ./logs
+  databricks air logs 123456789
+  databricks air logs 123456789 --node 1 --retry 0
+  databricks air logs 123456789 --download-to ./logs
 
 Flags:
       --download-to string   Download all logs to this directory instead of printing

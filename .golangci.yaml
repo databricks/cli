@@ -7,7 +7,6 @@ linters:
     - gocritic
     - govet
     - ineffassign
-    - intrange
     - mirror
     - perfsprint
     - revive
@@ -15,7 +14,7 @@ linters:
     - testifylint
     - unconvert
     - unused
-    - exhaustruct
+    - exhaustruct_v5
     - exhaustive
     - copyloopvar
     - forbidigo
@@ -35,7 +34,14 @@ linters:
     - asciicheck
     - reassign
     - modernize
+    - makezero
+    - errorlint
   settings:
+    errorlint:
+      # Switching %v to %w changes which errors callers can match with
+      # errors.Is/As (e.g. fs.ErrNotExist, context.Canceled), so it needs
+      # per-site review rather than a bulk fix.
+      errorf: false
     modernize:
       # omitzero changes JSON wire format for nested structs (unlike omitempty),
       # so each site needs per-site review rather than a bulk rewrite.
@@ -63,7 +69,6 @@ linters:
           files:
             - "**"
             - "!**/bundle/internal/schema/**"
-            - "!**/bundle/internal/tf/codegen/**"
             - "!**/bundle/internal/validation/**"
             - "!**/internal/cligen/**"
           deny:
@@ -102,6 +107,17 @@ linters:
         - pattern: 'errors\.As\b'
           msg: 'Use errors.AsType[T](err) for type-safe error unwrapping (Go 1.26+).'
       analyze-types: true
+    recvcheck:
+      # recvcheck v0.3 switched its built-in exclusions from Marshal* to
+      # Unmarshal*. Value-receiver MarshalJSON paired with pointer-receiver
+      # UnmarshalJSON is the idiomatic pattern, so keep excluding both.
+      exclusions:
+        - "*.MarshalText"
+        - "*.MarshalJSON"
+        - "*.MarshalYAML"
+        - "*.MarshalXML"
+        - "*.MarshalBinary"
+        - "*.GobEncode"
     copyloopvar:
       check-alias: true
     errcheck:
@@ -121,11 +137,8 @@ linters:
             - "**/internal/testutil/**"
             - "**/libs/testdiff/**"
             - "**/libs/python/pythontest/**"
-        - name: context-keys-type
         - name: error-return
         - name: errorf
-        - name: range-val-in-closure
-        - name: waitgroup-by-value
         - name: unconditional-recursion
         - name: use-waitgroup-go
     gocritic:
@@ -171,10 +184,10 @@ linters:
     rules:
       - path-except: bundle/direct/dresources|bundle/config/mutator/load_dbalert_files.go
         linters:
-          - exhaustruct
+          - exhaustruct_v5
       - path: bundle/direct/dresources/.*_test.go
         linters:
-          - exhaustruct
+          - exhaustruct_v5
       - text: "Use env\\.Get"
         path: "_test\\.go$"
         linters:
@@ -196,6 +209,7 @@ formatters:
           replacement: any
     gofumpt:
       module-path: github.com/databricks/cli
-      extra-rules: true
+      extra:
+        group-params: true
   exclusions:
     generated: lax

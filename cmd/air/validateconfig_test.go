@@ -1,13 +1,27 @@
 package aircmd
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
+	sdkconfig "github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/config/credentials"
+	sdkauth "github.com/databricks/databricks-sdk-go/config/experimental/auth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
 )
 
 func baseRunConfig() *runConfig {
@@ -36,56 +50,358 @@ func validateServer(t *testing.T, status int, body string, gotReq *map[string]an
 	return srv
 }
 
-func TestPreflightValidatePasses(t *testing.T) {
+func validationTestWorkspaceClient(t *testing.T, host string) *databricks.WorkspaceClient {
+	t.Helper()
+	w := newTestWorkspaceClient(t, host)
+	w.Config.RetryTimeoutSeconds = 1
+	return w
+}
+
+func validationTestWorkspaceClientWithTransport(t *testing.T, transport validationRoundTripFunc) *databricks.WorkspaceClient {
+	t.Helper()
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:          "https://example.test",
+		Token:         "token",
+		HTTPTransport: transport,
+	})
+	require.NoError(t, err)
+	return w
+}
+
+type validationRoundTripFunc func(*http.Request) (*http.Response, error)
+
+func (fn validationRoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return fn(req)
+}
+
+type validationOAuthCredentials struct {
+	tokenSource sdkauth.TokenSource
+}
+
+func (validationOAuthCredentials) Name() string { return "oauth-m2m" }
+
+func (c validationOAuthCredentials) Configure(context.Context, *sdkconfig.Config) (credentials.CredentialsProvider, error) {
+	return credentials.NewOAuthCredentialsProviderFromTokenSource(c.tokenSource), nil
+}
+
+type validationErrorReadCloser struct{}
+
+func (validationErrorReadCloser) Read([]byte) (int, error) { return 0, errors.New("body read failed") }
+func (validationErrorReadCloser) Close() error             { return nil }
+
+type validationContextReadCloser struct {
+	ctx context.Context
+}
+
+func (r validationContextReadCloser) Read([]byte) (int, error) {
+	<-r.ctx.Done()
+	return 0, r.ctx.Err()
+}
+func (validationContextReadCloser) Close() error { return nil }
+
+func TestPreflightValidateFailsOpenWhenBackendUnavailable(t *testing.T) {
+	tests := []struct {
+		name   string
+		status int
+		body   string
+	}{
+		{"disabled", http.StatusBadRequest, `{"error_code":"FEATURE_DISABLED","message":"not enabled"}`},
+		{"server error", http.StatusInternalServerError, `{"error_code":"INTERNAL_ERROR","message":"backend failed"}`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := validateServer(t, tt.status, tt.body, nil)
+			err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestPreflightValidationUnavailableWarnsWithoutRetry(t *testing.T) {
+	var requests atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == validateConfigPath {
+			requests.Add(1)
+			w.WriteHeader(http.StatusServiceUnavailable)
+			_, _ = w.Write([]byte(`{"error_code":"TEMPORARILY_UNAVAILABLE","message":"try again"}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(srv.Close)
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+
+	err := preflightValidate(ctx, validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	require.NoError(t, err)
+	assert.Equal(t, int32(1), requests.Load())
+	assert.Equal(t, "Warning: server-side config validation was unavailable; continuing with submission.\n", stderr.String())
+}
+
+func TestPreflightValidationDoesNotRetryTransportFailure(t *testing.T) {
+	var requests atomic.Int32
+	w := validationTestWorkspaceClientWithTransport(t, func(req *http.Request) (*http.Response, error) {
+		if req.URL.Path == validateConfigPath {
+			requests.Add(1)
+		}
+		return nil, errors.New("connection failed")
+	})
+
+	err := preflightValidate(t.Context(), w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	require.NoError(t, err)
+	assert.Equal(t, int32(1), requests.Load())
+}
+
+func TestPreflightValidationFailsOpenOnInvalidSuccessResponse(t *testing.T) {
+	tests := []struct {
+		name string
+		body func() io.ReadCloser
+	}{
+		{"body read failure", func() io.ReadCloser { return validationErrorReadCloser{} }},
+		{"malformed JSON", func() io.ReadCloser { return io.NopCloser(strings.NewReader("{")) }},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var requests atomic.Int32
+			w := validationTestWorkspaceClientWithTransport(t, func(req *http.Request) (*http.Response, error) {
+				body := io.NopCloser(strings.NewReader(`{}`))
+				if req.URL.Path == validateConfigPath {
+					requests.Add(1)
+					body = tt.body()
+				}
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Header:     http.Header{"Content-Type": []string{"application/json"}},
+					Body:       body,
+					Request:    req,
+				}, nil
+			})
+
+			err := preflightValidate(t.Context(), w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+			require.NoError(t, err)
+			assert.Equal(t, int32(1), requests.Load())
+		})
+	}
+}
+
+func TestPreflightValidationBodyReadFailureOnCallerErrorBlocks(t *testing.T) {
+	w := validationTestWorkspaceClientWithTransport(t, func(req *http.Request) (*http.Response, error) {
+		body := io.NopCloser(strings.NewReader(`{}`))
+		status := http.StatusOK
+		if req.URL.Path == validateConfigPath {
+			body = validationContextReadCloser{ctx: req.Context()}
+			status = http.StatusUnauthorized
+		}
+		return &http.Response{
+			StatusCode: status,
+			Header:     http.Header{"Content-Type": []string{"application/json"}},
+			Body:       body,
+			Request:    req,
+		}, nil
+	})
+
+	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
+	defer cancel()
+	err := preflightValidate(ctx, w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	require.Error(t, err)
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	require.True(t, ok)
+	assert.Equal(t, http.StatusUnauthorized, apiErr.StatusCode)
+}
+
+func TestPreflightValidationOAuthRefreshUsesDeadline(t *testing.T) {
+	refreshStarted := make(chan struct{})
+	tokenSource := sdkauth.NewCachedTokenSource(
+		sdkauth.TokenSourceFn(func(ctx context.Context) (*oauth2.Token, error) {
+			close(refreshStarted)
+			<-ctx.Done()
+			return nil, ctx.Err()
+		}),
+		sdkauth.WithCachedToken(&oauth2.Token{
+			AccessToken: "expired",
+			Expiry:      time.Now().Add(-time.Hour),
+		}),
+	)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:        "https://example.test",
+		Credentials: validationOAuthCredentials{tokenSource: tokenSource},
+		HTTPTransport: validationRoundTripFunc(func(*http.Request) (*http.Response, error) {
+			t.Fatal("validation request should not be sent")
+			return nil, nil
+		}),
+		HostMetadataResolver: func(context.Context, string) (*sdkconfig.HostMetadata, error) {
+			return &sdkconfig.HostMetadata{}, nil
+		},
+	})
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
+	defer cancel()
+	started := time.Now()
+	err = preflightValidate(ctx, w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+
+	require.NoError(t, err)
+	assert.Less(t, time.Since(started), time.Second)
+	select {
+	case <-refreshStarted:
+	default:
+		t.Fatal("OAuth token refresh did not start")
+	}
+}
+
+func TestPreflightValidationM2MOAuthRejectionBlocks(t *testing.T) {
+	tests := []struct {
+		status  int
+		wantErr error
+	}{
+		{http.StatusBadRequest, apierr.ErrBadRequest},
+		{http.StatusUnauthorized, apierr.ErrUnauthenticated},
+		{http.StatusForbidden, apierr.ErrPermissionDenied},
+	}
+
+	for _, tt := range tests {
+		t.Run(http.StatusText(tt.status), func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case "/oidc/.well-known/oauth-authorization-server":
+					_ = json.NewEncoder(w).Encode(map[string]string{"token_endpoint": "http://" + r.Host + "/token"})
+				case "/token":
+					w.WriteHeader(tt.status)
+					_, _ = w.Write([]byte(`{"error":"invalid_client"}`))
+				}
+			}))
+			t.Cleanup(srv.Close)
+
+			w, err := databricks.NewWorkspaceClient(&databricks.Config{
+				Host:         srv.URL,
+				ClientID:     "client-id",
+				ClientSecret: "client-secret",
+				AuthType:     "oauth-m2m",
+				DiscoveryURL: srv.URL + "/oidc/.well-known/oauth-authorization-server",
+				HostMetadataResolver: func(context.Context, string) (*sdkconfig.HostMetadata, error) {
+					return &sdkconfig.HostMetadata{}, nil
+				},
+			})
+			require.NoError(t, err)
+
+			err = preflightValidate(t.Context(), w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+			require.ErrorIs(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestPreflightValidationTimeoutFailsOpen(t *testing.T) {
+	releaseRequest := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == validateConfigPath {
+			<-releaseRequest
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
+	defer cancel()
+	started := time.Now()
+	err := preflightValidate(ctx, validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	close(releaseRequest)
+	require.NoError(t, err)
+	assert.Less(t, time.Since(started), time.Second)
+}
+
+func TestPreflightValidationPropagatesCancellation(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == validateConfigPath {
+			<-r.Context().Done()
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	err := preflightValidate(ctx, validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	require.ErrorIs(t, err, context.Canceled)
+}
+
+func TestPreflightValidationPropagatesCancellationWhileReadingErrorResponse(t *testing.T) {
+	validationStarted := make(chan struct{})
+	w := validationTestWorkspaceClientWithTransport(t, func(req *http.Request) (*http.Response, error) {
+		body := io.NopCloser(strings.NewReader(`{}`))
+		if req.URL.Path == validateConfigPath {
+			close(validationStarted)
+			body = validationContextReadCloser{ctx: req.Context()}
+		}
+		return &http.Response{
+			StatusCode: http.StatusServiceUnavailable,
+			Header:     http.Header{"Content-Type": []string{"application/json"}},
+			Body:       body,
+			Request:    req,
+		}, nil
+	})
+
+	ctx, cancel := context.WithCancel(t.Context())
+	go func() {
+		<-validationStarted
+		cancel()
+	}()
+	err := preflightValidate(ctx, w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	require.ErrorIs(t, err, context.Canceled)
+}
+
+func TestPreflightValidateBlocksOnCallerError(t *testing.T) {
+	for _, status := range []int{http.StatusBadRequest, http.StatusUnauthorized, http.StatusForbidden} {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			srv := validateServer(t, status, `{"error_code":"INVALID_PARAMETER_VALUE","message":"request rejected"}`, nil)
+			err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestPreflightValidateBlocksOnRequestVisitorError(t *testing.T) {
 	srv := validateServer(t, http.StatusOK, `{}`, nil)
-	err := preflightValidate(t.Context(), newTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh")
-	assert.NoError(t, err)
+	w := validationTestWorkspaceClient(t, srv.URL)
+	w.Config.Headers = func(*http.Request) error {
+		return errors.New("failed to add request headers")
+	}
+
+	err := preflightValidate(t.Context(), w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	require.ErrorContains(t, err, "failed to add request headers")
 }
 
-func TestPreflightValidateReportsErrors(t *testing.T) {
-	body := `{"errors":[
-		{"path":"experiment","message":"only letters, digits, hyphens, underscores","code":"DISALLOWED_CHARACTERS"},
-		{"path":"deployments[0].compute.accelerator_count","message":"must be a multiple of 8","code":"COUNT_NOT_MULTIPLE"}
-	]}`
-	srv := validateServer(t, http.StatusOK, body, nil)
-	err := preflightValidate(t.Context(), newTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh")
-	require.Error(t, err)
-	// Every problem is surfaced, each pointing at its config field.
-	assert.Contains(t, err.Error(), "experiment: only letters")
-	assert.Contains(t, err.Error(), "deployments[0].compute.accelerator_count: must be a multiple of 8")
-}
+func TestClassifyValidationFailure(t *testing.T) {
+	tests := []struct {
+		name            string
+		err             error
+		wantUnavailable bool
+		wantRetryable   bool
+	}{
+		{"canceled", context.Canceled, false, false},
+		{"deadline", context.DeadlineExceeded, true, true},
+		{"transport", &url.Error{Op: "Post", URL: "https://example.test", Err: errors.New("connection failed")}, true, true},
+		{"unknown", errors.New("authentication visitor failed"), false, false},
+		{"bad request", &apierr.APIError{StatusCode: http.StatusBadRequest}, false, false},
+		{"disabled", &apierr.APIError{StatusCode: http.StatusBadRequest, ErrorCode: "FEATURE_DISABLED"}, true, false},
+		{"unauthenticated", &apierr.APIError{StatusCode: http.StatusUnauthorized}, false, false},
+		{"forbidden", &apierr.APIError{StatusCode: http.StatusForbidden}, false, false},
+		{"not found", &apierr.APIError{StatusCode: http.StatusNotFound}, true, false},
+		{"not implemented", &apierr.APIError{StatusCode: http.StatusNotImplemented}, true, false},
+		{"request timeout", &apierr.APIError{StatusCode: http.StatusRequestTimeout}, true, true},
+		{"rate limited", &apierr.APIError{StatusCode: http.StatusTooManyRequests}, true, true},
+		{"server error", &apierr.APIError{StatusCode: http.StatusInternalServerError}, true, true},
+	}
 
-func TestPreflightValidateFailsOpenWhenDisabled(t *testing.T) {
-	// The endpoint is behind a SAFE flag; a disabled endpoint must not block the run.
-	srv := validateServer(t, http.StatusBadRequest,
-		`{"error_code":"FEATURE_DISABLED","message":"ValidateConfig is not yet enabled."}`, nil)
-	err := preflightValidate(t.Context(), newTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh")
-	assert.NoError(t, err)
-}
-
-func TestPreflightValidateFailsOpenWhenNotFound(t *testing.T) {
-	// A workspace that predates the endpoint returns 404; skip and let submit proceed.
-	srv := validateServer(t, http.StatusNotFound, `{"error_code":"ENDPOINT_NOT_FOUND","message":"not found"}`, nil)
-	err := preflightValidate(t.Context(), newTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh")
-	assert.NoError(t, err)
-}
-
-func TestPreflightValidateFailsOpenOnServerError(t *testing.T) {
-	// A 5xx is a backend problem, not the user's config; blocking a submit on it
-	// isn't actionable, and submit re-validates anyway.
-	srv := validateServer(t, http.StatusInternalServerError,
-		`{"error_code":"INTERNAL_ERROR","message":"backend blew up"}`, nil)
-	err := preflightValidate(t.Context(), newTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh")
-	assert.NoError(t, err)
-}
-
-func TestPreflightValidateBlocksOnClientError(t *testing.T) {
-	// A 4xx other than the fail-open cases means the request itself was rejected
-	// (e.g. the proto hook flagged a missing required field); surface it.
-	srv := validateServer(t, http.StatusBadRequest,
-		`{"error_code":"INVALID_PARAMETER_VALUE","message":"command_path is required"}`, nil)
-	err := preflightValidate(t.Context(), newTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh")
-	require.Error(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			unavailable, retryable := classifyValidationFailure(tt.err)
+			assert.Equal(t, tt.wantUnavailable, unavailable)
+			assert.Equal(t, tt.wantRetryable, retryable)
+		})
+	}
 }
 
 func TestValidateConfigRequestShape(t *testing.T) {
@@ -95,7 +411,8 @@ func TestValidateConfigRequestShape(t *testing.T) {
 	cfg := baseRunConfig()
 	cfg.MaxRetries = new(3)
 	cfg.EnvVariables = map[string]string{"HF_HOME": "/tmp/hf"}
-	err := preflightValidate(t.Context(), newTestWorkspaceClient(t, srv.URL), cfg, "/Workspace/Users/me/cmd.sh")
+	cfg.Environment = &environmentConfig{UnityCatalogImage: "main.air.training:v1"}
+	err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), cfg, "/Workspace/Users/me/cmd.sh", nil, "token")
 	require.NoError(t, err)
 
 	task := gotReq["task"].(map[string]any)
@@ -104,8 +421,10 @@ func TestValidateConfigRequestShape(t *testing.T) {
 	compute := deployment["compute"].(map[string]any)
 	assert.Equal(t, "GPU_8xH100", compute["accelerator_type"])
 	assert.EqualValues(t, 16, compute["accelerator_count"])
+	assert.Equal(t, "main.air.training:v1", task["unity_catalog_image_path"])
 
 	runOptions := gotReq["run_options"].(map[string]any)
+	assert.Equal(t, "token", runOptions["idempotency_token"])
 	assert.EqualValues(t, 3, runOptions["max_retries"])
 	assert.Equal(t, map[string]any{"HF_HOME": "/tmp/hf"}, runOptions["env_variables"])
 }
@@ -117,7 +436,7 @@ func TestValidateConfigRequestCarriesPriorityClass(t *testing.T) {
 	cfg := baseRunConfig()
 	cfg.Compute.PoolID = new("cap-8xh100-res")
 	cfg.Compute.PriorityClass = new("CRITICAL")
-	err := preflightValidate(t.Context(), newTestWorkspaceClient(t, srv.URL), cfg, "/Workspace/Users/me/cmd.sh")
+	err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), cfg, "/Workspace/Users/me/cmd.sh", nil, "token")
 	require.NoError(t, err)
 
 	task := gotReq["task"].(map[string]any)
@@ -128,17 +447,27 @@ func TestValidateConfigRequestCarriesPriorityClass(t *testing.T) {
 }
 
 func TestValidateConfigRequestOmitsUnsetOptions(t *testing.T) {
-	// A minimal config carries no run_options and only the fields it set, so the
-	// server never validates values the user didn't provide.
 	var gotReq map[string]any
 	srv := validateServer(t, http.StatusOK, `{}`, &gotReq)
 
-	err := preflightValidate(t.Context(), newTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh")
+	err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
 	require.NoError(t, err)
 
-	_, hasRunOptions := gotReq["run_options"]
-	assert.False(t, hasRunOptions)
+	assert.Equal(t, map[string]any{"idempotency_token": "token"}, gotReq["run_options"])
 	task := gotReq["task"].(map[string]any)
 	_, hasMlflowRun := task["mlflow_run"]
 	assert.False(t, hasMlflowRun)
+}
+
+func TestValidateConfigRequestCarriesEnvironment(t *testing.T) {
+	cfg := baseRunConfig()
+	cfg.Environment = &environmentConfig{
+		Version:      stringOrInt{set: true, raw: "databricks_ai_v6"},
+		Dependencies: dependencies{set: true, list: []string{"torch==2.3.0", "numpy"}},
+	}
+
+	request := validateConfigRequest(t.Context(), cfg, "/Workspace/Users/me/cmd.sh", nil, "token")
+	raw, err := json.Marshal(request["environment"])
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"base_environment":"workspace-base-environments/databricks_ai_v6","dependencies":["torch==2.3.0","numpy"]}`, string(raw))
 }

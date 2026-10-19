@@ -30,6 +30,13 @@ func stubValidateConfig(server *testserver.Server) {
 	})
 }
 
+func TestEffectiveIdempotencyToken(t *testing.T) {
+	cfg := &runConfig{IdempotencyToken: new("from-config")}
+	assert.Equal(t, "from-flag", effectiveIdempotencyToken("from-flag", cfg))
+	assert.Equal(t, "from-config", effectiveIdempotencyToken("", cfg))
+	assert.NotEmpty(t, effectiveIdempotencyToken("", &runConfig{}))
+}
+
 func TestDlRuntimeImage(t *testing.T) {
 	ctx := t.Context()
 	// A config runtime version wins and is used bare.
@@ -106,65 +113,74 @@ func TestBuildSubmitPayloadB300(t *testing.T) {
 	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorType("GPU_8xB300"), AcceleratorCount: 8}, p.Tasks[0].AiRuntimeTask.Deployments[0].Compute)
 }
 
-func TestSubmitRunInjectsPoolID(t *testing.T) {
-	server := testserver.New(t)
-	t.Cleanup(server.Close)
-	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
-		assert.Equal(t, "123", req.Headers.Get("X-Databricks-Workspace-Id"))
-		var body map[string]any
-		require.NoError(t, json.Unmarshal(req.Body, &body))
-		tasks := body["tasks"].([]any)
-		task := tasks[0].(map[string]any)
-		airTask := task["ai_runtime_task"].(map[string]any)
-		deployments := airTask["deployments"].([]any)
-		deployment := deployments[0].(map[string]any)
-		compute := deployment["compute"].(map[string]any)
-		assert.Equal(t, "capacity-1", compute["provisioned_capacity_id"])
-		return jobs.SubmitRunResponse{RunId: 42}
-	})
+func TestSubmitRun(t *testing.T) {
+	for _, tc := range []struct {
+		name                  string
+		poolID                string
+		priorityClass         string
+		unityCatalogImagePath string
+	}{
+		{name: "on-demand"},
+		{name: "pool", poolID: "capacity-1"},
+		{name: "pool-critical", poolID: "capacity-1", priorityClass: "CRITICAL"},
+		{name: "pool-normal", poolID: "capacity-1", priorityClass: "NORMAL"},
+		{name: "pool-best-effort", poolID: "capacity-1", priorityClass: "BEST_EFFORT"},
+		{name: "image", unityCatalogImagePath: "main.air.training:prod"},
+		{name: "pool-image", poolID: "capacity-1", unityCatalogImagePath: "main.air.training:prod"},
+		{name: "pool-priority-image", poolID: "capacity-1", priorityClass: "CRITICAL", unityCatalogImagePath: "main.air.training:prod"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			server := testserver.New(t)
+			t.Cleanup(server.Close)
+			server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+				assert.Equal(t, "123", req.Headers.Get("X-Databricks-Workspace-Id"))
+				var body map[string]any
+				require.NoError(t, json.Unmarshal(req.Body, &body))
+				assert.Equal(t, "idem-key", body["idempotency_token"])
+				tasks := body["tasks"].([]any)
+				require.Len(t, tasks, 1)
+				task := tasks[0].(map[string]any)
+				assert.EqualValues(t, 0, task["max_retries"])
+				airTask := task["ai_runtime_task"].(map[string]any)
+				// priority_class rides directly on the ai_runtime_task, next to
+				// provisioned_capacity_id on the deployment compute.
+				if tc.priorityClass == "" {
+					assert.NotContains(t, airTask, "priority_class")
+				} else {
+					assert.Equal(t, tc.priorityClass, airTask["priority_class"])
+				}
+				if tc.unityCatalogImagePath == "" {
+					assert.NotContains(t, airTask, "unity_catalog_image_path")
+				} else {
+					assert.Equal(t, tc.unityCatalogImagePath, airTask["unity_catalog_image_path"])
+				}
+				deployments := airTask["deployments"].([]any)
+				require.Len(t, deployments, 1)
+				deployment := deployments[0].(map[string]any)
+				compute := deployment["compute"].(map[string]any)
+				if tc.poolID == "" {
+					assert.NotContains(t, compute, "provisioned_capacity_id")
+				} else {
+					assert.Equal(t, tc.poolID, compute["provisioned_capacity_id"])
+				}
+				return jobs.SubmitRunResponse{RunId: 42}
+			})
 
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token", WorkspaceID: "123"})
-	require.NoError(t, err)
-	payload := buildSubmitPayload(&runConfig{
-		ExperimentName: "exp",
-		Command:        new("x"),
-		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
-	}, "/command.sh", "4", "", snapshotResult{}, nil)
+			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token", WorkspaceID: "123"})
+			require.NoError(t, err)
+			payload := buildSubmitPayload(&runConfig{
+				ExperimentName: "exp",
+				Command:        new("x"),
+				Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
+				MaxRetries:     new(0),
+			}, "/command.sh", "4", "", snapshotResult{}, nil)
+			payload.IdempotencyToken = "idem-key"
 
-	runID, err := submitRun(t.Context(), w, payload, "capacity-1", "", "")
-	require.NoError(t, err)
-	assert.Equal(t, int64(42), runID)
-}
-
-func TestSubmitRunInjectsPriorityClass(t *testing.T) {
-	server := testserver.New(t)
-	t.Cleanup(server.Close)
-	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
-		var body map[string]any
-		require.NoError(t, json.Unmarshal(req.Body, &body))
-		tasks := body["tasks"].([]any)
-		task := tasks[0].(map[string]any)
-		airTask := task["ai_runtime_task"].(map[string]any)
-		// priority_class rides directly on the ai_runtime_task, next to
-		// provisioned_capacity_id on the deployment compute.
-		assert.Equal(t, "CRITICAL", airTask["priority_class"])
-		deployment := airTask["deployments"].([]any)[0].(map[string]any)
-		compute := deployment["compute"].(map[string]any)
-		assert.Equal(t, "capacity-1", compute["provisioned_capacity_id"])
-		return jobs.SubmitRunResponse{RunId: 7}
-	})
-
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token", WorkspaceID: "123"})
-	require.NoError(t, err)
-	payload := buildSubmitPayload(&runConfig{
-		ExperimentName: "exp",
-		Command:        new("x"),
-		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
-	}, "/command.sh", "4", "", snapshotResult{}, nil)
-
-	runID, err := submitRun(t.Context(), w, payload, "capacity-1", "CRITICAL", "")
-	require.NoError(t, err)
-	assert.Equal(t, int64(7), runID)
+			runID, err := submitRun(t.Context(), w, payload, tc.poolID, tc.priorityClass, tc.unityCatalogImagePath, nil)
+			require.NoError(t, err)
+			assert.Equal(t, int64(42), runID)
+		})
+	}
 }
 
 func TestBuildSubmitPayloadDefaultRetries(t *testing.T) {
@@ -238,26 +254,6 @@ func TestBuildSubmitPayloadDatabricksAIEnvironment(t *testing.T) {
 		"base_environment": "workspace-base-environments/databricks_ai_v5",
 		"dependencies": ["accelerate"]
 	}`, string(b))
-}
-
-func TestSubmitToken(t *testing.T) {
-	cfg := &runConfig{IdempotencyToken: new("from-config")}
-
-	tok, err := submitToken("from-flag", cfg) // flag wins
-	require.NoError(t, err)
-	assert.Equal(t, "from-flag", tok)
-
-	tok, err = submitToken("", cfg) // then config
-	require.NoError(t, err)
-	assert.Equal(t, "from-config", tok)
-
-	tok, err = submitToken("", &runConfig{}) // else generated
-	require.NoError(t, err)
-	assert.NotEmpty(t, tok)
-
-	// An over-long token errors instead of being truncated.
-	_, err = submitToken(strings.Repeat("a", 65), cfg)
-	require.ErrorContains(t, err, "64 characters or less")
 }
 
 type blockingLaunchWriter struct {
@@ -348,7 +344,14 @@ func TestSubmitWorkload(t *testing.T) {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
 		return jobs.SubmitRunResponse{RunId: 777}
 	})
-	stubValidateConfig(server)
+	var validatedToken string
+	server.Handle("POST", validateConfigPath, func(req testserver.Request) any {
+		var body map[string]any
+		require.NoError(t, json.Unmarshal(req.Body, &body))
+		runOptions := body["run_options"].(map[string]any)
+		validatedToken = runOptions["idempotency_token"].(string)
+		return validateConfigResponse{}
+	})
 	testserver.AddDefaultHandlers(server)
 
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
@@ -362,6 +365,7 @@ func TestSubmitWorkload(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(777), runID)
 	assert.Contains(t, dashboardURL, "/jobs/runs/777")
+	assert.Equal(t, "idem-key", validatedToken)
 
 	// The submitted payload is a native ai_runtime_task pointing at the uploaded
 	// command.sh under the run's launch directory.
@@ -378,6 +382,68 @@ func TestSubmitWorkload(t *testing.T) {
 	assert.Equal(t, jobs.ComputeSpecAcceleratorTypeGpu1xH100, d.Compute.AcceleratorType)
 	assert.Equal(t, 1, d.Compute.AcceleratorCount)
 	assert.Empty(t, d.Compute.ProvisionedCapacityId)
+}
+
+func TestSubmitWorkloadValidationOutcome(t *testing.T) {
+	tests := []struct {
+		name       string
+		response   any
+		wantError  string
+		wantSubmit bool
+	}{
+		{
+			name: "field error",
+			response: validateConfigResponse{Errors: []configFieldError{{
+				Path: "task.deployments[0].compute.accelerator_count", Message: "must be positive", Code: "INVALID_COUNT",
+			}}},
+			wantError: "accelerator_count: must be positive",
+		},
+		{
+			name:       "service unavailable",
+			response:   testserver.Response{StatusCode: 503, Body: map[string]string{"error_code": "TEMPORARILY_UNAVAILABLE", "message": "try again"}},
+			wantSubmit: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := testserver.New(t)
+			t.Cleanup(server.Close)
+			var uploads, submissions atomic.Int32
+			server.Handle("POST", validateConfigPath, func(req testserver.Request) any { return tt.response })
+			server.Handle("POST", "/api/2.0/workspace/import", func(req testserver.Request) any {
+				uploads.Add(1)
+				form, err := testserver.ParseImportForm(req)
+				assert.NoError(t, err)
+				return req.Workspace.WorkspaceFilesImportFile(form.Path, form.Content, true)
+			})
+			server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+				submissions.Add(1)
+				return jobs.SubmitRunResponse{RunId: 777}
+			})
+			testserver.AddDefaultHandlers(server)
+
+			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token", RetryTimeoutSeconds: 1})
+			require.NoError(t, err)
+			cfgPath := writeConfigFile(t, "run.yaml", minimalConfig)
+			cfg, err := loadRunConfig(cfgPath)
+			require.NoError(t, err)
+
+			_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+			if tt.wantError != "" {
+				require.ErrorContains(t, err, tt.wantError)
+			} else {
+				require.NoError(t, err)
+			}
+			if tt.wantSubmit {
+				assert.Positive(t, uploads.Load())
+				assert.Equal(t, int32(1), submissions.Load())
+			} else {
+				assert.Zero(t, uploads.Load())
+				assert.Zero(t, submissions.Load())
+			}
+		})
+	}
 }
 
 func TestSubmitWorkloadStagingErrorPreventsSubmit(t *testing.T) {
@@ -473,6 +539,84 @@ environment:
 	aiRuntimeTask, ok := task["ai_runtime_task"].(map[string]any)
 	require.True(t, ok)
 	assert.Equal(t, "main.air.training:prod", aiRuntimeTask["unity_catalog_image_path"])
+}
+
+func TestInjectContainers(t *testing.T) {
+	cfg := baseRunConfig()
+	cfg.Containers = []containerConfig{{Name: "inference", Ranks: []int{0, 1}, UnityCatalogImage: "main.ml.inference:v1"}}
+	payload := buildSubmitPayload(cfg, "/Workspace/run/command.sh", "6", "", snapshotResult{}, nil)
+	assert.Empty(t, payload.Tasks[0].AiRuntimeTask.Deployments[0].CommandPath)
+	raw, err := json.Marshal(payload)
+	require.NoError(t, err)
+	var body map[string]any
+	require.NoError(t, json.Unmarshal(raw, &body))
+
+	err = injectContainers(body, []submittedContainer{
+		{Name: "inference", CommandPath: "/Workspace/run/containers/inference/command.sh", Ranks: []int{0, 1}, UnityCatalogImagePath: "main.ml.inference:v1"},
+		{Name: "dataproc", CommandPath: "/Workspace/run/containers/dataproc/command.sh", Ranks: []int{2}, UnityCatalogImagePath: "main.ml.dataproc:v1"},
+	})
+	require.NoError(t, err)
+
+	task, err := aiRuntimeTaskFromSubmitBody(body)
+	require.NoError(t, err)
+	deployment := task["deployments"].([]any)[0].(map[string]any)
+	assert.NotContains(t, deployment, "command_path")
+	containers := deployment["containers"].([]any)
+	require.Len(t, containers, 2)
+	first := containers[0].(map[string]any)
+	assert.Equal(t, "inference", first["name"])
+	assert.Equal(t, "/Workspace/run/containers/inference/command.sh", first["command_path"])
+	assert.Equal(t, "main.ml.inference:v1", first["unity_catalog_image_path"])
+	assert.Equal(t, []any{0, 1}, first["ranks"])
+	assert.NotContains(t, first, "environment_variables")
+}
+
+func TestSubmitWorkloadSendsContainerCommandsWithoutDeploymentCommand(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+
+	var got map[string]any
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+		require.NoError(t, json.Unmarshal(req.Body, &got))
+		return jobs.SubmitRunResponse{RunId: 777}
+	})
+	stubValidateConfig(server)
+	testserver.AddDefaultHandlers(server)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+
+	cfgPath := writeConfigFile(t, "run.yaml", `experiment_name: container-run
+compute:
+  accelerator_type: GPU_1xA10
+  num_accelerators: 2
+containers:
+  - name: inference
+    ranks: [0]
+    unity_catalog_image: main.ml.inference:v1
+    command: python infer.py
+  - name: trainer
+    ranks: [1]
+    unity_catalog_image: main.ml.trainer:v1
+    command: python train.py
+`)
+	cfg, err := loadRunConfig(cfgPath)
+	require.NoError(t, err)
+	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+	require.NoError(t, err)
+
+	aiRuntimeTask, err := aiRuntimeTaskFromSubmitBody(got)
+	require.NoError(t, err)
+	deployments := aiRuntimeTask["deployments"].([]any)
+	require.Len(t, deployments, 1)
+	deployment := deployments[0].(map[string]any)
+	assert.NotContains(t, deployment, "command_path")
+	containers := deployment["containers"].([]any)
+	require.Len(t, containers, 2)
+	for i, name := range []string{"inference", "trainer"} {
+		container := containers[i].(map[string]any)
+		assert.Equal(t, name, container["name"])
+		assert.True(t, strings.HasSuffix(container["command_path"].(string), "/containers/"+name+"/command.sh"))
+	}
 }
 
 // A working-tree code_source is packaged into a tarball, uploaded via libs/filer,
@@ -588,18 +732,19 @@ func TestSubmitWorkloadPlainTarContentAddressed(t *testing.T) {
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		return jobs.SubmitRunResponse{RunId: 555}
 	})
-	// Count snapshot import-file calls, preserving fake-workspace persistence so the
+	// Count snapshot import calls, preserving fake-workspace persistence so the
 	// second submit's existence Stat sees the first upload. A count (not a set keyed by
 	// path) is what proves the skip: both submits resolve to the same content-addressed
 	// name, so a set could not tell a skipped second submit from one that re-uploaded to
 	// that same path.
 	snapshotUploads := 0
-	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req testserver.Request) any {
-		p := req.Vars["path"]
-		if strings.Contains(p, "/.air/repo_snapshots/") {
+	server.Handle("POST", "/api/2.0/workspace/import", func(req testserver.Request) any {
+		form, err := testserver.ParseImportForm(req)
+		assert.NoError(t, err)
+		if strings.Contains(form.Path, "/.air/repo_snapshots/") {
 			snapshotUploads++
 		}
-		return req.Workspace.WorkspaceFilesImportFile(p, req.Body, req.URL.Query().Get("overwrite") == "true")
+		return req.Workspace.WorkspaceFilesImportFile(form.Path, form.Content, form.Overwrite)
 	})
 	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
@@ -636,9 +781,19 @@ code_source:
 	assert.Regexp(t, `^src_[0-9a-f]{16}\.tar\.gz$`, base)
 
 	// Same unchanged tree → identical remote path, and the second submit moved no bytes:
-	// zero new import-file calls (a real skip), not a re-upload to the same name.
+	// zero new import calls (a real skip), not a re-upload to the same name.
 	assert.Equal(t, first.CodeSourcePath, second.CodeSourcePath)
 	assert.Equal(t, afterFirst, snapshotUploads, "unchanged plain_tar should skip the second upload")
+	require.NotNil(t, first.SizeBytes)
+	assert.Positive(t, *first.SizeBytes)
+	assert.Nil(t, second.SizeBytes)
+	assert.Equal(t, new(false), second.UsesGit)
+	assert.Equal(t, new(modePlainTar), first.PackagingMode)
+	assert.Equal(t, first.PackagingMode, second.PackagingMode)
+	assert.NotNil(t, first.PackagingDurationMs)
+	assert.NotNil(t, first.UploadDurationMs)
+	assert.Equal(t, new(int64(0)), second.PackagingDurationMs)
+	assert.Equal(t, new(int64(0)), second.UploadDurationMs)
 }
 
 // A git_archive snapshot is content-addressed by (commit, include_paths): submitting
@@ -656,12 +811,13 @@ func TestSubmitWorkloadGitArchiveCaching(t *testing.T) {
 	// Dedupe by path: the filer mkdirs-and-retries the import on a missing
 	// parent dir, so one logical upload can hit this route more than once.
 	uploaded := map[string]bool{}
-	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req testserver.Request) any {
-		p := req.Vars["path"]
-		if strings.Contains(p, "/.air/repo_snapshots/") {
-			uploaded[p] = true
+	server.Handle("POST", "/api/2.0/workspace/import", func(req testserver.Request) any {
+		form, err := testserver.ParseImportForm(req)
+		assert.NoError(t, err)
+		if strings.Contains(form.Path, "/.air/repo_snapshots/") {
+			uploaded[form.Path] = true
 		}
-		return req.Workspace.WorkspaceFilesImportFile(p, req.Body, req.URL.Query().Get("overwrite") == "true")
+		return req.Workspace.WorkspaceFilesImportFile(form.Path, form.Content, form.Overwrite)
 	})
 	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
@@ -695,6 +851,16 @@ code_source:
 	// (the second submit is a cache hit and moves no bytes).
 	assert.Equal(t, first.CodeSourcePath, second.CodeSourcePath)
 	assert.Len(t, uploaded, 1, "git_archive cache hit should skip the second upload")
+	require.NotNil(t, first.SizeBytes)
+	assert.Positive(t, *first.SizeBytes)
+	assert.Nil(t, second.SizeBytes)
+	assert.Equal(t, new(true), second.UsesGit)
+	assert.Equal(t, new(modeGitArchive), first.PackagingMode)
+	assert.Equal(t, first.PackagingMode, second.PackagingMode)
+	assert.NotNil(t, first.PackagingDurationMs)
+	assert.NotNil(t, first.UploadDurationMs)
+	assert.Equal(t, new(int64(0)), second.PackagingDurationMs)
+	assert.Equal(t, new(int64(0)), second.UploadDurationMs)
 }
 
 // When enabled, a code source uploads provenance sidecars (git_state.json and
@@ -735,6 +901,8 @@ code_source:
 
 	assert.Empty(t, snap.GitStatePath)
 	assert.Empty(t, snap.GitDiffPath)
+	assert.Equal(t, new(true), snap.UsesGit)
+	assert.Equal(t, new(modePlainTar), snap.PackagingMode)
 
 	_, err = sidecarStore.Read(ctx, gitStateName)
 	assert.ErrorIs(t, err, fs.ErrNotExist)

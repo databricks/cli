@@ -3,8 +3,8 @@ print_requests() {
     rm "$OUT_REQUESTS"
 }
 
-$CLI bundle plan -o json | nostamp > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | nostamp > out.plan_create.json
 trace $CLI bundle deploy
 trace print_requests
-$CLI bundle plan -o json | nostamp > out.plan_skip.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | nostamp > out.plan_skip.json
 trace print_requests

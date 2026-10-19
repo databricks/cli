@@ -17,13 +17,11 @@ import (
 
 func TestConvertPythonParams(t *testing.T) {
 	job := &resources.Job{
-		JobSettings: jobs.JobSettings{
-			Tasks: []jobs.Task{
-				{PythonWheelTask: &jobs.PythonWheelTask{
-					PackageName: "my_test_code",
-					EntryPoint:  "run",
-				}},
-			},
+		Tasks: []jobs.Task{
+			{PythonWheelTask: &jobs.PythonWheelTask{
+				PackageName: "my_test_code",
+				EntryPoint:  "run",
+			}},
 		},
 	}
 	b := &bundle.Bundle{
@@ -242,10 +240,8 @@ func TestJobRunnerRunNoWaitGetRunFails(t *testing.T) {
 func TestJobRunnerRestartForContinuousUnpausedJobs(t *testing.T) {
 	job := &resources.Job{
 		ID: "123",
-		JobSettings: jobs.JobSettings{
-			Continuous: &jobs.Continuous{
-				PauseStatus: jobs.PauseStatusUnpaused,
-			},
+		Continuous: &jobs.Continuous{
+			PauseStatus: jobs.PauseStatusUnpaused,
 		},
 	}
 	b := &bundle.Bundle{

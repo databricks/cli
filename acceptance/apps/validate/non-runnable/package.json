@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "typegen": "",
+    "typecheck": null,
+    "test": "",
+    "//": ["a comment"],
+    "build": "node -e \"console.log('non-runnable entries ignored'); process.exit(17)\""
+  }
+}

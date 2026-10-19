@@ -19,6 +19,10 @@ from databricks.bundles.alerts._models.cron_schedule import (
     CronSchedule,
     CronScheduleParam,
 )
+from databricks.bundles.alerts._models.custom_template_format import (
+    CustomTemplateFormat,
+    CustomTemplateFormatParam,
+)
 from databricks.bundles.alerts._models.lifecycle import Lifecycle, LifecycleParam
 from databricks.bundles.alerts._models.permission import Permission, PermissionParam
 from databricks.bundles.core._resource import Resource
@@ -65,6 +69,21 @@ class Alert(Resource):
     custom_summary: VariableOrOptional[str] = None
     """
     Custom summary for the alert. support mustache template.
+    """
+
+    custom_template_format: VariableOrOptional[CustomTemplateFormat] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The format used to interpret the `custom_summary` and `custom_description` templates.
+    
+    `HTML` treats both templates as HTML with Mustache `{{VARIABLE_NAME}}` placeholders.
+    `MARKDOWN` treats them as Markdown with allowlisted `@VARIABLE_NAME` placeholders and converts
+    them to the format each notification destination expects, so a single template renders
+    correctly in email, Slack, and Microsoft Teams.
+    
+    When unset, the API applies no default. Responses omit the field unless a format is stored,
+    and a template with no format is rendered as HTML.
     """
 
     file_path: VariableOrOptional[str] = None
@@ -155,6 +174,21 @@ class AlertDict(TypedDict, total=False):
     custom_summary: VariableOrOptional[str]
     """
     Custom summary for the alert. support mustache template.
+    """
+
+    custom_template_format: VariableOrOptional[CustomTemplateFormatParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The format used to interpret the `custom_summary` and `custom_description` templates.
+    
+    `HTML` treats both templates as HTML with Mustache `{{VARIABLE_NAME}}` placeholders.
+    `MARKDOWN` treats them as Markdown with allowlisted `@VARIABLE_NAME` placeholders and converts
+    them to the format each notification destination expects, so a single template renders
+    correctly in email, Slack, and Microsoft Teams.
+    
+    When unset, the API applies no default. Responses omit the field unless a format is stored,
+    and a template with no format is rendered as HTML.
     """
 
     file_path: VariableOrOptional[str]

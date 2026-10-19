@@ -1,0 +1,21 @@
+bundle:
+  name: test-pipeline-dev-mode-changes
+
+resources:
+  pipelines:
+    my_pipeline:
+      name: test-pipeline-dev-mode-changes
+      libraries:
+        - file:
+            path: pipeline_file.py
+
+targets:
+  dev_false:
+    mode: development
+    resources:
+      pipelines:
+        my_pipeline:
+          development: false
+  switch_to_dev: {}
+  switch_from_dev: {mode: development}
+  ui_toggle: {mode: development}

@@ -70,7 +70,7 @@ Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.2/jobs/reset",
   "body": {
-    "job_id": [NUMID],
+    "job_id": [J_ID],
     "new_settings": {
       "deployment": {
         "kind": "BUNDLE",
@@ -112,7 +112,7 @@ Destroy: 2 deleted
   "method": "POST",
   "path": "/api/2.2/jobs/delete",
   "body": {
-    "job_id": [NUMID]
+    "job_id": [J_ID]
   }
 }
 {

@@ -146,11 +146,9 @@ func TestEmbeddedStruct(t *testing.T) {
 	}
 
 	parent := Parent{
-		Embedded: Embedded{
-			EmbeddedField: "embedded_value",
-			EmbeddedInt:   42,
-		},
-		ParentField: "parent_value",
+		EmbeddedField: "embedded_value",
+		EmbeddedInt:   42,
+		ParentField:   "parent_value",
 	}
 
 	result := flatten(t, parent)
@@ -179,12 +177,8 @@ func TestNestedEmbeddedStructs(t *testing.T) {
 	}
 
 	obj := Level3{
-		Level2: Level2{
-			Level1: Level1{
-				Field1: "one",
-			},
-			Field2: "two",
-		},
+		Field1: "one",
+		Field2: "two",
 		Field3: "three",
 	}
 
@@ -266,11 +260,9 @@ func TestEmbeddedStructWithJSONTagDash(t *testing.T) {
 	}
 
 	parent := Parent{
-		Embedded: Embedded{
-			SkipField:    "should_not_appear",
-			IncludeField: "should_appear",
-		},
-		ParentField: "parent",
+		SkipField:    "should_not_appear",
+		IncludeField: "should_appear",
+		ParentField:  "parent",
 	}
 
 	assert.Equal(t, map[string]any{
@@ -299,7 +291,7 @@ type walkOptionOnlyEmbed struct {
 }
 
 func TestWalkTaggedEmbedIsANamedField(t *testing.T) {
-	value := &walkTaggedEmbed{WalkEmbedLeaf: WalkEmbedLeaf{Value: "v"}, Own: "o"}
+	value := &walkTaggedEmbed{Value: "v", Own: "o"}
 
 	blob, err := json.Marshal(value)
 	require.NoError(t, err)
@@ -309,7 +301,7 @@ func TestWalkTaggedEmbedIsANamedField(t *testing.T) {
 }
 
 func TestWalkOptionOnlyEmbedIsStillFlattened(t *testing.T) {
-	value := &walkOptionOnlyEmbed{WalkEmbedLeaf: WalkEmbedLeaf{Value: "v"}, Own: "o"}
+	value := &walkOptionOnlyEmbed{Value: "v", Own: "o"}
 
 	blob, err := json.Marshal(value)
 	require.NoError(t, err)

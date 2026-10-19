@@ -6,8 +6,6 @@ from typing import Literal
 
 class ParseMode(Enum):
     """
-    :meta private: [EXPERIMENTAL]
-
     Determines how errors encountered while deserializing records are handled.
     """
 

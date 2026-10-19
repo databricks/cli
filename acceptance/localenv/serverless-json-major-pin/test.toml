@@ -1,5 +1,3 @@
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
-
 Env.DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE = "$DATABRICKS_HOST"
 # Serverless pins databricks-connect by major (~=17.0) across every env
 # (environments#15), a compatible-release range rather than a concrete version.

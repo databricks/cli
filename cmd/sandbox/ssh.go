@@ -218,13 +218,27 @@ func verifyKeyRegistered(ctx context.Context, api *sandboxAPI, keyPath string) e
 	return fmt.Errorf("your sandbox SSH key (%s) is not registered with this workspace — run `databricks sandbox register` to re-register it", want)
 }
 
-// ensureRunning brings the named sandbox to Running with its own
-// spinner — caller must not have one open.
+// ensureRunning owns the lifecycle transition so SSH does not hang inside
+// connection setup. The caller must not have a spinner open.
 func ensureRunning(ctx context.Context, api *sandboxAPI, id, currentStatus string) (*sandboxEntry, error) {
+	if strings.EqualFold(currentStatus, "running") {
+		return &sandboxEntry{SandboxID: id, Status: currentStatus}, nil
+	}
+
 	s := spin(ctx, "Starting "+cmdio.Bold(ctx, id)+"…")
 	defer s.Close()
 
 	var sb *sandboxEntry
+	if strings.EqualFold(currentStatus, "stopping") {
+		stopped, err := waitForStopped(ctx, api, s, id)
+		if err != nil {
+			s.fail("Failed to start " + id)
+			return nil, err
+		}
+		currentStatus = stopped.Status
+		s.Update("Starting " + id + "…")
+	}
+
 	if strings.EqualFold(currentStatus, "stopped") {
 		updated, err := api.start(ctx, id)
 		if err != nil {

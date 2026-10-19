@@ -18,8 +18,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth:
     """
-    :meta private: [EXPERIMENTAL]
-
     Header-based API-key authentication for a custom provider: the secret is
     forwarded on outbound requests under a caller-chosen HTTP header, as
     `<api_key_name>: <api_key_value>`.
@@ -27,18 +25,14 @@ class ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth:
 
     api_key_name: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] HTTP header name that carries the API key on outbound requests (e.g.,
+    HTTP header name that carries the API key on outbound requests (e.g.,
     `Ocp-Apim-Subscription-Key`). The value forwarded under this header is
     supplied via `api_key_value`.
     """
 
     api_key_value: VariableOrOptional[ModelProviderServiceConfigProviderSecret] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Secret value forwarded under the `api_key_name` header on outbound
+    Secret value forwarded under the `api_key_name` header on outbound
     requests. Supplied as inline plaintext via `ProviderSecret.plaintext`.
     """
 
@@ -59,18 +53,14 @@ class ModelProviderServiceConfigCustomProviderApiKeyHeaderAuthDict(
 
     api_key_name: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] HTTP header name that carries the API key on outbound requests (e.g.,
+    HTTP header name that carries the API key on outbound requests (e.g.,
     `Ocp-Apim-Subscription-Key`). The value forwarded under this header is
     supplied via `api_key_value`.
     """
 
     api_key_value: VariableOrOptional[ModelProviderServiceConfigProviderSecretParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Secret value forwarded under the `api_key_name` header on outbound
+    Secret value forwarded under the `api_key_name` header on outbound
     requests. Supplied as inline plaintext via `ProviderSecret.plaintext`.
     """
 

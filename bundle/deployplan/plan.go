@@ -86,15 +86,6 @@ func NewPlanDirect() *Plan {
 	}
 }
 
-// NewPlanTerraform creates a new Plan for terraform engine without plan_version.
-func NewPlanTerraform() *Plan {
-	return &Plan{
-		CLIVersion: build.GetInfo().Version,
-		Plan:       make(map[string]*PlanEntry),
-		lockmap:    newLockmap(),
-	}
-}
-
 // LoadPlanFromFile reads a plan from a JSON file.
 func LoadPlanFromFile(path string) (*Plan, error) {
 	file, err := os.Open(path)

@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"slices"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -365,28 +368,51 @@ func TestHostKeyChangedHint(t *testing.T) {
 
 func TestBuildRemoteShellArgs(t *testing.T) {
 	const bashCmd = `command -v bash >/dev/null 2>&1 && exec bash -i || exec "${SHELL:-/bin/sh}" -i`
+	const version = "1.2.3"
 
-	t.Run("interactive returns non-login bash command", func(t *testing.T) {
-		args := buildRemoteShellArgs(ClientOptions{}, "")
+	// A serverless session has a connection name and no cluster ID.
+	serverless := ClientOptions{ConnectionName: "my-conn"}
+
+	t.Run("serverless installs a launcher per agent, cds home, then opens bash", func(t *testing.T) {
+		const wsHome = "/Workspace/Users/me@example.com"
+		args := buildRemoteShellArgs(serverless, wsHome, version)
+		require.Len(t, args, 1)
+		// A wrapper is written for every supported agent before the shell opens.
+		for _, agent := range SupportedAgentNames() {
+			assert.Contains(t, args[0], `cat > "$HOME/.agent-shim/bin/`+agent+`"`)
+			assert.Contains(t, args[0], agentWrapperScript(wsHome, version, agent))
+		}
+		assert.Contains(t, args[0], `export PATH="$PATH:$HOME/.agent-shim/bin"`)
+		// The cd into the workspace home precedes the shell launch.
+		assert.True(t, strings.HasSuffix(args[0], `cd '`+wsHome+`' 2>/dev/null; `+bashCmd))
+	})
+
+	t.Run("dedicated cluster skips the launchers but keeps the workspace cwd", func(t *testing.T) {
+		const wsHome = "/Workspace/Users/me@example.com"
+		args := buildRemoteShellArgs(ClientOptions{ClusterID: "abc-123"}, wsHome, version)
+		require.Len(t, args, 1)
+		// No launchers on a dedicated cluster...
+		assert.NotContains(t, args[0], "agent-shim/bin")
+		// ...but the cd into the workspace home is preserved (regression guard).
+		assert.Equal(t, `cd '`+wsHome+`' 2>/dev/null; `+bashCmd, args[0])
+	})
+
+	t.Run("serverless without a workspace home skips the launchers", func(t *testing.T) {
+		// Without wsHome the wrappers can't locate the CLI, so only the shell opens.
+		args := buildRemoteShellArgs(serverless, "", version)
 		require.Len(t, args, 1)
 		assert.Equal(t, bashCmd, args[0])
 	})
 
-	t.Run("interactive cds into workspace home when set", func(t *testing.T) {
-		args := buildRemoteShellArgs(ClientOptions{}, "/Workspace/Users/me@example.com")
-		require.Len(t, args, 1)
-		assert.Equal(t, `cd '/Workspace/Users/me@example.com' 2>/dev/null; `+bashCmd, args[0])
-	})
-
 	t.Run("non-interactive passes additional args verbatim", func(t *testing.T) {
 		additional := []string{"ls", "-la"}
-		args := buildRemoteShellArgs(ClientOptions{AdditionalArgs: additional}, "/Workspace/Users/me@example.com")
+		args := buildRemoteShellArgs(ClientOptions{ConnectionName: "my-conn", AdditionalArgs: additional}, "/Workspace/Users/me@example.com", version)
 		assert.Equal(t, additional, args)
 	})
 }
 
 func TestBuildSSHArgsSetsServerAliveInterval(t *testing.T) {
-	args := buildSSHArgs("user", "/key", "/pins/myhost", "proxy command", "myhost", "", ClientOptions{})
+	args := buildSSHArgs("user", "/key", "/pins/myhost", "proxy command", "myhost", "", "1.2.3", ClientOptions{})
 
 	// ssh stops parsing options at the destination, so an option placed after the host would be
 	// treated as part of the remote command rather than as an ssh option.
@@ -397,7 +423,7 @@ func TestBuildSSHArgsSetsServerAliveInterval(t *testing.T) {
 }
 
 func TestBuildSSHArgsPinsHostKey(t *testing.T) {
-	args := buildSSHArgs("user", "/key", "/pins/myhost", "proxy command", "myhost", "", ClientOptions{})
+	args := buildSSHArgs("user", "/key", "/pins/myhost", "proxy command", "myhost", "", "1.2.3", ClientOptions{})
 
 	// The pinned file is the whole point of strict checking here: without it ssh would
 	// fall back to ~/.ssh/known_hosts, where an entry for this name may be left over from
@@ -411,6 +437,27 @@ func TestBuildSSHArgsPinsHostKey(t *testing.T) {
 	}
 }
 
+func TestAgentWrapperScript(t *testing.T) {
+	const wsHome = "/Workspace/Users/me@example.com"
+
+	t.Run("resolves the uploaded binary and delegates to agent-shim <agent>", func(t *testing.T) {
+		wrapper := agentWrapperScript(wsHome, "1.2.3", "codex")
+		assert.True(t, strings.HasPrefix(wrapper, "#!/usr/bin/env bash"))
+		// Architecture is resolved on the remote via uname -m.
+		assert.Contains(t, wrapper, "case \"$(uname -m)\" in")
+		// Binary path uses the version dir + arch subdir; the workspace/version-derived
+		// portion is single-quoted while ${_arch} stays expandable on the remote.
+		assert.Contains(t, wrapper, `exec '`+wsHome+`/.databricks/ssh-tunnel/1.2.3/databricks_cli_1.2.3_linux_'${_arch}'/databricks' ssh agent-shim codex "$@"`)
+		// The workspace home is forwarded so the shim can name the working directory.
+		assert.Contains(t, wrapper, "export "+workspaceHomeEnv+"='"+wsHome+"'")
+	})
+
+	t.Run("dev builds use the version-less release subdir", func(t *testing.T) {
+		wrapper := agentWrapperScript(wsHome, "1.2.3-dev+abc", "claude")
+		assert.Contains(t, wrapper, `/ssh-tunnel/1.2.3-dev+abc/databricks_cli_linux_'${_arch}'/databricks`)
+	})
+}
+
 func TestBuildSSHArgsPTYPlacement(t *testing.T) {
 	indexOf := func(args []string, want string) int {
 		for i, a := range args {
@@ -422,7 +469,7 @@ func TestBuildSSHArgsPTYPlacement(t *testing.T) {
 	}
 
 	t.Run("interactive forces a PTY before the destination", func(t *testing.T) {
-		args := buildSSHArgs("user", "/key", "/pins/myhost", "proxy command", "myhost", "/Workspace/Users/me@example.com", ClientOptions{})
+		args := buildSSHArgs("user", "/key", "/pins/myhost", "proxy command", "myhost", "/Workspace/Users/me@example.com", "1.2.3", ClientOptions{})
 		ptyIdx := indexOf(args, "-t")
 		hostIdx := indexOf(args, "myhost")
 		require.NotEqual(t, -1, ptyIdx, "-t must be present for interactive sessions")
@@ -434,7 +481,7 @@ func TestBuildSSHArgsPTYPlacement(t *testing.T) {
 	})
 
 	t.Run("non-interactive does not force a PTY", func(t *testing.T) {
-		args := buildSSHArgs("user", "/key", "/pins/myhost", "proxy command", "myhost", "", ClientOptions{AdditionalArgs: []string{"ls", "-la"}})
+		args := buildSSHArgs("user", "/key", "/pins/myhost", "proxy command", "myhost", "", "1.2.3", ClientOptions{AdditionalArgs: []string{"ls", "-la"}})
 		assert.Equal(t, -1, indexOf(args, "-t"), "no PTY for non-interactive passthrough")
 		hostIdx := indexOf(args, "myhost")
 		require.NotEqual(t, -1, hostIdx)
@@ -758,4 +805,116 @@ func TestBuildSshTunnelEventReportsFailure(t *testing.T) {
 	b, err := json.Marshal(got)
 	require.NoError(t, err)
 	assert.Contains(t, string(b), `"is_success":false`)
+}
+
+func TestMetadataResponseError(t *testing.T) {
+	tests := []struct {
+		name       string
+		statusCode int
+		body       string
+		forbidden  bool
+		message    string
+	}{
+		{
+			name:       "feature disabled",
+			statusCode: 403,
+			body:       `"FEATURE_DISABLED: An administrator has disabled port forwarding to serverless compute for this workspace"`,
+			forbidden:  true,
+			message:    "the workspace refused the SSH tunnel connection: FEATURE_DISABLED: An administrator has disabled port forwarding to serverless compute for this workspace",
+		},
+		{
+			name:       "forbidden with a body that is not a JSON string",
+			statusCode: 403,
+			body:       "Forbidden\n",
+			forbidden:  true,
+			message:    "the workspace refused the SSH tunnel connection: Forbidden",
+		},
+		{
+			name:       "forbidden with an empty body",
+			statusCode: 403,
+			body:       "",
+			forbidden:  true,
+			message:    "the workspace refused the SSH tunnel connection: status code 403",
+		},
+		{
+			// A stale metadata.json points at a terminated cluster; the caller must start a new server.
+			name:       "terminated cluster is retried",
+			statusCode: 400,
+			body:       `"INVALID_STATE: Cluster 1014-135824-abcdefgh-v2n is in Terminated state but Spark driver is not healthy"`,
+			forbidden:  false,
+			message:    "server metadata error\nserver is not ok, status code 400",
+		},
+		{
+			name:       "server still starting is retried",
+			statusCode: 502,
+			body:       "",
+			forbidden:  false,
+			message:    "server metadata error\nserver is not ok, status code 502",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := metadataResponseError(tc.statusCode, []byte(tc.body))
+			assert.Equal(t, tc.forbidden, errors.Is(err, errDriverProxyForbidden))
+			assert.Equal(t, !tc.forbidden, errors.Is(err, errServerMetadata))
+			assert.EqualError(t, err, tc.message)
+		})
+	}
+}
+
+func TestCheckPortForwardingToServerless(t *testing.T) {
+	tests := []struct {
+		name    string
+		status  int
+		body    string
+		wantErr error
+	}{
+		{
+			name:    "disabled",
+			status:  http.StatusOK,
+			body:    `{"effective_boolean_val": {"value": false}}`,
+			wantErr: errPortForwardingDisabled,
+		},
+		{
+			name:   "enabled",
+			status: http.StatusOK,
+			body:   `{"effective_boolean_val": {"value": true}}`,
+		},
+		{
+			name:   "no effective value",
+			status: http.StatusOK,
+			body:   `{}`,
+		},
+		{
+			// Production does not serve the setting through the public API yet.
+			name:   "read fails",
+			status: http.StatusBadRequest,
+			body:   `{"error_code": "INVALID_PARAMETER_VALUE", "message": "Setting port_fwd_serverless_enabled is not enabled for public API"}`,
+		},
+		{
+			// A retriable status is not retried, so a throttled service cannot hold up the connection.
+			name:   "throttled",
+			status: http.StatusTooManyRequests,
+			body:   `{"error_code": "TOO_MANY_REQUESTS", "message": "slow down"}`,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var reads atomic.Int32
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/api/2.1/settings/"+portFwdServerlessSetting {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				reads.Add(1)
+				w.WriteHeader(tc.status)
+				_, _ = w.Write([]byte(tc.body))
+			}))
+			defer srv.Close()
+
+			ctx := cmdio.MockDiscard(t.Context())
+			assert.Equal(t, tc.wantErr, checkPortForwardingToServerless(ctx, newProbeClient(t, srv.URL)))
+			assert.Equal(t, int32(1), reads.Load())
+		})
+	}
 }

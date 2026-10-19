@@ -21,7 +21,7 @@ func TestValidateProductionPipelines(t *testing.T) {
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
 						CreatePipeline: pipelines.CreatePipeline{
-							Development: true,
+							Development: true, //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 						},
 					},
 				},
@@ -101,7 +101,7 @@ func TestProcessTargetModeProduction(t *testing.T) {
 
 	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, "pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
-	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Development)
+	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Development) //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
@@ -167,6 +167,13 @@ func TestValidateDevelopmentMode(t *testing.T) {
 	b.Config.Workspace.RootPath = "/Shared/.bundle/x/y/state"
 	diags = validateDevelopmentMode(b)
 	require.ErrorContains(t, diags.Error(), "root_path must start with '~/' or contain the current username to ensure uniqueness when using 'mode: development'")
+
+	// Test with immutable folder snapshot paths
+	b = mockBundle(config.Development)
+	b.Config.Workspace.FilePath = resources.SnapshotFullPathRef + "/files"
+	b.Config.Workspace.ArtifactPath = resources.SnapshotFullPathRef + "/artifacts"
+	diags = validateDevelopmentMode(b)
+	require.NoError(t, diags.Error())
 
 	// Test with a bundle that has an unpaused trigger pause status
 	b = mockBundle(config.Development)

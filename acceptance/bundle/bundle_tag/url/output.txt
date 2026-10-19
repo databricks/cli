@@ -68,7 +68,7 @@ Resources:
   Jobs:
     foo:
       Name: Untitled
-      URL:  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[FOO_ID]?w=[WORKSPACE_ID]
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -83,6 +83,6 @@ Destroy: 1 deleted
   "method": "POST",
   "path": "/api/2.2/jobs/delete",
   "body": {
-    "job_id": [NUMID]
+    "job_id": [FOO_ID]
   }
 }

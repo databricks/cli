@@ -18,37 +18,35 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class ProtobufTransformerOptions:
-    """
-    :meta private: [EXPERIMENTAL]
-    """
+    """"""
 
     desc_file_path: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Required: path to the .desc file (dbfs:/... or /Volumes/...).
+    [Beta] Required: path to the .desc file (dbfs:/... or /Volumes/...).
     """
 
     message_name: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Required: fully-qualified message type name.
+    [Beta] Required: fully-qualified message type name.
     """
 
     parse_mode: VariableOrOptional[ParseMode] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Parse mode for Protobuf data.
-    Valid values: FAILFAST, PERMISSIVE. Defaults to FAILFAST.
+    [Beta] (Optional) Parse mode for Protobuf data.
+    Valid values: FAILFAST, PERMISSIVE. Defaults to PERMISSIVE.
     """
 
     recursive_fields_max_depth: VariableOrOptional[int] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Maximum expansion depth for recursive protobuf fields.
+    [Beta] (Optional) Maximum expansion depth for recursive protobuf fields.
     Spark SQL does not natively support recursive types, so recursive
     fields are expanded up to this depth and truncated beyond it.
     Valid values: -1 (disallow recursive fields), 0 (drop), 1-10.
@@ -58,7 +56,7 @@ class ProtobufTransformerOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Schema registry to resolve the Protobuf schema at runtime instead
+    [Beta] (Optional) Schema registry to resolve the Protobuf schema at runtime instead
     of providing it via desc_file_path.
     """
 
@@ -77,29 +75,29 @@ class ProtobufTransformerOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Required: path to the .desc file (dbfs:/... or /Volumes/...).
+    [Beta] Required: path to the .desc file (dbfs:/... or /Volumes/...).
     """
 
     message_name: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Required: fully-qualified message type name.
+    [Beta] Required: fully-qualified message type name.
     """
 
     parse_mode: VariableOrOptional[ParseModeParam]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Parse mode for Protobuf data.
-    Valid values: FAILFAST, PERMISSIVE. Defaults to FAILFAST.
+    [Beta] (Optional) Parse mode for Protobuf data.
+    Valid values: FAILFAST, PERMISSIVE. Defaults to PERMISSIVE.
     """
 
     recursive_fields_max_depth: VariableOrOptional[int]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Maximum expansion depth for recursive protobuf fields.
+    [Beta] (Optional) Maximum expansion depth for recursive protobuf fields.
     Spark SQL does not natively support recursive types, so recursive
     fields are expanded up to this depth and truncated beyond it.
     Valid values: -1 (disallow recursive fields), 0 (drop), 1-10.
@@ -109,7 +107,7 @@ class ProtobufTransformerOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Schema registry to resolve the Protobuf schema at runtime instead
+    [Beta] (Optional) Schema registry to resolve the Protobuf schema at runtime instead
     of providing it via desc_file_path.
     """
 

@@ -72,23 +72,22 @@ func (*ResourceSqlWarehouse) PrepareState(input *resources.SqlWarehouse) *SqlWar
 // Started is derived from warehouse state so the planner can detect start/stop changes.
 func (*ResourceSqlWarehouse) RemapState(warehouse *SqlWarehouseRemote) *SqlWarehouseState {
 	return &SqlWarehouseState{
-		CreateWarehouseRequest: sql.CreateWarehouseRequest{
-			AutoStopMins:            warehouse.AutoStopMins,
-			Channel:                 warehouse.Channel,
-			ClusterSize:             warehouse.ClusterSize,
-			CreatorName:             warehouse.CreatorName,
-			EnablePhoton:            warehouse.EnablePhoton,
-			EnableServerlessCompute: warehouse.EnableServerlessCompute,
-			InstanceProfileArn:      warehouse.InstanceProfileArn,
-			MaxNumClusters:          warehouse.MaxNumClusters,
-			MinNumClusters:          warehouse.MinNumClusters,
-			Name:                    warehouse.Name,
-			SpotInstancePolicy:      warehouse.SpotInstancePolicy,
-			Tags:                    warehouse.Tags,
-			WarehouseType:           sql.CreateWarehouseRequestWarehouseType(warehouse.WarehouseType),
-			ForceSendFields:         utils.FilterFields[sql.CreateWarehouseRequest](warehouse.ForceSendFields),
-		},
-		Lifecycle: warehouse.Lifecycle,
+		AutoStopMins:            warehouse.AutoStopMins,
+		Channel:                 warehouse.Channel,
+		ClusterSize:             warehouse.ClusterSize,
+		CreatorName:             warehouse.CreatorName,
+		EnablePhoton:            warehouse.EnablePhoton,
+		EnableServerlessCompute: warehouse.EnableServerlessCompute,
+		InstanceProfileArn:      warehouse.InstanceProfileArn,
+		MaxNumClusters:          warehouse.MaxNumClusters,
+		MinNumClusters:          warehouse.MinNumClusters,
+		Name:                    warehouse.Name,
+		SpotInstancePolicy:      warehouse.SpotInstancePolicy,
+		StatementTimeout:        warehouse.StatementTimeout,
+		Tags:                    warehouse.Tags,
+		WarehouseType:           sql.CreateWarehouseRequestWarehouseType(warehouse.WarehouseType),
+		ForceSendFields:         utils.FilterFields[sql.CreateWarehouseRequest](warehouse.ForceSendFields),
+		Lifecycle:               warehouse.Lifecycle,
 	}
 }
 
@@ -148,6 +147,7 @@ func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *
 			MinNumClusters:          config.MinNumClusters,
 			Name:                    config.Name,
 			SpotInstancePolicy:      config.SpotInstancePolicy,
+			StatementTimeout:        config.StatementTimeout,
 			Tags:                    config.Tags,
 			WarehouseType:           sql.EditWarehouseRequestWarehouseType(config.WarehouseType),
 			ForceSendFields:         utils.FilterFields[sql.EditWarehouseRequest](config.ForceSendFields),

@@ -15,7 +15,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -68,7 +68,7 @@ func setupBundle(t *testing.T) (context.Context, *bundle.Bundle, *mocks.MockWork
 
 	mwc := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(mwc.WorkspaceClient)
-	bundletest.SetLocation(b, "resources.apps.my_app", []dyn.Location{{File: filepath.Join(root, "./databricks.yml")}})
+	bundletest.SetLocation(b, "resources.apps.my_app", []diag.Location{{File: filepath.Join(root, "./databricks.yml")}})
 
 	ctx := cmdio.MockDiscard(t.Context())
 
@@ -274,9 +274,7 @@ func TestStopApp(t *testing.T) {
 
 func TestBuildAppDeploymentWithValueFrom(t *testing.T) {
 	app := &resources.App{
-		App: apps.App{
-			SourceCodePath: "/path/to/app",
-		},
+		SourceCodePath: "/path/to/app",
 		Config: &resources.AppConfig{
 			Command: []string{"python", "app.py"},
 			Env: []resources.AppEnvVar{

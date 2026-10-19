@@ -149,6 +149,13 @@ class SqlWarehouse(Resource):
     Configurations whether the endpoint should use spot instances.
     """
 
+    statement_timeout: VariableOrOptional[int] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] Warehouse statement timeout in seconds.
+    """
+
     tags: VariableOrOptional[EndpointTags] = None
     """
     A set of key-value pairs that will be tagged on all resources (e.g., AWS instances and EBS volumes) associated
@@ -283,6 +290,13 @@ class SqlWarehouseDict(TypedDict, total=False):
     spot_instance_policy: VariableOrOptional[SpotInstancePolicyParam]
     """
     Configurations whether the endpoint should use spot instances.
+    """
+
+    statement_timeout: VariableOrOptional[int]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] Warehouse statement timeout in seconds.
     """
 
     tags: VariableOrOptional[EndpointTagsParam]

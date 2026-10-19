@@ -23,8 +23,8 @@ type Bundle struct {
 	// DEPRECATED. Left for backward compatibility with Target
 	Environment string `json:"environment,omitempty" bundle:"readonly"`
 
-	// Terraform holds configuration related to Terraform.
-	// For example, where to find the binary, which version to use, etc.
+	// DEPRECATED. The Terraform engine was removed, so this setting is ignored
+	// (a warning is reported if it is set). Kept so existing configs still parse.
 	Terraform *Terraform `json:"terraform,omitempty" bundle:"readonly"`
 
 	// Force-override Git branch validation.
@@ -46,8 +46,8 @@ type Bundle struct {
 	// Overrides the cluster used for jobs and other supported assets.
 	ClusterId string `json:"cluster_id,omitempty"`
 
-	// Engine specifies the deployment engine to use ("terraform" or "direct").
-	// Defaults to "direct"; set "terraform" to opt out.
+	// Engine specifies the deployment engine to use. "direct" is the only supported
+	// engine and the default; "terraform" is rejected with the removal error.
 	// Can be overridden with the DATABRICKS_BUNDLE_ENGINE environment variable.
 	Engine engine.EngineType `json:"engine,omitempty"`
 

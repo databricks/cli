@@ -38,6 +38,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/environments"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/settingsv2"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/gorilla/websocket"
 )
@@ -46,6 +47,19 @@ import (
 var sshServerBootstrapScript string
 
 var errServerMetadata = errors.New("server metadata error")
+
+// portFwdServerlessSetting is the workspace setting an administrator turns off to disable port
+// forwarding to serverless compute, which the tunnel needs.
+const portFwdServerlessSetting = "port_fwd_serverless_enabled"
+
+var errPortForwardingDisabled = errors.New("port forwarding to serverless compute is disabled for this workspace " +
+	"(setting " + portFwdServerlessSetting + "), and the SSH tunnel needs it. " +
+	"Ask a workspace or account admin to enable it, or connect to a dedicated cluster with --cluster")
+
+// errDriverProxyForbidden is a 403 from the driver proxy. Unlike the other non-200 responses, which a
+// server that is still starting produces too, retrying cannot change it: the workspace forbids the
+// connection, e.g. because an administrator disabled port forwarding to serverless compute.
+var errDriverProxyForbidden = errors.New("the workspace refused the SSH tunnel connection")
 
 var connectionNameRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
 
@@ -341,6 +355,15 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		cmdio.LogString(ctx, fmt.Sprintf("Connecting to %s...", sessionID))
 	}
 
+	// Skipped when reconnecting with --metadata (the ProxyCommand child): the server is already
+	// running, so there is no compute left to spare, and every IDE reconnect would repeat the read.
+	if opts.IsServerlessMode() && opts.ServerMetadata == "" {
+		if err := checkPortForwardingToServerless(ctx, client); err != nil {
+			outcome.errorCategory = protos.SshTunnelErrorCategoryPortForwardingDisabled
+			return err
+		}
+	}
+
 	if opts.IDE != "" && !opts.ProxyMode {
 		if err := vscode.CheckIDECommand(opts.IDE); err != nil {
 			outcome.errorCategory = protos.SshTunnelErrorCategoryIDECommandNotOnPath
@@ -445,6 +468,9 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		userName, serverPort, clusterID, err = ensureSSHServerIsRunning(ctx, client, version, secretScopeName, opts)
 		if err != nil {
 			outcome.errorCategory = protos.SshTunnelErrorCategoryServerStartTimeout
+			if errors.Is(err, errDriverProxyForbidden) {
+				outcome.errorCategory = protos.SshTunnelErrorCategoryDriverProxyForbidden
+			}
 			return fmt.Errorf("failed to ensure that ssh server is running: %w", err)
 		}
 		outcome.serverStartTimeMs = time.Since(serverStartTime).Milliseconds()
@@ -512,7 +538,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		return runIDE(ctx, client, userName, keyPath, knownHostsPath, serverPort, clusterID, opts)
 	} else {
 		log.Infof(ctx, "Additional SSH arguments: %v", opts.AdditionalArgs)
-		return spawnSSHClient(ctx, client, userName, keyPath, knownHostsPath, serverPort, clusterID, opts)
+		return spawnSSHClient(ctx, client, userName, keyPath, knownHostsPath, serverPort, clusterID, version, opts)
 	}
 }
 
@@ -653,7 +679,7 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 	log.Debugf(ctx, "Metadata response status code: %d", resp.StatusCode)
 
 	if resp.StatusCode != http.StatusOK {
-		return serverMetadata{}, errors.Join(errServerMetadata, fmt.Errorf("server is not ok, status code %d", resp.StatusCode))
+		return serverMetadata{}, metadataResponseError(resp.StatusCode, bodyBytes)
 	}
 
 	return serverMetadata{
@@ -663,6 +689,53 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 		UsagePolicyID:         wsMetadata.UsagePolicyID,
 		KeepDetachedProcesses: wsMetadata.KeepDetachedProcesses,
 	}, nil
+}
+
+// metadataResponseError classifies a non-200 response from the server's /metadata endpoint. A 403
+// is final and carries the driver proxy's own explanation; anything else is errServerMetadata,
+// which callers treat as a server that is not running yet.
+func metadataResponseError(statusCode int, body []byte) error {
+	if statusCode != http.StatusForbidden {
+		return errors.Join(errServerMetadata, fmt.Errorf("server is not ok, status code %d", statusCode))
+	}
+	// The driver proxy writes its error as a JSON string ("CODE: message") rather than the usual
+	// {"error_code", "message"} object.
+	var message string
+	if json.Unmarshal(body, &message) != nil {
+		message = string(body)
+	}
+	message = strings.TrimSpace(message)
+	if message == "" {
+		message = fmt.Sprintf("status code %d", statusCode)
+	}
+	return fmt.Errorf("%w: %s", errDriverProxyForbidden, message)
+}
+
+// checkPortForwardingToServerless refuses a serverless connection before any compute is started when
+// the workspace setting that the driver proxy enforces for the tunnel is off. The proxy's gate
+// (PortForwardingToServerlessGate in data-plane-router) also depends on an enforcement flag and a port
+// allow-list that the CLI cannot see, and the setting is not readable through the public API in every
+// environment. A read that fails therefore lets the connection go ahead, and the proxy's own 403
+// (errDriverProxyForbidden) remains the backstop. The read goes through a client with retries turned
+// off, so a throttled or unavailable settings service cannot hold up the connection for the SDK's
+// retry budget.
+func checkPortForwardingToServerless(ctx context.Context, client *databricks.WorkspaceClient) error {
+	apiClient, err := newProbeAPIClient(client.Config)
+	if err != nil {
+		log.Debugf(ctx, "Could not build a client to read the %s setting, continuing: %v", portFwdServerlessSetting, err)
+		return nil
+	}
+	setting, err := settingsv2.NewWorkspaceSettingsV2(apiClient).GetPublicWorkspaceSetting(ctx, settingsv2.GetPublicWorkspaceSettingRequest{
+		Name: portFwdServerlessSetting,
+	})
+	if err != nil {
+		log.Debugf(ctx, "Could not read the %s setting, continuing: %v", portFwdServerlessSetting, err)
+		return nil
+	}
+	if setting.EffectiveBooleanVal != nil && !setting.EffectiveBooleanVal.Value {
+		return errPortForwardingDisabled
+	}
+	return nil
 }
 
 // newDriverProxyRequest builds an authenticated GET request to one of the SSH server's
@@ -875,6 +948,34 @@ func shellSingleQuote(s string) string {
 	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
 
+// agentWrapperScript returns one agent's on-PATH launcher: it resolves the uploaded
+// databricks CLI for the driver's arch, then delegates to `ssh agent-shim <agent>`.
+// wsHome anchors that binary path and is forwarded (via env) for the agent context.
+func agentWrapperScript(wsHome, version, agent string) string {
+	versionedDir := wsHome + "/.databricks/ssh-tunnel/" + version
+	// Mirror getReleaseName (minus .zip); ${_arch} is expanded on the remote.
+	subdir := strings.TrimSuffix(getReleaseName("${_arch}", version), ".zip")
+	// Single-quote the workspace/version-derived path so a username or version with
+	// shell metacharacters can't break (or inject into) the exec line, while leaving
+	// ${_arch} unquoted so the remote shell still expands it (getReleaseName always
+	// embeds it, so Cut always splits here).
+	before, after, _ := strings.Cut(subdir, "${_arch}")
+	binary := shellSingleQuote(versionedDir+"/"+before) + "${_arch}" + shellSingleQuote(after+"/databricks")
+
+	// buildRemoteShellArgs only installs launchers when wsHome is set, so it is
+	// always non-empty here.
+	exports := "export " + workspaceHomeEnv + "=" + shellSingleQuote(wsHome) + "\n"
+
+	return fmt.Sprintf(`#!/usr/bin/env bash
+# "%[3]s" launcher from "databricks ssh connect"; delegates to "ssh agent-shim %[3]s".
+case "$(uname -m)" in
+  x86_64|amd64) _arch=amd64 ;;
+  aarch64|arm64) _arch=arm64 ;;
+  *) echo "%[3]s: unsupported architecture $(uname -m)" >&2; exit 1 ;;
+esac
+%[1]sexec %[2]s ssh agent-shim %[3]s "$@"`, exports, binary, agent)
+}
+
 // buildRemoteShellArgs returns the ssh arguments that follow the hostname.
 //
 // For the interactive case (no remote command given), it forces PTY allocation
@@ -886,9 +987,8 @@ func shellSingleQuote(s string) string {
 // would resolve to the system interpreter instead of $DATABRICKS_VIRTUAL_ENV. Using
 // -i avoids that reset; the server's ~/.bashrc snippet (see seedEnvActivation) then
 // re-prepends the environment bin after /etc/bash.bashrc runs, so bare `python`/`pip`
-// resolve to the environment interpreter. When wsHome is set, the shell first changes
-// into the user's workspace home folder; if that directory is missing the cd is
-// ignored and the shell still launches from $HOME.
+// resolve to the environment interpreter. It first installs a per-agent launcher
+// (see agentWrapperScript) on PATH, then cds into wsHome when set (else $HOME).
 //
 // For the non-interactive case (e.g. `databricks ssh connect ... -- ls -la`),
 // the user's command is returned verbatim so behavior is unchanged.
@@ -896,15 +996,39 @@ func shellSingleQuote(s string) string {
 // Note: this returns the remote command only. PTY allocation (-t) is added to
 // the ssh options *before* the destination by the caller; -t placed after the
 // host would be parsed as part of the remote command, not as ssh's flag.
-func buildRemoteShellArgs(opts ClientOptions, wsHome string) []string {
+func buildRemoteShellArgs(opts ClientOptions, wsHome, version string) []string {
 	if len(opts.AdditionalArgs) > 0 {
 		return opts.AdditionalArgs
 	}
-	cmd := `command -v bash >/dev/null 2>&1 && exec bash -i || exec "${SHELL:-/bin/sh}" -i`
+	shell := `command -v bash >/dev/null 2>&1 && exec bash -i || exec "${SHELL:-/bin/sh}" -i`
+	// For any interactive session, land in the user's workspace home when known;
+	// if that directory is missing the cd is ignored and the shell still launches
+	// from $HOME. This is independent of the launcher install below, so dedicated
+	// clusters keep the workspace cwd they had before agent launchers existed.
 	if wsHome != "" {
-		cmd = "cd " + shellSingleQuote(wsHome) + " 2>/dev/null; " + cmd
+		shell = "cd " + shellSingleQuote(wsHome) + " 2>/dev/null; " + shell
 	}
-	return []string{cmd}
+	// The agent launchers are serverless-only for now: dedicated clusters have no
+	// story for persisting the shims or respecting existing installs. They also
+	// need the workspace path to locate the uploaded CLI. Otherwise just open the shell.
+	if !opts.IsServerlessMode() || wsHome == "" {
+		return []string{shell}
+	}
+	// Write each agent's wrapper (quoted heredoc keeps its $VARS literal), then open the shell.
+	remoteShimDir := "$HOME/" + agentBinDir
+	var cmd strings.Builder
+	fmt.Fprintf(&cmd, "mkdir -p \"%s\"\n", remoteShimDir)
+	for _, agent := range SupportedAgentNames() {
+		fmt.Fprintf(&cmd, `cat > "%[1]s/%[2]s" <<'AGENT_SHIM_WRAPPER_EOF'
+%[3]s
+AGENT_SHIM_WRAPPER_EOF
+chmod +x "%[1]s/%[2]s"
+`, remoteShimDir, agent, agentWrapperScript(wsHome, version, agent))
+	}
+	// Append the shim dir (don't prepend) so the wrappers never shadow a real
+	// binary of the same name earlier on PATH.
+	fmt.Fprintf(&cmd, "export PATH=\"$PATH:%s\"\n", remoteShimDir)
+	return []string{cmd.String() + shell}
 }
 
 // buildSSHArgs assembles the argument list for the ssh client. Options come
@@ -916,7 +1040,7 @@ func buildRemoteShellArgs(opts ClientOptions, wsHome string) []string {
 // Host key checking is strict rather than accept-new because the caller has already
 // pinned the server's key in knownHostsPath (see pinServerHostKey), so there is nothing
 // left to accept on trust.
-func buildSSHArgs(userName, privateKeyPath, knownHostsPath, proxyCommand, hostName, wsHome string, opts ClientOptions) []string {
+func buildSSHArgs(userName, privateKeyPath, knownHostsPath, proxyCommand, hostName, wsHome, version string, opts ClientOptions) []string {
 	sshArgs := []string{
 		"-l", userName,
 		"-i", privateKeyPath,
@@ -931,11 +1055,11 @@ func buildSSHArgs(userName, privateKeyPath, knownHostsPath, proxyCommand, hostNa
 		sshArgs = append(sshArgs, "-t")
 	}
 	sshArgs = append(sshArgs, hostName)
-	sshArgs = append(sshArgs, buildRemoteShellArgs(opts, wsHome)...)
+	sshArgs = append(sshArgs, buildRemoteShellArgs(opts, wsHome, version)...)
 	return sshArgs
 }
 
-func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, userName, privateKeyPath, knownHostsPath string, serverPort int, clusterID string, opts ClientOptions) error {
+func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, userName, privateKeyPath, knownHostsPath string, serverPort int, clusterID, version string, opts ClientOptions) error {
 	// Create a copy with metadata for the ProxyCommand
 	optsWithMetadata := opts
 	optsWithMetadata.ServerMetadata = FormatMetadata(userName, serverPort, clusterID)
@@ -959,7 +1083,7 @@ func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, use
 		}
 	}
 
-	sshArgs := buildSSHArgs(userName, privateKeyPath, knownHostsPath, proxyCommand, hostName, wsHome, opts)
+	sshArgs := buildSSHArgs(userName, privateKeyPath, knownHostsPath, proxyCommand, hostName, wsHome, version, opts)
 
 	log.Debugf(ctx, "Launching SSH client: ssh %s", strings.Join(sshArgs, " "))
 	sshCmd := exec.CommandContext(ctx, "ssh", sshArgs...)
@@ -1241,6 +1365,15 @@ func describeRunFailure(ctx context.Context, client *databricks.WorkspaceClient,
 	return strings.TrimRight(b.String(), "\n")
 }
 
+// cancelSSHServerRun cancels the bootstrap run this connection submitted once no client can reach
+// its server. Best effort: the server also shuts itself down after its no-client delay, so a
+// failure here must not hide the error that made the connection give up.
+func cancelSSHServerRun(ctx context.Context, client *databricks.WorkspaceClient, runID int64) {
+	if _, err := client.Jobs.CancelRun(ctx, jobs.CancelRun{RunId: runID}); err != nil {
+		log.Debugf(ctx, "Failed to cancel the ssh server job run %d: %v", runID, err)
+	}
+}
+
 // runFailureIfTerminated reports whether the bootstrap run has reached a terminal state (so the
 // SSH server will never come up), returning a formatted failure description when it has.
 func runFailureIfTerminated(ctx context.Context, client *databricks.WorkspaceClient, runID int64) (string, bool) {
@@ -1330,6 +1463,7 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 	clusterID := opts.ClusterID
 
 	meta, err := getServerMetadata(ctx, client, sessionID, clusterID, version, opts.Liteswap)
+	// This includes errDriverProxyForbidden: a new server would be refused the same way.
 	if err != nil && !errors.Is(err, errServerMetadata) {
 		return "", 0, "", err
 	}
@@ -1359,6 +1493,10 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 				return "", 0, "", ctx.Err()
 			}
 			meta, err = getServerMetadata(ctx, client, sessionID, clusterID, version, opts.Liteswap)
+			if errors.Is(err, errDriverProxyForbidden) {
+				cancelSSHServerRun(ctx, client, runID)
+				return "", 0, "", err
+			}
 			// Accept only once metadata reflects the requested usage policy, so we don't latch
 			// onto a server a previous connection started under a different policy before our new
 			// server has overwritten metadata.json.

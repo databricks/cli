@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/process"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -27,16 +28,33 @@ const cancelPMStderr = "error: no solution found: databricks-connect==17.2 confl
 // below — a plain ">= 0" assertion would also hold for the unset field.
 const fetchDelay = 25 * time.Millisecond
 
-type fakePM struct{ py, dbc, pyspark, dbcImportErr string }
+type fakePM struct {
+	py, dbc, pyspark, dbcImportErr string
+	// root and rootErr are what WorkspaceRoot reports; an empty root means the
+	// project is not a workspace member.
+	root    string
+	rootErr error
+}
 
 func (fakePM) Name() string                                    { return "fake" }
 func (fakePM) EnsureAvailable(context.Context) (string, error) { return "fake 1.0", nil }
 func (fakePM) EnsurePython(_ context.Context, minor string) (PythonSelection, error) {
 	return PythonSelection{Executable: minor, Resolution: PythonResolutionUVInstallSucceeded}, nil
 }
-func (fakePM) Provision(context.Context, string, string) error { return nil }
-func (fakePM) PostProvision(context.Context, string) error     { return nil }
-func (f fakePM) Validate(context.Context, string) (VenvInfo, error) {
+
+func (f fakePM) WorkspaceRoot(_ context.Context, projectDir string) (string, error) {
+	if f.rootErr != nil {
+		return "", f.rootErr
+	}
+	if f.root != "" {
+		return f.root, nil
+	}
+	return projectDir, nil
+}
+
+func (fakePM) Provision(context.Context, string, string) error     { return nil }
+func (fakePM) PostProvision(context.Context, string, string) error { return nil }
+func (f fakePM) Validate(context.Context, string, string) (VenvInfo, error) {
 	return VenvInfo{PythonMinor: f.py, DBConnect: f.dbc, Pyspark: f.pyspark, DBConnectImportErr: f.dbcImportErr}, nil
 }
 
@@ -54,15 +72,19 @@ func (noProvisionPM) EnsurePython(context.Context, string) (PythonSelection, err
 	return PythonSelection{}, errors.New("EnsurePython must not be called under --dry-run")
 }
 
+func (noProvisionPM) WorkspaceRoot(_ context.Context, projectDir string) (string, error) {
+	return projectDir, nil
+}
+
 func (noProvisionPM) Provision(context.Context, string, string) error {
 	return errors.New("Provision must not be called under --dry-run")
 }
 
-func (noProvisionPM) PostProvision(context.Context, string) error {
+func (noProvisionPM) PostProvision(context.Context, string, string) error {
 	return errors.New("PostProvision must not be called under --dry-run")
 }
 
-func (noProvisionPM) Validate(context.Context, string) (VenvInfo, error) {
+func (noProvisionPM) Validate(context.Context, string, string) (VenvInfo, error) {
 	return VenvInfo{}, errors.New("Validate must not be called under --dry-run")
 }
 
@@ -135,7 +157,7 @@ func TestPipelineProvisionsWithSelectedPython(t *testing.T) {
 	dir := writeProject(t)
 	srv := newTestServer(t)
 	defer srv.Close()
-	pm := &recordingPM{fakePM: fakePM{py: "3.12", dbc: "17.2.0"}}
+	pm := &recordingPM{py: "3.12", dbc: "17.2.0"}
 	p := &Pipeline{
 		Mode: ModeDefault, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
@@ -156,7 +178,7 @@ func TestPipelineRetainsFallbackResolutionWhenProvisioningFails(t *testing.T) {
 	srv := newTestServer(t)
 	defer srv.Close()
 	pm := &recordingPM{
-		fakePM:       fakePM{py: "3.12", dbc: "17.2.0"},
+		py: "3.12", dbc: "17.2.0",
 		provisionErr: errors.New("sync failed"),
 	}
 	p := &Pipeline{
@@ -332,7 +354,7 @@ func TestPipelineReportsCancellationNotProvisionFailure(t *testing.T) {
 	defer srv.Close()
 
 	ctx, cancel := context.WithCancel(t.Context())
-	pm := cancelPM{fakePM: fakePM{py: "3.12", dbc: "17.2.0"}, entered: make(chan struct{})}
+	pm := cancelPM{py: "3.12", dbc: "17.2.0", entered: make(chan struct{})}
 	p := &Pipeline{
 		Mode: ModeDefault, Check: false, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
@@ -525,7 +547,7 @@ constraint-dependencies = ["pip<24"]
 	}))
 	defer srv.Close()
 
-	pm := &recordingPM{fakePM: fakePM{py: "3.12", dbc: "17.2.0"}}
+	pm := &recordingPM{py: "3.12", dbc: "17.2.0"}
 	p := &Pipeline{
 		Mode: ModeDefault, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
@@ -840,7 +862,7 @@ func TestApplyMergeFailsOnUnreadableDirWithoutOverwritingBackup(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chmod(dir, 0o755) })
 
 	p := &Pipeline{ProjectDir: dir, res: &Result{Phases: initialPhases()}}
-	err := p.applyMerge(t.Context(), []byte("merged"), false)
+	err := p.applyMerge(t.Context(), []byte("merged"), nil, false)
 	require.Error(t, err)
 	var pe *PipelineError
 	require.ErrorAs(t, err, &pe)
@@ -1068,13 +1090,13 @@ func TestApplyMergeSameInstantBackupsGetUniqueNames(t *testing.T) {
 	}
 
 	// First modifying apply: backs up "current-1" under a timestamped name.
-	require.NoError(t, p.applyMerge(t.Context(), []byte("merged-1\n"), false))
+	require.NoError(t, p.applyMerge(t.Context(), []byte("merged-1\n"), nil, false))
 	first := p.res.BackupPath
 	require.NotEmpty(t, first)
 
 	// Second modifying apply at the SAME instant: backs up "merged-1" but must not
 	// collide with or overwrite the first timestamped backup.
-	require.NoError(t, p.applyMerge(t.Context(), []byte("merged-2\n"), false))
+	require.NoError(t, p.applyMerge(t.Context(), []byte("merged-2\n"), nil, false))
 	second := p.res.BackupPath
 	require.NotEmpty(t, second)
 
@@ -1419,4 +1441,230 @@ func TestPipelineNoConstraintsGreenfieldOmitsPins(t *testing.T) {
 	assert.NotContains(t, s, "constraint-dependencies")
 	// databricks-connect (orthogonal) is still added.
 	assert.Contains(t, s, "databricks-connect~=17.2.0")
+}
+
+// newServerlessTestPipeline returns a pipeline for dir against a test artifact
+// server (serverless v4) that is closed when the test ends.
+func newServerlessTestPipeline(t *testing.T, dir string) *Pipeline {
+	srv := newTestServer(t)
+	t.Cleanup(srv.Close)
+	return &Pipeline{
+		Mode: ModeDefault, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags: ComputeFlags{Serverless: "v4"}, Compute: stubCompute{},
+		PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+}
+
+// venvRecordingPM records the folders the pipeline hands to PostProvision and
+// Validate.
+type venvRecordingPM struct {
+	fakePM
+	postProvisionDir, postProvisionVenv, validateDir, validateVenv string
+}
+
+func (f *venvRecordingPM) PostProvision(_ context.Context, projectDir, venv string) error {
+	f.postProvisionDir, f.postProvisionVenv = projectDir, venv
+	return nil
+}
+
+func (f *venvRecordingPM) Validate(ctx context.Context, projectDir, venv string) (VenvInfo, error) {
+	f.validateDir, f.validateVenv = projectDir, venv
+	return f.fakePM.Validate(ctx, projectDir, venv)
+}
+
+func TestPipelinePassesProjectVenvToPackageManager(t *testing.T) {
+	dir := writeProject(t)
+	pm := &venvRecordingPM{py: "3.12", dbc: "17.2.0"}
+	p := newServerlessTestPipeline(t, dir)
+	p.PM = pm
+
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	want := filepath.Join(dir, ".venv")
+	assert.Equal(t, dir, pm.postProvisionDir)
+	assert.Equal(t, want, pm.postProvisionVenv)
+	assert.Equal(t, dir, pm.validateDir)
+	assert.Equal(t, want, pm.validateVenv)
+	assert.Equal(t, ".venv", res.VenvPath)
+}
+
+func TestWritePyprojectNoOpWritesNothing(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, pyprojectFile)
+	content := []byte("[project]\nname = \"x\"\n")
+	require.NoError(t, os.WriteFile(path, content, 0o644))
+
+	p := &Pipeline{ProjectDir: dir}
+	backup, mutated, perr := p.writePyproject(path, content, false)
+	require.Nil(t, perr)
+	assert.Empty(t, backup)
+	assert.False(t, mutated)
+	assert.NoFileExists(t, filepath.Join(dir, backupFile))
+}
+
+func TestWritePyprojectBacksUpInItsOwnFolder(t *testing.T) {
+	project := t.TempDir()
+	other := t.TempDir()
+	path := filepath.Join(other, pyprojectFile)
+	require.NoError(t, os.WriteFile(path, []byte("[project]\nname = \"x\"\n"), 0o644))
+
+	p := &Pipeline{ProjectDir: project}
+	backup, mutated, perr := p.writePyproject(path, []byte("[project]\nname = \"y\"\n"), false)
+	require.Nil(t, perr)
+	assert.True(t, mutated)
+	assert.Equal(t, filepath.Join(other, backupFile), backup)
+	assert.NoFileExists(t, filepath.Join(project, backupFile))
+	got, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Equal(t, "[project]\nname = \"y\"\n", string(got))
+}
+
+func TestPyprojectDiffLabels(t *testing.T) {
+	d := pyprojectDiff("pyproject.toml", []byte("a\n"), []byte("b\n"), false)
+	assert.Contains(t, d, "--- pyproject.toml")
+	assert.Contains(t, d, "+++ pyproject.toml.new")
+	g := pyprojectDiff("pyproject.toml", nil, []byte("b\n"), true)
+	assert.Contains(t, g, "+++ pyproject.toml")
+	assert.NotContains(t, g, ".new")
+}
+
+// resolvedPath returns path with symlinks resolved (macOS temp folders live
+// under /var, a symlink to /private/var).
+func resolvedPath(t *testing.T, path string) string {
+	t.Helper()
+	resolved, err := filepath.EvalSymlinks(path)
+	require.NoError(t, err)
+	return resolved
+}
+
+// uvJoinBase returns the folder uv joins a relative UV_PROJECT_ENVIRONMENT to:
+// symlink-resolved on Unix, as given on Windows.
+func uvJoinBase(t *testing.T, base string) string {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		return base
+	}
+	return resolvedPath(t, base)
+}
+
+func TestPipelineUsesUvProjectEnvironment(t *testing.T) {
+	// uv puts the project environment at UV_PROJECT_ENVIRONMENT: an absolute
+	// path as is, a relative one against the (symlink-resolved) workspace root,
+	// or the project root outside a workspace.
+	abs := filepath.Join(t.TempDir(), "envs", "proj")
+	tests := []struct {
+		name string
+		// setup returns the project folder, the folder a relative value is
+		// joined to, and the fake package manager.
+		setup        func(t *testing.T) (projectDir, base string, pm fakePM)
+		value        string
+		wantVenv     func(t *testing.T, base string) string
+		wantVenvPath func(venv string) string
+	}{
+		{
+			name: "relative, standalone",
+			setup: func(t *testing.T) (string, string, fakePM) {
+				dir := writeProject(t)
+				return dir, dir, fakePM{py: "3.12", dbc: "17.2.0"}
+			},
+			value:        "custom-env",
+			wantVenv:     func(t *testing.T, base string) string { return filepath.Join(uvJoinBase(t, base), "custom-env") },
+			wantVenvPath: func(string) string { return "custom-env" },
+		},
+		{
+			name: "relative, workspace member",
+			setup: func(t *testing.T) (string, string, fakePM) {
+				root, member := memberLayout(t)
+				require.NoError(t, os.WriteFile(filepath.Join(member, pyprojectFile),
+					[]byte("[project]\nname = \"a\"\nversion = \"0.1.0\"\nrequires-python = \">=3.10\"\n"), 0o644))
+				return member, root, fakePM{py: "3.12", dbc: "17.2.0", root: root}
+			},
+			value:        "custom-env",
+			wantVenv:     func(t *testing.T, base string) string { return filepath.Join(uvJoinBase(t, base), "custom-env") },
+			wantVenvPath: func(string) string { return "../../custom-env" },
+		},
+		{
+			name: "relative with .. through a symlinked project",
+			setup: func(t *testing.T) (string, string, fakePM) {
+				if runtime.GOOS == "windows" {
+					t.Skip("symlinks need extra privileges on Windows")
+				}
+				real := writeProject(t)
+				link := filepath.Join(t.TempDir(), "link")
+				require.NoError(t, os.Symlink(real, link))
+				return link, real, fakePM{py: "3.12", dbc: "17.2.0"}
+			},
+			value: filepath.Join("..", "env"),
+			wantVenv: func(t *testing.T, base string) string {
+				return filepath.Join(filepath.Dir(resolvedPath(t, base)), "env")
+			},
+			wantVenvPath: func(string) string { return "../env" },
+		},
+		{
+			name: "relative with a trailing slash",
+			setup: func(t *testing.T) (string, string, fakePM) {
+				dir := writeProject(t)
+				return dir, dir, fakePM{py: "3.12", dbc: "17.2.0"}
+			},
+			value:        "custom-env/",
+			wantVenv:     func(t *testing.T, base string) string { return filepath.Join(uvJoinBase(t, base), "custom-env") },
+			wantVenvPath: func(string) string { return "custom-env" },
+		},
+		{
+			// On Windows a rooted path keeps the drive of the root, as in uv.
+			name: "rooted without a drive",
+			setup: func(t *testing.T) (string, string, fakePM) {
+				if runtime.GOOS != "windows" {
+					t.Skip("a rooted path without a drive exists only on Windows")
+				}
+				dir := writeProject(t)
+				return dir, dir, fakePM{py: "3.12", dbc: "17.2.0"}
+			},
+			value:    `\envs\x`,
+			wantVenv: func(t *testing.T, base string) string { return filepath.VolumeName(base) + `\envs\x` },
+			// The drive comes from the project.
+			wantVenvPath: filepath.ToSlash,
+		},
+		{
+			// A Windows drive-relative value such as C:envs\x names a folder on
+			// that drive; uv uses it as is, so does the CLI.
+			name: "drive-relative",
+			setup: func(t *testing.T) (string, string, fakePM) {
+				if runtime.GOOS != "windows" {
+					t.Skip("a drive-relative path exists only on Windows")
+				}
+				dir := writeProject(t)
+				return dir, dir, fakePM{py: "3.12", dbc: "17.2.0"}
+			},
+			value:        `C:envs\x`,
+			wantVenv:     func(*testing.T, string) string { return `C:envs\x` },
+			wantVenvPath: func(string) string { return "C:envs/x" },
+		},
+		{
+			name: "absolute",
+			setup: func(t *testing.T) (string, string, fakePM) {
+				dir := writeProject(t)
+				return dir, dir, fakePM{py: "3.12", dbc: "17.2.0"}
+			},
+			value:        abs,
+			wantVenv:     func(*testing.T, string) string { return abs },
+			wantVenvPath: func(string) string { return filepath.ToSlash(abs) },
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			projectDir, base, fake := tc.setup(t)
+			pm := &venvRecordingPM{fakePM: fake}
+			p := newServerlessTestPipeline(t, projectDir)
+			p.PM = pm
+
+			res, err := p.Run(env.Set(t.Context(), EnvUvProjectEnvironment, tc.value))
+			require.NoError(t, err)
+			want := tc.wantVenv(t, base)
+			assert.Equal(t, want, pm.postProvisionVenv)
+			assert.Equal(t, want, pm.validateVenv)
+			assert.Equal(t, tc.wantVenvPath(want), res.VenvPath)
+		})
+	}
 }

@@ -10,6 +10,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
@@ -45,6 +46,19 @@ func dlRuntimeImage(ctx context.Context, runtimeVersion string) string {
 	return strings.TrimPrefix(img, "CLIENT-GPU-")
 }
 
+func buildRunEnvironment(dlImage string, deps []string) *compute.Environment {
+	environment := &compute.Environment{}
+	if strings.HasPrefix(dlImage, databricksAIPrefix) {
+		environment.BaseEnvironment = "workspace-base-environments/" + dlImage
+	} else {
+		environment.EnvironmentVersion = dlImage
+	}
+	if len(deps) > 0 {
+		environment.Dependencies = deps
+	}
+	return environment
+}
+
 // buildSubmitPayload assembles the runs/submit payload. commandPath is the
 // workspace path of the uploaded command.sh; dlImage is the runtime channel;
 // usagePolicyID is the already-resolved policy id ("" when the run has none);
@@ -57,15 +71,18 @@ func dlRuntimeImage(ctx context.Context, runtimeVersion string) string {
 // "false"). Jobs performs the retries — each attempt is a fresh AI Runtime
 // workload.
 func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID string, snap snapshotResult, deps []string) jobs.SubmitRun {
+	deployment := jobs.DeploymentSpec{
+		Compute: jobs.ComputeSpec{
+			AcceleratorType:  jobs.ComputeSpecAcceleratorType(cfg.Compute.AcceleratorType),
+			AcceleratorCount: cfg.Compute.NumAccelerators,
+		},
+	}
+	if len(cfg.Containers) == 0 {
+		deployment.CommandPath = commandPath
+	}
 	task := jobs.AiRuntimeTask{
-		Experiment: cfg.ExperimentName,
-		Deployments: []jobs.DeploymentSpec{{
-			CommandPath: commandPath,
-			Compute: jobs.ComputeSpec{
-				AcceleratorType:  jobs.ComputeSpecAcceleratorType(cfg.Compute.AcceleratorType),
-				AcceleratorCount: cfg.Compute.NumAccelerators,
-			},
-		}},
+		Experiment:     cfg.ExperimentName,
+		Deployments:    []jobs.DeploymentSpec{deployment},
 		CodeSourcePath: snap.CodeSourcePath,
 	}
 	if cfg.MLflowRunName != nil {
@@ -95,15 +112,7 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID stri
 	// Carry the user's declared deps inline on spec.dependencies; the AI Runtime
 	// backend installs them via --deps-config. The SDK marshaler drops nil and empty
 	// slices, so a no-deps run omits the key.
-	envSpec := &compute.Environment{}
-	if strings.HasPrefix(dlImage, databricksAIPrefix) {
-		envSpec.BaseEnvironment = "workspace-base-environments/" + dlImage
-	} else {
-		envSpec.EnvironmentVersion = dlImage
-	}
-	if len(deps) > 0 {
-		envSpec.Dependencies = deps
-	}
+	envSpec := buildRunEnvironment(dlImage, deps)
 
 	return jobs.SubmitRun{
 		RunName: cfg.ExperimentName,
@@ -119,12 +128,19 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID stri
 	}
 }
 
-func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.SubmitRun, poolID, priorityClass, unityCatalogImagePath string) (int64, error) {
+type submittedContainer struct {
+	Name                  string
+	CommandPath           string
+	Ranks                 []int
+	UnityCatalogImagePath string
+}
+
+func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.SubmitRun, poolID, priorityClass, unityCatalogImagePath string, containers []submittedContainer) (int64, error) {
 	// None of these fields are modeled by the SDK's AiRuntimeTask, so a run that
 	// sets any of them has to go through the raw /api/2.2 body. priority_class only
 	// ever appears alongside a pool (validation enforces it), but route on
 	// all of them so none can be silently dropped.
-	if poolID == "" && priorityClass == "" && unityCatalogImagePath == "" {
+	if poolID == "" && priorityClass == "" && unityCatalogImagePath == "" && len(containers) == 0 {
 		wait, err := w.Jobs.Submit(ctx, payload)
 		if err != nil {
 			return 0, err
@@ -152,6 +168,11 @@ func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.
 		}
 		aiRuntimeTask["unity_catalog_image_path"] = unityCatalogImagePath
 	}
+	if len(containers) > 0 {
+		if err := injectContainers(body, containers); err != nil {
+			return 0, err
+		}
+	}
 
 	apiClient, err := client.New(w.Config)
 	if err != nil {
@@ -163,6 +184,39 @@ func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.
 		return 0, err
 	}
 	return response.RunId, nil
+}
+
+func injectContainers(body map[string]any, containers []submittedContainer) error {
+	aiRuntimeTask, err := aiRuntimeTaskFromSubmitBody(body)
+	if err != nil {
+		return err
+	}
+	deployments, ok := aiRuntimeTask["deployments"].([]any)
+	if !ok || len(deployments) != 1 {
+		return errors.New("AIR submit payload must contain exactly one deployment")
+	}
+	deployment, ok := deployments[0].(map[string]any)
+	if !ok {
+		return errors.New("AIR submit payload deployment has an invalid shape")
+	}
+	// The SDK's DeploymentSpec marshals its required command_path even when
+	// empty. Container runs have their own commands, so omit that wire field.
+	delete(deployment, "command_path")
+	raw := make([]any, 0, len(containers))
+	for _, container := range containers {
+		ranks := make([]any, len(container.Ranks))
+		for i, rank := range container.Ranks {
+			ranks[i] = rank
+		}
+		raw = append(raw, map[string]any{
+			"name":                     container.Name,
+			"command_path":             container.CommandPath,
+			"ranks":                    ranks,
+			"unity_catalog_image_path": container.UnityCatalogImagePath,
+		})
+	}
+	deployment["containers"] = raw
+	return nil
 }
 
 // injectPoolFields sets the pool-only fields the SDK does not model onto the
@@ -213,10 +267,9 @@ func aiRuntimeTaskFromSubmitBody(body map[string]any) (map[string]any, error) {
 	return aiRuntimeTask, nil
 }
 
-// submitToken resolves the idempotency token: the --idempotency-key flag wins,
-// then the config's token, else a generated one. Over-long tokens error rather
-// than truncate, since truncation could make two distinct tokens collide.
-func submitToken(flag string, cfg *runConfig) (string, error) {
+// effectiveIdempotencyToken resolves the token sent to validation and submit:
+// the --idempotency-key flag wins, then the config's token, else a generated one.
+func effectiveIdempotencyToken(flag string, cfg *runConfig) string {
 	token := flag
 	if token == "" && cfg.IdempotencyToken != nil {
 		token = *cfg.IdempotencyToken
@@ -224,10 +277,16 @@ func submitToken(flag string, cfg *runConfig) (string, error) {
 	if token == "" {
 		token = uuid.NewString()
 	}
+	return token
+}
+
+// validateIdempotencyToken keeps the CLI's submission guard as a fallback when
+// backend validation is unavailable or does not yet enforce the same rule.
+func validateIdempotencyToken(token string) error {
 	if len(token) > 64 {
-		return "", fmt.Errorf("idempotency token must be 64 characters or less, got %d", len(token))
+		return fmt.Errorf("idempotency token must be 64 characters or less, got %d", len(token))
 	}
-	return token, nil
+	return nil
 }
 
 // withSpinner runs fn, showing an stderr spinner labeled msg when show is true.
@@ -263,42 +322,36 @@ func stageRunArtifacts(ctx context.Context, launchWriter fileWriter, items []upl
 		})
 	}
 
-	if err := group.Wait(); err != nil {
-		return snapshotResult{}, err
-	}
-	return snap, nil
+	err := group.Wait()
+	// Preserve measurements from attempted snapshot phases even if staging fails.
+	return snap, err
 }
 
 // submitWorkload runs the submit happy path: ensure the experiment directory,
 // upload the launch artifacts, assemble the Jobs payload, and submit it. It
 // returns the new run_id and its dashboard URL. showProgress enables the stderr
 // staging spinner (text mode only).
-func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string, showProgress bool) (int64, string, error) {
-	// Compute the launch dir and command_path up front — a read-only workspace lookup plus a
-	// local path build, no writes yet — so the pre-flight validates the real command_path. The
-	// same path is reused for the upload and submit below, so the validated path is the submitted
-	// one.
-	base, err := userWorkspaceDir(ctx, w)
+func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string, showProgress bool) (runID int64, dashboardURL string, err error) {
+	start := time.Now()
+	var snap snapshotResult
+	defer func() { logRunEvent(ctx, cfg, snap, runID, time.Since(start), err) }()
+
+	// Compute and validate the actual submission path before creating artifacts.
+	base, funcDir, commandPath, err := prospectiveLaunchPaths(ctx, w, cfg)
 	if err != nil {
 		return 0, "", err
 	}
-	runName := ""
-	if cfg.MLflowRunName != nil {
-		runName = *cfg.MLflowRunName
-	}
-	funcDir := cliLaunchDir(base, cfg.ExperimentName, runName)
-	commandPath := path.Join(funcDir, commandScriptName)
+	containers := submittedContainers(cfg, funcDir)
+	token := effectiveIdempotencyToken(idempotencyKey, cfg)
 
-	// Pre-flight the config server-side before any upload, so a bad config fails with the
-	// backend's field-level errors and no orphaned artifacts.
-	if err := preflightValidate(ctx, w, cfg, commandPath); err != nil {
+	// Validate server-side before uploading, so invalid configs leave no artifacts.
+	if err := preflightValidate(ctx, w, cfg, commandPath, containers, token); err != nil {
 		return 0, "", err
 	}
 
-	// Resolve the idempotency token first so a bad key fails before any upload,
-	// and before the policy lookup below spends a round trip on it.
-	token, err := submitToken(idempotencyKey, cfg)
-	if err != nil {
+	// Retain the local guard after backend validation so an unavailable endpoint
+	// cannot let a bad key reach upload or submission.
+	if err := validateIdempotencyToken(token); err != nil {
 		return 0, "", err
 	}
 
@@ -350,7 +403,6 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		}
 	}
 
-	var snap snapshotResult
 	err = withSpinner(ctx, showProgress, "Staging run artifacts…", func() error {
 		var stageErr error
 		snap, stageErr = stageRunArtifacts(ctx, fc, items, stageSnapshot)
@@ -377,11 +429,24 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	// Submit returns as soon as the run is created; we don't wait for it to finish.
 	// Permissions are granted by the caller, after the submit result is shown, so
 	// the best-effort grant never delays the success line.
-	runID, err := submitRun(ctx, w, payload, poolID, priorityClass, cfg.unityCatalogImagePath())
+	runID, err = submitRun(ctx, w, payload, poolID, priorityClass, cfg.unityCatalogImagePath(), containers)
 	if err != nil {
 		return 0, "", err
 	}
 
-	dashboardURL := strings.TrimRight(w.Config.Host, "/") + "/jobs/runs/" + strconv.FormatInt(runID, 10)
+	dashboardURL = strings.TrimRight(w.Config.Host, "/") + "/jobs/runs/" + strconv.FormatInt(runID, 10)
 	return runID, dashboardURL, nil
+}
+
+func submittedContainers(cfg *runConfig, funcDir string) []submittedContainer {
+	containers := make([]submittedContainer, 0, len(cfg.Containers))
+	for _, container := range cfg.Containers {
+		containers = append(containers, submittedContainer{
+			Name:                  container.Name,
+			CommandPath:           path.Join(funcDir, "containers", container.Name, commandScriptName),
+			Ranks:                 container.Ranks,
+			UnityCatalogImagePath: container.UnityCatalogImage,
+		})
+	}
+	return containers
 }

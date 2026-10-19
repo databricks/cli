@@ -1,6 +1,7 @@
 package aircmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -94,6 +95,56 @@ permissions:
 	assert.Len(t, cfg.Permissions, 2)
 }
 
+func TestLoadRunConfig_CodeSourceShapes(t *testing.T) {
+	tests := []struct {
+		name string
+		yaml string
+	}{
+		{"flattened", "code_source:\n  root_path: src\n"},
+		{"flattened with type", "code_source:\n  type: snapshot\n  root_path: src\n"},
+		{"nested", "code_source:\n  snapshot:\n    root_path: src\n"},
+		{"nested with type", "code_source:\n  type: snapshot\n  snapshot:\n    root_path: src\n"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := loadRunConfig(writeConfig(t, minimalConfig+tt.yaml))
+			require.NoError(t, err)
+			require.NotNil(t, cfg.CodeSource.Snapshot)
+			assert.Equal(t, "src", cfg.CodeSource.Snapshot.RootPath)
+			assert.Nil(t, cfg.CodeSource.LegacySnapshot)
+		})
+	}
+}
+
+func TestLoadRunConfig_CodeSourceErrors(t *testing.T) {
+	tests := []struct {
+		name    string
+		yaml    string
+		errFrag string
+	}{
+		{"empty", "code_source: {}\n", "requires snapshot configuration"},
+		{"type only", "code_source:\n  type: snapshot\n", "requires snapshot configuration"},
+		{"empty type", "code_source:\n  type: \"\"\n  root_path: src\n", "cannot be empty; omit it to use snapshot"},
+		{"null type", "code_source:\n  type: null\n  root_path: src\n", "cannot be empty; omit it to use snapshot"},
+		{"unsupported type", "code_source:\n  type: git\n  root_path: src\n", "must be 'snapshot'"},
+		{"mixed shapes", "code_source:\n  root_path: src\n  snapshot:\n    root_path: src\n", "remove the 'snapshot' wrapper and place all fields directly under code_source"},
+		{"mixed with null snapshot", "code_source:\n  root_path: src\n  snapshot: null\n", "remove the 'snapshot' wrapper and place all fields directly under code_source"},
+		{"flattened error path", "code_source:\n  root_path: \"\"\n", "code_source.root_path cannot be empty"},
+		{"nested error path", "code_source:\n  snapshot:\n    root_path: \"\"\n", "code_source.snapshot.root_path cannot be empty"},
+		{"null snapshot", "code_source:\n  snapshot: null\n", "code_source.snapshot.root_path cannot be empty"},
+		{"unknown flattened field", "code_source:\n  root_path: src\n  bogus: true\n", "field bogus not found"},
+		{"unknown nested field", "code_source:\n  snapshot:\n    root_path: src\n    bogus: true\n", "field bogus not found"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := loadRunConfig(writeConfig(t, minimalConfig+tt.yaml))
+			require.ErrorContains(t, err, tt.errFrag)
+		})
+	}
+}
+
 // TestLoadRunConfigUnityCatalogImage covers parsing environment.unity_catalog_image,
 // which is mutually exclusive with dependencies/version.
 func TestLoadRunConfigUnityCatalogImage(t *testing.T) {
@@ -104,6 +155,74 @@ environment:
 	require.NoError(t, err)
 	require.NotNil(t, cfg.Environment)
 	assert.Equal(t, "main.air.training:prod", cfg.Environment.UnityCatalogImage)
+}
+
+func TestLoadRunConfigContainers(t *testing.T) {
+	cfg, err := loadRunConfig(writeConfig(t, `
+experiment_name: roles
+compute:
+  accelerator_type: GPU_1xH100
+  num_accelerators: 4
+containers:
+  - name: inference
+    command: python infer.py
+    ranks: [0, 1]
+    unity_catalog_image: main.ml.inference:v1
+    environment_variables:
+      variables:
+        MODEL_NAME: llama
+        HF_TOKEN: '{{secrets/research/hf_token}}'
+  - name: dataproc
+    command: python dataproc.py
+    ranks: [2, 3]
+    unity_catalog_image: main.ml.dataproc:v2
+`))
+	require.NoError(t, err)
+	require.Nil(t, cfg.Command)
+	require.Len(t, cfg.Containers, 2)
+	assert.Equal(t, []int{0, 1}, cfg.Containers[0].Ranks)
+	assert.Equal(t, "llama", cfg.Containers[0].EnvironmentVariables.Variables["MODEL_NAME"])
+}
+
+func TestMultiImageExample(t *testing.T) {
+	cfg, err := loadRunConfig("examples/multi-image-example.yaml")
+	require.NoError(t, err)
+	assert.Equal(t, "qwen_grpo_multi_image", cfg.ExperimentName)
+	assert.Len(t, cfg.Containers, 2)
+}
+
+func TestLoadRunConfigContainerValidation(t *testing.T) {
+	base := `
+experiment_name: roles
+compute:
+  accelerator_type: GPU_1xH100
+  num_accelerators: 2
+containers:
+  - name: first
+    command: echo first
+    ranks: [0]
+    unity_catalog_image: main.ml.first:v1
+  - name: second
+    command: echo second
+    ranks: [%s]
+    unity_catalog_image: main.ml.second:v1
+`
+	for _, tc := range []struct {
+		name    string
+		rank    string
+		wantErr string
+	}{
+		{"overlap", "0", "rank 0 is assigned to both"},
+		{"out of range", "2", "valid ranks for this compute are 0 through 1"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := loadRunConfig(writeConfig(t, fmt.Sprintf(base, tc.rank)))
+			require.ErrorContains(t, err, tc.wantErr)
+		})
+	}
+
+	_, err := loadRunConfig(writeConfig(t, strings.Replace(base, "ranks: [%s]", "ranks: []", 1)))
+	require.ErrorContains(t, err, "ranks must contain at least one rank")
 }
 
 // TestLoadRunConfig_PolymorphicFields exercises the str|int and bool|str unions
@@ -427,7 +546,7 @@ func TestSnapshotSourceConfigValidate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.snap.validate()
+			err := tt.snap.validate("code_source")
 			if tt.errFrag == "" {
 				assert.NoError(t, err)
 				return
@@ -488,10 +607,9 @@ func TestResolveConfigField(t *testing.T) {
 		{"bare path", "compute.accelerator_type", "config.compute.accelerator_type", "string", ""},
 		{"top-level required", "config.experiment_name", "config.experiment_name", "string", "yes"},
 		{"int leaf", "config.max_retries", "config.max_retries", "int", ""},
-		{"conditionally required", "config.code_source.type", "config.code_source.type", "string", "when code_source is set"},
 		{"through a slice", "config.permissions.level", "config.permissions.level", "string", "when a grant is listed"},
 		{"free-form map", "config.parameters", "config.parameters", "map of string to any", ""},
-		{"deeply nested", "config.code_source.snapshot.root_path", "config.code_source.snapshot.root_path", "string", "when code_source.snapshot is set"},
+		{"flattened snapshot", "config.code_source.root_path", "config.code_source.root_path", "string", "when code_source is set"},
 	}
 
 	for _, tt := range tests {
@@ -513,7 +631,7 @@ func TestResolveConfigField_PolymorphicTypes(t *testing.T) {
 	tests := []struct{ path, wantType string }{
 		{"config.environment.dependencies", "list of strings"},
 		{"config.environment.version", "string or int"},
-		{"config.code_source.snapshot.git.remote", "bool or string"},
+		{"config.code_source.git.remote", "bool or string"},
 	}
 
 	for _, tt := range tests {
@@ -580,8 +698,13 @@ func TestResolveConfigField_Errors(t *testing.T) {
 		},
 		{
 			name:      "nested typo reports the resolved prefix",
-			path:      "config.code_source.snapshot.rootpath",
-			wantParts: []string{`unknown config field "config.code_source.snapshot.rootpath"`, `did you mean "root_path"?`},
+			path:      "config.code_source.rootpath",
+			wantParts: []string{`unknown config field "config.code_source.rootpath"`, `did you mean "root_path"?`},
+		},
+		{
+			name:      "legacy fields are hidden",
+			path:      "config.code_source.snapshot",
+			wantParts: []string{`unknown config field "config.code_source.snapshot"`},
 		},
 	}
 
@@ -641,6 +764,9 @@ func TestConfigFieldsAllDocumented(t *testing.T) {
 	var walk func(fields []configField)
 	walk = func(fields []configField) {
 		for _, f := range fields {
+			if f.hidden {
+				continue
+			}
 			assert.NotEmpty(t, f.help, "%s is missing a help: struct tag", f.path)
 			assert.NotEmpty(t, f.typeName, "%s has no type name", f.path)
 			walk(f.children)
@@ -708,8 +834,16 @@ func TestConfigSchemaSharedByHelpAndOverride(t *testing.T) {
 	paths := []string{
 		"compute.num_accelerators",
 		"environment.unity_catalog_image",
-		"code_source.snapshot.root_path",
+		"code_source.root_path",
 		"env_variables.MY_VAR", // free-form sub-path
+	}
+
+	for _, p := range []string{"code_source.type", "code_source.snapshot.root_path"} {
+		t.Run(p+" compatibility override", func(t *testing.T) {
+			require.NoError(t, validateOverridePaths([]overrideEntry{{path: p, raw: "x"}}))
+			_, err := resolveConfigField(p)
+			require.Error(t, err)
+		})
 	}
 	for _, p := range paths {
 		t.Run(p, func(t *testing.T) {

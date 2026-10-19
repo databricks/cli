@@ -9,7 +9,7 @@
    "state": {
     "display_name": "my dashboard",
     "embed_credentials": true,
-    "etag": "[NUMID]",
+    "etag": "80611980",
     "parent_path": "/Workspace/Users/[USERNAME]",
     "published": true,
     "serialized_dashboard": "sha256:[HASH]",

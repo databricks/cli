@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/terraform_dabs_map"
 	"github.com/databricks/cli/libs/structs/structpath"
-	tfjson "github.com/hashicorp/terraform-json"
 )
 
 // TFStateAttrs maps (tfResourceType → resourceName → raw JSON attributes).
@@ -34,9 +33,9 @@ type rawTFState struct {
 	Serial    int    `json:"serial"`
 	Lineage   string `json:"lineage"`
 	Resources []struct {
-		Type      string              `json:"type"`
-		Name      string              `json:"name"`
-		Mode      tfjson.ResourceMode `json:"mode"`
+		Type      string `json:"type"`
+		Name      string `json:"name"`
+		Mode      string `json:"mode"`
 		Instances []struct {
 			Attributes json.RawMessage `json:"attributes"`
 		} `json:"instances"`
@@ -77,7 +76,7 @@ func ParseTFStateFull(ctx context.Context, path string) (*TFState, error) {
 func parseTFStateAttrsFromRaw(s *rawTFState) TFStateAttrs {
 	result := make(TFStateAttrs)
 	for _, r := range s.Resources {
-		if r.Mode != tfjson.ManagedResourceMode || len(r.Instances) == 0 {
+		if r.Mode != terraform.ManagedResourceMode || len(r.Instances) == 0 {
 			continue
 		}
 		if result[r.Type] == nil {

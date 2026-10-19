@@ -3,6 +3,7 @@ package dockercredentials
 import (
 	"context"
 	"fmt"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/databricks/cli/libs/env"
@@ -36,7 +37,7 @@ func Configure(ctx context.Context, executable, registryHost string) (Configurat
 	return Configuration{ConfigPath: configPath, Shim: shim}, nil
 }
 
-// Inspect reads the helper selection without modifying Docker's configuration.
+// Inspect checks the helper selection and executable availability without modifying Docker's configuration.
 func Inspect(ctx context.Context, registryHost string) (Status, error) {
 	configPath, err := ConfigPath(ctx)
 	if err != nil {
@@ -45,6 +46,10 @@ func Inspect(ctx context.Context, registryHost string) (Status, error) {
 	configured, err := CredentialHelperConfigured(configPath, registryHost)
 	if err != nil {
 		return Status{}, err
+	}
+	if configured {
+		_, err := exec.LookPath("docker-credential-" + HelperName)
+		configured = err == nil
 	}
 	return Status{Host: registryHost, Configured: configured}, nil
 }

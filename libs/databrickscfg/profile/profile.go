@@ -6,6 +6,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 )
 
+// WorkspaceIDNone is a sentinel value persisted to .databrickscfg when the
+// user explicitly skips workspace selection for SPOG account-level access.
+const WorkspaceIDNone = "none"
+
 // Profile holds a subset of the keys in a databrickscfg profile.
 // It should only be used for prompting and filtering.
 // Use its name to construct a config.Config.

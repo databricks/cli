@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"path"
 	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
@@ -16,15 +18,16 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/workspaceurls"
+	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
 // stagedOperations lists the resources the plan will touch, for CreateVersion to stage an
 // operation each. Skipped and undefined actions are left out: nothing is applied for them, so
 // their operations would stay pending and the service would hold no state for them.
-func stagedOperations(plan *deployplan.Plan) ([]dms.StagedOperation, error) {
+func stagedOperations(plan *deployplan.Plan) ([]bundledeployments.StagedOperation, error) {
 	actions := plan.GetActions()
-	staged := make([]dms.StagedOperation, 0, len(actions))
+	staged := make([]bundledeployments.StagedOperation, 0, len(actions))
 	for _, action := range actions {
 		if action.ActionType == deployplan.Skip || action.ActionType == deployplan.Undefined {
 			continue
@@ -33,8 +36,8 @@ func stagedOperations(plan *deployplan.Plan) ([]dms.StagedOperation, error) {
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", action.ResourceKey, err)
 		}
-		staged = append(staged, dms.StagedOperation{
-			ResourceKey: action.ResourceKey,
+		staged = append(staged, bundledeployments.StagedOperation{
+			ResourceKey: strings.TrimPrefix(action.ResourceKey, dms.StatePrefix),
 			ActionType:  actionType,
 		})
 	}
@@ -69,19 +72,35 @@ func actionToSDK(a deployplan.ActionType) (bundledeployments.OperationActionType
 // no deployment behind; a first deploy's new id is then stamped into the plan (StampDeploymentID).
 func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bundledeployments.Deployment) {
 	db := &b.DeploymentBundle
-	dmsClient := db.StateDB.DmsClient()
-	metadata := deploymentMetadata(b)
+	w := b.WorkspaceClient(ctx)
+	metadata, err := deploymentMetadata(b)
+	if err != nil {
+		logdiag.LogError(ctx, fmt.Errorf("failed to compute deployment metadata: %w", err))
+		return
+	}
 	deploymentID := db.StateDB.DeploymentID
 	if deploymentID == "" {
-		id, err := dmsClient.CreateDeployment(ctx, b.Config.Workspace.StatePath, metadata)
+		dep := metadata.Deployment()
+		dep.InitialParentPath = b.Config.Workspace.StatePath
+		created, err := w.BundleDeployments.CreateDeployment(ctx, bundledeployments.CreateDeploymentRequest{Deployment: dep})
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("failed to create deployment: %w", err))
 			return
 		}
-		deploymentID = id
+		// The id is the workspace node the server makes under the parent path.
+		deploymentID, err = dms.DeploymentIDFromName(created.Name)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("failed to create deployment: %w", err))
+			return
+		}
 		db.StateDB.DeploymentID = deploymentID
 	} else if mask := metadata.StaleFields(current); mask != "" {
-		if err := dmsClient.UpdateDeployment(ctx, deploymentID, metadata, mask); err != nil {
+		_, err := w.BundleDeployments.UpdateDeployment(ctx, bundledeployments.UpdateDeploymentRequest{
+			Name:       dms.DeploymentName(deploymentID),
+			Deployment: dms.DeploymentUpdate(metadata, mask),
+			UpdateMask: fieldmask.FieldMask{Paths: strings.Split(mask, ",")},
+		})
+		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("failed to update deployment: %w", err))
 			return
 		}
@@ -96,12 +115,12 @@ func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bu
 // startVersion claims the version the run settled on and opens the buffer that records
 // each state write under it. Called after approval, so a declined deploy never claims a number.
 // A no-op when the bundle does not record deployment history.
-func startVersion(ctx context.Context, b *bundle.Bundle, versionType dms.VersionType, staged []dms.StagedOperation) error {
+func startVersion(ctx context.Context, b *bundle.Bundle, versionType dms.VersionType, staged []bundledeployments.StagedOperation) error {
 	db := &b.DeploymentBundle
-	dmsClient := db.StateDB.DmsClient()
-	if dmsClient == nil {
+	if !db.StateDB.IsDeploymentMetadataService() {
 		return nil
 	}
+	w := b.WorkspaceClient(ctx)
 	deploymentID := db.StateDB.DeploymentID
 	// This run's version follows the one the state is anchored to, which is empty for the first.
 	// InitializeOperationBuffer moves the anchor below, so callers afterwards read the created
@@ -124,12 +143,16 @@ func startVersion(ctx context.Context, b *bundle.Bundle, versionType dms.Version
 			OriginUrl: git.OriginURL,
 		}
 	}
-	version, err := dmsClient.CreateVersion(ctx, deploymentID, versionID, dms.CreateVersionRequest{
-		CliVersion:        build.GetInfo().Version,
-		VersionType:       versionType,
-		PreviousVersionId: previousVersionID,
-		Operations:        staged,
-		GitInfo:           gitInfo,
+	version, err := w.BundleDeployments.CreateVersion(ctx, bundledeployments.CreateVersionRequest{
+		Parent:    dms.DeploymentName(deploymentID),
+		VersionId: strconv.Itoa(versionID),
+		Version: bundledeployments.Version{
+			CliVersion:        build.GetInfo().Version,
+			VersionType:       versionType,
+			PreviousVersionId: previousVersionID,
+			GitInfo:           gitInfo,
+			Operations:        staged,
+		},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create deployment version: %w", err)
@@ -163,7 +186,7 @@ func logDeploymentVersion(ctx context.Context, b *bundle.Bundle) {
 
 // deploymentMetadata describes the bundle this deploy came from and where it
 // landed, mirroring what bundle/deploy/metadata computes for the metadata file.
-func deploymentMetadata(b *bundle.Bundle) dms.Metadata {
+func deploymentMetadata(b *bundle.Bundle) (dms.Metadata, error) {
 	p := dms.Metadata{
 		DisplayName: b.Config.Bundle.Name,
 		TargetName:  b.Config.Bundle.Target,
@@ -173,6 +196,15 @@ func deploymentMetadata(b *bundle.Bundle) dms.Metadata {
 	ws := &bundledeployments.WorkspaceInfo{
 		RootPath: b.Config.Workspace.RootPath,
 		FilePath: b.Config.Workspace.FilePath,
+	}
+	// With an immutable folder, file_path is a reference to the snapshot, which only
+	// resolves once the snapshot is uploaded. Its path is already known from the staged zip.
+	if b.IsImmutableFolder() {
+		snapshot, ok := b.Config.Resources.Snapshots[resources.SnapshotResourceKey]
+		if !ok {
+			return dms.Metadata{}, fmt.Errorf("no %s in the bundle", resources.SnapshotKey)
+		}
+		ws.FilePath = path.Join(snapshot.FullPath(), "files")
 	}
 	// In a source-linked deployment files are not copied, so resources read them
 	// from the sync root instead of file_path (see bundle/deploy/metadata.Compute).
@@ -187,7 +219,7 @@ func deploymentMetadata(b *bundle.Bundle) dms.Metadata {
 		ws.BundleRootPath = b.Config.Bundle.Git.BundleRootPath
 	}
 	p.Workspace = ws
-	return p
+	return p, nil
 }
 
 // deploymentModeToSDK maps the bundle target's mode to the DMS enum. An unset mode

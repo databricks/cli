@@ -1,0 +1,14 @@
+bundle:
+  name: test-bundle
+
+targets:
+  bracket:
+    resources:
+      dashboards:
+        "reports[":
+          serialized_dashboard: "{}"
+  comma:
+    resources:
+      dashboards:
+        "a,b":
+          serialized_dashboard: "{}"

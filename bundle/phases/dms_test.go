@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,11 +22,11 @@ func TestStagedOperationsCoversEveryTouchedResource(t *testing.T) {
 	staged, err := stagedOperations(plan)
 	require.NoError(t, err)
 
-	assert.ElementsMatch(t, []dms.StagedOperation{
-		{ResourceKey: "resources.jobs.foo", ActionType: bundledeployments.OperationActionTypeOperationActionTypeCreate},
-		{ResourceKey: "resources.pipelines.bar", ActionType: bundledeployments.OperationActionTypeOperationActionTypeRecreate},
-		{ResourceKey: "resources.schemas.baz", ActionType: bundledeployments.OperationActionTypeOperationActionTypeDelete},
-		{ResourceKey: "resources.clusters.small", ActionType: bundledeployments.OperationActionTypeOperationActionTypeResize},
+	assert.ElementsMatch(t, []bundledeployments.StagedOperation{
+		{ResourceKey: "jobs.foo", ActionType: bundledeployments.OperationActionTypeOperationActionTypeCreate},
+		{ResourceKey: "pipelines.bar", ActionType: bundledeployments.OperationActionTypeOperationActionTypeRecreate},
+		{ResourceKey: "schemas.baz", ActionType: bundledeployments.OperationActionTypeOperationActionTypeDelete},
+		{ResourceKey: "clusters.small", ActionType: bundledeployments.OperationActionTypeOperationActionTypeResize},
 	}, staged)
 }
 
@@ -43,8 +42,8 @@ func TestStagedOperationsLeavesOutUntouchedResources(t *testing.T) {
 	staged, err := stagedOperations(plan)
 	require.NoError(t, err)
 
-	assert.Equal(t, []dms.StagedOperation{
-		{ResourceKey: "resources.jobs.touched", ActionType: bundledeployments.OperationActionTypeOperationActionTypeUpdate},
+	assert.Equal(t, []bundledeployments.StagedOperation{
+		{ResourceKey: "jobs.touched", ActionType: bundledeployments.OperationActionTypeOperationActionTypeUpdate},
 	}, staged)
 }
 

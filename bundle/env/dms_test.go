@@ -22,20 +22,34 @@ func TestDeploymentHistoryEnv(t *testing.T) {
 		{"yes", false},
 	} {
 		ctx := env.Set(t.Context(), DeploymentHistoryVariable, tc.value)
-		assert.Equal(t, tc.want, RecordsDeploymentHistory(ctx, false), "value %q", tc.value)
+		assert.Equal(t, tc.want, RecordsDeploymentHistory(ctx, nil), "value %q", tc.value)
 	}
 }
 
 func TestDeploymentHistoryEnvUnset(t *testing.T) {
-	assert.False(t, RecordsDeploymentHistory(t.Context(), false))
+	assert.False(t, RecordsDeploymentHistory(t.Context(), nil))
 }
 
 func TestRecordsDeploymentHistory(t *testing.T) {
-	// The bundle setting alone is enough, and so is the environment; the env var
-	// exists so the acceptance suite can record without touching every databricks.yml.
-	assert.True(t, RecordsDeploymentHistory(t.Context(), true))
-	assert.False(t, RecordsDeploymentHistory(t.Context(), false))
-
-	ctx := env.Set(t.Context(), DeploymentHistoryVariable, "true")
-	assert.True(t, RecordsDeploymentHistory(ctx, false))
+	for _, tc := range []struct {
+		name       string
+		configured *bool
+		value      string
+		want       bool
+	}{
+		{"config true env true", new(true), "true", true},
+		{"config true env false", new(true), "false", true},
+		{"config true env unset", new(true), "", true},
+		{"config false env true", new(false), "true", false},
+		{"config false env false", new(false), "false", false},
+		{"config false env unset", new(false), "", false},
+		{"config unset env true", nil, "true", true},
+		{"config unset env false", nil, "false", false},
+		{"config unset env unset", nil, "", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := env.Set(t.Context(), DeploymentHistoryVariable, tc.value)
+			assert.Equal(t, tc.want, RecordsDeploymentHistory(ctx, tc.configured))
+		})
+	}
 }

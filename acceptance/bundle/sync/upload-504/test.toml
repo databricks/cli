@@ -1,0 +1,2 @@
+RecordRequests = true
+Env.DATABRICKS_BUNDLE_RETRY_INTERVAL_MS = "100"

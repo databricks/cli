@@ -1,7 +1,6 @@
 Cloud = true
 CloudSlow = true
 
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 EnvMatrix.READPLAN = ["", "1"]
 
 Ignore = [".databricks", "databricks.yml", "tmp.plan.json"]

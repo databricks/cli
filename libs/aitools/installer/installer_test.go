@@ -1032,6 +1032,7 @@ func TestSupportsProjectScopeSetCorrectly(t *testing.T) {
 		"pi":          true,
 		"gemini":      true,
 		"goose":       true,
+		"kiro":        true,
 	}
 
 	for _, agent := range agents.Registry {
@@ -1061,7 +1062,7 @@ func TestGetSkillsRefLatestReleaseFallsBackToEmbeddedPin(t *testing.T) {
 
 	ref, explicit, err := GetSkillsRef(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, "v0.2.10", ref)
+	assert.Equal(t, "v0.2.30", ref)
 	assert.False(t, explicit, "an embedded fallback is not a user pin")
 }
 

@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	cliauth "github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
@@ -30,7 +31,7 @@ func TestNewFilesAPIClientDoesNotResolveAmbientConfig(t *testing.T) {
 	workspaceClient, err := databricks.NewWorkspaceClient(&databricks.Config{
 		Host:        server.URL,
 		Token:       "resolved-token",
-		WorkspaceID: cliauth.WorkspaceIDNone,
+		WorkspaceID: profile.WorkspaceIDNone,
 	})
 	require.NoError(t, err)
 
@@ -211,7 +212,7 @@ func TestMapUploadError(t *testing.T) {
 
 	// Other errors pass through unchanged.
 	other := errors.New("boom")
-	if got := mapUploadError(other, p); got != other {
+	if got := mapUploadError(other, p); got != other { //nolint:errorlint // must be the same error, not a wrapper
 		t.Errorf("mapUploadError(other) = %v, want it unchanged", got)
 	}
 }

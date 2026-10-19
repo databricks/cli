@@ -280,11 +280,48 @@ func Render(ctx context.Context, v any) error {
 // locked from the first batch so columns stay aligned across pages).
 // Piped output and JSON output keep the existing non-paged behavior.
 func RenderIterator[T any](ctx context.Context, i listing.Iterator[T]) error {
+	return renderAnyIterator(ctx, anyIterator[T]{i})
+}
+
+// anyIterator erases the element type so that the renderers and pager below
+// are instantiated once rather than once per listed SDK type, which
+// otherwise adds megabytes to the binary.
+type anyIterator[T any] struct {
+	listing.Iterator[T]
+}
+
+func (a anyIterator[T]) Next(ctx context.Context) (any, error) {
+	return a.Iterator.Next(ctx)
+}
+
+func renderAnyIterator(ctx context.Context, i listing.Iterator[any]) error {
 	c := fromContext(ctx)
 	if c.capabilities.SupportsPager() && c.outputFormat == flags.OutputText && c.template != "" {
 		return renderIteratorPagedTemplate(ctx, i, c.in, c.out, c.headerTemplate, c.template)
 	}
 	return renderWithTemplate(ctx, newIteratorRenderer(i), c.outputFormat, c.out, c.headerTemplate, c.template)
+}
+
+// RenderJSONBytes writes already-serialized JSON to the command's output,
+// re-indented and (on a color-capable stdout) colorized. Unlike Render it does
+// not decode the input into Go values, so it preserves the input's exact
+// tokens — integer literals beyond float64 precision and object key order
+// included.
+func RenderJSONBytes(ctx context.Context, raw []byte) error {
+	var buf bytes.Buffer
+	if err := json.Indent(&buf, raw, "", "  "); err != nil {
+		return err
+	}
+	out := buf.Bytes()
+	if colorEnabled(ctx) {
+		out = colorizeJSON(out)
+	}
+	c := fromContext(ctx)
+	if _, err := c.out.Write(out); err != nil {
+		return err
+	}
+	_, err := c.out.Write([]byte{'\n'})
+	return err
 }
 
 func RenderWithTemplate(ctx context.Context, v any, headerTemplate, template string) error {

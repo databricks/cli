@@ -1,0 +1,50 @@
+
+>>> [CLI] apps init --name test-app-pnpm --skip-install
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/test-app-pnpm
+  Files: 6
+
+  Next steps:
+
+    cd test-app-pnpm
+    pnpm install --frozen-lockfile && pnpm run dev
+
+=== test-app-pnpm lockfiles ===
+pnpm-lock.yaml
+pnpm-workspace.yaml
+
+>>> [CLI] apps init --name test-app-npm --package-manager npm --skip-install
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/test-app-npm
+  Files: 6
+
+  Next steps:
+
+    cd test-app-npm
+    npm ci && npm run dev
+
+=== test-app-npm lockfiles ===
+npm-shrinkwrap.json
+package-lock.json
+
+=== Npm accepts a shrinkwrap template with a pnpm lockfile
+>>> [CLI] apps init --name shrinkwrap-app --template shrinkwrap-template --package-manager npm --skip-install
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/shrinkwrap-app
+  Files: 3
+
+  Next steps:
+
+    cd shrinkwrap-app
+    npm ci && npm run dev
+
+npm-shrinkwrap.json

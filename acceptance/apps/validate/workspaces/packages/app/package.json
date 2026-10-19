@@ -1,0 +1,7 @@
+{
+  "name": "validation-workspace-app",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "node -e \"console.log('workspace build ran'); process.exit(17)\""
+  }
+}

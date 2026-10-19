@@ -1,0 +1,18 @@
+# Fixtures for the response-rendering edge cases. The HTML and malformed bodies
+# must surface the SDK's errors (the *json.RawMessage target keeps that
+# handling); the trailing newline must not produce a blank line.
+[[Server]]
+Pattern = "GET /api/2.0/test/empty"
+Response.Body = ''
+
+[[Server]]
+Pattern = "GET /api/2.0/test/trailing"
+Response.Body = "{\"ok\": true}\n"
+
+[[Server]]
+Pattern = "GET /api/2.0/test/html"
+Response.Body = '<html><head><title>Databricks</title></head><body>Sign in</body></html>'
+
+[[Server]]
+Pattern = "GET /api/2.0/test/malformed"
+Response.Body = '{"truncated":'

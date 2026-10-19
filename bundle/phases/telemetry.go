@@ -333,11 +333,11 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 		b.Metrics.SetBoolValue(metrics.AiRuntimeTaskMultitask, airMultitask)
 	}
 
-	// Record whether the deprecated terraform engine was explicitly opted into,
-	// separately per source. Only emitted when true; absence means "not opted in
-	// via this source". An invalid env value has already failed the command
-	// upstream via ResolveEngineSetting, so treating the FromEnv error as
-	// "not terraform" here cannot mask a real terraform opt-in.
+	// Record whether the removed terraform engine was still requested (the command
+	// then fails with the removal error), separately per source. Only emitted when
+	// true; absence means "not requested via this source". An invalid env value has
+	// already failed the command upstream via ValidateEngineSetting, so treating the
+	// FromEnv error as "not terraform" here cannot mask a real terraform request.
 	if b.Config.Bundle.Engine == engine.EngineTerraform {
 		b.Metrics.SetBoolValue(metrics.EngineTerraformConfig, true)
 	}
@@ -401,7 +401,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 			DeploymentId: b.Metrics.DeploymentId.String(),
 			ErrorMessage: errMsg,
 
-			ResourceCount:                     resourcesCount,
+			ResourceCount:                     resourcesCount, //nolint:staticcheck // SA1019: populated alongside ResourcesMetadata during the transition
 			ResourceJobCount:                  int64(len(b.Config.Resources.Jobs)),
 			ResourcePipelineCount:             int64(len(b.Config.Resources.Pipelines)),
 			ResourceModelCount:                int64(len(b.Config.Resources.Models)),

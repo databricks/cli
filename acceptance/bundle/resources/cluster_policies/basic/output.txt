@@ -55,7 +55,7 @@ Resources:
   Cluster Policies:
     test_cluster_policy:
       Name: my_cluster_policy-[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/compute/policies/[TEST_CLUSTER_POLICY_ID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/compute/policies/[TEST_CLUSTER_POLICY_ID]?w=[WORKSPACE_ID]
 
 === Update the cluster policy name
 >>> update_file.py databricks.yml my_cluster_policy my_cluster_policy_2
@@ -88,7 +88,7 @@ Resources:
   Cluster Policies:
     test_cluster_policy:
       Name: my_cluster_policy_2-[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/compute/policies/[TEST_CLUSTER_POLICY_ID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/compute/policies/[TEST_CLUSTER_POLICY_ID]?w=[WORKSPACE_ID]
 
 === Destroy the cluster policy
 >>> [CLI] bundle destroy --auto-approve

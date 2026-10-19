@@ -1,6 +1,6 @@
 
->>> [CLI] bundle deployment bind experiment1 [NUMID] --auto-approve
-Successfully bound experiment with an id '[NUMID]'
+>>> [CLI] bundle deployment bind experiment1 [EXPERIMENT_ID] --auto-approve
+Successfully bound experiment with an id '[EXPERIMENT_ID]'
 Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle deploy --force-lock --auto-approve
@@ -8,7 +8,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQU
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
->>> [CLI] experiments get-experiment [NUMID]
+>>> [CLI] experiments get-experiment [EXPERIMENT_ID]
 {
   "name": "/Users/[USERNAME]/test-experiment[UNIQUE_NAME]",
   "lifecycle_stage": "active"
@@ -21,7 +21,7 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 0 deleted
 
->>> [CLI] experiments get-experiment [NUMID]
+>>> [CLI] experiments get-experiment [EXPERIMENT_ID]
 {
   "name": "/Users/[USERNAME]/test-experiment[UNIQUE_NAME]",
   "lifecycle_stage": "active"

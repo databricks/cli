@@ -13,15 +13,13 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class ConfluentSchemaRegistryOptions:
-    """
-    :meta private: [EXPERIMENTAL]
-    """
+    """"""
 
     subject: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Required: subject name to resolve in the registry.
+    [Beta] Required: subject name to resolve in the registry.
     """
 
     @classmethod
@@ -39,7 +37,7 @@ class ConfluentSchemaRegistryOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Required: subject name to resolve in the registry.
+    [Beta] Required: subject name to resolve in the registry.
     """
 
 

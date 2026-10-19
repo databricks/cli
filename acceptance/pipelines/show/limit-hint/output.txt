@@ -1,0 +1,35 @@
+
+=== default limit shows a hint when more rows are available
+
+>>> [CLI] pipelines show main.default.people
+id
+--
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+
+10 rows
+Use --limit <n> to preview more rows.
+
+=== wire SQL fetches one extra row
+
+>>> print_requests.py //api/2.0/sql/statements
+{
+  "method": "POST",
+  "path": "/api/2.0/sql/statements",
+  "body": {
+    "disposition": "INLINE",
+    "format": "JSON_ARRAY",
+    "on_wait_timeout": "CONTINUE",
+    "statement": "SELECT * FROM `main`.`default`.`people` LIMIT 11",
+    "wait_timeout": "10s",
+    "warehouse_id": "wh-test"
+  }
+}

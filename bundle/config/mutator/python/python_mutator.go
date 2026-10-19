@@ -328,7 +328,7 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	b.Metrics.PythonUpdatedResources = addResourceCounts(b.Metrics.PythonUpdatedResources, result.UpdatedResources)
 	b.Metrics.PythonAddedResources = addResourceCounts(b.Metrics.PythonAddedResources, result.AddedResources)
 
-	if err == mutateDiagsHasError {
+	if errors.Is(err, mutateDiagsHasError) {
 		if !mutateDiags.HasError() {
 			panic("mutateDiags has no error, but error is expected")
 		}
@@ -546,7 +546,7 @@ func loadOutput(rootPath string, outputFile io.Reader, locations *pythonLocation
 		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to parse output file: %w", err))
 	}
 
-	// generated has dyn.Location as if it comes from generated YAML file
+	// generated has diag.Location as if it comes from generated YAML file
 	// earlier we loaded locations.json with source locations in Python code
 	generatedWithLocations, err := mergePythonLocations(generated, locations)
 	if err != nil {

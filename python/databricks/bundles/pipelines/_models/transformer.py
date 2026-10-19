@@ -37,7 +37,7 @@ class Transformer:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview]
+    [Beta]
     """
 
     format: VariableOrOptional[TransformerFormat] = None
@@ -74,7 +74,7 @@ class Transformer:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview]
+    [Beta]
     """
 
     @classmethod
@@ -92,7 +92,7 @@ class TransformerDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview]
+    [Beta]
     """
 
     format: VariableOrOptional[TransformerFormatParam]
@@ -129,7 +129,7 @@ class TransformerDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview]
+    [Beta]
     """
 
 

@@ -1,0 +1,16 @@
+
+=== Empty response body renders null
+>>> [CLI] api get /api/2.0/test/empty
+null
+
+=== A trailing newline in the body does not add a blank line
+>>> [CLI] api get /api/2.0/test/trailing
+{
+  "ok": true
+}
+
+=== An HTML response surfaces the SDK's actionable error
+OK: HTML detected
+
+=== A malformed JSON response surfaces an unmarshal error
+OK: unmarshal error reported

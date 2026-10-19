@@ -4,10 +4,9 @@
 # ///
 """Keep .cursor/rules/*.mdc in sync with the canonical .agents/rules/*.md rules.
 
-The agent instructions live in AGENTS.md and .agents/ (rules, skills). Most agents
-reach them through a single committed symlink that needs no per-rule upkeep:
+The agent instructions live in AGENTS.md and .agents/ (rules, skills). Claude
+reads AGENTS.md directly. Other integrations use committed symlinks:
 
-  - CLAUDE.md                      -> AGENTS.md
   - .github/custom-instructions.md -> AGENTS.md
   - .claude/rules, .claude/skills  -> .agents/rules, .agents/skills  (directory links)
 

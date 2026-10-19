@@ -1,8 +1,6 @@
 Ignore = ["home"]
 RecordRequests = true
 
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
-
 Timeout = "30s"
 
 # The Docker credential-helper installation path is covered separately on

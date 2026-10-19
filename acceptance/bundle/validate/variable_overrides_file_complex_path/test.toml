@@ -1,0 +1,5 @@
+Badness = "Relative paths in variable-overrides.json resolve inconsistently: task files are resolved against the bundle root (with an error), libraries relative to the overrides file."
+
+[[Repls]]
+Old = '\\'
+New = '/'

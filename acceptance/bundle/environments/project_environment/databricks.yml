@@ -1,0 +1,5 @@
+bundle:
+  name: project_environment
+
+include:
+  - resources/*.yml

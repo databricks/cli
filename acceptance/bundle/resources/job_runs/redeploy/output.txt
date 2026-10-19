@@ -3,7 +3,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default/files...
 Created jobs.my_job
-Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]
+Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[WORKSPACE_ID]
 Output from job_runs.my_run: id=[MY_RUN_ID]: SUCCESS
 Created job_runs.my_run
 Files: 1 uploaded, 0 deleted
@@ -19,11 +19,11 @@ Resources:
   Job Runs:
     my_run:
       Name: 
-      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?w=[WORKSPACE_ID]
   Jobs:
     my_job:
       Name: my-job
-      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[WORKSPACE_ID]
 
 >>> read_id.py my_job
 [MY_JOB_ID]
@@ -70,7 +70,7 @@ Resources:
     "result_state": "SUCCESS",
     "run_id": [MY_RUN_ID],
     "run_name": "my-job",
-    "run_page_url": "[DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]",
+    "run_page_url": "[DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[WORKSPACE_ID]",
     "run_type": "JOB_RUN",
     "state": {
       "life_cycle_state": "TERMINATED",
@@ -96,7 +96,7 @@ Resources:
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default/files...
-Output from job_runs.my_run: id=[MY_RUN_ID_2]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?o=[NUMID]
+Output from job_runs.my_run: id=[MY_RUN_ID_2]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?o=[WORKSPACE_ID]
 Output from job_runs.my_run: id=[MY_RUN_ID_2]: SUCCESS
 Recreated job_runs.my_run
 Files: 1 uploaded, 0 deleted
@@ -112,11 +112,11 @@ Resources:
   Job Runs:
     my_run:
       Name: 
-      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?w=[WORKSPACE_ID]
   Jobs:
     my_job:
       Name: my-job
-      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[WORKSPACE_ID]
 
 === the config change triggered a second, different run and left the previous one alone
 >>> print_requests.py --keep //jobs/runs/delete

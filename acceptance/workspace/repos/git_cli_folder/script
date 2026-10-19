@@ -4,7 +4,9 @@ provider=gitHub
 # DIRECTORY, not a REPO. Path-based commands must still resolve it to a repo ID.
 path=/Workspace/Users/me@databricks.com/test-repo
 
-MSYS_NO_PATHCONV=1 trace $CLI repos create $url $provider --path $path | jq .id -r
+MSYS_NO_PATHCONV=1 trace $CLI repos create $url $provider --path $path | jq .id -r | tee repo_id.tmp
+add_repl "$(cat repo_id.tmp)" REPO_ID
+rm repo_id.tmp
 
 title "Get by path resolves a Git CLI folder"
 MSYS_NO_PATHCONV=1 trace $CLI repos get $path -o json

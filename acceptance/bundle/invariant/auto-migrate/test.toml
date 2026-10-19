@@ -1,3 +1,10 @@
+# These migrate a per-config terraform-state fixture (replayed by replay_tfstate.py, captured once
+# against the local test server) instead of running a live terraform deploy, so they are local-only.
+# That is complete coverage, not a gap: tf->direct migration is a one-time transition over a closed
+# set of resource types (terraform gets no new converters, and resources created on the direct
+# engine are never migrated), so a real-workspace run would add nothing.
+Cloud = false
+
 # Recording needs a bundle it has seen from the start. This test seeds a state file,
 # so recording refuses it. TODO(DMS): drop this once existing state can be
 # handed over to the service (see the TODO in dstate.Open).

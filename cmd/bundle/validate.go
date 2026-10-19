@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
@@ -67,7 +68,7 @@ Please run this command before deploying to ensure configuration quality.`,
 		})
 		ctx := cmd.Context()
 
-		if err != nil && err != root.ErrAlreadyPrinted {
+		if err != nil && !errors.Is(err, root.ErrAlreadyPrinted) {
 			logdiag.LogError(ctx, err)
 			err = root.ErrAlreadyPrinted
 		}
@@ -97,7 +98,7 @@ Please run this command before deploying to ensure configuration quality.`,
 			} else {
 				prefix = fmt.Sprintf("%d warnings were found", numWarnings)
 			}
-			return fmt.Errorf("%s. Warnings are not allowed in strict mode", prefix)
+			return fmt.Errorf("%s. Warnings are treated as errors in strict mode", prefix)
 		}
 
 		return err

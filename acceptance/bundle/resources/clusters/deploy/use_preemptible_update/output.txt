@@ -1,0 +1,71 @@
+
+=== Deploy 1: create the cluster with gcp_attributes but no use_preemptible_executors
+
+>>> [CLI] bundle deploy -qq
+
+=== gcp_attributes sent on create (use_preemptible_executors absent):
+{
+  "availability": "PREEMPTIBLE_GCP",
+  "zone_id": "auto"
+}
+
+=== Now the user adds an explicit use_preemptible_executors: false to the config
+
+=== Deploy 2: bundle should detect and apply the use_preemptible_executors change
+
+>>> [CLI] bundle plan
+update clusters.test_cluster
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+=== use_preemptible_executors change in the plan:
+{
+  "action": "update",
+  "new": false,
+  "remote": false
+}
+
+>>> [CLI] bundle deploy -qq
+
+=== gcp_attributes sent on update (empty means the change was NOT applied):
+{
+  "availability": "PREEMPTIBLE_GCP",
+  "use_preemptible_executors": false,
+  "zone_id": "auto"
+}
+
+=== Deploy 3: no config change, should converge to a no-op
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Now the user removes use_preemptible_executors again
+
+=== Deploy 4: removing the explicit false is a change, symmetric with setting it
+
+>>> [CLI] bundle plan
+update clusters.test_cluster
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+=== use_preemptible_executors change in the plan:
+{
+  "action": "update",
+  "old": false,
+  "remote": false
+}
+
+>>> [CLI] bundle deploy -qq
+
+=== Deploy 5: no config change, should converge to a no-op
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.clusters.test_cluster
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted

@@ -15,33 +15,25 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class MaintenanceWindow:
     """
-    :meta private: [EXPERIMENTAL]
-
     A recurring weekly time window during which platform-initiated maintenance is
     allowed to run for a continuous job.
     """
 
     day_of_week: VariableOr[DayOfWeek]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The day of week on which maintenance is allowed to happen. This field is required.
+    The day of week on which maintenance is allowed to happen. This field is required.
     """
 
     start_hour: VariableOr[int]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] An integer between 0 and 23 denoting the start hour for the maintenance window in the 24-hour day.
+    An integer between 0 and 23 denoting the start hour for the maintenance window in the 24-hour day.
     Platform-initiated maintenance is triggered only within a one-hour window starting at this hour.
     This field is required.
     """
 
     timezone_id: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] A Java timezone ID. The maintenance window is resolved with respect to this timezone. See [Java TimeZone](https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html) for details. This field is required.
+    A Java timezone ID. The maintenance window is resolved with respect to this timezone. See [Java TimeZone](https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html) for details. This field is required.
     """
 
     @classmethod
@@ -57,25 +49,19 @@ class MaintenanceWindowDict(TypedDict, total=False):
 
     day_of_week: VariableOr[DayOfWeekParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The day of week on which maintenance is allowed to happen. This field is required.
+    The day of week on which maintenance is allowed to happen. This field is required.
     """
 
     start_hour: VariableOr[int]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] An integer between 0 and 23 denoting the start hour for the maintenance window in the 24-hour day.
+    An integer between 0 and 23 denoting the start hour for the maintenance window in the 24-hour day.
     Platform-initiated maintenance is triggered only within a one-hour window starting at this hour.
     This field is required.
     """
 
     timezone_id: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] A Java timezone ID. The maintenance window is resolved with respect to this timezone. See [Java TimeZone](https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html) for details. This field is required.
+    A Java timezone ID. The maintenance window is resolved with respect to this timezone. See [Java TimeZone](https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html) for details. This field is required.
     """
 
 

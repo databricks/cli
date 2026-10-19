@@ -14,16 +14,12 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class SmartsheetOptions:
     """
-    :meta private: [EXPERIMENTAL]
-
     Smartsheet specific options for ingestion
     """
 
     enforce_schema: VariableOrOptional[bool] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] (Optional) When true, maps each column to its Smartsheet-declared type (Text/Number/Date/
+    [Public Preview] (Optional) When true, maps each column to its Smartsheet-declared type (Text/Number/Date/
     Checkbox/etc.). Cells that do not conform to the declared type are set to NULL.
     When false, all columns land as STRING. Use false for sheets with irregular data or columns
     that frequently violate their own declared type.
@@ -43,9 +39,7 @@ class SmartsheetOptionsDict(TypedDict, total=False):
 
     enforce_schema: VariableOrOptional[bool]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] (Optional) When true, maps each column to its Smartsheet-declared type (Text/Number/Date/
+    [Public Preview] (Optional) When true, maps each column to its Smartsheet-declared type (Text/Number/Date/
     Checkbox/etc.). Cells that do not conform to the declared type are set to NULL.
     When false, all columns land as STRING. Use false for sheets with irregular data or columns
     that frequently violate their own declared type.

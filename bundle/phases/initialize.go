@@ -153,6 +153,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// After PythonMutator, mutators must not change bundle resources, or such changes are not
 		// going to be visible in Python code.
 
+		// Warn when the deprecated pipeline-level development property is set by the user.
+		// Must run after PythonMutator to see development values set by Python mutators.
+		validate.PipelineDevelopmentDeprecated(),
+
 		// Compute resources.volumes.*.volume_path and resolve references to it. Must run after
 		// PythonMutator: volume_path is computed and read-only, not declared by the PyDABs Volume
 		// model, so exposing it to Python would fail resource loading (like "deployment" below).
@@ -201,8 +205,8 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		mutator.ValidateJobRunTriggers(),
 
 		// Reads (dynamic): * (strings) (searches for ${resources.*} references)
-		// Warns (TF engine) or errors (direct engine) when a cross-resource reference
-		// points to a Terraform-only field with no DABs equivalent.
+		// Errors when a cross-resource reference points to a Terraform-only field
+		// with no DABs equivalent.
 		validate.TFOnlyReferences(),
 
 		// Reads (typed): b.Config.Permissions (checks if current user or their groups have CAN_MANAGE permissions)

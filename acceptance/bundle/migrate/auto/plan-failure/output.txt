@@ -4,16 +4,16 @@
 
 >>> print_migration_telemetry
 
-=== Inject GET failure so the plan check blocks the migration
->>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
-Warn: migration to direct: cannot plan resources.jobs.test_job: reading id="[NUMID]": Fault injected by test. (403 INJECTED): Endpoint: GET [DATABRICKS_URL]/api/2.2/jobs/get?job_id=[NUMID]
+=== Inject GET failure so the migration plan check fails: migration hard-errors (no terraform fallback)
+>>> DATABRICKS_BUNDLE_ENGINE=direct musterr [CLI] bundle deploy
+Warn: migration to direct: cannot plan resources.jobs.test_job: reading id="[TEST_JOB_ID]": Fault injected by test. (403 INJECTED): Endpoint: GET [DATABRICKS_URL]/api/2.2/jobs/get?job_id=[TEST_JOB_ID]
 HTTP Status: 403 Forbidden
 API error_code: INJECTED
 API message: Fault injected by test.
-Warn: migration to the direct engine failed its plan check; deploying on terraform this time: planning failed
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Files: 1 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+Error: migrating Terraform state to the direct engine: the migrated state failed its plan check: planning failed
+
+The Terraform deployment engine was removed in Databricks CLI v1.20.0. Auto-migration of your bundle failed. Install Databricks CLI v1.19.x to deploy on Terraform, and please report this to dabs-feedback@databricks.com
+
 
 >>> print_migration_telemetry
 direct_migrate_plan_error true
@@ -24,16 +24,14 @@ direct_migrate_plan_error true
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
 ID                   Type  Language  Path
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate
+[OBJECT_ID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate
 
 === Retry: plan check passes this time, migration succeeds
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Migrated 1 resource to direct deployment engine.
-Files: 0 uploaded, 0 deleted
+Files: 1 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> print_migration_telemetry
@@ -46,7 +44,7 @@ direct_migrated_via_env true
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
 ID                   Type  Language  Path
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate.backup
+[OBJECT_ID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
+[OBJECT_ID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json
+[OBJECT_ID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json
+[OBJECT_ID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate.backup

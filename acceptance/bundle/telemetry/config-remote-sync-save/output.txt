@@ -35,7 +35,7 @@ Resource: resources.jobs.foo
   "states_available_count": 2,
   "state_resource_ids": {
     "resource_job_ids": [
-      "[NUMID]"
+      "[FOO_ID]"
     ]
   }
 }

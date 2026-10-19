@@ -5,4 +5,5 @@ cp -r $TESTDIR/../base/{$EXTRA_CONFIG,setup.py,my_test_code} .
 trace cat databricks.yml
 trap "errcode trace '$CLI' bundle destroy --auto-approve" EXIT
 trace $CLI bundle deploy
+replace_ids.py
 trace $CLI bundle run some_other_job --python-params param1,param2

@@ -4,6 +4,10 @@
 
 === Change immutable storage. Without --auto-approve the recreate is refused
 >>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle deploy
+Warning: The "development" property of pipelines is deprecated. Use "mode: development" in your databricks.yml instead. See https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.my_pipeline.development
+  in databricks.yml:15:20
+
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 
@@ -29,6 +33,10 @@ direct_migrate_recreate_planned true
 
 === With --auto-approve the recreate is applied on direct
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy --auto-approve
+Warning: The "development" property of pipelines is deprecated. Use "mode: development" in your databricks.yml instead. See https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.my_pipeline.development
+  in databricks.yml:15:20
+
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 
@@ -49,6 +57,10 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 
 === Cleanup
 >>> [CLI] bundle destroy --auto-approve
+Warning: The "development" property of pipelines is deprecated. Use "mode: development" in your databricks.yml instead. See https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.my_pipeline.development
+  in databricks.yml:15:20
+
 The following resources will be deleted:
   delete resources.pipelines.my_pipeline
 

@@ -6,7 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 func ValidateGenieSpaceEtags() bundle.ReadOnlyMutator {
@@ -29,8 +29,8 @@ func (v *validateGenieSpaceEtags) Apply(ctx context.Context, b *bundle.Bundle) d
 				{
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf("genie space %q has an etag set. Etags must not be set in bundle configuration", genieSpace.Title),
-					Paths:     []dyn.Path{dyn.MustPathFromString("resources.genie_spaces." + k)},
-					Locations: b.Config.GetLocations("resources.genie_spaces." + k),
+					Paths:     structpath.NewPathSlice("resources", "genie_spaces", k),
+					Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "resources", "genie_spaces", k)),
 				},
 			}
 		}

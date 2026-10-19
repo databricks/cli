@@ -7,12 +7,11 @@ attributes block, ...). This script walks every resource subtree and sets every
 settable string LEAF (including nested ones) that the base doesn't already set
 to "". Coverage is therefore scoped to the blocks present in base.yml, which is
 how we avoid mutually-exclusive blocks (aws vs gcp attributes, git_source vs
-none) that would make terraform abort.
+none).
 
 A field is settable/eligible when out.fields.txt types it as `string` (this
 skips enums, which are named types) with flag ALL or INPUT, and it is not
-output_only (<resource_type>.generated.yml), a bundle-framework field, or a
-known terraform-erroring field.
+output_only (<resource_type>.generated.yml) or a bundle-framework field.
 
 Run from the repo root; writes databricks.yml in the test directory:
   acceptance/bundle/empty_string_dropped/gen_empty_config.py
@@ -31,23 +30,6 @@ BASE = TESTDIR / "base.yml"
 
 # Bundle-framework fields present on every resource; not real API inputs.
 FRAMEWORK_FIELDS = {"id", "url", "modified_status"}
-
-# Leaf field names that make terraform error at plan time (ConflictsWith, enum
-# validation on string-typed fields, computed attributes), so no request is
-# recorded. Applied per resource type. Matched by leaf name at any depth.
-TERRAFORM_ERRORS = {
-    "clusters": {"instance_pool_id", "driver_instance_pool_id", "driver_node_type_id"},
-    "jobs": {
-        "instance_pool_id",
-        "driver_instance_pool_id",
-        "driver_node_type_id",
-        # git_source: branch/commit/tag are mutually exclusive; base sets branch.
-        "git_commit",
-        "git_tag",
-    },
-    "pipelines": {"channel", "edition", "catalog", "storage", "schema", "target"},
-    "sql_warehouses": {"creator_name"},
-}
 
 
 def string_leaf_parents():
@@ -115,7 +97,7 @@ def main():
     base = yaml.safe_load(BASE.read_text())
 
     for rtype, entries in sorted(base.get("resources", {}).items()):
-        excluded = output_only.get(rtype, set()) | FRAMEWORK_FIELDS | TERRAFORM_ERRORS.get(rtype, set())
+        excluded = output_only.get(rtype, set()) | FRAMEWORK_FIELDS
         for cfg in entries.values():
             fill(cfg, "", parents.get(rtype, {}), excluded)
 

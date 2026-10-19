@@ -1,0 +1,29 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.1/clusters/create",
+    "body": {
+      "autotermination_minutes": 60,
+      "cluster_name": "test-cluster-[UNIQUE_NAME]",
+      "instance_pool_id": "0123-456789-pool0",
+      "num_workers": 1,
+      "spark_version": "13.3.x-scala2.12"
+    }
+  },
+  {
+    "method": "PUT",
+    "path": "/api/2.0/permissions/clusters/79fec859-ec2d-4060-79fe-c859ec2d4061",
+    "body": {
+      "access_control_list": [
+        {
+          "group_name": "users",
+          "permission_level": "CAN_ATTACH_TO"
+        },
+        {
+          "permission_level": "CAN_MANAGE",
+          "user_name": "tester@databricks.com"
+        }
+      ]
+    }
+  }
+]

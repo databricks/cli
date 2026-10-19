@@ -11,7 +11,7 @@
         "dashboard_id": "[DASHBOARD1_ID]",
         "display_name": "my dashboard",
         "embed_credentials": true,
-        "etag": "[NUMID]",
+        "etag": "80611980",
         "lifecycle_state": "ACTIVE",
         "parent_path": "/Workspace/Users/[USERNAME]",
         "path": "/Users/[USERNAME]/my dashboard.lvdash.json",
@@ -34,8 +34,8 @@
         "etag": {
           "action": "skip",
           "reason": "custom",
-          "old": "[NUMID]",
-          "remote": "[NUMID]"
+          "old": "80611980",
+          "remote": "80611980"
         },
         "lifecycle_state": {
           "action": "skip",

@@ -25,9 +25,8 @@ type applyDefaultTaskSource struct{}
 // Python code added or removed, and so the injected value is not exposed to Python
 // code. That is the same rationale that first moved this defaulting out of the
 // pre-Python resource mutators, at the cost of making it invisible in
-// `bundle validate`/`summary` and of leaving the direct engine without it
-// (terraform got it from tfdyn). Running it here as a normal mutator restores that
-// visibility and covers both engines from one place.
+// `bundle validate`/`summary` and of leaving the direct engine without it.
+// Running it here as a normal mutator restores that visibility.
 // See https://github.com/databricks/cli/pull/3359 and
 // https://github.com/databricks/cli/pull/3528.
 func ApplyDefaultTaskSource() bundle.Mutator {
@@ -39,7 +38,6 @@ func (a *applyDefaultTaskSource) Name() string {
 }
 
 // sourceAwareTaskTypes are the task types that support the `source` field.
-// Keep in sync with supportedTypeTasks in bundle/deploy/terraform/tfdyn/convert_job.go.
 // https://docs.databricks.com/api/workspace/jobs/create
 var sourceAwareTaskTypes = []string{
 	"dbt_task",
