@@ -128,7 +128,7 @@ func resolveLatestSkillsReleaseRef(ctx context.Context) (ref string, explicit bo
 		return "v" + embedded, false, nil
 	}
 	if embeddedErr != nil {
-		return "", false, fmt.Errorf("resolve latest skills release: %w (embedded fallback failed: %v)", err, embeddedErr)
+		return "", false, fmt.Errorf("resolve latest skills release: %w (embedded fallback failed: %v)", err, embeddedErr) //nolint:errorlint // only the primary error belongs in the chain
 	}
 	return "", false, fmt.Errorf("resolve latest skills release: %w", err)
 }
@@ -785,7 +785,7 @@ func replaceDir(destDir, tmpDir string) error {
 	if err := renamePathFn(tmpDir, destDir); err != nil {
 		if backupDest != "" {
 			if restoreErr := renamePathFn(backupDest, destDir); restoreErr != nil {
-				return fmt.Errorf("failed to move skill into place: %w (also failed to restore existing skill: %v)", err, restoreErr)
+				return fmt.Errorf("failed to move skill into place: %w (also failed to restore existing skill: %v)", err, restoreErr) //nolint:errorlint // only the primary error belongs in the chain
 			}
 		}
 		return fmt.Errorf("failed to move skill into place: %w", err)

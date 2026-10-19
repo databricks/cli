@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"mime"
@@ -141,7 +142,7 @@ func ParseImportForm(req Request) (ImportForm, error) {
 	mr := multipart.NewReader(bytes.NewReader(req.Body), params["boundary"])
 	for {
 		part, err := mr.NextPart()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return form, nil
 		}
 		if err != nil {
@@ -907,7 +908,7 @@ func AddDefaultHandlers(server *Server) {
 		var bundleID, snapshotID string
 		for {
 			p, err := mr.NextPart()
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			if err != nil {
@@ -1047,6 +1048,10 @@ func AddDefaultHandlers(server *Server) {
 	// user, /logs is a best-effort error tail, /ssh hijacks the connection for a
 	// websocket (so it's raw, not a JSON response).
 	server.Handle("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/metadata", func(req Request) any {
+		defer req.Workspace.LockUnlock()()
+		if req.Vars["cluster_id"] == sshTunnelClusterID && req.Workspace.portForwardingToServerlessDisabled() {
+			return Response{StatusCode: 403, Body: sshTunnelFeatureDisabledBody}
+		}
 		return Response{Body: sshTunnelRemoteUser()}
 	})
 
@@ -1064,6 +1069,14 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.HandleRaw("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/ssh", server.sshTunnelHandler)
+
+	server.Handle("GET", "/api/2.1/settings/{name}", func(req Request) any {
+		return req.Workspace.WorkspaceSettingGet(req)
+	})
+
+	server.Handle("PATCH", "/api/2.1/settings/{name}", func(req Request) any {
+		return req.Workspace.WorkspaceSettingPatch(req)
+	})
 
 	// Secrets ACLs:
 	server.Handle("GET", "/api/2.0/secrets/acls/get", func(req Request) any {

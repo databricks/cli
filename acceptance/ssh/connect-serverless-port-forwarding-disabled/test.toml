@@ -1,0 +1,11 @@
+Cloud = false
+
+# Record requests so we can assert that nothing is created before the CLI gives up.
+RecordRequests = true
+
+# The rest of acceptance/ssh only runs on Linux; nothing here needs another OS.
+GOOS.linux = true
+GOOS.darwin = false
+GOOS.windows = false
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

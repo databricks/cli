@@ -1,0 +1,18 @@
+
+>>> [CLI] workspace-settings-v2 patch-public-workspace-setting port_fwd_serverless_enabled --json {"name": "port_fwd_serverless_enabled", "boolean_val": {"value": false}}
+
+=== CLI ssh connect
+
+=== Reported error category
+
+>>> jq -r select(.path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.ssh_tunnel_event.error_category [OUTPUT_DIR]/out.requests.txt
+DRIVER_PROXY_FORBIDDEN
+
+>>> print_requests.py //api/2.2/jobs/runs/cancel
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/runs/cancel",
+  "body": {
+    "run_id": [RUN_ID]
+  }
+}

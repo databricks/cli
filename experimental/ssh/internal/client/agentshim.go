@@ -374,7 +374,7 @@ func probeAIGateway(ctx context.Context, wsclient *databricks.WorkspaceClient) e
 }
 
 // newProbeAPIClient builds a low-level client from cfg with the SDK's retries
-// turned off, so the gateway preflight is one-shot. Clearing ErrorRetriable and
+// turned off, so a preflight check is one-shot. Clearing ErrorRetriable and
 // TransientErrors makes a retriable status (429, 503, ...) surface on the first
 // attempt rather than looping until the retry budget expires; it mirrors
 // client.New, which builds the retrying client the rest of the CLI uses.
@@ -392,7 +392,7 @@ func probeModelServices(ctx context.Context, apiClient *client.DatabricksClient)
 	it := catalog.NewAiGateway(apiClient).ListModelServices(ctx, catalog.ListModelServicesRequest{PageSize: modelServiceProbePageSize})
 	_, err := it.Next(ctx)
 	if err != nil {
-		if err == listing.ErrNoMoreItems {
+		if errors.Is(err, listing.ErrNoMoreItems) {
 			// endpoint is reachable but there are no results
 			return gatewayProbe{reachable: true}
 		}

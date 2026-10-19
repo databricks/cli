@@ -1,0 +1,29 @@
+Cloud = false
+
+# Record requests so we can assert that the CLI cancels the run it submitted.
+RecordRequests = true
+
+# Stand-in release archives staged by the script; not golden output.
+Ignore = [
+  "releases",
+]
+
+# The rest of acceptance/ssh only runs on Linux; nothing here needs another OS.
+GOOS.linux = true
+GOOS.darwin = false
+GOOS.windows = false
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+# Production does not serve port_fwd_serverless_enabled through the public API, so the CLI cannot
+# check it up front there and only learns about it from the driver proxy's 403. This reproduces
+# that environment, which the fake workspace's settings handler does not model.
+[[Server]]
+Pattern = "GET /api/2.1/settings/port_fwd_serverless_enabled"
+Response.StatusCode = 404
+Response.Body = '''
+{
+  "error_code": "NOT_FOUND",
+  "message": "Setting port_fwd_serverless_enabled is not enabled for public API"
+}
+'''

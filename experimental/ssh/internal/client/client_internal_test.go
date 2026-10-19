@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"slices"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -802,4 +805,116 @@ func TestBuildSshTunnelEventReportsFailure(t *testing.T) {
 	b, err := json.Marshal(got)
 	require.NoError(t, err)
 	assert.Contains(t, string(b), `"is_success":false`)
+}
+
+func TestMetadataResponseError(t *testing.T) {
+	tests := []struct {
+		name       string
+		statusCode int
+		body       string
+		forbidden  bool
+		message    string
+	}{
+		{
+			name:       "feature disabled",
+			statusCode: 403,
+			body:       `"FEATURE_DISABLED: An administrator has disabled port forwarding to serverless compute for this workspace"`,
+			forbidden:  true,
+			message:    "the workspace refused the SSH tunnel connection: FEATURE_DISABLED: An administrator has disabled port forwarding to serverless compute for this workspace",
+		},
+		{
+			name:       "forbidden with a body that is not a JSON string",
+			statusCode: 403,
+			body:       "Forbidden\n",
+			forbidden:  true,
+			message:    "the workspace refused the SSH tunnel connection: Forbidden",
+		},
+		{
+			name:       "forbidden with an empty body",
+			statusCode: 403,
+			body:       "",
+			forbidden:  true,
+			message:    "the workspace refused the SSH tunnel connection: status code 403",
+		},
+		{
+			// A stale metadata.json points at a terminated cluster; the caller must start a new server.
+			name:       "terminated cluster is retried",
+			statusCode: 400,
+			body:       `"INVALID_STATE: Cluster 1014-135824-abcdefgh-v2n is in Terminated state but Spark driver is not healthy"`,
+			forbidden:  false,
+			message:    "server metadata error\nserver is not ok, status code 400",
+		},
+		{
+			name:       "server still starting is retried",
+			statusCode: 502,
+			body:       "",
+			forbidden:  false,
+			message:    "server metadata error\nserver is not ok, status code 502",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := metadataResponseError(tc.statusCode, []byte(tc.body))
+			assert.Equal(t, tc.forbidden, errors.Is(err, errDriverProxyForbidden))
+			assert.Equal(t, !tc.forbidden, errors.Is(err, errServerMetadata))
+			assert.EqualError(t, err, tc.message)
+		})
+	}
+}
+
+func TestCheckPortForwardingToServerless(t *testing.T) {
+	tests := []struct {
+		name    string
+		status  int
+		body    string
+		wantErr error
+	}{
+		{
+			name:    "disabled",
+			status:  http.StatusOK,
+			body:    `{"effective_boolean_val": {"value": false}}`,
+			wantErr: errPortForwardingDisabled,
+		},
+		{
+			name:   "enabled",
+			status: http.StatusOK,
+			body:   `{"effective_boolean_val": {"value": true}}`,
+		},
+		{
+			name:   "no effective value",
+			status: http.StatusOK,
+			body:   `{}`,
+		},
+		{
+			// Production does not serve the setting through the public API yet.
+			name:   "read fails",
+			status: http.StatusBadRequest,
+			body:   `{"error_code": "INVALID_PARAMETER_VALUE", "message": "Setting port_fwd_serverless_enabled is not enabled for public API"}`,
+		},
+		{
+			// A retriable status is not retried, so a throttled service cannot hold up the connection.
+			name:   "throttled",
+			status: http.StatusTooManyRequests,
+			body:   `{"error_code": "TOO_MANY_REQUESTS", "message": "slow down"}`,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var reads atomic.Int32
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/api/2.1/settings/"+portFwdServerlessSetting {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				reads.Add(1)
+				w.WriteHeader(tc.status)
+				_, _ = w.Write([]byte(tc.body))
+			}))
+			defer srv.Close()
+
+			ctx := cmdio.MockDiscard(t.Context())
+			assert.Equal(t, tc.wantErr, checkPortForwardingToServerless(ctx, newProbeClient(t, srv.URL)))
+			assert.Equal(t, int32(1), reads.Load())
+		})
+	}
 }

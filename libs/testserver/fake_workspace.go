@@ -34,6 +34,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/serving"
+	"github.com/databricks/databricks-sdk-go/service/settingsv2"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -240,6 +241,9 @@ type FakeWorkspace struct {
 	Secrets      map[string]map[string]string // scope -> key -> value
 	Acls         map[string][]workspace.AclItem
 	UCSecrets    map[string]catalog.Secret // full_name -> secret (Unity Catalog secrets)
+
+	// WorkspaceSettings holds settings written through the settings v2 public API, keyed by name.
+	WorkspaceSettings map[string]settingsv2.Setting
 
 	// Generic permissions storage: key is "{object_type}:{object_id}"
 	Permissions map[string]iam.ObjectPermissions
@@ -525,6 +529,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		SecretScopes:              map[string]workspace.SecretScope{},
 		Secrets:                   map[string]map[string]string{},
 		Acls:                      map[string][]workspace.AclItem{},
+		WorkspaceSettings:         map[string]settingsv2.Setting{},
 		Permissions:               map[string]iam.ObjectPermissions{},
 		Groups:                    map[string]iam.Group{},
 		DatabaseInstances:         map[string]database.DatabaseInstance{},
@@ -840,7 +845,25 @@ func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
 
 func (s *FakeWorkspace) WorkspaceExport(path string) []byte {
 	defer s.LockUnlock()()
+	if _, isDir := s.directories[path]; isDir {
+		return exportDirectory(path)
+	}
 	return s.files[path].Data
+}
+
+// exportDirectory mimics the real API, which exports a directory as a ZIP archive even with
+// direct_download=true. Only the directory's own entry is included: callers just need to see
+// that they got an archive rather than a file.
+func exportDirectory(dirPath string) []byte {
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	if _, err := zw.Create(path.Base(dirPath) + "/"); err != nil {
+		panic(err)
+	}
+	if err := zw.Close(); err != nil {
+		panic(err)
+	}
+	return buf.Bytes()
 }
 
 // WorkspaceDelete implements POST /api/2.0/workspace/delete. As in the real API, a
