@@ -47,7 +47,7 @@ title "4. Backup copy\nExpect: backup=updated; bytes match latest and differ fro
 trace MSYS_NO_PATHCONV=1 $CLI workspace export "$state_path/resources.json.backup" --format AUTO --file .databricks/resources.backup.repeat.json
 trace cat .databricks/resources.backup.repeat.json | contains.py '"name": "updated"' '!"name": "repeated"' | jq '{state_version, cli_version, lineage, serial, resources: (.state | map_values({id: .__id__, name: .state.name}))}'
 trace cmp .databricks/resources.before-repeat.json .databricks/resources.backup.repeat.json
-trace musterr cmp -s .databricks/resources.backup.first.json .databricks/resources.backup.repeat.json
+trace diff.py .databricks/resources.backup.first.json .databricks/resources.backup.repeat.json
 echo "PASS: backup checked"
 
 title "A remote history marker prevents repeat registration despite a higher unmarked local serial"
