@@ -12,11 +12,62 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  regression-report:
+  # The tests are selected from changes under acceptance/ (see acceptance/internal/selection),
+  # so a PR without any skips the expensive job. A comment left by an earlier commit that did
+  # change them is deleted here, as the expensive job no longer runs to do it.
+  changes:
     # Fork PRs get a read-only token and cannot comment.
     if: >-
       !github.event.pull_request.head.repo.fork &&
       github.actor != 'dependabot[bot]'
+
+    # The org's IP allow list only lets this runner group call the GitHub API.
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    outputs:
+      acceptance: ${{ steps.changes.outputs.acceptance }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      # The same diff the selection makes (see selection.FromGit): the merge commit GitHub checks
+      # out for the PR against its merge base with origin/main.
+      - name: Detect acceptance test changes
+        id: changes
+        run: |
+          if [[ -n "$(git diff --name-only --merge-base origin/main HEAD -- acceptance/)" ]]; then
+            echo "acceptance=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "acceptance=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Delete the report comment of an earlier commit
+        if: ${{ steps.changes.outputs.acceptance == 'false' }}
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |-
+            const { owner, repo } = context.repo;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number: context.issue.number,
+            });
+            const existing = comments.find(c =>
+              c.user.login === 'github-actions[bot]' && c.body && c.body.startsWith('<!-- regression-test-report -->'));
+            if (existing) {
+              await github.rest.issues.deleteComment({ owner, repo, comment_id: existing.id });
+            }
+
+  regression-report:
+    needs: changes
+    if: ${{ needs.changes.outputs.acceptance == 'true' }}
 
     runs-on:
       group: databricks-deco-testing-runner-group
