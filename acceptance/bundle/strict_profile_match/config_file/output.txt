@@ -1,0 +1,52 @@
+
+=== A target that matches several profiles, including [DEFAULT], is rejected
+>>> errcode env DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/ambiguous.databrickscfg [CLI] bundle validate -t classic
+Error: cannot resolve bundle auth configuration: resolve: strict profile matching: multiple profiles match host [DATABRICKS_URL]: DEFAULT, workspace_classic. Config: host=[DATABRICKS_URL], config_file=[TEST_TMP_DIR]/ambiguous.databrickscfg, databricks_cli_path=[CLI]. Env: DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH
+
+Name: strict-profile-match
+Target: classic
+Workspace:
+  Host: [DATABRICKS_URL]
+
+Found 1 error
+
+Exit code: 1
+
+=== Account profiles are skipped
+>>> errcode env DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/account.databrickscfg [CLI] bundle run -t custom_host show_auth
+profile=workspace_custom_host host=[CUSTOM_HOST] workspace_id=[WORKSPACE_ID]
+
+>>> errcode env DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/account.databrickscfg [CLI] bundle validate -t custom_host_without_workspace_id
+Error: cannot resolve bundle auth configuration: resolve: strict profile matching: host [CUSTOM_HOST] requires a workspace ID; set workspace.workspace_id or add ?o=<workspace-id> to workspace.host. Config: host=[CUSTOM_HOST], config_file=[TEST_TMP_DIR]/account.databrickscfg, databricks_cli_path=[CLI]. Env: DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH
+
+Name: strict-profile-match
+Target: custom_host_without_workspace_id
+Workspace:
+  Host: [CUSTOM_HOST]
+
+Found 1 error
+
+Exit code: 1
+
+>>> errcode env DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/account.databrickscfg [CLI] bundle validate -t no_host -p account_custom_host
+Error: cannot resolve bundle auth configuration: resolve: strict profile matching: account_custom_host is not a workspace profile with a host in the config file. Config: profile=account_custom_host, config_file=[TEST_TMP_DIR]/account.databrickscfg, databricks_cli_path=[CLI]. Env: DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH
+
+Name: strict-profile-match
+Target: no_host
+
+Found 1 error
+
+Exit code: 1
+
+=== A missing config file is rejected
+>>> errcode env DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/missing.databrickscfg [CLI] bundle validate -t classic
+Error: cannot resolve bundle auth configuration: resolve: strict profile matching: config file [TEST_TMP_DIR]/missing.databrickscfg not found. Config: host=[DATABRICKS_URL], config_file=[TEST_TMP_DIR]/missing.databrickscfg, databricks_cli_path=[CLI]. Env: DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH
+
+Name: strict-profile-match
+Target: classic
+Workspace:
+  Host: [DATABRICKS_URL]
+
+Found 1 error
+
+Exit code: 1

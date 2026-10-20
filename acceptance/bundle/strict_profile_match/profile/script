@@ -1,0 +1,17 @@
+title "A workspace.profile that matches the target is accepted"
+trace errcode $CLI bundle run -t classic_with_matching_profile show_auth
+
+title "A workspace.profile that doesn't match the target is rejected"
+trace errcode $CLI bundle validate -t classic_with_profile
+
+title "An explicit profile that matches the target is accepted"
+trace errcode $CLI bundle run -t classic -p workspace_classic show_auth
+
+title "An explicit profile that doesn't match the target is rejected"
+trace errcode $CLI bundle validate -t classic -p workspace_classic_id
+
+title "An explicit profile wins over workspace.profile, as without strict mode"
+trace errcode $CLI bundle run -t classic_with_profile -p workspace_classic show_auth
+
+title "A CLI started from a bundle script uses the selected profile"
+trace errcode $CLI bundle run -t custom_host nested_validate

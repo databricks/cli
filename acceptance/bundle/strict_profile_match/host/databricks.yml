@@ -15,14 +15,6 @@ targets:
   classic_other_workspace:
     workspace:
       host: $CLASSIC_HOST/?o=2222222222
-  classic_with_profile:
-    workspace:
-      host: $CLASSIC_HOST
-      profile: my-local-profile
-  classic_with_matching_profile:
-    workspace:
-      host: $CLASSIC_HOST
-      profile: workspace_classic
   custom_host:
     workspace:
       host: $CUSTOM_HOST/?o=$WORKSPACE_ID
@@ -39,10 +31,3 @@ targets:
   unknown_host:
     workspace:
       host: https://unknown.test
-  no_host: {}
-  no_host_with_profile:
-    workspace:
-      profile: workspace_custom_host
-  no_host_with_workspace_id:
-    workspace:
-      workspace_id: "$WORKSPACE_ID"

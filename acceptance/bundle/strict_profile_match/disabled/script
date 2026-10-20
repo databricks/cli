@@ -1,0 +1,4 @@
+unset DATABRICKS_BUNDLE_STRICT_PROFILE_MATCH
+
+title "Without strict mode, the environment token is used for a custom host of another workspace"
+trace errcode $CLI bundle validate -t custom_host_other_workspace

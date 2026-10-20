@@ -1,12 +1,14 @@
 package databrickscfg
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"io/fs"
 	"strings"
 
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
 	"gopkg.in/ini.v1"
@@ -41,6 +43,16 @@ var resolveAuthGapFromEnv = envLoader{name: "environment (auth gap-fill)", skipA
 // out-of-band profile name triggers this chain.
 var ProfileAuthLoaders = []config.Loader{
 	ResolveNonAuthFromEnv,
+	config.ConfigFile,
+	resolveAuthGapFromEnv,
+}
+
+// StrictProfileLoaders is ProfileAuthLoaders with strictProfileLoader before
+// the config file, so the profile always comes from the config file, even when
+// auth env vars are set.
+var StrictProfileLoaders = []config.Loader{
+	ResolveNonAuthFromEnv,
+	strictProfileLoader{},
 	config.ConfigFile,
 	resolveAuthGapFromEnv,
 }
@@ -267,4 +279,93 @@ func (l profileFromHostLoader) isAnyAuthConfigured(cfg *config.Config) bool {
 	// If the auth type is set, we can skip profile resolution.
 	// For example, to force "azure-cli", only the host and the auth type will be set.
 	return cfg.AuthType != ""
+}
+
+// strictProfileLoader selects the profile like profileFromHostLoader, but it
+// always runs and fails when there is no single match, so credentials from the
+// environment only reach a host and workspace that a profile allows. Each
+// workspace profile allows one pair of host and workspace ID, and a profile
+// without a workspace_id allows a config without one. Account profiles are
+// skipped. A config without a host uses the profile it names.
+type strictProfileLoader struct{}
+
+func (strictProfileLoader) Name() string {
+	return "strict-profile-match"
+}
+
+func (strictProfileLoader) Configure(cfg *config.Config) error {
+	configFile, err := config.LoadFile(cfg.ConfigFile)
+	if errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("strict profile matching: config file %s not found", cmp.Or(cfg.ConfigFile, "~/.databrickscfg"))
+	}
+	if err != nil {
+		return fmt.Errorf("strict profile matching: %w", err)
+	}
+	if cfg.Host == "" {
+		return checkNamedProfile(cfg, configFile)
+	}
+
+	host := normalizeHost(cfg.Host)
+	var hostMatches, matches []string
+	for _, s := range configFile.Sections() {
+		if normalizeHost(sectionValue(s, hostAttr)) != host || !isWorkspaceSection(s) {
+			continue
+		}
+		hostMatches = append(hostMatches, s.Name())
+		if sectionValue(s, "workspace_id") == cfg.WorkspaceID {
+			matches = append(matches, s.Name())
+		}
+	}
+	switch {
+	case len(matches) > 1:
+		return fmt.Errorf("strict profile matching: multiple profiles match host %s: %s", cfg.Host, strings.Join(matches, ", "))
+	case len(hostMatches) == 0:
+		return fmt.Errorf("strict profile matching: no workspace profile matches host %s", cfg.Host)
+	case len(matches) == 0 && cfg.WorkspaceID == "":
+		return fmt.Errorf("strict profile matching: host %s requires a workspace ID; set workspace.workspace_id or add ?o=<workspace-id> to workspace.host", cfg.Host)
+	case len(matches) == 0:
+		return fmt.Errorf("strict profile matching: no profile for host %s has workspace_id %s", cfg.Host, cfg.WorkspaceID)
+	}
+
+	// A CLI started from a bundle script receives the selected profile through
+	// DATABRICKS_CONFIG_PROFILE, so only a different profile is an error.
+	if cfg.Profile != "" && cfg.Profile != matches[0] {
+		return fmt.Errorf("strict profile matching: profile %s does not match profile %s selected for host %s", cfg.Profile, matches[0], cfg.Host)
+	}
+	cfg.Profile = matches[0]
+	return nil
+}
+
+// checkNamedProfile checks the profile named by a config without a host. The
+// profile supplies the host, and also the workspace ID unless the config sets
+// one that the profile must have.
+func checkNamedProfile(cfg *config.Config, configFile *config.File) error {
+	if cfg.Profile == "" {
+		return errors.New("strict profile matching: set workspace.host, or select a profile with --profile, workspace.profile or [__settings__].default_profile")
+	}
+	s, err := configFile.GetSection(cfg.Profile)
+	if err != nil || sectionValue(s, hostAttr) == "" || !isWorkspaceSection(s) {
+		return fmt.Errorf("strict profile matching: %s is not a workspace profile with a host in the config file", cfg.Profile)
+	}
+	if cfg.WorkspaceID != "" && sectionValue(s, "workspace_id") != cfg.WorkspaceID {
+		return fmt.Errorf("strict profile matching: profile %s does not have workspace_id %s", cfg.Profile, cfg.WorkspaceID)
+	}
+	return nil
+}
+
+func isWorkspaceSection(s *ini.Section) bool {
+	return profile.MatchWorkspaceProfiles(profile.Profile{
+		AccountID:   sectionValue(s, "account_id"),
+		WorkspaceID: sectionValue(s, "workspace_id"),
+	})
+}
+
+// sectionValue returns the value of a key, or "" when the section doesn't have
+// it. Unlike Section.Key, it doesn't add a missing key to the section.
+func sectionValue(s *ini.Section, name string) string {
+	key, err := s.GetKey(name)
+	if err != nil {
+		return ""
+	}
+	return key.Value()
 }

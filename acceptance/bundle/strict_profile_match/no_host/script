@@ -1,0 +1,21 @@
+# A target without a host gets its host from a profile selected by name.
+title "A target without a host or a profile is rejected"
+trace errcode $CLI bundle validate -t no_host
+
+title "A target without a host uses the explicit profile"
+trace errcode $CLI bundle run -t no_host -p workspace_custom_host show_auth
+
+title "A target without a host uses workspace.profile"
+trace errcode $CLI bundle run -t no_host_with_profile show_auth
+
+title "A target without a host uses the default profile"
+trace errcode env DATABRICKS_CONFIG_FILE=$TEST_TMP_DIR/default.databrickscfg $CLI bundle run -t no_host show_auth
+
+title "A target without a host accepts a profile with the target's workspace ID"
+trace errcode $CLI bundle run -t no_host_with_workspace_id -p workspace_classic_id show_auth
+
+title "A target without a host rejects a profile without the target's workspace ID"
+trace errcode env DATABRICKS_CONFIG_FILE=$TEST_TMP_DIR/default.databrickscfg $CLI bundle validate -t no_host_with_workspace_id
+
+title "A target without a host rejects an unknown profile"
+trace errcode $CLI bundle validate -t no_host -p my-local-profile

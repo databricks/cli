@@ -1,0 +1,68 @@
+
+=== Target classic matches one profile
+>>> errcode [CLI] bundle run -t classic show_auth
+profile=workspace_classic host=[DATABRICKS_URL] workspace_id=[WORKSPACE_ID]
+
+=== Target classic_with_workspace_id matches one profile
+>>> errcode [CLI] bundle run -t classic_with_workspace_id show_auth
+profile=workspace_classic_id host=[DATABRICKS_URL] workspace_id=[WORKSPACE_ID]
+
+=== Target custom_host matches one profile
+>>> errcode [CLI] bundle run -t custom_host show_auth
+profile=workspace_custom_host host=[CUSTOM_HOST] workspace_id=[WORKSPACE_ID]
+
+=== Target custom_host_workspace_id_field matches one profile
+>>> errcode [CLI] bundle run -t custom_host_workspace_id_field show_auth
+profile=workspace_custom_host host=[CUSTOM_HOST] workspace_id=[WORKSPACE_ID]
+
+=== Target classic_other_workspace is rejected
+>>> errcode [CLI] bundle validate -t classic_other_workspace
+Error: cannot resolve bundle auth configuration: resolve: strict profile matching: no profile for host [DATABRICKS_URL] has workspace_id 2222222222. Config: host=[DATABRICKS_URL], workspace_id=2222222222, config_file=[TEST_TMP_DIR]/.databrickscfg, databricks_cli_path=[CLI]. Env: DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH
+
+Name: strict-profile-match
+Target: classic_other_workspace
+Workspace:
+  Host: [DATABRICKS_URL]
+
+Found 1 error
+
+Exit code: 1
+
+=== Target custom_host_without_workspace_id is rejected
+>>> errcode [CLI] bundle validate -t custom_host_without_workspace_id
+Error: cannot resolve bundle auth configuration: resolve: strict profile matching: host [CUSTOM_HOST] requires a workspace ID; set workspace.workspace_id or add ?o=<workspace-id> to workspace.host. Config: host=[CUSTOM_HOST], config_file=[TEST_TMP_DIR]/.databrickscfg, databricks_cli_path=[CLI]. Env: DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH
+
+Name: strict-profile-match
+Target: custom_host_without_workspace_id
+Workspace:
+  Host: [CUSTOM_HOST]
+
+Found 1 error
+
+Exit code: 1
+
+=== Target custom_host_other_workspace is rejected
+>>> errcode [CLI] bundle validate -t custom_host_other_workspace
+Error: cannot resolve bundle auth configuration: resolve: strict profile matching: no profile for host [CUSTOM_HOST] has workspace_id 2222222222. Config: host=[CUSTOM_HOST], workspace_id=2222222222, config_file=[TEST_TMP_DIR]/.databrickscfg, databricks_cli_path=[CLI]. Env: DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH
+
+Name: strict-profile-match
+Target: custom_host_other_workspace
+Workspace:
+  Host: [CUSTOM_HOST]
+
+Found 1 error
+
+Exit code: 1
+
+=== Target unknown_host is rejected
+>>> errcode [CLI] bundle validate -t unknown_host
+Error: cannot resolve bundle auth configuration: resolve: strict profile matching: no workspace profile matches host https://unknown.test. Config: host=https://unknown.test, config_file=[TEST_TMP_DIR]/.databrickscfg, databricks_cli_path=[CLI]. Env: DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH
+
+Name: strict-profile-match
+Target: unknown_host
+Workspace:
+  Host: https://unknown.test
+
+Found 1 error
+
+Exit code: 1

@@ -1,0 +1,49 @@
+
+=== A target without a host or a profile is rejected
+>>> errcode [CLI] bundle validate -t no_host
+Error: cannot resolve bundle auth configuration: resolve: strict profile matching: set workspace.host, or select a profile with --profile, workspace.profile or [__settings__].default_profile. Config: config_file=[TEST_TMP_DIR]/.databrickscfg, databricks_cli_path=[CLI]. Env: DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH
+
+Name: strict-profile-match
+Target: no_host
+
+Found 1 error
+
+Exit code: 1
+
+=== A target without a host uses the explicit profile
+>>> errcode [CLI] bundle run -t no_host -p workspace_custom_host show_auth
+profile=workspace_custom_host host=[CUSTOM_HOST] workspace_id=[WORKSPACE_ID]
+
+=== A target without a host uses workspace.profile
+>>> errcode [CLI] bundle run -t no_host_with_profile show_auth
+profile=workspace_custom_host host=[CUSTOM_HOST] workspace_id=[WORKSPACE_ID]
+
+=== A target without a host uses the default profile
+>>> errcode env DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/default.databrickscfg [CLI] bundle run -t no_host show_auth
+profile=workspace_classic host=[DATABRICKS_URL] workspace_id=[WORKSPACE_ID]
+
+=== A target without a host accepts a profile with the target's workspace ID
+>>> errcode [CLI] bundle run -t no_host_with_workspace_id -p workspace_classic_id show_auth
+profile=workspace_classic_id host=[DATABRICKS_URL] workspace_id=[WORKSPACE_ID]
+
+=== A target without a host rejects a profile without the target's workspace ID
+>>> errcode env DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/default.databrickscfg [CLI] bundle validate -t no_host_with_workspace_id
+Error: cannot resolve bundle auth configuration: resolve: strict profile matching: profile workspace_classic does not have workspace_id [WORKSPACE_ID]. Config: workspace_id=[WORKSPACE_ID], profile=workspace_classic, config_file=[TEST_TMP_DIR]/default.databrickscfg, databricks_cli_path=[CLI]. Env: DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH
+
+Name: strict-profile-match
+Target: no_host_with_workspace_id
+
+Found 1 error
+
+Exit code: 1
+
+=== A target without a host rejects an unknown profile
+>>> errcode [CLI] bundle validate -t no_host -p my-local-profile
+Error: cannot resolve bundle auth configuration: resolve: strict profile matching: my-local-profile is not a workspace profile with a host in the config file. Config: profile=my-local-profile, config_file=[TEST_TMP_DIR]/.databrickscfg, databricks_cli_path=[CLI]. Env: DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH
+
+Name: strict-profile-match
+Target: no_host
+
+Found 1 error
+
+Exit code: 1
