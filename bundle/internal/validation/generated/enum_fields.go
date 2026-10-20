@@ -261,6 +261,8 @@ var EnumFields = map[string][]string{
 	"resources.pipelines.*.permissions[*].level":           {"CAN_MANAGE", "CAN_RUN", "CAN_VIEW", "IS_OWNER"},
 	"resources.pipelines.*.restart_window.days_of_week[*]": {"FRIDAY", "MONDAY", "SATURDAY", "SUNDAY", "THURSDAY", "TUESDAY", "WEDNESDAY"},
 
+	"resources.postgres_data_apis.*.openapi_mode": {"OPEN_API_MODE_DISABLED", "OPEN_API_MODE_IGNORE_PRIVILEGES"},
+
 	"resources.postgres_endpoints.*.endpoint_type": {"ENDPOINT_TYPE_READ_ONLY", "ENDPOINT_TYPE_READ_WRITE"},
 
 	"resources.postgres_projects.*.permissions[*].level": {"CAN_ATTACH_TO", "CAN_BIND", "CAN_CREATE", "CAN_CREATE_APP", "CAN_EDIT", "CAN_EDIT_METADATA", "CAN_MANAGE", "CAN_MANAGE_PRODUCTION_VERSIONS", "CAN_MANAGE_RUN", "CAN_MANAGE_STAGING_VERSIONS", "CAN_MONITOR", "CAN_MONITOR_ONLY", "CAN_QUERY", "CAN_READ", "CAN_RESTART", "CAN_RUN", "CAN_USE", "CAN_VIEW", "CAN_VIEW_METADATA", "IS_OWNER"},

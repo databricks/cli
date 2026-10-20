@@ -46,6 +46,7 @@ type Resources struct {
 	PostgresRoles             map[string]*resources.PostgresRole             `json:"postgres_roles,omitempty"`
 	PostgresSyncedTables      map[string]*resources.PostgresSyncedTable      `json:"postgres_synced_tables,omitempty"`
 	PostgresSnapshotSchedules map[string]*resources.PostgresSnapshotSchedule `json:"postgres_snapshot_schedules,omitempty"`
+	PostgresDataApis          map[string]*resources.PostgresDataApi          `json:"postgres_data_apis,omitempty"`
 	VectorSearchEndpoints     map[string]*resources.VectorSearchEndpoint     `json:"vector_search_endpoints,omitempty"`
 	VectorSearchIndexes       map[string]*resources.VectorSearchIndex        `json:"vector_search_indexes,omitempty"`
 	InstancePools             map[string]*resources.InstancePool             `json:"instance_pools,omitempty"`
@@ -143,6 +144,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["postgres_roles"], r.PostgresRoles),
 		collectResourceMap(descriptions["postgres_synced_tables"], r.PostgresSyncedTables),
 		collectResourceMap(descriptions["postgres_snapshot_schedules"], r.PostgresSnapshotSchedules),
+		collectResourceMap(descriptions["postgres_data_apis"], r.PostgresDataApis),
 		collectResourceMap(descriptions["vector_search_endpoints"], r.VectorSearchEndpoints),
 		collectResourceMap(descriptions["vector_search_indexes"], r.VectorSearchIndexes),
 		collectResourceMap(descriptions["instance_pools"], r.InstancePools),
@@ -219,6 +221,7 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"postgres_roles":               (&resources.PostgresRole{}).ResourceDescription(),
 		"postgres_synced_tables":       (&resources.PostgresSyncedTable{}).ResourceDescription(),
 		"postgres_snapshot_schedules":  (&resources.PostgresSnapshotSchedule{}).ResourceDescription(),
+		"postgres_data_apis":           (&resources.PostgresDataApi{}).ResourceDescription(),
 		"vector_search_endpoints":      (&resources.VectorSearchEndpoint{}).ResourceDescription(),
 		"vector_search_indexes":        (&resources.VectorSearchIndex{}).ResourceDescription(),
 		"internal_immutable_snapshots": (&resources.Snapshot{}).ResourceDescription(),

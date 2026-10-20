@@ -1,0 +1,10 @@
+bundle:
+  name: test-bundle
+
+resources:
+  postgres_data_apis:
+    data_api1:
+      parent: projects/test-project/branches/production/databases/test-database
+      db_schemas:
+        - public
+      db_max_rows: 500

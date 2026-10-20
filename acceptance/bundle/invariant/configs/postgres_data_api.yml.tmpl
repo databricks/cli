@@ -1,0 +1,32 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  postgres_projects:
+    project:
+      project_id: test-pg-project-$UNIQUE_NAME
+      display_name: Test Postgres Project
+
+  # The Data API needs a read-write endpoint on the branch; the "production"
+  # branch created with the project comes with one.
+  postgres_roles:
+    owner:
+      parent: ${resources.postgres_projects.project.name}/branches/production
+      role_id: test-role-$UNIQUE_NAME
+      postgres_role: app_role
+
+  postgres_databases:
+    database:
+      parent: ${resources.postgres_projects.project.name}/branches/production
+      database_id: test-database-$UNIQUE_NAME
+      postgres_database: app_db
+      role: ${resources.postgres_roles.owner.name}
+
+  postgres_data_apis:
+    foo:
+      parent: ${resources.postgres_databases.database.name}
+      db_schemas:
+        - public
+      db_max_rows: 1000 # CAN_REMOVE
+      server_cors_allowed_origins: # CAN_REMOVE
+        - https://app.example.com # CAN_REMOVE

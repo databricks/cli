@@ -1622,6 +1622,16 @@ resources:
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+    "postgres_data_apis":
+      "description": |-
+        The Postgres Data API definitions for the bundle, where each key is the name of the Data API. Each entry enables and configures the Data API (a REST interface) of a database on a Lakebase Autoscaling branch. Removing an entry turns off the Data API; the database and its data are not affected.
+      "$fields":
+        "lifecycle":
+          "description": |-
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+        "parent":
+          "description": |-
+            The database whose Data API this manages. Format: projects/{project_id}/branches/{branch_id}/databases/{database_id}
     "postgres_databases":
       "description": |-
         The Postgres database definitions for the bundle, where each key is the name of the database. Each entry defines a database on a Lakebase Autoscaling branch.

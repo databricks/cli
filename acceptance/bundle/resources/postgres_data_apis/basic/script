@@ -1,0 +1,33 @@
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+   rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+database_name="projects/test-pg-proj-${UNIQUE_NAME}/branches/production/databases/my-database"
+data_api_name="${database_name}/data-api"
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+trace $CLI bundle validate
+trace $CLI bundle summary
+trace $CLI bundle plan
+
+title "Deploy enables the Data API"
+rm -f "$OUT_REQUESTS"
+trace $CLI bundle deploy
+print_postgres_requests deploy
+trace $CLI postgres get-data-api "${data_api_name}" | data_api_fields
+trace $CLI bundle summary
+
+title "Plan after deploy shows no changes"
+trace $CLI bundle plan
+
+title "Removing the resource turns off the Data API but keeps the database"
+sed '/postgres_data_apis:/,$d' databricks.yml > databricks.yml.new && mv databricks.yml.new databricks.yml
+trace $CLI bundle plan
+rm -f "$OUT_REQUESTS"
+trace $CLI bundle deploy --auto-approve
+print_postgres_requests remove
+trace musterr $CLI postgres get-data-api "${data_api_name}"
+trace $CLI postgres get-database "${database_name}" | jq '{name}'

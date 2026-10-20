@@ -1396,6 +1396,11 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.PostgresOperationGet(name)
 	})
 
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api/operations/{operation_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"] + "/data-api/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
 	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles/{role_id}/operations/{operation_id}", func(req Request) any {
 		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/roles/" + req.Vars["role_id"] + "/operations/" + req.Vars["operation_id"]
 		return req.Workspace.PostgresOperationGet(name)
@@ -1545,6 +1550,27 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}", func(req Request) any {
 		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"]
 		return req.Workspace.PostgresDatabaseDelete(name)
+	})
+
+	// Postgres Data API (a per-database singleton):
+	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"]
+		return req.Workspace.PostgresDataApiCreate(req, parent)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"] + "/data-api"
+		return req.Workspace.PostgresDataApiGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"] + "/data-api"
+		return req.Workspace.PostgresDataApiUpdate(req, name)
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"] + "/data-api"
+		return req.Workspace.PostgresDataApiDelete(name)
 	})
 
 	// Postgres Roles:
