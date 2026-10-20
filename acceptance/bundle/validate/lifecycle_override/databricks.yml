@@ -1,9 +1,6 @@
 bundle:
   name: test-bundle
 
-include:
-  - override.yml
-
 resources:
   jobs:
     j:
@@ -22,3 +19,15 @@ resources:
       num_workers: 2
       lifecycle:
         prevent_destroy: true
+
+targets:
+  dev:
+    resources:
+      jobs:
+        j:
+          lifecycle:
+            prevent_destroy: false
+      clusters:
+        c:
+          lifecycle:
+            prevent_destroy: false
