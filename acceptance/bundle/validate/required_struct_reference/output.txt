@@ -1,9 +1,8 @@
 
->>> [CLI] bundle validate
-Name: test-bundle
-Target: default
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
-
-Validation OK!
+>>> [CLI] bundle validate -o json
+{
+  "clients": {
+    "jobs": "${resources.clusters.source.is_single_node}",
+    "notebooks": true
+  }
+}
