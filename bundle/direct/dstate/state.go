@@ -23,6 +23,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/google/uuid"
 )
@@ -584,8 +585,10 @@ Run "databricks bundle destroy" first, then deploy again with deployment history
 
 		if dmsDeployment.DeploymentID != "" {
 			w := cmdctx.WorkspaceClient(ctx)
-			recorded, err := w.BundleDeployments.ListResourcesAll(ctx, bundledeployments.ListResourcesRequest{
-				Parent: dms.DeploymentName(dmsDeployment.DeploymentID),
+			recorded, err := retry.With(ctx, retry.IsTransientRead, func() ([]bundledeployments.Resource, error) {
+				return w.BundleDeployments.ListResourcesAll(ctx, bundledeployments.ListResourcesRequest{
+					Parent: dms.DeploymentName(dmsDeployment.DeploymentID),
+				})
 			})
 			if err != nil {
 				return fmt.Errorf("listing resources from the deployment history service: %w", err)
