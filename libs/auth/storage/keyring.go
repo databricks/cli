@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/zalando/go-keyring"
 	"golang.org/x/oauth2"
 )
@@ -104,7 +104,7 @@ func probeWithBackend(backend keyringBackend, timeout time.Duration) error {
 		timeout:        timeout,
 		keyringSvcName: keyringServiceName,
 	}
-	account := keyringProbeAccountPrefix + uuid.NewString()
+	account := keyringProbeAccountPrefix + uuid.New().String()
 	tok := &oauth2.Token{AccessToken: "probe"}
 	if err := c.Put(account, Entry{Token: tok}); err != nil {
 		return fmt.Errorf("write: %w", err)
@@ -133,7 +133,7 @@ func probeReadWithBackend(backend keyringBackend, timeout time.Duration) error {
 		timeout:        timeout,
 		keyringSvcName: keyringServiceName,
 	}
-	account := keyringProbeAccountPrefix + uuid.NewString()
+	account := keyringProbeAccountPrefix + uuid.New().String()
 	err := c.withTimeout("get", func() error {
 		_, gerr := c.backend.Get(c.keyringSvcName, account)
 		return gerr

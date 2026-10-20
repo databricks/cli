@@ -18,12 +18,12 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"uuid"
 
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
-	"github.com/google/uuid"
 
 	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -158,8 +158,7 @@ func nextUUID() string {
 	var b [16]byte
 	binary.BigEndian.PutUint64(b[0:8], uint64(nextID()))
 	binary.BigEndian.PutUint64(b[8:16], uint64(nextID()))
-	u := uuid.Must(uuid.FromBytes(b[:]))
-	return u.String()
+	return uuid.UUID(b).String()
 }
 
 func nextDashboardID() string {

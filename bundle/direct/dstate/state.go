@@ -14,6 +14,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"uuid"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -24,7 +25,6 @@ import (
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
-	"github.com/google/uuid"
 )
 
 const (

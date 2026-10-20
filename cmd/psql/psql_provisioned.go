@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"uuid"
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -11,7 +12,6 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/google/uuid"
 )
 
 // provisionedDefaultDatabase is the default database for Lakebase Provisioned instances.
@@ -42,7 +42,7 @@ func connectProvisioned(ctx context.Context, instanceName string, retryConfig li
 
 	cred, err := w.Database.GenerateDatabaseCredential(ctx, database.GenerateDatabaseCredentialRequest{
 		InstanceNames: []string{instance.Name},
-		RequestId:     uuid.NewString(),
+		RequestId:     uuid.New().String(),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to get database credentials: %w", err)

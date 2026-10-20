@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"path"
 	"strings"
+	"uuid"
 
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
-	"github.com/google/uuid"
 )
 
 // userWorkspaceDirEnv overrides the per-user workspace directory; mirrors the
@@ -53,7 +53,7 @@ func cliLaunchDir(base, experiment, run string) string {
 	if run == "" {
 		run = experiment
 	}
-	unique := strings.ReplaceAll(uuid.NewString(), "-", "")[:16]
+	unique := strings.ReplaceAll(uuid.New().String(), "-", "")[:16]
 	return path.Join(base, ".air", "cli_launch", experiment, run+"_"+unique)
 }
 
