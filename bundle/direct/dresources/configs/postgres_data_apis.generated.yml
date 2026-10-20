@@ -1,0 +1,21 @@
+# Generated, do not edit.
+
+ignore_remote_changes:
+  - field: db_aggregates_enabled
+    reason: spec:input_only
+  - field: db_extra_search_path
+    reason: spec:input_only
+  - field: db_max_rows
+    reason: spec:input_only
+  - field: db_schemas
+    reason: spec:input_only
+  - field: jwt_cache_max_lifetime
+    reason: spec:input_only
+  - field: jwt_role_claim_key
+    reason: spec:input_only
+  - field: openapi_mode
+    reason: spec:input_only
+  - field: server_cors_allowed_origins
+    reason: spec:input_only
+  - field: server_timing_enabled
+    reason: spec:input_only

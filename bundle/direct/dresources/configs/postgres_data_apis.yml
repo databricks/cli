@@ -1,0 +1,10 @@
+provided_id_fields:
+  # parent composes the Data API's hierarchical name ("{parent}/data-api");
+  # changing it targets a different database's Data API, so it recreates
+  # (delete + create).
+  - field: parent
+    reason: id_field
+stable_output_fields:
+  # name ("{parent}/data-api") is backend-assigned at creation and immutable;
+  # see the stable_output_fields doc in config.go and ES-2202624.
+  - field: name

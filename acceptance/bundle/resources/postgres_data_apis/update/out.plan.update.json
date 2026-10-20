@@ -1,0 +1,30 @@
+{
+  "action": "update",
+  "changes": {
+    "db_max_rows": {
+      "action": "update",
+      "old": 100,
+      "new": 500
+    },
+    "db_schemas": {
+      "action": "skip",
+      "reason": "spec:input_only",
+      "old": [
+        "public"
+      ],
+      "new": [
+        "public"
+      ]
+    },
+    "server_cors_allowed_origins": {
+      "action": "skip",
+      "reason": "spec:input_only",
+      "old": [
+        "https://app.example.com"
+      ],
+      "new": [
+        "https://app.example.com"
+      ]
+    }
+  }
+}

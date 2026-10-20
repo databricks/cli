@@ -64,6 +64,7 @@ var dmsResourceTypes = []string{
 	"pipelines",
 	"postgres_branches",
 	"postgres_catalogs",
+	"postgres_data_apis",
 	"postgres_databases",
 	"postgres_endpoints",
 	"postgres_projects",

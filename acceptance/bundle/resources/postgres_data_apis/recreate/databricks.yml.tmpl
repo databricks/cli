@@ -1,0 +1,37 @@
+bundle:
+  name: recreate-pg-data-api-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-$UNIQUE_NAME
+      display_name: "Test Project for Data API Recreate"
+      pg_version: 16
+
+  postgres_roles:
+    owner:
+      parent: ${resources.postgres_projects.my_project.id}/branches/production
+      role_id: app-owner
+      postgres_role: app_owner
+
+  postgres_databases:
+    first:
+      parent: ${resources.postgres_projects.my_project.id}/branches/production
+      database_id: first-database
+      postgres_database: first_db
+      role: ${resources.postgres_roles.owner.id}
+    second:
+      parent: ${resources.postgres_projects.my_project.id}/branches/production
+      database_id: second-database
+      postgres_database: second_db
+      role: ${resources.postgres_roles.owner.id}
+
+  postgres_data_apis:
+    my_data_api:
+      parent: ${resources.postgres_databases.first.name}
+      db_schemas:
+        - public
+      db_max_rows: 100

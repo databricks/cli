@@ -1,0 +1,50 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects",
+  "q": {
+    "project_id": "test-pg-proj-[UNIQUE_NAME]"
+  },
+  "body": {
+    "spec": {
+      "display_name": "Test Project for Data API",
+      "pg_version": 16
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/production/roles",
+  "q": {
+    "role_id": "app-owner"
+  },
+  "body": {
+    "spec": {
+      "postgres_role": "app_owner"
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases",
+  "q": {
+    "database_id": "my-database"
+  },
+  "body": {
+    "spec": {
+      "postgres_database": "app_db",
+      "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production/roles/app-owner"
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database/data-api",
+  "body": {
+    "spec": {
+      "db_max_rows": 100,
+      "db_schemas": [
+        "public"
+      ]
+    }
+  }
+}

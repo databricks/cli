@@ -1,0 +1,16 @@
+Cloud = true
+
+# Lakebase v2 (postgres) is only available in AWS as of January 2026
+CloudEnvs.gcp = false
+CloudEnvs.azure = false
+
+Ignore = [
+    "databricks.yml",
+    ".databricks",
+]
+
+[[Repls]]
+# Normalize endpoint UIDs (ep-xxx-yyy format, supports both word-based and hex-based UIDs)
+Old = 'ep-[a-z0-9-]+'
+New = '[ENDPOINT_UID]'
+Order = 1
