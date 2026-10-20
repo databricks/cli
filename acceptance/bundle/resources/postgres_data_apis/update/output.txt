@@ -33,11 +33,14 @@ Resources: 0 created, 1 changed, 0 deleted, 3 unchanged
     "db_schemas": [
       "public"
     ],
-    "db_max_rows": 500
+    "db_max_rows": 500,
+    "server_cors_allowed_origins": [
+      "https://app.example.com"
+    ]
   }
 }
 
-=== Remove a spec field: the whole spec is sent, so the field resets to its server default
+=== Remove a spec field: update_mask=spec keeps a field the request omits, so it keeps its last value
 >>> [CLI] bundle plan
 update postgres_data_apis.my_data_api
 
@@ -48,6 +51,21 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-pg-data-api
 Updated postgres_data_apis.my_data_api
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 3 unchanged
+
+>>> [CLI] postgres get-data-api projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database/data-api
+{
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database/data-api",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database",
+  "status": {
+    "db_schemas": [
+      "public"
+    ],
+    "db_max_rows": 500,
+    "server_cors_allowed_origins": [
+      "https://app.example.com"
+    ]
+  }
+}
 
 === Plan after update shows no changes
 >>> [CLI] bundle plan

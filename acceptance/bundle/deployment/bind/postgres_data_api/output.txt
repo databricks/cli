@@ -3,12 +3,12 @@
 === Deploy fails because the Data API is already enabled
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Error: cannot create resources.postgres_data_apis.data_api1: Data API is already enabled for database projects/test-project/branches/production/databases/test-database (409 ALREADY_EXISTS)
+Error: cannot create resources.postgres_data_apis.data_api1: Data API is already enabled for this database (409 ALREADY_EXISTS)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.0/postgres/projects/test-project/branches/production/databases/test-database/data-api
 HTTP Status: 409 Conflict
 API error_code: ALREADY_EXISTS
-API message: Data API is already enabled for database projects/test-project/branches/production/databases/test-database
+API message: Data API is already enabled for this database
 
 Files: 2 uploaded, 0 deleted
 
@@ -83,7 +83,7 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 1 deleted
 
 >>> musterr [CLI] postgres get-data-api projects/test-project/branches/production/databases/test-database/data-api
-Error: data api id not found [TraceId: [UUID]]
+Error: Data API is not enabled for this database
 
 >>> [CLI] postgres get-database projects/test-project/branches/production/databases/test-database
 {
