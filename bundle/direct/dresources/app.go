@@ -301,10 +301,9 @@ func deploymentToAppConfig(d *apps.AppDeployment) *resources.AppConfig {
 		config.Env = make([]resources.AppEnvVar, len(d.EnvVars))
 		for i, ev := range d.EnvVars {
 			config.Env[i] = resources.AppEnvVar{
-				Name:            ev.Name,
-				Value:           ev.Value,
-				ValueFrom:       ev.ValueFrom,
-				ForceSendFields: nil,
+				Name:      ev.Name,
+				Value:     ev.Value,
+				ValueFrom: ev.ValueFrom,
 			}
 		}
 	}
