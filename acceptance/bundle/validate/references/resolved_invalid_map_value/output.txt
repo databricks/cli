@@ -5,6 +5,5 @@ Warning: expected string, found map
   in databricks.yml:15:23
 
 {
-  "bad.key[0]": "",
   "good": "ok"
 }

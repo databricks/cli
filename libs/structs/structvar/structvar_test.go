@@ -340,3 +340,29 @@ func TestCopyMetadata(t *testing.T) {
 	}, dst.Refs)
 	assert.Equal(t, []diag.Location{loc}, dst.Locations.Exact(a))
 }
+
+func TestDeleteSliceElement(t *testing.T) {
+	type obj struct {
+		Items []string `json:"items"`
+	}
+	sv := &structvar.StructVar{Value: &obj{Items: []string{"a", "b", "c"}}}
+	items := structpath.NewStringKey(nil, "items")
+	for i, name := range []string{"a", "b", "c"} {
+		loc := diag.Location{File: name, Line: i + 1}
+		sv.Locations = sv.Locations.With(structpath.NewIndex(items, i), (*structvar.Locations)(nil).WithLocations([]diag.Location{loc}))
+	}
+	sv.Refs = map[string]string{"items[2]": "${var.c}"}
+
+	require.NoError(t, sv.Delete(structpath.NewIndex(items, 0)))
+
+	assert.Equal(t, []string{"b", "c"}, sv.Value.(*obj).Items)
+	assert.Equal(t, []diag.Location{{File: "b", Line: 2}}, sv.Locations.Exact(structpath.NewIndex(items, 0)))
+	assert.Equal(t, []diag.Location{{File: "c", Line: 3}}, sv.Locations.Exact(structpath.NewIndex(items, 1)))
+	assert.Nil(t, sv.Locations.Exact(structpath.NewIndex(items, 2)))
+	assert.Equal(t, map[string]string{"items[1]": "${var.c}"}, sv.Refs)
+
+	require.NoError(t, sv.Delete(structpath.NewIndex(items, 1)))
+	assert.Equal(t, []string{"b"}, sv.Value.(*obj).Items)
+	assert.Nil(t, sv.Locations.Exact(structpath.NewIndex(items, 1)))
+	assert.Empty(t, sv.Refs)
+}

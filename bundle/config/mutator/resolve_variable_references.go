@@ -1,6 +1,7 @@
 package mutator
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -356,12 +357,38 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []*st
 
 	// Store the results in the typed configuration, converting them to the type of the
 	// field (e.g. a variable reference resolved to an integer).
+	// A value that cannot be converted is dropped, which moves the elements after it in
+	// a sequence: apply the updates from the last element to the first.
+	slices.SortStableFunc(updates, func(a, b resolvedValue) int { return -comparePaths(a.path, b.path) })
+	var updateDiags []diag.Diagnostics
 	for _, u := range updates {
 		d, err := b.Config.Decode(u.path, u.value)
-		diags = diags.Extend(d).Extend(diag.FromErr(err))
+		updateDiags = append(updateDiags, d.Extend(diag.FromErr(err)))
+	}
+	for _, d := range slices.Backward(updateDiags) {
+		diags = diags.Extend(d)
 	}
 
 	return hasUpdates, diags
+}
+
+// comparePaths orders paths by their components; indices are compared as numbers.
+func comparePaths(a, b *structpath.PathNode) int {
+	as, bs := a.AsSlice(), b.AsSlice()
+	for i := 0; i < len(as) && i < len(bs); i++ {
+		ai, aok := as[i].Index()
+		bi, bok := bs[i].Index()
+		if aok && bok {
+			if c := cmp.Compare(ai, bi); c != 0 {
+				return c
+			}
+			continue
+		}
+		if c := strings.Compare(as[i].String(), bs[i].String()); c != 0 {
+			return c
+		}
+	}
+	return cmp.Compare(len(as), len(bs))
 }
 
 // resolvedValue is the value a reference string at path resolved to.

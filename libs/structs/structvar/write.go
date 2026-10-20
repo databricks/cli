@@ -82,19 +82,36 @@ func isScalarKind(k reflect.Kind) bool {
 	}
 }
 
-// Delete removes the value at path: a map entry is deleted, a struct field is zeroed.
+// Delete removes the value at path: a map entry or slice element is deleted (the
+// elements after it move down, with their locations and references), a struct field is
+// zeroed.
 func (sv *StructVar) Delete(path *structpath.PathNode) error {
 	p := components(path)
 	if len(p) == 0 {
 		return errors.New("cannot delete the root")
 	}
 	parent, last := p[:len(p)-1], p[len(p)-1]
+	shifted := false
 	err := walkTo(reflect.ValueOf(sv.Value), parent, func(v reflect.Value) error {
 		v = derefAlloc(v)
 		switch {
 		case v.Kind() == reflect.Map && last.isKey:
 			if !v.IsNil() {
 				v.SetMapIndex(reflect.ValueOf(last.key).Convert(v.Type().Key()), reflect.Value{})
+			}
+		case v.Kind() == reflect.Slice && !last.isKey:
+			if last.index < 0 || last.index >= v.Len() {
+				return fmt.Errorf("index %d out of range at %s", last.index, path.Parent())
+			}
+			n := v.Len()
+			sv.Refs = withoutRefs(sv.Refs, path)
+			sv.Locations = sv.Locations.With(path, nil)
+			shifted = true
+			reflect.Copy(v.Slice(last.index, n), v.Slice(last.index+1, n))
+			v.Index(n - 1).SetZero()
+			v.SetLen(n - 1)
+			for i := last.index + 1; i < n; i++ {
+				sv.MoveMetadata(structpath.NewIndex(path.Parent(), i), structpath.NewIndex(path.Parent(), i-1))
 			}
 		case v.Kind() == reflect.Struct && last.isKey:
 			info := GetStructInfo(v.Type())
@@ -114,8 +131,10 @@ func (sv *StructVar) Delete(path *structpath.PathNode) error {
 	if err != nil {
 		return err
 	}
-	sv.Refs = withoutRefs(sv.Refs, path)
-	sv.Locations = sv.Locations.With(path, nil)
+	if !shifted {
+		sv.Refs = withoutRefs(sv.Refs, path)
+		sv.Locations = sv.Locations.With(path, nil)
+	}
 	return nil
 }
 

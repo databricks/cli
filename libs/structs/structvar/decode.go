@@ -92,22 +92,28 @@ func DecodeYAMLNode(file string, node *yaml.Node, dst any, mapLocations Location
 
 // Assign sets the value described by src at path, replacing what was there, with the
 // references and locations of src. The value is converted to the type at path like
-// [DecodeYAML] converts values; the diagnostics explain values that were dropped.
+// [DecodeYAML] converts values; the diagnostics explain values that were dropped. A
+// dropped slice element or map entry is removed, like [DecodeYAML] does.
 func (sv *StructVar) Assign(path *structpath.PathNode, src View) (diag.Diagnostics, error) {
 	var d decoder
 	var n *dnode
+	dropped := false
 	err := update(reflect.ValueOf(sv.Value), components(path), func(dst reflect.Value) (bool, error) {
 		var ok bool
 		var err error
 		n, ok, err = d.decode(dst, viewSource{src}, path)
 		if !ok {
 			dst.SetZero()
+			dropped = err == nil
 			return false, err
 		}
 		return n.isZeroValue(dst), err
 	})
 	if err != nil {
 		return d.diags, err
+	}
+	if dropped && path != nil {
+		return d.diags, sv.Delete(path)
 	}
 	sv.Refs = n.refs(path, withoutRefs(sv.Refs, path))
 	sv.Locations = sv.Locations.With(path, n.locations())

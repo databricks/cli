@@ -6,7 +6,6 @@ Warning: expected string, found map
 
 {
   "on_failure": [
-    "",
     "ok@example.test"
   ]
 }
