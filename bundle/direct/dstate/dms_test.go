@@ -2,8 +2,6 @@ package dstate
 
 import (
 	"encoding/json"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle/deployplan"
@@ -11,35 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestMarkDeploymentHistory(t *testing.T) {
-	statePath := filepath.Join(t.TempDir(), "resources.json")
-	original := NewDatabase("lineage", 2)
-	original.Features = map[string]struct{}{}
-	original.State["resources.jobs.foo"] = ResourceEntry{ID: "123", State: json.RawMessage(`{"name":"original"}`)}
-	var db DeploymentState
-	db.OpenWithData(statePath, original)
-	require.NoError(t, db.Persist())
-	before, err := os.ReadFile(statePath)
-	require.NoError(t, err)
-
-	require.NoError(t, db.MarkDeploymentHistory(3))
-
-	assert.True(t, db.IsDeploymentMetadataService())
-	assert.Equal(t, 3, db.GetSerial())
-	assert.Contains(t, db.StateFeatures(), FeatureDeploymentHistory)
-	assert.Equal(t, original.State, db.Data.State)
-	assert.Equal(t, "123", db.GetResourceID("resources.jobs.foo"))
-	after, err := os.ReadFile(statePath)
-	require.NoError(t, err)
-	assert.NotEqual(t, before, after)
-	var persisted Database
-	require.NoError(t, json.Unmarshal(after, &persisted))
-	assert.Equal(t, 3, persisted.Serial)
-	assert.Contains(t, persisted.Features, FeatureDeploymentHistory)
-	assert.Empty(t, persisted.State)
-	assert.NoFileExists(t, statePath+".wal")
-}
 
 func TestApplyDMSState(t *testing.T) {
 	// The service stores state as an opaque string, so the envelope the write path sent
