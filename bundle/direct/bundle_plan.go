@@ -1285,12 +1285,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			}
 		}
 
-		slices.SortFunc(dependsOn, func(a, b deployplan.DependsOnEntry) int {
-			if a.Node != b.Node {
-				return strings.Compare(a.Node, b.Node)
-			}
-			return strings.Compare(a.Label, b.Label)
-		})
+		slices.SortFunc(dependsOn, compareDependsOn)
 
 		// Store an unredacted copy in the cache so Apply can deploy with the
 		// actual values. The original newStateConfig is redacted below and used
@@ -1330,6 +1325,8 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		p.Plan[node] = &e
 	}
 
+	addGrantsDependencies(p)
+
 	for n, entry := range existingKeys {
 		if p.Plan[n] != nil {
 			panic("unexpected node " + n)
@@ -1342,6 +1339,67 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 	}
 
 	return p, nil
+}
+
+func compareDependsOn(a, b deployplan.DependsOnEntry) int {
+	if a.Node != b.Node {
+		return strings.Compare(a.Node, b.Node)
+	}
+	return strings.Compare(a.Label, b.Label)
+}
+
+// addGrantsDependencies makes resources that refer to another resource also depend on that
+// resource's grants, because creating some resources requires the grants to be in place: a
+// pipeline cannot be created before its run_as principal has CREATE TABLE on the target schema.
+// A grants dependency that would create a cycle is skipped, e.g. when a schema grants privileges
+// to the service principal of an app that refers to the schema.
+func addGrantsDependencies(plan *deployplan.Plan) {
+	for _, node := range slices.Sorted(maps.Keys(plan.Plan)) {
+		entry := plan.Plan[node]
+
+		seen := make(map[string]bool, len(entry.DependsOn))
+		for _, dep := range entry.DependsOn {
+			seen[dep.Node] = true
+		}
+
+		var grantsDeps []deployplan.DependsOnEntry
+		for _, dep := range entry.DependsOn {
+			grantsNode := dep.Node + ".grants"
+			if seen[grantsNode] || plan.Plan[grantsNode] == nil || dependsOnTransitively(plan, grantsNode, node) {
+				continue
+			}
+			seen[grantsNode] = true
+			grantsDeps = append(grantsDeps, deployplan.DependsOnEntry{Node: grantsNode, Label: dep.Label})
+		}
+
+		if len(grantsDeps) > 0 {
+			entry.DependsOn = append(entry.DependsOn, grantsDeps...)
+			slices.SortFunc(entry.DependsOn, compareDependsOn)
+		}
+	}
+}
+
+// dependsOnTransitively reports whether node is target or depends on it, directly or through other nodes.
+func dependsOnTransitively(plan *deployplan.Plan, node, target string) bool {
+	visited := make(map[string]bool)
+	stack := []string{node}
+	for len(stack) > 0 {
+		n := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		if n == target {
+			return true
+		}
+		// A dependency on a node missing from the plan is reported by makeGraph.
+		entry := plan.Plan[n]
+		if visited[n] || entry == nil {
+			continue
+		}
+		visited[n] = true
+		for _, dep := range entry.DependsOn {
+			stack = append(stack, dep.Node)
+		}
+	}
+	return false
 }
 
 // ExtractReferences extracts variable references from the config subtree rooted at node,

@@ -1,0 +1,34 @@
+bundle:
+  name: schema-grants-pipeline-$UNIQUE_NAME
+
+resources:
+  catalogs:
+    pipeline_catalog:
+      name: catalog_grants_pipeline_$UNIQUE_NAME
+      grants:
+        - principal: $RUN_AS_SP
+          privileges:
+            - USE_CATALOG
+
+  schemas:
+    src:
+      catalog_name: ${resources.catalogs.pipeline_catalog.name}
+      name: src
+      grants:
+        - principal: $RUN_AS_SP
+          privileges:
+            - USE_SCHEMA
+            - CREATE_TABLE
+            - CREATE_MATERIALIZED_VIEW
+
+  pipelines:
+    load:
+      name: schema-grants-pipeline-$UNIQUE_NAME
+      catalog: ${resources.schemas.src.catalog_name}
+      schema: ${resources.schemas.src.name}
+      serverless: true
+      libraries:
+        - file:
+            path: ./transformation.py
+      run_as:
+        service_principal_name: $RUN_AS_SP
