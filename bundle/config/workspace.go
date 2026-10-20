@@ -222,16 +222,17 @@ func (w *Workspace) Client(ctx context.Context) (*databricks.WorkspaceClient, er
 // StrictProfile returns the profile that the target must authenticate with when
 // strict profile matching is enabled. Each workspace profile allows one pair of
 // host and workspace ID, and a profile without a workspace_id allows targets
-// without one. Account profiles are skipped. The target's pair must match exactly
-// one profile. Anything else is an error, so credentials from the environment
-// only reach a host and workspace that a profile allows.
-func (w *Workspace) StrictProfile(ctx context.Context) (string, error) {
+// without one. Account profiles are skipped. A target with a host must match
+// exactly one profile by its pair. A target without a host uses a named profile,
+// see strictProfileWithoutHost. Anything else is an error, so credentials from
+// the environment only reach a host and workspace that a profile allows.
+func (w *Workspace) StrictProfile(ctx context.Context, explicitProfile string) (string, error) {
 	// Match the host and workspace ID that Client resolves, without rewriting
 	// the target's configuration.
 	target := *w
 	target.NormalizeHostURL()
 	if target.Host == "" {
-		return "", errors.New("strict profile matching: workspace.host must be set")
+		return target.strictProfileWithoutHost(ctx, explicitProfile)
 	}
 
 	withHost := profile.WithHost(target.Host)
@@ -261,4 +262,43 @@ func (w *Workspace) StrictProfile(ctx context.Context) (string, error) {
 	default:
 		return "", fmt.Errorf("strict profile matching: no profile for host %s has workspace_id %s", target.Host, target.WorkspaceID)
 	}
+}
+
+// strictProfileWithoutHost returns the profile for a target without a host: the
+// explicit profile, else workspace.profile, else [__settings__].default_profile,
+// the same order as without strict mode. The profile supplies the host, so it
+// must be a workspace profile in the config file. It also supplies the
+// workspace ID, unless the target sets one that the profile must have.
+func (w *Workspace) strictProfileWithoutHost(ctx context.Context, name string) (string, error) {
+	profiler := profile.GetProfiler(ctx)
+	if name == "" {
+		name = w.Profile
+	}
+	if name == "" {
+		path, err := profiler.GetPath(ctx)
+		if err != nil {
+			return "", err
+		}
+		name, err = databrickscfg.GetConfiguredDefaultProfile(ctx, path)
+		if err != nil {
+			return "", err
+		}
+	}
+	if name == "" {
+		return "", errors.New("strict profile matching: set workspace.host, or select a profile with --profile, workspace.profile or [__settings__].default_profile")
+	}
+
+	profiles, err := profiler.LoadProfiles(ctx, func(p profile.Profile) bool {
+		return p.Name == name && profile.MatchWorkspaceProfiles(p)
+	})
+	if err != nil {
+		return "", err
+	}
+	if len(profiles) == 0 {
+		return "", fmt.Errorf("strict profile matching: %s is not a workspace profile with a host in the config file", name)
+	}
+	if w.WorkspaceID != "" && profiles[0].WorkspaceID != w.WorkspaceID {
+		return "", fmt.Errorf("strict profile matching: profile %s does not have workspace_id %s", name, w.WorkspaceID)
+	}
+	return name, nil
 }

@@ -97,10 +97,10 @@ func configureProfile(cmd *cobra.Command, b *bundle.Bundle) {
 }
 
 // configureStrictProfile selects the profile from the target's host and
-// workspace ID. A profile set in the bundle configuration or passed explicitly
-// must be the selected one.
+// workspace ID, or by name for a target without a host. A profile set in the
+// bundle configuration or passed explicitly must be the selected one.
 func configureStrictProfile(ctx context.Context, b *bundle.Bundle, explicitProfile string) {
-	selected, err := b.Config.Workspace.StrictProfile(ctx)
+	selected, err := b.Config.Workspace.StrictProfile(ctx, explicitProfile)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return

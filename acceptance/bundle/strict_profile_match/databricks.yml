@@ -40,3 +40,9 @@ targets:
     workspace:
       host: https://unknown.test
   no_host: {}
+  no_host_with_profile:
+    workspace:
+      profile: workspace_custom_host
+  no_host_with_workspace_id:
+    workspace:
+      workspace_id: "$WORKSPACE_ID"

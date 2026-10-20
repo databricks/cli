@@ -9,7 +9,7 @@ add_repl "$CUSTOM_HOST" CUSTOM_HOST
 export WORKSPACE_ID=$(curl -s "$DATABRICKS_HOST/.well-known/databricks-config" | jq -r .workspace_id)
 
 # scripts.yml is not substituted, so the bundle script expands $CLI at run time.
-for f in databricks.yml .databrickscfg ambiguous.databrickscfg account.databrickscfg; do
+for f in databricks.yml .databrickscfg ambiguous.databrickscfg account.databrickscfg default.databrickscfg; do
   envsubst < $f > out && mv out $f
 done
 
@@ -22,10 +22,11 @@ title "Without strict mode, the environment token is used for a custom host of a
 trace errcode $CLI bundle validate -t custom_host_other_workspace
 
 export DATABRICKS_BUNDLE_STRICT_PROFILE_MATCH=1
+fields='{host: .workspace.host, workspace_id: .workspace.workspace_id, profile: .workspace.profile}'
 
 for target in classic classic_with_workspace_id custom_host custom_host_workspace_id_field classic_with_matching_profile; do
   title "Strict mode, target $target matches one profile"
-  trace errcode $CLI bundle validate -t $target -o json | jq '{host: .workspace.host, workspace_id: .workspace.workspace_id, profile: .workspace.profile}'
+  trace errcode $CLI bundle validate -t $target -o json | jq "$fields"
 done
 
 for target in classic_other_workspace custom_host_without_workspace_id custom_host_other_workspace unknown_host no_host classic_with_profile; do
@@ -41,6 +42,35 @@ trace errcode $CLI bundle validate -t classic -p workspace_classic_id
 
 title "Strict mode, a CLI started from a bundle script gets the selected profile"
 trace errcode $CLI bundle run -t custom_host nested_validate
+
+# A target without a host gets its host from a profile selected by name.
+# current_user shows that the CLI authenticated with that profile.
+selected='{profile: .workspace.profile, workspace_id: .workspace.workspace_id, user: .workspace.current_user.userName}'
+
+title "Strict mode, a target without a host uses the explicit profile"
+trace errcode $CLI bundle validate -t no_host -p workspace_custom_host -o json | jq "$selected"
+
+title "Strict mode, a target without a host uses workspace.profile"
+trace errcode $CLI bundle validate -t no_host_with_profile -o json | jq "$selected"
+
+title "Strict mode, a target without a host uses the default profile"
+trace errcode env DATABRICKS_CONFIG_FILE=$TEST_TMP_DIR/default.databrickscfg $CLI bundle validate -t no_host -o json | jq "$selected"
+trace errcode env DATABRICKS_CONFIG_FILE=$TEST_TMP_DIR/default.databrickscfg $CLI bundle run -t no_host nested_validate
+
+title "Strict mode, a target without a host accepts a profile with the target's workspace ID"
+trace errcode $CLI bundle validate -t no_host_with_workspace_id -p workspace_classic_id -o json | jq "$selected"
+
+title "Strict mode, a target without a host rejects a profile without the target's workspace ID"
+trace errcode env DATABRICKS_CONFIG_FILE=$TEST_TMP_DIR/default.databrickscfg $CLI bundle validate -t no_host_with_workspace_id
+
+title "Strict mode, a target without a host rejects an unknown profile"
+trace errcode $CLI bundle validate -t no_host -p my-local-profile
+
+title "Strict mode, a target without a host rejects an account profile"
+trace errcode env DATABRICKS_CONFIG_FILE=$TEST_TMP_DIR/account.databrickscfg $CLI bundle validate -t no_host -p account_custom_host
+
+title "Strict mode, a target without a host rejects an explicit profile that differs from workspace.profile"
+trace errcode $CLI bundle validate -t no_host_with_profile -p workspace_classic
 
 title "Strict mode, a target that matches several profiles, including [DEFAULT], is rejected"
 trace errcode env DATABRICKS_CONFIG_FILE=$TEST_TMP_DIR/ambiguous.databrickscfg $CLI bundle validate -t classic

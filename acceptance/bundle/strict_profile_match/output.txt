@@ -104,7 +104,7 @@ Exit code: 1
 
 === Strict mode, target no_host is rejected
 >>> errcode [CLI] bundle validate -t no_host
-Error: strict profile matching: workspace.host must be set
+Error: strict profile matching: set workspace.host, or select a profile with --profile, workspace.profile or [__settings__].default_profile
 
 Name: strict-profile-match
 Target: no_host
@@ -146,6 +146,85 @@ Exit code: 1
 === Strict mode, a CLI started from a bundle script gets the selected profile
 >>> errcode [CLI] bundle run -t custom_host nested_validate
 workspace_custom_host
+
+=== Strict mode, a target without a host uses the explicit profile
+>>> errcode [CLI] bundle validate -t no_host -p workspace_custom_host -o json
+{
+  "profile": "workspace_custom_host",
+  "workspace_id": null,
+  "user": "[USERNAME]"
+}
+
+=== Strict mode, a target without a host uses workspace.profile
+>>> errcode [CLI] bundle validate -t no_host_with_profile -o json
+{
+  "profile": "workspace_custom_host",
+  "workspace_id": null,
+  "user": "[USERNAME]"
+}
+
+=== Strict mode, a target without a host uses the default profile
+>>> errcode env DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/default.databrickscfg [CLI] bundle validate -t no_host -o json
+{
+  "profile": "workspace_classic",
+  "workspace_id": null,
+  "user": "[USERNAME]"
+}
+
+>>> errcode env DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/default.databrickscfg [CLI] bundle run -t no_host nested_validate
+workspace_classic
+
+=== Strict mode, a target without a host accepts a profile with the target's workspace ID
+>>> errcode [CLI] bundle validate -t no_host_with_workspace_id -p workspace_classic_id -o json
+{
+  "profile": "workspace_classic_id",
+  "workspace_id": "[WORKSPACE_ID]",
+  "user": "[USERNAME]"
+}
+
+=== Strict mode, a target without a host rejects a profile without the target's workspace ID
+>>> errcode env DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/default.databrickscfg [CLI] bundle validate -t no_host_with_workspace_id
+Error: strict profile matching: profile workspace_classic does not have workspace_id [WORKSPACE_ID]
+
+Name: strict-profile-match
+Target: no_host_with_workspace_id
+
+Found 1 error
+
+Exit code: 1
+
+=== Strict mode, a target without a host rejects an unknown profile
+>>> errcode [CLI] bundle validate -t no_host -p my-local-profile
+Error: strict profile matching: my-local-profile is not a workspace profile with a host in the config file
+
+Name: strict-profile-match
+Target: no_host
+
+Found 1 error
+
+Exit code: 1
+
+=== Strict mode, a target without a host rejects an account profile
+>>> errcode env DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/account.databrickscfg [CLI] bundle validate -t no_host -p account_custom_host
+Error: strict profile matching: account_custom_host is not a workspace profile with a host in the config file
+
+Name: strict-profile-match
+Target: no_host
+
+Found 1 error
+
+Exit code: 1
+
+=== Strict mode, a target without a host rejects an explicit profile that differs from workspace.profile
+>>> errcode [CLI] bundle validate -t no_host_with_profile -p workspace_classic
+Error: strict profile matching: workspace.profile workspace_custom_host does not match profile workspace_classic selected for the target; remove workspace.profile or set it to workspace_classic
+
+Name: strict-profile-match
+Target: no_host_with_profile
+
+Found 1 error
+
+Exit code: 1
 
 === Strict mode, a target that matches several profiles, including [DEFAULT], is rejected
 >>> errcode env DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/ambiguous.databrickscfg [CLI] bundle validate -t classic
