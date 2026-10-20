@@ -12,13 +12,30 @@ Warning: required field "assets_dir" is not set
   },
   "quality_monitors": {
     "my_monitor": {
-      "output_schema_name": "${resources.catalogs.my_catalog.name}.${resources.schemas.my_schema.name}",
+      "lifecycle": {
+        "depends_on": [
+          {
+            "node": "schemas.my_schema"
+          },
+          {
+            "node": "catalogs.my_catalog"
+          }
+        ]
+      },
+      "output_schema_name": "mycatalog.dev_[USERNAME]_myschema",
       "table_name": "mycatalog.myschema.mytable"
     }
   },
   "schemas": {
     "my_schema": {
-      "catalog_name": "${resources.catalogs.my_catalog.name}",
+      "catalog_name": "mycatalog",
+      "lifecycle": {
+        "depends_on": [
+          {
+            "node": "catalogs.my_catalog"
+          }
+        ]
+      },
       "name": "dev_[USERNAME]_myschema"
     }
   }
