@@ -406,8 +406,8 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			nextVersion := b.DeploymentBundle.StateDB.GetSerial() + 1
 			// Stamp jobs and pipelines for the plan:
 			// 1. Existing: deployment ID is known; version = last recorded + 1.
-			// 2. New: stamp version 1, but skip AnnotateDeployment below because no ID exists yet.
-			//    The deploy phase creates the deployment and stamps its ID.
+			// 2. New: AnnotateDeploymentVersion stamps version 1 now; the deploy phase
+			//    stamps the deployment ID after creating the deployment.
 			// 3. Migrated: deployment ID is known; version = migration version + 1.
 			muts := []bundle.Mutator{metadata.AnnotateDeploymentVersion(nextVersion)}
 			if dmsDeploymentID != "" {
