@@ -1,0 +1,62 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:update_feature"
+      ],
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "features": {
+      "my_feature_1": {
+        "description": "My Feature (updated)",
+        "full_name": "main.default.my_feature_1",
+        "function": {
+          "aggregation_function": {
+            "count_function": {
+              "input": "value"
+            },
+            "time_window": {
+              "sliding": {
+                "slide_duration": "86400s",
+                "window_duration": "604800s"
+              }
+            }
+          }
+        },
+        "source": {
+          "delta_table_source": {
+            "full_name": "main.default.my_source_1"
+          }
+        }
+      },
+      "my_feature_2": {
+        "description": "My Feature (2) (updated)",
+        "full_name": "main.default.my_feature_2",
+        "function": {
+          "aggregation_function": {
+            "count_function": {
+              "input": "value"
+            },
+            "time_window": {
+              "sliding": {
+                "slide_duration": "86400s",
+                "window_duration": "604800s"
+              }
+            }
+          }
+        },
+        "source": {
+          "delta_table_source": {
+            "full_name": "main.default.my_source_2"
+          }
+        }
+      }
+    }
+  }
+}

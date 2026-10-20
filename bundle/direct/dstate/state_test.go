@@ -7,6 +7,10 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/testserver"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -43,6 +47,151 @@ func TestFinalizeWithNoEntriesDoesNotWriteStateFile(t *testing.T) {
 
 	_, err := os.Stat(path)
 	assert.ErrorIs(t, err, os.ErrNotExist)
+}
+
+func TestDataForFileSerial(t *testing.T) {
+	tests := []struct {
+		name       string
+		recording  bool
+		versionID  int
+		wantSerial int
+	}{
+		{name: "direct state keeps its serial", versionID: 7, wantSerial: 3},
+		{name: "recorded state caches the current version", recording: true, versionID: 7, wantSerial: 7},
+		{name: "no recorded version omits the serial", recording: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := DeploymentState{
+				Data:           NewDatabase("test-lineage", 3),
+				recordsHistory: tt.recording,
+				VersionID:      tt.versionID,
+			}
+			db.Data.State["resources.jobs.foo"] = ResourceEntry{ID: "123", State: json.RawMessage(`{"name":"foo"}`)}
+
+			snapshot := db.dataForFile()
+			assert.Equal(t, tt.wantSerial, snapshot.Serial)
+			assert.Equal(t, 3, db.Data.Serial)
+			assert.Len(t, db.Data.State, 1)
+			if tt.recording {
+				assert.Empty(t, snapshot.State)
+				assert.Contains(t, snapshot.Features, FeatureDeploymentHistory)
+			} else {
+				assert.Equal(t, db.Data.State, snapshot.State)
+			}
+			data, err := json.Marshal(snapshot)
+			require.NoError(t, err)
+			if tt.wantSerial == 0 {
+				assert.NotContains(t, string(data), `"serial"`)
+			}
+		})
+	}
+}
+
+func TestOpenUsesDMSVersionForSerial(t *testing.T) {
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.0/bundle/deployments/123/resources", func(req testserver.Request) any {
+		return bundledeployments.ListResourcesResponse{}
+	})
+	testserver.AddDefaultHandlers(server)
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "testtoken"})
+	require.NoError(t, err)
+
+	tests := []struct {
+		name          string
+		omitSerial    bool
+		fileSerial    int
+		unmarked      bool
+		deploymentID  string
+		lastVersionID int
+		wantErr       string
+	}{
+		{
+			name:          "legacy missing serial",
+			omitSerial:    true,
+			deploymentID:  "123",
+			lastVersionID: 7,
+		},
+		{
+			name:          "legacy zero serial",
+			deploymentID:  "123",
+			lastVersionID: 7,
+		},
+		{
+			name:          "serial copy behind service",
+			fileSerial:    2,
+			deploymentID:  "123",
+			lastVersionID: 7,
+		},
+		{
+			name:          "serial copy equal to service",
+			fileSerial:    7,
+			deploymentID:  "123",
+			lastVersionID: 7,
+		},
+		{
+			name:          "serial copy ahead of service",
+			fileSerial:    99,
+			deploymentID:  "123",
+			lastVersionID: 7,
+			wantErr:       "resource state serial (99) is ahead of deployment history version (7)",
+		},
+		{
+			name: "no deployment has version zero",
+		},
+		{
+			name:       "positive serial copy without deployment",
+			fileSerial: 99,
+			wantErr:    "resource state serial (99) is ahead of deployment history version (0)",
+		},
+		{
+			name:         "positive serial copy without recorded version",
+			fileSerial:   1,
+			deploymentID: "123",
+			wantErr:      "resource state serial (1) is ahead of deployment history version (0)",
+		},
+		{
+			name:          "unmarked serial can be ahead of service",
+			fileSerial:    99,
+			unmarked:      true,
+			deploymentID:  "123",
+			lastVersionID: 7,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "resources.json")
+			seed := map[string]any{
+				"state_version": currentStateVersion,
+				"lineage":       "test-lineage",
+				"features":      map[string]struct{}{FeatureDeploymentHistory: {}},
+				"state":         map[string]ResourceEntry{},
+			}
+			if !tt.omitSerial {
+				seed["serial"] = tt.fileSerial
+			}
+			if tt.unmarked {
+				delete(seed, "features")
+			}
+			data, err := json.Marshal(seed)
+			require.NoError(t, err)
+			require.NoError(t, os.WriteFile(path, data, 0o600))
+
+			ctx := cmdctx.SetWorkspaceClient(t.Context(), client)
+			var db DeploymentState
+			err = db.Open(ctx, path, WithRecovery(false), WithWrite(false), WithDeploymentHistory(true), OpenDmsArgs{
+				DeploymentID: tt.deploymentID, LastVersionID: tt.lastVersionID,
+			})
+			if tt.wantErr != "" {
+				require.EqualError(t, err, "inconsistent deployment state: "+tt.wantErr)
+				assert.False(t, db.IsOpen())
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.lastVersionID, db.GetSerial())
+			mustFinalize(t, &db)
+		})
+	}
 }
 
 func TestExportStateFromDataJobRunJobID(t *testing.T) {
@@ -183,15 +332,15 @@ func TestHeaderOnlyWALRecoveryDoesNotAdvanceSerial(t *testing.T) {
 }
 
 func TestEmptyFeatureStateAcceptedWithoutFlippingVersion(t *testing.T) {
-	empty := &Database{Header: Header{StateVersion: 3}}
+	empty := &Database{StateVersion: 3}
 	require.NoError(t, migrateState(empty))
 	assert.Equal(t, 3, empty.StateVersion, "v3 + no features keeps its on-disk version, not flipped to v2")
 
 	// Version 3 states with unknown features must still be refused.
-	withFeature := &Database{Header: Header{
+	withFeature := &Database{
 		StateVersion: 3,
 		Features:     map[string]struct{}{"future_feature": {}},
-	}}
+	}
 	err := migrateState(withFeature)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "requires features this CLI does not support")

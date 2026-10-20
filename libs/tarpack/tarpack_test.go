@@ -3,6 +3,7 @@ package tarpack
 import (
 	"archive/tar"
 	"bytes"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -26,7 +27,7 @@ func readTar(t *testing.T, b []byte) map[string]readEntry {
 	out := map[string]readEntry{}
 	for {
 		hdr, err := tr.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		require.NoError(t, err)

@@ -45,7 +45,7 @@ func setVariable(ctx context.Context, v dyn.Value, variable *variable.Variable, 
 
 		v, err := dyn.Set(v, "value", dyn.V(val))
 		if err != nil {
-			return dyn.InvalidValue, fmt.Errorf(`failed to assign value "%s" to variable %s from environment variable %s with error: %v`, val, name, envVarName, err)
+			return dyn.InvalidValue, fmt.Errorf(`failed to assign value "%s" to variable %s from environment variable %s with error: %v`, val, name, envVarName, err) //nolint:errorlint // runs inside dyn.Map, which drops wrapped no-such-key errors
 		}
 		return v, nil
 	}
@@ -70,7 +70,7 @@ func setVariable(ctx context.Context, v dyn.Value, variable *variable.Variable, 
 
 		v, err := dyn.Set(v, "value", fileDefault)
 		if err != nil {
-			return dyn.InvalidValue, fmt.Errorf(`failed to assign default value from variable file to variable %s with error: %v`, name, err)
+			return dyn.InvalidValue, fmt.Errorf(`failed to assign default value from variable file to variable %s with error: %v`, name, err) //nolint:errorlint // runs inside dyn.Map, which drops wrapped no-such-key errors
 		}
 
 		return v, nil
@@ -80,12 +80,12 @@ func setVariable(ctx context.Context, v dyn.Value, variable *variable.Variable, 
 	if variable.HasDefault() {
 		vDefault, err := dyn.Get(v, "default")
 		if err != nil {
-			return dyn.InvalidValue, fmt.Errorf(`failed to get default value from config "%s" for variable %s with error: %v`, variable.Default, name, err)
+			return dyn.InvalidValue, fmt.Errorf(`failed to get default value from config "%s" for variable %s with error: %v`, variable.Default, name, err) //nolint:errorlint // runs inside dyn.Map, which drops wrapped no-such-key errors
 		}
 
 		v, err := dyn.Set(v, "value", vDefault)
 		if err != nil {
-			return dyn.InvalidValue, fmt.Errorf(`failed to assign default value from config "%s" to variable %s with error: %v`, variable.Default, name, err)
+			return dyn.InvalidValue, fmt.Errorf(`failed to assign default value from config "%s" to variable %s with error: %v`, variable.Default, name, err) //nolint:errorlint // runs inside dyn.Map, which drops wrapped no-such-key errors
 		}
 		return v, nil
 	}

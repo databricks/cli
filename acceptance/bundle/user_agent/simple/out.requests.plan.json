@@ -14,10 +14,10 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/workspace/get-status",
+  "path": "/api/2.0/workspace/export",
   "q": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json",
-    "return_export_info": "true"
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json"
   }
 }
 {
@@ -27,10 +27,10 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/workspace/get-status",
+  "path": "/api/2.0/workspace/export",
   "q": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate",
-    "return_export_info": "true"
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate"
   }
 }
 {
@@ -40,10 +40,10 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/workspace/get-status",
+  "path": "/api/2.0/workspace/export",
   "q": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json",
-    "return_export_info": "true"
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json"
   }
 }
 {

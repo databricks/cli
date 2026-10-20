@@ -145,7 +145,7 @@ func (server *proxyServer) handleNewConnection(ctx context.Context, w http.Respo
 func runServerProxy(ctx context.Context, proxy *proxyConnection, createServerCommand createServerCommandFunc, w http.ResponseWriter, r *http.Request) error {
 	err := proxy.accept(w, r)
 	if err != nil {
-		return fmt.Errorf("failed to upgrade to websockets: %v", err)
+		return fmt.Errorf("failed to upgrade to websockets: %w", err)
 	}
 	defer closeProxyConnection(ctx, proxy)
 	log.Infof(ctx, "New connection accepted")
@@ -159,17 +159,17 @@ func runServerProxy(ctx context.Context, proxy *proxyConnection, createServerCom
 
 	sshdStdin, err := serverCmd.StdinPipe()
 	if err != nil {
-		return fmt.Errorf("failed to get stdin pipe: %v", err)
+		return fmt.Errorf("failed to get stdin pipe: %w", err)
 	}
 
 	sshdStdout, err := serverCmd.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("failed to get stdout pipe: %v", err)
+		return fmt.Errorf("failed to get stdout pipe: %w", err)
 	}
 
 	err = serverCmd.Start()
 	if err != nil {
-		return fmt.Errorf("failed to start SSHD process: %v", err)
+		return fmt.Errorf("failed to start SSHD process: %w", err)
 	}
 	defer releaseServerCommand(ctx, serverCmd)
 

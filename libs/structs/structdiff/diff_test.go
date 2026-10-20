@@ -939,8 +939,8 @@ type diffTaggedEmbed struct {
 }
 
 func TestDiffTaggedEmbedIsReportedUnderItsName(t *testing.T) {
-	before := &diffTaggedEmbed{DiffEmbedLeaf: DiffEmbedLeaf{Value: "before"}, Own: "o"}
-	after := &diffTaggedEmbed{DiffEmbedLeaf: DiffEmbedLeaf{Value: "after"}, Own: "o"}
+	before := &diffTaggedEmbed{Value: "before", Own: "o"}
+	after := &diffTaggedEmbed{Value: "after", Own: "o"}
 
 	blob, err := json.Marshal(after)
 	require.NoError(t, err)

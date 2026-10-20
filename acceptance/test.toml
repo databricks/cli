@@ -81,3 +81,9 @@ New = 'json.plan_version = [PLAN_VERSION];'
 
 # The lineage hash (libs/shortid) is not masked: fixture lineages hash to stable values, and
 # tests with a freshly minted lineage register its hash with read_lineage.py.
+
+# Workspace TreeIDs can be short (for example, in LITE). Match the deployment path
+# rather than arbitrary numbers so version numbers and counts stay visible.
+[[Repls]]
+Old = '\bdeployments/[0-9]+\b'
+New = 'deployments/[DEPLOYMENT_ID]'

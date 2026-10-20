@@ -1,1 +1,0 @@
-* `databricks environments setup-local` now supports uv workspace members: it uses the shared `.venv` at the workspace root and writes the dependency constraints to the root `pyproject.toml`. ([#7018](https://github.com/databricks/cli/pull/7018))

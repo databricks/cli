@@ -528,6 +528,22 @@ tasks:
     cmds:
       - "DATABRICKS_TEST_SELECT_CHANGED=${DATABRICKS_TEST_SELECT_CHANGED:-50} go test ./acceptance -run '^TestAccept$' -v -timeout=${LOCAL_TIMEOUT:-60m}"
 
+  regr:
+    desc: Run acceptance tests changed in this branch against main and the latest release, write regression_report.md
+    # No sources/generates: like local-select, the selection depends on the git diff.
+    cmds:
+      - "go test ./acceptance -run '^TestAccept$' -v -regr-main -regr-release -timeout=${LOCAL_TIMEOUT:-60m}"
+
+  regr-main:
+    desc: Run acceptance tests changed in this branch against a CLI built from main, write regression_report.md
+    cmds:
+      - "go test ./acceptance -run '^TestAccept$' -v -regr-main -timeout=${LOCAL_TIMEOUT:-60m}"
+
+  regr-release:
+    desc: Run acceptance tests changed in this branch against the latest release, write regression_report.md
+    cmds:
+      - "go test ./acceptance -run '^TestAccept$' -v -regr-release -timeout=${LOCAL_TIMEOUT:-60m}"
+
   test-update:
     desc: Update acceptance test output (local)
     # Excludes out* because the task rewrites them; keeping them in sources would

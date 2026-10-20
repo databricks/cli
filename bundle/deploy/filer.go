@@ -2,6 +2,7 @@ package deploy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -10,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 // FilerFactory is a function that returns a filer.Filer.
@@ -37,16 +39,15 @@ func (s stateFiler) Read(ctx context.Context, path string) (io.ReadCloser, error
 		return nil, err
 	}
 
-	stat, err := s.Stat(ctx, path)
-	if err != nil {
-		return nil, err
-	}
-	if stat.IsDir() {
-		return nil, fmt.Errorf("not a file: %s", absPath)
-	}
-
 	// Stream via the SDK's /workspace/export (direct_download=true); no 10 MB cap.
-	return s.workspaceClient.Workspace.Download(ctx, absPath)
+	// No get-status first: a missing file is the common first-deploy case and export's 404
+	// reports it in one round trip. A directory at a state path is not a state file; its
+	// export fails to parse as one.
+	r, err := s.workspaceClient.Workspace.Download(ctx, absPath)
+	if errors.Is(err, apierr.ErrNotFound) {
+		return nil, fmt.Errorf("file does not exist: %s: %w", absPath, fs.ErrNotExist)
+	}
+	return r, err
 }
 
 func (s stateFiler) ReadDir(ctx context.Context, path string) ([]fs.DirEntry, error) {

@@ -1,0 +1,16 @@
+bundle:
+  name: test-bundle
+
+variables:
+  bad:
+    type: complex
+    default:
+      x: 1
+
+resources:
+  jobs:
+    j:
+      name: test
+      tags:
+        "bad.key[0]": ${var.bad}
+        good: ok

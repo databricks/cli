@@ -99,7 +99,7 @@ func ensureMap(v dyn.Value, path dyn.Path) (dyn.Value, error) {
 		var err error
 		v, err = dyn.SetByPath(v, path, dyn.V(dyn.NewMapping()))
 		if err != nil {
-			return dyn.InvalidValue, fmt.Errorf("internal error: failed to create %s: %s", path, err)
+			return dyn.InvalidValue, fmt.Errorf("internal error: failed to create %s: %w", path, err)
 		}
 	}
 	return v, nil

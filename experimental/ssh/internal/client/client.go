@@ -38,6 +38,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/environments"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/settingsv2"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/gorilla/websocket"
 )
@@ -46,6 +47,19 @@ import (
 var sshServerBootstrapScript string
 
 var errServerMetadata = errors.New("server metadata error")
+
+// portFwdServerlessSetting is the workspace setting an administrator turns off to disable port
+// forwarding to serverless compute, which the tunnel needs.
+const portFwdServerlessSetting = "port_fwd_serverless_enabled"
+
+var errPortForwardingDisabled = errors.New("port forwarding to serverless compute is disabled for this workspace " +
+	"(setting " + portFwdServerlessSetting + "), and the SSH tunnel needs it. " +
+	"Ask a workspace or account admin to enable it, or connect to a dedicated cluster with --cluster")
+
+// errDriverProxyForbidden is a 403 from the driver proxy. Unlike the other non-200 responses, which a
+// server that is still starting produces too, retrying cannot change it: the workspace forbids the
+// connection, e.g. because an administrator disabled port forwarding to serverless compute.
+var errDriverProxyForbidden = errors.New("the workspace refused the SSH tunnel connection")
 
 var connectionNameRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
 
@@ -341,6 +355,15 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		cmdio.LogString(ctx, fmt.Sprintf("Connecting to %s...", sessionID))
 	}
 
+	// Skipped when reconnecting with --metadata (the ProxyCommand child): the server is already
+	// running, so there is no compute left to spare, and every IDE reconnect would repeat the read.
+	if opts.IsServerlessMode() && opts.ServerMetadata == "" {
+		if err := checkPortForwardingToServerless(ctx, client); err != nil {
+			outcome.errorCategory = protos.SshTunnelErrorCategoryPortForwardingDisabled
+			return err
+		}
+	}
+
 	if opts.IDE != "" && !opts.ProxyMode {
 		if err := vscode.CheckIDECommand(opts.IDE); err != nil {
 			outcome.errorCategory = protos.SshTunnelErrorCategoryIDECommandNotOnPath
@@ -445,6 +468,9 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		userName, serverPort, clusterID, err = ensureSSHServerIsRunning(ctx, client, version, secretScopeName, opts)
 		if err != nil {
 			outcome.errorCategory = protos.SshTunnelErrorCategoryServerStartTimeout
+			if errors.Is(err, errDriverProxyForbidden) {
+				outcome.errorCategory = protos.SshTunnelErrorCategoryDriverProxyForbidden
+			}
 			return fmt.Errorf("failed to ensure that ssh server is running: %w", err)
 		}
 		outcome.serverStartTimeMs = time.Since(serverStartTime).Milliseconds()
@@ -653,7 +679,7 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 	log.Debugf(ctx, "Metadata response status code: %d", resp.StatusCode)
 
 	if resp.StatusCode != http.StatusOK {
-		return serverMetadata{}, errors.Join(errServerMetadata, fmt.Errorf("server is not ok, status code %d", resp.StatusCode))
+		return serverMetadata{}, metadataResponseError(resp.StatusCode, bodyBytes)
 	}
 
 	return serverMetadata{
@@ -663,6 +689,53 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 		UsagePolicyID:         wsMetadata.UsagePolicyID,
 		KeepDetachedProcesses: wsMetadata.KeepDetachedProcesses,
 	}, nil
+}
+
+// metadataResponseError classifies a non-200 response from the server's /metadata endpoint. A 403
+// is final and carries the driver proxy's own explanation; anything else is errServerMetadata,
+// which callers treat as a server that is not running yet.
+func metadataResponseError(statusCode int, body []byte) error {
+	if statusCode != http.StatusForbidden {
+		return errors.Join(errServerMetadata, fmt.Errorf("server is not ok, status code %d", statusCode))
+	}
+	// The driver proxy writes its error as a JSON string ("CODE: message") rather than the usual
+	// {"error_code", "message"} object.
+	var message string
+	if json.Unmarshal(body, &message) != nil {
+		message = string(body)
+	}
+	message = strings.TrimSpace(message)
+	if message == "" {
+		message = fmt.Sprintf("status code %d", statusCode)
+	}
+	return fmt.Errorf("%w: %s", errDriverProxyForbidden, message)
+}
+
+// checkPortForwardingToServerless refuses a serverless connection before any compute is started when
+// the workspace setting that the driver proxy enforces for the tunnel is off. The proxy's gate
+// (PortForwardingToServerlessGate in data-plane-router) also depends on an enforcement flag and a port
+// allow-list that the CLI cannot see, and the setting is not readable through the public API in every
+// environment. A read that fails therefore lets the connection go ahead, and the proxy's own 403
+// (errDriverProxyForbidden) remains the backstop. The read goes through a client with retries turned
+// off, so a throttled or unavailable settings service cannot hold up the connection for the SDK's
+// retry budget.
+func checkPortForwardingToServerless(ctx context.Context, client *databricks.WorkspaceClient) error {
+	apiClient, err := newProbeAPIClient(client.Config)
+	if err != nil {
+		log.Debugf(ctx, "Could not build a client to read the %s setting, continuing: %v", portFwdServerlessSetting, err)
+		return nil
+	}
+	setting, err := settingsv2.NewWorkspaceSettingsV2(apiClient).GetPublicWorkspaceSetting(ctx, settingsv2.GetPublicWorkspaceSettingRequest{
+		Name: portFwdServerlessSetting,
+	})
+	if err != nil {
+		log.Debugf(ctx, "Could not read the %s setting, continuing: %v", portFwdServerlessSetting, err)
+		return nil
+	}
+	if setting.EffectiveBooleanVal != nil && !setting.EffectiveBooleanVal.Value {
+		return errPortForwardingDisabled
+	}
+	return nil
 }
 
 // newDriverProxyRequest builds an authenticated GET request to one of the SSH server's
@@ -1292,6 +1365,15 @@ func describeRunFailure(ctx context.Context, client *databricks.WorkspaceClient,
 	return strings.TrimRight(b.String(), "\n")
 }
 
+// cancelSSHServerRun cancels the bootstrap run this connection submitted once no client can reach
+// its server. Best effort: the server also shuts itself down after its no-client delay, so a
+// failure here must not hide the error that made the connection give up.
+func cancelSSHServerRun(ctx context.Context, client *databricks.WorkspaceClient, runID int64) {
+	if _, err := client.Jobs.CancelRun(ctx, jobs.CancelRun{RunId: runID}); err != nil {
+		log.Debugf(ctx, "Failed to cancel the ssh server job run %d: %v", runID, err)
+	}
+}
+
 // runFailureIfTerminated reports whether the bootstrap run has reached a terminal state (so the
 // SSH server will never come up), returning a formatted failure description when it has.
 func runFailureIfTerminated(ctx context.Context, client *databricks.WorkspaceClient, runID int64) (string, bool) {
@@ -1381,6 +1463,7 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 	clusterID := opts.ClusterID
 
 	meta, err := getServerMetadata(ctx, client, sessionID, clusterID, version, opts.Liteswap)
+	// This includes errDriverProxyForbidden: a new server would be refused the same way.
 	if err != nil && !errors.Is(err, errServerMetadata) {
 		return "", 0, "", err
 	}
@@ -1410,6 +1493,10 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 				return "", 0, "", ctx.Err()
 			}
 			meta, err = getServerMetadata(ctx, client, sessionID, clusterID, version, opts.Liteswap)
+			if errors.Is(err, errDriverProxyForbidden) {
+				cancelSSHServerRun(ctx, client, runID)
+				return "", 0, "", err
+			}
 			// Accept only once metadata reflects the requested usage policy, so we don't latch
 			// onto a server a previous connection started under a different policy before our new
 			// server has overwritten metadata.json.

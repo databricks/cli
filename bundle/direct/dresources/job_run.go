@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"uuid"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -20,7 +21,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/google/uuid"
 )
 
 // jobRunTimeout matches the timeout `bundle run` allows a run (bundle/run/job.go).
@@ -98,7 +98,7 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 		ts = *input.Lifecycle.TriggersState
 	}
 	if input.HasOnBundleDeploy() {
-		ts.OnBundleDeploy = uuid.NewString()
+		ts.OnBundleDeploy = uuid.New().String()
 	}
 	if !ts.IsEmpty() {
 		state.Lifecycle = &JobRunLifecycleState{TriggersState: &ts}
@@ -122,28 +122,26 @@ func makeJobRunRemote(run *jobs.Run) *JobRunRemote {
 		}
 	}
 	return &JobRunRemote{
-		RunNow: jobs.RunNow{
-			JobId:             run.JobId,
-			JobParameters:     jobParameters,
-			DbtCommands:       overriding.DbtCommands,
-			JarParams:         overriding.JarParams,
-			NotebookParams:    overriding.NotebookParams,
-			PipelineParams:    overriding.PipelineParams,
-			PythonNamedParams: overriding.PythonNamedParams,
-			PythonParams:      overriding.PythonParams,
-			SparkSubmitParams: overriding.SparkSubmitParams,
-			SqlParams:         overriding.SqlParams,
-			// Request-only fields GetRun never reports; listed so exhaustruct
-			// flags any new SDK field.
-			IdempotencyToken:  "",
-			Only:              nil,
-			PerformanceTarget: "",
-			Queue:             nil,
-			ForceSendFields:   nil,
-		},
-		ResultState: run.State.ResultState,
-		RunId:       run.RunId,
-		RunName:     run.RunName,
+		JobId:             run.JobId,
+		JobParameters:     jobParameters,
+		DbtCommands:       overriding.DbtCommands,
+		JarParams:         overriding.JarParams,
+		NotebookParams:    overriding.NotebookParams,
+		PipelineParams:    overriding.PipelineParams,
+		PythonNamedParams: overriding.PythonNamedParams,
+		PythonParams:      overriding.PythonParams,
+		SparkSubmitParams: overriding.SparkSubmitParams,
+		SqlParams:         overriding.SqlParams,
+		// Request-only fields GetRun never reports; listed so exhaustruct
+		// flags any new SDK field.
+		IdempotencyToken:  "",
+		Only:              nil,
+		PerformanceTarget: "",
+		Queue:             nil,
+		ForceSendFields:   nil,
+		ResultState:       run.State.ResultState,
+		RunId:             run.RunId,
+		RunName:           run.RunName,
 		// Rebuilt, not copied: the SDK records explicitly-sent fields in
 		// ForceSendFields, which makes zero values workspace-dependent.
 		State: &jobs.RunState{
@@ -190,7 +188,7 @@ func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (str
 	// Mint a token so an SDK retry of a lost response returns the same run. Set it
 	// on a copy: recording it in state would drift from the empty config and recreate.
 	req := config.RunNow
-	req.IdempotencyToken = uuid.NewString()
+	req.IdempotencyToken = uuid.New().String()
 	// RunNow returns only the new run id, so we return a nil remote and let the
 	// framework read it back via DoRead.
 	wait, err := r.client.Jobs.RunNow(ctx, req)

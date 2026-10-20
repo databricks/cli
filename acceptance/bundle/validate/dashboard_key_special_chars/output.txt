@@ -1,0 +1,38 @@
+
+>>> [CLI] bundle validate -t bracket
+Error: dashboard display_name is required
+  at resources.dashboards['reports[']
+  in databricks.yml:9:11
+
+Error: dashboard warehouse_id is required
+  at resources.dashboards['reports[']
+  in databricks.yml:9:11
+
+Name: test-bundle
+Target: bracket
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/bracket
+
+Found 2 errors
+
+Exit code: 1
+
+>>> [CLI] bundle validate -t comma
+Error: dashboard display_name is required
+  at resources.dashboards['a,b']
+  in databricks.yml:14:11
+
+Error: dashboard warehouse_id is required
+  at resources.dashboards['a,b']
+  in databricks.yml:14:11
+
+Name: test-bundle
+Target: comma
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/comma
+
+Found 2 errors
+
+Exit code: 1

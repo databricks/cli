@@ -14,14 +14,14 @@ import (
 
 func TestResolveDeploymentHistory(t *testing.T) {
 	b := &bundle.Bundle{Config: config.Root{
-		Experimental: &config.Experimental{DeploymentHistory: true},
+		Experimental: &config.Experimental{DeploymentHistory: new(true)},
 	}}
 
 	newState := &statemgmt.StateDesc{}
 	assert.True(t, resolveDeploymentHistory(t.Context(), b, newState))
 	assert.True(t, newState.IsDMS())
 	assert.False(t, resolveDeploymentHistory(t.Context(), b, &statemgmt.StateDesc{SourcePath: "resources.json"}))
-	b.Config.Experimental.DeploymentHistory = false
+	b.Config.Experimental.DeploymentHistory = new(false)
 	assert.True(t, resolveDeploymentHistory(t.Context(), b, &statemgmt.StateDesc{
 		SourcePath: "resources.json",
 		Features:   map[string]struct{}{dstate.FeatureDeploymentHistory: {}},

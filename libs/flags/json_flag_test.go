@@ -23,7 +23,7 @@ func TestJsonFlagValidate(t *testing.T) {
 
 	var invalid JsonFlag
 	require.NoError(t, invalid.Set(`{"a": 1,}`))
-	assert.EqualError(t, invalid.Validate(), "error decoding JSON at (inline):1:9: invalid character '}' looking for beginning of object key string")
+	assert.EqualError(t, invalid.Validate(), "error decoding JSON at (inline):1:8: invalid character ',' looking for beginning of value")
 }
 
 func TestJsonFlagEmpty(t *testing.T) {

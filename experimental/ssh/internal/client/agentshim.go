@@ -47,7 +47,9 @@ const (
 	ugRepo = "databricks/unity-gateway"
 
 	// pins the Unity Gateway CLI commit the shim installs.
-	ugCommit = "7f408803f9c0fe4958e6d264fd94595283a49a19" // v0.1.0
+	ugCommit = "034ea0fd11f8e1286b7dd3d945d189be4ff1f42d"
+
+	ugExecutable = "ug"
 
 	// pins the version of uv downloaded
 	uvBaseURL = "https://github.com/astral-sh/uv/releases/download/0.12.18/"
@@ -67,6 +69,8 @@ const (
 	// SHA-256 of each pinned node release tarball
 	nodeX64LinuxChecksum   = "fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6"
 	nodeArm64LinuxChecksum = "6ad1325edbdb5649c379b75a237147a666c95d4f9ae8d340fef2d1575d289ad2"
+
+	npmExecutable = "npm"
 
 	// environment variable used to pass the user's workspace home to the shim for the agent context.
 	workspaceHomeEnv = "DATABRICKS_WORKSPACE_HOME"
@@ -153,13 +157,23 @@ func RunAgentShim(ctx context.Context, client *databricks.WorkspaceClient, agent
 	if err != nil {
 		return categorize(protos.SshAgentShimErrorCategoryToolchainSetupFailed, fmt.Errorf("failed to resolve home directory: %w", err))
 	}
-	// bootstrapToolchain attributes the per-component install failure; TOOLCHAIN_SETUP_FAILED
-	// is the fallback for a lock or PATH problem.
-	if err := bootstrapToolchain(ctx, home); err != nil {
+
+	ugPath, err := bootstrapToolchain(ctx, home)
+	if err != nil {
 		return ensureCategory(protos.SshAgentShimErrorCategoryToolchainSetupFailed, err)
 	}
 
-	argv0, argv, environ, err := prepareAgentLaunch(ctx, home, agent, workspace, agentArgs)
+	err = setEnvForUnityGateway(ctx)
+	if err != nil {
+		return categorize(protos.SshAgentShimErrorCategoryAgentConfigurationFailed, fmt.Errorf("failed to set environment variables: %w", err))
+	}
+
+	err = runAgentConfiguration(ctx, agent, workspace)
+	if err != nil {
+		return ensureCategory(protos.SshAgentShimErrorCategoryAgentConfigurationFailed, err)
+	}
+
+	argv, environ, err := prepareAgentLaunch(ctx, home, agent, agentArgs)
 	if err != nil {
 		return ensureCategory(protos.SshAgentShimErrorCategoryAgentLaunchFailed, err)
 	}
@@ -169,7 +183,7 @@ func RunAgentShim(ctx context.Context, client *databricks.WorkspaceClient, agent
 	launched = true
 	logAgentShimEvent(ctx, agentName, outcome, time.Since(start))
 	uploadAgentShimTelemetry(ctx, agentName, time.Since(start))
-	return execProcess(argv0, argv, environ)
+	return execProcess(ugPath, argv, environ)
 }
 
 // agentShimOutcome is the observed result of an agent-shim launch, collected by
@@ -360,7 +374,7 @@ func probeAIGateway(ctx context.Context, wsclient *databricks.WorkspaceClient) e
 }
 
 // newProbeAPIClient builds a low-level client from cfg with the SDK's retries
-// turned off, so the gateway preflight is one-shot. Clearing ErrorRetriable and
+// turned off, so a preflight check is one-shot. Clearing ErrorRetriable and
 // TransientErrors makes a retriable status (429, 503, ...) surface on the first
 // attempt rather than looping until the retry budget expires; it mirrors
 // client.New, which builds the retrying client the rest of the CLI uses.
@@ -378,7 +392,7 @@ func probeModelServices(ctx context.Context, apiClient *client.DatabricksClient)
 	it := catalog.NewAiGateway(apiClient).ListModelServices(ctx, catalog.ListModelServicesRequest{PageSize: modelServiceProbePageSize})
 	_, err := it.Next(ctx)
 	if err != nil {
-		if err == listing.ErrNoMoreItems {
+		if errors.Is(err, listing.ErrNoMoreItems) {
 			// endpoint is reachable but there are no results
 			return gatewayProbe{reachable: true}
 		}
@@ -457,7 +471,7 @@ func aiGatewayScopeError(host, reason string) error {
 
 // --- end Unity AI Gateway preflight ---
 
-func bootstrapToolchain(ctx context.Context, home string) error {
+func bootstrapToolchain(ctx context.Context, home string) (string, error) {
 	// Reconstruct the PATH tooling runs under on every launch rather than caching
 	// it: every entry is a known location, so deriving it can't restore a stale
 	// path (e.g. a versioned CLI dir from an older session). Drop the shim dir so
@@ -470,19 +484,24 @@ func bootstrapToolchain(ctx context.Context, home string) error {
 
 	err := ensureToolchain(ctx, home, runtime.GOARCH)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// npm is on PATH now (shipped or just installed); silence its update-notifier
 	// box so it doesn't clutter the agent session.
 	disableNpmUpdateNotifier(ctx)
 
-	return nil
+	ugPath, err := exec.LookPath(ugExecutable)
+	if err != nil {
+		return "", categorize(protos.SshAgentShimErrorCategoryUnityGatewayCLINotFound, fmt.Errorf("the Unity Gateway CLI was not found on PATH after setup: %w", err))
+	}
+
+	return ugPath, nil
 }
 
 func toolchainReady() bool {
-	_, ugErr := exec.LookPath("ucode")
-	_, npmErr := exec.LookPath("npm")
+	_, ugErr := exec.LookPath(ugExecutable)
+	_, npmErr := exec.LookPath(npmExecutable)
 	return ugErr == nil && npmErr == nil
 }
 
@@ -522,7 +541,7 @@ func ensureToolchain(ctx context.Context, home, arch string) error {
 		}
 	}
 
-	if _, err := exec.LookPath("ucode"); err != nil {
+	if _, err := exec.LookPath(ugExecutable); err != nil {
 		if err := runStep(ctx, "Installing Unity Gateway CLI", func(out io.Writer) error {
 			env := os.Environ()
 			env = append(env, "UV_TOOL_DIR="+uvToolDirAbsolute, "UV_TOOL_BIN_DIR="+uvToolBinDirAbsolute)
@@ -648,31 +667,46 @@ func acquireSetupLock(ctx context.Context, home string) (func(), error) {
 	}
 }
 
-// prepareAgentLaunch resolves the Unity Gateway CLI and builds the argv and environment for
-// launching the agent. It stops short of the exec so the caller can emit telemetry first.
-func prepareAgentLaunch(ctx context.Context, home string, agent agentSpec, workspace string, agentArgs []string) (argv0 string, argv, environ []string, err error) {
-	ugPath, err := exec.LookPath("ucode")
-	if err != nil {
-		return "", nil, nil, categorize(protos.SshAgentShimErrorCategoryUnityGatewayCLINotFound, fmt.Errorf("the Unity Gateway CLI was not found on PATH after setup: %w", err))
-	}
-	contextArgs, err := injectAgentContext(ctx, home, agent)
-	if err != nil {
-		return "", nil, nil, categorize(protos.SshAgentShimErrorCategoryAgentContextSetupFailed, err)
-	}
-	argv = []string{"ucode", agent.name}
-	if workspace != "" {
-		argv = append(argv, "--workspace", workspace)
-	}
-	argv = append(argv, "--")
-	argv = append(argv, contextArgs...)
-	argv = append(argv, agentArgs...)
+func setEnvForUnityGateway(ctx context.Context) error {
 	// Pass the session token as DATABRICKS_BEARER so Unity Gateway CLI authenticates headlessly.
-	if env.Get(ctx, "DATABRICKS_BEARER") == "" {
-		if token := env.Get(ctx, "DATABRICKS_TOKEN"); token != "" {
-			_ = os.Setenv("DATABRICKS_BEARER", token)
+	if token := env.Get(ctx, "DATABRICKS_TOKEN"); token != "" {
+		err := os.Setenv("DATABRICKS_BEARER", token)
+		if err != nil {
+			return err
 		}
 	}
-	return ugPath, argv, os.Environ(), nil
+	err := os.Setenv("UG_SKIP_OS_SETTINGS", "1")
+	if err != nil {
+		return err
+	}
+	err = os.Setenv("AI_GATEWAY_REQUEST_TAGS", "{\"source\":\"databricks-ssh\"}")
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func runAgentConfiguration(ctx context.Context, agent agentSpec, workspace string) error {
+	if err := runStep(ctx, "Configuring "+agent.name, func(out io.Writer) error {
+		if err := runCommand(ctx, out, nil, ugExecutable, "configure", "--agent", agent.name, "--workspace", workspace, "--enable-databricks-ai-tools"); err != nil {
+			return fmt.Errorf("failed to configure %s: %w", agent.name, err)
+		}
+		return nil
+	}); err != nil {
+		return categorize(protos.SshAgentShimErrorCategoryAgentConfigurationFailed, err)
+	}
+	return nil
+}
+
+func prepareAgentLaunch(ctx context.Context, home string, agent agentSpec, agentArgs []string) (argv, environ []string, err error) {
+	contextArgs, err := injectAgentContext(ctx, home, agent)
+	if err != nil {
+		return nil, nil, categorize(protos.SshAgentShimErrorCategoryAgentContextSetupFailed, err)
+	}
+	argv = []string{ugExecutable, agent.name, "--"}
+	argv = append(argv, contextArgs...)
+	argv = append(argv, agentArgs...)
+	return argv, os.Environ(), nil
 }
 
 // put the Databricks context where the agent reads it, returning any extra argv.

@@ -157,7 +157,7 @@ func TestPipelineProvisionsWithSelectedPython(t *testing.T) {
 	dir := writeProject(t)
 	srv := newTestServer(t)
 	defer srv.Close()
-	pm := &recordingPM{fakePM: fakePM{py: "3.12", dbc: "17.2.0"}}
+	pm := &recordingPM{py: "3.12", dbc: "17.2.0"}
 	p := &Pipeline{
 		Mode: ModeDefault, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
@@ -178,7 +178,7 @@ func TestPipelineRetainsFallbackResolutionWhenProvisioningFails(t *testing.T) {
 	srv := newTestServer(t)
 	defer srv.Close()
 	pm := &recordingPM{
-		fakePM:       fakePM{py: "3.12", dbc: "17.2.0"},
+		py: "3.12", dbc: "17.2.0",
 		provisionErr: errors.New("sync failed"),
 	}
 	p := &Pipeline{
@@ -354,7 +354,7 @@ func TestPipelineReportsCancellationNotProvisionFailure(t *testing.T) {
 	defer srv.Close()
 
 	ctx, cancel := context.WithCancel(t.Context())
-	pm := cancelPM{fakePM: fakePM{py: "3.12", dbc: "17.2.0"}, entered: make(chan struct{})}
+	pm := cancelPM{py: "3.12", dbc: "17.2.0", entered: make(chan struct{})}
 	p := &Pipeline{
 		Mode: ModeDefault, Check: false, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
@@ -547,7 +547,7 @@ constraint-dependencies = ["pip<24"]
 	}))
 	defer srv.Close()
 
-	pm := &recordingPM{fakePM: fakePM{py: "3.12", dbc: "17.2.0"}}
+	pm := &recordingPM{py: "3.12", dbc: "17.2.0"}
 	p := &Pipeline{
 		Mode: ModeDefault, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
@@ -1475,7 +1475,7 @@ func (f *venvRecordingPM) Validate(ctx context.Context, projectDir, venv string)
 
 func TestPipelinePassesProjectVenvToPackageManager(t *testing.T) {
 	dir := writeProject(t)
-	pm := &venvRecordingPM{fakePM: fakePM{py: "3.12", dbc: "17.2.0"}}
+	pm := &venvRecordingPM{py: "3.12", dbc: "17.2.0"}
 	p := newServerlessTestPipeline(t, dir)
 	p.PM = pm
 

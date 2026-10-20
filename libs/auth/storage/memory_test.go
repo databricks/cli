@@ -82,22 +82,19 @@ func TestMemoryStore_ConcurrentPutAndLookup(t *testing.T) {
 	const goroutines = 20
 	const iterations = 100
 	var wg sync.WaitGroup
-	wg.Add(goroutines * 2)
 	for i := range goroutines {
 		prefix := fmt.Sprintf("writer-%d", i)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for j := range iterations {
 				key := fmt.Sprintf("%s-%d", prefix, j)
 				_ = s.Put(key, Entry{Token: &oauth2.Token{AccessToken: key}})
 			}
-		}()
-		go func() {
-			defer wg.Done()
+		})
+		wg.Go(func() {
 			for j := range iterations {
 				_, _ = s.Lookup(fmt.Sprintf("%s-%d", prefix, j))
 			}
-		}()
+		})
 	}
 	wg.Wait()
 }

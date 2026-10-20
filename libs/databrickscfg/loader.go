@@ -188,7 +188,7 @@ func (l profileFromHostLoader) Configure(cfg *config.Config) error {
 		// Check if this section matches the normalized host
 		return normalizeHost(key.Value()) == host
 	})
-	if err == errNoMatchingProfiles {
+	if errors.Is(err, errNoMatchingProfiles) {
 		return nil
 	}
 
@@ -197,7 +197,7 @@ func (l profileFromHostLoader) Configure(cfg *config.Config) error {
 	if names, ok := AsMultipleProfiles(err); ok && cfg.WorkspaceID != "" {
 		originalErr := err
 		match, err = l.disambiguateByWorkspaceID(ctx, configFile, host, cfg.WorkspaceID, names)
-		if err == errNoMatchingProfiles {
+		if errors.Is(err, errNoMatchingProfiles) {
 			// workspace_id didn't match any of the host-matching profiles.
 			// Fall back to the original ambiguity error.
 			log.Debugf(ctx, "workspace_id=%s did not match any profiles for host %s: %v", cfg.WorkspaceID, host, names)

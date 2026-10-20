@@ -1,0 +1,20 @@
+
+>>> [CLI] bundle validate -o json
+Error: file .databricks/bundle/default/src/main.py not found
+
+
+Exit code: 1
+[
+  {
+    "existing_cluster_id": "0123-456789-abcdefgh",
+    "libraries": [
+      {
+        "whl": ".databricks/bundle/default/src/lib.whl"
+      }
+    ],
+    "spark_python_task": {
+      "python_file": ".databricks/bundle/default/src/main.py"
+    },
+    "task_key": "main"
+  }
+]

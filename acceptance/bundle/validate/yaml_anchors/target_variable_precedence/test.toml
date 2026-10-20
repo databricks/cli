@@ -1,0 +1,1 @@
+Badness = "With <<: [*a, *b] the later anchor wins; the YAML merge key spec gives precedence to the earlier one."

@@ -1,0 +1,24 @@
+SCHEMA_NAME="feat_test_${UNIQUE_NAME}"
+export SCHEMA_FULL_NAME="main.${SCHEMA_NAME}"
+export TABLE_NAME="${SCHEMA_FULL_NAME}.source_table"
+
+trace $CLI schemas create "$SCHEMA_NAME" main -o json | jq '{full_name}'
+trace create_table.py "$TABLE_NAME"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    $CLI schemas delete "$SCHEMA_FULL_NAME" --force 2>/dev/null || true
+}
+trap cleanup EXIT
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+trace $CLI bundle deploy
+
+title "A second plan on an unchanged bundle must report no changes"
+trace $CLI bundle plan
+
+title "Update the description in place, then confirm the plan settles again"
+trace update_file.py databricks.yml DESCRIPTION1 DESCRIPTION2
+trace $CLI bundle deploy
+trace $CLI bundle plan

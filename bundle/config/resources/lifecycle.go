@@ -9,6 +9,12 @@ type LifecycleConfig interface {
 type Lifecycle struct {
 	// Lifecycle setting to prevent the resource from being destroyed.
 	PreventDestroy bool `json:"prevent_destroy,omitempty"`
+
+	// ForceSendFields records which fields were explicitly set so that zero-value
+	// overrides can replace non-zero base values (e.g., prevent_destroy: false in a target
+	// can override prevent_destroy: true in the base).
+	// This field is not serialized to JSON.
+	ForceSendFields []string `json:"-"`
 }
 
 // HasPreventDestroy returns true if prevent_destroy is set.

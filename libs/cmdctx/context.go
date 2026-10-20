@@ -2,8 +2,7 @@ package cmdctx
 
 import (
 	"context"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // key is a package-local type to use for context keys.

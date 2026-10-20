@@ -97,18 +97,16 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 	}
 
 	index := fakeVectorSearchIndex{
-		VectorIndex: vectorsearch.VectorIndex{
-			Creator:               s.CurrentUser().UserName,
-			EndpointName:          createReq.EndpointName,
-			IndexType:             createReq.IndexType,
-			IndexSubtype:          indexSubtype,
-			Name:                  createReq.Name,
-			PrimaryKey:            createReq.PrimaryKey,
-			DeltaSyncIndexSpec:    remapDeltaSyncSpec(createReq.DeltaSyncIndexSpec),
-			DirectAccessIndexSpec: createReq.DirectAccessIndexSpec,
-			Status: &vectorsearch.VectorIndexStatus{
-				Ready: true,
-			},
+		Creator:               s.CurrentUser().UserName,
+		EndpointName:          createReq.EndpointName,
+		IndexType:             createReq.IndexType,
+		IndexSubtype:          indexSubtype,
+		Name:                  createReq.Name,
+		PrimaryKey:            createReq.PrimaryKey,
+		DeltaSyncIndexSpec:    remapDeltaSyncSpec(createReq.DeltaSyncIndexSpec),
+		DirectAccessIndexSpec: createReq.DirectAccessIndexSpec,
+		Status: &vectorsearch.VectorIndexStatus{
+			Ready: true,
 		},
 		EndpointUuid: endpoint.Id,
 	}

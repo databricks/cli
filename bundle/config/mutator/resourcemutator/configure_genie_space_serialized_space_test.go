@@ -95,8 +95,8 @@ func TestConfigureGenieSpaceSerializedSpace(t *testing.T) {
 			}
 
 			gs := &resources.GenieSpace{
-				GenieSpaceConfig: resources.GenieSpaceConfig{Title: "My Genie Space"},
-				FilePath:         tt.filePath,
+				Title:    "My Genie Space",
+				FilePath: tt.filePath,
 			}
 			if tt.setSerialized {
 				gs.SerializedSpace = tt.serializedSpace

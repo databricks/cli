@@ -63,18 +63,16 @@ func TestVisitJobPaths(t *testing.T) {
 	}
 
 	job0 := &resources.Job{
-		JobSettings: jobs.JobSettings{
-			Tasks: []jobs.Task{
-				task0,
-				task1,
-				task2,
-				task3,
-				task4,
-				task5,
-				task6,
-				task7,
-				task8,
-			},
+		Tasks: []jobs.Task{
+			task0,
+			task1,
+			task2,
+			task3,
+			task4,
+			task5,
+			task6,
+			task7,
+			task8,
 		},
 	}
 
@@ -110,12 +108,10 @@ func TestVisitJobPaths_environments(t *testing.T) {
 		},
 	}
 	job0 := &resources.Job{
-		JobSettings: jobs.JobSettings{
-			Environments: []jobs.JobEnvironment{
-				environment0,
-				{Spec: &compute.Environment{ProjectEnvironment: "../pyproject.toml"}},
-				{Spec: &compute.Environment{ProjectEnvironment: "/Workspace/shared/pyproject.toml"}},
-			},
+		Environments: []jobs.JobEnvironment{
+			environment0,
+			{Spec: &compute.Environment{ProjectEnvironment: "../pyproject.toml"}},
+			{Spec: &compute.Environment{ProjectEnvironment: "/Workspace/shared/pyproject.toml"}},
 		},
 	}
 
@@ -138,15 +134,13 @@ func TestVisitJobPaths_environments(t *testing.T) {
 
 func TestVisitJobPaths_environmentVariables(t *testing.T) {
 	job0 := &resources.Job{
-		JobSettings: jobs.JobSettings{
-			EnvironmentVariables: []jobs.JobEnvironmentVariables{
-				{
-					EnvironmentVariablesKey: "default",
-					Spec: &jobs.JobEnvironmentVariablesSpec{
-						Files: []string{
-							"./a.env",
-							"./b.env",
-						},
+		EnvironmentVariables: []jobs.JobEnvironmentVariables{
+			{
+				EnvironmentVariablesKey: "default",
+				Spec: &jobs.JobEnvironmentVariablesSpec{
+					Files: []string{
+						"./a.env",
+						"./b.env",
 					},
 				},
 			},
@@ -190,11 +184,9 @@ func TestVisitJobPaths_foreach(t *testing.T) {
 		},
 	}
 	job0 := &resources.Job{
-		JobSettings: jobs.JobSettings{
-			Tasks: []jobs.Task{
-				task0,
-				task1,
-			},
+		Tasks: []jobs.Task{
+			task0,
+			task1,
 		},
 	}
 

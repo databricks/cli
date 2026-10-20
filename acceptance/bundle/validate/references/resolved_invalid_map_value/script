@@ -1,0 +1,2 @@
+# A map value whose reference resolves to the wrong type is dropped, with a warning at its path.
+trace $CLI bundle validate -o json | jq .resources.jobs.j.tags

@@ -30,8 +30,8 @@ func TestDisplayPipelineUpdate(t *testing.T) {
 					Id:          "pipeline-789",
 					Serverless:  true,
 					Channel:     "CURRENT",
-					Continuous:  true,
-					Development: true,
+					Continuous:  true, //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
+					Development: true, //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 					Catalog:     "test_catalog",
 					Schema:      "test_schema",
 				},

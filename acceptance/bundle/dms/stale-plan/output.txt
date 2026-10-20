@@ -33,6 +33,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
  "state_version": 3,
  "cli_version": "[CLI_VERSION]",
  "lineage": "[UUID]",
+ "serial": 1,
  "features": {
   "deployment_history": {}
  },
@@ -73,7 +74,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> jq {serial} .databricks/bundle/default/resources.json
 {
-  "serial": null
+  "serial": 2
 }
 
 === Replaying the older plan is rejected: same deployment, outdated version

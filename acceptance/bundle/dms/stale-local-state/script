@@ -1,0 +1,38 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Setup (LOG.setup): reconstruct full version 1 without a history marker, then deploy version 2"
+{
+    $CLI bundle deploy
+    DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true print_state.py > .databricks/resources.v1.json
+    DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true replace_ids.py
+    update_file.py databricks.yml 'name: foo' 'name: updated'
+    $CLI bundle deploy
+    cp .databricks/bundle/default/resources.json .databricks/resources.v2.json
+    deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-stale-local-state-${UNIQUE_NAME}/default/state/resources.deployment.json" -o json | jq -r '.object_id')
+    add_repl "$deployment_id" DEPLOYMENT_ID
+} &> LOG.setup
+trace jq -c '{serial, features}' .databricks/resources.v1.json
+trace jq -c '{serial, features}' .databricks/resources.v2.json
+
+title "Local recorded serial 3 ahead of DMS version 2 is rejected"
+trace update_file.py .databricks/bundle/default/resources.json '"serial": 2' '"serial": 3'
+trace musterr $CLI bundle deploy
+
+rm -f "$OUT_REQUESTS"
+
+title "1. Config false and env false: newer remote state replaces the local copy and reads DMS"
+update_file.py databricks.yml 'deployment_history: true' 'deployment_history: false'
+trace cp .databricks/resources.v1.json .databricks/bundle/default/resources.json
+trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false $CLI bundle summary --force-pull -o json | jq -c '{job_id: .resources.jobs.foo.id}'
+trace cmp .databricks/resources.v2.json .databricks/bundle/default/resources.json
+trace print_requests.py --dms //resources --get --oneline
+
+title "2. Config removed and env false: restore the same snapshot, then read remote DMS state"
+update_file.py databricks.yml $'experimental:\n  deployment_history: false\n\n' ''
+trace cp .databricks/resources.v1.json .databricks/bundle/default/resources.json
+trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false $CLI bundle summary --force-pull -o json | jq -c '{job_id: .resources.jobs.foo.id}'
+trace cmp .databricks/resources.v2.json .databricks/bundle/default/resources.json
+trace print_requests.py --dms //resources --get --oneline
+
+DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle destroy --auto-approve &> LOG.cleanup
+rm -f "$OUT_REQUESTS"

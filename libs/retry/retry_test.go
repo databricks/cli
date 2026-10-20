@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -24,6 +25,27 @@ func TestIsTransient(t *testing.T) {
 	assert.False(t, IsTransient(ctx, &apierr.APIError{StatusCode: http.StatusGatewayTimeout, Message: "deadline exceeded"}))
 	assert.False(t, IsTransient(ctx, &apierr.APIError{StatusCode: http.StatusForbidden}))
 	assert.False(t, IsTransient(ctx, errors.New("boom")))
+}
+
+func TestIsTransientRead(t *testing.T) {
+	ctx := t.Context()
+	// Everything IsTransient covers is transient for a read too.
+	assert.True(t, IsTransientRead(ctx, &apierr.APIError{StatusCode: http.StatusInternalServerError}))
+	assert.True(t, IsTransientRead(ctx, &apierr.APIError{StatusCode: http.StatusRequestTimeout}))
+	// REFUSED_STREAM is the transport failure the SDK leaves unretried, so we replay the read (issue #6472).
+	refusedStream := &url.Error{Op: "Get", URL: "https://example.test/api/2.0/workspace/get-status", Err: errors.New("stream error: stream ID 1; REFUSED_STREAM; received from peer")}
+	assert.True(t, IsTransientRead(ctx, refusedStream))
+	// Transport errors the SDK already retries for its full RetryTimeout must not be retried again.
+	connRefused := &url.Error{Op: "Get", URL: "https://example.test/api/2.0/workspace/get-status", Err: errors.New("dial tcp 10.0.0.1:443: connect: connection refused")}
+	assert.False(t, IsTransientRead(ctx, connRefused))
+	// A cancelled request is a *url.Error too, but not REFUSED_STREAM, so it fails fast rather than logging a retry.
+	cancelled := &url.Error{Op: "Get", URL: "https://example.test/api/2.0/workspace/get-status", Err: context.Canceled}
+	assert.False(t, IsTransientRead(ctx, cancelled))
+	// Not transient: retried by the SDK, client errors, and plain non-url errors.
+	assert.False(t, IsTransientRead(ctx, &apierr.APIError{StatusCode: http.StatusServiceUnavailable}))
+	assert.False(t, IsTransientRead(ctx, &apierr.APIError{StatusCode: http.StatusNotFound}))
+	assert.False(t, IsTransientRead(ctx, &apierr.APIError{StatusCode: http.StatusForbidden}))
+	assert.False(t, IsTransientRead(ctx, errors.New("boom")))
 }
 
 // testContext shortens the pause between attempts.

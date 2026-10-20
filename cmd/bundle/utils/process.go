@@ -693,7 +693,10 @@ Run "databricks bundle destroy" first, then deploy again with deployment history
 }
 
 func configuresDeploymentHistory(ctx context.Context, b *bundle.Bundle) bool {
-	configured := b.Config.Experimental != nil && b.Config.Experimental.DeploymentHistory
+	var configured *bool
+	if b.Config.Experimental != nil {
+		configured = b.Config.Experimental.DeploymentHistory
+	}
 	return bundleenv.RecordsDeploymentHistory(ctx, configured)
 }
 

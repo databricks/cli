@@ -379,7 +379,7 @@ func TestPipelineCancelDuringDiscoveryWritesNothing(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
-	p.PM = cancelDiscoveryPM{fakePM: fakePM{py: "3.12", dbc: "17.2.0", root: root}, cancel: cancel}
+	p.PM = cancelDiscoveryPM{py: "3.12", dbc: "17.2.0", root: root, cancel: cancel}
 	before, err := os.ReadFile(filepath.Join(member, pyprojectFile))
 	require.NoError(t, err)
 

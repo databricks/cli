@@ -44,17 +44,17 @@ func parsePythonDiagnostics(input io.Reader) (diag.Diagnostics, error) {
 
 		err := decoder.Decode(&parsedLine)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse diags: %s", err)
+			return nil, fmt.Errorf("failed to parse diags: %w", err)
 		}
 
 		severity, err := convertPythonSeverity(parsedLine.Severity)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse severity: %s", err)
+			return nil, fmt.Errorf("failed to parse severity: %w", err)
 		}
 
 		path, err := convertPythonPath(parsedLine.Path)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse path: %s", err)
+			return nil, fmt.Errorf("failed to parse path: %w", err)
 		}
 		var paths []*structpath.PathNode
 		if path != nil {

@@ -151,11 +151,9 @@ func TestValidatePropertyPatternMatch(t *testing.T) {
 
 	// Expect custom error message on match fail
 	err = validatePatternMatch("bar", "axyze", &Schema{
-		Type:    "string",
-		Pattern: "(a*.d)",
-		Extension: Extension{
-			PatternMatchFailureMessage: "my custom msg",
-		},
+		Type:                       "string",
+		Pattern:                    "(a*.d)",
+		PatternMatchFailureMessage: "my custom msg",
 	})
 	assert.EqualError(t, err, "invalid value for bar: \"axyze\". my custom msg")
 

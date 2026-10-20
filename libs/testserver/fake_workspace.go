@@ -16,13 +16,14 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
+	"uuid"
 
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
-	"github.com/google/uuid"
 
 	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -33,6 +34,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/serving"
+	"github.com/databricks/databricks-sdk-go/service/settingsv2"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -99,7 +101,14 @@ var (
 	idMutex      sync.Mutex
 	lastNowNano  int64
 	lastNowMilli int64
+	workspaceID  atomic.Int64
 )
+
+// nextTreenodeID starts above common version numbers and counts, which scripts
+// can otherwise mask when registering literal ID replacements.
+func nextTreenodeID() int64 {
+	return 1000 + workspaceID.Add(1)
+}
 
 // IDs are prefixed with 7 and padded to avoid matching regex 1[78]\d{14}
 func nextID() int64 {
@@ -149,8 +158,7 @@ func nextUUID() string {
 	var b [16]byte
 	binary.BigEndian.PutUint64(b[0:8], uint64(nextID()))
 	binary.BigEndian.PutUint64(b[8:16], uint64(nextID()))
-	u := uuid.Must(uuid.FromBytes(b[:]))
-	return u.String()
+	return uuid.UUID(b).String()
 }
 
 func nextDashboardID() string {
@@ -233,6 +241,8 @@ type FakeWorkspace struct {
 	ModelServices         map[string]catalog.ModelService
 	McpServices           map[string]catalog.McpService
 	ModelProviderServices map[string]catalog.ModelProviderService
+
+	Features              map[string]ml.Feature
 	ServingEndpoints      map[string]serving.ServingEndpointDetailed
 	VectorSearchEndpoints map[string]vectorsearch.EndpointInfo
 	VectorSearchIndexes   map[string]fakeVectorSearchIndex
@@ -246,6 +256,9 @@ type FakeWorkspace struct {
 	Secrets      map[string]map[string]string // scope -> key -> value
 	Acls         map[string][]workspace.AclItem
 	UCSecrets    map[string]catalog.Secret // full_name -> secret (Unity Catalog secrets)
+
+	// WorkspaceSettings holds settings written through the settings v2 public API, keyed by name.
+	WorkspaceSettings map[string]settingsv2.Setting
 
 	// Generic permissions storage: key is "{object_type}:{object_id}"
 	Permissions map[string]iam.ObjectPermissions
@@ -458,22 +471,22 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 			"/Workspace": {
 				ObjectType: "DIRECTORY",
 				Path:       "/Workspace",
-				ObjectId:   nextID(),
+				ObjectId:   nextTreenodeID(),
 			},
 			"/Users": {
 				ObjectType: "DIRECTORY",
 				Path:       "/Users",
-				ObjectId:   nextID(),
+				ObjectId:   nextTreenodeID(),
 			},
 			"/Users/" + TestUser.UserName: {
 				ObjectType: "DIRECTORY",
 				Path:       "/Users/" + TestUser.UserName,
-				ObjectId:   nextID(),
+				ObjectId:   nextTreenodeID(),
 			},
 			"/Users/" + TestUserSP.UserName: {
 				ObjectType: "DIRECTORY",
 				Path:       "/Users/" + TestUserSP.UserName,
-				ObjectId:   nextID(),
+				ObjectId:   nextTreenodeID(),
 			},
 			// The user home also exists under the /Workspace alias on real
 			// workspaces, so model it here too. Imports require the parent
@@ -481,17 +494,17 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 			"/Workspace/Users": {
 				ObjectType: "DIRECTORY",
 				Path:       "/Workspace/Users",
-				ObjectId:   nextID(),
+				ObjectId:   nextTreenodeID(),
 			},
 			"/Workspace/Users/" + TestUser.UserName: {
 				ObjectType: "DIRECTORY",
 				Path:       "/Workspace/Users/" + TestUser.UserName,
-				ObjectId:   nextID(),
+				ObjectId:   nextTreenodeID(),
 			},
 			"/Workspace/Users/" + TestUserSP.UserName: {
 				ObjectType: "DIRECTORY",
 				Path:       "/Workspace/Users/" + TestUserSP.UserName,
-				ObjectId:   nextID(),
+				ObjectId:   nextTreenodeID(),
 			},
 		},
 		files:        make(map[string]FileEntry),
@@ -514,6 +527,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		ModelServices:         map[string]catalog.ModelService{},
 		McpServices:           map[string]catalog.McpService{},
 		ModelProviderServices: map[string]catalog.ModelProviderService{},
+		Features:              map[string]ml.Feature{},
 		Volumes:               map[string]catalog.VolumeInfo{},
 		Dashboards:            NewEventualMap[string, *fakeDashboard](eventualConsistency),
 		PublishedDashboards:   map[string]dashboards.PublishedDashboard{},
@@ -532,6 +546,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		SecretScopes:              map[string]workspace.SecretScope{},
 		Secrets:                   map[string]map[string]string{},
 		Acls:                      map[string][]workspace.AclItem{},
+		WorkspaceSettings:         map[string]settingsv2.Setting{},
 		Permissions:               map[string]iam.ObjectPermissions{},
 		Groups:                    map[string]iam.Group{},
 		DatabaseInstances:         map[string]database.DatabaseInstance{},
@@ -881,7 +896,7 @@ func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
 			s.directories[dir] = workspace.ObjectInfo{
 				ObjectType: "DIRECTORY",
 				Path:       dir,
-				ObjectId:   nextID(),
+				ObjectId:   nextTreenodeID(),
 			}
 		}
 	}
@@ -889,7 +904,25 @@ func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
 
 func (s *FakeWorkspace) WorkspaceExport(path string) []byte {
 	defer s.LockUnlock()()
+	if _, isDir := s.directories[path]; isDir {
+		return exportDirectory(path)
+	}
 	return s.files[path].Data
+}
+
+// exportDirectory mimics the real API, which exports a directory as a ZIP archive even with
+// direct_download=true. Only the directory's own entry is included: callers just need to see
+// that they got an archive rather than a file.
+func exportDirectory(dirPath string) []byte {
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	if _, err := zw.Create(path.Base(dirPath) + "/"); err != nil {
+		panic(err)
+	}
+	if err := zw.Close(); err != nil {
+		panic(err)
+	}
+	return buf.Bytes()
 }
 
 // WorkspaceDelete implements POST /api/2.0/workspace/delete. As in the real API, a
@@ -1106,7 +1139,7 @@ func (s *FakeWorkspace) importFile(filePath string, body []byte, overwrite, dete
 				ObjectType: "NOTEBOOK",
 				Path:       workspacePath,
 				Language:   lang,
-				ObjectId:   nextID(),
+				ObjectId:   nextTreenodeID(),
 			},
 			Data: body,
 		}
@@ -1118,7 +1151,7 @@ func (s *FakeWorkspace) importFile(filePath string, body []byte, overwrite, dete
 			Info: workspace.ObjectInfo{
 				ObjectType: "FILE",
 				Path:       workspacePath,
-				ObjectId:   nextID(),
+				ObjectId:   nextTreenodeID(),
 			},
 			Data: body,
 		}
@@ -1175,7 +1208,7 @@ func (s *FakeWorkspace) WorkspaceImportNotebook(filePath string, body []byte, la
 			ObjectType: "NOTEBOOK",
 			Path:       filePath,
 			Language:   language,
-			ObjectId:   nextID(),
+			ObjectId:   nextTreenodeID(),
 		},
 		Data: body,
 	}
