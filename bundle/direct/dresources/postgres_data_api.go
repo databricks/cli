@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -11,17 +12,22 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
 
-// dataApiUpdateMask masks the whole spec. The direct engine sends the full
-// desired spec on every update, so a field removed from the config resets to
-// its server default. Masking only the changed leaves would instead be rejected
-// for a removed field ("is in update_mask but not provided in request").
+// dataApiUpdateMask masks the whole spec. With this mask the API sets every
+// field the request carries and keeps the current value of a field it omits,
+// so a field removed from the config keeps its last value. Leaf paths would
+// reset an omitted field instead, but resetting db_max_rows or
+// jwt_role_claim_key that way leaves the Data API unable to serve requests.
 var dataApiUpdateMask = []string{"spec"}
+
+// dataApiBoolFields are the spec's bool fields. Status omits a bool that is
+// false and was never set, so the remote spec forces them: a missing bool in
+// status means false, not unknown.
+var dataApiBoolFields = []string{"DbAggregatesEnabled", "ServerTimingEnabled"}
 
 // PostgresDataApiRemote is the return type for DoRead. It embeds
 // DataApiDataApiSpec so that all paths in StateType are valid paths in
 // RemoteType. GET does not return spec (it is INPUT_ONLY), so the embedded spec
-// stays at its zero value and postgres_data_apis.generated.yml suppresses the
-// resulting phantom drift via ignore_remote_changes with reason spec:input_only.
+// is filled from status, which reports the configuration in effect.
 type PostgresDataApiRemote struct {
 	postgres.DataApiDataApiSpec
 
@@ -68,17 +74,35 @@ func (*ResourcePostgresDataApi) RemapState(remote *PostgresDataApiRemote) *Postg
 }
 
 func makePostgresDataApiRemote(dataApi *postgres.DataApi) *PostgresDataApiRemote {
-	var spec postgres.DataApiDataApiSpec
-	if dataApi.Spec != nil {
-		spec = *dataApi.Spec
-	}
 	return &PostgresDataApiRemote{
-		DataApiDataApiSpec: spec,
+		DataApiDataApiSpec: dataApiSpecFromStatus(dataApi.Status),
 		Parent:             dataApi.Parent,
 		Name:               dataApi.Name,
 		Status:             dataApi.Status,
 		CreateTime:         dataApi.CreateTime,
 		UpdateTime:         dataApi.UpdateTime,
+	}
+}
+
+// dataApiSpecFromStatus returns the spec in effect, as reported by status. The
+// spec on the resource cannot be used: GET omits it, and the one in an operation
+// response leaves out the server defaults.
+func dataApiSpecFromStatus(status *postgres.DataApiDataApiStatus) postgres.DataApiDataApiSpec {
+	if status == nil {
+		var spec postgres.DataApiDataApiSpec
+		return spec
+	}
+	return postgres.DataApiDataApiSpec{
+		DbAggregatesEnabled:      status.DbAggregatesEnabled,
+		DbExtraSearchPath:        status.DbExtraSearchPath,
+		DbMaxRows:                status.DbMaxRows,
+		DbSchemas:                status.DbSchemas,
+		JwtCacheMaxLifetime:      status.JwtCacheMaxLifetime,
+		JwtRoleClaimKey:          status.JwtRoleClaimKey,
+		OpenapiMode:              status.OpenapiMode,
+		ServerCorsAllowedOrigins: status.ServerCorsAllowedOrigins,
+		ServerTimingEnabled:      status.ServerTimingEnabled,
+		ForceSendFields:          slices.Clone(dataApiBoolFields),
 	}
 }
 
