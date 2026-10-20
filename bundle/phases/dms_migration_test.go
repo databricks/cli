@@ -39,8 +39,7 @@ func TestMigrateToDMSRejectsTerraformBeforeLock(t *testing.T) {
 
 func TestMigrateToDMSAlreadyRecorded(t *testing.T) {
 	b := &bundle.Bundle{
-		BundleRootPath:    t.TempDir(),
-		MigratingToDirect: true,
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target:     "default",
@@ -62,7 +61,6 @@ func TestMigrateToDMSAlreadyRecorded(t *testing.T) {
 	require.False(t, logdiag.HasError(ctx), "%v", logdiag.FlushCollected(ctx))
 	assert.True(t, state.IsDMS())
 	assert.Equal(t, 2, state.Serial)
-	assert.False(t, b.MigratingToDirect)
 	assert.Nil(t, b.Locker)
 	assert.True(t, b.DeploymentBundle.StateDB.IsOpen())
 }

@@ -33,7 +33,6 @@ func MigrateToDMS(ctx context.Context, b *bundle.Bundle, state *statemgmt.StateD
 		return
 	}
 	if state.IsDMS() {
-		b.MigratingToDirect = false
 		return
 	}
 
