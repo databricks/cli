@@ -29,12 +29,15 @@ Resources:
       Name: projects/test-project/branches/production/databases/test-database/data-api
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+update postgres_data_apis.data_api1
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated postgres_data_apis.data_api1
 Files: 0 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] postgres get-data-api projects/test-project/branches/production/databases/test-database/data-api
 {
@@ -43,7 +46,7 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
     "db_schemas": [
       "public"
     ],
-    "db_max_rows": null
+    "db_max_rows": 500
   }
 }
 

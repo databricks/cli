@@ -8,3 +8,20 @@ stable_output_fields:
   # name ("{parent}/data-api") is backend-assigned at creation and immutable;
   # see the stable_output_fields doc in config.go and ES-2202624.
   - field: name
+backend_defaults:
+  # DoRead fills the spec from status, which reports every setting in effect.
+  # A field the config omits is left to the server: create applies the server
+  # default, and update_mask=spec keeps the current value of any field the
+  # request omits, so a field removed from the config keeps its last value.
+  # No allowed values are listed because that last value can be anything.
+  # Server defaults on create:
+  - field: db_aggregates_enabled # true
+  - field: db_schemas # ["public"]
+  - field: jwt_role_claim_key # ".sub"
+  - field: openapi_mode # OPEN_API_MODE_DISABLED
+  - field: server_cors_allowed_origins # ["none"]
+  # Unset by default:
+  - field: db_extra_search_path
+  - field: db_max_rows
+  - field: jwt_cache_max_lifetime
+  - field: server_timing_enabled

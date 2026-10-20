@@ -1,30 +1,31 @@
 {
   "action": "update",
   "changes": {
+    "db_aggregates_enabled": {
+      "action": "skip",
+      "reason": "backend_default",
+      "remote": true
+    },
     "db_max_rows": {
       "action": "update",
       "old": 100,
-      "new": 500
+      "new": 500,
+      "remote": 100
     },
-    "db_schemas": {
+    "jwt_role_claim_key": {
       "action": "skip",
-      "reason": "spec:input_only",
-      "old": [
-        "public"
-      ],
-      "new": [
-        "public"
-      ]
+      "reason": "backend_default",
+      "remote": ".sub"
     },
-    "server_cors_allowed_origins": {
+    "openapi_mode": {
       "action": "skip",
-      "reason": "spec:input_only",
-      "old": [
-        "https://app.example.com"
-      ],
-      "new": [
-        "https://app.example.com"
-      ]
+      "reason": "backend_default",
+      "remote": "OPEN_API_MODE_DISABLED"
+    },
+    "server_timing_enabled": {
+      "action": "skip",
+      "reason": "empty",
+      "remote": false
     }
   }
 }
