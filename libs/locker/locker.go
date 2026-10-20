@@ -10,10 +10,10 @@ import (
 	"io/fs"
 	"slices"
 	"time"
+	"uuid"
 
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/google/uuid"
 )
 
 type UnlockOption int

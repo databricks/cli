@@ -25,8 +25,7 @@ import (
 	"testing"
 	"time"
 	"unicode/utf8"
-
-	"github.com/google/uuid"
+	"uuid"
 
 	"github.com/databricks/cli/acceptance/internal"
 	"github.com/databricks/cli/acceptance/internal/selection"

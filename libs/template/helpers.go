@@ -11,14 +11,13 @@ import (
 	"slices"
 	"strings"
 	"text/template"
+	"uuid"
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
-
-	"github.com/google/uuid"
 )
 
 type ErrFail struct {
@@ -79,7 +78,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		"random_int": func(n int) int {
 			return rand.IntN(n)
 		},
-		// Alias for https://pkg.go.dev/github.com/google/uuid#New. Returns, as a string, a UUID which is a 128 bit (16 byte) Universal Unique IDentifier as defined in RFC 4122.
+		// Alias for https://pkg.go.dev/uuid#New. Returns, as a string, a UUID which is a 128 bit (16 byte) Universal Unique IDentifier as defined in RFC 9562.
 		"uuid": func() string {
 			return uuid.New().String()
 		},
