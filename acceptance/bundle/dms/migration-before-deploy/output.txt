@@ -1,6 +1,8 @@
 
-=== Setup (LOG.setup): legacy resources exist; deployment would recreate the schema
-=== 1. Migration commits and DMS is reread before ordinary planning fails
+=== Setup (LOG.setup): create a job and schema without history
+Next deploy enables history and recreates the schema in another catalog, requiring approval.
+=== 1. Fail deployment planning
+Expect: migration version 2 stays complete; no deployment version is created.
 >>> fault.py GET /api/2.2/jobs/get* 403 0 1
 
 >>> musterr [CLI] bundle deploy -qq
@@ -16,12 +18,14 @@ API message: Fault injected by test.
 Error: planning failed
 
 
+=== Request order: complete migration -> upload marker -> read DMS -> plan jobs
 >>> print_requests.py --dms --get //api/2.0/bundle //jobs/get //workspace/import //workspace-files/import-file --oneline
 {"method":"POST","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/2/complete"}
 {"method":"POST","path":"/Workspace/Users/[USERNAME]/.bundle/dms-migration-before-deploy-[UNIQUE_NAME]/default/state/resources.json"}
 {"method":"GET","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/resources"}
 {"method":"GET","path":"/api/2.2/jobs/get"}
 
+=== Remote state: version 2 marker; original resources preserved in the backup
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/dms-migration-before-deploy-[UNIQUE_NAME]/default/state/resources.json --format AUTO --file .databricks/resources.marker.json
 
 >>> jq -c {serial, features, state} .databricks/resources.marker.json
@@ -31,13 +35,15 @@ Error: planning failed
 
 >>> cmp .databricks/resources.before-migration.json .databricks/resources.backup.json
 
+=== Migration result: only completed version 2, with INITIAL_REGISTER operations
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-versions deployments/[DEPLOYMENT_ID] -o json
 [{"version_id":"2","status":"VERSION_STATUS_COMPLETED","completion_reason":"VERSION_COMPLETE_SUCCESS"}]
 
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-operations deployments/[DEPLOYMENT_ID]/versions/2 -o json
 [{"resource_key":"jobs.job","action_type":"OPERATION_ACTION_TYPE_INITIAL_REGISTER","status":"OPERATION_STATUS_SUCCEEDED"},{"resource_key":"schemas.schema","action_type":"OPERATION_ACTION_TYPE_INITIAL_REGISTER","status":"OPERATION_STATUS_SUCCEEDED"}]
 
-=== 2. Destructive deployment is declined; committed migration is not repeated
+=== 2. Retry without approval
+Expect: deployment declined; migration stays at version 2 and is not repeated.
 >>> musterr [CLI] bundle deploy -qq
 
 This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
@@ -47,18 +53,21 @@ Deleting data assets such as schemas, pipelines, or volumes may cause permanent 
 To proceed, use --auto-approve after reviewing the plan above.
 
 
+=== Local and remote markers must stay byte-for-byte unchanged
 >>> cmp .databricks/resources.marker.json .databricks/bundle/default/resources.json
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/dms-migration-before-deploy-[UNIQUE_NAME]/default/state/resources.json --format AUTO --file .databricks/resources.after-decline.json
 
 >>> cmp .databricks/resources.marker.json .databricks/resources.after-decline.json
 
+=== No DMS writes and no extra version on the declined retry
 >>> print_requests.py --dms //api/2.0/bundle
 
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-versions deployments/[DEPLOYMENT_ID] -o json
 [{"version_id":"2","status":"VERSION_STATUS_COMPLETED","completion_reason":"VERSION_COMPLETE_SUCCESS"}]
 
-=== 3. Approval creates ordinary deployment version 3, not another registration
+=== 3. Approve deployment
+Expect: ordinary deployment version 3; version 2 remains the only migration.
 >>> [CLI] bundle deploy --auto-approve -qq
 
 This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:

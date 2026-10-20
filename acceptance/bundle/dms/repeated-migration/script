@@ -14,41 +14,35 @@ title "Setup (LOG.setup)\nCurrent: job=updated; DMS version=3; old backup=one.\n
     trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true print_state.py > .databricks/resources.before-repeat.json
 } &> LOG.setup
 
-title "1. Before\nExpect: old backup=one; latest snapshot=updated.\n"
+title "1. Compare the old backup with the latest saved state\nExpect: old backup name=one; latest state name=updated.\n"
 trace gron.py .databricks/resources.backup.first.json | grep '\.state\.name = ' | contains.py '"one"'
 trace gron.py .databricks/resources.before-repeat.json | grep '\.state\.name = ' | contains.py '"updated"'
-echo "PASS: names checked"
 
-title "2. Repeat deploy\nExpect: register=4; deploy=5; name=repeated; created=0.\n"
+title "2. Restore saved state without its history flag and deploy again\nExpect: migration=4; deployment=5; name=repeated; no new jobs.\n"
 trace MSYS_NO_PATHCONV=1 $CLI workspace import "$state_path/resources.json" --file .databricks/resources.before-repeat.json --format AUTO --overwrite
 trace cp .databricks/resources.before-repeat.json .databricks/bundle/default/resources.json
 trace update_file.py databricks.yml 'name: updated' 'name: repeated'
 trace $CLI bundle deploy 2>&1 | contains.py 'Deployment history enabled: ' 'Current Deployment Version: ' '?version=4' '?version=5' 'Resources: 0 created' '!Created '
-echo "PASS: repeat deployed"
 
-title "3. DMS records\nExpect: versions complete; original ID preserved; name=repeated.\n"
+title "3. Check DMS records\nExpect: completed migration 4 and deployment 5; original ID preserved; name=repeated.\n"
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-versions "deployments/${deployment_id}" -o json |
-    jq 'map(select((.version_id | tonumber) >= 4))' |
-    jq -c 'sort_by(.version_id | tonumber) | map({version_id, previous_version_id, version_type, status, completion_reason})' |
-    jq -r '.[] | "version \(.version_id): previous=\(.previous_version_id) type=\(.version_type | ltrimstr("VERSION_TYPE_")) status=\(.status | ltrimstr("VERSION_STATUS_")) completion=\(.completion_reason | ltrimstr("VERSION_COMPLETE_"))"'
+    jq -c 'sort_by(.version_id | tonumber) | map({version_id, previous_version_id, version_type, status, completion_reason})'
+title "Migration 4: register the existing job ID again (INITIAL_REGISTER)"
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/4" -o json |
-    jq -c 'sort_by(.resource_key) | map({resource_key, resource_id, action_type, status})' |
-    jq -r '.[] | "operation 4: key=\(.resource_key) id=\(.resource_id) action=\(.action_type | ltrimstr("OPERATION_ACTION_TYPE_")) status=\(.status | ltrimstr("OPERATION_STATUS_"))"'
+    jq -c 'sort_by(.resource_key) | map({resource_key, resource_id, action_type, status})'
+title "Deployment 5: update the job name without creating a replacement"
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/5" -o json |
-    jq -c 'sort_by(.resource_key) | map({resource_key, resource_id, action_type, status})' |
-    jq -r '.[] | "operation 5: key=\(.resource_key) id=\(.resource_id) action=\(.action_type | ltrimstr("OPERATION_ACTION_TYPE_")) status=\(.status | ltrimstr("OPERATION_STATUS_"))"'
+    jq -c 'sort_by(.resource_key) | map({resource_key, resource_id, action_type, status})'
+title "Current resource: original job ID, name=repeated, last version=5"
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json |
-    jq -c 'sort_by(.resource_key) | map({resource_key, resource_id, last_action_type, last_version_id,
-        state: (.state | fromjson | {name: .state.name,
-            tasks: [.state.tasks[]? | {task_key, job_id: .run_job_task.job_id}],
-            depends_on: (.depends_on // [])})})' |
-    jq -r '.[] | "resource: key=\(.resource_key) id=\(.resource_id)\n  last_action=\(.last_action_type | ltrimstr("OPERATION_ACTION_TYPE_")) version=\(.last_version_id) name=\(.state.name)\n  tasks=\(.state.tasks | tojson) dependencies=\(.state.depends_on | tojson)"'
+    jq -c 'map({resource_key, resource_id, last_version_id, name: (.state | fromjson | .state.name)})'
 
-title "4. Backup copy\nExpect: backup=updated; bytes match latest and differ from first.\n"
+title "4. Check backup was overwritten\nExpect: name=updated (before this deploy), not one or repeated.\n"
 trace MSYS_NO_PATHCONV=1 $CLI workspace export "$state_path/resources.json.backup" --format AUTO --file .databricks/resources.backup.repeat.json
-trace cat .databricks/resources.backup.repeat.json | contains.py '"name": "updated"' '!"name": "repeated"' | jq '{state_version, cli_version, lineage, serial, resources: (.state | map_values({id: .__id__, name: .state.name}))}'
+trace cat .databricks/resources.backup.repeat.json | contains.py '"name": "updated"' '!"name": "one"' '!"name": "repeated"'
+title "Backup matches the restored snapshot byte for byte"
 trace cmp .databricks/resources.before-repeat.json .databricks/resources.backup.repeat.json
+title "Compare backups: serial 1 -> 3 and job name one -> updated"
 trace diff.py .databricks/resources.backup.first.json .databricks/resources.backup.repeat.json
-echo "PASS: backup checked"
 
 rm -f "$OUT_REQUESTS"

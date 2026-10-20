@@ -2,18 +2,17 @@
 === Setup (LOG.setup)
 Current: job=updated; DMS version=3; old backup=one.
 
-=== 1. Before
-Expect: old backup=one; latest snapshot=updated.
+=== 1. Compare the old backup with the latest saved state
+Expect: old backup name=one; latest state name=updated.
 
 >>> gron.py .databricks/resources.backup.first.json
 json.state.resources.jobs.one.state.name = "one";
 
 >>> gron.py .databricks/resources.before-repeat.json
 json.state.resources.jobs.one.state.name = "updated";
-PASS: names checked
 
-=== 2. Repeat deploy
-Expect: register=4; deploy=5; name=repeated; created=0.
+=== 2. Restore saved state without its history flag and deploy again
+Expect: migration=4; deployment=5; name=repeated; no new jobs.
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace import /Workspace/Users/[USERNAME]/.bundle/dms-repeated-migration-[UNIQUE_NAME]/default/state/resources.json --file .databricks/resources.before-repeat.json --format AUTO --overwrite
 
@@ -29,47 +28,60 @@ Current Deployment Version: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version
 Updated jobs.one
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
-PASS: repeat deployed
 
-=== 3. DMS records
-Expect: versions complete; original ID preserved; name=repeated.
+=== 3. Check DMS records
+Expect: completed migration 4 and deployment 5; original ID preserved; name=repeated.
 
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-versions deployments/[DEPLOYMENT_ID] -o json
-version 4: previous=3 type=DEPLOY status=COMPLETED completion=SUCCESS
-version 5: previous=4 type=DEPLOY status=COMPLETED completion=SUCCESS
+[{"version_id":"2","previous_version_id":null,"version_type":"VERSION_TYPE_DEPLOY","status":"VERSION_STATUS_COMPLETED","completion_reason":"VERSION_COMPLETE_SUCCESS"},{"version_id":"3","previous_version_id":"2","version_type":"VERSION_TYPE_DEPLOY","status":"VERSION_STATUS_COMPLETED","completion_reason":"VERSION_COMPLETE_SUCCESS"},{"version_id":"4","previous_version_id":"3","version_type":"VERSION_TYPE_DEPLOY","status":"VERSION_STATUS_COMPLETED","completion_reason":"VERSION_COMPLETE_SUCCESS"},{"version_id":"5","previous_version_id":"4","version_type":"VERSION_TYPE_DEPLOY","status":"VERSION_STATUS_COMPLETED","completion_reason":"VERSION_COMPLETE_SUCCESS"}]
 
+=== Migration 4: register the existing job ID again (INITIAL_REGISTER)
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-operations deployments/[DEPLOYMENT_ID]/versions/4 -o json
-operation 4: key=jobs.one id=[ONE_ID] action=INITIAL_REGISTER status=SUCCEEDED
+[{"resource_key":"jobs.one","resource_id":"[ONE_ID]","action_type":"OPERATION_ACTION_TYPE_INITIAL_REGISTER","status":"OPERATION_STATUS_SUCCEEDED"}]
 
+=== Deployment 5: update the job name without creating a replacement
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-operations deployments/[DEPLOYMENT_ID]/versions/5 -o json
-operation 5: key=jobs.one id=[ONE_ID] action=UPDATE status=SUCCEEDED
+[{"resource_key":"jobs.one","resource_id":"[ONE_ID]","action_type":"OPERATION_ACTION_TYPE_UPDATE","status":"OPERATION_STATUS_SUCCEEDED"}]
 
+=== Current resource: original job ID, name=repeated, last version=5
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[DEPLOYMENT_ID] -o json
-resource: key=jobs.one id=[ONE_ID]
-  last_action=UPDATE version=5 name=repeated
-  tasks=[] dependencies=[]
+[{"resource_key":"jobs.one","resource_id":"[ONE_ID]","last_version_id":"5","name":"repeated"}]
 
-=== 4. Backup copy
-Expect: backup=updated; bytes match latest and differ from first.
+=== 4. Check backup was overwritten
+Expect: name=updated (before this deploy), not one or repeated.
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/dms-repeated-migration-[UNIQUE_NAME]/default/state/resources.json.backup --format AUTO --file .databricks/resources.backup.repeat.json
 
 >>> cat .databricks/resources.backup.repeat.json
 {
-  "state_version": 3,
-  "cli_version": "[CLI_VERSION]",
-  "lineage": "[UUID]",
-  "serial": 3,
-  "resources": {
-    "resources.jobs.one": {
-      "id": "[ONE_ID]",
-      "name": "updated"
+ "state_version": 3,
+ "cli_version": "[CLI_VERSION]",
+ "lineage": "[UUID]",
+ "serial": 3,
+ "state": {
+  "resources.jobs.one": {
+   "__id__": "[ONE_ID]",
+   "state": {
+    "deployment": {
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-repeated-migration-[UNIQUE_NAME]/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "updated",
+    "queue": {
+     "enabled": true
     }
+   }
   }
+ }
 }
 
+=== Backup matches the restored snapshot byte for byte
 >>> cmp .databricks/resources.before-repeat.json .databricks/resources.backup.repeat.json
 
+=== Compare backups: serial 1 -> 3 and job name one -> updated
 >>> diff.py .databricks/resources.backup.first.json .databricks/resources.backup.repeat.json
 --- .databricks/resources.backup.first.json
 +++ .databricks/resources.backup.repeat.json
@@ -92,4 +104,3 @@ Expect: backup=updated; bytes match latest and differ from first.
   }
 -}
 +}
-PASS: backup checked
