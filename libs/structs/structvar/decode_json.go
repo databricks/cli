@@ -31,7 +31,7 @@ func ParseJSON(source string, data []byte) (*yaml.Node, error) {
 			err = errors.New("unexpected end of JSON input")
 		}
 		line, column := lines.position(decoder.InputOffset())
-		return nil, fmt.Errorf("error decoding JSON at %s: %v", diag.Location{File: source, Line: line, Column: column}, err)
+		return nil, fmt.Errorf("error decoding JSON at %s: %w", diag.Location{File: source, Line: line, Column: column}, err)
 	}
 	return node, nil
 }

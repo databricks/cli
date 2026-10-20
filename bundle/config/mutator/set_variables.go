@@ -51,7 +51,7 @@ func setVariable(ctx context.Context, cfg *config.Root, variable *variable.Varia
 
 		err := cfg.Set(valuePath, val)
 		if err != nil {
-			return fmt.Errorf(`failed to assign value "%s" to variable %s from environment variable %s with error: %v`, val, name, envVarName, err)
+			return fmt.Errorf(`failed to assign value "%s" to variable %s from environment variable %s with error: %v`, val, name, envVarName, err) //nolint:errorlint // runs inside dyn.Map, which drops wrapped no-such-key errors
 		}
 		return nil
 	}
@@ -76,7 +76,7 @@ func setVariable(ctx context.Context, cfg *config.Root, variable *variable.Varia
 
 		err := cfg.Assign(valuePath, fileDefault)
 		if err != nil {
-			return fmt.Errorf(`failed to assign default value from variable file to variable %s with error: %v`, name, err)
+			return fmt.Errorf(`failed to assign default value from variable file to variable %s with error: %v`, name, err) //nolint:errorlint // runs inside dyn.Map, which drops wrapped no-such-key errors
 		}
 
 		return nil
@@ -89,7 +89,7 @@ func setVariable(ctx context.Context, cfg *config.Root, variable *variable.Varia
 		defaultLocs := cfg.LocationTree().Sub(structpath.NewStringKey(variablePath, "default"))
 		err := cfg.Assign(valuePath, structvar.NewView(&variable.Default, nil, defaultLocs))
 		if err != nil {
-			return fmt.Errorf(`failed to assign default value from config "%s" to variable %s with error: %v`, variable.Default, name, err)
+			return fmt.Errorf(`failed to assign default value from config "%s" to variable %s with error: %w`, variable.Default, name, err)
 		}
 		return nil
 	}
