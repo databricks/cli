@@ -58,6 +58,12 @@ type Experimental struct {
 	// truth for their state.
 	// An explicit value takes priority over the environment setting.
 	DeploymentHistory *bool `json:"deployment_history,omitempty"`
+
+	// ForceSendFields records which fields were explicitly set so that zero-value
+	// overrides can replace non-zero base values (e.g., python_wheel_wrapper: false
+	// can override python_wheel_wrapper: true in the base).
+	// This field is not serialized to JSON.
+	ForceSendFields []string `json:"-"`
 }
 
 type Python struct {
@@ -77,6 +83,11 @@ type Python struct {
 	// If enabled, Python code will execute within this environment. If disabled,
 	// it defaults to using the Python interpreter available in the current shell.
 	VEnvPath string `json:"venv_path,omitempty"`
+
+	// ForceSendFields records which fields were explicitly set so that zero-value
+	// overrides are preserved if needed (currently unused but reserved for future).
+	// This field is not serialized to JSON.
+	ForceSendFields []string `json:"-"`
 }
 
 // PyDABs is deprecated use Python instead

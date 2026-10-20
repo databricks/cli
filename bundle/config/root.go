@@ -32,6 +32,11 @@ type Script struct {
 	// Use this to pass bundle configuration into a script's shell environment
 	// without polluting the script content with DABs interpolation syntax.
 	Env map[string]string `json:"env,omitempty"`
+
+	// ForceSendFields records which fields were explicitly set so that zero-value
+	// overrides are preserved if needed (currently unused but reserved for future).
+	// This field is not serialized to JSON.
+	ForceSendFields []string `json:"-"`
 }
 
 type Root struct { //nolint:recvcheck // value receivers for read-only accessors, pointer for mutators

@@ -60,4 +60,10 @@ type Bundle struct {
 	// A stable generated UUID for the bundle. This is normally serialized by
 	// Databricks first party template when a user runs bundle init.
 	Uuid string `json:"uuid,omitempty"`
+
+	// ForceSendFields records which fields were explicitly set so that zero-value
+	// overrides can replace non-zero base values (e.g., force: false, cluster_id: "",
+	// or engine: "" in a target).
+	// This field is not serialized to JSON.
+	ForceSendFields []string `json:"-"`
 }

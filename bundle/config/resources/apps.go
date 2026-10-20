@@ -31,6 +31,11 @@ type AppEnvVar struct {
 
 	// ValueFrom is the name of an external Databricks resource that contains the value, such as a secret or a database table.
 	ValueFrom string `json:"value_from,omitempty" yaml:"value_from,omitempty"`
+
+	// ForceSendFields records which fields were explicitly set so that zero-value
+	// overrides can replace non-zero base values (e.g., value: "" to clear an env var).
+	// This field is not serialized to JSON or YAML.
+	ForceSendFields []string `json:"-" yaml:"-"`
 }
 
 type App struct {

@@ -70,4 +70,9 @@ type Artifact struct {
 	// Git, when set on a `tgz` artifact, snapshots the given ref instead of the
 	// working tree. Mutually exclusive with `build`.
 	Git *ArtifactGit `json:"git,omitempty"`
+
+	// ForceSendFields records which fields were explicitly set so that zero-value
+	// overrides can replace non-zero base values (e.g., dynamic_version: false).
+	// This field is not serialized to JSON.
+	ForceSendFields []string `json:"-"`
 }

@@ -79,6 +79,11 @@ type Workspace struct {
 	// Remote workspace path for deployment state.
 	// This defaults to "${workspace.root}/state".
 	StatePath string `json:"state_path,omitempty"`
+
+	// ForceSendFields records which fields were explicitly set so that zero-value
+	// overrides can replace non-zero base values (e.g., azure_use_msi: false in a target).
+	// This field is not serialized to JSON.
+	ForceSendFields []string `json:"-"`
 }
 
 type User struct {

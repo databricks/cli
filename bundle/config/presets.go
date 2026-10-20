@@ -29,6 +29,11 @@ type Presets struct {
 
 	// Tags to add to all resources.
 	Tags map[string]string `json:"tags,omitempty"`
+
+	// ForceSendFields records which fields were explicitly set so that zero-value
+	// overrides can replace non-zero base values (e.g., name_prefix: "" clearing a base prefix).
+	// This field is not serialized to JSON.
+	ForceSendFields []string `json:"-"`
 }
 
 // IsExplicitlyEnabled tests whether this feature is explicitly enabled.

@@ -9,6 +9,11 @@ type Lock struct {
 	// Force acquisition of deployment lock even if it is currently held.
 	// This may be necessary if a prior deployment failed to release the lock.
 	Force bool `json:"force,omitempty"`
+
+	// ForceSendFields records which fields were explicitly set so that zero-value
+	// overrides can replace non-zero base values (e.g., force: false in a target).
+	// This field is not serialized to JSON.
+	ForceSendFields []string `json:"-"`
 }
 
 // IsEnabled checks if the deployment lock is enabled.

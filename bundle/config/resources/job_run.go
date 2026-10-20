@@ -39,6 +39,10 @@ type JobRunLifecycle struct {
 
 	// Resolved fingerprint for the planner; not user config.
 	TriggersState *JobRunTriggersState `json:"triggers_state,omitempty" bundle:"internal"`
+
+	// ForceSendFields records which fields were explicitly set for JobRunLifecycle-specific fields.
+	// This field is not serialized to JSON.
+	ForceSendFields []string `json:"-"`
 }
 
 // JobRunTrigger is one lifecycle.triggers entry.

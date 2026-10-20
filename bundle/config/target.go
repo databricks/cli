@@ -69,6 +69,11 @@ type Target struct {
 	Sync *Sync `json:"sync,omitempty"`
 
 	Permissions []resources.Permission `json:"permissions,omitempty"`
+
+	// ForceSendFields records which fields were explicitly set so that zero-value
+	// overrides can replace non-zero base values in target overrides.
+	// This field is not serialized to JSON.
+	ForceSendFields []string `json:"-"`
 }
 
 const (
