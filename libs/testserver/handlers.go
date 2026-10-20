@@ -865,7 +865,7 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.MaterializationSetsUpdate(req, req.Vars["materialization_set_id"])
 	})
 	server.Handle("DELETE", "/api/2.0/feature-engineering/materialization-sets/{materialization_set_id}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.MaterializationSets, req.Vars["materialization_set_id"])
+		return req.Workspace.MaterializationSetsDelete(req.Vars["materialization_set_id"])
 	})
 
 	// Model Provider Services (AI Gateway):

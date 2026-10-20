@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	"github.com/databricks/databricks-sdk-go/service/ml"
+	"github.com/google/uuid"
 )
 
 // https://docs.databricks.com/api/workspace/featureengineering
@@ -144,8 +145,12 @@ func (r *ResourceMaterializationSet) DoRead(ctx context.Context, id string) (*ml
 // DoCreate submits the set and waits for the long-running operation the create returns. The created
 // set arrives as that operation's response, which Wait reaches by polling GetOperation.
 func (r *ResourceMaterializationSet) DoCreate(ctx context.Context, config *ml.MaterializationSet) (string, *ml.MaterializationSet, error) {
+	// Each verb takes an idempotency token, and a repeat carrying one already used returns the
+	// operation the first request created rather than acting again. Minted here so the token the
+	// server sees is the one this call chose.
 	operation, err := r.client.FeatureEngineering.CreateMaterializationSet(ctx, ml.CreateMaterializationSetRequest{
 		MaterializationSet: *config,
+		RequestId:          uuid.NewString(),
 	})
 	if err != nil {
 		return "", nil, err
@@ -153,20 +158,27 @@ func (r *ResourceMaterializationSet) DoCreate(ctx context.Context, config *ml.Ma
 
 	set, err := operation.Wait(ctx)
 	if err != nil {
-		return "", nil, fmt.Errorf("%s: %w", materializationSetCreationTarget(operation), err)
+		return "", nil, fmt.Errorf("%s: %w", materializationSetOperationTarget(operation), err)
 	}
 	// The id is what the engine records the resource under, so an operation that settles without
 	// one is a failure even though the wait succeeded.
 	if set == nil || set.MaterializationSetId == "" {
 		return "", nil, fmt.Errorf("%s: creation finished without returning the set",
-			materializationSetCreationTarget(operation))
+			materializationSetOperationTarget(operation))
 	}
 	return set.MaterializationSetId, set, nil
 }
 
-// materializationSetCreationTarget names what a creation was building, taking the set id from the
-// operation metadata when the server supplied it and falling back to the operation name.
-func materializationSetCreationTarget(operation ml.CreateMaterializationSetOperationInterface) string {
+// materializationSetOperation is what a create, update and delete operation have in common: the
+// three generated interfaces share these two methods and differ only in what Wait returns.
+type materializationSetOperation interface {
+	Name() string
+	Metadata() (*ml.MaterializationSetOperationMetadata, error)
+}
+
+// materializationSetOperationTarget names the set an operation was changing, taking the set id from
+// the operation metadata when the server supplied it and falling back to the operation name.
+func materializationSetOperationTarget(operation materializationSetOperation) string {
 	metadata, err := operation.Metadata()
 	if err == nil && metadata != nil && metadata.MaterializationSetId != "" {
 		return "materialization set " + metadata.MaterializationSetId
@@ -174,19 +186,41 @@ func materializationSetCreationTarget(operation ml.CreateMaterializationSetOpera
 	return "operation " + operation.Name()
 }
 
+// DoUpdate reconciles the set's membership and waits for the long-running operation the update
+// returns. The reconciled set arrives as that operation's response.
 func (r *ResourceMaterializationSet) DoUpdate(ctx context.Context, id string, config *ml.MaterializationSet, _ *PlanEntry) (*ml.MaterializationSet, error) {
 	update := *config
 	update.MaterializationSetId = id
 
-	return r.client.FeatureEngineering.UpdateMaterializationSet(ctx, ml.UpdateMaterializationSetRequest{
+	operation, err := r.client.FeatureEngineering.UpdateMaterializationSet(ctx, ml.UpdateMaterializationSetRequest{
 		MaterializationSetId: id,
 		MaterializationSet:   update,
 		UpdateMask:           *fieldmask.New(materializationSetUpdatableFields),
+		RequestId:            uuid.NewString(),
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	set, err := operation.Wait(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", materializationSetOperationTarget(operation), err)
+	}
+	return set, nil
 }
 
+// DoDelete deletes the set and waits for the long-running operation the delete returns, which
+// settles with no response body.
 func (r *ResourceMaterializationSet) DoDelete(ctx context.Context, id string, _ *ml.MaterializationSet) error {
-	return r.client.FeatureEngineering.DeleteMaterializationSet(ctx, ml.DeleteMaterializationSetRequest{
+	operation, err := r.client.FeatureEngineering.DeleteMaterializationSet(ctx, ml.DeleteMaterializationSetRequest{
 		MaterializationSetId: id,
+		RequestId:            uuid.NewString(),
 	})
+	if err != nil {
+		return err
+	}
+	if err := operation.Wait(ctx); err != nil {
+		return fmt.Errorf("%s: %w", materializationSetOperationTarget(operation), err)
+	}
+	return nil
 }

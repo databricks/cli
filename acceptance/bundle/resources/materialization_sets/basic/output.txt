@@ -89,6 +89,7 @@ Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
   "resources.materialization_sets.set1": "skip"
 }
 
+=== The delete returns a long-running operation too, which the destroy waits on
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.features.batchfeat
@@ -98,8 +99,17 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 2 deleted
 
->>> print_requests.py //materialization-sets
+>>> print_requests.py --keep //materialization-sets
 {
   "method": "DELETE",
-  "path": "/api/2.0/feature-engineering/materialization-sets/[UUID]"
+  "path": "/api/2.0/feature-engineering/materialization-sets/[UUID]",
+  "q": {
+    "request_id": "[UUID]"
+  }
+}
+
+>>> print_requests.py --get //feature-engineering/operations
+{
+  "method": "GET",
+  "path": "/api/2.0/feature-engineering/operations/[UUID]"
 }

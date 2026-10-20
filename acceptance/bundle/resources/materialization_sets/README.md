@@ -14,14 +14,29 @@ empty, so every member field is write-once. That shapes most of the cases below:
 to any member field is caught by the planner as a `recreate`, and the only change that reaches the
 server is a removal.
 
+## Create, update and delete are all long-running
+
+Each write verb returns a `databricks.longrunning.Operation` and the adapter waits on it, so the set
+a create or update produces is read off the operation rather than the response body; a delete's
+operation settles with no response at all. Execution is synchronous server-side, so the operation is
+already terminal when the call returns and the wait settles on its first poll.
+
+Each verb also takes a `request_id`, and the server reserves an operation record against it before
+acting: a repeat carrying a token already used gets the first operation back and changes nothing.
+The adapter mints one per call, so the SDK's own retry of a lost response resolves to the first
+operation instead of acting twice. The engine's `retryOnTransient` calls the adapter afresh and so
+mints a new token; that is safe here because it never retries a create without the adapter opting
+in, and re-running an update or a delete reconciles to the same state. No case replays a token,
+because every adapter call mints its own.
+
 ## What each case pins
 
 | Case | Claim |
 |---|---|
-| `basic` | create through the long-running operation, then a redeploy that plans nothing -- the server-assigned schedule state and the output-only member fields must not read as drift |
+| `basic` | create through the long-running operation, then a redeploy that plans nothing -- the server-assigned schedule state and the output-only member fields must not read as drift; the destroy's operation round trip |
 | `bind` | unbinding leaves the set in the workspace and the plan reports `create`, which is the out-of-band shape; binding it back settles the first plan to `skip`, with the destination suppressed exactly as on a bundle-created set |
 | `membership` | the delete cascade runs both ways -- removing either member of a feature's pair on its own is refused, while removing a whole pair plans as `update` and the other feature's pair keeps its ids |
-| `removal_scope` | the cascade is scoped per feature: where every feature is materialized offline only, each contributes one member and can have it removed alone |
+| `removal_scope` | the cascade is scoped per feature: where every feature is materialized offline only, each contributes one member and can have it removed alone; the update's operation round trip |
 | `schedule_state` | a member the config leaves unset adopts the state the server assigned; a declared change to it is a `recreate`, and that recreate still has to satisfy the create endpoint's rule that a feature's members agree |
 | `immutable` | a write-once member field is caught by the planner as `recreate` and never reaches the server; adding a member routes to `update` so the server refuses it by name |
 | `destination` | a destination field the server accepts on write and never returns on read is not drift, while a repoint the config actually asked for still recreates -- the two are told apart by whether the persisted value is recoverable |
@@ -129,7 +144,14 @@ mixed update to construct.
   features, leaving each offline materialization's `*_partial_aggregates` table behind. A cloud case
   that wants a clean schema has to drop those itself.
 
-- **Partial failure.** One member failing does not stop the others, and the error carries what was
-  updated, deleted and failed. Reproducing it needs per-member failure injection the fake does not
-  have. This matters more than it used to: with field updates gone, a partway failure can only be a
+- **Partial failure.** One member failing does not stop the others, and the operation settles
+  FAILED carrying what was updated, deleted and failed in its metadata's `update_progress` or
+  `deletion_progress`. Reproducing it needs per-member failure injection the fake does not have.
+  This matters more than it used to: with field updates gone, a partway failure can only be a
   partway *deletion*, and nothing already deleted is put back.
+
+- **A settled-but-failed operation.** Every refusal these cases reach is an HTTP error on the call
+  itself, raised before the operation record exists, so the wait is never what fails. The branch
+  that reports a failed operation -- naming the set from the operation metadata -- is covered only
+  by `TestMaterializationSetOperationTarget`, and the same injection the partial-failure case needs
+  would cover it end to end.

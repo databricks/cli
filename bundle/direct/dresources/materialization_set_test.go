@@ -1,6 +1,7 @@
 package dresources
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -60,4 +61,42 @@ func TestMaterializationSetMemberKeyEscapesSeparator(t *testing.T) {
 		OnlineStoreConfig: &ml.OnlineStoreConfig{OnlineStoreName: "c"},
 	})
 	assert.NotEqual(t, first, forged)
+}
+
+// operationStub stands in for a generated operation interface. The three verbs' interfaces differ
+// only in what Wait returns, which materializationSetOperationTarget never calls.
+type operationStub struct {
+	name     string
+	metadata *ml.MaterializationSetOperationMetadata
+	err      error
+}
+
+func (s operationStub) Name() string { return s.name }
+
+func (s operationStub) Metadata() (*ml.MaterializationSetOperationMetadata, error) {
+	return s.metadata, s.err
+}
+
+// The set id names what a failed create, update or delete was changing. The server assigns it
+// before reserving the operation record, so the fallback to the operation name covers the cases
+// where the metadata is unreadable rather than a set that has no id.
+func TestMaterializationSetOperationTarget(t *testing.T) {
+	assert.Equal(t, "materialization set set-1", materializationSetOperationTarget(operationStub{
+		name:     "operations/abc",
+		metadata: &ml.MaterializationSetOperationMetadata{MaterializationSetId: "set-1"},
+	}))
+
+	assert.Equal(t, "operation operations/abc", materializationSetOperationTarget(operationStub{
+		name:     "operations/abc",
+		metadata: &ml.MaterializationSetOperationMetadata{},
+	}))
+
+	assert.Equal(t, "operation operations/abc", materializationSetOperationTarget(operationStub{
+		name: "operations/abc",
+	}))
+
+	assert.Equal(t, "operation operations/abc", materializationSetOperationTarget(operationStub{
+		name: "operations/abc",
+		err:  errors.New("metadata is not a MaterializationSetOperationMetadata"),
+	}))
 }

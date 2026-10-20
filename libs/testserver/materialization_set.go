@@ -222,10 +222,7 @@ func (s *FakeWorkspace) MaterializationSetsCreate(req Request) Response {
 
 	var set ml.MaterializationSet
 	if err := json.Unmarshal(req.Body, &set); err != nil {
-		return Response{
-			Body:       fmt.Sprintf("internal error: %s", err),
-			StatusCode: http.StatusInternalServerError,
-		}
+		return materializationSetInternalError(err)
 	}
 
 	if len(set.MaterializedFeatures) == 0 {
@@ -249,40 +246,29 @@ func (s *FakeWorkspace) MaterializationSetsCreate(req Request) Response {
 
 	s.MaterializationSets[set.MaterializationSetId] = set
 
-	operation, err := s.recordMaterializationSetCreation(set)
-	if err != nil {
-		return Response{
-			Body:       fmt.Sprintf("internal error: %s", err),
-			StatusCode: http.StatusInternalServerError,
-		}
-	}
-	return Response{Body: operation}
+	return s.materializationSetOperationResponse(set.MaterializationSetId, set.MaterializedFeatures, set)
 }
 
-// recordMaterializationSetCreation stores the operation the create returns and hands back a copy.
-// The work is finished by the time the response is written, so the operation is recorded already
-// terminal; a caller still has to poll it, because the created set is reachable only from there.
-func (s *FakeWorkspace) recordMaterializationSetCreation(set ml.MaterializationSet) (ml.Operation, error) {
-	featureNames := map[string]bool{}
-	var featureOrder []string
-	for _, member := range set.MaterializedFeatures {
-		if !featureNames[member.FeatureName] {
-			featureNames[member.FeatureName] = true
-			featureOrder = append(featureOrder, member.FeatureName)
-		}
-	}
-
-	metadata, err := json.Marshal(ml.MaterializationSetCreationMetadata{
-		FeatureFullNames:     featureOrder,
-		MaterializationSetId: set.MaterializationSetId,
-		State:                ml.MaterializationSetCreationMetadataStateSucceeded,
+// materializationSetOperationResponse records the terminal operation a set change returns and
+// renders it as the endpoint's response. The work is finished by the time the response is written,
+// so the operation is recorded already terminal; a caller still has to poll it, because a create's
+// or update's resulting set is reachable only from there.
+func (s *FakeWorkspace) materializationSetOperationResponse(
+	setID string,
+	members []ml.MaterializedFeature,
+	result any,
+) Response {
+	metadata, err := json.Marshal(ml.MaterializationSetOperationMetadata{
+		FeatureFullNames:     materializationSetFeatureNames(members),
+		MaterializationSetId: setID,
+		State:                ml.MaterializationSetOperationMetadataStateSucceeded,
 	})
 	if err != nil {
-		return ml.Operation{}, err
+		return materializationSetInternalError(err)
 	}
-	response, err := json.Marshal(set)
+	response, err := json.Marshal(result)
 	if err != nil {
-		return ml.Operation{}, err
+		return materializationSetInternalError(err)
 	}
 
 	operation := ml.Operation{
@@ -292,7 +278,49 @@ func (s *FakeWorkspace) recordMaterializationSetCreation(set ml.MaterializationS
 		Response: response,
 	}
 	s.Operations[operation.Name] = operation
-	return operation, nil
+	return Response{Body: operation}
+}
+
+// materializationSetFeatureNames lists each member's feature once in member order, which is what
+// the operation metadata reports.
+func materializationSetFeatureNames(members []ml.MaterializedFeature) []string {
+	seen := map[string]bool{}
+	var names []string
+	for _, member := range members {
+		if !seen[member.FeatureName] {
+			seen[member.FeatureName] = true
+			names = append(names, member.FeatureName)
+		}
+	}
+	return names
+}
+
+func materializationSetInternalError(err error) Response {
+	return Response{
+		Body:       fmt.Sprintf("internal error: %s", err),
+		StatusCode: http.StatusInternalServerError,
+	}
+}
+
+// materializationSetNotFound refuses a set id no set holds.
+func materializationSetNotFound(setID string) Response {
+	return materializationSetError(http.StatusNotFound, "NOT_FOUND",
+		fmt.Sprintf("Materialization set with ID '%s' does not exist.", setID))
+}
+
+// MaterializationSetsDelete fakes DELETE
+// /api/2.0/feature-engineering/materialization-sets/{materialization_set_id}. The delete returns a
+// long-running operation too, settling with an empty response.
+func (s *FakeWorkspace) MaterializationSetsDelete(setID string) Response {
+	defer s.LockUnlock()()
+
+	existing, ok := s.MaterializationSets[setID]
+	if !ok {
+		return materializationSetNotFound(setID)
+	}
+	delete(s.MaterializationSets, setID)
+
+	return s.materializationSetOperationResponse(setID, existing.MaterializedFeatures, struct{}{})
 }
 
 // OperationsGet fakes GET /api/2.0/feature-engineering/operations/{operation_id}.
@@ -384,16 +412,12 @@ func (s *FakeWorkspace) MaterializationSetsUpdate(req Request, setID string) Res
 
 	existing, ok := s.MaterializationSets[setID]
 	if !ok {
-		return materializationSetError(http.StatusNotFound, "NOT_FOUND",
-			fmt.Sprintf("Materialization set with ID '%s' does not exist.", setID))
+		return materializationSetNotFound(setID)
 	}
 
 	var requested ml.MaterializationSet
 	if err := json.Unmarshal(req.Body, &requested); err != nil {
-		return Response{
-			Body:       fmt.Sprintf("internal error: %s", err),
-			StatusCode: http.StatusInternalServerError,
-		}
+		return materializationSetInternalError(err)
 	}
 
 	if len(requested.MaterializedFeatures) == 0 {
@@ -466,5 +490,6 @@ func (s *FakeWorkspace) MaterializationSetsUpdate(req Request, setID string) Res
 
 	existing.MaterializedFeatures = matched
 	s.MaterializationSets[setID] = existing
-	return Response{Body: existing}
+
+	return s.materializationSetOperationResponse(setID, existing.MaterializedFeatures, existing)
 }

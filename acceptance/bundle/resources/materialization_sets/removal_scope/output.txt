@@ -34,3 +34,37 @@ Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
     "is_online": null
   }
 ]
+
+=== The update returns a long-running operation, and the reconciled set is read back from it
+>>> print_requests.py --keep //materialization-sets
+{
+  "method": "PATCH",
+  "path": "/api/2.0/feature-engineering/materialization-sets/[UUID]",
+  "q": {
+    "request_id": "[UUID]",
+    "update_mask": "materialized_features"
+  },
+  "body": {
+    "materialization_set_id": "[UUID]",
+    "materialized_features": [
+      {
+        "cron_schedule_trigger": {
+          "cron_expression": "0 0 * * * ?",
+          "mode": "MANUAL"
+        },
+        "feature_name": "main.materialization_set_acceptance_test.featf2_[UNIQUE_NAME]",
+        "offline_store_config": {
+          "catalog_name": "main",
+          "schema_name": "materialization_set_acceptance_test",
+          "table_name_prefix": "mat_[UNIQUE_NAME]"
+        }
+      }
+    ]
+  }
+}
+
+>>> print_requests.py --get //feature-engineering/operations
+{
+  "method": "GET",
+  "path": "/api/2.0/feature-engineering/operations/[UUID]"
+}

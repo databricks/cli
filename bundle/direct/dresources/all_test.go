@@ -131,8 +131,9 @@ var testConfig map[string]any = map[string]any{
 				FeatureName:         "main.default.my_feature",
 				CronScheduleTrigger: &ml.CronSchedule{CronExpression: "0 0 * * * ?"},
 				OfflineStoreConfig: &ml.OfflineStoreConfig{
-					CatalogName: "main",
-					SchemaName:  "default",
+					CatalogName:     "main",
+					SchemaName:      "default",
+					TableNamePrefix: "offline",
 				},
 			},
 			{

@@ -31,6 +31,9 @@ render databricks.yml.tmpl
 
 trace $CLI bundle deploy
 
+# The create's requests are pinned by the basic case, so drop them and let the update's stand alone.
+rm -f "$OUT_REQUESTS"
+
 title "A feature contributing one member can have it removed alone: the cascade set is that one"
 title "member, and the feature the request says nothing about is untouched"
 render no-f1.yml.tmpl
@@ -38,5 +41,9 @@ trace $CLI bundle plan -o json > out.plan.json
 trace set_action
 trace $CLI bundle deploy --auto-approve
 trace set_members
+
+title "The update returns a long-running operation, and the reconciled set is read back from it"
+trace print_requests.py --keep //materialization-sets
+trace print_requests.py --get //feature-engineering/operations
 
 rm -f out.plan.json

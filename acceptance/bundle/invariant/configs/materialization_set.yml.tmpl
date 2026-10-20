@@ -1,0 +1,34 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  features:
+    foo:
+      full_name: main.matset_inv_$UNIQUE_NAME.test_feature
+      source:
+        delta_table_source:
+          full_name: main.matset_inv_$UNIQUE_NAME.source_table
+      function:
+        aggregation_function:
+          count_function:
+            input: value
+          time_window:
+            sliding:
+              window_duration: 604800s
+              slide_duration: 86400s
+      entities:
+        - name: id
+      timeseries_column:
+        name: timestamp
+
+  materialization_sets:
+    foo:
+      materialized_features:
+        - feature_name: ${resources.features.foo.full_name}
+          offline_store_config:
+            catalog_name: main
+            schema_name: matset_inv_$UNIQUE_NAME
+            table_name_prefix: offline
+          cron_schedule_trigger:
+            mode: MANUAL
+            cron_expression: "0 0 * * * ?"
