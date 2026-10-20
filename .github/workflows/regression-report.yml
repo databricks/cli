@@ -39,13 +39,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      # The same diff the selection makes (see selection.FromGit): the merge commit GitHub checks
+      # out for the PR against its merge base with origin/main.
       - name: Detect acceptance test changes
         id: changes
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          if [[ -n "$(git diff --name-only "$BASE_SHA...$HEAD_SHA" -- acceptance/)" ]]; then
+          if [[ -n "$(git diff --name-only --merge-base origin/main HEAD -- acceptance/)" ]]; then
             echo "acceptance=true" >> "$GITHUB_OUTPUT"
           else
             echo "acceptance=false" >> "$GITHUB_OUTPUT"
