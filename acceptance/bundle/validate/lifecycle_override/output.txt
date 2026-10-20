@@ -1,0 +1,18 @@
+
+>>> [CLI] bundle validate -o json
+Error: multiple resources or scripts have been defined with the same key: c
+  at resources.clusters.c
+  in databricks.yml:20:7
+     override.yml:8:7
+
+Error: multiple resources or scripts have been defined with the same key: j
+  at resources.jobs.j
+  in databricks.yml:10:7
+     override.yml:4:7
+
+{
+  "job_prevent_destroy": false,
+  "cluster_prevent_destroy": false
+}
+
+Exit code: 1

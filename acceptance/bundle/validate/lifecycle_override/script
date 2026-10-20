@@ -1,0 +1,2 @@
+# Include override with prevent_destroy: false wins over base prevent_destroy: true
+trace $CLI bundle validate -o json | jq '{job_prevent_destroy: (.resources.jobs.j.lifecycle.prevent_destroy), cluster_prevent_destroy: (.resources.clusters.c.lifecycle.prevent_destroy)}'

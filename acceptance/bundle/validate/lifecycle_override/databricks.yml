@@ -1,0 +1,24 @@
+bundle:
+  name: test-bundle
+
+include:
+  - override.yml
+
+resources:
+  jobs:
+    j:
+      name: job
+      tasks:
+        - task_key: task
+          notebook_task:
+            notebook_path: /notebook
+      lifecycle:
+        prevent_destroy: true
+
+  clusters:
+    c:
+      spark_version: "15.4.x-scala2.12"
+      node_type_id: "i3.xlarge"
+      num_workers: 2
+      lifecycle:
+        prevent_destroy: true
