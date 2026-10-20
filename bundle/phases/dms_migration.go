@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -74,12 +73,10 @@ func MigrateToDMS(ctx context.Context, b *bundle.Bundle, state *statemgmt.StateD
 	}
 	logDeploymentVersion(ctx, b, "Deployment history enabled")
 	statemgmt.PushResourcesState(ctx, b)
+	// Keep the descriptor at the committed version. Downstream checks Features via
+	// IsDMS() to validate the history setting and reopen resource state from DMS.
 	state.Serial = db.GetSerial()
-	state.Lineage = db.Data.Lineage
 	state.Features = db.StateFeatures()
-	state.SourcePath = filepath.ToSlash(db.Path)
-	state.IsLocal = true
-	state.Content = nil
 }
 
 // registerMigrationState records every resource from the open direct state in an initial registration version.
