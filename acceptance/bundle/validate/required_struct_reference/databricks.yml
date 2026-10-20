@@ -10,7 +10,7 @@ resources:
     target:
       cluster_name: target
       spark_version: 15.4.x-scala2.12
-      # clients holds only a reference, so its Go value is zero; it is still set.
+      # clients is a required field of workload_type. Its only field is a reference.
       workload_type:
         clients:
           jobs: ${resources.clusters.source.is_single_node}
