@@ -19,9 +19,11 @@ import (
 )
 
 const (
-	maxImageRepositoryLength = 255
-	maxImageTagLength        = 128
-	airImagePlatform         = "linux/amd64"
+	maxImageRepositoryLength    = 255
+	maxImageTagLength           = 128
+	airImagePlatform            = "linux/amd64"
+	airImagesLaunchStage        = "PUBLIC_BETA"
+	airImagesLaunchStageDisplay = "Beta"
 )
 
 var (
@@ -105,8 +107,12 @@ func registryHostFromDockerConfigureOutput(output string) (string, error) {
 func newImagesCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "images",
-		Short: "Manage container images for AI Runtime",
+		Short: "*Beta* Manage container images for AI Runtime",
 		RunE:  root.ReportUnknownSubcommand,
+	}
+	cmd.Annotations = map[string]string{
+		"launch_stage":         airImagesLaunchStage,
+		"launch_stage_display": airImagesLaunchStageDisplay,
 	}
 	cmd.AddCommand(newImagePushCommand())
 	return cmd
@@ -122,8 +128,10 @@ func newImagePushCommandWithDeps(deps imagePushDeps) *cobra.Command {
 	var opts imagePushOptions
 	cmd := &cobra.Command{
 		Use:   "push",
-		Short: "Push a container image to Databricks Artifact Registry",
-		Long: `Push a container image to Databricks Artifact Registry under the specified Unity Catalog catalog and schema.
+		Short: "*Beta* Push a container image to Databricks Artifact Registry",
+		Long: `This command is in Beta.
+
+Push a container image to Databricks Artifact Registry under the specified Unity Catalog catalog and schema.
 
 The command configures Docker's Databricks credential helper, automatically detects
 the registry region, and pushes the source image to catalog.schema.artifact:tag.
@@ -138,6 +146,10 @@ The destination --artifact ARTIFACT[:TAG] defaults to the source image name and 
 			return runImagePush(cmd, &opts, deps)
 		},
 	}
+	cmd.Annotations = map[string]string{
+		"launch_stage":         airImagesLaunchStage,
+		"launch_stage_display": airImagesLaunchStageDisplay,
+	}
 
 	cmd.Flags().StringVarP(&opts.source, "source", "s", "", "Source container image to push (NAME[:TAG] or NAME@DIGEST)")
 	cmd.Flags().StringVar(&opts.catalog, "catalog", "", "Destination Unity Catalog catalog; use lowercase letters and digits separated by one or two underscores or one or more hyphens")
@@ -150,7 +162,7 @@ The destination --artifact ARTIFACT[:TAG] defaults to the source image name and 
 // runImagePush validates inputs, prepares a compatible source image, and pushes it to DAR.
 func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps) error {
 	ctx := cmd.Context()
-	cmdio.LogString(ctx, "Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.")
+	cmdio.LogString(ctx, "Warning: This feature is in Beta. The workspace must enable the required previews.")
 	w := cmdctx.WorkspaceClient(ctx)
 
 	resolved, err := resolveImagePushOptions(ctx, opts)
