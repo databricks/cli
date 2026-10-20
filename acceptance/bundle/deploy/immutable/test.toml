@@ -9,3 +9,6 @@ Ignore = [
 # Replace snapshot hash with SNAPSHOT_HASH
 Old = "[0-9a-f]{64}"
 New = "[SNAPSHOT_HASH]"
+
+# Skipping DMS tests for now because DMS do not support immutable resource yet
+EnvMatrix.DMS = [""]
