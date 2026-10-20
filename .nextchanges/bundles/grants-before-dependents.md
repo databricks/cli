@@ -1,0 +1,1 @@
+* Resources that reference another resource are now deployed after that resource's `grants`, fixing intermittent `User does not have CREATE TABLE on Schema` errors when a pipeline's `run_as` principal is granted access to its schema in the same bundle.
