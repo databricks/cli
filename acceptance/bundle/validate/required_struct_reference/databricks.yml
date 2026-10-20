@@ -1,0 +1,16 @@
+bundle:
+  name: test-bundle
+
+resources:
+  clusters:
+    source:
+      cluster_name: source
+      spark_version: 15.4.x-scala2.12
+      is_single_node: true
+    target:
+      cluster_name: target
+      spark_version: 15.4.x-scala2.12
+      # clients holds only a reference, so its Go value is zero; it is still set.
+      workload_type:
+        clients:
+          jobs: ${resources.clusters.source.is_single_node}
