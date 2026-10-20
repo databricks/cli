@@ -1,0 +1,39 @@
+bundle:
+  name: test-bundle
+
+resources:
+  quality_monitors:
+    src:
+      table_name: main.default.src
+      assets_dir: /Workspace/monitors/src
+      output_schema_name: main.default
+      inference_log:
+        granularities: [1 day]
+        model_id_col: model_id
+        prediction_col: prediction
+        problem_type: PROBLEM_TYPE_CLASSIFICATION
+        timestamp_col: timestamp
+      schedule:
+        quartz_cron_expression: "0 0 12 * * ?"
+        timezone_id: UTC
+    dst:
+      table_name: main.default.dst
+      assets_dir: /Workspace/monitors/dst
+      output_schema_name: main.default
+      inference_log:
+        granularities: [1 day]
+        model_id_col: model_id
+        prediction_col: prediction
+        problem_type: PROBLEM_TYPE_CLASSIFICATION
+        timestamp_col: timestamp
+      # Forced null: the target override replaces it with a reference.
+      schedule: null
+
+targets:
+  dev:
+    presets:
+      trigger_pause_status: PAUSED
+    resources:
+      quality_monitors:
+        dst:
+          schedule: ${resources.quality_monitors.src.schedule}
