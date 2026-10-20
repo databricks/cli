@@ -1,0 +1,1 @@
+* `databricks ssh connect` on serverless now makes `claude` and `codex` available in IDE sessions (`--ide`) and to non-interactive commands (e.g. `databricks ssh connect --name my-conn -- claude -p "..."`). ([#7124](https://github.com/databricks/cli/pull/7123))
