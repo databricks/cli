@@ -36,4 +36,3 @@ trace $CLI --version
 touch ignored_file.txt
 mkdir ignored_dir
 touch ignored_dir/hello.txt
-# tmp: trigger the regression-report
