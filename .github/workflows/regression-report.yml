@@ -21,7 +21,10 @@ jobs:
       !github.event.pull_request.head.repo.fork &&
       github.actor != 'dependabot[bot]'
 
-    runs-on: ubuntu-latest
+    # The org's IP allow list only lets this runner group call the GitHub API.
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
 
     permissions:
       contents: read
