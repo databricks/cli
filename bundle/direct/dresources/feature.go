@@ -3,7 +3,6 @@ package dresources
 import (
 	"context"
 	"slices"
-	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -38,7 +37,7 @@ func (r *ResourceFeature) DoCreate(ctx context.Context, config *ml.Feature) (str
 
 // The update endpoint rejects a mask containing anything else, so "*" cannot be used. Every other
 // field is excluded at plan level in configs/features.yml and features.generated.yml.
-var featureUpdatableFields = []string{"description"}
+const featureUpdateMask = "description"
 
 func (r *ResourceFeature) DoUpdate(ctx context.Context, id string, config *ml.Feature, _ *PlanEntry) (*ml.Feature, error) {
 	// The whole feature goes in the body, with the mask limiting what is applied: full_name,
@@ -51,7 +50,7 @@ func (r *ResourceFeature) DoUpdate(ctx context.Context, id string, config *ml.Fe
 	return r.client.FeatureEngineering.UpdateFeature(ctx, ml.UpdateFeatureRequest{
 		FullName:   id,
 		Feature:    update,
-		UpdateMask: strings.Join(featureUpdatableFields, ","),
+		UpdateMask: featureUpdateMask,
 	})
 }
 
