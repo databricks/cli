@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestUseDeploymentHistory(t *testing.T) {
+func TestMarkDeploymentHistory(t *testing.T) {
 	statePath := filepath.Join(t.TempDir(), "resources.json")
 	original := NewDatabase("lineage", 2)
 	original.Features = map[string]struct{}{}
@@ -23,7 +23,7 @@ func TestUseDeploymentHistory(t *testing.T) {
 	before, err := os.ReadFile(statePath)
 	require.NoError(t, err)
 
-	require.NoError(t, db.UseDeploymentHistory(3))
+	require.NoError(t, db.MarkDeploymentHistory(3))
 
 	assert.True(t, db.IsDeploymentMetadataService())
 	assert.Equal(t, 3, db.GetSerial())

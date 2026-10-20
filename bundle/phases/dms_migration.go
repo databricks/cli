@@ -140,5 +140,5 @@ func registerMigrationState(ctx context.Context, db *dstate.DeploymentState) err
 		return fmt.Errorf("recording migration version: %w", err)
 	}
 
-	return db.UseDeploymentHistory(versionID)
+	return db.MarkDeploymentHistory(versionID)
 }

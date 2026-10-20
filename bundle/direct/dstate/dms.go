@@ -16,8 +16,8 @@ type RecordedState struct {
 	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
 }
 
-// UseDeploymentHistory persists the DMS marker after all existing resources have been recorded.
-func (db *DeploymentState) UseDeploymentHistory(versionID int) error {
+// MarkDeploymentHistory persists the DMS marker after all existing resources have been recorded.
+func (db *DeploymentState) MarkDeploymentHistory(versionID int) error {
 	db.AssertOpenedForRead()
 	db.mu.Lock()
 	defer db.mu.Unlock()
