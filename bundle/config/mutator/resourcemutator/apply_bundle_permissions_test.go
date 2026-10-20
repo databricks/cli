@@ -23,6 +23,7 @@ var unsupportedResources = []string{
 	"external_locations",
 	"volumes",
 	"schemas",
+	"features",
 	"quality_monitors",
 	"registered_models",
 	"model_services",

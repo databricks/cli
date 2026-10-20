@@ -31,6 +31,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.pipelines.test_pipeline":                                     {ID: "1"},
 		"resources.models.test_mlflow_model":                                    {ID: "1"},
 		"resources.experiments.test_mlflow_experiment":                          {ID: "1"},
+		"resources.features.test_feature":                                       {ID: "main.default.test_feature"},
 		"resources.model_serving_endpoints.test_model_serving":                  {ID: "1"},
 		"resources.model_services.test_model_service":                           {ID: "main.default.test_model_service"},
 		"resources.mcp_services.test_mcp_service":                               {ID: "main.default.test_mcp_service"},
@@ -214,6 +215,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 				"test_mlflow_experiment": {
 					CreateExperiment: ml.CreateExperiment{
 						Name: "test_mlflow_experiment",
+					},
+				},
+			},
+			Features: map[string]*resources.Feature{
+				"test_feature": {
+					Feature: ml.Feature{
+						FullName: "main.default.test_feature",
 					},
 				},
 			},
@@ -644,6 +652,18 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
+			Features: map[string]*resources.Feature{
+				"test_feature": {
+					Feature: ml.Feature{
+						FullName: "main.default.test_feature",
+					},
+				},
+				"test_feature_new": {
+					Feature: ml.Feature{
+						FullName: "main.default.test_feature_new",
+					},
+				},
+			},
 			ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 				"test_model_serving": {
 					CreateServingEndpoint: serving.CreateServingEndpoint{
@@ -1059,6 +1079,8 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.models.test_mlflow_model_old":                            {ID: "2"},
 		"resources.experiments.test_mlflow_experiment":                      {ID: "1"},
 		"resources.experiments.test_mlflow_experiment_old":                  {ID: "2"},
+		"resources.features.test_feature":                                   {ID: "main.default.test_feature"},
+		"resources.features.test_feature_old":                               {ID: "main.default.test_feature_old"},
 		"resources.model_serving_endpoints.test_model_serving":              {ID: "1"},
 		"resources.model_serving_endpoints.test_model_serving_old":          {ID: "2"},
 		"resources.registered_models.test_registered_model":                 {ID: "1"},
@@ -1160,6 +1182,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Experiments["test_mlflow_experiment_old"].ModifiedStatus)
 	assert.Empty(t, config.Resources.Experiments["test_mlflow_experiment_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Experiments["test_mlflow_experiment_new"].ModifiedStatus)
+
+	assert.Equal(t, "main.default.test_feature", config.Resources.Features["test_feature"].ID)
+	assert.Empty(t, config.Resources.Features["test_feature"].ModifiedStatus)
+	assert.Equal(t, "main.default.test_feature_old", config.Resources.Features["test_feature_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Features["test_feature_old"].ModifiedStatus)
+	assert.Empty(t, config.Resources.Features["test_feature_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Features["test_feature_new"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.ModelServingEndpoints["test_model_serving"].ID)
 	assert.Empty(t, config.Resources.ModelServingEndpoints["test_model_serving"].ModifiedStatus)

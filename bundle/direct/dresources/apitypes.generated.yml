@@ -20,6 +20,8 @@ experiments: ml.CreateExperiment
 
 external_locations: catalog.CreateExternalLocation
 
+features: ml.Feature
+
 genie_spaces: dashboards.GenieUpdateSpaceRequest
 
 instance_pools: compute.CreateInstancePool
