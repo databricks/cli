@@ -404,9 +404,24 @@ func TestBuildRemoteShellArgs(t *testing.T) {
 		assert.Equal(t, bashCmd, args[0])
 	})
 
-	t.Run("non-interactive passes additional args verbatim", func(t *testing.T) {
+	t.Run("non-interactive serverless installs the launchers before the command", func(t *testing.T) {
+		const wsHome = "/Workspace/Users/me@example.com"
+		args := buildRemoteShellArgs(ClientOptions{ConnectionName: "my-conn", AdditionalArgs: []string{"claude", "-p", "'hi there'"}}, wsHome, version)
+		require.Len(t, args, 1)
+		assert.Equal(t, agentLauncherSetup(serverless, wsHome, version)+"claude -p 'hi there'", args[0])
+		// No cd: the command runs from the same directory as before launchers existed.
+		assert.NotContains(t, args[0], "cd '")
+	})
+
+	t.Run("non-interactive dedicated cluster passes additional args verbatim", func(t *testing.T) {
 		additional := []string{"ls", "-la"}
-		args := buildRemoteShellArgs(ClientOptions{ConnectionName: "my-conn", AdditionalArgs: additional}, "/Workspace/Users/me@example.com", version)
+		args := buildRemoteShellArgs(ClientOptions{ClusterID: "abc-123", AdditionalArgs: additional}, "/Workspace/Users/me@example.com", version)
+		assert.Equal(t, additional, args)
+	})
+
+	t.Run("non-interactive serverless without a workspace home passes additional args verbatim", func(t *testing.T) {
+		additional := []string{"ls", "-la"}
+		args := buildRemoteShellArgs(ClientOptions{ConnectionName: "my-conn", AdditionalArgs: additional}, "", version)
 		assert.Equal(t, additional, args)
 	})
 }

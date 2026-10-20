@@ -976,45 +976,17 @@ esac
 %[1]sexec %[2]s ssh agent-shim %[3]s "$@"`, exports, binary, agent)
 }
 
-// buildRemoteShellArgs returns the ssh arguments that follow the hostname.
-//
-// For the interactive case (no remote command given), it forces PTY allocation
-// and launches an interactive, non-login bash. bash is invoked explicitly because
-// the default shell on Databricks compute images is /bin/sh; if bash is unavailable
-// it falls back to $SHELL or /bin/sh so the connection never breaks. A login shell
-// (-l) would re-source /etc/profile, which rebuilds PATH from scratch and drops the
-// environment's bin directory that sshd forwards via SetEnv, so bare `python`/`pip`
-// would resolve to the system interpreter instead of $DATABRICKS_VIRTUAL_ENV. Using
-// -i avoids that reset; the server's ~/.bashrc snippet (see seedEnvActivation) then
-// re-prepends the environment bin after /etc/bash.bashrc runs, so bare `python`/`pip`
-// resolve to the environment interpreter. It first installs a per-agent launcher
-// (see agentWrapperScript) on PATH, then cds into wsHome when set (else $HOME).
-//
-// For the non-interactive case (e.g. `databricks ssh connect ... -- ls -la`),
-// the user's command is returned verbatim so behavior is unchanged.
-//
-// Note: this returns the remote command only. PTY allocation (-t) is added to
-// the ssh options *before* the destination by the caller; -t placed after the
-// host would be parsed as part of the remote command, not as ssh's flag.
-func buildRemoteShellArgs(opts ClientOptions, wsHome, version string) []string {
-	if len(opts.AdditionalArgs) > 0 {
-		return opts.AdditionalArgs
-	}
-	shell := `command -v bash >/dev/null 2>&1 && exec bash -i || exec "${SHELL:-/bin/sh}" -i`
-	// For any interactive session, land in the user's workspace home when known;
-	// if that directory is missing the cd is ignored and the shell still launches
-	// from $HOME. This is independent of the launcher install below, so dedicated
-	// clusters keep the workspace cwd they had before agent launchers existed.
-	if wsHome != "" {
-		shell = "cd " + shellSingleQuote(wsHome) + " 2>/dev/null; " + shell
-	}
+// agentLauncherSetup returns shell commands that install a per-agent launcher
+// (see agentWrapperScript) under $HOME and append its directory to PATH, or ""
+// when launchers don't apply to this session.
+func agentLauncherSetup(opts ClientOptions, wsHome, version string) string {
 	// The agent launchers are serverless-only for now: dedicated clusters have no
 	// story for persisting the shims or respecting existing installs. They also
-	// need the workspace path to locate the uploaded CLI. Otherwise just open the shell.
+	// need the workspace path to locate the uploaded CLI.
 	if !opts.IsServerlessMode() || wsHome == "" {
-		return []string{shell}
+		return ""
 	}
-	// Write each agent's wrapper (quoted heredoc keeps its $VARS literal), then open the shell.
+	// Write each agent's wrapper (quoted heredoc keeps its $VARS literal).
 	remoteShimDir := "$HOME/" + agentBinDir
 	var cmd strings.Builder
 	fmt.Fprintf(&cmd, "mkdir -p \"%s\"\n", remoteShimDir)
@@ -1028,7 +1000,49 @@ chmod +x "%[1]s/%[2]s"
 	// Append the shim dir (don't prepend) so the wrappers never shadow a real
 	// binary of the same name earlier on PATH.
 	fmt.Fprintf(&cmd, "export PATH=\"$PATH:%s\"\n", remoteShimDir)
-	return []string{cmd.String() + shell}
+	return cmd.String()
+}
+
+// buildRemoteShellArgs returns the ssh arguments that follow the hostname.
+//
+// For the interactive case (no remote command given), it forces PTY allocation
+// and launches an interactive, non-login bash. bash is invoked explicitly because
+// the default shell on Databricks compute images is /bin/sh; if bash is unavailable
+// it falls back to $SHELL or /bin/sh so the connection never breaks. A login shell
+// (-l) would re-source /etc/profile, which rebuilds PATH from scratch and drops the
+// environment's bin directory that sshd forwards via SetEnv, so bare `python`/`pip`
+// would resolve to the system interpreter instead of $DATABRICKS_VIRTUAL_ENV. Using
+// -i avoids that reset; the server's ~/.bashrc snippet (see seedEnvActivation) then
+// re-prepends the environment bin after /etc/bash.bashrc runs, so bare `python`/`pip`
+// resolve to the environment interpreter. It first installs the agent launchers
+// (see agentLauncherSetup) on PATH, then cds into wsHome when set (else $HOME).
+//
+// For the non-interactive case (e.g. `databricks ssh connect ... -- ls -la`),
+// the agent launchers are installed the same way and the user's command then
+// runs unchanged. Without launchers the command is returned verbatim.
+//
+// Note: this returns the remote command only. PTY allocation (-t) is added to
+// the ssh options *before* the destination by the caller; -t placed after the
+// host would be parsed as part of the remote command, not as ssh's flag.
+func buildRemoteShellArgs(opts ClientOptions, wsHome, version string) []string {
+	setup := agentLauncherSetup(opts, wsHome, version)
+	if len(opts.AdditionalArgs) > 0 {
+		if setup == "" {
+			return opts.AdditionalArgs
+		}
+		// ssh joins the remote command's arguments with spaces before handing them
+		// to the remote shell, so joining here preserves the user's command as-is.
+		return []string{setup + strings.Join(opts.AdditionalArgs, " ")}
+	}
+	shell := `command -v bash >/dev/null 2>&1 && exec bash -i || exec "${SHELL:-/bin/sh}" -i`
+	// For any interactive session, land in the user's workspace home when known;
+	// if that directory is missing the cd is ignored and the shell still launches
+	// from $HOME. This is independent of the launcher install, so dedicated
+	// clusters keep the workspace cwd they had before agent launchers existed.
+	if wsHome != "" {
+		shell = "cd " + shellSingleQuote(wsHome) + " 2>/dev/null; " + shell
+	}
+	return []string{setup + shell}
 }
 
 // buildSSHArgs assembles the argument list for the ssh client. Options come
@@ -1073,9 +1087,10 @@ func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, use
 
 	// For an interactive session (no remote command supplied), land the shell in
 	// the user's workspace home folder (/Workspace/Users/<email>) instead of the
-	// OS home. Only needed for an interactive session; skip the lookup otherwise.
+	// OS home. Serverless sessions also need it to install the agent launchers.
+	// Skip the lookup otherwise.
 	var wsHome string
-	if len(opts.AdditionalArgs) == 0 {
+	if len(opts.AdditionalArgs) == 0 || opts.IsServerlessMode() {
 		if currentUser, err := client.CurrentUser.Me(ctx, iam.MeRequest{}); err != nil {
 			log.Warnf(ctx, "Failed to resolve current user for workspace home directory: %v", err)
 		} else {
