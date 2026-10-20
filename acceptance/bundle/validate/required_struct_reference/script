@@ -1,1 +1,2 @@
-trace $CLI bundle validate
+# workload_type.clients is required. A clients that only has a reference in it is not reported as missing.
+trace $CLI bundle validate -o json | jq .resources.clusters.target.workload_type
