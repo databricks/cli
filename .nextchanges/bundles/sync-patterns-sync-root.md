@@ -1,1 +1,1 @@
-* Fix `bundle validate` warning that `sync.include` and `sync.exclude` patterns do not match any files when `sync.paths` includes a directory outside the bundle root.
+* Fix `bundle validate` warning that `sync.include` and `sync.exclude` patterns do not match any files when `sync.paths` includes a directory outside the bundle root. ([#7122](https://github.com/databricks/cli/pull/7122))
