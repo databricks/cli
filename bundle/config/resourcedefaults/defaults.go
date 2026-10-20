@@ -45,10 +45,6 @@ var Defaults = []Default{
 	// As of 2024-04, we're still using API 2.1 which has queueing disabled by default.
 	{Pattern: "resources.jobs.*.queue", Value: constant(jobs.QueueSettings{Enabled: true})},
 
-	// This is converted from single-task to multi-task. The dbt_task.schema default
-	// ("default") was declared at resources.jobs.*.task[*], which is not a field, so it
-	// never applied; #7097 fixes the pattern on main.
-
 	// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/clusters/resource_cluster.go
 	{Pattern: "resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.notebooks", Value: constant(true)},
 	{Pattern: "resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.jobs", Value: constant(true)},
