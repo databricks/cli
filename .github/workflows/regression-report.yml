@@ -34,7 +34,9 @@ jobs:
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
         with:
-          cache-key: regression-report
+          # The Go cache is only saved by runs on main, and this workflow never runs there,
+          # so it reuses the key push.yml saves for its Linux test job.
+          cache-key: test-direct
 
       # `git diff --merge-base origin/main` needs origin/main and enough history. This must run
       # AFTER setup-build-environment, whose own checkout would re-shallow the repo.
