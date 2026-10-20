@@ -10,8 +10,8 @@ title "Deploy fails because the Data API is already enabled"
 trace musterr $CLI bundle deploy
 
 title "Bind adopts the existing Data API"
-# Bind records the config as state, and spec is input-only (GET does not return it), so
-# the configured spec is not applied until it changes in the config.
+# Bind records the config as state. The plan compares it with the spec read back
+# from status, so the configured db_max_rows is applied on the next deploy.
 trace $CLI bundle deployment bind data_api1 "${DATA_API_NAME}" --auto-approve
 trace $CLI bundle summary
 trace $CLI bundle plan
