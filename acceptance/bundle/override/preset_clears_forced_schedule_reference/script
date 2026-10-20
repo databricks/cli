@@ -1,2 +1,4 @@
+# A target override can replace a null schedule with a reference to another monitor's schedule.
+# The deploy request has to carry the schedule of the referenced monitor.
 trace $CLI bundle deploy
 trace print_requests.py //tables/main.default.dst/monitor | jq '{schedule: .body.schedule}'
