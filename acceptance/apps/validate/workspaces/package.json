@@ -1,5 +1,0 @@
-{
-  "name": "validation-workspaces",
-  "private": true,
-  "workspaces": ["packages/*"]
-}
