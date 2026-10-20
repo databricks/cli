@@ -79,16 +79,11 @@ type BundleDeployExperimental struct {
 	// Execution time per mutator for a selected subset of mutators.
 	BundleMutatorExecutionTimeMs []IntMapEntry `json:"bundle_mutator_execution_time_ms,omitempty"`
 
-	// Deprecated: superseded by Pydabs.AddedResourcesCount.
-	PythonAddedResourcesCount int64 `json:"python_added_resources_count,omitempty"`
-
-	// Deprecated: superseded by Pydabs.UpdatedResourcesCount.
+	// Deprecated: superseded by the matching Pydabs fields. Both are
+	// populated during the transition.
+	PythonAddedResourcesCount   int64 `json:"python_added_resources_count,omitempty"`
 	PythonUpdatedResourcesCount int64 `json:"python_updated_resources_count,omitempty"`
-
-	// Deprecated: superseded by Pydabs.ResourceLoadersCount.
-	PythonResourceLoadersCount int64 `json:"python_resource_loaders_count,omitempty"`
-
-	// Deprecated: superseded by Pydabs.ResourceMutatorsCount.
+	PythonResourceLoadersCount  int64 `json:"python_resource_loaders_count,omitempty"`
 	PythonResourceMutatorsCount int64 `json:"python_resource_mutators_count,omitempty"`
 
 	// Number of files in the synced source tree considered for upload: the full
