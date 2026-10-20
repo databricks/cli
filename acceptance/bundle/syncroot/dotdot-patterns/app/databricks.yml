@@ -1,0 +1,12 @@
+bundle:
+  name: test-bundle
+
+sync:
+  paths:
+    - ../shared
+    - .
+  include:
+    - ../shared/*.py
+  exclude:
+    - tests/**
+    - missing/**
