@@ -50,34 +50,41 @@ func TestFinalizeWithNoEntriesDoesNotWriteStateFile(t *testing.T) {
 }
 
 func TestCloseReadState(t *testing.T) {
+	// 1. Disk has serial 1; change only the in-memory copy to serial 99.
 	path := filepath.Join(t.TempDir(), "resources.json")
 	var db DeploymentState
 	db.OpenWithData(path, NewDatabase("lineage", 1))
 	require.NoError(t, db.Persist())
-	before, err := os.ReadFile(path)
+	persistedBeforeClose, err := os.ReadFile(path)
 	require.NoError(t, err)
 	db.Data.Serial = 99
 
+	// 2. Closing twice is safe and leaves the database closed.
 	db.Close()
 	db.Close()
+	assert.False(t, db.IsOpen(), "Close must leave the database closed")
 
-	assert.False(t, db.IsOpen())
-	after, err := os.ReadFile(path)
+	// 3. Close does not write the in-memory changes to disk.
+	persistedAfterClose, err := os.ReadFile(path)
 	require.NoError(t, err)
-	assert.Equal(t, before, after)
+	assert.Equal(t, persistedBeforeClose, persistedAfterClose, "Close must not change resources.json")
+
+	// 4. Reopening reads serial 1 from disk, not the discarded serial 99.
 	require.NoError(t, db.Open(t.Context(), path, WithRecovery(false), WithWrite(false), WithDeploymentHistory(false), OpenDmsArgs{}))
-	assert.Equal(t, 1, db.GetSerial())
+	assert.Equal(t, 1, db.GetSerial(), "Open must reload the persisted serial")
 	db.Close()
 }
 
 func TestCloseRefusesWritableState(t *testing.T) {
+	// 1. Enter write mode. Writable state must use Finalize, not Close.
 	var db DeploymentState
 	db.OpenWithData(filepath.Join(t.TempDir(), "resources.json"), NewDatabase("lineage", 1))
 	require.NoError(t, db.UpgradeToWrite())
 	defer mustFinalize(t, &db)
 
+	// 2. Reject Close without closing the database, so Finalize can still finish.
 	assert.PanicsWithValue(t, "internal error: DeploymentState must be opened in read mode", db.Close)
-	assert.True(t, db.IsOpen())
+	assert.True(t, db.IsOpen(), "A rejected Close must leave writable state open for Finalize")
 }
 
 func TestDataForFileSerial(t *testing.T) {
