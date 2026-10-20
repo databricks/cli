@@ -1,0 +1,2 @@
+trace $CLI bundle validate -o json | jq '[.resources.jobs.job.tasks[] | {task_key, existing_cluster_id, new_cluster}]'
+trace $CLI bundle deploy

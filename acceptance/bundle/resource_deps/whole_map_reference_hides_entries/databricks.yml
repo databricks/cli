@@ -1,0 +1,18 @@
+bundle:
+  name: test-bundle
+
+presets:
+  tags:
+    owner: ${resources.jobs.j.id}
+
+resources:
+  schemas:
+    s:
+      name: s
+      catalog_name: main
+      properties: {owner: fixed}
+  jobs:
+    j:
+      name: j
+      # A whole-map reference: the preset's tags added to the typed map stay hidden.
+      tags: ${resources.schemas.s.properties}
