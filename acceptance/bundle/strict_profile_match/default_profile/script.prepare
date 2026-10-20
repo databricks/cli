@@ -1,0 +1,2 @@
+# The usual three profiles with workspace_classic_id as the default profile.
+{ printf '[__settings__]\ndefault_profile = workspace_classic_id\n\n'; cat .databrickscfg; } > out && mv out .databrickscfg
