@@ -99,6 +99,9 @@ var (
 
 	// "    --- FAIL: TestAccept/foo (0.10s)"
 	resultLineRE = regexp.MustCompile(`^\s*--- (PASS|FAIL|SKIP): (\S+) `)
+
+	// The temp dir of a test, e.g. "/tmp/TestAcceptfoo123456"; the random suffix differs on every run.
+	tmpDirRE = regexp.MustCompile(`/TestAccept[^/\s]*`)
 )
 
 // parseTestOutput parses the output of a test binary run with -test.v into results by test name.
@@ -266,10 +269,19 @@ func renderDetails(b *strings.Builder, test string, columns []regrColumn) {
 		marks[i] = c.Title + " " + statusMark(c.status(test))
 	}
 	fmt.Fprintf(b, "<details>\n<summary>%s: %s</summary>\n\n", test, strings.Join(marks, " | "))
+	// A new test commonly fails the same way on main and on the release, which would print the
+	// same long diff twice.
+	firstWith := map[string]string{}
 	for _, c := range failed {
-		output := truncateLines(strings.Join(c.Results[test].Output, "\n"), regrDetailLines)
+		output := strings.TrimSpace(strings.Join(c.Results[test].Output, "\n"))
+		key := tmpDirRE.ReplaceAllString(output, "/TestAccept")
+		if first, ok := firstWith[key]; ok {
+			fmt.Fprintf(b, "**%s:** same output as %s\n\n", c.Title, first)
+			continue
+		}
+		firstWith[key] = c.Title
 		// The longer fence keeps backticks in the output from ending the block.
-		fmt.Fprintf(b, "**%s:**\n````\n%s\n````\n\n", c.Title, strings.TrimSpace(output))
+		fmt.Fprintf(b, "**%s:**\n````\n%s\n````\n\n", c.Title, truncateLines(output, regrDetailLines))
 	}
 	b.WriteString("</details>\n\n")
 }

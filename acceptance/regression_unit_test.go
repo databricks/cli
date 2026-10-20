@@ -1,6 +1,7 @@
 package acceptance_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -65,4 +66,20 @@ func TestRenderRegressionReport(t *testing.T) {
 	assert.Contains(t, report, "| TestAccept/bundle/a | ❌ | ❌ |")
 	assert.Contains(t, report, "**main (abc):**\n````\nmain failure\n````")
 	assert.Contains(t, report, "failing=1")
+}
+
+func TestRenderRegressionReportDedupesIdenticalFailures(t *testing.T) {
+	failure := func(tmp string) *testResult {
+		return &testResult{Status: statusFail, Output: []string{"Messages: output.txt vs /tmp/TestAcceptfoo" + tmp + "/002/output.txt", "diff"}}
+	}
+	test := "TestAccept/bundle/a"
+	columns := []regrColumn{
+		{Title: "branch", Results: map[string]*testResult{test: {Status: statusPass}}},
+		{Title: "main (abc)", Category: catRegression, Results: map[string]*testResult{test: failure("111")}},
+		{Title: "latest (v1)", Category: catUnreleased, Results: map[string]*testResult{test: failure("222")}},
+	}
+
+	report := renderRegressionReport("Selected 1", columns)
+	assert.Equal(t, 1, strings.Count(report, "\ndiff\n"))
+	assert.Contains(t, report, "**latest (v1):** same output as main (abc)")
 }

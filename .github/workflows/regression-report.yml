@@ -91,11 +91,21 @@ jobs:
             const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
             const commitUrl = `${context.serverUrl}/${owner}/${repo}/commit/${sha}`;
 
-            // Comments are limited to 65536 characters; the artifact holds the full report.
+            // Comments are limited to 65536 characters; the artifact holds the full report. The table
+            // comes first, then one <details> block per failure: drop whole blocks that do not fit,
+            // as cutting one in the middle would leave its markup open.
             const MAX_REPORT = 60000;
             let report = fs.readFileSync(path, 'utf8');
             if (report.length > MAX_REPORT) {
-              report = report.slice(0, MAX_REPORT) + `\n\n_Report truncated, see the full report in the [run](${runUrl})._\n`;
+              const [head, ...blocks] = report.split('<details>\n');
+              let kept = head;
+              let shown = 0;
+              for (const block of blocks) {
+                if (kept.length + block.length > MAX_REPORT) break;
+                kept += '<details>\n' + block;
+                shown++;
+              }
+              report = kept + `_${blocks.length - shown} more failure details omitted, see the full report in the [run](${runUrl})._\n`;
             }
 
             const body = `${MARKER}\nCommit: [\`${sha.slice(0, 9)}\`](${commitUrl}) | [Workflow run](${runUrl})\n\n${report}`;
