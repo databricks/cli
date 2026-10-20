@@ -18,7 +18,10 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
     "db_schemas": [
       "public"
     ],
-    "db_max_rows": 100
+    "db_max_rows": 100,
+    "server_cors_allowed_origins": [
+      "none"
+    ]
   }
 }
 
@@ -37,7 +40,7 @@ Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 1 deleted, 4 unchanged
 
 >>> musterr [CLI] postgres get-data-api projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/first-database/data-api
-Error: data api id not found [TraceId: [UUID]]
+Error: Data API is not enabled for this database
 
 >>> [CLI] postgres get-data-api projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/second-database/data-api
 {
@@ -47,7 +50,10 @@ Error: data api id not found [TraceId: [UUID]]
     "db_schemas": [
       "public"
     ],
-    "db_max_rows": 100
+    "db_max_rows": 100,
+    "server_cors_allowed_origins": [
+      "none"
+    ]
   }
 }
 

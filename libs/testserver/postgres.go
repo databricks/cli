@@ -1373,10 +1373,21 @@ func (s *FakeWorkspace) PostgresDatabaseDelete(name string) Response {
 // "projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api".
 const dataApiSuffix = "/data-api"
 
-// dataApiUpdateMaskPaths is the update_mask the Data API is known to accept: the
-// whole spec, which worked against a real workspace in July 2026. Leaf paths are
-// unverified, so the fake rejects them.
+// dataApiUpdateMaskPaths is the update_mask the fake accepts: the whole spec,
+// which is what the CLI sends. The real API also accepts leaf paths, which reset
+// an omitted field instead of keeping it; the CLI never sends them, so the fake
+// does not model them.
 var dataApiUpdateMaskPaths = []string{"spec"}
+
+// dataApiNotEnabledMessage is the message the real API answers a get, update, or
+// delete with when the database's Data API is not enabled.
+const dataApiNotEnabledMessage = "Data API is not enabled for this database"
+
+// dataApiNotEnabledResponse is the 404 the real API returns for a Data API that
+// is not enabled.
+func dataApiNotEnabledResponse() Response {
+	return postgresErrorResponse(404, "NOT_FOUND", dataApiNotEnabledMessage)
+}
 
 // hasReadWriteEndpointLocked reports whether a branch has a read-write endpoint
 // (caller must hold lock).
@@ -1418,25 +1429,67 @@ func (s *FakeWorkspace) dataApiPreconditionLocked(databaseName string) *Response
 	return nil
 }
 
-// dataApiStatusFromSpec mirrors the spec onto Status, the way the real API
-// reports the configuration it applied while leaving Spec=nil on GET.
-func dataApiStatusFromSpec(spec *postgres.DataApiDataApiSpec) *postgres.DataApiDataApiStatus {
-	status := &postgres.DataApiDataApiStatus{
-		AvailableSchemas: []string{"public"},
+// dataApiDefaultStatus is the status the real API reports right after enabling
+// the Data API with only db_schemas set: the server defaults, which the status
+// echoes because it reports every setting in effect.
+func dataApiDefaultStatus() *postgres.DataApiDataApiStatus {
+	return &postgres.DataApiDataApiStatus{
+		AvailableSchemas:         []string{"public"},
+		DbAggregatesEnabled:      true,
+		DbSchemas:                []string{"public"},
+		JwtRoleClaimKey:          ".sub",
+		OpenapiMode:              postgres.OpenApiModeOpenApiModeDisabled,
+		ServerCorsAllowedOrigins: []string{"none"},
 	}
+}
+
+// applyDataApiSpec returns the status after applying the fields the spec sets,
+// the way the real API applies a create or an update_mask=spec update: a field
+// the request omits keeps its current value.
+func applyDataApiSpec(current *postgres.DataApiDataApiStatus, spec *postgres.DataApiDataApiSpec) *postgres.DataApiDataApiStatus {
+	status := *current
+	status.ForceSendFields = slices.Clone(current.ForceSendFields)
 	if spec == nil {
-		return status
+		return &status
 	}
-	status.DbAggregatesEnabled = spec.DbAggregatesEnabled
-	status.DbExtraSearchPath = spec.DbExtraSearchPath
-	status.DbMaxRows = spec.DbMaxRows
-	status.DbSchemas = spec.DbSchemas
-	status.JwtCacheMaxLifetime = spec.JwtCacheMaxLifetime
-	status.JwtRoleClaimKey = spec.JwtRoleClaimKey
-	status.OpenapiMode = spec.OpenapiMode
-	status.ServerCorsAllowedOrigins = spec.ServerCorsAllowedOrigins
-	status.ServerTimingEnabled = spec.ServerTimingEnabled
-	return status
+	applyDataApiBool(&status, spec, "DbAggregatesEnabled", &status.DbAggregatesEnabled, spec.DbAggregatesEnabled)
+	applyDataApiBool(&status, spec, "ServerTimingEnabled", &status.ServerTimingEnabled, spec.ServerTimingEnabled)
+	if spec.DbExtraSearchPath != nil {
+		status.DbExtraSearchPath = spec.DbExtraSearchPath
+	}
+	if spec.DbMaxRows != 0 {
+		status.DbMaxRows = spec.DbMaxRows
+	}
+	if spec.DbSchemas != nil {
+		status.DbSchemas = spec.DbSchemas
+	}
+	if spec.JwtCacheMaxLifetime != nil {
+		status.JwtCacheMaxLifetime = spec.JwtCacheMaxLifetime
+	}
+	if spec.JwtRoleClaimKey != "" {
+		status.JwtRoleClaimKey = spec.JwtRoleClaimKey
+	}
+	if spec.OpenapiMode != "" {
+		status.OpenapiMode = spec.OpenapiMode
+	}
+	if spec.ServerCorsAllowedOrigins != nil {
+		status.ServerCorsAllowedOrigins = spec.ServerCorsAllowedOrigins
+	}
+	return &status
+}
+
+// applyDataApiBool sets a bool status field when the spec sets it. A false sent
+// explicitly is recorded in the spec's ForceSendFields, so it counts as set. Once
+// set, the real API reports the bool even when it is false, so the status forces
+// it too; a bool that was never set and is false is omitted.
+func applyDataApiBool(status *postgres.DataApiDataApiStatus, spec *postgres.DataApiDataApiSpec, field string, dst *bool, value bool) {
+	if !value && !slices.Contains(spec.ForceSendFields, field) {
+		return
+	}
+	*dst = value
+	if !slices.Contains(status.ForceSendFields, field) {
+		status.ForceSendFields = append(status.ForceSendFields, field)
+	}
 }
 
 // PostgresDataApiCreate enables the Data API on a database. At most one Data API
@@ -1450,7 +1503,7 @@ func (s *FakeWorkspace) PostgresDataApiCreate(req Request, parent string) Respon
 
 	name := parent + dataApiSuffix
 	if _, exists := s.PostgresDataApis[name]; exists {
-		return postgresErrorResponse(409, "ALREADY_EXISTS", "Data API is already enabled for database "+parent)
+		return postgresErrorResponse(409, "ALREADY_EXISTS", "Data API is already enabled for this database")
 	}
 
 	var dataApi postgres.DataApi
@@ -1466,7 +1519,7 @@ func (s *FakeWorkspace) PostgresDataApiCreate(req Request, parent string) Respon
 	// The real API rejects enabling the Data API with an empty spec. A field sent
 	// explicitly with its zero value is recorded in ForceSendFields, so it counts.
 	if dataApi.Spec == nil || reflect.ValueOf(*dataApi.Spec).IsZero() {
-		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", "Field 'data_api.spec' must have at least one subfield with a non-default value")
+		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", "Field 'data_api' is required and must contain at least one subfield with a non-default value!")
 	}
 
 	now := nowTime()
@@ -1474,8 +1527,8 @@ func (s *FakeWorkspace) PostgresDataApiCreate(req Request, parent string) Respon
 	dataApi.Parent = parent
 	dataApi.CreateTime = now
 	dataApi.UpdateTime = now
-	dataApi.Status = dataApiStatusFromSpec(dataApi.Spec)
-	// spec is INPUT_ONLY: the API only returns status.
+	dataApi.Status = applyDataApiSpec(dataApiDefaultStatus(), dataApi.Spec)
+	// spec is INPUT_ONLY: GET only returns status.
 	dataApi.Spec = nil
 
 	s.PostgresDataApis[name] = dataApi
@@ -1495,7 +1548,7 @@ func (s *FakeWorkspace) PostgresDataApiGet(name string) Response {
 
 	dataApi, exists := s.PostgresDataApis[name]
 	if !exists {
-		return postgresNotFoundResponse("data api")
+		return dataApiNotEnabledResponse()
 	}
 
 	return Response{
@@ -1503,7 +1556,7 @@ func (s *FakeWorkspace) PostgresDataApiGet(name string) Response {
 	}
 }
 
-// PostgresDataApiUpdate replaces the Data API configuration of a database.
+// PostgresDataApiUpdate updates the Data API configuration of a database.
 func (s *FakeWorkspace) PostgresDataApiUpdate(req Request, name string) Response {
 	if resp := validateUpdateMask(req, dataApiUpdateMaskPaths, nil); resp != nil {
 		return *resp
@@ -1517,7 +1570,7 @@ func (s *FakeWorkspace) PostgresDataApiUpdate(req Request, name string) Response
 
 	dataApi, exists := s.PostgresDataApis[name]
 	if !exists {
-		return postgresNotFoundResponse("data api")
+		return dataApiNotEnabledResponse()
 	}
 
 	var updateDataApi postgres.DataApi
@@ -1530,8 +1583,8 @@ func (s *FakeWorkspace) PostgresDataApiUpdate(req Request, name string) Response
 		}
 	}
 
-	// "spec" is the only accepted mask path, so the whole configuration is replaced.
-	dataApi.Status = dataApiStatusFromSpec(updateDataApi.Spec)
+	// The "spec" mask keeps the current value of a field the request omits.
+	dataApi.Status = applyDataApiSpec(dataApi.Status, updateDataApi.Spec)
 	dataApi.UpdateTime = nowTime()
 	s.PostgresDataApis[name] = dataApi
 
@@ -1546,7 +1599,7 @@ func (s *FakeWorkspace) PostgresDataApiDelete(name string) Response {
 	defer s.LockUnlock()()
 
 	if _, exists := s.PostgresDataApis[name]; !exists {
-		return postgresNotFoundResponse("data api")
+		return dataApiNotEnabledResponse()
 	}
 
 	delete(s.PostgresDataApis, name)
