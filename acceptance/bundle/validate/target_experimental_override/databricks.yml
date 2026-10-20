@@ -1,0 +1,23 @@
+bundle:
+  name: test-bundle
+
+experimental:
+  python_wheel_wrapper: true
+  skip_artifact_cleanup: true
+  immutable_folder: true
+
+resources:
+  jobs:
+    j:
+      name: job
+      tasks:
+        - task_key: task
+          notebook_task:
+            notebook_path: /notebook
+
+targets:
+  dev:
+    experimental:
+      python_wheel_wrapper: false
+      skip_artifact_cleanup: false
+      immutable_folder: false

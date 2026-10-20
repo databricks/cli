@@ -1,0 +1,2 @@
+# A target can override experimental flags with false, overriding the root value of true
+trace $CLI bundle validate --target dev -o json | jq '.experimental | {python_wheel_wrapper, skip_artifact_cleanup, immutable_folder}'

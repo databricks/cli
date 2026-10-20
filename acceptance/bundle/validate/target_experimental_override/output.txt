@@ -1,0 +1,7 @@
+
+>>> [CLI] bundle validate --target dev -o json
+{
+  "python_wheel_wrapper": false,
+  "skip_artifact_cleanup": false,
+  "immutable_folder": false
+}
