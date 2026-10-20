@@ -30,8 +30,4 @@ type LifecycleWithStarted struct {
 	// If set to true, the resource will be deployed in started mode.
 	// Supported only for apps, clusters, and sql_warehouses.
 	Started *bool `json:"started,omitempty"`
-
-	// ForceSendFields records which fields were explicitly set for LifecycleWithStarted-specific fields.
-	// This field is not serialized to JSON.
-	ForceSendFields []string `json:"-"`
 }

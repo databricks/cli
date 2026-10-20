@@ -1,2 +1,0 @@
-# A target can override prevent_destroy with false, overriding the root value of true
-trace $CLI bundle validate --target dev -o json | jq '{job: (.resources.jobs.j.lifecycle.prevent_destroy), cluster: (.resources.clusters.c.lifecycle.prevent_destroy)}'

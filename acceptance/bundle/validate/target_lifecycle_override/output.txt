@@ -1,6 +1,0 @@
-
->>> [CLI] bundle validate --target dev -o json
-{
-  "job": false,
-  "cluster": false
-}
