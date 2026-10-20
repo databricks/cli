@@ -539,6 +539,18 @@ func TestProbeAIGateway(t *testing.T) {
 		assert.Contains(t, err.Error(), "transient error")
 		assert.NotContains(t, err.Error(), "not enabled")
 	})
+
+	t.Run("cancelled context is reported as interrupted, not classified", func(t *testing.T) {
+		unavailable := jsonHandler(http.StatusServiceUnavailable, `{"message":"try later"}`)
+		srv := newGatewayServer(t, unavailable, unavailable)
+		defer srv.Close()
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
+		err := probeAIGateway(ctx, newProbeClient(t, srv.URL))
+		require.ErrorIs(t, err, context.Canceled)
+		assert.NotContains(t, err.Error(), "not enabled")
+		assert.NotContains(t, err.Error(), "Retry")
+	})
 }
 
 func TestProbeModelServicesPageError(t *testing.T) {
