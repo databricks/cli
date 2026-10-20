@@ -1,10 +1,5 @@
 Cloud = true
 
-# The bundle deployments service rejects a "features." resource-key prefix, so a deploy that also
-# records deployment history fails before the feature is created. The local test server has no such
-# allowlist, so only the cloud leg is dropped.
-EnvMatrixExclude.no_feature_dms_on_cloud = ["CONFIG_Cloud=true", "DMS=true"]
-
 Ignore = [
     ".databricks",
     "databricks.yml",
