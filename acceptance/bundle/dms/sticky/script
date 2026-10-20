@@ -1,0 +1,32 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Deploy with recording on"
+trace $CLI bundle deploy
+rm -f "$OUT_REQUESTS"
+
+title "Drop the setting: the deployment keeps recording, so the next deploy creates version 2"
+update_file.py databricks.yml 'experimental:
+  deployment_history: true
+' ''
+update_file.py databricks.yml 'name: sticky' 'name: sticky-renamed'
+trace $CLI bundle deploy
+trace print_requests.py --dms //api/2.0/bundle/deployments --oneline --del-body state,resource_id
+
+title "Wiping the local cache does not change that: the recording state is pulled from the workspace"
+rm -rf .databricks
+trace $CLI bundle plan
+rm -f "$OUT_REQUESTS"
+
+title "An explicit false still conflicts with the state"
+update_file.py databricks.yml 'bundle:' 'experimental:
+  deployment_history: false
+
+bundle:'
+trace musterr $CLI bundle deploy
+update_file.py databricks.yml 'experimental:
+  deployment_history: false
+
+' ''
+
+trace $CLI bundle destroy --auto-approve
+rm -f "$OUT_REQUESTS"
