@@ -20,12 +20,13 @@ trace $CLI bundle deploy
 print_postgres_requests update
 trace $CLI postgres get-data-api "${data_api_name}" | data_api_fields
 
-title "Remove a spec field: the whole spec is sent, so the field resets to its server default"
+title "Remove a spec field: update_mask=spec keeps a field the request omits, so it keeps its last value"
 sed '/server_cors_allowed_origins:/,$d' databricks.yml > databricks.yml.new && mv databricks.yml.new databricks.yml
 trace $CLI bundle plan
 rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 print_postgres_requests remove_field
+trace $CLI postgres get-data-api "${data_api_name}" | data_api_fields
 
 title "Plan after update shows no changes"
 trace $CLI bundle plan
