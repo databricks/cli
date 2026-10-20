@@ -2,7 +2,9 @@ package dresources
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -10,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/google/uuid"
@@ -169,6 +172,68 @@ func (r *ResourceMaterializationSet) DoCreate(ctx context.Context, config *ml.Ma
 	return set.MaterializationSetId, set, nil
 }
 
+// materializationSetProgressTypes name the error details a partly applied set change carries, one
+// per verb that can partly apply. A creation cannot: it has no per-member outcome.
+var materializationSetProgressTypes = []string{
+	"type.googleapis.com/databricks.featurestore.MaterializationSetUpdateProgress",
+	"type.googleapis.com/databricks.featurestore.MaterializationSetDeletionProgress",
+}
+
+// protoJSONField reads a proto field out of a decoded JSON object under either spelling a
+// serializer may emit for it.
+func protoJSONField(fields map[string]any, snakeCase, camelCase string) any {
+	if value, present := fields[snakeCase]; present {
+		return value
+	}
+	return fields[camelCase]
+}
+
+// materializationSetChangeFailures names each member a partly applied change could not reach,
+// taken from the progress the server attaches as an error detail. Empty for an error raised before
+// the server touched a member, which is every validation failure.
+func materializationSetChangeFailures(err error) []string {
+	apiErr, isAPIError := errors.AsType[*apierr.APIError](err)
+	if !isAPIError || apiErr == nil {
+		return nil
+	}
+
+	var failures []string
+	for _, detail := range apiErr.ErrorDetails().UnknownDetails {
+		fields, isObject := detail.(map[string]any)
+		if !isObject {
+			continue
+		}
+		typeURL, _ := fields["@type"].(string)
+		if !slices.Contains(materializationSetProgressTypes, typeURL) {
+			continue
+		}
+		entries, _ := protoJSONField(
+			fields, "failed_materialized_features", "failedMaterializedFeatures").([]any)
+		for _, entry := range entries {
+			failure, isObject := entry.(map[string]any)
+			if !isObject {
+				continue
+			}
+			id, _ := protoJSONField(failure, "materialized_feature_id", "materializedFeatureId").(string)
+			errorCode, _ := protoJSONField(failure, "error_code", "errorCode").(string)
+			message, _ := failure["message"].(string)
+			failures = append(failures, fmt.Sprintf("%s (%s): %s", id, errorCode, message))
+		}
+	}
+	return failures
+}
+
+// withMaterializationSetChangeFailures restates the members a partly applied change left alone in
+// the error itself. Applied to the wait as well as the call, so it holds whether the server raises
+// the partial failure or settles the operation with it.
+func withMaterializationSetChangeFailures(err error) error {
+	failures := materializationSetChangeFailures(err)
+	if len(failures) == 0 {
+		return err
+	}
+	return fmt.Errorf("%w; members left unchanged: %s", err, strings.Join(failures, "; "))
+}
+
 // materializationSetOperation is what a create, update and delete operation have in common: the
 // three generated interfaces share these two methods and differ only in what Wait returns.
 type materializationSetOperation interface {
@@ -199,12 +264,13 @@ func (r *ResourceMaterializationSet) DoUpdate(ctx context.Context, id string, co
 		RequestId:            uuid.NewString(),
 	})
 	if err != nil {
-		return nil, err
+		return nil, withMaterializationSetChangeFailures(err)
 	}
 
 	set, err := operation.Wait(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", materializationSetOperationTarget(operation), err)
+		return nil, fmt.Errorf("%s: %w", materializationSetOperationTarget(operation),
+			withMaterializationSetChangeFailures(err))
 	}
 	return set, nil
 }
@@ -217,10 +283,11 @@ func (r *ResourceMaterializationSet) DoDelete(ctx context.Context, id string, _ 
 		RequestId:            uuid.NewString(),
 	})
 	if err != nil {
-		return err
+		return withMaterializationSetChangeFailures(err)
 	}
 	if err := operation.Wait(ctx); err != nil {
-		return fmt.Errorf("%s: %w", materializationSetOperationTarget(operation), err)
+		return fmt.Errorf("%s: %w", materializationSetOperationTarget(operation),
+			withMaterializationSetChangeFailures(err))
 	}
 	return nil
 }
