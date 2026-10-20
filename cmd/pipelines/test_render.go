@@ -81,8 +81,15 @@ func renderTestFailures(out io.Writer, run *testRun) {
 	}
 }
 
+func errorsLabel(n int) string {
+	if n == 1 {
+		return "error"
+	}
+	return "errors"
+}
+
 func formatTestCounts(s testRunSummary) string {
-	return fmt.Sprintf("%d passed, %d failed, %d skipped, %d errors", s.Passed, s.Failed, s.Skipped, s.Errors)
+	return fmt.Sprintf("%d passed, %d failed, %d skipped, %d %s", s.Passed, s.Failed, s.Skipped, s.Errors, errorsLabel(s.Errors))
 }
 
 // renderTestResult prints the end of a test run: failure details, then the summary or why
@@ -102,7 +109,7 @@ func renderTestResult(out io.Writer, run *testRun, incompleteReason string) {
 			{received.Passed, "passed"},
 			{received.Failed, "failed"},
 			{received.Skipped, "skipped"},
-			{received.Errors, "errors"},
+			{received.Errors, errorsLabel(received.Errors)},
 		} {
 			if count.n > 0 {
 				parts = append(parts, fmt.Sprintf("%d %s", count.n, count.label))

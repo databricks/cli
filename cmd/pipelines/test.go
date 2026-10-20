@@ -386,6 +386,9 @@ func (t testTarget) resumeCommand(cmd *cobra.Command, updateID string) string {
 	if target := cmd.Flag("target").Value.String(); target != "" {
 		parts = append(parts, "--target", target)
 	}
+	if profile := cmd.Flag("profile").Value.String(); profile != "" {
+		parts = append(parts, "--profile", profile)
+	}
 	return strings.Join(append(parts, "--resume", updateID), " ")
 }
 

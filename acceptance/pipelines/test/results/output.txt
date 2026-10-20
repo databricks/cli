@@ -80,7 +80,7 @@ tests/test_orders.py::test_backfill_fails
 tests/test_orders.py::test_fixture_error
   RuntimeError: fixture 'orders' setup failed
 
-4 tests: 1 passed, 1 failed, 1 skipped, 1 errors
+4 tests: 1 passed, 1 failed, 1 skipped, 1 error
 
 Exit code: 1
 

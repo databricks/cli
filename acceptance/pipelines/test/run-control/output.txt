@@ -43,6 +43,15 @@ Error: stopped waiting for update [UUID] after 3s; the update keeps running, to 
 
 Exit code: 1
 
+=== The command to read the results keeps the profile
+>>> errcode [CLI] pipelines test my_pipeline --resume [UUID] --timeout 3s -p run-control
+Pipeline: my_pipeline ([UUID])
+Update: [UUID]
+Running tests...
+Error: stopped waiting for update [UUID] after 3s; the update keeps running, to get its results run: databricks pipelines test my_pipeline --profile run-control --resume [UUID]
+
+Exit code: 1
+
 === Another update cannot start while the test update is active
 >>> errcode [CLI] pipelines test my_pipeline tests/test_orders.py
 Recommendation: This command runs the last deployed version of the code

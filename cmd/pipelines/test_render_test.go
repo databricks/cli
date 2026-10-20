@@ -56,7 +56,27 @@ t::bad
 t::setup
   No details were reported.
 
-3 tests: 1 passed, 1 failed, 0 skipped, 1 errors
+3 tests: 1 passed, 1 failed, 0 skipped, 1 error
+`,
+		},
+		{
+			name: "several errors",
+			events: func() []testPipelineEvent {
+				return []testPipelineEvent{
+					caseEvent(t, "t::setup", "ERROR", ""),
+					caseEvent(t, "t::teardown", "ERROR", ""),
+					summaryEvent(t, 2, 0, 0, 0, 2),
+				}
+			},
+			state: pipelines.UpdateInfoStateFailed,
+			want: `
+FAILURES
+t::setup
+  No details were reported.
+t::teardown
+  No details were reported.
+
+2 tests: 0 passed, 0 failed, 0 skipped, 2 errors
 `,
 		},
 		{
@@ -88,6 +108,21 @@ No tests were collected.
 			want: `
 RUN INCOMPLETE: the update failed before all test results were received.
 Results received: 1 passed, 1 skipped.
+`,
+		},
+		{
+			name: "incomplete with one error",
+			events: func() []testPipelineEvent {
+				return []testPipelineEvent{caseEvent(t, "t::setup", "ERROR", "")}
+			},
+			state: pipelines.UpdateInfoStateFailed,
+			want: `
+FAILURES
+t::setup
+  No details were reported.
+
+RUN INCOMPLETE: the update failed before all test results were received.
+Results received: 1 error.
 `,
 		},
 		{

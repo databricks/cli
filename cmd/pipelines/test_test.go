@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -238,6 +239,48 @@ func TestNewStartTestUpdateRequest(t *testing.T) {
 		body, err := json.Marshal(newStartTestUpdateRequest(tc.selection, tc.pytestArgs))
 		require.NoError(t, err)
 		assert.JSONEq(t, tc.want, string(body))
+	}
+}
+
+func TestTestTargetResumeCommand(t *testing.T) {
+	tests := []struct {
+		name   string
+		target testTarget
+		flags  map[string]string
+		want   string
+	}{
+		{
+			name:   "pipeline key",
+			target: testTarget{key: "my_pipeline", pipelineID: "p1"},
+			want:   "databricks pipelines test my_pipeline --resume u1",
+		},
+		{
+			name:   "pipeline key with target and profile",
+			target: testTarget{key: "my_pipeline", pipelineID: "p1"},
+			flags:  map[string]string{"target": "dev", "profile": "staging"},
+			want:   "databricks pipelines test my_pipeline --target dev --profile staging --resume u1",
+		},
+		{
+			name:   "pipeline ID with profile",
+			target: testTarget{pipelineID: "p1"},
+			flags:  map[string]string{"profile": "staging"},
+			want:   "databricks pipelines test --pipeline-id p1 --profile staging --resume u1",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			rootCmd := &cobra.Command{Use: "databricks"}
+			rootCmd.PersistentFlags().StringP("profile", "p", "", "")
+			rootCmd.PersistentFlags().StringP("target", "t", "", "")
+			pipelinesCmd := &cobra.Command{Use: "pipelines"}
+			cmd := &cobra.Command{Use: "test"}
+			rootCmd.AddCommand(pipelinesCmd)
+			pipelinesCmd.AddCommand(cmd)
+			for name, value := range tc.flags {
+				require.NoError(t, cmd.Flag(name).Value.Set(value))
+			}
+			assert.Equal(t, tc.want, tc.target.resumeCommand(cmd, "u1"))
+		})
 	}
 }
 
