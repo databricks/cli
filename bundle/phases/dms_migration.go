@@ -73,8 +73,8 @@ func MigrateToDMS(ctx context.Context, b *bundle.Bundle, state *statemgmt.StateD
 	}
 	logDeploymentVersion(ctx, b, "Deployment history enabled")
 	statemgmt.PushResourcesState(ctx, b)
-	// Keep the descriptor at the committed version. Downstream checks Features via
-	// IsDMS() to validate the history setting and reopen resource state from DMS.
+	// Remember the migration version and that state now lives in DMS.
+	// The deployment code uses this flag to accept the history setting and read resources from DMS.
 	state.Serial = db.GetSerial()
 	state.Features = db.StateFeatures()
 }
