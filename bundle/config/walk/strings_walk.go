@@ -1092,11 +1092,19 @@ func stringsConfigPresets(c *stringsWalk, n *Node, v *config.Presets) {
 	if n.isRef() {
 		return
 	}
+	if c.mode == EmptyFields && v.NamePrefix == "" && Forced(v.ForceSendFields, "NamePrefix") {
+		ch := n.Child("name_prefix")
+		c.fn(&ch, "")
+	}
 	if s := string(v.NamePrefix); c.match(s) {
 		ch := n.Child("name_prefix")
 		if r, ok := c.fn(&ch, s); ok {
 			v.NamePrefix = (r)
 		}
+	}
+	if c.mode == EmptyFields && v.TriggerPauseStatus == "" && Forced(v.ForceSendFields, "TriggerPauseStatus") {
+		ch := n.Child("trigger_pause_status")
+		c.fn(&ch, "")
 	}
 	if s := string(v.TriggerPauseStatus); c.match(s) {
 		ch := n.Child("trigger_pause_status")
@@ -1385,6 +1393,10 @@ func stringsConfigGit(c *stringsWalk, n *Node, v *config.Git) {
 func stringsConfigDeployment(c *stringsWalk, n *Node, v *config.Deployment) {
 	if n.isRef() {
 		return
+	}
+	if c.mode == EmptyFields && v.DeploymentID == "" && Forced(v.ForceSendFields, "DeploymentID") {
+		ch := n.Child("deployment_id")
+		c.fn(&ch, "")
 	}
 	if s := string(v.DeploymentID); c.match(s) {
 		ch := n.Child("deployment_id")
