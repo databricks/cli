@@ -25,8 +25,7 @@ import (
 	"testing"
 	"time"
 	"unicode/utf8"
-
-	"github.com/google/uuid"
+	"uuid"
 
 	"github.com/databricks/cli/acceptance/internal"
 	"github.com/databricks/cli/acceptance/internal/selection"
@@ -152,6 +151,10 @@ var Scripts = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
+	if RegrMain || RegrRelease {
+		runRegression(t)
+		return
+	}
 	testAccept(t, InprocessMode, nil, false)
 }
 
@@ -1504,7 +1507,13 @@ func resolveLatestVersion(t *testing.T, buildDir string) string {
 	}
 
 	const url = "https://api.github.com/repos/databricks/cli/releases/latest"
-	resp, err := http.Get(url)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, url, nil)
+	require.NoError(t, err)
+	// Unauthenticated requests from shared CI runner IPs hit the GitHub API rate limit.
+	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 	require.Equal(t, http.StatusOK, resp.StatusCode, "failed to fetch %s: %s", url, resp.Status)
@@ -1648,7 +1657,7 @@ func formatOutput(w io.Writer, err error) {
 	if err == nil {
 		return
 	}
-	if exiterr, ok := err.(*exec.ExitError); ok {
+	if exiterr, ok := errors.AsType[*exec.ExitError](err); ok {
 		exitCode := exiterr.ExitCode()
 		fmt.Fprintf(w, "\nExit code: %d\n", exitCode)
 	} else {
@@ -1859,7 +1868,7 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool, timeout ti
 				require.NoError(t, err)
 			}
 		}
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		require.NoError(t, err)

@@ -35,7 +35,13 @@ linters:
     - reassign
     - modernize
     - makezero
+    - errorlint
   settings:
+    errorlint:
+      # errorf is on: switching %v to %w changes which errors callers can
+      # match with errors.Is/As, so keep %v with a nolint reason where the
+      # cause must not be visible to callers.
+      errorf: true
     modernize:
       # omitzero changes JSON wire format for nested structs (unlike omitempty),
       # so each site needs per-site review rather than a bulk rewrite.

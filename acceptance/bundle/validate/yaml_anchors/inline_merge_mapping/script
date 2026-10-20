@@ -1,0 +1,2 @@
+# An inline mapping as the value of '<<' in target variables.
+errcode trace $CLI bundle validate

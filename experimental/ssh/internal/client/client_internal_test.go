@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"slices"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -855,6 +858,63 @@ func TestMetadataResponseError(t *testing.T) {
 			assert.Equal(t, tc.forbidden, errors.Is(err, errDriverProxyForbidden))
 			assert.Equal(t, !tc.forbidden, errors.Is(err, errServerMetadata))
 			assert.EqualError(t, err, tc.message)
+		})
+	}
+}
+
+func TestCheckPortForwardingToServerless(t *testing.T) {
+	tests := []struct {
+		name    string
+		status  int
+		body    string
+		wantErr error
+	}{
+		{
+			name:    "disabled",
+			status:  http.StatusOK,
+			body:    `{"effective_boolean_val": {"value": false}}`,
+			wantErr: errPortForwardingDisabled,
+		},
+		{
+			name:   "enabled",
+			status: http.StatusOK,
+			body:   `{"effective_boolean_val": {"value": true}}`,
+		},
+		{
+			name:   "no effective value",
+			status: http.StatusOK,
+			body:   `{}`,
+		},
+		{
+			// Production does not serve the setting through the public API yet.
+			name:   "read fails",
+			status: http.StatusBadRequest,
+			body:   `{"error_code": "INVALID_PARAMETER_VALUE", "message": "Setting port_fwd_serverless_enabled is not enabled for public API"}`,
+		},
+		{
+			// A retriable status is not retried, so a throttled service cannot hold up the connection.
+			name:   "throttled",
+			status: http.StatusTooManyRequests,
+			body:   `{"error_code": "TOO_MANY_REQUESTS", "message": "slow down"}`,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var reads atomic.Int32
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/api/2.1/settings/"+portFwdServerlessSetting {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				reads.Add(1)
+				w.WriteHeader(tc.status)
+				_, _ = w.Write([]byte(tc.body))
+			}))
+			defer srv.Close()
+
+			ctx := cmdio.MockDiscard(t.Context())
+			assert.Equal(t, tc.wantErr, checkPortForwardingToServerless(ctx, newProbeClient(t, srv.URL)))
+			assert.Equal(t, int32(1), reads.Load())
 		})
 	}
 }

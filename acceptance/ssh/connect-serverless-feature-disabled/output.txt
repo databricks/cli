@@ -3,6 +3,11 @@
 
 === CLI ssh connect
 
+=== Reported error category
+
+>>> jq -r select(.path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.ssh_tunnel_event.error_category [OUTPUT_DIR]/out.requests.txt
+DRIVER_PROXY_FORBIDDEN
+
 >>> print_requests.py //api/2.2/jobs/runs/cancel
 {
   "method": "POST",

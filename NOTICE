@@ -38,10 +38,6 @@ Copyright (c) 2012 Alex Ogier. All rights reserved.
 Copyright (c) 2012 The Go Authors. All rights reserved.
 License - https://github.com/spf13/pflag/blob/master/LICENSE
 
-google/uuid - https://github.com/google/uuid
-Copyright (c) 2009,2014 Google Inc. All rights reserved.
-License - https://github.com/google/uuid/blob/master/LICENSE
-
 hexops/gotextdiff - https://github.com/hexops/gotextdiff
 Copyright (c) 2009 The Go Authors. All rights reserved.
 License - https://github.com/hexops/gotextdiff/blob/main/LICENSE

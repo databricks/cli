@@ -1,8 +1,9 @@
 package iamutil
 
 import (
+	"uuid"
+
 	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/google/uuid"
 )
 
 // Determines whether a given user is a service principal.

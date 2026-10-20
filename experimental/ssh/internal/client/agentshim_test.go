@@ -252,7 +252,7 @@ func TestEnsureToolchain(t *testing.T) {
 	for _, staleLock := range []bool{false, true} {
 		t.Run(fmt.Sprintf("no-op when the toolchain is already present (staleLock=%v)", staleLock), func(t *testing.T) {
 			home := t.TempDir()
-			writeFakeExec(t, filepath.Join(home, uvToolBinDir), "ucode", ":")
+			writeFakeExec(t, filepath.Join(home, uvToolBinDir), ugExecutable, ":")
 			writeFakeExec(t, filepath.Join(home, agentDepsDir, "node", "bin"), "npm", ":")
 			writeFakeExec(t, filepath.Join(home, agentDepsDir, "uv"), "uv", fakeUvRecorder)
 			if staleLock {
@@ -270,7 +270,7 @@ func TestEnsureToolchain(t *testing.T) {
 
 	t.Run("installs the Unity Gateway CLI via uv when uv is already present", func(t *testing.T) {
 		home := t.TempDir()
-		// uv and npm are present; ucode is not, so only ucode gets installed and no
+		// uv and npm are present; ug is not, so only ug gets installed and no
 		// download happens
 		writeFakeExec(t, filepath.Join(home, agentDepsDir, "uv"), "uv", fakeUvRecorder)
 		writeFakeExec(t, filepath.Join(home, agentDepsDir, "node", "bin"), "npm", ":")
@@ -283,7 +283,7 @@ func TestEnsureToolchain(t *testing.T) {
 		out, err := os.ReadFile(marker)
 		require.NoError(t, err)
 		assert.Contains(t, string(out), "tool install git+https://github.com/"+ugRepo+"@"+ugCommit)
-		// The tool bin dir is prepended to PATH so the freshly installed ucode is found.
+		// The tool bin dir is prepended to PATH so the freshly installed ug is found.
 		assert.Contains(t, filepath.SplitList(os.Getenv("PATH")), filepath.Join(home, uvToolBinDir))
 		assert.NoFileExists(t, filepath.Join(home, agentRootDir, setupLockName), "the setup lock is released once setup finishes")
 	})
@@ -305,9 +305,9 @@ func TestEnsureToolchain(t *testing.T) {
 		done := make(chan error, 1)
 		go func() { done <- ensureToolchain(ctx, home, "amd64") }()
 
-		// The other client finishes: publish ucode+npm into the PATH dir, then release
+		// The other client finishes: publish ug+npm into the PATH dir, then release
 		// the lock so the waiting ensureToolchain can proceed.
-		writeFakeExec(t, filepath.Join(home, uvToolBinDir), "ucode", ":")
+		writeFakeExec(t, filepath.Join(home, uvToolBinDir), ugExecutable, ":")
 		writeFakeExec(t, filepath.Join(home, agentDepsDir, "node", "bin"), "npm", ":")
 		unlock()
 
@@ -644,14 +644,125 @@ func TestAgentShimOutcomeCategory(t *testing.T) {
 	}
 }
 
-func TestPrepareAgentLaunchUnityGatewayCLINotFound(t *testing.T) {
-	// An empty PATH means exec.LookPath("ucode") can't find the CLI, exercising the
-	// UNITY_GATEWAY_CLI_NOT_FOUND attribution.
-	t.Setenv("PATH", t.TempDir())
+func TestBootstrapToolchain(t *testing.T) {
+	// bootstrapToolchain runs the fake POSIX executables below, and agent-shim is
+	// only intended for Linux, so skip on Windows.
+	if runtime.GOOS == "windows" {
+		return
+	}
+
+	t.Run("returns the path to the Unity Gateway CLI", func(t *testing.T) {
+		home := t.TempDir()
+		writeFakeExec(t, filepath.Join(home, uvToolBinDir), ugExecutable, ":")
+		writeFakeExec(t, filepath.Join(home, agentDepsDir, "node", "bin"), npmExecutable, ":")
+		t.Setenv("PATH", t.TempDir())
+
+		ugPath, err := bootstrapToolchain(cmdio.MockDiscard(t.Context()), home)
+		require.NoError(t, err)
+		assert.Equal(t, filepath.Join(home, uvToolBinDir, ugExecutable), ugPath)
+	})
+
+	t.Run("reports UNITY_GATEWAY_CLI_NOT_FOUND when the install leaves no CLI on PATH", func(t *testing.T) {
+		home := t.TempDir()
+		// uv "succeeds" without installing anything, so the post-setup lookup fails.
+		writeFakeExec(t, filepath.Join(home, agentDepsDir, "uv"), "uv", ":")
+		writeFakeExec(t, filepath.Join(home, agentDepsDir, "node", "bin"), npmExecutable, ":")
+		t.Setenv("PATH", t.TempDir())
+
+		_, err := bootstrapToolchain(cmdio.MockDiscard(t.Context()), home)
+		require.Error(t, err)
+		assert.Equal(t, protos.SshAgentShimErrorCategoryUnityGatewayCLINotFound, agentShimOutcome{err: err}.category())
+	})
+}
+
+func TestSetEnvForUnityGateway(t *testing.T) {
+	t.Run("passes the session token as DATABRICKS_BEARER", func(t *testing.T) {
+		t.Setenv("DATABRICKS_TOKEN", "session-token")
+		t.Setenv("DATABRICKS_BEARER", "stale-bearer")
+		t.Setenv("UG_SKIP_OS_SETTINGS", "")
+		t.Setenv("AI_GATEWAY_REQUEST_TAGS", "")
+
+		require.NoError(t, setEnvForUnityGateway(t.Context()))
+		assert.Equal(t, "session-token", os.Getenv("DATABRICKS_BEARER"))
+		assert.Equal(t, "1", os.Getenv("UG_SKIP_OS_SETTINGS"))
+		assert.JSONEq(t, `{"source":"databricks-ssh"}`, os.Getenv("AI_GATEWAY_REQUEST_TAGS"))
+	})
+
+	t.Run("leaves DATABRICKS_BEARER unset without a session token", func(t *testing.T) {
+		t.Setenv("DATABRICKS_TOKEN", "")
+		t.Setenv("DATABRICKS_BEARER", "")
+		require.NoError(t, os.Unsetenv("DATABRICKS_BEARER"))
+		t.Setenv("UG_SKIP_OS_SETTINGS", "")
+		t.Setenv("AI_GATEWAY_REQUEST_TAGS", "")
+
+		require.NoError(t, setEnvForUnityGateway(t.Context()))
+		_, ok := os.LookupEnv("DATABRICKS_BEARER")
+		assert.False(t, ok)
+		assert.Equal(t, "1", os.Getenv("UG_SKIP_OS_SETTINGS"))
+		assert.JSONEq(t, `{"source":"databricks-ssh"}`, os.Getenv("AI_GATEWAY_REQUEST_TAGS"))
+	})
+}
+
+// fakeUgRecorder is the body of a stand-in `ug` that records its args to
+// $FAKE_UG_LOG. It uses only shell builtins so it needs nothing on PATH.
+const fakeUgRecorder = `echo "args: $*" > "$FAKE_UG_LOG"`
+
+func TestRunAgentConfiguration(t *testing.T) {
+	// runAgentConfiguration runs the fake POSIX `ug` below, and agent-shim is only
+	// intended for Linux, so skip on Windows.
+	if runtime.GOOS == "windows" {
+		return
+	}
 	agent, ok := agentByName("claude")
 	require.True(t, ok)
 
-	_, _, _, err := prepareAgentLaunch(t.Context(), t.TempDir(), agent, "https://example.test", nil)
-	require.Error(t, err)
-	assert.Equal(t, protos.SshAgentShimErrorCategoryUnityGatewayCLINotFound, agentShimOutcome{err: err}.category())
+	t.Run("configures the agent for the workspace", func(t *testing.T) {
+		binDir := t.TempDir()
+		writeFakeExec(t, binDir, ugExecutable, fakeUgRecorder)
+		marker := filepath.Join(t.TempDir(), "ug.log")
+		t.Setenv("FAKE_UG_LOG", marker)
+		t.Setenv("PATH", binDir)
+
+		require.NoError(t, runAgentConfiguration(cmdio.MockDiscard(t.Context()), agent, "https://example.test"))
+
+		out, err := os.ReadFile(marker)
+		require.NoError(t, err)
+		assert.Equal(t, "args: configure --agent claude --workspace https://example.test --enable-databricks-ai-tools\n", string(out))
+	})
+
+	t.Run("a failing configure reports AGENT_CONFIGURATION_FAILED", func(t *testing.T) {
+		binDir := t.TempDir()
+		writeFakeExec(t, binDir, ugExecutable, "exit 1")
+		t.Setenv("PATH", binDir)
+
+		err := runAgentConfiguration(cmdio.MockDiscard(t.Context()), agent, "https://example.test")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to configure claude")
+		assert.Equal(t, protos.SshAgentShimErrorCategoryAgentConfigurationFailed, agentShimOutcome{err: err}.category())
+	})
+}
+
+func TestPrepareAgentLaunch(t *testing.T) {
+	agent, ok := agentByName("claude")
+	require.True(t, ok)
+
+	t.Run("passes the context args before the user's agent args", func(t *testing.T) {
+		home := t.TempDir()
+		argv, environ, err := prepareAgentLaunch(t.Context(), home, agent, []string{"--resume"})
+		require.NoError(t, err)
+		require.NotEmpty(t, argv)
+		assert.Equal(t, []string{"claude", "--", "--append-system-prompt-file", filepath.Join(home, agentRootDir, contextFile), "--resume"}, argv[1:])
+		assert.Equal(t, os.Environ(), environ)
+	})
+
+	t.Run("a context setup failure reports AGENT_CONTEXT_SETUP_FAILED", func(t *testing.T) {
+		// A regular file where the home directory should be makes creating the
+		// context directory fail.
+		home := filepath.Join(t.TempDir(), "home")
+		require.NoError(t, os.WriteFile(home, nil, 0o644))
+
+		_, _, err := prepareAgentLaunch(t.Context(), home, agent, nil)
+		require.Error(t, err)
+		assert.Equal(t, protos.SshAgentShimErrorCategoryAgentContextSetupFailed, agentShimOutcome{err: err}.category())
+	})
 }

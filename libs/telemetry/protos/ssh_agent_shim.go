@@ -50,13 +50,13 @@ const (
 	// Installing uv (download, checksum, or extraction) failed.
 	SshAgentShimErrorCategoryUvInstallFailed SshAgentShimErrorCategory = "UV_INSTALL_FAILED"
 
-	// Installing the Unity Gateway CLI (`ucode`, via `uv tool install`) failed.
+	// Installing the Unity Gateway CLI (`ug`, via `uv tool install`) failed.
 	SshAgentShimErrorCategoryGatewayCLIInstallFailed SshAgentShimErrorCategory = "UNITY_GATEWAY_CLI_INSTALL_FAILED"
 
 	// Installing Node.js (download, checksum, or extraction) failed.
 	SshAgentShimErrorCategoryNodeInstallFailed SshAgentShimErrorCategory = "NODE_INSTALL_FAILED"
 
-	// The install steps reported success but the Unity Gateway CLI (`ucode`) was still not on
+	// The install steps reported success but the Unity Gateway CLI (`ug`) was still not on
 	// PATH when the shim went to launch the agent: a setup inconsistency, distinct from the
 	// install itself failing.
 	SshAgentShimErrorCategoryUnityGatewayCLINotFound SshAgentShimErrorCategory = "UNITY_GATEWAY_CLI_NOT_FOUND"
@@ -72,6 +72,9 @@ const (
 	// be observed afterwards (that would require running the agent as a child, which the shim
 	// intentionally does not do).
 	SshAgentShimErrorCategoryAgentLaunchFailed SshAgentShimErrorCategory = "AGENT_LAUNCH_FAILED"
+
+	// The configuration stage failed.
+	SshAgentShimErrorCategoryAgentConfigurationFailed SshAgentShimErrorCategory = "AGENT_CONFIGURATION_FAILED"
 
 	// The user interrupted setup (Ctrl-C or a termination signal) before the agent launched.
 	SshAgentShimErrorCategoryUserAborted SshAgentShimErrorCategory = "USER_ABORTED"

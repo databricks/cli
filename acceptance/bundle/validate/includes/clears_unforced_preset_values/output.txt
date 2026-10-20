@@ -1,0 +1,13 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "presets": {
+    "artifacts_dynamic_version": false,
+    "jobs_max_concurrent_runs": 0,
+    "name_prefix": ""
+  },
+  "job": {
+    "name": "job",
+    "max_concurrent_runs": 1
+  }
+}

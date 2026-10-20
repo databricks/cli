@@ -110,12 +110,12 @@ func parsePythonLocations(bundleRoot string, input io.Reader) (*pythonLocations,
 
 		err := decoder.Decode(&entry)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse python location: %s", err)
+			return nil, fmt.Errorf("failed to parse python location: %w", err)
 		}
 
 		path, err := dyn.NewPathFromString(entry.Path)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse python location: %s", err)
+			return nil, fmt.Errorf("failed to parse python location: %w", err)
 		}
 
 		// Output can contain both relative paths and absolute paths outside of bundle root.

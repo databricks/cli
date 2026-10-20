@@ -1,6 +1,7 @@
 # An administrator disabled port forwarding to serverless compute, so the driver proxy refuses
-# every request to the tunnel server. The CLI must report the proxy's reason as soon as it gets
-# the 403 instead of polling until the server start timeout, and cancel the run it submitted
+# every request to the tunnel server. The setting itself cannot be read here (see test.toml), so
+# the CLI goes ahead and starts the server. It must then report the proxy's reason as soon as it
+# gets the 403 instead of polling until the server start timeout, and cancel the run it submitted
 # since nothing can ever connect to that server.
 # The body repeats the name: with only {"value": false} in it, the API sees an empty message.
 trace $CLI workspace-settings-v2 patch-public-workspace-setting port_fwd_serverless_enabled --json '{"name": "port_fwd_serverless_enabled", "boolean_val": {"value": false}}' >/dev/null
@@ -13,5 +14,8 @@ mkdir -p releases
 title "CLI ssh connect\n"
 musterr $CLI ssh connect --name feature-disabled --releases-dir="$PWD/releases" -- "echo 'Connection successful'" >out.connect.txt 2>&1
 add_repl "$(grep -o 'run ID: [0-9]*' out.connect.txt | grep -o '[0-9]*$')" RUN_ID
+
+title "Reported error category\n"
+trace jq -r 'select(.path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.ssh_tunnel_event.error_category' "$OUT_REQUESTS"
 
 trace print_requests.py //api/2.2/jobs/runs/cancel
