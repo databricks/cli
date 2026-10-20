@@ -114,6 +114,56 @@ resources and reference them as `${resources.features.<key>.full_name}`, which a
 feature before the set -- a bare name leaves the create racing the feature, which is what made
 `sawtooth` flaky.
 
+## Cloud runs 2026-10-20
+
+Run against the `daniel-bai-fs2680` swap on workspace 2978662807315490. Two swap builds, and the
+difference between them is the point.
+
+**First build, universe `afc23c250043d`.** `batch`, `sawtooth`, `streaming` and `immutable` passed;
+`membership` and `removal_scope` failed, both refused with:
+
+```
+The fields 'pipeline_schedule_state' of materialized feature '<id>' of feature '<name>' cannot be
+changed. Only removing members is supported; recreate the materialization set instead.
+```
+
+`comparableMaterializationSetMembers` copied the requested `pipelineScheduleState` raw onto the
+comparison baseline while normalising the trigger beside it, so a bundle -- which never declares
+the field, it being a backend default -- compared `None` against the stored `ACTIVE` and had every
+membership change refused. Isolated live: the same removal succeeded when the surviving member
+carried `pipeline_schedule_state: ACTIVE` and failed when it did not, nothing else different.
+
+**Second build, universe `8438b2287fb03`.** Fixed, and the validations moved into
+`MaterializationSetUtils`. An omitted state now falls back to the stored one
+(`.orElse(normalizedExistingMaterializedFeature.pipelineScheduleState)`), and the changed-field list
+is derived from `MaterializedFeature.scalaDescriptor.fields` rather than a hand-maintained `Seq`, so
+a member field added later is covered without touching this check.
+
+All six cases have passed against that build. The one golden this cost was `membership`: the cascade
+refusal was reworded, and the fake carried the old text.
+
+```
+old: Changing one materialized feature of feature 'F' also changes '<id>', which the request does
+     not change. Apply the same change to every materialized feature of the feature.
+new: Changing materialized features '<ids>' of feature 'F' also changes materialized features
+     '<ids>', which the request does not change. Apply the same change to the unrequested
+     materialized features as well.
+```
+
+The new message names the removed members of the offending feature, so the fake groups removed
+members by feature and sorts the ids the way `FeatureStoreMessages.quotedIds` renders them.
+`materializedFeatureFieldCannotBeChanged` was reworded to match the server too, though no case
+reaches it -- the planner classifies every member field as a recreate, so a declared change never
+becomes an update request.
+
+**The workspace throws intermittent 500s that are not this resource.** Across five runs of the
+`DMS=` leg, individual cases failed on `POST /api/2.0/feature-engineering/features` with `Unable to
+create Feature '<name>' in UC. If the issue persists, please retry or contact support.`, and once on
+`Failed to create Lakebase table`. `immutable` lost three runs in a row this way. It is not the
+fixture: its two features are identical but for their names, and the one that fails varies. It did
+not reproduce from a direct two-feature create, serial or concurrent. Budget a retry per case rather
+than reading a single red run as a regression.
+
 ## Verified against a workspace, with no case of their own
 
 Run through the `daniel-bai-fs2680` swap on 2026-10-19, against a build carrying the write-once

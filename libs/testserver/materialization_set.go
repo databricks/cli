@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -24,12 +25,25 @@ func materializationSetError(statusCode int, errorCode, message string) Response
 	}
 }
 
-// materializedFeatureFieldCannotBeChanged refuses a field the set update cannot write. Every
-// member field is one, so the only change the endpoint applies is a removal.
-func materializedFeatureFieldCannotBeChanged(featureName, fieldPath string) Response {
+// quotedMaterializedFeatureIDs renders an id list the way FeatureStoreMessages.quotedIds does.
+func quotedMaterializedFeatureIDs(ids []string) string {
+	quoted := make([]string, len(ids))
+	for i, id := range ids {
+		quoted[i] = "'" + id + "'"
+	}
+	return strings.Join(quoted, ", ")
+}
+
+// materializedFeatureFieldCannotBeChanged refuses a field the set update cannot write. No
+// acceptance case reaches it: the planner classifies every member field as a recreate, so a
+// declared change never becomes an update request.
+func materializedFeatureFieldCannotBeChanged(
+	featureName, materializedFeatureID, fieldPath string,
+) Response {
 	return materializationSetError(http.StatusBadRequest, "INVALID_PARAMETER_VALUE",
-		fmt.Sprintf("The '%s' of feature '%s' cannot be changed after its materialized features "+
-			"are created. Recreate the materialization set instead.", fieldPath, featureName))
+		fmt.Sprintf("The fields '%s' of materialized feature '%s' of feature '%s' cannot be "+
+			"changed. Only removing members is supported; recreate the materialization set "+
+			"instead.", fieldPath, materializedFeatureID, featureName))
 }
 
 // materializationSetMemberKey matches a requested member to a stored one the way the backend does:
@@ -445,13 +459,14 @@ func (s *FakeWorkspace) MaterializationSetsUpdate(req Request, setID string) Res
 		}
 		if isCronScheduleChangeRequested(member.CronScheduleTrigger, stored.CronScheduleTrigger) {
 			return materializedFeatureFieldCannotBeChanged(member.FeatureName,
-				"cron_schedule_trigger")
+				stored.MaterializedFeatureId, "trigger")
 		}
-		// An unset state asks for no change, so the comparison is only against a stated one.
+		// An unset state asks for no change: the server falls back to the stored one before
+		// comparing, so a member the config never declares is not read as a change.
 		if member.PipelineScheduleState != "" &&
 			member.PipelineScheduleState != stored.PipelineScheduleState {
 			return materializedFeatureFieldCannotBeChanged(member.FeatureName,
-				"pipeline_schedule_state")
+				stored.MaterializedFeatureId, "pipeline_schedule_state")
 		}
 		requestedKeys[materializationSetMemberKey(member)] = true
 		matched = append(matched, stored)
@@ -459,33 +474,40 @@ func (s *FakeWorkspace) MaterializationSetsUpdate(req Request, setID string) Res
 
 	// Delete the members the request omits. Because a delete cascades from a feature's offline
 	// member to its online ones, a removal that would also reach a member the request still lists
-	// cannot be expressed and is refused before anything is written.
+	// cannot be expressed and is refused before anything is written. The server groups the removed
+	// members by feature and names that feature's removed ids, so the message is built the same way.
 	removedIDs := map[string]bool{}
+	featureNameToRemovedIDs := map[string][]string{}
 	for _, member := range existing.MaterializedFeatures {
 		if !requestedKeys[materializationSetMemberKey(member)] {
 			removedIDs[member.MaterializedFeatureId] = true
+			featureNameToRemovedIDs[member.FeatureName] = append(
+				featureNameToRemovedIDs[member.FeatureName], member.MaterializedFeatureId)
 		}
 	}
-	if len(removedIDs) > 0 {
-		for _, target := range materializationSetDeletionTargets(existing.MaterializedFeatures) {
-			var unrequested []string
-			requestedForChange := false
-			for _, member := range target {
-				if removedIDs[member.MaterializedFeatureId] {
-					requestedForChange = true
-				} else {
-					unrequested = append(unrequested, "'"+member.MaterializedFeatureId+"'")
-				}
-			}
-			// A target the caller asked nothing about is not in play.
-			if requestedForChange && len(unrequested) > 0 {
-				return materializationSetError(http.StatusBadRequest, "INVALID_PARAMETER_VALUE",
-					fmt.Sprintf("Changing one materialized feature of feature '%s' also changes "+
-						"%s, which the request does not change. Apply the same change to every "+
-						"materialized feature of the feature.",
-						target[0].FeatureName, strings.Join(unrequested, ", ")))
+	for _, target := range materializationSetDeletionTargets(existing.MaterializedFeatures) {
+		var unrequested []string
+		requestedForChange := false
+		for _, member := range target {
+			if removedIDs[member.MaterializedFeatureId] {
+				requestedForChange = true
+			} else {
+				unrequested = append(unrequested, member.MaterializedFeatureId)
 			}
 		}
+		// A target the caller asked nothing about is not in play.
+		if !requestedForChange || len(unrequested) == 0 {
+			continue
+		}
+		featureName := target[0].FeatureName
+		removedForFeature := append([]string(nil), featureNameToRemovedIDs[featureName]...)
+		sort.Strings(removedForFeature)
+		return materializationSetError(http.StatusBadRequest, "INVALID_PARAMETER_VALUE",
+			fmt.Sprintf("Changing materialized features %s of feature '%s' also changes "+
+				"materialized features %s, which the request does not change. Apply the same "+
+				"change to the unrequested materialized features as well.",
+				quotedMaterializedFeatureIDs(removedForFeature), featureName,
+				quotedMaterializedFeatureIDs(unrequested)))
 	}
 
 	existing.MaterializedFeatures = matched
