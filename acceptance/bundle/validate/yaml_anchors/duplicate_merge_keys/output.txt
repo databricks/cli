@@ -7,3 +7,9 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev
 
 Validation OK!
+
+>>> [CLI] bundle validate -t dev -o json
+{
+  "default": "second",
+  "value": "second"
+}
