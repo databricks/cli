@@ -159,10 +159,11 @@ becomes an update request.
 **The workspace throws intermittent 500s that are not this resource.** Across five runs of the
 `DMS=` leg, individual cases failed on `POST /api/2.0/feature-engineering/features` with `Unable to
 create Feature '<name>' in UC. If the issue persists, please retry or contact support.`, and once on
-`Failed to create Lakebase table`. `immutable` lost three runs in a row this way. It is not the
-fixture: its two features are identical but for their names, and the one that fails varies. It did
-not reproduce from a direct two-feature create, serial or concurrent. Budget a retry per case rather
-than reading a single red run as a regression.
+`Failed to create Lakebase table`. `immutable` lost three runs in a row this way, then passed twice in
+a row when run on its own -- so the trigger is the parallel load of six bundles deploying at once,
+not the fixture. Its two features are identical but for their names, and which one fails varies; a
+direct two-feature create reproduced nothing, serial or concurrent. Run a case on its own before
+reading a red run as a regression.
 
 ## Verified against a workspace, with no case of their own
 
