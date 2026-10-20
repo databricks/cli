@@ -2457,6 +2457,88 @@
                   }
                 ]
               },
+              "resources.PostgresDataApi": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "description": "[Private Preview] Desired PostgREST configuration (input).",
+                    "properties": {
+                      "db_aggregates_enabled": {
+                        "description": "[Private Preview] Enable aggregate functions (count, sum, avg, etc.) in Data API responses.\nDefault: true.",
+                        "$ref": "#/$defs/bool",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "db_extra_search_path": {
+                        "description": "[Private Preview] Additional schemas to include in the PostgreSQL search path.\nEach entry must be a valid PostgreSQL schema name.",
+                        "$ref": "#/$defs/slice/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "db_max_rows": {
+                        "description": "[Private Preview] Maximum number of rows returned in a single Data API response.\nMust be a positive integer.",
+                        "$ref": "#/$defs/int",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "db_schemas": {
+                        "description": "[Private Preview] Database schemas exposed through the Data API.\nEach entry must be a valid PostgreSQL schema name (1-63 chars, [a-zA-Z_][a-zA-Z0-9_$]*).\nMaximum 100 entries. Default: [\"public\"].",
+                        "$ref": "#/$defs/slice/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "jwt_cache_max_lifetime": {
+                        "description": "[Private Preview] Maximum lifetime for cached JWT tokens. Zero duration disables caching.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "jwt_role_claim_key": {
+                        "description": "[Private Preview] JSON path to the role claim in JWT tokens (e.g., \".sub\").\nDefault: \".sub\".",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "lifecycle": {
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "openapi_mode": {
+                        "description": "[Private Preview] OpenAPI documentation mode for the Data API endpoint.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.OpenApiMode",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "parent": {
+                        "description": "The database whose Data API this manages. Format: projects/{project_id}/branches/{branch_id}/databases/{database_id}",
+                        "$ref": "#/$defs/string"
+                      },
+                      "server_cors_allowed_origins": {
+                        "description": "[Private Preview] Allowed origins for CORS requests.\nEach entry should be a valid origin URL, or use \"*\" to allow all origins.",
+                        "$ref": "#/$defs/slice/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "server_timing_enabled": {
+                        "description": "[Private Preview] Enable the Server-Timing header in Data API responses.",
+                        "$ref": "#/$defs/bool",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "parent"
+                    ],
+                    "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                    "doNotSuggest": true
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.PostgresDatabase": {
                 "oneOf": [
                   {
@@ -4199,6 +4281,10 @@
                     "postgres_catalogs": {
                       "description": "The Postgres catalog definitions for the bundle, where each key is the name of the catalog. Each entry binds a Unity Catalog catalog to a Postgres database on a Lakebase Autoscaling branch.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresCatalog"
+                    },
+                    "postgres_data_apis": {
+                      "description": "The Postgres Data API definitions for the bundle, where each key is the name of the Data API. Each entry enables and configures the Data API (a REST interface) of a database on a Lakebase Autoscaling branch. Removing an entry turns off the Data API; the database and its data are not affected.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresDataApi"
                     },
                     "postgres_databases": {
                       "description": "The Postgres database definitions for the bundle, where each key is the name of the database. Each entry defines a database on a Lakebase Autoscaling branch.",
@@ -17293,6 +17379,26 @@
                 }
               ]
             },
+            "postgres.OpenApiMode": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Controls how the Data API exposes the OpenAPI documentation endpoint.\nOnly IGNORE_PRIVILEGES and DISABLED are supported today; \"follow-privileges\"\nis not implemented yet (it may be added later as value 3 — adding new enum\nvalues is backward-compatible).",
+                  "enum": [
+                    "OPEN_API_MODE_IGNORE_PRIVILEGES",
+                    "OPEN_API_MODE_DISABLED"
+                  ],
+                  "enumDescriptions": [
+                    "[Private Preview]",
+                    "[Private Preview]"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "postgres.ProjectCustomTag": {
               "oneOf": [
                 {
@@ -20228,6 +20334,20 @@
                       "type": "object",
                       "additionalProperties": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresCatalog"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.PostgresDataApi": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresDataApi"
                       }
                     },
                     {

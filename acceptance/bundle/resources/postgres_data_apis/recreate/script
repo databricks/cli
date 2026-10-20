@@ -1,0 +1,21 @@
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+   rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+branch_name="projects/test-pg-proj-${UNIQUE_NAME}/branches/production"
+
+title "Deploy the Data API on the first database"
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle deploy
+trace $CLI postgres get-data-api "${branch_name}/databases/first-database/data-api" | data_api_fields
+
+title "Moving the Data API to another database recreates it"
+trace update_file.py databricks.yml 'postgres_databases.first.name' 'postgres_databases.second.name'
+trace $CLI bundle plan
+rm -f "$OUT_REQUESTS"
+trace $CLI bundle deploy
+print_postgres_requests recreate
+trace musterr $CLI postgres get-data-api "${branch_name}/databases/first-database/data-api"
+trace $CLI postgres get-data-api "${branch_name}/databases/second-database/data-api" | data_api_fields

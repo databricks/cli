@@ -72,8 +72,9 @@ func TestExtractAnnotationsNestedEmbeddedSDKType(t *testing.T) {
 }
 
 // TestPostgresResourcesHaveLaunchStageOverride asserts every Postgres resource
-// type is pinned to Beta via a launch-stage override, so an upstream stage
-// change cannot silently alter its label (see annotation.OverrideLaunchStage).
+// type is pinned to its expected stage (Beta, or Private Preview for the Data
+// API) via a launch-stage override, so an upstream stage change cannot silently
+// alter its label (see annotation.OverrideLaunchStage).
 //
 // postgresResources is spelled out explicitly so the expected set is visible on
 // the page, but it is also cross-checked against the Postgres resources actually
@@ -81,21 +82,22 @@ func TestExtractAnnotationsNestedEmbeddedSDKType(t *testing.T) {
 // completeness check, which is the reminder to add it here AND to
 // launchStageOverrides in bundle/internal/annotation/preview.go.
 func TestPostgresResourcesHaveLaunchStageOverride(t *testing.T) {
-	postgresResources := []reflect.Type{
-		reflect.TypeFor[resources.PostgresBranch](),
-		reflect.TypeFor[resources.PostgresCatalog](),
-		reflect.TypeFor[resources.PostgresDatabase](),
-		reflect.TypeFor[resources.PostgresEndpoint](),
-		reflect.TypeFor[resources.PostgresProject](),
-		reflect.TypeFor[resources.PostgresRole](),
-		reflect.TypeFor[resources.PostgresSnapshotSchedule](),
-		reflect.TypeFor[resources.PostgresSyncedTable](),
+	postgresResources := map[reflect.Type]clijson.LaunchStage{
+		reflect.TypeFor[resources.PostgresBranch]():           clijson.LaunchStagePublicBeta,
+		reflect.TypeFor[resources.PostgresCatalog]():          clijson.LaunchStagePublicBeta,
+		reflect.TypeFor[resources.PostgresDataApi]():          clijson.LaunchStagePrivatePreview,
+		reflect.TypeFor[resources.PostgresDatabase]():         clijson.LaunchStagePublicBeta,
+		reflect.TypeFor[resources.PostgresEndpoint]():         clijson.LaunchStagePublicBeta,
+		reflect.TypeFor[resources.PostgresProject]():          clijson.LaunchStagePublicBeta,
+		reflect.TypeFor[resources.PostgresRole]():             clijson.LaunchStagePublicBeta,
+		reflect.TypeFor[resources.PostgresSnapshotSchedule](): clijson.LaunchStagePublicBeta,
+		reflect.TypeFor[resources.PostgresSyncedTable]():      clijson.LaunchStagePublicBeta,
 	}
 
 	// The list must cover every Postgres resource on config.Resources, so a
 	// newly added one can't slip through unpinned.
 	listed := make(map[reflect.Type]bool, len(postgresResources))
-	for _, typ := range postgresResources {
+	for typ := range postgresResources {
 		listed[typ] = true
 	}
 	for _, f := range reflect.VisibleFields(reflect.TypeFor[config.Resources]()) {
@@ -112,13 +114,13 @@ func TestPostgresResourcesHaveLaunchStageOverride(t *testing.T) {
 			"resource %s (%s) is not covered by this test; add it to postgresResources", f.Name, getPath(elem))
 	}
 
-	for _, typ := range postgresResources {
+	for typ, want := range postgresResources {
 		typePath := getPath(typ)
 		// A configured type returns its override for any input; an unconfigured
 		// one returns the input unchanged, so a GA input that survives as GA
 		// (rather than becoming Beta) means the override is missing.
 		stage := annotation.OverrideLaunchStage(typePath, clijson.LaunchStageGA)
-		assert.Equalf(t, clijson.LaunchStagePublicBeta, stage,
+		assert.Equalf(t, want, stage,
 			"resource %s has no launch-stage override; add it to launchStageOverrides in bundle/internal/annotation/preview.go", typePath)
 	}
 }

@@ -1,0 +1,31 @@
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+   rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+data_api_name="projects/test-pg-proj-${UNIQUE_NAME}/branches/production/databases/my-database/data-api"
+
+title "Initial deployment"
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle deploy
+rm -f "$OUT_REQUESTS"
+
+title "Change a spec field"
+trace update_file.py databricks.yml "db_max_rows: 100" "db_max_rows: 500"
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_data_apis.my_data_api" | {action, changes}' > out.plan.update.json
+rm -f "$OUT_REQUESTS"
+trace $CLI bundle deploy
+print_postgres_requests update
+trace $CLI postgres get-data-api "${data_api_name}" | data_api_fields
+
+title "Remove a spec field: the whole spec is sent, so the field resets to its server default"
+sed '/server_cors_allowed_origins:/,$d' databricks.yml > databricks.yml.new && mv databricks.yml.new databricks.yml
+trace $CLI bundle plan
+rm -f "$OUT_REQUESTS"
+trace $CLI bundle deploy
+print_postgres_requests remove_field
+
+title "Plan after update shows no changes"
+trace $CLI bundle plan

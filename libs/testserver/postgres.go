@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"regexp"
 	"slices"
 	"strings"
@@ -1360,6 +1361,195 @@ func (s *FakeWorkspace) PostgresDatabaseDelete(name string) Response {
 	}
 
 	delete(s.PostgresDatabases, name)
+	// The Data API is a sub-resource of the database and goes away with it.
+	delete(s.PostgresDataApis, name+dataApiSuffix)
+
+	return Response{
+		Body: s.createOperationLocked(name, nil),
+	}
+}
+
+// dataApiSuffix is the final segment of a Data API's resource name:
+// "projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api".
+const dataApiSuffix = "/data-api"
+
+// dataApiUpdateMaskPaths is the update_mask the Data API is known to accept: the
+// whole spec, which worked against a real workspace in July 2026. Leaf paths are
+// unverified, so the fake rejects them.
+var dataApiUpdateMaskPaths = []string{"spec"}
+
+// hasReadWriteEndpointLocked reports whether a branch has a read-write endpoint
+// (caller must hold lock).
+func (s *FakeWorkspace) hasReadWriteEndpointLocked(branchName string) bool {
+	prefix := branchName + "/endpoints/"
+	for name, endpoint := range s.PostgresEndpoints {
+		if strings.HasPrefix(name, prefix) && endpoint.Status != nil && endpoint.Status.EndpointType == postgres.EndpointTypeEndpointTypeReadWrite {
+			return true
+		}
+	}
+	return false
+}
+
+// dataApiPreconditionLocked returns the error the API answers a Data API create,
+// get, or update with when its database is missing (404) or the database's
+// branch has no read-write endpoint (400), which the backend requires to serve
+// the Data API. Returns nil when the request may proceed (caller must hold lock).
+func (s *FakeWorkspace) dataApiPreconditionLocked(databaseName string) *Response {
+	// Project and branch deletion do not cascade to databases in this fake, so
+	// check the ancestors first, as PostgresDatabaseGet does.
+	branchName, _, _ := strings.Cut(databaseName, "/databases/")
+	projectName, _, _ := strings.Cut(branchName, "/branches/")
+	if _, exists := s.PostgresProjects[projectName]; !exists {
+		resp := postgresNotFoundResponse("project")
+		return &resp
+	}
+	if _, exists := s.PostgresBranches[branchName]; !exists {
+		resp := postgresNotFoundResponse("branch")
+		return &resp
+	}
+	if _, exists := s.PostgresDatabases[databaseName]; !exists {
+		resp := postgresNotFoundResponse("database")
+		return &resp
+	}
+	if !s.hasReadWriteEndpointLocked(branchName) {
+		resp := postgresErrorResponse(400, "BAD_REQUEST", "Data API requires a read-write endpoint on branch "+branchName)
+		return &resp
+	}
+	return nil
+}
+
+// dataApiStatusFromSpec mirrors the spec onto Status, the way the real API
+// reports the configuration it applied while leaving Spec=nil on GET.
+func dataApiStatusFromSpec(spec *postgres.DataApiDataApiSpec) *postgres.DataApiDataApiStatus {
+	status := &postgres.DataApiDataApiStatus{
+		AvailableSchemas: []string{"public"},
+	}
+	if spec == nil {
+		return status
+	}
+	status.DbAggregatesEnabled = spec.DbAggregatesEnabled
+	status.DbExtraSearchPath = spec.DbExtraSearchPath
+	status.DbMaxRows = spec.DbMaxRows
+	status.DbSchemas = spec.DbSchemas
+	status.JwtCacheMaxLifetime = spec.JwtCacheMaxLifetime
+	status.JwtRoleClaimKey = spec.JwtRoleClaimKey
+	status.OpenapiMode = spec.OpenapiMode
+	status.ServerCorsAllowedOrigins = spec.ServerCorsAllowedOrigins
+	status.ServerTimingEnabled = spec.ServerTimingEnabled
+	return status
+}
+
+// PostgresDataApiCreate enables the Data API on a database. At most one Data API
+// exists per database, so a second create returns ALREADY_EXISTS.
+func (s *FakeWorkspace) PostgresDataApiCreate(req Request, parent string) Response {
+	defer s.LockUnlock()()
+
+	if errResp := s.dataApiPreconditionLocked(parent); errResp != nil {
+		return *errResp
+	}
+
+	name := parent + dataApiSuffix
+	if _, exists := s.PostgresDataApis[name]; exists {
+		return postgresErrorResponse(409, "ALREADY_EXISTS", "Data API is already enabled for database "+parent)
+	}
+
+	var dataApi postgres.DataApi
+	if len(req.Body) > 0 {
+		if err := json.Unmarshal(req.Body, &dataApi); err != nil {
+			return Response{
+				StatusCode: 400,
+				Body:       fmt.Sprintf("cannot unmarshal request body: %v", err),
+			}
+		}
+	}
+
+	// The real API rejects enabling the Data API with an empty spec. A field sent
+	// explicitly with its zero value is recorded in ForceSendFields, so it counts.
+	if dataApi.Spec == nil || reflect.ValueOf(*dataApi.Spec).IsZero() {
+		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", "Field 'data_api.spec' must have at least one subfield with a non-default value")
+	}
+
+	now := nowTime()
+	dataApi.Name = name
+	dataApi.Parent = parent
+	dataApi.CreateTime = now
+	dataApi.UpdateTime = now
+	dataApi.Status = dataApiStatusFromSpec(dataApi.Spec)
+	// spec is INPUT_ONLY: the API only returns status.
+	dataApi.Spec = nil
+
+	s.PostgresDataApis[name] = dataApi
+
+	return Response{
+		Body: s.createOperationLocked(name, dataApi),
+	}
+}
+
+// PostgresDataApiGet retrieves the Data API of a database.
+func (s *FakeWorkspace) PostgresDataApiGet(name string) Response {
+	defer s.LockUnlock()()
+
+	if errResp := s.dataApiPreconditionLocked(strings.TrimSuffix(name, dataApiSuffix)); errResp != nil {
+		return *errResp
+	}
+
+	dataApi, exists := s.PostgresDataApis[name]
+	if !exists {
+		return postgresNotFoundResponse("data api")
+	}
+
+	return Response{
+		Body: dataApi,
+	}
+}
+
+// PostgresDataApiUpdate replaces the Data API configuration of a database.
+func (s *FakeWorkspace) PostgresDataApiUpdate(req Request, name string) Response {
+	if resp := validateUpdateMask(req, dataApiUpdateMaskPaths, nil); resp != nil {
+		return *resp
+	}
+
+	defer s.LockUnlock()()
+
+	if errResp := s.dataApiPreconditionLocked(strings.TrimSuffix(name, dataApiSuffix)); errResp != nil {
+		return *errResp
+	}
+
+	dataApi, exists := s.PostgresDataApis[name]
+	if !exists {
+		return postgresNotFoundResponse("data api")
+	}
+
+	var updateDataApi postgres.DataApi
+	if len(req.Body) > 0 {
+		if err := json.Unmarshal(req.Body, &updateDataApi); err != nil {
+			return Response{
+				StatusCode: 400,
+				Body:       fmt.Sprintf("cannot unmarshal request body: %v", err),
+			}
+		}
+	}
+
+	// "spec" is the only accepted mask path, so the whole configuration is replaced.
+	dataApi.Status = dataApiStatusFromSpec(updateDataApi.Spec)
+	dataApi.UpdateTime = nowTime()
+	s.PostgresDataApis[name] = dataApi
+
+	return Response{
+		Body: s.createOperationLocked(name, dataApi),
+	}
+}
+
+// PostgresDataApiDelete disables the Data API of a database. The database and
+// its data are not affected.
+func (s *FakeWorkspace) PostgresDataApiDelete(name string) Response {
+	defer s.LockUnlock()()
+
+	if _, exists := s.PostgresDataApis[name]; !exists {
+		return postgresNotFoundResponse("data api")
+	}
+
+	delete(s.PostgresDataApis, name)
 
 	return Response{
 		Body: s.createOperationLocked(name, nil),
@@ -1740,6 +1930,8 @@ func (s *FakeWorkspace) createOperationLocked(resourceName string, response any)
 		resourceType = "SyncedTable"
 	case strings.HasSuffix(resourceName, "/snapshot-schedule"):
 		resourceType = "SnapshotSchedule"
+	case strings.HasSuffix(resourceName, dataApiSuffix):
+		resourceType = "DataApi"
 	case strings.Contains(resourceName, "/endpoints/"):
 		resourceType = "Endpoint"
 	case strings.Contains(resourceName, "/databases/"):

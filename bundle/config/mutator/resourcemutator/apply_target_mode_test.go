@@ -324,6 +324,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				PostgresDataApis: map[string]*resources.PostgresDataApi{
+					"postgres_data_api1": {
+						PostgresDataApiConfig: resources.PostgresDataApiConfig{
+							Parent: "projects/project1/branches/branch1/databases/database1",
+						},
+					},
+				},
 				VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 					"vs_endpoint1": {
 						CreateEndpoint: vectorsearch.CreateEndpoint{

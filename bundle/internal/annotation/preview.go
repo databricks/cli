@@ -27,8 +27,10 @@ func PreviewTag(stage clijson.LaunchStage) string {
 // fully-qualified Go type paths (PkgPath + "." + Name), matching getPath in
 // bundle/internal/schema.
 var launchStageOverrides = map[string]clijson.LaunchStage{
-	"github.com/databricks/cli/bundle/config/resources.PostgresBranch":           clijson.LaunchStagePublicBeta,
-	"github.com/databricks/cli/bundle/config/resources.PostgresCatalog":          clijson.LaunchStagePublicBeta,
+	"github.com/databricks/cli/bundle/config/resources.PostgresBranch":  clijson.LaunchStagePublicBeta,
+	"github.com/databricks/cli/bundle/config/resources.PostgresCatalog": clijson.LaunchStagePublicBeta,
+	// The Data API is at Private Preview, below the Beta its siblings are pinned to.
+	"github.com/databricks/cli/bundle/config/resources.PostgresDataApi":          clijson.LaunchStagePrivatePreview,
 	"github.com/databricks/cli/bundle/config/resources.PostgresDatabase":         clijson.LaunchStagePublicBeta,
 	"github.com/databricks/cli/bundle/config/resources.PostgresEndpoint":         clijson.LaunchStagePublicBeta,
 	"github.com/databricks/cli/bundle/config/resources.PostgresProject":          clijson.LaunchStagePublicBeta,
