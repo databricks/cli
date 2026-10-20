@@ -2,7 +2,6 @@ package mutator
 
 import (
 	"context"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/metrics"
@@ -32,43 +31,13 @@ func (m *resolveSelect) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnost
 
 	b.Metrics.SetBoolValue(metrics.SelectUsed, true)
 
-	// Build reverse index: unqualified name → []"type.name" matches.
-	byName := map[string][]string{}
-	for _, group := range b.Config.Resources.AllResources() {
-		typeName := group.Description.PluralName
-		for name := range group.Resources {
-			byName[name] = append(byName[name], typeName+"."+name)
-		}
-	}
-
 	resolved := make([]string, 0, len(b.Select))
 	for _, selector := range b.Select {
-		if strings.Contains(selector, ".") {
-			typeName, name, _ := strings.Cut(selector, ".")
-			found := false
-			for _, group := range b.Config.Resources.AllResources() {
-				if group.Description.PluralName == typeName {
-					if _, ok := group.Resources[name]; ok {
-						found = true
-					}
-					break
-				}
-			}
-			if !found {
-				return diag.Errorf("no such resource: %s", selector)
-			}
-			resolved = append(resolved, selector)
-		} else {
-			matches := byName[selector]
-			switch len(matches) {
-			case 0:
-				return diag.Errorf("no such resource: %s", selector)
-			case 1:
-				resolved = append(resolved, matches[0])
-			default:
-				return diag.Errorf("ambiguous resource: %s (can resolve to %s); use a qualified name to disambiguate", selector, strings.Join(matches, ", "))
-			}
+		res, key, err := b.Config.Resources.ResolveKey(selector)
+		if err != nil {
+			return diag.FromErr(err)
 		}
+		resolved = append(resolved, res.ResourceDescription().PluralName+"."+key)
 	}
 
 	b.Select = resolved
