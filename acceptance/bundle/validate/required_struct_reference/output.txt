@@ -3,6 +3,6 @@
 {
   "clients": {
     "jobs": "${resources.clusters.source.is_single_node}",
-    "notebooks": true
+    "notebooks": "${resources.clusters.source.is_single_node}"
   }
 }

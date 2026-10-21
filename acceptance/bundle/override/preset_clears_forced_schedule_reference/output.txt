@@ -8,5 +8,6 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //tables/main.default.dst/monitor
 {
+  "has_schedule": false,
   "schedule": null
 }
