@@ -29,3 +29,20 @@ trace print_requests.py --sort //jobs/delete
 
 # A full plan now has nothing to delete and 'keep' is unchanged.
 trace $CLI bundle plan
+
+# The same works with an unqualified name. Deploy 'gone' again, then remove it from
+# config so it is once more orphaned in state.
+title "Redeploy gone, then select it by unqualified name\n"
+envsubst '$UNIQUE_NAME' < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle deploy
+replace_ids.py
+envsubst '$UNIQUE_NAME' < databricks.yml.after.tmpl > databricks.yml
+
+trace $CLI bundle plan --select gone
+
+title "bundle deploy --select gone\n"
+trace $CLI bundle deploy --select gone
+
+trace print_requests.py --sort //jobs/delete
+
+trace $CLI bundle plan
