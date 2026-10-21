@@ -5,6 +5,7 @@ import (
 	"cmp"
 	"fmt"
 	"go/format"
+	"maps"
 	"os"
 	"path"
 	"reflect"
@@ -151,7 +152,7 @@ type gen struct {
 	aliases map[string]bool
 	funcs   map[string]string // signature -> function name
 	names   map[string]int
-	enums   map[string]string // joined values -> variable name
+	enums   map[reflect.Type]enumVar // enum type -> its valid values
 	out     bytes.Buffer
 	pending []*tnode
 }
@@ -163,7 +164,7 @@ func newGen(prefix string) *gen {
 		aliases: map[string]bool{"slices": true, "dyn": true},
 		funcs:   map[string]string{},
 		names:   map[string]int{},
-		enums:   map[string]string{},
+		enums:   map[reflect.Type]enumVar{},
 	}
 }
 
@@ -209,14 +210,29 @@ func capitalize(s string) string {
 	return strings.ToUpper(s[:1]) + s[1:]
 }
 
-func (g *gen) enumVar(values []string) string {
-	key := strings.Join(values, "\x00")
-	if name, ok := g.enums[key]; ok {
-		return name
+// enumVar is the variable holding the valid values of an enum type.
+type enumVar struct {
+	name   string
+	values []string
+}
+
+// enumVarFor returns the name of the variable holding the valid values of the enum type
+// typ, e.g. enumValuesPostgresPipelineChannel for postgres.PipelineChannel.
+func (g *gen) enumVarFor(typ reflect.Type, values []string) (string, error) {
+	if v, ok := g.enums[typ]; ok {
+		if !slices.Equal(v.values, values) {
+			return "", fmt.Errorf("enum type %s has different valid values at different paths", typ)
+		}
+		return v.name, nil
 	}
-	name := fmt.Sprintf("%sValues%d", g.prefix, len(g.enums))
-	g.enums[key] = name
-	return name
+	base := g.prefix + "Values" + capitalize(path.Base(typ.PkgPath())) + typ.Name()
+	g.names[base]++
+	name := base
+	if g.names[base] > 1 {
+		name = base + strconv.Itoa(g.names[base])
+	}
+	g.enums[typ] = enumVar{name: name, values: values}
+	return name, nil
 }
 
 // field is the field with JSON name key of the struct v points to.
@@ -317,7 +333,11 @@ func (g *gen) emitField(f field, child *tnode) error {
 		if f.typ.Kind() != reflect.String {
 			return fmt.Errorf("enum field %q of type %s", f.key, f.typ)
 		}
-		fmt.Fprintf(&g.out, "\tw.enumField(n, %q, string(%s), %s)\n", f.key, f.expr, g.enumVar(child.enum))
+		values, err := g.enumVarFor(f.typ, child.enum)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(&g.out, "\tw.enumField(n, %q, string(%s), %s)\n", f.key, f.expr, values)
 	case f.typ.Kind() == reflect.Pointer:
 		fmt.Fprintf(&g.out, "\tif c := n.child(%q); c.exists() {\n\t\t%s(w, &c, %s)\n\t}\n", f.key, g.funcFor(child), f.expr)
 	case f.typ.Kind() == reflect.Struct:
@@ -374,7 +394,11 @@ func (g *gen) emitElem(indent, expr string, typ reflect.Type, t *tnode, depth in
 		if typ.Kind() != reflect.String {
 			return fmt.Errorf("enum element of type %s", typ)
 		}
-		fmt.Fprintf(&g.out, "%sw.enumElem(&e, string(%s), %s)\n", indent, expr, g.enumVar(t.enum))
+		values, err := g.enumVarFor(typ, t.enum)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(&g.out, "%sw.enumElem(&e, string(%s), %s)\n", indent, expr, values)
 	case typ.Kind() == reflect.Pointer:
 		fmt.Fprintf(&g.out, "%s%s(w, &e, %s)\n", indent, g.funcFor(t), expr)
 	case typ.Kind() == reflect.Struct:
@@ -435,19 +459,13 @@ func generateWalker(file, prefix, doc string, required, enums map[string][]strin
 		}
 	}
 	fmt.Fprintf(&src, ")\n")
-	keys := make([]string, 0, len(g.enums))
-	for k := range g.enums {
-		keys = append(keys, k)
-	}
-	slices.SortFunc(keys, func(a, b string) int {
-		return cmp.Or(cmp.Compare(len(g.enums[a]), len(g.enums[b])), cmp.Compare(g.enums[a], g.enums[b]))
-	})
-	for _, k := range keys {
+	vars := slices.SortedFunc(maps.Values(g.enums), func(a, b enumVar) int { return cmp.Compare(a.name, b.name) })
+	for _, e := range vars {
 		var quoted []string
-		for value := range strings.SplitSeq(k, "\x00") {
+		for _, value := range e.values {
 			quoted = append(quoted, strconv.Quote(value))
 		}
-		fmt.Fprintf(&src, "\nvar %s = []string{%s}\n", g.enums[k], strings.Join(quoted, ", "))
+		fmt.Fprintf(&src, "\nvar %s = []string{%s}\n", e.name, strings.Join(quoted, ", "))
 	}
 	src.Write(g.out.Bytes())
 
