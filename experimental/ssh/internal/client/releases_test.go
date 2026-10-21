@@ -1,16 +1,21 @@
 package client
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"path"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/testserver"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
@@ -140,4 +145,41 @@ func TestUploadReleasesWithExistingBinary(t *testing.T) {
 			assert.Equal(t, tt.wantUploaded, uploaded)
 		})
 	}
+}
+
+func TestUploadReleasesSendsEachArchiveOnce(t *testing.T) {
+	const versionedDir = "/Workspace/Users/tester@databricks.test/.databricks/ssh-tunnel/1.12.0"
+
+	server := testserver.New(t)
+	var mu sync.Mutex
+	var imports []string
+	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req testserver.Request) any {
+		overwrite := req.URL.Query().Get("overwrite") == "true"
+		resp := req.Workspace.WorkspaceFilesImportFile(req.Vars["path"], req.Body, overwrite)
+		mu.Lock()
+		defer mu.Unlock()
+		imports = append(imports, fmt.Sprintf("%s %d", path.Base(path.Dir(req.Vars["path"])), cmp.Or(resp.StatusCode, http.StatusOK)))
+		return resp
+	})
+	testserver.AddDefaultHandlers(server)
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:  server.URL,
+		Token: "testtoken",
+	})
+	require.NoError(t, err)
+	workspaceFiler, err := filer.NewWorkspaceFilesClient(client, versionedDir)
+	require.NoError(t, err)
+
+	getRelease := func(ctx context.Context, architecture, version, releasesDir string) (io.ReadCloser, error) {
+		return io.NopCloser(strings.NewReader("archive")), nil
+	}
+	err = uploadReleases(t.Context(), workspaceFiler, getRelease, "1.12.0", "")
+	require.NoError(t, err)
+
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Equal(t, []string{
+		"databricks_cli_1.12.0_linux_amd64 200",
+		"databricks_cli_1.12.0_linux_arm64 200",
+	}, imports)
 }
