@@ -43,7 +43,7 @@ var uuidRe = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[
 // workspace checks performed by the backend.
 var unityCatalogImageRe = regexp.MustCompile(`^[^.:\s]+\.[^.:\s]+\.[^.:\s]+:[^:\s]+$`)
 
-var containerNameRe = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+var containerNameRe = regexp.MustCompile(`^[a-z]([-a-z0-9]{0,30}[a-z0-9])?$`)
 
 var secretTemplateRe = regexp.MustCompile(`^\{\{secrets/([^/{}]+)/([^/{}]+)\}\}$`)
 
@@ -228,7 +228,7 @@ func (c *runConfig) validate() error {
 // staged beside it because PuPr workspaces cannot consume the DEVELOPMENT API
 // field yet.
 type containerConfig struct {
-	Name                 string                               `yaml:"name" help:"Unique container name: at most 16 letters, digits, or underscores, not starting with a digit." required:"yes"`
+	Name                 string                               `yaml:"name" help:"Unique container name: 1–32 lowercase letters, digits, or hyphens; start with a letter and end with a letter or digit." required:"yes"`
 	Command              *string                              `yaml:"command" help:"Shell command run on every rank assigned to this container." required:"yes"`
 	Ranks                []int                                `yaml:"ranks" help:"Zero-based node ranks assigned to this container." required:"yes"`
 	UnityCatalogImage    string                               `yaml:"unity_catalog_image" help:"Unity Catalog image as <catalog>.<schema>.<image>:<tag>." required:"yes"`
@@ -256,8 +256,8 @@ func (c *runConfig) validateContainers() error {
 	for i := range c.Containers {
 		container := &c.Containers[i]
 		prefix := fmt.Sprintf("containers[%d]", i)
-		if !containerNameRe.MatchString(container.Name) || len(container.Name) > 16 {
-			return fmt.Errorf("%s.name must be at most 16 letters, digits, or underscores and must not start with a digit, got %q", prefix, container.Name)
+		if !containerNameRe.MatchString(container.Name) {
+			return fmt.Errorf("%s.name must start with a lowercase letter, contain only lowercase letters, digits, or '-', end with a letter or digit, and be at most 32 characters, got %q", prefix, container.Name)
 		}
 		if _, exists := names[container.Name]; exists {
 			return fmt.Errorf("%s.name %q is duplicated; container names must be unique", prefix, container.Name)
