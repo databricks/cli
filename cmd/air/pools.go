@@ -20,11 +20,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// A GPU pool is a pre-provisioned AI Runtime accelerator reservation,
-// targeted by runs through compute.provisioned_capacity_id.
+// A "GPU pool" is a pre-provisioned AI Runtime accelerator reservation — the
+// same reservation a run targets via compute.provisioned_capacity_id. "GPU
+// pool" (or "pool") is the product-facing name used across the Compute page and
+// this CLI. The backend still models and serves these as AiWorkflowService
+// ProvisionedCapacity resources. The external URL and resource-name prefix
+// use "pools"; wire messages and response fields keep the API's internal name.
 const poolsAPIPath = "/api/2.0/ai-training/pools"
 
-// resourceNamePrefix is the AIP resource-name prefix on Pool.name
+// resourceNamePrefix is the AIP resource-name prefix on ProvisionedCapacity.name
 // ("pools/{id}"). The CLI shows and accepts the bare id.
 const resourceNamePrefix = "pools/"
 
@@ -53,30 +57,31 @@ func (n *apiInt64) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// The wire structs below mirror the Pool proto's JSON.
-type pool struct {
-	Name   string      `json:"name"`
-	Spec   *poolSpec   `json:"spec"`
-	Status *poolStatus `json:"status"`
+// The wire structs below mirror the ProvisionedCapacity proto's JSON (the
+// backend name for a GPU pool).
+type provisionedCapacity struct {
+	Name   string                     `json:"name"`
+	Spec   *provisionedCapacitySpec   `json:"spec"`
+	Status *provisionedCapacityStatus `json:"status"`
 }
 
-type poolSpec struct {
+type provisionedCapacitySpec struct {
 	AcceleratorType  string   `json:"accelerator_type"`
 	AcceleratorCount apiInt64 `json:"accelerator_count"`
 }
 
-type poolStatus struct {
-	Usage *poolUsage `json:"usage"`
+type provisionedCapacityStatus struct {
+	Usage *provisionedCapacityUsage `json:"usage"`
 }
 
-type poolUsage struct {
+type provisionedCapacityUsage struct {
 	UsedAcceleratorCount apiInt64 `json:"used_accelerator_count"`
 	IdleAcceleratorCount apiInt64 `json:"idle_accelerator_count"`
 }
 
-type listPoolsResponse struct {
-	Pools         []pool `json:"pools"`
-	NextPageToken string `json:"next_page_token"`
+type listProvisionedCapacitiesResponse struct {
+	ProvisionedCapacities []provisionedCapacity `json:"provisioned_capacities"`
+	NextPageToken         string                `json:"next_page_token"`
 }
 
 // poolListData is the `air pools list` payload. Usage counts are intentionally
@@ -127,13 +132,13 @@ func poolAPIError(ctx context.Context, cmd *cobra.Command, action string, err er
 }
 
 // listPools pages the list endpoint fully.
-func listPools(ctx context.Context, w *databricks.WorkspaceClient) ([]pool, error) {
+func listPools(ctx context.Context, w *databricks.WorkspaceClient) ([]provisionedCapacity, error) {
 	apiClient, err := client.New(w.Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create API client: %w", err)
 	}
 
-	var out []pool
+	var out []provisionedCapacity
 	pageToken := ""
 	for range poolListMaxPages {
 		// GET query params ride the request arg (the SDK serializes them for a
@@ -142,13 +147,13 @@ func listPools(ctx context.Context, w *databricks.WorkspaceClient) ([]pool, erro
 		if pageToken != "" {
 			query["page_token"] = pageToken
 		}
-		var resp listPoolsResponse
+		var resp listProvisionedCapacitiesResponse
 		// WorkspaceIDHeaders is required so unified hosts route the call to the
 		// caller's workspace rather than relying on Config.WorkspaceID alone.
 		if err := apiClient.Do(ctx, http.MethodGet, poolsAPIPath, auth.WorkspaceIDHeaders(w.Config), nil, query, &resp); err != nil {
 			return nil, err
 		}
-		out = append(out, resp.Pools...)
+		out = append(out, resp.ProvisionedCapacities...)
 		if resp.NextPageToken == "" {
 			break
 		}
@@ -158,12 +163,12 @@ func listPools(ctx context.Context, w *databricks.WorkspaceClient) ([]pool, erro
 }
 
 // getPool fetches one pool, including its usage summary.
-func getPool(ctx context.Context, w *databricks.WorkspaceClient, id string) (*pool, error) {
+func getPool(ctx context.Context, w *databricks.WorkspaceClient, id string) (*provisionedCapacity, error) {
 	apiClient, err := client.New(w.Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create API client: %w", err)
 	}
-	var pc pool
+	var pc provisionedCapacity
 	// PathEscape the id: it is user-supplied, so a stray "/" or "?" would
 	// otherwise be parsed as extra path segments or a query string rather than
 	// staying part of the resource id.
@@ -309,8 +314,8 @@ func resolveSolePoolID(ctx context.Context, cmd *cobra.Command, w *databricks.Wo
 	}
 }
 
-// poolRowFrom projects a wire Pool to a list row.
-func poolRowFrom(p pool) poolRow {
+// poolRowFrom projects a wire ProvisionedCapacity to a list row.
+func poolRowFrom(p provisionedCapacity) poolRow {
 	row := poolRow{ID: poolID(p.Name)}
 	if p.Spec != nil {
 		row.AcceleratorType = p.Spec.AcceleratorType
@@ -319,8 +324,8 @@ func poolRowFrom(p pool) poolRow {
 	return row
 }
 
-// poolDetailFrom projects a wire Pool to the detail payload.
-func poolDetailFrom(p pool) poolDetailData {
+// poolDetailFrom projects a wire ProvisionedCapacity to the detail payload.
+func poolDetailFrom(p provisionedCapacity) poolDetailData {
 	data := poolDetailData{ID: poolID(p.Name)}
 	if p.Spec != nil {
 		data.AcceleratorType = p.Spec.AcceleratorType
