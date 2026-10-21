@@ -188,6 +188,7 @@ func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {
 		Continuous:           config.Continuous,
 		Deployment:           config.Deployment,
 		Description:          config.Description,
+		DurationTarget:       config.DurationTarget,
 		EditMode:             config.EditMode,
 		EmailNotifications:   config.EmailNotifications,
 		EnvironmentVariables: config.EnvironmentVariables,

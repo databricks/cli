@@ -19,7 +19,7 @@ class VarPopFunction:
 
     input: VariableOr[str]
     """
-    [Public Preview] The input column from which the population variance is computed.
+    The input column from which the population variance is computed.
     """
 
     @classmethod
@@ -35,7 +35,7 @@ class VarPopFunctionDict(TypedDict, total=False):
 
     input: VariableOr[str]
     """
-    [Public Preview] The input column from which the population variance is computed.
+    The input column from which the population variance is computed.
     """
 
 

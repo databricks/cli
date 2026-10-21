@@ -19,7 +19,7 @@ class MaxFunction:
 
     input: VariableOr[str]
     """
-    [Public Preview] The input column from which the maximum is computed.
+    The input column from which the maximum is computed.
     """
 
     @classmethod
@@ -35,7 +35,7 @@ class MaxFunctionDict(TypedDict, total=False):
 
     input: VariableOr[str]
     """
-    [Public Preview] The input column from which the maximum is computed.
+    The input column from which the maximum is computed.
     """
 
 

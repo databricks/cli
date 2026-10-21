@@ -19,7 +19,7 @@ class ColumnSelection:
 
     column: VariableOr[str]
     """
-    [Public Preview] Column name from source to select as the feature value.
+    Column name from source to select as the feature value.
     """
 
     @classmethod
@@ -35,7 +35,7 @@ class ColumnSelectionDict(TypedDict, total=False):
 
     column: VariableOr[str]
     """
-    [Public Preview] Column name from source to select as the feature value.
+    Column name from source to select as the feature value.
     """
 
 

@@ -1094,6 +1094,7 @@ resources.internal_immutable_snapshots.*.remote_root	string	INPUT
 resources.internal_immutable_snapshots.*.zip_path	string	INPUT	STATE
 resources.job_runs.*.dbt_commands	[]string	ALL
 resources.job_runs.*.dbt_commands[*]	string	ALL
+resources.job_runs.*.duration_target	string	ALL
 resources.job_runs.*.id	string	INPUT
 resources.job_runs.*.idempotency_token	string	ALL
 resources.job_runs.*.jar_params	[]string	ALL
@@ -1168,6 +1169,7 @@ resources.jobs.*.deployment.kind	jobs.JobDeploymentKind	ALL
 resources.jobs.*.deployment.metadata_file_path	string	ALL
 resources.jobs.*.deployment.version_id	string	ALL
 resources.jobs.*.description	string	ALL
+resources.jobs.*.duration_target	string	ALL
 resources.jobs.*.edit_mode	jobs.JobEditMode	ALL
 resources.jobs.*.effective_budget_policy_id	string	REMOTE
 resources.jobs.*.effective_usage_policy_id	string	REMOTE
@@ -1425,6 +1427,18 @@ resources.jobs.*.tasks[*].dashboard_task.dashboard_id	string	ALL
 resources.jobs.*.tasks[*].dashboard_task.filters	map[string]string	ALL
 resources.jobs.*.tasks[*].dashboard_task.filters.*	string	ALL
 resources.jobs.*.tasks[*].dashboard_task.subscription	*jobs.Subscription	ALL
+resources.jobs.*.tasks[*].dashboard_task.subscription.attachment	*jobs.SubscriptionAttachment	ALL
+resources.jobs.*.tasks[*].dashboard_task.subscription.attachment.data_attachment	*jobs.SubscriptionAttachmentDataAttachment	ALL
+resources.jobs.*.tasks[*].dashboard_task.subscription.attachment.data_attachment.file_format	jobs.SubscriptionAttachmentDataAttachmentFileFormat	ALL
+resources.jobs.*.tasks[*].dashboard_task.subscription.attachment.data_attachment.include_applied_filters	bool	ALL
+resources.jobs.*.tasks[*].dashboard_task.subscription.attachment.data_attachment.widgets	[]jobs.SubscriptionAttachmentDataAttachmentWidget	ALL
+resources.jobs.*.tasks[*].dashboard_task.subscription.attachment.data_attachment.widgets[*]	jobs.SubscriptionAttachmentDataAttachmentWidget	ALL
+resources.jobs.*.tasks[*].dashboard_task.subscription.attachment.data_attachment.widgets[*].page_id	string	ALL
+resources.jobs.*.tasks[*].dashboard_task.subscription.attachment.data_attachment.widgets[*].widget_id	string	ALL
+resources.jobs.*.tasks[*].dashboard_task.subscription.attachment.page_attachment	*jobs.SubscriptionAttachmentPageAttachment	ALL
+resources.jobs.*.tasks[*].dashboard_task.subscription.attachment.page_attachment.page_ids	[]string	ALL
+resources.jobs.*.tasks[*].dashboard_task.subscription.attachment.page_attachment.page_ids[*]	string	ALL
+resources.jobs.*.tasks[*].dashboard_task.subscription.attachment.page_attachment.page_selection	jobs.SubscriptionAttachmentPageAttachmentPageSelection	ALL
 resources.jobs.*.tasks[*].dashboard_task.subscription.custom_subject	string	ALL
 resources.jobs.*.tasks[*].dashboard_task.subscription.paused	bool	ALL
 resources.jobs.*.tasks[*].dashboard_task.subscription.subscribers	[]jobs.SubscriptionSubscriber	ALL
@@ -1521,6 +1535,18 @@ resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.dashboard_id	string	
 resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.filters	map[string]string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.filters.*	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.subscription	*jobs.Subscription	ALL
+resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.subscription.attachment	*jobs.SubscriptionAttachment	ALL
+resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.subscription.attachment.data_attachment	*jobs.SubscriptionAttachmentDataAttachment	ALL
+resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.subscription.attachment.data_attachment.file_format	jobs.SubscriptionAttachmentDataAttachmentFileFormat	ALL
+resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.subscription.attachment.data_attachment.include_applied_filters	bool	ALL
+resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.subscription.attachment.data_attachment.widgets	[]jobs.SubscriptionAttachmentDataAttachmentWidget	ALL
+resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.subscription.attachment.data_attachment.widgets[*]	jobs.SubscriptionAttachmentDataAttachmentWidget	ALL
+resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.subscription.attachment.data_attachment.widgets[*].page_id	string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.subscription.attachment.data_attachment.widgets[*].widget_id	string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.subscription.attachment.page_attachment	*jobs.SubscriptionAttachmentPageAttachment	ALL
+resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.subscription.attachment.page_attachment.page_ids	[]string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.subscription.attachment.page_attachment.page_ids[*]	string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.subscription.attachment.page_attachment.page_selection	jobs.SubscriptionAttachmentPageAttachmentPageSelection	ALL
 resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.subscription.custom_subject	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.subscription.paused	bool	ALL
 resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.subscription.subscribers	[]jobs.SubscriptionSubscriber	ALL

@@ -19,7 +19,7 @@ class LastFunction:
 
     input: VariableOr[str]
     """
-    [Public Preview] The input column from which the last value is returned.
+    The input column from which the last value is returned.
     """
 
     @classmethod
@@ -35,7 +35,7 @@ class LastFunctionDict(TypedDict, total=False):
 
     input: VariableOr[str]
     """
-    [Public Preview] The input column from which the last value is returned.
+    The input column from which the last value is returned.
     """
 
 

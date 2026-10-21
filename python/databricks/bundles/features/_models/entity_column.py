@@ -17,7 +17,7 @@ class EntityColumn:
 
     name: VariableOr[str]
     """
-    [Public Preview] The name of the entity column. For Kafka sources, use dot-prefixed path notation to reference
+    The name of the entity column. For Kafka sources, use dot-prefixed path notation to reference
     fields within the key or value schema (e.g., "value.user_id", "key.partition_key"). For nested
     fields, the leaf node name (e.g., "user_id" from "value.trip_details.user_id") is what will
     be present in materialized tables and expected to match at query time.
@@ -38,7 +38,7 @@ class EntityColumnDict(TypedDict, total=False):
 
     name: VariableOr[str]
     """
-    [Public Preview] The name of the entity column. For Kafka sources, use dot-prefixed path notation to reference
+    The name of the entity column. For Kafka sources, use dot-prefixed path notation to reference
     fields within the key or value schema (e.g., "value.user_id", "key.partition_key"). For nested
     fields, the leaf node name (e.g., "user_id" from "value.trip_details.user_id") is what will
     be present in materialized tables and expected to match at query time.

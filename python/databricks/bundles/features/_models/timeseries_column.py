@@ -17,7 +17,7 @@ class TimeseriesColumn:
 
     name: VariableOr[str]
     """
-    [Public Preview] The name of the timeseries column. For Kafka sources, use dot-prefixed path notation to
+    The name of the timeseries column. For Kafka sources, use dot-prefixed path notation to
     reference fields within the key or value schema (e.g., "value.event_timestamp"). For nested
     fields, the leaf node name (e.g., "event_timestamp" from "value.event_details.event_timestamp")
     is what will be present in materialized tables and expected to match at query time.
@@ -38,7 +38,7 @@ class TimeseriesColumnDict(TypedDict, total=False):
 
     name: VariableOr[str]
     """
-    [Public Preview] The name of the timeseries column. For Kafka sources, use dot-prefixed path notation to
+    The name of the timeseries column. For Kafka sources, use dot-prefixed path notation to
     reference fields within the key or value schema (e.g., "value.event_timestamp"). For nested
     fields, the leaf node name (e.g., "event_timestamp" from "value.event_details.event_timestamp")
     is what will be present in materialized tables and expected to match at query time.

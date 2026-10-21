@@ -19,17 +19,17 @@ class ApproxPercentileFunction:
 
     input: VariableOr[str]
     """
-    [Public Preview] The input column from which the approximate percentile is computed.
+    The input column from which the approximate percentile is computed.
     """
 
     percentile: VariableOr[float]
     """
-    [Public Preview] The percentile value to compute (between 0 and 1).
+    The percentile value to compute (between 0 and 1).
     """
 
     accuracy: VariableOrOptional[int] = None
     """
-    [Public Preview] The accuracy parameter (higher is more accurate but slower).
+    The accuracy parameter (higher is more accurate but slower).
     """
 
     @classmethod
@@ -45,17 +45,17 @@ class ApproxPercentileFunctionDict(TypedDict, total=False):
 
     input: VariableOr[str]
     """
-    [Public Preview] The input column from which the approximate percentile is computed.
+    The input column from which the approximate percentile is computed.
     """
 
     percentile: VariableOr[float]
     """
-    [Public Preview] The percentile value to compute (between 0 and 1).
+    The percentile value to compute (between 0 and 1).
     """
 
     accuracy: VariableOrOptional[int]
     """
-    [Public Preview] The accuracy parameter (higher is more accurate but slower).
+    The accuracy parameter (higher is more accurate but slower).
     """
 
 

@@ -6,6 +6,10 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrList, VariableOrOptional
+from databricks.bundles.jobs._models.subscription_attachment import (
+    SubscriptionAttachment,
+    SubscriptionAttachmentParam,
+)
 from databricks.bundles.jobs._models.subscription_subscriber import (
     SubscriptionSubscriber,
     SubscriptionSubscriberParam,
@@ -18,6 +22,16 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class Subscription:
     """"""
+
+    attachment: VariableOrOptional[SubscriptionAttachment] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Optional: The configuration for the files attached to the dashboard snapshot notification. It
+    controls the underlying data of dashboard widgets that is attached as data files and which
+    pages are included in the attached PDF. If not specified, the notification is sent with only
+    the default snapshot.
+    """
 
     custom_subject: VariableOrOptional[str] = None
     """
@@ -45,6 +59,16 @@ class Subscription:
 
 class SubscriptionDict(TypedDict, total=False):
     """"""
+
+    attachment: VariableOrOptional[SubscriptionAttachmentParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Optional: The configuration for the files attached to the dashboard snapshot notification. It
+    controls the underlying data of dashboard widgets that is attached as data files and which
+    pages are included in the attached PDF. If not specified, the notification is sent with only
+    the default snapshot.
+    """
 
     custom_subject: VariableOrOptional[str]
     """

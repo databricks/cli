@@ -31,13 +31,11 @@ class ModelProviderServiceConfigModelTargetConfig:
 
     endpoint_route: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Relative path appended to a custom provider's `base_url` for this model,
-    such as `serve/openai/chat`. Only custom model provider service targets
-    use this field; other provider types ignore it, and model service
-    destinations reject it. Do not include URI templates, queries, or
-    fragments. When empty, `base_url` is used unchanged.
+    Relative path appended to a custom provider's `base_url` for this model,
+    such as `serve/openai/chat`. Nonempty values are only supported for
+    custom model provider service targets; other provider types reject them.
+    Model service destinations do not support this field. Do not include
+    URI templates, queries, or fragments. When empty, `base_url` is used unchanged.
     """
 
     native_api_types: VariableOrList[str] = field(default_factory=list)
@@ -72,13 +70,11 @@ class ModelProviderServiceConfigModelTargetConfigDict(TypedDict, total=False):
 
     endpoint_route: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Relative path appended to a custom provider's `base_url` for this model,
-    such as `serve/openai/chat`. Only custom model provider service targets
-    use this field; other provider types ignore it, and model service
-    destinations reject it. Do not include URI templates, queries, or
-    fragments. When empty, `base_url` is used unchanged.
+    Relative path appended to a custom provider's `base_url` for this model,
+    such as `serve/openai/chat`. Nonempty values are only supported for
+    custom model provider service targets; other provider types reject them.
+    Model service destinations do not support this field. Do not include
+    URI templates, queries, or fragments. When empty, `base_url` is used unchanged.
     """
 
     native_api_types: VariableOrList[str]

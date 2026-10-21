@@ -92,6 +92,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newListProjects())
 	cmd.AddCommand(newListRoles())
 	cmd.AddCommand(newListSnapshots())
+	cmd.AddCommand(newRevealRolePassword())
 	cmd.AddCommand(newUndeleteBranch())
 	cmd.AddCommand(newUndeleteProject())
 	cmd.AddCommand(newUpdateBranch())
@@ -3931,6 +3932,69 @@ List Snapshots.
 	// Apply optional overrides to this command.
 	for _, fn := range listSnapshotsOverrides {
 		fn(cmd, &listSnapshotsReq)
+	}
+
+	return cmd
+}
+
+// start reveal-role-password command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var revealRolePasswordOverrides []func(
+	*cobra.Command,
+	*postgres.RevealRolePasswordRequest,
+)
+
+func newRevealRolePassword() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var revealRolePasswordReq postgres.RevealRolePasswordRequest
+
+	cmd.Use = "reveal-role-password NAME"
+	cmd.Short = `Reveal a Postgres Role password.`
+	cmd.Long = `Reveal a Postgres Role password.
+
+  Reveals the current password for a password-authenticated Postgres role.
+
+  Arguments:
+    NAME: The full resource path of the role whose password should be revealed.
+      Format: projects/{project_id}/branches/{branch_id}/roles/{role_id}`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		revealRolePasswordReq.Name = args[0]
+
+		response, err := w.Postgres.RevealRolePassword(ctx, revealRolePasswordReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range revealRolePasswordOverrides {
+		fn(cmd, &revealRolePasswordReq)
 	}
 
 	return cmd

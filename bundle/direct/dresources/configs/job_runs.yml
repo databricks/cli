@@ -5,6 +5,8 @@
 ignore_remote_changes:
   - field: job_id
     reason: immutable
+  - field: duration_target
+    reason: immutable
   # GetRun reports job_parameters resolved against the job's defaults, and
   # nests the rest under overriding_parameters.
   - field: dbt_commands

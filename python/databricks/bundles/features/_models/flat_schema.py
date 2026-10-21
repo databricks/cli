@@ -24,7 +24,7 @@ class FlatSchema:
 
     fields: VariableOrList[FieldDefinition] = field(default_factory=list)
     """
-    [Public Preview] The list of fields in this schema.
+    The list of fields in this schema.
     """
 
     @classmethod
@@ -40,7 +40,7 @@ class FlatSchemaDict(TypedDict, total=False):
 
     fields: VariableOrList[FieldDefinitionParam]
     """
-    [Public Preview] The list of fields in this schema.
+    The list of fields in this schema.
     """
 
 

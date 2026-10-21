@@ -19,7 +19,7 @@ class MinFunction:
 
     input: VariableOr[str]
     """
-    [Public Preview] The input column from which the minimum is computed.
+    The input column from which the minimum is computed.
     """
 
     @classmethod
@@ -35,7 +35,7 @@ class MinFunctionDict(TypedDict, total=False):
 
     input: VariableOr[str]
     """
-    [Public Preview] The input column from which the minimum is computed.
+    The input column from which the minimum is computed.
     """
 
 

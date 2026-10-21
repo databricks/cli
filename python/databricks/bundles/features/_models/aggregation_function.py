@@ -88,27 +88,27 @@ class AggregationFunction:
 
     approx_count_distinct: VariableOrOptional[ApproxCountDistinctFunction] = None
     """
-    [Public Preview] Computes the approximate count of distinct values.
+    Computes the approximate count of distinct values.
     """
 
     approx_percentile: VariableOrOptional[ApproxPercentileFunction] = None
     """
-    [Public Preview] Computes the approximate percentile of values.
+    Computes the approximate percentile of values.
     """
 
     avg: VariableOrOptional[AvgFunction] = None
     """
-    [Public Preview] Computes the average of values.
+    Computes the average of values.
     """
 
     count_function: VariableOrOptional[CountFunction] = None
     """
-    [Public Preview] Computes the count of values.
+    Computes the count of values.
     """
 
     first: VariableOrOptional[FirstFunction] = None
     """
-    [Public Preview] Returns the first value.
+    Returns the first value.
     """
 
     first_distinct: VariableOrOptional[FirstDistinctFunction] = None
@@ -127,7 +127,7 @@ class AggregationFunction:
 
     last: VariableOrOptional[LastFunction] = None
     """
-    [Public Preview] Returns the last value.
+    Returns the last value.
     """
 
     last_distinct: VariableOrOptional[LastDistinctFunction] = None
@@ -146,42 +146,42 @@ class AggregationFunction:
 
     max: VariableOrOptional[MaxFunction] = None
     """
-    [Public Preview] Computes the maximum value.
+    Computes the maximum value.
     """
 
     min: VariableOrOptional[MinFunction] = None
     """
-    [Public Preview] Computes the minimum value.
+    Computes the minimum value.
     """
 
     stddev_pop: VariableOrOptional[StddevPopFunction] = None
     """
-    [Public Preview] Computes the population standard deviation.
+    Computes the population standard deviation.
     """
 
     stddev_samp: VariableOrOptional[StddevSampFunction] = None
     """
-    [Public Preview] Computes the sample standard deviation.
+    Computes the sample standard deviation.
     """
 
     sum: VariableOrOptional[SumFunction] = None
     """
-    [Public Preview] Computes the sum of values.
+    Computes the sum of values.
     """
 
     time_window: VariableOrOptional[TimeWindow] = None
     """
-    [Public Preview] The time window over which the aggregation is computed.
+    The time window over which the aggregation is computed.
     """
 
     var_pop: VariableOrOptional[VarPopFunction] = None
     """
-    [Public Preview] Computes the population variance.
+    Computes the population variance.
     """
 
     var_samp: VariableOrOptional[VarSampFunction] = None
     """
-    [Public Preview] Computes the sample variance.
+    Computes the sample variance.
     """
 
     @classmethod
@@ -197,27 +197,27 @@ class AggregationFunctionDict(TypedDict, total=False):
 
     approx_count_distinct: VariableOrOptional[ApproxCountDistinctFunctionParam]
     """
-    [Public Preview] Computes the approximate count of distinct values.
+    Computes the approximate count of distinct values.
     """
 
     approx_percentile: VariableOrOptional[ApproxPercentileFunctionParam]
     """
-    [Public Preview] Computes the approximate percentile of values.
+    Computes the approximate percentile of values.
     """
 
     avg: VariableOrOptional[AvgFunctionParam]
     """
-    [Public Preview] Computes the average of values.
+    Computes the average of values.
     """
 
     count_function: VariableOrOptional[CountFunctionParam]
     """
-    [Public Preview] Computes the count of values.
+    Computes the count of values.
     """
 
     first: VariableOrOptional[FirstFunctionParam]
     """
-    [Public Preview] Returns the first value.
+    Returns the first value.
     """
 
     first_distinct: VariableOrOptional[FirstDistinctFunctionParam]
@@ -236,7 +236,7 @@ class AggregationFunctionDict(TypedDict, total=False):
 
     last: VariableOrOptional[LastFunctionParam]
     """
-    [Public Preview] Returns the last value.
+    Returns the last value.
     """
 
     last_distinct: VariableOrOptional[LastDistinctFunctionParam]
@@ -255,42 +255,42 @@ class AggregationFunctionDict(TypedDict, total=False):
 
     max: VariableOrOptional[MaxFunctionParam]
     """
-    [Public Preview] Computes the maximum value.
+    Computes the maximum value.
     """
 
     min: VariableOrOptional[MinFunctionParam]
     """
-    [Public Preview] Computes the minimum value.
+    Computes the minimum value.
     """
 
     stddev_pop: VariableOrOptional[StddevPopFunctionParam]
     """
-    [Public Preview] Computes the population standard deviation.
+    Computes the population standard deviation.
     """
 
     stddev_samp: VariableOrOptional[StddevSampFunctionParam]
     """
-    [Public Preview] Computes the sample standard deviation.
+    Computes the sample standard deviation.
     """
 
     sum: VariableOrOptional[SumFunctionParam]
     """
-    [Public Preview] Computes the sum of values.
+    Computes the sum of values.
     """
 
     time_window: VariableOrOptional[TimeWindowParam]
     """
-    [Public Preview] The time window over which the aggregation is computed.
+    The time window over which the aggregation is computed.
     """
 
     var_pop: VariableOrOptional[VarPopFunctionParam]
     """
-    [Public Preview] Computes the population variance.
+    Computes the population variance.
     """
 
     var_samp: VariableOrOptional[VarSampFunctionParam]
     """
-    [Public Preview] Computes the sample variance.
+    Computes the sample variance.
     """
 
 

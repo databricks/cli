@@ -19,7 +19,7 @@ class StddevSampFunction:
 
     input: VariableOr[str]
     """
-    [Public Preview] The input column from which the sample standard deviation is computed.
+    The input column from which the sample standard deviation is computed.
     """
 
     @classmethod
@@ -35,7 +35,7 @@ class StddevSampFunctionDict(TypedDict, total=False):
 
     input: VariableOr[str]
     """
-    [Public Preview] The input column from which the sample standard deviation is computed.
+    The input column from which the sample standard deviation is computed.
     """
 
 

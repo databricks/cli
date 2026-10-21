@@ -33,7 +33,7 @@ class TimeWindow:
 
     rolling: VariableOrOptional[RollingWindow] = None
     """
-    [Public Preview] A rolling time window with an optional non-negative delay.
+    A rolling time window with an optional non-negative delay.
     """
 
     sawtooth: VariableOrOptional[SawtoothWindow] = None
@@ -44,9 +44,6 @@ class TimeWindow:
     """
 
     sliding: VariableOrOptional[SlidingWindow] = None
-    """
-    [Public Preview]
-    """
 
     start_time: VariableOrOptional[str] = None
     """
@@ -63,9 +60,6 @@ class TimeWindow:
     """
 
     tumbling: VariableOrOptional[TumblingWindow] = None
-    """
-    [Public Preview]
-    """
 
     @classmethod
     def from_dict(cls, value: "TimeWindowDict") -> "Self":
@@ -80,7 +74,7 @@ class TimeWindowDict(TypedDict, total=False):
 
     rolling: VariableOrOptional[RollingWindowParam]
     """
-    [Public Preview] A rolling time window with an optional non-negative delay.
+    A rolling time window with an optional non-negative delay.
     """
 
     sawtooth: VariableOrOptional[SawtoothWindowParam]
@@ -91,9 +85,6 @@ class TimeWindowDict(TypedDict, total=False):
     """
 
     sliding: VariableOrOptional[SlidingWindowParam]
-    """
-    [Public Preview]
-    """
 
     start_time: VariableOrOptional[str]
     """
@@ -110,9 +101,6 @@ class TimeWindowDict(TypedDict, total=False):
     """
 
     tumbling: VariableOrOptional[TumblingWindowParam]
-    """
-    [Public Preview]
-    """
 
 
 TimeWindowParam = TimeWindowDict | TimeWindow

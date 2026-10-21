@@ -19,12 +19,12 @@ class ApproxCountDistinctFunction:
 
     input: VariableOr[str]
     """
-    [Public Preview] The input column from which the approximate count of distinct values is computed.
+    The input column from which the approximate count of distinct values is computed.
     """
 
     relative_sd: VariableOrOptional[float] = None
     """
-    [Public Preview] The maximum relative standard deviation allowed (default defined by Spark).
+    The maximum relative standard deviation allowed (default defined by Spark).
     """
 
     @classmethod
@@ -40,12 +40,12 @@ class ApproxCountDistinctFunctionDict(TypedDict, total=False):
 
     input: VariableOr[str]
     """
-    [Public Preview] The input column from which the approximate count of distinct values is computed.
+    The input column from which the approximate count of distinct values is computed.
     """
 
     relative_sd: VariableOrOptional[float]
     """
-    [Public Preview] The maximum relative standard deviation allowed (default defined by Spark).
+    The maximum relative standard deviation allowed (default defined by Spark).
     """
 
 

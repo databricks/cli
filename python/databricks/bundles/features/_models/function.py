@@ -29,12 +29,12 @@ class Function:
 
     aggregation_function: VariableOrOptional[AggregationFunction] = None
     """
-    [Public Preview] An aggregation function applied over a time window.
+    An aggregation function applied over a time window.
     """
 
     column_selection: VariableOrOptional[ColumnSelection] = None
     """
-    [Public Preview] Selects the latest value of a single column in a data source
+    Selects the latest value of a single column in a data source
     """
 
     custom_udf: VariableOrOptional[CustomUdf] = None
@@ -57,12 +57,12 @@ class FunctionDict(TypedDict, total=False):
 
     aggregation_function: VariableOrOptional[AggregationFunctionParam]
     """
-    [Public Preview] An aggregation function applied over a time window.
+    An aggregation function applied over a time window.
     """
 
     column_selection: VariableOrOptional[ColumnSelectionParam]
     """
-    [Public Preview] Selects the latest value of a single column in a data source
+    Selects the latest value of a single column in a data source
     """
 
     custom_udf: VariableOrOptional[CustomUdfParam]
