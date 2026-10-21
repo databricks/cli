@@ -188,6 +188,45 @@ func (s *FakeWorkspace) isSawtoothFeature(featureName string) bool {
 	return aggregation != nil && aggregation.TimeWindow != nil && aggregation.TimeWindow.Sawtooth != nil
 }
 
+// validateBatchAndStreamingFeaturesNotMixed mirrors the create-path rule that one call materializes
+// either batch features or streaming features. A Stream-sourced feature always materializes on the
+// streaming path; a Delta-sourced one joins it only when a member of it carries a streaming
+// trigger. An unknown feature falls in neither group, for the reason isSawtoothFeature gives.
+func (s *FakeWorkspace) validateBatchAndStreamingFeaturesNotMixed(
+	members []ml.MaterializedFeature,
+) *Response {
+	var batchFeatureNames, streamingFeatureNames []string
+	for _, featureName := range materializationSetFeatureNames(members) {
+		feature, stored := s.Features[featureName]
+		if !stored {
+			continue
+		}
+		hasStreamingMember := false
+		for _, member := range members {
+			if member.FeatureName == featureName && member.StreamingMode != nil {
+				hasStreamingMember = true
+			}
+		}
+		switch {
+		case feature.Source.StreamSource != nil || hasStreamingMember:
+			streamingFeatureNames = append(streamingFeatureNames, featureName)
+		case feature.Source.DeltaTableSource != nil:
+			batchFeatureNames = append(batchFeatureNames, featureName)
+		}
+	}
+	if len(batchFeatureNames) == 0 || len(streamingFeatureNames) == 0 {
+		return nil
+	}
+
+	response := materializationSetError(http.StatusBadRequest, "INVALID_PARAMETER_VALUE",
+		fmt.Sprintf("Batch and streaming features cannot be mixed in a single "+
+			"materialize_features call because they require different trigger types. Issue two "+
+			"separate calls: one for batch features and one for streaming features. Batch "+
+			"features: %s. Streaming features: %s",
+			strings.Join(batchFeatureNames, ", "), strings.Join(streamingFeatureNames, ", ")))
+	return &response
+}
+
 // validateSawtoothMaterializedFeatures mirrors the rule that a sawtooth feature declares all three
 // of its materialized features itself. The request is not expanded for it: a materialization set
 // stamps a set id on every member before the backend reaches its normalization, and that
@@ -244,6 +283,9 @@ func (s *FakeWorkspace) MaterializationSetsCreate(req Request) Response {
 			"A materialization set requires at least one materialized feature.")
 	}
 	if bad := validateBatchPipelineScheduleStates(set.MaterializedFeatures); bad != nil {
+		return *bad
+	}
+	if bad := s.validateBatchAndStreamingFeaturesNotMixed(set.MaterializedFeatures); bad != nil {
 		return *bad
 	}
 	if bad := validateSharedMaterializationDestination(set.MaterializedFeatures); bad != nil {
@@ -502,11 +544,22 @@ func (s *FakeWorkspace) MaterializationSetsUpdate(req Request, setID string) Res
 		featureName := target[0].FeatureName
 		removedForFeature := append([]string(nil), featureNameToRemovedIDs[featureName]...)
 		sort.Strings(removedForFeature)
+		// The server has a message for each direction. target[0] is the member a delete is applied
+		// to, so naming it means the delete reaches past what the request asked for, and omitting
+		// it means the named members have no delete of their own.
+		if removedIDs[target[0].MaterializedFeatureId] {
+			return materializationSetError(http.StatusBadRequest, "INVALID_PARAMETER_VALUE",
+				fmt.Sprintf("Deleting materialized features %s of feature '%s' also deletes "+
+					"materialized features %s, which the request does not delete. Delete the "+
+					"unrequested materialized features as well.",
+					quotedMaterializedFeatureIDs(removedForFeature), featureName,
+					quotedMaterializedFeatureIDs(unrequested)))
+		}
 		return materializationSetError(http.StatusBadRequest, "INVALID_PARAMETER_VALUE",
-			fmt.Sprintf("Changing materialized features %s of feature '%s' also changes "+
-				"materialized features %s, which the request does not change. Apply the same "+
-				"change to the unrequested materialized features as well.",
+			fmt.Sprintf("Materialized features %s of feature '%s' are deleted only by deleting "+
+				"materialized features %s, which the request doesn't supply. Remove %s as well.",
 				quotedMaterializedFeatureIDs(removedForFeature), featureName,
+				quotedMaterializedFeatureIDs(unrequested),
 				quotedMaterializedFeatureIDs(unrequested)))
 	}
 

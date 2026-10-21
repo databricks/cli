@@ -13,6 +13,15 @@ pin_profile() {
     printf "\nworkspace:\n  profile: %s\n" "$MATSET_PROFILE" >> databricks.yml
 }
 
+render() {
+    envsubst < "$1" > databricks.yml
+    pin_profile
+}
+
+set_action() {
+    jq -r '.plan["resources.materialization_sets.set1"].action' out.plan.json
+}
+
 cleanup() {
     $CLI bundle destroy --auto-approve > /dev/null 2>&1 || true
 }
@@ -39,5 +48,35 @@ trace $CLI bundle deploy
 
 title "Every suppressed destination change, by reason"
 trace jq -r '.plan["resources.materialization_sets.set1"].changes | to_entries | map(select(.value.reason == "input_only_not_returned")) | length' out.plan.json
+
+title "A sawtooth feature's three members are one cascade group, so every strict subset of them"
+title "is refused. Removing the offline member reaches both online ones,"
+render drop-offline.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
+trace musterr $CLI bundle deploy --auto-approve
+
+title "removing the online batch member names no member a delete can be applied to,"
+render drop-online-batch.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
+trace musterr $CLI bundle deploy --auto-approve
+
+title "and removing the batch pair still leaves the streaming member behind"
+render drop-batch-pair.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
+trace musterr $CLI bundle deploy --auto-approve
+
+title "Removing all three satisfies the cascade but empties the set, which the update endpoint"
+title "refuses in favour of the delete endpoint. None of the four refusals wrote anything, so"
+title "restoring the config plans nothing."
+render drop-all.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
+trace musterr $CLI bundle deploy --auto-approve
+render databricks.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
 
 rm -f out.requests.txt out.plan.json

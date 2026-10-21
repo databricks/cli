@@ -1,6 +1,7 @@
 export CATALOG_NAME="${MATSET_CATALOG:-danielb}"
 export SCHEMA_NAME="${MATSET_SCHEMA:-fs2680}"
 export ONLINE_STORE_NAME="${MATSET_ONLINE_STORE:-danielb}"
+export STREAM_FULL_NAME="${MATSET_STREAM:-danielb.fs2680.fs2680_dch48o_stream}"
 export TABLE_NAME="$CATALOG_NAME.$SCHEMA_NAME.src_$UNIQUE_NAME"
 
 # Each phase is its own template rather than a string edit, so the fixture a phase deploys is
@@ -29,6 +30,27 @@ trace $CLI bundle deploy
 trace $CLI bundle plan -o json > out.plan.json
 trace set_actions
 
+title "Neither member of the pair can be removed on its own. The offline member is the one a"
+title "delete is applied to, so removing it reaches the online one too,"
+render drop-offline.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_actions
+trace musterr $CLI bundle deploy --auto-approve
+
+title "and removing the online member names nothing a delete can be applied to"
+render drop-online.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_actions
+trace musterr $CLI bundle deploy --auto-approve
+
+title "Removing both satisfies the cascade but empties the set, which the update endpoint refuses"
+title "in favour of the delete endpoint. Restoring the pair plans nothing, so no refusal wrote."
+render drop-both.yml.tmpl
+trace musterr $CLI bundle deploy --auto-approve
+render databricks.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_actions
+
 title "Repointing the destinations is a recreate, not a silent no-op. The server cannot move a"
 title "materialization in place, so the set is rebuilt at the new location."
 render moved.yml.tmpl
@@ -50,6 +72,12 @@ title "members of one feature disagreeing on the state"
 render paused-offline.yml.tmpl
 trace $CLI bundle plan -o json > out.plan.json
 trace set_actions
+trace musterr $CLI bundle deploy --auto-approve
+
+title "A set cannot mix a feature that materializes on the batch path with one that materializes"
+title "on the streaming path. The refusal above left no set behind, so this reaches the create"
+title "endpoint, and it is raised before the shared-destination rule the two features also break."
+render mixed.yml.tmpl
 trace musterr $CLI bundle deploy --auto-approve
 
 rm -f out.requests.txt out.plan.json

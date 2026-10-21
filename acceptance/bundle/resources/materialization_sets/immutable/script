@@ -38,4 +38,15 @@ trace $CLI bundle plan -o json > out.plan.json
 trace set_action
 trace musterr $CLI bundle deploy --auto-approve
 
+title "Every refusal above leaves destroy and redeploy as the only route, so that pair is what a"
+title "member-field change costs. The delete settles its own operation, and the re-created set"
+title "plans clean."
+render databricks.yml.tmpl
+trace $CLI bundle destroy --auto-approve
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
+trace $CLI bundle deploy
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
+
 rm -f out.requests.txt out.plan.json

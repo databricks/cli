@@ -3,9 +3,10 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-streaming-[UNIQUE_NAME]/default/files...
 Created features.streamfeat
+Created features.streamfeat2
 Created materialization_sets.set1
-Files: 2 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+Files: 4 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 === A redeploy plans nothing. The schedule state the server assigns to a lone streaming member
 === must not read as drift, and neither must its online destination.
@@ -19,7 +20,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-streaming-[UNIQUE_NAME]/default/files...
 Files: 1 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+Resources: 0 created, 0 changed, 0 deleted, 3 unchanged
 
 === The schedule state is write-once, so declaring one on a streaming member that had none
 === plans as a recreate rather than an in-place update
@@ -32,3 +33,29 @@ Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 {
   "resources.materialization_sets.set1": "recreate"
 }
+
+=== Repointing a member's online destination is a recreate: the server cannot move a
+=== materialization in place, so the whole set is rebuilt at the new location
+>>> [CLI] bundle plan -o json
+
+>>> set_action
+recreate
+
+=== Removing one feature's streaming member is an update the endpoint accepts. With no offline
+=== member to cascade from, each online member is its own cascade group, so the other feature's
+=== member is untouched and the set is left non-empty.
+>>> [CLI] bundle plan -o json
+
+>>> set_action
+update
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-streaming-[UNIQUE_NAME]/default/files...
+Updated materialization_sets.set1
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> set_action
+skip

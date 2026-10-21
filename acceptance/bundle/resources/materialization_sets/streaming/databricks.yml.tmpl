@@ -3,6 +3,25 @@ bundle:
 
 resources:
   features:
+    # A second feature materialized to the same destination, so removing one feature's member
+    # leaves a set behind. A set must be emptied through the delete endpoint, not an update.
+    streamfeat2:
+      full_name: $CATALOG_NAME.$SCHEMA_NAME.stream2_$UNIQUE_NAME
+      source:
+        stream_source:
+          full_name: $STREAM_FULL_NAME
+      function:
+        aggregation_function:
+          count_function:
+            input: value.passenger_count_1
+          time_window:
+            rolling:
+              window_duration: 3600s
+      entities:
+        - name: value.pickup_zip
+      timeseries_column:
+        name: value.event_timestamp
+
     streamfeat:
       full_name: $CATALOG_NAME.$SCHEMA_NAME.stream_$UNIQUE_NAME
       source:
@@ -27,6 +46,15 @@ resources:
       materialized_features:
         # Online streaming only: no cron schedule, and no pipeline schedule state to agree on.
         - feature_name: ${resources.features.streamfeat.full_name}
+          online_store_config:
+            online_store_name: $ONLINE_STORE_NAME
+            catalog_name: $CATALOG_NAME
+            schema_name: $SCHEMA_NAME
+            table_name_prefix: stream_$UNIQUE_NAME
+          streaming_mode:
+            mode: STREAMING_MODE_TYPE_RTM
+        # Online streaming only: no cron schedule, and no pipeline schedule state to agree on.
+        - feature_name: ${resources.features.streamfeat2.full_name}
           online_store_config:
             online_store_name: $ONLINE_STORE_NAME
             catalog_name: $CATALOG_NAME

@@ -38,11 +38,11 @@ because every adapter call mints its own.
 | `membership` | the delete cascade runs both ways -- removing either member of a feature's pair on its own is refused, while removing a whole pair plans as `update` and the other feature's pair keeps its ids |
 | `removal_scope` | the cascade is scoped per feature: where every feature is materialized offline only, each contributes one member and can have it removed alone; the update's operation round trip |
 | `schedule_state` | a member the config leaves unset adopts the state the server assigned; a declared change to it is a `recreate`, and that recreate still has to satisfy the create endpoint's rule that a feature's members agree |
-| `immutable` | a write-once member field is caught by the planner as `recreate` and never reaches the server; adding a member routes to `update` so the server refuses it by name |
+| `immutable` | a write-once member field is caught by the planner as `recreate` and never reaches the server; adding a member routes to `update` so the server refuses it by name; destroy then redeploy is the route those refusals leave open, and the re-created set plans clean |
 | `destination` | a destination field the server accepts on write and never returns on read is not drift, while a repoint the config actually asked for still recreates -- the two are told apart by whether the persisted value is recoverable |
-| `batch` | a batch feature with both destinations creates and settles; repointing the destinations is a `recreate`; pausing the feature is a `recreate` that succeeds when every member agrees and is refused by the create endpoint when they do not |
-| `sawtooth` | the offline-and-online batch pair is refused at create, because a set is not expanded into the third materialization; all three declared creates and then plans nothing |
-| `streaming` | a lone streaming online member needs no schedule and no cron; declaring a schedule state on it plans as a `recreate` rather than an in-place update |
+| `batch` | a batch feature with both destinations creates and settles; neither member of its pair can be removed alone, and removing both empties the set, which the update endpoint refuses in favour of delete; repointing the destinations is a `recreate`; pausing the feature is a `recreate` that succeeds when every member agrees and is refused by the create endpoint when they do not; a set mixing a batch-path feature with a streaming-path one is refused at create |
+| `sawtooth` | the offline-and-online batch pair is refused at create, because a set is not expanded into the third materialization; all three declared creates and then plans nothing; the three members are one cascade group, so each of the three strict subsets of them is refused -- with the message depending on whether the removal names the member a delete is applied to -- and removing all three empties the set, which the update endpoint refuses |
+| `streaming` | a streaming online member needs no schedule and no cron; declaring a schedule state on it, or repointing its destination, plans as a `recreate` rather than an in-place update; with two features materialized to one destination and no offline member between them, each online member is its own cascade group, so one can be removed alone as an `update` |
 
 ## Running against a workspace
 
@@ -164,6 +164,23 @@ a row when run on its own -- so the trigger is the parallel load of six bundles 
 not the fixture. Its two features are identical but for their names, and which one fails varies; a
 direct two-feature create reproduced nothing, serial or concurrent. Run a case on its own before
 reading a red run as a regression.
+
+**Third build, universe `275193b7facc8`.** The deletion cascade refusal became two messages,
+picked by whether the removal names the member a delete is applied to:
+`materializationSetMembersCannotBeRemovedAlone` when it does not, and
+`deletionAffectsUnrequestedMaterializedFeatureMembers` when it does. The fake branches the same way
+and `membership`'s two arms now show one each. A set mixing a batch-path feature with a
+streaming-path one is also refused, which the fake had not modelled; `batch`'s last arm pins it,
+with the message captured from this build.
+
+**The removal-matrix arms added for this build have not run against a workspace.** Every message in
+them came from the backend source at `275193b7facc8` or, for the mixing refusal and the
+members-cannot-be-removed-alone wording, from a live deploy against the swap. The arms themselves --
+sawtooth's three subsets, batch's pair, streaming's second feature, immutable's destroy and
+redeploy -- have only run against the fake. The `streaming` case's claim that two stream features
+can share one set is the one that most needs checking: it rests on the shared-destination rule
+comparing a `(offline, Option[online])` pair that is identical for both, which is read off the
+source rather than observed.
 
 ## Verified against a workspace, with no case of their own
 
