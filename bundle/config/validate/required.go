@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/internal/validation/generated"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -25,52 +24,15 @@ func (f *required) Name() string {
 }
 
 // Warn for missing fields, based on annotations in the Go SDK / OpenAPI spec.
+// The walker is generated (required_walk.go) by bundle/internal/validation.
 func warnForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	diags := diag.Diagnostics{}
+	w := &walker{diags: diag.Diagnostics{}}
+	n := rootNode(b.Config.Value())
+	requiredConfigRoot(w, &n, &b.Config)
 
-	// Generate prefix tree for all required fields.
-	trie := &dyn.TrieNode{}
-	for k := range generated.RequiredFields {
-		pattern, err := dyn.NewPatternFromString(k)
-		if err != nil {
-			return diag.FromErr(fmt.Errorf("invalid pattern %q for required field validation: %w", k, err))
-		}
+	sortDiagnostics(w.diags)
 
-		err = trie.Insert(pattern)
-		if err != nil {
-			return diag.FromErr(fmt.Errorf("failed to insert pattern %q into trie: %w", k, err))
-		}
-	}
-
-	err := dyn.WalkReadOnly(b.Config.Value(), func(p dyn.Path, v dyn.Value) error {
-		// If the path is not found in the prefix tree, we do not need to validate any required
-		// fields in it.
-		pattern, ok := trie.SearchPath(p)
-		if !ok {
-			return nil
-		}
-
-		fields := generated.RequiredFields[pattern.String()]
-		for _, field := range fields {
-			vv := v.Get(field)
-			if vv.Kind() == dyn.KindInvalid || vv.Kind() == dyn.KindNil {
-				diags = diags.Append(diag.Diagnostic{
-					Severity:  diag.Warning,
-					Summary:   fmt.Sprintf("required field %q is not set", field),
-					Locations: v.Locations(),
-					Paths:     dyn.ToStructPaths(p),
-				})
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	sortDiagnostics(diags)
-
-	return diags
+	return w.diags
 }
 
 // sortDiagnostics orders diagnostics deterministically, since they are collected
