@@ -30,3 +30,9 @@ resources:
       db_max_rows: 1000 # CAN_REMOVE
       server_cors_allowed_origins: # CAN_REMOVE
         - https://app.example.com # CAN_REMOVE
+      jwt_cache_max_lifetime: 300s # CAN_REMOVE
+      openapi_mode: OPEN_API_MODE_IGNORE_PRIVILEGES # CAN_REMOVE
+      # Removing a bool converges like the other fields: the server keeps the
+      # last value and status reports it.
+      db_aggregates_enabled: false # CAN_REMOVE
+      server_timing_enabled: true # CAN_REMOVE
