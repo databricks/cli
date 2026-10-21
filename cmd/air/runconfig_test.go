@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -823,7 +824,7 @@ func TestRunCommandHelpComputeOptions(t *testing.T) {
 		{
 			name:        "empty response",
 			response:    `{}`,
-			wantOptions: "    No accelerator types are currently available in this workspace.",
+			wantOptions: "    No accelerator types are currently available for AI Runtime in this workspace.",
 		},
 		{
 			name:        "endpoint unavailable falls back",
@@ -870,6 +871,64 @@ func TestRunCommandHelpComputeOptions(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRunCommandHelpComputeOptionsUsesBundleTarget(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	var defaultHit, targetHit bool
+	defaultServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == computeOptionsPath {
+			defaultHit = true
+			_, _ = w.Write([]byte(`{"compute_options":[{"hardware_accelerator":"GPU_DEFAULT","per_node_accelerator_count":1}]}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(defaultServer.Close)
+	targetServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == computeOptionsPath {
+			targetHit = true
+			_, _ = w.Write([]byte(`{"compute_options":[{"hardware_accelerator":"GPU_TARGET","per_node_accelerator_count":1}]}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(targetServer.Close)
+
+	dir := t.TempDir()
+	t.Chdir(dir)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".databrickscfg"), []byte(fmt.Sprintf(`
+[DEFAULT]
+host = %s
+token = token
+
+[TARGET]
+host = %s
+token = token
+`, defaultServer.URL, targetServer.URL)), 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(dir, ".databrickscfg"))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "databricks.yml"), []byte(`
+bundle:
+  name: compute-help-test
+targets:
+  selected:
+    workspace:
+      profile: TARGET
+`), 0o600))
+
+	var out strings.Builder
+	cmd := newRunCommand()
+	cmd.Flags().String("target", "", "bundle target")
+	cmd.SetContext(t.Context())
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--target", "selected", "-h", "config.compute"})
+	require.NoError(t, cmd.Execute())
+
+	assert.True(t, targetHit)
+	assert.False(t, defaultHit)
+	assert.Contains(t, out.String(), "GPU_TARGET - 1 accelerator per node")
+	assert.NotContains(t, out.String(), "GPU_DEFAULT")
 }
 
 // Guards against adding a schema field without a help: tag.

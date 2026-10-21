@@ -279,7 +279,7 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 func loadComputeOptionsForHelp(cmd *cobra.Command, args []string) []computeOption {
 	ctx, cancel := context.WithTimeout(cmd.Context(), computeOptionsHelpTimeout)
 	defer cancel()
-	cmd.SetContext(root.SkipLoadBundle(root.SkipPrompt(ctx)))
+	cmd.SetContext(root.SkipPrompt(ctx))
 
 	if !cmdctx.HasWorkspaceClient(cmd.Context()) {
 		if err := root.MustWorkspaceClient(cmd, args); err != nil {
@@ -290,7 +290,8 @@ func loadComputeOptionsForHelp(cmd *cobra.Command, args []string) []computeOptio
 
 	options, err := listWorkspaceComputeOptions(cmd.Context(), cmdctx.WorkspaceClient(cmd.Context()))
 	if err != nil {
-		if !endpointUnavailable(err) {
+		unavailable, retryable := classifyValidationFailure(err)
+		if !unavailable || retryable {
 			cmd.PrintErrf("Warning: couldn't fetch the accelerator types available in this workspace; showing the built-in list instead: %v\n", err)
 		}
 		return fallbackComputeOptions()
