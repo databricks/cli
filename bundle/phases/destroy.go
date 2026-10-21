@@ -20,7 +20,6 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
 func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
@@ -168,7 +167,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 		if completed {
 			deploymentID := b.DeploymentBundle.StateDB.DeploymentID
 			w := b.WorkspaceClient(ctx)
-			if err := w.BundleDeployments.DeleteDeployment(ctx, bundledeployments.DeleteDeploymentRequest{Name: dms.DeploymentName(deploymentID)}); err != nil {
+			if err := deleteDeployment(ctx, w, deploymentID); err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("failed to delete deployment: %w", err))
 				return
 			}
@@ -301,7 +300,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 			} else if completed {
 				deploymentID := b.DeploymentBundle.StateDB.DeploymentID
 				w := b.WorkspaceClient(ctx)
-				if err := w.BundleDeployments.DeleteDeployment(ctx, bundledeployments.DeleteDeploymentRequest{Name: dms.DeploymentName(deploymentID)}); err != nil {
+				if err := deleteDeployment(ctx, w, deploymentID); err != nil {
 					logdiag.LogError(ctx, fmt.Errorf("failed to delete deployment: %w", err))
 				}
 			}

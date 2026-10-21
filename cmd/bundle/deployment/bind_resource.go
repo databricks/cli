@@ -27,7 +27,7 @@ func BindResource(cmd *cobra.Command, resourceKey, resourceId string, autoApprov
 	}
 	ctx := cmd.Context()
 
-	resource, err := b.Config.Resources.FindResourceByConfigKey(resourceKey)
+	resource, resourceKey, err := b.Config.Resources.ResolveKey(resourceKey)
 	if err != nil {
 		return err
 	}
