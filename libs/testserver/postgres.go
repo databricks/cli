@@ -1389,16 +1389,32 @@ func dataApiNotEnabledResponse() Response {
 	return postgresErrorResponse(404, "NOT_FOUND", dataApiNotEnabledMessage)
 }
 
-// hasReadWriteEndpointLocked reports whether a branch has a read-write endpoint
-// (caller must hold lock).
-func (s *FakeWorkspace) hasReadWriteEndpointLocked(branchName string) bool {
+// readWriteEndpointLocked returns the read-write endpoint of a branch (caller
+// must hold lock).
+func (s *FakeWorkspace) readWriteEndpointLocked(branchName string) (postgres.Endpoint, bool) {
 	prefix := branchName + "/endpoints/"
 	for name, endpoint := range s.PostgresEndpoints {
 		if strings.HasPrefix(name, prefix) && endpoint.Status != nil && endpoint.Status.EndpointType == postgres.EndpointTypeEndpointTypeReadWrite {
-			return true
+			return endpoint, true
 		}
 	}
-	return false
+	return postgres.Endpoint{}, false
+}
+
+// withDataApiURLLocked returns the Data API with status.url set the way the real
+// API reports it: https://{read-write endpoint host}/api/2.0/workspace/{workspace
+// ID}/rest/{Postgres database name}. It is derived from the current endpoint and
+// database on every response rather than stored. The caller must hold the lock
+// and have passed dataApiPreconditionLocked.
+func (s *FakeWorkspace) withDataApiURLLocked(dataApi postgres.DataApi) postgres.DataApi {
+	branchName, _, _ := strings.Cut(dataApi.Parent, "/databases/")
+	endpoint, _ := s.readWriteEndpointLocked(branchName)
+	database := s.PostgresDatabases[dataApi.Parent]
+
+	status := *dataApi.Status
+	status.Url = fmt.Sprintf("https://%s/api/2.0/workspace/%d/rest/%s", endpoint.Status.Hosts.Host, TestWorkspaceID, database.Status.PostgresDatabase)
+	dataApi.Status = &status
+	return dataApi
 }
 
 // dataApiPreconditionLocked returns the error the API answers a Data API create,
@@ -1422,7 +1438,7 @@ func (s *FakeWorkspace) dataApiPreconditionLocked(databaseName string) *Response
 		resp := postgresNotFoundResponse("database")
 		return &resp
 	}
-	if !s.hasReadWriteEndpointLocked(branchName) {
+	if _, ok := s.readWriteEndpointLocked(branchName); !ok {
 		resp := postgresErrorResponse(400, "BAD_REQUEST", "Data API requires a read-write endpoint on branch "+branchName)
 		return &resp
 	}
@@ -1534,7 +1550,7 @@ func (s *FakeWorkspace) PostgresDataApiCreate(req Request, parent string) Respon
 	s.PostgresDataApis[name] = dataApi
 
 	return Response{
-		Body: s.createOperationLocked(name, dataApi),
+		Body: s.createOperationLocked(name, s.withDataApiURLLocked(dataApi)),
 	}
 }
 
@@ -1552,7 +1568,7 @@ func (s *FakeWorkspace) PostgresDataApiGet(name string) Response {
 	}
 
 	return Response{
-		Body: dataApi,
+		Body: s.withDataApiURLLocked(dataApi),
 	}
 }
 
@@ -1589,7 +1605,7 @@ func (s *FakeWorkspace) PostgresDataApiUpdate(req Request, name string) Response
 	s.PostgresDataApis[name] = dataApi
 
 	return Response{
-		Body: s.createOperationLocked(name, dataApi),
+		Body: s.createOperationLocked(name, s.withDataApiURLLocked(dataApi)),
 	}
 }
 
