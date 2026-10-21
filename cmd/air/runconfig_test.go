@@ -779,7 +779,7 @@ func TestRunCommandHelpComputeOptions(t *testing.T) {
 		{
 			name:        "empty response",
 			response:    `{}`,
-			wantOptions: "    No accelerator types are currently available in this workspace.",
+			wantOptions: "    No accelerator types are currently available for AI Runtime in this workspace.",
 		},
 		{
 			name:        "endpoint unavailable falls back",

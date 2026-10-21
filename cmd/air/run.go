@@ -290,7 +290,8 @@ func loadComputeOptionsForHelp(cmd *cobra.Command, args []string) []computeOptio
 
 	options, err := listWorkspaceComputeOptions(cmd.Context(), cmdctx.WorkspaceClient(cmd.Context()))
 	if err != nil {
-		if !endpointUnavailable(err) {
+		unavailable, retryable := classifyValidationFailure(err)
+		if !unavailable || retryable {
 			cmd.PrintErrf("Warning: couldn't fetch the accelerator types available in this workspace; showing the built-in list instead: %v\n", err)
 		}
 		return fallbackComputeOptions()
