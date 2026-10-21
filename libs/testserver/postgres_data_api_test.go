@@ -48,6 +48,8 @@ func TestPostgresDataApiCreateGetUpdateDelete(t *testing.T) {
 	require.NotNil(t, dataApi.Status)
 	assert.Equal(t, []string{"public"}, dataApi.Status.DbSchemas)
 	assert.Equal(t, 100, dataApi.Status.DbMaxRows)
+	host := workspace.PostgresEndpoints[testDataApiBranch+"/endpoints/primary"].Status.Hosts.Host
+	assert.Equal(t, "https://"+host+"/api/2.0/workspace/900800700600/rest/app_db", dataApi.Status.Url)
 
 	// The "spec" mask keeps the current value of a field the request omits, so
 	// db_max_rows stays.
