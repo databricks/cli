@@ -25,7 +25,8 @@ func TestGetAllResources(t *testing.T) {
 		},
 	}
 
-	set := getAllResources(b)
+	set, err := getAllResources(b)
+	require.NoError(t, err)
 
 	assert.ElementsMatch(
 		t,
@@ -59,5 +60,20 @@ func TestGetAllResourcesMatchesConfigKeys(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, rv.NumField(), expected.Size())
 
-	assert.Equal(t, expected, getAllResources(b))
+	set, err := getAllResources(b)
+	require.NoError(t, err)
+	assert.Equal(t, expected, set)
+}
+
+func TestGetAllResourcesRejectsEmptyName(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{"": {}},
+			},
+		},
+	}
+
+	_, err := getAllResources(b)
+	assert.EqualError(t, err, "failed to collect resources: can't parse resource key")
 }
