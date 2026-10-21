@@ -1,0 +1,18 @@
+bundle:
+  name: dms-migration-before-deploy-$UNIQUE_NAME
+
+experimental:
+  deployment_history: false
+
+sync:
+  exclude:
+    - LOG.*
+
+resources:
+  jobs:
+    job:
+      name: migration-before-deploy
+  schemas:
+    schema:
+      name: dms_migration_before_deploy_$UNIQUE_NAME
+      catalog_name: main

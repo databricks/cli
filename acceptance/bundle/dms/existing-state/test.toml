@@ -1,3 +1,17 @@
-# This test deploys without recording first, then turns it on per-command, so it opts out of
-# the parent's DMS=true and drives DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY inline instead.
+# This test checks config precedence with conflicting environment settings,
+# so it drives DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY instead of the parent's matrix.
 EnvMatrix.DMS = [""]
+
+# acceptance/bundle/test.toml removes Current Deployment Version for shared DMS/non-DMS goldens.
+# Inherited Repls append and cannot be disabled here.
+# Mask at Order -1 before the parent's default 0, then restore at +1.
+# This lets these tests assert both migration and deployment links.
+[[Repls]]
+Old = '(?m)^Current Deployment Version: '
+New = '__CURRENT_DEPLOYMENT_VERSION__: '
+Order = -1
+
+[[Repls]]
+Old = '(?m)^__CURRENT_DEPLOYMENT_VERSION__: '
+New = 'Current Deployment Version: '
+Order = 1

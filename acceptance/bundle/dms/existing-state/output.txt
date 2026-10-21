@@ -1,78 +1,120 @@
 
-=== Deploy without recording: ordinary direct-engine state tracking one job, unknown to DMS
+=== 1. Create two jobs without history (direct state serial 1)
+Config disables history even though the environment enables it.
+>>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/files...
+Created jobs.one
+Created jobs.two
+Files: 2 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Save the original resources.json for the backup check
+>>> cp .databricks/bundle/default/resources.json .databricks/resources.before-dms.json
+
+=== 2. Enable history and rename job one
+Expect: version 2 registers old state; version 3 applies the new name; no new jobs.
+>>> update_file.py databricks.yml deployment_history: false deployment_history: true
+
+>>> update_file.py databricks.yml name: one name: updated
+
 >>> [CLI] bundle deploy
+Enabling deployment history...
+Deployment history enabled: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=2
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/files...
-Created jobs.one
-Files: 2 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+Current Deployment Version: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=3
+Updated jobs.one
+Updated jobs.two
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
 
->>> [CLI] bundle plan -o json
-{
-  "plan_version": [PLAN_VERSION],
-  "cli_version": "[CLI_VERSION]",
-  "lineage": "[UUID]",
-  "serial": 1
-}
-
->>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
-
->>> print_requests.py --dms //api/2.0/bundle --oneline
-
->>> jq {state_version, features} .databricks/bundle/default/resources.json
-{
-  "state_version": 3,
-  "features": null
-}
-
-=== Enabling recording is refused because the existing deployment is not recorded
->>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
-Error: deployment history setting (true) does not match the existing state (false)
-
-Update experimental.deployment_history to match the existing deployment, or run "databricks bundle destroy" to start over
-
-
->>> print_requests.py --dms //api/2.0/bundle --oneline
-
-=== Wiping the local cache still refuses after pulling the non-DMS state from the workspace
->>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
-Error: deployment history setting (true) does not match the existing state (false)
-
-Update experimental.deployment_history to match the existing deployment, or run "databricks bundle destroy" to start over
-
-
-=== A leftover local WAL with the wrong lineage is still refused
->>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
-Error: reading state from [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: WAL recovery failed: WAL lineage ("stale") does not match state lineage ("[UUID]")
-
-
-=== Destroy clears the deployment. With nothing recorded remotely the bundle is treated as new, so recording can be enabled once the stale WAL is gone
->>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.jobs.one
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default
-
-Destroy: 1 deleted
-
->>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/files...
-Created jobs.one
-Files: 2 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
-
->>> print_requests.py --dms //api/2.0/bundle --oneline
-{"method": "POST", "path": "/api/2.0/bundle/deployments", "body": {"display_name": "dms-existing-state-[UNIQUE_NAME]", "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state", "target_name": "default", "workspace_info": {"file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/files", "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default"}}}
-{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions", "q": {"version_id": "1"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_CREATE", "resource_key": "jobs.one"}], "version_type": "VERSION_TYPE_DEPLOY"}}
-{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/operations/jobs.one", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[ONE_ID]", "sequence_id": 0, "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[DEPLOYMENT_ID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"one\",\"queue\":{\"enabled\":true}}}", "status": "OPERATION_STATUS_SUCCEEDED"}}
-{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}
-
+=== 3. Check local state
+Expect: serial=3; history enabled; no resource state or WAL.
 >>> find.py resources[.]json[.]wal --expect 0
 
->>> jq {state_version, features} .databricks/bundle/default/resources.json
+>>> jq {serial, features, state} .databricks/bundle/default/resources.json
 {
-  "state_version": 3,
+  "serial": 3,
   "features": {
     "deployment_history": {}
-  }
+  },
+  "state": {}
 }
+
+=== 4. Check backup
+Expect: original IDs, names and dependencies; exact pre-migration bytes.
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/resources.json.backup --format AUTO --file .databricks/resources.backup.first.json
+
+>>> cat .databricks/resources.backup.first.json
+{
+ "state_version": 3,
+ "cli_version": "[CLI_VERSION]",
+ "lineage": "[UUID]",
+ "serial": 1,
+ "state": {
+  "resources.jobs.one": {
+   "__id__": "[ONE_ID]",
+   "state": {
+    "deployment": {
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "one",
+    "queue": {
+     "enabled": true
+    }
+   }
+  },
+  "resources.jobs.two": {
+   "__id__": "[TWO_ID]",
+   "state": {
+    "deployment": {
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "two",
+    "queue": {
+     "enabled": true
+    },
+    "tasks": [
+     {
+      "run_job_task": {
+       "job_id": [ONE_ID]
+      },
+      "task_key": "run_one"
+     }
+    ]
+   },
+   "depends_on": [
+    {
+     "node": "resources.jobs.one",
+     "label": "${resources.jobs.one.id}"
+    }
+   ]
+  }
+ }
+}
+>>> cmp .databricks/resources.before-dms.json .databricks/resources.backup.first.json
+
+=== 5. Check DMS records
+Expect: completed versions 2 and 3; original job IDs and dependency preserved.
+=== Version history: migration 2 completes before deployment 3
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-versions deployments/[DEPLOYMENT_ID] -o json
+[{"version_id":"2","previous_version_id":null,"version_type":"VERSION_TYPE_DEPLOY","status":"VERSION_STATUS_COMPLETED","completion_reason":"VERSION_COMPLETE_SUCCESS"},{"version_id":"3","previous_version_id":"2","version_type":"VERSION_TYPE_DEPLOY","status":"VERSION_STATUS_COMPLETED","completion_reason":"VERSION_COMPLETE_SUCCESS"}]
+
+=== Migration 2: register the original job IDs (INITIAL_REGISTER)
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-operations deployments/[DEPLOYMENT_ID]/versions/2 -o json
+[{"resource_key":"jobs.one","resource_id":"[ONE_ID]","action_type":"OPERATION_ACTION_TYPE_INITIAL_REGISTER","status":"OPERATION_STATUS_SUCCEEDED"},{"resource_key":"jobs.two","resource_id":"[TWO_ID]","action_type":"OPERATION_ACTION_TYPE_INITIAL_REGISTER","status":"OPERATION_STATUS_SUCCEEDED"}]
+
+=== Deployment 3: record updates separately
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-operations deployments/[DEPLOYMENT_ID]/versions/3 -o json
+[{"resource_key":"jobs.one","resource_id":"[ONE_ID]","action_type":"OPERATION_ACTION_TYPE_UPDATE","status":"OPERATION_STATUS_SUCCEEDED"},{"resource_key":"jobs.two","resource_id":"[TWO_ID]","action_type":"OPERATION_ACTION_TYPE_UPDATE","status":"OPERATION_STATUS_SUCCEEDED"}]
+
+=== Current resources: new name, original IDs, and job two still depends on job one
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[DEPLOYMENT_ID] -o json
+[{"resource_key":"jobs.one","resource_id":"[ONE_ID]","last_action_type":"OPERATION_ACTION_TYPE_UPDATE","last_version_id":"3","state":{"name":"updated","tasks":[],"depends_on":[]}},{"resource_key":"jobs.two","resource_id":"[TWO_ID]","last_action_type":"OPERATION_ACTION_TYPE_UPDATE","last_version_id":"3","state":{"name":"two","tasks":[{"task_key":"run_one","job_id":[ONE_ID]}],"depends_on":[{"node":"resources.jobs.one","label":"${resources.jobs.one.id}"}]}}]

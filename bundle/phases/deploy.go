@@ -321,12 +321,12 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// A first deploy's id did not exist at plan time - the version and any existing id were stamped
 	// then - so stamp the one just created into the plan the apply reads.
 	if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
-		firstDeploy := b.DeploymentBundle.StateDB.DeploymentID == ""
+		injectDeploymentIdInPlan := b.DeploymentBundle.StateDB.DeploymentID == ""
 		createOrUpdateDeployment(ctx, b, dmsDeployment)
 		if logdiag.HasError(ctx) {
 			return
 		}
-		if firstDeploy {
+		if injectDeploymentIdInPlan {
 			if err := b.DeploymentBundle.StampDeploymentIdForFirstVersion(b.DeploymentBundle.StateDB.DeploymentID); err != nil {
 				logdiag.LogError(ctx, err)
 				return
@@ -345,7 +345,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 				logdiag.LogError(ctx, err)
 				return
 			}
-			logDeploymentVersion(ctx, b)
+			logDeploymentVersion(ctx, b, "Current Deployment Version")
 		}
 	}
 

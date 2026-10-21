@@ -1,0 +1,14 @@
+bundle:
+  name: dms-repeated-migration-$UNIQUE_NAME
+
+experimental:
+  deployment_history: false
+
+sync:
+  exclude:
+    - LOG.*
+
+resources:
+  jobs:
+    one:
+      name: one

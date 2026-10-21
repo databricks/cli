@@ -885,6 +885,19 @@ func (db *DeploymentState) Persist() error {
 	return db.unlockedSave()
 }
 
+// Close discards read-only in-memory state so the next Open rereads its backend.
+// It is safe to call on a closed state. Writable state must be finalized instead.
+func (db *DeploymentState) Close() {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	if db.Path == "" {
+		return
+	}
+	db.AssertOpenedForRead()
+	db.reset()
+}
+
 // IsOpen reports whether the state has been opened (for read or write). It lets
 // callers probe the state without risking the panic in AssertOpenedForReadOrWrite,
 // e.g. code paths shared with the terraform engine where the state DB is never opened.
