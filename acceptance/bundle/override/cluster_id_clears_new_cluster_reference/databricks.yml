@@ -34,3 +34,16 @@ resources:
             notebook_path: /Workspace/notebook
           # A reference at new_cluster must not bring it back either.
           new_cluster: ${var.cluster}
+        - task_key: task_resource_ref
+          notebook_task:
+            notebook_path: /Workspace/notebook
+          # A reference to the new_cluster of another job is resolved after the override.
+          new_cluster: ${resources.jobs.other.job_clusters[0].new_cluster}
+    other:
+      name: other
+      job_clusters:
+        - job_cluster_key: shared
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 3
