@@ -2,6 +2,7 @@ package dstate
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -25,14 +26,14 @@ func TestOpenSaveFinalizeRoundTrip(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state.json")
 
 	var db DeploymentState
-	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), WithDeploymentHistory(false), OpenDmsArgs{}))
+	require.NoError(t, db.Open(t.Context(), path, WritingFile, WithRecovery(true), OpenDmsArgs{}))
 
 	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{"key": "val"}, nil))
 	mustFinalize(t, &db)
 
 	// Re-open and verify persisted data.
 	var db2 DeploymentState
-	require.NoError(t, db2.Open(t.Context(), path, WithRecovery(false), WithWrite(false), WithDeploymentHistory(false), OpenDmsArgs{}))
+	require.NoError(t, db2.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
 	assert.Equal(t, 1, db2.Data.Serial)
 	assert.Equal(t, "123", db2.GetResourceID("jobs.my_job"))
 	mustFinalize(t, &db2)
@@ -42,7 +43,7 @@ func TestFinalizeWithNoEntriesDoesNotWriteStateFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state.json")
 
 	var db DeploymentState
-	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), WithDeploymentHistory(false), OpenDmsArgs{}))
+	require.NoError(t, db.Open(t.Context(), path, WritingFile, WithRecovery(true), OpenDmsArgs{}))
 	mustFinalize(t, &db)
 
 	_, err := os.Stat(path)
@@ -63,9 +64,12 @@ func TestDataForFileSerial(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db := DeploymentState{
-				Data:           NewDatabase("test-lineage", 3),
-				recordsHistory: tt.recording,
-				VersionID:      tt.versionID,
+				Data:      NewDatabase("test-lineage", 3),
+				mode:      ReadingFile,
+				VersionID: tt.versionID,
+			}
+			if tt.recording {
+				db.mode = ReadingDMS
 			}
 			db.Data.State["resources.jobs.foo"] = ResourceEntry{ID: "123", State: json.RawMessage(`{"name":"foo"}`)}
 
@@ -179,7 +183,7 @@ func TestOpenUsesDMSVersionForSerial(t *testing.T) {
 
 			ctx := cmdctx.SetWorkspaceClient(t.Context(), client)
 			var db DeploymentState
-			err = db.Open(ctx, path, WithRecovery(false), WithWrite(false), WithDeploymentHistory(true), OpenDmsArgs{
+			err = db.Open(ctx, path, ReadingDMS, WithRecovery(false), OpenDmsArgs{
 				DeploymentID: tt.deploymentID, LastVersionID: tt.lastVersionID,
 			})
 			if tt.wantErr != "" {
@@ -243,10 +247,10 @@ func TestPanicOnDoubleOpen(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state.json")
 
 	var db DeploymentState
-	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), WithDeploymentHistory(false), OpenDmsArgs{}))
+	require.NoError(t, db.Open(t.Context(), path, WritingFile, WithRecovery(true), OpenDmsArgs{}))
 
 	assert.Panics(t, func() {
-		_ = db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), WithDeploymentHistory(false), OpenDmsArgs{})
+		_ = db.Open(t.Context(), path, WritingFile, WithRecovery(true), OpenDmsArgs{})
 	})
 	mustFinalize(t, &db)
 }
@@ -264,12 +268,12 @@ func TestCLIVersionRecordsLastWriter(t *testing.T) {
 	require.NoError(t, os.WriteFile(path, []byte(seed), 0o600))
 
 	var db DeploymentState
-	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), WithDeploymentHistory(false), OpenDmsArgs{}))
+	require.NoError(t, db.Open(t.Context(), path, WritingFile, WithRecovery(true), OpenDmsArgs{}))
 	require.NoError(t, db.SaveState(t.Context(), "resources.jobs.my_job", "123", map[string]string{"k": "v"}, nil))
 	mustFinalize(t, &db)
 
 	var reopened DeploymentState
-	require.NoError(t, reopened.Open(t.Context(), path, WithRecovery(false), WithWrite(false), WithDeploymentHistory(false), OpenDmsArgs{}))
+	require.NoError(t, reopened.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
 	assert.Equal(t, build.GetInfo().Version, reopened.Data.CLIVersion)
 	assert.Equal(t, 2, reopened.Data.Serial)
 	mustFinalize(t, &reopened)
@@ -291,7 +295,7 @@ func TestHeaderOnlyWALDoesNotUpdateCLIVersion(t *testing.T) {
 	require.NoError(t, os.WriteFile(walPath, append(headerLine, '\n'), 0o600))
 
 	var recovered DeploymentState
-	require.NoError(t, recovered.Open(t.Context(), path, WithRecovery(true), WithWrite(false), WithDeploymentHistory(false), OpenDmsArgs{}))
+	require.NoError(t, recovered.Open(t.Context(), path, ReadingFile, WithRecovery(true), OpenDmsArgs{}))
 	assert.Equal(t, "0.1.2", recovered.Data.CLIVersion, "a header-only WAL wrote no state, so the version must not move")
 	assert.Equal(t, 1, recovered.Data.Serial)
 	mustFinalize(t, &recovered)
@@ -303,12 +307,12 @@ func TestHeaderOnlyWALRecoveryDoesNotAdvanceSerial(t *testing.T) {
 
 	// Commit serial 1 with one resource.
 	var db DeploymentState
-	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), WithDeploymentHistory(false), OpenDmsArgs{}))
+	require.NoError(t, db.Open(t.Context(), path, WritingFile, WithRecovery(true), OpenDmsArgs{}))
 	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil))
 	mustFinalize(t, &db)
 
 	var committed DeploymentState
-	require.NoError(t, committed.Open(t.Context(), path, WithRecovery(false), WithWrite(false), WithDeploymentHistory(false), OpenDmsArgs{}))
+	require.NoError(t, committed.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
 	lineage := committed.Data.Lineage
 	require.Equal(t, 1, committed.Data.Serial)
 	mustFinalize(t, &committed)
@@ -324,7 +328,7 @@ func TestHeaderOnlyWALRecoveryDoesNotAdvanceSerial(t *testing.T) {
 	require.NoError(t, os.WriteFile(walPath, append(headerLine, '\n'), 0o600))
 
 	var recovered DeploymentState
-	require.NoError(t, recovered.Open(t.Context(), path, WithRecovery(true), WithWrite(false), WithDeploymentHistory(false), OpenDmsArgs{}))
+	require.NoError(t, recovered.Open(t.Context(), path, ReadingFile, WithRecovery(true), OpenDmsArgs{}))
 	assert.Equal(t, 1, recovered.Data.Serial)
 	assert.Equal(t, "123", recovered.GetResourceID("jobs.my_job"))
 	assert.NoFileExists(t, walPath)
@@ -353,17 +357,17 @@ func TestDeleteState(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state.json")
 
 	var db DeploymentState
-	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), WithDeploymentHistory(false), OpenDmsArgs{}))
+	require.NoError(t, db.Open(t.Context(), path, WritingFile, WithRecovery(true), OpenDmsArgs{}))
 	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil))
 	mustFinalize(t, &db)
 
 	var db2 DeploymentState
-	require.NoError(t, db2.Open(t.Context(), path, WithRecovery(true), WithWrite(true), WithDeploymentHistory(false), OpenDmsArgs{}))
+	require.NoError(t, db2.Open(t.Context(), path, WritingFile, WithRecovery(true), OpenDmsArgs{}))
 	require.NoError(t, db2.DeleteState(t.Context(), "jobs.my_job", false))
 	mustFinalize(t, &db2)
 
 	var db3 DeploymentState
-	require.NoError(t, db3.Open(t.Context(), path, WithRecovery(false), WithWrite(false), WithDeploymentHistory(false), OpenDmsArgs{}))
+	require.NoError(t, db3.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
 	assert.Equal(t, 2, db3.Data.Serial)
 	assert.Empty(t, db3.GetResourceID("jobs.my_job"))
 	mustFinalize(t, &db3)
@@ -375,7 +379,7 @@ func TestGetOrInitLineageReadableBeforeWriteAndPersisted(t *testing.T) {
 	// Fresh state opened read-only, as the deploy does before planning: no
 	// lineage yet.
 	var db DeploymentState
-	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(false), WithDeploymentHistory(false), OpenDmsArgs{}))
+	require.NoError(t, db.Open(t.Context(), path, ReadingFile, WithRecovery(true), OpenDmsArgs{}))
 	require.Empty(t, db.Data.Lineage)
 
 	// GetOrInitLineage initializes the lineage and makes it readable before any
@@ -386,13 +390,13 @@ func TestGetOrInitLineageReadableBeforeWriteAndPersisted(t *testing.T) {
 
 	// Upgrading to write reuses the same lineage (it goes into the WAL header),
 	// and a write makes it durable.
-	require.NoError(t, db.UpgradeToWrite())
+	require.NoError(t, db.UpgradeToWrite(WritingFile))
 	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil))
 	mustFinalize(t, &db)
 
 	// Re-open: the persisted lineage matches the one read before the write.
 	var reopened DeploymentState
-	require.NoError(t, reopened.Open(t.Context(), path, WithRecovery(false), WithWrite(false), WithDeploymentHistory(false), OpenDmsArgs{}))
+	require.NoError(t, reopened.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
 	assert.Equal(t, lineage, reopened.Data.Lineage)
 	mustFinalize(t, &reopened)
 }
@@ -406,13 +410,34 @@ func TestOpenFailureLeavesStateClosed(t *testing.T) {
 	require.NoError(t, os.WriteFile(path, []byte("{not json"), 0o600))
 
 	var db DeploymentState
-	require.Error(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), WithDeploymentHistory(false), OpenDmsArgs{}))
+	require.Error(t, db.Open(t.Context(), path, WritingFile, WithRecovery(true), OpenDmsArgs{}))
 	assert.Empty(t, db.Path)
 
 	// Once the state file is readable, the same receiver opens without panicking.
 	seed := `{"state_version":2,"cli_version":"0.1.2","lineage":"test-lineage","serial":1,"state":{}}`
 	require.NoError(t, os.WriteFile(path, []byte(seed), 0o600))
-	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), WithDeploymentHistory(false), OpenDmsArgs{}))
+	require.NoError(t, db.Open(t.Context(), path, WritingFile, WithRecovery(true), OpenDmsArgs{}))
 	assert.Equal(t, "test-lineage", db.Data.Lineage)
 	mustFinalize(t, &db)
+}
+
+func TestFileWriteErrorsRemainFatalWithHistory(t *testing.T) {
+	for _, mode := range []Mode{WritingFile, WritingFileWithHistory, WritingFileWithHistoryEnforced} {
+		t.Run(fmt.Sprint(mode), func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "resources.json")
+			data := NewDatabase("lineage", 1)
+			data.State["resources.jobs.job"] = ResourceEntry{ID: "old-id"}
+			var db DeploymentState
+			db.OpenWithData(path, data)
+			db.mode = mode
+			wal, err := os.Create(path + walSuffix)
+			require.NoError(t, err)
+			require.NoError(t, wal.Close())
+			db.walFile = wal
+			require.Error(t, db.SaveState(t.Context(), "resources.jobs.job", "new-id", struct{}{}, nil))
+			assert.Equal(t, "old-id", db.GetResourceID("resources.jobs.job"))
+			require.Error(t, db.DeleteState(t.Context(), "resources.jobs.job", false))
+			assert.Equal(t, "old-id", db.GetResourceID("resources.jobs.job"))
+		})
+	}
 }

@@ -149,7 +149,7 @@ New bundles use the direct engine automatically, no migration is needed.`)
 			return err
 		}
 
-		if err := stateDB.UpgradeToWrite(); err != nil {
+		if err := stateDB.UpgradeToWrite(dstate.WritingFile); err != nil {
 			return fmt.Errorf("upgrading state for apply: %w", err)
 		}
 

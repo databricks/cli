@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/stretchr/testify/assert"
@@ -21,6 +22,7 @@ import (
 func queued() *OperationBuffer {
 	return &OperationBuffer{
 		queue:       make(chan string, bufferedOperations),
+		cancel:      func() {},
 		pending:     make(map[string]OperationUpdate),
 		latestState: make(map[string]OperationUpdate),
 	}
@@ -76,8 +78,8 @@ func TestDrainIsIdempotent(t *testing.T) {
 	s.stopQueue = sync.OnceFunc(func() { close(s.queue) })
 	go s.run(t.Context())
 
-	require.NoError(t, s.Drain())
-	require.NoError(t, s.Drain())
+	require.NoError(t, s.Drain(t.Context()))
+	require.NoError(t, s.Drain(t.Context()))
 }
 
 func TestRecordFailureKeepsTheStateTheLastWriteRecorded(t *testing.T) {
@@ -113,4 +115,34 @@ func TestRecordFailureUsesTheGivenStateWhenNoWriteRecorded(t *testing.T) {
 	require.True(t, ok)
 	assert.JSONEq(t, `{"state":{"name":"v1"}}`, string(update.State))
 	assert.Equal(t, bundledeployments.OperationStatusOperationStatusFailed, update.Status)
+}
+
+func TestBestEffortBufferDoesNotBlockOnFullQueue(t *testing.T) {
+	b := queued()
+	b.bestEffort = true
+	for range bufferedOperations {
+		b.queue <- "occupied"
+	}
+	done := make(chan struct{})
+	go func() {
+		b.RecordOperation(t.Context(), "resources.jobs.foo", false, "id-1", json.RawMessage(`{}`))
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("history recording blocked on a full queue")
+	}
+	assert.ErrorContains(t, b.Err(), "buffer is full")
+}
+
+func TestBestEffortBufferStopsRecordingAfterError(t *testing.T) {
+	b := queued()
+	b.bestEffort = true
+	b.RecordOperation(t.Context(), "resources.jobs.foo", false, "id-1", json.RawMessage(strings.Repeat("x", maxStateSize+1)))
+	b.RecordOperation(t.Context(), "resources.jobs.bar", false, "id-2", json.RawMessage(`{}`))
+	b.RecordFailure("resources.jobs.bar", "id-2", nil, errors.New("apply failed"))
+	assert.ErrorContains(t, b.Err(), "exceeds")
+	assert.Empty(t, b.queue)
+	assert.Empty(t, b.pending)
 }

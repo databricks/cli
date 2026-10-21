@@ -3,6 +3,7 @@ package dms
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -14,6 +15,12 @@ import (
 // plan reads.
 const bufferedOperations = 10
 
+// BufferOptions controls backpressure and whether recording stops after an error.
+type BufferOptions struct {
+	Capacity   int
+	BestEffort bool
+}
+
 // OperationBuffer records each state write with DMS for one deployment version, off the apply
 // path: writes are queued and sent on one background goroutine. It exists only while a bundle
 // records deployment history; callers hold a nil buffer otherwise and must not call it.
@@ -23,9 +30,11 @@ type OperationBuffer struct {
 
 	// The buffer. queue holds bundle state keys, and pending the newest update per key, so a
 	// second write for a resource replaces the first.
-	queue     chan string
-	done      chan struct{}
-	stopQueue func()
+	queue      chan string
+	done       chan struct{}
+	stopQueue  func()
+	cancel     context.CancelFunc
+	bestEffort bool
 
 	// sequenceIDs holds the token the last update for a resource returned. A missing key reads as
 	// 0, which is what staging leaves. Unguarded: run is the only goroutine that writes, one update at a time.
@@ -53,12 +62,19 @@ type OperationBuffer struct {
 
 // StartOperationBuffer opens the buffer for the version the caller just created. The version
 // must already exist: operations record under it, and nothing here creates it.
-func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum int) *OperationBuffer {
+func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum int, options BufferOptions) *OperationBuffer {
+	ctx, cancel := context.WithCancel(ctx)
+	capacity := options.Capacity
+	if capacity <= 0 {
+		capacity = bufferedOperations
+	}
 	b := &OperationBuffer{
 		deploymentID: deploymentID,
 		versionNum:   versionNum,
-		queue:        make(chan string, bufferedOperations),
+		queue:        make(chan string, capacity),
 		done:         make(chan struct{}),
+		cancel:       cancel,
+		bestEffort:   options.BestEffort,
 		pending:      make(map[string]OperationUpdate),
 		latestState:  make(map[string]OperationUpdate),
 		sequenceIDs:  make(map[string]int64),
@@ -69,7 +85,7 @@ func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum i
 }
 
 // RecordOperation records a state write. state is the serialized envelope, nil for a delete.
-// An earlier failure does not stop it: keep recording, best effort.
+// Required recording continues after an earlier failure; optional history stops on the first error.
 func (b *OperationBuffer) RecordOperation(ctx context.Context, resourceKey string, inProgress bool, resourceID string, state json.RawMessage) {
 	update, err := NewStateUpdate(resourceID, state, inProgress)
 	if err != nil {
@@ -93,6 +109,10 @@ func (b *OperationBuffer) RecordFailure(resourceKey, resourceID string, state js
 // that latest state. latestState and pending are updated under the one lock. Panics after Drain.
 func (b *OperationBuffer) record(resourceKey string, update OperationUpdate, keepExistingUpdateIfAny bool, cause error) {
 	b.mu.Lock()
+	if b.bestEffort && b.err != nil {
+		b.mu.Unlock()
+		return
+	}
 	if keepExistingUpdateIfAny {
 		if latest, recorded := b.latestState[resourceKey]; recorded {
 			update = latest.Merge(failureUpdate(cause))
@@ -112,7 +132,18 @@ func (b *OperationBuffer) record(resourceKey string, update OperationUpdate, kee
 	//
 	// Only when the resource is not already queued, enqueue it.
 	if !queued {
-		b.queue <- resourceKey
+		if b.bestEffort {
+			select {
+			case b.queue <- resourceKey:
+			default:
+				b.setErr(errors.New("deployment history buffer is full"))
+			}
+		} else {
+			select {
+			case b.queue <- resourceKey:
+			case <-b.done:
+			}
+		}
 	}
 }
 
@@ -128,8 +159,13 @@ func (b *OperationBuffer) take(resourceKey string) (OperationUpdate, bool) {
 
 func (b *OperationBuffer) run(ctx context.Context) {
 	defer close(b.done)
+	defer b.cancel()
 
 	for resourceKey := range b.queue {
+		if err := ctx.Err(); err != nil {
+			b.setErr(err)
+			return
+		}
 		update, ok := b.take(resourceKey)
 		if !ok {
 			// Unreachable: a key is queued only when nothing was waiting for it. Guard so
@@ -137,9 +173,12 @@ func (b *OperationBuffer) run(ctx context.Context) {
 			continue
 		}
 
-		// Keep going after a failure, so one bad write does not drop everything behind it.
+		// Required recording keeps going so one bad write does not drop everything behind it.
 		if err := b.write(ctx, resourceKey, update); err != nil {
 			b.setErr(fmt.Errorf("recording operation for %s: %w", resourceKey, err))
+			if b.bestEffort {
+				return
+			}
 		}
 	}
 }
@@ -161,12 +200,18 @@ func (b *OperationBuffer) write(ctx context.Context, key string, update Operatio
 	return nil
 }
 
-// Drain waits for everything buffered to reach the service and returns the first write error,
-// which fails the deploy: DMS is the source of truth for what exists. Safe to call twice.
-func (b *OperationBuffer) Drain() error {
+// Drain waits for buffered writes, canceling outstanding requests when ctx expires.
+// It returns the first recording error and is safe to call twice.
+func (b *OperationBuffer) Drain(ctx context.Context) error {
 	b.stopQueue()
-	<-b.done
-	return b.Err()
+	select {
+	case <-b.done:
+		return b.Err()
+	case <-ctx.Done():
+		b.setErr(ctx.Err())
+		b.cancel()
+		return b.Err()
+	}
 }
 
 // setErr keeps the first error; one failure is enough to fail the deploy.
@@ -176,6 +221,9 @@ func (b *OperationBuffer) setErr(err error) {
 
 	if b.err == nil {
 		b.err = err
+		if b.bestEffort {
+			b.cancel()
+		}
 	}
 }
 

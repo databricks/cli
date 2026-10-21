@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dms"
@@ -347,7 +348,11 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 		}
 
 		// Upgrade from read (opened by process.go, or by Migrate) to write mode
-		if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
+		writeMode := dstate.WritingFile
+		if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
+			writeMode = dstate.WritingDMS
+		}
+		if err := b.DeploymentBundle.StateDB.UpgradeToWrite(writeMode); err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}
