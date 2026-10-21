@@ -20,7 +20,11 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     {
       "name": "ANOTHER_VAR"
     }
-  ]
+  ],
+  "health_check": {
+    "path": "/health",
+    "timeout": "120s"
+  }
 }
 
 >>> [CLI] bundle destroy --auto-approve
