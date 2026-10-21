@@ -15,10 +15,10 @@ Warning: required field "assets_dir" is not set
       "lifecycle": {
         "depends_on": [
           {
-            "node": "schemas.my_schema"
+            "resource": "schemas.my_schema"
           },
           {
-            "node": "catalogs.my_catalog"
+            "resource": "catalogs.my_catalog"
           }
         ]
       },
@@ -32,7 +32,7 @@ Warning: required field "assets_dir" is not set
       "lifecycle": {
         "depends_on": [
           {
-            "node": "catalogs.my_catalog"
+            "resource": "catalogs.my_catalog"
           }
         ]
       },
