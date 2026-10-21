@@ -340,14 +340,15 @@ a new profile is created.
 		if len(resources) > 0 {
 			persistentAuthOpts = append(persistentAuthOpts, u2m.WithResources(resources))
 		}
+		// Apply timeout before creating PersistentAuth so Challenge() respects it.
+		ctx, cancel := context.WithTimeout(ctx, loginTimeout)
+		defer cancel()
+
 		persistentAuth, err := u2m.NewPersistentAuth(ctx, persistentAuthOpts...)
 		if err != nil {
 			return err
 		}
 		defer persistentAuth.Close()
-
-		ctx, cancel := context.WithTimeout(ctx, loginTimeout)
-		defer cancel()
 
 		token, err := persistentAuth.Challenge()
 		if err != nil {

@@ -1,0 +1,3 @@
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --timeout 1s
+Error: authorize: context deadline exceeded
