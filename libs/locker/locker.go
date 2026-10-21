@@ -13,6 +13,7 @@ import (
 	"uuid"
 
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -209,7 +210,7 @@ func CreateLocker(user, targetDir string, w *databricks.WorkspaceClient) (*Locke
 	}
 
 	locker := &Locker{
-		filer: filer,
+		filer: retry.Filer(filer),
 
 		TargetDir: targetDir,
 		Active:    false,
