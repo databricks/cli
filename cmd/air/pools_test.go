@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const poolsBasePath = "/api/2.0/ai-training/provisioned-capacities"
+const poolsBasePath = "/api/2.0/ai-training/pools"
 
 func TestPoolsCommandShape(t *testing.T) {
 	pools := newPoolsCommand()
@@ -72,7 +72,7 @@ func TestAPIInt64Unmarshal(t *testing.T) {
 
 func TestPoolID(t *testing.T) {
 	// The full resource name is reduced to the bare id; a bare id is unchanged.
-	assert.Equal(t, "pool-a", poolID("provisioned-capacities/pool-a"))
+	assert.Equal(t, "pool-a", poolID("pools/pool-a"))
 	assert.Equal(t, "pool-a", poolID("pool-a"))
 }
 
@@ -108,8 +108,8 @@ func poolsServer(t *testing.T, listPages []string, getByID map[string]string) *h
 func TestListPoolsJSON(t *testing.T) {
 	// Two pages exercise the pagination loop; usage is absent on list, as the
 	// real endpoint leaves it. name arrives as the full resource name.
-	page1 := `{"provisioned_capacities":[{"name":"provisioned-capacities/pool-a","spec":{"accelerator_type":"GPU_8xH100","accelerator_count":64}}],"next_page_token":"tok2"}`
-	page2 := `{"provisioned_capacities":[{"name":"provisioned-capacities/pool-b","spec":{"accelerator_type":"GPU_1xH100","accelerator_count":"8"}}]}`
+	page1 := `{"pools":[{"name":"pools/pool-a","spec":{"accelerator_type":"GPU_8xH100","accelerator_count":64}}],"next_page_token":"tok2"}`
+	page2 := `{"pools":[{"name":"pools/pool-b","spec":{"accelerator_type":"GPU_1xH100","accelerator_count":"8"}}]}`
 	srv := poolsServer(t, []string{page1, page2}, nil)
 
 	var buf bytes.Buffer
@@ -133,7 +133,7 @@ func TestListPoolsJSON(t *testing.T) {
 }
 
 func TestListPoolsText(t *testing.T) {
-	page := `{"provisioned_capacities":[{"name":"provisioned-capacities/pool-a","spec":{"accelerator_type":"GPU_8xH100","accelerator_count":64}}]}`
+	page := `{"pools":[{"name":"pools/pool-a","spec":{"accelerator_type":"GPU_8xH100","accelerator_count":64}}]}`
 	srv := poolsServer(t, []string{page}, nil)
 
 	var buf bytes.Buffer
@@ -151,7 +151,7 @@ func TestListPoolsText(t *testing.T) {
 }
 
 func TestListPoolsTextEmpty(t *testing.T) {
-	srv := poolsServer(t, []string{`{"provisioned_capacities":[]}`}, nil)
+	srv := poolsServer(t, []string{`{"pools":[]}`}, nil)
 
 	var buf bytes.Buffer
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL))
@@ -164,7 +164,7 @@ func TestListPoolsTextEmpty(t *testing.T) {
 }
 
 func TestGetPoolJSON(t *testing.T) {
-	body := `{"name":"provisioned-capacities/pool-a","spec":{"accelerator_type":"GPU_8xH100","accelerator_count":64},"status":{"usage":{"used_accelerator_count":40,"idle_accelerator_count":24}}}`
+	body := `{"name":"pools/pool-a","spec":{"accelerator_type":"GPU_8xH100","accelerator_count":64},"status":{"usage":{"used_accelerator_count":40,"idle_accelerator_count":24}}}`
 	srv := poolsServer(t, nil, map[string]string{"pool-a": body})
 
 	var buf bytes.Buffer
@@ -190,7 +190,7 @@ func TestGetPoolJSON(t *testing.T) {
 
 func TestGetPoolAcceptsResourceName(t *testing.T) {
 	// A full resource name argument resolves to the same GET path as the bare id.
-	body := `{"name":"provisioned-capacities/pool-a","spec":{"accelerator_type":"GPU_8xH100","accelerator_count":64},"status":{"usage":{"used_accelerator_count":1,"idle_accelerator_count":63}}}`
+	body := `{"name":"pools/pool-a","spec":{"accelerator_type":"GPU_8xH100","accelerator_count":64},"status":{"usage":{"used_accelerator_count":1,"idle_accelerator_count":63}}}`
 	srv := poolsServer(t, nil, map[string]string{"pool-a": body})
 
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL))
@@ -198,7 +198,7 @@ func TestGetPoolAcceptsResourceName(t *testing.T) {
 	cmd.SetContext(ctx)
 	cmd.SetOut(&bytes.Buffer{})
 
-	require.NoError(t, cmd.RunE(cmd, []string{"provisioned-capacities/pool-a"}))
+	require.NoError(t, cmd.RunE(cmd, []string{"pools/pool-a"}))
 }
 
 func TestGetPoolEscapesID(t *testing.T) {
@@ -206,7 +206,7 @@ func TestGetPoolEscapesID(t *testing.T) {
 	// path rather than being parsed as a query string (which would truncate the
 	// path to "pool" and 404). The httptest server decodes %3F back to "?" in
 	// r.URL.Path, so a hit on the "pool?x" key proves the id survived intact.
-	body := `{"name":"provisioned-capacities/pool?x","spec":{"accelerator_type":"GPU_1xH100","accelerator_count":8}}`
+	body := `{"name":"pools/pool?x","spec":{"accelerator_type":"GPU_1xH100","accelerator_count":8}}`
 	srv := poolsServer(t, nil, map[string]string{"pool?x": body})
 
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL))
@@ -220,7 +220,7 @@ func TestGetPoolEscapesID(t *testing.T) {
 func TestGetPoolText(t *testing.T) {
 	// A pool whose usage block is absent shows N/A for the usage cells rather
 	// than a misleading zero.
-	body := `{"name":"provisioned-capacities/pool-a","spec":{"accelerator_type":"GPU_8xH100","accelerator_count":64}}`
+	body := `{"name":"pools/pool-a","spec":{"accelerator_type":"GPU_8xH100","accelerator_count":64}}`
 	srv := poolsServer(t, nil, map[string]string{"pool-a": body})
 
 	var buf bytes.Buffer
@@ -238,8 +238,8 @@ func TestGetPoolText(t *testing.T) {
 
 func TestGetPoolOmitIDResolvesSolePool(t *testing.T) {
 	// With exactly one pool, `air pools get` (no id) resolves it and shows usage.
-	list := `{"provisioned_capacities":[{"name":"provisioned-capacities/pool-only","spec":{"accelerator_type":"GPU_8xH100","accelerator_count":64}}]}`
-	detail := `{"name":"provisioned-capacities/pool-only","spec":{"accelerator_type":"GPU_8xH100","accelerator_count":64},"status":{"usage":{"used_accelerator_count":40,"idle_accelerator_count":24}}}`
+	list := `{"pools":[{"name":"pools/pool-only","spec":{"accelerator_type":"GPU_8xH100","accelerator_count":64}}]}`
+	detail := `{"name":"pools/pool-only","spec":{"accelerator_type":"GPU_8xH100","accelerator_count":64},"status":{"usage":{"used_accelerator_count":40,"idle_accelerator_count":24}}}`
 	srv := poolsServer(t, []string{list}, map[string]string{"pool-only": detail})
 
 	var buf bytes.Buffer
@@ -255,7 +255,7 @@ func TestGetPoolOmitIDResolvesSolePool(t *testing.T) {
 }
 
 func TestGetPoolOmitIDNoPools(t *testing.T) {
-	srv := poolsServer(t, []string{`{"provisioned_capacities":[]}`}, nil)
+	srv := poolsServer(t, []string{`{"pools":[]}`}, nil)
 
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL))
 	cmd := withOutput(newGetPoolCommand(), flags.OutputText)
@@ -269,9 +269,9 @@ func TestGetPoolOmitIDNoPools(t *testing.T) {
 
 func TestGetPoolOmitIDMultipleErrors(t *testing.T) {
 	// More than one pool: the id can't be inferred, so the error lists the ids.
-	list := `{"provisioned_capacities":[` +
-		`{"name":"provisioned-capacities/pool-a","spec":{"accelerator_type":"GPU_8xH100","accelerator_count":64}},` +
-		`{"name":"provisioned-capacities/pool-b","spec":{"accelerator_type":"GPU_1xH100","accelerator_count":8}}]}`
+	list := `{"pools":[` +
+		`{"name":"pools/pool-a","spec":{"accelerator_type":"GPU_8xH100","accelerator_count":64}},` +
+		`{"name":"pools/pool-b","spec":{"accelerator_type":"GPU_1xH100","accelerator_count":8}}]}`
 	srv := poolsServer(t, []string{list}, nil)
 
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL))
@@ -299,7 +299,7 @@ func TestListPoolsFeatureDisabledJSON(t *testing.T) {
 	// a permanent, non-retryable error, not a transient one.
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		_, _ = w.Write([]byte(`{"error_code":"FEATURE_DISABLED","message":"The provisioned capacity API is not yet enabled."}`))
+		_, _ = w.Write([]byte(`{"error_code":"FEATURE_DISABLED","message":"The pool API is not yet enabled."}`))
 	}))
 	t.Cleanup(srv.Close)
 
