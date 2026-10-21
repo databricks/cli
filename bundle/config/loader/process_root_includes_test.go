@@ -162,7 +162,6 @@ func TestProcessRootIncludesKeepsIncludesOfIncludedFiles(t *testing.T) {
 	diags := bundle.Apply(t.Context(), b, loader.ProcessRootIncludes())
 	require.NoError(t, diags.Error())
 	assert.Equal(t, []string{"a.yml", "b.yml", "c.yml"}, b.Config.Include)
-	assert.Equal(t, []any{"a.yml", "b.yml", "c.yml"}, b.Config.Value().Get("include").AsAny())
 }
 
 func TestProcessRootIncludesNotExists(t *testing.T) {

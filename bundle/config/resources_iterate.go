@@ -110,6 +110,15 @@ func (r *Resources) IterateAllResources(fn func(typ, name string, res ConfigReso
 			return
 		}
 	}
+	for _, name := range sortedKeys(r.Features) {
+		var res ConfigResource
+		if x := r.Features[name]; x != nil {
+			res = x
+		}
+		if !fn("features", name, res) {
+			return
+		}
+	}
 	for _, name := range sortedKeys(r.GenieSpaces) {
 		var res ConfigResource
 		if x := r.GenieSpaces[name]; x != nil {
@@ -457,6 +466,14 @@ func (r *Resources) Select(keys map[string]map[string]struct{}) Resources {
 			}
 		}
 	}
+	if names, ok := keys["features"]; ok {
+		out.Features = make(map[string]*resources.Feature, len(names))
+		for name := range names {
+			if x, ok := r.Features[name]; ok {
+				out.Features[name] = x
+			}
+		}
+	}
 	if names, ok := keys["genie_spaces"]; ok {
 		out.GenieSpaces = make(map[string]*resources.GenieSpace, len(names))
 		for name := range names {
@@ -796,6 +813,16 @@ func (r *Resources) CopyResource(src *Resources, typ, name string) bool {
 		}
 		r.ExternalLocations[name] = x
 		return true
+	case "features":
+		x, ok := src.Features[name]
+		if !ok {
+			return false
+		}
+		if r.Features == nil {
+			r.Features = map[string]*resources.Feature{}
+		}
+		r.Features[name] = x
+		return true
 	case "genie_spaces":
 		x, ok := src.GenieSpaces[name]
 		if !ok {
@@ -1132,6 +1159,10 @@ func (r *Resources) GetResource(typ, name string) (res ConfigResource, ok bool) 
 		}
 	case "external_locations":
 		if x := r.ExternalLocations[name]; x != nil {
+			return x, true
+		}
+	case "features":
+		if x := r.Features[name]; x != nil {
 			return x, true
 		}
 	case "genie_spaces":
@@ -1473,6 +1504,11 @@ func (r *Resources) IterateAllResourceStates(fn func(typ, name string, id *strin
 			return
 		}
 	}
+	for _, name := range sortedKeys(r.Features) {
+		if x := r.Features[name]; x != nil && !fn("features", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
 	for _, name := range sortedKeys(r.GenieSpaces) {
 		if x := r.GenieSpaces[name]; x != nil && !fn("genie_spaces", name, &x.ID, &x.ModifiedStatus) {
 			return
@@ -1718,6 +1754,16 @@ func (r *Resources) GetOrCreateState(typ, name string) (id *string, status *stri
 			}
 			x = &resources.ExternalLocation{}
 			r.ExternalLocations[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "features":
+		x, exists := r.Features[name]
+		if x == nil {
+			if r.Features == nil {
+				r.Features = map[string]*resources.Feature{}
+			}
+			x = &resources.Feature{}
+			r.Features[name] = x
 		}
 		return &x.ID, &x.ModifiedStatus, !exists, true
 	case "genie_spaces":

@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/databricks/databricks-sdk-go/service/serving"
@@ -27,55 +28,63 @@ var enumValues1 = []string{"whl", "jar", "tgz"}
 
 var enumValues10 = []string{"NULL", "PHOTON", "STANDARD"}
 
-var enumValues100 = []string{"CPU", "CPU_LARGE", "CPU_MEDIUM", "GPU_LARGE", "GPU_MEDIUM", "GPU_SMALL", "GPU_XLARGE", "GPU_XLARGE_8", "MULTIGPU_MEDIUM"}
+var enumValues100 = []string{"endpoint", "service_principal", "user", "user_group"}
 
-var enumValues101 = []string{"ENHANCED", "LEGACY"}
+var enumValues101 = []string{"CPU", "CPU_LARGE", "CPU_MEDIUM", "GPU_LARGE", "GPU_MEDIUM", "GPU_SMALL", "GPU_XLARGE", "GPU_XLARGE_8", "MULTIGPU_MEDIUM"}
 
-var enumValues102 = []string{"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"}
+var enumValues102 = []string{"ENHANCED", "LEGACY"}
 
-var enumValues103 = []string{"OAUTH", "PAT"}
+var enumValues103 = []string{"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"}
 
-var enumValues104 = []string{"DIRECT_QUERY", "DUAL", "IMPORT"}
+var enumValues104 = []string{"OAUTH", "PAT"}
 
-var enumValues105 = []string{"DESTINATION_TYPE_EXTERNAL_FOUNDATION_MODEL", "DESTINATION_TYPE_PAY_PER_TOKEN_FOUNDATION_MODEL", "DESTINATION_TYPE_PROVISIONED_THROUGHPUT_FOUNDATION_MODEL"}
+var enumValues105 = []string{"DIRECT_QUERY", "DUAL", "IMPORT"}
 
-var enumValues106 = []string{"ai21labs", "amazon-bedrock", "anthropic", "cohere", "custom", "databricks-model-serving", "google-cloud-vertex-ai", "openai", "palm"}
+var enumValues106 = []string{"DESTINATION_TYPE_EXTERNAL_FOUNDATION_MODEL", "DESTINATION_TYPE_PAY_PER_TOKEN_FOUNDATION_MODEL", "DESTINATION_TYPE_PROVISIONED_THROUGHPUT_FOUNDATION_MODEL"}
 
-var enumValues107 = []string{"PROVISIONING_PHASE_INDEX_SCAN", "PROVISIONING_PHASE_INDEX_SORT", "PROVISIONING_PHASE_MAIN"}
+var enumValues107 = []string{"ai21labs", "amazon-bedrock", "anthropic", "cohere", "custom", "databricks-model-serving", "google-cloud-vertex-ai", "openai", "palm"}
 
-var enumValues108 = []string{"BLOCK", "MASK", "NONE"}
+var enumValues108 = []string{"PROVISIONING_PHASE_INDEX_SCAN", "PROVISIONING_PHASE_INDEX_SORT", "PROVISIONING_PHASE_MAIN"}
 
-var enumValues109 = []string{"ai21labs", "amazon", "anthropic", "cohere"}
+var enumValues109 = []string{"BINARY", "BOOLEAN", "DATE", "DECIMAL", "DOUBLE", "FLOAT", "INTEGER", "LONG", "SHORT", "STRING", "TIMESTAMP"}
 
 var enumValues11 = []string{"ACTIVE", "TRASHED"}
 
-var enumValues110 = []string{"FILE", "FILE_METADATA", "PERMISSION"}
+var enumValues110 = []string{"BLOCK", "MASK", "NONE"}
 
-var enumValues111 = []string{"ALL", "INLINE_ONLY", "NONE", "NON_INLINE_ONLY"}
+var enumValues111 = []string{"ai21labs", "amazon", "anthropic", "cohere"}
 
-var enumValues112 = []string{"TEXT_HTML", "TEXT_PLAIN"}
+var enumValues112 = []string{"FILE_FORMAT_CSV", "FILE_FORMAT_EXCEL", "FILE_FORMAT_TSV"}
 
-var enumValues113 = []string{"FILE", "FILE_METADATA", "LIST", "PERMISSION"}
+var enumValues113 = []string{"PAGE_SELECTION_ALL", "PAGE_SELECTION_SUBSET"}
 
-var enumValues114 = []string{"AUCTION_AD", "AUCTION_ADGROUP", "AUCTION_ADVERTISER", "AUCTION_CAMPAIGN"}
+var enumValues114 = []string{"FILE", "FILE_METADATA", "PERMISSION"}
 
-var enumValues115 = []string{"AUDIENCE", "BASIC", "BUSINESS_CENTER", "DSA", "GMV_MAX", "PLAYABLE_AD"}
+var enumValues115 = []string{"ALL", "INLINE_ONLY", "NONE", "NON_INLINE_ONLY"}
 
-var enumValues116 = []string{"AVRO", "JSON", "PROTOBUF", "STRING"}
+var enumValues116 = []string{"TEXT_HTML", "TEXT_PLAIN"}
 
-var enumValues117 = []string{"AVRO", "BINARYFILE", "CSV", "EXCEL", "JSON", "ORC", "PARQUET", "XML"}
+var enumValues117 = []string{"FILE", "FILE_METADATA", "LIST", "PERMISSION"}
 
-var enumValues118 = []string{"ADD_NEW_COLUMNS", "ADD_NEW_COLUMNS_WITH_TYPE_WIDENING", "FAIL_ON_NEW_COLUMNS", "NONE", "RESCUE"}
+var enumValues118 = []string{"AUCTION_AD", "AUCTION_ADGROUP", "AUCTION_ADVERTISER", "AUCTION_CAMPAIGN"}
 
-var enumValues119 = []string{"CAMPAIGN", "CAMPAIGN_GROUP", "CREATIVE"}
+var enumValues119 = []string{"AUDIENCE", "BASIC", "BUSINESS_CENTER", "DSA", "GMV_MAX", "PLAYABLE_AD"}
 
 var enumValues12 = []string{"AVAILABLE", "DELETING", "FAILING_OVER", "STARTING", "STOPPED", "UPDATING"}
 
-var enumValues120 = []string{"ANALYTICS", "ATTRIBUTED_REVENUE_METRICS", "STATISTICS"}
+var enumValues120 = []string{"AVRO", "JSON", "PROTOBUF", "STRING"}
 
-var enumValues121 = []string{"ALL", "DAILY", "MONTHLY", "YEARLY"}
+var enumValues121 = []string{"AVRO", "BINARYFILE", "CSV", "EXCEL", "JSON", "ORC", "PARQUET", "XML"}
 
-var enumValues122 = []string{"FAILFAST", "PERMISSIVE"}
+var enumValues122 = []string{"ADD_NEW_COLUMNS", "ADD_NEW_COLUMNS_WITH_TYPE_WIDENING", "FAIL_ON_NEW_COLUMNS", "NONE", "RESCUE"}
+
+var enumValues123 = []string{"CAMPAIGN", "CAMPAIGN_GROUP", "CREATIVE"}
+
+var enumValues124 = []string{"ANALYTICS", "ATTRIBUTED_REVENUE_METRICS", "STATISTICS"}
+
+var enumValues125 = []string{"ALL", "DAILY", "MONTHLY", "YEARLY"}
+
+var enumValues126 = []string{"FAILFAST", "PERMISSIVE"}
 
 var enumValues13 = []string{"PERFORMANCE_OPTIMIZED", "STANDARD"}
 
@@ -99,7 +108,7 @@ var enumValues21 = []string{"AZURE_KEYVAULT", "DATABRICKS"}
 
 var enumValues22 = []string{"COST_OPTIMIZED", "POLICY_UNSPECIFIED", "RELIABILITY_OPTIMIZED"}
 
-var enumValues23 = []string{"CLASSIC", "PRO", "TYPE_UNSPECIFIED"}
+var enumValues23 = []string{"CLASSIC", "PRO", "REALTIME", "TYPE_UNSPECIFIED"}
 
 var enumValues24 = []string{"ACTIVE", "DEGRADED", "DELETING", "FAILED", "PROVISIONING", "UPDATING"}
 
@@ -147,125 +156,125 @@ var enumValues43 = []string{"CAN_ATTACH_TO", "CAN_MANAGE", "CAN_RESTART"}
 
 var enumValues44 = []string{"CAN_EDIT", "CAN_MANAGE", "CAN_READ"}
 
-var enumValues45 = []string{"ON_DEMAND", "SPOT"}
+var enumValues45 = []string{"APPROX_COUNT_DISTINCT", "APPROX_PERCENTILE", "AVG", "COUNT", "FIRST", "FUNCTION_TYPE_UNSPECIFIED", "LAST", "MAX", "MIN", "STDDEV_POP", "STDDEV_SAMP", "SUM", "VAR_POP", "VAR_SAMP"}
 
-var enumValues46 = []string{"ON_DEMAND_AZURE", "SPOT_AZURE"}
+var enumValues46 = []string{"ON_DEMAND", "SPOT"}
 
-var enumValues47 = []string{"CAN_ATTACH_TO", "CAN_MANAGE"}
+var enumValues47 = []string{"ON_DEMAND_AZURE", "SPOT_AZURE"}
 
-var enumValues48 = []string{"NEVER", "ON_FAILURE"}
+var enumValues48 = []string{"CAN_ATTACH_TO", "CAN_MANAGE"}
 
-var enumValues49 = []string{"BUNDLE", "SYSTEM_MANAGED"}
+var enumValues49 = []string{"NEVER", "ON_FAILURE"}
 
 var enumValues5 = []string{"ACTIVE", "DELETED"}
 
-var enumValues50 = []string{"awsCodeCommit", "azureDevOpsServices", "bitbucketCloud", "bitbucketServer", "gitHub", "gitHubEnterprise", "gitLab", "gitLabEnterpriseEdition"}
+var enumValues50 = []string{"BUNDLE", "SYSTEM_MANAGED"}
 
-var enumValues51 = []string{"CAN_MANAGE", "CAN_MANAGE_RUN", "CAN_VIEW", "IS_OWNER"}
+var enumValues51 = []string{"awsCodeCommit", "azureDevOpsServices", "bitbucketCloud", "bitbucketServer", "gitHub", "gitHubEnterprise", "gitLab", "gitLabEnterpriseEdition"}
 
-var enumValues52 = []string{"ALL_DONE", "ALL_FAILED", "ALL_SUCCESS", "AT_LEAST_ONE_FAILED", "AT_LEAST_ONE_SUCCESS", "NONE_FAILED"}
+var enumValues52 = []string{"CAN_MANAGE", "CAN_MANAGE_RUN", "CAN_VIEW", "IS_OWNER"}
 
-var enumValues53 = []string{"EXTERNAL_MODEL_PROVIDER_TYPE_AMAZON_BEDROCK", "EXTERNAL_MODEL_PROVIDER_TYPE_ANTHROPIC", "EXTERNAL_MODEL_PROVIDER_TYPE_AZURE_OPENAI", "EXTERNAL_MODEL_PROVIDER_TYPE_BEDROCK_MANTLE", "EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM", "EXTERNAL_MODEL_PROVIDER_TYPE_GEMINI_ENTERPRISE", "EXTERNAL_MODEL_PROVIDER_TYPE_MICROSOFT_FOUNDRY", "EXTERNAL_MODEL_PROVIDER_TYPE_OPENAI"}
+var enumValues53 = []string{"ALL_DONE", "ALL_FAILED", "ALL_SUCCESS", "AT_LEAST_ONE_FAILED", "AT_LEAST_ONE_SUCCESS", "NONE_FAILED"}
 
-var enumValues54 = []string{"CAN_MANAGE", "CAN_QUERY", "CAN_VIEW"}
+var enumValues54 = []string{"EXTERNAL_MODEL_PROVIDER_TYPE_AMAZON_BEDROCK", "EXTERNAL_MODEL_PROVIDER_TYPE_ANTHROPIC", "EXTERNAL_MODEL_PROVIDER_TYPE_AZURE_OPENAI", "EXTERNAL_MODEL_PROVIDER_TYPE_BEDROCK_MANTLE", "EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM", "EXTERNAL_MODEL_PROVIDER_TYPE_GEMINI_ENTERPRISE", "EXTERNAL_MODEL_PROVIDER_TYPE_MICROSOFT_FOUNDRY", "EXTERNAL_MODEL_PROVIDER_TYPE_OPENAI"}
 
-var enumValues55 = []string{"endpoint", "user"}
+var enumValues55 = []string{"CAN_MANAGE", "CAN_QUERY", "CAN_VIEW"}
 
-var enumValues56 = []string{"minute"}
+var enumValues56 = []string{"endpoint", "user"}
 
-var enumValues57 = []string{"TELEMETRY_FEATURE_INFERENCE_TABLE", "TELEMETRY_FEATURE_LOGS", "TELEMETRY_FEATURE_METRICS", "TELEMETRY_FEATURE_TRACES"}
+var enumValues57 = []string{"minute"}
 
-var enumValues58 = []string{"CAN_EDIT", "CAN_MANAGE", "CAN_MANAGE_PRODUCTION_VERSIONS", "CAN_MANAGE_STAGING_VERSIONS", "CAN_READ"}
+var enumValues58 = []string{"TELEMETRY_FEATURE_INFERENCE_TABLE", "TELEMETRY_FEATURE_LOGS", "TELEMETRY_FEATURE_METRICS", "TELEMETRY_FEATURE_TRACES"}
 
-var enumValues59 = []string{"BUNDLE"}
+var enumValues59 = []string{"CAN_EDIT", "CAN_MANAGE", "CAN_MANAGE_PRODUCTION_VERSIONS", "CAN_MANAGE_STAGING_VERSIONS", "CAN_READ"}
 
 var enumValues6 = []string{"LARGE", "MEDIUM", "XLARGE"}
 
-var enumValues60 = []string{"CDC", "QUERY_BASED"}
+var enumValues60 = []string{"BUNDLE"}
 
-var enumValues61 = []string{"BIGQUERY", "CONFLUENCE", "DYNAMICS365", "FOREIGN_CATALOG", "GA4_RAW_DATA", "GOOGLE_DRIVE", "JIRA", "MANAGED_POSTGRESQL", "META_MARKETING", "MYSQL", "NETSUITE", "ORACLE", "POSTGRESQL", "RABBITMQ", "SALESFORCE", "SERVICENOW", "SHAREPOINT", "SMARTSHEET", "SQLSERVER", "TERADATA", "TIKTOK_ADS", "WORKDAY_RAAS", "ZENDESK"}
+var enumValues61 = []string{"CDC", "QUERY_BASED"}
 
-var enumValues62 = []string{"CAN_MANAGE", "CAN_RUN", "CAN_VIEW", "IS_OWNER"}
+var enumValues62 = []string{"BIGQUERY", "CONFLUENCE", "DYNAMICS365", "FOREIGN_CATALOG", "GA4_RAW_DATA", "GOOGLE_DRIVE", "JIRA", "MANAGED_POSTGRESQL", "META_MARKETING", "MYSQL", "NETSUITE", "ORACLE", "POSTGRESQL", "RABBITMQ", "SALESFORCE", "SERVICENOW", "SHAREPOINT", "SMARTSHEET", "SQLSERVER", "TERADATA", "TIKTOK_ADS", "WORKDAY_RAAS", "ZENDESK"}
 
-var enumValues63 = []string{"FRIDAY", "MONDAY", "SATURDAY", "SUNDAY", "THURSDAY", "TUESDAY", "WEDNESDAY"}
+var enumValues63 = []string{"CAN_MANAGE", "CAN_RUN", "CAN_VIEW", "IS_OWNER"}
 
-var enumValues64 = []string{"STORED_GENERATED"}
+var enumValues64 = []string{"FRIDAY", "MONDAY", "SATURDAY", "SUNDAY", "THURSDAY", "TUESDAY", "WEDNESDAY"}
 
-var enumValues65 = []string{"CURRENT", "PREVIEW"}
+var enumValues65 = []string{"STORED_GENERATED"}
 
-var enumValues66 = []string{"PG_SPECIFIC_TYPE_HALFVEC", "PG_SPECIFIC_TYPE_VARCHAR", "PG_SPECIFIC_TYPE_VECTOR"}
+var enumValues66 = []string{"CURRENT", "PREVIEW"}
 
-var enumValues67 = []string{"CUSTOM_METRIC_TYPE_AGGREGATE", "CUSTOM_METRIC_TYPE_DERIVED", "CUSTOM_METRIC_TYPE_DRIFT"}
+var enumValues67 = []string{"PG_SPECIFIC_TYPE_HALFVEC", "PG_SPECIFIC_TYPE_VARCHAR", "PG_SPECIFIC_TYPE_VECTOR"}
 
-var enumValues68 = []string{"PROBLEM_TYPE_CLASSIFICATION", "PROBLEM_TYPE_REGRESSION"}
+var enumValues68 = []string{"CUSTOM_METRIC_TYPE_AGGREGATE", "CUSTOM_METRIC_TYPE_DERIVED", "CUSTOM_METRIC_TYPE_DRIFT"}
 
-var enumValues69 = []string{"PAUSED", "UNPAUSED", "UNSPECIFIED"}
+var enumValues69 = []string{"PROBLEM_TYPE_CLASSIFICATION", "PROBLEM_TYPE_REGRESSION"}
 
 var enumValues7 = []string{"DATA_SECURITY_MODE_AUTO", "DATA_SECURITY_MODE_DEDICATED", "DATA_SECURITY_MODE_STANDARD", "LEGACY_PASSTHROUGH", "LEGACY_SINGLE_USER", "LEGACY_SINGLE_USER_STANDARD", "LEGACY_TABLE_ACL", "NONE", "SINGLE_USER", "USER_ISOLATION"}
 
-var enumValues70 = []string{"READ", "WRITE", "MANAGE"}
+var enumValues70 = []string{"PAUSED", "UNPAUSED", "UNSPECIFIED"}
 
-var enumValues71 = []string{"CHANNEL_NAME_CURRENT", "CHANNEL_NAME_CUSTOM", "CHANNEL_NAME_PREVIEW", "CHANNEL_NAME_PREVIOUS"}
+var enumValues71 = []string{"READ", "WRITE", "MANAGE"}
 
-var enumValues72 = []string{"CAN_MANAGE", "CAN_MONITOR", "CAN_USE", "CAN_VIEW", "IS_OWNER"}
+var enumValues72 = []string{"CHANNEL_NAME_CURRENT", "CHANNEL_NAME_CUSTOM", "CHANNEL_NAME_PREVIEW", "CHANNEL_NAME_PREVIOUS"}
 
-var enumValues73 = []string{"SYNCED_TABLED_OFFLINE", "SYNCED_TABLE_OFFLINE_FAILED", "SYNCED_TABLE_ONLINE", "SYNCED_TABLE_ONLINE_CONTINUOUS_UPDATE", "SYNCED_TABLE_ONLINE_NO_PENDING_UPDATE", "SYNCED_TABLE_ONLINE_PIPELINE_FAILED", "SYNCED_TABLE_ONLINE_TRIGGERED_UPDATE", "SYNCED_TABLE_ONLINE_UPDATING_PIPELINE_RESOURCES", "SYNCED_TABLE_PROVISIONING", "SYNCED_TABLE_PROVISIONING_INITIAL_SNAPSHOT", "SYNCED_TABLE_PROVISIONING_PIPELINE_RESOURCES"}
+var enumValues73 = []string{"CAN_MANAGE", "CAN_MONITOR", "CAN_USE", "CAN_VIEW", "IS_OWNER"}
 
-var enumValues74 = []string{"CAN_CREATE", "CAN_MANAGE", "CAN_USE"}
+var enumValues74 = []string{"SYNCED_TABLED_OFFLINE", "SYNCED_TABLE_OFFLINE_FAILED", "SYNCED_TABLE_ONLINE", "SYNCED_TABLE_ONLINE_CONTINUOUS_UPDATE", "SYNCED_TABLE_ONLINE_NO_PENDING_UPDATE", "SYNCED_TABLE_ONLINE_PIPELINE_FAILED", "SYNCED_TABLE_ONLINE_TRIGGERED_UPDATE", "SYNCED_TABLE_ONLINE_UPDATING_PIPELINE_RESOURCES", "SYNCED_TABLE_PROVISIONING", "SYNCED_TABLE_PROVISIONING_INITIAL_SNAPSHOT", "SYNCED_TABLE_PROVISIONING_PIPELINE_RESOURCES"}
 
-var enumValues75 = []string{"CONTINUOUS", "TRIGGERED"}
+var enumValues75 = []string{"CAN_CREATE", "CAN_MANAGE", "CAN_USE"}
 
-var enumValues76 = []string{"AVG", "COUNT", "COUNT_DISTINCT", "MAX", "MEDIAN", "MIN", "STDDEV", "SUM"}
+var enumValues76 = []string{"CONTINUOUS", "TRIGGERED"}
 
-var enumValues77 = []string{"CANCELLED", "FAILED", "IN_PROGRESS", "SUCCEEDED"}
+var enumValues77 = []string{"AVG", "COUNT", "COUNT_DISTINCT", "MAX", "MEDIAN", "MIN", "STDDEV", "SUM"}
 
-var enumValues78 = []string{"CAN_CONNECT_AND_CREATE"}
+var enumValues78 = []string{"CANCELLED", "FAILED", "IN_PROGRESS", "SUCCEEDED"}
 
-var enumValues79 = []string{"CAN_EDIT", "CAN_MANAGE", "CAN_RUN", "CAN_VIEW"}
+var enumValues79 = []string{"CAN_CONNECT_AND_CREATE"}
 
 var enumValues8 = []string{"DEPENDENCY_MODE_AUTO", "DEPENDENCY_MODE_CLUSTER_LIBRARIES", "DEPENDENCY_MODE_ENVIRONMENTS"}
 
-var enumValues80 = []string{"MANAGE", "READ", "WRITE"}
+var enumValues80 = []string{"CAN_EDIT", "CAN_MANAGE", "CAN_RUN", "CAN_VIEW"}
 
-var enumValues81 = []string{"CAN_MANAGE", "CAN_USE", "IS_OWNER"}
+var enumValues81 = []string{"MANAGE", "READ", "WRITE"}
 
-var enumValues82 = []string{"EXECUTE", "MODIFY", "READ_VOLUME", "SELECT", "USE_CONNECTION", "WRITE_VOLUME"}
+var enumValues82 = []string{"CAN_MANAGE", "CAN_USE", "IS_OWNER"}
 
-var enumValues83 = []string{"CONNECTION", "FUNCTION", "MODEL_SERVICE", "TABLE", "VOLUME"}
+var enumValues83 = []string{"EXECUTE", "MODIFY", "READ_VOLUME", "SELECT", "USE_CONNECTION", "WRITE_VOLUME"}
 
-var enumValues84 = []string{"AWS_SSE_KMS", "AWS_SSE_S3"}
+var enumValues84 = []string{"CONNECTION", "FUNCTION", "MODEL_SERVICE", "TABLE", "VOLUME"}
 
-var enumValues85 = []string{"PREMIUM_LRS", "STANDARD_LRS"}
+var enumValues85 = []string{"AWS_SSE_KMS", "AWS_SSE_S3"}
 
-var enumValues86 = []string{"DISCONNECTED", "NOT_SYNCED"}
+var enumValues86 = []string{"PREMIUM_LRS", "STANDARD_LRS"}
 
-var enumValues87 = []string{"RUN_DURATION_SECONDS", "STREAMING_BACKLOG_BYTES", "STREAMING_BACKLOG_FILES", "STREAMING_BACKLOG_RECORDS", "STREAMING_BACKLOG_SECONDS"}
+var enumValues87 = []string{"DISCONNECTED", "NOT_SYNCED"}
 
-var enumValues88 = []string{"GREATER_THAN"}
+var enumValues88 = []string{"RUN_DURATION_SECONDS", "STREAMING_BACKLOG_BYTES", "STREAMING_BACKLOG_FILES", "STREAMING_BACKLOG_RECORDS", "STREAMING_BACKLOG_SECONDS"}
 
-var enumValues89 = []string{"QUERY_RETURNS_ROWS", "RESULT_VALUE_CHANGES"}
+var enumValues89 = []string{"GREATER_THAN"}
 
 var enumValues9 = []string{"CLASSIC_PREVIEW"}
 
-var enumValues90 = []string{"BEST_EFFORT", "CRITICAL", "NORMAL"}
+var enumValues90 = []string{"QUERY_RETURNS_ROWS", "RESULT_VALUE_CHANGES"}
 
-var enumValues91 = []string{"GPU_1xA10", "GPU_1xH100", "GPU_8xB300", "GPU_8xH100"}
+var enumValues91 = []string{"BEST_EFFORT", "CRITICAL", "NORMAL"}
 
-var enumValues92 = []string{"EQUAL_TO", "GREATER_THAN", "GREATER_THAN_OR_EQUAL", "LESS_THAN", "LESS_THAN_OR_EQUAL", "NOT_EQUAL"}
+var enumValues92 = []string{"GPU_1xA10", "GPU_1xH100", "GPU_8xB300", "GPU_8xH100"}
 
-var enumValues93 = []string{"GIT", "WORKSPACE"}
+var enumValues93 = []string{"EQUAL_TO", "GREATER_THAN", "GREATER_THAN_OR_EQUAL", "LESS_THAN", "LESS_THAN_OR_EQUAL", "NOT_EQUAL"}
 
-var enumValues94 = []string{"MODEL_ALIAS_SET", "MODEL_CREATED", "MODEL_VERSION_READY"}
+var enumValues94 = []string{"GIT", "WORKSPACE"}
 
-var enumValues95 = []string{"DAYS", "HOURS", "MINUTES", "WEEKS"}
+var enumValues95 = []string{"MODEL_ALIAS_SET", "MODEL_CREATED", "MODEL_VERSION_READY"}
 
-var enumValues96 = []string{"ALL_UPDATED", "ANY_UPDATED"}
+var enumValues96 = []string{"DAYS", "HOURS", "MINUTES", "WEEKS"}
 
-var enumValues97 = []string{"RATE_LIMIT_KEY_SERVICE", "RATE_LIMIT_KEY_SERVICE_PRINCIPAL", "RATE_LIMIT_KEY_USER", "RATE_LIMIT_KEY_USER_DEFAULT", "RATE_LIMIT_KEY_USER_GROUP"}
+var enumValues97 = []string{"ALL_UPDATED", "ANY_UPDATED"}
 
-var enumValues98 = []string{"RATE_LIMIT_RENEWAL_PERIOD_HOUR", "RATE_LIMIT_RENEWAL_PERIOD_MINUTE"}
+var enumValues98 = []string{"RATE_LIMIT_KEY_SERVICE", "RATE_LIMIT_KEY_SERVICE_PRINCIPAL", "RATE_LIMIT_KEY_USER", "RATE_LIMIT_KEY_USER_DEFAULT", "RATE_LIMIT_KEY_USER_GROUP"}
 
-var enumValues99 = []string{"endpoint", "service_principal", "user", "user_group"}
+var enumValues99 = []string{"RATE_LIMIT_RENEWAL_PERIOD_HOUR", "RATE_LIMIT_RENEWAL_PERIOD_MINUTE"}
 
 func enumConfigRoot(w *walker, n *walk.Node, v *config.Root) {
 	if v == nil {
@@ -387,6 +396,13 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 		for k, x := range v.ExternalLocations {
 			e := c.Child(k)
 			enumResourcesExternalLocation(w, &e, x)
+		}
+	}
+	if len(v.Features) > 0 {
+		c := n.Child("features")
+		for k, x := range v.Features {
+			e := c.Child(k)
+			enumResourcesFeature(w, &e, x)
 		}
 	}
 	if len(v.GenieSpaces) > 0 {
@@ -773,6 +789,20 @@ func enumResourcesExternalLocation(w *walker, n *walk.Node, v *resources.Externa
 			e := c.Elem(i)
 			enumCatalogPrivilegeAssignment(w, &e, &v.Grants[i])
 		}
+	}
+}
+
+func enumResourcesFeature(w *walker, n *walk.Node, v *resources.Feature) {
+	if v == nil {
+		return
+	}
+	if x := &v.Feature.Function; !walk.IsZeroStruct(x) || walk.Forced(v.Feature.ForceSendFields, "Function") || n.HasRefs("function") {
+		c := n.Child("function")
+		enumMlFunction(w, &c, x)
+	}
+	if x := &v.Feature.Source; !walk.IsZeroStruct(x) || walk.Forced(v.Feature.ForceSendFields, "Source") || n.HasRefs("source") {
+		c := n.Child("source")
+		enumMlDataSource(w, &c, x)
 	}
 }
 
@@ -1507,13 +1537,33 @@ func enumCatalogEncryptionDetails(w *walker, n *walk.Node, v *catalog.Encryption
 	}
 }
 
+func enumMlFunction(w *walker, n *walk.Node, v *ml.Function) {
+	if v == nil {
+		return
+	}
+	if s := string(v.FunctionType); s != "" {
+		c := n.Child("function_type")
+		w.enumValue(&c, s, enumValues45)
+	}
+}
+
+func enumMlDataSource(w *walker, n *walk.Node, v *ml.DataSource) {
+	if v == nil {
+		return
+	}
+	if x := v.RequestSource; x != nil {
+		c := n.Child("request_source")
+		enumMlRequestSource(w, &c, x)
+	}
+}
+
 func enumComputeInstancePoolAwsAttributes(w *walker, n *walk.Node, v *compute.InstancePoolAwsAttributes) {
 	if v == nil {
 		return
 	}
 	if s := string(v.Availability); s != "" || walk.Forced(v.ForceSendFields, "Availability") {
 		c := n.Child("availability")
-		w.enumValue(&c, s, enumValues45)
+		w.enumValue(&c, s, enumValues46)
 	}
 }
 
@@ -1523,7 +1573,7 @@ func enumComputeInstancePoolAzureAttributes(w *walker, n *walk.Node, v *compute.
 	}
 	if s := string(v.Availability); s != "" || walk.Forced(v.ForceSendFields, "Availability") {
 		c := n.Child("availability")
-		w.enumValue(&c, s, enumValues46)
+		w.enumValue(&c, s, enumValues47)
 	}
 }
 
@@ -1553,7 +1603,7 @@ func enumResourcesInstancePoolPermission(w *walker, n *walk.Node, v *resources.I
 	}
 	if s := string(v.Level); s != "" {
 		c := n.Child("level")
-		w.enumValue(&c, s, enumValues47)
+		w.enumValue(&c, s, enumValues48)
 	}
 }
 
@@ -1571,7 +1621,7 @@ func enumJobsContinuous(w *walker, n *walk.Node, v *jobs.Continuous) {
 	}
 	if s := string(v.TaskRetryMode); s != "" {
 		c := n.Child("task_retry_mode")
-		w.enumValue(&c, s, enumValues48)
+		w.enumValue(&c, s, enumValues49)
 	}
 }
 
@@ -1581,7 +1631,7 @@ func enumJobsJobDeployment(w *walker, n *walk.Node, v *jobs.JobDeployment) {
 	}
 	if s := string(v.Kind); s != "" || walk.Forced(v.ForceSendFields, "Kind") {
 		c := n.Child("kind")
-		w.enumValue(&c, s, enumValues49)
+		w.enumValue(&c, s, enumValues50)
 	}
 }
 
@@ -1591,7 +1641,7 @@ func enumJobsGitSource(w *walker, n *walk.Node, v *jobs.GitSource) {
 	}
 	if s := string(v.GitProvider); s != "" || walk.Forced(v.ForceSendFields, "GitProvider") {
 		c := n.Child("git_provider")
-		w.enumValue(&c, s, enumValues50)
+		w.enumValue(&c, s, enumValues51)
 	}
 	if x := v.JobSource; x != nil {
 		c := n.Child("job_source")
@@ -1628,7 +1678,7 @@ func enumResourcesJobPermission(w *walker, n *walk.Node, v *resources.JobPermiss
 	}
 	if s := string(v.Level); s != "" {
 		c := n.Child("level")
-		w.enumValue(&c, s, enumValues51)
+		w.enumValue(&c, s, enumValues52)
 	}
 }
 
@@ -1662,6 +1712,10 @@ func enumJobsTask(w *walker, n *walk.Node, v *jobs.Task) {
 		c := n.Child("condition_task")
 		enumJobsConditionTask(w, &c, x)
 	}
+	if x := v.DashboardTask; x != nil {
+		c := n.Child("dashboard_task")
+		enumJobsDashboardTask(w, &c, x)
+	}
 	if x := v.DbtTask; x != nil {
 		c := n.Child("dbt_task")
 		enumJobsDbtTask(w, &c, x)
@@ -1692,7 +1746,7 @@ func enumJobsTask(w *walker, n *walk.Node, v *jobs.Task) {
 	}
 	if s := string(v.RunIf); s != "" || walk.Forced(v.ForceSendFields, "RunIf") {
 		c := n.Child("run_if")
-		w.enumValue(&c, s, enumValues52)
+		w.enumValue(&c, s, enumValues53)
 	}
 	if x := v.SparkPythonTask; x != nil {
 		c := n.Child("spark_python_task")
@@ -1779,7 +1833,7 @@ func enumCatalogModelProviderServiceConfig(w *walker, n *walk.Node, v *catalog.M
 	}
 	if s := string(v.ProviderType); s != "" || walk.Forced(v.ForceSendFields, "ProviderType") {
 		c := n.Child("provider_type")
-		w.enumValue(&c, s, enumValues53)
+		w.enumValue(&c, s, enumValues54)
 	}
 	if len(v.RateLimits) > 0 {
 		c := n.Child("rate_limits")
@@ -1850,7 +1904,7 @@ func enumResourcesModelServingEndpointPermission(w *walker, n *walk.Node, v *res
 	}
 	if s := string(v.Level); s != "" {
 		c := n.Child("level")
-		w.enumValue(&c, s, enumValues54)
+		w.enumValue(&c, s, enumValues55)
 	}
 }
 
@@ -1860,11 +1914,11 @@ func enumServingRateLimit(w *walker, n *walk.Node, v *serving.RateLimit) {
 	}
 	if s := string(v.Key); s != "" {
 		c := n.Child("key")
-		w.enumValue(&c, s, enumValues55)
+		w.enumValue(&c, s, enumValues56)
 	}
 	if s := string(v.RenewalPeriod); s != "" {
 		c := n.Child("renewal_period")
-		w.enumValue(&c, s, enumValues56)
+		w.enumValue(&c, s, enumValues57)
 	}
 }
 
@@ -1876,7 +1930,7 @@ func enumServingTelemetryConfig(w *walker, n *walk.Node, v *serving.TelemetryCon
 		c := n.Child("enabled_telemetry_features")
 		for i := range v.EnabledTelemetryFeatures {
 			e := c.Elem(i)
-			w.enumValue(&e, string(v.EnabledTelemetryFeatures[i]), enumValues57)
+			w.enumValue(&e, string(v.EnabledTelemetryFeatures[i]), enumValues58)
 		}
 	}
 }
@@ -1887,7 +1941,7 @@ func enumResourcesMlflowModelPermission(w *walker, n *walk.Node, v *resources.Ml
 	}
 	if s := string(v.Level); s != "" {
 		c := n.Child("level")
-		w.enumValue(&c, s, enumValues58)
+		w.enumValue(&c, s, enumValues59)
 	}
 }
 
@@ -1919,7 +1973,7 @@ func enumPipelinesPipelineDeployment(w *walker, n *walk.Node, v *pipelines.Pipel
 	}
 	if s := string(v.Kind); s != "" || walk.Forced(v.ForceSendFields, "Kind") {
 		c := n.Child("kind")
-		w.enumValue(&c, s, enumValues59)
+		w.enumValue(&c, s, enumValues60)
 	}
 }
 
@@ -1929,7 +1983,7 @@ func enumPipelinesIngestionPipelineDefinition(w *walker, n *walk.Node, v *pipeli
 	}
 	if s := string(v.ConnectorType); s != "" || walk.Forced(v.ForceSendFields, "ConnectorType") {
 		c := n.Child("connector_type")
-		w.enumValue(&c, s, enumValues60)
+		w.enumValue(&c, s, enumValues61)
 	}
 	if x := v.FullRefreshWindow; x != nil {
 		c := n.Child("full_refresh_window")
@@ -1944,7 +1998,7 @@ func enumPipelinesIngestionPipelineDefinition(w *walker, n *walk.Node, v *pipeli
 	}
 	if s := string(v.SourceType); s != "" || walk.Forced(v.ForceSendFields, "SourceType") {
 		c := n.Child("source_type")
-		w.enumValue(&c, s, enumValues61)
+		w.enumValue(&c, s, enumValues62)
 	}
 	if x := v.TableConfiguration; x != nil {
 		c := n.Child("table_configuration")
@@ -1958,7 +2012,7 @@ func enumResourcesPipelinePermission(w *walker, n *walk.Node, v *resources.Pipel
 	}
 	if s := string(v.Level); s != "" {
 		c := n.Child("level")
-		w.enumValue(&c, s, enumValues62)
+		w.enumValue(&c, s, enumValues63)
 	}
 }
 
@@ -1970,7 +2024,7 @@ func enumPipelinesRestartWindow(w *walker, n *walk.Node, v *pipelines.RestartWin
 		c := n.Child("days_of_week")
 		for i := range v.DaysOfWeek {
 			e := c.Elem(i)
-			w.enumValue(&e, string(v.DaysOfWeek[i]), enumValues63)
+			w.enumValue(&e, string(v.DaysOfWeek[i]), enumValues64)
 		}
 	}
 }
@@ -1991,7 +2045,7 @@ func enumPostgresSyncedTableSyncedTableSpecExtraColumn(w *walker, n *walk.Node, 
 	}
 	if s := string(v.Maintenance); s != "" || walk.Forced(v.ForceSendFields, "Maintenance") {
 		c := n.Child("maintenance")
-		w.enumValue(&c, s, enumValues64)
+		w.enumValue(&c, s, enumValues65)
 	}
 }
 
@@ -2001,7 +2055,7 @@ func enumPostgresNewPipelineSpec(w *walker, n *walk.Node, v *postgres.NewPipelin
 	}
 	if s := string(v.PipelineChannel); s != "" || walk.Forced(v.ForceSendFields, "PipelineChannel") {
 		c := n.Child("pipeline_channel")
-		w.enumValue(&c, s, enumValues65)
+		w.enumValue(&c, s, enumValues66)
 	}
 }
 
@@ -2011,7 +2065,7 @@ func enumPostgresSyncedTableSyncedTableSpecTypeOverride(w *walker, n *walk.Node,
 	}
 	if s := string(v.PgType); s != "" || walk.Forced(v.ForceSendFields, "PgType") {
 		c := n.Child("pg_type")
-		w.enumValue(&c, s, enumValues66)
+		w.enumValue(&c, s, enumValues67)
 	}
 }
 
@@ -2021,7 +2075,7 @@ func enumCatalogMonitorMetric(w *walker, n *walk.Node, v *catalog.MonitorMetric)
 	}
 	if s := string(v.Type); s != "" {
 		c := n.Child("type")
-		w.enumValue(&c, s, enumValues67)
+		w.enumValue(&c, s, enumValues68)
 	}
 }
 
@@ -2031,7 +2085,7 @@ func enumCatalogMonitorInferenceLog(w *walker, n *walk.Node, v *catalog.MonitorI
 	}
 	if s := string(v.ProblemType); s != "" || walk.Forced(v.ForceSendFields, "ProblemType") {
 		c := n.Child("problem_type")
-		w.enumValue(&c, s, enumValues68)
+		w.enumValue(&c, s, enumValues69)
 	}
 }
 
@@ -2041,7 +2095,7 @@ func enumCatalogMonitorCronSchedule(w *walker, n *walk.Node, v *catalog.MonitorC
 	}
 	if s := string(v.PauseStatus); s != "" {
 		c := n.Child("pause_status")
-		w.enumValue(&c, s, enumValues69)
+		w.enumValue(&c, s, enumValues70)
 	}
 }
 
@@ -2051,7 +2105,7 @@ func enumResourcesSecretScopePermission(w *walker, n *walk.Node, v *resources.Se
 	}
 	if s := string(v.Level); s != "" {
 		c := n.Child("level")
-		w.enumValue(&c, s, enumValues70)
+		w.enumValue(&c, s, enumValues71)
 	}
 }
 
@@ -2061,7 +2115,7 @@ func enumSqlChannel(w *walker, n *walk.Node, v *sql.Channel) {
 	}
 	if s := string(v.Name); s != "" || walk.Forced(v.ForceSendFields, "Name") {
 		c := n.Child("name")
-		w.enumValue(&c, s, enumValues71)
+		w.enumValue(&c, s, enumValues72)
 	}
 }
 
@@ -2071,7 +2125,7 @@ func enumResourcesSqlWarehousePermission(w *walker, n *walk.Node, v *resources.S
 	}
 	if s := string(v.Level); s != "" {
 		c := n.Child("level")
-		w.enumValue(&c, s, enumValues72)
+		w.enumValue(&c, s, enumValues73)
 	}
 }
 
@@ -2085,7 +2139,7 @@ func enumDatabaseSyncedTableStatus(w *walker, n *walk.Node, v *database.SyncedTa
 	}
 	if s := string(v.DetailedState); s != "" || walk.Forced(v.ForceSendFields, "DetailedState") {
 		c := n.Child("detailed_state")
-		w.enumValue(&c, s, enumValues73)
+		w.enumValue(&c, s, enumValues74)
 	}
 	if x := v.ProvisioningStatus; x != nil {
 		c := n.Child("provisioning_status")
@@ -2120,7 +2174,7 @@ func enumResourcesVectorSearchEndpointPermission(w *walker, n *walk.Node, v *res
 	}
 	if s := string(v.Level); s != "" {
 		c := n.Child("level")
-		w.enumValue(&c, s, enumValues74)
+		w.enumValue(&c, s, enumValues75)
 	}
 }
 
@@ -2130,7 +2184,7 @@ func enumVectorsearchDeltaSyncVectorIndexSpecRequest(w *walker, n *walk.Node, v 
 	}
 	if s := string(v.PipelineType); s != "" || walk.Forced(v.ForceSendFields, "PipelineType") {
 		c := n.Child("pipeline_type")
-		w.enumValue(&c, s, enumValues75)
+		w.enumValue(&c, s, enumValues76)
 	}
 }
 
@@ -2140,7 +2194,7 @@ func enumSqlAlertV2OperandColumn(w *walker, n *walk.Node, v *sql.AlertV2OperandC
 	}
 	if s := string(v.Aggregation); s != "" || walk.Forced(v.ForceSendFields, "Aggregation") {
 		c := n.Child("aggregation")
-		w.enumValue(&c, s, enumValues76)
+		w.enumValue(&c, s, enumValues77)
 	}
 }
 
@@ -2160,7 +2214,7 @@ func enumAppsAppDeploymentStatus(w *walker, n *walk.Node, v *apps.AppDeploymentS
 	}
 	if s := string(v.State); s != "" || walk.Forced(v.ForceSendFields, "State") {
 		c := n.Child("state")
-		w.enumValue(&c, s, enumValues77)
+		w.enumValue(&c, s, enumValues78)
 	}
 }
 
@@ -2180,7 +2234,7 @@ func enumAppsAppResourceDatabase(w *walker, n *walk.Node, v *apps.AppResourceDat
 	}
 	if s := string(v.Permission); s != "" {
 		c := n.Child("permission")
-		w.enumValue(&c, s, enumValues78)
+		w.enumValue(&c, s, enumValues79)
 	}
 }
 
@@ -2200,7 +2254,7 @@ func enumAppsAppResourceGenieSpace(w *walker, n *walk.Node, v *apps.AppResourceG
 	}
 	if s := string(v.Permission); s != "" {
 		c := n.Child("permission")
-		w.enumValue(&c, s, enumValues79)
+		w.enumValue(&c, s, enumValues80)
 	}
 }
 
@@ -2210,7 +2264,7 @@ func enumAppsAppResourceJob(w *walker, n *walk.Node, v *apps.AppResourceJob) {
 	}
 	if s := string(v.Permission); s != "" {
 		c := n.Child("permission")
-		w.enumValue(&c, s, enumValues51)
+		w.enumValue(&c, s, enumValues52)
 	}
 }
 
@@ -2220,7 +2274,7 @@ func enumAppsAppResourcePostgres(w *walker, n *walk.Node, v *apps.AppResourcePos
 	}
 	if s := string(v.Permission); s != "" || walk.Forced(v.ForceSendFields, "Permission") {
 		c := n.Child("permission")
-		w.enumValue(&c, s, enumValues78)
+		w.enumValue(&c, s, enumValues79)
 	}
 }
 
@@ -2230,7 +2284,7 @@ func enumAppsAppResourceSecret(w *walker, n *walk.Node, v *apps.AppResourceSecre
 	}
 	if s := string(v.Permission); s != "" {
 		c := n.Child("permission")
-		w.enumValue(&c, s, enumValues80)
+		w.enumValue(&c, s, enumValues81)
 	}
 }
 
@@ -2240,7 +2294,7 @@ func enumAppsAppResourceServingEndpoint(w *walker, n *walk.Node, v *apps.AppReso
 	}
 	if s := string(v.Permission); s != "" {
 		c := n.Child("permission")
-		w.enumValue(&c, s, enumValues54)
+		w.enumValue(&c, s, enumValues55)
 	}
 }
 
@@ -2250,7 +2304,7 @@ func enumAppsAppResourceSqlWarehouse(w *walker, n *walk.Node, v *apps.AppResourc
 	}
 	if s := string(v.Permission); s != "" {
 		c := n.Child("permission")
-		w.enumValue(&c, s, enumValues81)
+		w.enumValue(&c, s, enumValues82)
 	}
 }
 
@@ -2260,11 +2314,11 @@ func enumAppsAppResourceUcSecurable(w *walker, n *walk.Node, v *apps.AppResource
 	}
 	if s := string(v.Permission); s != "" || walk.Forced(v.ForceSendFields, "Permission") {
 		c := n.Child("permission")
-		w.enumValue(&c, s, enumValues82)
+		w.enumValue(&c, s, enumValues83)
 	}
 	if s := string(v.SecurableType); s != "" || walk.Forced(v.ForceSendFields, "SecurableType") {
 		c := n.Child("securable_type")
-		w.enumValue(&c, s, enumValues83)
+		w.enumValue(&c, s, enumValues84)
 	}
 }
 
@@ -2274,7 +2328,17 @@ func enumCatalogSseEncryptionDetails(w *walker, n *walk.Node, v *catalog.SseEncr
 	}
 	if s := string(v.Algorithm); s != "" || walk.Forced(v.ForceSendFields, "Algorithm") {
 		c := n.Child("algorithm")
-		w.enumValue(&c, s, enumValues84)
+		w.enumValue(&c, s, enumValues85)
+	}
+}
+
+func enumMlRequestSource(w *walker, n *walk.Node, v *ml.RequestSource) {
+	if v == nil {
+		return
+	}
+	if x := v.FlatSchema; x != nil {
+		c := n.Child("flat_schema")
+		enumMlFlatSchema(w, &c, x)
 	}
 }
 
@@ -2284,7 +2348,7 @@ func enumComputeDiskType(w *walker, n *walk.Node, v *compute.DiskType) {
 	}
 	if s := string(v.AzureDiskVolumeType); s != "" {
 		c := n.Child("azure_disk_volume_type")
-		w.enumValue(&c, s, enumValues85)
+		w.enumValue(&c, s, enumValues86)
 	}
 	if s := string(v.EbsVolumeType); s != "" {
 		c := n.Child("ebs_volume_type")
@@ -2298,7 +2362,7 @@ func enumJobsMaintenanceWindow(w *walker, n *walk.Node, v *jobs.MaintenanceWindo
 	}
 	if s := string(v.DayOfWeek); s != "" {
 		c := n.Child("day_of_week")
-		w.enumValue(&c, s, enumValues63)
+		w.enumValue(&c, s, enumValues64)
 	}
 }
 
@@ -2308,7 +2372,7 @@ func enumJobsJobSource(w *walker, n *walk.Node, v *jobs.JobSource) {
 	}
 	if s := string(v.DirtyState); s != "" {
 		c := n.Child("dirty_state")
-		w.enumValue(&c, s, enumValues86)
+		w.enumValue(&c, s, enumValues87)
 	}
 }
 
@@ -2318,11 +2382,11 @@ func enumJobsJobsHealthRule(w *walker, n *walk.Node, v *jobs.JobsHealthRule) {
 	}
 	if s := string(v.Metric); s != "" {
 		c := n.Child("metric")
-		w.enumValue(&c, s, enumValues87)
+		w.enumValue(&c, s, enumValues88)
 	}
 	if s := string(v.Op); s != "" {
 		c := n.Child("op")
-		w.enumValue(&c, s, enumValues88)
+		w.enumValue(&c, s, enumValues89)
 	}
 }
 
@@ -2366,7 +2430,7 @@ func enumJobsSqlConditionConfiguration(w *walker, n *walk.Node, v *jobs.SqlCondi
 	}
 	if s := string(v.TriggerMode); s != "" {
 		c := n.Child("trigger_mode")
-		w.enumValue(&c, s, enumValues89)
+		w.enumValue(&c, s, enumValues90)
 	}
 }
 
@@ -2383,7 +2447,7 @@ func enumJobsAiRuntimeTask(w *walker, n *walk.Node, v *jobs.AiRuntimeTask) {
 	}
 	if s := string(v.PriorityClass); s != "" || walk.Forced(v.ForceSendFields, "PriorityClass") {
 		c := n.Child("priority_class")
-		w.enumValue(&c, s, enumValues90)
+		w.enumValue(&c, s, enumValues91)
 	}
 }
 
@@ -2393,7 +2457,7 @@ func enumJobsCompute(w *walker, n *walk.Node, v *jobs.Compute) {
 	}
 	if s := string(v.HardwareAccelerator); s != "" {
 		c := n.Child("hardware_accelerator")
-		w.enumValue(&c, s, enumValues91)
+		w.enumValue(&c, s, enumValues92)
 	}
 }
 
@@ -2403,7 +2467,17 @@ func enumJobsConditionTask(w *walker, n *walk.Node, v *jobs.ConditionTask) {
 	}
 	if s := string(v.Op); s != "" {
 		c := n.Child("op")
-		w.enumValue(&c, s, enumValues92)
+		w.enumValue(&c, s, enumValues93)
+	}
+}
+
+func enumJobsDashboardTask(w *walker, n *walk.Node, v *jobs.DashboardTask) {
+	if v == nil {
+		return
+	}
+	if x := v.Subscription; x != nil {
+		c := n.Child("subscription")
+		enumJobsSubscription(w, &c, x)
 	}
 }
 
@@ -2413,7 +2487,7 @@ func enumJobsDbtTask(w *walker, n *walk.Node, v *jobs.DbtTask) {
 	}
 	if s := string(v.Source); s != "" || walk.Forced(v.ForceSendFields, "Source") {
 		c := n.Child("source")
-		w.enumValue(&c, s, enumValues93)
+		w.enumValue(&c, s, enumValues94)
 	}
 }
 
@@ -2433,7 +2507,7 @@ func enumJobsGenAiComputeTask(w *walker, n *walk.Node, v *jobs.GenAiComputeTask)
 	}
 	if s := string(v.Source); s != "" || walk.Forced(v.ForceSendFields, "Source") {
 		c := n.Child("source")
-		w.enumValue(&c, s, enumValues93)
+		w.enumValue(&c, s, enumValues94)
 	}
 }
 
@@ -2443,7 +2517,7 @@ func enumJobsNotebookTask(w *walker, n *walk.Node, v *jobs.NotebookTask) {
 	}
 	if s := string(v.Source); s != "" || walk.Forced(v.ForceSendFields, "Source") {
 		c := n.Child("source")
-		w.enumValue(&c, s, enumValues93)
+		w.enumValue(&c, s, enumValues94)
 	}
 }
 
@@ -2470,7 +2544,7 @@ func enumJobsSparkPythonTask(w *walker, n *walk.Node, v *jobs.SparkPythonTask) {
 	}
 	if s := string(v.Source); s != "" {
 		c := n.Child("source")
-		w.enumValue(&c, s, enumValues93)
+		w.enumValue(&c, s, enumValues94)
 	}
 }
 
@@ -2490,7 +2564,7 @@ func enumJobsModelTriggerConfiguration(w *walker, n *walk.Node, v *jobs.ModelTri
 	}
 	if s := string(v.Condition); s != "" || walk.Forced(v.ForceSendFields, "Condition") {
 		c := n.Child("condition")
-		w.enumValue(&c, s, enumValues94)
+		w.enumValue(&c, s, enumValues95)
 	}
 }
 
@@ -2500,7 +2574,7 @@ func enumJobsPeriodicTriggerConfiguration(w *walker, n *walk.Node, v *jobs.Perio
 	}
 	if s := string(v.Unit); s != "" {
 		c := n.Child("unit")
-		w.enumValue(&c, s, enumValues95)
+		w.enumValue(&c, s, enumValues96)
 	}
 }
 
@@ -2510,7 +2584,7 @@ func enumJobsTableUpdateTriggerConfiguration(w *walker, n *walk.Node, v *jobs.Ta
 	}
 	if s := string(v.Condition); s != "" || walk.Forced(v.ForceSendFields, "Condition") {
 		c := n.Child("condition")
-		w.enumValue(&c, s, enumValues96)
+		w.enumValue(&c, s, enumValues97)
 	}
 }
 
@@ -2524,7 +2598,7 @@ func enumJobsContinuousTriggerConfiguration(w *walker, n *walk.Node, v *jobs.Con
 	}
 	if s := string(v.TaskRetryMode); s != "" {
 		c := n.Child("task_retry_mode")
-		w.enumValue(&c, s, enumValues48)
+		w.enumValue(&c, s, enumValues49)
 	}
 }
 
@@ -2534,11 +2608,11 @@ func enumCatalogRateLimit(w *walker, n *walk.Node, v *catalog.RateLimit) {
 	}
 	if s := string(v.Key); s != "" || walk.Forced(v.ForceSendFields, "Key") {
 		c := n.Child("key")
-		w.enumValue(&c, s, enumValues97)
+		w.enumValue(&c, s, enumValues98)
 	}
 	if s := string(v.RenewalPeriod); s != "" || walk.Forced(v.ForceSendFields, "RenewalPeriod") {
 		c := n.Child("renewal_period")
-		w.enumValue(&c, s, enumValues98)
+		w.enumValue(&c, s, enumValues99)
 	}
 }
 
@@ -2579,11 +2653,11 @@ func enumServingAiGatewayRateLimit(w *walker, n *walk.Node, v *serving.AiGateway
 	}
 	if s := string(v.Key); s != "" || walk.Forced(v.ForceSendFields, "Key") {
 		c := n.Child("key")
-		w.enumValue(&c, s, enumValues99)
+		w.enumValue(&c, s, enumValues100)
 	}
 	if s := string(v.RenewalPeriod); s != "" || walk.Forced(v.ForceSendFields, "RenewalPeriod") {
 		c := n.Child("renewal_period")
-		w.enumValue(&c, s, enumValues56)
+		w.enumValue(&c, s, enumValues57)
 	}
 }
 
@@ -2597,7 +2671,7 @@ func enumServingServedEntityInput(w *walker, n *walk.Node, v *serving.ServedEnti
 	}
 	if s := string(v.WorkloadType); s != "" || walk.Forced(v.ForceSendFields, "WorkloadType") {
 		c := n.Child("workload_type")
-		w.enumValue(&c, s, enumValues100)
+		w.enumValue(&c, s, enumValues101)
 	}
 }
 
@@ -2607,7 +2681,7 @@ func enumServingServedModelInput(w *walker, n *walk.Node, v *serving.ServedModel
 	}
 	if s := string(v.WorkloadType); s != "" || walk.Forced(v.ForceSendFields, "WorkloadType") {
 		c := n.Child("workload_type")
-		w.enumValue(&c, s, enumValues100)
+		w.enumValue(&c, s, enumValues101)
 	}
 }
 
@@ -2617,7 +2691,7 @@ func enumPipelinesPipelineClusterAutoscale(w *walker, n *walk.Node, v *pipelines
 	}
 	if s := string(v.Mode); s != "" {
 		c := n.Child("mode")
-		w.enumValue(&c, s, enumValues101)
+		w.enumValue(&c, s, enumValues102)
 	}
 }
 
@@ -2629,7 +2703,7 @@ func enumPipelinesOperationTimeWindow(w *walker, n *walk.Node, v *pipelines.Oper
 		c := n.Child("days_of_week")
 		for i := range v.DaysOfWeek {
 			e := c.Elem(i)
-			w.enumValue(&e, string(v.DaysOfWeek[i]), enumValues63)
+			w.enumValue(&e, string(v.DaysOfWeek[i]), enumValues64)
 		}
 	}
 }
@@ -2658,7 +2732,7 @@ func enumPipelinesTableSpecificConfig(w *walker, n *walk.Node, v *pipelines.Tabl
 	}
 	if s := string(v.ScdType); s != "" || walk.Forced(v.ForceSendFields, "ScdType") {
 		c := n.Child("scd_type")
-		w.enumValue(&c, s, enumValues102)
+		w.enumValue(&c, s, enumValues103)
 	}
 }
 
@@ -2668,7 +2742,7 @@ func enumPostgresWeeklySchedule(w *walker, n *walk.Node, v *postgres.WeeklySched
 	}
 	if s := string(v.DayOfWeek); s != "" || walk.Forced(v.ForceSendFields, "DayOfWeek") {
 		c := n.Child("day_of_week")
-		w.enumValue(&c, s, enumValues63)
+		w.enumValue(&c, s, enumValues64)
 	}
 }
 
@@ -2708,7 +2782,7 @@ func enumDatabaseSyncedTableSpecTypeOverride(w *walker, n *walk.Node, v *databas
 	}
 	if s := string(v.PgType); s != "" || walk.Forced(v.ForceSendFields, "PgType") {
 		c := n.Child("pg_type")
-		w.enumValue(&c, s, enumValues66)
+		w.enumValue(&c, s, enumValues67)
 	}
 }
 
@@ -2718,7 +2792,20 @@ func enumSqlAlertV2OperandColumn2(w *walker, n *walk.Node, v *sql.AlertV2Operand
 	}
 	if s := string(v.Aggregation); s != "" || walk.Forced(v.ForceSendFields, "Aggregation") {
 		c := n.Child("aggregation")
-		w.enumValue(&c, s, enumValues76)
+		w.enumValue(&c, s, enumValues77)
+	}
+}
+
+func enumMlFlatSchema(w *walker, n *walk.Node, v *ml.FlatSchema) {
+	if v == nil {
+		return
+	}
+	if len(v.Fields) > 0 {
+		c := n.Child("fields")
+		for i := range v.Fields {
+			e := c.Elem(i)
+			enumMlFieldDefinition(w, &e, &v.Fields[i])
+		}
 	}
 }
 
@@ -2729,6 +2816,16 @@ func enumJobsDeploymentSpec(w *walker, n *walk.Node, v *jobs.DeploymentSpec) {
 	if x := &v.Compute; !walk.IsZeroStruct(x) || walk.Forced(v.ForceSendFields, "Compute") || n.HasRefs("compute") {
 		c := n.Child("compute")
 		enumJobsComputeSpec(w, &c, x)
+	}
+}
+
+func enumJobsSubscription(w *walker, n *walk.Node, v *jobs.Subscription) {
+	if v == nil {
+		return
+	}
+	if x := v.Attachment; x != nil {
+		c := n.Child("attachment")
+		enumJobsSubscriptionAttachment(w, &c, x)
 	}
 }
 
@@ -2747,6 +2844,10 @@ func enumJobsTask2(w *walker, n *walk.Node, v *jobs.Task) {
 	if x := v.ConditionTask; x != nil {
 		c := n.Child("condition_task")
 		enumJobsConditionTask(w, &c, x)
+	}
+	if x := v.DashboardTask; x != nil {
+		c := n.Child("dashboard_task")
+		enumJobsDashboardTask(w, &c, x)
 	}
 	if x := v.DbtTask; x != nil {
 		c := n.Child("dbt_task")
@@ -2774,7 +2875,7 @@ func enumJobsTask2(w *walker, n *walk.Node, v *jobs.Task) {
 	}
 	if s := string(v.RunIf); s != "" || walk.Forced(v.ForceSendFields, "RunIf") {
 		c := n.Child("run_if")
-		w.enumValue(&c, s, enumValues52)
+		w.enumValue(&c, s, enumValues53)
 	}
 	if x := v.SparkPythonTask; x != nil {
 		c := n.Child("spark_python_task")
@@ -2792,11 +2893,11 @@ func enumJobsPowerBiModel(w *walker, n *walk.Node, v *jobs.PowerBiModel) {
 	}
 	if s := string(v.AuthenticationMethod); s != "" || walk.Forced(v.ForceSendFields, "AuthenticationMethod") {
 		c := n.Child("authentication_method")
-		w.enumValue(&c, s, enumValues103)
+		w.enumValue(&c, s, enumValues104)
 	}
 	if s := string(v.StorageMode); s != "" || walk.Forced(v.ForceSendFields, "StorageMode") {
 		c := n.Child("storage_mode")
-		w.enumValue(&c, s, enumValues104)
+		w.enumValue(&c, s, enumValues105)
 	}
 }
 
@@ -2806,7 +2907,7 @@ func enumJobsPowerBiTable(w *walker, n *walk.Node, v *jobs.PowerBiTable) {
 	}
 	if s := string(v.StorageMode); s != "" || walk.Forced(v.ForceSendFields, "StorageMode") {
 		c := n.Child("storage_mode")
-		w.enumValue(&c, s, enumValues104)
+		w.enumValue(&c, s, enumValues105)
 	}
 }
 
@@ -2816,7 +2917,7 @@ func enumJobsSqlTaskFile(w *walker, n *walk.Node, v *jobs.SqlTaskFile) {
 	}
 	if s := string(v.Source); s != "" {
 		c := n.Child("source")
-		w.enumValue(&c, s, enumValues93)
+		w.enumValue(&c, s, enumValues94)
 	}
 }
 
@@ -2826,7 +2927,7 @@ func enumCatalogModelServiceConfigDestinationConfig(w *walker, n *walk.Node, v *
 	}
 	if s := string(v.DestinationType); s != "" || walk.Forced(v.ForceSendFields, "DestinationType") {
 		c := n.Child("destination_type")
-		w.enumValue(&c, s, enumValues105)
+		w.enumValue(&c, s, enumValues106)
 	}
 }
 
@@ -2863,7 +2964,7 @@ func enumServingExternalModel(w *walker, n *walk.Node, v *serving.ExternalModel)
 	}
 	if s := string(v.Provider); s != "" {
 		c := n.Child("provider")
-		w.enumValue(&c, s, enumValues106)
+		w.enumValue(&c, s, enumValues107)
 	}
 }
 
@@ -2915,7 +3016,17 @@ func enumDatabaseSyncedTablePipelineProgress(w *walker, n *walk.Node, v *databas
 	}
 	if s := string(v.ProvisioningPhase); s != "" || walk.Forced(v.ForceSendFields, "ProvisioningPhase") {
 		c := n.Child("provisioning_phase")
-		w.enumValue(&c, s, enumValues107)
+		w.enumValue(&c, s, enumValues108)
+	}
+}
+
+func enumMlFieldDefinition(w *walker, n *walk.Node, v *ml.FieldDefinition) {
+	if v == nil {
+		return
+	}
+	if s := string(v.DataType); s != "" {
+		c := n.Child("data_type")
+		w.enumValue(&c, s, enumValues109)
 	}
 }
 
@@ -2925,7 +3036,21 @@ func enumJobsComputeSpec(w *walker, n *walk.Node, v *jobs.ComputeSpec) {
 	}
 	if s := string(v.AcceleratorType); s != "" || walk.Forced(v.ForceSendFields, "AcceleratorType") {
 		c := n.Child("accelerator_type")
-		w.enumValue(&c, s, enumValues91)
+		w.enumValue(&c, s, enumValues92)
+	}
+}
+
+func enumJobsSubscriptionAttachment(w *walker, n *walk.Node, v *jobs.SubscriptionAttachment) {
+	if v == nil {
+		return
+	}
+	if x := v.DataAttachment; x != nil {
+		c := n.Child("data_attachment")
+		enumJobsSubscriptionAttachmentDataAttachment(w, &c, x)
+	}
+	if x := v.PageAttachment; x != nil {
+		c := n.Child("page_attachment")
+		enumJobsSubscriptionAttachmentPageAttachment(w, &c, x)
 	}
 }
 
@@ -2935,7 +3060,7 @@ func enumServingAiGatewayGuardrailPiiBehavior(w *walker, n *walk.Node, v *servin
 	}
 	if s := string(v.Behavior); s != "" {
 		c := n.Child("behavior")
-		w.enumValue(&c, s, enumValues108)
+		w.enumValue(&c, s, enumValues110)
 	}
 }
 
@@ -2945,7 +3070,7 @@ func enumServingAmazonBedrockConfig(w *walker, n *walk.Node, v *serving.AmazonBe
 	}
 	if s := string(v.BedrockProvider); s != "" || walk.Forced(v.ForceSendFields, "BedrockProvider") {
 		c := n.Child("bedrock_provider")
-		w.enumValue(&c, s, enumValues109)
+		w.enumValue(&c, s, enumValues111)
 	}
 }
 
@@ -2992,13 +3117,33 @@ func enumPipelinesIngestionPipelineDefinitionFanoutOptions(w *walker, n *walk.No
 	}
 }
 
+func enumJobsSubscriptionAttachmentDataAttachment(w *walker, n *walk.Node, v *jobs.SubscriptionAttachmentDataAttachment) {
+	if v == nil {
+		return
+	}
+	if s := string(v.FileFormat); s != "" || walk.Forced(v.ForceSendFields, "FileFormat") {
+		c := n.Child("file_format")
+		w.enumValue(&c, s, enumValues112)
+	}
+}
+
+func enumJobsSubscriptionAttachmentPageAttachment(w *walker, n *walk.Node, v *jobs.SubscriptionAttachmentPageAttachment) {
+	if v == nil {
+		return
+	}
+	if s := string(v.PageSelection); s != "" {
+		c := n.Child("page_selection")
+		w.enumValue(&c, s, enumValues113)
+	}
+}
+
 func enumPipelinesGoogleDriveOptions(w *walker, n *walk.Node, v *pipelines.GoogleDriveOptions) {
 	if v == nil {
 		return
 	}
 	if s := string(v.EntityType); s != "" || walk.Forced(v.ForceSendFields, "EntityType") {
 		c := n.Child("entity_type")
-		w.enumValue(&c, s, enumValues110)
+		w.enumValue(&c, s, enumValues114)
 	}
 	if x := v.FileIngestionOptions; x != nil {
 		c := n.Child("file_ingestion_options")
@@ -3036,11 +3181,11 @@ func enumPipelinesOutlookOptions(w *walker, n *walk.Node, v *pipelines.OutlookOp
 	}
 	if s := string(v.AttachmentMode); s != "" || walk.Forced(v.ForceSendFields, "AttachmentMode") {
 		c := n.Child("attachment_mode")
-		w.enumValue(&c, s, enumValues111)
+		w.enumValue(&c, s, enumValues115)
 	}
 	if s := string(v.BodyFormat); s != "" || walk.Forced(v.ForceSendFields, "BodyFormat") {
 		c := n.Child("body_format")
-		w.enumValue(&c, s, enumValues112)
+		w.enumValue(&c, s, enumValues116)
 	}
 }
 
@@ -3050,7 +3195,7 @@ func enumPipelinesSharepointOptions(w *walker, n *walk.Node, v *pipelines.Sharep
 	}
 	if s := string(v.EntityType); s != "" || walk.Forced(v.ForceSendFields, "EntityType") {
 		c := n.Child("entity_type")
-		w.enumValue(&c, s, enumValues113)
+		w.enumValue(&c, s, enumValues117)
 	}
 	if x := v.FileIngestionOptions; x != nil {
 		c := n.Child("file_ingestion_options")
@@ -3068,11 +3213,11 @@ func enumPipelinesTikTokAdsOptions(w *walker, n *walk.Node, v *pipelines.TikTokA
 	}
 	if s := string(v.DataLevel); s != "" || walk.Forced(v.ForceSendFields, "DataLevel") {
 		c := n.Child("data_level")
-		w.enumValue(&c, s, enumValues114)
+		w.enumValue(&c, s, enumValues118)
 	}
 	if s := string(v.ReportType); s != "" || walk.Forced(v.ForceSendFields, "ReportType") {
 		c := n.Child("report_type")
-		w.enumValue(&c, s, enumValues115)
+		w.enumValue(&c, s, enumValues119)
 	}
 }
 
@@ -3086,7 +3231,7 @@ func enumPipelinesTransformer(w *walker, n *walk.Node, v *pipelines.Transformer)
 	}
 	if s := string(v.Format); s != "" || walk.Forced(v.ForceSendFields, "Format") {
 		c := n.Child("format")
-		w.enumValue(&c, s, enumValues116)
+		w.enumValue(&c, s, enumValues120)
 	}
 	if x := v.JsonOptions; x != nil {
 		c := n.Child("json_options")
@@ -3104,11 +3249,11 @@ func enumPipelinesFileIngestionOptions(w *walker, n *walk.Node, v *pipelines.Fil
 	}
 	if s := string(v.Format); s != "" || walk.Forced(v.ForceSendFields, "Format") {
 		c := n.Child("format")
-		w.enumValue(&c, s, enumValues117)
+		w.enumValue(&c, s, enumValues121)
 	}
 	if s := string(v.SchemaEvolutionMode); s != "" || walk.Forced(v.ForceSendFields, "SchemaEvolutionMode") {
 		c := n.Child("schema_evolution_mode")
-		w.enumValue(&c, s, enumValues118)
+		w.enumValue(&c, s, enumValues122)
 	}
 }
 
@@ -3122,7 +3267,7 @@ func enumPipelinesTransformer2(w *walker, n *walk.Node, v *pipelines.Transformer
 	}
 	if s := string(v.Format); s != "" || walk.Forced(v.ForceSendFields, "Format") {
 		c := n.Child("format")
-		w.enumValue(&c, s, enumValues116)
+		w.enumValue(&c, s, enumValues120)
 	}
 	if x := v.JsonOptions; x != nil {
 		c := n.Child("json_options")
@@ -3142,16 +3287,16 @@ func enumPipelinesLinkedInAdsOptionsLinkedInAdsCustomReportOptions(w *walker, n 
 		c := n.Child("entity_granularity")
 		for i := range v.EntityGranularity {
 			e := c.Elem(i)
-			w.enumValue(&e, string(v.EntityGranularity[i]), enumValues119)
+			w.enumValue(&e, string(v.EntityGranularity[i]), enumValues123)
 		}
 	}
 	if s := string(v.Finder); s != "" {
 		c := n.Child("finder")
-		w.enumValue(&c, s, enumValues120)
+		w.enumValue(&c, s, enumValues124)
 	}
 	if s := string(v.TimeGranularity); s != "" {
 		c := n.Child("time_granularity")
-		w.enumValue(&c, s, enumValues121)
+		w.enumValue(&c, s, enumValues125)
 	}
 }
 
@@ -3161,11 +3306,11 @@ func enumPipelinesTikTokAdsOptionsTikTokAdsCustomReportOptions(w *walker, n *wal
 	}
 	if s := string(v.DataLevel); s != "" || walk.Forced(v.ForceSendFields, "DataLevel") {
 		c := n.Child("data_level")
-		w.enumValue(&c, s, enumValues114)
+		w.enumValue(&c, s, enumValues118)
 	}
 	if s := string(v.ReportType); s != "" || walk.Forced(v.ForceSendFields, "ReportType") {
 		c := n.Child("report_type")
-		w.enumValue(&c, s, enumValues115)
+		w.enumValue(&c, s, enumValues119)
 	}
 }
 
@@ -3175,7 +3320,7 @@ func enumPipelinesAvroTransformerOptions(w *walker, n *walk.Node, v *pipelines.A
 	}
 	if s := string(v.ParseMode); s != "" || walk.Forced(v.ForceSendFields, "ParseMode") {
 		c := n.Child("parse_mode")
-		w.enumValue(&c, s, enumValues122)
+		w.enumValue(&c, s, enumValues126)
 	}
 }
 
@@ -3185,7 +3330,7 @@ func enumPipelinesJsonTransformerOptions(w *walker, n *walk.Node, v *pipelines.J
 	}
 	if s := string(v.SchemaEvolutionMode); s != "" || walk.Forced(v.ForceSendFields, "SchemaEvolutionMode") {
 		c := n.Child("schema_evolution_mode")
-		w.enumValue(&c, s, enumValues118)
+		w.enumValue(&c, s, enumValues122)
 	}
 }
 
@@ -3195,6 +3340,6 @@ func enumPipelinesProtobufTransformerOptions(w *walker, n *walk.Node, v *pipelin
 	}
 	if s := string(v.ParseMode); s != "" || walk.Forced(v.ForceSendFields, "ParseMode") {
 		c := n.Child("parse_mode")
-		w.enumValue(&c, s, enumValues122)
+		w.enumValue(&c, s, enumValues126)
 	}
 }

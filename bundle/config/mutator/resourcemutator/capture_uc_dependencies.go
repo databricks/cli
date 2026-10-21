@@ -194,7 +194,7 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 		if f == nil {
 			continue
 		}
-		if dynvar.ContainsVariableReference(f.FullName) {
+		if structvar.ContainsVariableReference(f.FullName) {
 			continue
 		}
 		parts, ok := splitUCName(f.FullName, 3)
