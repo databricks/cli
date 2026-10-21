@@ -442,8 +442,8 @@ func TestResourcesBindSupport(t *testing.T) {
 			t.Fatalf("Expected at least one resource in group %s", group.Description)
 		}
 		for _, resource := range group.Resources {
-			// bind operation requires resource to be returned from FindResourceByConfigKey
-			r, err := supportedResources.FindResourceByConfigKey("my_" + resource.ResourceDescription().SingularName)
+			// bind operation requires resource to be returned from ResolveKey
+			r, _, err := supportedResources.ResolveKey("my_" + resource.ResourceDescription().SingularName)
 			assert.NoError(t, err)
 
 			// bind operation requires Exists to return true
@@ -483,5 +483,40 @@ func TestAllInteralResourcesAreMarkedAsInternal(t *testing.T) {
 		}
 		field.Set(r)
 		assert.True(t, resources.HasInternalResources())
+	}
+}
+
+func TestResolveKey(t *testing.T) {
+	r := &Resources{
+		Jobs:      map[string]*resources.Job{"foo": {}, "thing": {}},
+		Pipelines: map[string]*resources.Pipeline{"bar": {}, "thing": {}},
+	}
+
+	tests := []struct {
+		ref      string
+		wantType string
+		wantKey  string
+		wantErr  string
+	}{
+		{ref: "foo", wantType: "jobs", wantKey: "foo"},
+		{ref: "jobs.foo", wantType: "jobs", wantKey: "foo"},
+		{ref: "pipelines.thing", wantType: "pipelines", wantKey: "thing"},
+		{ref: "missing", wantErr: "no such resource: missing"},
+		{ref: "jobs.bar", wantErr: "no such resource: jobs.bar"},
+		{ref: "nosuchtype.foo", wantErr: "no such resource: nosuchtype.foo"},
+		{ref: "thing", wantErr: "ambiguous resource: thing (can resolve to jobs.thing, pipelines.thing); use a qualified name to disambiguate"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.ref, func(t *testing.T) {
+			res, key, err := r.ResolveKey(tc.ref)
+			if tc.wantErr != "" {
+				assert.EqualError(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantType, res.ResourceDescription().PluralName)
+			assert.Equal(t, tc.wantKey, key)
+		})
 	}
 }
