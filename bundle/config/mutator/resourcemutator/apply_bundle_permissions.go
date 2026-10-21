@@ -3,17 +3,17 @@ package resourcemutator
 import (
 	"context"
 	"fmt"
+	"maps"
+	"reflect"
 	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/permissions"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
@@ -108,44 +108,63 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		return diag.FromErr(err)
 	}
 
-	b.Config.Resources.IterateAllPermissions(func(typ, name string, perms config.PermissionList) bool {
-		lm, ok := levelsMap[typ]
+	for _, group := range b.Config.Resources.AllResources() {
+		key := group.Description.PluralName
+		lm, ok := levelsMap[key]
 		if !ok {
-			return true
+			continue
 		}
-		err = applyToResource(ctx, b, typ, name, lm, perms)
-		return err == nil
-	})
-	return diag.FromErr(err)
+
+		for _, name := range slices.Sorted(maps.Keys(group.Resources)) {
+			field := reflect.ValueOf(group.Resources[name]).Elem().FieldByName("Permissions")
+			permissions := readPermissions(field)
+			permissions = append(permissions, convertPermissions(
+				ctx,
+				b.Config.Permissions,
+				permissions,
+				key,
+				lm,
+			)...)
+			writePermissions(field, permissions)
+		}
+	}
+
+	return nil
 }
 
-// applyToResource applies the bundle permissions to the permissions perms of the
-// resource name of type typ, using the permission levels lm of that type.
-func applyToResource(ctx context.Context, b *bundle.Bundle, typ, name string, lm map[string]string, perms config.PermissionList) error {
-	path := structpath.NewPath(nil, "resources", typ, name, "permissions")
-	// Present as [structvar.View] decides: a non-nil list or a pure reference.
-	had := !perms.IsNil() || b.Config.IsReferenceAt(path)
+// readPermissions converts the permissions field of a resource to []resources.Permission.
+// The element type of the field differs between resources, but all have the same fields.
+func readPermissions(field reflect.Value) []resources.Permission {
+	var permissions []resources.Permission
+	for i := range field.Len() {
+		p := field.Index(i)
+		permissions = append(permissions, resources.Permission{
+			Level:                iam.PermissionLevel(p.FieldByName("Level").String()),
+			UserName:             p.FieldByName("UserName").String(),
+			ServicePrincipalName: p.FieldByName("ServicePrincipalName").String(),
+			GroupName:            p.FieldByName("GroupName").String(),
+		})
+	}
+	return permissions
+}
 
-	existing := make([]resources.Permission, 0, perms.Len())
-	for i := range perms.Len() {
-		existing = append(existing, perms.At(i))
+// writePermissions sets the permissions field of a resource to permissions.
+// An empty list is stored as nil, so that the field is absent from the configuration.
+func writePermissions(field reflect.Value, permissions []resources.Permission) {
+	if len(permissions) == 0 {
+		field.SetZero()
+		return
 	}
 
-	added := convertPermissions(ctx, b.Config.Permissions, existing, typ, lm)
-	for _, p := range added {
-		perms.Append(p)
+	out := reflect.MakeSlice(field.Type(), len(permissions), len(permissions))
+	for i, p := range permissions {
+		e := out.Index(i)
+		e.FieldByName("Level").SetString(string(p.Level))
+		e.FieldByName("UserName").SetString(p.UserName)
+		e.FieldByName("ServicePrincipalName").SetString(p.ServicePrincipalName)
+		e.FieldByName("GroupName").SetString(p.GroupName)
 	}
-
-	if !had {
-		return nil
-	}
-
-	// Empty permissions are dropped. Otherwise they are rebuilt without locations.
-	if len(existing) == 0 && len(added) == 0 {
-		return b.Config.Delete(path)
-	}
-	b.Config.SetLocations(path, nil)
-	return nil
+	field.Set(out)
 }
 
 func validatePermissions(b *bundle.Bundle) error {

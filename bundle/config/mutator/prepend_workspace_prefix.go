@@ -2,7 +2,6 @@ package mutator
 
 import (
 	"context"
-	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -27,16 +26,30 @@ var skipPrefixes = []string{
 
 func (m *prependWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	w := &b.Config.Workspace
-	for _, path := range []*string{&w.RootPath, &w.FilePath, &w.ArtifactPath, &w.StatePath, &w.ResourcePath} {
-		// Skip prefixing if the path does not start with /, it might be variable reference or smth else.
-		if !strings.HasPrefix(*path, "/") {
-			continue
-		}
-		if slices.ContainsFunc(skipPrefixes, func(prefix string) bool { return strings.HasPrefix(*path, prefix) }) {
-			continue
-		}
-		// The value keeps its locations, so diagnostics point at the original config line.
-		*path = "/Workspace" + *path
+	for _, path := range []*string{
+		&w.RootPath,
+		&w.FilePath,
+		&w.ArtifactPath,
+		&w.StatePath,
+		&w.ResourcePath,
+	} {
+		*path = prependWorkspacePrefixTo(*path)
 	}
+
 	return nil
+}
+
+func prependWorkspacePrefixTo(path string) string {
+	// Skip prefixing if the path does not start with /, it might be variable reference or smth else.
+	if !strings.HasPrefix(path, "/") {
+		return path
+	}
+
+	for _, prefix := range skipPrefixes {
+		if strings.HasPrefix(path, prefix) {
+			return path
+		}
+	}
+
+	return "/Workspace" + path
 }

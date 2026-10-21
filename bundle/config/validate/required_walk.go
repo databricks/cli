@@ -163,6 +163,13 @@ func requiredConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 			requiredResourcesExternalLocation(w, &e, x)
 		}
 	}
+	if len(v.Features) > 0 {
+		c := n.Child("features")
+		for k, x := range v.Features {
+			e := c.Child(k)
+			requiredResourcesFeature(w, &e, x)
+		}
+	}
 	if len(v.GenieSpaces) > 0 {
 		c := n.Child("genie_spaces")
 		for k, x := range v.GenieSpaces {
@@ -660,6 +667,53 @@ func requiredResourcesExternalLocation(w *walker, n *walk.Node, v *resources.Ext
 	}
 	if !(v.CreateExternalLocation.Url != "" || walk.Forced(v.CreateExternalLocation.ForceSendFields, "Url")) {
 		w.missing(n, "url")
+	}
+}
+
+func requiredResourcesFeature(w *walker, n *walk.Node, v *resources.Feature) {
+	if v == nil {
+		w.missing(n, "full_name")
+		w.missing(n, "function")
+		w.missing(n, "source")
+		return
+	}
+	if !(v.Feature.FullName != "" || walk.Forced(v.Feature.ForceSendFields, "FullName")) {
+		w.missing(n, "full_name")
+	}
+	if !(!walk.IsZeroStruct(&v.Feature.Function) || walk.Forced(v.Feature.ForceSendFields, "Function") || n.HasRefs("function")) {
+		w.missing(n, "function")
+	}
+	if !(!walk.IsZeroStruct(&v.Feature.Source) || walk.Forced(v.Feature.ForceSendFields, "Source") || n.HasRefs("source")) {
+		w.missing(n, "source")
+	}
+	if len(v.Feature.Entities) > 0 {
+		c := n.Child("entities")
+		for i := range v.Feature.Entities {
+			e := c.Elem(i)
+			requiredMlEntityColumn(w, &e, &v.Feature.Entities[i])
+		}
+	}
+	if x := &v.Feature.Function; !walk.IsZeroStruct(x) || walk.Forced(v.Feature.ForceSendFields, "Function") || n.HasRefs("function") {
+		c := n.Child("function")
+		requiredMlFunction(w, &c, x)
+	}
+	if x := &v.Feature.Source; !walk.IsZeroStruct(x) || walk.Forced(v.Feature.ForceSendFields, "Source") || n.HasRefs("source") {
+		c := n.Child("source")
+		requiredMlDataSource(w, &c, x)
+	}
+	if x := v.Feature.TimeWindow; x != nil {
+		c := n.Child("time_window")
+		requiredMlTimeWindow(w, &c, x)
+	} else if walk.Forced(v.Feature.ForceSendFields, "TimeWindow") || n.IsRef("time_window") {
+		c := n.Child("time_window")
+		requiredMlTimeWindow(w, &c, nil)
+	}
+	if x := v.Feature.TimeseriesColumn; x != nil {
+		c := n.Child("timeseries_column")
+		requiredMlTimeseriesColumn(w, &c, x)
+	} else if walk.Forced(v.Feature.ForceSendFields, "TimeseriesColumn") || n.IsRef("timeseries_column") {
+		c := n.Child("timeseries_column")
+		requiredMlTimeseriesColumn(w, &c, nil)
 	}
 }
 
@@ -1715,6 +1769,128 @@ func requiredMlExperimentTraceLocation(w *walker, n *walk.Node, v *ml.Experiment
 	}
 }
 
+func requiredMlEntityColumn(w *walker, n *walk.Node, v *ml.EntityColumn) {
+	if v == nil {
+		w.missing(n, "name")
+		return
+	}
+	if !(v.Name != "") {
+		w.missing(n, "name")
+	}
+}
+
+func requiredMlFunction(w *walker, n *walk.Node, v *ml.Function) {
+	if v == nil {
+		return
+	}
+	if x := v.AggregationFunction; x != nil {
+		c := n.Child("aggregation_function")
+		requiredMlAggregationFunction(w, &c, x)
+	} else if n.IsRef("aggregation_function") {
+		c := n.Child("aggregation_function")
+		requiredMlAggregationFunction(w, &c, nil)
+	}
+	if x := v.ColumnSelection; x != nil {
+		c := n.Child("column_selection")
+		requiredMlColumnSelection(w, &c, x)
+	} else if n.IsRef("column_selection") {
+		c := n.Child("column_selection")
+		requiredMlColumnSelection(w, &c, nil)
+	}
+	if x := v.CustomUdf; x != nil {
+		c := n.Child("custom_udf")
+		requiredMlCustomUdf(w, &c, x)
+	} else if n.IsRef("custom_udf") {
+		c := n.Child("custom_udf")
+		requiredMlCustomUdf(w, &c, nil)
+	}
+	if len(v.ExtraParameters) > 0 {
+		c := n.Child("extra_parameters")
+		for i := range v.ExtraParameters {
+			e := c.Elem(i)
+			requiredMlFunctionExtraParameter(w, &e, &v.ExtraParameters[i])
+		}
+	}
+}
+
+func requiredMlDataSource(w *walker, n *walk.Node, v *ml.DataSource) {
+	if v == nil {
+		return
+	}
+	if x := v.DeltaTableSource; x != nil {
+		c := n.Child("delta_table_source")
+		requiredMlDeltaTableSource(w, &c, x)
+	} else if n.IsRef("delta_table_source") {
+		c := n.Child("delta_table_source")
+		requiredMlDeltaTableSource(w, &c, nil)
+	}
+	if x := v.FeatureViewSource; x != nil {
+		c := n.Child("feature_view_source")
+		requiredMlFeatureViewSource(w, &c, x)
+	} else if n.IsRef("feature_view_source") {
+		c := n.Child("feature_view_source")
+		requiredMlFeatureViewSource(w, &c, nil)
+	}
+	if x := v.KafkaSource; x != nil {
+		c := n.Child("kafka_source")
+		requiredMlKafkaSource(w, &c, x)
+	} else if n.IsRef("kafka_source") {
+		c := n.Child("kafka_source")
+		requiredMlKafkaSource(w, &c, nil)
+	}
+	if x := v.RequestSource; x != nil {
+		c := n.Child("request_source")
+		requiredMlRequestSource(w, &c, x)
+	} else if n.IsRef("request_source") {
+		c := n.Child("request_source")
+		requiredMlRequestSource(w, &c, nil)
+	}
+	if x := v.StreamSource; x != nil {
+		c := n.Child("stream_source")
+		requiredMlStreamSource(w, &c, x)
+	} else if n.IsRef("stream_source") {
+		c := n.Child("stream_source")
+		requiredMlStreamSource(w, &c, nil)
+	}
+}
+
+func requiredMlTimeWindow(w *walker, n *walk.Node, v *ml.TimeWindow) {
+	if v == nil {
+		return
+	}
+	if x := v.Continuous; x != nil {
+		c := n.Child("continuous")
+		requiredMlContinuousWindow(w, &c, x)
+	} else if walk.Forced(v.ForceSendFields, "Continuous") || n.IsRef("continuous") {
+		c := n.Child("continuous")
+		requiredMlContinuousWindow(w, &c, nil)
+	}
+	if x := v.Sliding; x != nil {
+		c := n.Child("sliding")
+		requiredMlSlidingWindow(w, &c, x)
+	} else if walk.Forced(v.ForceSendFields, "Sliding") || n.IsRef("sliding") {
+		c := n.Child("sliding")
+		requiredMlSlidingWindow(w, &c, nil)
+	}
+	if x := v.Tumbling; x != nil {
+		c := n.Child("tumbling")
+		requiredMlTumblingWindow(w, &c, x)
+	} else if walk.Forced(v.ForceSendFields, "Tumbling") || n.IsRef("tumbling") {
+		c := n.Child("tumbling")
+		requiredMlTumblingWindow(w, &c, nil)
+	}
+}
+
+func requiredMlTimeseriesColumn(w *walker, n *walk.Node, v *ml.TimeseriesColumn) {
+	if v == nil {
+		w.missing(n, "name")
+		return
+	}
+	if !(v.Name != "") {
+		w.missing(n, "name")
+	}
+}
+
 func requiredResourcesInstancePoolPermission(w *walker, n *walk.Node, v *resources.InstancePoolPermission) {
 	if v == nil {
 		w.missing(n, "level")
@@ -1899,6 +2075,13 @@ func requiredJobsTask(w *walker, n *walk.Node, v *jobs.Task) {
 	} else if walk.Forced(v.ForceSendFields, "ConditionTask") || n.IsRef("condition_task") {
 		c := n.Child("condition_task")
 		requiredJobsConditionTask(w, &c, nil)
+	}
+	if x := v.DashboardTask; x != nil {
+		c := n.Child("dashboard_task")
+		requiredJobsDashboardTask(w, &c, x)
+	} else if walk.Forced(v.ForceSendFields, "DashboardTask") || n.IsRef("dashboard_task") {
+		c := n.Child("dashboard_task")
+		requiredJobsDashboardTask(w, &c, nil)
 	}
 	if x := v.DbtTask; x != nil {
 		c := n.Child("dbt_task")
@@ -3000,6 +3183,279 @@ func requiredMlUcTraceLocation(w *walker, n *walk.Node, v *ml.UcTraceLocation) {
 	}
 }
 
+func requiredMlAggregationFunction(w *walker, n *walk.Node, v *ml.AggregationFunction) {
+	if v == nil {
+		return
+	}
+	if x := v.ApproxCountDistinct; x != nil {
+		c := n.Child("approx_count_distinct")
+		requiredMlApproxCountDistinctFunction(w, &c, x)
+	} else if n.IsRef("approx_count_distinct") {
+		c := n.Child("approx_count_distinct")
+		requiredMlApproxCountDistinctFunction(w, &c, nil)
+	}
+	if x := v.ApproxPercentile; x != nil {
+		c := n.Child("approx_percentile")
+		requiredMlApproxPercentileFunction(w, &c, x)
+	} else if n.IsRef("approx_percentile") {
+		c := n.Child("approx_percentile")
+		requiredMlApproxPercentileFunction(w, &c, nil)
+	}
+	if x := v.Avg; x != nil {
+		c := n.Child("avg")
+		requiredMlAvgFunction(w, &c, x)
+	} else if n.IsRef("avg") {
+		c := n.Child("avg")
+		requiredMlAvgFunction(w, &c, nil)
+	}
+	if x := v.CountFunction; x != nil {
+		c := n.Child("count_function")
+		requiredMlCountFunction(w, &c, x)
+	} else if n.IsRef("count_function") {
+		c := n.Child("count_function")
+		requiredMlCountFunction(w, &c, nil)
+	}
+	if x := v.First; x != nil {
+		c := n.Child("first")
+		requiredMlFirstFunction(w, &c, x)
+	} else if n.IsRef("first") {
+		c := n.Child("first")
+		requiredMlFirstFunction(w, &c, nil)
+	}
+	if x := v.FirstDistinct; x != nil {
+		c := n.Child("first_distinct")
+		requiredMlFirstDistinctFunction(w, &c, x)
+	} else if n.IsRef("first_distinct") {
+		c := n.Child("first_distinct")
+		requiredMlFirstDistinctFunction(w, &c, nil)
+	}
+	if x := v.FirstN; x != nil {
+		c := n.Child("first_n")
+		requiredMlFirstNFunction(w, &c, x)
+	} else if n.IsRef("first_n") {
+		c := n.Child("first_n")
+		requiredMlFirstNFunction(w, &c, nil)
+	}
+	if x := v.Last; x != nil {
+		c := n.Child("last")
+		requiredMlLastFunction(w, &c, x)
+	} else if n.IsRef("last") {
+		c := n.Child("last")
+		requiredMlLastFunction(w, &c, nil)
+	}
+	if x := v.LastDistinct; x != nil {
+		c := n.Child("last_distinct")
+		requiredMlLastDistinctFunction(w, &c, x)
+	} else if n.IsRef("last_distinct") {
+		c := n.Child("last_distinct")
+		requiredMlLastDistinctFunction(w, &c, nil)
+	}
+	if x := v.LastN; x != nil {
+		c := n.Child("last_n")
+		requiredMlLastNFunction(w, &c, x)
+	} else if n.IsRef("last_n") {
+		c := n.Child("last_n")
+		requiredMlLastNFunction(w, &c, nil)
+	}
+	if x := v.Max; x != nil {
+		c := n.Child("max")
+		requiredMlMaxFunction(w, &c, x)
+	} else if n.IsRef("max") {
+		c := n.Child("max")
+		requiredMlMaxFunction(w, &c, nil)
+	}
+	if x := v.Min; x != nil {
+		c := n.Child("min")
+		requiredMlMinFunction(w, &c, x)
+	} else if n.IsRef("min") {
+		c := n.Child("min")
+		requiredMlMinFunction(w, &c, nil)
+	}
+	if x := v.StddevPop; x != nil {
+		c := n.Child("stddev_pop")
+		requiredMlStddevPopFunction(w, &c, x)
+	} else if n.IsRef("stddev_pop") {
+		c := n.Child("stddev_pop")
+		requiredMlStddevPopFunction(w, &c, nil)
+	}
+	if x := v.StddevSamp; x != nil {
+		c := n.Child("stddev_samp")
+		requiredMlStddevSampFunction(w, &c, x)
+	} else if n.IsRef("stddev_samp") {
+		c := n.Child("stddev_samp")
+		requiredMlStddevSampFunction(w, &c, nil)
+	}
+	if x := v.Sum; x != nil {
+		c := n.Child("sum")
+		requiredMlSumFunction(w, &c, x)
+	} else if n.IsRef("sum") {
+		c := n.Child("sum")
+		requiredMlSumFunction(w, &c, nil)
+	}
+	if x := v.TimeWindow; x != nil {
+		c := n.Child("time_window")
+		requiredMlTimeWindow(w, &c, x)
+	} else if n.IsRef("time_window") {
+		c := n.Child("time_window")
+		requiredMlTimeWindow(w, &c, nil)
+	}
+	if x := v.VarPop; x != nil {
+		c := n.Child("var_pop")
+		requiredMlVarPopFunction(w, &c, x)
+	} else if n.IsRef("var_pop") {
+		c := n.Child("var_pop")
+		requiredMlVarPopFunction(w, &c, nil)
+	}
+	if x := v.VarSamp; x != nil {
+		c := n.Child("var_samp")
+		requiredMlVarSampFunction(w, &c, x)
+	} else if n.IsRef("var_samp") {
+		c := n.Child("var_samp")
+		requiredMlVarSampFunction(w, &c, nil)
+	}
+}
+
+func requiredMlColumnSelection(w *walker, n *walk.Node, v *ml.ColumnSelection) {
+	if v == nil {
+		w.missing(n, "column")
+		return
+	}
+	if !(v.Column != "") {
+		w.missing(n, "column")
+	}
+}
+
+func requiredMlCustomUdf(w *walker, n *walk.Node, v *ml.CustomUdf) {
+	if v == nil {
+		w.missing(n, "function_path")
+		return
+	}
+	if !(v.FunctionPath != "") {
+		w.missing(n, "function_path")
+	}
+	if len(v.InputBindings) > 0 {
+		c := n.Child("input_bindings")
+		for i := range v.InputBindings {
+			e := c.Elem(i)
+			requiredMlInputBinding(w, &e, &v.InputBindings[i])
+		}
+	}
+}
+
+func requiredMlFunctionExtraParameter(w *walker, n *walk.Node, v *ml.FunctionExtraParameter) {
+	if v == nil {
+		w.missing(n, "key")
+		w.missing(n, "value")
+		return
+	}
+	if !(v.Key != "") {
+		w.missing(n, "key")
+	}
+	if !(v.Value != "") {
+		w.missing(n, "value")
+	}
+}
+
+func requiredMlDeltaTableSource(w *walker, n *walk.Node, v *ml.DeltaTableSource) {
+	if v == nil {
+		w.missing(n, "full_name")
+		return
+	}
+	if !(v.FullName != "" || walk.Forced(v.ForceSendFields, "FullName")) {
+		w.missing(n, "full_name")
+	}
+}
+
+func requiredMlFeatureViewSource(w *walker, n *walk.Node, v *ml.FeatureViewSource) {
+	if v == nil {
+		return
+	}
+	if len(v.FeatureReferences) > 0 {
+		c := n.Child("feature_references")
+		for i := range v.FeatureReferences {
+			e := c.Elem(i)
+			requiredMlFeatureReference(w, &e, &v.FeatureReferences[i])
+		}
+	}
+}
+
+func requiredMlKafkaSource(w *walker, n *walk.Node, v *ml.KafkaSource) {
+	if v == nil {
+		w.missing(n, "name")
+		return
+	}
+	if !(v.Name != "" || walk.Forced(v.ForceSendFields, "Name")) {
+		w.missing(n, "name")
+	}
+	if len(v.EntityColumnIdentifiers) > 0 {
+		c := n.Child("entity_column_identifiers")
+		for i := range v.EntityColumnIdentifiers {
+			e := c.Elem(i)
+			requiredMlColumnIdentifier(w, &e, &v.EntityColumnIdentifiers[i])
+		}
+	}
+	if x := v.TimeseriesColumnIdentifier; x != nil {
+		c := n.Child("timeseries_column_identifier")
+		requiredMlColumnIdentifier2(w, &c, x)
+	} else if walk.Forced(v.ForceSendFields, "TimeseriesColumnIdentifier") || n.IsRef("timeseries_column_identifier") {
+		c := n.Child("timeseries_column_identifier")
+		requiredMlColumnIdentifier2(w, &c, nil)
+	}
+}
+
+func requiredMlRequestSource(w *walker, n *walk.Node, v *ml.RequestSource) {
+	if v == nil {
+		return
+	}
+	if x := v.FlatSchema; x != nil {
+		c := n.Child("flat_schema")
+		requiredMlFlatSchema(w, &c, x)
+	} else if walk.Forced(v.ForceSendFields, "FlatSchema") || n.IsRef("flat_schema") {
+		c := n.Child("flat_schema")
+		requiredMlFlatSchema(w, &c, nil)
+	}
+}
+
+func requiredMlStreamSource(w *walker, n *walk.Node, v *ml.StreamSource) {
+	if v == nil {
+		w.missing(n, "full_name")
+		return
+	}
+	if !(v.FullName != "" || walk.Forced(v.ForceSendFields, "FullName")) {
+		w.missing(n, "full_name")
+	}
+}
+
+func requiredMlContinuousWindow(w *walker, n *walk.Node, v *ml.ContinuousWindow) {
+	if v == nil {
+		w.missing(n, "window_duration")
+		return
+	}
+	if !(v.WindowDuration != "" || walk.Forced(v.ForceSendFields, "WindowDuration")) {
+		w.missing(n, "window_duration")
+	}
+}
+
+func requiredMlSlidingWindow(w *walker, n *walk.Node, v *ml.SlidingWindow) {
+	if v == nil {
+		w.missing(n, "slide_duration")
+		return
+	}
+	if !(v.SlideDuration != "" || walk.Forced(v.ForceSendFields, "SlideDuration")) {
+		w.missing(n, "slide_duration")
+	}
+}
+
+func requiredMlTumblingWindow(w *walker, n *walk.Node, v *ml.TumblingWindow) {
+	if v == nil {
+		w.missing(n, "window_duration")
+		return
+	}
+	if !(v.WindowDuration != "" || walk.Forced(v.ForceSendFields, "WindowDuration")) {
+		w.missing(n, "window_duration")
+	}
+}
+
 func requiredJobsMaintenanceWindow(w *walker, n *walk.Node, v *jobs.MaintenanceWindow) {
 	if v == nil {
 		w.missing(n, "day_of_week")
@@ -3141,6 +3597,19 @@ func requiredJobsConditionTask(w *walker, n *walk.Node, v *jobs.ConditionTask) {
 	}
 	if !(v.Right != "") {
 		w.missing(n, "right")
+	}
+}
+
+func requiredJobsDashboardTask(w *walker, n *walk.Node, v *jobs.DashboardTask) {
+	if v == nil {
+		return
+	}
+	if x := v.Subscription; x != nil {
+		c := n.Child("subscription")
+		requiredJobsSubscription(w, &c, x)
+	} else if walk.Forced(v.ForceSendFields, "Subscription") || n.IsRef("subscription") {
+		c := n.Child("subscription")
+		requiredJobsSubscription(w, &c, nil)
 	}
 }
 
@@ -3713,6 +4182,257 @@ func requiredSqlAlertV2OperandColumn2(w *walker, n *walk.Node, v *sql.AlertV2Ope
 	}
 }
 
+func requiredMlApproxCountDistinctFunction(w *walker, n *walk.Node, v *ml.ApproxCountDistinctFunction) {
+	if v == nil {
+		w.missing(n, "input")
+		return
+	}
+	if !(v.Input != "" || walk.Forced(v.ForceSendFields, "Input")) {
+		w.missing(n, "input")
+	}
+}
+
+func requiredMlApproxPercentileFunction(w *walker, n *walk.Node, v *ml.ApproxPercentileFunction) {
+	if v == nil {
+		w.missing(n, "input")
+		w.missing(n, "percentile")
+		return
+	}
+	if !(v.Input != "" || walk.Forced(v.ForceSendFields, "Input")) {
+		w.missing(n, "input")
+	}
+	if !(v.Percentile != 0 || walk.Forced(v.ForceSendFields, "Percentile") || n.IsRef("percentile")) {
+		w.missing(n, "percentile")
+	}
+}
+
+func requiredMlAvgFunction(w *walker, n *walk.Node, v *ml.AvgFunction) {
+	if v == nil {
+		w.missing(n, "input")
+		return
+	}
+	if !(v.Input != "") {
+		w.missing(n, "input")
+	}
+}
+
+func requiredMlCountFunction(w *walker, n *walk.Node, v *ml.CountFunction) {
+	if v == nil {
+		w.missing(n, "input")
+		return
+	}
+	if !(v.Input != "") {
+		w.missing(n, "input")
+	}
+}
+
+func requiredMlFirstFunction(w *walker, n *walk.Node, v *ml.FirstFunction) {
+	if v == nil {
+		w.missing(n, "input")
+		return
+	}
+	if !(v.Input != "") {
+		w.missing(n, "input")
+	}
+}
+
+func requiredMlFirstDistinctFunction(w *walker, n *walk.Node, v *ml.FirstDistinctFunction) {
+	if v == nil {
+		w.missing(n, "input")
+		w.missing(n, "n")
+		return
+	}
+	if !(v.Input != "") {
+		w.missing(n, "input")
+	}
+	if !(v.N != 0 || n.IsRef("n")) {
+		w.missing(n, "n")
+	}
+}
+
+func requiredMlFirstNFunction(w *walker, n *walk.Node, v *ml.FirstNFunction) {
+	if v == nil {
+		w.missing(n, "input")
+		w.missing(n, "n")
+		return
+	}
+	if !(v.Input != "") {
+		w.missing(n, "input")
+	}
+	if !(v.N != 0 || n.IsRef("n")) {
+		w.missing(n, "n")
+	}
+}
+
+func requiredMlLastFunction(w *walker, n *walk.Node, v *ml.LastFunction) {
+	if v == nil {
+		w.missing(n, "input")
+		return
+	}
+	if !(v.Input != "") {
+		w.missing(n, "input")
+	}
+}
+
+func requiredMlLastDistinctFunction(w *walker, n *walk.Node, v *ml.LastDistinctFunction) {
+	if v == nil {
+		w.missing(n, "input")
+		w.missing(n, "n")
+		return
+	}
+	if !(v.Input != "") {
+		w.missing(n, "input")
+	}
+	if !(v.N != 0 || n.IsRef("n")) {
+		w.missing(n, "n")
+	}
+}
+
+func requiredMlLastNFunction(w *walker, n *walk.Node, v *ml.LastNFunction) {
+	if v == nil {
+		w.missing(n, "input")
+		w.missing(n, "n")
+		return
+	}
+	if !(v.Input != "") {
+		w.missing(n, "input")
+	}
+	if !(v.N != 0 || n.IsRef("n")) {
+		w.missing(n, "n")
+	}
+}
+
+func requiredMlMaxFunction(w *walker, n *walk.Node, v *ml.MaxFunction) {
+	if v == nil {
+		w.missing(n, "input")
+		return
+	}
+	if !(v.Input != "") {
+		w.missing(n, "input")
+	}
+}
+
+func requiredMlMinFunction(w *walker, n *walk.Node, v *ml.MinFunction) {
+	if v == nil {
+		w.missing(n, "input")
+		return
+	}
+	if !(v.Input != "") {
+		w.missing(n, "input")
+	}
+}
+
+func requiredMlStddevPopFunction(w *walker, n *walk.Node, v *ml.StddevPopFunction) {
+	if v == nil {
+		w.missing(n, "input")
+		return
+	}
+	if !(v.Input != "") {
+		w.missing(n, "input")
+	}
+}
+
+func requiredMlStddevSampFunction(w *walker, n *walk.Node, v *ml.StddevSampFunction) {
+	if v == nil {
+		w.missing(n, "input")
+		return
+	}
+	if !(v.Input != "") {
+		w.missing(n, "input")
+	}
+}
+
+func requiredMlSumFunction(w *walker, n *walk.Node, v *ml.SumFunction) {
+	if v == nil {
+		w.missing(n, "input")
+		return
+	}
+	if !(v.Input != "") {
+		w.missing(n, "input")
+	}
+}
+
+func requiredMlVarPopFunction(w *walker, n *walk.Node, v *ml.VarPopFunction) {
+	if v == nil {
+		w.missing(n, "input")
+		return
+	}
+	if !(v.Input != "") {
+		w.missing(n, "input")
+	}
+}
+
+func requiredMlVarSampFunction(w *walker, n *walk.Node, v *ml.VarSampFunction) {
+	if v == nil {
+		w.missing(n, "input")
+		return
+	}
+	if !(v.Input != "") {
+		w.missing(n, "input")
+	}
+}
+
+func requiredMlInputBinding(w *walker, n *walk.Node, v *ml.InputBinding) {
+	if v == nil {
+		w.missing(n, "column")
+		w.missing(n, "parameter")
+		return
+	}
+	if !(v.Column != "") {
+		w.missing(n, "column")
+	}
+	if !(v.Parameter != "") {
+		w.missing(n, "parameter")
+	}
+}
+
+func requiredMlFeatureReference(w *walker, n *walk.Node, v *ml.FeatureReference) {
+	if v == nil {
+		w.missing(n, "feature")
+		return
+	}
+	if !(v.Feature != "") {
+		w.missing(n, "feature")
+	}
+}
+
+func requiredMlColumnIdentifier(w *walker, n *walk.Node, v *ml.ColumnIdentifier) {
+	if v == nil {
+		w.missing(n, "variant_expr_path")
+		return
+	}
+	if !(v.VariantExprPath != "") {
+		w.missing(n, "variant_expr_path")
+	}
+}
+
+func requiredMlColumnIdentifier2(w *walker, n *walk.Node, v *ml.ColumnIdentifier) {
+	if v == nil {
+		w.missing(n, "variant_expr_path")
+		return
+	}
+	if !(v.VariantExprPath != "") {
+		w.missing(n, "variant_expr_path")
+	}
+}
+
+func requiredMlFlatSchema(w *walker, n *walk.Node, v *ml.FlatSchema) {
+	if v == nil {
+		w.missing(n, "fields")
+		return
+	}
+	if !(v.Fields != nil || n.IsRef("fields")) {
+		w.missing(n, "fields")
+	}
+	if len(v.Fields) > 0 {
+		c := n.Child("fields")
+		for i := range v.Fields {
+			e := c.Elem(i)
+			requiredMlFieldDefinition(w, &e, &v.Fields[i])
+		}
+	}
+}
+
 func requiredJobsDeploymentSpec(w *walker, n *walk.Node, v *jobs.DeploymentSpec) {
 	if v == nil {
 		w.missing(n, "compute")
@@ -3724,6 +4444,19 @@ func requiredJobsDeploymentSpec(w *walker, n *walk.Node, v *jobs.DeploymentSpec)
 	if x := &v.Compute; !walk.IsZeroStruct(x) || walk.Forced(v.ForceSendFields, "Compute") || n.HasRefs("compute") {
 		c := n.Child("compute")
 		requiredJobsComputeSpec(w, &c, x)
+	}
+}
+
+func requiredJobsSubscription(w *walker, n *walk.Node, v *jobs.Subscription) {
+	if v == nil {
+		return
+	}
+	if x := v.Attachment; x != nil {
+		c := n.Child("attachment")
+		requiredJobsSubscriptionAttachment(w, &c, x)
+	} else if walk.Forced(v.ForceSendFields, "Attachment") || n.IsRef("attachment") {
+		c := n.Child("attachment")
+		requiredJobsSubscriptionAttachment(w, &c, nil)
 	}
 }
 
@@ -3755,6 +4488,13 @@ func requiredJobsTask2(w *walker, n *walk.Node, v *jobs.Task) {
 	} else if walk.Forced(v.ForceSendFields, "ConditionTask") || n.IsRef("condition_task") {
 		c := n.Child("condition_task")
 		requiredJobsConditionTask(w, &c, nil)
+	}
+	if x := v.DashboardTask; x != nil {
+		c := n.Child("dashboard_task")
+		requiredJobsDashboardTask(w, &c, x)
+	} else if walk.Forced(v.ForceSendFields, "DashboardTask") || n.IsRef("dashboard_task") {
+		c := n.Child("dashboard_task")
+		requiredJobsDashboardTask(w, &c, nil)
 	}
 	if x := v.DbtTask; x != nil {
 		c := n.Child("dbt_task")
@@ -4241,6 +4981,20 @@ func requiredPipelinesAutoFullRefreshPolicy(w *walker, n *walk.Node, v *pipeline
 	}
 }
 
+func requiredMlFieldDefinition(w *walker, n *walk.Node, v *ml.FieldDefinition) {
+	if v == nil {
+		w.missing(n, "data_type")
+		w.missing(n, "name")
+		return
+	}
+	if !(v.DataType != "") {
+		w.missing(n, "data_type")
+	}
+	if !(v.Name != "") {
+		w.missing(n, "name")
+	}
+}
+
 func requiredJobsComputeSpec(w *walker, n *walk.Node, v *jobs.ComputeSpec) {
 	if v == nil {
 		w.missing(n, "accelerator_count")
@@ -4252,6 +5006,19 @@ func requiredJobsComputeSpec(w *walker, n *walk.Node, v *jobs.ComputeSpec) {
 	}
 	if !(v.AcceleratorType != "" || walk.Forced(v.ForceSendFields, "AcceleratorType")) {
 		w.missing(n, "accelerator_type")
+	}
+}
+
+func requiredJobsSubscriptionAttachment(w *walker, n *walk.Node, v *jobs.SubscriptionAttachment) {
+	if v == nil {
+		return
+	}
+	if x := v.DataAttachment; x != nil {
+		c := n.Child("data_attachment")
+		requiredJobsSubscriptionAttachmentDataAttachment(w, &c, x)
+	} else if n.IsRef("data_attachment") {
+		c := n.Child("data_attachment")
+		requiredJobsSubscriptionAttachmentDataAttachment(w, &c, nil)
 	}
 }
 
@@ -4451,6 +5218,27 @@ func requiredPipelinesConnectorOptions(w *walker, n *walk.Node, v *pipelines.Con
 	}
 }
 
+func requiredJobsSubscriptionAttachmentDataAttachment(w *walker, n *walk.Node, v *jobs.SubscriptionAttachmentDataAttachment) {
+	if v == nil {
+		w.missing(n, "file_format")
+		w.missing(n, "widgets")
+		return
+	}
+	if !(v.FileFormat != "" || walk.Forced(v.ForceSendFields, "FileFormat")) {
+		w.missing(n, "file_format")
+	}
+	if !(v.Widgets != nil || n.IsRef("widgets")) {
+		w.missing(n, "widgets")
+	}
+	if len(v.Widgets) > 0 {
+		c := n.Child("widgets")
+		for i := range v.Widgets {
+			e := c.Elem(i)
+			requiredJobsSubscriptionAttachmentDataAttachmentWidget(w, &e, &v.Widgets[i])
+		}
+	}
+}
+
 func requiredCatalogModelProviderServiceConfigSecretReference(w *walker, n *walk.Node, v *catalog.ModelProviderServiceConfigSecretReference) {
 	if v == nil {
 		w.missing(n, "name")
@@ -4508,6 +5296,20 @@ func requiredPipelinesRabbitmqOptions(w *walker, n *walk.Node, v *pipelines.Rabb
 	}
 	if !(v.Queue != "") {
 		w.missing(n, "queue")
+	}
+}
+
+func requiredJobsSubscriptionAttachmentDataAttachmentWidget(w *walker, n *walk.Node, v *jobs.SubscriptionAttachmentDataAttachmentWidget) {
+	if v == nil {
+		w.missing(n, "page_id")
+		w.missing(n, "widget_id")
+		return
+	}
+	if !(v.PageId != "") {
+		w.missing(n, "page_id")
+	}
+	if !(v.WidgetId != "") {
+		w.missing(n, "widget_id")
 	}
 }
 
