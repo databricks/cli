@@ -1,0 +1,33 @@
+bundle:
+  name: strict-profile-match
+
+include:
+  - scripts.yml
+
+targets:
+  classic:
+    default: true
+    workspace:
+      host: $CLASSIC_HOST
+  classic_with_workspace_id:
+    workspace:
+      host: $CLASSIC_HOST/?o=$WORKSPACE_ID
+  classic_other_workspace:
+    workspace:
+      host: $CLASSIC_HOST/?o=2222222222
+  custom_host:
+    workspace:
+      host: $CUSTOM_HOST/?o=$WORKSPACE_ID
+  custom_host_workspace_id_field:
+    workspace:
+      host: $CUSTOM_HOST
+      workspace_id: "$WORKSPACE_ID"
+  custom_host_without_workspace_id:
+    workspace:
+      host: $CUSTOM_HOST
+  custom_host_other_workspace:
+    workspace:
+      host: $CUSTOM_HOST/?o=2222222222
+  unknown_host:
+    workspace:
+      host: https://unknown.test
