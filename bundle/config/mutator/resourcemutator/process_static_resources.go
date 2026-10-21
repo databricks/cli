@@ -2,6 +2,7 @@ package resourcemutator
 
 import (
 	"context"
+	"errors"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
@@ -27,7 +28,10 @@ func (p processStaticResources) Name() string {
 }
 
 func (p processStaticResources) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	addedResources := getAllResources(b)
+	addedResources, err := getAllResources(b)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	// only YAML resources need to have paths normalized, before normalizing paths
 	// we need to resolve variables because they can change path values:
@@ -57,12 +61,15 @@ func (p processStaticResources) Apply(ctx context.Context, b *bundle.Bundle) dia
 	return nil
 }
 
-func getAllResources(b *bundle.Bundle) ResourceKeySet {
+func getAllResources(b *bundle.Bundle) (ResourceKeySet, error) {
 	set := NewResourceKeySet()
 	for _, group := range b.Config.Resources.AllResources() {
 		for name := range group.Resources {
+			if name == "" {
+				return nil, errors.New("failed to collect resources: can't parse resource key")
+			}
 			set.AddResourceKey(ResourceKey{Type: group.Description.PluralName, Name: name})
 		}
 	}
-	return set
+	return set, nil
 }
