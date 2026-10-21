@@ -1,0 +1,1 @@
+* Align multi-image container name validation with backend services: allow hyphens and up to 32 characters, and reject uppercase letters and underscores. ([#7154](https://github.com/databricks/cli/pull/7154))
