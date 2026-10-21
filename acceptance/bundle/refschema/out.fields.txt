@@ -34,6 +34,9 @@ resources.alerts.*.evaluation.threshold.value.string_value	string	ALL
 resources.alerts.*.file_path	string	INPUT
 resources.alerts.*.id	string	ALL
 resources.alerts.*.lifecycle	resources.Lifecycle	INPUT
+resources.alerts.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.alerts.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.alerts.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.alerts.*.lifecycle.prevent_destroy	bool	INPUT
 resources.alerts.*.lifecycle_state	sql.AlertLifecycleState	ALL
 resources.alerts.*.modified_status	string	INPUT
@@ -155,6 +158,9 @@ resources.apps.*.id	string	ALL
 resources.apps.*.lifecycle	*dresources.StateLifecycle	REMOTE	STATE
 resources.apps.*.lifecycle	*resources.LifecycleWithStarted	INPUT
 resources.apps.*.lifecycle	resources.Lifecycle	INPUT
+resources.apps.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.apps.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.apps.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.apps.*.lifecycle.prevent_destroy	bool	INPUT
 resources.apps.*.lifecycle.started	*bool	ALL
 resources.apps.*.modified_status	string	INPUT
@@ -274,6 +280,9 @@ resources.catalogs.*.full_name	string	REMOTE
 resources.catalogs.*.id	string	INPUT
 resources.catalogs.*.isolation_mode	catalog.CatalogIsolationMode	REMOTE
 resources.catalogs.*.lifecycle	resources.Lifecycle	INPUT
+resources.catalogs.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.catalogs.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.catalogs.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.catalogs.*.lifecycle.prevent_destroy	bool	INPUT
 resources.catalogs.*.managed_encryption_settings	*catalog.EncryptionSettings	ALL
 resources.catalogs.*.managed_encryption_settings.azure_encryption_settings	*catalog.AzureEncryptionSettings	ALL
@@ -331,6 +340,9 @@ resources.cluster_policies.*.libraries[*].pypi.repo	string	ALL
 resources.cluster_policies.*.libraries[*].requirements	string	ALL
 resources.cluster_policies.*.libraries[*].whl	string	ALL
 resources.cluster_policies.*.lifecycle	resources.Lifecycle	INPUT
+resources.cluster_policies.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.cluster_policies.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.cluster_policies.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.cluster_policies.*.lifecycle.prevent_destroy	bool	INPUT
 resources.cluster_policies.*.max_clusters_per_user	int64	ALL
 resources.cluster_policies.*.modified_status	string	INPUT
@@ -488,6 +500,9 @@ resources.clusters.*.libraries[*].whl	string	ALL
 resources.clusters.*.lifecycle	*dresources.StateLifecycle	REMOTE	STATE
 resources.clusters.*.lifecycle	*resources.LifecycleWithStarted	INPUT
 resources.clusters.*.lifecycle	resources.Lifecycle	INPUT
+resources.clusters.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.clusters.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.clusters.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.clusters.*.lifecycle.prevent_destroy	bool	INPUT
 resources.clusters.*.lifecycle.started	*bool	ALL
 resources.clusters.*.modified_status	string	INPUT
@@ -654,6 +669,9 @@ resources.dashboards.*.etag	string	ALL
 resources.dashboards.*.file_path	string	INPUT
 resources.dashboards.*.id	string	INPUT
 resources.dashboards.*.lifecycle	resources.Lifecycle	INPUT
+resources.dashboards.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.dashboards.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.dashboards.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.dashboards.*.lifecycle.prevent_destroy	bool	INPUT
 resources.dashboards.*.lifecycle_state	dashboards.LifecycleState	ALL
 resources.dashboards.*.modified_status	string	INPUT
@@ -675,6 +693,9 @@ resources.database_catalogs.*.database_instance_name	string	ALL
 resources.database_catalogs.*.database_name	string	ALL
 resources.database_catalogs.*.id	string	INPUT
 resources.database_catalogs.*.lifecycle	resources.Lifecycle	INPUT
+resources.database_catalogs.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.database_catalogs.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.database_catalogs.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.database_catalogs.*.lifecycle.prevent_destroy	bool	INPUT
 resources.database_catalogs.*.modified_status	string	INPUT
 resources.database_catalogs.*.name	string	ALL
@@ -709,6 +730,9 @@ resources.database_instances.*.enable_pg_native_login	bool	ALL
 resources.database_instances.*.enable_readable_secondaries	bool	ALL
 resources.database_instances.*.id	string	INPUT
 resources.database_instances.*.lifecycle	resources.Lifecycle	INPUT
+resources.database_instances.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.database_instances.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.database_instances.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.database_instances.*.lifecycle.prevent_destroy	bool	INPUT
 resources.database_instances.*.modified_status	string	INPUT
 resources.database_instances.*.name	string	ALL
@@ -740,6 +764,9 @@ resources.experiments.*.experiment_id	string	REMOTE
 resources.experiments.*.id	string	INPUT
 resources.experiments.*.last_update_time	int64	REMOTE
 resources.experiments.*.lifecycle	resources.Lifecycle	INPUT
+resources.experiments.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.experiments.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.experiments.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.experiments.*.lifecycle.prevent_destroy	bool	INPUT
 resources.experiments.*.lifecycle_stage	string	REMOTE
 resources.experiments.*.modified_status	string	INPUT
@@ -823,6 +850,9 @@ resources.external_locations.*.file_event_queue.provided_sqs.queue_url	string	AL
 resources.external_locations.*.id	string	INPUT
 resources.external_locations.*.isolation_mode	catalog.IsolationMode	REMOTE
 resources.external_locations.*.lifecycle	resources.Lifecycle	INPUT
+resources.external_locations.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.external_locations.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.external_locations.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.external_locations.*.lifecycle.prevent_destroy	bool	INPUT
 resources.external_locations.*.metastore_id	string	REMOTE
 resources.external_locations.*.modified_status	string	INPUT
@@ -928,6 +958,9 @@ resources.features.*.id	string	INPUT
 resources.features.*.inputs	[]string	ALL
 resources.features.*.inputs[*]	string	ALL
 resources.features.*.lifecycle	resources.Lifecycle	INPUT
+resources.features.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.features.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.features.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.features.*.lifecycle.prevent_destroy	bool	INPUT
 resources.features.*.lineage_context	*ml.LineageContext	ALL
 resources.features.*.lineage_context.job_context	*ml.JobContext	ALL
@@ -1000,6 +1033,9 @@ resources.genie_spaces.*.etag	string	ALL
 resources.genie_spaces.*.file_path	string	INPUT
 resources.genie_spaces.*.id	string	INPUT
 resources.genie_spaces.*.lifecycle	resources.Lifecycle	INPUT
+resources.genie_spaces.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.genie_spaces.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.genie_spaces.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.genie_spaces.*.lifecycle.prevent_destroy	bool	INPUT
 resources.genie_spaces.*.modified_status	string	INPUT
 resources.genie_spaces.*.parent_path	string	ALL
@@ -1044,6 +1080,9 @@ resources.instance_pools.*.idle_instance_autotermination_minutes	int	ALL
 resources.instance_pools.*.instance_pool_id	string	REMOTE
 resources.instance_pools.*.instance_pool_name	string	ALL
 resources.instance_pools.*.lifecycle	resources.Lifecycle	INPUT
+resources.instance_pools.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.instance_pools.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.instance_pools.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.instance_pools.*.lifecycle.prevent_destroy	bool	INPUT
 resources.instance_pools.*.max_capacity	int	ALL
 resources.instance_pools.*.min_idle_instances	int	ALL
@@ -1105,6 +1144,9 @@ resources.job_runs.*.job_parameters.*	string	ALL
 resources.job_runs.*.lifecycle	*dresources.JobRunLifecycleState	STATE
 resources.job_runs.*.lifecycle	*resources.JobRunLifecycle	INPUT
 resources.job_runs.*.lifecycle	resources.Lifecycle	INPUT
+resources.job_runs.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.job_runs.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.job_runs.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.job_runs.*.lifecycle.prevent_destroy	bool	INPUT
 resources.job_runs.*.lifecycle.triggers	[]resources.JobRunTrigger	INPUT
 resources.job_runs.*.lifecycle.triggers[*]	resources.JobRunTrigger	INPUT
@@ -1351,6 +1393,9 @@ resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.notebooks	boo
 resources.jobs.*.job_clusters[*].serverless_compute_id	string	ALL
 resources.jobs.*.job_id	int64	REMOTE
 resources.jobs.*.lifecycle	resources.Lifecycle	INPUT
+resources.jobs.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.jobs.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.jobs.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.jobs.*.lifecycle.prevent_destroy	bool	INPUT
 resources.jobs.*.max_concurrent_runs	int	ALL
 resources.jobs.*.modified_status	string	INPUT
@@ -2351,6 +2396,9 @@ resources.mcp_services.*.config.source_connection.options	map[string]string	ALL
 resources.mcp_services.*.config.source_connection.options.*	string	ALL
 resources.mcp_services.*.id	string	INPUT
 resources.mcp_services.*.lifecycle	resources.Lifecycle	INPUT
+resources.mcp_services.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.mcp_services.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.mcp_services.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.mcp_services.*.lifecycle.prevent_destroy	bool	INPUT
 resources.mcp_services.*.mcp_service_id	string	ALL
 resources.mcp_services.*.modified_status	string	INPUT
@@ -2483,6 +2531,9 @@ resources.model_provider_services.*.config.targets[*].native_api_types	[]string	
 resources.model_provider_services.*.config.targets[*].native_api_types[*]	string	ALL
 resources.model_provider_services.*.id	string	INPUT
 resources.model_provider_services.*.lifecycle	resources.Lifecycle	INPUT
+resources.model_provider_services.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.model_provider_services.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.model_provider_services.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.model_provider_services.*.lifecycle.prevent_destroy	bool	INPUT
 resources.model_provider_services.*.model_provider_service_id	string	ALL
 resources.model_provider_services.*.modified_status	string	INPUT
@@ -2548,6 +2599,9 @@ resources.model_services.*.config.routing.fallback.destinations[*].provisioned_t
 resources.model_services.*.config.routing.fallback.destinations[*].traffic_percentage	int	ALL
 resources.model_services.*.id	string	INPUT
 resources.model_services.*.lifecycle	resources.Lifecycle	INPUT
+resources.model_services.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.model_services.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.model_services.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.model_services.*.lifecycle.prevent_destroy	bool	INPUT
 resources.model_services.*.model_service_id	string	ALL
 resources.model_services.*.modified_status	string	INPUT
@@ -3022,6 +3076,9 @@ resources.model_serving_endpoints.*.endpoint_details.telemetry_config.telemetry_
 resources.model_serving_endpoints.*.endpoint_id	string	REMOTE
 resources.model_serving_endpoints.*.id	string	INPUT
 resources.model_serving_endpoints.*.lifecycle	resources.Lifecycle	INPUT
+resources.model_serving_endpoints.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.model_serving_endpoints.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.model_serving_endpoints.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.model_serving_endpoints.*.lifecycle.prevent_destroy	bool	INPUT
 resources.model_serving_endpoints.*.modified_status	string	INPUT
 resources.model_serving_endpoints.*.name	string	ALL
@@ -3077,6 +3134,9 @@ resources.models.*.latest_versions[*].tags[*].value	string	REMOTE
 resources.models.*.latest_versions[*].user_id	string	REMOTE
 resources.models.*.latest_versions[*].version	string	REMOTE
 resources.models.*.lifecycle	resources.Lifecycle	INPUT
+resources.models.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.models.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.models.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.models.*.lifecycle.prevent_destroy	bool	INPUT
 resources.models.*.model_id	string	REMOTE
 resources.models.*.modified_status	string	INPUT
@@ -3887,6 +3947,9 @@ resources.pipelines.*.libraries[*].notebook	*pipelines.NotebookLibrary	ALL
 resources.pipelines.*.libraries[*].notebook.path	string	ALL
 resources.pipelines.*.libraries[*].whl	string	ALL
 resources.pipelines.*.lifecycle	resources.Lifecycle	INPUT
+resources.pipelines.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.pipelines.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.pipelines.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.pipelines.*.lifecycle.prevent_destroy	bool	INPUT
 resources.pipelines.*.modified_status	string	INPUT
 resources.pipelines.*.name	string	ALL
@@ -3939,6 +4002,9 @@ resources.postgres_branches.*.expire_time	*time.Time	ALL
 resources.postgres_branches.*.id	string	INPUT
 resources.postgres_branches.*.is_protected	bool	ALL
 resources.postgres_branches.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_branches.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.postgres_branches.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.postgres_branches.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.postgres_branches.*.lifecycle.prevent_destroy	bool	INPUT
 resources.postgres_branches.*.modified_status	string	INPUT
 resources.postgres_branches.*.name	string	REMOTE
@@ -3975,6 +4041,9 @@ resources.postgres_catalogs.*.create_database_if_missing	bool	ALL
 resources.postgres_catalogs.*.create_time	*time.Time	REMOTE
 resources.postgres_catalogs.*.id	string	INPUT
 resources.postgres_catalogs.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_catalogs.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.postgres_catalogs.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.postgres_catalogs.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.postgres_catalogs.*.lifecycle.prevent_destroy	bool	INPUT
 resources.postgres_catalogs.*.modified_status	string	INPUT
 resources.postgres_catalogs.*.name	string	REMOTE
@@ -3990,6 +4059,9 @@ resources.postgres_databases.*.create_time	*time.Time	REMOTE
 resources.postgres_databases.*.database_id	string	ALL
 resources.postgres_databases.*.id	string	INPUT
 resources.postgres_databases.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_databases.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.postgres_databases.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.postgres_databases.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.postgres_databases.*.lifecycle.prevent_destroy	bool	INPUT
 resources.postgres_databases.*.modified_status	string	INPUT
 resources.postgres_databases.*.name	string	REMOTE
@@ -4015,6 +4087,9 @@ resources.postgres_endpoints.*.group.max	int	ALL
 resources.postgres_endpoints.*.group.min	int	ALL
 resources.postgres_endpoints.*.id	string	INPUT
 resources.postgres_endpoints.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_endpoints.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.postgres_endpoints.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.postgres_endpoints.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.postgres_endpoints.*.lifecycle.prevent_destroy	bool	INPUT
 resources.postgres_endpoints.*.modified_status	string	INPUT
 resources.postgres_endpoints.*.name	string	REMOTE
@@ -4079,6 +4154,9 @@ resources.postgres_projects.*.initial_endpoint_spec.group.min	int	REMOTE
 resources.postgres_projects.*.initial_endpoint_spec.no_suspension	bool	REMOTE
 resources.postgres_projects.*.initial_endpoint_spec.suspend_timeout_duration	*duration.Duration	REMOTE
 resources.postgres_projects.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_projects.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.postgres_projects.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.postgres_projects.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.postgres_projects.*.lifecycle.prevent_destroy	bool	INPUT
 resources.postgres_projects.*.modified_status	string	INPUT
 resources.postgres_projects.*.name	string	REMOTE
@@ -4127,6 +4205,9 @@ resources.postgres_roles.*.create_time	*time.Time	REMOTE
 resources.postgres_roles.*.id	string	INPUT
 resources.postgres_roles.*.identity_type	postgres.RoleIdentityType	ALL
 resources.postgres_roles.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_roles.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.postgres_roles.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.postgres_roles.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.postgres_roles.*.lifecycle.prevent_destroy	bool	INPUT
 resources.postgres_roles.*.membership_roles	[]postgres.RoleMembershipRole	ALL
 resources.postgres_roles.*.membership_roles[*]	postgres.RoleMembershipRole	ALL
@@ -4152,6 +4233,9 @@ resources.postgres_roles.*.url	string	INPUT
 resources.postgres_snapshot_schedules.*.branch	string	ALL
 resources.postgres_snapshot_schedules.*.id	string	INPUT
 resources.postgres_snapshot_schedules.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_snapshot_schedules.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.postgres_snapshot_schedules.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.postgres_snapshot_schedules.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.postgres_snapshot_schedules.*.lifecycle.prevent_destroy	bool	INPUT
 resources.postgres_snapshot_schedules.*.modified_status	string	INPUT
 resources.postgres_snapshot_schedules.*.name	string	REMOTE
@@ -4180,6 +4264,9 @@ resources.postgres_synced_tables.*.extra_columns[*].compute	string	ALL
 resources.postgres_synced_tables.*.extra_columns[*].maintenance	postgres.SyncedTableSyncedTableSpecExtraColumnMaintenance	ALL
 resources.postgres_synced_tables.*.id	string	INPUT
 resources.postgres_synced_tables.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_synced_tables.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.postgres_synced_tables.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.postgres_synced_tables.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.postgres_synced_tables.*.lifecycle.prevent_destroy	bool	INPUT
 resources.postgres_synced_tables.*.modified_status	string	INPUT
 resources.postgres_synced_tables.*.name	string	REMOTE
@@ -4249,6 +4336,9 @@ resources.quality_monitors.*.inference_log.problem_type	catalog.MonitorInference
 resources.quality_monitors.*.inference_log.timestamp_col	string	ALL
 resources.quality_monitors.*.latest_monitor_failure_msg	string	ALL
 resources.quality_monitors.*.lifecycle	resources.Lifecycle	INPUT
+resources.quality_monitors.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.quality_monitors.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.quality_monitors.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.quality_monitors.*.lifecycle.prevent_destroy	bool	INPUT
 resources.quality_monitors.*.modified_status	string	INPUT
 resources.quality_monitors.*.monitor_version	int64	REMOTE
@@ -4293,6 +4383,9 @@ resources.registered_models.*.created_by	string	ALL
 resources.registered_models.*.full_name	string	ALL
 resources.registered_models.*.id	string	INPUT
 resources.registered_models.*.lifecycle	resources.Lifecycle	INPUT
+resources.registered_models.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.registered_models.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.registered_models.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.registered_models.*.lifecycle.prevent_destroy	bool	INPUT
 resources.registered_models.*.metastore_id	string	ALL
 resources.registered_models.*.modified_status	string	INPUT
@@ -4324,6 +4417,9 @@ resources.schemas.*.enable_predictive_optimization	catalog.EnablePredictiveOptim
 resources.schemas.*.full_name	string	REMOTE
 resources.schemas.*.id	string	INPUT
 resources.schemas.*.lifecycle	resources.Lifecycle	INPUT
+resources.schemas.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.schemas.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.schemas.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.schemas.*.lifecycle.prevent_destroy	bool	INPUT
 resources.schemas.*.metastore_id	string	REMOTE
 resources.schemas.*.modified_status	string	INPUT
@@ -4353,6 +4449,9 @@ resources.secret_scopes.*.keyvault_metadata	*workspace.AzureKeyVaultSecretScopeM
 resources.secret_scopes.*.keyvault_metadata.dns_name	string	INPUT
 resources.secret_scopes.*.keyvault_metadata.resource_id	string	INPUT
 resources.secret_scopes.*.lifecycle	resources.Lifecycle	INPUT
+resources.secret_scopes.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.secret_scopes.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.secret_scopes.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.secret_scopes.*.lifecycle.prevent_destroy	bool	INPUT
 resources.secret_scopes.*.modified_status	string	INPUT
 resources.secret_scopes.*.name	string	INPUT	REMOTE
@@ -4374,6 +4473,9 @@ resources.secrets.*.expire_time	*time.Time	ALL
 resources.secrets.*.full_name	string	ALL
 resources.secrets.*.id	string	INPUT
 resources.secrets.*.lifecycle	resources.Lifecycle	INPUT
+resources.secrets.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.secrets.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.secrets.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.secrets.*.lifecycle.prevent_destroy	bool	INPUT
 resources.secrets.*.metastore_id	string	ALL
 resources.secrets.*.modified_status	string	INPUT
@@ -4414,6 +4516,9 @@ resources.sql_warehouses.*.jdbc_url	string	REMOTE
 resources.sql_warehouses.*.lifecycle	*dresources.StateLifecycle	REMOTE	STATE
 resources.sql_warehouses.*.lifecycle	*resources.LifecycleWithStarted	INPUT
 resources.sql_warehouses.*.lifecycle	resources.Lifecycle	INPUT
+resources.sql_warehouses.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.sql_warehouses.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.sql_warehouses.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.sql_warehouses.*.lifecycle.prevent_destroy	bool	INPUT
 resources.sql_warehouses.*.lifecycle.started	*bool	ALL
 resources.sql_warehouses.*.max_num_clusters	int	ALL
@@ -4490,6 +4595,9 @@ resources.synced_database_tables.*.effective_database_instance_name	string	ALL
 resources.synced_database_tables.*.effective_logical_database_name	string	ALL
 resources.synced_database_tables.*.id	string	INPUT
 resources.synced_database_tables.*.lifecycle	resources.Lifecycle	INPUT
+resources.synced_database_tables.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.synced_database_tables.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.synced_database_tables.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.synced_database_tables.*.lifecycle.prevent_destroy	bool	INPUT
 resources.synced_database_tables.*.logical_database_name	string	ALL
 resources.synced_database_tables.*.modified_status	string	INPUT
@@ -4531,6 +4639,9 @@ resources.vector_search_endpoints.*.id	string	INPUT	REMOTE
 resources.vector_search_endpoints.*.last_updated_timestamp	int64	REMOTE
 resources.vector_search_endpoints.*.last_updated_user	string	REMOTE
 resources.vector_search_endpoints.*.lifecycle	resources.Lifecycle	INPUT
+resources.vector_search_endpoints.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.vector_search_endpoints.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.vector_search_endpoints.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.vector_search_endpoints.*.lifecycle.prevent_destroy	bool	INPUT
 resources.vector_search_endpoints.*.modified_status	string	INPUT
 resources.vector_search_endpoints.*.name	string	ALL
@@ -4585,6 +4696,9 @@ resources.vector_search_indexes.*.id	string	INPUT
 resources.vector_search_indexes.*.index_subtype	vectorsearch.IndexSubtype	ALL
 resources.vector_search_indexes.*.index_type	vectorsearch.VectorIndexType	ALL
 resources.vector_search_indexes.*.lifecycle	resources.Lifecycle	INPUT
+resources.vector_search_indexes.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.vector_search_indexes.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.vector_search_indexes.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.vector_search_indexes.*.lifecycle.prevent_destroy	bool	INPUT
 resources.vector_search_indexes.*.modified_status	string	INPUT
 resources.vector_search_indexes.*.name	string	ALL
@@ -4614,6 +4728,9 @@ resources.volumes.*.encryption_details.sse_encryption_details.aws_kms_key_arn	st
 resources.volumes.*.full_name	string	REMOTE
 resources.volumes.*.id	string	INPUT
 resources.volumes.*.lifecycle	resources.Lifecycle	INPUT
+resources.volumes.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.volumes.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.volumes.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.volumes.*.lifecycle.prevent_destroy	bool	INPUT
 resources.volumes.*.metastore_id	string	REMOTE
 resources.volumes.*.modified_status	string	INPUT

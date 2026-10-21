@@ -1,0 +1,16 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    a_job:
+      name: a_job
+      lifecycle:
+        depends_on:
+          - resource: a_job
+          - resource: missing
+    b_job:
+      name: b_job
+      lifecycle:
+        depends_on:
+          - resource: a.b.c

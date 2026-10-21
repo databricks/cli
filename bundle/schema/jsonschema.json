@@ -954,6 +954,27 @@
                   }
                 ]
               },
+              "resources.DependsOn": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "resource": {
+                        "description": "Key of the resource to depend on, as `foo` or `jobs.foo`.",
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "resource"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.ExternalLocation": {
                 "oneOf": [
                   {
@@ -1613,6 +1634,10 @@
                   {
                     "type": "object",
                     "properties": {
+                      "depends_on": {
+                        "description": "Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DependsOn"
+                      },
                       "prevent_destroy": {
                         "description": "Lifecycle setting to prevent the resource from being destroyed.",
                         "$ref": "#/$defs/bool"
@@ -1657,6 +1682,10 @@
                   {
                     "type": "object",
                     "properties": {
+                      "depends_on": {
+                        "description": "Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DependsOn"
+                      },
                       "prevent_destroy": {
                         "description": "Lifecycle setting to prevent the resource from being destroyed.",
                         "$ref": "#/$defs/bool"
@@ -1675,6 +1704,10 @@
                   {
                     "type": "object",
                     "properties": {
+                      "depends_on": {
+                        "description": "Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DependsOn"
+                      },
                       "prevent_destroy": {
                         "description": "Lifecycle setting to prevent the resource from being destroyed.",
                         "$ref": "#/$defs/bool"
@@ -20537,6 +20570,20 @@
                       "type": "array",
                       "items": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.ClusterPolicyPermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.DependsOn": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DependsOn"
                       }
                     },
                     {
