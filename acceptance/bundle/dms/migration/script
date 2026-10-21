@@ -1,0 +1,40 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "1. Create two jobs without history (direct state serial 1)\nConfig disables history even though the environment enables it."
+trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy 2>&1 | contains.py '!Current Deployment Version:' '!Enabling deployment history'
+replace_ids.py
+title "Save the original resources.json for the backup check"
+trace cp .databricks/bundle/default/resources.json .databricks/resources.before-dms.json
+
+title "2. Enable history and rename job one\nExpect: version 2 registers old state; version 3 applies the new name; no new jobs."
+export DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false
+trace update_file.py databricks.yml 'deployment_history: false' 'deployment_history: true'
+trace update_file.py databricks.yml 'name: one' 'name: updated'
+trace $CLI bundle deploy 2>&1 | contains.py 'Enabling deployment history...' 'Deployment history enabled: ' 'Current Deployment Version: ' '?version=2' '?version=3' 'Resources: 0 created'
+
+title "3. Check local state\nExpect: serial=3; history enabled; no resource state or WAL."
+trace find.py 'resources[.]json[.]wal' --expect 0
+trace jq '{serial, features, state}' .databricks/bundle/default/resources.json
+
+title "4. Check backup\nExpect: original IDs, names and dependencies; exact pre-migration bytes."
+trace MSYS_NO_PATHCONV=1 $CLI workspace export "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-migration-${UNIQUE_NAME}/default/state/resources.json.backup" --format AUTO --file .databricks/resources.backup.first.json
+trace cat .databricks/resources.backup.first.json
+trace cmp .databricks/resources.before-dms.json .databricks/resources.backup.first.json
+
+title "5. Check DMS records\nExpect: completed versions 2 and 3; original job IDs and dependency preserved."
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-migration-${UNIQUE_NAME}/default/state/resources.deployment.json" -o json | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+add_repl "$deployment_id" DEPLOYMENT_ID
+title "Version history: migration 2 completes before deployment 3"
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-versions "deployments/${deployment_id}" -o json | jq -c 'sort_by(.version_id | tonumber) | map({version_id, previous_version_id, version_type, status, completion_reason})'
+title "Migration 2: register the original job IDs (INITIAL_REGISTER)"
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/2" -o json | jq -c 'sort_by(.resource_key) | map({resource_key, resource_id, action_type, status})'
+title "Deployment 3: record updates separately"
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/3" -o json | jq -c 'sort_by(.resource_key) | map({resource_key, resource_id, action_type, status})'
+title "Current resources: new name, original IDs, and job two still depends on job one"
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -c '
+    sort_by(.resource_key) | map({resource_key, resource_id, last_action_type, last_version_id,
+        state: (.state | fromjson | {name: .state.name,
+            tasks: [.state.tasks[]? | {task_key, job_id: .run_job_task.job_id}],
+            depends_on: (.depends_on // [])})})'
+
+rm -f "$OUT_REQUESTS"
