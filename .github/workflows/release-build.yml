@@ -1,5 +1,10 @@
 name: release-build
 
+# `brew install --HEAD databricks/tap/databricks` installs the "cli" artifact of the latest
+# successful run of this workflow on main. Renaming this file or the artifact, or changing the
+# snapshot archive names or layout, breaks it. The test-head workflow in databricks/homebrew-tap
+# checks this daily. See https://github.com/databricks/homebrew-tap/blob/main/Formula/databricks.rb.
+
 on:
   push:
     tags:
@@ -127,6 +132,7 @@ jobs:
       - name: Stage bundle JSON schema for upload
         run: cp bundle/schema/jsonschema.json dist/
 
+      # The Homebrew tap downloads this artifact; see the comment at the top of this file.
       - name: Upload artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
