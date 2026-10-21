@@ -337,17 +337,15 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	defer func() { logRunEvent(ctx, cfg, snap, runID, time.Since(start), err) }()
 
 	// Compute and validate the actual submission path before creating artifacts.
-	base, funcDir, commandPath, err := prospectiveLaunchPaths(ctx, w, cfg)
+	// Validate server-side before uploading, so invalid configs leave no artifacts.
+	token := effectiveIdempotencyToken(idempotencyKey, cfg)
+	base, funcDir, commandPath, err := prospectiveLaunchPaths(ctx, w, cfg, func(funcDir, commandPath string) error {
+		return preflightValidate(ctx, w, cfg, commandPath, submittedContainers(cfg, funcDir), token)
+	})
 	if err != nil {
 		return 0, "", err
 	}
 	containers := submittedContainers(cfg, funcDir)
-	token := effectiveIdempotencyToken(idempotencyKey, cfg)
-
-	// Validate server-side before uploading, so invalid configs leave no artifacts.
-	if err := preflightValidate(ctx, w, cfg, commandPath, containers, token); err != nil {
-		return 0, "", err
-	}
 
 	// Retain the local guard after backend validation so an unavailable endpoint
 	// cannot let a bad key reach upload or submission.

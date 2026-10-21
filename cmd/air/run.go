@@ -56,7 +56,12 @@ func validateDryRunInWorkspace(ctx context.Context, cmd *cobra.Command, args []s
 	}
 
 	w := cmdctx.WorkspaceClient(ctx)
-	_, funcDir, commandPath, err := prospectiveLaunchPaths(ctx, w, cfg)
+	// Path and validation failures are classified differently, so keep validation's result apart.
+	var validateErr error
+	_, _, _, err := prospectiveLaunchPaths(ctx, w, cfg, func(funcDir, commandPath string) error {
+		validateErr = validateDryRunConfig(ctx, w, cfg, commandPath, submittedContainers(cfg, funcDir), idempotencyToken, timeout)
+		return nil
+	})
 	if err != nil {
 		unavailable, retryable := classifyValidationFailure(err)
 		if !unavailable {
@@ -65,7 +70,7 @@ func validateDryRunInWorkspace(ctx context.Context, cmd *cobra.Command, args []s
 		return ctx, asValidationUnavailable(err, retryable)
 	}
 
-	return ctx, validateDryRunConfig(ctx, w, cfg, commandPath, submittedContainers(cfg, funcDir), idempotencyToken, timeout)
+	return ctx, validateErr
 }
 
 func newRunCommand() *cobra.Command {
