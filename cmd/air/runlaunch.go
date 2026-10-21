@@ -58,8 +58,8 @@ func userNameFromWorkspaceToken(ctx context.Context, cfg *config.Config) string 
 	return claims.Subject
 }
 
-// userWorkspaceDirOverride returns the per-user workspace directory set by env or profile, if any.
-func userWorkspaceDirOverride(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
+// userWorkspaceDir returns the user's workspace home, honoring the env override.
+func userWorkspaceDir(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
 	if override := env.Get(ctx, userWorkspaceDirEnv); override != "" {
 		return override, nil
 	}
@@ -67,7 +67,14 @@ func userWorkspaceDirOverride(ctx context.Context, w *databricks.WorkspaceClient
 	if err != nil {
 		return "", fmt.Errorf("failed to read selected profile: %w", err)
 	}
-	return override, nil
+	if override != "" {
+		return override, nil
+	}
+	email, err := currentUserEmail(ctx, w)
+	if err != nil {
+		return "", err
+	}
+	return "/Workspace/Users/" + email, nil
 }
 
 // cliLaunchDir returns a unique workspace directory for a run's launch artifacts:
@@ -83,9 +90,8 @@ func cliLaunchDir(base, experiment, run string) string {
 // prospectiveLaunchPaths returns the workspace paths a submission would use without creating
 // directories or uploading artifacts, after running validate on them.
 //
-// The user's directory comes from SCIM Me unless overridden. The access token usually names the
-// user already, so validate first runs on that guess while SCIM Me is in flight, and again on
-// SCIM's answer if it differs.
+// The access token usually names the user, so validate first runs on that guess while
+// userWorkspaceDir looks up the real directory, and again if the two differ.
 func prospectiveLaunchPaths(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, validate func(launchDir, commandPath string) error) (string, string, string, error) {
 	runName := ""
 	if cfg.MLflowRunName != nil {
@@ -97,33 +103,28 @@ func prospectiveLaunchPaths(ctx context.Context, w *databricks.WorkspaceClient, 
 		return base, launchDir, commandPath, validate(launchDir, commandPath)
 	}
 
-	override, err := userWorkspaceDirOverride(ctx, w)
-	if err != nil {
-		return "", "", "", err
+	guessBase := ""
+	if user := userNameFromWorkspaceToken(ctx, w.Config); user != "" {
+		guessBase = "/Workspace/Users/" + user
 	}
-	if override != "" {
-		return validated(override)
-	}
-
-	guess := userNameFromWorkspaceToken(ctx, w.Config)
-	var email string
+	var base string
 	var g errgroup.Group
 	g.Go(func() (err error) {
-		email, err = currentUserEmail(ctx, w)
+		base, err = userWorkspaceDir(ctx, w)
 		return err
 	})
-	var base, launchDir, commandPath string
-	var guessErr error
-	if guess != "" {
-		base, launchDir, commandPath, guessErr = validated("/Workspace/Users/" + guess)
+	var launchDir, commandPath string
+	var validateErr error
+	if guessBase != "" {
+		_, launchDir, commandPath, validateErr = validated(guessBase)
 	}
 	if err := g.Wait(); err != nil {
 		return "", "", "", err
 	}
-	if guess == "" || email != guess {
-		return validated("/Workspace/Users/" + email)
+	if base != guessBase {
+		return validated(base)
 	}
-	return base, launchDir, commandPath, guessErr
+	return base, launchDir, commandPath, validateErr
 }
 
 // ensureExperimentDirectory creates experimentDir if it is missing, matching the

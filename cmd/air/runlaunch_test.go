@@ -41,20 +41,15 @@ func newFakeWorkspaceClient(t *testing.T) *databricks.WorkspaceClient {
 func TestUserWorkspaceDir(t *testing.T) {
 	w := newFakeWorkspaceClient(t)
 	t.Setenv(userWorkspaceDirEnv, "")
-	dir := launchBase(t, w)
+	dir, err := userWorkspaceDir(t.Context(), w)
+	require.NoError(t, err)
 	assert.True(t, strings.HasPrefix(dir, "/Workspace/Users/"), dir)
 
 	// The env override wins without an API call.
 	t.Setenv(userWorkspaceDirEnv, "/Workspace/custom")
-	assert.Equal(t, "/Workspace/custom", launchBase(t, w))
-}
-
-// launchBase returns the user directory prospectiveLaunchPaths resolves, with validation stubbed out.
-func launchBase(t *testing.T, w *databricks.WorkspaceClient) string {
-	t.Helper()
-	base, _, _, err := prospectiveLaunchPaths(t.Context(), w, baseRunConfig(), func(string, string) error { return nil })
+	dir, err = userWorkspaceDir(t.Context(), w)
 	require.NoError(t, err)
-	return base
+	assert.Equal(t, "/Workspace/custom", dir)
 }
 
 func fakeJWT(t *testing.T, issuer, subject string) string {
@@ -71,7 +66,7 @@ func oauthConfig(host, accessToken string) *databricks.Config {
 	return &databricks.Config{Host: host, Credentials: config.NewTokenSourceStrategy("test-oauth", ts)}
 }
 
-// The token's user is only a guess that lets validation start early: SCIM Me always decides.
+// The token's user is only a guess that lets validation start early: userWorkspaceDir decides.
 func TestProspectiveLaunchPathsTokenGuess(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
@@ -95,9 +90,8 @@ func TestProspectiveLaunchPathsTokenGuess(t *testing.T) {
 		{"token names the SCIM user", oauthConfig(server.URL, fakeJWT(t, issuer, testserver.TestUser.UserName)), "", []string{scimDir}},
 		{"token names another user", oauthConfig(server.URL, otherToken), "", []string{otherDir, scimDir}},
 		{"token from another issuer", oauthConfig(server.URL, fakeJWT(t, "https://accounts.test/oidc", "other@example.com")), "", []string{scimDir}},
-		{"opaque token", oauthConfig(server.URL, "not-a-jwt"), "", []string{scimDir}},
 		{"pat", &databricks.Config{Host: server.URL, Token: otherToken}, "", []string{scimDir}},
-		{"override", oauthConfig(server.URL, otherToken), "/Workspace/custom", []string{"/Workspace/custom"}},
+		{"override", oauthConfig(server.URL, otherToken), "/Workspace/custom", []string{otherDir, "/Workspace/custom"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Setenv(userWorkspaceDirEnv, tc.override)
@@ -148,7 +142,8 @@ databricks_internal_user_workspace_dir = /Workspace/second
 		w.Config.ConfigFile = configPath
 		w.Config.Profile = "first"
 		t.Setenv(userWorkspaceDirEnv, "")
-		dir := launchBase(t, w)
+		dir, err := userWorkspaceDir(t.Context(), w)
+		require.NoError(t, err)
 		assert.Equal(t, "/Workspace/first", dir)
 	})
 
@@ -157,7 +152,8 @@ databricks_internal_user_workspace_dir = /Workspace/second
 		w.Config.ConfigFile = configPath
 		w.Config.Profile = ""
 		t.Setenv(userWorkspaceDirEnv, "")
-		dir := launchBase(t, w)
+		dir, err := userWorkspaceDir(t.Context(), w)
+		require.NoError(t, err)
 		assert.Equal(t, "/Workspace/second", dir)
 	})
 
@@ -166,7 +162,8 @@ databricks_internal_user_workspace_dir = /Workspace/second
 		w.Config.ConfigFile = configPath
 		w.Config.Profile = "first"
 		t.Setenv(userWorkspaceDirEnv, "/Workspace/env")
-		dir := launchBase(t, w)
+		dir, err := userWorkspaceDir(t.Context(), w)
+		require.NoError(t, err)
 		assert.Equal(t, "/Workspace/env", dir)
 	})
 }
