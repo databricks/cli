@@ -1,24 +1,17 @@
 package aircmd
 
 import (
-	"context"
-	"encoding/base64"
-	"encoding/json"
-	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/config"
-	sdkauth "github.com/databricks/databricks-sdk-go/config/experimental/auth"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/oauth2"
 )
 
 func TestCliLaunchDir(t *testing.T) {
@@ -53,76 +46,23 @@ func TestUserWorkspaceDir(t *testing.T) {
 	assert.Equal(t, "/Workspace/custom", dir)
 }
 
-func fakeJWT(t *testing.T, issuer, subject string) string {
-	payload, err := json.Marshal(map[string]string{"iss": issuer, "sub": subject})
-	require.NoError(t, err)
-	enc := base64.RawURLEncoding
-	return enc.EncodeToString([]byte(`{"alg":"none"}`)) + "." + enc.EncodeToString(payload) + ".sig"
-}
-
-func oauthConfig(host, authType, accessToken string) *databricks.Config {
-	ts := sdkauth.TokenSourceFn(func(context.Context) (*oauth2.Token, error) {
-		return &oauth2.Token{AccessToken: accessToken}, nil
-	})
-	return &databricks.Config{Host: host, Credentials: config.NewTokenSourceStrategy(authType, ts)}
-}
-
-// The token's user is only a guess that lets validation start early: userWorkspaceDir decides.
-func TestProspectiveLaunchPathsTokenGuess(t *testing.T) {
+func TestUserWorkspaceDirRequestsOnlyUserName(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
 	var attributes []string
 	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(req testserver.Request) any {
 		attributes = append(attributes, req.URL.Query().Get("attributes"))
-		return testserver.TestUser
+		return iam.User{UserName: "me@example.com"}
 	})
 	testserver.AddDefaultHandlers(server)
-	issuer := server.URL + "/oidc"
-	scimDir := "/Workspace/Users/" + testserver.TestUser.UserName
-	otherDir := "/Workspace/Users/other@example.com"
-	otherToken := fakeJWT(t, issuer, "other@example.com")
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+	t.Setenv(userWorkspaceDirEnv, "")
 
-	for _, tc := range []struct {
-		name      string
-		cfg       *databricks.Config
-		override  string
-		validated []string
-	}{
-		{"token names the SCIM user", oauthConfig(server.URL, auth.AuthTypeDatabricksCli, fakeJWT(t, issuer, testserver.TestUser.UserName)), "", []string{scimDir}},
-		{"token names another user", oauthConfig(server.URL, auth.AuthTypeOAuthM2M, otherToken), "", []string{otherDir, scimDir}},
-		{"token from another issuer", oauthConfig(server.URL, auth.AuthTypeDatabricksCli, fakeJWT(t, "https://accounts.test/oidc", "other@example.com")), "", []string{scimDir}},
-		// Other auth types may not cache Token, so they skip the guess.
-		{"other auth type", oauthConfig(server.URL, auth.AuthTypeAzureCli, otherToken), "", []string{scimDir}},
-		{"pat", &databricks.Config{Host: server.URL, Token: otherToken}, "", []string{scimDir}},
-		{"override", oauthConfig(server.URL, auth.AuthTypeDatabricksCli, otherToken), "/Workspace/custom", []string{"/Workspace/custom"}},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Setenv(userWorkspaceDirEnv, tc.override)
-			w, err := databricks.NewWorkspaceClient(tc.cfg)
-			require.NoError(t, err)
-
-			var launchDirs []string
-			base, launchDir, commandPath, err := prospectiveLaunchPaths(t.Context(), w, baseRunConfig(), func(launchDir, _ string) error {
-				launchDirs = append(launchDirs, launchDir)
-				if strings.HasPrefix(launchDir, otherDir+"/") {
-					return errors.New("validated an unconfirmed user")
-				}
-				return nil
-			})
-			require.NoError(t, err)
-			require.Len(t, launchDirs, len(tc.validated))
-			for i, dir := range tc.validated {
-				assert.True(t, strings.HasPrefix(launchDirs[i], dir+"/.air/cli_launch/"), launchDirs[i])
-			}
-			assert.Equal(t, tc.validated[len(tc.validated)-1], base)
-			assert.Equal(t, launchDirs[len(launchDirs)-1], launchDir)
-			assert.Equal(t, launchDir+"/command.sh", commandPath)
-		})
-	}
-	require.NotEmpty(t, attributes)
-	for _, a := range attributes {
-		assert.Equal(t, "userName", a)
-	}
+	dir, err := userWorkspaceDir(t.Context(), w)
+	require.NoError(t, err)
+	assert.Equal(t, "/Workspace/Users/me@example.com", dir)
+	assert.Equal(t, []string{"userName"}, attributes)
 }
 
 func TestUserWorkspaceDirProfilePrecedence(t *testing.T) {
