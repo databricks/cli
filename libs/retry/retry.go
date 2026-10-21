@@ -23,6 +23,10 @@ const MaxRetries = 2
 // IntervalMsVariable names the environment variable that overrides the pause between attempts.
 const IntervalMsVariable = "DATABRICKS_BUNDLE_RETRY_INTERVAL_MS"
 
+// DisableWarningVariable names the environment variable that, when set to a non-empty value,
+// suppresses the warning logged before each retry.
+const DisableWarningVariable = "DATABRICKS_BUNDLE_RETRY_DISABLE_WARNING"
+
 const defaultInterval = 15 * time.Second
 
 // interval returns the pause between attempts: the override in milliseconds if set and valid, 15s otherwise.
@@ -85,7 +89,9 @@ func With[T any](ctx context.Context, check func(context.Context, error) bool, f
 		if err == nil || attempt >= MaxRetries || !check(ctx, err) {
 			return result, err
 		}
-		log.Warnf(ctx, "%s", retryMessage(err))
+		if env.Get(ctx, DisableWarningVariable) == "" {
+			log.Warnf(ctx, "%s", retryMessage(err))
+		}
 		select {
 		case <-ctx.Done():
 			var zero T
