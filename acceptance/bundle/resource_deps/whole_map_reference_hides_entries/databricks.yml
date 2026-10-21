@@ -3,7 +3,7 @@ bundle:
 
 presets:
   tags:
-    owner: ${resources.jobs.j.id}
+    preset_tag: ${resources.jobs.j.id}
 
 resources:
   schemas:
