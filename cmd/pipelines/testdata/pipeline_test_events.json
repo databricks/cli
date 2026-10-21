@@ -1,0 +1,466 @@
+{
+  "events": [
+    {
+      "id": "782e8fb0-b5ed-11f1-aef0-ea7f54252662",
+      "sequence": {
+        "data_plane_id": {
+          "instance": "execution",
+          "seq_no": 1790016433419015
+        },
+        "control_plane_seq_no": 1790016697159001
+      },
+      "origin": {
+        "cloud": "AWS",
+        "region": "us-east-1",
+        "org_id": 4168071307939726,
+        "pipeline_id": "2d0401ce-8229-4795-926f-c3991369655e",
+        "pipeline_type": "WORKSPACE",
+        "pipeline_name": "sdp-test-emission-m2-20260918",
+        "cluster_id": "0921-183525-qk8f8dh3-v2n",
+        "update_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c",
+        "request_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c"
+      },
+      "timestamp": "2026-09-21T18:51:35.339Z",
+      "message": "Test case 'test_demo.py::test_pass' is PENDING.",
+      "level": "INFO",
+      "details": {
+        "test_case_progress": {
+          "node_id": "test_demo.py::test_pass",
+          "source": {
+            "workspace_path": "test_demo.py",
+            "line": 4
+          },
+          "status": "PIPELINE_TEST_CASE_STATUS_PENDING"
+        }
+      },
+      "event_type": "test_case_progress",
+      "maturity_level": "EVOLVING"
+    },
+    {
+      "id": "782fc830-b5ed-11f1-aef0-ea7f54252662",
+      "sequence": {
+        "data_plane_id": {
+          "instance": "execution",
+          "seq_no": 1790016433419016
+        },
+        "control_plane_seq_no": 1790016697162001
+      },
+      "origin": {
+        "cloud": "AWS",
+        "region": "us-east-1",
+        "org_id": 4168071307939726,
+        "pipeline_id": "2d0401ce-8229-4795-926f-c3991369655e",
+        "pipeline_type": "WORKSPACE",
+        "pipeline_name": "sdp-test-emission-m2-20260918",
+        "cluster_id": "0921-183525-qk8f8dh3-v2n",
+        "update_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c",
+        "request_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c"
+      },
+      "timestamp": "2026-09-21T18:51:35.347Z",
+      "message": "Test case 'test_demo.py::test_fail' is PENDING.",
+      "level": "INFO",
+      "details": {
+        "test_case_progress": {
+          "node_id": "test_demo.py::test_fail",
+          "source": {
+            "workspace_path": "test_demo.py",
+            "line": 8
+          },
+          "status": "PIPELINE_TEST_CASE_STATUS_PENDING"
+        }
+      },
+      "event_type": "test_case_progress",
+      "maturity_level": "EVOLVING"
+    },
+    {
+      "id": "78306470-b5ed-11f1-aef0-ea7f54252662",
+      "sequence": {
+        "data_plane_id": {
+          "instance": "execution",
+          "seq_no": 1790016433419017
+        },
+        "control_plane_seq_no": 1790016697164001
+      },
+      "origin": {
+        "cloud": "AWS",
+        "region": "us-east-1",
+        "org_id": 4168071307939726,
+        "pipeline_id": "2d0401ce-8229-4795-926f-c3991369655e",
+        "pipeline_type": "WORKSPACE",
+        "pipeline_name": "sdp-test-emission-m2-20260918",
+        "cluster_id": "0921-183525-qk8f8dh3-v2n",
+        "update_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c",
+        "request_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c"
+      },
+      "timestamp": "2026-09-21T18:51:35.351Z",
+      "message": "Test case 'test_demo.py::test_skip' is PENDING.",
+      "level": "INFO",
+      "details": {
+        "test_case_progress": {
+          "node_id": "test_demo.py::test_skip",
+          "source": {
+            "workspace_path": "test_demo.py",
+            "line": 12
+          },
+          "status": "PIPELINE_TEST_CASE_STATUS_PENDING"
+        }
+      },
+      "event_type": "test_case_progress",
+      "maturity_level": "EVOLVING"
+    },
+    {
+      "id": "7830b290-b5ed-11f1-aef0-ea7f54252662",
+      "sequence": {
+        "data_plane_id": {
+          "instance": "execution",
+          "seq_no": 1790016433419018
+        },
+        "control_plane_seq_no": 1790016697166001
+      },
+      "origin": {
+        "cloud": "AWS",
+        "region": "us-east-1",
+        "org_id": 4168071307939726,
+        "pipeline_id": "2d0401ce-8229-4795-926f-c3991369655e",
+        "pipeline_type": "WORKSPACE",
+        "pipeline_name": "sdp-test-emission-m2-20260918",
+        "cluster_id": "0921-183525-qk8f8dh3-v2n",
+        "update_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c",
+        "request_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c"
+      },
+      "timestamp": "2026-09-21T18:51:35.353Z",
+      "message": "Test case 'test_demo.py::test_error' is PENDING.",
+      "level": "INFO",
+      "details": {
+        "test_case_progress": {
+          "node_id": "test_demo.py::test_error",
+          "source": {
+            "workspace_path": "test_demo.py",
+            "line": 22
+          },
+          "status": "PIPELINE_TEST_CASE_STATUS_PENDING"
+        }
+      },
+      "event_type": "test_case_progress",
+      "maturity_level": "EVOLVING"
+    },
+    {
+      "id": "7831c400-b5ed-11f1-aef0-ea7f54252662",
+      "sequence": {
+        "data_plane_id": {
+          "instance": "execution",
+          "seq_no": 1790016433419019
+        },
+        "control_plane_seq_no": 1790016697167001
+      },
+      "origin": {
+        "cloud": "AWS",
+        "region": "us-east-1",
+        "org_id": 4168071307939726,
+        "pipeline_id": "2d0401ce-8229-4795-926f-c3991369655e",
+        "pipeline_type": "WORKSPACE",
+        "pipeline_name": "sdp-test-emission-m2-20260918",
+        "cluster_id": "0921-183525-qk8f8dh3-v2n",
+        "update_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c",
+        "request_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c"
+      },
+      "timestamp": "2026-09-21T18:51:35.360Z",
+      "message": "Test case 'test_demo.py::test_pass' is RUNNING.",
+      "level": "INFO",
+      "details": {
+        "test_case_progress": {
+          "node_id": "test_demo.py::test_pass",
+          "status": "PIPELINE_TEST_CASE_STATUS_RUNNING"
+        }
+      },
+      "event_type": "test_case_progress",
+      "maturity_level": "EVOLVING"
+    },
+    {
+      "id": "7834f850-b5ed-11f1-aef0-ea7f54252662",
+      "sequence": {
+        "data_plane_id": {
+          "instance": "execution",
+          "seq_no": 1790016433419020
+        },
+        "control_plane_seq_no": 1790016697169001
+      },
+      "origin": {
+        "cloud": "AWS",
+        "region": "us-east-1",
+        "org_id": 4168071307939726,
+        "pipeline_id": "2d0401ce-8229-4795-926f-c3991369655e",
+        "pipeline_type": "WORKSPACE",
+        "pipeline_name": "sdp-test-emission-m2-20260918",
+        "cluster_id": "0921-183525-qk8f8dh3-v2n",
+        "update_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c",
+        "request_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c"
+      },
+      "timestamp": "2026-09-21T18:51:35.381Z",
+      "message": "Test case 'test_demo.py::test_pass' PASSED.",
+      "level": "INFO",
+      "details": {
+        "test_case_progress": {
+          "node_id": "test_demo.py::test_pass",
+          "status": "PIPELINE_TEST_CASE_STATUS_PASSED",
+          "result": {
+            "duration_ms": 0
+          }
+        }
+      },
+      "event_type": "test_case_progress",
+      "maturity_level": "EVOLVING"
+    },
+    {
+      "id": "78359490-b5ed-11f1-aef0-ea7f54252662",
+      "sequence": {
+        "data_plane_id": {
+          "instance": "execution",
+          "seq_no": 1790016433419021
+        },
+        "control_plane_seq_no": 1790016697171001
+      },
+      "origin": {
+        "cloud": "AWS",
+        "region": "us-east-1",
+        "org_id": 4168071307939726,
+        "pipeline_id": "2d0401ce-8229-4795-926f-c3991369655e",
+        "pipeline_type": "WORKSPACE",
+        "pipeline_name": "sdp-test-emission-m2-20260918",
+        "cluster_id": "0921-183525-qk8f8dh3-v2n",
+        "update_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c",
+        "request_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c"
+      },
+      "timestamp": "2026-09-21T18:51:35.385Z",
+      "message": "Test case 'test_demo.py::test_fail' is RUNNING.",
+      "level": "INFO",
+      "details": {
+        "test_case_progress": {
+          "node_id": "test_demo.py::test_fail",
+          "status": "PIPELINE_TEST_CASE_STATUS_RUNNING"
+        }
+      },
+      "event_type": "test_case_progress",
+      "maturity_level": "EVOLVING"
+    },
+    {
+      "id": "783cc080-b5ed-11f1-aef0-ea7f54252662",
+      "sequence": {
+        "data_plane_id": {
+          "instance": "execution",
+          "seq_no": 1790016433419022
+        },
+        "control_plane_seq_no": 1790016697173001
+      },
+      "origin": {
+        "cloud": "AWS",
+        "region": "us-east-1",
+        "org_id": 4168071307939726,
+        "pipeline_id": "2d0401ce-8229-4795-926f-c3991369655e",
+        "pipeline_type": "WORKSPACE",
+        "pipeline_name": "sdp-test-emission-m2-20260918",
+        "cluster_id": "0921-183525-qk8f8dh3-v2n",
+        "update_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c",
+        "request_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c"
+      },
+      "timestamp": "2026-09-21T18:51:35.432Z",
+      "message": "Test case 'test_demo.py::test_fail' FAILED.",
+      "level": "INFO",
+      "details": {
+        "test_case_progress": {
+          "node_id": "test_demo.py::test_fail",
+          "status": "PIPELINE_TEST_CASE_STATUS_FAILED",
+          "result": {
+            "duration_ms": 0,
+            "failure": {
+              "exceptions": [
+                {
+                  "message": "\\u001B[0m\\u001B[94mdef\\u001B[39;49;00m\\u001B[90m \\u001B[39;49;00m\\u001B[92mtest_fail\\u001B[39;49;00m():\\u001B[90m\\u001B[39;49;00m\\n>       \\u001B[94massert\\u001B[39;49;00m \\u001B[94m1\\u001B[39;49;00m + \\u001B[94m1\\u001B[39;49;00m == \\u001B[94m3\\u001B[39;49;00m, \\u001B[33m\\\"\\u001B[39;49;00m\\u001B[33mintentional demo failure\\u001B[39;49;00m\\u001B[33m\\\"\\u001B[39;49;00m\\u001B[90m\\u001B[39;49;00m\\n\\u001B[1m\\u001B[31mE       AssertionError: intentional demo failure\\u001B[0m\\n\\n\\u001B[1m\\u001B[31mWorkspace/Shared/sdp_m2_20260918/test_demo.py\\u001B[0m:9: AssertionError"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "event_type": "test_case_progress",
+      "maturity_level": "EVOLVING"
+    },
+    {
+      "id": "783e9540-b5ed-11f1-aef0-ea7f54252662",
+      "sequence": {
+        "data_plane_id": {
+          "instance": "execution",
+          "seq_no": 1790016433419023
+        },
+        "control_plane_seq_no": 1790016697175001
+      },
+      "origin": {
+        "cloud": "AWS",
+        "region": "us-east-1",
+        "org_id": 4168071307939726,
+        "pipeline_id": "2d0401ce-8229-4795-926f-c3991369655e",
+        "pipeline_type": "WORKSPACE",
+        "pipeline_name": "sdp-test-emission-m2-20260918",
+        "cluster_id": "0921-183525-qk8f8dh3-v2n",
+        "update_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c",
+        "request_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c"
+      },
+      "timestamp": "2026-09-21T18:51:35.444Z",
+      "message": "Test case 'test_demo.py::test_skip' is RUNNING.",
+      "level": "INFO",
+      "details": {
+        "test_case_progress": {
+          "node_id": "test_demo.py::test_skip",
+          "status": "PIPELINE_TEST_CASE_STATUS_RUNNING"
+        }
+      },
+      "event_type": "test_case_progress",
+      "maturity_level": "EVOLVING"
+    },
+    {
+      "id": "783f5890-b5ed-11f1-aef0-ea7f54252662",
+      "sequence": {
+        "data_plane_id": {
+          "instance": "execution",
+          "seq_no": 1790016433419024
+        },
+        "control_plane_seq_no": 1790016697176001
+      },
+      "origin": {
+        "cloud": "AWS",
+        "region": "us-east-1",
+        "org_id": 4168071307939726,
+        "pipeline_id": "2d0401ce-8229-4795-926f-c3991369655e",
+        "pipeline_type": "WORKSPACE",
+        "pipeline_name": "sdp-test-emission-m2-20260918",
+        "cluster_id": "0921-183525-qk8f8dh3-v2n",
+        "update_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c",
+        "request_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c"
+      },
+      "timestamp": "2026-09-21T18:51:35.449Z",
+      "message": "Test case 'test_demo.py::test_skip' SKIPPED.",
+      "level": "INFO",
+      "details": {
+        "test_case_progress": {
+          "node_id": "test_demo.py::test_skip",
+          "status": "PIPELINE_TEST_CASE_STATUS_SKIPPED",
+          "result": {
+            "duration_ms": 0,
+            "skip_reason": "Skipped: demo skip reason"
+          }
+        }
+      },
+      "event_type": "test_case_progress",
+      "maturity_level": "EVOLVING"
+    },
+    {
+      "id": "783fcdc0-b5ed-11f1-aef0-ea7f54252662",
+      "sequence": {
+        "data_plane_id": {
+          "instance": "execution",
+          "seq_no": 1790016433419025
+        },
+        "control_plane_seq_no": 1790016697178001
+      },
+      "origin": {
+        "cloud": "AWS",
+        "region": "us-east-1",
+        "org_id": 4168071307939726,
+        "pipeline_id": "2d0401ce-8229-4795-926f-c3991369655e",
+        "pipeline_type": "WORKSPACE",
+        "pipeline_name": "sdp-test-emission-m2-20260918",
+        "cluster_id": "0921-183525-qk8f8dh3-v2n",
+        "update_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c",
+        "request_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c"
+      },
+      "timestamp": "2026-09-21T18:51:35.452Z",
+      "message": "Test case 'test_demo.py::test_error' is RUNNING.",
+      "level": "INFO",
+      "details": {
+        "test_case_progress": {
+          "node_id": "test_demo.py::test_error",
+          "status": "PIPELINE_TEST_CASE_STATUS_RUNNING"
+        }
+      },
+      "event_type": "test_case_progress",
+      "maturity_level": "EVOLVING"
+    },
+    {
+      "id": "7840df30-b5ed-11f1-aef0-ea7f54252662",
+      "sequence": {
+        "data_plane_id": {
+          "instance": "execution",
+          "seq_no": 1790016433419026
+        },
+        "control_plane_seq_no": 1790016697180001
+      },
+      "origin": {
+        "cloud": "AWS",
+        "region": "us-east-1",
+        "org_id": 4168071307939726,
+        "pipeline_id": "2d0401ce-8229-4795-926f-c3991369655e",
+        "pipeline_type": "WORKSPACE",
+        "pipeline_name": "sdp-test-emission-m2-20260918",
+        "cluster_id": "0921-183525-qk8f8dh3-v2n",
+        "update_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c",
+        "request_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c"
+      },
+      "timestamp": "2026-09-21T18:51:35.459Z",
+      "message": "Test case 'test_demo.py::test_error' ERROR.",
+      "level": "INFO",
+      "details": {
+        "test_case_progress": {
+          "node_id": "test_demo.py::test_error",
+          "status": "PIPELINE_TEST_CASE_STATUS_ERROR",
+          "result": {
+            "duration_ms": 0,
+            "failure": {
+              "exceptions": [
+                {
+                  "message": "\\u001B[0m\\u001B[37m@pytest\\u001B[39;49;00m.fixture\\u001B[90m\\u001B[39;49;00m\\n    \\u001B[94mdef\\u001B[39;49;00m\\u001B[90m \\u001B[39;49;00m\\u001B[92mbroken_setup\\u001B[39;49;00m():\\u001B[90m\\u001B[39;49;00m\\n>       \\u001B[94mraise\\u001B[39;49;00m \\u001B[96mRuntimeError\\u001B[39;49;00m(\\u001B[33m\\\"\\u001B[39;49;00m\\u001B[33mintentional setup error for demo\\u001B[39;49;00m\\u001B[33m\\\"\\u001B[39;49;00m)\\u001B[90m\\u001B[39;49;00m\\n\\u001B[1m\\u001B[31mE       RuntimeError: intentional setup error for demo\\u001B[0m\\n\\n\\u001B[1m\\u001B[31mWorkspace/Shared/sdp_m2_20260918/test_demo.py\\u001B[0m:19: RuntimeError"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "event_type": "test_case_progress",
+      "maturity_level": "EVOLVING"
+    },
+    {
+      "id": "7841f0a0-b5ed-11f1-aef0-ea7f54252662",
+      "sequence": {
+        "data_plane_id": {
+          "instance": "execution",
+          "seq_no": 1790016433419027
+        },
+        "control_plane_seq_no": 1790016697188001
+      },
+      "origin": {
+        "cloud": "AWS",
+        "region": "us-east-1",
+        "org_id": 4168071307939726,
+        "pipeline_id": "2d0401ce-8229-4795-926f-c3991369655e",
+        "pipeline_type": "WORKSPACE",
+        "pipeline_name": "sdp-test-emission-m2-20260918",
+        "cluster_id": "0921-183525-qk8f8dh3-v2n",
+        "update_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c",
+        "request_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c"
+      },
+      "timestamp": "2026-09-21T18:51:35.466Z",
+      "message": "Pipeline tests finished: 4 total, 1 passed, 1 failed, 1 skipped, 1 errors.",
+      "level": "INFO",
+      "details": {
+        "test_summary": {
+          "total": 4,
+          "passed": 1,
+          "failed": 1,
+          "skipped": 1,
+          "errors": 1
+        }
+      },
+      "event_type": "test_summary",
+      "maturity_level": "EVOLVING"
+    }
+  ]
+}
