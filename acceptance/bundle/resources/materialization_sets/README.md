@@ -173,14 +173,12 @@ and `membership`'s two arms now show one each. A set mixing a batch-path feature
 streaming-path one is also refused, which the fake had not modelled; `batch`'s last arm pins it,
 with the message captured from this build.
 
-**The removal-matrix arms added for this build have not run against a workspace.** Every message in
-them came from the backend source at `275193b7facc8` or, for the mixing refusal and the
-members-cannot-be-removed-alone wording, from a live deploy against the swap. The arms themselves --
-sawtooth's three subsets, batch's pair, streaming's second feature, immutable's destroy and
-redeploy -- have only run against the fake. The `streaming` case's claim that two stream features
-can share one set is the one that most needs checking: it rests on the shared-destination rule
-comparing a `(offline, Option[online])` pair that is identical for both, which is read off the
-source rather than observed.
+All six `Cloud = true` cases pass against this build, run one at a time, with no golden changed --
+so every message in the removal matrix is the server's own text and not a reading of its source.
+That covers both cascade messages, the empty-set refusal that sends a caller to the delete endpoint,
+the batch-versus-streaming mixing refusal, and the `streaming` case's claim that two stream features
+materialized to one destination can share a set, which until then rested on the shared-destination
+rule comparing a `(offline, Option[online])` pair that is identical for both.
 
 ## Verified against a workspace, with no case of their own
 
