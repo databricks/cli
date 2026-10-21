@@ -25,7 +25,7 @@ import (
 // pool" (or "pool") is the product-facing name used across the Compute page and
 // this CLI. The backend still models and serves these as AiWorkflowService
 // ProvisionedCapacity resources. The external URL and resource-name prefix
-// use "pools"; wire messages and response fields keep the API's internal name.
+// use "pools"; responses keep the legacy resource names and wire field names.
 const poolsAPIPath = "/api/2.0/ai-training/pools"
 
 // resourceNamePrefix is the AIP resource-name prefix on ProvisionedCapacity.name
@@ -110,7 +110,7 @@ type poolDetailData struct {
 // already be the bare id (from a user argument) or the full resource name (from
 // a response's name field).
 func poolID(name string) string {
-	return strings.TrimPrefix(name, resourceNamePrefix)
+	return strings.TrimPrefix(strings.TrimPrefix(name, resourceNamePrefix), "provisioned-capacities/")
 }
 
 // poolAPIError classifies a pools call failure into the CLI's error envelope,
