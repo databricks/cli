@@ -47,6 +47,12 @@ func escapeMemberKeyPart(part string) string {
 // materializationSetMemberKey identifies a materialized feature member by content rather than
 // position. The key components are the feature name, the online store name (empty for the offline
 // member), and whether the trigger is streaming.
+//
+// The server builds a key from the same three components, in the same order, in
+// MaterializationSetMemberKey.keyOf -- see
+// feature-store/src/main/scala/com/databricks/feature-store/utils/materialized-features/MaterializationSetUtils.scala
+// -- and pairs a requested member with a stored one by it. Adding, dropping or redefining a
+// component here takes the same change there.
 func materializationSetMemberKey(member ml.MaterializedFeature) (string, string) {
 	onlineStoreName := ""
 	if member.OnlineStoreConfig != nil {
