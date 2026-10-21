@@ -13,7 +13,7 @@
       "lifecycle": {
         "depends_on": [
           {
-            "node": "schemas.my"
+            "resource": "schemas.my"
           }
         ]
       },
@@ -28,7 +28,7 @@
       "lifecycle": {
         "depends_on": [
           {
-            "node": "schemas.my"
+            "resource": "schemas.my"
           }
         ]
       },
