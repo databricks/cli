@@ -78,7 +78,6 @@ var databricksTemplates = []Template{
 	},
 	{
 		name:        LakeflowIntegrations,
-		hidden:      true,
 		description: "The template for Lakeflow integrations",
 		Reader:      &builtinReader{name: string(LakeflowIntegrations)},
 		Writer:      &writerWithFullTelemetry{name: LakeflowIntegrations},
