@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
@@ -59,11 +60,11 @@ func fakeJWT(t *testing.T, issuer, subject string) string {
 	return enc.EncodeToString([]byte(`{"alg":"none"}`)) + "." + enc.EncodeToString(payload) + ".sig"
 }
 
-func oauthConfig(host, accessToken string) *databricks.Config {
+func oauthConfig(host, authType, accessToken string) *databricks.Config {
 	ts := sdkauth.TokenSourceFn(func(context.Context) (*oauth2.Token, error) {
 		return &oauth2.Token{AccessToken: accessToken}, nil
 	})
-	return &databricks.Config{Host: host, Credentials: config.NewTokenSourceStrategy("test-oauth", ts)}
+	return &databricks.Config{Host: host, Credentials: config.NewTokenSourceStrategy(authType, ts)}
 }
 
 // The token's user is only a guess that lets validation start early: userWorkspaceDir decides.
@@ -87,11 +88,13 @@ func TestProspectiveLaunchPathsTokenGuess(t *testing.T) {
 		override  string
 		validated []string
 	}{
-		{"token names the SCIM user", oauthConfig(server.URL, fakeJWT(t, issuer, testserver.TestUser.UserName)), "", []string{scimDir}},
-		{"token names another user", oauthConfig(server.URL, otherToken), "", []string{otherDir, scimDir}},
-		{"token from another issuer", oauthConfig(server.URL, fakeJWT(t, "https://accounts.test/oidc", "other@example.com")), "", []string{scimDir}},
+		{"token names the SCIM user", oauthConfig(server.URL, auth.AuthTypeDatabricksCli, fakeJWT(t, issuer, testserver.TestUser.UserName)), "", []string{scimDir}},
+		{"token names another user", oauthConfig(server.URL, auth.AuthTypeOAuthM2M, otherToken), "", []string{otherDir, scimDir}},
+		{"token from another issuer", oauthConfig(server.URL, auth.AuthTypeDatabricksCli, fakeJWT(t, "https://accounts.test/oidc", "other@example.com")), "", []string{scimDir}},
+		// Other auth types may not cache Token, so they skip the guess.
+		{"other auth type", oauthConfig(server.URL, auth.AuthTypeAzureCli, otherToken), "", []string{scimDir}},
 		{"pat", &databricks.Config{Host: server.URL, Token: otherToken}, "", []string{scimDir}},
-		{"override", oauthConfig(server.URL, otherToken), "/Workspace/custom", []string{otherDir, "/Workspace/custom"}},
+		{"override", oauthConfig(server.URL, auth.AuthTypeDatabricksCli, otherToken), "/Workspace/custom", []string{"/Workspace/custom"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Setenv(userWorkspaceDirEnv, tc.override)

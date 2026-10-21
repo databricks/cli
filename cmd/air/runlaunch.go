@@ -10,6 +10,7 @@ import (
 	"strings"
 	"uuid"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -36,6 +37,11 @@ func currentUserEmail(ctx context.Context, w *databricks.WorkspaceClient) (strin
 // userNameFromWorkspaceToken returns the sub claim of cfg's OAuth access token when this
 // workspace issued it, or "" otherwise. It is only a guess: sub need not equal the SCIM userName.
 func userNameFromWorkspaceToken(ctx context.Context, cfg *config.Config) string {
+	// These mint workspace tokens and serve Token from the cache request headers use; others,
+	// such as azure-cli, would fetch a fresh token here.
+	if cfg.AuthType != auth.AuthTypeDatabricksCli && cfg.AuthType != auth.AuthTypeOAuthM2M {
+		return ""
+	}
 	token, err := cfg.GetTokenSource().Token(ctx)
 	if err != nil {
 		return ""
@@ -58,8 +64,8 @@ func userNameFromWorkspaceToken(ctx context.Context, cfg *config.Config) string 
 	return claims.Subject
 }
 
-// userWorkspaceDir returns the user's workspace home, honoring the env override.
-func userWorkspaceDir(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
+// userWorkspaceDirOverride returns the per-user workspace directory set by env or profile, if any.
+func userWorkspaceDirOverride(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
 	if override := env.Get(ctx, userWorkspaceDirEnv); override != "" {
 		return override, nil
 	}
@@ -67,8 +73,13 @@ func userWorkspaceDir(ctx context.Context, w *databricks.WorkspaceClient) (strin
 	if err != nil {
 		return "", fmt.Errorf("failed to read selected profile: %w", err)
 	}
-	if override != "" {
-		return override, nil
+	return override, nil
+}
+
+// userWorkspaceDir returns the user's workspace home, honoring the env override.
+func userWorkspaceDir(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
+	if override, err := userWorkspaceDirOverride(ctx, w); override != "" || err != nil {
+		return override, err
 	}
 	email, err := currentUserEmail(ctx, w)
 	if err != nil {
@@ -90,8 +101,9 @@ func cliLaunchDir(base, experiment, run string) string {
 // prospectiveLaunchPaths returns the workspace paths a submission would use without creating
 // directories or uploading artifacts, after running validate on them.
 //
-// The access token usually names the user, so validate first runs on that guess while
-// userWorkspaceDir looks up the real directory, and again if the two differ.
+// The directory is usually known before SCIM Me answers (an override, or the user a
+// workspace-issued token names), so validate first runs on that guess while userWorkspaceDir
+// looks up the real directory, and again if the two differ.
 func prospectiveLaunchPaths(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, validate func(launchDir, commandPath string) error) (string, string, string, error) {
 	runName := ""
 	if cfg.MLflowRunName != nil {
@@ -103,9 +115,14 @@ func prospectiveLaunchPaths(ctx context.Context, w *databricks.WorkspaceClient, 
 		return base, launchDir, commandPath, validate(launchDir, commandPath)
 	}
 
-	guessBase := ""
-	if user := userNameFromWorkspaceToken(ctx, w.Config); user != "" {
-		guessBase = "/Workspace/Users/" + user
+	guessBase, err := userWorkspaceDirOverride(ctx, w)
+	if err != nil {
+		return "", "", "", err
+	}
+	if guessBase == "" {
+		if user := userNameFromWorkspaceToken(ctx, w.Config); user != "" {
+			guessBase = "/Workspace/Users/" + user
+		}
 	}
 	var base string
 	var g errgroup.Group
