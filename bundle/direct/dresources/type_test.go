@@ -81,16 +81,20 @@ var knownMissingInStateType = map[string][]string{
 	},
 	"apps": {
 		"lifecycle.prevent_destroy",
+		"lifecycle.depends_on",
 	},
 	"clusters": {
 		"lifecycle.prevent_destroy",
+		"lifecycle.depends_on",
 	},
 	"sql_warehouses": {
 		"lifecycle.prevent_destroy",
+		"lifecycle.depends_on",
 	},
 	"job_runs": {
 		// State stores trigger fingerprints, not the config trigger list / prevent_destroy.
 		"lifecycle.prevent_destroy",
+		"lifecycle.depends_on",
 		"lifecycle.triggers",
 	},
 	"dashboards": {

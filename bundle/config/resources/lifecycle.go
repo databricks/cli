@@ -15,6 +15,15 @@ type Lifecycle struct {
 	// can override prevent_destroy: true in the base).
 	// This field is not serialized to JSON.
 	ForceSendFields []string `json:"-"`
+
+	// Resources that must be deployed before this resource and deleted after it.
+	DependsOn []DependsOn `json:"depends_on,omitempty"`
+}
+
+// DependsOn is a single lifecycle.depends_on entry.
+type DependsOn struct {
+	// Key of the resource to depend on: "foo" or "jobs.foo".
+	Resource string `json:"resource"`
 }
 
 // HasPreventDestroy returns true if prevent_destroy is set.
