@@ -48,8 +48,9 @@ var ProfileAuthLoaders = []config.Loader{
 }
 
 // StrictProfileLoaders is ProfileAuthLoaders with strictProfileLoader before
-// the config file, so the profile always comes from the config file, even when
-// auth env vars are set.
+// the config file. The profile name always comes from the config file, based on
+// the host and workspace ID in the bundle configuration, even when auth env vars
+// are set.
 var StrictProfileLoaders = []config.Loader{
 	ResolveNonAuthFromEnv,
 	strictProfileLoader{},
@@ -286,7 +287,7 @@ func (l profileFromHostLoader) isAnyAuthConfigured(cfg *config.Config) bool {
 // environment only reach a host and workspace that a profile allows. Each
 // workspace profile allows one pair of host and workspace ID, and a profile
 // without a workspace_id allows a config without one. Account profiles are
-// skipped. A config without a host uses the profile it names.
+// skipped. A config with a workspace ID but no host uses the profile it names.
 type strictProfileLoader struct{}
 
 func (strictProfileLoader) Name() string {
@@ -294,6 +295,12 @@ func (strictProfileLoader) Name() string {
 }
 
 func (strictProfileLoader) Configure(cfg *config.Config) error {
+	// Without a host or workspace ID there is nothing to match, so the next
+	// loaders resolve the config as without strict mode.
+	if cfg.Host == "" && cfg.WorkspaceID == "" {
+		return nil
+	}
+
 	configFile, err := config.LoadFile(cfg.ConfigFile)
 	if errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("strict profile matching: config file %s not found", cmp.Or(cfg.ConfigFile, "~/.databrickscfg"))
@@ -336,18 +343,18 @@ func (strictProfileLoader) Configure(cfg *config.Config) error {
 	return nil
 }
 
-// checkNamedProfile checks the profile named by a config without a host. The
-// profile supplies the host, and also the workspace ID unless the config sets
-// one that the profile must have.
+// checkNamedProfile checks the profile named by a config with a workspace ID but
+// no host. There is no host in the config to compare, so the host comes from the
+// named profile, and the profile must have the config's workspace ID.
 func checkNamedProfile(cfg *config.Config, configFile *config.File) error {
 	if cfg.Profile == "" {
-		return errors.New("strict profile matching: set workspace.host, or select a profile with --profile, workspace.profile or [__settings__].default_profile")
+		return fmt.Errorf("strict profile matching: workspace_id %s needs a host; set workspace.host, or select a profile with --profile, workspace.profile or [__settings__].default_profile", cfg.WorkspaceID)
 	}
 	s, err := configFile.GetSection(cfg.Profile)
 	if err != nil || sectionValue(s, hostAttr) == "" || !isWorkspaceSection(s) {
 		return fmt.Errorf("strict profile matching: %s is not a workspace profile with a host in the config file", cfg.Profile)
 	}
-	if cfg.WorkspaceID != "" && sectionValue(s, "workspace_id") != cfg.WorkspaceID {
+	if sectionValue(s, "workspace_id") != cfg.WorkspaceID {
 		return fmt.Errorf("strict profile matching: profile %s does not have workspace_id %s", cfg.Profile, cfg.WorkspaceID)
 	}
 	return nil

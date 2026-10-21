@@ -9,3 +9,14 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/strict-profile-match/custom_host_other_workspace
 
 Validation OK!
+
+=== The variable is read as a boolean, so false leaves strict mode off
+>>> errcode env DATABRICKS_BUNDLE_STRICT_PROFILE_MATCH=false [CLI] bundle validate -t custom_host_other_workspace
+Name: strict-profile-match
+Target: custom_host_other_workspace
+Workspace:
+  Host: [CUSTOM_HOST]/?o=2222222222
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/strict-profile-match/custom_host_other_workspace
+
+Validation OK!

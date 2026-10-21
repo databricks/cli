@@ -15,4 +15,6 @@ targets:
   custom_host_without_workspace_id:
     workspace:
       host: $CUSTOM_HOST
-  no_host: {}
+  no_host_with_workspace_id:
+    workspace:
+      workspace_id: "$WORKSPACE_ID"

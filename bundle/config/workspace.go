@@ -178,11 +178,11 @@ func (w *Workspace) Client(ctx context.Context) (*databricks.WorkspaceClient, er
 
 	cfg := w.Config(ctx)
 
-	_, strict := env.StrictProfileMatch(ctx)
 	switch {
-	case strict:
+	case env.StrictProfileMatch(ctx) && (w.Host != "" || w.WorkspaceID != ""):
 		// The target's host and workspace ID must match a profile, even when
-		// auth env vars are set.
+		// auth env vars are set. A target with neither has nothing to match, so
+		// it resolves as without strict mode.
 		cfg.Loaders = databrickscfg.StrictProfileLoaders
 	case w.Profile != "":
 		// An explicit profile wins over auth env vars (#5096).

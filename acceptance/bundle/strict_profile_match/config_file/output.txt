@@ -28,11 +28,11 @@ Found 1 error
 
 Exit code: 1
 
->>> errcode env DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/account.databrickscfg [CLI] bundle validate -t no_host -p account_custom_host
-Error: cannot resolve bundle auth configuration: resolve: strict profile matching: account_custom_host is not a workspace profile with a host in the config file. Config: profile=account_custom_host, config_file=[TEST_TMP_DIR]/account.databrickscfg, databricks_cli_path=[CLI]. Env: DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH
+>>> errcode env DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/account.databrickscfg [CLI] bundle validate -t no_host_with_workspace_id -p account_custom_host
+Error: cannot resolve bundle auth configuration: resolve: strict profile matching: account_custom_host is not a workspace profile with a host in the config file. Config: workspace_id=[WORKSPACE_ID], profile=account_custom_host, config_file=[TEST_TMP_DIR]/account.databrickscfg, databricks_cli_path=[CLI]. Env: DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH
 
 Name: strict-profile-match
-Target: no_host
+Target: no_host_with_workspace_id
 
 Found 1 error
 
