@@ -2,13 +2,12 @@ package resourcemutator
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -53,11 +52,12 @@ func TestGetAllResourcesMatchesConfigKeys(t *testing.T) {
 		field.Set(m)
 	}
 
-	root, err := convert.FromTyped(b.Config, dyn.NilValue)
-	require.NoError(t, err)
+	// The key of a resource type is the JSON name of its field in Resources.
 	expected := NewResourceKeySet()
-	err = expected.AddPattern(dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()), root)
-	require.NoError(t, err)
+	for i := range rv.NumField() {
+		typ, _, _ := strings.Cut(rv.Type().Field(i).Tag.Get("json"), ",")
+		expected.AddResourceKey(ResourceKey{Type: typ, Name: "my_resource"})
+	}
 	require.Equal(t, rv.NumField(), expected.Size())
 
 	set, err := getAllResources(b)

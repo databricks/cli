@@ -7,7 +7,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -57,7 +56,9 @@ resources:
 }
 
 func TestRequiredWalkSetValues(t *testing.T) {
-	// A pure reference and an explicit zero value set a field; null does not.
+	// A pure reference sets a field; null does not. An explicit zero of a field that has no
+	// ForceSendFields (here value: 0) cannot be told from an unset field in the typed
+	// configuration, so it is reported (known difference from the dyn implementation).
 	b := loadBundle(t, `
 bundle:
   name: test-bundle
@@ -86,6 +87,7 @@ resources:
 	assert.Equal(t, []string{
 		`required field "commands" is not set at resources.jobs.job.tasks[1].dbt_task (23)`,
 		`required field "job_id" is not set at resources.jobs.job.tasks[0].run_job_task (20)`,
+		`required field "value" is not set at resources.jobs.job.health.rules[1] (15)`,
 	}, summarize(diags))
 }
 
@@ -111,9 +113,8 @@ resources:
 	}, summarize(diags))
 }
 
-func TestEnumWalkKeepsWalkOrderForTies(t *testing.T) {
-	// Values without a location tie in the sort; they keep the order of the
-	// configuration, not that of the walk over the typed maps.
+func TestEnumWalkOrdersTiesByPath(t *testing.T) {
+	// Diagnostics without a location tie in the sort; the path breaks the tie.
 	b := loadBundle(t, `
 bundle:
   name: test-bundle
@@ -132,21 +133,15 @@ resources:
         - task_key: a
           run_if: SOMETIMES
 `)
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		return dyn.MapByPattern(v, dyn.NewPattern(dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey(), dyn.Key("tasks"), dyn.AnyIndex(), dyn.Key("run_if")), func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
-			return dyn.V(v.MustString()), nil
-		})
-	})
-	require.NoError(t, err)
 	diags := bundle.Apply(t.Context(), b, Enum())
 	var paths []string
 	for _, d := range diags {
 		paths = append(paths, d.Paths[0].String())
 	}
 	assert.Equal(t, []string{
-		"resources.jobs.zeta.tasks[0].run_if",
 		"resources.jobs.alpha.tasks[0].run_if",
 		"resources.jobs.mid.tasks[0].run_if",
+		"resources.jobs.zeta.tasks[0].run_if",
 	}, paths)
 }
 

@@ -510,6 +510,17 @@ func stringsConfigResources(c *stringsWalk, n *Node, v *config.Resources) {
 			}
 		}
 	}
+	if !n.IsRef("features") {
+		if len(v.Features) > 0 {
+			cn := n.Child("features")
+			for _, k := range sortedKeys(v.Features) {
+				if x := v.Features[k]; x != nil {
+					ch := cn.Child(string(k))
+					stringsResourcesFeature(c, &ch, x)
+				}
+			}
+		}
+	}
 	if !n.IsRef("models") {
 		if len(v.Models) > 0 {
 			cn := n.Child("models")
@@ -1642,6 +1653,16 @@ func stringsResourcesJob(c *stringsWalk, n *Node, v *resources.Job) {
 			v.JobSettings.Description = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.JobSettings.DurationTarget == "" && Forced(v.JobSettings.ForceSendFields, "DurationTarget") {
+		ch := n.Child("duration_target")
+		c.fn(&ch, "")
+	}
+	if s := string(v.JobSettings.DurationTarget); c.match(s) {
+		ch := n.Child("duration_target")
+		if r, ok := c.fn(&ch, s); ok {
+			v.JobSettings.DurationTarget = (r)
+		}
+	}
 	if c.mode == EmptyFields && v.JobSettings.EditMode == "" && Forced(v.JobSettings.ForceSendFields, "EditMode") {
 		ch := n.Child("edit_mode")
 		c.fn(&ch, "")
@@ -1864,6 +1885,16 @@ func stringsResourcesJobRun(c *stringsWalk, n *Node, v *resources.JobRun) {
 					}
 				}
 			}
+		}
+	}
+	if c.mode == EmptyFields && v.RunNow.DurationTarget == "" && Forced(v.RunNow.ForceSendFields, "DurationTarget") {
+		ch := n.Child("duration_target")
+		c.fn(&ch, "")
+	}
+	if s := string(v.RunNow.DurationTarget); c.match(s) {
+		ch := n.Child("duration_target")
+		if r, ok := c.fn(&ch, s); ok {
+			v.RunNow.DurationTarget = (r)
 		}
 	}
 	if c.mode == EmptyFields && v.RunNow.IdempotencyToken == "" && Forced(v.RunNow.ForceSendFields, "IdempotencyToken") {
@@ -2275,6 +2306,144 @@ func stringsResourcesPipeline(c *stringsWalk, n *Node, v *resources.Pipeline) {
 		ch := n.Child("usage_policy_id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.CreatePipeline.UsagePolicyId = (r)
+		}
+	}
+}
+
+func stringsResourcesFeature(c *stringsWalk, n *Node, v *resources.Feature) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.ID); c.match(s) {
+		ch := n.Child("id")
+		if r, ok := c.fn(&ch, s); ok {
+			v.ID = (r)
+		}
+	}
+	if s := string(v.BaseResource.URL); c.match(s) {
+		ch := n.Child("url")
+		if r, ok := c.fn(&ch, s); ok {
+			v.BaseResource.URL = (r)
+		}
+	}
+	if s := string(v.BaseResource.ModifiedStatus); c.match(s) {
+		ch := n.Child("modified_status")
+		if r, ok := c.fn(&ch, s); ok {
+			v.BaseResource.ModifiedStatus = (r)
+		}
+	}
+	if c.mode == EmptyFields && v.Feature.CatalogName == "" && Forced(v.Feature.ForceSendFields, "CatalogName") {
+		ch := n.Child("catalog_name")
+		c.fn(&ch, "")
+	}
+	if s := string(v.Feature.CatalogName); c.match(s) {
+		ch := n.Child("catalog_name")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Feature.CatalogName = (r)
+		}
+	}
+	if c.mode == EmptyFields && v.Feature.CreatedBy == "" && Forced(v.Feature.ForceSendFields, "CreatedBy") {
+		ch := n.Child("created_by")
+		c.fn(&ch, "")
+	}
+	if s := string(v.Feature.CreatedBy); c.match(s) {
+		ch := n.Child("created_by")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Feature.CreatedBy = (r)
+		}
+	}
+	if c.mode == EmptyFields && v.Feature.Description == "" && Forced(v.Feature.ForceSendFields, "Description") {
+		ch := n.Child("description")
+		c.fn(&ch, "")
+	}
+	if s := string(v.Feature.Description); c.match(s) {
+		ch := n.Child("description")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Feature.Description = (r)
+		}
+	}
+	if !n.IsRef("entities") {
+		if len(v.Feature.Entities) > 0 {
+			cn := n.Child("entities")
+			for i := range v.Feature.Entities {
+				{
+					ch := cn.Elem(i)
+					stringsMlEntityColumn(c, &ch, &v.Feature.Entities[i])
+				}
+			}
+		}
+	}
+	if c.mode == EmptyFields && v.Feature.FilterCondition == "" && Forced(v.Feature.ForceSendFields, "FilterCondition") {
+		ch := n.Child("filter_condition")
+		c.fn(&ch, "")
+	}
+	if s := string(v.Feature.FilterCondition); c.match(s) {
+		ch := n.Child("filter_condition")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Feature.FilterCondition = (r)
+		}
+	}
+	if s := string(v.Feature.FullName); c.match(s) {
+		ch := n.Child("full_name")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Feature.FullName = (r)
+		}
+	}
+	if !n.IsRef("function") {
+		{
+			ch := n.Child("function")
+			stringsMlFunction(c, &ch, &v.Feature.Function)
+		}
+	}
+	if !n.IsRef("inputs") {
+		if len(v.Feature.Inputs) > 0 {
+			cn := n.Child("inputs")
+			for i := range v.Feature.Inputs {
+				if s := string(v.Feature.Inputs[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.Feature.Inputs[i] = (r)
+					}
+				}
+			}
+		}
+	}
+	if c.mode == EmptyFields && v.Feature.Name == "" && Forced(v.Feature.ForceSendFields, "Name") {
+		ch := n.Child("name")
+		c.fn(&ch, "")
+	}
+	if s := string(v.Feature.Name); c.match(s) {
+		ch := n.Child("name")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Feature.Name = (r)
+		}
+	}
+	if c.mode == EmptyFields && v.Feature.SchemaName == "" && Forced(v.Feature.ForceSendFields, "SchemaName") {
+		ch := n.Child("schema_name")
+		c.fn(&ch, "")
+	}
+	if s := string(v.Feature.SchemaName); c.match(s) {
+		ch := n.Child("schema_name")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Feature.SchemaName = (r)
+		}
+	}
+	if !n.IsRef("source") {
+		{
+			ch := n.Child("source")
+			stringsMlDataSource(c, &ch, &v.Feature.Source)
+		}
+	}
+	if !n.IsRef("time_window") {
+		if x := v.Feature.TimeWindow; x != nil {
+			ch := n.Child("time_window")
+			stringsMlTimeWindow(c, &ch, x)
+		}
+	}
+	if !n.IsRef("timeseries_column") {
+		if x := v.Feature.TimeseriesColumn; x != nil {
+			ch := n.Child("timeseries_column")
+			stringsMlTimeseriesColumn(c, &ch, x)
 		}
 	}
 }
@@ -7570,6 +7739,131 @@ func stringsPipelinesPipelineTrigger(c *stringsWalk, n *Node, v *pipelines.Pipel
 	}
 }
 
+func stringsMlEntityColumn(c *stringsWalk, n *Node, v *ml.EntityColumn) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.Name); c.match(s) {
+		ch := n.Child("name")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Name = (r)
+		}
+	}
+}
+
+func stringsMlFunction(c *stringsWalk, n *Node, v *ml.Function) {
+	if n.isRef() {
+		return
+	}
+	if !n.IsRef("aggregation_function") {
+		if x := v.AggregationFunction; x != nil {
+			ch := n.Child("aggregation_function")
+			stringsMlAggregationFunction(c, &ch, x)
+		}
+	}
+	if !n.IsRef("column_selection") {
+		if x := v.ColumnSelection; x != nil {
+			ch := n.Child("column_selection")
+			stringsMlColumnSelection(c, &ch, x)
+		}
+	}
+	if !n.IsRef("custom_udf") {
+		if x := v.CustomUdf; x != nil {
+			ch := n.Child("custom_udf")
+			stringsMlCustomUdf(c, &ch, x)
+		}
+	}
+	if !n.IsRef("extra_parameters") {
+		if len(v.ExtraParameters) > 0 {
+			cn := n.Child("extra_parameters")
+			for i := range v.ExtraParameters {
+				{
+					ch := cn.Elem(i)
+					stringsMlFunctionExtraParameter(c, &ch, &v.ExtraParameters[i])
+				}
+			}
+		}
+	}
+	if s := string(v.FunctionType); c.match(s) {
+		ch := n.Child("function_type")
+		if r, ok := c.fn(&ch, s); ok {
+			v.FunctionType = ml.FunctionFunctionType(r)
+		}
+	}
+}
+
+func stringsMlDataSource(c *stringsWalk, n *Node, v *ml.DataSource) {
+	if n.isRef() {
+		return
+	}
+	if !n.IsRef("delta_table_source") {
+		if x := v.DeltaTableSource; x != nil {
+			ch := n.Child("delta_table_source")
+			stringsMlDeltaTableSource(c, &ch, x)
+		}
+	}
+	if !n.IsRef("feature_view_source") {
+		if x := v.FeatureViewSource; x != nil {
+			ch := n.Child("feature_view_source")
+			stringsMlFeatureViewSource(c, &ch, x)
+		}
+	}
+	if !n.IsRef("kafka_source") {
+		if x := v.KafkaSource; x != nil {
+			ch := n.Child("kafka_source")
+			stringsMlKafkaSource(c, &ch, x)
+		}
+	}
+	if !n.IsRef("request_source") {
+		if x := v.RequestSource; x != nil {
+			ch := n.Child("request_source")
+			stringsMlRequestSource(c, &ch, x)
+		}
+	}
+	if !n.IsRef("stream_source") {
+		if x := v.StreamSource; x != nil {
+			ch := n.Child("stream_source")
+			stringsMlStreamSource(c, &ch, x)
+		}
+	}
+}
+
+func stringsMlTimeWindow(c *stringsWalk, n *Node, v *ml.TimeWindow) {
+	if n.isRef() {
+		return
+	}
+	if !n.IsRef("continuous") {
+		if x := v.Continuous; x != nil {
+			ch := n.Child("continuous")
+			stringsMlContinuousWindow(c, &ch, x)
+		}
+	}
+	if !n.IsRef("sliding") {
+		if x := v.Sliding; x != nil {
+			ch := n.Child("sliding")
+			stringsMlSlidingWindow(c, &ch, x)
+		}
+	}
+	if !n.IsRef("tumbling") {
+		if x := v.Tumbling; x != nil {
+			ch := n.Child("tumbling")
+			stringsMlTumblingWindow(c, &ch, x)
+		}
+	}
+}
+
+func stringsMlTimeseriesColumn(c *stringsWalk, n *Node, v *ml.TimeseriesColumn) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.Name); c.match(s) {
+		ch := n.Child("name")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Name = (r)
+		}
+	}
+}
+
 func stringsResourcesMlflowModelPermission(c *stringsWalk, n *Node, v *resources.MlflowModelPermission) {
 	if n.isRef() {
 		return
@@ -12259,6 +12553,414 @@ func stringsPipelinesCronTrigger(c *stringsWalk, n *Node, v *pipelines.CronTrigg
 	}
 }
 
+func stringsMlAggregationFunction(c *stringsWalk, n *Node, v *ml.AggregationFunction) {
+	if n.isRef() {
+		return
+	}
+	if !n.IsRef("approx_count_distinct") {
+		if x := v.ApproxCountDistinct; x != nil {
+			ch := n.Child("approx_count_distinct")
+			stringsMlApproxCountDistinctFunction(c, &ch, x)
+		}
+	}
+	if !n.IsRef("approx_percentile") {
+		if x := v.ApproxPercentile; x != nil {
+			ch := n.Child("approx_percentile")
+			stringsMlApproxPercentileFunction(c, &ch, x)
+		}
+	}
+	if !n.IsRef("avg") {
+		if x := v.Avg; x != nil {
+			ch := n.Child("avg")
+			stringsMlAvgFunction(c, &ch, x)
+		}
+	}
+	if !n.IsRef("count_function") {
+		if x := v.CountFunction; x != nil {
+			ch := n.Child("count_function")
+			stringsMlCountFunction(c, &ch, x)
+		}
+	}
+	if !n.IsRef("first") {
+		if x := v.First; x != nil {
+			ch := n.Child("first")
+			stringsMlFirstFunction(c, &ch, x)
+		}
+	}
+	if !n.IsRef("first_distinct") {
+		if x := v.FirstDistinct; x != nil {
+			ch := n.Child("first_distinct")
+			stringsMlFirstDistinctFunction(c, &ch, x)
+		}
+	}
+	if !n.IsRef("first_n") {
+		if x := v.FirstN; x != nil {
+			ch := n.Child("first_n")
+			stringsMlFirstNFunction(c, &ch, x)
+		}
+	}
+	if !n.IsRef("last") {
+		if x := v.Last; x != nil {
+			ch := n.Child("last")
+			stringsMlLastFunction(c, &ch, x)
+		}
+	}
+	if !n.IsRef("last_distinct") {
+		if x := v.LastDistinct; x != nil {
+			ch := n.Child("last_distinct")
+			stringsMlLastDistinctFunction(c, &ch, x)
+		}
+	}
+	if !n.IsRef("last_n") {
+		if x := v.LastN; x != nil {
+			ch := n.Child("last_n")
+			stringsMlLastNFunction(c, &ch, x)
+		}
+	}
+	if !n.IsRef("max") {
+		if x := v.Max; x != nil {
+			ch := n.Child("max")
+			stringsMlMaxFunction(c, &ch, x)
+		}
+	}
+	if !n.IsRef("min") {
+		if x := v.Min; x != nil {
+			ch := n.Child("min")
+			stringsMlMinFunction(c, &ch, x)
+		}
+	}
+	if !n.IsRef("stddev_pop") {
+		if x := v.StddevPop; x != nil {
+			ch := n.Child("stddev_pop")
+			stringsMlStddevPopFunction(c, &ch, x)
+		}
+	}
+	if !n.IsRef("stddev_samp") {
+		if x := v.StddevSamp; x != nil {
+			ch := n.Child("stddev_samp")
+			stringsMlStddevSampFunction(c, &ch, x)
+		}
+	}
+	if !n.IsRef("sum") {
+		if x := v.Sum; x != nil {
+			ch := n.Child("sum")
+			stringsMlSumFunction(c, &ch, x)
+		}
+	}
+	if !n.IsRef("time_window") {
+		if x := v.TimeWindow; x != nil {
+			ch := n.Child("time_window")
+			stringsMlTimeWindow(c, &ch, x)
+		}
+	}
+	if !n.IsRef("var_pop") {
+		if x := v.VarPop; x != nil {
+			ch := n.Child("var_pop")
+			stringsMlVarPopFunction(c, &ch, x)
+		}
+	}
+	if !n.IsRef("var_samp") {
+		if x := v.VarSamp; x != nil {
+			ch := n.Child("var_samp")
+			stringsMlVarSampFunction(c, &ch, x)
+		}
+	}
+}
+
+func stringsMlColumnSelection(c *stringsWalk, n *Node, v *ml.ColumnSelection) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.Column); c.match(s) {
+		ch := n.Child("column")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Column = (r)
+		}
+	}
+}
+
+func stringsMlCustomUdf(c *stringsWalk, n *Node, v *ml.CustomUdf) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.FunctionPath); c.match(s) {
+		ch := n.Child("function_path")
+		if r, ok := c.fn(&ch, s); ok {
+			v.FunctionPath = (r)
+		}
+	}
+	if !n.IsRef("input_bindings") {
+		if len(v.InputBindings) > 0 {
+			cn := n.Child("input_bindings")
+			for i := range v.InputBindings {
+				{
+					ch := cn.Elem(i)
+					stringsMlInputBinding(c, &ch, &v.InputBindings[i])
+				}
+			}
+		}
+	}
+}
+
+func stringsMlFunctionExtraParameter(c *stringsWalk, n *Node, v *ml.FunctionExtraParameter) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.Key); c.match(s) {
+		ch := n.Child("key")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Key = (r)
+		}
+	}
+	if s := string(v.Value); c.match(s) {
+		ch := n.Child("value")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Value = (r)
+		}
+	}
+}
+
+func stringsMlDeltaTableSource(c *stringsWalk, n *Node, v *ml.DeltaTableSource) {
+	if n.isRef() {
+		return
+	}
+	if c.mode == EmptyFields && v.DataframeSchema == "" && Forced(v.ForceSendFields, "DataframeSchema") {
+		ch := n.Child("dataframe_schema")
+		c.fn(&ch, "")
+	}
+	if s := string(v.DataframeSchema); c.match(s) {
+		ch := n.Child("dataframe_schema")
+		if r, ok := c.fn(&ch, s); ok {
+			v.DataframeSchema = (r)
+		}
+	}
+	if !n.IsRef("entity_columns") {
+		if len(v.EntityColumns) > 0 {
+			cn := n.Child("entity_columns")
+			for i := range v.EntityColumns {
+				if s := string(v.EntityColumns[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.EntityColumns[i] = (r)
+					}
+				}
+			}
+		}
+	}
+	if c.mode == EmptyFields && v.FilterCondition == "" && Forced(v.ForceSendFields, "FilterCondition") {
+		ch := n.Child("filter_condition")
+		c.fn(&ch, "")
+	}
+	if s := string(v.FilterCondition); c.match(s) {
+		ch := n.Child("filter_condition")
+		if r, ok := c.fn(&ch, s); ok {
+			v.FilterCondition = (r)
+		}
+	}
+	if s := string(v.FullName); c.match(s) {
+		ch := n.Child("full_name")
+		if r, ok := c.fn(&ch, s); ok {
+			v.FullName = (r)
+		}
+	}
+	if c.mode == EmptyFields && v.TimeseriesColumn == "" && Forced(v.ForceSendFields, "TimeseriesColumn") {
+		ch := n.Child("timeseries_column")
+		c.fn(&ch, "")
+	}
+	if s := string(v.TimeseriesColumn); c.match(s) {
+		ch := n.Child("timeseries_column")
+		if r, ok := c.fn(&ch, s); ok {
+			v.TimeseriesColumn = (r)
+		}
+	}
+	if c.mode == EmptyFields && v.TransformationSql == "" && Forced(v.ForceSendFields, "TransformationSql") {
+		ch := n.Child("transformation_sql")
+		c.fn(&ch, "")
+	}
+	if s := string(v.TransformationSql); c.match(s) {
+		ch := n.Child("transformation_sql")
+		if r, ok := c.fn(&ch, s); ok {
+			v.TransformationSql = (r)
+		}
+	}
+}
+
+func stringsMlFeatureViewSource(c *stringsWalk, n *Node, v *ml.FeatureViewSource) {
+	if n.isRef() {
+		return
+	}
+	if !n.IsRef("feature_references") {
+		if len(v.FeatureReferences) > 0 {
+			cn := n.Child("feature_references")
+			for i := range v.FeatureReferences {
+				{
+					ch := cn.Elem(i)
+					stringsMlFeatureReference(c, &ch, &v.FeatureReferences[i])
+				}
+			}
+		}
+	}
+}
+
+func stringsMlKafkaSource(c *stringsWalk, n *Node, v *ml.KafkaSource) {
+	if n.isRef() {
+		return
+	}
+	if !n.IsRef("entity_column_identifiers") {
+		if len(v.EntityColumnIdentifiers) > 0 {
+			cn := n.Child("entity_column_identifiers")
+			for i := range v.EntityColumnIdentifiers {
+				{
+					ch := cn.Elem(i)
+					stringsMlColumnIdentifier(c, &ch, &v.EntityColumnIdentifiers[i])
+				}
+			}
+		}
+	}
+	if c.mode == EmptyFields && v.FilterCondition == "" && Forced(v.ForceSendFields, "FilterCondition") {
+		ch := n.Child("filter_condition")
+		c.fn(&ch, "")
+	}
+	if s := string(v.FilterCondition); c.match(s) {
+		ch := n.Child("filter_condition")
+		if r, ok := c.fn(&ch, s); ok {
+			v.FilterCondition = (r)
+		}
+	}
+	if s := string(v.Name); c.match(s) {
+		ch := n.Child("name")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Name = (r)
+		}
+	}
+	if !n.IsRef("timeseries_column_identifier") {
+		if x := v.TimeseriesColumnIdentifier; x != nil {
+			ch := n.Child("timeseries_column_identifier")
+			stringsMlColumnIdentifier(c, &ch, x)
+		}
+	}
+}
+
+func stringsMlRequestSource(c *stringsWalk, n *Node, v *ml.RequestSource) {
+	if n.isRef() {
+		return
+	}
+	if c.mode == EmptyFields && v.DataframeSchema == "" && Forced(v.ForceSendFields, "DataframeSchema") {
+		ch := n.Child("dataframe_schema")
+		c.fn(&ch, "")
+	}
+	if s := string(v.DataframeSchema); c.match(s) {
+		ch := n.Child("dataframe_schema")
+		if r, ok := c.fn(&ch, s); ok {
+			v.DataframeSchema = (r)
+		}
+	}
+	if !n.IsRef("flat_schema") {
+		if x := v.FlatSchema; x != nil {
+			ch := n.Child("flat_schema")
+			stringsMlFlatSchema(c, &ch, x)
+		}
+	}
+}
+
+func stringsMlStreamSource(c *stringsWalk, n *Node, v *ml.StreamSource) {
+	if n.isRef() {
+		return
+	}
+	if c.mode == EmptyFields && v.DataframeSchema == "" && Forced(v.ForceSendFields, "DataframeSchema") {
+		ch := n.Child("dataframe_schema")
+		c.fn(&ch, "")
+	}
+	if s := string(v.DataframeSchema); c.match(s) {
+		ch := n.Child("dataframe_schema")
+		if r, ok := c.fn(&ch, s); ok {
+			v.DataframeSchema = (r)
+		}
+	}
+	if c.mode == EmptyFields && v.FilterCondition == "" && Forced(v.ForceSendFields, "FilterCondition") {
+		ch := n.Child("filter_condition")
+		c.fn(&ch, "")
+	}
+	if s := string(v.FilterCondition); c.match(s) {
+		ch := n.Child("filter_condition")
+		if r, ok := c.fn(&ch, s); ok {
+			v.FilterCondition = (r)
+		}
+	}
+	if s := string(v.FullName); c.match(s) {
+		ch := n.Child("full_name")
+		if r, ok := c.fn(&ch, s); ok {
+			v.FullName = (r)
+		}
+	}
+	if c.mode == EmptyFields && v.TransformationSql == "" && Forced(v.ForceSendFields, "TransformationSql") {
+		ch := n.Child("transformation_sql")
+		c.fn(&ch, "")
+	}
+	if s := string(v.TransformationSql); c.match(s) {
+		ch := n.Child("transformation_sql")
+		if r, ok := c.fn(&ch, s); ok {
+			v.TransformationSql = (r)
+		}
+	}
+}
+
+func stringsMlContinuousWindow(c *stringsWalk, n *Node, v *ml.ContinuousWindow) {
+	if n.isRef() {
+		return
+	}
+	if c.mode == EmptyFields && v.Offset == "" && Forced(v.ForceSendFields, "Offset") {
+		ch := n.Child("offset")
+		c.fn(&ch, "")
+	}
+	if s := string(v.Offset); c.match(s) {
+		ch := n.Child("offset")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Offset = (r)
+		}
+	}
+	if s := string(v.WindowDuration); c.match(s) {
+		ch := n.Child("window_duration")
+		if r, ok := c.fn(&ch, s); ok {
+			v.WindowDuration = (r)
+		}
+	}
+}
+
+func stringsMlSlidingWindow(c *stringsWalk, n *Node, v *ml.SlidingWindow) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.SlideDuration); c.match(s) {
+		ch := n.Child("slide_duration")
+		if r, ok := c.fn(&ch, s); ok {
+			v.SlideDuration = (r)
+		}
+	}
+	if c.mode == EmptyFields && v.WindowDuration == "" && Forced(v.ForceSendFields, "WindowDuration") {
+		ch := n.Child("window_duration")
+		c.fn(&ch, "")
+	}
+	if s := string(v.WindowDuration); c.match(s) {
+		ch := n.Child("window_duration")
+		if r, ok := c.fn(&ch, s); ok {
+			v.WindowDuration = (r)
+		}
+	}
+}
+
+func stringsMlTumblingWindow(c *stringsWalk, n *Node, v *ml.TumblingWindow) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.WindowDuration); c.match(s) {
+		ch := n.Child("window_duration")
+		if r, ok := c.fn(&ch, s); ok {
+			v.WindowDuration = (r)
+		}
+	}
+}
+
 func stringsMlUcTraceLocation(c *stringsWalk, n *Node, v *ml.UcTraceLocation) {
 	if n.isRef() {
 		return
@@ -14063,6 +14765,12 @@ func stringsJobsSubscription(c *stringsWalk, n *Node, v *jobs.Subscription) {
 	if n.isRef() {
 		return
 	}
+	if !n.IsRef("attachment") {
+		if x := v.Attachment; x != nil {
+			ch := n.Child("attachment")
+			stringsJobsSubscriptionAttachment(c, &ch, x)
+		}
+	}
 	if c.mode == EmptyFields && v.CustomSubject == "" && Forced(v.ForceSendFields, "CustomSubject") {
 		ch := n.Child("custom_subject")
 		c.fn(&ch, "")
@@ -14598,6 +15306,269 @@ func stringsPipelinesIngestionPipelineDefinitionWorkdayReportParameters(c *strin
 	}
 }
 
+func stringsMlApproxCountDistinctFunction(c *stringsWalk, n *Node, v *ml.ApproxCountDistinctFunction) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.Input); c.match(s) {
+		ch := n.Child("input")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Input = (r)
+		}
+	}
+}
+
+func stringsMlApproxPercentileFunction(c *stringsWalk, n *Node, v *ml.ApproxPercentileFunction) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.Input); c.match(s) {
+		ch := n.Child("input")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Input = (r)
+		}
+	}
+}
+
+func stringsMlAvgFunction(c *stringsWalk, n *Node, v *ml.AvgFunction) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.Input); c.match(s) {
+		ch := n.Child("input")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Input = (r)
+		}
+	}
+}
+
+func stringsMlCountFunction(c *stringsWalk, n *Node, v *ml.CountFunction) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.Input); c.match(s) {
+		ch := n.Child("input")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Input = (r)
+		}
+	}
+}
+
+func stringsMlFirstFunction(c *stringsWalk, n *Node, v *ml.FirstFunction) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.Input); c.match(s) {
+		ch := n.Child("input")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Input = (r)
+		}
+	}
+}
+
+func stringsMlFirstDistinctFunction(c *stringsWalk, n *Node, v *ml.FirstDistinctFunction) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.Input); c.match(s) {
+		ch := n.Child("input")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Input = (r)
+		}
+	}
+}
+
+func stringsMlFirstNFunction(c *stringsWalk, n *Node, v *ml.FirstNFunction) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.Input); c.match(s) {
+		ch := n.Child("input")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Input = (r)
+		}
+	}
+}
+
+func stringsMlLastFunction(c *stringsWalk, n *Node, v *ml.LastFunction) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.Input); c.match(s) {
+		ch := n.Child("input")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Input = (r)
+		}
+	}
+}
+
+func stringsMlLastDistinctFunction(c *stringsWalk, n *Node, v *ml.LastDistinctFunction) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.Input); c.match(s) {
+		ch := n.Child("input")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Input = (r)
+		}
+	}
+}
+
+func stringsMlLastNFunction(c *stringsWalk, n *Node, v *ml.LastNFunction) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.Input); c.match(s) {
+		ch := n.Child("input")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Input = (r)
+		}
+	}
+}
+
+func stringsMlMaxFunction(c *stringsWalk, n *Node, v *ml.MaxFunction) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.Input); c.match(s) {
+		ch := n.Child("input")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Input = (r)
+		}
+	}
+}
+
+func stringsMlMinFunction(c *stringsWalk, n *Node, v *ml.MinFunction) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.Input); c.match(s) {
+		ch := n.Child("input")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Input = (r)
+		}
+	}
+}
+
+func stringsMlStddevPopFunction(c *stringsWalk, n *Node, v *ml.StddevPopFunction) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.Input); c.match(s) {
+		ch := n.Child("input")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Input = (r)
+		}
+	}
+}
+
+func stringsMlStddevSampFunction(c *stringsWalk, n *Node, v *ml.StddevSampFunction) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.Input); c.match(s) {
+		ch := n.Child("input")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Input = (r)
+		}
+	}
+}
+
+func stringsMlSumFunction(c *stringsWalk, n *Node, v *ml.SumFunction) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.Input); c.match(s) {
+		ch := n.Child("input")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Input = (r)
+		}
+	}
+}
+
+func stringsMlVarPopFunction(c *stringsWalk, n *Node, v *ml.VarPopFunction) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.Input); c.match(s) {
+		ch := n.Child("input")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Input = (r)
+		}
+	}
+}
+
+func stringsMlVarSampFunction(c *stringsWalk, n *Node, v *ml.VarSampFunction) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.Input); c.match(s) {
+		ch := n.Child("input")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Input = (r)
+		}
+	}
+}
+
+func stringsMlInputBinding(c *stringsWalk, n *Node, v *ml.InputBinding) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.Column); c.match(s) {
+		ch := n.Child("column")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Column = (r)
+		}
+	}
+	if s := string(v.Parameter); c.match(s) {
+		ch := n.Child("parameter")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Parameter = (r)
+		}
+	}
+}
+
+func stringsMlFeatureReference(c *stringsWalk, n *Node, v *ml.FeatureReference) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.Feature); c.match(s) {
+		ch := n.Child("feature")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Feature = (r)
+		}
+	}
+}
+
+func stringsMlColumnIdentifier(c *stringsWalk, n *Node, v *ml.ColumnIdentifier) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.VariantExprPath); c.match(s) {
+		ch := n.Child("variant_expr_path")
+		if r, ok := c.fn(&ch, s); ok {
+			v.VariantExprPath = (r)
+		}
+	}
+}
+
+func stringsMlFlatSchema(c *stringsWalk, n *Node, v *ml.FlatSchema) {
+	if n.isRef() {
+		return
+	}
+	if !n.IsRef("fields") {
+		if len(v.Fields) > 0 {
+			cn := n.Child("fields")
+			for i := range v.Fields {
+				{
+					ch := cn.Elem(i)
+					stringsMlFieldDefinition(c, &ch, &v.Fields[i])
+				}
+			}
+		}
+	}
+}
+
 func stringsServingAiGatewayGuardrailParameters(c *stringsWalk, n *Node, v *serving.AiGatewayGuardrailParameters) {
 	if n.isRef() {
 		return
@@ -15095,6 +16066,24 @@ func stringsJobsComputeSpec(c *stringsWalk, n *Node, v *jobs.ComputeSpec) {
 	}
 }
 
+func stringsJobsSubscriptionAttachment(c *stringsWalk, n *Node, v *jobs.SubscriptionAttachment) {
+	if n.isRef() {
+		return
+	}
+	if !n.IsRef("data_attachment") {
+		if x := v.DataAttachment; x != nil {
+			ch := n.Child("data_attachment")
+			stringsJobsSubscriptionAttachmentDataAttachment(c, &ch, x)
+		}
+	}
+	if !n.IsRef("page_attachment") {
+		if x := v.PageAttachment; x != nil {
+			ch := n.Child("page_attachment")
+			stringsJobsSubscriptionAttachmentPageAttachment(c, &ch, x)
+		}
+	}
+}
+
 func stringsJobsSubscriptionSubscriber(c *stringsWalk, n *Node, v *jobs.SubscriptionSubscriber) {
 	if n.isRef() {
 		return
@@ -15304,6 +16293,24 @@ func stringsPipelinesIngestionPipelineDefinitionWorkdayReportParametersQueryKeyV
 		ch := n.Child("value")
 		if r, ok := c.fn(&ch, s); ok {
 			v.Value = (r)
+		}
+	}
+}
+
+func stringsMlFieldDefinition(c *stringsWalk, n *Node, v *ml.FieldDefinition) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.DataType); c.match(s) {
+		ch := n.Child("data_type")
+		if r, ok := c.fn(&ch, s); ok {
+			v.DataType = ml.ScalarDataType(r)
+		}
+	}
+	if s := string(v.Name); c.match(s) {
+		ch := n.Child("name")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Name = (r)
 		}
 	}
 }
@@ -15880,6 +16887,54 @@ func stringsCatalogModelProviderServiceConfigCustomProviderApiKeyHeaderAuth(c *s
 		if x := v.ApiKeyValue; x != nil {
 			ch := n.Child("api_key_value")
 			stringsCatalogModelProviderServiceConfigProviderSecret(c, &ch, x)
+		}
+	}
+}
+
+func stringsJobsSubscriptionAttachmentDataAttachment(c *stringsWalk, n *Node, v *jobs.SubscriptionAttachmentDataAttachment) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.FileFormat); c.match(s) {
+		ch := n.Child("file_format")
+		if r, ok := c.fn(&ch, s); ok {
+			v.FileFormat = jobs.SubscriptionAttachmentDataAttachmentFileFormat(r)
+		}
+	}
+	if !n.IsRef("widgets") {
+		if len(v.Widgets) > 0 {
+			cn := n.Child("widgets")
+			for i := range v.Widgets {
+				{
+					ch := cn.Elem(i)
+					stringsJobsSubscriptionAttachmentDataAttachmentWidget(c, &ch, &v.Widgets[i])
+				}
+			}
+		}
+	}
+}
+
+func stringsJobsSubscriptionAttachmentPageAttachment(c *stringsWalk, n *Node, v *jobs.SubscriptionAttachmentPageAttachment) {
+	if n.isRef() {
+		return
+	}
+	if !n.IsRef("page_ids") {
+		if len(v.PageIds) > 0 {
+			cn := n.Child("page_ids")
+			for i := range v.PageIds {
+				if s := string(v.PageIds[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.PageIds[i] = (r)
+					}
+				}
+			}
+		}
+	}
+	if s := string(v.PageSelection); c.match(s) {
+		ch := n.Child("page_selection")
+		if r, ok := c.fn(&ch, s); ok {
+			v.PageSelection = jobs.SubscriptionAttachmentPageAttachmentPageSelection(r)
 		}
 	}
 }
@@ -16621,6 +17676,24 @@ func stringsCatalogModelProviderServiceConfigSecretReference(c *stringsWalk, n *
 	}
 }
 
+func stringsJobsSubscriptionAttachmentDataAttachmentWidget(c *stringsWalk, n *Node, v *jobs.SubscriptionAttachmentDataAttachmentWidget) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.PageId); c.match(s) {
+		ch := n.Child("page_id")
+		if r, ok := c.fn(&ch, s); ok {
+			v.PageId = (r)
+		}
+	}
+	if s := string(v.WidgetId); c.match(s) {
+		ch := n.Child("widget_id")
+		if r, ok := c.fn(&ch, s); ok {
+			v.WidgetId = (r)
+		}
+	}
+}
+
 func stringsPipelinesFileIngestionOptions(c *stringsWalk, n *Node, v *pipelines.FileIngestionOptions) {
 	if n.isRef() {
 		return
@@ -17198,6 +18271,12 @@ func stringsResource(c *stringsWalk, n *Node, v *config.Resources, typ, name str
 			ch := n.Child(typ)
 			rn := ch.Child(name)
 			stringsResourcesPipeline(c, &rn, x)
+		}
+	case "features":
+		if x := v.Features[name]; x != nil {
+			ch := n.Child(typ)
+			rn := ch.Child(name)
+			stringsResourcesFeature(c, &rn, x)
 		}
 	case "models":
 		if x := v.Models[name]; x != nil {
