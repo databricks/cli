@@ -1,7 +1,6 @@
 package client
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -151,17 +150,17 @@ func TestUploadReleasesSendsEachArchiveOnce(t *testing.T) {
 	const versionedDir = "/Workspace/Users/tester@databricks.test/.databricks/ssh-tunnel/1.12.0"
 
 	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
 	var mu sync.Mutex
 	var imports []string
-	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req testserver.Request) any {
-		overwrite := req.URL.Query().Get("overwrite") == "true"
-		resp := req.Workspace.WorkspaceFilesImportFile(req.Vars["path"], req.Body, overwrite)
+	server.ResponseCallback = func(req *testserver.Request, resp *testserver.EncodedResponse) {
+		if !strings.HasPrefix(req.URL.Path, "/api/2.0/workspace-files/import-file/") {
+			return
+		}
 		mu.Lock()
 		defer mu.Unlock()
-		imports = append(imports, fmt.Sprintf("%s %d", path.Base(path.Dir(req.Vars["path"])), cmp.Or(resp.StatusCode, http.StatusOK)))
-		return resp
-	})
-	testserver.AddDefaultHandlers(server)
+		imports = append(imports, fmt.Sprintf("%s %d", path.Base(path.Dir(req.URL.Path)), resp.StatusCode))
+	}
 	client, err := databricks.NewWorkspaceClient(&databricks.Config{
 		Host:  server.URL,
 		Token: "testtoken",

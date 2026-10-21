@@ -127,8 +127,6 @@ func uploadReleases(ctx context.Context, workspaceFiler filer.Filer, getRelease 
 		}
 		defer releaseReader.Close()
 
-		// import-file reports a missing parent folder only after receiving the whole archive, so
-		// create the folder up front instead of letting CreateParentDirectories upload it twice.
 		err = workspaceFiler.Mkdir(ctx, remoteSubFolder)
 		if err != nil {
 			return fmt.Errorf("failed to create directory %s in workspace: %w", remoteSubFolder, err)
@@ -137,7 +135,7 @@ func uploadReleases(ctx context.Context, workspaceFiler filer.Filer, getRelease 
 		log.Infof(ctx, "Uploading %s to the workspace", fileName)
 		// workspace-files/import-file API will automatically unzip the payload,
 		// producing the filerRoot/remoteSubFolder/*archive-contents* structure, with 'databricks' binary inside.
-		err = workspaceFiler.Write(ctx, remoteArchivePath, releaseReader, filer.OverwriteIfExists)
+		err = workspaceFiler.Write(ctx, remoteArchivePath, releaseReader, filer.OverwriteIfExists, filer.CreateParentDirectories)
 		if err != nil {
 			if isProxyUploadError(err) {
 				return fmt.Errorf("failed to upload file %s to workspace: %w\n\n"+
