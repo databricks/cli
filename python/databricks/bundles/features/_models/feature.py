@@ -46,27 +46,27 @@ class Feature(Resource):
 
     full_name: VariableOr[str]
     """
-    [Public Preview] The full three-part name (catalog, schema, name) of the feature.
+    The full three-part name (catalog, schema, name) of the feature.
     """
 
     function: VariableOr[Function]
     """
-    [Public Preview] The function by which the feature is computed.
+    The function by which the feature is computed.
     """
 
     source: VariableOr[DataSource]
     """
-    [Public Preview] The data source of the feature.
+    The data source of the feature.
     """
 
     description: VariableOrOptional[str] = None
     """
-    [Public Preview] The description of the feature.
+    The description of the feature.
     """
 
     entities: VariableOrList[EntityColumn] = field(default_factory=list)
     """
-    [Public Preview] The entity columns for the feature, used as aggregation keys and for query-time lookup.
+    The entity columns for the feature, used as aggregation keys and for query-time lookup.
     Optional since entities are not set for RequestSource features or on-demand calculated features.
     """
 
@@ -85,7 +85,7 @@ class Feature(Resource):
 
     timeseries_column: VariableOrOptional[TimeseriesColumn] = None
     """
-    [Public Preview] Column recording time, used for point-in-time joins, backfills, and aggregations.
+    Column recording time, used for point-in-time joins, backfills, and aggregations.
     Optional since a timeseries column is not set for RequestSource features or on-demand
     calculated features.
     """
@@ -103,27 +103,27 @@ class FeatureDict(TypedDict, total=False):
 
     full_name: VariableOr[str]
     """
-    [Public Preview] The full three-part name (catalog, schema, name) of the feature.
+    The full three-part name (catalog, schema, name) of the feature.
     """
 
     function: VariableOr[FunctionParam]
     """
-    [Public Preview] The function by which the feature is computed.
+    The function by which the feature is computed.
     """
 
     source: VariableOr[DataSourceParam]
     """
-    [Public Preview] The data source of the feature.
+    The data source of the feature.
     """
 
     description: VariableOrOptional[str]
     """
-    [Public Preview] The description of the feature.
+    The description of the feature.
     """
 
     entities: VariableOrList[EntityColumnParam]
     """
-    [Public Preview] The entity columns for the feature, used as aggregation keys and for query-time lookup.
+    The entity columns for the feature, used as aggregation keys and for query-time lookup.
     Optional since entities are not set for RequestSource features or on-demand calculated features.
     """
 
@@ -142,7 +142,7 @@ class FeatureDict(TypedDict, total=False):
 
     timeseries_column: VariableOrOptional[TimeseriesColumnParam]
     """
-    [Public Preview] Column recording time, used for point-in-time joins, backfills, and aggregations.
+    Column recording time, used for point-in-time joins, backfills, and aggregations.
     Optional since a timeseries column is not set for RequestSource features or on-demand
     calculated features.
     """

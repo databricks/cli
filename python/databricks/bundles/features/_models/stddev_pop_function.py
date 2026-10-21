@@ -19,7 +19,7 @@ class StddevPopFunction:
 
     input: VariableOr[str]
     """
-    [Public Preview] The input column from which the population standard deviation is computed. For Kafka sources,
+    The input column from which the population standard deviation is computed. For Kafka sources,
     use dot-prefixed path notation (e.g., "value.amount"). For nested fields, the leaf node name is used.
     Colon-prefixed notation (e.g., "value:amount") is supported for backwards
     compatibility but is deprecated; migrate to dot notation.
@@ -38,7 +38,7 @@ class StddevPopFunctionDict(TypedDict, total=False):
 
     input: VariableOr[str]
     """
-    [Public Preview] The input column from which the population standard deviation is computed. For Kafka sources,
+    The input column from which the population standard deviation is computed. For Kafka sources,
     use dot-prefixed path notation (e.g., "value.amount"). For nested fields, the leaf node name is used.
     Colon-prefixed notation (e.g., "value:amount") is supported for backwards
     compatibility but is deprecated; migrate to dot notation.

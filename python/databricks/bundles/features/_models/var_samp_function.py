@@ -19,7 +19,7 @@ class VarSampFunction:
 
     input: VariableOr[str]
     """
-    [Public Preview] The input column from which the sample variance is computed.
+    The input column from which the sample variance is computed.
     """
 
     @classmethod
@@ -35,7 +35,7 @@ class VarSampFunctionDict(TypedDict, total=False):
 
     input: VariableOr[str]
     """
-    [Public Preview] The input column from which the sample variance is computed.
+    The input column from which the sample variance is computed.
     """
 
 

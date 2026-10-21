@@ -17,7 +17,7 @@ class SlidingWindow:
 
     slide_duration: VariableOr[str]
     """
-    [Public Preview] The slide duration (interval by which windows advance, must be positive and less than duration).
+    The slide duration (interval by which windows advance, must be positive and less than duration).
     """
 
     delay: VariableOrOptional[str] = None
@@ -41,7 +41,7 @@ class SlidingWindow:
 
     window_duration: VariableOrOptional[str] = None
     """
-    [Public Preview] The duration of the sliding window. Must be positive when set; absent means lifetime
+    The duration of the sliding window. Must be positive when set; absent means lifetime
     (aggregate over the entity's entire history).
     """
 
@@ -58,7 +58,7 @@ class SlidingWindowDict(TypedDict, total=False):
 
     slide_duration: VariableOr[str]
     """
-    [Public Preview] The slide duration (interval by which windows advance, must be positive and less than duration).
+    The slide duration (interval by which windows advance, must be positive and less than duration).
     """
 
     delay: VariableOrOptional[str]
@@ -82,7 +82,7 @@ class SlidingWindowDict(TypedDict, total=False):
 
     window_duration: VariableOrOptional[str]
     """
-    [Public Preview] The duration of the sliding window. Must be positive when set; absent means lifetime
+    The duration of the sliding window. Must be positive when set; absent means lifetime
     (aggregate over the entity's entire history).
     """
 

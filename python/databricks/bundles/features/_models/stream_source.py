@@ -19,7 +19,7 @@ class StreamSource:
 
     full_name: VariableOr[str]
     """
-    [Public Preview] Three-part full name of the Stream (catalog.schema.stream).
+    Three-part full name of the Stream (catalog.schema.stream).
     """
 
     dataframe_schema: VariableOrOptional[str] = None
@@ -33,7 +33,7 @@ class StreamSource:
 
     filter_condition: VariableOrOptional[str] = None
     """
-    [Public Preview] The filter condition applied to the source data before aggregation.
+    The filter condition applied to the source data before aggregation.
     """
 
     transformation_sql: VariableOrOptional[str] = None
@@ -57,7 +57,7 @@ class StreamSourceDict(TypedDict, total=False):
 
     full_name: VariableOr[str]
     """
-    [Public Preview] Three-part full name of the Stream (catalog.schema.stream).
+    Three-part full name of the Stream (catalog.schema.stream).
     """
 
     dataframe_schema: VariableOrOptional[str]
@@ -71,7 +71,7 @@ class StreamSourceDict(TypedDict, total=False):
 
     filter_condition: VariableOrOptional[str]
     """
-    [Public Preview] The filter condition applied to the source data before aggregation.
+    The filter condition applied to the source data before aggregation.
     """
 
     transformation_sql: VariableOrOptional[str]

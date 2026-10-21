@@ -19,7 +19,7 @@ class FirstFunction:
 
     input: VariableOr[str]
     """
-    [Public Preview] The input column from which the first value is returned.
+    The input column from which the first value is returned.
     """
 
     @classmethod
@@ -35,7 +35,7 @@ class FirstFunctionDict(TypedDict, total=False):
 
     input: VariableOr[str]
     """
-    [Public Preview] The input column from which the first value is returned.
+    The input column from which the first value is returned.
     """
 
 

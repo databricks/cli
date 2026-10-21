@@ -19,7 +19,7 @@ class SumFunction:
 
     input: VariableOr[str]
     """
-    [Public Preview] The input column from which the sum is computed. For Kafka sources, use dot-prefixed path
+    The input column from which the sum is computed. For Kafka sources, use dot-prefixed path
     notation (e.g., "value.amount"). For nested fields, the leaf node name is used.
     Colon-prefixed notation (e.g., "value:amount") is supported for backwards
     compatibility but is deprecated; migrate to dot notation.
@@ -38,7 +38,7 @@ class SumFunctionDict(TypedDict, total=False):
 
     input: VariableOr[str]
     """
-    [Public Preview] The input column from which the sum is computed. For Kafka sources, use dot-prefixed path
+    The input column from which the sum is computed. For Kafka sources, use dot-prefixed path
     notation (e.g., "value.amount"). For nested fields, the leaf node name is used.
     Colon-prefixed notation (e.g., "value:amount") is supported for backwards
     compatibility but is deprecated; migrate to dot notation.

@@ -43,7 +43,7 @@ class DataSource:
 
     delta_table_source: VariableOrOptional[DeltaTableSource] = None
     """
-    [Public Preview] A Delta table data source.
+    A Delta table data source.
     """
 
     feature_view_source: VariableOrOptional[FeatureViewSource] = None
@@ -55,7 +55,7 @@ class DataSource:
 
     kafka_source: VariableOrOptional[KafkaSource] = None
     """
-    [Public Preview] A Kafka stream data source.
+    A Kafka stream data source.
     """
 
     lateness: VariableOrOptional[SourceLateness] = None
@@ -68,12 +68,12 @@ class DataSource:
 
     request_source: VariableOrOptional[RequestSource] = None
     """
-    [Public Preview] A request-time data source.
+    A request-time data source.
     """
 
     stream_source: VariableOrOptional[StreamSource] = None
     """
-    [Public Preview] A Stream data source.
+    A Stream data source.
     """
 
     @classmethod
@@ -89,7 +89,7 @@ class DataSourceDict(TypedDict, total=False):
 
     delta_table_source: VariableOrOptional[DeltaTableSourceParam]
     """
-    [Public Preview] A Delta table data source.
+    A Delta table data source.
     """
 
     feature_view_source: VariableOrOptional[FeatureViewSourceParam]
@@ -101,7 +101,7 @@ class DataSourceDict(TypedDict, total=False):
 
     kafka_source: VariableOrOptional[KafkaSourceParam]
     """
-    [Public Preview] A Kafka stream data source.
+    A Kafka stream data source.
     """
 
     lateness: VariableOrOptional[SourceLatenessParam]
@@ -114,12 +114,12 @@ class DataSourceDict(TypedDict, total=False):
 
     request_source: VariableOrOptional[RequestSourceParam]
     """
-    [Public Preview] A request-time data source.
+    A request-time data source.
     """
 
     stream_source: VariableOrOptional[StreamSourceParam]
     """
-    [Public Preview] A Stream data source.
+    A Stream data source.
     """
 
 

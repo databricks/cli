@@ -28,7 +28,7 @@ class RequestSource:
 
     flat_schema: VariableOrOptional[FlatSchema] = None
     """
-    [Public Preview] A flat schema with scalar-typed fields only.
+    A flat schema with scalar-typed fields only.
     """
 
     @classmethod
@@ -52,7 +52,7 @@ class RequestSourceDict(TypedDict, total=False):
 
     flat_schema: VariableOrOptional[FlatSchemaParam]
     """
-    [Public Preview] A flat schema with scalar-typed fields only.
+    A flat schema with scalar-typed fields only.
     """
 
 

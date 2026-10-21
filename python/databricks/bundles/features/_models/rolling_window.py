@@ -19,14 +19,14 @@ class RollingWindow:
 
     delay: VariableOrOptional[str] = None
     """
-    [Public Preview] Non-negative analytic lag that evaluates the window this far in the past. Use this for timing
+    Non-negative analytic lag that evaluates the window this far in the past. Use this for timing
     variations unrelated to source lateness, such as a 30-day count as of one week ago. If unset,
     the analytic lag is zero. It composes with source.lateness when both are set.
     """
 
     window_duration: VariableOrOptional[str] = None
     """
-    [Public Preview] The duration of the rolling window. Must be positive when set; absent means lifetime
+    The duration of the rolling window. Must be positive when set; absent means lifetime
     (aggregate over the entity's entire history).
     """
 
@@ -43,14 +43,14 @@ class RollingWindowDict(TypedDict, total=False):
 
     delay: VariableOrOptional[str]
     """
-    [Public Preview] Non-negative analytic lag that evaluates the window this far in the past. Use this for timing
+    Non-negative analytic lag that evaluates the window this far in the past. Use this for timing
     variations unrelated to source lateness, such as a 30-day count as of one week ago. If unset,
     the analytic lag is zero. It composes with source.lateness when both are set.
     """
 
     window_duration: VariableOrOptional[str]
     """
-    [Public Preview] The duration of the rolling window. Must be positive when set; absent means lifetime
+    The duration of the rolling window. Must be positive when set; absent means lifetime
     (aggregate over the entity's entire history).
     """
 

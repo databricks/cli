@@ -17,7 +17,7 @@ class TumblingWindow:
 
     window_duration: VariableOr[str]
     """
-    [Public Preview] The duration of each tumbling window (non-overlapping, fixed-duration windows).
+    The duration of each tumbling window (non-overlapping, fixed-duration windows).
     """
 
     delay: VariableOrOptional[str] = None
@@ -51,7 +51,7 @@ class TumblingWindowDict(TypedDict, total=False):
 
     window_duration: VariableOr[str]
     """
-    [Public Preview] The duration of each tumbling window (non-overlapping, fixed-duration windows).
+    The duration of each tumbling window (non-overlapping, fixed-duration windows).
     """
 
     delay: VariableOrOptional[str]

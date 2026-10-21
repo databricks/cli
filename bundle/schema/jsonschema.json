@@ -501,7 +501,7 @@
                         "x-databricks-launch-stage": "GA"
                       },
                       "driver_node_type_id": {
-                        "description": "The node type of the Spark driver.\nNote that this field is optional; if unset, the driver node type will be set as the same value\nas `node_type_id` defined above.\n\nThis field, along with node_type_id, should not be set if virtual_cluster_size is set.\nIf both driver_node_type_id, node_type_id, and virtual_cluster_size are specified, driver_node_type_id and node_type_id take precedence.",
+                        "description": "The node type of the Spark driver.\nNote that this field is optional; if unset, the driver node type will be set as the same value\nas `node_type_id` defined above.",
                         "$ref": "#/$defs/string",
                         "x-databricks-launch-stage": "GA"
                       },
@@ -1038,14 +1038,14 @@
                     "type": "object",
                     "properties": {
                       "description": {
-                        "description": "[Public Preview] The description of the feature.",
+                        "description": "The description of the feature.",
                         "$ref": "#/$defs/string",
-                        "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                        "x-databricks-launch-stage": "GA"
                       },
                       "entities": {
-                        "description": "[Public Preview] The entity columns for the feature, used as aggregation keys and for query-time lookup.\nOptional since entities are not set for RequestSource features or on-demand calculated features.",
+                        "description": "The entity columns for the feature, used as aggregation keys and for query-time lookup.\nOptional since entities are not set for RequestSource features or on-demand calculated features.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.EntityColumn",
-                        "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                        "x-databricks-launch-stage": "GA"
                       },
                       "filter_condition": {
                         "description": "[Private Preview]",
@@ -1056,14 +1056,14 @@
                         "deprecated": true
                       },
                       "full_name": {
-                        "description": "[Public Preview] The full three-part name (catalog, schema, name) of the feature.",
+                        "description": "The full three-part name (catalog, schema, name) of the feature.",
                         "$ref": "#/$defs/string",
-                        "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                        "x-databricks-launch-stage": "GA"
                       },
                       "function": {
-                        "description": "[Public Preview] The function by which the feature is computed.",
+                        "description": "The function by which the feature is computed.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.Function",
-                        "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                        "x-databricks-launch-stage": "GA"
                       },
                       "inputs": {
                         "description": "[Private Preview]",
@@ -1083,9 +1083,9 @@
                         "doNotSuggest": true
                       },
                       "source": {
-                        "description": "[Public Preview] The data source of the feature.",
+                        "description": "The data source of the feature.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.DataSource",
-                        "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                        "x-databricks-launch-stage": "GA"
                       },
                       "time_window": {
                         "description": "[Private Preview]",
@@ -1096,9 +1096,9 @@
                         "deprecated": true
                       },
                       "timeseries_column": {
-                        "description": "[Public Preview] Column recording time, used for point-in-time joins, backfills, and aggregations.\nOptional since a timeseries column is not set for RequestSource features or on-demand\ncalculated features.",
+                        "description": "Column recording time, used for point-in-time joins, backfills, and aggregations.\nOptional since a timeseries column is not set for RequestSource features or on-demand\ncalculated features.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.TimeseriesColumn",
-                        "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                        "x-databricks-launch-stage": "GA"
                       }
                     },
                     "additionalProperties": false,
@@ -1325,6 +1325,12 @@
                         "$ref": "#/$defs/string",
                         "x-databricks-launch-stage": "GA"
                       },
+                      "duration_target": {
+                        "description": "[Private Preview] The window the run aims to finish within, in hours, for a Cost-optimized serverless run.\nRequired only when `performance_target` is `COST_OPTIMIZED`. Must be one of the\nsupported values: `NO_FLEXIBILITY`, `4h`, `12h`, `24h`, `72h`. `NO_FLEXIBILITY` means the run\nuses the default cost-optimized performance level without additional cost-saving optimizations.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
                       "email_notifications": {
                         "description": "An optional set of email addresses that is notified when runs of this job begin or complete as well as when this job is deleted.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobEmailNotifications",
@@ -1501,6 +1507,12 @@
                         "deprecationMessage": "This field is deprecated",
                         "doNotSuggest": true,
                         "deprecated": true
+                      },
+                      "duration_target": {
+                        "description": "[Private Preview] The window the run aims to finish within, in hours, for a Cost-optimized serverless run.\nRequired only when `performance_target` is `COST_OPTIMIZED`. Must be one of the\nsupported values: `NO_FLEXIBILITY`, `4h`, `12h`, `24h`, `72h`. `NO_FLEXIBILITY` means the run\nuses the default cost-optimized performance level without additional cost-saving optimizations.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
                       },
                       "jar_params": {
                         "description": "[Private Preview] A list of parameters for jobs with Spark JAR tasks, for example `\"jar_params\": [\"john doe\", \"35\"]`.\nThe parameters are used to invoke the main function of the main class specified in the Spark JAR task.\nIf not specified upon `run-now`, it defaults to an empty list.\njar_params cannot be specified in conjunction with notebook_params.\nThe JSON representation of this field (for example `{\"jar_params\":[\"john doe\",\"35\"]}`) cannot exceed 10,000 bytes.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.",
@@ -5708,10 +5720,9 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "bedrock_mantle": {
-                      "description": "[Private Preview] Amazon Bedrock provider configuration.",
+                      "description": "Amazon Bedrock provider configuration.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigAmazonBedrockProviderConfig",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "GA"
                     },
                     "custom": {
                       "description": "Custom OpenAI-compatible provider configuration with bearer-token\nauthentication.",
@@ -5729,7 +5740,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "forward_unmanaged_paths": {
-                      "description": "Whether to proxy paths that AI Gateway does not recognize as configured\nprovider-native API types. Defaults to false. When true, these paths are\nforwarded unchanged to the upstream provider. When false, only\nrecognized API paths are served. Enabling this broadens the upstream API\nsurface exposed through the provider service.",
+                      "description": "Whether to proxy paths that AI Gateway does not recognize as configured\nprovider-native API types. Defaults to false. When true, these paths are\nforwarded unchanged to the upstream provider. When false, only\nrecognized API paths are served. Enabling this broadens the upstream API\nsurface exposed through the provider service. AI Gateway cannot evaluate\nService Policies on opaque unmanaged requests, so unmanaged requests are\nrejected whenever Service Policies are attached to this securable.",
                       "$ref": "#/$defs/bool",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -5754,10 +5765,9 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "pricing": {
-                      "description": "[Private Preview] Pricing configuration for this provider service. An explicitly empty\nconfiguration is retained on Create and Update and applies no adjustment.",
+                      "description": "Pricing configuration for this provider service. An explicitly empty\nconfiguration is retained on Create and Update and applies no adjustment.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigProviderPricingConfig",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "GA"
                     },
                     "provider_type": {
                       "description": "External model provider. Required on Create and immutable thereafter. Set\nthe matching provider-specific configuration, such as `openai`,\n`azure_openai`, or `amazon_bedrock`.",
@@ -6090,16 +6100,6 @@
                     "EXTERNAL_MODEL_PROVIDER_TYPE_MICROSOFT_FOUNDRY",
                     "EXTERNAL_MODEL_PROVIDER_TYPE_GEMINI_ENTERPRISE",
                     "EXTERNAL_MODEL_PROVIDER_TYPE_BEDROCK_MANTLE"
-                  ],
-                  "enumDescriptions": [
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "[Private Preview]"
                   ]
                 },
                 {
@@ -6225,10 +6225,9 @@
                   "description": "Model target configuration shared by model provider service targets and\nexternal model destinations on model services.",
                   "properties": {
                     "endpoint_route": {
-                      "description": "[Private Preview] Relative path appended to a custom provider's `base_url` for this model,\nsuch as `serve/openai/chat`. Only custom model provider service targets\nuse this field; other provider types ignore it, and model service\ndestinations reject it. Do not include URI templates, queries, or\nfragments. When empty, `base_url` is used unchanged.",
+                      "description": "Relative path appended to a custom provider's `base_url` for this model,\nsuch as `serve/openai/chat`. Nonempty values are only supported for\ncustom model provider service targets; other provider types reject them.\nModel service destinations do not support this field. Do not include\nURI templates, queries, or fragments. When empty, `base_url` is used unchanged.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "GA"
                     },
                     "model": {
                       "description": "Provider-side model identifier, such as `gpt-5` or `claude-opus-4-7`.\nThis identifies a model at the upstream provider; it is not a Unity\nCatalog model resource.",
@@ -6309,10 +6308,9 @@
                   "description": "Pricing adjustments applied to this provider service's external-model spend\nestimates.",
                   "properties": {
                     "default_discount_basis_points": {
-                      "description": "[Private Preview] Provider-wide adjustment to external-model spend estimates in basis points:\n2000 = 20% off; -2000 = a 20% markup. Negative values have no lower bound\nbeyond the int32 range. Values cannot exceed 10000 (100% off). An omitted\nvalue or zero leaves the estimate unchanged.",
+                      "description": "Provider-wide adjustment to external-model spend estimates in basis points:\n2000 = 20% off; -2000 = a 20% markup. Negative values have no lower bound\nbeyond the int32 range. Values cannot exceed 10000 (100% off). An omitted\nvalue or zero leaves the estimate unchanged.",
                       "$ref": "#/$defs/int",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false
@@ -7568,7 +7566,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "driver_node_type_id": {
-                      "description": "The node type of the Spark driver.\nNote that this field is optional; if unset, the driver node type will be set as the same value\nas `node_type_id` defined above.\n\nThis field, along with node_type_id, should not be set if virtual_cluster_size is set.\nIf both driver_node_type_id, node_type_id, and virtual_cluster_size are specified, driver_node_type_id and node_type_id take precedence.",
+                      "description": "The node type of the Spark driver.\nNote that this field is optional; if unset, the driver node type will be set as the same value\nas `node_type_id` defined above.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -11686,6 +11684,12 @@
                 {
                   "type": "object",
                   "properties": {
+                    "attachment": {
+                      "description": "[Private Preview] Optional: The configuration for the files attached to the dashboard snapshot notification. It\ncontrols the underlying data of dashboard widgets that is attached as data files and which\npages are included in the attached PDF. If not specified, the notification is sent with only\nthe default snapshot.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionAttachment",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
                     "custom_subject": {
                       "description": "Optional: Allows users to specify a custom subject line on the email sent\nto subscribers.",
                       "$ref": "#/$defs/string",
@@ -11703,6 +11707,170 @@
                     }
                   },
                   "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "jobs.SubscriptionAttachment": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "The configuration for the files attached to the dashboard snapshot notification sent to\nsubscribers. `data_attachment` describes the underlying data of dashboard widgets attached\nas data files, and `page_attachment` describes which dashboard pages are included in the\nattached PDF.",
+                  "properties": {
+                    "data_attachment": {
+                      "description": "[Private Preview] Optional: The configuration for the underlying data of dashboard widgets attached as tabular\ndata files. If not specified, no tabular data is attached.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionAttachmentDataAttachment",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "page_attachment": {
+                      "description": "[Private Preview] Optional: The selection of dashboard pages included in the attached PDF. If not specified,\nonly the first page is included.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionAttachmentPageAttachment",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "jobs.SubscriptionAttachmentDataAttachment": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "The configuration for the tabular data files attached to the dashboard snapshot. `widgets`\nlists the widgets whose data is exported and `file_format` is the output format; each\nreferenced widget's data is exported as a separate file.",
+                  "properties": {
+                    "file_format": {
+                      "description": "[Private Preview] The file format of the exported tabular data files.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionAttachmentDataAttachmentFileFormat",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "include_applied_filters": {
+                      "description": "[Private Preview] When true, the dashboard's applied filter values are included alongside the tabular data as\nan additional attached file.",
+                      "$ref": "#/$defs/bool",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "widgets": {
+                      "description": "[Private Preview] The widgets whose underlying data is exported. At least one widget must be referenced.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionAttachmentDataAttachmentWidget",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "file_format",
+                    "widgets"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "jobs.SubscriptionAttachmentDataAttachmentFileFormat": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The output format of an exported tabular data file. Must be set to a value other than\n`FILE_FORMAT_UNSPECIFIED`.",
+                  "enum": [
+                    "FILE_FORMAT_CSV",
+                    "FILE_FORMAT_TSV",
+                    "FILE_FORMAT_EXCEL"
+                  ],
+                  "enumDescriptions": [
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "jobs.SubscriptionAttachmentDataAttachmentWidget": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Identifies a dashboard widget whose data to attach. `page_id` and `widget_id` are\nthe URL identifiers from the dashboard's serialized definition returned by the Get dashboard\nAPI (`serialized_dashboard`), and together they uniquely identify the widget.",
+                  "properties": {
+                    "page_id": {
+                      "description": "[Private Preview] The URL identifier of the page containing the widget. This is the value of the `name`\nfield of the corresponding entry under `pages` in the serialized dashboard definition.\nFormat: alphanumeric, hyphen, and underscore characters allowed, max length 63.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "widget_id": {
+                      "description": "[Private Preview] The URL identifier of the widget. This is the value of the `name` field of the\ncorresponding widget under that page's `layout` in the serialized dashboard definition.\nFormat: alphanumeric, hyphen, and underscore characters allowed, max length 63.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "page_id",
+                    "widget_id"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "jobs.SubscriptionAttachmentPageAttachment": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "The selection of dashboard pages included in the attached PDF. `page_selection` chooses\nbetween all pages, the first page only, or an explicit subset listed in `page_ids`.",
+                  "properties": {
+                    "page_ids": {
+                      "description": "[Private Preview] The identifiers of the pages to include in the PDF. Only specified when `page_selection` is\n`PAGE_SELECTION_SUBSET`. Each value is the identifier of a page in the dashboard's\nserialized definition returned by the Get dashboard API (`serialized_dashboard`): the value\nof the `name` field of an entry under `pages`.\nFormat: alphanumeric, hyphen, and underscore characters allowed, max length 63.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "page_selection": {
+                      "description": "[Private Preview] How the attached pages are selected. When set to `PAGE_SELECTION_SUBSET`, the pages to\ninclude are listed in `page_ids`.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionAttachmentPageAttachmentPageSelection",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "jobs.SubscriptionAttachmentPageAttachmentPageSelection": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Determines which dashboard pages are attached to the notification.",
+                  "enum": [
+                    "PAGE_SELECTION_ALL",
+                    "PAGE_SELECTION_SUBSET"
+                  ],
+                  "enumDescriptions": [
+                    "[Private Preview]",
+                    "[Private Preview]"
+                  ]
                 },
                 {
                   "type": "string",
@@ -12308,29 +12476,29 @@
                   "description": "An aggregation function applied over a time window.",
                   "properties": {
                     "approx_count_distinct": {
-                      "description": "[Public Preview] Computes the approximate count of distinct values.",
+                      "description": "Computes the approximate count of distinct values.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ApproxCountDistinctFunction",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "approx_percentile": {
-                      "description": "[Public Preview] Computes the approximate percentile of values.",
+                      "description": "Computes the approximate percentile of values.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ApproxPercentileFunction",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "avg": {
-                      "description": "[Public Preview] Computes the average of values.",
+                      "description": "Computes the average of values.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.AvgFunction",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "count_function": {
-                      "description": "[Public Preview] Computes the count of values.",
+                      "description": "Computes the count of values.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.CountFunction",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "first": {
-                      "description": "[Public Preview] Returns the first value.",
+                      "description": "Returns the first value.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FirstFunction",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "first_distinct": {
                       "description": "[Private Preview] Returns the first N distinct values, ordered by the feature's timeseries column.",
@@ -12345,9 +12513,9 @@
                       "doNotSuggest": true
                     },
                     "last": {
-                      "description": "[Public Preview] Returns the last value.",
+                      "description": "Returns the last value.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.LastFunction",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "last_distinct": {
                       "description": "[Private Preview] Returns the last N distinct values, ordered by the feature's timeseries column.",
@@ -12362,44 +12530,44 @@
                       "doNotSuggest": true
                     },
                     "max": {
-                      "description": "[Public Preview] Computes the maximum value.",
+                      "description": "Computes the maximum value.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaxFunction",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "min": {
-                      "description": "[Public Preview] Computes the minimum value.",
+                      "description": "Computes the minimum value.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MinFunction",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "stddev_pop": {
-                      "description": "[Public Preview] Computes the population standard deviation.",
+                      "description": "Computes the population standard deviation.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.StddevPopFunction",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "stddev_samp": {
-                      "description": "[Public Preview] Computes the sample standard deviation.",
+                      "description": "Computes the sample standard deviation.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.StddevSampFunction",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "sum": {
-                      "description": "[Public Preview] Computes the sum of values.",
+                      "description": "Computes the sum of values.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.SumFunction",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "time_window": {
-                      "description": "[Public Preview] The time window over which the aggregation is computed.",
+                      "description": "The time window over which the aggregation is computed.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.TimeWindow",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "var_pop": {
-                      "description": "[Public Preview] Computes the population variance.",
+                      "description": "Computes the population variance.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.VarPopFunction",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "var_samp": {
-                      "description": "[Public Preview] Computes the sample variance.",
+                      "description": "Computes the sample variance.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.VarSampFunction",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false
@@ -12417,14 +12585,14 @@
                   "description": "Computes the approximate count of distinct values.",
                   "properties": {
                     "input": {
-                      "description": "[Public Preview] The input column from which the approximate count of distinct values is computed.",
+                      "description": "The input column from which the approximate count of distinct values is computed.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "relative_sd": {
-                      "description": "[Public Preview] The maximum relative standard deviation allowed (default defined by Spark).",
+                      "description": "The maximum relative standard deviation allowed (default defined by Spark).",
                       "$ref": "#/$defs/float64",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -12445,19 +12613,19 @@
                   "description": "Computes the approximate percentile of values.",
                   "properties": {
                     "accuracy": {
-                      "description": "[Public Preview] The accuracy parameter (higher is more accurate but slower).",
+                      "description": "The accuracy parameter (higher is more accurate but slower).",
                       "$ref": "#/$defs/int64",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "input": {
-                      "description": "[Public Preview] The input column from which the approximate percentile is computed.",
+                      "description": "The input column from which the approximate percentile is computed.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "percentile": {
-                      "description": "[Public Preview] The percentile value to compute (between 0 and 1).",
+                      "description": "The percentile value to compute (between 0 and 1).",
                       "$ref": "#/$defs/float64",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -12479,9 +12647,9 @@
                   "description": "Computes the average of values.",
                   "properties": {
                     "input": {
-                      "description": "[Public Preview] The input column from which the average is computed. For Kafka sources, use dot-prefixed path\nnotation (e.g., \"value.amount\"). For nested fields, the leaf node name is used.\nColon-prefixed notation (e.g., \"value:amount\") is supported for backwards\ncompatibility but is deprecated; migrate to dot notation.",
+                      "description": "The input column from which the average is computed. For Kafka sources, use dot-prefixed path\nnotation (e.g., \"value.amount\"). For nested fields, the leaf node name is used.\nColon-prefixed notation (e.g., \"value:amount\") is supported for backwards\ncompatibility but is deprecated; migrate to dot notation.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -12525,9 +12693,9 @@
                   "description": "A ColumnSelection function, equivalent to the LAST() record of an entity over a lifetime window",
                   "properties": {
                     "column": {
-                      "description": "[Public Preview] Column name from source to select as the feature value.",
+                      "description": "Column name from source to select as the feature value.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -12577,9 +12745,9 @@
                   "description": "Computes the count of values.",
                   "properties": {
                     "input": {
-                      "description": "[Public Preview] The input column from which the count is computed. For Kafka sources, use dot-prefixed path\nnotation (e.g., \"value.amount\"). For nested fields, the leaf node name is used.\nColon-prefixed notation (e.g., \"value:amount\") is supported for backwards\ncompatibility but is deprecated; migrate to dot notation.",
+                      "description": "The input column from which the count is computed. For Kafka sources, use dot-prefixed path\nnotation (e.g., \"value.amount\"). For nested fields, the leaf node name is used.\nColon-prefixed notation (e.g., \"value:amount\") is supported for backwards\ncompatibility but is deprecated; migrate to dot notation.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -12630,9 +12798,9 @@
                   "description": "Specifies the data source backing a feature. Exactly one source type must be set.",
                   "properties": {
                     "delta_table_source": {
-                      "description": "[Public Preview] A Delta table data source.",
+                      "description": "A Delta table data source.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.DeltaTableSource",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "feature_view_source": {
                       "description": "[Private Preview] A data source composed from registered upstream Features.",
@@ -12641,9 +12809,9 @@
                       "doNotSuggest": true
                     },
                     "kafka_source": {
-                      "description": "[Public Preview] A Kafka stream data source.",
+                      "description": "A Kafka stream data source.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.KafkaSource",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "lateness": {
                       "description": "[Private Preview] Completeness timing for this Feature's use of the source. This configuration is part of the\nFeature definition; it does not modify the underlying table or stream.",
@@ -12652,14 +12820,14 @@
                       "doNotSuggest": true
                     },
                     "request_source": {
-                      "description": "[Public Preview] A request-time data source.",
+                      "description": "A request-time data source.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.RequestSource",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "stream_source": {
-                      "description": "[Public Preview] A Stream data source.",
+                      "description": "A Stream data source.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.StreamSource",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false
@@ -12676,9 +12844,9 @@
                   "type": "object",
                   "properties": {
                     "dataframe_schema": {
-                      "description": "[Public Preview] Schema of the resulting dataframe after transformations, in Spark StructType JSON format (from df.schema.json()).\nRequired if transformation_sql is specified.\nExample: {\"type\":\"struct\",\"fields\":[{\"name\":\"col_a\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"col_c\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}}]}",
+                      "description": "Schema of the resulting dataframe after transformations, in Spark StructType JSON format (from df.schema.json()).\nRequired if transformation_sql is specified.\nExample: {\"type\":\"struct\",\"fields\":[{\"name\":\"col_a\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"col_c\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}}]}",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "entity_columns": {
                       "description": "[Private Preview]",
@@ -12689,14 +12857,14 @@
                       "deprecated": true
                     },
                     "filter_condition": {
-                      "description": "[Public Preview] Single WHERE clause to filter delta table before applying transformations. Will be row-wise evaluated, so should only include conditionals and projections.",
+                      "description": "Single WHERE clause to filter delta table before applying transformations. Will be row-wise evaluated, so should only include conditionals and projections.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "full_name": {
-                      "description": "[Public Preview] The full three-part (catalog, schema, table) name of the Delta table.",
+                      "description": "The full three-part (catalog, schema, table) name of the Delta table.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "timeseries_column": {
                       "description": "[Private Preview]",
@@ -12707,9 +12875,9 @@
                       "deprecated": true
                     },
                     "transformation_sql": {
-                      "description": "[Public Preview] A single SQL SELECT expression applied after filter_condition.\nShould contains all the columns needed (eg. \"SELECT *, col_a + col_b AS col_c FROM x.y.z WHERE col_a \u003e 0\" would have `transformation_sql` \"*, col_a + col_b AS col_c\")\nIf transformation_sql is not provided, all columns of the delta table are present in the DataSource dataframe.",
+                      "description": "A single SQL SELECT expression applied after filter_condition.\nShould contains all the columns needed (eg. \"SELECT *, col_a + col_b AS col_c FROM x.y.z WHERE col_a \u003e 0\" would have `transformation_sql` \"*, col_a + col_b AS col_c\")\nIf transformation_sql is not provided, all columns of the delta table are present in the DataSource dataframe.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -12729,9 +12897,9 @@
                   "type": "object",
                   "properties": {
                     "name": {
-                      "description": "[Public Preview] The name of the entity column. For Kafka sources, use dot-prefixed path notation to reference\nfields within the key or value schema (e.g., \"value.user_id\", \"key.partition_key\"). For nested\nfields, the leaf node name (e.g., \"user_id\" from \"value.trip_details.user_id\") is what will\nbe present in materialized tables and expected to match at query time.\nColon-prefixed notation (e.g., \"value:user_id\") is supported for backwards\ncompatibility but is deprecated; migrate to dot notation.",
+                      "description": "The name of the entity column. For Kafka sources, use dot-prefixed path notation to reference\nfields within the key or value schema (e.g., \"value.user_id\", \"key.partition_key\"). For nested\nfields, the leaf node name (e.g., \"user_id\" from \"value.trip_details.user_id\") is what will\nbe present in materialized tables and expected to match at query time.\nColon-prefixed notation (e.g., \"value:user_id\") is supported for backwards\ncompatibility but is deprecated; migrate to dot notation.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -12860,14 +13028,14 @@
                   "description": "A single field definition within a FlatSchema, specifying the field name and its scalar data type.\nDoes not support nested or complex types (arrays, maps, structs).",
                   "properties": {
                     "data_type": {
-                      "description": "[Public Preview] The scalar data type of the field.",
+                      "description": "The scalar data type of the field.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ScalarDataType",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "name": {
-                      "description": "[Public Preview] The name of the field.",
+                      "description": "The name of the field.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -12920,9 +13088,9 @@
                   "description": "Returns the first value.",
                   "properties": {
                     "input": {
-                      "description": "[Public Preview] The input column from which the first value is returned.",
+                      "description": "The input column from which the first value is returned.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -12974,9 +13142,9 @@
                   "description": "A flat (non-nested) schema for request-time fields, defined as an ordered list of field definitions.\nThis schema only supports scalar types.",
                   "properties": {
                     "fields": {
-                      "description": "[Public Preview] The list of fields in this schema.",
+                      "description": "The list of fields in this schema.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.FieldDefinition",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -12996,14 +13164,14 @@
                   "type": "object",
                   "properties": {
                     "aggregation_function": {
-                      "description": "[Public Preview] An aggregation function applied over a time window.",
+                      "description": "An aggregation function applied over a time window.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.AggregationFunction",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "column_selection": {
-                      "description": "[Public Preview] Selects the latest value of a single column in a data source",
+                      "description": "Selects the latest value of a single column in a data source",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ColumnSelection",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "custom_udf": {
                       "description": "[Private Preview] Applies a registered Unity Catalog function row-wise to source columns.",
@@ -13180,14 +13348,14 @@
                       "deprecated": true
                     },
                     "filter_condition": {
-                      "description": "[Public Preview] The filter condition applied to the source data before aggregation.",
+                      "description": "The filter condition applied to the source data before aggregation.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "name": {
-                      "description": "[Public Preview] Name of the Kafka source, used to identify it. This is used to look up the corresponding KafkaConfig object. Can be distinct from topic name.",
+                      "description": "Name of the Kafka source, used to identify it. This is used to look up the corresponding KafkaConfig object. Can be distinct from topic name.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "timeseries_column_identifier": {
                       "description": "[Private Preview]",
@@ -13247,9 +13415,9 @@
                   "description": "Returns the last value.",
                   "properties": {
                     "input": {
-                      "description": "[Public Preview] The input column from which the last value is returned.",
+                      "description": "The input column from which the last value is returned.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -13328,9 +13496,9 @@
                   "description": "Computes the maximum value.",
                   "properties": {
                     "input": {
-                      "description": "[Public Preview] The input column from which the maximum is computed.",
+                      "description": "The input column from which the maximum is computed.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -13351,9 +13519,9 @@
                   "description": "Computes the minimum value.",
                   "properties": {
                     "input": {
-                      "description": "[Public Preview] The input column from which the minimum is computed.",
+                      "description": "The input column from which the minimum is computed.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -13424,9 +13592,9 @@
                       "doNotSuggest": true
                     },
                     "flat_schema": {
-                      "description": "[Public Preview] A flat schema with scalar-typed fields only.",
+                      "description": "A flat schema with scalar-typed fields only.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FlatSchema",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false
@@ -13444,14 +13612,14 @@
                   "description": "A rolling time window with an optional non-negative delay.",
                   "properties": {
                     "delay": {
-                      "description": "[Public Preview] Non-negative analytic lag that evaluates the window this far in the past. Use this for timing\nvariations unrelated to source lateness, such as a 30-day count as of one week ago. If unset,\nthe analytic lag is zero. It composes with source.lateness when both are set.",
+                      "description": "Non-negative analytic lag that evaluates the window this far in the past. Use this for timing\nvariations unrelated to source lateness, such as a 30-day count as of one week ago. If unset,\nthe analytic lag is zero. It composes with source.lateness when both are set.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "window_duration": {
-                      "description": "[Public Preview] The duration of the rolling window. Must be positive when set; absent means lifetime\n(aggregate over the entity's entire history).",
+                      "description": "The duration of the rolling window. Must be positive when set; absent means lifetime\n(aggregate over the entity's entire history).",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false
@@ -13506,19 +13674,6 @@
                     "SHORT",
                     "BINARY",
                     "DECIMAL"
-                  ],
-                  "enumDescriptions": [
-                    "[Public Preview]",
-                    "[Public Preview]",
-                    "[Public Preview]",
-                    "[Public Preview]",
-                    "[Public Preview]",
-                    "[Public Preview]",
-                    "[Public Preview]",
-                    "[Public Preview]",
-                    "[Public Preview]",
-                    "[Public Preview]",
-                    "[Public Preview]"
                   ]
                 },
                 {
@@ -13545,14 +13700,14 @@
                       "doNotSuggest": true
                     },
                     "slide_duration": {
-                      "description": "[Public Preview] The slide duration (interval by which windows advance, must be positive and less than duration).",
+                      "description": "The slide duration (interval by which windows advance, must be positive and less than duration).",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "window_duration": {
-                      "description": "[Public Preview] The duration of the sliding window. Must be positive when set; absent means lifetime\n(aggregate over the entity's entire history).",
+                      "description": "The duration of the sliding window. Must be positive when set; absent means lifetime\n(aggregate over the entity's entire history).",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -13594,9 +13749,9 @@
                   "description": "Computes the population standard deviation.",
                   "properties": {
                     "input": {
-                      "description": "[Public Preview] The input column from which the population standard deviation is computed. For Kafka sources,\nuse dot-prefixed path notation (e.g., \"value.amount\"). For nested fields, the leaf node name is used.\nColon-prefixed notation (e.g., \"value:amount\") is supported for backwards\ncompatibility but is deprecated; migrate to dot notation.",
+                      "description": "The input column from which the population standard deviation is computed. For Kafka sources,\nuse dot-prefixed path notation (e.g., \"value.amount\"). For nested fields, the leaf node name is used.\nColon-prefixed notation (e.g., \"value:amount\") is supported for backwards\ncompatibility but is deprecated; migrate to dot notation.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -13617,9 +13772,9 @@
                   "description": "Computes the sample standard deviation.",
                   "properties": {
                     "input": {
-                      "description": "[Public Preview] The input column from which the sample standard deviation is computed.",
+                      "description": "The input column from which the sample standard deviation is computed.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -13646,14 +13801,14 @@
                       "doNotSuggest": true
                     },
                     "filter_condition": {
-                      "description": "[Public Preview] The filter condition applied to the source data before aggregation.",
+                      "description": "The filter condition applied to the source data before aggregation.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "full_name": {
-                      "description": "[Public Preview] Three-part full name of the Stream (catalog.schema.stream).",
+                      "description": "Three-part full name of the Stream (catalog.schema.stream).",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "transformation_sql": {
                       "description": "[Private Preview] The pipeline runs these SQL statements immediately after conversion into\nthe schema specified on the Stream object.",
@@ -13680,9 +13835,9 @@
                   "description": "Computes the sum of values.",
                   "properties": {
                     "input": {
-                      "description": "[Public Preview] The input column from which the sum is computed. For Kafka sources, use dot-prefixed path\nnotation (e.g., \"value.amount\"). For nested fields, the leaf node name is used.\nColon-prefixed notation (e.g., \"value:amount\") is supported for backwards\ncompatibility but is deprecated; migrate to dot notation.",
+                      "description": "The input column from which the sum is computed. For Kafka sources, use dot-prefixed path\nnotation (e.g., \"value.amount\"). For nested fields, the leaf node name is used.\nColon-prefixed notation (e.g., \"value:amount\") is supported for backwards\ncompatibility but is deprecated; migrate to dot notation.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -13710,9 +13865,9 @@
                       "deprecated": true
                     },
                     "rolling": {
-                      "description": "[Public Preview] A rolling time window with an optional non-negative delay.",
+                      "description": "A rolling time window with an optional non-negative delay.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.RollingWindow",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "sawtooth": {
                       "description": "[Private Preview] A sawtooth window served via the hybrid batch + streaming path.",
@@ -13721,9 +13876,8 @@
                       "doNotSuggest": true
                     },
                     "sliding": {
-                      "description": "[Public Preview]",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.SlidingWindow",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "start_time": {
                       "description": "[Private Preview] Earliest event-time boundary at which the Feature may emit an output. This gates outputs, not\nthe historical inputs read by a window. For example, a 365-day window with\nstart_time=2026-01-01 begins emitting partial-window values on that date instead of waiting\nfor 365 days of data; a lifetime window produces no output before start_time. If unset,\ntumbling and fixed-duration sliding windows first emit at an offset-aligned boundary after a\nfull window can be formed. If unset, lifetime sliding windows and rolling windows emit as soon as\neligible source data exists.\nNot currently supported for sawtooth windows or for Features with a stream source.",
@@ -13732,9 +13886,8 @@
                       "doNotSuggest": true
                     },
                     "tumbling": {
-                      "description": "[Public Preview]",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.TumblingWindow",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false
@@ -13751,9 +13904,9 @@
                   "type": "object",
                   "properties": {
                     "name": {
-                      "description": "[Public Preview] The name of the timeseries column. For Kafka sources, use dot-prefixed path notation to\nreference fields within the key or value schema (e.g., \"value.event_timestamp\"). For nested\nfields, the leaf node name (e.g., \"event_timestamp\" from \"value.event_details.event_timestamp\")\nis what will be present in materialized tables and expected to match at query time.\nColon-prefixed notation (e.g., \"value:event_timestamp\") is supported for\nbackwards compatibility but is deprecated; migrate to dot notation.",
+                      "description": "The name of the timeseries column. For Kafka sources, use dot-prefixed path notation to\nreference fields within the key or value schema (e.g., \"value.event_timestamp\"). For nested\nfields, the leaf node name (e.g., \"event_timestamp\" from \"value.event_details.event_timestamp\")\nis what will be present in materialized tables and expected to match at query time.\nColon-prefixed notation (e.g., \"value:event_timestamp\") is supported for\nbackwards compatibility but is deprecated; migrate to dot notation.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -13785,9 +13938,9 @@
                       "doNotSuggest": true
                     },
                     "window_duration": {
-                      "description": "[Public Preview] The duration of each tumbling window (non-overlapping, fixed-duration windows).",
+                      "description": "The duration of each tumbling window (non-overlapping, fixed-duration windows).",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -13845,9 +13998,9 @@
                   "description": "Computes the population variance.",
                   "properties": {
                     "input": {
-                      "description": "[Public Preview] The input column from which the population variance is computed.",
+                      "description": "The input column from which the population variance is computed.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -13868,9 +14021,9 @@
                   "description": "Computes the sample variance.",
                   "properties": {
                     "input": {
-                      "description": "[Public Preview] The input column from which the sample variance is computed.",
+                      "description": "The input column from which the sample variance is computed.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -14942,6 +15095,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Type of source system that a managed ingestion pipeline reads from.",
                   "enum": [
                     "MYSQL",
                     "POSTGRESQL",
@@ -19183,7 +19337,14 @@
                   "enum": [
                     "TYPE_UNSPECIFIED",
                     "CLASSIC",
-                    "PRO"
+                    "PRO",
+                    "REALTIME"
+                  ],
+                  "enumDescriptions": [
+                    "",
+                    "",
+                    "",
+                    "[Private Preview]"
                   ]
                 },
                 {
@@ -20913,6 +21074,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SqlTaskSubscription"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "jobs.SubscriptionAttachmentDataAttachmentWidget": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionAttachmentDataAttachmentWidget"
                     }
                   },
                   {

@@ -24,12 +24,12 @@ class FieldDefinition:
 
     data_type: VariableOr[ScalarDataType]
     """
-    [Public Preview] The scalar data type of the field.
+    The scalar data type of the field.
     """
 
     name: VariableOr[str]
     """
-    [Public Preview] The name of the field.
+    The name of the field.
     """
 
     @classmethod
@@ -45,12 +45,12 @@ class FieldDefinitionDict(TypedDict, total=False):
 
     data_type: VariableOr[ScalarDataTypeParam]
     """
-    [Public Preview] The scalar data type of the field.
+    The scalar data type of the field.
     """
 
     name: VariableOr[str]
     """
-    [Public Preview] The name of the field.
+    The name of the field.
     """
 
 

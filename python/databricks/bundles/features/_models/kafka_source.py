@@ -17,12 +17,12 @@ class KafkaSource:
 
     name: VariableOr[str]
     """
-    [Public Preview] Name of the Kafka source, used to identify it. This is used to look up the corresponding KafkaConfig object. Can be distinct from topic name.
+    Name of the Kafka source, used to identify it. This is used to look up the corresponding KafkaConfig object. Can be distinct from topic name.
     """
 
     filter_condition: VariableOrOptional[str] = None
     """
-    [Public Preview] The filter condition applied to the source data before aggregation.
+    The filter condition applied to the source data before aggregation.
     """
 
     @classmethod
@@ -38,12 +38,12 @@ class KafkaSourceDict(TypedDict, total=False):
 
     name: VariableOr[str]
     """
-    [Public Preview] Name of the Kafka source, used to identify it. This is used to look up the corresponding KafkaConfig object. Can be distinct from topic name.
+    Name of the Kafka source, used to identify it. This is used to look up the corresponding KafkaConfig object. Can be distinct from topic name.
     """
 
     filter_condition: VariableOrOptional[str]
     """
-    [Public Preview] The filter condition applied to the source data before aggregation.
+    The filter condition applied to the source data before aggregation.
     """
 
 

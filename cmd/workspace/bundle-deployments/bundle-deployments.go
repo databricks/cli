@@ -746,6 +746,7 @@ func newListDeployments() *cobra.Command {
 	var listDeploymentsLimit int
 
 	cmd.Flags().IntVar(&listDeploymentsReq.PageSize, "page-size", listDeploymentsReq.PageSize, `The maximum number of deployments to return.`)
+	cmd.Flags().BoolVar(&listDeploymentsReq.ShowDeleted, "show-deleted", listDeploymentsReq.ShowDeleted, `Whether to include soft-deleted deployments in the response.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listDeploymentsLimit, "limit", 0, `Maximum number of results to return.`)
