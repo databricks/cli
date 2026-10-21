@@ -21,7 +21,8 @@ const userWorkspaceDirEnv = "DATABRICKS_INTERNAL_USER_WORKSPACE_DIR"
 
 // currentUserEmail returns the authenticated user's email (works for any domain).
 func currentUserEmail(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
-	me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
+	// Only userName is needed; the full response also resolves groups and entitlements.
+	me, err := w.CurrentUser.Me(ctx, iam.MeRequest{Attributes: "userName"})
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve current user: %w", err)
 	}
