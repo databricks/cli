@@ -25,9 +25,15 @@ title "5. Destroy follows recorded state; redeploy starts a new history"
 rm -f .databricks/bundle/default/resources.json.wal
 # Turn history off to check that destroy still follows the recorded backend.
 trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false $CLI bundle destroy --auto-approve
+title "Fresh history: version 1 creates the job without migration"
+rm -f "$OUT_REQUESTS"
 trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
+trace print_requests.py --dms //api/2.0/bundle --oneline
 trace find.py 'resources[.]json[.]wal' --expect 0
 trace jq '{state_version, features}' .databricks/bundle/default/resources.json
+DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true replace_ids.py
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-existing-state-${UNIQUE_NAME}/default/state/resources.deployment.json" -o json | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+add_repl "$deployment_id" DEPLOYMENT_ID
 
-# Registration payloads, versions, and backups are covered by the migration test.
+# Drop telemetry and state probes recorded after the fresh-deployment assertion above.
 rm -f "$OUT_REQUESTS"
