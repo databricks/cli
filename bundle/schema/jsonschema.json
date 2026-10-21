@@ -2449,7 +2449,7 @@
                 "oneOf": [
                   {
                     "type": "object",
-                    "description": "[Private Preview] Desired PostgREST configuration (input).",
+                    "description": "[Private Preview] The Data API (a PostgREST-compatible REST interface) of a Postgres database on a Lakebase Autoscaling branch. A database has at most one Data API. Its serving URL is available as `status.url`; reference it as `${resources.postgres_data_apis.\u003ckey\u003e.status.url}`. Durations use the protobuf seconds format, such as `300s`.",
                     "properties": {
                       "db_aggregates_enabled": {
                         "description": "[Private Preview] Enable aggregate functions (count, sum, avg, etc.) in Data API responses.\nDefault: true.",
@@ -17148,7 +17148,7 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "Controls how the Data API exposes the OpenAPI documentation endpoint.\nOnly IGNORE_PRIVILEGES and DISABLED are supported today; \"follow-privileges\"\nis not implemented yet (it may be added later as value 3 — adding new enum\nvalues is backward-compatible).",
+                  "description": "Controls how the Data API exposes the OpenAPI documentation endpoint. `OPEN_API_MODE_IGNORE_PRIVILEGES` serves the OpenAPI document without filtering it by the caller's privileges; `OPEN_API_MODE_DISABLED` turns the endpoint off.",
                   "enum": [
                     "OPEN_API_MODE_IGNORE_PRIVILEGES",
                     "OPEN_API_MODE_DISABLED"
