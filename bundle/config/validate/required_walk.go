@@ -1649,6 +1649,9 @@ func requiredJobsTask(w *walker, n *node, v *jobs.Task) {
 	if c := n.child("condition_task"); c.exists() {
 		requiredJobsConditionTask(w, &c, v.ConditionTask)
 	}
+	if c := n.child("dashboard_task"); c.exists() {
+		requiredJobsDashboardTask(w, &c, v.DashboardTask)
+	}
 	if c := n.child("dbt_task"); c.exists() {
 		requiredJobsDbtTask(w, &c, v.DbtTask)
 	}
@@ -2788,6 +2791,15 @@ func requiredJobsConditionTask(w *walker, n *node, v *jobs.ConditionTask) {
 	}
 }
 
+func requiredJobsDashboardTask(w *walker, n *node, v *jobs.DashboardTask) {
+	if v == nil {
+		v = &jobs.DashboardTask{}
+	}
+	if c := n.child("subscription"); c.exists() {
+		requiredJobsSubscription(w, &c, v.Subscription)
+	}
+}
+
 func requiredJobsDbtTask(w *walker, n *node, v *jobs.DbtTask) {
 	if v == nil {
 		v = &jobs.DbtTask{}
@@ -3475,6 +3487,15 @@ func requiredJobsDeploymentSpec(w *walker, n *node, v *jobs.DeploymentSpec) {
 	}
 }
 
+func requiredJobsSubscription(w *walker, n *node, v *jobs.Subscription) {
+	if v == nil {
+		v = &jobs.Subscription{}
+	}
+	if c := n.child("attachment"); c.exists() {
+		requiredJobsSubscriptionAttachment(w, &c, v.Attachment)
+	}
+}
+
 func requiredJobsTask2(w *walker, n *node, v *jobs.Task) {
 	if v == nil {
 		v = &jobs.Task{}
@@ -3490,6 +3511,9 @@ func requiredJobsTask2(w *walker, n *node, v *jobs.Task) {
 	}
 	if c := n.child("condition_task"); c.exists() {
 		requiredJobsConditionTask(w, &c, v.ConditionTask)
+	}
+	if c := n.child("dashboard_task"); c.exists() {
+		requiredJobsDashboardTask(w, &c, v.DashboardTask)
 	}
 	if c := n.child("dbt_task"); c.exists() {
 		requiredJobsDbtTask(w, &c, v.DbtTask)
@@ -3829,6 +3853,15 @@ func requiredJobsComputeSpec(w *walker, n *node, v *jobs.ComputeSpec) {
 	}
 }
 
+func requiredJobsSubscriptionAttachment(w *walker, n *node, v *jobs.SubscriptionAttachment) {
+	if v == nil {
+		v = &jobs.SubscriptionAttachment{}
+	}
+	if c := n.child("data_attachment"); c.exists() {
+		requiredJobsSubscriptionAttachmentDataAttachment(w, &c, v.DataAttachment)
+	}
+}
+
 func requiredJobsForEachTask2(w *walker, n *node, v *jobs.ForEachTask) {
 	if v == nil {
 		v = &jobs.ForEachTask{}
@@ -3979,6 +4012,25 @@ func requiredPipelinesConnectorOptions(w *walker, n *node, v *pipelines.Connecto
 	}
 }
 
+func requiredJobsSubscriptionAttachmentDataAttachment(w *walker, n *node, v *jobs.SubscriptionAttachmentDataAttachment) {
+	if v == nil {
+		v = &jobs.SubscriptionAttachmentDataAttachment{}
+	}
+	if !(v.FileFormat != "") && !n.has("file_format") {
+		w.missing(n, "file_format")
+	}
+	if !(v.Widgets != nil) && !n.has("widgets") {
+		w.missing(n, "widgets")
+	}
+	if len(v.Widgets) > 0 {
+		c := n.child("widgets")
+		for i0 := range v.Widgets {
+			e := c.elem(i0)
+			requiredJobsSubscriptionAttachmentDataAttachmentWidget(w, &e, &v.Widgets[i0])
+		}
+	}
+}
+
 func requiredCatalogModelProviderServiceConfigSecretReference(w *walker, n *node, v *catalog.ModelProviderServiceConfigSecretReference) {
 	if v == nil {
 		v = &catalog.ModelProviderServiceConfigSecretReference{}
@@ -4024,6 +4076,18 @@ func requiredPipelinesRabbitmqOptions(w *walker, n *node, v *pipelines.RabbitmqO
 	}
 	if !(v.Queue != "") && !n.has("queue") {
 		w.missing(n, "queue")
+	}
+}
+
+func requiredJobsSubscriptionAttachmentDataAttachmentWidget(w *walker, n *node, v *jobs.SubscriptionAttachmentDataAttachmentWidget) {
+	if v == nil {
+		v = &jobs.SubscriptionAttachmentDataAttachmentWidget{}
+	}
+	if !(v.PageId != "") && !n.has("page_id") {
+		w.missing(n, "page_id")
+	}
+	if !(v.WidgetId != "") && !n.has("widget_id") {
+		w.missing(n, "widget_id")
 	}
 }
 

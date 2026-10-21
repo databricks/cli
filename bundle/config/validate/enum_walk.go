@@ -173,6 +173,10 @@ var enumValuesJobsSqlConditionTriggerMode = []string{"QUERY_RETURNS_ROWS", "RESU
 
 var enumValuesJobsStorageMode = []string{"DIRECT_QUERY", "DUAL", "IMPORT"}
 
+var enumValuesJobsSubscriptionAttachmentDataAttachmentFileFormat = []string{"FILE_FORMAT_CSV", "FILE_FORMAT_EXCEL", "FILE_FORMAT_TSV"}
+
+var enumValuesJobsSubscriptionAttachmentPageAttachmentPageSelection = []string{"PAGE_SELECTION_ALL", "PAGE_SELECTION_SUBSET"}
+
 var enumValuesJobsTaskRetryMode = []string{"NEVER", "ON_FAILURE"}
 
 var enumValuesMlExperimentPermissionLevel = []string{"CAN_EDIT", "CAN_MANAGE", "CAN_READ"}
@@ -275,7 +279,7 @@ var enumValuesSqlChannelName = []string{"CHANNEL_NAME_CURRENT", "CHANNEL_NAME_CU
 
 var enumValuesSqlComparisonOperator = []string{"EQUAL", "GREATER_THAN", "GREATER_THAN_OR_EQUAL", "IS_NOT_NULL", "IS_NULL", "LESS_THAN", "LESS_THAN_OR_EQUAL", "NOT_EQUAL"}
 
-var enumValuesSqlCreateWarehouseRequestWarehouseType = []string{"CLASSIC", "PRO", "TYPE_UNSPECIFIED"}
+var enumValuesSqlCreateWarehouseRequestWarehouseType = []string{"CLASSIC", "PRO", "REALTIME", "TYPE_UNSPECIFIED"}
 
 var enumValuesSqlCustomTemplateFormat = []string{"HTML", "MARKDOWN"}
 
@@ -1505,6 +1509,9 @@ func enumJobsTask(w *walker, n *node, v *jobs.Task) {
 	if c := n.child("condition_task"); c.exists() {
 		enumJobsConditionTask(w, &c, v.ConditionTask)
 	}
+	if c := n.child("dashboard_task"); c.exists() {
+		enumJobsDashboardTask(w, &c, v.DashboardTask)
+	}
 	if c := n.child("dbt_task"); c.exists() {
 		enumJobsDbtTask(w, &c, v.DbtTask)
 	}
@@ -2066,6 +2073,15 @@ func enumJobsConditionTask(w *walker, n *node, v *jobs.ConditionTask) {
 	w.enumField(n, "op", string(v.Op), enumValuesJobsConditionTaskOp)
 }
 
+func enumJobsDashboardTask(w *walker, n *node, v *jobs.DashboardTask) {
+	if v == nil {
+		v = &jobs.DashboardTask{}
+	}
+	if c := n.child("subscription"); c.exists() {
+		enumJobsSubscription(w, &c, v.Subscription)
+	}
+}
+
 func enumJobsDbtTask(w *walker, n *node, v *jobs.DbtTask) {
 	if v == nil {
 		v = &jobs.DbtTask{}
@@ -2332,6 +2348,15 @@ func enumJobsDeploymentSpec(w *walker, n *node, v *jobs.DeploymentSpec) {
 	}
 }
 
+func enumJobsSubscription(w *walker, n *node, v *jobs.Subscription) {
+	if v == nil {
+		v = &jobs.Subscription{}
+	}
+	if c := n.child("attachment"); c.exists() {
+		enumJobsSubscriptionAttachment(w, &c, v.Attachment)
+	}
+}
+
 func enumJobsTask2(w *walker, n *node, v *jobs.Task) {
 	if v == nil {
 		v = &jobs.Task{}
@@ -2344,6 +2369,9 @@ func enumJobsTask2(w *walker, n *node, v *jobs.Task) {
 	}
 	if c := n.child("condition_task"); c.exists() {
 		enumJobsConditionTask(w, &c, v.ConditionTask)
+	}
+	if c := n.child("dashboard_task"); c.exists() {
+		enumJobsDashboardTask(w, &c, v.DashboardTask)
 	}
 	if c := n.child("dbt_task"); c.exists() {
 		enumJobsDbtTask(w, &c, v.DbtTask)
@@ -2490,6 +2518,18 @@ func enumJobsComputeSpec(w *walker, n *node, v *jobs.ComputeSpec) {
 	w.enumField(n, "accelerator_type", string(v.AcceleratorType), enumValuesJobsComputeSpecAcceleratorType)
 }
 
+func enumJobsSubscriptionAttachment(w *walker, n *node, v *jobs.SubscriptionAttachment) {
+	if v == nil {
+		v = &jobs.SubscriptionAttachment{}
+	}
+	if c := n.child("data_attachment"); c.exists() {
+		enumJobsSubscriptionAttachmentDataAttachment(w, &c, v.DataAttachment)
+	}
+	if c := n.child("page_attachment"); c.exists() {
+		enumJobsSubscriptionAttachmentPageAttachment(w, &c, v.PageAttachment)
+	}
+}
+
 func enumServingAiGatewayGuardrailPiiBehavior(w *walker, n *node, v *serving.AiGatewayGuardrailPiiBehavior) {
 	if v == nil {
 		v = &serving.AiGatewayGuardrailPiiBehavior{}
@@ -2539,6 +2579,20 @@ func enumPipelinesIngestionPipelineDefinitionFanoutOptions(w *walker, n *node, v
 			enumPipelinesTransformer(w, &e, &v.Transforms[i0])
 		}
 	}
+}
+
+func enumJobsSubscriptionAttachmentDataAttachment(w *walker, n *node, v *jobs.SubscriptionAttachmentDataAttachment) {
+	if v == nil {
+		v = &jobs.SubscriptionAttachmentDataAttachment{}
+	}
+	w.enumField(n, "file_format", string(v.FileFormat), enumValuesJobsSubscriptionAttachmentDataAttachmentFileFormat)
+}
+
+func enumJobsSubscriptionAttachmentPageAttachment(w *walker, n *node, v *jobs.SubscriptionAttachmentPageAttachment) {
+	if v == nil {
+		v = &jobs.SubscriptionAttachmentPageAttachment{}
+	}
+	w.enumField(n, "page_selection", string(v.PageSelection), enumValuesJobsSubscriptionAttachmentPageAttachmentPageSelection)
 }
 
 func enumPipelinesGoogleDriveOptions(w *walker, n *node, v *pipelines.GoogleDriveOptions) {
