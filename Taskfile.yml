@@ -6,7 +6,9 @@ vars:
   EXE_EXT: '{{if eq OS "windows"}}.exe{{end}}'
   # Pinned ruff (linter + formatter). Keep in sync with the version in
   # .github/workflows/check.yml and python/Taskfile.yml.
-  RUFF: uvx ruff@0.15.17
+  # `uv tool run` rather than its `uvx` alias: the SDK bumper's image ships
+  # only the `uv` binary.
+  RUFF: uv tool run ruff@0.15.17
   TEST_PACKAGES: ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... .
   ACCEPTANCE_TEST_FILTER: ""
   # Single brace-expansion glob covering every //go:embed target in the repo,

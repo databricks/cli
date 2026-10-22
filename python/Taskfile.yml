@@ -44,8 +44,8 @@ tasks:
     cmds:
       # Pinned to match the global ruff version (see root Taskfile fmt-python and
       # .github/workflows/check.yml). ruff config lives in ../ruff.toml.
-      - uvx ruff@0.15.17 check --fix databricks databricks_tests || true
-      - uvx ruff@0.15.17 format
+      - uv tool run ruff@0.15.17 check --fix databricks databricks_tests || true
+      - uv tool run ruff@0.15.17 format
 
   pydabs-docs:
     desc: Generate pydabs documentation
@@ -84,8 +84,9 @@ tasks:
       - cd codegen && uv run -m pytest codegen_tests
       - cd codegen && uv run -m codegen.main --output ..
       # Generated code is fixed and formatted by the global ruff (see ../ruff.toml).
-      - uvx ruff@0.15.17 check --fix databricks databricks_tests || true
-      - uvx ruff@0.15.17 format
+      # `uv tool run`, not `uvx`: the SDK bumper runs this with only `uv` installed.
+      - uv tool run ruff@0.15.17 check --fix databricks databricks_tests || true
+      - uv tool run ruff@0.15.17 format
       # The `uv run` invocations above rewrite the lockfiles with the internal
       # *.databricks.com PyPI proxy URL when uv/pip is proxy-configured (locally
       # or via setup-jfrog in CI). That is environment noise, not codegen output;
