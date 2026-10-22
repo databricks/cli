@@ -3,6 +3,12 @@ version: '3'
 # Tasks for the python/databricks-bundles package. Included from the root
 # Taskfile via `includes:` with `flatten: true`, so `./task pydabs-codegen`
 # works from the repo root and `task pydabs-codegen` works from this dir.
+#
+# The `uv run` invocations below pass `--frozen` so uv consumes the committed
+# uv.lock without re-resolving. A plain `uv run` rewrites the lockfile's URLs to
+# the internal *.databricks.com PyPI proxy whenever uv/pip is proxy-configured
+# (locally or via setup-jfrog in CI), which is environment noise, not a real
+# change.
 
 tasks:
   default:
@@ -22,7 +28,7 @@ tasks:
       - README.md
       - LICENSE
     cmds:
-      - "uv run python -m pytest databricks_tests --cov=databricks.bundles --cov-report html -vv"
+      - "uv run --frozen python -m pytest databricks_tests --cov=databricks.bundles --cov-report html -vv"
 
   pydabs-lint:
     desc: Run pydabs type checks (ruff lint/format is global, see root `lint-python` / `fmt-python`)
@@ -34,7 +40,7 @@ tasks:
       - LICENSE
     cmds:
       - "uv lock --check"
-      - "uv run pyright"
+      - "uv run --frozen pyright"
 
   pydabs-fmt:
     desc: Lint-fix and format pydabs code with the global ruff
@@ -59,7 +65,7 @@ tasks:
     generates:
       - docs/_output/**
     cmds:
-      - "uv run --python 3.12 sphinx-build docs docs/_output --show-traceback --nitpicky --fresh-env --keep-going -W"
+      - "uv run --python 3.12 --frozen sphinx-build docs docs/_output --show-traceback --nitpicky --fresh-env --keep-going -W"
 
   pydabs-codegen:
     desc: Run pydabs codegen
@@ -81,16 +87,11 @@ tasks:
       - rm -rf databricks/bundles/core/_generated
       # test_resources.py is hand-written except for the generated TestCase data.
       - rm -rf databricks_tests/core/_generated
-      - cd codegen && uv run -m pytest codegen_tests
-      - cd codegen && uv run -m codegen.main --output ..
+      - cd codegen && uv run --frozen -m pytest codegen_tests
+      - cd codegen && uv run --frozen -m codegen.main --output ..
       # Generated code is fixed and formatted by the global ruff (see ../ruff.toml).
       - uvx ruff@0.15.17 check --fix databricks databricks_tests || true
       - uvx ruff@0.15.17 format
-      # The `uv run` invocations above rewrite the lockfiles with the internal
-      # *.databricks.com PyPI proxy URL when uv/pip is proxy-configured (locally
-      # or via setup-jfrog in CI). That is environment noise, not codegen output;
-      # revert it so the committed locks stay on pypi.org.
-      - git checkout -- uv.lock codegen/uv.lock
 
   pydabs-build:
     desc: Build pydabs wheel
