@@ -321,20 +321,40 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 		DependsOn: dependsOn,
 	}
 
-	if db.mode == WritingDMS {
+	switch db.mode {
+	case WritingDMS:
 		db.Data.State[key] = entry
-	} else if err := appendJSONLine(db.walFile, WALEntry{Key: key, Value: &entry}); err != nil {
-		return err
-	}
-	db.stateIDs[key] = newID
+		db.stateIDs[key] = newID
+		if buf := db.operationBuffer; buf != nil {
+			recorded, err := json.Marshal(RecordedState{State: entry.State, DependsOn: dependsOn})
+			if err != nil {
+				return err
+			}
+			buf.RecordOperation(ctx, key, false, newID, recorded)
+		}
 
-	// File-backed modes record history only after the WAL append succeeds.
-	if buf := db.operationBuffer; buf != nil {
-		recorded, err := json.Marshal(RecordedState{State: entry.State, DependsOn: dependsOn})
-		if err != nil {
+	case WritingFile:
+		if err := appendJSONLine(db.walFile, WALEntry{Key: key, Value: &entry}); err != nil {
 			return err
 		}
-		buf.RecordOperation(ctx, key, false, newID, recorded)
+		db.stateIDs[key] = newID
+
+	case WritingFileWithHistory, WritingFileWithHistoryEnforced:
+		// File-backed modes record history only after the WAL append succeeds.
+		if err := appendJSONLine(db.walFile, WALEntry{Key: key, Value: &entry}); err != nil {
+			return err
+		}
+		db.stateIDs[key] = newID
+		if buf := db.operationBuffer; buf != nil {
+			recorded, err := json.Marshal(RecordedState{State: entry.State, DependsOn: dependsOn})
+			if err != nil {
+				return err
+			}
+			buf.RecordOperation(ctx, key, false, newID, recorded)
+		}
+
+	default:
+		return fmt.Errorf("cannot save state in mode %d", db.mode)
 	}
 	return nil
 }
@@ -353,16 +373,32 @@ func (db *DeploymentState) DeleteState(ctx context.Context, key string, inProgre
 	// Read before the delete below: DMS needs the id to say which resource went away.
 	deletedID := db.stateIDs[key]
 
-	if db.mode == WritingDMS {
+	switch db.mode {
+	case WritingDMS:
 		delete(db.Data.State, key)
-	} else if err := appendJSONLine(db.walFile, WALEntry{Key: key}); err != nil {
-		return err
-	}
-	if buf := db.operationBuffer; buf != nil {
-		buf.RecordOperation(ctx, key, inProgress, deletedID, nil)
-	}
+		if buf := db.operationBuffer; buf != nil {
+			buf.RecordOperation(ctx, key, inProgress, deletedID, nil)
+		}
+		delete(db.stateIDs, key)
 
-	delete(db.stateIDs, key)
+	case WritingFile:
+		if err := appendJSONLine(db.walFile, WALEntry{Key: key}); err != nil {
+			return err
+		}
+		delete(db.stateIDs, key)
+
+	case WritingFileWithHistory, WritingFileWithHistoryEnforced:
+		if err := appendJSONLine(db.walFile, WALEntry{Key: key}); err != nil {
+			return err
+		}
+		if buf := db.operationBuffer; buf != nil {
+			buf.RecordOperation(ctx, key, inProgress, deletedID, nil)
+		}
+		delete(db.stateIDs, key)
+
+	default:
+		return fmt.Errorf("cannot delete state in mode %d", db.mode)
+	}
 	return nil
 }
 
