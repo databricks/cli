@@ -27,6 +27,9 @@ func requiredConfigRoot(w *walker, n *node, v *config.Root) {
 	if len(v.Artifacts) > 0 {
 		c := n.child("artifacts")
 		for k0, x0 := range v.Artifacts {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredConfigArtifact(w, &e, x0)
 		}
@@ -47,6 +50,9 @@ func requiredConfigRoot(w *walker, n *node, v *config.Root) {
 	if len(v.Scripts) > 0 {
 		c := n.child("scripts")
 		for k0, x0 := range v.Scripts {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredConfigScript(w, &e, &x0)
 		}
@@ -91,6 +97,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.Alerts) > 0 {
 		c := n.child("alerts")
 		for k0, x0 := range v.Alerts {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesAlert(w, &e, x0)
 		}
@@ -98,6 +107,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.Apps) > 0 {
 		c := n.child("apps")
 		for k0, x0 := range v.Apps {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesApp(w, &e, x0)
 		}
@@ -105,6 +117,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.Catalogs) > 0 {
 		c := n.child("catalogs")
 		for k0, x0 := range v.Catalogs {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesCatalog(w, &e, x0)
 		}
@@ -112,6 +127,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.ClusterPolicies) > 0 {
 		c := n.child("cluster_policies")
 		for k0, x0 := range v.ClusterPolicies {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesClusterPolicy(w, &e, x0)
 		}
@@ -119,6 +137,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.Clusters) > 0 {
 		c := n.child("clusters")
 		for k0, x0 := range v.Clusters {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesCluster(w, &e, x0)
 		}
@@ -126,6 +147,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.Dashboards) > 0 {
 		c := n.child("dashboards")
 		for k0, x0 := range v.Dashboards {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesDashboard(w, &e, x0)
 		}
@@ -133,6 +157,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.DatabaseCatalogs) > 0 {
 		c := n.child("database_catalogs")
 		for k0, x0 := range v.DatabaseCatalogs {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesDatabaseCatalog(w, &e, x0)
 		}
@@ -140,6 +167,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.DatabaseInstances) > 0 {
 		c := n.child("database_instances")
 		for k0, x0 := range v.DatabaseInstances {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesDatabaseInstance(w, &e, x0)
 		}
@@ -147,6 +177,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.Experiments) > 0 {
 		c := n.child("experiments")
 		for k0, x0 := range v.Experiments {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesMlflowExperiment(w, &e, x0)
 		}
@@ -154,6 +187,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.ExternalLocations) > 0 {
 		c := n.child("external_locations")
 		for k0, x0 := range v.ExternalLocations {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesExternalLocation(w, &e, x0)
 		}
@@ -161,6 +197,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.Features) > 0 {
 		c := n.child("features")
 		for k0, x0 := range v.Features {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesFeature(w, &e, x0)
 		}
@@ -168,6 +207,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.GenieSpaces) > 0 {
 		c := n.child("genie_spaces")
 		for k0, x0 := range v.GenieSpaces {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesGenieSpace(w, &e, x0)
 		}
@@ -175,6 +217,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.InstancePools) > 0 {
 		c := n.child("instance_pools")
 		for k0, x0 := range v.InstancePools {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesInstancePool(w, &e, x0)
 		}
@@ -182,6 +227,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.JobRuns) > 0 {
 		c := n.child("job_runs")
 		for k0, x0 := range v.JobRuns {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesJobRun(w, &e, x0)
 		}
@@ -189,6 +237,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.Jobs) > 0 {
 		c := n.child("jobs")
 		for k0, x0 := range v.Jobs {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesJob(w, &e, x0)
 		}
@@ -196,6 +247,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.McpServices) > 0 {
 		c := n.child("mcp_services")
 		for k0, x0 := range v.McpServices {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesMcpService(w, &e, x0)
 		}
@@ -203,6 +257,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.ModelProviderServices) > 0 {
 		c := n.child("model_provider_services")
 		for k0, x0 := range v.ModelProviderServices {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesModelProviderService(w, &e, x0)
 		}
@@ -210,6 +267,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.ModelServices) > 0 {
 		c := n.child("model_services")
 		for k0, x0 := range v.ModelServices {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesModelService(w, &e, x0)
 		}
@@ -217,6 +277,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.ModelServingEndpoints) > 0 {
 		c := n.child("model_serving_endpoints")
 		for k0, x0 := range v.ModelServingEndpoints {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesModelServingEndpoint(w, &e, x0)
 		}
@@ -224,6 +287,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.Models) > 0 {
 		c := n.child("models")
 		for k0, x0 := range v.Models {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesMlflowModel(w, &e, x0)
 		}
@@ -231,6 +297,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.Pipelines) > 0 {
 		c := n.child("pipelines")
 		for k0, x0 := range v.Pipelines {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesPipeline(w, &e, x0)
 		}
@@ -238,6 +307,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.PostgresBranches) > 0 {
 		c := n.child("postgres_branches")
 		for k0, x0 := range v.PostgresBranches {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesPostgresBranch(w, &e, x0)
 		}
@@ -245,6 +317,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.PostgresCatalogs) > 0 {
 		c := n.child("postgres_catalogs")
 		for k0, x0 := range v.PostgresCatalogs {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesPostgresCatalog(w, &e, x0)
 		}
@@ -252,6 +327,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.PostgresDatabases) > 0 {
 		c := n.child("postgres_databases")
 		for k0, x0 := range v.PostgresDatabases {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesPostgresDatabase(w, &e, x0)
 		}
@@ -259,6 +337,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.PostgresEndpoints) > 0 {
 		c := n.child("postgres_endpoints")
 		for k0, x0 := range v.PostgresEndpoints {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesPostgresEndpoint(w, &e, x0)
 		}
@@ -266,6 +347,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.PostgresProjects) > 0 {
 		c := n.child("postgres_projects")
 		for k0, x0 := range v.PostgresProjects {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesPostgresProject(w, &e, x0)
 		}
@@ -273,6 +357,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.PostgresRoles) > 0 {
 		c := n.child("postgres_roles")
 		for k0, x0 := range v.PostgresRoles {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesPostgresRole(w, &e, x0)
 		}
@@ -280,6 +367,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.PostgresSnapshotSchedules) > 0 {
 		c := n.child("postgres_snapshot_schedules")
 		for k0, x0 := range v.PostgresSnapshotSchedules {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesPostgresSnapshotSchedule(w, &e, x0)
 		}
@@ -287,6 +377,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.PostgresSyncedTables) > 0 {
 		c := n.child("postgres_synced_tables")
 		for k0, x0 := range v.PostgresSyncedTables {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesPostgresSyncedTable(w, &e, x0)
 		}
@@ -294,6 +387,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.QualityMonitors) > 0 {
 		c := n.child("quality_monitors")
 		for k0, x0 := range v.QualityMonitors {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesQualityMonitor(w, &e, x0)
 		}
@@ -301,6 +397,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.Schemas) > 0 {
 		c := n.child("schemas")
 		for k0, x0 := range v.Schemas {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesSchema(w, &e, x0)
 		}
@@ -308,6 +407,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.SecretScopes) > 0 {
 		c := n.child("secret_scopes")
 		for k0, x0 := range v.SecretScopes {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesSecretScope(w, &e, x0)
 		}
@@ -315,6 +417,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.Secrets) > 0 {
 		c := n.child("secrets")
 		for k0, x0 := range v.Secrets {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesSecret(w, &e, x0)
 		}
@@ -322,6 +427,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.SqlWarehouses) > 0 {
 		c := n.child("sql_warehouses")
 		for k0, x0 := range v.SqlWarehouses {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesSqlWarehouse(w, &e, x0)
 		}
@@ -329,6 +437,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.SyncedDatabaseTables) > 0 {
 		c := n.child("synced_database_tables")
 		for k0, x0 := range v.SyncedDatabaseTables {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesSyncedDatabaseTable(w, &e, x0)
 		}
@@ -336,6 +447,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.VectorSearchEndpoints) > 0 {
 		c := n.child("vector_search_endpoints")
 		for k0, x0 := range v.VectorSearchEndpoints {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesVectorSearchEndpoint(w, &e, x0)
 		}
@@ -343,6 +457,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.VectorSearchIndexes) > 0 {
 		c := n.child("vector_search_indexes")
 		for k0, x0 := range v.VectorSearchIndexes {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesVectorSearchIndex(w, &e, x0)
 		}
@@ -350,6 +467,9 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 	if len(v.Volumes) > 0 {
 		c := n.child("volumes")
 		for k0, x0 := range v.Volumes {
+			if k0 == "" {
+				continue
+			}
 			e := c.child(k0)
 			requiredResourcesVolume(w, &e, x0)
 		}
