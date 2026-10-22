@@ -203,9 +203,11 @@ func (db *DeploymentState) getOperationBuffer() *dms.OperationBuffer {
 
 // RecordingError reports whether recording state writes to the service has failed, so the apply
 // stops touching resources once the service is no longer keeping up. File-backed history modes
-// always return nil because their resource state remains recoverable from the WAL.
+// always return nil so history recording errors do not block the deployment; resource state
+// remains recoverable from the WAL.
 func (db *DeploymentState) RecordingError() error {
 	if !db.IsDeploymentMetadataService() {
+		// TODO: Warn users when history recording fails in file-backed history modes.
 		return nil
 	}
 	buf := db.getOperationBuffer()
@@ -536,9 +538,6 @@ func (db *DeploymentState) reset() {
 }
 
 func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, mode Mode, withRecovery WithRecovery, dmsDeployment OpenDmsArgs) error {
-	if err := mode.validate(); err != nil {
-		return err
-	}
 	db.Path = path
 	db.mode = ReadingFile
 	if mode == ReadingDMS || mode == WritingDMS {

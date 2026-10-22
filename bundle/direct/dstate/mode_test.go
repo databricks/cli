@@ -388,14 +388,13 @@ func TestEnforcedHistorySurvivesWALRecovery(t *testing.T) {
 	}
 }
 
-func TestOpenRejectsInvalidModesAndFeatures(t *testing.T) {
+func TestOpenRejectsIncompatibleModesAndFeatures(t *testing.T) {
 	for _, tc := range []struct {
 		name     string
 		mode     dstate.Mode
 		features string
 		wantErr  string
 	}{
-		{"unknown mode", dstate.Mode(99), `{}`, "invalid deployment state mode"},
 		{"unknown feature", dstate.ReadingFile, `{"future":{}}`, "requires features"},
 		{"conflicting features", dstate.ReadingFile, `{"deployment_history":{},"deployment_history_best_effort":{}}`, "deployment_history_best_effort"},
 		{"DMS reading best effort history", dstate.ReadingDMS, `{"deployment_history_best_effort":{}}`, "deployment_history_best_effort"},
