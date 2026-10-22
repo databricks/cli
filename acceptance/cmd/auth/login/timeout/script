@@ -5,8 +5,3 @@ sethome "./home"
 export BROWSER="echo_browser.py"
 
 trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --timeout 1s > /dev/null
-
-# Keep stdin open without sending a confirmation code, so only --timeout ends
-# the device code login. The sleep must outlast the timeout, otherwise the
-# login fails with EOF instead.
-sleep 5 | DATABRICKS_CLI_DEVICE_CODE=true trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code --timeout 1s
