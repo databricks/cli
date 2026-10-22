@@ -88,13 +88,15 @@ func (m *ModelProviderService) Exists(ctx context.Context, w *databricks.Workspa
 	return true, nil
 }
 
+var modelProviderServiceDescription = ResourceDescription{
+	SingularName:  "model_provider_service",
+	PluralName:    "model_provider_services",
+	SingularTitle: "Model provider service",
+	PluralTitle:   "Model provider services",
+}
+
 func (*ModelProviderService) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "model_provider_service",
-		PluralName:    "model_provider_services",
-		SingularTitle: "Model provider service",
-		PluralTitle:   "Model provider services",
-	}
+	return modelProviderServiceDescription
 }
 
 func (m *ModelProviderService) InitializeURL(baseURL url.URL) {

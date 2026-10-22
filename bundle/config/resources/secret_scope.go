@@ -89,13 +89,22 @@ func (s SecretScope) Exists(ctx context.Context, w *databricks.WorkspaceClient, 
 	return false, nil
 }
 
+var secretScopeDescription = ResourceDescription{
+	SingularName:  "secret_scope",
+	PluralName:    "secret_scopes",
+	SingularTitle: "Secret Scope",
+	PluralTitle:   "Secret Scopes",
+	Permissions: PermissionsDescription{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "MANAGE",
+			CanView:   "READ",
+		},
+		SkipFixup: true,
+	},
+}
+
 func (s SecretScope) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "secret_scope",
-		PluralName:    "secret_scopes",
-		SingularTitle: "Secret Scope",
-		PluralTitle:   "Secret Scopes",
-	}
+	return secretScopeDescription
 }
 
 func (s SecretScope) GetName() string {

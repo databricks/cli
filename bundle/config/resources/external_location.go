@@ -39,13 +39,15 @@ func (e *ExternalLocation) Exists(ctx context.Context, w *databricks.WorkspaceCl
 	return true, nil
 }
 
+var externalLocationDescription = ResourceDescription{
+	SingularName:  "external_location",
+	PluralName:    "external_locations",
+	SingularTitle: "External Location",
+	PluralTitle:   "External Locations",
+}
+
 func (*ExternalLocation) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "external_location",
-		PluralName:    "external_locations",
-		SingularTitle: "External Location",
-		PluralTitle:   "External Locations",
-	}
+	return externalLocationDescription
 }
 
 func (e *ExternalLocation) InitializeURL(baseURL url.URL) {

@@ -237,3 +237,80 @@ func TestAllResourcesExplicitlyDefinedForPermissionsSupport(t *testing.T) {
 		}
 	}
 }
+
+func TestBundlePermissionMappings(t *testing.T) {
+	// Preserve the pre-registry policy independently of the metadata that now drives it.
+	expected := map[string]map[string]string{
+		"jobs": {
+			"CAN_MANAGE": "CAN_MANAGE",
+			"CAN_VIEW":   "CAN_VIEW",
+			"CAN_RUN":    "CAN_MANAGE_RUN",
+		},
+		"pipelines": {
+			"CAN_MANAGE": "CAN_MANAGE",
+			"CAN_VIEW":   "CAN_VIEW",
+			"CAN_RUN":    "CAN_RUN",
+		},
+		"experiments": {
+			"CAN_MANAGE": "CAN_MANAGE",
+			"CAN_VIEW":   "CAN_READ",
+		},
+		"models": {
+			"CAN_MANAGE": "CAN_MANAGE",
+			"CAN_VIEW":   "CAN_READ",
+		},
+		"model_serving_endpoints": {
+			"CAN_MANAGE": "CAN_MANAGE",
+			"CAN_VIEW":   "CAN_VIEW",
+			"CAN_RUN":    "CAN_QUERY",
+		},
+		"dashboards": {
+			"CAN_MANAGE": "CAN_MANAGE",
+			"CAN_VIEW":   "CAN_READ",
+		},
+		"genie_spaces": {
+			"CAN_MANAGE": "CAN_MANAGE",
+			"CAN_VIEW":   "CAN_READ",
+		},
+		"apps": {
+			"CAN_MANAGE": "CAN_MANAGE",
+			"CAN_VIEW":   "CAN_USE",
+		},
+		"secret_scopes": {
+			"CAN_MANAGE": "MANAGE",
+			"CAN_VIEW":   "READ",
+		},
+		"alerts": {
+			"CAN_MANAGE": "CAN_MANAGE",
+			"CAN_VIEW":   "CAN_READ",
+			"CAN_RUN":    "CAN_RUN",
+		},
+		"sql_warehouses": {
+			"CAN_MANAGE": "CAN_MANAGE",
+			"CAN_VIEW":   "CAN_VIEW",
+			"CAN_RUN":    "CAN_MONITOR",
+		},
+		"database_instances": {
+			"CAN_MANAGE": "CAN_MANAGE",
+			"CAN_VIEW":   "CAN_USE",
+		},
+		"postgres_projects": {
+			"CAN_MANAGE": "CAN_MANAGE",
+			"CAN_VIEW":   "CAN_USE",
+		},
+		"clusters": {
+			"CAN_MANAGE": "CAN_MANAGE",
+			"CAN_VIEW":   "CAN_ATTACH_TO",
+			"CAN_RUN":    "CAN_RESTART",
+		},
+		"vector_search_endpoints": {
+			"CAN_MANAGE": "CAN_MANAGE",
+			"CAN_VIEW":   "CAN_USE",
+		},
+		"instance_pools": {
+			"CAN_MANAGE": "CAN_MANAGE",
+			"CAN_VIEW":   "CAN_ATTACH_TO",
+		},
+	}
+	assert.Equal(t, expected, levelsMap)
+}

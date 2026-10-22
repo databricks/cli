@@ -37,13 +37,24 @@ func (d *DatabaseInstance) Exists(ctx context.Context, w *databricks.WorkspaceCl
 	return true, nil
 }
 
+var databaseInstanceDescription = ResourceDescription{
+	SingularName:  "database_instance",
+	PluralName:    "database_instances",
+	SingularTitle: "Database instance",
+	PluralTitle:   "Database instances",
+	Permissions: PermissionsDescription{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_USE",
+		},
+		RequestObjectType:  "database-instances",
+		ResponseObjectType: "database-instances",
+		ObjectIDField:      "id",
+	},
+}
+
 func (d *DatabaseInstance) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "database_instance",
-		PluralName:    "database_instances",
-		SingularTitle: "Database instance",
-		PluralTitle:   "Database instances",
-	}
+	return databaseInstanceDescription
 }
 
 func (d *DatabaseInstance) GetName() string {

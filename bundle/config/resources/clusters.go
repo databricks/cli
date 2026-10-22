@@ -50,13 +50,26 @@ func (s *Cluster) Exists(ctx context.Context, w *databricks.WorkspaceClient, id 
 	return true, nil
 }
 
+var clusterDescription = ResourceDescription{
+	SingularName:  "cluster",
+	PluralName:    "clusters",
+	SingularTitle: "Cluster",
+	PluralTitle:   "Clusters",
+	Permissions: PermissionsDescription{
+		BundleLevels: BundlePermissionLevels{
+			// https://docs.databricks.com/aws/en/security/auth/access-control/#compute-acls
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_ATTACH_TO",
+			CanRun:    "CAN_RESTART",
+		},
+		RequestObjectType:  "clusters",
+		ResponseObjectType: "cluster",
+		ObjectIDField:      "id",
+	},
+}
+
 func (*Cluster) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "cluster",
-		PluralName:    "clusters",
-		SingularTitle: "Cluster",
-		PluralTitle:   "Clusters",
-	}
+	return clusterDescription
 }
 
 func (s *Cluster) InitializeURL(baseURL url.URL) {

@@ -42,13 +42,15 @@ func (s *QualityMonitor) Exists(ctx context.Context, w *databricks.WorkspaceClie
 	return true, nil
 }
 
+var qualityMonitorDescription = ResourceDescription{
+	SingularName:  "quality_monitor",
+	PluralName:    "quality_monitors",
+	SingularTitle: "Quality Monitor",
+	PluralTitle:   "Quality Monitors",
+}
+
 func (*QualityMonitor) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "quality_monitor",
-		PluralName:    "quality_monitors",
-		SingularTitle: "Quality Monitor",
-		PluralTitle:   "Quality Monitors",
-	}
+	return qualityMonitorDescription
 }
 
 func (s *QualityMonitor) InitializeURL(baseURL url.URL) {

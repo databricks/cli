@@ -41,13 +41,25 @@ func (a *Alert) Exists(ctx context.Context, w *databricks.WorkspaceClient, id st
 	return true, nil
 }
 
+var alertDescription = ResourceDescription{
+	SingularName:  "alert",
+	PluralName:    "alerts",
+	SingularTitle: "Alert",
+	PluralTitle:   "Alerts",
+	Permissions: PermissionsDescription{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_READ",
+			CanRun:    "CAN_RUN",
+		},
+		RequestObjectType:  "alertsv2",
+		ResponseObjectType: "alertv2",
+		ObjectIDField:      "id",
+	},
+}
+
 func (a *Alert) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "alert",
-		PluralName:    "alerts",
-		SingularTitle: "Alert",
-		PluralTitle:   "Alerts",
-	}
+	return alertDescription
 }
 
 func (a *Alert) InitializeURL(baseURL url.URL) {

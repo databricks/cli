@@ -35,13 +35,15 @@ func (d *DatabaseCatalog) Exists(ctx context.Context, w *databricks.WorkspaceCli
 	return true, nil
 }
 
+var databaseCatalogDescription = ResourceDescription{
+	SingularName:  "database_catalog",
+	PluralName:    "database_catalogs",
+	SingularTitle: "Database catalog",
+	PluralTitle:   "Database catalogs",
+}
+
 func (d *DatabaseCatalog) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "database_catalog",
-		PluralName:    "database_catalogs",
-		SingularTitle: "Database catalog",
-		PluralTitle:   "Database catalogs",
-	}
+	return databaseCatalogDescription
 }
 
 func (d *DatabaseCatalog) GetName() string {

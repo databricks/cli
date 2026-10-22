@@ -47,13 +47,26 @@ func (sw *SqlWarehouse) Exists(ctx context.Context, w *databricks.WorkspaceClien
 	return true, nil
 }
 
+var sqlWarehouseDescription = ResourceDescription{
+	SingularName:  "sql_warehouse",
+	PluralName:    "sql_warehouses",
+	SingularTitle: "Sql Warehouse",
+	PluralTitle:   "SQL Warehouses",
+	Permissions: PermissionsDescription{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_VIEW",
+			CanRun:    "CAN_MONITOR",
+		},
+		RequestObjectType:  "sql/warehouses",
+		ResponseObjectType: "warehouses",
+		ObjectIDField:      "id",
+		HasIsOwner:         true,
+	},
+}
+
 func (*SqlWarehouse) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "sql_warehouse",
-		PluralName:    "sql_warehouses",
-		SingularTitle: "Sql Warehouse",
-		PluralTitle:   "SQL Warehouses",
-	}
+	return sqlWarehouseDescription
 }
 
 func (sw *SqlWarehouse) InitializeURL(baseURL url.URL) {

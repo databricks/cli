@@ -43,13 +43,26 @@ func (p *Pipeline) Exists(ctx context.Context, w *databricks.WorkspaceClient, id
 	return true, nil
 }
 
+var pipelineDescription = ResourceDescription{
+	SingularName:  "pipeline",
+	PluralName:    "pipelines",
+	SingularTitle: "Pipeline",
+	PluralTitle:   "Pipelines",
+	Permissions: PermissionsDescription{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_VIEW",
+			CanRun:    "CAN_RUN",
+		},
+		RequestObjectType:  "pipelines",
+		ResponseObjectType: "pipelines",
+		ObjectIDField:      "id",
+		HasIsOwner:         true,
+	},
+}
+
 func (p *Pipeline) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "pipeline",
-		PluralName:    "pipelines",
-		SingularTitle: "Pipeline",
-		PluralTitle:   "Pipelines",
-	}
+	return pipelineDescription
 }
 
 func (p *Pipeline) InitializeURL(baseURL url.URL) {

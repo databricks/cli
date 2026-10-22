@@ -57,13 +57,15 @@ func (e *PostgresEndpoint) Exists(ctx context.Context, w *databricks.WorkspaceCl
 	return true, nil
 }
 
+var postgresEndpointDescription = ResourceDescription{
+	SingularName:  "postgres_endpoint",
+	PluralName:    "postgres_endpoints",
+	SingularTitle: "Postgres endpoint",
+	PluralTitle:   "Postgres endpoints",
+}
+
 func (e *PostgresEndpoint) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "postgres_endpoint",
-		PluralName:    "postgres_endpoints",
-		SingularTitle: "Postgres endpoint",
-		PluralTitle:   "Postgres endpoints",
-	}
+	return postgresEndpointDescription
 }
 
 func (e *PostgresEndpoint) GetName() string {

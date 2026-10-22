@@ -85,13 +85,15 @@ func (s *Snapshot) Exists(ctx context.Context, w *databricks.WorkspaceClient, na
 	return true, nil
 }
 
+var snapshotDescription = ResourceDescription{
+	SingularName:  "internal_immutable_snapshot",
+	PluralName:    "internal_immutable_snapshots",
+	SingularTitle: "Internal Immutable Snapshot",
+	PluralTitle:   "Internal Immutable Snapshots",
+}
+
 func (s *Snapshot) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "internal_immutable_snapshot",
-		PluralName:    "internal_immutable_snapshots",
-		SingularTitle: "Internal Immutable Snapshot",
-		PluralTitle:   "Internal Immutable Snapshots",
-	}
+	return snapshotDescription
 }
 
 func (s *Snapshot) GetName() string {

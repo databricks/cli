@@ -109,13 +109,24 @@ func (*Dashboard) Exists(ctx context.Context, w *databricks.WorkspaceClient, id 
 	return true, nil
 }
 
+var dashboardDescription = ResourceDescription{
+	SingularName:  "dashboard",
+	PluralName:    "dashboards",
+	SingularTitle: "Dashboard",
+	PluralTitle:   "Dashboards",
+	Permissions: PermissionsDescription{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_READ",
+		},
+		RequestObjectType:  "dashboards",
+		ResponseObjectType: "dashboard",
+		ObjectIDField:      "id",
+	},
+}
+
 func (*Dashboard) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "dashboard",
-		PluralName:    "dashboards",
-		SingularTitle: "Dashboard",
-		PluralTitle:   "Dashboards",
-	}
+	return dashboardDescription
 }
 
 func (r *Dashboard) InitializeURL(baseURL url.URL) {

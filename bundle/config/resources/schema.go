@@ -38,13 +38,15 @@ func (s *Schema) Exists(ctx context.Context, w *databricks.WorkspaceClient, full
 	return true, nil
 }
 
+var schemaDescription = ResourceDescription{
+	SingularName:  "schema",
+	PluralName:    "schemas",
+	SingularTitle: "Schema",
+	PluralTitle:   "Schemas",
+}
+
 func (*Schema) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "schema",
-		PluralName:    "schemas",
-		SingularTitle: "Schema",
-		PluralTitle:   "Schemas",
-	}
+	return schemaDescription
 }
 
 func (s *Schema) InitializeURL(baseURL url.URL) {

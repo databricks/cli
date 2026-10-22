@@ -58,13 +58,15 @@ func (b *PostgresSnapshotSchedule) Exists(ctx context.Context, w *databricks.Wor
 	return true, nil
 }
 
+var postgresSnapshotScheduleDescription = ResourceDescription{
+	SingularName:  "postgres_snapshot_schedule",
+	PluralName:    "postgres_snapshot_schedules",
+	SingularTitle: "Postgres snapshot schedule",
+	PluralTitle:   "Postgres snapshot schedules",
+}
+
 func (b *PostgresSnapshotSchedule) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "postgres_snapshot_schedule",
-		PluralName:    "postgres_snapshot_schedules",
-		SingularTitle: "Postgres snapshot schedule",
-		PluralTitle:   "Postgres snapshot schedules",
-	}
+	return postgresSnapshotScheduleDescription
 }
 
 func (b *PostgresSnapshotSchedule) GetName() string {

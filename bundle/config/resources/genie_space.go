@@ -85,13 +85,24 @@ func (*GenieSpace) Exists(ctx context.Context, w *databricks.WorkspaceClient, id
 	return true, nil
 }
 
+var genieSpaceDescription = ResourceDescription{
+	SingularName:  "genie_space",
+	PluralName:    "genie_spaces",
+	SingularTitle: "Genie Space",
+	PluralTitle:   "Genie Spaces",
+	Permissions: PermissionsDescription{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_READ",
+		},
+		RequestObjectType:  "genie",
+		ResponseObjectType: "genie-space",
+		ObjectIDField:      "id",
+	},
+}
+
 func (*GenieSpace) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "genie_space",
-		PluralName:    "genie_spaces",
-		SingularTitle: "Genie Space",
-		PluralTitle:   "Genie Spaces",
-	}
+	return genieSpaceDescription
 }
 
 func (r *GenieSpace) InitializeURL(baseURL url.URL) {

@@ -51,13 +51,15 @@ func (v *Volume) Exists(ctx context.Context, w *databricks.WorkspaceClient, full
 	return true, nil
 }
 
+var volumeDescription = ResourceDescription{
+	SingularName:  "volume",
+	PluralName:    "volumes",
+	SingularTitle: "Volume",
+	PluralTitle:   "Volumes",
+}
+
 func (*Volume) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "volume",
-		PluralName:    "volumes",
-		SingularTitle: "Volume",
-		PluralTitle:   "Volumes",
-	}
+	return volumeDescription
 }
 
 func (v *Volume) InitializeURL(baseURL url.URL) {

@@ -69,13 +69,15 @@ func (b *PostgresBranch) Exists(ctx context.Context, w *databricks.WorkspaceClie
 	return true, nil
 }
 
+var postgresBranchDescription = ResourceDescription{
+	SingularName:  "postgres_branch",
+	PluralName:    "postgres_branches",
+	SingularTitle: "Postgres branch",
+	PluralTitle:   "Postgres branches",
+}
+
 func (b *PostgresBranch) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "postgres_branch",
-		PluralName:    "postgres_branches",
-		SingularTitle: "Postgres branch",
-		PluralTitle:   "Postgres branches",
-	}
+	return postgresBranchDescription
 }
 
 func (b *PostgresBranch) GetName() string {

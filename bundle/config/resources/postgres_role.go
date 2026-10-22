@@ -62,13 +62,15 @@ func (r *PostgresRole) Exists(ctx context.Context, w *databricks.WorkspaceClient
 	return true, nil
 }
 
+var postgresRoleDescription = ResourceDescription{
+	SingularName:  "postgres_role",
+	PluralName:    "postgres_roles",
+	SingularTitle: "Postgres role",
+	PluralTitle:   "Postgres roles",
+}
+
 func (r *PostgresRole) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "postgres_role",
-		PluralName:    "postgres_roles",
-		SingularTitle: "Postgres role",
-		PluralTitle:   "Postgres roles",
-	}
+	return postgresRoleDescription
 }
 
 func (r *PostgresRole) GetName() string {

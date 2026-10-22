@@ -16,20 +16,6 @@ const (
 	canManage = "CAN_MANAGE"
 )
 
-// Which resources support IS_OWNER permission.
-var hasIsOwner = map[string]bool{
-	"jobs":           true,
-	"pipelines":      true,
-	"sql_warehouses": true,
-}
-
-var ignoredResources = map[string]bool{
-	"secret_scopes": true,
-	// Cluster policies only support CAN_USE; injecting the current user as
-	// CAN_MANAGE/IS_OWNER would be rejected by the permissions API.
-	"cluster_policies": true,
-}
-
 // When processing permissions, we need to implement these constraints:
 // 1. There should be no more than one IS_OWNER settings for a given resource.
 // 2. We should automatically add IS_OWNER for current user (for resources that support it) or CAN_MANAGE permission.
@@ -60,7 +46,7 @@ func processPermissions(currentUser string) dyn.MapFunc {
 		}
 
 		resourceType := p[1].Key()
-		if ignoredResources[resourceType] {
+		if resources.All[resourceType].Permissions.SkipFixup {
 			return v, nil
 		}
 
@@ -101,7 +87,7 @@ func readPrincipal(v dyn.Value) string {
 func ensureCurrentUserMgmtPermissions(permissions dyn.Value, currentUser, resourceType string) (dyn.Value, error) {
 	currentUserHasIsOwner := false
 	currentUserIndCanManage := -1
-	canAddIsOwner := hasIsOwner[resourceType]
+	canAddIsOwner := resources.All[resourceType].Permissions.HasIsOwner
 
 	permissionArray, ok := permissions.AsSequence()
 	if !ok {

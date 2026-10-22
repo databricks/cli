@@ -36,13 +36,15 @@ func (c *Catalog) Exists(ctx context.Context, w *databricks.WorkspaceClient, nam
 	return true, nil
 }
 
+var catalogDescription = ResourceDescription{
+	SingularName:  "catalog",
+	PluralName:    "catalogs",
+	SingularTitle: "Catalog",
+	PluralTitle:   "Catalogs",
+}
+
 func (*Catalog) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "catalog",
-		PluralName:    "catalogs",
-		SingularTitle: "Catalog",
-		PluralTitle:   "Catalogs",
-	}
+	return catalogDescription
 }
 
 func (c *Catalog) InitializeURL(baseURL url.URL) {

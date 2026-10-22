@@ -7,37 +7,31 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 // source: https://github.com/databricks/terraform-provider-databricks/blob/main/permissions/permission_definitions.go
 
-var requestObjectTypeToObjectType = map[string]string{
-	"cluster-policies":        "cluster-policy",
-	"instance-pools":          "instance-pool",
-	"clusters":                "cluster",
-	"pipelines":               "pipelines",
-	"jobs":                    "job",
-	"notebooks":               "notebook",
-	"directories":             "directory",
-	"files":                   "file",
-	"repos":                   "repo",
-	"authorization":           "tokens", // maps to both "tokens" and "passwords"
-	"sql/warehouses":          "warehouses",
-	"dbsql-dashboards":        "dashboard",
-	"sql/alerts":              "alert",
-	"sql/queries":             "query",
-	"dashboards":              "dashboard",
-	"genie":                   "genie-space",
-	"experiments":             "mlflowExperiment",
-	"registered-models":       "registered-model",
-	"serving-endpoints":       "serving-endpoint",
-	"vector-search-endpoints": "vector-search-endpoints",
-	"apps":                    "apps",
-	"database-instances":      "database-instances",
-	"database-projects":       "database-projects",
-	"alertsv2":                "alertv2",
-}
+var requestObjectTypeToObjectType = func() map[string]string {
+	// These API objects are not bundle resources.
+	result := map[string]string{
+		"notebooks":        "notebook",
+		"directories":      "directory",
+		"files":            "file",
+		"repos":            "repo",
+		"authorization":    "tokens", // maps to both "tokens" and "passwords"
+		"dbsql-dashboards": "dashboard",
+		"sql/alerts":       "alert",
+		"sql/queries":      "query",
+	}
+	for _, description := range resources.All {
+		if p := description.Permissions; p.RequestObjectType != "" {
+			result[p.RequestObjectType] = p.ResponseObjectType
+		}
+	}
+	return result
+}()
 
 // aclPrincipalKey returns a unique key identifying the principal in an ACL entry.
 func aclPrincipalKey(acl iam.AccessControlResponse) string {

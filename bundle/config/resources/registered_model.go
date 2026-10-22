@@ -40,13 +40,15 @@ func (s *RegisteredModel) Exists(ctx context.Context, w *databricks.WorkspaceCli
 	return true, nil
 }
 
+var registeredModelDescription = ResourceDescription{
+	SingularName:  "registered_model",
+	PluralName:    "registered_models",
+	SingularTitle: "Registered Model",
+	PluralTitle:   "Registered Models",
+}
+
 func (*RegisteredModel) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "registered_model",
-		PluralName:    "registered_models",
-		SingularTitle: "Registered Model",
-		PluralTitle:   "Registered Models",
-	}
+	return registeredModelDescription
 }
 
 func (s *RegisteredModel) InitializeURL(baseURL url.URL) {

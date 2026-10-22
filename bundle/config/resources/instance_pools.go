@@ -35,13 +35,24 @@ func (s *InstancePool) Exists(ctx context.Context, w *databricks.WorkspaceClient
 	return true, nil
 }
 
+var instancePoolDescription = ResourceDescription{
+	SingularName:  "instance_pool",
+	PluralName:    "instance_pools",
+	SingularTitle: "Instance Pool",
+	PluralTitle:   "Instance Pools",
+	Permissions: PermissionsDescription{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_ATTACH_TO",
+		},
+		RequestObjectType:  "instance-pools",
+		ResponseObjectType: "instance-pool",
+		ObjectIDField:      "id",
+	},
+}
+
 func (*InstancePool) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "instance_pool",
-		PluralName:    "instance_pools",
-		SingularTitle: "Instance Pool",
-		PluralTitle:   "Instance Pools",
-	}
+	return instancePoolDescription
 }
 
 func (s *InstancePool) InitializeURL(baseURL url.URL) {

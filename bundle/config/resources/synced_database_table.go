@@ -35,13 +35,15 @@ func (s *SyncedDatabaseTable) Exists(ctx context.Context, w *databricks.Workspac
 	return true, nil
 }
 
+var syncedDatabaseTableDescription = ResourceDescription{
+	SingularName:  "synced_database_table",
+	PluralName:    "synced_database_tables",
+	SingularTitle: "Synced database table",
+	PluralTitle:   "Synced database tables",
+}
+
 func (s *SyncedDatabaseTable) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "synced_database_table",
-		PluralName:    "synced_database_tables",
-		SingularTitle: "Synced database table",
-		PluralTitle:   "Synced database tables",
-	}
+	return syncedDatabaseTableDescription
 }
 
 func (s *SyncedDatabaseTable) GetName() string {

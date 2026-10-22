@@ -43,13 +43,15 @@ func (e *VectorSearchIndex) Exists(ctx context.Context, w *databricks.WorkspaceC
 	return true, nil
 }
 
+var vectorSearchIndexDescription = ResourceDescription{
+	SingularName:  "vector_search_index",
+	PluralName:    "vector_search_indexes",
+	SingularTitle: "Vector Search Index",
+	PluralTitle:   "Vector Search Indexes",
+}
+
 func (e *VectorSearchIndex) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "vector_search_index",
-		PluralName:    "vector_search_indexes",
-		SingularTitle: "Vector Search Index",
-		PluralTitle:   "Vector Search Indexes",
-	}
+	return vectorSearchIndexDescription
 }
 
 func (e *VectorSearchIndex) InitializeURL(baseURL url.URL) {

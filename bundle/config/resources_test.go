@@ -108,7 +108,7 @@ func TestResourcesAllResourcesCompleteness(t *testing.T) {
 }
 
 func TestSupportedResources(t *testing.T) {
-	// Please add your resource to the SupportedResources() function in resources.go if you add a new resource.
+	// Register new resources in resources.All; SupportedResources derives its descriptions from that registry.
 	actual := SupportedResources()
 
 	typ := reflect.TypeFor[Resources]()
@@ -439,7 +439,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	allResources := supportedResources.AllResources()
 	for _, group := range allResources {
 		if len(group.Resources) == 0 && !unbindableResources[group.Description.SingularName] {
-			t.Fatalf("Expected at least one resource in group %s", group.Description)
+			t.Fatalf("Expected at least one resource in group %s", group.Description.PluralName)
 		}
 		for _, resource := range group.Resources {
 			// bind operation requires resource to be returned from ResolveKey

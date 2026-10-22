@@ -45,13 +45,23 @@ func (s *ClusterPolicy) Exists(ctx context.Context, w *databricks.WorkspaceClien
 	return true, nil
 }
 
+var clusterPolicyDescription = ResourceDescription{
+	SingularName:  "cluster_policy",
+	PluralName:    "cluster_policies",
+	SingularTitle: "Cluster Policy",
+	PluralTitle:   "Cluster Policies",
+	Permissions: PermissionsDescription{
+		RequestObjectType:  "cluster-policies",
+		ResponseObjectType: "cluster-policy",
+		ObjectIDField:      "id",
+		// Cluster policies only support CAN_USE; injecting the current user as
+		// CAN_MANAGE/IS_OWNER would be rejected by the permissions API.
+		SkipFixup: true,
+	},
+}
+
 func (*ClusterPolicy) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "cluster_policy",
-		PluralName:    "cluster_policies",
-		SingularTitle: "Cluster Policy",
-		PluralTitle:   "Cluster Policies",
-	}
+	return clusterPolicyDescription
 }
 
 func (s *ClusterPolicy) InitializeURL(baseURL url.URL) {

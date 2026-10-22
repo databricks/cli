@@ -63,13 +63,24 @@ func (p *PostgresProject) Exists(ctx context.Context, w *databricks.WorkspaceCli
 	return true, nil
 }
 
+var postgresProjectDescription = ResourceDescription{
+	SingularName:  "postgres_project",
+	PluralName:    "postgres_projects",
+	SingularTitle: "Postgres project",
+	PluralTitle:   "Postgres projects",
+	Permissions: PermissionsDescription{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_USE",
+		},
+		RequestObjectType:  "database-projects",
+		ResponseObjectType: "database-projects",
+		ObjectIDField:      "project_id", // bare project_id, not the hierarchical "projects/{id}" state ID
+	},
+}
+
 func (p *PostgresProject) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "postgres_project",
-		PluralName:    "postgres_projects",
-		SingularTitle: "Postgres project",
-		PluralTitle:   "Postgres projects",
-	}
+	return postgresProjectDescription
 }
 
 func (p *PostgresProject) GetName() string {

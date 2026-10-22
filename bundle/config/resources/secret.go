@@ -48,13 +48,15 @@ func (s *Secret) Exists(ctx context.Context, w *databricks.WorkspaceClient, full
 	return true, nil
 }
 
+var secretDescription = ResourceDescription{
+	SingularName:  "secret",
+	PluralName:    "secrets",
+	SingularTitle: "Secret",
+	PluralTitle:   "Secrets",
+}
+
 func (*Secret) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "secret",
-		PluralName:    "secrets",
-		SingularTitle: "Secret",
-		PluralTitle:   "Secrets",
-	}
+	return secretDescription
 }
 
 func (s *Secret) InitializeURL(baseURL url.URL) {

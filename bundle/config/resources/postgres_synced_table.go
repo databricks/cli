@@ -52,13 +52,15 @@ func (s *PostgresSyncedTable) Exists(ctx context.Context, w *databricks.Workspac
 	return true, nil
 }
 
+var postgresSyncedTableDescription = ResourceDescription{
+	SingularName:  "postgres_synced_table",
+	PluralName:    "postgres_synced_tables",
+	SingularTitle: "Postgres synced table",
+	PluralTitle:   "Postgres synced tables",
+}
+
 func (s *PostgresSyncedTable) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "postgres_synced_table",
-		PluralName:    "postgres_synced_tables",
-		SingularTitle: "Postgres synced table",
-		PluralTitle:   "Postgres synced tables",
-	}
+	return postgresSyncedTableDescription
 }
 
 func (s *PostgresSyncedTable) GetName() string {

@@ -20,80 +20,26 @@ import (
 var (
 	allowedLevels = []string{permissions.CAN_MANAGE, permissions.CAN_VIEW, permissions.CAN_RUN}
 	// Map of allowed permission levels to the corresponding permission level of specific resources
-	levelsMap = map[string](map[string]string){
-		"jobs": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_VIEW",
-			permissions.CAN_RUN:    "CAN_MANAGE_RUN",
-		},
-		"pipelines": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_VIEW",
-			permissions.CAN_RUN:    "CAN_RUN",
-		},
-		"experiments": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_READ",
-		},
-		"models": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_READ",
-		},
-		"model_serving_endpoints": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_VIEW",
-			permissions.CAN_RUN:    "CAN_QUERY",
-		},
-		"dashboards": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_READ",
-		},
-		"genie_spaces": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_READ",
-		},
-		"apps": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_USE",
-		},
-		"secret_scopes": {
-			permissions.CAN_MANAGE: "MANAGE",
-			permissions.CAN_VIEW:   "READ",
-		},
-		"alerts": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_READ",
-			permissions.CAN_RUN:    "CAN_RUN",
-		},
-		"sql_warehouses": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_VIEW",
-			permissions.CAN_RUN:    "CAN_MONITOR",
-		},
-		"database_instances": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_USE",
-		},
-		"postgres_projects": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_USE",
-		},
-		"clusters": {
-			// https://docs.databricks.com/aws/en/security/auth/access-control/#compute-acls
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_ATTACH_TO",
-			permissions.CAN_RUN:    "CAN_RESTART",
-		},
-		"vector_search_endpoints": {
-			// https://docs.databricks.com/aws/en/security/auth/access-control/#vector-search-endpoint-acls
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_USE",
-		},
-		"instance_pools": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_ATTACH_TO",
-		},
-	}
+	levelsMap = func() map[string]map[string]string {
+		result := make(map[string]map[string]string)
+		for name, description := range resources.All {
+			p := description.Permissions.BundleLevels
+			levels := map[string]string{
+				permissions.CAN_MANAGE: p.CanManage,
+				permissions.CAN_VIEW:   p.CanView,
+				permissions.CAN_RUN:    p.CanRun,
+			}
+			for level, mapped := range levels {
+				if mapped == "" {
+					delete(levels, level)
+				}
+			}
+			if len(levels) > 0 {
+				result[name] = levels
+			}
+		}
+		return result
+	}()
 )
 
 type bundlePermissions struct{}

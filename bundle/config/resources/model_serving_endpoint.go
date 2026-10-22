@@ -41,13 +41,25 @@ func (s *ModelServingEndpoint) Exists(ctx context.Context, w *databricks.Workspa
 	return true, nil
 }
 
+var modelServingEndpointDescription = ResourceDescription{
+	SingularName:  "model_serving_endpoint",
+	PluralName:    "model_serving_endpoints",
+	SingularTitle: "Model Serving Endpoint",
+	PluralTitle:   "Model Serving Endpoints",
+	Permissions: PermissionsDescription{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_VIEW",
+			CanRun:    "CAN_QUERY",
+		},
+		RequestObjectType:  "serving-endpoints",
+		ResponseObjectType: "serving-endpoint",
+		ObjectIDField:      "endpoint_id", // internal numeric ID, not the name used in CRUD APIs
+	},
+}
+
 func (s *ModelServingEndpoint) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "model_serving_endpoint",
-		PluralName:    "model_serving_endpoints",
-		SingularTitle: "Model Serving Endpoint",
-		PluralTitle:   "Model Serving Endpoints",
-	}
+	return modelServingEndpointDescription
 }
 
 func (s *ModelServingEndpoint) InitializeURL(baseURL url.URL) {

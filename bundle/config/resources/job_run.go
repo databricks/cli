@@ -114,13 +114,15 @@ func (r *JobRun) Exists(ctx context.Context, w *databricks.WorkspaceClient, id s
 	return true, nil
 }
 
+var jobRunDescription = ResourceDescription{
+	SingularName:  "job_run",
+	PluralName:    "job_runs",
+	SingularTitle: "Job Run",
+	PluralTitle:   "Job Runs",
+}
+
 func (r *JobRun) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "job_run",
-		PluralName:    "job_runs",
-		SingularTitle: "Job Run",
-		PluralTitle:   "Job Runs",
-	}
+	return jobRunDescription
 }
 
 // GetName returns the in-product name, which is empty: a run has no name.

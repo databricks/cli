@@ -80,13 +80,15 @@ func (m *McpService) Exists(ctx context.Context, w *databricks.WorkspaceClient, 
 	return true, nil
 }
 
+var mcpServiceDescription = ResourceDescription{
+	SingularName:  "mcp_service",
+	PluralName:    "mcp_services",
+	SingularTitle: "MCP service",
+	PluralTitle:   "MCP services",
+}
+
 func (*McpService) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "mcp_service",
-		PluralName:    "mcp_services",
-		SingularTitle: "MCP service",
-		PluralTitle:   "MCP services",
-	}
+	return mcpServiceDescription
 }
 
 func (m *McpService) InitializeURL(baseURL url.URL) {

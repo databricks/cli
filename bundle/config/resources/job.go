@@ -43,13 +43,26 @@ func (j *Job) Exists(ctx context.Context, w *databricks.WorkspaceClient, id stri
 	return true, nil
 }
 
+var jobDescription = ResourceDescription{
+	SingularName:  "job",
+	PluralName:    "jobs",
+	SingularTitle: "Job",
+	PluralTitle:   "Jobs",
+	Permissions: PermissionsDescription{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_VIEW",
+			CanRun:    "CAN_MANAGE_RUN",
+		},
+		RequestObjectType:  "jobs",
+		ResponseObjectType: "job",
+		ObjectIDField:      "id",
+		HasIsOwner:         true,
+	},
+}
+
 func (j *Job) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "job",
-		PluralName:    "jobs",
-		SingularTitle: "Job",
-		PluralTitle:   "Jobs",
-	}
+	return jobDescription
 }
 
 func (j *Job) InitializeURL(baseURL url.URL) {

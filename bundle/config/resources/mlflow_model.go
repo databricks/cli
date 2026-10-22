@@ -38,13 +38,24 @@ func (s *MlflowModel) Exists(ctx context.Context, w *databricks.WorkspaceClient,
 	return true, nil
 }
 
+var mlflowModelDescription = ResourceDescription{
+	SingularName:  "model",
+	PluralName:    "models",
+	SingularTitle: "Model",
+	PluralTitle:   "Models",
+	Permissions: PermissionsDescription{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_READ",
+		},
+		RequestObjectType:  "registered-models",
+		ResponseObjectType: "registered-model",
+		ObjectIDField:      "model_id", // numeric model ID, not the model name used as CRUD state ID
+	},
+}
+
 func (s *MlflowModel) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "model",
-		PluralName:    "models",
-		SingularTitle: "Model",
-		PluralTitle:   "Models",
-	}
+	return mlflowModelDescription
 }
 
 func (s *MlflowModel) InitializeURL(baseURL url.URL) {

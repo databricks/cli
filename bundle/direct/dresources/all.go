@@ -3,6 +3,7 @@ package dresources
 import (
 	"fmt"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -48,23 +49,7 @@ var SupportedResources = map[string]any{
 	"cluster_policies":            (*ResourceClusterPolicy)(nil),
 
 	// Permissions
-	"jobs.permissions":                    (*ResourcePermissions)(nil),
-	"pipelines.permissions":               (*ResourcePermissions)(nil),
-	"apps.permissions":                    (*ResourcePermissions)(nil),
-	"alerts.permissions":                  (*ResourcePermissions)(nil),
-	"clusters.permissions":                (*ResourcePermissions)(nil),
-	"cluster_policies.permissions":        (*ResourcePermissions)(nil),
-	"database_instances.permissions":      (*ResourcePermissions)(nil),
-	"postgres_projects.permissions":       (*ResourcePermissions)(nil),
-	"experiments.permissions":             (*ResourcePermissions)(nil),
-	"models.permissions":                  (*ResourcePermissions)(nil),
-	"sql_warehouses.permissions":          (*ResourcePermissions)(nil),
-	"secret_scopes.permissions":           (*ResourceSecretScopeAcls)(nil),
-	"model_serving_endpoints.permissions": (*ResourcePermissions)(nil),
-	"dashboards.permissions":              (*ResourcePermissions)(nil),
-	"genie_spaces.permissions":            (*ResourcePermissions)(nil),
-	"vector_search_endpoints.permissions": (*ResourcePermissions)(nil),
-	"instance_pools.permissions":          (*ResourcePermissions)(nil),
+	"secret_scopes.permissions": (*ResourceSecretScopeAcls)(nil),
 
 	// Grants
 	"catalogs.grants":                (*ResourceGrants)(nil),
@@ -80,6 +65,14 @@ var SupportedResources = map[string]any{
 
 	// Internal resources
 	"internal_immutable_snapshots": (*ResourceSnapshot)(nil),
+}
+
+func init() {
+	for name, description := range resources.All {
+		if p := description.Permissions; p.RequestObjectType != "" {
+			SupportedResources[name+".permissions"] = (*ResourcePermissions)(nil)
+		}
+	}
 }
 
 func InitAll(client *databricks.WorkspaceClient) (map[string]*Adapter, error) {

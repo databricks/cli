@@ -61,13 +61,15 @@ func (d *PostgresDatabase) Exists(ctx context.Context, w *databricks.WorkspaceCl
 	return true, nil
 }
 
+var postgresDatabaseDescription = ResourceDescription{
+	SingularName:  "postgres_database",
+	PluralName:    "postgres_databases",
+	SingularTitle: "Postgres database",
+	PluralTitle:   "Postgres databases",
+}
+
 func (d *PostgresDatabase) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "postgres_database",
-		PluralName:    "postgres_databases",
-		SingularTitle: "Postgres database",
-		PluralTitle:   "Postgres databases",
-	}
+	return postgresDatabaseDescription
 }
 
 func (d *PostgresDatabase) GetName() string {

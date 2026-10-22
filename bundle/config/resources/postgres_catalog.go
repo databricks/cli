@@ -50,13 +50,15 @@ func (c *PostgresCatalog) Exists(ctx context.Context, w *databricks.WorkspaceCli
 	return true, nil
 }
 
+var postgresCatalogDescription = ResourceDescription{
+	SingularName:  "postgres_catalog",
+	PluralName:    "postgres_catalogs",
+	SingularTitle: "Postgres catalog",
+	PluralTitle:   "Postgres catalogs",
+}
+
 func (c *PostgresCatalog) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "postgres_catalog",
-		PluralName:    "postgres_catalogs",
-		SingularTitle: "Postgres catalog",
-		PluralTitle:   "Postgres catalogs",
-	}
+	return postgresCatalogDescription
 }
 
 func (c *PostgresCatalog) GetName() string {

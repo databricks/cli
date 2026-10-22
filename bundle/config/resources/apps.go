@@ -82,13 +82,24 @@ func (a *App) Exists(ctx context.Context, w *databricks.WorkspaceClient, name st
 	return true, nil
 }
 
+var appDescription = ResourceDescription{
+	SingularName:  "app",
+	PluralName:    "apps",
+	SingularTitle: "App",
+	PluralTitle:   "Apps",
+	Permissions: PermissionsDescription{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_USE",
+		},
+		RequestObjectType:  "apps",
+		ResponseObjectType: "apps",
+		ObjectIDField:      "id",
+	},
+}
+
 func (*App) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "app",
-		PluralName:    "apps",
-		SingularTitle: "App",
-		PluralTitle:   "Apps",
-	}
+	return appDescription
 }
 
 func (a *App) InitializeURL(baseURL url.URL) {

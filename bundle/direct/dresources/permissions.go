@@ -6,31 +6,11 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
-
-// GetAPIRequestObjectType is used by direct to construct a request to permissions API:
-// https://github.com/databricks/terraform-provider-databricks/blob/430902d/permissions/permission_definitions.go#L775C24-L775C32
-var permissionResourceToObjectType = map[string]string{
-	"alerts":                  "/alertsv2/",
-	"apps":                    "/apps/",
-	"clusters":                "/clusters/",
-	"cluster_policies":        "/cluster-policies/",
-	"instance_pools":          "/instance-pools/",
-	"dashboards":              "/dashboards/",
-	"genie_spaces":            "/genie/",
-	"database_instances":      "/database-instances/",
-	"postgres_projects":       "/database-projects/",
-	"jobs":                    "/jobs/",
-	"experiments":             "/experiments/",
-	"models":                  "/registered-models/",
-	"model_serving_endpoints": "/serving-endpoints/",
-	"pipelines":               "/pipelines/",
-	"sql_warehouses":          "/sql/warehouses/",
-	"vector_search_endpoints": "/vector-search-endpoints/",
-}
 
 type ResourcePermissions struct {
 	client *databricks.WorkspaceClient
@@ -63,17 +43,6 @@ type PermissionsState struct {
 	EmbeddedSlice []StatePermission `json:"__embed__,omitempty"`
 }
 
-// permissionIDFields maps resource types that use a non-standard ID field for
-// the permissions API; resources absent from it use defaultPermissionIDField.
-var permissionIDFields = map[string]string{
-	"model_serving_endpoints": "endpoint_id",   // internal numeric ID, not the name used in CRUD APIs
-	"models":                  "model_id",      // numeric model ID, not the model name used as CRUD state ID
-	"postgres_projects":       "project_id",    // bare project_id, not the hierarchical "projects/{id}" state ID
-	"vector_search_endpoints": "endpoint_uuid", // endpoint UUID, not the endpoint name used as deployment ID
-}
-
-const defaultPermissionIDField = "id"
-
 func (*ResourcePermissions) New(client *databricks.WorkspaceClient) *ResourcePermissions {
 	return &ResourcePermissions{client: client, objectType: "", idField: ""}
 }
@@ -84,15 +53,13 @@ func (r *ResourcePermissions) Configure(resourceType string) error {
 		return fmt.Errorf("internal error: resource type %q does not end with .permissions", resourceType)
 	}
 
-	r.objectType, ok = permissionResourceToObjectType[parentType]
-	if !ok {
+	p := resources.All[parentType].Permissions
+	if p.RequestObjectType == "" {
 		return fmt.Errorf("unsupported permissions resource type: %s", parentType)
 	}
 
-	r.idField, ok = permissionIDFields[parentType]
-	if !ok {
-		r.idField = defaultPermissionIDField
-	}
+	r.objectType = "/" + p.RequestObjectType + "/"
+	r.idField = p.ObjectIDField
 
 	return nil
 }

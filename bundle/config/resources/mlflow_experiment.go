@@ -38,13 +38,24 @@ func (s *MlflowExperiment) Exists(ctx context.Context, w *databricks.WorkspaceCl
 	return true, nil
 }
 
+var mlflowExperimentDescription = ResourceDescription{
+	SingularName:  "experiment",
+	PluralName:    "experiments",
+	SingularTitle: "Experiment",
+	PluralTitle:   "Experiments",
+	Permissions: PermissionsDescription{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_READ",
+		},
+		RequestObjectType:  "experiments",
+		ResponseObjectType: "mlflowExperiment",
+		ObjectIDField:      "id",
+	},
+}
+
 func (s *MlflowExperiment) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:  "experiment",
-		PluralName:    "experiments",
-		SingularTitle: "Experiment",
-		PluralTitle:   "Experiments",
-	}
+	return mlflowExperimentDescription
 }
 
 func (s *MlflowExperiment) InitializeURL(baseURL url.URL) {
