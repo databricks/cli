@@ -3,6 +3,10 @@ Cloud = true
 # Skipping DMS tests for now because DMS do not support immutable resource yet
 EnvMatrix.DMS = [""]
 
+# The deploying identity shows in the output keyed by its kind (can_manage principals, permission
+# hints). Cloud tests deploy as a service principal, so do the same locally to get the same output.
+IsServicePrincipal = true
+
 Ignore = [
     "databricks.yml",
     ".databricks",

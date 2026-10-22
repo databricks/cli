@@ -15,7 +15,7 @@ If it is not included, CAN_MANAGE permissions are only applied if the present id
 Consider using a adding a top-level permissions section such as the following:
 
   permissions:
-    - user_name: [USERNAME]
+    - service_principal_name: [USERNAME]
       level: CAN_MANAGE
 
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
@@ -38,7 +38,7 @@ If it is not included, CAN_MANAGE permissions are only applied if the present id
 Consider using a adding a top-level permissions section such as the following:
 
   permissions:
-    - user_name: [USERNAME]
+    - service_principal_name: [USERNAME]
       level: CAN_MANAGE
 
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.

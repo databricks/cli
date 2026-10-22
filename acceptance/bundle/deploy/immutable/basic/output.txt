@@ -65,7 +65,7 @@ Building python_artifact...
       ],
       "can_manage": [
         {
-          "user_name": "[USERNAME]"
+          "service_principal_name": "[USERNAME]"
         }
       ],
       "zip_path": "[TEST_TMP_DIR]/.databricks/bundle/default/snapshots/[SNAPSHOT_HASH]-[UUID].zip"
@@ -113,7 +113,7 @@ Building python_artifact...
       ],
       "can_manage": [
         {
-          "user_name": "[USERNAME]"
+          "service_principal_name": "[USERNAME]"
         }
       ],
       "zip_path": "[TEST_TMP_DIR]/.databricks/bundle/default/snapshots/[SNAPSHOT_HASH]-[UUID].zip"
@@ -153,12 +153,12 @@ Building python_artifact...
       "reason": "missing_in_remote",
       "old": [
         {
-          "user_name": "[USERNAME]"
+          "service_principal_name": "[USERNAME]"
         }
       ],
       "new": [
         {
-          "user_name": "[USERNAME]"
+          "service_principal_name": "[USERNAME]"
         }
       ]
     },

@@ -25,6 +25,11 @@ import (
 // TestWorkspaceID is the id of the fake workspace.
 const TestWorkspaceID = 900800700600
 
+// snapshotRootUUID is the workspace user UUID the snapshot root is under. The real API uses a
+// UUID that is not the deploying identity's user name (an email or a service principal's
+// application ID), so snapshot paths never contain the user name.
+const snapshotRootUUID = "3f9d2c1b-7a6e-4b5d-8c4f-0e1a2b3c4d5e"
+
 var TestMetastore = catalog.MetastoreAssignment{
 	DefaultCatalogName: "hive_metastore",
 	MetastoreId:        "120efa64-9b68-46ba-be38-f319458430d2",
@@ -930,7 +935,7 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/api/2.0/repos/snapshots/rootpath", func(req Request) any {
 		return map[string]any{
-			"path": "/Workspace/Users/" + TestUserSP.UserName + "/.snapshots/",
+			"path": "/Workspace/Users/" + snapshotRootUUID + "/.snapshots/",
 		}
 	})
 
@@ -968,8 +973,8 @@ func AddDefaultHandlers(server *Server) {
 
 		// The server stores content under a fixed "snapshot" subfolder of the caller's
 		// relative_path. The real API uses the workspace user UUID (not email) in the path,
-		// matching service-principal identities used in cloud acceptance tests.
-		contentPath := fmt.Sprintf("/Workspace/Users/%s/.snapshots/%s/snapshot", TestUserSP.UserName, relativePath)
+		// see snapshotRootUUID.
+		contentPath := fmt.Sprintf("/Workspace/Users/%s/.snapshots/%s/snapshot", snapshotRootUUID, relativePath)
 		// Snapshots are immutable, so a relative_path can be created only once. The real API
 		// answers with a 400 that carries the code in the message and sets no error_code.
 		if _, exists := req.Workspace.SnapshotInfo(contentPath); exists {
@@ -994,7 +999,7 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("GET", "/api/2.0/snapshots/info", func(req Request) any {
 		relPath := req.URL.Query().Get("relative_path")
 		// Build the content path the same way the create handler does.
-		contentPath := fmt.Sprintf("/Workspace/Users/%s/.snapshots/%s/snapshot", TestUserSP.UserName, relPath)
+		contentPath := fmt.Sprintf("/Workspace/Users/%s/.snapshots/%s/snapshot", snapshotRootUUID, relPath)
 		rec, ok := req.Workspace.SnapshotInfo(contentPath)
 		if !ok {
 			return Response{
