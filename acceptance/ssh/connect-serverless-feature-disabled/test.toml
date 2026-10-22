@@ -1,6 +1,7 @@
 Cloud = false
 
-# Record requests so we can assert that the CLI cancels the run it submitted.
+# Record requests so we can assert that the CLI uploads each release archive once and cancels
+# the run it submitted.
 RecordRequests = true
 
 # Stand-in release archives staged by the script; not golden output.
