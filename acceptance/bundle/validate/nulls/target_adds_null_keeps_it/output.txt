@@ -1,0 +1,7 @@
+
+>>> [CLI] bundle validate -t dev -o json
+Warning: required field "enabled" is not set
+  at resources.jobs.j.queue
+  in databricks.yml:18:18
+
+null
