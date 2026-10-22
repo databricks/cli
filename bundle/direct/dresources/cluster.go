@@ -105,7 +105,7 @@ func (r *ResourceCluster) PrepareState(input *resources.Cluster) *ClusterState {
 // RemapState maps the remote ClusterRemote to ClusterState for diff comparison.
 // Started is derived from cluster state so the planner can detect start/stop changes.
 func (r *ResourceCluster) RemapState(input *ClusterRemote) *ClusterState {
-	spec := &ClusterState{
+	spec := &ClusterState{ // sdk:copy-from input
 		ApplyPolicyDefaultValues:   input.ApplyPolicyDefaultValues,
 		Autoscale:                  input.Autoscale,
 		AutoterminationMinutes:     input.AutoterminationMinutes,
@@ -428,7 +428,7 @@ func remoteClusterIsRunning(entry *PlanEntry) bool {
 }
 
 func makeCreateCluster(config *compute.ClusterSpec) compute.CreateCluster {
-	create := compute.CreateCluster{
+	create := compute.CreateCluster{ // sdk:copy-from config
 		ApplyPolicyDefaultValues:   config.ApplyPolicyDefaultValues,
 		Autoscale:                  config.Autoscale,
 		AutoterminationMinutes:     config.AutoterminationMinutes,
@@ -478,7 +478,7 @@ func makeCreateCluster(config *compute.ClusterSpec) compute.CreateCluster {
 }
 
 func makeEditCluster(id string, config *compute.ClusterSpec) compute.EditCluster {
-	edit := compute.EditCluster{
+	edit := compute.EditCluster{ // sdk:copy-from config
 		ClusterId:                  id,
 		ApplyPolicyDefaultValues:   config.ApplyPolicyDefaultValues,
 		Autoscale:                  config.Autoscale,

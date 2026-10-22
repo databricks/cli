@@ -25,7 +25,7 @@ func (*ResourceRegisteredModel) PrepareState(input *resources.RegisteredModel) *
 }
 
 func (*ResourceRegisteredModel) RemapState(model *catalog.RegisteredModelInfo) *catalog.CreateRegisteredModelRequest {
-	return &catalog.CreateRegisteredModelRequest{
+	return &catalog.CreateRegisteredModelRequest{ // sdk:copy-from model
 		CatalogName:     model.CatalogName,
 		Comment:         model.Comment,
 		Name:            model.Name,

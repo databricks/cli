@@ -52,7 +52,7 @@ Decide with the user whether to keep the tagging-producer drift or restore those
 The task ends with step 4 (`generate-clijson-post` runs `bump-sdk-post`) and ignores its error, so read the end of its output, or go on with step 4 directly.
 
 **4. Regenerate everything downstream: `./task bump-sdk-post`.**
-This is the whole mechanical part of the bump: `generate-check` (command stubs, refschema, schema, validation, direct-engine YAML, pydabs), then `test-update` for the acceptance goldens.
+This is the whole mechanical part of the bump: `fix-sdk-field-copies` (complete reviewed direct-resource mappings), `generate-check` (command stubs, refschema, schema, validation, direct-engine YAML, pydabs), then `test-update` for the acceptance goldens.
 Everything after it needs judgment.
 Run directly, it fails on errors: `generate-refschema` and `test-update` build the CLI, so it fails while the bump still breaks compilation; fix that (step 5) and rerun the task.
 
@@ -67,7 +67,7 @@ Revert any golden change you can't attribute to the new SDK or spec.
 **5. Handle SDK breaking changes.**
 Read the SDK's `CHANGELOG.md` at the target version (in the module cache) to enumerate breaking changes before chasing compile errors.
 A removed struct field that the CLI used (e.g. `jobs.AiRuntimeTask.CodeSourcePath`) should have its usage temporarily disabled with a comment noting it returns in a later SDK bump, not deleted outright.
-A new struct field triggers an `exhaustruct` lint failure in `bundle/direct/dresources/*`. Run `./task lint` and (in case of issues) wire the field through `PrepareState` and `RemapState` when it exists on both the input and remote types.
+A new struct field can trigger an `exhaustruct` lint failure in `bundle/direct/dresources/*`. `bump-sdk-post` first runs `fix-sdk-field-copies`, which adds missing same-name, same-JSON-name, identical-type copies only in literals explicitly annotated with `// sdk:copy-from source`. Existing assignments are preserved. Read `tools/sdkfieldcopies/README.md` for the reviewed scope and exclusions. Remaining fields still need judgment: run `./task lint`, review the fixer diagnostics, and wire the field through the appropriate mappings. Do not add zero values or annotations just to silence lint.
 Where a remote is rebuilt by hand from a GET response (e.g. `makeJobRunRemote` maps `jobs.Run` into the `jobs.RunNow`-shaped `JobRunRemote`), copy the new field from the response if the response has it, and list it with the request-only zero values otherwise.
 `job_runs.yml` must list every `jobs.RunNow` field under `ignore_remote_changes`; `TestJobRunIgnoresEveryRequestField` fails on a new one.
 A field the new spec now annotates as output-only may already be emitted into `<resource_type>.generated.yml`, making the manual entry in `<resource_type>.yml` redundant; `TestResourcesYMLNoRedundantRules` catches this, so remove the manual entry.

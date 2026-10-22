@@ -71,7 +71,7 @@ func (*ResourceSqlWarehouse) PrepareState(input *resources.SqlWarehouse) *SqlWar
 // RemapState maps the remote SqlWarehouseRemote to SqlWarehouseState for diff comparison.
 // Started is derived from warehouse state so the planner can detect start/stop changes.
 func (*ResourceSqlWarehouse) RemapState(warehouse *SqlWarehouseRemote) *SqlWarehouseState {
-	return &SqlWarehouseState{
+	return &SqlWarehouseState{ // sdk:copy-from warehouse
 		AutoStopMins:                warehouse.AutoStopMins,
 		Channel:                     warehouse.Channel,
 		ClusterSize:                 warehouse.ClusterSize,
@@ -137,7 +137,7 @@ func hasWarehouseChanges(entry *PlanEntry) bool {
 func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *SqlWarehouseState, entry *PlanEntry) (*SqlWarehouseRemote, error) {
 	edited := hasWarehouseChanges(entry)
 	if edited {
-		request := sql.EditWarehouseRequest{
+		request := sql.EditWarehouseRequest{ // sdk:copy-from config
 			AutoStopMins:                config.AutoStopMins,
 			Channel:                     config.Channel,
 			ClusterSize:                 config.ClusterSize,

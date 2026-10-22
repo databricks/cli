@@ -23,7 +23,7 @@ func (*ResourceCatalog) PrepareState(input *resources.Catalog) *catalog.CreateCa
 }
 
 func (*ResourceCatalog) RemapState(info *catalog.CatalogInfo) *catalog.CreateCatalog {
-	return &catalog.CreateCatalog{
+	return &catalog.CreateCatalog{ // sdk:copy-from info
 		Comment:                   info.Comment,
 		ConnectionName:            info.ConnectionName,
 		CustomMaxRetentionHours:   info.CustomMaxRetentionHours,

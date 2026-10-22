@@ -32,7 +32,7 @@ func (*ResourceClusterPolicy) PrepareState(input *resources.ClusterPolicy) *comp
 // RemapState copies the config fields shared by Policy and CreatePolicy;
 // output-only fields (policy_id, created_at_timestamp, creator_user_name, is_default) are not in the state.
 func (*ResourceClusterPolicy) RemapState(remote *compute.Policy) *compute.CreatePolicy {
-	return &compute.CreatePolicy{
+	return &compute.CreatePolicy{ // sdk:copy-from remote
 		Definition:                      remote.Definition,
 		Description:                     remote.Description,
 		Libraries:                       remote.Libraries,
@@ -58,7 +58,7 @@ func (r *ResourceClusterPolicy) DoCreate(ctx context.Context, config *compute.Cr
 }
 
 func (r *ResourceClusterPolicy) DoUpdate(ctx context.Context, id string, config *compute.CreatePolicy, _ *PlanEntry) (*compute.Policy, error) {
-	return nil, r.client.ClusterPolicies.Edit(ctx, compute.EditPolicy{
+	return nil, r.client.ClusterPolicies.Edit(ctx, compute.EditPolicy{ // sdk:copy-from config
 		PolicyId:                        id,
 		Name:                            config.Name,
 		Definition:                      config.Definition,

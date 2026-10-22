@@ -26,7 +26,7 @@ func (*ResourceVolume) PrepareState(input *resources.Volume) *catalog.CreateVolu
 }
 
 func (*ResourceVolume) RemapState(info *catalog.VolumeInfo) *catalog.CreateVolumeRequestContent {
-	return &catalog.CreateVolumeRequestContent{
+	return &catalog.CreateVolumeRequestContent{ // sdk:copy-from info
 		CatalogName:     info.CatalogName,
 		Comment:         info.Comment,
 		Name:            info.Name,

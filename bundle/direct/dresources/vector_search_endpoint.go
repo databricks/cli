@@ -62,7 +62,7 @@ func (*ResourceVectorSearchEndpoint) PrepareState(input *resources.VectorSearchE
 }
 
 func (*ResourceVectorSearchEndpoint) RemapState(remote *VectorSearchEndpointRemote) *vectorsearch.CreateEndpoint {
-	return &vectorsearch.CreateEndpoint{
+	return &vectorsearch.CreateEndpoint{ // sdk:copy-from remote
 		Name:            remote.Name,
 		EndpointType:    remote.EndpointType,
 		BudgetPolicyId:  remote.BudgetPolicyId,

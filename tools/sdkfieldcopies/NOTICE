@@ -1,0 +1,5 @@
+This development tool uses the following open source project, licensed under the BSD (3-clause) license:
+
+golang.org/x/tools - https://github.com/golang/tools
+Copyright 2009 The Go Authors.
+License - https://github.com/golang/tools/blob/master/LICENSE

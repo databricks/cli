@@ -43,7 +43,7 @@ func (*ResourceMlflowModel) PrepareState(input *resources.MlflowModel) *ml.Creat
 }
 
 func (*ResourceMlflowModel) RemapState(output *MlflowModelRemote) *ml.CreateModelRequest {
-	return &ml.CreateModelRequest{
+	return &ml.CreateModelRequest{ // sdk:copy-from output
 		Name:            output.Name,
 		Tags:            output.Tags,
 		Description:     output.Description,

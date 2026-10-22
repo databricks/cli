@@ -24,7 +24,7 @@ func (*ResourceInstancePool) PrepareState(input *resources.InstancePool) *comput
 // RemapState copies the config fields shared by GetInstancePool and CreateInstancePool;
 // output-only fields (state, stats, default_tags, instance_pool_id) are not in the state.
 func (*ResourceInstancePool) RemapState(remote *compute.GetInstancePool) *compute.CreateInstancePool {
-	return &compute.CreateInstancePool{
+	return &compute.CreateInstancePool{ // sdk:copy-from remote
 		AwsAttributes:                      remote.AwsAttributes,
 		AzureAttributes:                    remote.AzureAttributes,
 		CustomTags:                         remote.CustomTags,
@@ -58,7 +58,7 @@ func (r *ResourceInstancePool) DoCreate(ctx context.Context, config *compute.Cre
 }
 
 func (r *ResourceInstancePool) DoUpdate(ctx context.Context, id string, config *compute.CreateInstancePool, _ *PlanEntry) (*compute.GetInstancePool, error) {
-	return nil, r.client.InstancePools.Edit(ctx, compute.EditInstancePool{
+	return nil, r.client.InstancePools.Edit(ctx, compute.EditInstancePool{ // sdk:copy-from config
 		InstancePoolId:                     id,
 		InstancePoolName:                   config.InstancePoolName,
 		NodeTypeId:                         config.NodeTypeId,

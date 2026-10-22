@@ -60,7 +60,7 @@ func (*ResourceSecretScope) PrepareState(input *resources.SecretScope) *SecretSc
 }
 
 func (*ResourceSecretScope) RemapState(remote *SecretScopeRemote) *SecretScopeConfig {
-	return &SecretScopeConfig{
+	return &SecretScopeConfig{ // sdk:copy-from remote
 		Scope:                  remote.Scope,
 		ScopeBackendType:       remote.ScopeBackendType,
 		BackendAzureKeyvault:   remote.BackendAzureKeyvault,

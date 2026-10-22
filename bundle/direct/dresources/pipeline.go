@@ -173,7 +173,7 @@ func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *Pipe
 		return nil, nil
 	}
 
-	request := pipelines.EditPipeline{
+	request := pipelines.EditPipeline{ // sdk:copy-from config
 		AllowDuplicateNames:  config.AllowDuplicateNames,
 		BudgetPolicyId:       config.BudgetPolicyId,
 		Catalog:              config.Catalog,

@@ -82,7 +82,7 @@ func (*ResourceVectorSearchIndex) PrepareState(input *resources.VectorSearchInde
 }
 
 func (*ResourceVectorSearchIndex) RemapState(remote *VectorSearchIndexRemote) *VectorSearchIndexState {
-	state := &VectorSearchIndexState{
+	state := &VectorSearchIndexState{ // sdk:copy-from remote
 		DeltaSyncIndexSpec:    nil, // need to remap below
 		DirectAccessIndexSpec: remote.DirectAccessIndexSpec,
 		IndexSubtype:          remote.IndexSubtype,
@@ -93,7 +93,7 @@ func (*ResourceVectorSearchIndex) RemapState(remote *VectorSearchIndexRemote) *V
 		EndpointUuid:          remote.EndpointUuid,
 	}
 	if remote.DeltaSyncIndexSpec != nil {
-		state.DeltaSyncIndexSpec = &vectorsearch.DeltaSyncVectorIndexSpecRequest{
+		state.DeltaSyncIndexSpec = &vectorsearch.DeltaSyncVectorIndexSpecRequest{ // sdk:copy-from remote.DeltaSyncIndexSpec
 			ColumnsToIndex:          remote.DeltaSyncIndexSpec.ColumnsToIndex,
 			ColumnsToSync:           remote.DeltaSyncIndexSpec.ColumnsToSync,
 			EmbeddingSourceColumns:  remote.DeltaSyncIndexSpec.EmbeddingSourceColumns,
