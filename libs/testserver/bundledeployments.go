@@ -45,6 +45,7 @@ var dmsResourceTypes = []string{
 	"cluster_policies",
 	"clusters",
 	"dashboards",
+	"data_quality_monitors",
 	"database_catalogs",
 	"database_instances",
 	"experiments",

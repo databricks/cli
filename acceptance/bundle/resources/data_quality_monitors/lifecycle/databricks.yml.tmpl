@@ -1,0 +1,14 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  schemas:
+    myschema:
+      catalog_name: main
+      name: dqm_$UNIQUE_NAME
+
+  data_quality_monitors:
+    schema_monitor:
+      object_type: schema
+      object_id: ${resources.schemas.myschema.schema_id}
+      anomaly_detection_config: {}

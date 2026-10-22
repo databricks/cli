@@ -64,6 +64,13 @@ var RequiredFields = map[string][]string{
 
 	"resources.dashboards.*.permissions[*]": {"level"},
 
+	"resources.data_quality_monitors.*":                                         {"object_id", "object_type"},
+	"resources.data_quality_monitors.*.data_profiling_config":                   {"output_schema_id"},
+	"resources.data_quality_monitors.*.data_profiling_config.custom_metrics[*]": {"definition", "input_columns", "name", "output_data_type", "type"},
+	"resources.data_quality_monitors.*.data_profiling_config.inference_log":     {"granularities", "model_id_column", "prediction_column", "problem_type", "timestamp_column"},
+	"resources.data_quality_monitors.*.data_profiling_config.schedule":          {"quartz_cron_expression", "timezone_id"},
+	"resources.data_quality_monitors.*.data_profiling_config.time_series":       {"granularities", "timestamp_column"},
+
 	"resources.database_catalogs.*": {"database_instance_name", "database_name", "name"},
 
 	"resources.database_instances.*":                {"name"},

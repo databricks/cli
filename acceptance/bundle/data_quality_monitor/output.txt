@@ -1,0 +1,36 @@
+
+>>> [CLI] bundle validate -o json -t development
+{
+  "mode": "development",
+  "data_quality_monitors": {
+    "my_monitor": {
+      "data_profiling_config": {
+        "assets_dir": "/Shared/provider-test/databricks_monitoring/main.test.thing1",
+        "output_schema_id": "[UUID]",
+        "snapshot": {}
+      },
+      "object_id": "[UUID]",
+      "object_type": "table"
+    }
+  }
+}
+
+>>> [CLI] bundle validate -o json -t production
+{
+  "mode": "production",
+  "data_quality_monitors": {
+    "my_monitor": {
+      "data_profiling_config": {
+        "assets_dir": "/Shared/provider-test/databricks_monitoring/main.test.thing1",
+        "output_schema_id": "[UUID]",
+        "schedule": {
+          "quartz_cron_expression": "0 0 12 * * ?",
+          "timezone_id": "UTC"
+        },
+        "snapshot": {}
+      },
+      "object_id": "[UUID]",
+      "object_type": "table"
+    }
+  }
+}

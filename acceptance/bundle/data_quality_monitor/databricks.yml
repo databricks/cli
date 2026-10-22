@@ -1,0 +1,25 @@
+bundle:
+  name: data_quality_monitors
+
+resources:
+  data_quality_monitors:
+    my_monitor:
+      object_type: table
+      object_id: 11111111-2222-3333-4444-555555555555
+      data_profiling_config:
+        assets_dir: /Shared/provider-test/databricks_monitoring/main.test.thing1
+        output_schema_id: 66666666-7777-8888-9999-000000000000
+        snapshot: {}
+        schedule:
+          quartz_cron_expression: "0 0 12 * * ?" # every day at noon
+          timezone_id: UTC
+
+targets:
+  development:
+    mode: development
+    default: true
+
+  production:
+    mode: production
+    workspace:
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
