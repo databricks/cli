@@ -1360,7 +1360,7 @@ func TestGetSkillsRefDefaultManifest(t *testing.T) {
 				wantRef := pinnedRef
 				var latestErr error
 				if offline {
-					latestErr = errors.New("network down")
+					latestErr = errors.New("HTTP 403 fetching latest skills release")
 				}
 				switch {
 				case latest && offline:
