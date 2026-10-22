@@ -1,0 +1,13 @@
+# Without an aliases section the model's aliases are unmanaged (skipped with reason `unmanaged`), so
+# aliases set by MLflow clients are not drift. With a section, the config lists every alias of the
+# model: declared ones are set, others deleted, and drift is corrected.
+# Local only: aliases need registered model versions, which the test registers through the fake
+# server rather than with MLflow.
+RecordRequests = true
+
+# READPLAN=1 feeds the serialized plan to `bundle deploy --plan`.
+EnvMatrix.READPLAN = ["", "1"]
+
+Env.MSYS_NO_PATHCONV = "1"
+
+Ignore = ["tmp.plan.json"]

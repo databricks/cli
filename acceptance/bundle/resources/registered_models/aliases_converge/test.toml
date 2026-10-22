@@ -1,4 +1,5 @@
+# Local only: the alias needs a registered model version, which the test registers through the
+# fake server rather than with MLflow.
 RecordRequests = false
 
-# The aliases input_only classification lives in the direct engine, so scope
-# this regression there.
+Env.MSYS_NO_PATHCONV = "1"

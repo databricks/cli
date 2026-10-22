@@ -1,0 +1,462 @@
+
+=== Deploy a model that declares no aliases
+>>> print_requests.py //unity-catalog/models
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/models",
+  "body": {
+    "catalog_name": "main",
+    "name": "model-aliases-[UNIQUE_NAME]",
+    "schema_name": "default"
+  }
+}
+
+=== Out of band: a training run registers two versions and points 'champion' at version 1
+>>> register_model_version main.default.model-aliases-[UNIQUE_NAME]
+1
+
+>>> register_model_version main.default.model-aliases-[UNIQUE_NAME]
+2
+
+>>> print_requests.py //unity-catalog/models
+{
+  "method": "PUT",
+  "path": "/api/2.1/unity-catalog/models/main.default.model-aliases-[UNIQUE_NAME]/aliases/champion",
+  "body": {
+    "version_num": 1
+  }
+}
+
+=== No aliases section: 'champion' is skipped as unmanaged, not drift
+>>> plan_aliases
+{
+  "aliases": {
+    "action": "skip",
+    "reason": "unmanaged",
+    "remote": [
+      {
+        "alias_name": "champion",
+        "catalog_name": "main",
+        "id": "[UUID]",
+        "model_name": "model-aliases-[UNIQUE_NAME]",
+        "schema_name": "default",
+        "version_num": 1
+      }
+    ]
+  }
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Declare aliases: 'champion' moves to version 2 and 'challenger' points at version 1
+>>> plan_aliases
+{
+  "aliases": {
+    "action": "update",
+    "new": [
+      {
+        "alias_name": "champion",
+        "version_num": 2
+      },
+      {
+        "alias_name": "challenger",
+        "version_num": 1
+      }
+    ],
+    "remote": [
+      {
+        "alias_name": "champion",
+        "catalog_name": "main",
+        "id": "[UUID]",
+        "model_name": "model-aliases-[UNIQUE_NAME]",
+        "schema_name": "default",
+        "version_num": 1
+      }
+    ]
+  },
+  "aliases[alias_name='challenger']": {
+    "action": "update",
+    "new": {
+      "alias_name": "challenger",
+      "version_num": 1
+    }
+  },
+  "aliases[alias_name='champion'].catalog_name": {
+    "action": "skip",
+    "reason": "output_only",
+    "remote": "main"
+  },
+  "aliases[alias_name='champion'].id": {
+    "action": "skip",
+    "reason": "output_only",
+    "remote": "[UUID]"
+  },
+  "aliases[alias_name='champion'].model_name": {
+    "action": "skip",
+    "reason": "output_only",
+    "remote": "model-aliases-[UNIQUE_NAME]"
+  },
+  "aliases[alias_name='champion'].schema_name": {
+    "action": "skip",
+    "reason": "output_only",
+    "remote": "default"
+  },
+  "aliases[alias_name='champion'].version_num": {
+    "action": "update",
+    "new": 2,
+    "remote": 1
+  }
+}
+
+>>> print_requests.py //unity-catalog/models
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/models/main.default.model-aliases-[UNIQUE_NAME]",
+  "body": {
+    "catalog_name": "main",
+    "comment": "",
+    "name": "model-aliases-[UNIQUE_NAME]",
+    "schema_name": "default"
+  }
+}
+{
+  "method": "PUT",
+  "path": "/api/2.1/unity-catalog/models/main.default.model-aliases-[UNIQUE_NAME]/aliases/champion",
+  "body": {
+    "version_num": 2
+  }
+}
+{
+  "method": "PUT",
+  "path": "/api/2.1/unity-catalog/models/main.default.model-aliases-[UNIQUE_NAME]/aliases/challenger",
+  "body": {
+    "version_num": 1
+  }
+}
+
+>>> [CLI] registered-models get main.default.model-aliases-[UNIQUE_NAME] --include-aliases
+[
+  {
+    "alias_name": "champion",
+    "version_num": 2
+  },
+  {
+    "alias_name": "challenger",
+    "version_num": 1
+  }
+]
+
+=== Redeploy is a no-op: the fields the backend fills in on each alias are skipped as output_only
+>>> plan_aliases
+{
+  "aliases[alias_name='challenger'].catalog_name": {
+    "action": "skip",
+    "reason": "output_only",
+    "remote": "main"
+  },
+  "aliases[alias_name='challenger'].id": {
+    "action": "skip",
+    "reason": "output_only",
+    "remote": "[UUID]"
+  },
+  "aliases[alias_name='challenger'].model_name": {
+    "action": "skip",
+    "reason": "output_only",
+    "remote": "model-aliases-[UNIQUE_NAME]"
+  },
+  "aliases[alias_name='challenger'].schema_name": {
+    "action": "skip",
+    "reason": "output_only",
+    "remote": "default"
+  },
+  "aliases[alias_name='champion'].catalog_name": {
+    "action": "skip",
+    "reason": "output_only",
+    "remote": "main"
+  },
+  "aliases[alias_name='champion'].id": {
+    "action": "skip",
+    "reason": "output_only",
+    "remote": "[UUID]"
+  },
+  "aliases[alias_name='champion'].model_name": {
+    "action": "skip",
+    "reason": "output_only",
+    "remote": "model-aliases-[UNIQUE_NAME]"
+  },
+  "aliases[alias_name='champion'].schema_name": {
+    "action": "skip",
+    "reason": "output_only",
+    "remote": "default"
+  }
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Drift: out of band, 'champion' moves back to version 1 and 'challenger' is deleted; deploy restores both
+>>> print_requests.py //unity-catalog/models
+{
+  "method": "PUT",
+  "path": "/api/2.1/unity-catalog/models/main.default.model-aliases-[UNIQUE_NAME]/aliases/champion",
+  "body": {
+    "version_num": 1
+  }
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/models/main.default.model-aliases-[UNIQUE_NAME]/aliases/challenger"
+}
+
+>>> plan_aliases
+{
+  "aliases[alias_name='challenger']": {
+    "action": "update",
+    "old": {
+      "alias_name": "challenger",
+      "version_num": 1
+    },
+    "new": {
+      "alias_name": "challenger",
+      "version_num": 1
+    }
+  },
+  "aliases[alias_name='champion'].catalog_name": {
+    "action": "skip",
+    "reason": "output_only",
+    "remote": "main"
+  },
+  "aliases[alias_name='champion'].id": {
+    "action": "skip",
+    "reason": "output_only",
+    "remote": "[UUID]"
+  },
+  "aliases[alias_name='champion'].model_name": {
+    "action": "skip",
+    "reason": "output_only",
+    "remote": "model-aliases-[UNIQUE_NAME]"
+  },
+  "aliases[alias_name='champion'].schema_name": {
+    "action": "skip",
+    "reason": "output_only",
+    "remote": "default"
+  },
+  "aliases[alias_name='champion'].version_num": {
+    "action": "update",
+    "old": 2,
+    "new": 2,
+    "remote": 1
+  }
+}
+
+>>> print_requests.py //unity-catalog/models
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/models/main.default.model-aliases-[UNIQUE_NAME]",
+  "body": {
+    "catalog_name": "main",
+    "comment": "",
+    "name": "model-aliases-[UNIQUE_NAME]",
+    "schema_name": "default"
+  }
+}
+{
+  "method": "PUT",
+  "path": "/api/2.1/unity-catalog/models/main.default.model-aliases-[UNIQUE_NAME]/aliases/champion",
+  "body": {
+    "version_num": 2
+  }
+}
+{
+  "method": "PUT",
+  "path": "/api/2.1/unity-catalog/models/main.default.model-aliases-[UNIQUE_NAME]/aliases/challenger",
+  "body": {
+    "version_num": 1
+  }
+}
+
+>>> [CLI] registered-models get main.default.model-aliases-[UNIQUE_NAME] --include-aliases
+[
+  {
+    "alias_name": "champion",
+    "version_num": 2
+  },
+  {
+    "alias_name": "challenger",
+    "version_num": 1
+  }
+]
+
+=== Drop 'challenger' from the config: it is deleted, and so is 'staging', set out of band meanwhile
+>>> print_requests.py //unity-catalog/models
+{
+  "method": "PUT",
+  "path": "/api/2.1/unity-catalog/models/main.default.model-aliases-[UNIQUE_NAME]/aliases/staging",
+  "body": {
+    "version_num": 1
+  }
+}
+
+>>> plan_aliases
+{
+  "aliases[alias_name='challenger']": {
+    "action": "update",
+    "old": {
+      "alias_name": "challenger",
+      "version_num": 1
+    },
+    "remote": {
+      "alias_name": "challenger",
+      "catalog_name": "main",
+      "id": "[UUID]",
+      "model_name": "model-aliases-[UNIQUE_NAME]",
+      "schema_name": "default",
+      "version_num": 1
+    }
+  },
+  "aliases[alias_name='champion'].catalog_name": {
+    "action": "skip",
+    "reason": "output_only",
+    "remote": "main"
+  },
+  "aliases[alias_name='champion'].id": {
+    "action": "skip",
+    "reason": "output_only",
+    "remote": "[UUID]"
+  },
+  "aliases[alias_name='champion'].model_name": {
+    "action": "skip",
+    "reason": "output_only",
+    "remote": "model-aliases-[UNIQUE_NAME]"
+  },
+  "aliases[alias_name='champion'].schema_name": {
+    "action": "skip",
+    "reason": "output_only",
+    "remote": "default"
+  },
+  "aliases[alias_name='staging']": {
+    "action": "update",
+    "remote": {
+      "alias_name": "staging",
+      "catalog_name": "main",
+      "id": "[UUID]",
+      "model_name": "model-aliases-[UNIQUE_NAME]",
+      "schema_name": "default",
+      "version_num": 1
+    }
+  }
+}
+
+>>> print_requests.py //unity-catalog/models
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/models/main.default.model-aliases-[UNIQUE_NAME]",
+  "body": {
+    "catalog_name": "main",
+    "comment": "",
+    "name": "model-aliases-[UNIQUE_NAME]",
+    "schema_name": "default"
+  }
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/models/main.default.model-aliases-[UNIQUE_NAME]/aliases/challenger"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/models/main.default.model-aliases-[UNIQUE_NAME]/aliases/staging"
+}
+
+>>> [CLI] registered-models get main.default.model-aliases-[UNIQUE_NAME] --include-aliases
+[
+  {
+    "alias_name": "champion",
+    "version_num": 2
+  }
+]
+
+=== An empty aliases list keeps the aliases managed and deletes them all
+>>> plan_aliases
+{
+  "aliases[alias_name='champion']": {
+    "action": "update",
+    "old": {
+      "alias_name": "champion",
+      "version_num": 2
+    },
+    "remote": {
+      "alias_name": "champion",
+      "catalog_name": "main",
+      "id": "[UUID]",
+      "model_name": "model-aliases-[UNIQUE_NAME]",
+      "schema_name": "default",
+      "version_num": 2
+    }
+  }
+}
+
+>>> print_requests.py //unity-catalog/models
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/models/main.default.model-aliases-[UNIQUE_NAME]",
+  "body": {
+    "catalog_name": "main",
+    "comment": "",
+    "name": "model-aliases-[UNIQUE_NAME]",
+    "schema_name": "default"
+  }
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/models/main.default.model-aliases-[UNIQUE_NAME]/aliases/champion"
+}
+
+>>> [CLI] registered-models get main.default.model-aliases-[UNIQUE_NAME] --include-aliases
+[]
+
+=== Remove the aliases section: aliases are unmanaged again, so one set out of band stays
+>>> print_requests.py //unity-catalog/models
+{
+  "method": "PUT",
+  "path": "/api/2.1/unity-catalog/models/main.default.model-aliases-[UNIQUE_NAME]/aliases/champion",
+  "body": {
+    "version_num": 1
+  }
+}
+
+>>> plan_aliases
+{
+  "aliases": {
+    "action": "skip",
+    "reason": "unmanaged",
+    "remote": [
+      {
+        "alias_name": "champion",
+        "catalog_name": "main",
+        "id": "[UUID]",
+        "model_name": "model-aliases-[UNIQUE_NAME]",
+        "schema_name": "default",
+        "version_num": 1
+      }
+    ]
+  }
+}
+
+>>> print_requests.py //unity-catalog/models
+
+>>> [CLI] registered-models get main.default.model-aliases-[UNIQUE_NAME] --include-aliases
+[
+  {
+    "alias_name": "champion",
+    "version_num": 1
+  }
+]
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.registered_models.model1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/registered-model-aliases-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
