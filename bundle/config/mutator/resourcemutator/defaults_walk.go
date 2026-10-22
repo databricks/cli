@@ -29,6 +29,9 @@ func defaultsConfigResources(w *defaultsWalker, n *walk.Node, v *config.Resource
 	if len(v.Alerts) > 0 {
 		c := n.Child("alerts")
 		for k, x := range v.Alerts {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			defaultsResourcesAlert(w, &e, x)
 		}
@@ -36,6 +39,9 @@ func defaultsConfigResources(w *defaultsWalker, n *walk.Node, v *config.Resource
 	if len(v.Apps) > 0 {
 		c := n.Child("apps")
 		for k, x := range v.Apps {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			defaultsResourcesApp(w, &e, x)
 		}
@@ -43,6 +49,9 @@ func defaultsConfigResources(w *defaultsWalker, n *walk.Node, v *config.Resource
 	if len(v.Clusters) > 0 {
 		c := n.Child("clusters")
 		for k, x := range v.Clusters {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			defaultsResourcesCluster(w, &e, x)
 		}
@@ -50,6 +59,9 @@ func defaultsConfigResources(w *defaultsWalker, n *walk.Node, v *config.Resource
 	if len(v.Dashboards) > 0 {
 		c := n.Child("dashboards")
 		for k, x := range v.Dashboards {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			defaultsResourcesDashboard(w, &e, x)
 		}
@@ -57,6 +69,9 @@ func defaultsConfigResources(w *defaultsWalker, n *walk.Node, v *config.Resource
 	if len(v.GenieSpaces) > 0 {
 		c := n.Child("genie_spaces")
 		for k, x := range v.GenieSpaces {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			defaultsResourcesGenieSpace(w, &e, x)
 		}
@@ -64,6 +79,9 @@ func defaultsConfigResources(w *defaultsWalker, n *walk.Node, v *config.Resource
 	if len(v.Jobs) > 0 {
 		c := n.Child("jobs")
 		for k, x := range v.Jobs {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			defaultsResourcesJob(w, &e, x)
 		}
@@ -71,6 +89,9 @@ func defaultsConfigResources(w *defaultsWalker, n *walk.Node, v *config.Resource
 	if len(v.Pipelines) > 0 {
 		c := n.Child("pipelines")
 		for k, x := range v.Pipelines {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			defaultsResourcesPipeline(w, &e, x)
 		}
@@ -78,6 +99,9 @@ func defaultsConfigResources(w *defaultsWalker, n *walk.Node, v *config.Resource
 	if len(v.SqlWarehouses) > 0 {
 		c := n.Child("sql_warehouses")
 		for k, x := range v.SqlWarehouses {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			defaultsResourcesSqlWarehouse(w, &e, x)
 		}
@@ -85,6 +109,9 @@ func defaultsConfigResources(w *defaultsWalker, n *walk.Node, v *config.Resource
 	if len(v.Volumes) > 0 {
 		c := n.Child("volumes")
 		for k, x := range v.Volumes {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			defaultsResourcesVolume(w, &e, x)
 		}
