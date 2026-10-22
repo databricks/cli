@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
@@ -14,6 +15,9 @@ import (
 // bufferedOperations caps how far ahead of the service a deploy may get; DMS is what the next
 // plan reads.
 const bufferedOperations = 10
+
+// OperationTimeout caps a single DMS history request, including its retries.
+const OperationTimeout = time.Minute
 
 // BufferOptions controls backpressure and whether recording stops after an error.
 type BufferOptions struct {
@@ -185,6 +189,8 @@ func (b *OperationBuffer) run(ctx context.Context) {
 
 // write sends one update, at the sequence id the resource is at.
 func (b *OperationBuffer) write(ctx context.Context, key string, update OperationUpdate) error {
+	ctx, cancel := context.WithTimeout(ctx, OperationTimeout)
+	defer cancel()
 	w := cmdctx.WorkspaceClient(ctx)
 	result, err := w.BundleDeployments.UpdateOperation(ctx, bundledeployments.UpdateOperationRequest{
 		Name:       OperationName(b.deploymentID, b.versionNum, key),

@@ -32,12 +32,11 @@ import (
 const (
 	// currentStateVersion is the schema version written by this CLI and the version
 	// legacy states are migrated up to on load.
-	currentStateVersion     = 3
-	initialBufferSize       = 64 * 1024
-	maxWalEntrySize         = 10 * 1024 * 1024
-	walSuffix               = ".wal"
-	historyDrainTimeout     = 5 * time.Second
-	historyOperationTimeout = 5 * time.Second
+	currentStateVersion             = 3
+	initialBufferSize               = 64 * 1024
+	maxWalEntrySize                 = 10 * 1024 * 1024
+	walSuffix                       = ".wal"
+	historyDrainTimeoutPerOperation = 3 * time.Second
 )
 
 // FeatureDeploymentHistory marks a state whose resources are also recorded with the
@@ -105,6 +104,9 @@ type DeploymentState struct {
 	// operationBuffer records each state write with DMS. Nil unless the bundle records deployment
 	// history, in which case InitializeOperationBuffer installs it once the version exists.
 	operationBuffer *dms.OperationBuffer
+
+	// Includes all staged operations, even those already recorded or coalesced.
+	operationCount int
 
 	// versionCompleted makes CompleteVersion a no-op after the first call, so a deferred safety-net
 	// completion after an explicit one does nothing.
@@ -189,6 +191,7 @@ func (db *DeploymentState) InitializeOperationBuffer(ctx context.Context, deploy
 		options.Capacity = operationCount
 	}
 	db.operationBuffer = dms.StartOperationBuffer(ctx, deploymentID, versionID, options)
+	db.operationCount = operationCount
 	db.DeploymentID = deploymentID
 	db.VersionID = versionID
 }
@@ -231,11 +234,8 @@ func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (b
 	bestEffort := db.mode.isFileWithHistory()
 	db.mu.Unlock()
 
-	if bestEffort {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, historyOperationTimeout)
-		defer cancel()
-	}
+	ctx, cancel := context.WithTimeout(ctx, dms.OperationTimeout)
+	defer cancel()
 
 	// A recording failure fails the version even when the caller counted the deploy a success: the
 	// service does not then hold everything the WAL does. Finalize already drained and surfaced it;
@@ -497,6 +497,7 @@ func (db *DeploymentState) reset() {
 	db.Path = ""
 	db.Data = Database{}
 	db.stateIDs = nil
+	db.operationCount = 0
 }
 
 func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, mode Mode, withRecovery WithRecovery, dmsDeployment OpenDmsArgs) error {
@@ -510,6 +511,7 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, mode M
 	}
 	db.operationBuffer = nil
 	db.versionCompleted = false
+	db.operationCount = 0
 	db.DeploymentID = dmsDeployment.DeploymentID
 	db.VersionID = dmsDeployment.LastVersionID
 
@@ -644,6 +646,7 @@ func (db *DeploymentState) OpenWithData(path string, data Database) {
 	db.mode = ReadingFile
 	db.operationBuffer = nil
 	db.versionCompleted = false
+	db.operationCount = 0
 	db.DeploymentID = ""
 	db.VersionID = 0
 	db.Data = data
@@ -820,7 +823,8 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 		drainCtx := ctx
 		cancel := func() {}
 		if db.mode.isFileWithHistory() {
-			drainCtx, cancel = context.WithTimeout(ctx, historyDrainTimeout)
+			drainTimeout := time.Duration(db.operationCount) * historyDrainTimeoutPerOperation
+			drainCtx, cancel = context.WithTimeout(ctx, drainTimeout)
 		}
 		drainErr := db.operationBuffer.Drain(drainCtx)
 		cancel()

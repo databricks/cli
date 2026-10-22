@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/databricks/cli/bundle/deployplan"
@@ -32,6 +33,9 @@ func (m modeTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	} else {
 		m.handler.ServeHTTP(w, r)
 	}
+	if err := r.Context().Err(); err != nil {
+		return nil, err
+	}
 	response := w.Result()
 	response.Request = r
 	return response, nil
@@ -43,6 +47,8 @@ func modeContext(t *testing.T, handler http.HandlerFunc) context.Context {
 	client, err := databricks.NewWorkspaceClient(&databricks.Config{
 		Host: "https://state.test", Token: "test-token", AuthType: "pat",
 		HTTPTransport: modeTransport{handler: handler},
+		// Let our request deadline expire before the SDK's inactivity timeout.
+		HTTPTimeoutSeconds: 120,
 	})
 	require.NoError(t, err)
 	return cmdctx.SetWorkspaceClient(t.Context(), client)
@@ -266,36 +272,117 @@ func TestHistoryErrorsFailOpen(t *testing.T) {
 
 func TestHistoryDrainTimeoutPreservesFileState(t *testing.T) {
 	for _, mode := range []dstate.Mode{dstate.WritingFileWithHistory, dstate.WritingFileWithHistoryEnforced} {
-		t.Run(fmt.Sprint(mode), func(t *testing.T) {
-			started := make(chan struct{})
-			finished := make(chan struct{})
-			ctx := modeContext(t, func(w http.ResponseWriter, r *http.Request) {
-				_, _ = io.Copy(io.Discard, r.Body)
-				close(started)
-				<-r.Context().Done()
-				close(finished)
+		for _, tc := range []struct {
+			name           string
+			operationCount int
+			callerTimeout  time.Duration
+			wantDuration   time.Duration
+		}{
+			{name: "one operation", operationCount: 1, wantDuration: 3 * time.Second},
+			{name: "all staged operations", operationCount: 4, wantDuration: 12 * time.Second},
+			{name: "shorter caller deadline", operationCount: 4, callerTimeout: 20 * time.Millisecond, wantDuration: 20 * time.Millisecond},
+		} {
+			t.Run(fmt.Sprintf("%d/%s", mode, tc.name), func(t *testing.T) {
+				synctest.Test(t, func(t *testing.T) {
+					started := make(chan struct{})
+					finished := make(chan struct{})
+					ctx := modeContext(t, func(w http.ResponseWriter, r *http.Request) {
+						_, _ = io.Copy(io.Discard, r.Body)
+						close(started)
+						<-r.Context().Done()
+						close(finished)
+					})
+					path := filepath.Join(t.TempDir(), "resources.json")
+					var db dstate.DeploymentState
+					require.NoError(t, db.Open(ctx, path, mode, false, dstate.OpenDmsArgs{}))
+					db.InitializeOperationBuffer(ctx, "dep-1", 1, tc.operationCount)
+					// One buffered update must still get the budget for all staged operations.
+					require.NoError(t, db.SaveState(ctx, "resources.jobs.job", "id-1", struct{}{}, nil))
+					<-started
+					drainCtx := ctx
+					if tc.callerTimeout > 0 {
+						var cancel context.CancelFunc
+						drainCtx, cancel = context.WithTimeout(ctx, tc.callerTimeout)
+						defer cancel()
+					}
+					start := time.Now()
+					_, err := db.Finalize(drainCtx)
+					require.NoError(t, err)
+					assert.Equal(t, tc.wantDuration, time.Since(start))
+					assert.FileExists(t, path)
+					assert.NoFileExists(t, path+".wal")
+					<-finished
+				})
 			})
-			path := filepath.Join(t.TempDir(), "resources.json")
-			var db dstate.DeploymentState
-			require.NoError(t, db.Open(ctx, path, mode, false, dstate.OpenDmsArgs{}))
-			db.InitializeOperationBuffer(ctx, "dep-1", 1, 1)
-			require.NoError(t, db.SaveState(ctx, "resources.jobs.job", "id-1", struct{}{}, nil))
-			select {
-			case <-started:
-			case <-time.After(5 * time.Second):
-				t.Fatal("DMS request did not start")
-			}
-			drainCtx, cancel := context.WithTimeout(ctx, 20*time.Millisecond)
-			defer cancel()
-			_, err := db.Finalize(drainCtx)
-			require.NoError(t, err)
-			assert.FileExists(t, path)
-			assert.NoFileExists(t, path+".wal")
-			select {
-			case <-finished:
-			case <-time.After(5 * time.Second):
-				t.Fatal("DMS request was not canceled")
-			}
+		}
+	}
+}
+
+func TestOperationTimeout(t *testing.T) {
+	for _, mode := range []dstate.Mode{dstate.WritingDMS, dstate.WritingFileWithHistory, dstate.WritingFileWithHistoryEnforced} {
+		t.Run(fmt.Sprint(mode), func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				finished := make(chan struct{})
+				ctx := modeContext(t, func(w http.ResponseWriter, r *http.Request) {
+					_, _ = io.Copy(io.Discard, r.Body)
+					<-r.Context().Done()
+					close(finished)
+				})
+				path := filepath.Join(t.TempDir(), "resources.json")
+				var db dstate.DeploymentState
+				require.NoError(t, db.Open(ctx, path, mode, false, dstate.OpenDmsArgs{}))
+				db.InitializeOperationBuffer(ctx, "dep-1", 1, 100)
+				start := time.Now()
+				require.NoError(t, db.SaveState(ctx, "resources.jobs.job", "id-1", struct{}{}, nil))
+				<-finished
+				synctest.Wait()
+				assert.Equal(t, time.Minute, time.Since(start))
+				_, err := db.Finalize(ctx)
+				if mode == dstate.WritingDMS {
+					require.ErrorIs(t, err, context.DeadlineExceeded)
+				} else {
+					require.NoError(t, err)
+					var reopened dstate.DeploymentState
+					require.NoError(t, reopened.Open(ctx, path, dstate.ReadingFile, false, dstate.OpenDmsArgs{}))
+					assert.Equal(t, "id-1", reopened.GetResourceID("resources.jobs.job"))
+					_, err = reopened.Finalize(ctx)
+					require.NoError(t, err)
+				}
+			})
+		})
+	}
+}
+
+func TestCompleteVersionTimeout(t *testing.T) {
+	for _, mode := range []dstate.Mode{dstate.WritingDMS, dstate.WritingFileWithHistory, dstate.WritingFileWithHistoryEnforced} {
+		t.Run(fmt.Sprint(mode), func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				ctx := modeContext(t, func(w http.ResponseWriter, r *http.Request) {
+					if r.Method == http.MethodPost {
+						_, _ = io.Copy(io.Discard, r.Body)
+						<-r.Context().Done()
+					} else {
+						w.Header().Set("Content-Type", "application/json")
+						_, _ = w.Write([]byte(`{"sequence_id":1}`))
+					}
+				})
+				var db dstate.DeploymentState
+				path := filepath.Join(t.TempDir(), "resources.json")
+				require.NoError(t, db.Open(ctx, path, mode, false, dstate.OpenDmsArgs{}))
+				db.InitializeOperationBuffer(ctx, "dep-1", 1, 1)
+				require.NoError(t, db.SaveState(ctx, "resources.jobs.job", "id-1", struct{}{}, nil))
+				_, err := db.Finalize(ctx)
+				require.NoError(t, err)
+				start := time.Now()
+				completed, err := db.CompleteVersion(ctx, true)
+				assert.Equal(t, time.Minute, time.Since(start))
+				assert.False(t, completed)
+				if mode == dstate.WritingDMS {
+					require.ErrorIs(t, err, context.DeadlineExceeded)
+				} else {
+					require.NoError(t, err)
+				}
+			})
 		})
 	}
 }
