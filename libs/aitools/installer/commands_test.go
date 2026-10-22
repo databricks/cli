@@ -42,9 +42,9 @@ func TestCommandsWithRateLimitedSkillsRelease(t *testing.T) {
 			t.Setenv("DATABRICKS_FORCE_EMBEDDED_COMPAT", "false")
 			t.Setenv("DATABRICKS_CACHE_ENABLED", "true")
 			t.Setenv("DATABRICKS_CACHE_DIR", homeDir)
-			require.NoError(t, os.WriteFile(filepath.Join(homeDir, "compat-manifest.json"), []byte(`{"1.22.0":{"appkit":"0.84.0","skills":"latest"}}`), 0o600))
+			require.NoError(t, os.WriteFile(filepath.Join(homeDir, "compat-manifest.json"), []byte(`{"1.23.0":{"appkit":"0.84.0","skills":"latest"},"1.22.0":{"appkit":"0.84.0","skills":"0.2.32"}}`), 0o600))
 			originalVersion := build.GetInfo().Version
-			build.SetBuildVersion("1.22.0")
+			build.SetBuildVersion("1.23.0")
 			t.Cleanup(func() { build.SetBuildVersion(originalVersion) })
 			embedded, err := clicompat.ResolveEmbeddedAgentSkillsVersion()
 			require.NoError(t, err)

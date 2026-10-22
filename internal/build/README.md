@@ -8,7 +8,8 @@ Raw skills track the latest published skills release for the newest CLI range. P
 
 ```json
 {
-  "1.22.0": { "appkit": "0.84.0", "skills": "latest" },
+  "1.23.0": { "appkit": "0.84.0", "skills": "latest" },
+  "1.22.0": { "appkit": "0.84.0", "skills": "0.2.32" },
   "1.20.0": { "appkit": "0.84.0", "skills": "0.2.30" },
   "1.0.0": { "appkit": "0.76.1", "skills": "0.2.10" },
   "0.299.2": { "appkit": "0.24.0", "skills": "0.1.5" }
@@ -25,14 +26,15 @@ Raw-skills updates and reinstalls reject automatic downgrades, including with `-
 
 CLIs before `1.6.0` reject the whole remote manifest when any entry uses `"latest"`, even an entry they never resolve to. They use a valid cached manifest or their embedded manifest without returning a parse error. These CLIs stop receiving remote compatibility updates for both AppKit and skills.
 
-Latest tracking starts at the CLI `1.22.0` range. CLI `1.20.x` and `1.21.x` stay pinned.
+Latest tracking starts at the CLI `1.23.0` range. CLI `1.22.x` stays pinned to skills `0.2.32` because those binaries don't have the release-lookup fallback.
 
 For example, with the manifest above:
 - CLI `0.299.5` → uses `0.299.2` entry (appkit `0.24.0`)
 - CLI `1.19.0` → uses `1.0.0` entry (appkit `0.76.1`)
 - CLI `1.21.0` → uses `1.20.0` entry (appkit `0.84.0`, skills `0.2.30`)
-- CLI `1.22.0` → uses `1.22.0` entry (appkit `0.84.0`, latest skills with the release resolved at build time as fallback)
-- CLI `0.0.0-dev+abc` → uses `1.22.0` entry (dev builds use the highest versioned entry)
+- CLI `1.22.0` → uses `1.22.0` entry (appkit `0.84.0`, skills `0.2.32`)
+- CLI `1.23.0` → uses `1.23.0` entry (appkit `0.84.0`, latest skills with the release resolved at build time as fallback)
+- CLI `0.0.0-dev+abc` → uses `1.23.0` entry (dev builds use the highest versioned entry)
 
 ## How the CLI resolves versions
 

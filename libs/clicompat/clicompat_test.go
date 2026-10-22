@@ -23,6 +23,8 @@ import (
 	"golang.org/x/mod/semver"
 )
 
+const pinnedAgentSkillsVersion = "0.2.32"
+
 // roundTripFunc adapts a function into an http.RoundTripper.
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
@@ -346,7 +348,9 @@ func TestResolveEmbeddedAgentSkillsVersion(t *testing.T) {
 		want    string
 	}{
 		{version: "1.0.0", want: "0.2.10"},
-		{version: "1.22.0", want: latest},
+		{version: "1.22.0", want: pinnedAgentSkillsVersion},
+		{version: "1.22.9", want: pinnedAgentSkillsVersion},
+		{version: "1.23.0", want: latest},
 		{version: "0.0.0-dev+test", want: latest},
 	} {
 		t.Run(tc.version, func(t *testing.T) {
