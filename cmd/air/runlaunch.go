@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"path"
 	"strings"
+	"uuid"
 
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
-	"github.com/google/uuid"
 )
 
 // userWorkspaceDirEnv overrides the per-user workspace directory; mirrors the
@@ -21,7 +21,8 @@ const userWorkspaceDirEnv = "DATABRICKS_INTERNAL_USER_WORKSPACE_DIR"
 
 // currentUserEmail returns the authenticated user's email (works for any domain).
 func currentUserEmail(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
-	me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
+	// Only userName is needed; the full response also resolves groups and entitlements.
+	me, err := w.CurrentUser.Me(ctx, iam.MeRequest{Attributes: "userName"})
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve current user: %w", err)
 	}
@@ -53,7 +54,7 @@ func cliLaunchDir(base, experiment, run string) string {
 	if run == "" {
 		run = experiment
 	}
-	unique := strings.ReplaceAll(uuid.NewString(), "-", "")[:16]
+	unique := strings.ReplaceAll(uuid.New().String(), "-", "")[:16]
 	return path.Join(base, ".air", "cli_launch", experiment, run+"_"+unique)
 }
 

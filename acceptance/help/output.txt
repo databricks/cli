@@ -30,7 +30,7 @@ Lakeflow
 
 Machine Learning
   experiments                            Experiments are the primary unit of organization in MLflow; all MLflow runs belong to an experiment.
-  feature-engineering                    *Public Preview* Feature Engineering provides APIs for managing features and materialized features.
+  feature-engineering                    Feature Engineering provides APIs for managing features and materialized features.
   model-registry                         Note: This API reference documents APIs for the Workspace Model Registry.
 
 Real-time Serving
@@ -55,7 +55,7 @@ Identity and Access Management
   service-principals-v2                  *Public Preview* Identities for use with jobs, automated tools, and systems such as scripts, apps, and CI/CD platforms.
   users                                  User identities recognized by Databricks and represented by email addresses.
   users-v2                               *Public Preview* User identities recognized by Databricks and represented by email addresses.
-  workspace-iam-v2                       *Beta* These APIs are used to manage identities and the workspace access of these identities in Databricks.
+  workspace-iam-v2                       These APIs are used to manage identities and the workspace access of these identities in Databricks.
 
 Databricks SQL
   alerts                                 The alerts API can be used to perform CRUD operations on alerts.
@@ -125,11 +125,11 @@ OAuth
   service-principal-secrets-proxy        These APIs enable administrators to manage service principal secrets at the workspace level.
 
 Marketplace
-  consumer-fulfillments                  *Public Preview* Fulfillments are entities that allow consumers to preview installations.
-  consumer-installations                 *Public Preview* Installations are entities that allow consumers to interact with Databricks Marketplace listings.
-  consumer-listings                      *Public Preview* Listings are the core entities in the Marketplace.
-  consumer-personalization-requests      *Public Preview* Personalization Requests allow customers to interact with the individualized Marketplace listing flow.
-  consumer-providers                     *Public Preview* Providers are the entities that publish listings to the Marketplace.
+  consumer-fulfillments                  Fulfillments are entities that allow consumers to preview installations.
+  consumer-installations                 Installations are entities that allow consumers to interact with Databricks Marketplace listings.
+  consumer-listings                      Listings are the core entities in the Marketplace.
+  consumer-personalization-requests      Personalization Requests allow customers to interact with the individualized Marketplace listing flow.
+  consumer-providers                     Providers are the entities that publish listings to the Marketplace.
   provider-exchange-filters              *Public Preview* Marketplace exchanges filters curate which groups can access an exchange.
   provider-exchanges                     *Public Preview* Marketplace exchanges allow providers to share their listings with a curated set of customers.
   provider-files                         *Public Preview* Marketplace offers a set of file APIs for various purposes such as preview notebooks and provider icons.
@@ -149,7 +149,7 @@ Quality Monitor
   quality-monitor-v2                     *Beta* Deprecated: Please use the Data Quality Monitoring API instead (REST: /api/data-quality/v1/monitors).
 
 Data Classification
-  data-classification                    *Public Preview* Manage data classification for Unity Catalog catalogs.
+  data-classification                    Manage data classification for Unity Catalog catalogs.
 
 Data Quality Monitoring
   data-quality                           *Public Preview* Manage the data quality of Unity Catalog objects (currently support schema and table).
@@ -159,8 +159,9 @@ Database Instances
   psql                                   Connect to a Lakebase Postgres database
 
 Agent Bricks
-  knowledge-assistants                   *Beta* Manage Knowledge Assistants and related resources.
-  supervisor-agents                      *Beta* Manage Supervisor Agents and related resources.
+  agent-kit                              *Beta* APIs for managing agent memory and durable session state.
+  knowledge-assistants                   *Beta* Manage legacy Knowledge Assistants and related resources.
+  supervisor-agents                      *Beta* Manage legacy Supervisor Agents and related resources.
 
 AI Functions
   ai-functions                           Transform and enrich data with AI on Databricks.

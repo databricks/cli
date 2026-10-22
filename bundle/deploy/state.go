@@ -9,11 +9,11 @@ import (
 	"io/fs"
 	"path/filepath"
 	"time"
+	"uuid"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/vfs"
-	"github.com/google/uuid"
 )
 
 const (

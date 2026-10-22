@@ -298,6 +298,22 @@ __all__ = [
     "StorageMode",
     "StorageModeParam",
     "Subscription",
+    "SubscriptionAttachment",
+    "SubscriptionAttachmentDataAttachment",
+    "SubscriptionAttachmentDataAttachmentDict",
+    "SubscriptionAttachmentDataAttachmentFileFormat",
+    "SubscriptionAttachmentDataAttachmentFileFormatParam",
+    "SubscriptionAttachmentDataAttachmentParam",
+    "SubscriptionAttachmentDataAttachmentWidget",
+    "SubscriptionAttachmentDataAttachmentWidgetDict",
+    "SubscriptionAttachmentDataAttachmentWidgetParam",
+    "SubscriptionAttachmentDict",
+    "SubscriptionAttachmentPageAttachment",
+    "SubscriptionAttachmentPageAttachmentDict",
+    "SubscriptionAttachmentPageAttachmentPageSelection",
+    "SubscriptionAttachmentPageAttachmentPageSelectionParam",
+    "SubscriptionAttachmentPageAttachmentParam",
+    "SubscriptionAttachmentParam",
     "SubscriptionDict",
     "SubscriptionParam",
     "SubscriptionSubscriber",
@@ -816,6 +832,34 @@ from databricks.bundles.jobs._models.subscription import (
     Subscription,
     SubscriptionDict,
     SubscriptionParam,
+)
+from databricks.bundles.jobs._models.subscription_attachment import (
+    SubscriptionAttachment,
+    SubscriptionAttachmentDict,
+    SubscriptionAttachmentParam,
+)
+from databricks.bundles.jobs._models.subscription_attachment_data_attachment import (
+    SubscriptionAttachmentDataAttachment,
+    SubscriptionAttachmentDataAttachmentDict,
+    SubscriptionAttachmentDataAttachmentParam,
+)
+from databricks.bundles.jobs._models.subscription_attachment_data_attachment_file_format import (
+    SubscriptionAttachmentDataAttachmentFileFormat,
+    SubscriptionAttachmentDataAttachmentFileFormatParam,
+)
+from databricks.bundles.jobs._models.subscription_attachment_data_attachment_widget import (
+    SubscriptionAttachmentDataAttachmentWidget,
+    SubscriptionAttachmentDataAttachmentWidgetDict,
+    SubscriptionAttachmentDataAttachmentWidgetParam,
+)
+from databricks.bundles.jobs._models.subscription_attachment_page_attachment import (
+    SubscriptionAttachmentPageAttachment,
+    SubscriptionAttachmentPageAttachmentDict,
+    SubscriptionAttachmentPageAttachmentParam,
+)
+from databricks.bundles.jobs._models.subscription_attachment_page_attachment_page_selection import (
+    SubscriptionAttachmentPageAttachmentPageSelection,
+    SubscriptionAttachmentPageAttachmentPageSelectionParam,
 )
 from databricks.bundles.jobs._models.subscription_subscriber import (
     SubscriptionSubscriber,

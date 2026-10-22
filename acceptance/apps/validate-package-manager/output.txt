@@ -1,0 +1,36 @@
+
+=== Warn but continue on conflicting lockfiles
+>>> [CLI] apps validate --path conflicting
+Warn: found conflicting package managers; using npm from package-lock.json and ignoring pnpm-lock.yaml
+Validating project using npm...
+✅ Installing dependencies ([DURATION])
+✅ Generating types ([DURATION])
+✅ Running AST-grep lint ([DURATION])
+✅ Type checking ([DURATION])
+✅ Building ([DURATION])
+✅ Running tests ([DURATION])
+✅ All validation checks passed ([DURATION])
+
+=== Warn but continue on unsupported lockfiles
+>>> [CLI] apps validate --path unsupported
+Warn: ignoring unsupported lockfile yarn.lock; apps validation uses npm or pnpm
+Validating project using npm...
+✅ Installing dependencies ([DURATION])
+✅ Generating types ([DURATION])
+✅ Running AST-grep lint ([DURATION])
+✅ Type checking ([DURATION])
+✅ Building ([DURATION])
+✅ Running tests ([DURATION])
+✅ All validation checks passed ([DURATION])
+
+=== Declared package manager wins over a pnpm lockfile
+>>> [CLI] apps validate --path metadata-npm
+Warn: found conflicting package managers; using npm from package.json and ignoring pnpm-lock.yaml
+Validating project using npm...
+✅ Installing dependencies ([DURATION])
+✅ Generating types ([DURATION])
+✅ Running AST-grep lint ([DURATION])
+✅ Type checking ([DURATION])
+✅ Building ([DURATION])
+✅ Running tests ([DURATION])
+✅ All validation checks passed ([DURATION])

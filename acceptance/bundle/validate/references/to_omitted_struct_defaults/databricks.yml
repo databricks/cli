@@ -1,0 +1,7 @@
+bundle:
+  name: test-bundle
+
+variables:
+  git_info:
+    type: complex
+    default: ${bundle.git}

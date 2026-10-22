@@ -31,12 +31,14 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
 	"golang.org/x/mod/semver"
@@ -597,7 +599,9 @@ func ValidateEngineSetting(ctx context.Context, b *bundle.Bundle) error {
 func fetchDeploymentFromStatePath(ctx context.Context, w *databricks.WorkspaceClient, statePath string) (string, *bundledeployments.Deployment, error) {
 	nodePath := path.Join(statePath, dms.DeploymentNodeName)
 
-	obj, err := w.Workspace.GetStatusByPath(ctx, nodePath)
+	obj, err := retry.With(ctx, retry.IsTransientRead, func() (*workspace.ObjectInfo, error) {
+		return w.Workspace.GetStatusByPath(ctx, nodePath)
+	})
 	if errors.Is(err, apierr.ErrNotFound) || errors.Is(err, apierr.ErrResourceDoesNotExist) {
 		return "", nil, nil
 	}
@@ -605,8 +609,10 @@ func fetchDeploymentFromStatePath(ctx context.Context, w *databricks.WorkspaceCl
 		return "", nil, fmt.Errorf("looking up deployment at %s: %w", nodePath, err)
 	}
 	deploymentID := strconv.FormatInt(obj.ObjectId, 10)
-	deployment, err := w.BundleDeployments.GetDeployment(ctx, bundledeployments.GetDeploymentRequest{
-		Name: dms.DeploymentName(deploymentID),
+	deployment, err := retry.With(ctx, retry.IsTransientRead, func() (*bundledeployments.Deployment, error) {
+		return w.BundleDeployments.GetDeployment(ctx, bundledeployments.GetDeploymentRequest{
+			Name: dms.DeploymentName(deploymentID),
+		})
 	})
 	if err != nil {
 		return "", nil, err

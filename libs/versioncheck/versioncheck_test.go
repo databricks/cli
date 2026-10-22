@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -130,4 +131,22 @@ func TestCheck(t *testing.T) {
 		result := Check(t.Context())
 		assert.True(t, result.CheckFailed)
 	})
+}
+
+func TestGitHubAPIURL(t *testing.T) {
+	tests := []struct {
+		name     string
+		override string
+		want     string
+	}{
+		{"default", "", "https://api.github.com"},
+		{"override", "http://mirror.test", "http://mirror.test"},
+		{"override with trailing slash", "http://mirror.test/", "http://mirror.test"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := env.Set(t.Context(), gitHubAPIURLEnv, tc.override)
+			assert.Equal(t, tc.want, GitHubAPIURL(ctx))
+		})
+	}
 }

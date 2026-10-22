@@ -100,6 +100,16 @@ class Job(Resource):
     An optional description for the job. The maximum length is 27700 characters in UTF-8 encoding.
     """
 
+    duration_target: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The window the run aims to finish within, in hours, for a Cost-optimized serverless run.
+    Required only when `performance_target` is `COST_OPTIMIZED`. Must be one of the
+    supported values: `NO_FLEXIBILITY`, `4h`, `12h`, `24h`, `72h`. `NO_FLEXIBILITY` means the run
+    uses the default cost-optimized performance level without additional cost-saving optimizations.
+    """
+
     email_notifications: VariableOrOptional[JobEmailNotifications] = None
     """
     An optional set of email addresses that is notified when runs of this job begin or complete as well as when this job is deleted.
@@ -285,6 +295,16 @@ class JobDict(TypedDict, total=False):
     description: VariableOrOptional[str]
     """
     An optional description for the job. The maximum length is 27700 characters in UTF-8 encoding.
+    """
+
+    duration_target: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The window the run aims to finish within, in hours, for a Cost-optimized serverless run.
+    Required only when `performance_target` is `COST_OPTIMIZED`. Must be one of the
+    supported values: `NO_FLEXIBILITY`, `4h`, `12h`, `24h`, `72h`. `NO_FLEXIBILITY` means the run
+    uses the default cost-optimized performance level without additional cost-saving optimizations.
     """
 
     email_notifications: VariableOrOptional[JobEmailNotificationsParam]

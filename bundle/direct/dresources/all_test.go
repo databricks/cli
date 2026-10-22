@@ -109,6 +109,21 @@ var testConfig map[string]any = map[string]any{
 		StorageLocation: "s3://my-bucket/my-path",
 	},
 
+	"features": &resources.Feature{
+		FullName:    "main.default.my_feature",
+		Description: "Test feature",
+		Source: ml.DataSource{
+			DeltaTableSource: &ml.DeltaTableSource{
+				FullName: "main.default.my_source",
+			},
+		},
+		Function: ml.Function{
+			ColumnSelection: &ml.ColumnSelection{Column: "amount"},
+		},
+		Entities:         []ml.EntityColumn{{Name: "id"}},
+		TimeseriesColumn: &ml.TimeseriesColumn{Name: "ts"},
+	},
+
 	"experiments": &resources.MlflowExperiment{
 		Name: "my-experiment",
 		Tags: []ml.ExperimentTag{

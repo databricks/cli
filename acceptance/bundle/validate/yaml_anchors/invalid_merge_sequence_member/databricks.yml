@@ -1,0 +1,15 @@
+bundle:
+  name: test-bundle
+
+variables:
+  x:
+    default: base
+
+definitions:
+  overrides: &overrides
+    x: overridden
+
+targets:
+  dev:
+    variables:
+      <<: [*overrides, 17]

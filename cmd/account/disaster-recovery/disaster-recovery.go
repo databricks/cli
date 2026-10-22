@@ -72,6 +72,7 @@ func newCreateFailoverGroup() *cobra.Command {
 	cmd.Flags().Var(&createFailoverGroupJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&createFailoverGroupReq.ValidateOnly, "validate-only", createFailoverGroupReq.ValidateOnly, `When true, validates the request without creating the failover group.`)
+	// TODO: complex arg: initial_replication_progress
 	cmd.Flags().StringVar(&createFailoverGroupReq.FailoverGroup.Name, "name", createFailoverGroupReq.FailoverGroup.Name, `Fully qualified resource name in the format accounts/{account_id}/failover-groups/{failover_group_id}.`)
 	// TODO: complex arg: unity_catalog_assets
 
@@ -768,6 +769,7 @@ func newUpdateFailoverGroup() *cobra.Command {
 	cmd.Flags().Var(&updateFailoverGroupJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateFailoverGroupReq.Etag, "etag", updateFailoverGroupReq.Etag, `Optional opaque version string for optimistic locking, obtained from a prior read of the failover group.`)
+	// TODO: complex arg: initial_replication_progress
 	cmd.Flags().StringVar(&updateFailoverGroupReq.FailoverGroup.Name, "name", updateFailoverGroupReq.FailoverGroup.Name, `Fully qualified resource name in the format accounts/{account_id}/failover-groups/{failover_group_id}.`)
 	// TODO: complex arg: unity_catalog_assets
 

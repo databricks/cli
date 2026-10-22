@@ -39,12 +39,17 @@ Create, manage, and control the lifecycle of sandboxes -- isolated,
 	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	// Add methods
+	cmd.AddCommand(newCreateDirectory())
 	cmd.AddCommand(newCreateSandbox())
+	cmd.AddCommand(newDeletePath())
 	cmd.AddCommand(newDeleteSandbox())
 	cmd.AddCommand(newExecuteCommandSync())
+	cmd.AddCommand(newGetMetadata())
 	cmd.AddCommand(newGetSandbox())
 	cmd.AddCommand(newListCommands())
+	cmd.AddCommand(newListDirectoryContents())
 	cmd.AddCommand(newListSandboxes())
+	cmd.AddCommand(newRenamePath())
 	cmd.AddCommand(newStartSandbox())
 	cmd.AddCommand(newStopSandbox())
 	cmd.AddCommand(newUpdateSandbox())
@@ -52,6 +57,96 @@ Create, manage, and control the lifecycle of sandboxes -- isolated,
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
+	}
+
+	return cmd
+}
+
+// start create-directory command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createDirectoryOverrides []func(
+	*cobra.Command,
+	*sandbox.CreateDirectoryRequest,
+)
+
+func newCreateDirectory() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createDirectoryReq sandbox.CreateDirectoryRequest
+	var createDirectoryJson flags.JsonFlag
+
+	cmd.Flags().Var(&createDirectoryJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().BoolVar(&createDirectoryReq.Parents, "parents", createDirectoryReq.Parents, `Defaults to true, which also succeeds when the directory already exists.`)
+
+	cmd.Use = "create-directory PARENT PATH"
+	cmd.Short = `.`
+	cmd.Long = `.
+
+  Creates a directory in a sandbox, including missing parents by default.
+
+  Arguments:
+    PARENT:
+    PATH: Absolute UTF-8 path of the directory.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return errors.New("when --json flag is specified, provide only PARENT as positional arguments. Provide 'path' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createDirectoryJson.Unmarshal(&createDirectoryReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createDirectoryReq.Parent = args[0]
+		if !cmd.Flags().Changed("json") {
+			createDirectoryReq.Path = args[1]
+		}
+
+		response, err := w.Sandbox.CreateDirectory(ctx, createDirectoryReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createDirectoryOverrides {
+		fn(cmd, &createDirectoryReq)
 	}
 
 	return cmd
@@ -135,6 +230,97 @@ Create a sandbox.
 	// Apply optional overrides to this command.
 	for _, fn := range createSandboxOverrides {
 		fn(cmd, &createSandboxReq)
+	}
+
+	return cmd
+}
+
+// start delete-path command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deletePathOverrides []func(
+	*cobra.Command,
+	*sandbox.DeletePathRequest,
+)
+
+func newDeletePath() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deletePathReq sandbox.DeletePathRequest
+	var deletePathJson flags.JsonFlag
+
+	cmd.Flags().Var(&deletePathJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().BoolVar(&deletePathReq.Recursive, "recursive", deletePathReq.Recursive, `Required for a non-empty directory.`)
+
+	cmd.Use = "delete-path PARENT PATH"
+	cmd.Short = `.`
+	cmd.Long = `.
+
+  Deletes a file, symlink, or empty directory, with an option for recursive
+  deletion. Succeeds if the path is already absent.
+
+  Arguments:
+    PARENT:
+    PATH: Absolute UTF-8 path of the entry to delete.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return errors.New("when --json flag is specified, provide only PARENT as positional arguments. Provide 'path' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := deletePathJson.Unmarshal(&deletePathReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		deletePathReq.Parent = args[0]
+		if !cmd.Flags().Changed("json") {
+			deletePathReq.Path = args[1]
+		}
+
+		response, err := w.Sandbox.DeletePath(ctx, deletePathReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deletePathOverrides {
+		fn(cmd, &deletePathReq)
 	}
 
 	return cmd
@@ -301,6 +487,70 @@ Run a command in a sandbox and wait for its result.
 	return cmd
 }
 
+// start get-metadata command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getMetadataOverrides []func(
+	*cobra.Command,
+	*sandbox.GetMetadataRequest,
+)
+
+func newGetMetadata() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getMetadataReq sandbox.GetMetadataRequest
+
+	cmd.Use = "get-metadata PARENT PATH"
+	cmd.Short = `.`
+	cmd.Long = `.
+
+  Returns metadata for a path without following its final symlink.
+
+  Arguments:
+    PARENT:
+    PATH: Absolute UTF-8 path of the entry to inspect.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getMetadataReq.Parent = args[0]
+		getMetadataReq.Path = args[1]
+
+		response, err := w.Sandbox.GetMetadata(ctx, getMetadataReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getMetadataOverrides {
+		fn(cmd, &getMetadataReq)
+	}
+
+	return cmd
+}
+
 // start get-sandbox command
 
 // Slice with functions to override default command behavior.
@@ -423,6 +673,87 @@ List the tracked command executions in a sandbox.
 	return cmd
 }
 
+// start list-directory-contents command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listDirectoryContentsOverrides []func(
+	*cobra.Command,
+	*sandbox.ListDirectoryContentsRequest,
+)
+
+func newListDirectoryContents() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listDirectoryContentsReq sandbox.ListDirectoryContentsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listDirectoryContentsLimit int
+
+	cmd.Flags().IntVar(&listDirectoryContentsReq.PageSize, "page-size", listDirectoryContentsReq.PageSize, `Zero uses the default of 1000; values above 1000 are clamped to 1000.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listDirectoryContentsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listDirectoryContentsReq.PageToken, "page-token", listDirectoryContentsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-directory-contents PARENT PATH"
+	cmd.Short = `.`
+	cmd.Long = `.
+
+  Lists a directory's immediate children in UTF-8 name order. Later pages may
+  reflect concurrent changes.
+
+  Arguments:
+    PARENT:
+    PATH: Absolute UTF-8 path of the directory.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		listDirectoryContentsReq.Parent = args[0]
+		listDirectoryContentsReq.Path = args[1]
+
+		response := w.Sandbox.ListDirectoryContents(ctx, listDirectoryContentsReq)
+		if listDirectoryContentsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listDirectoryContentsLimit)
+		}
+		if listDirectoryContentsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listDirectoryContentsLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listDirectoryContentsOverrides {
+		fn(cmd, &listDirectoryContentsReq)
+	}
+
+	return cmd
+}
+
 // start list-sandboxes command
 
 // Slice with functions to override default command behavior.
@@ -490,6 +821,99 @@ List sandboxes.
 	// Apply optional overrides to this command.
 	for _, fn := range listSandboxesOverrides {
 		fn(cmd, &listSandboxesReq)
+	}
+
+	return cmd
+}
+
+// start rename-path command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var renamePathOverrides []func(
+	*cobra.Command,
+	*sandbox.RenamePathRequest,
+)
+
+func newRenamePath() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var renamePathReq sandbox.RenamePathRequest
+	var renamePathJson flags.JsonFlag
+
+	cmd.Flags().Var(&renamePathJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Use = "rename-path PARENT SOURCE DESTINATION"
+	cmd.Short = `.`
+	cmd.Long = `.
+
+  Renames a path within a sandbox. The destination must be absent and on the
+  same filesystem.
+
+  Arguments:
+    PARENT: Sandbox resource name, for example sandboxes/my-sandbox.
+    SOURCE: Absolute UTF-8 path to move.
+    DESTINATION: Exact absolute UTF-8 destination; it must not already exist.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return errors.New("when --json flag is specified, provide only PARENT as positional arguments. Provide 'source', 'destination' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(3)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := renamePathJson.Unmarshal(&renamePathReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		renamePathReq.Parent = args[0]
+		if !cmd.Flags().Changed("json") {
+			renamePathReq.Source = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
+			renamePathReq.Destination = args[2]
+		}
+
+		response, err := w.Sandbox.RenamePath(ctx, renamePathReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range renamePathOverrides {
+		fn(cmd, &renamePathReq)
 	}
 
 	return cmd

@@ -1,0 +1,2 @@
+# An unknown field inside a complex variable used as a whole resource keeps the location of its key.
+errcode trace $CLI bundle validate

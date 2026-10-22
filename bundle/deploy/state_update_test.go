@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"testing"
+	"uuid"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -12,7 +13,6 @@ import (
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -90,7 +90,7 @@ func TestStateUpdate(t *testing.T) {
 	require.Equal(t, build.GetInfo().Version, state.CliVersion)
 
 	// Valid non-empty UUID is generated.
-	require.NotEqual(t, uuid.Nil, state.ID)
+	require.NotEqual(t, uuid.Nil(), state.ID)
 }
 
 func TestStateUpdateWithExistingState(t *testing.T) {

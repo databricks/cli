@@ -1,0 +1,16 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    j:
+      name: first
+      max_concurrent_runs: 1
+      tags:
+        a: one
+        shared: first
+      name: second
+      max_concurrent_runs: 5
+      tags:
+        b: two
+        shared: second

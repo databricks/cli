@@ -1,0 +1,7 @@
+bundle:
+  name: strict-profile-match
+
+targets:
+  custom_host_other_workspace:
+    workspace:
+      host: $CUSTOM_HOST/?o=2222222222

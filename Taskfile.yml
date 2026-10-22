@@ -6,7 +6,9 @@ vars:
   EXE_EXT: '{{if eq OS "windows"}}.exe{{end}}'
   # Pinned ruff (linter + formatter). Keep in sync with the version in
   # .github/workflows/check.yml and python/Taskfile.yml.
-  RUFF: uvx ruff@0.15.17
+  # `uv tool run` rather than its `uvx` alias: the SDK bumper's image ships
+  # only the `uv` binary.
+  RUFF: uv tool run ruff@0.15.17
   TEST_PACKAGES: ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... .
   ACCEPTANCE_TEST_FILTER: ""
   # Single brace-expansion glob covering every //go:embed target in the repo,
@@ -528,6 +530,22 @@ tasks:
     cmds:
       - "DATABRICKS_TEST_SELECT_CHANGED=${DATABRICKS_TEST_SELECT_CHANGED:-50} go test ./acceptance -run '^TestAccept$' -v -timeout=${LOCAL_TIMEOUT:-60m}"
 
+  regr:
+    desc: Run acceptance tests changed in this branch against main and the latest release, write regression_report.md
+    # No sources/generates: like local-select, the selection depends on the git diff.
+    cmds:
+      - "go test ./acceptance -run '^TestAccept$' -v -regr-main -regr-release -timeout=${LOCAL_TIMEOUT:-60m}"
+
+  regr-main:
+    desc: Run acceptance tests changed in this branch against a CLI built from main, write regression_report.md
+    cmds:
+      - "go test ./acceptance -run '^TestAccept$' -v -regr-main -timeout=${LOCAL_TIMEOUT:-60m}"
+
+  regr-release:
+    desc: Run acceptance tests changed in this branch against the latest release, write regression_report.md
+    cmds:
+      - "go test ./acceptance -run '^TestAccept$' -v -regr-release -timeout=${LOCAL_TIMEOUT:-60m}"
+
   test-update:
     desc: Update acceptance test output (local)
     # Excludes out* because the task rewrites them; keeping them in sources would
@@ -632,6 +650,8 @@ tasks:
       - libs/aitools/**
       - experimental/aitools/**
       - acceptance/apps/**
+      # acceptance/cmd/aitools is not listed on purpose: a change there runs
+      # `test`, which also runs on Windows. The -run pattern below still runs it.
       - acceptance/experimental/aitools/**
       - "{{.EMBED_SOURCES}}"
     cmds:
@@ -646,7 +666,7 @@ tasks:
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./acceptance/... \
-          -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/(apps|experimental/aitools)"
+          -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/apps|TestAccept/cmd/aitools|TestAccept/experimental/aitools"
 
   test-exp-ssh:
     desc: Run experimental SSH unit and acceptance tests
@@ -897,7 +917,7 @@ tasks:
   # generate-clijson so the SDK bumper can run the same cleanup after its own
   # update-sdk invocation.
   generate-clijson-post:
-    desc: Clean up genkit update-sdk output (shared by generate-clijson and the SDK bumper)
+    desc: Clean up genkit update-sdk output, then run bump-sdk-post (shared by generate-clijson and the SDK bumper)
     cmds:
       # genkit also writes .gitattributes, but that file is owned by
       # generate-cligen (which derives it from .gitattributes.manual plus the
@@ -930,6 +950,25 @@ tasks:
         fi
       - "{{.GO_TOOL}} yamlfmt .github/workflows/tagging.yml"
       - task: ws
+      # Last, so generate-cligen rewrites the .gitattributes restored above.
+      # The SDK bumper aborts before opening a PR on any error from this task,
+      # and bump-sdk-post fails whenever the bump needs hand fixes, so ignore
+      # its error: the PR then carries what was regenerated.
+      - task: bump-sdk-post
+        ignore_error: true
+
+  # The mechanical rest of an SDK bump once go.mod, .codegen/_openapi_sha and
+  # .codegen/cli.json are updated: regenerate every artifact derived from them,
+  # then refresh the acceptance goldens. generate-clijson-post runs it last;
+  # run it directly to redo it, e.g. after hand fixes. generate-refschema and
+  # test-update build the CLI, so it fails while the bump breaks compilation
+  # (code using a removed SDK field). Those fixes, exhaustruct wiring and the
+  # changelog PR link stay manual (.agents/skills/bump-sdk).
+  bump-sdk-post:
+    desc: Regenerate everything downstream of an SDK bump and refresh acceptance goldens
+    cmds:
+      - task: generate-check
+      - task: test-update
 
   # Refreshes out.fields.txt, which records the field paths / types emitted by
   # `bundle debug refschema` (see cmd/bundle/debug/refschema.go). It reflects

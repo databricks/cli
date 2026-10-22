@@ -32,6 +32,7 @@ EnvMatrix.INPUT_CONFIG = [
     "database_instance.yml.tmpl",
     "experiment.yml.tmpl",
     "external_location.yml.tmpl",
+    "feature.yml.tmpl",
     "genie_space.yml.tmpl",
     "instance_pool.yml.tmpl",
     "job.yml.tmpl",
@@ -119,6 +120,9 @@ EnvMatrixExclude.no_model_service_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG
 # Cloud coverage for data quality monitors comes from
 # resources/data_quality_monitors/lifecycle; the invariant matrix runs locally.
 EnvMatrixExclude.no_data_quality_monitor_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=data_quality_monitor.yml.tmpl"]
+# Deployment history has no "features." resource-key prefix, so the deploy fails before the feature
+# is created; see dmsResourceTypes in libs/testserver/bundledeployments.go.
+EnvMatrixExclude.no_feature_dms = ["DMS=true", "INPUT_CONFIG=feature.yml.tmpl"]
 # Fake SQL endpoint for local tests
 
 [[Server]]
