@@ -137,7 +137,7 @@ func TestFileModesPersistStateAndHistory(t *testing.T) {
 			assert.Equal(t, 1, reopened.GetSerial())
 			assert.Len(t, reopened.Data.State, 1)
 			assert.Equal(t, dependsOn, reopened.Data.State["resources.jobs.kept"].DependsOn)
-			_, enforced := reopened.Data.Features[dstate.FeatureDMSShadow]
+			_, enforced := reopened.Data.Features[dstate.FeatureDeploymentHistoryBestEffort]
 			assert.Equal(t, mode == dstate.WritingFileWithHistoryEnforced, enforced)
 			_, err = reopened.Finalize(t.Context())
 			require.NoError(t, err)
@@ -190,11 +190,11 @@ func TestDMSReadsAndWritesWithoutWAL(t *testing.T) {
 
 func TestUpgradeToWriteValidatesMode(t *testing.T) {
 	for _, tc := range []struct {
-		name    string
-		read    dstate.Mode
-		write   dstate.Mode
-		shadow  bool
-		wantErr string
+		name       string
+		read       dstate.Mode
+		write      dstate.Mode
+		bestEffort bool
+		wantErr    string
 	}{
 		{"file", dstate.ReadingFile, dstate.WritingFile, false, ""},
 		{"history", dstate.ReadingFile, dstate.WritingFileWithHistory, false, ""},
@@ -206,13 +206,13 @@ func TestUpgradeToWriteValidatesMode(t *testing.T) {
 		{"reading mode", dstate.ReadingFile, dstate.ReadingFile, false, "invalid"},
 		{"unknown mode", dstate.ReadingFile, dstate.Mode(99), false, "invalid"},
 		{"enforcement retained", dstate.ReadingFile, dstate.WritingFileWithHistory, true, ""},
-		{"enforcement bypass", dstate.ReadingFile, dstate.WritingFile, true, "dms_shadow"},
+		{"enforcement bypass", dstate.ReadingFile, dstate.WritingFile, true, "deployment_history_best_effort"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := modeContext(t, nil)
 			path := filepath.Join(t.TempDir(), "resources.json")
-			if tc.shadow {
-				require.NoError(t, os.WriteFile(path, []byte(`{"state_version":3,"features":{"dms_shadow":{}},"state":{}}`), 0o600))
+			if tc.bestEffort {
+				require.NoError(t, os.WriteFile(path, []byte(`{"state_version":3,"features":{"deployment_history_best_effort":{}},"state":{}}`), 0o600))
 			}
 			var db dstate.DeploymentState
 			require.NoError(t, db.Open(ctx, path, tc.read, false, dstate.OpenDmsArgs{}))
@@ -406,11 +406,11 @@ func TestEnforcedHistorySurvivesWALRecovery(t *testing.T) {
 			require.NoError(t, os.WriteFile(recoveredPath+".wal", wal, 0o600))
 			var recovered dstate.DeploymentState
 			require.NoError(t, recovered.Open(t.Context(), recoveredPath, dstate.ReadingFile, true, dstate.OpenDmsArgs{}))
-			assert.Contains(t, recovered.StateFeatures(), dstate.FeatureDMSShadow)
+			assert.Contains(t, recovered.StateFeatures(), dstate.FeatureDeploymentHistoryBestEffort)
 			assert.Equal(t, 1, recovered.GetSerial())
 			assert.FileExists(t, recoveredPath)
 			assert.NoFileExists(t, recoveredPath+".wal")
-			require.ErrorContains(t, recovered.UpgradeToWrite(dstate.WritingFile), "dms_shadow")
+			require.ErrorContains(t, recovered.UpgradeToWrite(dstate.WritingFile), "deployment_history_best_effort")
 			if withResource {
 				assert.Equal(t, "id-1", recovered.GetResourceID("resources.jobs.job"))
 			}
@@ -429,10 +429,10 @@ func TestOpenRejectsInvalidModesAndFeatures(t *testing.T) {
 	}{
 		{"unknown mode", dstate.Mode(99), `{}`, "invalid deployment state mode"},
 		{"unknown feature", dstate.ReadingFile, `{"future":{}}`, "requires features"},
-		{"conflicting features", dstate.ReadingFile, `{"deployment_history":{},"dms_shadow":{}}`, "dms_shadow"},
-		{"DMS reading shadow", dstate.ReadingDMS, `{"dms_shadow":{}}`, "dms_shadow"},
+		{"conflicting features", dstate.ReadingFile, `{"deployment_history":{},"deployment_history_best_effort":{}}`, "deployment_history_best_effort"},
+		{"DMS reading best effort history", dstate.ReadingDMS, `{"deployment_history_best_effort":{}}`, "deployment_history_best_effort"},
 		{"file writing DMS", dstate.WritingFile, `{"deployment_history":{}}`, "not supported"},
-		{"file writing shadow", dstate.WritingFile, `{"dms_shadow":{}}`, "dms_shadow"},
+		{"file writing best effort history", dstate.WritingFile, `{"deployment_history_best_effort":{}}`, "deployment_history_best_effort"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			path := filepath.Join(t.TempDir(), "resources.json")

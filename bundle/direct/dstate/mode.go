@@ -28,7 +28,7 @@ const (
 
 	// WritingFileWithHistoryEnforced writes state through WAL to resources.json and records DMS history.
 	// DMS errors and drain timeouts let the deployment continue.
-	// Persists dms_shadow to reject clients that cannot honor history recording.
+	// Persists deployment_history_best_effort to reject clients that cannot honor history recording.
 	WritingFileWithHistoryEnforced
 )
 

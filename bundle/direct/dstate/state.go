@@ -49,8 +49,9 @@ const (
 // deploying such a state without recording is refused.
 const FeatureDeploymentHistory = "deployment_history"
 
-// FeatureDMSShadow requires writers to record history while keeping file state authoritative.
-const FeatureDMSShadow = "dms_shadow"
+// FeatureDeploymentHistoryBestEffort requires writers to attempt DMS history recording.
+// Resource state stays in resources.json; recording errors only warn.
+const FeatureDeploymentHistoryBestEffort = "deployment_history_best_effort"
 
 // featuresDocURL explains the state-features mechanism in the error shown when this CLI refuses a
 // state that depends on a feature it does not recognize.
@@ -60,8 +61,8 @@ const featuresDocURL = "https://docs.databricks.com/aws/en/dev-tools/bundles/sta
 // any feature not listed here is refused (see checkStateFeatures), so a newer CLI's feature is not
 // silently clobbered by this one.
 var recognizedFeatures = map[string]struct{}{
-	FeatureDeploymentHistory: {},
-	FeatureDMSShadow:         {},
+	FeatureDeploymentHistory:           {},
+	FeatureDeploymentHistoryBestEffort: {},
 }
 
 // assertNoUnsupportedFeatures refuses a state that depends on a feature this CLI does not recognize.
@@ -105,8 +106,7 @@ type DeploymentState struct {
 	// history, in which case InitializeOperationBuffer installs it once the version exists.
 	operationBuffer *dms.OperationBuffer
 
-	// Includes all staged operations, even those already recorded or coalesced.
-	operationCount int
+	historyDrainTimeout time.Duration
 
 	// versionCompleted makes CompleteVersion a no-op after the first call, so a deferred safety-net
 	// completion after an explicit one does nothing.
@@ -191,7 +191,7 @@ func (db *DeploymentState) InitializeOperationBuffer(ctx context.Context, deploy
 		options.Capacity = operationCount
 	}
 	db.operationBuffer = dms.StartOperationBuffer(ctx, deploymentID, versionID, options)
-	db.operationCount = operationCount
+	db.historyDrainTimeout = time.Duration(operationCount) * historyDrainTimeoutPerOperation
 	db.DeploymentID = deploymentID
 	db.VersionID = versionID
 }
@@ -497,7 +497,7 @@ func (db *DeploymentState) reset() {
 	db.Path = ""
 	db.Data = Database{}
 	db.stateIDs = nil
-	db.operationCount = 0
+	db.historyDrainTimeout = 0
 }
 
 func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, mode Mode, withRecovery WithRecovery, dmsDeployment OpenDmsArgs) error {
@@ -511,7 +511,7 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, mode M
 	}
 	db.operationBuffer = nil
 	db.versionCompleted = false
-	db.operationCount = 0
+	db.historyDrainTimeout = 0
 	db.DeploymentID = dmsDeployment.DeploymentID
 	db.VersionID = dmsDeployment.LastVersionID
 
@@ -572,9 +572,9 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, mode M
 	if recording && recorded && db.Data.Serial > dmsDeployment.LastVersionID {
 		return fmt.Errorf("inconsistent deployment state: resource state serial (%d) is ahead of deployment history version (%d)", db.Data.Serial, dmsDeployment.LastVersionID)
 	}
-	_, shadow := db.Data.Features[FeatureDMSShadow]
-	if shadow && (recorded || recording) {
-		return errors.New("dms_shadow file state cannot be opened as DMS-authoritative state")
+	_, bestEffort := db.Data.Features[FeatureDeploymentHistoryBestEffort]
+	if bestEffort && (recorded || recording) {
+		return errors.New("deployment_history_best_effort file state cannot be opened as DMS-authoritative state")
 	}
 	switch {
 	case recording && !recorded && len(db.Data.State) == 0:
@@ -646,7 +646,7 @@ func (db *DeploymentState) OpenWithData(path string, data Database) {
 	db.mode = ReadingFile
 	db.operationBuffer = nil
 	db.versionCompleted = false
-	db.operationCount = 0
+	db.historyDrainTimeout = 0
 	db.DeploymentID = ""
 	db.VersionID = 0
 	db.Data = data
@@ -823,8 +823,7 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 		drainCtx := ctx
 		cancel := func() {}
 		if db.mode.isFileWithHistory() {
-			drainTimeout := time.Duration(db.operationCount) * historyDrainTimeoutPerOperation
-			drainCtx, cancel = context.WithTimeout(ctx, drainTimeout)
+			drainCtx, cancel = context.WithTimeout(ctx, db.historyDrainTimeout)
 		}
 		drainErr := db.operationBuffer.Drain(drainCtx)
 		cancel()
@@ -865,12 +864,12 @@ func (db *DeploymentState) unlockedUpgradeToWrite(mode Mode) error {
 		return err
 	}
 	_, recorded := db.Data.Features[FeatureDeploymentHistory]
-	_, shadow := db.Data.Features[FeatureDMSShadow]
+	_, bestEffort := db.Data.Features[FeatureDeploymentHistoryBestEffort]
 	if db.mode.usesDMSState() != mode.usesDMSState() || recorded != mode.usesDMSState() {
 		return errors.New("cannot change the deployment state source when upgrading to write")
 	}
-	if shadow && !mode.isFileWithHistory() {
-		return errors.New("dms_shadow state requires writing with deployment history enabled")
+	if bestEffort && !mode.isFileWithHistory() {
+		return errors.New("deployment_history_best_effort state requires writing with deployment history enabled")
 	}
 
 	if mode == WritingDMS {
@@ -894,7 +893,7 @@ func (db *DeploymentState) unlockedUpgradeToWrite(mode Mode) error {
 		if features == nil {
 			features = make(map[string]struct{})
 		}
-		features[FeatureDMSShadow] = struct{}{}
+		features[FeatureDeploymentHistoryBestEffort] = struct{}{}
 	}
 	walHead := Header{
 		Lineage:      db.GetOrInitLineage(),
