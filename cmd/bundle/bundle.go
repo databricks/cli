@@ -29,6 +29,7 @@ Online documentation: https://docs.databricks.com/en/dev-tools/bundles/index.htm
 	cmd.AddCommand(newDeployCommand())
 	cmd.AddCommand(newDestroyCommand())
 	cmd.AddCommand(newRunCommand())
+	cmd.AddCommand(newTestCommand())
 	cmd.AddCommand(newSchemaCommand())
 	cmd.AddCommand(newSyncCommand())
 	cmd.AddCommand(newValidateCommand())

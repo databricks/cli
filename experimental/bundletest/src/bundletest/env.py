@@ -65,7 +65,7 @@ class JobHandle(ResourceHandle):
         # tests that deliberately run a failing job pass check=False and inspect the result.
         self._last = self._backend.run_job(self.name, params)
         if check and not self._last.succeeded:
-            raise JobRunFailed(self._last)
+            raise JobRunFailed(self.name, self._last)
         return self._last
 
     def last_run(self) -> RunResult:

@@ -8,6 +8,7 @@ deployed jobs, execute_sql/table_schema round-trips, get_resource off `bundle su
 import pytest
 
 
+@pytest.mark.bundle_resource("jobs.transform_orders", "jobs.aggregate_orders")
 def test_bronze_to_silver_to_gold(env, schema):
     env.seed(
         f"{schema}.raw_orders",
@@ -33,17 +34,20 @@ def test_bronze_to_silver_to_gold(env, schema):
 
 
 @pytest.mark.cloud_only
+@pytest.mark.bundle_resource("jobs.transform_orders")
 def test_price_type_is_databricks_decimal(env, schema):
     env.seed(f"{schema}.raw_orders", [{"order_id": 1, "total_price": 10.0}])
     env.run_job("transform_orders")
     assert env.table(f"{schema}.orders").schema["total_price"] == "decimal(10,2)"
 
 
+@pytest.mark.bundle_resource("jobs.transform_orders")
 def test_job_is_wired_to_its_sql(env):
     job = env.backend.get_resource("jobs", "transform_orders")
     assert job["tasks"][0]["sql_task"]["file"]["path"].endswith("transform_orders.sql")
 
 
+@pytest.mark.bundle_resource("dashboards.orders_overview")
 def test_dashboard_source_tables_from_file_path(env, schema):
     # The dashboard is defined by file_path, not inline, yet source_tables() still resolves:
     # `bundle summary` inlines the file's serialized form at config-load, so get_resource has it.
@@ -52,6 +56,7 @@ def test_dashboard_source_tables_from_file_path(env, schema):
     assert dashboard.source_tables() == [f"{schema}.order_summary"]
 
 
+@pytest.mark.bundle_resource("volumes.raw_data")
 def test_uploaded_csv_is_readable(env, tmp_path):
     csv = tmp_path / "orders.csv"
     csv.write_text("order_id,total_price\n1,10.0\n2,5.0\n")
@@ -65,6 +70,7 @@ def test_uploaded_csv_is_readable(env, tmp_path):
 
 
 @pytest.mark.cloud_only
+@pytest.mark.bundle_resource("jobs.transform_orders")
 def test_deployed_job_carries_server_filled_fields(env):
     # get_deployed reads the workspace's stored object, so it carries values the server filled
     # in or normalized that our databricks.yml never declared — what get_resource (the declared
