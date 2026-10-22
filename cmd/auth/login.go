@@ -598,7 +598,8 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 	// are logged as warnings and never block login.
 	runHostDiscovery(ctx, authArguments)
 
-	if needsAccountIDPrompt(authArguments.Host, authArguments.DiscoveryURL) && authArguments.AccountID == "" {
+	needsAccountIDPrompt := isAccountOrUnifiedHost(authArguments.Host, authArguments.DiscoveryURL) && authArguments.AccountID == ""
+	if needsAccountIDPrompt {
 		if existingProfile != nil && existingProfile.AccountID != "" {
 			authArguments.AccountID = existingProfile.AccountID
 		} else {
@@ -613,10 +614,10 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 	return nil
 }
 
-// needsAccountIDPrompt reports whether the target host requires an account ID
+// isAccountOrUnifiedHost reports whether the target host requires an account ID
 // for OAuth URL construction. True for classic account hosts (accounts.*) and
 // for unified hosts detected via account-scoped DiscoveryURL.
-func needsAccountIDPrompt(host, discoveryURL string) bool {
+func isAccountOrUnifiedHost(host, discoveryURL string) bool {
 	canonicalHost := (&config.Config{Host: host}).CanonicalHostName()
 	if auth.IsClassicAccountHost(canonicalHost) {
 		return true

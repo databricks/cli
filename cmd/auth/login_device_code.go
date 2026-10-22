@@ -37,12 +37,12 @@ func validateDeviceCodeHost(ctx context.Context, authArguments *auth.AuthArgumen
 	// workspace hosts, which must not change the default profile name.
 	probe := *authArguments
 	probe.Host = auth.ExtractHostQueryParams(probe.Host).Host
-	if needsAccountIDPrompt(probe.Host, probe.DiscoveryURL) {
+	if isAccountOrUnifiedHost(probe.Host, probe.DiscoveryURL) {
 		return errDeviceCodeWorkspaceOnly
 	}
 	if probe.DiscoveryURL == "" {
 		runHostDiscovery(ctx, &probe)
-		if needsAccountIDPrompt(probe.Host, probe.DiscoveryURL) {
+		if isAccountOrUnifiedHost(probe.Host, probe.DiscoveryURL) {
 			return errDeviceCodeWorkspaceOnly
 		}
 	}
