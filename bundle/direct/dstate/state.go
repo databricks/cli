@@ -36,7 +36,7 @@ const (
 	initialBufferSize               = 64 * 1024
 	maxWalEntrySize                 = 10 * 1024 * 1024
 	walSuffix                       = ".wal"
-	historyDrainTimeoutPerOperation = 3 * time.Second
+	historyDrainTimeoutPerOperation = 5 * time.Second
 )
 
 // FeatureDeploymentHistory marks a state whose resources are also recorded with the

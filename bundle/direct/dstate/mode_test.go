@@ -278,8 +278,8 @@ func TestHistoryDrainTimeoutPreservesFileState(t *testing.T) {
 			callerTimeout  time.Duration
 			wantDuration   time.Duration
 		}{
-			{name: "one operation", operationCount: 1, wantDuration: 3 * time.Second},
-			{name: "all staged operations", operationCount: 4, wantDuration: 12 * time.Second},
+			{name: "one operation", operationCount: 1, wantDuration: 5 * time.Second},
+			{name: "all staged operations", operationCount: 4, wantDuration: 20 * time.Second},
 			{name: "shorter caller deadline", operationCount: 4, callerTimeout: 20 * time.Millisecond, wantDuration: 20 * time.Millisecond},
 		} {
 			t.Run(fmt.Sprintf("%d/%s", mode, tc.name), func(t *testing.T) {
