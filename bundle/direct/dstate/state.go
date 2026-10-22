@@ -221,7 +221,12 @@ func (db *DeploymentState) RecordingError() error {
 func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (bool, error) {
 	db.mu.Lock()
 	buf := db.operationBuffer
-	if buf == nil || db.versionCompleted {
+	// WritingFile has no DMS buffer, so version completion is skipped.
+	if buf == nil {
+		db.mu.Unlock()
+		return false, nil
+	}
+	if db.versionCompleted {
 		db.mu.Unlock()
 		return false, nil
 	}
