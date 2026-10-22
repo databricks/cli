@@ -2,6 +2,7 @@ package structvar_test
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/diag"
@@ -365,4 +366,53 @@ func TestDeleteSliceElement(t *testing.T) {
 	assert.Equal(t, []string{"b"}, sv.Value.(*obj).Items)
 	assert.Nil(t, sv.Locations.Exact(structpath.NewIndex(items, 1)))
 	assert.Empty(t, sv.Refs)
+}
+
+func TestMergeNullKeepsFieldSet(t *testing.T) {
+	type inner struct {
+		Enabled bool `json:"enabled"`
+	}
+	type obj struct {
+		Name            string   `json:"name,omitempty"`
+		Queue           *inner   `json:"queue,omitempty"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	var dst obj
+	dstVar, _, err := structvar.DecodeYAML("dst.yml", strings.NewReader("name: x\n"), &dst)
+	require.NoError(t, err)
+
+	var src obj
+	srcVar, _, err := structvar.DecodeYAML("src.yml", strings.NewReader("queue: null\n"), &src)
+	require.NoError(t, err)
+
+	require.NoError(t, dstVar.Merge(nil, srcVar.View()))
+
+	// An explicit null added by the merge stays set, as it does when it is decoded.
+	assert.Nil(t, dst.Queue)
+	assert.Equal(t, []string{"Queue"}, dst.ForceSendFields)
+}
+
+func TestMergeNullIntoValueKeepsIt(t *testing.T) {
+	type inner struct {
+		Enabled bool `json:"enabled"`
+	}
+	type obj struct {
+		Queue           *inner   `json:"queue,omitempty"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	var dst obj
+	dstVar, _, err := structvar.DecodeYAML("dst.yml", strings.NewReader("queue:\n  enabled: true\n"), &dst)
+	require.NoError(t, err)
+
+	var src obj
+	srcVar, _, err := structvar.DecodeYAML("src.yml", strings.NewReader("queue: null\n"), &src)
+	require.NoError(t, err)
+
+	require.NoError(t, dstVar.Merge(nil, srcVar.View()))
+
+	// A null does not clear an existing value.
+	require.NotNil(t, dst.Queue)
+	assert.True(t, dst.Queue.Enabled)
 }
