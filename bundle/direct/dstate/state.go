@@ -185,11 +185,7 @@ func (db *DeploymentState) InitializeOperationBuffer(ctx context.Context, deploy
 	db.AssertOpenedForWrite()
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	options := dms.BufferOptions{}
-	if db.mode.isFileWithHistory() {
-		options.BestEffort = true
-		options.Capacity = operationCount
-	}
+	options := dms.BufferOptions{BestEffort: db.mode.isFileWithHistory()}
 	db.operationBuffer = dms.StartOperationBuffer(ctx, deploymentID, versionID, options)
 	db.historyDrainTimeout = time.Duration(operationCount) * historyDrainTimeoutPerOperation
 	db.DeploymentID = deploymentID

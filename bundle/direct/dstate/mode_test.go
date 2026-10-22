@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"testing"
 	"testing/synctest"
@@ -505,4 +506,33 @@ func TestRecoveryRejectsUnknownWALFeatures(t *testing.T) {
 	assert.False(t, db.IsOpen())
 	assert.NoFileExists(t, path)
 	assert.FileExists(t, path+".wal")
+}
+
+func TestFullHistoryBufferUnblocksAfterOperationTimeout(t *testing.T) {
+	for _, mode := range []dstate.Mode{dstate.WritingFileWithHistory, dstate.WritingFileWithHistoryEnforced} {
+		t.Run(fmt.Sprint(mode), func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				ctx := modeContext(t, func(w http.ResponseWriter, r *http.Request) {
+					_, _ = io.Copy(io.Discard, r.Body)
+					<-r.Context().Done()
+				})
+				path := filepath.Join(t.TempDir(), "resources.json")
+				var db dstate.DeploymentState
+				require.NoError(t, db.Open(ctx, path, mode, false, dstate.OpenDmsArgs{}))
+				const operationCount = 32
+				db.InitializeOperationBuffer(ctx, "dep-1", 1, operationCount)
+				start := time.Now()
+				for i := range operationCount {
+					key := fmt.Sprintf("resources.jobs.job_%d", i)
+					require.NoError(t, db.SaveState(ctx, key, strconv.Itoa(i), struct{}{}, nil))
+				}
+				assert.Equal(t, time.Minute, time.Since(start))
+				exported, err := db.Finalize(ctx)
+				require.NoError(t, err)
+				assert.Len(t, exported, operationCount)
+				assert.FileExists(t, path)
+				assert.NoFileExists(t, path+".wal")
+			})
+		})
+	}
 }

@@ -3,7 +3,6 @@ package dms
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -19,9 +18,8 @@ const bufferedOperations = 10
 // OperationTimeout caps a single DMS history request, including its retries.
 const OperationTimeout = time.Minute
 
-// BufferOptions controls backpressure and whether recording stops after an error.
+// BufferOptions controls whether recording continues after an error.
 type BufferOptions struct {
-	Capacity   int
 	BestEffort bool
 }
 
@@ -68,14 +66,10 @@ type OperationBuffer struct {
 // must already exist: operations record under it, and nothing here creates it.
 func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum int, options BufferOptions) *OperationBuffer {
 	ctx, cancel := context.WithCancel(ctx)
-	capacity := options.Capacity
-	if capacity <= 0 {
-		capacity = bufferedOperations
-	}
 	b := &OperationBuffer{
 		deploymentID: deploymentID,
 		versionNum:   versionNum,
-		queue:        make(chan string, capacity),
+		queue:        make(chan string, bufferedOperations),
 		done:         make(chan struct{}),
 		cancel:       cancel,
 		bestEffort:   options.BestEffort,
@@ -136,17 +130,9 @@ func (b *OperationBuffer) record(resourceKey string, update OperationUpdate, kee
 	//
 	// Only when the resource is not already queued, enqueue it.
 	if !queued {
-		if b.bestEffort {
-			select {
-			case b.queue <- resourceKey:
-			default:
-				b.setErr(errors.New("deployment history buffer is full"))
-			}
-		} else {
-			select {
-			case b.queue <- resourceKey:
-			case <-b.done:
-			}
+		select {
+		case b.queue <- resourceKey:
+		case <-b.done:
 		}
 	}
 }

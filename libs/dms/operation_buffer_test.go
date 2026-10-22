@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
+	"testing/synctest"
 
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/stretchr/testify/assert"
@@ -117,23 +117,53 @@ func TestRecordFailureUsesTheGivenStateWhenNoWriteRecorded(t *testing.T) {
 	assert.Equal(t, bundledeployments.OperationStatusOperationStatusFailed, update.Status)
 }
 
-func TestBestEffortBufferDoesNotBlockOnFullQueue(t *testing.T) {
-	b := queued()
-	b.bestEffort = true
-	for range bufferedOperations {
-		b.queue <- "occupied"
-	}
-	done := make(chan struct{})
-	go func() {
-		b.RecordOperation(t.Context(), "resources.jobs.foo", false, "id-1", json.RawMessage(`{}`))
-		close(done)
-	}()
-	select {
-	case <-done:
-	case <-time.After(time.Second):
-		t.Fatal("history recording blocked on a full queue")
-	}
-	assert.ErrorContains(t, b.Err(), "buffer is full")
+func TestBestEffortBufferWaitsForQueueSpace(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		b := queued()
+		b.bestEffort = true
+		for range bufferedOperations {
+			b.queue <- "occupied"
+		}
+		done := make(chan struct{})
+		go func() {
+			b.RecordOperation(t.Context(), "resources.jobs.foo", false, "id-1", json.RawMessage(`{}`))
+			close(done)
+		}()
+		synctest.Wait()
+		select {
+		case <-done:
+			t.Fatal("recording should wait for queue space")
+		default:
+		}
+		<-b.queue
+		<-done
+		assert.NoError(t, b.Err())
+		assert.Len(t, b.queue, bufferedOperations)
+		_, ok := b.take("resources.jobs.foo")
+		assert.True(t, ok)
+	})
+}
+
+func TestBestEffortBufferUnblocksWhenWriterStops(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		b := queued()
+		b.bestEffort = true
+		b.done = make(chan struct{})
+		for range bufferedOperations {
+			b.queue <- "occupied"
+		}
+		done := make(chan struct{})
+		go func() {
+			b.RecordOperation(t.Context(), "resources.jobs.foo", false, "id-1", json.RawMessage(`{}`))
+			close(done)
+		}()
+		synctest.Wait()
+		cause := errors.New("recording failed")
+		b.setErr(cause)
+		close(b.done)
+		<-done
+		assert.ErrorIs(t, b.Err(), cause)
+	})
 }
 
 func TestBestEffortBufferStopsRecordingAfterError(t *testing.T) {
