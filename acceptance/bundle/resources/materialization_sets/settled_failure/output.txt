@@ -17,12 +17,12 @@ update
 
 >>> musterr [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-settled-[UNIQUE_NAME]/default/files...
-Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: materialization set [UUID]: Materialization set '[UUID]' was partly updated: 0 materialized features deleted, 2 failed.; members left unchanged: [UUID] (INTERNAL_ERROR): Failed to delete materialized feature '[UUID]'. If the issue persists, please retry or contact support.; [UUID] (INTERNAL_ERROR): Failed to delete materialized feature '[UUID]'. If the issue persists, please retry or contact support. (200 INTERNAL_ERROR)
+Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: materialization set [UUID]: Changed 0 of 2 materialized features in materialization set '[UUID]'. The operation's progress lists which update succeeded, which failed and why.; members left unchanged: [UUID] (INTERNAL_ERROR): Failed to delete materialized feature '[UUID]'. If the issue persists, please retry or contact support.; [UUID] (INTERNAL_ERROR): Failed to delete materialized feature '[UUID]'. If the issue persists, please retry or contact support. (200 INTERNAL_ERROR)
 
 Endpoint: n/a
 HTTP Status: 200
 API error_code: INTERNAL_ERROR
-API message: materialization set [UUID]: Materialization set '[UUID]' was partly updated: 0 materialized features deleted, 2 failed.; members left unchanged: [UUID] (INTERNAL_ERROR): Failed to delete materialized feature '[UUID]'. If the issue persists, please retry or contact support.; [UUID] (INTERNAL_ERROR): Failed to delete materialized feature '[UUID]'. If the issue persists, please retry or contact support.
+API message: materialization set [UUID]: Changed 0 of 2 materialized features in materialization set '[UUID]'. The operation's progress lists which update succeeded, which failed and why.; members left unchanged: [UUID] (INTERNAL_ERROR): Failed to delete materialized feature '[UUID]'. If the issue persists, please retry or contact support.; [UUID] (INTERNAL_ERROR): Failed to delete materialized feature '[UUID]'. If the issue persists, please retry or contact support.
 
 Files: 2 uploaded, 0 deleted
 

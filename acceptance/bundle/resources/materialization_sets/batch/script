@@ -76,7 +76,8 @@ trace musterr $CLI bundle deploy --auto-approve
 
 title "A set cannot mix a feature that materializes on the batch path with one that materializes"
 title "on the streaming path. The refusal above left no set behind, so this reaches the create"
-title "endpoint, and it is raised before the shared-destination rule the two features also break."
+title "endpoint -- which reserves its operation record before it reaches this rule, so the refusal"
+title "settles that record and arrives as HTTP 200 rather than as an error on the call."
 render mixed.yml.tmpl
 trace musterr $CLI bundle deploy --auto-approve
 

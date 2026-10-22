@@ -49,12 +49,12 @@ Files: 2 uploaded, 0 deleted
 
 >>> musterr [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-batch-[UNIQUE_NAME]/default/files...
-Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Materialized features '[UUID]' of feature 'danielb.fs2680.batch_[UNIQUE_NAME]' are deleted only by deleting materialized features '[UUID]', which the request doesn't supply. Remove '[UUID]' as well. (400 INVALID_PARAMETER_VALUE)
+Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Materialized features '[UUID]' of feature 'danielb.fs2680.batch_[UNIQUE_NAME]' are deleted only by deleting materialized features '[UUID]', which the request does not supply. Remove those as well. (400 INVALID_PARAMETER_VALUE)
 
 Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?request_id=[UUID]&update_mask=materialized_features
 HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
-API message: Materialized features '[UUID]' of feature 'danielb.fs2680.batch_[UNIQUE_NAME]' are deleted only by deleting materialized features '[UUID]', which the request doesn't supply. Remove '[UUID]' as well.
+API message: Materialized features '[UUID]' of feature 'danielb.fs2680.batch_[UNIQUE_NAME]' are deleted only by deleting materialized features '[UUID]', which the request does not supply. Remove those as well.
 
 Files: 2 uploaded, 0 deleted
 
@@ -145,15 +145,16 @@ Files: 2 uploaded, 0 deleted
 
 === A set cannot mix a feature that materializes on the batch path with one that materializes
 === on the streaming path. The refusal above left no set behind, so this reaches the create
-=== endpoint, and it is raised before the shared-destination rule the two features also break.
+=== endpoint -- which reserves its operation record before it reaches this rule, so the refusal
+=== settles that record and arrives as HTTP 200 rather than as an error on the call.
 >>> musterr [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-batch-[UNIQUE_NAME]/default/files...
 Created features.streamfeat
-Error: cannot create resources.materialization_sets.set1: Batch and streaming features cannot be mixed in a single materialize_features call because they require different trigger types. Issue two separate calls: one for batch features and one for streaming features. Batch features: danielb.fs2680.batch_[UNIQUE_NAME]. Streaming features: danielb.fs2680.batchstream_[UNIQUE_NAME] (400 INVALID_PARAMETER_VALUE)
+Error: cannot create resources.materialization_sets.set1: materialization set [UUID]: Batch and streaming features cannot be mixed in a single materialize_features call because they require different trigger types. Issue two separate calls: one for batch features and one for streaming features. Batch features: danielb.fs2680.batch_[UNIQUE_NAME]. Streaming features: danielb.fs2680.batchstream_[UNIQUE_NAME] (200 INVALID_PARAMETER_VALUE)
 
-Endpoint: POST [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets?request_id=[UUID]
-HTTP Status: 400 Bad Request
+Endpoint: n/a
+HTTP Status: 200
 API error_code: INVALID_PARAMETER_VALUE
-API message: Batch and streaming features cannot be mixed in a single materialize_features call because they require different trigger types. Issue two separate calls: one for batch features and one for streaming features. Batch features: danielb.fs2680.batch_[UNIQUE_NAME]. Streaming features: danielb.fs2680.batchstream_[UNIQUE_NAME]
+API message: materialization set [UUID]: Batch and streaming features cannot be mixed in a single materialize_features call because they require different trigger types. Issue two separate calls: one for batch features and one for streaming features. Batch features: danielb.fs2680.batch_[UNIQUE_NAME]. Streaming features: danielb.fs2680.batchstream_[UNIQUE_NAME]
 
 Files: 1 uploaded, 0 deleted

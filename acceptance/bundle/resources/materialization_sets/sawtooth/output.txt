@@ -6,12 +6,12 @@
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-sawtooth-[UNIQUE_NAME]/default/files...
 Created features.sawfeat
-Error: cannot create resources.materialization_sets.set1: Feature 'danielb.fs2680.saw_[UNIQUE_NAME]' uses a sawtooth window, which requires an offline batch materialization, an online batch materialization and an online streaming materialization. Declare one materialize feature request for each. (400 BAD_REQUEST)
+Error: cannot create resources.materialization_sets.set1: materialization set [UUID]: Feature 'danielb.fs2680.saw_[UNIQUE_NAME]' uses a sawtooth window, which requires an offline batch materialization, an online batch materialization and an online streaming materialization. Declare one materialize feature request for each. (200 BAD_REQUEST)
 
-Endpoint: POST [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets?request_id=[UUID]
-HTTP Status: 400 Bad Request
+Endpoint: n/a
+HTTP Status: 200
 API error_code: BAD_REQUEST
-API message: Feature 'danielb.fs2680.saw_[UNIQUE_NAME]' uses a sawtooth window, which requires an offline batch materialization, an online batch materialization and an online streaming materialization. Declare one materialize feature request for each.
+API message: materialization set [UUID]: Feature 'danielb.fs2680.saw_[UNIQUE_NAME]' uses a sawtooth window, which requires an offline batch materialization, an online batch materialization and an online streaming materialization. Declare one materialize feature request for each.
 
 Files: 7 uploaded, 0 deleted
 
@@ -66,12 +66,12 @@ update
 
 >>> musterr [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-sawtooth-[UNIQUE_NAME]/default/files...
-Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Materialized features '[UUID]' of feature 'danielb.fs2680.saw_[UNIQUE_NAME]' are deleted only by deleting materialized features '[UUID]', '[UUID]', which the request doesn't supply. Remove '[UUID]', '[UUID]' as well. (400 INVALID_PARAMETER_VALUE)
+Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Materialized features '[UUID]' of feature 'danielb.fs2680.saw_[UNIQUE_NAME]' are deleted only by deleting materialized features '[UUID]', '[UUID]', which the request does not supply. Remove those as well. (400 INVALID_PARAMETER_VALUE)
 
 Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?request_id=[UUID]&update_mask=materialized_features
 HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
-API message: Materialized features '[UUID]' of feature 'danielb.fs2680.saw_[UNIQUE_NAME]' are deleted only by deleting materialized features '[UUID]', '[UUID]', which the request doesn't supply. Remove '[UUID]', '[UUID]' as well.
+API message: Materialized features '[UUID]' of feature 'danielb.fs2680.saw_[UNIQUE_NAME]' are deleted only by deleting materialized features '[UUID]', '[UUID]', which the request does not supply. Remove those as well.
 
 Files: 2 uploaded, 0 deleted
 

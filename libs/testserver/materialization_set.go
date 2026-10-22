@@ -15,6 +15,14 @@ import (
 // backend's own message text, so a golden recorded locally is a claim about the real API that the
 // cloud run then checks.
 
+// materializationSetRefusal is a rule's verdict, separated from how it is reported: a rule the
+// backend reaches before reserving an operation record becomes an HTTP error, and one it reaches
+// after becomes a settled FAILED operation.
+type materializationSetRefusal struct {
+	errorCode string
+	message   string
+}
+
 func materializationSetError(statusCode int, errorCode, message string) Response {
 	return Response{
 		StatusCode: statusCode,
@@ -123,7 +131,7 @@ func featureMaterializationDestination(members []ml.MaterializedFeature) string 
 // validateSharedMaterializationDestination mirrors the create-path rule that every feature in a
 // set asks for an identical destination pair. Because the pair carries the online config, a set
 // cannot mix a feature materialized to both stores with one materialized offline only.
-func validateSharedMaterializationDestination(members []ml.MaterializedFeature) *Response {
+func validateSharedMaterializationDestination(members []ml.MaterializedFeature) *materializationSetRefusal {
 	membersByFeature := map[string][]ml.MaterializedFeature{}
 	featureOrder := []string{}
 	for _, member := range members {
@@ -138,16 +146,17 @@ func validateSharedMaterializationDestination(members []ml.MaterializedFeature) 
 		destinations[featureMaterializationDestination(membersByFeature[featureName])] = true
 	}
 	if len(destinations) > 1 {
-		response := materializationSetError(http.StatusBadRequest, "BAD_REQUEST",
-			"All features must share the same materialization destination.")
-		return &response
+		return &materializationSetRefusal{
+			errorCode: "BAD_REQUEST",
+			message:   "All features must share the same materialization destination.",
+		}
 	}
 	return validateOfflineAndOnlineDestinationsDiffer(members)
 }
 
 // validateOfflineAndOnlineDestinationsDiffer mirrors the create-path rule that a feature
 // materialized to both stores must separate them by catalog, schema or prefix.
-func validateOfflineAndOnlineDestinationsDiffer(members []ml.MaterializedFeature) *Response {
+func validateOfflineAndOnlineDestinationsDiffer(members []ml.MaterializedFeature) *materializationSetRefusal {
 	var offline *ml.OfflineStoreConfig
 	var online *ml.OnlineStoreConfig
 	for _, member := range members {
@@ -165,11 +174,12 @@ func validateOfflineAndOnlineDestinationsDiffer(members []ml.MaterializedFeature
 		online.TableNamePrefix != offline.TableNamePrefix {
 		return nil
 	}
-	response := materializationSetError(http.StatusBadRequest, "BAD_REQUEST",
-		fmt.Sprintf("Offline and online materialization destinations must differ. Found "+
+	return &materializationSetRefusal{
+		errorCode: "BAD_REQUEST",
+		message: fmt.Sprintf("Offline and online materialization destinations must differ. Found "+
 			"identical catalog names '%s', schema names '%s', and table name prefixes '%s'.",
-			offline.CatalogName, offline.SchemaName, offline.TableNamePrefix))
-	return &response
+			offline.CatalogName, offline.SchemaName, offline.TableNamePrefix),
+	}
 }
 
 // sawtoothMaterializedFeatureCount is how many materialized features a sawtooth window produces:
@@ -194,7 +204,7 @@ func (s *FakeWorkspace) isSawtoothFeature(featureName string) bool {
 // trigger. An unknown feature falls in neither group, for the reason isSawtoothFeature gives.
 func (s *FakeWorkspace) validateBatchAndStreamingFeaturesNotMixed(
 	members []ml.MaterializedFeature,
-) *Response {
+) *materializationSetRefusal {
 	var batchFeatureNames, streamingFeatureNames []string
 	for _, featureName := range materializationSetFeatureNames(members) {
 		feature, stored := s.Features[featureName]
@@ -218,13 +228,14 @@ func (s *FakeWorkspace) validateBatchAndStreamingFeaturesNotMixed(
 		return nil
 	}
 
-	response := materializationSetError(http.StatusBadRequest, "INVALID_PARAMETER_VALUE",
-		fmt.Sprintf("Batch and streaming features cannot be mixed in a single "+
+	return &materializationSetRefusal{
+		errorCode: "INVALID_PARAMETER_VALUE",
+		message: fmt.Sprintf("Batch and streaming features cannot be mixed in a single "+
 			"materialize_features call because they require different trigger types. Issue two "+
 			"separate calls: one for batch features and one for streaming features. Batch "+
 			"features: %s. Streaming features: %s",
-			strings.Join(batchFeatureNames, ", "), strings.Join(streamingFeatureNames, ", ")))
-	return &response
+			strings.Join(batchFeatureNames, ", "), strings.Join(streamingFeatureNames, ", ")),
+	}
 }
 
 // validateSawtoothMaterializedFeatures mirrors the rule that a sawtooth feature declares all three
@@ -232,7 +243,9 @@ func (s *FakeWorkspace) validateBatchAndStreamingFeaturesNotMixed(
 // stamps a set id on every member before the backend reaches its normalization, and that
 // normalization is skipped whenever the id is set, so a member maps to exactly one materialized
 // feature and the set stays diffable.
-func (s *FakeWorkspace) validateSawtoothMaterializedFeatures(members []ml.MaterializedFeature) *Response {
+func (s *FakeWorkspace) validateSawtoothMaterializedFeatures(
+	members []ml.MaterializedFeature,
+) *materializationSetRefusal {
 	byFeature := map[string][]ml.MaterializedFeature{}
 	var featureOrder []string
 	for _, member := range members {
@@ -259,11 +272,14 @@ func (s *FakeWorkspace) validateSawtoothMaterializedFeatures(members []ml.Materi
 		}
 		if len(byFeature[featureName]) != sawtoothMaterializedFeatureCount ||
 			offlineBatch != 1 || onlineBatch != 1 || onlineStreaming != 1 {
-			response := materializationSetError(http.StatusBadRequest, "BAD_REQUEST", fmt.Sprintf(
-				"Feature '%s' uses a sawtooth window, which requires an offline batch "+
-					"materialization, an online batch materialization and an online streaming "+
-					"materialization. Declare one materialize feature request for each.", featureName))
-			return &response
+			return &materializationSetRefusal{
+				errorCode: "BAD_REQUEST",
+				message: fmt.Sprintf(
+					"Feature '%s' uses a sawtooth window, which requires an offline batch "+
+						"materialization, an online batch materialization and an online streaming "+
+						"materialization. Declare one materialize feature request for each.",
+					featureName),
+			}
 		}
 	}
 	return nil
@@ -285,17 +301,22 @@ func (s *FakeWorkspace) MaterializationSetsCreate(req Request) Response {
 	if bad := validateBatchPipelineScheduleStates(set.MaterializedFeatures); bad != nil {
 		return *bad
 	}
-	if bad := s.validateBatchAndStreamingFeaturesNotMixed(set.MaterializedFeatures); bad != nil {
-		return *bad
-	}
-	if bad := validateSharedMaterializationDestination(set.MaterializedFeatures); bad != nil {
-		return *bad
-	}
-	if bad := s.validateSawtoothMaterializedFeatures(set.MaterializedFeatures); bad != nil {
-		return *bad
-	}
-
 	set.MaterializationSetId = nextUUID()
+
+	// The operation record is reserved here, so what follows is the operation's outcome rather
+	// than a rejected request: the backend reaches these rules inside the batch create it calls
+	// after reserving, and reports them by settling the record.
+	for _, bad := range []*materializationSetRefusal{
+		s.validateBatchAndStreamingFeaturesNotMixed(set.MaterializedFeatures),
+		validateSharedMaterializationDestination(set.MaterializedFeatures),
+		s.validateSawtoothMaterializedFeatures(set.MaterializedFeatures),
+	} {
+		if bad == nil {
+			continue
+		}
+		return s.materializationSetFailedOperationResponse(set.MaterializationSetId,
+			set.MaterializedFeatures, bad.errorCode, bad.message, nil)
+	}
 	for i, member := range set.MaterializedFeatures {
 		set.MaterializedFeatures[i] = populateMaterializationSetMember(member, set.MaterializationSetId)
 	}
@@ -398,8 +419,8 @@ func partialMaterializationSetChangeErrorCode(
 func (s *FakeWorkspace) materializationSetFailedOperationResponse(
 	setID string,
 	members []ml.MaterializedFeature,
+	errorCode string,
 	message string,
-	failures []ml.MaterializedFeatureChangeFailure,
 	progress func(*ml.MaterializationSetOperationMetadata),
 ) Response {
 	settled := ml.MaterializationSetOperationMetadata{
@@ -407,7 +428,9 @@ func (s *FakeWorkspace) materializationSetFailedOperationResponse(
 		MaterializationSetId: setID,
 		State:                ml.MaterializationSetOperationMetadataStateFailed,
 	}
-	progress(&settled)
+	if progress != nil {
+		progress(&settled)
+	}
 
 	metadata, err := json.Marshal(settled)
 	if err != nil {
@@ -419,7 +442,7 @@ func (s *FakeWorkspace) materializationSetFailedOperationResponse(
 		Done:     true,
 		Metadata: metadata,
 		Error: &ml.DatabricksServiceExceptionWithDetailsProto{
-			ErrorCode: ml.ErrorCode(partialMaterializationSetChangeErrorCode(failures)),
+			ErrorCode: ml.ErrorCode(errorCode),
 			Message:   message,
 		},
 	}
@@ -473,9 +496,10 @@ func (s *FakeWorkspace) MaterializationSetsDelete(setID string) Response {
 	if failures := materializationSetTeardownFailures(targets, allIDs); len(failures) > 0 {
 		// The set is kept so the members that still need deleting can be retried.
 		return s.materializationSetFailedOperationResponse(setID, existing.MaterializedFeatures,
-			fmt.Sprintf("Materialization set '%s' was partly deleted: %d materialized features "+
-				"deleted, %d failed.", setID, 0, len(failures)),
-			failures,
+			partialMaterializationSetChangeErrorCode(failures),
+			fmt.Sprintf("Deleted %d of %d materialized features in materialization set '%s'. "+
+				"The operation's progress lists which deletion succeeded, which failed and why.",
+				0, len(failures), setID),
 			func(metadata *ml.MaterializationSetOperationMetadata) {
 				metadata.DeletionProgress = &ml.MaterializationSetDeletionProgress{
 					FailedMaterializedFeatures: failures,
@@ -666,9 +690,9 @@ func (s *FakeWorkspace) MaterializationSetsUpdate(req Request, setID string) Res
 		}
 		return materializationSetError(http.StatusBadRequest, "INVALID_PARAMETER_VALUE",
 			fmt.Sprintf("Materialized features %s of feature '%s' are deleted only by deleting "+
-				"materialized features %s, which the request doesn't supply. Remove %s as well.",
+				"materialized features %s, which the request does not supply. Remove those as "+
+				"well.",
 				quotedMaterializedFeatureIDs(removedForFeature), featureName,
-				quotedMaterializedFeatureIDs(unrequested),
 				quotedMaterializedFeatureIDs(unrequested)))
 	}
 
@@ -677,9 +701,10 @@ func (s *FakeWorkspace) MaterializationSetsUpdate(req Request, setID string) Res
 		// Nothing is written: the one target this fake can fail is the only target, so no member
 		// of the change got through.
 		return s.materializationSetFailedOperationResponse(setID, existing.MaterializedFeatures,
-			fmt.Sprintf("Materialization set '%s' was partly updated: %d materialized features "+
-				"deleted, %d failed.", setID, 0, len(failures)),
-			failures,
+			partialMaterializationSetChangeErrorCode(failures),
+			fmt.Sprintf("Changed %d of %d materialized features in materialization set '%s'. "+
+				"The operation's progress lists which update succeeded, which failed and why.",
+				0, len(failures), setID),
 			func(metadata *ml.MaterializationSetOperationMetadata) {
 				metadata.UpdateProgress = &ml.MaterializationSetUpdateProgress{
 					FailedMaterializedFeatures: failures,

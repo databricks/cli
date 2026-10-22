@@ -31,8 +31,14 @@ because every adapter call mints its own.
 
 ## A failure after the operation is reserved is not an HTTP error
 
-The backend raises only while it can still reject the request outright -- every validation, which
-runs before it reserves an operation record. Past that point a failure is the operation's outcome,
+The backend raises only while it can still reject the request outright, and that boundary sits
+earlier than "every validation". On the create path only three rules are reached before the record
+is reserved: a member list that is empty, a supplied set id that already exists, and the schedule
+states agreeing, which a wire-level validation hook checks before the handler runs at all. The
+batch-and-streaming mixing rule, both destination rules and the sawtooth triple rule all live inside
+the batch create the handler calls *after* reserving, so each of them settles the record and comes
+back as HTTP 200. Measured against the live build, not read off the handler: `batch` and `sawtooth`
+each failed on a golden still expecting a 400. Past that point a failure is the operation's outcome,
 so all three verbs settle the record FAILED and return it with HTTP 200, carrying the error code and
 message on the operation and the per-member outcome on the metadata's progress arm. A creation has
 no progress arm: it has no per-member outcome to report.
@@ -199,6 +205,13 @@ That covers both cascade messages, the empty-set refusal that sends a caller to 
 the batch-versus-streaming mixing refusal, and the `streaming` case's claim that two stream features
 materialized to one destination can share a set, which until then rested on the shared-destination
 rule comparing a `(offline, Option[online])` pair that is identical for both.
+
+**Fourth build, universe `cd7a68312ca3`** -- the promotion tip, carrying the settled-failure
+contract. All six `Cloud = true` cases pass against it, run one at a time. Three messages had been
+reworded (`materializationSetMembersCannotBeRemovedAlone`, and both partial-change messages, which
+now count what got through and point at the operation's progress), and two refusals moved from an
+HTTP 400 to a settled FAILED operation. The fake and four goldens were corrected from what the live
+run returned.
 
 ## Verified against a workspace, with no case of their own
 
