@@ -503,7 +503,7 @@ func (db *DeploymentState) GetOrInitLineage() string {
 	return db.Data.Lineage
 }
 
-// WithRecovery allows Open to merge a leftover WAL into file state.
+// If true, then Open reads the WAL and merges it in the state. If false, and WAL is present, Open returns an error.
 type WithRecovery bool
 
 // Open loads resource state using mode, recovering a leftover WAL when requested.
