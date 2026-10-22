@@ -1,5 +1,39 @@
 # Version changelog
 
+## Release v1.22.0 (2026-10-22)
+
+### CLI
+
+ * Fix `databricks aitools install` overwriting newer raw skills with an older pinned release. CLI 1.22.0 and newer now install the latest published skills and prevent automatic downgrades. ([#7069](https://github.com/databricks/cli/pull/7069))
+ * Fix `auth login --timeout` not applying to the browser login, which waited for the OAuth redirect indefinitely. ([#7103](https://github.com/databricks/cli/pull/7103))
+ * Remove the 50-workspace limit in `auth login` and support searching workspaces by name or ID. ([#7071](https://github.com/databricks/cli/pull/7071))
+ * `databricks ssh connect` now fails right away with the workspace's reason when port forwarding to serverless compute is disabled, instead of waiting out the server start timeout. ([#7057](https://github.com/databricks/cli/pull/7057))
+
+### AI Runtime
+
+ * `air run` now spends less time before submitting: it fetches only the user name from SCIM. ([#7153](https://github.com/databricks/cli/pull/7153))
+ * Align multi-image container name validation with backend services: allow hyphens and up to 32 characters, and reject uppercase letters and underscores. ([#7154](https://github.com/databricks/cli/pull/7154))
+
+### Bundles
+
+ * The `compute_id` deprecation warning for a target now shows the full path (`targets.<name>.compute_id`). ([#7048](https://github.com/databricks/cli/pull/7048))
+ * Add `DATABRICKS_BUNDLE_STRICT_PROFILE_MATCH`, which requires a target's host and workspace ID to match exactly one profile in the config file before authenticating. Targets without a host or workspace ID are not affected. ([#7109](https://github.com/databricks/cli/pull/7109))
+ * Zero-value overrides of `presets`, `lifecycle.prevent_destroy` and `deployment` settings in includes now replace non-zero base values, and `bundle validate -o json` shows explicit zero presets. ([#7117](https://github.com/databricks/cli/pull/7117))
+ * `bundle deployment bind` and `unbind` now accept a resource as `type.key`, e.g. `jobs.foo`. ([#7128](https://github.com/databricks/cli/pull/7128))
+ * Retry more transient server errors during `bundle deploy` and `bundle destroy`, including when releasing the deploy lock and reading state. ([#7129](https://github.com/databricks/cli/pull/7129))
+ * Fix migration from Terraform failing when a deployed resource references a resource that was never deployed. ([#7157](https://github.com/databricks/cli/pull/7157))
+ * Add `app-appkit` to bundle templates to simplify starting a Databricks Apps project. ([#7004](https://github.com/databricks/cli/pull/7004), [#7007](https://github.com/databricks/cli/pull/7007))
+ * Add support for the `features` resource type. ([#6952](https://github.com/databricks/cli/pull/6952))
+ * Fix `bundle validate` warning that `sync.include` and `sync.exclude` patterns do not match any files when `sync.paths` includes a directory outside the bundle root. ([#7122](https://github.com/databricks/cli/pull/7122))
+
+### Dependency Updates
+
+ * Bump dependencies with known vulnerabilities. ([#7083](https://github.com/databricks/cli/pull/7083))
+ * Bump Go to 1.27.2. Release binaries now require macOS 13 Ventura or later. ([#7052](https://github.com/databricks/cli/pull/7052))
+ * Update the Go SDK to [v0.189.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.189.0). ([#7138](https://github.com/databricks/cli/pull/7138))
+ * Bump Go toolchain to 1.27.3. ([#7116](https://github.com/databricks/cli/pull/7116))
+
+
 ## Release v1.21.0 (2026-10-14)
 
 ### CLI
