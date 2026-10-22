@@ -68,6 +68,7 @@ var EnumFields = map[string][]string{
 
 	"resources.features.*.function.function_type":                                {"APPROX_COUNT_DISTINCT", "APPROX_PERCENTILE", "AVG", "COUNT", "FIRST", "FUNCTION_TYPE_UNSPECIFIED", "LAST", "MAX", "MIN", "STDDEV_POP", "STDDEV_SAMP", "SUM", "VAR_POP", "VAR_SAMP"},
 	"resources.features.*.source.request_source.flat_schema.fields[*].data_type": {"BINARY", "BOOLEAN", "DATE", "DECIMAL", "DOUBLE", "FLOAT", "INTEGER", "LONG", "SHORT", "STRING", "TIMESTAMP"},
+	"resources.features.*.source.sdp_source.pipeline_state":                      {"ERROR", "PENDING", "RESOLVED"},
 
 	"resources.genie_spaces.*.permissions[*].level": {"CAN_ATTACH_TO", "CAN_BIND", "CAN_CREATE", "CAN_CREATE_APP", "CAN_EDIT", "CAN_EDIT_METADATA", "CAN_MANAGE", "CAN_MANAGE_PRODUCTION_VERSIONS", "CAN_MANAGE_RUN", "CAN_MANAGE_STAGING_VERSIONS", "CAN_MONITOR", "CAN_MONITOR_ONLY", "CAN_QUERY", "CAN_READ", "CAN_RESTART", "CAN_RUN", "CAN_USE", "CAN_VIEW", "CAN_VIEW_METADATA", "IS_OWNER"},
 

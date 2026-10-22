@@ -14,8 +14,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class SubscriptionAttachmentDataAttachmentWidget:
     """
-    :meta private: [EXPERIMENTAL]
-
     Identifies a dashboard widget whose data to attach. `page_id` and `widget_id` are
     the URL identifiers from the dashboard's serialized definition returned by the Get dashboard
     API (`serialized_dashboard`), and together they uniquely identify the widget.
@@ -25,7 +23,7 @@ class SubscriptionAttachmentDataAttachmentWidget:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The URL identifier of the page containing the widget. This is the value of the `name`
+    [Beta] The URL identifier of the page containing the widget. This is the value of the `name`
     field of the corresponding entry under `pages` in the serialized dashboard definition.
     Format: alphanumeric, hyphen, and underscore characters allowed, max length 63.
     """
@@ -34,7 +32,7 @@ class SubscriptionAttachmentDataAttachmentWidget:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The URL identifier of the widget. This is the value of the `name` field of the
+    [Beta] The URL identifier of the widget. This is the value of the `name` field of the
     corresponding widget under that page's `layout` in the serialized dashboard definition.
     Format: alphanumeric, hyphen, and underscore characters allowed, max length 63.
     """
@@ -56,7 +54,7 @@ class SubscriptionAttachmentDataAttachmentWidgetDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The URL identifier of the page containing the widget. This is the value of the `name`
+    [Beta] The URL identifier of the page containing the widget. This is the value of the `name`
     field of the corresponding entry under `pages` in the serialized dashboard definition.
     Format: alphanumeric, hyphen, and underscore characters allowed, max length 63.
     """
@@ -65,7 +63,7 @@ class SubscriptionAttachmentDataAttachmentWidgetDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The URL identifier of the widget. This is the value of the `name` field of the
+    [Beta] The URL identifier of the widget. This is the value of the `name` field of the
     corresponding widget under that page's `layout` in the serialized dashboard definition.
     Format: alphanumeric, hyphen, and underscore characters allowed, max length 63.
     """

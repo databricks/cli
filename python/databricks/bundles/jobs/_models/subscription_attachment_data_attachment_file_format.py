@@ -6,8 +6,6 @@ from typing import Literal
 
 class SubscriptionAttachmentDataAttachmentFileFormat(Enum):
     """
-    :meta private: [EXPERIMENTAL]
-
     The output format of an exported tabular data file. Must be set to a value other than
     `FILE_FORMAT_UNSPECIFIED`.
     """

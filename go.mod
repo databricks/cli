@@ -13,7 +13,7 @@ require (
 	github.com/charmbracelet/huh v1.0.0 // MIT
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
 	github.com/charmbracelet/x/ansi v0.11.8 // MIT
-	github.com/databricks/databricks-sdk-go v0.189.0 // Apache-2.0
+	github.com/databricks/databricks-sdk-go v0.190.0 // Apache-2.0
 	github.com/databricks/sdk-go/auth v0.1.0 // Apache-2.0
 	github.com/databricks/sdk-go/core v0.1.0 // Apache-2.0
 	github.com/databricks/sdk-go/files v0.1.0 // Apache-2.0

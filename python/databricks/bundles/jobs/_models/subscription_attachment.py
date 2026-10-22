@@ -22,8 +22,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class SubscriptionAttachment:
     """
-    :meta private: [EXPERIMENTAL]
-
     The configuration for the files attached to the dashboard snapshot notification sent to
     subscribers. `data_attachment` describes the underlying data of dashboard widgets attached
     as data files, and `page_attachment` describes which dashboard pages are included in the
@@ -34,7 +32,7 @@ class SubscriptionAttachment:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Optional: The configuration for the underlying data of dashboard widgets attached as tabular
+    [Beta] Optional: The configuration for the underlying data of dashboard widgets attached as tabular
     data files. If not specified, no tabular data is attached.
     """
 
@@ -42,7 +40,7 @@ class SubscriptionAttachment:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Optional: The selection of dashboard pages included in the attached PDF. If not specified,
+    [Beta] Optional: The selection of dashboard pages included in the attached PDF. If not specified,
     only the first page is included.
     """
 
@@ -61,7 +59,7 @@ class SubscriptionAttachmentDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Optional: The configuration for the underlying data of dashboard widgets attached as tabular
+    [Beta] Optional: The configuration for the underlying data of dashboard widgets attached as tabular
     data files. If not specified, no tabular data is attached.
     """
 
@@ -69,7 +67,7 @@ class SubscriptionAttachmentDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Optional: The selection of dashboard pages included in the attached PDF. If not specified,
+    [Beta] Optional: The selection of dashboard pages included in the attached PDF. If not specified,
     only the first page is included.
     """
 
