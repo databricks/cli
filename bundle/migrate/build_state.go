@@ -204,9 +204,12 @@ func BuildStateFromTF(
 				if err != nil {
 					return warningsSeen, fmt.Errorf("%s: reading field %q: %w", node, pending.fieldPathStr, err)
 				}
-				zero := reflect.Zero(reflect.TypeOf(current)).Interface()
-				if err := structaccess.Set(sv.Value, fieldPath, zero); err != nil {
-					return warningsSeen, fmt.Errorf("%s: cannot unset field %q: %w", node, pending.fieldPathStr, err)
+				// A nil value means the field is already unset (e.g. an unresolved ref in a number).
+				if current != nil {
+					zero := reflect.Zero(reflect.TypeOf(current)).Interface()
+					if err := structaccess.Set(sv.Value, fieldPath, zero); err != nil {
+						return warningsSeen, fmt.Errorf("%s: cannot unset field %q: %w", node, pending.fieldPathStr, err)
+					}
 				}
 				delete(sv.Refs, pending.fieldPathStr)
 				continue
@@ -279,6 +282,10 @@ func referencesUndeployed(refTemplate string, tfIDs map[string]string) bool {
 			continue
 		}
 		targetNode, _ := config.GetNodeAndType(path)
+		// Not a resource reference (e.g. ${var.x}).
+		if len(targetNode) == 0 {
+			continue
+		}
 		if _, ok := tfIDs[targetNode.String()]; !ok {
 			return true
 		}

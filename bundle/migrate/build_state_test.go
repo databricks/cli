@@ -330,3 +330,32 @@ resources:
 	assert.Contains(t, string(entry.State), `"alert_id": ""`)
 	assert.NotContains(t, state, "resources.alerts.new_alert")
 }
+
+func TestBuildStateFromTFRefToUndeployedResourceInNumberField(t *testing.T) {
+	state := runBuildStateFromTF(t, `
+resources:
+  jobs:
+    new_job:
+      name: "new"
+    my_job:
+      name: "hello"
+      timeout_seconds: "${resources.jobs.new_job.timeout_seconds}"
+`,
+		migrate.TFStateAttrs{"databricks_job": {"my_job": json.RawMessage(`{"id": "1", "name": "hello"}`)}},
+		map[string]string{"resources.jobs.my_job": "1"},
+	)
+	assert.Contains(t, state, "resources.jobs.my_job")
+}
+
+func TestBuildStateFromTFNonResourceRefIsNotUndeployed(t *testing.T) {
+	state := runBuildStateFromTF(t, `
+resources:
+  jobs:
+    my_job:
+      name: "${var.x}"
+`,
+		migrate.TFStateAttrs{"databricks_job": {"my_job": json.RawMessage(`{"id": "1", "name": "hello"}`)}},
+		map[string]string{"resources.jobs.my_job": "1"},
+	)
+	assert.Contains(t, string(state["resources.jobs.my_job"].State), `"name": "hello"`)
+}
