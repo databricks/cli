@@ -41,8 +41,9 @@ trace $CLI bundle plan --select jobs.producer
 title "bundle deploy --select jobs.producer\n"
 trace $CLI bundle deploy --select jobs.producer
 
-# Both producer and consumer were deleted; keep was not.
-trace print_requests.py --sort //jobs/delete
+# Both producer and consumer were deleted, dependent first; keep was not. Not sorted:
+# --sort orders by the raw job ID, which is random on a real workspace.
+trace print_requests.py //jobs/delete
 
 # A full plan now has nothing to delete and 'keep' is unchanged.
 trace $CLI bundle plan
