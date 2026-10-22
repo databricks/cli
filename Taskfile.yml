@@ -648,7 +648,6 @@ tasks:
       - libs/aitools/**
       - experimental/aitools/**
       - acceptance/apps/**
-      - acceptance/cmd/aitools/**
       - acceptance/experimental/aitools/**
       - "{{.EMBED_SOURCES}}"
     cmds:

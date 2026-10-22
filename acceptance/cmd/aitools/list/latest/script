@@ -1,4 +1,5 @@
-setup_list_test
+# Isolate HOME so parallel aitools tests don't race on a shared ~/.databricks.
+sethome home
 use_compat_manifest
 
 trace $CLI aitools list --output json | list_fields

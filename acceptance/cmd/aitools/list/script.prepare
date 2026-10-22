@@ -1,12 +1,5 @@
-# setup_list_test isolates HOME, so parallel aitools tests don't race on a
-# shared ~/.databricks.
-setup_list_test() {
-    sethome home
-}
-
 # use_compat_manifest copies the test's compat-manifest.json into the CLI
-# cache. A fresh cache file replaces the remote compat manifest, and dev builds
-# use its highest entry.
+# cache. A fresh cache file replaces the remote compat manifest.
 use_compat_manifest() {
     mkdir -p "$DATABRICKS_CACHE_DIR"
     cp compat-manifest.json "$DATABRICKS_CACHE_DIR/compat-manifest.json"

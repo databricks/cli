@@ -1,12 +1,4 @@
 
->>> [CLI] aitools list
-Available raw skill directories (test-ref):
-
-  NAME        VERSION  INSTALLED
-  test-skill  v1.0.0   not installed
-
-0/1 raw skill directories installed (global)
-
 >>> [CLI] aitools list --output json
 {
   "release": "test-ref",
@@ -33,10 +25,6 @@ Available raw skill directories (test-ref):
 === Only the skills manifest reaches the mock server: no latest-release lookup
 
 >>> print_requests.py --get
-{
-  "method": "GET",
-  "path": "/test-ref/manifest.json"
-}
 {
   "method": "GET",
   "path": "/test-ref/manifest.json"

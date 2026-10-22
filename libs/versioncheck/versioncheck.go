@@ -27,11 +27,9 @@ const (
 	defaultGitHubAPIURL = "https://api.github.com"
 	latestReleasePath   = "/repos/databricks/cli/releases/latest"
 
-	// gitHubAPIURLEnv overrides the GitHub API base URL for the CLI release
-	// lookup here and the skills release lookup in libs/aitools/installer. It
-	// lets acceptance tests point both lookups at the mock server (and gives
-	// airgapped setups an escape hatch); it is not a documented, user-facing
-	// setting.
+	// gitHubAPIURLEnv overrides the GitHub API base URL. It lets acceptance
+	// tests point the lookup at the mock server (and gives airgapped setups an
+	// escape hatch); it is not a documented, user-facing setting.
 	gitHubAPIURLEnv = "DATABRICKS_CLI_GITHUB_API_URL"
 
 	// fetchTimeout bounds the release lookup. The explicit `version --check`
@@ -129,10 +127,12 @@ type latestRelease struct {
 	URL     string `json:"url"`
 }
 
-// GitHubAPIURL returns the GitHub API base URL, with the gitHubAPIURLEnv override.
+// GitHubAPIURL returns the GitHub API base URL. DATABRICKS_CLI_GITHUB_API_URL
+// overrides it for both the CLI release lookup here and the skills release
+// lookup in libs/aitools/installer.
 func GitHubAPIURL(ctx context.Context) string {
 	if base := env.Get(ctx, gitHubAPIURLEnv); base != "" {
-		return base
+		return strings.TrimRight(base, "/")
 	}
 	return defaultGitHubAPIURL
 }

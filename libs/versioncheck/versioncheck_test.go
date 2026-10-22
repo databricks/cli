@@ -138,4 +138,7 @@ func TestGitHubAPIURL(t *testing.T) {
 
 	t.Setenv(gitHubAPIURLEnv, "http://mirror.test")
 	assert.Equal(t, "http://mirror.test", GitHubAPIURL(t.Context()))
+
+	t.Setenv(gitHubAPIURLEnv, "http://mirror.test/")
+	assert.Equal(t, "http://mirror.test", GitHubAPIURL(t.Context()))
 }

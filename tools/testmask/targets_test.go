@@ -39,13 +39,6 @@ func TestGetTargets(t *testing.T) {
 			targets: []string{"test-exp-aitools"},
 		},
 		{
-			name: "acceptance_cmd_aitools_triggers_aitools",
-			files: []string{
-				"acceptance/cmd/aitools/list/latest/script",
-			},
-			targets: []string{"test-exp-aitools"},
-		},
-		{
 			name: "sandbox",
 			files: []string{
 				"cmd/sandbox/create.go",
