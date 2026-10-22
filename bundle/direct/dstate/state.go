@@ -236,6 +236,9 @@ func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (b
 	db.versionCompleted = true
 	deploymentID, versionID := db.DeploymentID, db.VersionID
 	bestEffort := db.mode == WritingFileWithHistory || db.mode == WritingFileWithHistoryEnforced
+	if db.Path == "" {
+		db.reset()
+	}
 	db.mu.Unlock()
 
 	// A recording failure fails the version even when the caller counted the deploy a success: the
@@ -543,8 +546,6 @@ func (db *DeploymentState) Open(ctx context.Context, path string, mode Mode, wit
 	if err != nil {
 		// A failed open must leave the receiver closed so it can be retried.
 		db.reset()
-		db.mode = ReadingFile
-		db.operationBuffer = nil
 	}
 	return err
 }
@@ -559,14 +560,19 @@ func (db *DeploymentState) reset() {
 	db.Data = Database{}
 	db.stateIDs = nil
 	db.historyDrainTimeout = 0
+	// Retain recording state only while version completion is pending.
+	if db.operationBuffer == nil || db.versionCompleted {
+		db.mode = ReadingFile
+		db.operationBuffer = nil
+		db.versionCompleted = false
+		db.DeploymentID = ""
+		db.VersionID = 0
+	}
 }
 
 func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, mode Mode, withRecovery WithRecovery, dmsDeployment OpenDmsArgs) error {
 	db.Path = path
 	db.mode = mode
-	db.operationBuffer = nil
-	db.versionCompleted = false
-	db.historyDrainTimeout = 0
 	db.DeploymentID = dmsDeployment.DeploymentID
 	db.VersionID = dmsDeployment.LastVersionID
 
@@ -699,11 +705,6 @@ func (db *DeploymentState) OpenWithData(path string, data Database) {
 
 	db.Path = path
 	db.mode = ReadingFile
-	db.operationBuffer = nil
-	db.versionCompleted = false
-	db.historyDrainTimeout = 0
-	db.DeploymentID = ""
-	db.VersionID = 0
 	db.Data = data
 	db.stateIDs = make(map[string]string)
 	for key, entry := range data.State {

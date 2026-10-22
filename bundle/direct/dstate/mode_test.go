@@ -373,6 +373,9 @@ func TestCompleteVersionHonorsCallerDeadline(t *testing.T) {
 				completed, err := db.CompleteVersion(completionCtx, true)
 				assert.Equal(t, 90*time.Second, time.Since(start))
 				assert.False(t, completed)
+				assert.False(t, db.RecordsHistory())
+				assert.Empty(t, db.DeploymentID)
+				assert.Zero(t, db.VersionID)
 				if mode == dstate.WritingDMS {
 					require.ErrorIs(t, err, context.DeadlineExceeded)
 				} else {
@@ -459,21 +462,26 @@ func TestCompleteVersionAfterFinalize(t *testing.T) {
 					_, _ = w.Write([]byte(`{"sequence_id":1}`))
 				}
 			})
-			path := filepath.Join(t.TempDir(), "resources.json")
 			var db dstate.DeploymentState
-			require.NoError(t, db.Open(ctx, path, mode, false, dstate.OpenDmsArgs{}))
-			db.InitializeOperationBuffer(ctx, "dep-1", 1, 1)
-			require.NoError(t, db.SaveState(ctx, "resources.jobs.job", "id-1", struct{}{}, nil))
-			_, err := db.Finalize(ctx)
-			require.NoError(t, err)
-			assert.False(t, db.IsOpen())
-			completed, err := db.CompleteVersion(ctx, true)
-			require.NoError(t, err)
-			assert.True(t, completed)
-			completed, err = db.CompleteVersion(ctx, true)
-			require.NoError(t, err)
-			assert.False(t, completed)
-			assert.Equal(t, 1, completions)
+			for cycle := range 2 {
+				path := filepath.Join(t.TempDir(), "resources.json")
+				require.NoError(t, db.Open(ctx, path, mode, false, dstate.OpenDmsArgs{}))
+				db.InitializeOperationBuffer(ctx, "dep-1", 1, 1)
+				require.NoError(t, db.SaveState(ctx, "resources.jobs.job", "id-1", struct{}{}, nil))
+				_, err := db.Finalize(ctx)
+				require.NoError(t, err)
+				assert.False(t, db.IsOpen())
+				completed, err := db.CompleteVersion(ctx, true)
+				require.NoError(t, err)
+				assert.True(t, completed)
+				completed, err = db.CompleteVersion(ctx, true)
+				require.NoError(t, err)
+				assert.False(t, completed)
+				assert.Equal(t, cycle+1, completions)
+				assert.False(t, db.RecordsHistory())
+				assert.Empty(t, db.DeploymentID)
+				assert.Zero(t, db.VersionID)
+			}
 		})
 	}
 }

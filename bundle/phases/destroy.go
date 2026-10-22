@@ -159,6 +159,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 
 	if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
 		// Complete version before deleting remote files; the deployment node is under statePath.
+		deploymentID := b.DeploymentBundle.StateDB.DeploymentID
 		completed, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, true)
 		if err != nil {
 			logdiag.LogError(ctx, err)
@@ -166,7 +167,6 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 		}
 		// A completed destroy's resources are gone, so its deployment record is deleted too.
 		if completed {
-			deploymentID := b.DeploymentBundle.StateDB.DeploymentID
 			w := b.WorkspaceClient(ctx)
 			if err := deleteDeployment(ctx, w, deploymentID); err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("failed to delete deployment: %w", err))
@@ -295,11 +295,11 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 	// destroyCore has completed the version.
 	defer func() {
 		if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
+			deploymentID := b.DeploymentBundle.StateDB.DeploymentID
 			completed, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, !logdiag.HasError(ctx))
 			if err != nil {
 				logdiag.LogError(ctx, err)
 			} else if completed {
-				deploymentID := b.DeploymentBundle.StateDB.DeploymentID
 				w := b.WorkspaceClient(ctx)
 				if err := deleteDeployment(ctx, w, deploymentID); err != nil {
 					logdiag.LogError(ctx, fmt.Errorf("failed to delete deployment: %w", err))
