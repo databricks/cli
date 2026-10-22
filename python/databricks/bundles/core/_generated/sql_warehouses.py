@@ -10,7 +10,10 @@ from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.sql_warehouses._models.sql_warehouse import SqlWarehouse, SqlWarehouseParam
+    from databricks.bundles.sql_warehouses._models.sql_warehouse import (
+        SqlWarehouse,
+        SqlWarehouseParam,
+    )
 
 
 def _resource_type() -> "_ResourceType":

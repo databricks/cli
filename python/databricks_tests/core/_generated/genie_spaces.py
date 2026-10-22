@@ -2,11 +2,11 @@
 
 from databricks.bundles.core import Resources, genie_space_mutator
 from databricks.bundles.core._generated.genie_spaces import _resource_type
-from databricks_tests.core._resource_test_case import ResourceTestCase
 from databricks.bundles.genie_spaces._models.genie_space import GenieSpace
 from databricks.bundles.genie_spaces._models.lifecycle import Lifecycle
 from databricks.bundles.genie_spaces._models.permission import Permission
 from databricks.bundles.genie_spaces._models.permission_level import PermissionLevel
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
@@ -14,7 +14,10 @@ def _test_case():
         ResourceTestCase(
             add_resource=Resources.add_genie_space,
             dict_example={"lifecycle": {}, "permissions": [{"level": "CAN_MANAGE"}]},
-            dataclass_example=GenieSpace(lifecycle=Lifecycle(), permissions=[Permission(level=PermissionLevel.CAN_MANAGE)]),
+            dataclass_example=GenieSpace(
+                lifecycle=Lifecycle(),
+                permissions=[Permission(level=PermissionLevel.CAN_MANAGE)],
+            ),
             mutator=genie_space_mutator,
         ),
         _resource_type(),

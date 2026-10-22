@@ -10,7 +10,10 @@ from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.instance_pools._models.instance_pool import InstancePool, InstancePoolParam
+    from databricks.bundles.instance_pools._models.instance_pool import (
+        InstancePool,
+        InstancePoolParam,
+    )
 
 
 def _resource_type() -> "_ResourceType":

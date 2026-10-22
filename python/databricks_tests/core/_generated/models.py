@@ -2,20 +2,38 @@
 
 from databricks.bundles.core import Resources, mlflow_model_mutator
 from databricks.bundles.core._generated.models import _resource_type
-from databricks_tests.core._resource_test_case import ResourceTestCase
 from databricks.bundles.models._models.lifecycle import Lifecycle
 from databricks.bundles.models._models.mlflow_model import MlflowModel
-from databricks.bundles.models._models.mlflow_model_permission import MlflowModelPermission
+from databricks.bundles.models._models.mlflow_model_permission import (
+    MlflowModelPermission,
+)
 from databricks.bundles.models._models.model_tag import ModelTag
-from databricks.bundles.models._models.registered_model_permission_level import RegisteredModelPermissionLevel
+from databricks.bundles.models._models.registered_model_permission_level import (
+    RegisteredModelPermissionLevel,
+)
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
         ResourceTestCase(
             add_resource=Resources.add_mlflow_model,
-            dict_example={"lifecycle": {}, "name": "name", "permissions": [{"level": "CAN_MANAGE"}], "tags": [{}]},
-            dataclass_example=MlflowModel(lifecycle=Lifecycle(), name="name", permissions=[MlflowModelPermission(level=RegisteredModelPermissionLevel.CAN_MANAGE)], tags=[ModelTag()]),
+            dict_example={
+                "lifecycle": {},
+                "name": "name",
+                "permissions": [{"level": "CAN_MANAGE"}],
+                "tags": [{}],
+            },
+            dataclass_example=MlflowModel(
+                lifecycle=Lifecycle(),
+                name="name",
+                permissions=[
+                    MlflowModelPermission(
+                        level=RegisteredModelPermissionLevel.CAN_MANAGE
+                    )
+                ],
+                tags=[ModelTag()],
+            ),
             mutator=mlflow_model_mutator,
         ),
         _resource_type(),

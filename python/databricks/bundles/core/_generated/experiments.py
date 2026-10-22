@@ -10,12 +10,17 @@ from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.experiments._models.mlflow_experiment import MlflowExperiment, MlflowExperimentParam
+    from databricks.bundles.experiments._models.mlflow_experiment import (
+        MlflowExperiment,
+        MlflowExperimentParam,
+    )
 
 
 def _resource_type() -> "_ResourceType":
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.experiments._models.mlflow_experiment import MlflowExperiment
+    from databricks.bundles.experiments._models.mlflow_experiment import (
+        MlflowExperiment,
+    )
 
     return _ResourceType(
         resource_type=MlflowExperiment,
@@ -64,7 +69,9 @@ class _MlflowExperimentResources:
         :param mlflow_experiment: the mlflow_experiment to add, can be MlflowExperiment or dict
         :param location: optional location of the mlflow_experiment in the source code
         """
-        from databricks.bundles.experiments._models.mlflow_experiment import MlflowExperiment
+        from databricks.bundles.experiments._models.mlflow_experiment import (
+            MlflowExperiment,
+        )
 
         mlflow_experiment = _transform(MlflowExperiment, mlflow_experiment)
         path = ("resources", "experiments", resource_name)
@@ -95,7 +102,9 @@ def mlflow_experiment_mutator(
 ) -> ResourceMutator["MlflowExperiment"]: ...
 
 
-def mlflow_experiment_mutator(function: Callable) -> ResourceMutator["MlflowExperiment"]:
+def mlflow_experiment_mutator(
+    function: Callable,
+) -> ResourceMutator["MlflowExperiment"]:
     """
     Decorator for defining mutator for experiments. Function should return a new instance of the mlflow_experiment
     with the desired changes, instead of mutating the input mlflow_experiment.
@@ -110,6 +119,8 @@ def mlflow_experiment_mutator(function: Callable) -> ResourceMutator["MlflowExpe
 
     :param function: Function that mutates experiments.
     """
-    from databricks.bundles.experiments._models.mlflow_experiment import MlflowExperiment
+    from databricks.bundles.experiments._models.mlflow_experiment import (
+        MlflowExperiment,
+    )
 
     return ResourceMutator(resource_type=MlflowExperiment, function=function)

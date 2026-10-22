@@ -9,13 +9,13 @@ from databricks.bundles.core._resource_mutator import ResourceMutator
 from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
-    from databricks.bundles.core._resource_type import _ResourceType
     from databricks.bundles.clusters._models.cluster import Cluster, ClusterParam
+    from databricks.bundles.core._resource_type import _ResourceType
 
 
 def _resource_type() -> "_ResourceType":
-    from databricks.bundles.core._resource_type import _ResourceType
     from databricks.bundles.clusters._models.cluster import Cluster
+    from databricks.bundles.core._resource_type import _ResourceType
 
     return _ResourceType(
         resource_type=Cluster,

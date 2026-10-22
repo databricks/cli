@@ -2,21 +2,35 @@
 
 from databricks.bundles.core import Resources, feature_mutator
 from databricks.bundles.core._generated.features import _resource_type
-from databricks_tests.core._resource_test_case import ResourceTestCase
 from databricks.bundles.features._models.data_source import DataSource
 from databricks.bundles.features._models.entity_column import EntityColumn
 from databricks.bundles.features._models.feature import Feature
 from databricks.bundles.features._models.function import Function
 from databricks.bundles.features._models.lifecycle import Lifecycle
 from databricks.bundles.features._models.timeseries_column import TimeseriesColumn
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
         ResourceTestCase(
             add_resource=Resources.add_feature,
-            dict_example={"entities": [{"name": "name"}], "full_name": "full_name", "function": {}, "lifecycle": {}, "source": {}, "timeseries_column": {"name": "name"}},
-            dataclass_example=Feature(entities=[EntityColumn(name="name")], full_name="full_name", function=Function(), lifecycle=Lifecycle(), source=DataSource(), timeseries_column=TimeseriesColumn(name="name")),
+            dict_example={
+                "entities": [{"name": "name"}],
+                "full_name": "full_name",
+                "function": {},
+                "lifecycle": {},
+                "source": {},
+                "timeseries_column": {"name": "name"},
+            },
+            dataclass_example=Feature(
+                entities=[EntityColumn(name="name")],
+                full_name="full_name",
+                function=Function(),
+                lifecycle=Lifecycle(),
+                source=DataSource(),
+                timeseries_column=TimeseriesColumn(name="name"),
+            ),
             mutator=feature_mutator,
         ),
         _resource_type(),

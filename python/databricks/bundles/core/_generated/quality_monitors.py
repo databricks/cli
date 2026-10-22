@@ -10,12 +10,17 @@ from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.quality_monitors._models.quality_monitor import QualityMonitor, QualityMonitorParam
+    from databricks.bundles.quality_monitors._models.quality_monitor import (
+        QualityMonitor,
+        QualityMonitorParam,
+    )
 
 
 def _resource_type() -> "_ResourceType":
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.quality_monitors._models.quality_monitor import QualityMonitor
+    from databricks.bundles.quality_monitors._models.quality_monitor import (
+        QualityMonitor,
+    )
 
     return _ResourceType(
         resource_type=QualityMonitor,
@@ -64,7 +69,9 @@ class _QualityMonitorResources:
         :param quality_monitor: the quality_monitor to add, can be QualityMonitor or dict
         :param location: optional location of the quality_monitor in the source code
         """
-        from databricks.bundles.quality_monitors._models.quality_monitor import QualityMonitor
+        from databricks.bundles.quality_monitors._models.quality_monitor import (
+            QualityMonitor,
+        )
 
         quality_monitor = _transform(QualityMonitor, quality_monitor)
         path = ("resources", "quality_monitors", resource_name)
@@ -110,6 +117,8 @@ def quality_monitor_mutator(function: Callable) -> ResourceMutator["QualityMonit
 
     :param function: Function that mutates quality_monitors.
     """
-    from databricks.bundles.quality_monitors._models.quality_monitor import QualityMonitor
+    from databricks.bundles.quality_monitors._models.quality_monitor import (
+        QualityMonitor,
+    )
 
     return ResourceMutator(resource_type=QualityMonitor, function=function)

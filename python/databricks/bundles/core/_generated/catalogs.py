@@ -9,13 +9,13 @@ from databricks.bundles.core._resource_mutator import ResourceMutator
 from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
-    from databricks.bundles.core._resource_type import _ResourceType
     from databricks.bundles.catalogs._models.catalog import Catalog, CatalogParam
+    from databricks.bundles.core._resource_type import _ResourceType
 
 
 def _resource_type() -> "_ResourceType":
-    from databricks.bundles.core._resource_type import _ResourceType
     from databricks.bundles.catalogs._models.catalog import Catalog
+    from databricks.bundles.core._resource_type import _ResourceType
 
     return _ResourceType(
         resource_type=Catalog,

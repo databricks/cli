@@ -2,18 +2,30 @@
 
 from databricks.bundles.core import Resources, schema_mutator
 from databricks.bundles.core._generated.schemas import _resource_type
-from databricks_tests.core._resource_test_case import ResourceTestCase
 from databricks.bundles.schemas._models.lifecycle import Lifecycle
 from databricks.bundles.schemas._models.privilege_assignment import PrivilegeAssignment
 from databricks.bundles.schemas._models.schema import Schema
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
         ResourceTestCase(
             add_resource=Resources.add_schema,
-            dict_example={"catalog_name": "catalog_name", "grants": [{}], "lifecycle": {}, "name": "name", "properties": {"key": "value"}},
-            dataclass_example=Schema(catalog_name="catalog_name", grants=[PrivilegeAssignment()], lifecycle=Lifecycle(), name="name", properties={"key": "value"}),
+            dict_example={
+                "catalog_name": "catalog_name",
+                "grants": [{}],
+                "lifecycle": {},
+                "name": "name",
+                "properties": {"key": "value"},
+            },
+            dataclass_example=Schema(
+                catalog_name="catalog_name",
+                grants=[PrivilegeAssignment()],
+                lifecycle=Lifecycle(),
+                name="name",
+                properties={"key": "value"},
+            ),
             mutator=schema_mutator,
         ),
         _resource_type(),

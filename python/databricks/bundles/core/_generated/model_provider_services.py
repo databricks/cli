@@ -10,12 +10,17 @@ from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.model_provider_services._models.model_provider_service import ModelProviderService, ModelProviderServiceParam
+    from databricks.bundles.model_provider_services._models.model_provider_service import (
+        ModelProviderService,
+        ModelProviderServiceParam,
+    )
 
 
 def _resource_type() -> "_ResourceType":
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.model_provider_services._models.model_provider_service import ModelProviderService
+    from databricks.bundles.model_provider_services._models.model_provider_service import (
+        ModelProviderService,
+    )
 
     return _ResourceType(
         resource_type=ModelProviderService,
@@ -64,9 +69,13 @@ class _ModelProviderServiceResources:
         :param model_provider_service: the model_provider_service to add, can be ModelProviderService or dict
         :param location: optional location of the model_provider_service in the source code
         """
-        from databricks.bundles.model_provider_services._models.model_provider_service import ModelProviderService
+        from databricks.bundles.model_provider_services._models.model_provider_service import (
+            ModelProviderService,
+        )
 
-        model_provider_service = _transform(ModelProviderService, model_provider_service)
+        model_provider_service = _transform(
+            ModelProviderService, model_provider_service
+        )
         path = ("resources", "model_provider_services", resource_name)
         location = location or Location.from_stack_frame(depth=1)
 
@@ -80,7 +89,9 @@ class _ModelProviderServiceResources:
             if location:
                 self.add_location(path, location)
 
-            self._resources["model_provider_services"][resource_name] = model_provider_service
+            self._resources["model_provider_services"][resource_name] = (
+                model_provider_service
+            )
 
 
 @overload
@@ -95,7 +106,9 @@ def model_provider_service_mutator(
 ) -> ResourceMutator["ModelProviderService"]: ...
 
 
-def model_provider_service_mutator(function: Callable) -> ResourceMutator["ModelProviderService"]:
+def model_provider_service_mutator(
+    function: Callable,
+) -> ResourceMutator["ModelProviderService"]:
     """
     Decorator for defining mutator for model_provider_services. Function should return a new instance of the model_provider_service
     with the desired changes, instead of mutating the input model_provider_service.
@@ -110,6 +123,8 @@ def model_provider_service_mutator(function: Callable) -> ResourceMutator["Model
 
     :param function: Function that mutates model_provider_services.
     """
-    from databricks.bundles.model_provider_services._models.model_provider_service import ModelProviderService
+    from databricks.bundles.model_provider_services._models.model_provider_service import (
+        ModelProviderService,
+    )
 
     return ResourceMutator(resource_type=ModelProviderService, function=function)

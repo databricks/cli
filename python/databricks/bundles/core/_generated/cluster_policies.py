@@ -9,13 +9,16 @@ from databricks.bundles.core._resource_mutator import ResourceMutator
 from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
+    from databricks.bundles.cluster_policies._models.cluster_policy import (
+        ClusterPolicy,
+        ClusterPolicyParam,
+    )
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.cluster_policies._models.cluster_policy import ClusterPolicy, ClusterPolicyParam
 
 
 def _resource_type() -> "_ResourceType":
-    from databricks.bundles.core._resource_type import _ResourceType
     from databricks.bundles.cluster_policies._models.cluster_policy import ClusterPolicy
+    from databricks.bundles.core._resource_type import _ResourceType
 
     return _ResourceType(
         resource_type=ClusterPolicy,
@@ -64,7 +67,9 @@ class _ClusterPolicyResources:
         :param cluster_policy: the cluster_policy to add, can be ClusterPolicy or dict
         :param location: optional location of the cluster_policy in the source code
         """
-        from databricks.bundles.cluster_policies._models.cluster_policy import ClusterPolicy
+        from databricks.bundles.cluster_policies._models.cluster_policy import (
+            ClusterPolicy,
+        )
 
         cluster_policy = _transform(ClusterPolicy, cluster_policy)
         path = ("resources", "cluster_policies", resource_name)

@@ -10,12 +10,17 @@ from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.database_catalogs._models.database_catalog import DatabaseCatalog, DatabaseCatalogParam
+    from databricks.bundles.database_catalogs._models.database_catalog import (
+        DatabaseCatalog,
+        DatabaseCatalogParam,
+    )
 
 
 def _resource_type() -> "_ResourceType":
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.database_catalogs._models.database_catalog import DatabaseCatalog
+    from databricks.bundles.database_catalogs._models.database_catalog import (
+        DatabaseCatalog,
+    )
 
     return _ResourceType(
         resource_type=DatabaseCatalog,
@@ -64,7 +69,9 @@ class _DatabaseCatalogResources:
         :param database_catalog: the database_catalog to add, can be DatabaseCatalog or dict
         :param location: optional location of the database_catalog in the source code
         """
-        from databricks.bundles.database_catalogs._models.database_catalog import DatabaseCatalog
+        from databricks.bundles.database_catalogs._models.database_catalog import (
+            DatabaseCatalog,
+        )
 
         database_catalog = _transform(DatabaseCatalog, database_catalog)
         path = ("resources", "database_catalogs", resource_name)
@@ -110,6 +117,8 @@ def database_catalog_mutator(function: Callable) -> ResourceMutator["DatabaseCat
 
     :param function: Function that mutates database_catalogs.
     """
-    from databricks.bundles.database_catalogs._models.database_catalog import DatabaseCatalog
+    from databricks.bundles.database_catalogs._models.database_catalog import (
+        DatabaseCatalog,
+    )
 
     return ResourceMutator(resource_type=DatabaseCatalog, function=function)

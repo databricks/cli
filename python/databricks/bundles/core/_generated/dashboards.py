@@ -10,7 +10,10 @@ from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.dashboards._models.dashboard import Dashboard, DashboardParam
+    from databricks.bundles.dashboards._models.dashboard import (
+        Dashboard,
+        DashboardParam,
+    )
 
 
 def _resource_type() -> "_ResourceType":

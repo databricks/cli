@@ -10,12 +10,17 @@ from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.synced_database_tables._models.synced_database_table import SyncedDatabaseTable, SyncedDatabaseTableParam
+    from databricks.bundles.synced_database_tables._models.synced_database_table import (
+        SyncedDatabaseTable,
+        SyncedDatabaseTableParam,
+    )
 
 
 def _resource_type() -> "_ResourceType":
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.synced_database_tables._models.synced_database_table import SyncedDatabaseTable
+    from databricks.bundles.synced_database_tables._models.synced_database_table import (
+        SyncedDatabaseTable,
+    )
 
     return _ResourceType(
         resource_type=SyncedDatabaseTable,
@@ -64,7 +69,9 @@ class _SyncedDatabaseTableResources:
         :param synced_database_table: the synced_database_table to add, can be SyncedDatabaseTable or dict
         :param location: optional location of the synced_database_table in the source code
         """
-        from databricks.bundles.synced_database_tables._models.synced_database_table import SyncedDatabaseTable
+        from databricks.bundles.synced_database_tables._models.synced_database_table import (
+            SyncedDatabaseTable,
+        )
 
         synced_database_table = _transform(SyncedDatabaseTable, synced_database_table)
         path = ("resources", "synced_database_tables", resource_name)
@@ -80,7 +87,9 @@ class _SyncedDatabaseTableResources:
             if location:
                 self.add_location(path, location)
 
-            self._resources["synced_database_tables"][resource_name] = synced_database_table
+            self._resources["synced_database_tables"][resource_name] = (
+                synced_database_table
+            )
 
 
 @overload
@@ -95,7 +104,9 @@ def synced_database_table_mutator(
 ) -> ResourceMutator["SyncedDatabaseTable"]: ...
 
 
-def synced_database_table_mutator(function: Callable) -> ResourceMutator["SyncedDatabaseTable"]:
+def synced_database_table_mutator(
+    function: Callable,
+) -> ResourceMutator["SyncedDatabaseTable"]:
     """
     Decorator for defining mutator for synced_database_tables. Function should return a new instance of the synced_database_table
     with the desired changes, instead of mutating the input synced_database_table.
@@ -110,6 +121,8 @@ def synced_database_table_mutator(function: Callable) -> ResourceMutator["Synced
 
     :param function: Function that mutates synced_database_tables.
     """
-    from databricks.bundles.synced_database_tables._models.synced_database_table import SyncedDatabaseTable
+    from databricks.bundles.synced_database_tables._models.synced_database_table import (
+        SyncedDatabaseTable,
+    )
 
     return ResourceMutator(resource_type=SyncedDatabaseTable, function=function)

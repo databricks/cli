@@ -2,19 +2,35 @@
 
 from databricks.bundles.core import Resources, model_service_mutator
 from databricks.bundles.core._generated.model_services import _resource_type
-from databricks_tests.core._resource_test_case import ResourceTestCase
 from databricks.bundles.model_services._models.lifecycle import Lifecycle
 from databricks.bundles.model_services._models.model_service import ModelService
-from databricks.bundles.model_services._models.model_service_config import ModelServiceConfig
-from databricks.bundles.model_services._models.privilege_assignment import PrivilegeAssignment
+from databricks.bundles.model_services._models.model_service_config import (
+    ModelServiceConfig,
+)
+from databricks.bundles.model_services._models.privilege_assignment import (
+    PrivilegeAssignment,
+)
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
         ResourceTestCase(
             add_resource=Resources.add_model_service,
-            dict_example={"config": {}, "grants": [{}], "lifecycle": {}, "model_service_id": "model_service_id", "parent": "parent"},
-            dataclass_example=ModelService(config=ModelServiceConfig(), grants=[PrivilegeAssignment()], lifecycle=Lifecycle(), model_service_id="model_service_id", parent="parent"),
+            dict_example={
+                "config": {},
+                "grants": [{}],
+                "lifecycle": {},
+                "model_service_id": "model_service_id",
+                "parent": "parent",
+            },
+            dataclass_example=ModelService(
+                config=ModelServiceConfig(),
+                grants=[PrivilegeAssignment()],
+                lifecycle=Lifecycle(),
+                model_service_id="model_service_id",
+                parent="parent",
+            ),
             mutator=model_service_mutator,
         ),
         _resource_type(),

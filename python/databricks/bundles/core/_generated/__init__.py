@@ -4,34 +4,109 @@ from typing import TYPE_CHECKING
 
 from databricks.bundles.core._generated.alerts import _AlertResources, alert_mutator
 from databricks.bundles.core._generated.apps import _AppResources, app_mutator
-from databricks.bundles.core._generated.catalogs import _CatalogResources, catalog_mutator
-from databricks.bundles.core._generated.cluster_policies import _ClusterPolicyResources, cluster_policy_mutator
-from databricks.bundles.core._generated.clusters import _ClusterResources, cluster_mutator
-from databricks.bundles.core._generated.dashboards import _DashboardResources, dashboard_mutator
-from databricks.bundles.core._generated.database_catalogs import _DatabaseCatalogResources, database_catalog_mutator
-from databricks.bundles.core._generated.database_instances import _DatabaseInstanceResources, database_instance_mutator
-from databricks.bundles.core._generated.experiments import _MlflowExperimentResources, mlflow_experiment_mutator
-from databricks.bundles.core._generated.external_locations import _ExternalLocationResources, external_location_mutator
-from databricks.bundles.core._generated.features import _FeatureResources, feature_mutator
-from databricks.bundles.core._generated.genie_spaces import _GenieSpaceResources, genie_space_mutator
-from databricks.bundles.core._generated.instance_pools import _InstancePoolResources, instance_pool_mutator
-from databricks.bundles.core._generated.job_runs import _JobRunResources, job_run_mutator
+from databricks.bundles.core._generated.catalogs import (
+    _CatalogResources,
+    catalog_mutator,
+)
+from databricks.bundles.core._generated.cluster_policies import (
+    _ClusterPolicyResources,
+    cluster_policy_mutator,
+)
+from databricks.bundles.core._generated.clusters import (
+    _ClusterResources,
+    cluster_mutator,
+)
+from databricks.bundles.core._generated.dashboards import (
+    _DashboardResources,
+    dashboard_mutator,
+)
+from databricks.bundles.core._generated.database_catalogs import (
+    _DatabaseCatalogResources,
+    database_catalog_mutator,
+)
+from databricks.bundles.core._generated.database_instances import (
+    _DatabaseInstanceResources,
+    database_instance_mutator,
+)
+from databricks.bundles.core._generated.experiments import (
+    _MlflowExperimentResources,
+    mlflow_experiment_mutator,
+)
+from databricks.bundles.core._generated.external_locations import (
+    _ExternalLocationResources,
+    external_location_mutator,
+)
+from databricks.bundles.core._generated.features import (
+    _FeatureResources,
+    feature_mutator,
+)
+from databricks.bundles.core._generated.genie_spaces import (
+    _GenieSpaceResources,
+    genie_space_mutator,
+)
+from databricks.bundles.core._generated.instance_pools import (
+    _InstancePoolResources,
+    instance_pool_mutator,
+)
+from databricks.bundles.core._generated.job_runs import (
+    _JobRunResources,
+    job_run_mutator,
+)
 from databricks.bundles.core._generated.jobs import _JobResources, job_mutator
-from databricks.bundles.core._generated.mcp_services import _McpServiceResources, mcp_service_mutator
-from databricks.bundles.core._generated.model_provider_services import _ModelProviderServiceResources, model_provider_service_mutator
-from databricks.bundles.core._generated.model_services import _ModelServiceResources, model_service_mutator
-from databricks.bundles.core._generated.model_serving_endpoints import _ModelServingEndpointResources, model_serving_endpoint_mutator
-from databricks.bundles.core._generated.models import _MlflowModelResources, mlflow_model_mutator
-from databricks.bundles.core._generated.pipelines import _PipelineResources, pipeline_mutator
-from databricks.bundles.core._generated.quality_monitors import _QualityMonitorResources, quality_monitor_mutator
-from databricks.bundles.core._generated.registered_models import _RegisteredModelResources, registered_model_mutator
+from databricks.bundles.core._generated.mcp_services import (
+    _McpServiceResources,
+    mcp_service_mutator,
+)
+from databricks.bundles.core._generated.model_provider_services import (
+    _ModelProviderServiceResources,
+    model_provider_service_mutator,
+)
+from databricks.bundles.core._generated.model_services import (
+    _ModelServiceResources,
+    model_service_mutator,
+)
+from databricks.bundles.core._generated.model_serving_endpoints import (
+    _ModelServingEndpointResources,
+    model_serving_endpoint_mutator,
+)
+from databricks.bundles.core._generated.models import (
+    _MlflowModelResources,
+    mlflow_model_mutator,
+)
+from databricks.bundles.core._generated.pipelines import (
+    _PipelineResources,
+    pipeline_mutator,
+)
+from databricks.bundles.core._generated.quality_monitors import (
+    _QualityMonitorResources,
+    quality_monitor_mutator,
+)
+from databricks.bundles.core._generated.registered_models import (
+    _RegisteredModelResources,
+    registered_model_mutator,
+)
 from databricks.bundles.core._generated.schemas import _SchemaResources, schema_mutator
-from databricks.bundles.core._generated.secret_scopes import _SecretScopeResources, secret_scope_mutator
+from databricks.bundles.core._generated.secret_scopes import (
+    _SecretScopeResources,
+    secret_scope_mutator,
+)
 from databricks.bundles.core._generated.secrets import _SecretResources, secret_mutator
-from databricks.bundles.core._generated.sql_warehouses import _SqlWarehouseResources, sql_warehouse_mutator
-from databricks.bundles.core._generated.synced_database_tables import _SyncedDatabaseTableResources, synced_database_table_mutator
-from databricks.bundles.core._generated.vector_search_endpoints import _VectorSearchEndpointResources, vector_search_endpoint_mutator
-from databricks.bundles.core._generated.vector_search_indexes import _VectorSearchIndexResources, vector_search_index_mutator
+from databricks.bundles.core._generated.sql_warehouses import (
+    _SqlWarehouseResources,
+    sql_warehouse_mutator,
+)
+from databricks.bundles.core._generated.synced_database_tables import (
+    _SyncedDatabaseTableResources,
+    synced_database_table_mutator,
+)
+from databricks.bundles.core._generated.vector_search_endpoints import (
+    _VectorSearchEndpointResources,
+    vector_search_endpoint_mutator,
+)
+from databricks.bundles.core._generated.vector_search_indexes import (
+    _VectorSearchIndexResources,
+    vector_search_index_mutator,
+)
 from databricks.bundles.core._generated.volumes import _VolumeResources, volume_mutator
 
 if TYPE_CHECKING:
