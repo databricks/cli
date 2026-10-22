@@ -1,0 +1,27 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+title "Replay a prior terraform deployment of a job only"
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
+rm -f "$OUT_REQUESTS"
+
+# The job gains an alert_task that references a new alert, neither of which terraform ever deployed.
+# Neither the job's terraform state nor the alert has the referenced id, so the migration must not
+# try to resolve it.
+title "Add a new alert and a job task that references it"
+ALERT='  alerts: {new_alert: {display_name: "New alert", query_text: "select 2", warehouse_id: "'$TEST_DEFAULT_WAREHOUSE_ID'", evaluation: {comparison_operator: EQUAL, source: {name: "1"}, threshold: {value: {double_value: 1.3}}}, schedule: {pause_status: UNPAUSED, quartz_cron_schedule: "44 19 */1 * * ?", timezone_id: "Europe/Amsterdam"}}}'
+update_file.py databricks.yml '  jobs:' "$ALERT"$'\n  jobs:'
+update_file.py databricks.yml 'name: "Test Auto-Migrate Job"' 'name: "Test Auto-Migrate Job"'$'\n      tasks: [{task_key: check, alert_task: {alert_id: "${resources.alerts.new_alert.id}"}}]'
+
+title "Deploy auto-migrates to direct and creates the alert and the task"
+trace $CLI bundle deploy
+replace_ids.py
+
+title "The job update carries the new alert id"
+trace print_requests.py //api/2.2/jobs/reset | gron.py | grep alert_id
+rm -f "$OUT_REQUESTS"
+
+title "Redeploy is a no-op"
+trace $CLI bundle plan
+
+trace $CLI bundle destroy --auto-approve
+rm -f "$OUT_REQUESTS"
