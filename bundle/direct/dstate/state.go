@@ -455,7 +455,7 @@ func (db *DeploymentState) StateFeatures() map[string]struct{} {
 func (db *DeploymentState) GetSerial() int {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	if db.mode == ReadingDMS || db.mode == WritingDMS {
+	if db.isDeploymentMetadataService() {
 		return db.VersionID
 	}
 	return db.Data.Serial
@@ -467,6 +467,10 @@ func (db *DeploymentState) GetSerial() int {
 func (db *DeploymentState) IsDeploymentMetadataService() bool {
 	db.mu.Lock()
 	defer db.mu.Unlock()
+	return db.isDeploymentMetadataService()
+}
+
+func (db *DeploymentState) isDeploymentMetadataService() bool {
 	return db.mode == ReadingDMS || db.mode == WritingDMS
 }
 
