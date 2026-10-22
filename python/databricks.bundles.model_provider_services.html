@@ -73,6 +73,7 @@
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.database_instances.html">Database Instances</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.experiments.html">Experiments</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.external_locations.html">External Locations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.features.html">Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.genie_spaces.html">Genie Spaces</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.instance_pools.html">Instance Pools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.job_runs.html">Job Runs</a></li>
@@ -302,6 +303,12 @@ be set on Create; the two are mutually exclusive.</p>
 </dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfig.bedrock_mantle">
+<span class="sig-name descname"><span class="pre">bedrock_mantle</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigAmazonBedrockProviderConfig" title="databricks.bundles.model_provider_services._models.model_provider_service_config_amazon_bedrock_provider_config.ModelProviderServiceConfigAmazonBedrockProviderConfig"><span class="pre">ModelProviderServiceConfigAmazonBedrockProviderConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfig.bedrock_mantle" title="Link to this definition">¶</a></dt>
+<dd><p>Amazon Bedrock provider configuration.</p>
+</dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfig.custom">
 <span class="sig-name descname"><span class="pre">custom</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigCustomProviderConfig" title="databricks.bundles.model_provider_services._models.model_provider_service_config_custom_provider_config.ModelProviderServiceConfigCustomProviderConfig"><span class="pre">ModelProviderServiceConfigCustomProviderConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfig.custom" title="Link to this definition">¶</a></dt>
 <dd><p>Custom OpenAI-compatible provider configuration with bearer-token
@@ -332,7 +339,9 @@ per request.</p>
 provider-native API types. Defaults to false. When true, these paths are
 forwarded unchanged to the upstream provider. When false, only
 recognized API paths are served. Enabling this broadens the upstream API
-surface exposed through the provider service.</p>
+surface exposed through the provider service. AI Gateway cannot evaluate
+Service Policies on opaque unmanaged requests, so unmanaged requests are
+rejected whenever Service Policies are attached to this securable.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -359,6 +368,13 @@ service’s inference table instead.</p>
 <dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfig.openai">
 <span class="sig-name descname"><span class="pre">openai</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigOpenAiProviderConfig" title="databricks.bundles.model_provider_services._models.model_provider_service_config_open_ai_provider_config.ModelProviderServiceConfigOpenAiProviderConfig"><span class="pre">ModelProviderServiceConfigOpenAiProviderConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfig.openai" title="Link to this definition">¶</a></dt>
 <dd><p>OpenAI provider configuration.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfig.pricing">
+<span class="sig-name descname"><span class="pre">pricing</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigProviderPricingConfig" title="databricks.bundles.model_provider_services._models.model_provider_service_config_provider_pricing_config.ModelProviderServiceConfigProviderPricingConfig"><span class="pre">ModelProviderServiceConfigProviderPricingConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfig.pricing" title="Link to this definition">¶</a></dt>
+<dd><p>Pricing configuration for this provider service. An explicitly empty
+configuration is retained on Create and Update and applies no adjustment.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -1212,6 +1228,16 @@ Catalog model resource.</p>
 </dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfigModelTargetConfig.endpoint_route">
+<span class="sig-name descname"><span class="pre">endpoint_route</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigModelTargetConfig.endpoint_route" title="Link to this definition">¶</a></dt>
+<dd><p>Relative path appended to a custom provider’s <cite>base_url</cite> for this model,
+such as <cite>serve/openai/chat</cite>. Nonempty values are only supported for
+custom model provider service targets; other provider types reject them.
+Model service destinations do not support this field. Do not include
+URI templates, queries, or fragments. When empty, <cite>base_url</cite> is used unchanged.</p>
+</dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfigModelTargetConfig.native_api_types">
 <span class="sig-name descname"><span class="pre">native_api_types</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigModelTargetConfig.native_api_types" title="Link to this definition">¶</a></dt>
 <dd><p>Provider-native API types supported by this model, such as
@@ -1325,6 +1351,44 @@ the <cite>OpenAI-Organization</cite> header.</p>
 </dl>
 
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigOpenAiProviderDirectConfig.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfigProviderPricingConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ModelProviderServiceConfigProviderPricingConfig</span></span><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigProviderPricingConfig" title="Link to this definition">¶</a></dt>
+<dd><p>Pricing adjustments applied to this provider service’s external-model spend
+estimates.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfigProviderPricingConfig.default_discount_basis_points">
+<span class="sig-name descname"><span class="pre">default_discount_basis_points</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigProviderPricingConfig.default_discount_basis_points" title="Link to this definition">¶</a></dt>
+<dd><p>Provider-wide adjustment to external-model spend estimates in basis points:
+2000 = 20% off; -2000 = a 20% markup. Negative values have no lower bound
+beyond the int32 range. Values cannot exceed 10000 (100% off). An omitted
+value or zero leaves the estimate unchanged.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfigProviderPricingConfig.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigProviderPricingConfig.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfigProviderPricingConfig.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigProviderPricingConfig.as_dict" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
