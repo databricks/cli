@@ -1,20 +1,11 @@
 package dresources
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
 	"errors"
-	"io"
-	"net/http"
-	"net/url"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/common"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestMaterializationSetMemberKey(t *testing.T) {
@@ -110,68 +101,47 @@ func TestMaterializationSetOperationTarget(t *testing.T) {
 	}))
 }
 
-// apiErrorWithDetails builds the error the SDK produces from a response body carrying error
-// details, which is the only way the per-member outcome of a partly applied change reaches a
-// client.
-func apiErrorWithDetails(t *testing.T, message string, details []map[string]any) error {
-	t.Helper()
-	body, err := json.Marshal(map[string]any{
-		"error_code": "RESOURCE_CONFLICT",
-		"message":    message,
-		"details":    details,
+func TestMaterializationSetChangeFailuresFromUpdateProgress(t *testing.T) {
+	failures := materializationSetChangeFailures(&ml.MaterializationSetOperationMetadata{
+		UpdateProgress: &ml.MaterializationSetUpdateProgress{
+			DeletedMaterializedFeatureIds: []string{"mf-gone"},
+			FailedMaterializedFeatures: []ml.MaterializedFeatureChangeFailure{
+				{
+					MaterializedFeatureId: "mf-kept",
+					ErrorCode:             "PERMISSION_DENIED",
+					Message:               "no permission on the online table",
+				},
+			},
+		},
 	})
-	require.NoError(t, err)
 
-	resp := &http.Response{
-		StatusCode: http.StatusConflict,
-		Status:     "409 Conflict",
-		Request:    &http.Request{Method: http.MethodPatch, URL: &url.URL{Path: "/api/2.0/x"}},
-	}
-	return apierr.GetAPIError(context.Background(), common.ResponseWrapper{
-		Response:   resp,
-		DebugBytes: body,
-		ReadCloser: io.NopCloser(bytes.NewReader(body)),
+	assert.Equal(t, []string{"mf-kept (PERMISSION_DENIED): no permission on the online table"}, failures)
+}
+
+func TestMaterializationSetChangeFailuresFromDeletionProgress(t *testing.T) {
+	failures := materializationSetChangeFailures(&ml.MaterializationSetOperationMetadata{
+		DeletionProgress: &ml.MaterializationSetDeletionProgress{
+			FailedMaterializedFeatures: []ml.MaterializedFeatureChangeFailure{
+				{MaterializedFeatureId: "mf-1", ErrorCode: "INTERNAL_ERROR", Message: "pipeline stuck"},
+				{MaterializedFeatureId: "mf-2", ErrorCode: "RESOURCE_CONFLICT", Message: "in use"},
+			},
+		},
 	})
+
+	assert.Equal(t, []string{
+		"mf-1 (INTERNAL_ERROR): pipeline stuck",
+		"mf-2 (RESOURCE_CONFLICT): in use",
+	}, failures)
 }
 
-func updateProgressDetail(failures []map[string]any) map[string]any {
-	return map[string]any{
-		"@type":                            "type.googleapis.com/databricks.featurestore.MaterializationSetUpdateProgress",
-		"deleted_materialized_feature_ids": []any{"mf-gone"},
-		"failed_materialized_features":     failures,
-	}
-}
-
-// The server's message defers to an error detail the CLI never prints, so the adapter has to
-// restate the failed members in the error itself.
-func TestMaterializationSetChangeFailuresAreRestatedInTheError(t *testing.T) {
-	err := apiErrorWithDetails(t,
-		"Changed 1 of 2 materialized features in materialization set 'set-1'; see the error "+
-			"details for which ones failed.",
-		[]map[string]any{updateProgressDetail([]map[string]any{{
-			"materialized_feature_id": "mf-stuck",
-			"error_code":              "RESOURCE_CONFLICT",
-			"message":                 "pipeline is updating",
-		}})})
-
-	wrapped := withMaterializationSetChangeFailures(err)
-	assert.Contains(t, wrapped.Error(), "members left unchanged:")
-	assert.Contains(t, wrapped.Error(), "mf-stuck (RESOURCE_CONFLICT): pipeline is updating")
-	// The server's own message survives, so nothing a caller already relied on is lost.
-	assert.Contains(t, wrapped.Error(), "Changed 1 of 2 materialized features")
-	assert.ErrorIs(t, wrapped, err)
-}
-
-// Every validation failure is raised before the server touches a member, so it carries no progress
-// and must come back exactly as it arrived.
-func TestMaterializationSetChangeFailuresLeavesOtherErrorsAlone(t *testing.T) {
-	withoutDetails := apiErrorWithDetails(t, "Materialization set 'set-1' does not exist.", nil)
-	assert.Equal(t, withoutDetails, withMaterializationSetChangeFailures(withoutDetails))
-
-	// A progress detail naming no failed member is a succeeded change, not a partial one.
-	empty := apiErrorWithDetails(t, "transient", []map[string]any{updateProgressDetail(nil)})
-	assert.Equal(t, empty, withMaterializationSetChangeFailures(empty))
-
-	plain := errors.New("connection reset")
-	assert.Equal(t, plain, withMaterializationSetChangeFailures(plain))
+func TestMaterializationSetChangeFailuresWithoutFailedMembers(t *testing.T) {
+	// A creation carries no progress arm at all, and a change that fully applied carries one
+	// naming no failure; neither has a member to report.
+	assert.Empty(t, materializationSetChangeFailures(&ml.MaterializationSetOperationMetadata{}))
+	assert.Empty(t, materializationSetChangeFailures(&ml.MaterializationSetOperationMetadata{
+		DeletionProgress: &ml.MaterializationSetDeletionProgress{
+			DeletedMaterializedFeatureIds: []string{"mf-1"},
+		},
+	}))
+	assert.Empty(t, materializationSetChangeFailures(nil))
 }

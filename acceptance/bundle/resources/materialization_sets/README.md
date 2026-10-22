@@ -29,6 +29,25 @@ mints a new token; that is safe here because it never retries a create without t
 in, and re-running an update or a delete reconciles to the same state. No case replays a token,
 because every adapter call mints its own.
 
+## A failure after the operation is reserved is not an HTTP error
+
+The backend raises only while it can still reject the request outright -- every validation, which
+runs before it reserves an operation record. Past that point a failure is the operation's outcome,
+so all three verbs settle the record FAILED and return it with HTTP 200, carrying the error code and
+message on the operation and the per-member outcome on the metadata's progress arm. A creation has
+no progress arm: it has no per-member outcome to report.
+
+The generated wait flattens that into one string and reads no metadata, so the adapter re-reads the
+settled operation to recover the code structurally and appends the members the change left alone.
+It returns an `APIError` so the engine classifies and renders the failure as it would any other,
+with the 200 the call actually returned as the status -- which maps to no sentinel, deliberately: a
+member that could not be torn down must not reach the destroy step's permission-denied leniency,
+whose purpose is to forgive a resource that is already gone.
+
+One gap this leaves is the engine's, not ours, and `settled_failure` pins it: `DeploymentUnit.Delete`
+forgives a delete error matching none of the three cases it knows, so a partly deleted set exits
+zero with its state dropped. The deployment-history leg is the one path that records and returns it.
+
 ## What each case pins
 
 | Case | Claim |
@@ -42,6 +61,7 @@ because every adapter call mints its own.
 | `destination` | a destination field the server accepts on write and never returns on read is not drift, while a repoint the config actually asked for still recreates -- the two are told apart by whether the persisted value is recoverable |
 | `batch` | a batch feature with both destinations creates and settles; neither member of its pair can be removed alone, and removing both empties the set, which the update endpoint refuses in favour of delete; repointing the destinations is a `recreate`; pausing the feature is a `recreate` that succeeds when every member agrees and is refused by the create endpoint when they do not; a set mixing a batch-path feature with a streaming-path one is refused at create |
 | `sawtooth` | the offline-and-online batch pair is refused at create, because a set is not expanded into the third materialization; all three declared creates and then plans nothing; the three members are one cascade group, so each of the three strict subsets of them is refused -- with the message depending on whether the removal names the member a delete is applied to -- and removing all three empties the set, which the update endpoint refuses |
+| `settled_failure` | a failure the server hits after reserving an operation comes back as HTTP 200 with the operation FAILED: the adapter recovers the error code from the operation and the per-member outcome from its metadata, the update fails naming each member left behind and writes nothing, and the destroy reports success anyway because the engine forgives a delete error it cannot classify |
 | `streaming` | a streaming online member needs no schedule and no cron; declaring a schedule state on it, or repointing its destination, plans as a `recreate` rather than an in-place update; with two features materialized to one destination and no offline member between them, each online member is its own cascade group, so one can be removed alone as an `update` |
 
 ## Running against a workspace
@@ -210,11 +230,10 @@ mixed update to construct.
   features, leaving each offline materialization's `*_partial_aggregates` table behind. A cloud case
   that wants a clean schema has to drop those itself.
 
-- **Partial failure.** One member failing does not stop the others, and the operation settles
-  FAILED carrying what was updated, deleted and failed in its metadata's `update_progress` or
-  `deletion_progress`. Reproducing it needs per-member failure injection the fake does not have.
-  This matters more than it used to: with field updates gone, a partway failure can only be a
-  partway *deletion*, and nothing already deleted is put back.
+- **A real member-teardown failure.** `settled_failure` produces the settled-FAILED shape
+  from a marker the fake looks for in a feature name, because a real teardown fails on
+  infrastructure no request can ask for. The adapter's reading of that shape is pinned; that
+  the server emits it for a genuine failure is not, and cannot be from here.
 
 - **A settled-but-failed operation.** Every refusal these cases reach is an HTTP error on the call
   itself, raised before the operation record exists, so the wait is never what fails. The branch

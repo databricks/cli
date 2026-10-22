@@ -1,0 +1,12 @@
+# Pinned to the leg without deployment-history recording, where the engine's destroy step forgives
+# a delete error it cannot classify. With recording on it takes the branch that records the failure
+# and returns it, so the destroy fails instead and the two legs cannot share one golden.
+EnvMatrix.DMS = [""]
+
+# Local only, and not because the claims are redundant: the failure is produced by a marker the
+# fake looks for in a feature name, since a real teardown fails on infrastructure no request can
+# ask for. Against a workspace this case would simply succeed.
+Ignore = [
+    ".databricks",
+    "databricks.yml",
+]

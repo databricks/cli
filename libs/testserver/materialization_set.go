@@ -337,6 +337,96 @@ func (s *FakeWorkspace) materializationSetOperationResponse(
 	return Response{Body: operation}
 }
 
+// materializedFeatureTeardownFailsMarker is how a fixture asks the fake for a member the backend
+// cannot tear down. A real teardown fails on infrastructure -- a job, a pipeline or a table the
+// delete cannot reach -- which no request can ask for, so the trigger has to be in the fixture.
+const materializedFeatureTeardownFailsMarker = "teardown_fails"
+
+// materializationSetTeardownFailures reports the members of `targets` the fake refuses to tear
+// down, one failure each, in target order.
+func materializationSetTeardownFailures(
+	targets [][]ml.MaterializedFeature,
+	removedIDs map[string]bool,
+) []ml.MaterializedFeatureChangeFailure {
+	var failures []ml.MaterializedFeatureChangeFailure
+	for _, target := range targets {
+		if !strings.Contains(target[0].FeatureName, materializedFeatureTeardownFailsMarker) {
+			continue
+		}
+		for _, member := range target {
+			if !removedIDs[member.MaterializedFeatureId] {
+				continue
+			}
+			failures = append(failures, ml.MaterializedFeatureChangeFailure{
+				MaterializedFeatureId: member.MaterializedFeatureId,
+				ErrorCode:             "INTERNAL_ERROR",
+				Message: fmt.Sprintf(
+					"Failed to delete materialized feature '%s'. If the issue persists, please "+
+						"retry or contact support.", member.MaterializedFeatureId),
+			})
+		}
+	}
+	return failures
+}
+
+// partialMaterializationSetChangeErrorCode collapses the member failures to one code the way the
+// backend does: a single code is reported as itself, a permission failure wins over any other, and
+// a mix of client errors becomes BAD_REQUEST.
+func partialMaterializationSetChangeErrorCode(
+	failures []ml.MaterializedFeatureChangeFailure,
+) string {
+	codes := map[string]bool{}
+	for _, failure := range failures {
+		codes[failure.ErrorCode] = true
+	}
+	switch {
+	case len(codes) == 1:
+		for code := range codes {
+			return code
+		}
+		return "INTERNAL_ERROR"
+	case codes["PERMISSION_DENIED"]:
+		return "PERMISSION_DENIED"
+	default:
+		return "INTERNAL_ERROR"
+	}
+}
+
+// materializationSetFailedOperationResponse settles an operation as FAILED and returns it with
+// HTTP 200, which is how the backend reports a change it reserved an operation for and then could
+// not finish. The per-member outcome rides on the metadata's progress arm.
+func (s *FakeWorkspace) materializationSetFailedOperationResponse(
+	setID string,
+	members []ml.MaterializedFeature,
+	message string,
+	failures []ml.MaterializedFeatureChangeFailure,
+	progress func(*ml.MaterializationSetOperationMetadata),
+) Response {
+	settled := ml.MaterializationSetOperationMetadata{
+		FeatureFullNames:     materializationSetFeatureNames(members),
+		MaterializationSetId: setID,
+		State:                ml.MaterializationSetOperationMetadataStateFailed,
+	}
+	progress(&settled)
+
+	metadata, err := json.Marshal(settled)
+	if err != nil {
+		return materializationSetInternalError(err)
+	}
+
+	operation := ml.Operation{
+		Name:     "operations/" + nextUUID(),
+		Done:     true,
+		Metadata: metadata,
+		Error: &ml.DatabricksServiceExceptionWithDetailsProto{
+			ErrorCode: ml.ErrorCode(partialMaterializationSetChangeErrorCode(failures)),
+			Message:   message,
+		},
+	}
+	s.Operations[operation.Name] = operation
+	return Response{Body: operation}
+}
+
 // materializationSetFeatureNames lists each member's feature once in member order, which is what
 // the operation metadata reports.
 func materializationSetFeatureNames(members []ml.MaterializedFeature) []string {
@@ -374,6 +464,25 @@ func (s *FakeWorkspace) MaterializationSetsDelete(setID string) Response {
 	if !ok {
 		return materializationSetNotFound(setID)
 	}
+
+	allIDs := map[string]bool{}
+	for _, member := range existing.MaterializedFeatures {
+		allIDs[member.MaterializedFeatureId] = true
+	}
+	targets := materializationSetDeletionTargets(existing.MaterializedFeatures)
+	if failures := materializationSetTeardownFailures(targets, allIDs); len(failures) > 0 {
+		// The set is kept so the members that still need deleting can be retried.
+		return s.materializationSetFailedOperationResponse(setID, existing.MaterializedFeatures,
+			fmt.Sprintf("Materialization set '%s' was partly deleted: %d materialized features "+
+				"deleted, %d failed.", setID, 0, len(failures)),
+			failures,
+			func(metadata *ml.MaterializationSetOperationMetadata) {
+				metadata.DeletionProgress = &ml.MaterializationSetDeletionProgress{
+					FailedMaterializedFeatures: failures,
+				}
+			})
+	}
+
 	delete(s.MaterializationSets, setID)
 
 	return s.materializationSetOperationResponse(setID, existing.MaterializedFeatures, struct{}{})
@@ -561,6 +670,21 @@ func (s *FakeWorkspace) MaterializationSetsUpdate(req Request, setID string) Res
 				quotedMaterializedFeatureIDs(removedForFeature), featureName,
 				quotedMaterializedFeatureIDs(unrequested),
 				quotedMaterializedFeatureIDs(unrequested)))
+	}
+
+	targets := materializationSetDeletionTargets(existing.MaterializedFeatures)
+	if failures := materializationSetTeardownFailures(targets, removedIDs); len(failures) > 0 {
+		// Nothing is written: the one target this fake can fail is the only target, so no member
+		// of the change got through.
+		return s.materializationSetFailedOperationResponse(setID, existing.MaterializedFeatures,
+			fmt.Sprintf("Materialization set '%s' was partly updated: %d materialized features "+
+				"deleted, %d failed.", setID, 0, len(failures)),
+			failures,
+			func(metadata *ml.MaterializationSetOperationMetadata) {
+				metadata.UpdateProgress = &ml.MaterializationSetUpdateProgress{
+					FailedMaterializedFeatures: failures,
+				}
+			})
 	}
 
 	existing.MaterializedFeatures = matched
