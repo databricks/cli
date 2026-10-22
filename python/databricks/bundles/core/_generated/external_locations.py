@@ -10,17 +10,12 @@ from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.external_locations._models.external_location import (
-        ExternalLocation,
-        ExternalLocationParam,
-    )
+    from databricks.bundles.external_locations._models.external_location import ExternalLocation, ExternalLocationParam
 
 
 def _resource_type() -> "_ResourceType":
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.external_locations._models.external_location import (
-        ExternalLocation,
-    )
+    from databricks.bundles.external_locations._models.external_location import ExternalLocation
 
     return _ResourceType(
         resource_type=ExternalLocation,
@@ -69,9 +64,7 @@ class _ExternalLocationResources:
         :param external_location: the external_location to add, can be ExternalLocation or dict
         :param location: optional location of the external_location in the source code
         """
-        from databricks.bundles.external_locations._models.external_location import (
-            ExternalLocation,
-        )
+        from databricks.bundles.external_locations._models.external_location import ExternalLocation
 
         external_location = _transform(ExternalLocation, external_location)
         path = ("resources", "external_locations", resource_name)
@@ -102,9 +95,7 @@ def external_location_mutator(
 ) -> ResourceMutator["ExternalLocation"]: ...
 
 
-def external_location_mutator(
-    function: Callable,
-) -> ResourceMutator["ExternalLocation"]:
+def external_location_mutator(function: Callable) -> ResourceMutator["ExternalLocation"]:
     """
     Decorator for defining mutator for external_locations. Function should return a new instance of the external_location
     with the desired changes, instead of mutating the input external_location.
@@ -119,8 +110,6 @@ def external_location_mutator(
 
     :param function: Function that mutates external_locations.
     """
-    from databricks.bundles.external_locations._models.external_location import (
-        ExternalLocation,
-    )
+    from databricks.bundles.external_locations._models.external_location import ExternalLocation
 
     return ResourceMutator(resource_type=ExternalLocation, function=function)

@@ -2,32 +2,18 @@
 
 from databricks.bundles.core import Resources, secret_mutator
 from databricks.bundles.core._generated.secrets import _resource_type
+from databricks_tests.core._resource_test_case import ResourceTestCase
 from databricks.bundles.secrets._models.lifecycle import Lifecycle
 from databricks.bundles.secrets._models.privilege_assignment import PrivilegeAssignment
 from databricks.bundles.secrets._models.secret import Secret
-from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
         ResourceTestCase(
             add_resource=Resources.add_secret,
-            dict_example={
-                "catalog_name": "catalog_name",
-                "grants": [{}],
-                "lifecycle": {},
-                "name": "name",
-                "schema_name": "schema_name",
-                "value": "value",
-            },
-            dataclass_example=Secret(
-                catalog_name="catalog_name",
-                grants=[PrivilegeAssignment()],
-                lifecycle=Lifecycle(),
-                name="name",
-                schema_name="schema_name",
-                value="value",
-            ),
+            dict_example={"catalog_name": "catalog_name", "grants": [{}], "lifecycle": {}, "name": "name", "schema_name": "schema_name", "value": "value"},
+            dataclass_example=Secret(catalog_name="catalog_name", grants=[PrivilegeAssignment()], lifecycle=Lifecycle(), name="name", schema_name="schema_name", value="value"),
             mutator=secret_mutator,
         ),
         _resource_type(),

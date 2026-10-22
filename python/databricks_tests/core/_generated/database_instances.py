@@ -2,36 +2,20 @@
 
 from databricks.bundles.core import Resources, database_instance_mutator
 from databricks.bundles.core._generated.database_instances import _resource_type
-from databricks.bundles.database_instances._models.database_instance import (
-    DatabaseInstance,
-)
-from databricks.bundles.database_instances._models.database_instance_ref import (
-    DatabaseInstanceRef,
-)
+from databricks_tests.core._resource_test_case import ResourceTestCase
+from databricks.bundles.database_instances._models.database_instance import DatabaseInstance
+from databricks.bundles.database_instances._models.database_instance_ref import DatabaseInstanceRef
 from databricks.bundles.database_instances._models.lifecycle import Lifecycle
 from databricks.bundles.database_instances._models.permission import Permission
-from databricks.bundles.database_instances._models.permission_level import (
-    PermissionLevel,
-)
-from databricks_tests.core._resource_test_case import ResourceTestCase
+from databricks.bundles.database_instances._models.permission_level import PermissionLevel
 
 
 def _test_case():
     return (
         ResourceTestCase(
             add_resource=Resources.add_database_instance,
-            dict_example={
-                "lifecycle": {},
-                "name": "name",
-                "parent_instance_ref": {},
-                "permissions": [{"level": "CAN_MANAGE"}],
-            },
-            dataclass_example=DatabaseInstance(
-                lifecycle=Lifecycle(),
-                name="name",
-                parent_instance_ref=DatabaseInstanceRef(),
-                permissions=[Permission(level=PermissionLevel.CAN_MANAGE)],
-            ),
+            dict_example={"lifecycle": {}, "name": "name", "parent_instance_ref": {}, "permissions": [{"level": "CAN_MANAGE"}]},
+            dataclass_example=DatabaseInstance(lifecycle=Lifecycle(), name="name", parent_instance_ref=DatabaseInstanceRef(), permissions=[Permission(level=PermissionLevel.CAN_MANAGE)]),
             mutator=database_instance_mutator,
         ),
         _resource_type(),

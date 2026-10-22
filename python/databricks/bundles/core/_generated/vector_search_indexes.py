@@ -10,17 +10,12 @@ from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.vector_search_indexes._models.vector_search_index import (
-        VectorSearchIndex,
-        VectorSearchIndexParam,
-    )
+    from databricks.bundles.vector_search_indexes._models.vector_search_index import VectorSearchIndex, VectorSearchIndexParam
 
 
 def _resource_type() -> "_ResourceType":
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.vector_search_indexes._models.vector_search_index import (
-        VectorSearchIndex,
-    )
+    from databricks.bundles.vector_search_indexes._models.vector_search_index import VectorSearchIndex
 
     return _ResourceType(
         resource_type=VectorSearchIndex,
@@ -69,9 +64,7 @@ class _VectorSearchIndexResources:
         :param vector_search_index: the vector_search_index to add, can be VectorSearchIndex or dict
         :param location: optional location of the vector_search_index in the source code
         """
-        from databricks.bundles.vector_search_indexes._models.vector_search_index import (
-            VectorSearchIndex,
-        )
+        from databricks.bundles.vector_search_indexes._models.vector_search_index import VectorSearchIndex
 
         vector_search_index = _transform(VectorSearchIndex, vector_search_index)
         path = ("resources", "vector_search_indexes", resource_name)
@@ -87,9 +80,7 @@ class _VectorSearchIndexResources:
             if location:
                 self.add_location(path, location)
 
-            self._resources["vector_search_indexes"][resource_name] = (
-                vector_search_index
-            )
+            self._resources["vector_search_indexes"][resource_name] = vector_search_index
 
 
 @overload
@@ -104,9 +95,7 @@ def vector_search_index_mutator(
 ) -> ResourceMutator["VectorSearchIndex"]: ...
 
 
-def vector_search_index_mutator(
-    function: Callable,
-) -> ResourceMutator["VectorSearchIndex"]:
+def vector_search_index_mutator(function: Callable) -> ResourceMutator["VectorSearchIndex"]:
     """
     Decorator for defining mutator for vector_search_indexes. Function should return a new instance of the vector_search_index
     with the desired changes, instead of mutating the input vector_search_index.
@@ -121,8 +110,6 @@ def vector_search_index_mutator(
 
     :param function: Function that mutates vector_search_indexes.
     """
-    from databricks.bundles.vector_search_indexes._models.vector_search_index import (
-        VectorSearchIndex,
-    )
+    from databricks.bundles.vector_search_indexes._models.vector_search_index import VectorSearchIndex
 
     return ResourceMutator(resource_type=VectorSearchIndex, function=function)

@@ -10,10 +10,7 @@ from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.secret_scopes._models.secret_scope import (
-        SecretScope,
-        SecretScopeParam,
-    )
+    from databricks.bundles.secret_scopes._models.secret_scope import SecretScope, SecretScopeParam
 
 
 def _resource_type() -> "_ResourceType":

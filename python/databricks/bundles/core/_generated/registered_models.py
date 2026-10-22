@@ -10,17 +10,12 @@ from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.registered_models._models.registered_model import (
-        RegisteredModel,
-        RegisteredModelParam,
-    )
+    from databricks.bundles.registered_models._models.registered_model import RegisteredModel, RegisteredModelParam
 
 
 def _resource_type() -> "_ResourceType":
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.registered_models._models.registered_model import (
-        RegisteredModel,
-    )
+    from databricks.bundles.registered_models._models.registered_model import RegisteredModel
 
     return _ResourceType(
         resource_type=RegisteredModel,
@@ -69,9 +64,7 @@ class _RegisteredModelResources:
         :param registered_model: the registered_model to add, can be RegisteredModel or dict
         :param location: optional location of the registered_model in the source code
         """
-        from databricks.bundles.registered_models._models.registered_model import (
-            RegisteredModel,
-        )
+        from databricks.bundles.registered_models._models.registered_model import RegisteredModel
 
         registered_model = _transform(RegisteredModel, registered_model)
         path = ("resources", "registered_models", resource_name)
@@ -117,8 +110,6 @@ def registered_model_mutator(function: Callable) -> ResourceMutator["RegisteredM
 
     :param function: Function that mutates registered_models.
     """
-    from databricks.bundles.registered_models._models.registered_model import (
-        RegisteredModel,
-    )
+    from databricks.bundles.registered_models._models.registered_model import RegisteredModel
 
     return ResourceMutator(resource_type=RegisteredModel, function=function)

@@ -9,13 +9,13 @@ from databricks.bundles.core._resource_mutator import ResourceMutator
 from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
-    from databricks.bundles.apps._models.app import App, AppParam
     from databricks.bundles.core._resource_type import _ResourceType
+    from databricks.bundles.apps._models.app import App, AppParam
 
 
 def _resource_type() -> "_ResourceType":
-    from databricks.bundles.apps._models.app import App
     from databricks.bundles.core._resource_type import _ResourceType
+    from databricks.bundles.apps._models.app import App
 
     return _ResourceType(
         resource_type=App,

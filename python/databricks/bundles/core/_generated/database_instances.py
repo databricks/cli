@@ -10,17 +10,12 @@ from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.database_instances._models.database_instance import (
-        DatabaseInstance,
-        DatabaseInstanceParam,
-    )
+    from databricks.bundles.database_instances._models.database_instance import DatabaseInstance, DatabaseInstanceParam
 
 
 def _resource_type() -> "_ResourceType":
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.database_instances._models.database_instance import (
-        DatabaseInstance,
-    )
+    from databricks.bundles.database_instances._models.database_instance import DatabaseInstance
 
     return _ResourceType(
         resource_type=DatabaseInstance,
@@ -69,9 +64,7 @@ class _DatabaseInstanceResources:
         :param database_instance: the database_instance to add, can be DatabaseInstance or dict
         :param location: optional location of the database_instance in the source code
         """
-        from databricks.bundles.database_instances._models.database_instance import (
-            DatabaseInstance,
-        )
+        from databricks.bundles.database_instances._models.database_instance import DatabaseInstance
 
         database_instance = _transform(DatabaseInstance, database_instance)
         path = ("resources", "database_instances", resource_name)
@@ -102,9 +95,7 @@ def database_instance_mutator(
 ) -> ResourceMutator["DatabaseInstance"]: ...
 
 
-def database_instance_mutator(
-    function: Callable,
-) -> ResourceMutator["DatabaseInstance"]:
+def database_instance_mutator(function: Callable) -> ResourceMutator["DatabaseInstance"]:
     """
     Decorator for defining mutator for database_instances. Function should return a new instance of the database_instance
     with the desired changes, instead of mutating the input database_instance.
@@ -119,8 +110,6 @@ def database_instance_mutator(
 
     :param function: Function that mutates database_instances.
     """
-    from databricks.bundles.database_instances._models.database_instance import (
-        DatabaseInstance,
-    )
+    from databricks.bundles.database_instances._models.database_instance import DatabaseInstance
 
     return ResourceMutator(resource_type=DatabaseInstance, function=function)

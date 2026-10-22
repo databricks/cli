@@ -10,10 +10,7 @@ from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.model_services._models.model_service import (
-        ModelService,
-        ModelServiceParam,
-    )
+    from databricks.bundles.model_services._models.model_service import ModelService, ModelServiceParam
 
 
 def _resource_type() -> "_ResourceType":

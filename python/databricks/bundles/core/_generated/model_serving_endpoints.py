@@ -10,17 +10,12 @@ from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.model_serving_endpoints._models.model_serving_endpoint import (
-        ModelServingEndpoint,
-        ModelServingEndpointParam,
-    )
+    from databricks.bundles.model_serving_endpoints._models.model_serving_endpoint import ModelServingEndpoint, ModelServingEndpointParam
 
 
 def _resource_type() -> "_ResourceType":
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.model_serving_endpoints._models.model_serving_endpoint import (
-        ModelServingEndpoint,
-    )
+    from databricks.bundles.model_serving_endpoints._models.model_serving_endpoint import ModelServingEndpoint
 
     return _ResourceType(
         resource_type=ModelServingEndpoint,
@@ -69,13 +64,9 @@ class _ModelServingEndpointResources:
         :param model_serving_endpoint: the model_serving_endpoint to add, can be ModelServingEndpoint or dict
         :param location: optional location of the model_serving_endpoint in the source code
         """
-        from databricks.bundles.model_serving_endpoints._models.model_serving_endpoint import (
-            ModelServingEndpoint,
-        )
+        from databricks.bundles.model_serving_endpoints._models.model_serving_endpoint import ModelServingEndpoint
 
-        model_serving_endpoint = _transform(
-            ModelServingEndpoint, model_serving_endpoint
-        )
+        model_serving_endpoint = _transform(ModelServingEndpoint, model_serving_endpoint)
         path = ("resources", "model_serving_endpoints", resource_name)
         location = location or Location.from_stack_frame(depth=1)
 
@@ -89,9 +80,7 @@ class _ModelServingEndpointResources:
             if location:
                 self.add_location(path, location)
 
-            self._resources["model_serving_endpoints"][resource_name] = (
-                model_serving_endpoint
-            )
+            self._resources["model_serving_endpoints"][resource_name] = model_serving_endpoint
 
 
 @overload
@@ -106,9 +95,7 @@ def model_serving_endpoint_mutator(
 ) -> ResourceMutator["ModelServingEndpoint"]: ...
 
 
-def model_serving_endpoint_mutator(
-    function: Callable,
-) -> ResourceMutator["ModelServingEndpoint"]:
+def model_serving_endpoint_mutator(function: Callable) -> ResourceMutator["ModelServingEndpoint"]:
     """
     Decorator for defining mutator for model_serving_endpoints. Function should return a new instance of the model_serving_endpoint
     with the desired changes, instead of mutating the input model_serving_endpoint.
@@ -123,8 +110,6 @@ def model_serving_endpoint_mutator(
 
     :param function: Function that mutates model_serving_endpoints.
     """
-    from databricks.bundles.model_serving_endpoints._models.model_serving_endpoint import (
-        ModelServingEndpoint,
-    )
+    from databricks.bundles.model_serving_endpoints._models.model_serving_endpoint import ModelServingEndpoint
 
     return ResourceMutator(resource_type=ModelServingEndpoint, function=function)

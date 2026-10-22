@@ -2,17 +2,11 @@
 
 from databricks.bundles.core import Resources, registered_model_mutator
 from databricks.bundles.core._generated.registered_models import _resource_type
-from databricks.bundles.registered_models._models.lifecycle import Lifecycle
-from databricks.bundles.registered_models._models.privilege_assignment import (
-    PrivilegeAssignment,
-)
-from databricks.bundles.registered_models._models.registered_model import (
-    RegisteredModel,
-)
-from databricks.bundles.registered_models._models.registered_model_alias import (
-    RegisteredModelAlias,
-)
 from databricks_tests.core._resource_test_case import ResourceTestCase
+from databricks.bundles.registered_models._models.lifecycle import Lifecycle
+from databricks.bundles.registered_models._models.privilege_assignment import PrivilegeAssignment
+from databricks.bundles.registered_models._models.registered_model import RegisteredModel
+from databricks.bundles.registered_models._models.registered_model_alias import RegisteredModelAlias
 
 
 def _test_case():
@@ -20,11 +14,7 @@ def _test_case():
         ResourceTestCase(
             add_resource=Resources.add_registered_model,
             dict_example={"aliases": [{}], "grants": [{}], "lifecycle": {}},
-            dataclass_example=RegisteredModel(
-                aliases=[RegisteredModelAlias()],
-                grants=[PrivilegeAssignment()],
-                lifecycle=Lifecycle(),
-            ),
+            dataclass_example=RegisteredModel(aliases=[RegisteredModelAlias()], grants=[PrivilegeAssignment()], lifecycle=Lifecycle()),
             mutator=registered_model_mutator,
         ),
         _resource_type(),

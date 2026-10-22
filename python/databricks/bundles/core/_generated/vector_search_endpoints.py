@@ -10,17 +10,12 @@ from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.vector_search_endpoints._models.vector_search_endpoint import (
-        VectorSearchEndpoint,
-        VectorSearchEndpointParam,
-    )
+    from databricks.bundles.vector_search_endpoints._models.vector_search_endpoint import VectorSearchEndpoint, VectorSearchEndpointParam
 
 
 def _resource_type() -> "_ResourceType":
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.vector_search_endpoints._models.vector_search_endpoint import (
-        VectorSearchEndpoint,
-    )
+    from databricks.bundles.vector_search_endpoints._models.vector_search_endpoint import VectorSearchEndpoint
 
     return _ResourceType(
         resource_type=VectorSearchEndpoint,
@@ -69,13 +64,9 @@ class _VectorSearchEndpointResources:
         :param vector_search_endpoint: the vector_search_endpoint to add, can be VectorSearchEndpoint or dict
         :param location: optional location of the vector_search_endpoint in the source code
         """
-        from databricks.bundles.vector_search_endpoints._models.vector_search_endpoint import (
-            VectorSearchEndpoint,
-        )
+        from databricks.bundles.vector_search_endpoints._models.vector_search_endpoint import VectorSearchEndpoint
 
-        vector_search_endpoint = _transform(
-            VectorSearchEndpoint, vector_search_endpoint
-        )
+        vector_search_endpoint = _transform(VectorSearchEndpoint, vector_search_endpoint)
         path = ("resources", "vector_search_endpoints", resource_name)
         location = location or Location.from_stack_frame(depth=1)
 
@@ -89,9 +80,7 @@ class _VectorSearchEndpointResources:
             if location:
                 self.add_location(path, location)
 
-            self._resources["vector_search_endpoints"][resource_name] = (
-                vector_search_endpoint
-            )
+            self._resources["vector_search_endpoints"][resource_name] = vector_search_endpoint
 
 
 @overload
@@ -106,9 +95,7 @@ def vector_search_endpoint_mutator(
 ) -> ResourceMutator["VectorSearchEndpoint"]: ...
 
 
-def vector_search_endpoint_mutator(
-    function: Callable,
-) -> ResourceMutator["VectorSearchEndpoint"]:
+def vector_search_endpoint_mutator(function: Callable) -> ResourceMutator["VectorSearchEndpoint"]:
     """
     Decorator for defining mutator for vector_search_endpoints. Function should return a new instance of the vector_search_endpoint
     with the desired changes, instead of mutating the input vector_search_endpoint.
@@ -123,8 +110,6 @@ def vector_search_endpoint_mutator(
 
     :param function: Function that mutates vector_search_endpoints.
     """
-    from databricks.bundles.vector_search_endpoints._models.vector_search_endpoint import (
-        VectorSearchEndpoint,
-    )
+    from databricks.bundles.vector_search_endpoints._models.vector_search_endpoint import VectorSearchEndpoint
 
     return ResourceMutator(resource_type=VectorSearchEndpoint, function=function)

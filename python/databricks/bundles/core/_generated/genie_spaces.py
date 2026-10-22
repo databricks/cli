@@ -10,10 +10,7 @@ from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
     from databricks.bundles.core._resource_type import _ResourceType
-    from databricks.bundles.genie_spaces._models.genie_space import (
-        GenieSpace,
-        GenieSpaceParam,
-    )
+    from databricks.bundles.genie_spaces._models.genie_space import GenieSpace, GenieSpaceParam
 
 
 def _resource_type() -> "_ResourceType":

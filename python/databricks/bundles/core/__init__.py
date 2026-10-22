@@ -58,6 +58,24 @@ from databricks.bundles.core._diagnostics import (
     Diagnostics,
     Severity,
 )
+from databricks.bundles.core._load import (
+    load_resources_from_current_package_module,
+    load_resources_from_module,
+    load_resources_from_modules,
+    load_resources_from_package_module,
+)
+from databricks.bundles.core._location import Location
+from databricks.bundles.core._resource import Resource
+from databricks.bundles.core._resource_mutator import ResourceMutator
+from databricks.bundles.core._resources import Resources
+from databricks.bundles.core._variable import (
+    Variable,
+    VariableOr,
+    VariableOrDict,
+    VariableOrList,
+    VariableOrOptional,
+    variables,
+)
 from databricks.bundles.core._generated import (
     alert_mutator,
     app_mutator,
@@ -90,22 +108,4 @@ from databricks.bundles.core._generated import (
     vector_search_endpoint_mutator,
     vector_search_index_mutator,
     volume_mutator,
-)
-from databricks.bundles.core._load import (
-    load_resources_from_current_package_module,
-    load_resources_from_module,
-    load_resources_from_modules,
-    load_resources_from_package_module,
-)
-from databricks.bundles.core._location import Location
-from databricks.bundles.core._resource import Resource
-from databricks.bundles.core._resource_mutator import ResourceMutator
-from databricks.bundles.core._resources import Resources
-from databricks.bundles.core._variable import (
-    Variable,
-    VariableOr,
-    VariableOrDict,
-    VariableOrList,
-    VariableOrOptional,
-    variables,
 )
