@@ -454,6 +454,8 @@ func setupSkillsFallback(t *testing.T, latestErr error) (ManifestSource, string)
 	t.Helper()
 	setBuildVersion(t, "1.22.0")
 	t.Setenv("DATABRICKS_SKILLS_REF", "")
+	t.Setenv("DATABRICKS_FORCE_EMBEDDED_COMPAT", "false")
+	t.Setenv("DATABRICKS_CACHE_ENABLED", "true")
 	withCachedCompat(t, skillsLatestSentinel)
 	stubLatestSkillsReleaseRef(t, "v9.9.9", latestErr)
 	fallbackVersion, err := clicompat.ResolveEmbeddedAgentSkillsVersion()
@@ -1329,8 +1331,8 @@ func TestGetSkillsRefDefaultManifest(t *testing.T) {
 	var m clicompat.Manifest
 	require.NoError(t, json.Unmarshal(build.CLICompatManifestJSON, &m))
 
-	// Build overlays resolve latest to a concrete pin. Derive expectations from
-	// the embedded manifest so this also tests the generated release snapshot.
+	// Derive expectations from the embedded manifest so routine manifest edits
+	// need no test changes. Entries resolved at build time still track latest.
 	tests := []struct {
 		version string
 	}{

@@ -526,9 +526,12 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 
 	pluginCount := 0
 	if len(pluginItems) > 0 {
-		ref, _, err := installer.GetSkillsRefWithFallback(ctx)
+		// Plugins install from the agent's marketplace, so the skills ref only
+		// labels the recorded version. Record it as unknown when unresolved.
+		ref, _, err := installer.GetSkillsRef(ctx)
 		if err != nil {
-			return outcomes, err
+			log.Debugf(ctx, "Recording plugin version as unknown: %v", err)
+			ref = ""
 		}
 		records := map[string]installer.PluginRecord{}
 		for _, it := range pluginItems {

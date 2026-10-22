@@ -148,7 +148,7 @@ func resolveLatestSkillsReleaseRef(ctx context.Context, allowFallback bool) (ref
 }
 
 func fetchLatestSkillsReleaseRef(ctx context.Context) (string, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", skillsRepoOwner, skillsRepoName)
+	url := fmt.Sprintf("%s/repos/%s/%s/releases/latest", skillsAPIURL(ctx), skillsRepoOwner, skillsRepoName)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
@@ -196,6 +196,15 @@ func GetSkillsBaseURL(ctx context.Context) string {
 		return strings.TrimRight(base, "/")
 	}
 	return "https://raw.githubusercontent.com/" + skillsRepoOwner + "/" + skillsRepoName
+}
+
+// skillsAPIURL returns the GitHub API base URL for release lookups.
+// DATABRICKS_SKILLS_API_URL overrides it for acceptance tests.
+func skillsAPIURL(ctx context.Context) string {
+	if base := env.Get(ctx, "DATABRICKS_SKILLS_API_URL"); base != "" {
+		return strings.TrimRight(base, "/")
+	}
+	return "https://api.github.com"
 }
 
 // Manifest describes the skills manifest fetched from the skills repo.

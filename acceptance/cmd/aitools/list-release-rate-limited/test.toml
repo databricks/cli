@@ -1,0 +1,31 @@
+# Mock server replaces api.github.com and raw.githubusercontent.com. No
+# DATABRICKS_SKILLS_REF, so list must look up the latest skills release.
+Env.DATABRICKS_SKILLS_API_URL = "$DATABRICKS_HOST"
+Env.DATABRICKS_SKILLS_BASE_URL = "$DATABRICKS_HOST"
+Env.DATABRICKS_FORCE_EMBEDDED_COMPAT = "true"
+
+Ignore = [
+    "home",
+]
+
+[[Server]]
+Pattern = "GET /repos/databricks/databricks-agent-skills/releases/latest"
+Response.StatusCode = 403
+Response.Body = '''{"message": "API rate limit exceeded"}'''
+
+[[Server]]
+Pattern = "GET /{ref}/manifest.json"
+Response.Body = '''
+{
+  "version": "2",
+  "updated_at": "2026-01-01T00:00:00Z",
+  "skills": {
+    "test-stable": {
+      "version": "1.0.0",
+      "description": "Stable test skill",
+      "files": ["SKILL.md"],
+      "repo_dir": "skills"
+    }
+  }
+}
+'''

@@ -1,0 +1,7 @@
+# Isolate HOME so parallel aitools tests don't race on a shared ~/.databricks.
+sethome home
+
+title "list falls back to the embedded skills version when the release lookup is rate limited\n"
+# The agent list is what editor integrations render; detection depends on the
+# host, so only the names are printed.
+trace $CLI aitools list --output json | jq '{release, skills: [.skills[].name], agents: [.agents[].name]}'

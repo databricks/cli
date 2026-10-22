@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -169,18 +170,28 @@ func ResolveEmbeddedAppKitVersion() (string, error) {
 
 // ResolveEmbeddedAgentSkillsVersion resolves the fallback for the current CLI
 // without fetching compatibility data. Build tasks resolve latest before
-// embedding; direct go builds use the compiled development fallback.
+// embedding. If "latest" remains, the newest pin below that range applies.
 func ResolveEmbeddedAgentSkillsVersion() (string, error) {
 	m, err := parseEmbeddedManifest()
 	if err != nil {
 		return "", fmt.Errorf("embedded manifest: %w", err)
 	}
-	entry, err := Resolve(m, build.GetInfo().Version)
+	return resolvePinnedAgentSkillsVersion(m, build.GetInfo().Version)
+}
+
+// resolvePinnedAgentSkillsVersion resolves the skills version as if ranges
+// tracking latest were absent from the manifest.
+func resolvePinnedAgentSkillsVersion(m Manifest, cliVersion string) (string, error) {
+	pinned := maps.Clone(m)
+	maps.DeleteFunc(pinned, func(_ string, entry Entry) bool {
+		return entry.AgentSkills == AgentSkillsLatest
+	})
+	if len(pinned) == 0 {
+		return "", errors.New("embedded manifest has no pinned skills version")
+	}
+	entry, err := Resolve(pinned, cliVersion)
 	if err != nil {
 		return "", fmt.Errorf("embedded manifest resolve: %w", err)
-	}
-	if entry.AgentSkills == AgentSkillsLatest {
-		return build.AgentSkillsFallbackVersion, nil
 	}
 	return entry.AgentSkills, nil
 }
