@@ -1013,6 +1013,14 @@
 </li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Subscription.as_dict">(Subscription method)</a>
 </li>
+        <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachment.as_dict">(SubscriptionAttachment method)</a>
+</li>
+        <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachmentDataAttachment.as_dict">(SubscriptionAttachmentDataAttachment method)</a>
+</li>
+        <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentWidget.as_dict">(SubscriptionAttachmentDataAttachmentWidget method)</a>
+</li>
+        <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachmentPageAttachment.as_dict">(SubscriptionAttachmentPageAttachment method)</a>
+</li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionSubscriber.as_dict">(SubscriptionSubscriber method)</a>
 </li>
         <li><a href="databricks.bundles.features.html#databricks.bundles.features.SumFunction.as_dict">(SumFunction method)</a>
@@ -2899,6 +2907,12 @@
 </li>
       <li><a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.ExternalLocation.file_event_queue">file_event_queue (ExternalLocation attribute)</a>
 </li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentFileFormat.FILE_FORMAT_CSV">FILE_FORMAT_CSV (SubscriptionAttachmentDataAttachmentFileFormat attribute)</a>
+</li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentFileFormat.FILE_FORMAT_EXCEL">FILE_FORMAT_EXCEL (SubscriptionAttachmentDataAttachmentFileFormat attribute)</a>
+</li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentFileFormat.FILE_FORMAT_TSV">FILE_FORMAT_TSV (SubscriptionAttachmentDataAttachmentFileFormat attribute)</a>
+</li>
       <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.Alert.file_path">file_path (Alert attribute)</a>
 
       <ul>
@@ -3545,6 +3559,14 @@
         <li><a href="databricks.bundles.features.html#databricks.bundles.features.StreamSource.from_dict">(StreamSource class method)</a>
 </li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Subscription.from_dict">(Subscription class method)</a>
+</li>
+        <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachment.from_dict">(SubscriptionAttachment class method)</a>
+</li>
+        <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachmentDataAttachment.from_dict">(SubscriptionAttachmentDataAttachment class method)</a>
+</li>
+        <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentWidget.from_dict">(SubscriptionAttachmentDataAttachmentWidget class method)</a>
+</li>
+        <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachmentPageAttachment.from_dict">(SubscriptionAttachmentPageAttachment class method)</a>
 </li>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionSubscriber.from_dict">(SubscriptionSubscriber class method)</a>
 </li>
@@ -5300,6 +5322,10 @@
       </ul></li>
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.PythonWheelTask.package_name">package_name (PythonWheelTask attribute)</a>
 </li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachmentPageAttachmentPageSelection.PAGE_SELECTION_ALL">PAGE_SELECTION_ALL (SubscriptionAttachmentPageAttachmentPageSelection attribute)</a>
+</li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachmentPageAttachmentPageSelection.PAGE_SELECTION_SUBSET">PAGE_SELECTION_SUBSET (SubscriptionAttachmentPageAttachmentPageSelection attribute)</a>
+</li>
       <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.ExternalModelProvider.PALM">PALM (ExternalModelProvider attribute)</a>
 </li>
       <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.PaLmConfig.palm_api_key">palm_api_key (PaLmConfig attribute)</a>
@@ -5516,10 +5542,10 @@
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.RunJobTask.pipeline_params">(RunJobTask attribute)</a>
 </li>
       </ul></li>
-      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Task.pipeline_task">pipeline_task (Task attribute)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.Task.pipeline_task">pipeline_task (Task attribute)</a>
+</li>
       <li><a href="databricks.bundles.vector_search_indexes.html#databricks.bundles.vector_search_indexes.DeltaSyncVectorIndexSpecRequest.pipeline_type">pipeline_type (DeltaSyncVectorIndexSpecRequest attribute)</a>
 </li>
       <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.PipelineCluster">PipelineCluster (class in databricks.bundles.pipelines)</a>
@@ -6298,8 +6324,6 @@
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SqlTaskFile.source">(SqlTaskFile attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.SchemaSpec.source_catalog">source_catalog (SchemaSpec attribute)</a>
 
       <ul>
@@ -6308,6 +6332,8 @@
         <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.TableSpec.source_catalog">(TableSpec attribute)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="databricks.bundles.apps.html#databricks.bundles.apps.App.source_code_path">source_code_path (App attribute)</a>
 
       <ul>
@@ -6543,6 +6569,18 @@
       <li><a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.AzureQueueStorage.subscription_id">subscription_id (AzureQueueStorage attribute)</a>
 </li>
       <li><a href="databricks.bundles.external_locations.html#databricks.bundles.external_locations.GcpPubsub.subscription_name">subscription_name (GcpPubsub attribute)</a>
+</li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachment">SubscriptionAttachment (class in databricks.bundles.jobs)</a>
+</li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachmentDataAttachment">SubscriptionAttachmentDataAttachment (class in databricks.bundles.jobs)</a>
+</li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentFileFormat">SubscriptionAttachmentDataAttachmentFileFormat (class in databricks.bundles.jobs)</a>
+</li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentWidget">SubscriptionAttachmentDataAttachmentWidget (class in databricks.bundles.jobs)</a>
+</li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachmentPageAttachment">SubscriptionAttachmentPageAttachment (class in databricks.bundles.jobs)</a>
+</li>
+      <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.SubscriptionAttachmentPageAttachmentPageSelection">SubscriptionAttachmentPageAttachmentPageSelection (class in databricks.bundles.jobs)</a>
 </li>
       <li><a href="databricks.bundles.alerts.html#databricks.bundles.alerts.AlertV2Notification.subscriptions">subscriptions (AlertV2Notification attribute)</a>
 

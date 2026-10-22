@@ -4853,6 +4853,164 @@ to subscribers.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachment">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SubscriptionAttachment</span></span><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachment" title="Link to this definition">¶</a></dt>
+<dd><p>The configuration for the files attached to the dashboard snapshot notification sent to
+subscribers. <cite>data_attachment</cite> describes the underlying data of dashboard widgets attached
+as data files, and <cite>page_attachment</cite> describes which dashboard pages are included in the
+attached PDF.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachment.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachment.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachment.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachment.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachmentDataAttachment">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SubscriptionAttachmentDataAttachment</span></span><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachmentDataAttachment" title="Link to this definition">¶</a></dt>
+<dd><p>The configuration for the tabular data files attached to the dashboard snapshot. <cite>widgets</cite>
+lists the widgets whose data is exported and <cite>file_format</cite> is the output format; each
+referenced widget’s data is exported as a separate file.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachmentDataAttachment.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachmentDataAttachment.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachmentDataAttachment.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachmentDataAttachment.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentFileFormat">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SubscriptionAttachmentDataAttachmentFileFormat</span></span><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentFileFormat" title="Link to this definition">¶</a></dt>
+<dd><p>The output format of an exported tabular data file. Must be set to a value other than
+<cite>FILE_FORMAT_UNSPECIFIED</cite>.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentFileFormat.FILE_FORMAT_CSV">
+<span class="sig-name descname"><span class="pre">FILE_FORMAT_CSV</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'FILE_FORMAT_CSV'</span></em><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentFileFormat.FILE_FORMAT_CSV" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentFileFormat.FILE_FORMAT_TSV">
+<span class="sig-name descname"><span class="pre">FILE_FORMAT_TSV</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'FILE_FORMAT_TSV'</span></em><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentFileFormat.FILE_FORMAT_TSV" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentFileFormat.FILE_FORMAT_EXCEL">
+<span class="sig-name descname"><span class="pre">FILE_FORMAT_EXCEL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'FILE_FORMAT_EXCEL'</span></em><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentFileFormat.FILE_FORMAT_EXCEL" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentWidget">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SubscriptionAttachmentDataAttachmentWidget</span></span><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentWidget" title="Link to this definition">¶</a></dt>
+<dd><p>Identifies a dashboard widget whose data to attach. <cite>page_id</cite> and <cite>widget_id</cite> are
+the URL identifiers from the dashboard’s serialized definition returned by the Get dashboard
+API (<cite>serialized_dashboard</cite>), and together they uniquely identify the widget.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentWidget.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentWidget.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentWidget.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachmentDataAttachmentWidget.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachmentPageAttachment">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SubscriptionAttachmentPageAttachment</span></span><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachmentPageAttachment" title="Link to this definition">¶</a></dt>
+<dd><p>The selection of dashboard pages included in the attached PDF. <cite>page_selection</cite> chooses
+between all pages, the first page only, or an explicit subset listed in <cite>page_ids</cite>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachmentPageAttachment.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachmentPageAttachment.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachmentPageAttachment.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachmentPageAttachment.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachmentPageAttachmentPageSelection">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SubscriptionAttachmentPageAttachmentPageSelection</span></span><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachmentPageAttachmentPageSelection" title="Link to this definition">¶</a></dt>
+<dd><p>Determines which dashboard pages are attached to the notification.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachmentPageAttachmentPageSelection.PAGE_SELECTION_ALL">
+<span class="sig-name descname"><span class="pre">PAGE_SELECTION_ALL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'PAGE_SELECTION_ALL'</span></em><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachmentPageAttachmentPageSelection.PAGE_SELECTION_ALL" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionAttachmentPageAttachmentPageSelection.PAGE_SELECTION_SUBSET">
+<span class="sig-name descname"><span class="pre">PAGE_SELECTION_SUBSET</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'PAGE_SELECTION_SUBSET'</span></em><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionAttachmentPageAttachmentPageSelection.PAGE_SELECTION_SUBSET" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionSubscriber">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SubscriptionSubscriber</span></span><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionSubscriber" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
