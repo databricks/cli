@@ -379,7 +379,8 @@ func (g *gen) emitContainer(indent, expr string, typ reflect.Type, t *tnode) {
 		fmt.Fprintf(&g.out, "%sfor i := range %s {\n%s\te := c.Elem(i)\n", indent, expr, indent)
 		g.emitElem(indent+"\t", expr+"[i]", typ.Elem(), elem)
 	} else {
-		fmt.Fprintf(&g.out, "%sfor k, x := range %s {\n%s\te := c.Child(k)\n", indent, expr, indent)
+		// The dynamic walk this replaces never matched an empty key against the wildcard.
+		fmt.Fprintf(&g.out, "%sfor k, x := range %s {\n%s\tif k == \"\" {\n%s\t\tcontinue\n%s\t}\n%s\te := c.Child(k)\n", indent, expr, indent, indent, indent, indent)
 		g.emitElem(indent+"\t", "x", typ.Elem(), elem)
 	}
 	fmt.Fprintf(&g.out, "%s}\n", indent)
