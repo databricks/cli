@@ -1,5 +1,0 @@
-
->>> musterr [CLI] auth login --host [DATABRICKS_URL] --use-device-code
-Error: --use-device-code is only supported for workspace hosts
-
->>> print_requests.py //oidc/v1/device/auth

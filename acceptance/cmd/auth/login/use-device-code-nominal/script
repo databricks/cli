@@ -1,0 +1,21 @@
+sethome "./home"
+export DATABRICKS_CLI_DEVICE_CODE=true
+
+title "Login with a host\n"
+printf "FTFA-QQKY\n" | trace $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code
+trace $CLI auth token --profile test | gron.py | grep access_token
+trace $CLI auth profiles
+
+title "Login again with the host from the saved profile\n"
+printf "FTFA-QQKY\n" | trace $CLI auth login --profile test --use-device-code
+trace $CLI auth token --profile test | gron.py | grep access_token
+trace print_requests.py --oneline //oidc/v1/device/auth //oidc/v1/token
+
+# The token gets the scopes requested at device authorization, so --scopes is
+# sent there and not with the token request.
+title "Login with custom scopes\n"
+printf "FTFA-QQKY\n" | trace $CLI auth login --host $DATABRICKS_HOST --profile scoped --use-device-code --scopes sql
+trace print_requests.py --oneline //oidc/v1/device/auth //oidc/v1/token
+
+# Track the .databrickscfg file that was created to surface changes.
+mv "./home/.databrickscfg" "./out.databrickscfg"

@@ -1,9 +1,0 @@
-sethome "./home"
-export DATABRICKS_CLI_DEVICE_CODE=true
-
-# An account-scoped discovery URL marks the host as a unified host.
-export DATABRICKS_DISCOVERY_URL="$DATABRICKS_HOST/oidc/accounts/spog-acct-123/.well-known/oauth-authorization-server"
-
-# Unified hosts are rejected before the device authorization request.
-trace musterr $CLI auth login --host $DATABRICKS_HOST --use-device-code
-trace print_requests.py //oidc/v1/device/auth

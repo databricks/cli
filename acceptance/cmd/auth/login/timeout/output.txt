@@ -1,3 +1,13 @@
 
 >>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --timeout 1s
 Error: authorize: context deadline exceeded
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --timeout 1s
+Using a browser on another device, visit:
+[DATABRICKS_URL]/device/verification
+
+And enter the code:
+WDJB-MJHT
+
+Once finished, enter the confirmation code provided in your browser.
+Confirmation code: Error: reading confirmation code: context deadline exceeded
