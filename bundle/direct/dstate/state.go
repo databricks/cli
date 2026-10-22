@@ -236,9 +236,6 @@ func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (b
 	bestEffort := db.mode == WritingFileWithHistory || db.mode == WritingFileWithHistoryEnforced
 	db.mu.Unlock()
 
-	ctx, cancel := context.WithTimeout(ctx, dms.OperationTimeout)
-	defer cancel()
-
 	// A recording failure fails the version even when the caller counted the deploy a success: the
 	// service does not then hold everything the WAL does. Finalize already drained and surfaced it;
 	// this reads the drained buffer's error so a destroy whose uploads failed keeps its record.

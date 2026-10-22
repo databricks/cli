@@ -5,18 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
-
-// bufferedOperations caps how far ahead of the service a deploy may get; DMS is what the next
-// plan reads.
-const bufferedOperations = 10
-
-// OperationTimeout caps a single DMS history request, including its retries.
-const OperationTimeout = time.Minute
 
 // BufferOptions controls whether recording continues after an error.
 type BufferOptions struct {
@@ -30,11 +22,8 @@ type OperationBuffer struct {
 	deploymentID string
 	versionNum   int
 
-	// The buffer. queue holds bundle state keys, and pending the newest update per key, so a
-	// second write for a resource replaces the first.
-	queue      chan string
+	wake       chan struct{}
 	done       chan struct{}
-	stopQueue  func()
 	cancel     context.CancelFunc
 	bestEffort bool
 
@@ -49,6 +38,10 @@ type OperationBuffer struct {
 
 	// mu guards the fields below.
 	mu sync.Mutex
+
+	// queue is unbounded and contains one key per pending update.
+	queue  []string
+	closed bool
 
 	// pending holds the newest update per resource key, absent once the writer takes it.
 	pending map[string]OperationUpdate
@@ -69,7 +62,7 @@ func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum i
 	b := &OperationBuffer{
 		deploymentID: deploymentID,
 		versionNum:   versionNum,
-		queue:        make(chan string, bufferedOperations),
+		wake:         make(chan struct{}, 1),
 		done:         make(chan struct{}),
 		cancel:       cancel,
 		bestEffort:   options.BestEffort,
@@ -77,7 +70,6 @@ func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum i
 		latestState:  make(map[string]OperationUpdate),
 		sequenceIDs:  make(map[string]int64),
 	}
-	b.stopQueue = sync.OnceFunc(func() { close(b.queue) })
 	go b.run(ctx)
 	return b
 }
@@ -107,9 +99,12 @@ func (b *OperationBuffer) RecordFailure(resourceKey, resourceID string, state js
 // that latest state. latestState and pending are updated under the one lock. Panics after Drain.
 func (b *OperationBuffer) record(resourceKey string, update OperationUpdate, keepExistingUpdateIfAny bool, cause error) {
 	b.mu.Lock()
+	defer b.mu.Unlock()
 	if b.bestEffort && b.err != nil {
-		b.mu.Unlock()
 		return
+	}
+	if b.closed {
+		panic("recording operation after drain")
 	}
 	if keepExistingUpdateIfAny {
 		if latest, recorded := b.latestState[resourceKey]; recorded {
@@ -123,16 +118,48 @@ func (b *OperationBuffer) record(resourceKey string, update OperationUpdate, kee
 		update = waiting.Merge(update)
 	}
 	b.pending[resourceKey] = update
-	b.mu.Unlock()
 
 	// when already queued: the writer reads the map when it gets to the key,
 	// so it picks up what was just stored.
 	//
 	// Only when the resource is not already queued, enqueue it.
 	if !queued {
+		b.queue = append(b.queue, resourceKey)
+		b.notify()
+	}
+}
+
+// notify wakes the writer without blocking producers.
+func (b *OperationBuffer) notify() {
+	select {
+	case b.wake <- struct{}{}:
+	default:
+	}
+}
+
+// next waits for a queued key, drain, or cancellation.
+func (b *OperationBuffer) next(ctx context.Context) (string, bool) {
+	for {
+		b.mu.Lock()
+		if len(b.queue) > 0 {
+			key := b.queue[0]
+			b.queue[0] = ""
+			b.queue = b.queue[1:]
+			if len(b.queue) == 0 {
+				b.queue = nil
+			}
+			b.mu.Unlock()
+			return key, true
+		}
+		closed := b.closed
+		b.mu.Unlock()
+		if closed {
+			return "", false
+		}
 		select {
-		case b.queue <- resourceKey:
-		case <-b.done:
+		case <-b.wake:
+		case <-ctx.Done():
+			return "", false
 		}
 	}
 }
@@ -151,9 +178,13 @@ func (b *OperationBuffer) run(ctx context.Context) {
 	defer close(b.done)
 	defer b.cancel()
 
-	for resourceKey := range b.queue {
+	for {
+		resourceKey, ok := b.next(ctx)
 		if err := ctx.Err(); err != nil {
 			b.setErr(err)
+			return
+		}
+		if !ok {
 			return
 		}
 		update, ok := b.take(resourceKey)
@@ -175,8 +206,6 @@ func (b *OperationBuffer) run(ctx context.Context) {
 
 // write sends one update, at the sequence id the resource is at.
 func (b *OperationBuffer) write(ctx context.Context, key string, update OperationUpdate) error {
-	ctx, cancel := context.WithTimeout(ctx, OperationTimeout)
-	defer cancel()
 	w := cmdctx.WorkspaceClient(ctx)
 	result, err := w.BundleDeployments.UpdateOperation(ctx, bundledeployments.UpdateOperationRequest{
 		Name:       OperationName(b.deploymentID, b.versionNum, key),
@@ -195,7 +224,10 @@ func (b *OperationBuffer) write(ctx context.Context, key string, update Operatio
 // Drain waits for buffered writes, canceling outstanding requests when ctx expires.
 // It returns the first recording error and is safe to call twice.
 func (b *OperationBuffer) Drain(ctx context.Context) error {
-	b.stopQueue()
+	b.mu.Lock()
+	b.closed = true
+	b.mu.Unlock()
+	b.notify()
 	select {
 	case <-b.done:
 		return b.Err()

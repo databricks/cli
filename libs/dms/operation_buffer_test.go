@@ -3,8 +3,8 @@ package dms
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
-	"sync"
 	"testing"
 	"testing/synctest"
 
@@ -21,7 +21,7 @@ import (
 // queued builds a buffer whose queue nothing drains, so a test drives record and take itself.
 func queued() *OperationBuffer {
 	return &OperationBuffer{
-		queue:       make(chan string, bufferedOperations),
+		wake:        make(chan struct{}, 1),
 		cancel:      func() {},
 		pending:     make(map[string]OperationUpdate),
 		latestState: make(map[string]OperationUpdate),
@@ -71,15 +71,10 @@ func TestBufferFailsOnOversizedState(t *testing.T) {
 }
 
 func TestDrainIsIdempotent(t *testing.T) {
-	// Nothing recorded, so no transport is needed: this is the second drain, which must not
-	// panic on an already closed queue.
-	s := queued()
-	s.done = make(chan struct{})
-	s.stopQueue = sync.OnceFunc(func() { close(s.queue) })
-	go s.run(t.Context())
-
-	require.NoError(t, s.Drain(t.Context()))
-	require.NoError(t, s.Drain(t.Context()))
+	// An idle writer must wake up when the queue is closed.
+	b := StartOperationBuffer(t.Context(), "dep-1", 1, BufferOptions{})
+	require.NoError(t, b.Drain(t.Context()))
+	require.NoError(t, b.Drain(t.Context()))
 }
 
 func TestRecordFailureKeepsTheStateTheLastWriteRecorded(t *testing.T) {
@@ -117,52 +112,37 @@ func TestRecordFailureUsesTheGivenStateWhenNoWriteRecorded(t *testing.T) {
 	assert.Equal(t, bundledeployments.OperationStatusOperationStatusFailed, update.Status)
 }
 
-func TestBestEffortBufferWaitsForQueueSpace(t *testing.T) {
+func TestBufferQueuesWithoutBackpressure(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		b := queued()
-		b.bestEffort = true
-		for range bufferedOperations {
-			b.queue <- "occupied"
+		const operationCount = 1000
+		for i := range operationCount {
+			key := fmt.Sprintf("resources.jobs.job_%d", i)
+			b.RecordOperation(t.Context(), key, false, "id-1", json.RawMessage(`{"state":{}}`))
 		}
-		done := make(chan struct{})
-		go func() {
-			b.RecordOperation(t.Context(), "resources.jobs.foo", false, "id-1", json.RawMessage(`{}`))
-			close(done)
-		}()
-		synctest.Wait()
-		select {
-		case <-done:
-			t.Fatal("recording should wait for queue space")
-		default:
-		}
-		<-b.queue
-		<-done
 		assert.NoError(t, b.Err())
-		assert.Len(t, b.queue, bufferedOperations)
-		_, ok := b.take("resources.jobs.foo")
-		assert.True(t, ok)
+		assert.Len(t, b.queue, operationCount)
+		assert.Len(t, b.pending, operationCount)
+		for i := range operationCount {
+			key, ok := b.next(t.Context())
+			require.True(t, ok)
+			assert.Equal(t, fmt.Sprintf("resources.jobs.job_%d", i), key)
+			_, ok = b.take(key)
+			require.True(t, ok)
+		}
+		assert.Empty(t, b.queue)
+		assert.Empty(t, b.pending)
 	})
 }
 
-func TestBestEffortBufferUnblocksWhenWriterStops(t *testing.T) {
+func TestBestEffortBufferStopsIdleWriterAfterError(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
-		b := queued()
-		b.bestEffort = true
-		b.done = make(chan struct{})
-		for range bufferedOperations {
-			b.queue <- "occupied"
-		}
-		done := make(chan struct{})
-		go func() {
-			b.RecordOperation(t.Context(), "resources.jobs.foo", false, "id-1", json.RawMessage(`{}`))
-			close(done)
-		}()
+		b := StartOperationBuffer(t.Context(), "dep-1", 1, BufferOptions{BestEffort: true})
 		synctest.Wait()
 		cause := errors.New("recording failed")
 		b.setErr(cause)
-		close(b.done)
-		<-done
-		assert.ErrorIs(t, b.Err(), cause)
+		<-b.done
+		assert.ErrorIs(t, b.Drain(t.Context()), cause)
 	})
 }
 

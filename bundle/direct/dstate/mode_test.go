@@ -48,8 +48,8 @@ func modeContext(t *testing.T, handler http.HandlerFunc) context.Context {
 	client, err := databricks.NewWorkspaceClient(&databricks.Config{
 		Host: "https://state.test", Token: "test-token", AuthType: "pat",
 		HTTPTransport: modeTransport{handler: handler},
-		// Let our request deadline expire before the SDK's inactivity timeout.
-		HTTPTimeoutSeconds: 120,
+		// Keep SDK inactivity timeouts outside the drain budgets exercised here.
+		HTTPTimeoutSeconds: 600,
 	})
 	require.NoError(t, err)
 	return cmdctx.SetWorkspaceClient(t.Context(), client)
@@ -319,42 +319,7 @@ func TestHistoryDrainTimeoutPreservesFileState(t *testing.T) {
 	}
 }
 
-func TestOperationTimeout(t *testing.T) {
-	for _, mode := range []dstate.Mode{dstate.WritingDMS, dstate.WritingFileWithHistory, dstate.WritingFileWithHistoryEnforced} {
-		t.Run(fmt.Sprint(mode), func(t *testing.T) {
-			synctest.Test(t, func(t *testing.T) {
-				finished := make(chan struct{})
-				ctx := modeContext(t, func(w http.ResponseWriter, r *http.Request) {
-					_, _ = io.Copy(io.Discard, r.Body)
-					<-r.Context().Done()
-					close(finished)
-				})
-				path := filepath.Join(t.TempDir(), "resources.json")
-				var db dstate.DeploymentState
-				require.NoError(t, db.Open(ctx, path, mode, false, dstate.OpenDmsArgs{}))
-				db.InitializeOperationBuffer(ctx, "dep-1", 1, 100)
-				start := time.Now()
-				require.NoError(t, db.SaveState(ctx, "resources.jobs.job", "id-1", struct{}{}, nil))
-				<-finished
-				synctest.Wait()
-				assert.Equal(t, time.Minute, time.Since(start))
-				_, err := db.Finalize(ctx)
-				if mode == dstate.WritingDMS {
-					require.ErrorIs(t, err, context.DeadlineExceeded)
-				} else {
-					require.NoError(t, err)
-					var reopened dstate.DeploymentState
-					require.NoError(t, reopened.Open(ctx, path, dstate.ReadingFile, false, dstate.OpenDmsArgs{}))
-					assert.Equal(t, "id-1", reopened.GetResourceID("resources.jobs.job"))
-					_, err = reopened.Finalize(ctx)
-					require.NoError(t, err)
-				}
-			})
-		})
-	}
-}
-
-func TestCompleteVersionTimeout(t *testing.T) {
+func TestCompleteVersionHonorsCallerDeadline(t *testing.T) {
 	for _, mode := range []dstate.Mode{dstate.WritingDMS, dstate.WritingFileWithHistory, dstate.WritingFileWithHistoryEnforced} {
 		t.Run(fmt.Sprint(mode), func(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
@@ -374,9 +339,11 @@ func TestCompleteVersionTimeout(t *testing.T) {
 				require.NoError(t, db.SaveState(ctx, "resources.jobs.job", "id-1", struct{}{}, nil))
 				_, err := db.Finalize(ctx)
 				require.NoError(t, err)
+				completionCtx, cancel := context.WithTimeout(ctx, 90*time.Second)
+				defer cancel()
 				start := time.Now()
-				completed, err := db.CompleteVersion(ctx, true)
-				assert.Equal(t, time.Minute, time.Since(start))
+				completed, err := db.CompleteVersion(completionCtx, true)
+				assert.Equal(t, 90*time.Second, time.Since(start))
 				assert.False(t, completed)
 				if mode == dstate.WritingDMS {
 					require.ErrorIs(t, err, context.DeadlineExceeded)
@@ -508,13 +475,17 @@ func TestRecoveryRejectsUnknownWALFeatures(t *testing.T) {
 	assert.FileExists(t, path+".wal")
 }
 
-func TestFullHistoryBufferUnblocksAfterOperationTimeout(t *testing.T) {
+func TestHistoryQueueOnlyTimesOutAtDrain(t *testing.T) {
 	for _, mode := range []dstate.Mode{dstate.WritingFileWithHistory, dstate.WritingFileWithHistoryEnforced} {
 		t.Run(fmt.Sprint(mode), func(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
+				started := make(chan struct{})
+				finished := make(chan struct{})
 				ctx := modeContext(t, func(w http.ResponseWriter, r *http.Request) {
 					_, _ = io.Copy(io.Discard, r.Body)
+					close(started)
 					<-r.Context().Done()
+					close(finished)
 				})
 				path := filepath.Join(t.TempDir(), "resources.json")
 				var db dstate.DeploymentState
@@ -526,12 +497,23 @@ func TestFullHistoryBufferUnblocksAfterOperationTimeout(t *testing.T) {
 					key := fmt.Sprintf("resources.jobs.job_%d", i)
 					require.NoError(t, db.SaveState(ctx, key, strconv.Itoa(i), struct{}{}, nil))
 				}
-				assert.Equal(t, time.Minute, time.Since(start))
+				assert.Zero(t, time.Since(start))
+				<-started
+				time.Sleep(time.Minute + time.Second)
+				select {
+				case <-finished:
+					t.Fatal("recording stopped before drain")
+				default:
+				}
+				drainStart := time.Now()
 				exported, err := db.Finalize(ctx)
 				require.NoError(t, err)
+				assert.Equal(t, 160*time.Second, time.Since(drainStart))
 				assert.Len(t, exported, operationCount)
 				assert.FileExists(t, path)
 				assert.NoFileExists(t, path+".wal")
+				<-finished
+				assert.Equal(t, 160*time.Second, time.Since(drainStart))
 			})
 		})
 	}
