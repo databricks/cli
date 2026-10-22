@@ -1,0 +1,5 @@
+# The unauthenticated GitHub API answers 403 when the per-IP rate limit is hit.
+[[Server]]
+Pattern = "GET /repos/databricks/databricks-agent-skills/releases/latest"
+Response.StatusCode = 403
+Response.Body = '{"message": "API rate limit exceeded"}'

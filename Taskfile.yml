@@ -648,6 +648,8 @@ tasks:
       - libs/aitools/**
       - experimental/aitools/**
       - acceptance/apps/**
+      # acceptance/cmd/aitools is not listed on purpose: a change there runs
+      # `test`, which also runs on Windows. The -run pattern below still runs it.
       - acceptance/experimental/aitools/**
       - "{{.EMBED_SOURCES}}"
     cmds:
@@ -662,7 +664,7 @@ tasks:
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./acceptance/... \
-          -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/(apps|experimental/aitools)"
+          -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/apps|TestAccept/cmd/aitools|TestAccept/experimental/aitools"
 
   test-exp-ssh:
     desc: Run experimental SSH unit and acceptance tests
