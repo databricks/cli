@@ -1,0 +1,34 @@
+bundle:
+  name: recreate-ref-both-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+# When a resource is recreated, the direct deploy engine cannot resolve a reference to its
+# output fields at plan time (a recreate does not preserve the id), so the reference stays the
+# literal "${...}" placeholder. A dependent that uses it then diffs its saved value against the
+# placeholder and plans a phantom change -- even when the referenced value is actually
+# unchanged. The dependent's action depends on the field: an immutable/id field -> recreate, a
+# mutable field -> update. This test covers the immutable case (a spurious RECREATE).
+#
+# pg_version is spec:immutable, so a bump recreates the project. project_id is unchanged, so the
+# project name (projects/{project_id}) is stable, and my_catalog.branch -- built from
+# ${my_project.name} -- resolves to the same value: the catalog does not actually change, yet
+# the direct engine plans and executes its recreate.
+#
+# This test runs the direct engine only. For context, the terraform engine (now being removed)
+# behaved the same here -- it also recreated the catalog, because it cannot cancel a replace
+# once the plan commits it to separate destroy/create graph nodes.
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-$UNIQUE_NAME
+      display_name: My project
+      pg_version: 16
+
+  postgres_catalogs:
+    my_catalog:
+      catalog_id: mycat
+      branch: ${resources.postgres_projects.my_project.name}/branches/production
+      postgres_database: appdb
+      create_database_if_missing: true
