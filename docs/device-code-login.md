@@ -6,8 +6,8 @@ approve the login in a browser on another device (for example your laptop or
 phone), and type the confirmation code it shows you back into the CLI.
 
 > [!WARNING]
-> Device code login is an experimental proof of concept. It is disabled by
-> default, may change without notice, and only supports workspace hosts.
+> Device code login is experimental. It is disabled by default, may change
+> without notice, and only supports workspace hosts.
 > Account hosts and unified (SPOG) hosts are not supported yet.
 
 ## Prerequisites

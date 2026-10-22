@@ -50,7 +50,7 @@ const (
 	// development against non-production environments.
 	discoveryHostEnvVar = "DATABRICKS_DISCOVERY_HOST"
 	// deviceCodeEnvVar enables the experimental device code login flow
-	// (--use-device-code) while it is a proof of concept.
+	// (--use-device-code) while it is experimental.
 	deviceCodeEnvVar = "DATABRICKS_CLI_DEVICE_CODE"
 )
 
@@ -171,7 +171,7 @@ a new profile is created.
 		"RFC 8707 resource indicator to scope the login to (repeatable). Requires --host.")
 	cmd.Flags().BoolVar(&useDeviceCode, "use-device-code", false,
 		"Log in with a device code, using a browser on another device (experimental)")
-	// Hidden while device code login is an experimental proof of concept.
+	// Hidden while device code login is experimental.
 	cmd.Flags().MarkHidden("use-device-code")
 
 	cmd.PreRunE = profileHostConflictCheck

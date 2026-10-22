@@ -53,7 +53,7 @@ sequenceDiagram
 # Device code login (experimental)
 
 `databricks auth login --use-device-code` logs in from a machine without a browser.
-It is a proof of concept: the flag is hidden and requires
+It is experimental: the flag is hidden and requires
 `DATABRICKS_CLI_DEVICE_CODE=true`. Only workspace hosts are supported. See
 [docs/device-code-login.md](../../docs/device-code-login.md) for the user guide.
 
