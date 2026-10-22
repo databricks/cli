@@ -187,6 +187,8 @@ var enumValuesMlRegisteredModelPermissionLevel = []string{"CAN_EDIT", "CAN_MANAG
 
 var enumValuesMlScalarDataType = []string{"BINARY", "BOOLEAN", "DATE", "DECIMAL", "DOUBLE", "FLOAT", "INTEGER", "LONG", "SHORT", "STRING", "TIMESTAMP"}
 
+var enumValuesMlSdpSourceState = []string{"ERROR", "PENDING", "RESOLVED"}
+
 var enumValuesPipelinesConnectorType = []string{"CDC", "QUERY_BASED"}
 
 var enumValuesPipelinesDayOfWeek = []string{"FRIDAY", "MONDAY", "SATURDAY", "SUNDAY", "THURSDAY", "TUESDAY", "WEDNESDAY"}
@@ -1501,6 +1503,9 @@ func enumMlDataSource(w *walker, n *node, v *ml.DataSource) {
 	if c := n.child("request_source"); c.exists() {
 		enumMlRequestSource(w, &c, v.RequestSource)
 	}
+	if c := n.child("sdp_source"); c.exists() {
+		enumMlSdpSource(w, &c, v.SdpSource)
+	}
 }
 
 func enumComputeInstancePoolAwsAttributes(w *walker, n *node, v *compute.InstancePoolAwsAttributes) {
@@ -2098,6 +2103,13 @@ func enumMlRequestSource(w *walker, n *node, v *ml.RequestSource) {
 	if c := n.child("flat_schema"); c.exists() {
 		enumMlFlatSchema(w, &c, v.FlatSchema)
 	}
+}
+
+func enumMlSdpSource(w *walker, n *node, v *ml.SdpSource) {
+	if v == nil {
+		v = &ml.SdpSource{}
+	}
+	w.enumField(n, "pipeline_state", string(v.PipelineState), enumValuesMlSdpSourceState)
 }
 
 func enumComputeDiskType(w *walker, n *node, v *compute.DiskType) {
