@@ -42,6 +42,16 @@ func isZeroScalar(src View) bool {
 	return k != KindNil && k != KindMap && k != KindSequence && src.isZero()
 }
 
+// isNil reports whether v is a nil pointer, map, slice or interface.
+func isNil(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Pointer, reflect.Map, reflect.Slice, reflect.Interface:
+		return v.IsNil()
+	default:
+		return false
+	}
+}
+
 // CheckMerge returns the error [StructVar.Merge] would return for merging src into dst.
 func CheckMerge(dst, src View) error {
 	ak, bk := dst.Kind(), src.Kind()
@@ -118,7 +128,9 @@ func (m *merger) merge(dst reflect.Value, dstView, src View, path *structpath.Pa
 				childView.v = child
 				var err error
 				locs, err = m.merge(child, childView, sc, cp)
-				return isZeroScalar(sc), err
+				// A zero scalar, or a null that left the field empty, was written
+				// explicitly and must stay set.
+				return isZeroScalar(sc) || sc.Kind() == KindNil && isNil(child), err
 			})
 			if err != nil {
 				return nil, err
