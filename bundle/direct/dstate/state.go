@@ -36,6 +36,7 @@ const (
 	initialBufferSize       = 64 * 1024
 	maxWalEntrySize         = 10 * 1024 * 1024
 	walSuffix               = ".wal"
+	historyDrainTimeout     = 5 * time.Second
 	historyOperationTimeout = 5 * time.Second
 )
 
@@ -94,8 +95,8 @@ type DeploymentState struct {
 	mu      sync.Mutex
 	walFile *os.File
 
-	// CompleteVersion runs after Finalize and still needs the mode.
-	// DMS state: errors fail deployment. File state with history: errors only warn.
+	// mode controls where resource state is read and written, whether DMS
+	// history is recorded, and whether DMS errors fail the deployment.
 	mode Mode
 
 	// Maps resource key to ID. Unlike Data.State, this is up to date during writes (deploys).
@@ -108,8 +109,6 @@ type DeploymentState struct {
 	// versionCompleted makes CompleteVersion a no-op after the first call, so a deferred safety-net
 	// completion after an explicit one does nothing.
 	versionCompleted bool
-
-	historyDrainTimeout time.Duration
 
 	// DeploymentID is the recorded deployment's id. Set at Open, or by the first deploy that creates
 	// the deployment, which Open cannot know about.
@@ -188,7 +187,6 @@ func (db *DeploymentState) InitializeOperationBuffer(ctx context.Context, deploy
 	if db.mode.isFileWithHistory() {
 		options.BestEffort = true
 		options.Capacity = operationCount
-		db.historyDrainTimeout = time.Duration(operationCount) * historyOperationTimeout
 	}
 	db.operationBuffer = dms.StartOperationBuffer(ctx, deploymentID, versionID, options)
 	db.DeploymentID = deploymentID
@@ -512,7 +510,6 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, mode M
 	}
 	db.operationBuffer = nil
 	db.versionCompleted = false
-	db.historyDrainTimeout = 0
 	db.DeploymentID = dmsDeployment.DeploymentID
 	db.VersionID = dmsDeployment.LastVersionID
 
@@ -647,7 +644,6 @@ func (db *DeploymentState) OpenWithData(path string, data Database) {
 	db.mode = ReadingFile
 	db.operationBuffer = nil
 	db.versionCompleted = false
-	db.historyDrainTimeout = 0
 	db.DeploymentID = ""
 	db.VersionID = 0
 	db.Data = data
@@ -824,7 +820,7 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 		drainCtx := ctx
 		cancel := func() {}
 		if db.mode.isFileWithHistory() {
-			drainCtx, cancel = context.WithTimeout(ctx, db.historyDrainTimeout)
+			drainCtx, cancel = context.WithTimeout(ctx, historyDrainTimeout)
 		}
 		drainErr := db.operationBuffer.Drain(drainCtx)
 		cancel()
