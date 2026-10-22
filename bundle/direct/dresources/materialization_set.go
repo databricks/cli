@@ -228,7 +228,7 @@ func (r *ResourceMaterializationSet) materializationSetOperationFailure(
 	}
 	return &apierr.APIError{
 		ErrorCode:  string(settled.Error.ErrorCode),
-		Message:    target + ": " + message,
+		Message:    target + " operation failed: " + message,
 		StatusCode: http.StatusOK,
 	}
 }

@@ -6,12 +6,12 @@
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-sawtooth-[UNIQUE_NAME]/default/files...
 Created features.sawfeat
-Error: cannot create resources.materialization_sets.set1: materialization set [UUID]: Feature 'danielb.fs2680.saw_[UNIQUE_NAME]' uses a sawtooth window, which requires an offline batch materialization, an online batch materialization and an online streaming materialization. Declare one materialize feature request for each. (200 BAD_REQUEST)
+Error: cannot create resources.materialization_sets.set1: materialization set [UUID] operation failed: Feature 'danielb.fs2680.saw_[UNIQUE_NAME]' uses a sawtooth window, which requires an offline batch materialization, an online batch materialization and an online streaming materialization. Declare one materialize feature request for each. (200 BAD_REQUEST)
 
 Endpoint: n/a
 HTTP Status: 200
 API error_code: BAD_REQUEST
-API message: materialization set [UUID]: Feature 'danielb.fs2680.saw_[UNIQUE_NAME]' uses a sawtooth window, which requires an offline batch materialization, an online batch materialization and an online streaming materialization. Declare one materialize feature request for each.
+API message: materialization set [UUID] operation failed: Feature 'danielb.fs2680.saw_[UNIQUE_NAME]' uses a sawtooth window, which requires an offline batch materialization, an online batch materialization and an online streaming materialization. Declare one materialize feature request for each.
 
 Files: 7 uploaded, 0 deleted
 
