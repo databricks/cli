@@ -149,3 +149,25 @@ resources:
 		"resources.jobs.mid.tasks[0].run_if",
 	}, paths)
 }
+
+func TestWalksSkipEmptyMapKeys(t *testing.T) {
+	// The dynamic walk these replace never matched an empty key against a wildcard.
+	b := loadBundle(t, `
+bundle:
+  name: test-bundle
+variables:
+  "":
+    type: bogus
+resources:
+  jobs:
+    "": {}
+`)
+	var paths []string
+	for _, d := range bundle.Apply(t.Context(), b, Enum()) {
+		paths = append(paths, d.Paths[0].String())
+	}
+	for _, d := range bundle.Apply(t.Context(), b, Required()) {
+		paths = append(paths, d.Paths[0].String())
+	}
+	assert.Empty(t, paths)
+}
