@@ -526,7 +526,7 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 
 	pluginCount := 0
 	if len(pluginItems) > 0 {
-		ref, _, err := installer.GetSkillsRef(ctx)
+		ref, _, err := installer.GetSkillsRefWithFallback(ctx)
 		if err != nil {
 			return outcomes, err
 		}

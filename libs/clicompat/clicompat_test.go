@@ -305,6 +305,7 @@ func TestResolveAgentSkillsVersion(t *testing.T) {
 	}{
 		{name: "pinned", manifest: `{"0.0.0":{"appkit":"0.84.0","skills":"0.2.30"}}`, want: "0.2.30"},
 		{name: "latest sentinel", manifest: `{"0.0.0":{"appkit":"0.84.0","skills":"latest"}}`, want: AgentSkillsLatest},
+		{name: "resolved at build time", manifest: `{"0.0.0":{"appkit":"0.84.0","skills":"0.2.32","skills_resolved_from_latest":true}}`, want: AgentSkillsLatest},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -332,13 +333,21 @@ func TestResolveEmbeddedAppKitVersion(t *testing.T) {
 }
 
 func TestResolveEmbeddedAgentSkillsVersion(t *testing.T) {
+	m, err := parseManifest(build.CLICompatManifestJSON)
+	require.NoError(t, err)
+	latestEntry, err := Resolve(m, "0.0.0-dev+test")
+	require.NoError(t, err)
+	latest := latestEntry.AgentSkills
+	if latest == AgentSkillsLatest {
+		latest = build.AgentSkillsFallbackVersion
+	}
 	for _, tc := range []struct {
 		version string
 		want    string
 	}{
 		{version: "1.0.0", want: "0.2.10"},
-		{version: "1.22.0", want: build.AgentSkillsFallbackVersion},
-		{version: "0.0.0-dev+test", want: build.AgentSkillsFallbackVersion},
+		{version: "1.22.0", want: latest},
+		{version: "0.0.0-dev+test", want: latest},
 	} {
 		t.Run(tc.version, func(t *testing.T) {
 			original := build.GetInfo().Version
@@ -371,10 +380,7 @@ func TestEmbeddedManifest_IsWellFormed(t *testing.T) {
 		return semver.Compare("v"+a, "v"+b)
 	})
 
-	// Pinning the newest range (e.g. after a breaking skills release) must
-	// update this assertion in the same change.
-	assert.Equal(t, AgentSkillsLatest, m[keys[len(keys)-1]].AgentSkills,
-		"the newest CLI range must track the latest skills release")
+	// Release builds resolve latest to a concrete pin before embedding it.
 	assert.True(t, semver.IsValid("v"+build.AgentSkillsFallbackVersion),
 		"compiled skills fallback must be a concrete version")
 

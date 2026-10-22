@@ -56,6 +56,10 @@ const (
 type Entry struct {
 	AppKit      string `json:"appkit"`
 	AgentSkills string `json:"skills"`
+
+	// Set by the build script when replacing latest with a concrete fallback.
+	// Preserve latest tracking without treating that fallback as an explicit pin.
+	AgentSkillsResolvedFromLatest bool `json:"skills_resolved_from_latest,omitempty"`
 }
 
 // Manifest is the compatibility manifest: a map of CLI version strings to entries.
@@ -164,8 +168,8 @@ func ResolveEmbeddedAppKitVersion() (string, error) {
 }
 
 // ResolveEmbeddedAgentSkillsVersion resolves the fallback for the current CLI
-// without fetching compatibility data. Ranges tracking latest use the tested
-// release compiled into the binary.
+// without fetching compatibility data. Build tasks resolve latest before
+// embedding; direct go builds use the compiled development fallback.
 func ResolveEmbeddedAgentSkillsVersion() (string, error) {
 	m, err := parseEmbeddedManifest()
 	if err != nil {
@@ -283,6 +287,9 @@ func ResolveAgentSkillsVersion(ctx context.Context) (string, error) {
 	entry, err := resolveEntry(ctx, build.GetInfo().Version)
 	if err != nil {
 		return "", err
+	}
+	if entry.AgentSkillsResolvedFromLatest {
+		return AgentSkillsLatest, nil
 	}
 	return entry.AgentSkills, nil
 }

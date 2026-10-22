@@ -3,6 +3,7 @@ version: 2
 before:
   hooks:
     - go mod download
+    - python3 .github/scripts/pin-cli-compat.py
 
 builds:
   - env:
@@ -17,6 +18,7 @@ builds:
     mod_timestamp: '{{ .CommitTimestamp }}'
     flags:
       - -trimpath
+      - -overlay=.databricks/cli-compat/overlay.json
     ldflags:
       - '-s -w'
       - -X github.com/databricks/cli/internal/build.buildProjectName={{ .ProjectName }}

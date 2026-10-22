@@ -454,13 +454,11 @@ func setupSkillsFallback(t *testing.T, latestErr error) (ManifestSource, string)
 	t.Helper()
 	setBuildVersion(t, "1.22.0")
 	t.Setenv("DATABRICKS_SKILLS_REF", "")
-	t.Setenv("DATABRICKS_FORCE_EMBEDDED_COMPAT", "false")
-	t.Setenv("DATABRICKS_CACHE_ENABLED", "true")
-	cacheDir := t.TempDir()
-	t.Setenv("DATABRICKS_CACHE_DIR", cacheDir)
-	require.NoError(t, os.WriteFile(filepath.Join(cacheDir, "compat-manifest.json"), build.CLICompatManifestJSON, 0o600))
+	withCachedCompat(t, skillsLatestSentinel)
 	stubLatestSkillsReleaseRef(t, "v9.9.9", latestErr)
-	fallbackRef := "v" + build.AgentSkillsFallbackVersion
+	fallbackVersion, err := clicompat.ResolveEmbeddedAgentSkillsVersion()
+	require.NoError(t, err)
+	fallbackRef := "v" + fallbackVersion
 	body, err := json.Marshal(testManifest())
 	require.NoError(t, err)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -1331,11 +1329,10 @@ func TestGetSkillsRefDefaultManifest(t *testing.T) {
 	var m clicompat.Manifest
 	require.NoError(t, json.Unmarshal(build.CLICompatManifestJSON, &m))
 
-	// The table only records which CLI versions track latest. Pins come from
-	// the embedded manifest so routine skills bumps need no test changes.
+	// Build overlays resolve latest to a concrete pin. Derive expectations from
+	// the embedded manifest so this also tests the generated release snapshot.
 	tests := []struct {
 		version string
-		latest  bool
 	}{
 		{version: "0.299.2"},
 		{version: "1.0.0"},
@@ -1343,14 +1340,15 @@ func TestGetSkillsRefDefaultManifest(t *testing.T) {
 		{version: "1.20.0"},
 		{version: "1.21.0"},
 		{version: "1.21.9"},
-		{version: "1.22.0", latest: true},
-		{version: "1.23.0", latest: true},
-		{version: "0.0.0-dev+test", latest: true},
+		{version: "1.22.0"},
+		{version: "1.23.0"},
+		{version: "0.0.0-dev+test"},
 	}
 	for _, tc := range tests {
 		entry, err := clicompat.Resolve(m, tc.version)
 		require.NoError(t, err)
 		pinnedRef := "v" + entry.AgentSkills
+		latest := entry.AgentSkills == skillsLatestSentinel || entry.AgentSkillsResolvedFromLatest
 
 		for _, offline := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%s/offline=%t", tc.version, offline), func(t *testing.T) {
@@ -1365,21 +1363,21 @@ func TestGetSkillsRefDefaultManifest(t *testing.T) {
 					latestErr = errors.New("network down")
 				}
 				switch {
-				case tc.latest && offline:
+				case latest && offline:
 					wantRef = ""
-				case tc.latest:
+				case latest:
 					wantRef = "v9.9.9"
 				}
 				stubLatestSkillsReleaseRef(t, "v9.9.9", latestErr)
 
 				ref, explicit, err := GetSkillsRef(t.Context())
-				if tc.latest && offline {
+				if latest && offline {
 					require.ErrorIs(t, err, latestErr)
 				} else {
 					require.NoError(t, err)
 				}
 				assert.Equal(t, wantRef, ref)
-				assert.Equal(t, !tc.latest, explicit)
+				assert.Equal(t, !latest, explicit)
 			})
 		}
 	}
@@ -1398,10 +1396,76 @@ func TestGetSkillsRefLatestReleaseLookupFails(t *testing.T) {
 	assert.False(t, explicit)
 }
 
+func TestGetSkillsRefWithFallback(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		version   string
+		envRef    string
+		latestErr error
+	}{
+		{name: "latest release available", version: skillsLatestSentinel},
+		{name: "rate limited", version: skillsLatestSentinel, latestErr: errors.New("HTTP 403 fetching latest skills release")},
+		{name: "network unavailable", version: skillsLatestSentinel, latestErr: errors.New("network down")},
+		{name: "compatibility pin", version: "0.1.5", latestErr: errors.New("must not fetch latest")},
+		{name: "environment override", version: skillsLatestSentinel, envRef: "main", latestErr: errors.New("must not fetch latest")},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			setBuildVersion(t, "1.22.0")
+			t.Setenv("DATABRICKS_SKILLS_REF", tc.envRef)
+			withCachedCompat(t, tc.version)
+			orig := latestSkillsReleaseRefFn
+			t.Cleanup(func() { latestSkillsReleaseRefFn = orig })
+			called := false
+			latestSkillsReleaseRefFn = func(context.Context) (string, error) {
+				called = true
+				return "v9.9.9", tc.latestErr
+			}
+
+			ref, explicit, err := GetSkillsRefWithFallback(cmdio.MockDiscard(t.Context()))
+			require.NoError(t, err)
+			switch {
+			case tc.envRef != "":
+				assert.Equal(t, tc.envRef, ref)
+				assert.True(t, explicit)
+				assert.False(t, called)
+			case tc.version != skillsLatestSentinel:
+				assert.Equal(t, "v"+tc.version, ref)
+				assert.True(t, explicit)
+				assert.False(t, called)
+			case tc.latestErr != nil:
+				embedded, err := clicompat.ResolveEmbeddedAgentSkillsVersion()
+				require.NoError(t, err)
+				assert.Equal(t, "v"+embedded, ref)
+				assert.False(t, explicit)
+				assert.True(t, called)
+			default:
+				assert.Equal(t, "v9.9.9", ref)
+				assert.False(t, explicit)
+				assert.True(t, called)
+			}
+		})
+	}
+}
+
+func TestGetSkillsRefBuildResolvedLatestIsNotExplicit(t *testing.T) {
+	setBuildVersion(t, "1.22.0")
+	t.Setenv("DATABRICKS_SKILLS_REF", "")
+	withCachedCompat(t, "0.2.32")
+	cachePath := filepath.Join(os.Getenv("DATABRICKS_CACHE_DIR"), "compat-manifest.json")
+	require.NoError(t, os.WriteFile(cachePath, []byte(`{"1.22.0":{"appkit":"0.84.0","skills":"0.2.32","skills_resolved_from_latest":true}}`), 0o600))
+	stubLatestSkillsReleaseRef(t, "v9.9.9", nil)
+	ref, explicit, err := GetSkillsRef(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, "v9.9.9", ref, "build-time resolution must preserve latest tracking")
+	assert.False(t, explicit, "build snapshots must not bypass automatic downgrade checks")
+}
+
 func TestFetchSkillsManifestWithFallback(t *testing.T) {
 	const missingRef = "v9.9.9"
 	setBuildVersion(t, "1.22.0")
-	fallbackRef := "v" + build.AgentSkillsFallbackVersion
+	fallbackVersion, err := clicompat.ResolveEmbeddedAgentSkillsVersion()
+	require.NoError(t, err)
+	fallbackRef := "v" + fallbackVersion
 
 	tests := []struct {
 		name          string

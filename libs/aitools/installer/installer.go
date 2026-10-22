@@ -105,6 +105,13 @@ func GetSkillsRef(ctx context.Context) (ref string, explicit bool, err error) {
 	return getSkillsRef(ctx, false)
 }
 
+// GetSkillsRefWithFallback resolves the skills ref, using the embedded version
+// if the latest-release lookup fails. Falling back does not mark the ref as an
+// explicit pin, so callers must still check for downgrades of installed skills.
+func GetSkillsRefWithFallback(ctx context.Context) (ref string, explicit bool, err error) {
+	return getSkillsRef(ctx, true)
+}
+
 func getSkillsRef(ctx context.Context, allowFallback bool) (ref string, explicit bool, err error) {
 	if ref := env.Get(ctx, "DATABRICKS_SKILLS_REF"); ref != "" {
 		return ref, true, nil
