@@ -1398,22 +1398,6 @@ func TestGetSkillsRefLatestReleaseLookupFails(t *testing.T) {
 	assert.False(t, explicit)
 }
 
-func TestFetchLatestSkillsReleaseRefUsesAPIURLOverride(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/repos/databricks/databricks-agent-skills/releases/latest" {
-			http.NotFound(w, r)
-			return
-		}
-		_, _ = w.Write([]byte(`{"tag_name": "v0.2.33"}`))
-	}))
-	t.Cleanup(srv.Close)
-	t.Setenv("DATABRICKS_SKILLS_API_URL", srv.URL+"/")
-
-	ref, err := fetchLatestSkillsReleaseRef(t.Context())
-	require.NoError(t, err)
-	assert.Equal(t, "v0.2.33", ref)
-}
-
 func TestFetchSkillsManifestWithFallback(t *testing.T) {
 	const missingRef = "v9.9.9"
 	setBuildVersion(t, "1.22.0")

@@ -1,17 +1,9 @@
-# Isolate HOME so parallel aitools tests don't race on a shared ~/.databricks.
-sethome home
-# Agent detection needs ~/.claude; prefer USERPROFILE on Windows.
-mkdir -p "${USERPROFILE:-$HOME}/.claude"
+setup_list_test
+use_compat_manifest
 
-# A fresh cached compat manifest replaces the remote one. Dev builds use its
-# highest entry.
-mkdir -p "$DATABRICKS_CACHE_DIR"
-cat > "$DATABRICKS_CACHE_DIR/compat-manifest.json" <<'JSON'
-{"1.0.0": {"appkit": "0.84.0", "skills": "latest"}}
-JSON
-
-# Agent detection depends on the binaries on PATH, so keep only the skills.
-trace errcode $CLI aitools list --output json | jq '{release, skills}'
+# Without an embedded fallback, a failed lookup fails the command. This is the
+# CLI 1.22.0 behavior that #7159 mitigates with a pinned compat entry.
+trace musterr $CLI aitools list --output json
 
 title "The lookup fails, so the manifest is never fetched\n"
 trace print_requests.py --get

@@ -17,10 +17,20 @@ Available raw skill directories (test-ref):
       "experimental": false,
       "installed": {}
     }
-  ]
+  ],
+  "summary": {
+    "global": {
+      "installed": 0,
+      "total": 1
+    },
+    "project": {
+      "installed": 0,
+      "total": 1
+    }
+  }
 }
 
-=== Only the manifest is fetched: no compat manifest, no latest-release lookup
+=== Only the skills manifest reaches the mock server: no latest-release lookup
 
 >>> print_requests.py --get
 {

@@ -1,0 +1,21 @@
+# setup_list_test isolates HOME, so parallel aitools tests don't race on a
+# shared ~/.databricks. Agent detection needs ~/.claude; prefer USERPROFILE on
+# Windows.
+setup_list_test() {
+    sethome home
+    mkdir -p "${USERPROFILE:-$HOME}/.claude"
+}
+
+# use_compat_manifest copies the test's compat-manifest.json into the CLI
+# cache. A fresh cache file replaces the remote compat manifest, and dev builds
+# use its highest entry.
+use_compat_manifest() {
+    mkdir -p "$DATABRICKS_CACHE_DIR"
+    cp compat-manifest.json "$DATABRICKS_CACHE_DIR/compat-manifest.json"
+}
+
+# list_fields keeps the fields of `aitools list --output json` that the tests
+# assert. Agent detection depends on the binaries on PATH, so agents are left out.
+list_fields() {
+    jq '{release, skills, summary}'
+}

@@ -140,17 +140,24 @@ func resolveLatestSkillsReleaseRef(ctx context.Context, allowFallback bool) (ref
 	return "", false, fmt.Errorf("resolve latest skills release: %w", err)
 }
 
-// getSkillsAPIURL returns the GitHub API base URL for the latest-release lookup.
-// DATABRICKS_SKILLS_API_URL overrides it for acceptance tests.
-func getSkillsAPIURL(ctx context.Context) string {
-	if base := env.Get(ctx, "DATABRICKS_SKILLS_API_URL"); base != "" {
+const (
+	defaultGitHubAPIURL = "https://api.github.com"
+
+	// gitHubAPIURLEnv overrides the GitHub API base URL, as in libs/versioncheck.
+	// Acceptance tests use it to point the latest-release lookup at the mock server.
+	gitHubAPIURLEnv = "DATABRICKS_CLI_GITHUB_API_URL"
+)
+
+// getGitHubAPIURL returns the GitHub API base URL for the latest-release lookup.
+func getGitHubAPIURL(ctx context.Context) string {
+	if base := env.Get(ctx, gitHubAPIURLEnv); base != "" {
 		return strings.TrimRight(base, "/")
 	}
-	return "https://api.github.com"
+	return defaultGitHubAPIURL
 }
 
 func fetchLatestSkillsReleaseRef(ctx context.Context) (string, error) {
-	url := fmt.Sprintf("%s/repos/%s/%s/releases/latest", getSkillsAPIURL(ctx), skillsRepoOwner, skillsRepoName)
+	url := fmt.Sprintf("%s/repos/%s/%s/releases/latest", getGitHubAPIURL(ctx), skillsRepoOwner, skillsRepoName)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
