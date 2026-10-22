@@ -69,14 +69,12 @@ func TestKeepRegistered(t *testing.T) {
 				initialRequests := len(requests)
 				failure = ""
 				mu.Unlock()
-				time.Sleep(59 * time.Second)
-				synctest.Wait()
+				synctest.Sleep(59 * time.Second)
 				mu.Lock()
 				assert.Len(t, requests, initialRequests)
 				assert.Equal(t, 1, tokenCalls)
 				mu.Unlock()
-				time.Sleep(time.Second)
-				synctest.Wait()
+				synctest.Sleep(time.Second)
 				mu.Lock()
 				refreshes := 1
 				switch initialFailure {
@@ -88,8 +86,7 @@ func TestKeepRegistered(t *testing.T) {
 
 				before := len(requests)
 				mu.Unlock()
-				time.Sleep(3 * fuse.RefreshInterval)
-				synctest.Wait()
+				synctest.Sleep(3 * fuse.RefreshInterval)
 				mu.Lock()
 				assert.Len(t, requests, before+3, "steady state must only refresh volumes")
 				for _, req := range requests[before:] {
@@ -99,8 +96,7 @@ func TestKeepRegistered(t *testing.T) {
 
 				token = "token-two"
 				mu.Unlock()
-				time.Sleep(fuse.RefreshInterval)
-				synctest.Wait()
+				synctest.Sleep(fuse.RefreshInterval)
 				mu.Lock()
 				require.Len(t, requests, before+2)
 				assert.Equal(t, token, requests[before].Body["apiToken"])
@@ -108,15 +104,13 @@ func TestKeepRegistered(t *testing.T) {
 
 				pid = registration.PID - 1
 				mu.Unlock()
-				time.Sleep(fuse.RefreshInterval)
-				synctest.Wait()
+				synctest.Sleep(fuse.RefreshInterval)
 				mu.Lock()
 				assert.Len(t, requests, before+4, "restore registration when a different ancestor is reported")
 				pid = registration.PID
 				probeErr = errors.New("filesystem metadata unavailable")
 				mu.Unlock()
-				time.Sleep(fuse.RefreshInterval)
-				synctest.Wait()
+				synctest.Sleep(fuse.RefreshInterval)
 				mu.Lock()
 				assert.Len(t, requests, before+6, "restore registration when the probe fails")
 				probeErr = nil
@@ -126,8 +120,7 @@ func TestKeepRegistered(t *testing.T) {
 				mu.Lock()
 				callsAtCancel := tokenCalls
 				mu.Unlock()
-				time.Sleep(2 * fuse.RefreshInterval)
-				synctest.Wait()
+				synctest.Sleep(2 * fuse.RefreshInterval)
 				mu.Lock()
 				assert.Equal(t, callsAtCancel, tokenCalls)
 				assert.Len(t, requests, before+6)
@@ -165,8 +158,7 @@ func TestKeepRegisteredRecoversVolumesRegistrationLoss(t *testing.T) {
 			// A UC-FUSE restart loses its mapping while WSFS still reports the server PID.
 			registered["1015"] = false
 			mu.Unlock()
-			time.Sleep(fuse.RefreshInterval)
-			synctest.Wait()
+			synctest.Sleep(fuse.RefreshInterval)
 			mu.Lock()
 			assert.True(t, registered["1015"], "restore volumes registration with an unchanged credential")
 			assert.Equal(t, 1, requests["1021"], "healthy WSFS must not invalidate its caches")
@@ -225,13 +217,11 @@ func TestKeepRegisteredBlockedPIDProbe(t *testing.T) {
 				synctest.Wait()
 				start := time.Now()
 				for tick := range 3 {
-					time.Sleep(time.Until(start.Add(time.Duration(tick+1) * fuse.RefreshInterval)))
-					synctest.Wait()
+					synctest.Sleep(time.Until(start.Add(time.Duration(tick+1) * fuse.RefreshInterval)))
 					mu.Lock()
 					assert.Equal(t, tick+1, requests["1015"], "wait for the probe before refreshing")
 					mu.Unlock()
-					time.Sleep(fuse.PIDProbeTimeout)
-					synctest.Wait()
+					synctest.Sleep(fuse.PIDProbeTimeout)
 					mu.Lock()
 					assert.Equal(t, tick+2, requests["1015"], "keep refreshing volumes while WSFS is blocked")
 					assert.Equal(t, tick+2, requests["1021"], "force WSFS registration after a probe timeout")
@@ -242,16 +232,14 @@ func TestKeepRegisteredBlockedPIDProbe(t *testing.T) {
 				if scenario == "recover" {
 					releaseProbe <- struct{}{}
 					synctest.Wait()
-					time.Sleep(2 * fuse.RefreshInterval)
-					synctest.Wait()
+					synctest.Sleep(2 * fuse.RefreshInterval)
 					mu.Lock()
 					assert.Equal(t, 6, requests["1015"])
 					assert.Equal(t, 4, requests["1021"], "stop forcing WSFS registration after probe recovery")
 					assert.Equal(t, 2, probeCalls, "resume probing after the outstanding read completes")
 					mu.Unlock()
 				} else {
-					time.Sleep(fuse.RefreshInterval - fuse.PIDProbeTimeout)
-					synctest.Wait()
+					synctest.Sleep(fuse.RefreshInterval - fuse.PIDProbeTimeout)
 				}
 
 				cancel()
@@ -265,8 +253,7 @@ func TestKeepRegisteredBlockedPIDProbe(t *testing.T) {
 				callsAtCancel := probeCalls
 				requestsAtCancel := requests["1015"]
 				mu.Unlock()
-				time.Sleep(2 * fuse.RefreshInterval)
-				synctest.Wait()
+				synctest.Sleep(2 * fuse.RefreshInterval)
 				mu.Lock()
 				assert.Equal(t, callsAtCancel, probeCalls)
 				assert.Equal(t, requestsAtCancel, requests["1015"])
