@@ -478,19 +478,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
-
-			// Warn when --select is passed alongside a plan that was either not
-			// pre-filtered, or was pre-filtered with different selectors. In both cases
-			// the current --select has no effect: the plan's resource set is fixed.
-			if len(b.Select) > 0 {
-				currentSorted := slices.Clone(b.Select)
-				slices.Sort(currentSorted)
-				planSorted := slices.Clone(plan.Selectors)
-				slices.Sort(planSorted)
-				if !plan.WasFiltered || !slices.Equal(currentSorted, planSorted) {
-					log.Warnf(ctx, "--select is ignored when --plan is used; re-run bundle plan --select to produce a pre-filtered plan")
-				}
-			}
 		}
 
 		// Reject an unknown --select before PreDeployChecks and the predeploy script

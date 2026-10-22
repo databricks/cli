@@ -186,17 +186,6 @@ func TestFilterToSelected_DeletionErrorsOnMultipleLiveDependents(t *testing.T) {
 	assert.ErrorContains(t, err, "jobs.consumer2")
 }
 
-// FilterToSelected sets WasFiltered and Selectors regardless of how many resources were
-// excluded, including when the selection covers all resources (NotSelected == 0).
-func TestFilterToSelected_SetsWasFiltered(t *testing.T) {
-	p := deployplan.NewPlanDirect()
-	p.Plan["resources.jobs.only"] = &deployplan.PlanEntry{}
-	require.NoError(t, p.FilterToSelected(t.Context(), []string{"jobs.only"}))
-	assert.True(t, p.WasFiltered)
-	assert.Equal(t, 0, p.NotSelected)
-	assert.Equal(t, []string{"jobs.only"}, p.Selectors)
-}
-
 // When a resource is pulled in by the reverse-edge BFS as a Delete dependent, its own
 // grants/permissions sub-nodes must also be included in the filtered plan.
 func TestFilterToSelected_DeletionIncludesTransitiveDependentSubNodes(t *testing.T) {

@@ -38,17 +38,6 @@ type Plan struct {
 	// (--plan); used only for summary reporting.
 	NotSelected int `json:"not_selected,omitempty"`
 
-	// WasFiltered is true when FilterToSelected was called on this plan, regardless
-	// of how many resources were excluded. Serialized so process.go can distinguish
-	// a plan that was pre-filtered at plan time (suppress the "--select ignored"
-	// warning) from one that was not (the flag has no effect and should warn).
-	WasFiltered bool `json:"was_filtered,omitempty"`
-
-	// Selectors holds the raw --select values used to produce this filtered plan.
-	// Serialized alongside WasFiltered so process.go can warn when --select at
-	// deploy time differs from the selectors baked into the plan file.
-	Selectors []string `json:"selectors,omitempty"`
-
 	mutex   sync.Mutex `json:"-"`
 	lockmap lockmap    `json:"-"`
 }
@@ -431,8 +420,6 @@ func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 	}
 
 	p.NotSelected = before - len(p.Plan)
-	p.WasFiltered = true
-	p.Selectors = slices.Clone(selected)
 	return nil
 }
 
