@@ -86,6 +86,10 @@ GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git rebase or
 
 **Direct deployment engine**: Bundles are deployed by the direct engine (`bundle/direct/`), which calls the APIs without Terraform. The Terraform engine was removed in v1.20.0: `bundle.engine: terraform` and `DATABRICKS_BUNDLE_ENGINE=terraform` are rejected, and existing Terraform state is migrated to the direct engine before the command runs.
 
+### Onboarding a bundle resource
+
+**RULE: Before adding a bundle resource type, read [the onboarding skill](.agents/skills/onboard-bundle-resource/SKILL.md).** It connects the API contract, Go registration, direct adapter, generated schema and Python support, bundle behaviors, and lifecycle tests. Start from the recent examples it identifies; older resources can carry API-specific workarounds that should not be copied into a new adapter.
+
 # Development Tips
 
 - Use `./task test-update` to regenerate acceptance test outputs after changes.
