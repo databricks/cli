@@ -1,9 +1,7 @@
 # setup_list_test isolates HOME, so parallel aitools tests don't race on a
-# shared ~/.databricks. Agent detection needs ~/.claude; prefer USERPROFILE on
-# Windows.
+# shared ~/.databricks.
 setup_list_test() {
     sethome home
-    mkdir -p "${USERPROFILE:-$HOME}/.claude"
 }
 
 # use_compat_manifest copies the test's compat-manifest.json into the CLI

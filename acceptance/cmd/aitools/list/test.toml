@@ -2,8 +2,9 @@
 # api.github.com (latest skills release lookup).
 Env.DATABRICKS_SKILLS_BASE_URL = "$DATABRICKS_HOST"
 Env.DATABRICKS_CLI_GITHUB_API_URL = "$DATABRICKS_HOST"
-# Read the compat manifest from the cache file that a test writes, even if the
+# Use the skills ref and the compat manifest that each test sets, even if the
 # shell sets other values.
+Env.DATABRICKS_SKILLS_REF = ""
 Env.DATABRICKS_FORCE_EMBEDDED_COMPAT = "false"
 Env.DATABRICKS_CACHE_ENABLED = "true"
 RecordRequests = true

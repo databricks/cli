@@ -663,7 +663,7 @@ tasks:
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./acceptance/... \
-          -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/(apps|cmd/aitools|experimental/aitools)"
+          -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/apps|TestAccept/cmd/aitools|TestAccept/experimental/aitools"
 
   test-exp-ssh:
     desc: Run experimental SSH unit and acceptance tests

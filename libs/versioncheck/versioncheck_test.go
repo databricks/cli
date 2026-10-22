@@ -131,3 +131,11 @@ func TestCheck(t *testing.T) {
 		assert.True(t, result.CheckFailed)
 	})
 }
+
+func TestGitHubAPIURL(t *testing.T) {
+	t.Setenv(gitHubAPIURLEnv, "")
+	assert.Equal(t, "https://api.github.com", GitHubAPIURL(t.Context()))
+
+	t.Setenv(gitHubAPIURLEnv, "http://mirror.test")
+	assert.Equal(t, "http://mirror.test", GitHubAPIURL(t.Context()))
+}

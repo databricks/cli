@@ -26,6 +26,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/versioncheck"
 	"golang.org/x/mod/semver"
 	"golang.org/x/sync/errgroup"
 )
@@ -140,24 +141,8 @@ func resolveLatestSkillsReleaseRef(ctx context.Context, allowFallback bool) (ref
 	return "", false, fmt.Errorf("resolve latest skills release: %w", err)
 }
 
-const (
-	defaultGitHubAPIURL = "https://api.github.com"
-
-	// gitHubAPIURLEnv overrides the GitHub API base URL, as in libs/versioncheck.
-	// Acceptance tests use it to point the latest-release lookup at the mock server.
-	gitHubAPIURLEnv = "DATABRICKS_CLI_GITHUB_API_URL"
-)
-
-// getGitHubAPIURL returns the GitHub API base URL for the latest-release lookup.
-func getGitHubAPIURL(ctx context.Context) string {
-	if base := env.Get(ctx, gitHubAPIURLEnv); base != "" {
-		return strings.TrimRight(base, "/")
-	}
-	return defaultGitHubAPIURL
-}
-
 func fetchLatestSkillsReleaseRef(ctx context.Context) (string, error) {
-	url := fmt.Sprintf("%s/repos/%s/%s/releases/latest", getGitHubAPIURL(ctx), skillsRepoOwner, skillsRepoName)
+	url := fmt.Sprintf("%s/repos/%s/%s/releases/latest", versioncheck.GitHubAPIURL(ctx), skillsRepoOwner, skillsRepoName)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
