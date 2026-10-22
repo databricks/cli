@@ -94,7 +94,8 @@ type DeploymentState struct {
 	mu      sync.Mutex
 	walFile *os.File
 
-	// mode survives Finalize so version completion retains its error policy.
+	// CompleteVersion runs after Finalize and still needs the mode.
+	// DMS state: errors fail deployment. File state with history: errors only warn.
 	mode Mode
 
 	// Maps resource key to ID. Unlike Data.State, this is up to date during writes (deploys).

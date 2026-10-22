@@ -6,11 +6,29 @@ import "fmt"
 type Mode int
 
 const (
+	// ReadingFile reads resources.json and optionally recovers a leftover WAL.
+	// State writes are disabled.
 	ReadingFile Mode = iota
+
+	// WritingFile records state changes in WAL.
+	// Finalize merges them into resources.json. DMS is unused.
 	WritingFile
+
+	// ReadingDMS reads resource state from DMS.
+	// State writes are disabled.
 	ReadingDMS
+
+	// WritingDMS records resource state in DMS without creating a WAL.
+	// DMS errors fail the deployment.
 	WritingDMS
+
+	// WritingFileWithHistory writes state through WAL to resources.json and records DMS history.
+	// DMS errors and drain timeouts let the deployment continue.
 	WritingFileWithHistory
+
+	// WritingFileWithHistoryEnforced writes state through WAL to resources.json and records DMS history.
+	// DMS errors and drain timeouts let the deployment continue.
+	// Persists dms_shadow to reject clients that cannot honor history recording.
 	WritingFileWithHistoryEnforced
 )
 
