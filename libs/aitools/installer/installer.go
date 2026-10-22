@@ -140,8 +140,17 @@ func resolveLatestSkillsReleaseRef(ctx context.Context, allowFallback bool) (ref
 	return "", false, fmt.Errorf("resolve latest skills release: %w", err)
 }
 
+// getSkillsAPIURL returns the GitHub API base URL for the latest-release lookup.
+// DATABRICKS_SKILLS_API_URL overrides it for acceptance tests.
+func getSkillsAPIURL(ctx context.Context) string {
+	if base := env.Get(ctx, "DATABRICKS_SKILLS_API_URL"); base != "" {
+		return strings.TrimRight(base, "/")
+	}
+	return "https://api.github.com"
+}
+
 func fetchLatestSkillsReleaseRef(ctx context.Context) (string, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", skillsRepoOwner, skillsRepoName)
+	url := fmt.Sprintf("%s/repos/%s/%s/releases/latest", getSkillsAPIURL(ctx), skillsRepoOwner, skillsRepoName)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)

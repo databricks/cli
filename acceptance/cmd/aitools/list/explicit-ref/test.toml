@@ -1,0 +1,2 @@
+# DATABRICKS_SKILLS_REF skips the compat manifest and the latest-release lookup.
+Env.DATABRICKS_SKILLS_REF = "test-ref"

@@ -1,0 +1,25 @@
+
+>>> [CLI] aitools list --output json
+{
+  "release": "0.2.33",
+  "skills": [
+    {
+      "name": "test-skill",
+      "latest_version": "1.0.33",
+      "experimental": false,
+      "installed": {}
+    }
+  ]
+}
+
+=== The latest-release lookup picks the manifest version
+
+>>> print_requests.py --get
+{
+  "method": "GET",
+  "path": "/repos/databricks/databricks-agent-skills/releases/latest"
+}
+{
+  "method": "GET",
+  "path": "/v0.2.33/manifest.json"
+}

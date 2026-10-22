@@ -1,0 +1,13 @@
+
+>>> errcode [CLI] aitools list --output json
+Error: resolve latest skills release: HTTP 403 fetching latest skills release
+
+Exit code: 1
+
+=== The lookup fails, so the manifest is never fetched
+
+>>> print_requests.py --get
+{
+  "method": "GET",
+  "path": "/repos/databricks/databricks-agent-skills/releases/latest"
+}

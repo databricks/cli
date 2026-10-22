@@ -1,0 +1,21 @@
+
+>>> [CLI] aitools list --output json
+{
+  "release": "0.2.32",
+  "skills": [
+    {
+      "name": "test-skill",
+      "latest_version": "1.0.32",
+      "experimental": false,
+      "installed": {}
+    }
+  ]
+}
+
+=== A pinned version skips the latest-release lookup
+
+>>> print_requests.py --get
+{
+  "method": "GET",
+  "path": "/v0.2.32/manifest.json"
+}

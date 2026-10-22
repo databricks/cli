@@ -1,0 +1,11 @@
+# Isolate HOME so parallel aitools tests don't race on a shared ~/.databricks.
+sethome home
+# Agent detection needs ~/.claude; prefer USERPROFILE on Windows.
+mkdir -p "${USERPROFILE:-$HOME}/.claude"
+
+trace $CLI aitools list
+# Agent detection depends on the binaries on PATH, so keep only the skills.
+trace $CLI aitools list --output json | jq '{release, skills}'
+
+title "Only the manifest is fetched: no compat manifest, no latest-release lookup\n"
+trace print_requests.py --get

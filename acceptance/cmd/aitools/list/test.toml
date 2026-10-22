@@ -1,0 +1,60 @@
+# The mock server replaces raw.githubusercontent.com (skills manifest) and
+# api.github.com (latest skills release lookup).
+Env.DATABRICKS_SKILLS_BASE_URL = "$DATABRICKS_HOST"
+Env.DATABRICKS_SKILLS_API_URL = "$DATABRICKS_HOST"
+RecordRequests = true
+
+Ignore = [
+    "home",
+]
+
+[[Server]]
+Pattern = "GET /test-ref/manifest.json"
+Response.Body = '''
+{
+  "version": "2",
+  "updated_at": "2026-01-01T00:00:00Z",
+  "skills": {
+    "test-skill": {
+      "version": "1.0.0",
+      "description": "Test skill",
+      "files": ["SKILL.md"],
+      "repo_dir": "skills"
+    }
+  }
+}
+'''
+
+[[Server]]
+Pattern = "GET /v0.2.32/manifest.json"
+Response.Body = '''
+{
+  "version": "2",
+  "updated_at": "2026-01-01T00:00:00Z",
+  "skills": {
+    "test-skill": {
+      "version": "1.0.32",
+      "description": "Test skill",
+      "files": ["SKILL.md"],
+      "repo_dir": "skills"
+    }
+  }
+}
+'''
+
+[[Server]]
+Pattern = "GET /v0.2.33/manifest.json"
+Response.Body = '''
+{
+  "version": "2",
+  "updated_at": "2026-01-01T00:00:00Z",
+  "skills": {
+    "test-skill": {
+      "version": "1.0.33",
+      "description": "Test skill",
+      "files": ["SKILL.md"],
+      "repo_dir": "skills"
+    }
+  }
+}
+'''
