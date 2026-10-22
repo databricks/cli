@@ -221,6 +221,10 @@ func (db *DeploymentState) RecordingError() error {
 // one does nothing. Finalize has already drained the buffered operations. It reads only fields that
 // survive Finalize's reset and asserts nothing, so it is safe to call after the state is closed.
 func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (bool, error) {
+	if !db.RecordsHistory() {
+		return false, nil
+	}
+
 	db.mu.Lock()
 	buf := db.operationBuffer
 	if buf == nil || db.versionCompleted {
