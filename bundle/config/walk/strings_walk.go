@@ -4645,6 +4645,16 @@ func stringsResourcesSqlWarehouse(c *stringsWalk, n *Node, v *resources.SqlWareh
 			v.CreateWarehouseRequest.CreatorName = (r)
 		}
 	}
+	if c.mode == EmptyFields && v.CreateWarehouseRequest.CustomerVersionLabel == "" && Forced(v.CreateWarehouseRequest.ForceSendFields, "CustomerVersionLabel") {
+		ch := n.Child("customer_version_label")
+		c.fn(&ch, "")
+	}
+	if s := string(v.CreateWarehouseRequest.CustomerVersionLabel); c.match(s) {
+		ch := n.Child("customer_version_label")
+		if r, ok := c.fn(&ch, s); ok {
+			v.CreateWarehouseRequest.CustomerVersionLabel = (r)
+		}
+	}
 	if c.mode == EmptyFields && v.CreateWarehouseRequest.InstanceProfileArn == "" && Forced(v.CreateWarehouseRequest.ForceSendFields, "InstanceProfileArn") {
 		ch := n.Child("instance_profile_arn")
 		c.fn(&ch, "")
@@ -7818,6 +7828,12 @@ func stringsMlDataSource(c *stringsWalk, n *Node, v *ml.DataSource) {
 		if x := v.RequestSource; x != nil {
 			ch := n.Child("request_source")
 			stringsMlRequestSource(c, &ch, x)
+		}
+	}
+	if !n.IsRef("sdp_source") {
+		if x := v.SdpSource; x != nil {
+			ch := n.Child("sdp_source")
+			stringsMlSdpSource(c, &ch, x)
 		}
 	}
 	if !n.IsRef("stream_source") {
@@ -12859,6 +12875,85 @@ func stringsMlRequestSource(c *stringsWalk, n *Node, v *ml.RequestSource) {
 		if x := v.FlatSchema; x != nil {
 			ch := n.Child("flat_schema")
 			stringsMlFlatSchema(c, &ch, x)
+		}
+	}
+}
+
+func stringsMlSdpSource(c *stringsWalk, n *Node, v *ml.SdpSource) {
+	if n.isRef() {
+		return
+	}
+	if c.mode == EmptyFields && v.DataframeSchema == "" && Forced(v.ForceSendFields, "DataframeSchema") {
+		ch := n.Child("dataframe_schema")
+		c.fn(&ch, "")
+	}
+	if s := string(v.DataframeSchema); c.match(s) {
+		ch := n.Child("dataframe_schema")
+		if r, ok := c.fn(&ch, s); ok {
+			v.DataframeSchema = (r)
+		}
+	}
+	if c.mode == EmptyFields && v.FilterCondition == "" && Forced(v.ForceSendFields, "FilterCondition") {
+		ch := n.Child("filter_condition")
+		c.fn(&ch, "")
+	}
+	if s := string(v.FilterCondition); c.match(s) {
+		ch := n.Child("filter_condition")
+		if r, ok := c.fn(&ch, s); ok {
+			v.FilterCondition = (r)
+		}
+	}
+	if !n.IsRef("input_tables") {
+		if len(v.InputTables) > 0 {
+			cn := n.Child("input_tables")
+			for i := range v.InputTables {
+				if s := string(v.InputTables[i]); c.match(s) {
+					ch := cn.Elem(i)
+					if r, ok := c.fn(&ch, s); ok {
+						v.InputTables[i] = (r)
+					}
+				}
+			}
+		}
+	}
+	if c.mode == EmptyFields && v.OutputTable == "" && Forced(v.ForceSendFields, "OutputTable") {
+		ch := n.Child("output_table")
+		c.fn(&ch, "")
+	}
+	if s := string(v.OutputTable); c.match(s) {
+		ch := n.Child("output_table")
+		if r, ok := c.fn(&ch, s); ok {
+			v.OutputTable = (r)
+		}
+	}
+	if c.mode == EmptyFields && v.PipelineId == "" && Forced(v.ForceSendFields, "PipelineId") {
+		ch := n.Child("pipeline_id")
+		c.fn(&ch, "")
+	}
+	if s := string(v.PipelineId); c.match(s) {
+		ch := n.Child("pipeline_id")
+		if r, ok := c.fn(&ch, s); ok {
+			v.PipelineId = (r)
+		}
+	}
+	if c.mode == EmptyFields && v.PipelineState == "" && Forced(v.ForceSendFields, "PipelineState") {
+		ch := n.Child("pipeline_state")
+		c.fn(&ch, "")
+	}
+	if s := string(v.PipelineState); c.match(s) {
+		ch := n.Child("pipeline_state")
+		if r, ok := c.fn(&ch, s); ok {
+			v.PipelineState = ml.SdpSourceState(r)
+		}
+	}
+	if c.mode == EmptyFields && v.TransformationSql == "" && Forced(v.ForceSendFields, "TransformationSql") {
+		ch := n.Child("transformation_sql")
+		c.fn(&ch, "")
+	}
+	if s := string(v.TransformationSql); c.match(s) {
+		ch := n.Child("transformation_sql")
+		if r, ok := c.fn(&ch, s); ok {
+			v.TransformationSql = (r)
 		}
 	}
 }
