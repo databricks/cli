@@ -128,8 +128,7 @@ type latestRelease struct {
 }
 
 // GitHubAPIURL returns the GitHub API base URL. DATABRICKS_CLI_GITHUB_API_URL
-// overrides it for both the CLI release lookup here and the skills release
-// lookup in libs/aitools/installer.
+// overrides it.
 func GitHubAPIURL(ctx context.Context) string {
 	if base := env.Get(ctx, gitHubAPIURLEnv); base != "" {
 		return strings.TrimRight(base, "/")

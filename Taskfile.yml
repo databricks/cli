@@ -648,6 +648,8 @@ tasks:
       - libs/aitools/**
       - experimental/aitools/**
       - acceptance/apps/**
+      # acceptance/cmd/aitools is not listed on purpose: a change there runs
+      # `test`, which also runs on Windows. The -run pattern below still runs it.
       - acceptance/experimental/aitools/**
       - "{{.EMBED_SOURCES}}"
     cmds:
