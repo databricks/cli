@@ -1,6 +1,6 @@
 ---
 name: onboard-bundle-resource
-description: Add a Databricks resource type to Declarative Automation Bundles, including its direct adapter, schema, Python support, bundle behavior, and lifecycle tests. Use for onboarding or completing support for a resources section; generating workspace API commands alone is a separate workflow.
+description: Add or extend a Databricks bundle resource, or audit resource support against SDK changes. Covers direct adapters, schema, Python support, bundle behavior, and lifecycle tests; generating workspace API commands alone is a separate workflow.
 ---
 
 # Onboard a bundle resource
@@ -8,6 +8,8 @@ description: Add a Databricks resource type to Declarative Automation Bundles, i
 Work from the repo root. Read [the adapter contract](../../../bundle/direct/dresources/README.md) before implementing a resource, and follow [generated-file ownership](../../rules/auto-generated-files.md) and [testing rules](../../rules/testing.md).
 
 Use `feature.go` for a small recent resource and `model_service.go` for an AIP resource with separate create identity, a nested body, and UC grants. Both have config wrappers and direct adapters. Read [examples and review lessons](references/precedents.md) when choosing a pattern or investigating a special API contract. The target API determines which parts of an example apply.
+
+For an existing resource or an SDK coverage audit, start with [API evolution and generation](references/evolution-and-generation.md). It also consolidates the earlier onboarding efforts and distinguishes implemented generators from pending registry/scaffolding work. An audit produces a scoped gap report; it does not automatically onboard every SDK service.
 
 ## Establish the contract
 
@@ -19,6 +21,8 @@ Inspect the SDK version in `go.mod`, its service models/methods, and the corresp
 - Update support and accepted mask paths; asynchronous completion; missing-resource deletion; permissions/grants; execution identity and presets.
 
 Use API docs and upstream proto annotations to resolve ambiguity. If `~/universe` is available, start with `deco/api/tech-docs/api-resources.md`, locate the service proto, and inspect its resource, field-behavior, method and HTTP annotations. The rules under `deco/api/health/linter` explain Databricks-specific AIP requirements. Upstream can be ahead of the pinned SDK/spec: do not expose unreleased fields merely because they exist there. Without that checkout, use the pinned spec, SDK, and published API docs.
+
+Use [probe-resource-api](../probe-resource-api/SKILL.md) during new-resource onboarding and whenever API behavior changes or is uncertain. Establish applicable create/read/update/clear/delete and failure semantics on a live test workspace before modeling them in the fake; reuse existing live evidence for unchanged behavior and probe the gaps. Record conclusions and unavailable coverage. A final cloud lifecycle test validates the assembled adapter; direct API probes establish the behavior it must implement.
 
 If SDK/spec support is missing, identify that prerequisite and keep its bump separate from resource onboarding; use the repo's `bump-sdk` skill when needed. `.codegen/cli.json` and SDK models are generated inputs: correct upstream annotations and regenerate through their owning workflow. A pending upstream fix may need a narrowly documented local rule.
 
@@ -35,6 +39,8 @@ If SDK/spec support is missing, identify that prerequisite and keep its bump sep
 | `libs/testserver/` | Add stateful service handlers, routes in `handlers.go`, and storage in `FakeWorkspace` as needed. |
 
 Define value-receiver `MarshalJSON` and pointer-receiver `UnmarshalJSON` on the outer config wrapper using SDK `marshal`. An embedded SDK marshaler can otherwise discard wrapper fields. Handwritten config structs with optional scalar fields need their own `ForceSendFields` and marshal methods. `TestResourceTypesZeroValueFieldsSerialize` guards serialization and ForceSendFields routing; request or round-trip assertions must also verify that explicit zeros reach the payload.
+
+When converting between different SDK structs, filter copied force-send names with `utils.FilterFields[DestinationType]` from `libs/utils` so names absent from the destination cannot reach its marshaler. Keep each list on the struct owning those fields; filtering is not a replacement for explicitly sending the zeros needed to clear fields.
 
 SDK request fields tagged `json:"-"` are invisible to the bundle schema. If create identity lives outside the body, use a bundle-local config with JSON-visible identity plus mutable body fields, as `ModelServiceConfig` does. Keep lifecycle, permissions, grants, and other wrapper-only fields out of `PrepareState` unless they belong to the resource's API state.
 
@@ -61,11 +67,13 @@ Decide each item explicitly; do not add every resource to an unsupported list by
 | --- | --- |
 | `run_as` | `bundle/config/mutator/resourcemutator/run_as.go` and its tests. Propagate supported execution identity; reject incompatible execution behavior with an actionable diagnostic. Passive resources can coexist with a different run identity without a new rejection. Update coverage lists to reflect the decision. |
 | Presets/development mode | `apply_presets.go` and the exhaustive fixture in `apply_target_mode_test.go` in the same directory. Decide prefix, tags and other applicable presets; keep hierarchy/name formats valid. Cover changed behavior in acceptance tests. |
+| Resource normalization | `resource_mutator.go` in the same directory owns resource-specific initialization, defaults, merge keys and fixups. Add behavior only when the resource needs it; verify target overrides and normalization through acceptance tests. |
 | UC dependencies | `capture_uc_dependencies.go` in the same directory. Capture parent catalog/schema dependencies, including APIs whose parent is a resource-name string. |
 | Permissions/UC grants | Resource wrapper, `apply_bundle_permissions.go` and its coverage tests, direct `permissions.go`/`grants.go`, and `all.go`. Use shared sub-resource machinery. Verify a public API supports the securable type. Shared grants pass the parent's `.id` as UC `FullName`; check that contract when choosing the deployment ID. |
 | Bundle launch stage | `bundle/internal/annotation/preview.go` owns CLI launch-stage overrides. Check whether a bundle-local config retains its upstream stage and whether the bundle release stage differs. Add an override when needed and verify the generated schema, particularly for handwritten singleton types. |
 | State loading | `bundle/statemgmt/state_load_test.go` has exhaustive fixtures/assertions for IDs and modified status. A newly introduced type needs coverage; changing an already-shipped persisted shape also requires compatibility handling in `bundle/direct/dstate/migrate.go`. |
 | Bind/unbind | `Exists`, `bundle/config/resources_test.go` bind coverage, and `acceptance/bundle/deployment/bind/<singular>/`. Test the documented identity format and subsequent deploy/destroy. |
+| Destructive-action UX | For deletion/recreation that loses data, cascades to children, or triggers costly rebuilds, check `deployApprovalGroups` / `destroyApprovalGroups` in `bundle/phases/{deploy,destroy}.go` and messages in `messages.go`. Wire appropriate warnings and cover approval, `--auto-approve`, and `lifecycle.prevent_destroy`; see `genie_spaces/delete_warning`. |
 | Deployment metadata service (DMS) | `libs/testserver/bundledeployments.go` lists supported prefixes and the upstream files owning them. Verify service support/rollout; a fake-only registration cannot enable deployment history. |
 
 If DMS does not support the type yet, identify the upstream dependency and report the limitation. Keep the fake faithful to the service. An intentional temporary matrix exclusion needs an explicit reason in the resource and invariant tests; it does not establish DMS support.
@@ -83,6 +91,8 @@ After registering the Go types, run generators in dependency order:
 ```
 
 `./task generate` runs these in order and also regenerates CLI commands from the checked-in spec. It does not refresh the spec from upstream.
+
+These generators do not create Go resource wrappers, CRUD adapters, fake stores/routes, or all policy registrations. Those remain explicit work; proposed resource scaffolding is described in the evolution/generation reference.
 
 Inspect the resource in the generated outputs:
 
@@ -103,7 +113,7 @@ Use existing test harnesses and helpers:
 3. Read `acceptance/bundle/invariant/README.md`. Add `configs/<singular>.yml.tmpl` **and its `EnvMatrix.INPUT_CONFIG` entry in `acceptance/bundle/invariant/test.toml`**; an unselected fixture never runs. Include supported grants/permissions. Mark removable lines `# CAN_REMOVE` to test clearing; reserve a reasoned `# CANNOT_REMOVE` for demonstrated limitations.
 4. Exclude a new direct-only template from historical `invariant/migrate` and `invariant/auto-migrate` matrices with a reason. Check `invariant/continue_293` too: its old CLI cannot seed newly introduced types. These are compatibility boundaries, not broken tests to skip; do not add new Terraform converters or historical fixtures.
 5. Add bind/unbind coverage when supported. Add `acceptance/bundle/python/<plural>-support/` for every PyDABs-exposed resource, following its [README](../../../acceptance/bundle/python/README.md). It exercises YAML, Python construction and a mutator; new resources use the current wheel. Python's coverage test enforces its presence.
-6. Run local tests, then at least one live-cloud lifecycle test for a new type, as required by the adapter README. `Cloud = true` adds a cloud run; it still runs locally. Use the available cloud-test workflow, provision dependencies and arrange cleanup. Record unavailable environments or unrun coverage accurately.
+6. Run local tests, then at least one live-cloud lifecycle test for a new type, as required by the adapter README. `Cloud = true` adds a cloud run; it still runs locally. Follow the probing skill's [recording and cloud-test guide](../probe-resource-api/references/recording.md) to compare observations and keep the fake faithful. Record unavailable environments or unrun coverage accurately.
 
 Useful local commands, replacing `<plural>` with the new resource:
 

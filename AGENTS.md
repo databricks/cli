@@ -90,6 +90,8 @@ GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git rebase or
 
 **RULE: Before adding a bundle resource type, read [the onboarding skill](.agents/skills/onboard-bundle-resource/SKILL.md).** It connects the API contract, Go registration, direct adapter, generated schema and Python support, bundle behaviors, and lifecycle tests. Start from the recent examples it identifies; older resources can carry API-specific workarounds that should not be copied into a new adapter.
 
+Use [the API probing skill](.agents/skills/probe-resource-api/SKILL.md) to establish live backend behavior, including edge cases, before encoding uncertain semantics in an adapter or `libs/testserver`. It covers direct API experiments, acceptance recording, and turning observations into repeatable tests. Passing against the fake does not establish the real API contract.
+
 # Development Tips
 
 - Use `./task test-update` to regenerate acceptance test outputs after changes.
