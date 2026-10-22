@@ -12,7 +12,11 @@ title "Add a new alert and a job task that references it"
 # Uncomment the alert, the task and timeout_seconds (a number field with a reference) in databricks.yml.
 update_file.py databricks.yml '# ' ''
 
-title "Deploy auto-migrates to direct and creates the alert and the task"
+title "Plan shows the new alert and the job update (the terraform state is migrated in memory)"
+trace $CLI bundle plan -o json
+rm -f "$OUT_REQUESTS"
+
+title "Deploy migrates to direct, creates the alert and updates the job"
 trace $CLI bundle deploy
 replace_ids.py
 
