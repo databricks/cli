@@ -283,6 +283,9 @@ func enumConfigRoot(w *walker, n *walk.Node, v *config.Root) {
 	if len(v.Artifacts) > 0 {
 		c := n.Child("artifacts")
 		for k, x := range v.Artifacts {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumConfigArtifact(w, &e, x)
 		}
@@ -301,6 +304,9 @@ func enumConfigRoot(w *walker, n *walk.Node, v *config.Root) {
 	if len(v.Variables) > 0 {
 		c := n.Child("variables")
 		for k, x := range v.Variables {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumVariableVariable(w, &e, x)
 		}
@@ -338,6 +344,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.Alerts) > 0 {
 		c := n.Child("alerts")
 		for k, x := range v.Alerts {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesAlert(w, &e, x)
 		}
@@ -345,6 +354,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.Apps) > 0 {
 		c := n.Child("apps")
 		for k, x := range v.Apps {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesApp(w, &e, x)
 		}
@@ -352,6 +364,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.Catalogs) > 0 {
 		c := n.Child("catalogs")
 		for k, x := range v.Catalogs {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesCatalog(w, &e, x)
 		}
@@ -359,6 +374,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.ClusterPolicies) > 0 {
 		c := n.Child("cluster_policies")
 		for k, x := range v.ClusterPolicies {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesClusterPolicy(w, &e, x)
 		}
@@ -366,6 +384,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.Clusters) > 0 {
 		c := n.Child("clusters")
 		for k, x := range v.Clusters {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesCluster(w, &e, x)
 		}
@@ -373,6 +394,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.Dashboards) > 0 {
 		c := n.Child("dashboards")
 		for k, x := range v.Dashboards {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesDashboard(w, &e, x)
 		}
@@ -380,6 +404,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.DatabaseInstances) > 0 {
 		c := n.Child("database_instances")
 		for k, x := range v.DatabaseInstances {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesDatabaseInstance(w, &e, x)
 		}
@@ -387,6 +414,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.Experiments) > 0 {
 		c := n.Child("experiments")
 		for k, x := range v.Experiments {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesMlflowExperiment(w, &e, x)
 		}
@@ -394,6 +424,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.ExternalLocations) > 0 {
 		c := n.Child("external_locations")
 		for k, x := range v.ExternalLocations {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesExternalLocation(w, &e, x)
 		}
@@ -401,6 +434,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.Features) > 0 {
 		c := n.Child("features")
 		for k, x := range v.Features {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesFeature(w, &e, x)
 		}
@@ -408,6 +444,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.GenieSpaces) > 0 {
 		c := n.Child("genie_spaces")
 		for k, x := range v.GenieSpaces {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesGenieSpace(w, &e, x)
 		}
@@ -415,6 +454,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.InstancePools) > 0 {
 		c := n.Child("instance_pools")
 		for k, x := range v.InstancePools {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesInstancePool(w, &e, x)
 		}
@@ -422,6 +464,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.JobRuns) > 0 {
 		c := n.Child("job_runs")
 		for k, x := range v.JobRuns {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesJobRun(w, &e, x)
 		}
@@ -429,6 +474,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.Jobs) > 0 {
 		c := n.Child("jobs")
 		for k, x := range v.Jobs {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesJob(w, &e, x)
 		}
@@ -436,6 +484,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.McpServices) > 0 {
 		c := n.Child("mcp_services")
 		for k, x := range v.McpServices {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesMcpService(w, &e, x)
 		}
@@ -443,6 +494,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.ModelProviderServices) > 0 {
 		c := n.Child("model_provider_services")
 		for k, x := range v.ModelProviderServices {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesModelProviderService(w, &e, x)
 		}
@@ -450,6 +504,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.ModelServices) > 0 {
 		c := n.Child("model_services")
 		for k, x := range v.ModelServices {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesModelService(w, &e, x)
 		}
@@ -457,6 +514,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.ModelServingEndpoints) > 0 {
 		c := n.Child("model_serving_endpoints")
 		for k, x := range v.ModelServingEndpoints {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesModelServingEndpoint(w, &e, x)
 		}
@@ -464,6 +524,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.Models) > 0 {
 		c := n.Child("models")
 		for k, x := range v.Models {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesMlflowModel(w, &e, x)
 		}
@@ -471,6 +534,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.Pipelines) > 0 {
 		c := n.Child("pipelines")
 		for k, x := range v.Pipelines {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesPipeline(w, &e, x)
 		}
@@ -478,6 +544,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.PostgresEndpoints) > 0 {
 		c := n.Child("postgres_endpoints")
 		for k, x := range v.PostgresEndpoints {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesPostgresEndpoint(w, &e, x)
 		}
@@ -485,6 +554,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.PostgresProjects) > 0 {
 		c := n.Child("postgres_projects")
 		for k, x := range v.PostgresProjects {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesPostgresProject(w, &e, x)
 		}
@@ -492,6 +564,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.PostgresRoles) > 0 {
 		c := n.Child("postgres_roles")
 		for k, x := range v.PostgresRoles {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesPostgresRole(w, &e, x)
 		}
@@ -499,6 +574,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.PostgresSnapshotSchedules) > 0 {
 		c := n.Child("postgres_snapshot_schedules")
 		for k, x := range v.PostgresSnapshotSchedules {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesPostgresSnapshotSchedule(w, &e, x)
 		}
@@ -506,6 +584,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.PostgresSyncedTables) > 0 {
 		c := n.Child("postgres_synced_tables")
 		for k, x := range v.PostgresSyncedTables {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesPostgresSyncedTable(w, &e, x)
 		}
@@ -513,6 +594,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.QualityMonitors) > 0 {
 		c := n.Child("quality_monitors")
 		for k, x := range v.QualityMonitors {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesQualityMonitor(w, &e, x)
 		}
@@ -520,6 +604,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.RegisteredModels) > 0 {
 		c := n.Child("registered_models")
 		for k, x := range v.RegisteredModels {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesRegisteredModel(w, &e, x)
 		}
@@ -527,6 +614,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.Schemas) > 0 {
 		c := n.Child("schemas")
 		for k, x := range v.Schemas {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesSchema(w, &e, x)
 		}
@@ -534,6 +624,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.SecretScopes) > 0 {
 		c := n.Child("secret_scopes")
 		for k, x := range v.SecretScopes {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesSecretScope(w, &e, x)
 		}
@@ -541,6 +634,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.Secrets) > 0 {
 		c := n.Child("secrets")
 		for k, x := range v.Secrets {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesSecret(w, &e, x)
 		}
@@ -548,6 +644,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.SqlWarehouses) > 0 {
 		c := n.Child("sql_warehouses")
 		for k, x := range v.SqlWarehouses {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesSqlWarehouse(w, &e, x)
 		}
@@ -555,6 +654,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.SyncedDatabaseTables) > 0 {
 		c := n.Child("synced_database_tables")
 		for k, x := range v.SyncedDatabaseTables {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesSyncedDatabaseTable(w, &e, x)
 		}
@@ -562,6 +664,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.VectorSearchEndpoints) > 0 {
 		c := n.Child("vector_search_endpoints")
 		for k, x := range v.VectorSearchEndpoints {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesVectorSearchEndpoint(w, &e, x)
 		}
@@ -569,6 +674,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.VectorSearchIndexes) > 0 {
 		c := n.Child("vector_search_indexes")
 		for k, x := range v.VectorSearchIndexes {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesVectorSearchIndex(w, &e, x)
 		}
@@ -576,6 +684,9 @@ func enumConfigResources(w *walker, n *walk.Node, v *config.Resources) {
 	if len(v.Volumes) > 0 {
 		c := n.Child("volumes")
 		for k, x := range v.Volumes {
+			if k == "" {
+				continue
+			}
 			e := c.Child(k)
 			enumResourcesVolume(w, &e, x)
 		}
