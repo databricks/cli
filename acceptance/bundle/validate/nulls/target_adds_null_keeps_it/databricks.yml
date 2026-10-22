@@ -1,0 +1,18 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    j:
+      name: j
+      tasks:
+        - task_key: t
+          notebook_task:
+            notebook_path: ./nb.py
+
+targets:
+  dev:
+    resources:
+      jobs:
+        j:
+          queue: null
