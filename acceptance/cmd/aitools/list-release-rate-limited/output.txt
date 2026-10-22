@@ -1,0 +1,23 @@
+
+=== list falls back to the embedded skills version when the release lookup is rate limited
+
+>>> [CLI] aitools list --output json
+Warn: Could not resolve latest skills release (HTTP 403 fetching latest skills release); falling back to embedded skills version 0.2.32
+{
+  "release": "0.2.32",
+  "skills": [
+    "test-stable"
+  ],
+  "agents": [
+    "claude-code",
+    "cursor",
+    "codex",
+    "opencode",
+    "copilot",
+    "antigravity",
+    "pi",
+    "gemini",
+    "goose",
+    "kiro"
+  ]
+}

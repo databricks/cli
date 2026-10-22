@@ -151,7 +151,7 @@ func defaultListSkills(cmd *cobra.Command, scope string) error {
 // returns the structured listOutput. scope=="" loads both scopes; "global"
 // or "project" loads only that scope.
 func buildListOutput(ctx context.Context, scope string) (listOutput, error) {
-	ref, explicit, err := installer.GetSkillsRef(ctx)
+	ref, explicit, err := installer.GetSkillsRefWithFallback(ctx)
 	if err != nil {
 		return listOutput{}, err
 	}

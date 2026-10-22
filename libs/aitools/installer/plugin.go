@@ -366,7 +366,10 @@ func RecordPluginInstalls(ctx context.Context, cliScope string, records map[stri
 		state.Plugins = make(map[string]PluginRecord, len(records))
 	}
 	maps.Copy(state.Plugins, records)
-	state.Release = ref
+	// An unresolved release keeps the one recorded by earlier installs.
+	if ref != "" {
+		state.Release = ref
+	}
 	state.LastUpdated = time.Now()
 	state.Scope = cliScope
 	return SaveState(dir, state)

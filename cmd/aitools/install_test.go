@@ -6,6 +6,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -267,6 +269,52 @@ func TestExecutePlanSkipBlockedPluginExit0(t *testing.T) {
 	planExplicit := buildPlan([]*agents.Agent{claude}, installer.ScopeGlobal, false, true)
 	_, err = executePlan(ctx, nil, planExplicit, installer.InstallOptions{Scope: installer.ScopeGlobal}, false)
 	require.Error(t, err)
+}
+
+func TestExecutePlanPluginWithUnresolvedSkillsRelease(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("DATABRICKS_SKILLS_REF", "")
+	t.Setenv("DATABRICKS_FORCE_EMBEDDED_COMPAT", "false")
+	t.Setenv("DATABRICKS_CACHE_ENABLED", "true")
+	t.Setenv("DATABRICKS_CACHE_DIR", tmp)
+	require.NoError(t, os.WriteFile(filepath.Join(tmp, "compat-manifest.json"), []byte(`{"0.0.0":{"appkit":"0.84.0","skills":"latest"}}`), 0o600))
+	lookups := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		lookups++
+		w.WriteHeader(http.StatusForbidden)
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("DATABRICKS_SKILLS_API_URL", srv.URL)
+
+	installRef, recordRef := "unset", "unset"
+	orig := installPluginForAgentFn
+	origRec := recordPluginInstallsFn
+	origCleanup := cleanupLegacyFn
+	t.Cleanup(func() {
+		installPluginForAgentFn = orig
+		recordPluginInstallsFn = origRec
+		cleanupLegacyFn = origCleanup
+	})
+	cleanupLegacyFn = func(context.Context, *agents.Agent, string) error { return nil }
+	installPluginForAgentFn = func(_ context.Context, _ *agents.Agent, scope, ref string) (installer.PluginRecord, error) {
+		installRef = ref
+		return installer.PluginRecord{Plugin: "databricks", Scope: scope, Version: installer.DisplaySkillsVersion(ref)}, nil
+	}
+	recordPluginInstallsFn = func(_ context.Context, _ string, _ map[string]installer.PluginRecord, ref string) error {
+		recordRef = ref
+		return nil
+	}
+
+	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
+	plan := buildPlan([]*agents.Agent{claude}, installer.ScopeGlobal, false, true)
+	outcomes, err := executePlan(cmdio.MockDiscard(t.Context()), nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, false)
+	require.NoError(t, err)
+	require.Len(t, outcomes, 1)
+	assert.Equal(t, outcomeInstalled, outcomes[0].status)
+	assert.Equal(t, 1, lookups)
+	// The marketplace picks the plugin version, so a failed lookup records it as unknown.
+	assert.Empty(t, installRef)
+	assert.Empty(t, recordRef)
 }
 
 // --- RunE: skills-only path (config-dir detection, no plugin) ---

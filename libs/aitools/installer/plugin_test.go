@@ -503,6 +503,25 @@ func TestUninstallPluginKeepMarketplaceFlag(t *testing.T) {
 	}
 }
 
+func TestRecordPluginInstallsUnresolvedRefKeepsRelease(t *testing.T) {
+	setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	dir, err := GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+
+	require.NoError(t, RecordPluginInstalls(ctx, ScopeGlobal, map[string]PluginRecord{
+		agents.NameClaudeCode: {Marketplace: "databricks-agent-skills", Plugin: "databricks", Version: "0.2.6"},
+	}, "v0.2.6"))
+	require.NoError(t, RecordPluginInstalls(ctx, ScopeGlobal, map[string]PluginRecord{
+		agents.NameCodex: {Marketplace: "databricks-agent-skills", Plugin: "databricks"},
+	}, ""))
+
+	st, err := LoadState(dir)
+	require.NoError(t, err)
+	assert.Equal(t, "v0.2.6", st.Release)
+	assert.Contains(t, st.Plugins, agents.NameCodex)
+}
+
 func TestRecordPluginInstallsThenSkillsInstallNoPanic(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())

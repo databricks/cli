@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -56,6 +57,10 @@ const (
 type Entry struct {
 	AppKit      string `json:"appkit"`
 	AgentSkills string `json:"skills"`
+
+	// Set by the build script when replacing latest with a concrete fallback.
+	// Preserve latest tracking without treating that fallback as an explicit pin.
+	AgentSkillsResolvedFromLatest bool `json:"skills_resolved_from_latest,omitempty"`
 }
 
 // Manifest is the compatibility manifest: a map of CLI version strings to entries.
@@ -164,19 +169,29 @@ func ResolveEmbeddedAppKitVersion() (string, error) {
 }
 
 // ResolveEmbeddedAgentSkillsVersion resolves the fallback for the current CLI
-// without fetching compatibility data. Ranges tracking latest use the tested
-// release compiled into the binary.
+// without fetching compatibility data. Build tasks resolve latest before
+// embedding. If "latest" remains, the newest pin below that range applies.
 func ResolveEmbeddedAgentSkillsVersion() (string, error) {
 	m, err := parseEmbeddedManifest()
 	if err != nil {
 		return "", fmt.Errorf("embedded manifest: %w", err)
 	}
-	entry, err := Resolve(m, build.GetInfo().Version)
+	return resolvePinnedAgentSkillsVersion(m, build.GetInfo().Version)
+}
+
+// resolvePinnedAgentSkillsVersion resolves the skills version as if ranges
+// tracking latest were absent from the manifest.
+func resolvePinnedAgentSkillsVersion(m Manifest, cliVersion string) (string, error) {
+	pinned := maps.Clone(m)
+	maps.DeleteFunc(pinned, func(_ string, entry Entry) bool {
+		return entry.AgentSkills == AgentSkillsLatest
+	})
+	if len(pinned) == 0 {
+		return "", errors.New("embedded manifest has no pinned skills version")
+	}
+	entry, err := Resolve(pinned, cliVersion)
 	if err != nil {
 		return "", fmt.Errorf("embedded manifest resolve: %w", err)
-	}
-	if entry.AgentSkills == AgentSkillsLatest {
-		return build.AgentSkillsFallbackVersion, nil
 	}
 	return entry.AgentSkills, nil
 }
@@ -283,6 +298,9 @@ func ResolveAgentSkillsVersion(ctx context.Context) (string, error) {
 	entry, err := resolveEntry(ctx, build.GetInfo().Version)
 	if err != nil {
 		return "", err
+	}
+	if entry.AgentSkillsResolvedFromLatest {
+		return AgentSkillsLatest, nil
 	}
 	return entry.AgentSkills, nil
 }

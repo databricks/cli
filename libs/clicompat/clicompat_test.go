@@ -307,6 +307,7 @@ func TestResolveAgentSkillsVersion(t *testing.T) {
 	}{
 		{name: "pinned", manifest: `{"0.0.0":{"appkit":"0.84.0","skills":"0.2.30"}}`, want: "0.2.30"},
 		{name: "latest sentinel", manifest: `{"0.0.0":{"appkit":"0.84.0","skills":"latest"}}`, want: AgentSkillsLatest},
+		{name: "resolved at build time", manifest: `{"0.0.0":{"appkit":"0.84.0","skills":"0.2.32","skills_resolved_from_latest":true}}`, want: AgentSkillsLatest},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -340,7 +341,11 @@ func TestResolveEmbeddedAgentSkillsVersion(t *testing.T) {
 	}{
 		{version: "1.0.0", want: "0.2.10"},
 		{version: "1.22.0", want: pinnedAgentSkillsVersion},
-		{version: "0.0.0-dev+test", want: pinnedAgentSkillsVersion},
+		{version: "1.22.9", want: pinnedAgentSkillsVersion},
+		// The latest range falls back to the 1.22 pin, or to a newer release
+		// when a build overlay resolved it.
+		{version: "1.23.0"},
+		{version: "0.0.0-dev+test"},
 	} {
 		t.Run(tc.version, func(t *testing.T) {
 			original := build.GetInfo().Version
@@ -349,9 +354,48 @@ func TestResolveEmbeddedAgentSkillsVersion(t *testing.T) {
 
 			v, err := ResolveEmbeddedAgentSkillsVersion()
 			require.NoError(t, err)
+			if tc.want != "" {
+				assert.Equal(t, tc.want, v)
+			} else {
+				assert.GreaterOrEqual(t, semver.Compare("v"+v, "v"+pinnedAgentSkillsVersion), 0, "got %s", v)
+			}
+		})
+	}
+}
+
+func TestResolvePinnedAgentSkillsVersion(t *testing.T) {
+	tracking := Manifest{
+		"1.23.0": {AppKit: "0.84.0", AgentSkills: AgentSkillsLatest},
+		"1.22.0": {AppKit: "0.84.0", AgentSkills: "0.2.32"},
+		"1.20.0": {AppKit: "0.84.0", AgentSkills: "0.2.30"},
+		"1.0.0":  {AppKit: "0.76.1", AgentSkills: "0.2.10"},
+	}
+	resolved := Manifest{
+		"1.23.0": {AppKit: "0.84.0", AgentSkills: "0.2.35", AgentSkillsResolvedFromLatest: true},
+		"1.22.0": {AppKit: "0.84.0", AgentSkills: "0.2.32"},
+	}
+	for _, tc := range []struct {
+		name     string
+		manifest Manifest
+		version  string
+		want     string
+	}{
+		{name: "latest range", manifest: tracking, version: "1.23.0", want: "0.2.32"},
+		{name: "above latest range", manifest: tracking, version: "1.24.1", want: "0.2.32"},
+		{name: "dev build", manifest: tracking, version: "0.0.0-dev+test", want: "0.2.32"},
+		{name: "pinned range", manifest: tracking, version: "1.21.0", want: "0.2.30"},
+		{name: "older than all ranges", manifest: tracking, version: "0.9.0", want: "0.2.10"},
+		{name: "resolved at build time", manifest: resolved, version: "1.23.0", want: "0.2.35"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			v, err := resolvePinnedAgentSkillsVersion(tc.manifest, tc.version)
+			require.NoError(t, err)
 			assert.Equal(t, tc.want, v)
 		})
 	}
+
+	_, err := resolvePinnedAgentSkillsVersion(Manifest{"1.23.0": {AppKit: "0.84.0", AgentSkills: AgentSkillsLatest}}, "1.23.0")
+	assert.ErrorContains(t, err, "no pinned skills version")
 }
 
 // --- Embedded manifest validation (replaces AppKit TS validator) ---
@@ -373,12 +417,9 @@ func TestEmbeddedManifest_IsWellFormed(t *testing.T) {
 		return semver.Compare("v"+a, "v"+b)
 	})
 
-	// Pinning the newest range (e.g. after a breaking skills release) must
-	// update this assertion in the same change.
-	assert.Equal(t, pinnedAgentSkillsVersion, m[keys[len(keys)-1]].AgentSkills,
-		"the newest CLI range must stay pinned until all callers support latest-release fallback")
-	assert.True(t, semver.IsValid("v"+build.AgentSkillsFallbackVersion),
-		"compiled skills fallback must be a concrete version")
+	// Ranges tracking latest fall back to a pinned range below them.
+	_, err = resolvePinnedAgentSkillsVersion(m, "0.0.0-dev+test")
+	assert.NoError(t, err, "the latest range needs a pinned range to fall back to")
 
 	// Keys must be in ascending semver order.
 	for i := 1; i < len(keys); i++ {
