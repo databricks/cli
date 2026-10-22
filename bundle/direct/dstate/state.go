@@ -555,10 +555,7 @@ func (db *DeploymentState) reset() {
 
 func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, mode Mode, withRecovery WithRecovery, dmsDeployment OpenDmsArgs) error {
 	db.Path = path
-	db.mode = ReadingFile
-	if mode == ReadingDMS || mode == WritingDMS {
-		db.mode = ReadingDMS
-	}
+	db.mode = mode
 	db.operationBuffer = nil
 	db.versionCompleted = false
 	db.historyDrainTimeout = 0
@@ -676,7 +673,7 @@ Run "databricks bundle destroy" first, then deploy again with deployment history
 	}
 
 	if mode.isWritable() {
-		return db.unlockedUpgradeToWrite(mode)
+		return db.initializeWrites(mode)
 	}
 
 	return nil
@@ -898,10 +895,6 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 func (db *DeploymentState) UpgradeToWrite(mode Mode) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	return db.unlockedUpgradeToWrite(mode)
-}
-
-func (db *DeploymentState) unlockedUpgradeToWrite(mode Mode) error {
 	if db.Path == "" {
 		return errors.New("internal error: DeploymentState must be opened first")
 	}
@@ -911,12 +904,25 @@ func (db *DeploymentState) unlockedUpgradeToWrite(mode Mode) error {
 	if !mode.isWritable() {
 		return fmt.Errorf("invalid deployment state write mode: %d", mode)
 	}
+	if (db.mode == ReadingDMS) != (mode == WritingDMS) {
+		return errors.New("cannot change the deployment state source when upgrading to write")
+	}
+	if err := db.initializeWrites(mode); err != nil {
+		return err
+	}
+	db.mode = mode
+	return nil
+}
+
+// initializeWrites validates write compatibility and prepares DMS metadata or a WAL.
+// Callers must hold db.mu.
+func (db *DeploymentState) initializeWrites(mode Mode) error {
 	if err := assertNoUnsupportedFeatures(db.Data.Features); err != nil {
 		return err
 	}
 	_, recorded := db.Data.Features[FeatureDeploymentHistory]
 	_, bestEffort := db.Data.Features[FeatureDeploymentHistoryBestEffort]
-	if (db.mode == ReadingDMS) != (mode == WritingDMS) || recorded != (mode == WritingDMS) {
+	if recorded != (mode == WritingDMS) {
 		return errors.New("cannot change the deployment state source when upgrading to write")
 	}
 	if bestEffort && mode != WritingFileWithHistory && mode != WritingFileWithHistoryEnforced {
@@ -927,7 +933,6 @@ func (db *DeploymentState) unlockedUpgradeToWrite(mode Mode) error {
 		db.Data.Lineage = db.GetOrInitLineage()
 		db.Data.StateVersion = currentStateVersion
 		db.Data.CLIVersion = build.GetInfo().Version
-		db.mode = mode
 		return nil
 	}
 
@@ -960,7 +965,6 @@ func (db *DeploymentState) unlockedUpgradeToWrite(mode Mode) error {
 		return fmt.Errorf("failed to write WAL header to %s: %w", walPath, err)
 	}
 	db.walFile = walFile
-	db.mode = mode
 	return nil
 }
 
