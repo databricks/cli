@@ -505,8 +505,24 @@ func (db *DeploymentState) GetOrInitLineage() string {
 // If true, then Open reads the WAL and merges it in the state. If false, and WAL is present, Open returns an error.
 type WithRecovery bool
 
-// Open loads resource state using mode, recovering a leftover WAL when requested.
-// DMS reads and history writes require a workspace client on ctx.
+// Open loads deployment state and enables reads or writes according to mode:
+//   - ReadingFile: reads resources.json; state writes are disabled.
+//   - WritingFile: reads resources.json and opens a WAL for state writes.
+//   - ReadingDMS: reads resources from DMS; state writes are disabled.
+//   - WritingDMS: reads and writes resources through DMS; no WAL is opened.
+//   - WritingFileWithHistory: behaves like WritingFile and also records DMS history.
+//     History errors do not fail the deployment.
+//   - WritingFileWithHistoryEnforced: also persists a feature marker that rejects
+//     older clients that do not support history recording.
+//
+// All modes read deployment metadata and feature markers from resources.json.
+// Open rejects modes that conflict with those markers.
+//
+// File modes recover a leftover WAL only when withRecovery is set.
+// DMS modes reject any leftover WAL.
+//
+// DMS reads require a workspace client on ctx. DMS writes and history recording
+// start after a version exists and InitializeOperationBuffer is called.
 func (db *DeploymentState) Open(ctx context.Context, path string, mode Mode, withRecovery WithRecovery, dmsDeployment OpenDmsArgs) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
