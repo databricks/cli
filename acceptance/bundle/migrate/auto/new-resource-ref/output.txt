@@ -13,9 +13,10 @@ Updated jobs.test_job
 Files: 1 uploaded, 0 deleted
 Resources: 1 created, 1 changed, 0 deleted, 0 unchanged
 
-=== The job update carries the new alert id
+=== The job update carries the new alert id and timeout
 >>> print_requests.py //api/2.2/jobs/reset
 json.body.new_settings.tasks[0].alert_task.alert_id = "[NEW_ALERT_ID]";
+json.body.new_settings.timeout_seconds = 300;
 
 === Redeploy is a no-op
 >>> [CLI] bundle plan

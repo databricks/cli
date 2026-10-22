@@ -9,15 +9,15 @@ rm -f "$OUT_REQUESTS"
 # Neither the job's terraform state nor the alert has the referenced id, so the migration must not
 # try to resolve it.
 title "Add a new alert and a job task that references it"
-# Uncomment the alert and the task in databricks.yml.
+# Uncomment the alert, the task and timeout_seconds (a number field with a reference) in databricks.yml.
 update_file.py databricks.yml '# ' ''
 
 title "Deploy auto-migrates to direct and creates the alert and the task"
 trace $CLI bundle deploy
 replace_ids.py
 
-title "The job update carries the new alert id"
-trace print_requests.py //api/2.2/jobs/reset | gron.py | grep alert_id
+title "The job update carries the new alert id and timeout"
+trace print_requests.py //api/2.2/jobs/reset | gron.py | grep -E "alert_id|timeout_seconds"
 rm -f "$OUT_REQUESTS"
 
 title "Redeploy is a no-op"

@@ -9,6 +9,8 @@ resources:
   #     warehouse_id: "${var.warehouse_id}"
   #     evaluation:
   #       comparison_operator: EQUAL
+  #       notification:
+  #         retrigger_seconds: 300
   #       source:
   #         name: "1"
   #       threshold:
@@ -22,6 +24,7 @@ resources:
   jobs:
     test_job:
       name: "Test Auto-Migrate Job"
+      # timeout_seconds: ${resources.alerts.new_alert.evaluation.notification.retrigger_seconds}
       # tasks:
       #   - task_key: check
       #     alert_task:
