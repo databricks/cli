@@ -261,18 +261,18 @@ func BuildStateFromTF(
 
 // referencesUndeployed reports whether refTemplate references a resource that is not in the terraform state.
 func referencesUndeployed(refTemplate string, tfIDs map[string]string) bool {
-	ref, ok := dynvar.NewRef(dyn.V(refTemplate))
+	ref, ok := structvar.NewRef(refTemplate)
 	if !ok {
 		return false
 	}
 	for _, targetPath := range ref.References() {
-		path, err := dyn.NewPathFromString(targetPath)
+		path, err := structpath.ParsePath(targetPath)
 		if err != nil {
 			continue
 		}
 		targetNode, _ := config.GetNodeAndType(path)
 		// Not a resource reference (e.g. ${var.x}).
-		if len(targetNode) == 0 {
+		if targetNode == nil {
 			continue
 		}
 		if _, ok := tfIDs[targetNode.String()]; !ok {
