@@ -1,5 +1,12 @@
 # Version changelog
 
+## Release v1.22.1 (2026-10-22)
+
+### CLI
+
+ * Fix GitHub API rate limit errors in `aitools list` and plugin installs by pinning skills to `0.2.32`. ([#7159](https://github.com/databricks/cli/pull/7159))
+
+
 ## Release v1.22.0 (2026-10-22)
 
 ### CLI
