@@ -185,7 +185,9 @@ func (db *DeploymentState) InitializeOperationBuffer(ctx context.Context, deploy
 	db.AssertOpenedForWrite()
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	options := dms.BufferOptions{BestEffort: db.mode.isFileWithHistory()}
+	options := dms.BufferOptions{
+		BestEffort: db.mode == WritingFileWithHistory || db.mode == WritingFileWithHistoryEnforced,
+	}
 	db.operationBuffer = dms.StartOperationBuffer(ctx, deploymentID, versionID, options)
 	db.historyDrainTimeout = time.Duration(operationCount) * historyDrainTimeoutPerOperation
 	db.DeploymentID = deploymentID
@@ -232,7 +234,7 @@ func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (b
 	}
 	db.versionCompleted = true
 	deploymentID, versionID := db.DeploymentID, db.VersionID
-	bestEffort := db.mode.isFileWithHistory()
+	bestEffort := db.mode == WritingFileWithHistory || db.mode == WritingFileWithHistoryEnforced
 	db.mu.Unlock()
 
 	ctx, cancel := context.WithTimeout(ctx, dms.OperationTimeout)
@@ -324,7 +326,7 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 		DependsOn: dependsOn,
 	}
 
-	if db.mode.usesDMSState() {
+	if db.mode == WritingDMS {
 		db.Data.State[key] = entry
 	} else if err := appendJSONLine(db.walFile, WALEntry{Key: key, Value: &entry}); err != nil {
 		return err
@@ -356,7 +358,7 @@ func (db *DeploymentState) DeleteState(ctx context.Context, key string, inProgre
 	// Read before the delete below: DMS needs the id to say which resource went away.
 	deletedID := db.stateIDs[key]
 
-	if db.mode.usesDMSState() {
+	if db.mode == WritingDMS {
 		delete(db.Data.State, key)
 	} else if err := appendJSONLine(db.walFile, WALEntry{Key: key}); err != nil {
 		return err
@@ -419,15 +421,10 @@ func (db *DeploymentState) StateFeatures() map[string]struct{} {
 func (db *DeploymentState) GetSerial() int {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	if db.isDeploymentMetadataService() {
+	if db.mode == ReadingDMS || db.mode == WritingDMS {
 		return db.VersionID
 	}
 	return db.Data.Serial
-}
-
-// isDeploymentMetadataService is IsDeploymentMetadataService for callers already holding db.mu.
-func (db *DeploymentState) isDeploymentMetadataService() bool {
-	return db.mode.usesDMSState()
 }
 
 // IsDeploymentMetadataService reports whether this deployment's resource state lives in the
@@ -436,14 +433,19 @@ func (db *DeploymentState) isDeploymentMetadataService() bool {
 func (db *DeploymentState) IsDeploymentMetadataService() bool {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	return db.isDeploymentMetadataService()
+	return db.mode == ReadingDMS || db.mode == WritingDMS
 }
 
 // RecordsHistory reports whether this mode records resource operations with DMS.
 func (db *DeploymentState) RecordsHistory() bool {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	return db.mode.recordsHistory()
+	switch db.mode {
+	case ReadingDMS, WritingDMS, WritingFileWithHistory, WritingFileWithHistoryEnforced:
+		return true
+	default:
+		return false
+	}
 }
 
 // GetOrInitLineage returns the deployment lineage, generating and storing a new
@@ -507,7 +509,7 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, mode M
 	}
 	db.Path = path
 	db.mode = ReadingFile
-	if mode.usesDMSState() {
+	if mode == ReadingDMS || mode == WritingDMS {
 		db.mode = ReadingDMS
 	}
 	db.operationBuffer = nil
@@ -540,7 +542,7 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, mode M
 		db.stateIDs[key] = entry.ID
 	}
 
-	recording := mode.usesDMSState()
+	recording := mode == ReadingDMS || mode == WritingDMS
 
 	walPath := db.Path + walSuffix
 	_, err = os.Stat(walPath)
@@ -821,15 +823,16 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 
 	// File state is persisted before waiting on optional history recording.
 	if db.operationBuffer != nil {
+		bestEffort := db.mode == WritingFileWithHistory || db.mode == WritingFileWithHistoryEnforced
 		drainCtx := ctx
 		cancel := func() {}
-		if db.mode.isFileWithHistory() {
+		if bestEffort {
 			drainCtx, cancel = context.WithTimeout(ctx, db.historyDrainTimeout)
 		}
 		drainErr := db.operationBuffer.Drain(drainCtx)
 		cancel()
 		if drainErr != nil {
-			if db.mode.isFileWithHistory() {
+			if bestEffort {
 				log.Warnf(ctx, "Failed to record deployment history: %s", drainErr)
 			} else {
 				err = errors.Join(err, drainErr)
@@ -866,10 +869,10 @@ func (db *DeploymentState) unlockedUpgradeToWrite(mode Mode) error {
 	}
 	_, recorded := db.Data.Features[FeatureDeploymentHistory]
 	_, bestEffort := db.Data.Features[FeatureDeploymentHistoryBestEffort]
-	if db.mode.usesDMSState() != mode.usesDMSState() || recorded != mode.usesDMSState() {
+	if (db.mode == ReadingDMS) != (mode == WritingDMS) || recorded != (mode == WritingDMS) {
 		return errors.New("cannot change the deployment state source when upgrading to write")
 	}
-	if bestEffort && !mode.isFileWithHistory() {
+	if bestEffort && mode != WritingFileWithHistory && mode != WritingFileWithHistoryEnforced {
 		return errors.New("deployment_history_best_effort state requires writing with deployment history enabled")
 	}
 
@@ -1026,7 +1029,7 @@ func (db *DeploymentState) unlockedSave() error {
 
 // Data to persist in the remote resources.json file.
 func (db *DeploymentState) dataForFile() Database {
-	if db.isDeploymentMetadataService() {
+	if db.mode == ReadingDMS || db.mode == WritingDMS {
 		header := db.Data.Header
 		if header.Features == nil {
 			header.Features = make(map[string]struct{})

@@ -41,18 +41,6 @@ func (m Mode) isWritable() bool {
 	}
 }
 
-func (m Mode) usesDMSState() bool {
-	return m == ReadingDMS || m == WritingDMS
-}
-
-func (m Mode) isFileWithHistory() bool {
-	return m == WritingFileWithHistory || m == WritingFileWithHistoryEnforced
-}
-
-func (m Mode) recordsHistory() bool {
-	return m.usesDMSState() || m.isFileWithHistory()
-}
-
 func (m Mode) validate() error {
 	switch m {
 	case ReadingFile, WritingFile, ReadingDMS, WritingDMS, WritingFileWithHistory, WritingFileWithHistoryEnforced:
