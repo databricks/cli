@@ -26,13 +26,13 @@ For a selected implementation:
 
 ## Consolidated source material
 
-The following efforts were compared on 2026-10-22. Their useful instructions are incorporated into the repo skills; their runtime implementations and package manifests remain separate.
+The following efforts were compared on 2026-10-22. Their useful instructions are incorporated into the repo skills. The old CLI branches were archived and retired; the runtime refactor continues separately on [`janniklasrose/bundle-resource-registry`](https://github.com/databricks/cli/tree/janniklasrose/bundle-resource-registry).
 
 | Source | What this workflow retains | Superseded assumptions |
 | --- | --- | --- |
 | [Plugin PR #10455](https://github.com/databricks-eng/plugin-marketplace/pull/10455), closed draft, head `5d375b823a07410cb63677224c7d13ab43fc4fe8` | Existing-resource evolution, SDK discovery, gap categories, destructive-action UX. Its `databricks-cli-add-dabs` / `databricks-cli-update-dabs` commands wrap instructions; it supplies no recording or generation tools. | Change-derived update masks, create-then-update as a default, nonmutating update mocks, automatic implementation from the latest SDK, monolithic lifecycle YAML and nonexistent drift scripts. |
-| CLI branch `janniklasrose/agents/skill-add-new-resource-to-dabs` at `6759f90c6` | Package READMEs own long-lived contracts; skills sequence work. Stateful fake handlers, interaction tests, scoped `ForceSendFields` copying and deletion guardrails. | `.agent/` paths, Make targets, removed schema override files, Terraform gating, and missing README links. |
-| CLI branch `specwork/dabs-auto-generation` at `0ef1a1d0e`, based on `~/_specs/pub/cli/dabs-auto-generation/` | Explicit mechanical/manual boundary, independent parity and completeness checks, API-evolution workflow, and staged automation below. | Treating the metadata prototype as a complete generator, manual Python registries, new Terraform mappings, or deriving policy correctness from the same metadata being tested. |
+| Retired CLI branch `janniklasrose/agents/skill-add-new-resource-to-dabs` at `6759f90c6` | Package READMEs own long-lived contracts; skills sequence work. Stateful fake handlers, interaction tests, scoped `ForceSendFields` copying and deletion guardrails. | `.agent/` paths, Make targets, removed schema override files, Terraform gating, and missing README links. |
+| Retired CLI branch `specwork/dabs-auto-generation` at `0ef1a1d0e`, based on `~/_specs/pub/cli/dabs-auto-generation/` | Explicit mechanical/manual boundary, independent parity and completeness checks, API-evolution workflow, and staged automation below. | Treating the metadata prototype as a complete generator, manual Python registries, new Terraform mappings, or deriving policy correctness from the same metadata being tested. |
 
 Keep adapter contracts in `bundle/direct/dresources/README.md`, testing conventions in the existing testing docs, and live experiments in the probing skill. A future plugin should locate the CLI checkout and dispatch to these repo skills so its guidance follows the code rather than maintaining another implementation copy.
 
@@ -40,14 +40,18 @@ Keep adapter contracts in `bundle/direct/dresources/README.md`, testing conventi
 
 Current generators handle CLI command stubs, reflected field inventories, bundle schema/docs annotations, required/enum validation, direct lifecycle field rules, and public Python models/wiring/docs. Config wrappers, direct CRUD, fake behavior and most resource policy wiring remain handwritten.
 
-The auto-generation prototype extends `ResourceDescription` with metadata, adds a `resources.All` registry, and derives two consumers: bundle permission levels and permission fixups. It does **not** migrate direct/testserver permissions, grants or run-as behavior, and it does not generate wrappers, adapters, fake handlers or scaffolds. None of its runtime changes is included in this instructions branch.
+The retired auto-generation prototype extended `ResourceDescription` with metadata, added a `resources.All` registry, and derived two consumers: bundle permission levels and permission fixups. It did **not** migrate direct/testserver permissions, grants or run-as behavior, and did not generate wrappers, adapters, fake handlers or scaffolds.
 
-Before advancing that prototype:
+The replacement refactor consolidates resource descriptions and the permission metadata consumed by bundle levels, permission fixups, direct IAM registration/routing and the fake's IAM object types. It preserves custom secret-scope ACLs and fake-only routes. It is a separate change based on current main; this onboarding workflow continues to describe main until that refactor lands.
 
-- Update it to the current resource set and preserve existing public names/titles and comments. Validate exactly-one registration, descriptor agreement, and completeness independently of the implementation.
-- Correct and narrow metadata to the consumer being migrated. At the inspected revision, the snapshot direct-support flag is wrong, grants/run-as metadata is incomplete, and Features is missing. Direct ACL support, bundle-level permission mappings, ACL routing/IDs and owner fixups are distinct capabilities: cluster policies and secret scopes demonstrate why one boolean/list cannot represent all of them.
-- Migrate one consumer with independent before/after behavior expectations. Comparing two calls to the same derived function does not prove parity. Retain tests for per-resource policy and real API behavior.
-- Keep later milestones separate: remaining permission consumers; grants/run-as tables after policy decisions; config/registry scaffolding; simple adapter scaffolding; then scoped SDK gap reporting. Do not add unused future metadata or public helpers in anticipation of those milestones.
+On the refactor branch, each resource owns its descriptor and value-only `PermissionsDescription`, registered in `bundle/config/resources/registry.go` as `resources.All`. Set bundle-level mappings, IAM request/response object types, the referenceable object-ID field, and owner/fixup policy there as applicable. Generic IAM permission adapters register automatically; custom ACL adapters and grants remain explicit in `dresources/all.go`. Config maps, `AllResources()`, CRUD adapters and fake service handlers remain handwritten.
+
+Requirements when reviewing or extending the refactor:
+
+- Cover the current resource set and preserve existing public names/titles and comments. Validate exactly-one registration, descriptor agreement, and completeness independently of the implementation.
+- Correct and narrow metadata to the consumer being migrated. The retired prototype had an incorrect snapshot direct-support flag, incomplete grants/run-as metadata, and no Features entry. Drop unused capability fields and cover the current resource set. Direct ACL support, bundle-level permission mappings, ACL routing/IDs and owner fixups are distinct capabilities: cluster policies and secret scopes demonstrate why one boolean/list cannot represent all of them.
+- Verify each migrated consumer with independent before/after behavior expectations. Comparing two calls to the same derived function does not prove parity. Retain tests for per-resource policy and real API behavior.
+- Keep later milestones separate: grants/run-as tables after policy decisions; config/registry scaffolding; simple adapter scaffolding; then scoped SDK gap reporting. Do not add unused future metadata or public helpers in anticipation of those milestones.
 
 Any future adapter generator must preserve `PrepareState`/`DoRead`/`RemapState` semantics, force-send ownership, identity conversions, stable references and state compatibility. `TestInputSubset` and `TestRemoteSuperset` check path compatibility with explicit exceptions for bundle-only and input-only fields; synthesis must not disguise genuinely missing remote behavior. Static masks, wait hooks and one mutation per lifecycle operation still apply.
 
