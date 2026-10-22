@@ -50,19 +50,29 @@ const maxConfirmationAttempts = 3
 // the user can still enter, including this one.
 type ConfirmFunc func(ctx context.Context, da DeviceAuthorization, lastErr error, attemptsLeft int) (string, error)
 
-// CheckDeviceCodeSupported returns ErrDeviceCodeNotSupported if the workspace
-// does not advertise a device authorization endpoint in its OIDC discovery
-// document. Callers use it to fail before prompting the user for anything.
-func CheckDeviceCodeSupported(ctx context.Context, workspaceHost string) error {
-	supplier := &BasicOAuthEndpointSupplier{Client: httpclient.NewApiClient(httpclient.ClientConfig{})}
-	endpoints, err := supplier.GetWorkspaceOAuthEndpoints(ctx, workspaceHost)
+// CheckDeviceCodeSupported returns the error DeviceCodeChallenge would fail
+// with before contacting the device authorization endpoint, such as
+// ErrDeviceCodeNotSupported. Callers use it to fail before prompting the user
+// for anything.
+func (a *PersistentAuth) CheckDeviceCodeSupported() error {
+	_, err := a.deviceCodeConfig()
+	return err
+}
+
+// deviceCodeConfig returns the OAuth config for device code login, or an
+// error if the host does not support it.
+func (a *PersistentAuth) deviceCodeConfig() (*oauth2.Config, error) {
+	if _, ok := a.oAuthArgument.(WorkspaceOAuthArgument); !ok {
+		return nil, errors.New("device code login is only supported for workspace hosts")
+	}
+	cfg, err := a.oauth2Config()
 	if err != nil {
-		return fmt.Errorf("fetching OAuth endpoints: %w", err)
+		return nil, fmt.Errorf("fetching oauth config: %w", err)
 	}
-	if endpoints.DeviceAuthorizationEndpoint == "" {
-		return ErrDeviceCodeNotSupported
+	if cfg.Endpoint.DeviceAuthURL == "" {
+		return nil, ErrDeviceCodeNotSupported
 	}
-	return nil
+	return cfg, nil
 }
 
 // DeviceCodeChallenge logs in using the Databricks variant of the RFC 8628
@@ -73,15 +83,9 @@ func CheckDeviceCodeSupported(ctx context.Context, workspaceHost string) error {
 // it up to maxConfirmationAttempts times. Only workspace hosts are supported.
 // The caller is responsible for storing the returned token.
 func (a *PersistentAuth) DeviceCodeChallenge(confirm ConfirmFunc) (*oauth2.Token, error) {
-	if _, ok := a.oAuthArgument.(WorkspaceOAuthArgument); !ok {
-		return nil, errors.New("device code login is only supported for workspace hosts")
-	}
-	cfg, err := a.oauth2Config()
+	cfg, err := a.deviceCodeConfig()
 	if err != nil {
-		return nil, fmt.Errorf("fetching oauth config: %w", err)
-	}
-	if cfg.Endpoint.DeviceAuthURL == "" {
-		return nil, ErrDeviceCodeNotSupported
+		return nil, err
 	}
 
 	ctx := a.setOAuthContext(a.ctx)

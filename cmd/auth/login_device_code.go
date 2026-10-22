@@ -46,7 +46,16 @@ func validateDeviceCodeHost(ctx context.Context, authArguments *auth.AuthArgumen
 			return errDeviceCodeWorkspaceOnly
 		}
 	}
-	return u2m.CheckDeviceCodeSupported(ctx, (&config.Config{Host: probe.Host}).CanonicalHostName())
+	arg, err := u2m.NewBasicWorkspaceOAuthArgument((&config.Config{Host: probe.Host}).CanonicalHostName())
+	if err != nil {
+		return err
+	}
+	persistentAuth, err := u2m.NewPersistentAuth(ctx, u2m.WithOAuthArgument(arg))
+	if err != nil {
+		return err
+	}
+	defer persistentAuth.Close()
+	return persistentAuth.CheckDeviceCodeSupported()
 }
 
 // validateDeviceCodeLogin returns an error if device code login is not enabled

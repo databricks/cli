@@ -325,35 +325,17 @@ func TestNormalizeCode(t *testing.T) {
 
 func TestCheckDeviceCodeSupported(t *testing.T) {
 	tests := []struct {
-		name    string
-		body    string
-		wantErr string
+		name      string
+		advertise bool
+		wantErr   error
 	}{
-		{
-			name: "advertised",
-			body: `{"token_endpoint": "https://workspace.test/oidc/v1/token", "device_authorization_endpoint": "https://workspace.test/oidc/v1/device/auth"}`,
-		},
-		{
-			name:    "not advertised",
-			body:    `{"token_endpoint": "https://workspace.test/oidc/v1/token"}`,
-			wantErr: "device code login is not enabled for this workspace",
-		},
+		{name: "advertised", advertise: true},
+		{name: "not advertised", wantErr: ErrDeviceCodeNotSupported},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				assert.Equal(t, "/oidc/.well-known/oauth-authorization-server", r.URL.Path)
-				w.Header().Set("Content-Type", "application/json")
-				_, _ = w.Write([]byte(tc.body))
-			}))
-			defer srv.Close()
-
-			err := CheckDeviceCodeSupported(t.Context(), srv.URL)
-			if tc.wantErr != "" {
-				assert.EqualError(t, err, tc.wantErr)
-			} else {
-				assert.NoError(t, err)
-			}
+			p := newDeviceCodeAuth(t, &fakeDeviceServer{}, tc.advertise)
+			assert.ErrorIs(t, p.CheckDeviceCodeSupported(), tc.wantErr)
 		})
 	}
 }
