@@ -37,8 +37,8 @@ func (s *FakeWorkspace) DataQualityMonitorCreate(req Request) Response {
 	return Response{Body: monitor}
 }
 
-// update_mask is a query parameter; the fake applies both configs, which is
-// what the mask the CLI sends covers.
+// update_mask is a query parameter; the fake replaces both configs, which is
+// what the "*" mask the CLI sends does.
 func (s *FakeWorkspace) DataQualityMonitorUpdate(req Request, objectType, objectID string) Response {
 	defer s.LockUnlock()()
 

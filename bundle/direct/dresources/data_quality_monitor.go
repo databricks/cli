@@ -15,11 +15,6 @@ type ResourceDataQualityMonitor struct {
 	client *databricks.WorkspaceClient
 }
 
-// dataQualityMonitorUpdateMask lists every client-settable field; object_type
-// and object_id are the identity and recreate on change. This matches the mask
-// the Terraform provider sends.
-const dataQualityMonitorUpdateMask = "anomaly_detection_config,data_profiling_config"
-
 func (*ResourceDataQualityMonitor) New(client *databricks.WorkspaceClient) *ResourceDataQualityMonitor {
 	return &ResourceDataQualityMonitor{client: client}
 }
@@ -58,7 +53,7 @@ func (r *ResourceDataQualityMonitor) DoUpdate(ctx context.Context, id string, co
 		Monitor:    *config,
 		ObjectType: objectType,
 		ObjectId:   objectID,
-		UpdateMask: dataQualityMonitorUpdateMask,
+		UpdateMask: "*",
 	})
 }
 

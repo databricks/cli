@@ -54,7 +54,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "method": "PATCH",
   "path": "/api/data-quality/v1/monitors/table/[UUID]",
   "q": {
-    "update_mask": "anomaly_detection_config,data_profiling_config"
+    "update_mask": "*"
   },
   "body": {
     "data_profiling_config": {
