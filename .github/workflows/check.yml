@@ -42,7 +42,7 @@ jobs:
 
       - name: Run Go and Python lint checks (does not include formatting checks)
         # `task lint` runs golangci-lint and `ruff check` (lint-python). ruff is
-        # provided by uvx, installed above; formatting is checked by `task fmt` below.
+        # run via `uv tool run`, installed above; formatting is checked by `task fmt` below.
         run: go tool -modfile=tools/task/go.mod task lint
 
       - name: "task fmt: Python, Go and YAML formatting"
