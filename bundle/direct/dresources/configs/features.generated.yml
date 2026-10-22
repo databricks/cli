@@ -34,3 +34,5 @@ ignore_remote_changes:
     reason: spec:output_only
   - field: schema_name
     reason: spec:output_only
+  - field: source.sdp_source.pipeline_state
+    reason: spec:output_only

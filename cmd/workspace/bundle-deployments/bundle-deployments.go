@@ -1134,8 +1134,8 @@ func newUpdateOperation() *cobra.Command {
   the operation has been modified since. On success the server increments
   sequence_id; updates to state, resource_id, and dashboard_metadata are
   mirrored onto the corresponding deployment-level resource. Listing state in
-  update_mask with no value clears it, which removes the resource, so a delete
-  that is retried until it succeeds must clear state. The parent version must
+  update_mask with no value clears it, which removes the tracked resource, so
+  a delete or unbind that succeeds must clear state. The parent version must
   be in progress, and after the update is applied a succeeded operation cannot
   carry an error_message. See the state and resource_id fields for the
   rest.

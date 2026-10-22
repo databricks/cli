@@ -1,0 +1,35 @@
+bundle:
+  name: test-bundle
+
+resources:
+  # alerts:
+  #   new_alert:
+  #     display_name: "New alert"
+  #     query_text: "select 2"
+  #     warehouse_id: "${var.warehouse_id}"
+  #     evaluation:
+  #       comparison_operator: EQUAL
+  #       notification:
+  #         retrigger_seconds: 300
+  #       source:
+  #         name: "1"
+  #       threshold:
+  #         value:
+  #           double_value: 1.3
+  #     schedule:
+  #       pause_status: UNPAUSED
+  #       quartz_cron_schedule: "44 19 */1 * * ?"
+  #       timezone_id: Europe/Amsterdam
+
+  jobs:
+    test_job:
+      name: "Test Auto-Migrate Job"
+      # timeout_seconds: ${resources.alerts.new_alert.evaluation.notification.retrigger_seconds}
+      # tasks:
+      #   - task_key: check
+      #     alert_task:
+      #       alert_id: "${resources.alerts.new_alert.id}"
+
+variables:
+  warehouse_id:
+    description: Set via BUNDLE_VAR_warehouse_id

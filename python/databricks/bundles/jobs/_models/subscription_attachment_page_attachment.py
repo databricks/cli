@@ -18,8 +18,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class SubscriptionAttachmentPageAttachment:
     """
-    :meta private: [EXPERIMENTAL]
-
     The selection of dashboard pages included in the attached PDF. `page_selection` chooses
     between all pages, the first page only, or an explicit subset listed in `page_ids`.
     """
@@ -28,7 +26,7 @@ class SubscriptionAttachmentPageAttachment:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The identifiers of the pages to include in the PDF. Only specified when `page_selection` is
+    [Beta] The identifiers of the pages to include in the PDF. Only specified when `page_selection` is
     `PAGE_SELECTION_SUBSET`. Each value is the identifier of a page in the dashboard's
     serialized definition returned by the Get dashboard API (`serialized_dashboard`): the value
     of the `name` field of an entry under `pages`.
@@ -41,7 +39,7 @@ class SubscriptionAttachmentPageAttachment:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] How the attached pages are selected. When set to `PAGE_SELECTION_SUBSET`, the pages to
+    [Beta] How the attached pages are selected. When set to `PAGE_SELECTION_SUBSET`, the pages to
     include are listed in `page_ids`.
     """
 
@@ -60,7 +58,7 @@ class SubscriptionAttachmentPageAttachmentDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The identifiers of the pages to include in the PDF. Only specified when `page_selection` is
+    [Beta] The identifiers of the pages to include in the PDF. Only specified when `page_selection` is
     `PAGE_SELECTION_SUBSET`. Each value is the identifier of a page in the dashboard's
     serialized definition returned by the Get dashboard API (`serialized_dashboard`): the value
     of the `name` field of an entry under `pages`.
@@ -73,7 +71,7 @@ class SubscriptionAttachmentPageAttachmentDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] How the attached pages are selected. When set to `PAGE_SELECTION_SUBSET`, the pages to
+    [Beta] How the attached pages are selected. When set to `PAGE_SELECTION_SUBSET`, the pages to
     include are listed in `page_ids`.
     """
 

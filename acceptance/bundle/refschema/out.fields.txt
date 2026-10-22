@@ -967,6 +967,15 @@ resources.features.*.source.request_source.flat_schema.fields	[]ml.FieldDefiniti
 resources.features.*.source.request_source.flat_schema.fields[*]	ml.FieldDefinition	ALL
 resources.features.*.source.request_source.flat_schema.fields[*].data_type	ml.ScalarDataType	ALL
 resources.features.*.source.request_source.flat_schema.fields[*].name	string	ALL
+resources.features.*.source.sdp_source	*ml.SdpSource	ALL
+resources.features.*.source.sdp_source.dataframe_schema	string	ALL
+resources.features.*.source.sdp_source.filter_condition	string	ALL
+resources.features.*.source.sdp_source.input_tables	[]string	ALL
+resources.features.*.source.sdp_source.input_tables[*]	string	ALL
+resources.features.*.source.sdp_source.output_table	string	ALL
+resources.features.*.source.sdp_source.pipeline_id	string	ALL
+resources.features.*.source.sdp_source.pipeline_state	ml.SdpSourceState	ALL
+resources.features.*.source.sdp_source.transformation_sql	string	ALL
 resources.features.*.source.stream_source	*ml.StreamSource	ALL
 resources.features.*.source.stream_source.dataframe_schema	string	ALL
 resources.features.*.source.stream_source.filter_condition	string	ALL
@@ -4396,6 +4405,7 @@ resources.sql_warehouses.*.channel.dbsql_version	string	ALL
 resources.sql_warehouses.*.channel.name	sql.ChannelName	ALL
 resources.sql_warehouses.*.cluster_size	string	ALL
 resources.sql_warehouses.*.creator_name	string	ALL
+resources.sql_warehouses.*.customer_version_label	string	ALL
 resources.sql_warehouses.*.enable_photon	bool	ALL
 resources.sql_warehouses.*.enable_serverless_compute	bool	ALL
 resources.sql_warehouses.*.health	*sql.EndpointHealth	REMOTE
@@ -4416,6 +4426,7 @@ resources.sql_warehouses.*.lifecycle	*resources.LifecycleWithStarted	INPUT
 resources.sql_warehouses.*.lifecycle	resources.Lifecycle	INPUT
 resources.sql_warehouses.*.lifecycle.prevent_destroy	bool	INPUT
 resources.sql_warehouses.*.lifecycle.started	*bool	ALL
+resources.sql_warehouses.*.max_dbu	int	ALL
 resources.sql_warehouses.*.max_num_clusters	int	ALL
 resources.sql_warehouses.*.min_num_clusters	int	ALL
 resources.sql_warehouses.*.modified_status	string	INPUT
@@ -4427,6 +4438,7 @@ resources.sql_warehouses.*.odbc_params.hostname	string	REMOTE
 resources.sql_warehouses.*.odbc_params.path	string	REMOTE
 resources.sql_warehouses.*.odbc_params.port	int	REMOTE
 resources.sql_warehouses.*.odbc_params.protocol	string	REMOTE
+resources.sql_warehouses.*.reyden_cluster_size_multiplier	float64	ALL
 resources.sql_warehouses.*.spot_instance_policy	sql.SpotInstancePolicy	ALL
 resources.sql_warehouses.*.state	sql.State	REMOTE
 resources.sql_warehouses.*.statement_timeout	int	ALL

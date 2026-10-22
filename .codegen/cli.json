@@ -4632,7 +4632,7 @@
           "launch_stage": "PUBLIC_PREVIEW"
         },
         "alert_configurations": {
-          "description": "Alerts to configure when this budget is in a triggered state. Budgets must have exactly one alert configuration.",
+          "description": "Alerts to configure when this budget is in a triggered state. Budgets must have at least one alert configuration.\nA budget can have up to four shared alerts per time period, each with a unique `quantity_threshold`.\nBudgets with `resource_type` set to `BUDGET_RESOURCE_TYPE_UNITY_AI_GATEWAY` can also use per-user alerts, with optional `principal_overrides`.\nThese budgets can have at most one per-user alert per time period, and can use shared alerts, a per-user alert, or both.\nThe `BLOCK_USAGE` action is only supported on budgets with `resource_type` set to `BUDGET_RESOURCE_TYPE_UNITY_AI_GATEWAY`.\nAt most one shared alert per time period can have a `BLOCK_USAGE` action, and it must be the shared alert with the highest threshold in that period.",
           "launch_stage": "PUBLIC_PREVIEW"
         },
         "budget_configuration_id": {
@@ -4794,7 +4794,7 @@
           "launch_stage": "PUBLIC_PREVIEW"
         },
         "alert_configurations": {
-          "description": "Alerts to configure when this budget is in a triggered state. Budgets must have exactly one alert configuration.",
+          "description": "Alerts to configure when this budget is in a triggered state. Budgets must have at least one alert configuration.\nA budget can have up to four shared alerts per time period, each with a unique `quantity_threshold`.\nBudgets with `resource_type` set to `BUDGET_RESOURCE_TYPE_UNITY_AI_GATEWAY` can also use per-user alerts, with optional `principal_overrides`.\nThese budgets can have at most one per-user alert per time period, and can use shared alerts, a per-user alert, or both.\nThe `BLOCK_USAGE` action is only supported on budgets with `resource_type` set to `BUDGET_RESOURCE_TYPE_UNITY_AI_GATEWAY`.\nAt most one shared alert per time period can have a `BLOCK_USAGE` action, and it must be the shared alert with the highest threshold in that period.",
           "launch_stage": "PUBLIC_PREVIEW"
         },
         "display_name": {
@@ -5320,7 +5320,7 @@
           "launch_stage": "PUBLIC_PREVIEW"
         },
         "alert_configurations": {
-          "description": "Alerts to configure when this budget is in a triggered state. Budgets must have exactly one alert configuration.",
+          "description": "Alerts to configure when this budget is in a triggered state. Budgets must have at least one alert configuration.\nA budget can have up to four shared alerts per time period, each with a unique `quantity_threshold`.\nBudgets with `resource_type` set to `BUDGET_RESOURCE_TYPE_UNITY_AI_GATEWAY` can also use per-user alerts, with optional `principal_overrides`.\nThese budgets can have at most one per-user alert per time period, and can use shared alerts, a per-user alert, or both.\nThe `BLOCK_USAGE` action is only supported on budgets with `resource_type` set to `BUDGET_RESOURCE_TYPE_UNITY_AI_GATEWAY`.\nAt most one shared alert per time period can have a `BLOCK_USAGE` action, and it must be the shared alert with the highest threshold in that period.",
           "launch_stage": "PUBLIC_PREVIEW"
         },
         "budget_configuration_id": {
@@ -5945,7 +5945,7 @@
           ]
         },
         "state": {
-          "description": "Serialized local config state after the operation. Its presence records\nwhether the resource still exists. Explicitly clearing state removes the resource;\nomitting it from the update mask leaves resource state unchanged.\nState is stored only on Resources. UpdateOperation accepts state but omits it\nfrom its response, as do subsequent GetOperation and ListOperations.\n\nMutable: may be updated after creation via UpdateOperation. When updating,\nthe caller must echo the last-observed `sequence_id` as a concurrency\nprecondition.\n\nThe string is not parsed; it is projected onto the corresponding Resource's\nstate. It is deliberately not google.protobuf.Value, whose only numeric case\nis `double number_value`, so parsing the client's JSON into it rewrites every\ninteger as a double - `1` reads back as `1.0`, which no longer deserializes\ninto an integer field - and silently loses precision above 2^53, which is\nwithin range for IDs the client records.\n\nA string rather than bytes: the payload is always UTF-8 JSON, and proto3 JSON\nmaps bytes to base64, which inflates every request and response by a third\nand makes state unreadable in logs and API responses. Both generate the same\nOpenAPI schema (\"type\": \"string\"), so the SDKs are identical either way.",
+          "description": "Serialized local config state after the operation. Its presence records\nwhether the resource is still tracked by the deployment. Explicitly clearing\nstate removes the resource from the deployment; omitting it from the update\nmask leaves resource state unchanged.\nState is stored only on Resources. UpdateOperation accepts state but omits it\nfrom its response, as do subsequent GetOperation and ListOperations.\n\nMutable: may be updated after creation via UpdateOperation. When updating,\nthe caller must echo the last-observed `sequence_id` as a concurrency\nprecondition.\n\nThe string is not parsed; it is projected onto the corresponding Resource's\nstate. It is deliberately not google.protobuf.Value, whose only numeric case\nis `double number_value`, so parsing the client's JSON into it rewrites every\ninteger as a double - `1` reads back as `1.0`, which no longer deserializes\ninto an integer field - and silently loses precision above 2^53, which is\nwithin range for IDs the client records.\n\nA string rather than bytes: the payload is always UTF-8 JSON, and proto3 JSON\nmaps bytes to base64, which inflates every request and response by a third\nand makes state unreadable in logs and API responses. Both generate the same\nOpenAPI schema (\"type\": \"string\"), so the SDKs are identical either way.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OPTIONAL"
@@ -10565,7 +10565,7 @@
     "catalog.ListMcpServicesRequest": {
       "fields": {
         "page_size": {
-          "description": "Maximum number of MCP services to return. Defaults to 100 when unset or 0;\nthe maximum is 200. Use `page_token` to retrieve additional pages.",
+          "description": "Maximum number of MCP services to return. Defaults to 200 when unset or 0;\nthe maximum is 200. Use `page_token` to retrieve additional pages.",
           "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
@@ -10646,7 +10646,7 @@
     "catalog.ListModelProviderServicesRequest": {
       "fields": {
         "page_size": {
-          "description": "Maximum number of provider services to return. Defaults to 100 when unset or\n0; the maximum is 200. Use `page_token` to retrieve additional pages.",
+          "description": "Maximum number of provider services to return. Defaults to 200 when unset or\n0; the maximum is 200. Use `page_token` to retrieve additional pages.",
           "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
@@ -10703,7 +10703,7 @@
     "catalog.ListModelServicesRequest": {
       "fields": {
         "page_size": {
-          "description": "Maximum number of model services to return. Defaults to 100 when unset or 0;\nthe maximum is 200. Use `page_token` to retrieve additional pages.",
+          "description": "Maximum number of model services to return. Defaults to 200 when unset or 0;\nthe maximum is 200. Use `page_token` to retrieve additional pages.",
           "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
@@ -11009,7 +11009,7 @@
     "catalog.ListSkillsRequest": {
       "fields": {
         "page_size": {
-          "description": "Maximum number of skills to return. Defaults to 100 when unset or 0; the\nmaximum is 200. Use `page_token` to retrieve additional pages.",
+          "description": "Maximum number of skills to return. Defaults to 200 when unset or 0; the\nmaximum is 200. Use `page_token` to retrieve additional pages.",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
@@ -11869,7 +11869,7 @@
       }
     },
     "catalog.ModelProviderServiceConfigCustomProviderConfig": {
-      "description": "Custom OpenAI-compatible provider configuration with bearer-token\nauthentication.",
+      "description": "Custom OpenAI-compatible provider configuration.",
       "fields": {
         "direct": {
           "description": "Endpoint and authentication configuration for the custom provider.",
@@ -35620,7 +35620,7 @@
         "attachment": {
           "description": "Optional: The configuration for the files attached to the dashboard snapshot notification. It\ncontrols the underlying data of dashboard widgets that is attached as data files and which\npages are included in the attached PDF. If not specified, the notification is sent with only\nthe default snapshot.",
           "ref": "jobs.SubscriptionAttachment",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -35645,7 +35645,7 @@
         "data_attachment": {
           "description": "Optional: The configuration for the underlying data of dashboard widgets attached as tabular\ndata files. If not specified, no tabular data is attached.",
           "ref": "jobs.SubscriptionAttachmentDataAttachment",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -35653,7 +35653,7 @@
         "page_attachment": {
           "description": "Optional: The selection of dashboard pages included in the attached PDF. If not specified,\nonly the first page is included.",
           "ref": "jobs.SubscriptionAttachmentPageAttachment",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -35666,18 +35666,18 @@
         "file_format": {
           "description": "The file format of the exported tabular data files.",
           "ref": "jobs.SubscriptionAttachmentDataAttachmentFileFormat",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "include_applied_filters": {
           "description": "When true, the dashboard's applied filter values are included alongside the tabular data as\nan additional attached file.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "widgets": {
           "description": "The widgets whose underlying data is exported. At least one widget must be referenced.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         }
       }
     },
@@ -35689,9 +35689,9 @@
         "FILE_FORMAT_EXCEL"
       ],
       "enum_launch_stages": {
-        "FILE_FORMAT_CSV": "PRIVATE_PREVIEW",
-        "FILE_FORMAT_EXCEL": "PRIVATE_PREVIEW",
-        "FILE_FORMAT_TSV": "PRIVATE_PREVIEW"
+        "FILE_FORMAT_CSV": "PUBLIC_BETA",
+        "FILE_FORMAT_EXCEL": "PUBLIC_BETA",
+        "FILE_FORMAT_TSV": "PUBLIC_BETA"
       }
     },
     "jobs.SubscriptionAttachmentDataAttachmentWidget": {
@@ -35699,11 +35699,11 @@
       "fields": {
         "page_id": {
           "description": "The URL identifier of the page containing the widget. This is the value of the `name`\nfield of the corresponding entry under `pages` in the serialized dashboard definition.\nFormat: alphanumeric, hyphen, and underscore characters allowed, max length 63.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "widget_id": {
           "description": "The URL identifier of the widget. This is the value of the `name` field of the\ncorresponding widget under that page's `layout` in the serialized dashboard definition.\nFormat: alphanumeric, hyphen, and underscore characters allowed, max length 63.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         }
       }
     },
@@ -35712,7 +35712,7 @@
       "fields": {
         "page_ids": {
           "description": "The identifiers of the pages to include in the PDF. Only specified when `page_selection` is\n`PAGE_SELECTION_SUBSET`. Each value is the identifier of a page in the dashboard's\nserialized definition returned by the Get dashboard API (`serialized_dashboard`): the value\nof the `name` field of an entry under `pages`.\nFormat: alphanumeric, hyphen, and underscore characters allowed, max length 63.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -35720,7 +35720,7 @@
         "page_selection": {
           "description": "How the attached pages are selected. When set to `PAGE_SELECTION_SUBSET`, the pages to\ninclude are listed in `page_ids`.",
           "ref": "jobs.SubscriptionAttachmentPageAttachmentPageSelection",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -35734,8 +35734,8 @@
         "PAGE_SELECTION_SUBSET"
       ],
       "enum_launch_stages": {
-        "PAGE_SELECTION_ALL": "PRIVATE_PREVIEW",
-        "PAGE_SELECTION_SUBSET": "PRIVATE_PREVIEW"
+        "PAGE_SELECTION_ALL": "PUBLIC_BETA",
+        "PAGE_SELECTION_SUBSET": "PUBLIC_BETA"
       }
     },
     "jobs.SubscriptionSubscriber": {
@@ -39758,6 +39758,14 @@
           "description": "A request-time data source.",
           "ref": "ml.RequestSource",
           "launch_stage": "GA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "sdp_source": {
+          "description": "A Spark Declarative Pipeline data source.",
+          "ref": "ml.SdpSource",
+          "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -43864,6 +43872,74 @@
         }
       }
     },
+    "ml.SdpSource": {
+      "description": "A Spark Declarative Pipeline (SDP) data source.",
+      "fields": {
+        "dataframe_schema": {
+          "description": "Schema of the resulting dataframe after transformations, in Spark StructType JSON format (from df.schema.json()).\nRequired if transformation_sql is specified.\nExample: {\"type\":\"struct\",\"fields\":[{\"name\":\"col_a\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"col_c\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}}]}",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "filter_condition": {
+          "description": "Single WHERE clause to filter the pipeline's output table before applying transformations. Will be row-wise evaluated, so should only include conditionals and projections.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "input_tables": {
+          "description": "The full three-part names of the tables the pipeline reads from. Required to materialize this\nfeature with a TableTrigger, which starts a run when these tables update. Each table must exist\nwhen the feature is created. After the pipeline runs, Feature Store checks that it reads from\nthese tables, and the run fails if it doesn't. At most 100 tables.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "output_table": {
+          "description": "The full three-part (catalog, schema, table) name of the pipeline's output table to read from.\nThe table doesn't need to exist until the pipeline first runs. Required.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "pipeline_id": {
+          "description": "The ID of the Spark Declarative Pipeline that Feature Store runs to produce this source, before\neach materialization or backfill. The pipeline must already exist when the feature is created,\nand you need CAN_RUN, CAN_MANAGE, or owner permission on it. It doesn't need to have run yet.\nDeleting the feature doesn't delete the pipeline. If the pipeline is deleted, this field reads\nback empty. Required.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "pipeline_state": {
+          "description": "State tracking pipeline execution and output table validation. PENDING until the pipeline\nhas run at least once and created the output table; then RESOLVED on success, or ERROR on failure.",
+          "ref": "ml.SdpSourceState",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
+        },
+        "transformation_sql": {
+          "description": "A single SQL SELECT expression applied after filter_condition.\nShould contain all the columns needed (eg. \"SELECT *, col_a + col_b AS col_c FROM x.y.z WHERE col_a \u003e 0\" would have `transformation_sql` \"*, col_a + col_b AS col_c\")\nIf transformation_sql is not provided, all columns of the pipeline's output table are present in the DataSource dataframe.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        }
+      }
+    },
+    "ml.SdpSourceState": {
+      "description": "State of the SDP source relative to pipeline execution and output table validation.",
+      "enum": [
+        "PENDING",
+        "RESOLVED",
+        "ERROR"
+      ],
+      "enum_launch_stages": {
+        "ERROR": "PRIVATE_PREVIEW",
+        "PENDING": "PRIVATE_PREVIEW",
+        "RESOLVED": "PRIVATE_PREVIEW"
+      }
+    },
     "ml.SearchExperiments": {
       "fields": {
         "filter": {
@@ -47952,7 +48028,7 @@
           "launch_stage": "GA"
         },
         "order_by": {
-          "description": "A list of strings specifying the order of results.\nSupported order_by fields are id and name. The default is id asc.\nThis field is optional.",
+          "description": "A list of strings specifying the order of results.\nThe supported order_by field is id. The default is id asc.\nThis field is optional.",
           "launch_stage": "GA"
         },
         "page_token": {
@@ -61644,11 +61720,6 @@
           "description": "Name of the share.",
           "launch_stage": "GA"
         },
-        "replication_config": {
-          "description": "Configuration for share replication.",
-          "ref": "sharing.ReplicationConfig",
-          "launch_stage": "PRIVATE_PREVIEW"
-        },
         "storage_root": {
           "description": "Storage root URL for the share.",
           "launch_stage": "GA"
@@ -62626,15 +62697,6 @@
         }
       }
     },
-    "sharing.ReplicationConfig": {
-      "description": "Configuration for Delta Sharing replication on a share. When enabled, the share's data is\ncopied into each recipient's region so recipients can query the share locally.",
-      "fields": {
-        "enabled": {
-          "description": "Whether replication is enabled for the share.",
-          "launch_stage": "PRIVATE_PREVIEW"
-        }
-      }
-    },
     "sharing.RetrieveTokenRequest": {},
     "sharing.RetrieveTokenResponse": {
       "fields": {
@@ -62726,11 +62788,6 @@
         "owner": {
           "description": "Username of current owner of share.",
           "launch_stage": "GA"
-        },
-        "replication_config": {
-          "description": "Configuration for share replication.",
-          "ref": "sharing.ReplicationConfig",
-          "launch_stage": "PRIVATE_PREVIEW"
         },
         "storage_location": {
           "description": "Storage Location URL (full path) for the share.",
@@ -64183,6 +64240,13 @@
           "description": "warehouse creator name",
           "launch_stage": "GA"
         },
+        "customer_version_label": {
+          "description": "Compute version label for a REALTIME warehouse. This field is output only.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
+        },
         "enable_photon": {
           "description": "Configures whether the warehouse should use Photon optimized clusters.\n\nDefaults to true.",
           "launch_stage": "GA"
@@ -64196,6 +64260,10 @@
           "deprecated": true,
           "launch_stage": "GA"
         },
+        "max_dbu": {
+          "description": "Maximum compute capacity of a real-time SQL warehouse, in DBU per hour.\nMust be a multiple of 3 between 3 and 960. The effective maximum cannot be\nlower than the warehouse's minimum capacity.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
         "max_num_clusters": {
           "description": "Maximum number of clusters that the autoscaler will create to handle\nconcurrent queries.\n\nSupported values:\n- Must be \u003e= min_num_clusters\n- Must be \u003c= 40.\n\nDefaults to min_clusters if unset.",
           "launch_stage": "GA"
@@ -64207,6 +64275,10 @@
         "name": {
           "description": "Logical name for the cluster.\n\nSupported values:\n- Must be unique within an org.\n- Must be less than 100 characters.",
           "launch_stage": "GA"
+        },
+        "reyden_cluster_size_multiplier": {
+          "description": "Cluster size multiplier for Reyden warehouses. Scales the effective compute\ncapacity relative to the nominal virtual cluster size. Only meaningful when\nthe warehouse is of Reyden type.\n\nAccepted range: 1.0 to the workspace-configured maximum (decimals\nallowed). The default maximum is 100.0.\n- Values below 1.0 are normalized to 1.0.\n- Values above the configured maximum are capped at that maximum.\n- When absent, the warehouse is treated as having a multiplier of 1.0.",
+          "launch_stage": "PRIVATE_PREVIEW"
         },
         "spot_instance_policy": {
           "description": "Configurations whether the endpoint should use spot instances.",
@@ -64655,6 +64727,13 @@
           "description": "warehouse creator name",
           "launch_stage": "GA"
         },
+        "customer_version_label": {
+          "description": "Compute version label for a REALTIME warehouse. This field is output only.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
+        },
         "enable_photon": {
           "description": "Configures whether the warehouse should use Photon optimized clusters.\n\nDefaults to true.",
           "launch_stage": "GA"
@@ -64668,6 +64747,10 @@
           "deprecated": true,
           "launch_stage": "GA"
         },
+        "max_dbu": {
+          "description": "Maximum compute capacity of a real-time SQL warehouse, in DBU per hour.\nMust be a multiple of 3 between 3 and 960. The effective maximum cannot be\nlower than the warehouse's minimum capacity.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
         "max_num_clusters": {
           "description": "Maximum number of clusters that the autoscaler will create to handle\nconcurrent queries.\n\nSupported values:\n- Must be \u003e= min_num_clusters\n- Must be \u003c= 40.\n\nDefaults to min_clusters if unset.",
           "launch_stage": "GA"
@@ -64679,6 +64762,10 @@
         "name": {
           "description": "Logical name for the cluster.\n\nSupported values:\n- Must be unique within an org.\n- Must be less than 100 characters.",
           "launch_stage": "GA"
+        },
+        "reyden_cluster_size_multiplier": {
+          "description": "Cluster size multiplier for Reyden warehouses. Scales the effective compute\ncapacity relative to the nominal virtual cluster size. Only meaningful when\nthe warehouse is of Reyden type.\n\nAccepted range: 1.0 to the workspace-configured maximum (decimals\nallowed). The default maximum is 100.0.\n- Values below 1.0 are normalized to 1.0.\n- Values above the configured maximum are capped at that maximum.\n- When absent, the warehouse is treated as having a multiplier of 1.0.",
+          "launch_stage": "PRIVATE_PREVIEW"
         },
         "spot_instance_policy": {
           "description": "Configurations whether the endpoint should use spot instances.",
@@ -64778,6 +64865,13 @@
           "description": "warehouse creator name",
           "launch_stage": "GA"
         },
+        "customer_version_label": {
+          "description": "Compute version label for a REALTIME warehouse. This field is output only.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
+        },
         "enable_photon": {
           "description": "Configures whether the warehouse should use Photon optimized clusters.\n\nDefaults to true.",
           "launch_stage": "GA"
@@ -64810,6 +64904,10 @@
           "description": "the jdbc connection string for this warehouse",
           "launch_stage": "GA"
         },
+        "max_dbu": {
+          "description": "Maximum compute capacity of a real-time SQL warehouse, in DBU per hour.\nMust be a multiple of 3 between 3 and 960. The effective maximum cannot be\nlower than the warehouse's minimum capacity.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
         "max_num_clusters": {
           "description": "Maximum number of clusters that the autoscaler will create to handle\nconcurrent queries.\n\nSupported values:\n- Must be \u003e= min_num_clusters\n- Must be \u003c= 40.\n\nDefaults to min_clusters if unset.",
           "launch_stage": "GA"
@@ -64835,6 +64933,10 @@
           "description": "ODBC parameters for the SQL warehouse",
           "ref": "sql.OdbcParams",
           "launch_stage": "GA"
+        },
+        "reyden_cluster_size_multiplier": {
+          "description": "Cluster size multiplier for Reyden warehouses. Scales the effective compute\ncapacity relative to the nominal virtual cluster size. Only meaningful when\nthe warehouse is of Reyden type.\n\nAccepted range: 1.0 to the workspace-configured maximum (decimals\nallowed). The default maximum is 100.0.\n- Values below 1.0 are normalized to 1.0.\n- Values above the configured maximum are capped at that maximum.\n- When absent, the warehouse is treated as having a multiplier of 1.0.",
+          "launch_stage": "PRIVATE_PREVIEW"
         },
         "spot_instance_policy": {
           "description": "Configurations whether the endpoint should use spot instances.",
@@ -65133,6 +65235,13 @@
           "description": "warehouse creator name",
           "launch_stage": "GA"
         },
+        "customer_version_label": {
+          "description": "Compute version label for a REALTIME warehouse. This field is output only.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
+        },
         "enable_photon": {
           "description": "Configures whether the warehouse should use Photon optimized clusters.\n\nDefaults to true.",
           "launch_stage": "GA"
@@ -65165,6 +65274,10 @@
           "description": "the jdbc connection string for this warehouse",
           "launch_stage": "GA"
         },
+        "max_dbu": {
+          "description": "Maximum compute capacity of a real-time SQL warehouse, in DBU per hour.\nMust be a multiple of 3 between 3 and 960. The effective maximum cannot be\nlower than the warehouse's minimum capacity.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
         "max_num_clusters": {
           "description": "Maximum number of clusters that the autoscaler will create to handle\nconcurrent queries.\n\nSupported values:\n- Must be \u003e= min_num_clusters\n- Must be \u003c= 40.\n\nDefaults to min_clusters if unset.",
           "launch_stage": "GA"
@@ -65190,6 +65303,10 @@
           "description": "ODBC parameters for the SQL warehouse",
           "ref": "sql.OdbcParams",
           "launch_stage": "GA"
+        },
+        "reyden_cluster_size_multiplier": {
+          "description": "Cluster size multiplier for Reyden warehouses. Scales the effective compute\ncapacity relative to the nominal virtual cluster size. Only meaningful when\nthe warehouse is of Reyden type.\n\nAccepted range: 1.0 to the workspace-configured maximum (decimals\nallowed). The default maximum is 100.0.\n- Values below 1.0 are normalized to 1.0.\n- Values above the configured maximum are capped at that maximum.\n- When absent, the warehouse is treated as having a multiplier of 1.0.",
+          "launch_stage": "PRIVATE_PREVIEW"
         },
         "spot_instance_policy": {
           "description": "Configurations whether the endpoint should use spot instances.",
@@ -77537,7 +77654,7 @@
           },
           {
             "name": "CreateSkill",
-            "description": "Creates a skill in a Unity Catalog schema and provisions its managed bundle\nstorage. Specify its name in `skill_id`. The request contains an optional\ncomment but no bundle bytes. Upload bundle files through the Files API,\nthen call FinalizeSkill.\n\nYou must be the owner of the parent schema or have `CREATE_VOLUME` and\n`USE_SCHEMA` on it, plus `USE_CATALOG` on the parent catalog.",
+            "description": "Creates a skill in a Unity Catalog schema and provisions its managed bundle\nstorage. Specify its name in `skill_id`. The request contains an optional\ncomment but no bundle bytes.\n\nTo publish a skill:\n\n1. Call CreateSkill to create the skill in Unity Catalog.\n2. Upload every bundle file, including `SKILL.md` at the bundle root,\nwith the Files API:\n`PUT /api/2.0/fs/files/Skills/{catalog}/{schema}/{skill}/{file_path}`.\nThe CreateSkill caller owns the skill and can upload. Other callers\nneed `READ_VOLUME` and `WRITE_VOLUME` on the skill.\n3. Call FinalizeSkill to validate `SKILL.md` and set the skill's\n`bundle_name` and `description` from its frontmatter `name` and\n`description`.\n\nYou must be the owner of the parent schema or have `CREATE_VOLUME` and\n`USE_SCHEMA` on it, plus `USE_CATALOG` on the parent catalog.",
             "summary": "Create a skill.",
             "path": "/api/2.1/unity-catalog/skills",
             "can_use_json": true,
@@ -78127,7 +78244,7 @@
           },
           {
             "name": "FinalizeSkill",
-            "description": "Finalizes a skill after its bundle is uploaded. This method reads SKILL.md\nthrough the Files API using the caller's authorization. Its YAML\nfrontmatter must contain an agentskills.io-compliant `name` and a nonblank\n`description` within the configured UTF-8 byte limit. On success, it\nreplaces `bundle_name` and `description`; refreshes `finalize_time`,\n`update_time`, and `updated_by`; and returns the updated skill. `comment` is\npreserved. Re-finalization uses the latest SKILL.md and is last-write-wins\nwithout an etag precondition. Validation failures do not change metadata.\n\nYou must be the owner of the skill or have `READ_VOLUME` on it, plus\n`USE_CATALOG` on the parent catalog and `USE_SCHEMA` on the parent schema.",
+            "description": "Finalizes a skill after its bundle files are uploaded or changed through\nthe Files API. Call it again after every bundle change. This method reads\nSKILL.md through the Files API using the caller's authorization. Its YAML\nfrontmatter must contain an agentskills.io-compliant `name` and a nonblank\n`description` within the configured UTF-8 byte limit. On success, it\nreplaces `bundle_name` and `description`; refreshes `finalize_time`,\n`update_time`, and `updated_by`; and returns the updated skill. `comment` is\npreserved. Re-finalization uses the latest SKILL.md and is last-write-wins\nwithout an etag precondition. Validation failures do not change metadata.\n\nYou must be the owner of the skill or have `READ_VOLUME` on it, plus\n`USE_CATALOG` on the parent catalog and `USE_SCHEMA` on the parent schema.",
             "summary": "Finalize a skill.",
             "path": "/api/2.1/unity-catalog/{name=skills/*}/finalize",
             "has_required_positional_arguments": true,
@@ -78521,7 +78638,7 @@
             "all_fields": [
               {
                 "name": "page_size",
-                "description": "Maximum number of MCP services to return. Defaults to 100 when unset or 0;\nthe maximum is 200. Use `page_token` to retrieve additional pages.",
+                "description": "Maximum number of MCP services to return. Defaults to 200 when unset or 0;\nthe maximum is 200. Use `page_token` to retrieve additional pages.",
                 "is_query": true,
                 "entity": {
                   "is_int": true
@@ -78592,7 +78709,7 @@
             "all_fields": [
               {
                 "name": "page_size",
-                "description": "Maximum number of provider services to return. Defaults to 100 when unset or\n0; the maximum is 200. Use `page_token` to retrieve additional pages.",
+                "description": "Maximum number of provider services to return. Defaults to 200 when unset or\n0; the maximum is 200. Use `page_token` to retrieve additional pages.",
                 "is_query": true,
                 "entity": {
                   "is_int": true
@@ -78663,7 +78780,7 @@
             "all_fields": [
               {
                 "name": "page_size",
-                "description": "Maximum number of model services to return. Defaults to 100 when unset or 0;\nthe maximum is 200. Use `page_token` to retrieve additional pages.",
+                "description": "Maximum number of model services to return. Defaults to 200 when unset or 0;\nthe maximum is 200. Use `page_token` to retrieve additional pages.",
                 "is_query": true,
                 "entity": {
                   "is_int": true
@@ -78758,7 +78875,7 @@
             "all_fields": [
               {
                 "name": "page_size",
-                "description": "Maximum number of skills to return. Defaults to 100 when unset or 0; the\nmaximum is 200. Use `page_token` to retrieve additional pages.",
+                "description": "Maximum number of skills to return. Defaults to 200 when unset or 0; the\nmaximum is 200. Use `page_token` to retrieve additional pages.",
                 "is_query": true,
                 "entity": {
                   "is_int": true
@@ -79543,7 +79660,7 @@
           },
           {
             "name": "UpdateSkill",
-            "description": "Updates a skill. Only fields named in `update_mask` are changed; currently\nonly `comment` is supported. The resource name is immutable. Optionally\nsupply an `etag` to make the update conditional on the skill not having\nchanged since it was read. Bundle files, grants, tags, and ownership are\nunchanged.\n\nYou must be the owner of the skill or have `MANAGE` on it, plus\n`USE_CATALOG` on the parent catalog and `USE_SCHEMA` on the parent schema.",
+            "description": "Updates a skill. Only fields named in `update_mask` are changed; currently\nonly `comment` is supported. The resource name is immutable. Optionally\nsupply an `etag` to make the update conditional on the skill not having\nchanged since it was read. Bundle files, grants, tags, and ownership are\nunchanged.\n\nTo update the bundle, add, overwrite (`overwrite=true`), or delete files\nunder `/Skills/{catalog}/{schema}/{skill}/` with the Files API, then call\nFinalizeSkill. Changing bundle files requires being the owner of the skill\nor having `READ_VOLUME` and `WRITE_VOLUME` on it; `MANAGE` does not grant\naccess to bundle files.\n\nTo call UpdateSkill, you must be the owner of the skill or have `MANAGE` on\nit, plus `USE_CATALOG` on the parent catalog and `USE_SCHEMA` on the parent\nschema.",
             "summary": "Update a skill.",
             "path": "/api/2.1/unity-catalog/{name=skills/*}",
             "can_use_json": true,
@@ -93504,7 +93621,7 @@
           },
           {
             "name": "UpdateOperation",
-            "description": "Updates a resource operation's mutable fields.\n\n`state`, `error_message`, `resource_id`, `status`, and `dashboard_metadata`\nmay be updated, independently; `update_mask` must contain only those paths.\nAll other fields are immutable. The update is guarded by an\noptimistic-concurrency check: the caller sets `operation.sequence_id` to the\nvalue it last observed, and the server rejects the update with `ABORTED` if\nthe operation has been modified since. On success the server increments\n`sequence_id`; updates to `state`, `resource_id`, and `dashboard_metadata`\nare mirrored onto the corresponding deployment-level resource. Listing\n`state` in `update_mask` with no value clears it, which removes the\nresource, so a delete that is retried until it succeeds must clear `state`.\nThe parent version must be in progress, and after the update is applied a\nsucceeded operation cannot carry an `error_message`. See the `state` and\n`resource_id` fields for the rest.",
+            "description": "Updates a resource operation's mutable fields.\n\n`state`, `error_message`, `resource_id`, `status`, and `dashboard_metadata`\nmay be updated, independently; `update_mask` must contain only those paths.\nAll other fields are immutable. The update is guarded by an\noptimistic-concurrency check: the caller sets `operation.sequence_id` to the\nvalue it last observed, and the server rejects the update with `ABORTED` if\nthe operation has been modified since. On success the server increments\n`sequence_id`; updates to `state`, `resource_id`, and `dashboard_metadata`\nare mirrored onto the corresponding deployment-level resource. Listing\n`state` in `update_mask` with no value clears it, which removes the\ntracked resource, so a delete or unbind that succeeds must clear `state`.\nThe parent version must be in progress, and after the update is applied a\nsucceeded operation cannot carry an `error_message`. See the `state` and\n`resource_id` fields for the rest.",
             "summary": "Update an operation.",
             "path": "/api/2.0/bundle/{name=deployments/*/versions/*/operations/*}",
             "can_use_json": true,
@@ -93837,7 +93954,7 @@
               },
               {
                 "name": "state",
-                "description": "Serialized local config state after the operation. Its presence records\nwhether the resource still exists. Explicitly clearing state removes the resource;\nomitting it from the update mask leaves resource state unchanged.\nState is stored only on Resources. UpdateOperation accepts state but omits it\nfrom its response, as do subsequent GetOperation and ListOperations.\n\nMutable: may be updated after creation via UpdateOperation. When updating,\nthe caller must echo the last-observed `sequence_id` as a concurrency\nprecondition.\n\nThe string is not parsed; it is projected onto the corresponding Resource's\nstate. It is deliberately not google.protobuf.Value, whose only numeric case\nis `double number_value`, so parsing the client's JSON into it rewrites every\ninteger as a double - `1` reads back as `1.0`, which no longer deserializes\ninto an integer field - and silently loses precision above 2^53, which is\nwithin range for IDs the client records.\n\nA string rather than bytes: the payload is always UTF-8 JSON, and proto3 JSON\nmaps bytes to base64, which inflates every request and response by a third\nand makes state unreadable in logs and API responses. Both generate the same\nOpenAPI schema (\"type\": \"string\"), so the SDKs are identical either way.",
+                "description": "Serialized local config state after the operation. Its presence records\nwhether the resource is still tracked by the deployment. Explicitly clearing\nstate removes the resource from the deployment; omitting it from the update\nmask leaves resource state unchanged.\nState is stored only on Resources. UpdateOperation accepts state but omits it\nfrom its response, as do subsequent GetOperation and ListOperations.\n\nMutable: may be updated after creation via UpdateOperation. When updating,\nthe caller must echo the last-observed `sequence_id` as a concurrency\nprecondition.\n\nThe string is not parsed; it is projected onto the corresponding Resource's\nstate. It is deliberately not google.protobuf.Value, whose only numeric case\nis `double number_value`, so parsing the client's JSON into it rewrites every\ninteger as a double - `1` reads back as `1.0`, which no longer deserializes\ninto an integer field - and silently loses precision above 2^53, which is\nwithin range for IDs the client records.\n\nA string rather than bytes: the payload is always UTF-8 JSON, and proto3 JSON\nmaps bytes to base64, which inflates every request and response by a third\nand makes state unreadable in logs and API responses. Both generate the same\nOpenAPI schema (\"type\": \"string\"), so the SDKs are identical either way.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -177531,7 +177648,7 @@
               },
               {
                 "name": "order_by",
-                "description": "A list of strings specifying the order of results.\nSupported order_by fields are id and name. The default is id asc.\nThis field is optional.",
+                "description": "A list of strings specifying the order of results.\nThe supported order_by field is id. The default is id asc.\nThis field is optional.",
                 "is_query": true,
                 "entity": {
                   "pascal_name": "List",
@@ -211625,16 +211742,6 @@
                 }
               },
               {
-                "name": "replication_config",
-                "description": "Configuration for share replication.",
-                "is_request_body_field": true,
-                "is_optional_object": true,
-                "entity": {
-                  "pascal_name": "ReplicationConfig",
-                  "is_object": true
-                }
-              },
-              {
                 "name": "storage_root",
                 "description": "Storage root URL for the share.",
                 "is_request_body_field": true,
@@ -225093,6 +225200,15 @@
                 }
               },
               {
+                "name": "customer_version_label",
+                "description": "Compute version label for a REALTIME warehouse. This field is output only.",
+                "is_output_only": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
                 "name": "enable_photon",
                 "description": "Configures whether the warehouse should use Photon optimized clusters.\n\nDefaults to true.",
                 "is_request_body_field": true,
@@ -225117,6 +225233,14 @@
                 }
               },
               {
+                "name": "max_dbu",
+                "description": "Maximum compute capacity of a real-time SQL warehouse, in DBU per hour.\nMust be a multiple of 3 between 3 and 960. The effective maximum cannot be\nlower than the warehouse's minimum capacity.",
+                "is_request_body_field": true,
+                "entity": {
+                  "is_int": true
+                }
+              },
+              {
                 "name": "max_num_clusters",
                 "description": "Maximum number of clusters that the autoscaler will create to handle\nconcurrent queries.\n\nSupported values:\n- Must be \u003e= min_num_clusters\n- Must be \u003c= 40.\n\nDefaults to min_clusters if unset.",
                 "is_request_body_field": true,
@@ -225138,6 +225262,14 @@
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
+                }
+              },
+              {
+                "name": "reyden_cluster_size_multiplier",
+                "description": "Cluster size multiplier for Reyden warehouses. Scales the effective compute\ncapacity relative to the nominal virtual cluster size. Only meaningful when\nthe warehouse is of Reyden type.\n\nAccepted range: 1.0 to the workspace-configured maximum (decimals\nallowed). The default maximum is 100.0.\n- Values below 1.0 are normalized to 1.0.\n- Values above the configured maximum are capped at that maximum.\n- When absent, the warehouse is treated as having a multiplier of 1.0.",
+                "is_request_body_field": true,
+                "entity": {
+                  "is_float64": true
                 }
               },
               {
@@ -225715,6 +225847,15 @@
                 }
               },
               {
+                "name": "customer_version_label",
+                "description": "Compute version label for a REALTIME warehouse. This field is output only.",
+                "is_output_only": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
                 "name": "enable_photon",
                 "description": "Configures whether the warehouse should use Photon optimized clusters.\n\nDefaults to true.",
                 "is_request_body_field": true,
@@ -225748,6 +225889,14 @@
                 }
               },
               {
+                "name": "max_dbu",
+                "description": "Maximum compute capacity of a real-time SQL warehouse, in DBU per hour.\nMust be a multiple of 3 between 3 and 960. The effective maximum cannot be\nlower than the warehouse's minimum capacity.",
+                "is_request_body_field": true,
+                "entity": {
+                  "is_int": true
+                }
+              },
+              {
                 "name": "max_num_clusters",
                 "description": "Maximum number of clusters that the autoscaler will create to handle\nconcurrent queries.\n\nSupported values:\n- Must be \u003e= min_num_clusters\n- Must be \u003c= 40.\n\nDefaults to min_clusters if unset.",
                 "is_request_body_field": true,
@@ -225769,6 +225918,14 @@
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
+                }
+              },
+              {
+                "name": "reyden_cluster_size_multiplier",
+                "description": "Cluster size multiplier for Reyden warehouses. Scales the effective compute\ncapacity relative to the nominal virtual cluster size. Only meaningful when\nthe warehouse is of Reyden type.\n\nAccepted range: 1.0 to the workspace-configured maximum (decimals\nallowed). The default maximum is 100.0.\n- Values below 1.0 are normalized to 1.0.\n- Values above the configured maximum are capped at that maximum.\n- When absent, the warehouse is treated as having a multiplier of 1.0.",
+                "is_request_body_field": true,
+                "entity": {
+                  "is_float64": true
                 }
               },
               {

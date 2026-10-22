@@ -6,8 +6,6 @@ from typing import Literal
 
 class SubscriptionAttachmentPageAttachmentPageSelection(Enum):
     """
-    :meta private: [EXPERIMENTAL]
-
     Determines which dashboard pages are attached to the notification.
     """
 
