@@ -290,7 +290,7 @@ var testConfig map[string]any = map[string]any{
 	},
 
 	"internal_immutable_snapshots": &resources.Snapshot{
-		RemoteRoot: "/Workspace/Users/" + testserver.TestUserSP.UserName + "/.snapshots",
+		RemoteRoot: "/Workspace/Users/" + testserver.SnapshotRootUUID + "/.snapshots",
 		BundleID:   "test-bundle-id",
 		ACL:        []snapshot.ACLEntry{{UserName: "user@example.com", PermissionLevel: "CAN_READ"}},
 	},
