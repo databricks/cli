@@ -449,16 +449,20 @@ func (db *DeploymentState) StateFeatures() map[string]struct{} {
 	return maps.Clone(db.Data.Features)
 }
 
-// GetSerial reports the counter a saved plan is validated against: the service's version for a
-// deployment that records history, and the state serial otherwise. When the deployment uses the
-// deployment metadata service, the serial from resources.json is not used for plan validation.
+// GetSerial reports the counter used to validate saved plans.
+// DMS modes use the service version; plain file modes use the file serial.
+// File modes with history use the larger counter because either can advance independently.
 func (db *DeploymentState) GetSerial() int {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	if db.isDeploymentMetadataService() {
+	switch db.mode {
+	case ReadingDMS, WritingDMS:
 		return db.VersionID
+	case WritingFileWithHistory, WritingFileWithHistoryEnforced:
+		return max(db.VersionID, db.Data.Serial)
+	default:
+		return db.Data.Serial
 	}
-	return db.Data.Serial
 }
 
 // IsDeploymentMetadataService reports whether this deployment's resource state lives in the

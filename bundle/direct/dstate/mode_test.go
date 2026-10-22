@@ -55,6 +55,34 @@ func modeContext(t *testing.T, handler http.HandlerFunc) context.Context {
 	return cmdctx.SetWorkspaceClient(t.Context(), client)
 }
 
+func TestGetSerialWithDivergingCounters(t *testing.T) {
+	for _, tc := range []struct {
+		mode         dstate.Mode
+		versionAhead int
+		serialAhead  int
+	}{
+		{dstate.ReadingFile, 4, 7},
+		{dstate.WritingFile, 4, 7},
+		{dstate.ReadingDMS, 7, 4},
+		{dstate.WritingDMS, 7, 4},
+		{dstate.WritingFileWithHistory, 7, 7},
+		{dstate.WritingFileWithHistoryEnforced, 7, 7},
+	} {
+		t.Run(fmt.Sprint(tc.mode), func(t *testing.T) {
+			ctx := modeContext(t, nil)
+			var db dstate.DeploymentState
+			path := filepath.Join(t.TempDir(), "resources.json")
+			require.NoError(t, db.Open(ctx, path, tc.mode, false, dstate.OpenDmsArgs{}))
+			db.Data.Serial, db.VersionID = 4, 7
+			assert.Equal(t, tc.versionAhead, db.GetSerial(), "DMS version ahead of file serial")
+			db.Data.Serial, db.VersionID = 7, 4
+			assert.Equal(t, tc.serialAhead, db.GetSerial(), "file serial ahead of DMS version")
+			_, err := db.Finalize(ctx)
+			require.NoError(t, err)
+		})
+	}
+}
+
 func TestModeAssertions(t *testing.T) {
 	for _, tc := range []struct {
 		mode     dstate.Mode
