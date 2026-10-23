@@ -14,19 +14,19 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 {
   "action": "skip",
   "store_config_changes": {
-    "materialized_features[member='main.myschema.destfeat|danielb|false'].online_store_config.catalog_name": {
+    "materialized_features[member='feature_name=main.myschema.destfeat|is_streaming_mode=false'].offline_store_config": {
       "action": "skip",
       "reason": "input_only_not_returned"
     },
-    "materialized_features[member='main.myschema.destfeat|danielb|false'].online_store_config.schema_name": {
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.catalog_name": {
       "action": "skip",
       "reason": "input_only_not_returned"
     },
-    "materialized_features[member='main.myschema.destfeat|danielb|false'].online_store_config.table_name_prefix": {
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.schema_name": {
       "action": "skip",
       "reason": "input_only_not_returned"
     },
-    "materialized_features[member='main.myschema.destfeat||false'].offline_store_config": {
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.table_name_prefix": {
       "action": "skip",
       "reason": "input_only_not_returned"
     }
@@ -47,19 +47,19 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 {
   "action": "recreate",
   "store_config_changes": {
-    "materialized_features[member='main.myschema.destfeat|danielb|false'].online_store_config.catalog_name": {
+    "materialized_features[member='feature_name=main.myschema.destfeat|is_streaming_mode=false'].offline_store_config": {
+      "action": "skip",
+      "reason": "input_only_not_returned"
+    },
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.catalog_name": {
       "action": "recreate",
       "reason": "spec:immutable"
     },
-    "materialized_features[member='main.myschema.destfeat|danielb|false'].online_store_config.schema_name": {
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.schema_name": {
       "action": "skip",
       "reason": "input_only_not_returned"
     },
-    "materialized_features[member='main.myschema.destfeat|danielb|false'].online_store_config.table_name_prefix": {
-      "action": "skip",
-      "reason": "input_only_not_returned"
-    },
-    "materialized_features[member='main.myschema.destfeat||false'].offline_store_config": {
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.table_name_prefix": {
       "action": "skip",
       "reason": "input_only_not_returned"
     }
@@ -77,25 +77,25 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 {
   "action": "recreate",
   "store_config_changes": {
-    "materialized_features[member='main.myschema.destfeat|danielb|false'].online_store_config.catalog_name": {
+    "materialized_features[member='feature_name=main.myschema.destfeat|is_streaming_mode=false'].offline_store_config": {
       "action": "skip",
       "reason": "input_only_not_returned"
     },
-    "materialized_features[member='main.myschema.destfeat|danielb|false'].online_store_config.schema_name": {
-      "action": "skip",
-      "reason": "input_only_not_returned"
-    },
-    "materialized_features[member='main.myschema.destfeat|danielb|false'].online_store_config.table_name_prefix": {
-      "action": "skip",
-      "reason": "input_only_not_returned"
-    },
-    "materialized_features[member='main.myschema.destfeat||false'].offline_store_config": {
-      "action": "skip",
-      "reason": "input_only_not_returned"
-    },
-    "materialized_features[member='main.myschema.destfeat||false'].offline_store_config.table_name_prefix": {
+    "materialized_features[member='feature_name=main.myschema.destfeat|is_streaming_mode=false'].offline_store_config.table_name_prefix": {
       "action": "recreate",
       "reason": "spec:immutable"
+    },
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.catalog_name": {
+      "action": "skip",
+      "reason": "input_only_not_returned"
+    },
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.schema_name": {
+      "action": "skip",
+      "reason": "input_only_not_returned"
+    },
+    "materialized_features[member='feature_name=main.myschema.destfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.table_name_prefix": {
+      "action": "skip",
+      "reason": "input_only_not_returned"
     }
   }
 }

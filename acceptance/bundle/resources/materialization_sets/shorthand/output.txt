@@ -58,8 +58,8 @@ skip
 recreate
 
 >>> recreated_fields
-materialized_features[member='danielb.fs2680.shd_[UNIQUE_NAME]|danielb|false'].online_store_config.table_name_prefix
-materialized_features[member='danielb.fs2680.shd_[UNIQUE_NAME]|danielb|true'].online_store_config.table_name_prefix
+materialized_features[member='feature_name=danielb.fs2680.shd_[UNIQUE_NAME]|online_store_name=danielb|is_streaming_mode=false'].online_store_config.table_name_prefix
+materialized_features[member='feature_name=danielb.fs2680.shd_[UNIQUE_NAME]|online_store_name=danielb|is_streaming_mode=true'].online_store_config.table_name_prefix
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-shorthand-[UNIQUE_NAME]/default/files...

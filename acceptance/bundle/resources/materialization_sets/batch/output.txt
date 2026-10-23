@@ -149,8 +149,8 @@ Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
 }
 
 >>> jq -r .plan["resources.materialization_sets.set1"].changes | to_entries | map(select(.value.action == "recreate")) | .[] | "\(.value.reason) old=\(.value.old) new=\(.value.new)" out.plan.json
-spec:immutable old=batch_[UNIQUE_NAME] new=moved_[UNIQUE_NAME]
 spec:immutable old=batch_[UNIQUE_NAME]_off new=moved_[UNIQUE_NAME]_off
+spec:immutable old=batch_[UNIQUE_NAME] new=moved_[UNIQUE_NAME]
 
 === The schedule state is write-once, so pausing the feature is a recreate rather than the
 === in-place update the endpoint would refuse

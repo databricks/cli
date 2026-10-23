@@ -28,13 +28,13 @@ func TestMaterializationSetMemberKey(t *testing.T) {
 
 	field, value := materializationSetMemberKey(offline)
 	assert.Equal(t, "member", field)
-	assert.Equal(t, "main.default.feat||false", value)
+	assert.Equal(t, "feature_name=main.default.feat|is_streaming_mode=false", value)
 
 	_, onlineValue := materializationSetMemberKey(online)
-	assert.Equal(t, "main.default.feat|store_one|false", onlineValue)
+	assert.Equal(t, "feature_name=main.default.feat|online_store_name=store_one|is_streaming_mode=false", onlineValue)
 
 	_, streamingValue := materializationSetMemberKey(streaming)
-	assert.Equal(t, "main.default.feat||true", streamingValue)
+	assert.Equal(t, "feature_name=main.default.feat|is_streaming_mode=true", streamingValue)
 
 	// The three members of one feature must not collide with each other.
 	assert.NotEqual(t, value, onlineValue)
@@ -64,6 +64,25 @@ func TestMaterializationSetMemberKeyEscapesSeparator(t *testing.T) {
 		OnlineStoreConfig: &ml.OnlineStoreConfig{OnlineStoreName: "c"},
 	})
 	assert.NotEqual(t, first, forged)
+}
+
+// An absent online destination and an online destination carrying no store name are distinct
+// members, which is why the component is omitted rather than left empty.
+func TestMaterializationSetMemberKeySeparatesAbsentOnlineStoreFromEmptyName(t *testing.T) {
+	_, offline := materializationSetMemberKey(ml.MaterializedFeature{
+		FeatureName:        "main.default.feat",
+		OfflineStoreConfig: &ml.OfflineStoreConfig{CatalogName: "main", SchemaName: "default"},
+	})
+	_, onlineWithoutName := materializationSetMemberKey(ml.MaterializedFeature{
+		FeatureName:       "main.default.feat",
+		OnlineStoreConfig: &ml.OnlineStoreConfig{CatalogName: "main", SchemaName: "default"},
+	})
+
+	assert.Equal(t, "feature_name=main.default.feat|is_streaming_mode=false", offline)
+	assert.Equal(t,
+		"feature_name=main.default.feat|online_store_name=|is_streaming_mode=false",
+		onlineWithoutName)
+	assert.NotEqual(t, offline, onlineWithoutName)
 }
 
 // operationStub stands in for a generated operation interface. The three verbs' interfaces differ
@@ -154,7 +173,7 @@ func TestMaterializationSetChangeFailuresWithoutFailedMembers(t *testing.T) {
 // shapes it covers are a member added or removed whole and the member list emptied whole; every
 // other path keeps the action the rules gave it.
 func TestMaterializationSetMembershipChangeIsAnUpdate(t *testing.T) {
-	const member = "materialized_features[member='main.ns.feat|store|false']"
+	const member = "materialized_features[member='feature_name=main.ns.feat|online_store_name=store|is_streaming_mode=false']"
 
 	for _, test := range []struct {
 		path   string
@@ -162,7 +181,7 @@ func TestMaterializationSetMembershipChangeIsAnUpdate(t *testing.T) {
 	}{
 		{"materialized_features", deployplan.Update},
 		{member, deployplan.Update},
-		{"materialized_features[member='main.ns.feat||false']", deployplan.Update},
+		{"materialized_features[member='feature_name=main.ns.feat|is_streaming_mode=false']", deployplan.Update},
 		{member + ".feature_name", deployplan.Recreate},
 		{member + ".cron_schedule_trigger", deployplan.Recreate},
 		{member + ".online_store_config.table_name_prefix", deployplan.Recreate},
@@ -185,7 +204,7 @@ func TestMaterializationSetMembershipChangeIsAnUpdate(t *testing.T) {
 // input-only suppression, which only ever sees a member's destination three segments down.
 func TestMaterializationSetDestinationSuppressionStillReachesMemberFields(t *testing.T) {
 	path, err := structpath.ParsePath(
-		"materialized_features[member='main.ns.feat||false'].offline_store_config")
+		"materialized_features[member='feature_name=main.ns.feat|is_streaming_mode=false'].offline_store_config")
 	require.NoError(t, err)
 
 	change := &ChangeDesc{Action: deployplan.Recreate, Reason: "spec:immutable", New: "declared"}

@@ -44,24 +44,25 @@ func escapeMemberKeyPart(part string) string {
 }
 
 // materializationSetMemberKey identifies a materialized feature member by content rather than
-// position. The key components are the feature name, the online store name (empty for the offline
-// member), and whether the trigger is streaming.
+// position, as labelled components joined by the separator escapeMemberKeyPart escapes.
 //
-// The server builds a key from the same three components, in the same order, in
-// MaterializationSetMemberKey.keyOf -- see
+// online_store_name is omitted rather than left empty when the member has no online destination,
+// which is what keeps an offline member distinct from an online one whose store name is unset.
+//
+// The server pairs members by the same components in MaterializationSetMemberKey -- see
 // feature-store/src/main/scala/com/databricks/feature-store/utils/materialized-features/MaterializationSetUtils.scala
-// -- and pairs a requested member with a stored one by it. Adding, dropping or redefining a
-// component here takes the same change there.
+// -- holding them in a case class rather than a joined string, so this encoding is the CLI's own
+// and only the component list has to agree. Adding, dropping or redefining one takes the same
+// change there.
 func materializationSetMemberKey(member ml.MaterializedFeature) (string, string) {
-	onlineStoreName := ""
+	parts := []string{"feature_name=" + escapeMemberKeyPart(member.FeatureName)}
 	if member.OnlineStoreConfig != nil {
-		onlineStoreName = member.OnlineStoreConfig.OnlineStoreName
+		parts = append(parts,
+			"online_store_name="+escapeMemberKeyPart(member.OnlineStoreConfig.OnlineStoreName))
 	}
-	return "member", strings.Join([]string{
-		escapeMemberKeyPart(member.FeatureName),
-		escapeMemberKeyPart(onlineStoreName),
-		strconv.FormatBool(member.StreamingMode != nil),
-	}, "|")
+	parts = append(parts, "is_streaming_mode="+strconv.FormatBool(member.StreamingMode != nil))
+
+	return "member", strings.Join(parts, "|")
 }
 
 func (*ResourceMaterializationSet) KeyedSlices() map[string]any {
@@ -118,9 +119,9 @@ func isAbsentRemotely(remote any) bool {
 // destroy-and-recreate, and it suppresses the drift left behind by an ignore_remote_changes rule
 // that cannot fire.
 func (*ResourceMaterializationSet) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *ml.MaterializationSet) error {
-	// A member added or removed whole is a two-segment path,
-	// materialized_features[member='<feature name>|<online store name>|<is streaming>'], and the
-	// member list emptied whole is the one-segment materialized_features. An immutable field rule
+	// A member added or removed whole is a two-segment path, materialized_features[member=...]
+	// carrying the key materializationSetMemberKey builds, and the member list emptied whole is the
+	// one-segment materialized_features. An immutable field rule
 	// under materialized_features[*] matches either, because the matcher truncates a pattern longer
 	// than the path. Both count as an update rather than a destroy-and-recreate, because
 	// reconciling membership is what the update endpoint does: it refuses an addition by naming the

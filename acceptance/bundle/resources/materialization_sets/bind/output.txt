@@ -33,10 +33,10 @@ Run 'bundle deploy' to deploy changes to your workspace
 }
 
 >>> destination_changes
-materialized_features[member='main.myschema.bindfeat|danielb|false'].online_store_config.catalog_name skip input_only_not_returned
-materialized_features[member='main.myschema.bindfeat|danielb|false'].online_store_config.schema_name skip input_only_not_returned
-materialized_features[member='main.myschema.bindfeat|danielb|false'].online_store_config.table_name_prefix skip input_only_not_returned
-materialized_features[member='main.myschema.bindfeat||false'].offline_store_config skip input_only_not_returned
+materialized_features[member='feature_name=main.myschema.bindfeat|is_streaming_mode=false'].offline_store_config skip input_only_not_returned
+materialized_features[member='feature_name=main.myschema.bindfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.catalog_name skip input_only_not_returned
+materialized_features[member='feature_name=main.myschema.bindfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.schema_name skip input_only_not_returned
+materialized_features[member='feature_name=main.myschema.bindfeat|online_store_name=danielb|is_streaming_mode=false'].online_store_config.table_name_prefix skip input_only_not_returned
 
 === And the deploy is a no-op rather than a rebuild
 >>> [CLI] bundle deploy
