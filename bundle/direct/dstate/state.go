@@ -563,7 +563,8 @@ func (db *DeploymentState) reset() {
 	db.Data = Database{}
 	db.stateIDs = nil
 	db.historyDrainTimeout = 0
-	// Retain recording state only while version completion is pending.
+	// Keep the buffer, mode, and IDs after Finalize so CompleteVersion can use them.
+	// Clear them if no version was started, or CompleteVersion has copied what it needs.
 	if db.operationBuffer == nil || db.versionCompleted {
 		db.mode = ReadingFile
 		db.operationBuffer = nil
