@@ -1,0 +1,10 @@
+# Isolate HOME so parallel aitools tests don't race on a shared ~/.databricks.
+sethome home
+use_compat_manifest
+
+# Known gap: list does not fall back to the embedded skills version, so a
+# failed latest-release lookup fails the command.
+trace musterr $CLI aitools list --output json
+
+title "The lookup fails, so the manifest is never fetched\n"
+trace print_requests.py --get

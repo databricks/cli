@@ -1,0 +1,168 @@
+name: Regression report
+
+# Runs the acceptance tests a PR changed against main and the latest release, and posts the
+# result as a PR comment (see `./task regr`). A new commit updates the same comment.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# A newer commit supersedes the run in progress, so an old report never overwrites a new one.
+concurrency:
+  group: regression-report-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  # The tests are selected from changes under acceptance/ (see acceptance/internal/selection),
+  # so a PR without any skips the expensive job. A comment left by an earlier commit that did
+  # change them is deleted here, as the expensive job no longer runs to do it.
+  changes:
+    # Fork PRs get a read-only token and cannot comment.
+    if: >-
+      !github.event.pull_request.head.repo.fork &&
+      github.actor != 'dependabot[bot]'
+
+    # The org's IP allow list only lets this runner group call the GitHub API.
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    outputs:
+      acceptance: ${{ steps.changes.outputs.acceptance }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      # The same diff the selection makes (see selection.FromGit): the merge commit GitHub checks
+      # out for the PR against its merge base with origin/main.
+      - name: Detect acceptance test changes
+        id: changes
+        run: |
+          if [[ -n "$(git diff --name-only --merge-base origin/main HEAD -- acceptance/)" ]]; then
+            echo "acceptance=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "acceptance=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Delete the report comment of an earlier commit
+        if: ${{ steps.changes.outputs.acceptance == 'false' }}
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |-
+            const { owner, repo } = context.repo;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number: context.issue.number,
+            });
+            const existing = comments.find(c =>
+              c.user.login === 'github-actions[bot]' && c.body && c.body.startsWith('<!-- regression-test-report -->'));
+            if (existing) {
+              await github.rest.issues.deleteComment({ owner, repo, comment_id: existing.id });
+            }
+
+  regression-report:
+    needs: changes
+    if: ${{ needs.changes.outputs.acceptance == 'true' }}
+
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          # The Go cache is only saved by runs on main, and this workflow never runs there,
+          # so it reuses the key push.yml saves for its Linux test job.
+          cache-key: test-direct
+
+      # `git diff --merge-base origin/main` needs origin/main and enough history. This must run
+      # AFTER setup-build-environment, whose own checkout would re-shallow the repo.
+      - name: Fetch origin/main
+        run: |
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+            git fetch --no-tags --unshallow origin
+          fi
+
+      - name: Run regression tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: go tool -modfile=tools/task/go.mod task regr
+
+      - name: Upload report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: regression-report
+          path: regression_report.md
+          if-no-files-found: ignore
+          retention-days: 7
+
+      # No report means no acceptance tests are changed (anymore), so there is nothing to
+      # comment: drop the comment of an earlier commit instead of leaving it stale.
+      - name: Post, update or delete PR comment
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |-
+            const fs = require('fs');
+            const path = process.env.GITHUB_WORKSPACE + '/regression_report.md';
+
+            // Other comments by the same bot are left alone: ours is found by this marker.
+            const MARKER = '<!-- regression-test-report -->';
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number,
+            });
+            const existing = comments.find(c =>
+              c.user.login === 'github-actions[bot]' && c.body && c.body.startsWith(MARKER));
+
+            if (!fs.existsSync(path)) {
+              if (existing) {
+                await github.rest.issues.deleteComment({ owner, repo, comment_id: existing.id });
+              }
+              return;
+            }
+
+            const sha = context.payload.pull_request.head.sha;
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const commitUrl = `${context.serverUrl}/${owner}/${repo}/commit/${sha}`;
+
+            // Comments are limited to 65536 characters; the artifact holds the full report. The table
+            // comes first, then one <details> block per failure: drop whole blocks that do not fit,
+            // as cutting one in the middle would leave its markup open.
+            const MAX_REPORT = 60000;
+            let report = fs.readFileSync(path, 'utf8');
+            if (report.length > MAX_REPORT) {
+              const [head, ...blocks] = report.split('<details>\n');
+              let kept = head;
+              let shown = 0;
+              for (const block of blocks) {
+                if (kept.length + block.length > MAX_REPORT) break;
+                kept += '<details>\n' + block;
+                shown++;
+              }
+              report = kept + `_${blocks.length - shown} more failure details omitted, see the full report in the [run](${runUrl})._\n`;
+            }
+
+            const body = `${MARKER}\nCommit: [\`${sha.slice(0, 9)}\`](${commitUrl}) | [Workflow run](${runUrl})\n\n${report}`;
+
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }

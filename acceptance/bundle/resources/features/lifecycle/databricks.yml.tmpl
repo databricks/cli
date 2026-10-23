@@ -1,0 +1,23 @@
+bundle:
+  name: test-features-lifecycle-$UNIQUE_NAME
+
+resources:
+  features:
+    feature1:
+      full_name: $SCHEMA_FULL_NAME.feature_$UNIQUE_NAME
+      description: DESCRIPTION1
+      source:
+        delta_table_source:
+          full_name: $TABLE_NAME
+      function:
+        aggregation_function:
+          count_function:
+            input: value
+          time_window:
+            sliding:
+              window_duration: 604800s
+              slide_duration: 86400s
+      entities:
+        - name: id
+      timeseries_column:
+        name: timestamp

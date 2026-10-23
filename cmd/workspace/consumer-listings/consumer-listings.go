@@ -20,18 +20,16 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "consumer-listings",
-		Short: `*Public Preview* Listings are the core entities in the Marketplace.`,
-		Long: `This command is in Public Preview and may change without notice.
-
-Listings are the core entities in the Marketplace. They represent the products
+		Short: `Listings are the core entities in the Marketplace.`,
+		Long: `Listings are the core entities in the Marketplace. They represent the products
   that are available for consumption.`,
 		GroupID: "marketplace",
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newBatchGet())
@@ -64,17 +62,15 @@ func newBatchGet() *cobra.Command {
 	// TODO: array: ids
 
 	cmd.Use = "batch-get"
-	cmd.Short = `*Public Preview* Get one batch of listings. One may specify up to 50 IDs per request.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Get one batch of listings. One may specify up to 50 IDs per request.
+	cmd.Short = `Get one batch of listings. One may specify up to 50 IDs per request.`
+	cmd.Long = `Get one batch of listings. One may specify up to 50 IDs per request.
 
   Batch get a published listing in the Databricks Marketplace that the consumer
   has access to.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -121,17 +117,15 @@ func newGet() *cobra.Command {
 	var getReq marketplace.GetListingRequest
 
 	cmd.Use = "get ID"
-	cmd.Short = `*Public Preview* Get listing.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Get listing.
+	cmd.Short = `Get listing.`
+	cmd.Long = `Get listing.
 
   Get a published listing in the Databricks Marketplace that the consumer has
   access to.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -212,17 +206,15 @@ func newList() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
-	cmd.Short = `*Public Preview* List listings.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-List listings.
+	cmd.Short = `List listings.`
+	cmd.Long = `List listings.
 
   List all published listings in the Databricks Marketplace that the consumer
   has access to.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -290,10 +282,8 @@ func newSearch() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "search QUERY"
-	cmd.Short = `*Public Preview* Search listings.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Search listings.
+	cmd.Short = `Search listings.`
+	cmd.Long = `Search listings.
 
   Search published listings in the Databricks Marketplace that the consumer has
   access to. This query supports a variety of different search parameters and
@@ -303,8 +293,8 @@ Search listings.
     QUERY: Fuzzy matches query`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {

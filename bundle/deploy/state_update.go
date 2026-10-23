@@ -7,13 +7,13 @@ import (
 	"io/fs"
 	"os"
 	"time"
+	"uuid"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
-	"github.com/google/uuid"
 )
 
 type stateUpdate struct{}
@@ -46,7 +46,7 @@ func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 	state.Files = fl
 
 	// Generate a UUID for the deployment, if one does not already exist
-	if state.ID == uuid.Nil {
+	if state.ID == uuid.Nil() {
 		state.ID = uuid.New()
 	}
 	b.Metrics.DeploymentId = state.ID

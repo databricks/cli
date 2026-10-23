@@ -1,0 +1,175 @@
+
+=== Replay a prior terraform deployment of a job only
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
+
+=== Add a new alert and a job task that references it
+=== Plan shows the new alert and the job update (the terraform state is migrated in memory)
+>>> [CLI] bundle plan -o json
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+{
+  "plan_version": [PLAN_VERSION],
+  "cli_version": "[CLI_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 3,
+  "plan": {
+    "resources.alerts.new_alert": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "display_name": "New alert",
+          "evaluation": {
+            "comparison_operator": "EQUAL",
+            "notification": {
+              "retrigger_seconds": 300
+            },
+            "source": {
+              "name": "1"
+            },
+            "threshold": {
+              "value": {
+                "double_value": 1.3
+              }
+            }
+          },
+          "parent_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/resources",
+          "query_text": "select 2",
+          "schedule": {
+            "pause_status": "UNPAUSED",
+            "quartz_cron_schedule": "44 19 */1 * * ?",
+            "timezone_id": "Europe/Amsterdam"
+          },
+          "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+        }
+      }
+    },
+    "resources.jobs.test_job": {
+      "depends_on": [
+        {
+          "node": "resources.alerts.new_alert",
+          "label": "${resources.alerts.new_alert.evaluation.notification.retrigger_seconds}"
+        },
+        {
+          "node": "resources.alerts.new_alert",
+          "label": "${resources.alerts.new_alert.id}"
+        }
+      ],
+      "action": "update",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "Test Auto-Migrate Job",
+          "queue": {
+            "enabled": true
+          },
+          "tasks": [
+            {
+              "alert_task": {
+                "alert_id": "${resources.alerts.new_alert.id}"
+              },
+              "task_key": "check"
+            }
+          ],
+          "timeout_seconds": 300
+        },
+        "vars": {
+          "tasks[0].alert_task.alert_id": "${resources.alerts.new_alert.id}"
+        }
+      },
+      "remote_state": {
+        "created_time": [UNIX_TIME_MILLIS],
+        "creator_user_name": "[USERNAME]",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "email_notifications": {},
+        "format": "MULTI_TASK",
+        "job_id": [TEST_JOB_ID],
+        "max_concurrent_runs": 1,
+        "name": "Test Auto-Migrate Job",
+        "queue": {
+          "enabled": true
+        },
+        "run_as_user_name": "[USERNAME]",
+        "timeout_seconds": 0,
+        "webhook_notifications": {}
+      },
+      "changes": {
+        "email_notifications": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": {}
+        },
+        "tasks": {
+          "action": "update",
+          "old": [
+            {
+              "alert_task": {
+                "alert_id": ""
+              },
+              "task_key": "check"
+            }
+          ],
+          "new": [
+            {
+              "alert_task": {
+                "alert_id": "${resources.alerts.new_alert.id}"
+              },
+              "task_key": "check"
+            }
+          ]
+        },
+        "tasks[task_key='check'].alert_task.alert_id": {
+          "action": "update",
+          "old": "",
+          "new": "${resources.alerts.new_alert.id}"
+        },
+        "timeout_seconds": {
+          "action": "update",
+          "new": 300,
+          "remote": 0
+        },
+        "webhook_notifications": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": {}
+        }
+      }
+    }
+  }
+}
+
+=== Deploy migrates to direct, creates the alert and updates the job
+>>> [CLI] bundle deploy
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Migrated 1 resource to direct deployment engine.
+Created alerts.new_alert
+Updated jobs.test_job
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 1 changed, 0 deleted, 0 unchanged
+
+=== The job update carries the new alert id and timeout
+>>> print_requests.py //api/2.2/jobs/reset
+json.body.new_settings.tasks[0].alert_task.alert_id = "[NEW_ALERT_ID]";
+json.body.new_settings.timeout_seconds = 300;
+
+=== Redeploy is a no-op
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.alerts.new_alert
+  delete resources.jobs.test_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 2 deleted

@@ -172,9 +172,9 @@ func TestValidateExecutable(t *testing.T) {
 			require.NoError(t, err)
 			err = m.ValidateExecutable()
 			require.ErrorIs(t, err, exec.ErrNotFound)
-			assert.ErrorContains(t, err, "--skip-install")
+			assert.ErrorContains(t, err, "databricks apps init --skip-install")
 			if name == "pnpm" {
-				assert.ErrorContains(t, err, "--package-manager npm")
+				assert.ErrorContains(t, err, "databricks apps init --package-manager npm")
 				assert.ErrorContains(t, err, "corepack enable pnpm")
 				assert.ErrorContains(t, err, "npx get-pnpm")
 			}

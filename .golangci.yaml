@@ -38,10 +38,10 @@ linters:
     - errorlint
   settings:
     errorlint:
-      # Switching %v to %w changes which errors callers can match with
-      # errors.Is/As (e.g. fs.ErrNotExist, context.Canceled), so it needs
-      # per-site review rather than a bulk fix.
-      errorf: false
+      # errorf is on: switching %v to %w changes which errors callers can
+      # match with errors.Is/As, so keep %v with a nolint reason where the
+      # cause must not be visible to callers.
+      errorf: true
     modernize:
       # omitzero changes JSON wire format for nested structs (unlike omitempty),
       # so each site needs per-site review rather than a bulk rewrite.

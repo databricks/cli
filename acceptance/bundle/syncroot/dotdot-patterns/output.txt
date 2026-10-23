@@ -1,0 +1,32 @@
+
+>>> [CLI] bundle validate
+Warning: Pattern app/missing/** does not match any files
+  at sync.exclude[1]
+  in databricks.yml:12:7
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 1 warning
+
+>>> [CLI] bundle validate -o json
+Warning: Pattern app/missing/** does not match any files
+  at sync.exclude[1]
+  in databricks.yml:12:7
+
+{
+  "exclude": [
+    "app/tests/**",
+    "app/missing/**"
+  ],
+  "include": [
+    "shared/*.py"
+  ],
+  "paths": [
+    "shared",
+    "app"
+  ]
+}

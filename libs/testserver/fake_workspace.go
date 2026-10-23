@@ -18,12 +18,12 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"uuid"
 
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
-	"github.com/google/uuid"
 
 	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -158,8 +158,7 @@ func nextUUID() string {
 	var b [16]byte
 	binary.BigEndian.PutUint64(b[0:8], uint64(nextID()))
 	binary.BigEndian.PutUint64(b[8:16], uint64(nextID()))
-	u := uuid.Must(uuid.FromBytes(b[:]))
-	return u.String()
+	return uuid.UUID(b).String()
 }
 
 func nextDashboardID() string {
@@ -228,6 +227,8 @@ type FakeWorkspace struct {
 	ModelServices         map[string]catalog.ModelService
 	McpServices           map[string]catalog.McpService
 	ModelProviderServices map[string]catalog.ModelProviderService
+
+	Features              map[string]ml.Feature
 	ServingEndpoints      map[string]serving.ServingEndpointDetailed
 	VectorSearchEndpoints map[string]vectorsearch.EndpointInfo
 	VectorSearchIndexes   map[string]fakeVectorSearchIndex
@@ -511,6 +512,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		ModelServices:         map[string]catalog.ModelService{},
 		McpServices:           map[string]catalog.McpService{},
 		ModelProviderServices: map[string]catalog.ModelProviderService{},
+		Features:              map[string]ml.Feature{},
 		Volumes:               map[string]catalog.VolumeInfo{},
 		Dashboards:            NewEventualMap[string, *fakeDashboard](eventualConsistency),
 		PublishedDashboards:   map[string]dashboards.PublishedDashboard{},
@@ -845,7 +847,25 @@ func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
 
 func (s *FakeWorkspace) WorkspaceExport(path string) []byte {
 	defer s.LockUnlock()()
+	if _, isDir := s.directories[path]; isDir {
+		return exportDirectory(path)
+	}
 	return s.files[path].Data
+}
+
+// exportDirectory mimics the real API, which exports a directory as a ZIP archive even with
+// direct_download=true. Only the directory's own entry is included: callers just need to see
+// that they got an archive rather than a file.
+func exportDirectory(dirPath string) []byte {
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	if _, err := zw.Create(path.Base(dirPath) + "/"); err != nil {
+		panic(err)
+	}
+	if err := zw.Close(); err != nil {
+		panic(err)
+	}
+	return buf.Bytes()
 }
 
 // WorkspaceDelete implements POST /api/2.0/workspace/delete. As in the real API, a

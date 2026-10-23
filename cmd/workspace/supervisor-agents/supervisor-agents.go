@@ -23,10 +23,10 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "supervisor-agents",
-		Short: `*Beta* Manage Supervisor Agents and related resources.`,
+		Short: `*Beta* Manage legacy Supervisor Agents and related resources.`,
 		Long: `This command is in Beta and may change without notice.
 
-Manage Supervisor Agents and related resources.`,
+Manage legacy Supervisor Agents and related resources.`,
 		GroupID: "agentbricks",
 		RunE:    root.ReportUnknownSubcommand,
 	}

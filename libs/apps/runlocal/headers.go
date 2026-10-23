@@ -1,8 +1,9 @@
 package runlocal
 
 import (
+	"uuid"
+
 	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/google/uuid"
 )
 
 func GetXHeaders(user *iam.User) map[string]string {

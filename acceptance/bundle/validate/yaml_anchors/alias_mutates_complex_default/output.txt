@@ -1,0 +1,17 @@
+
+>>> [CLI] bundle validate -t dev -o json
+{
+  "x": {
+    "default": "overridden",
+    "value": "overridden"
+  },
+  "payload": {
+    "default": {
+      "x": "overridden"
+    },
+    "type": "complex",
+    "value": {
+      "x": "overridden"
+    }
+  }
+}

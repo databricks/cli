@@ -17,7 +17,10 @@ import (
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/workspaceurls"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
@@ -95,10 +98,12 @@ func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bu
 		}
 		db.StateDB.DeploymentID = deploymentID
 	} else if mask := metadata.StaleFields(current); mask != "" {
-		_, err := w.BundleDeployments.UpdateDeployment(ctx, bundledeployments.UpdateDeploymentRequest{
-			Name:       dms.DeploymentName(deploymentID),
-			Deployment: dms.DeploymentUpdate(metadata, mask),
-			UpdateMask: fieldmask.FieldMask{Paths: strings.Split(mask, ",")},
+		_, err := retry.With(ctx, retry.IsTransient, func() (*bundledeployments.Deployment, error) {
+			return w.BundleDeployments.UpdateDeployment(ctx, bundledeployments.UpdateDeploymentRequest{
+				Name:       dms.DeploymentName(deploymentID),
+				Deployment: dms.DeploymentUpdate(metadata, mask),
+				UpdateMask: fieldmask.FieldMask{Paths: strings.Split(mask, ",")},
+			})
 		})
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("failed to update deployment: %w", err))
@@ -110,6 +115,21 @@ func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bu
 	bundle.ApplyFuncContext(ctx, b, func(_ context.Context, b *bundle.Bundle) {
 		b.Config.Bundle.Deployment.DeploymentID = deploymentID
 	})
+}
+
+// deleteDeployment deletes the deployment record. A retry that finds it missing succeeds: the
+// earlier attempt may have deleted it before its response was lost.
+func deleteDeployment(ctx context.Context, w *databricks.WorkspaceClient, deploymentID string) error {
+	retried := false
+	_, err := retry.With(ctx, retry.IsTransient, func() (struct{}, error) {
+		err := w.BundleDeployments.DeleteDeployment(ctx, bundledeployments.DeleteDeploymentRequest{Name: dms.DeploymentName(deploymentID)})
+		if retried && apierr.IsMissing(err) {
+			return struct{}{}, nil
+		}
+		retried = true
+		return struct{}{}, err
+	})
+	return err
 }
 
 // startVersion claims the version the run settled on and opens the buffer that records

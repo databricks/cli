@@ -14,17 +14,13 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class ModelProviderServiceConfigProviderPricingConfig:
     """
-    :meta private: [EXPERIMENTAL]
-
     Pricing adjustments applied to this provider service's external-model spend
     estimates.
     """
 
     default_discount_basis_points: VariableOrOptional[int] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Provider-wide adjustment to external-model spend estimates in basis points:
+    Provider-wide adjustment to external-model spend estimates in basis points:
     2000 = 20% off; -2000 = a 20% markup. Negative values have no lower bound
     beyond the int32 range. Values cannot exceed 10000 (100% off). An omitted
     value or zero leaves the estimate unchanged.
@@ -45,9 +41,7 @@ class ModelProviderServiceConfigProviderPricingConfigDict(TypedDict, total=False
 
     default_discount_basis_points: VariableOrOptional[int]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Provider-wide adjustment to external-model spend estimates in basis points:
+    Provider-wide adjustment to external-model spend estimates in basis points:
     2000 = 20% off; -2000 = a 20% markup. Negative values have no lower bound
     beyond the int32 range. Values cannot exceed 10000 (100% off). An omitted
     value or zero leaves the estimate unchanged.

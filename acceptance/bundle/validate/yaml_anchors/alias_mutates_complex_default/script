@@ -1,0 +1,2 @@
+# Target variables given as an alias of a complex default do not change that default.
+trace $CLI bundle validate -t dev -o json | jq '.variables | {x, payload}'

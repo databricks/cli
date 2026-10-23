@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+	"uuid"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
@@ -31,7 +32,6 @@ import (
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/google/uuid"
 )
 
 const internalFolder = ".internal"

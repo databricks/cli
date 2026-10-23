@@ -2,7 +2,7 @@ module github.com/databricks/cli
 
 go 1.27.0
 
-toolchain go1.27.2
+toolchain go1.27.3
 
 require (
 	dario.cat/mergo v1.0.2 // BSD-3-Clause
@@ -13,13 +13,12 @@ require (
 	github.com/charmbracelet/huh v1.0.0 // MIT
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
 	github.com/charmbracelet/x/ansi v0.11.8 // MIT
-	github.com/databricks/databricks-sdk-go v0.188.0 // Apache-2.0
+	github.com/databricks/databricks-sdk-go v0.190.0 // Apache-2.0
 	github.com/databricks/sdk-go/auth v0.1.0 // Apache-2.0
 	github.com/databricks/sdk-go/core v0.1.0 // Apache-2.0
 	github.com/databricks/sdk-go/files v0.1.0 // Apache-2.0
 	github.com/databricks/sdk-go/options v0.1.0 // Apache-2.0
 	github.com/google/jsonschema-go v0.4.3 // MIT
-	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/gorilla/websocket v1.5.3 // BSD-2-Clause
 	github.com/hexops/gotextdiff v1.0.3 // BSD-3-Clause
 	github.com/jackc/pgx/v5 v5.11.0 // MIT
@@ -70,6 +69,7 @@ require (
 	github.com/godbus/dbus/v5 v5.2.2 // indirect
 	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.11 // indirect
 	github.com/googleapis/gax-go/v2 v2.17.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect

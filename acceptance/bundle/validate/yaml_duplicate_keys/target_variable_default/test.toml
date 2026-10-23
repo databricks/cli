@@ -1,0 +1,1 @@
+Badness = 'The duplicate default key is accepted silently (the later one wins); YAML requires keys to be unique.'

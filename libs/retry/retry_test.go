@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"testing"
@@ -35,6 +36,9 @@ func TestIsTransientRead(t *testing.T) {
 	// REFUSED_STREAM is the transport failure the SDK leaves unretried, so we replay the read (issue #6472).
 	refusedStream := &url.Error{Op: "Get", URL: "https://example.test/api/2.0/workspace/get-status", Err: errors.New("stream error: stream ID 1; REFUSED_STREAM; received from peer")}
 	assert.True(t, IsTransientRead(ctx, refusedStream))
+	// The connection cut mid-response, seen on GET /clusters/get.
+	unexpectedEOF := &url.Error{Op: "Get", URL: "https://example.test/api/2.1/clusters/get", Err: io.ErrUnexpectedEOF}
+	assert.True(t, IsTransientRead(ctx, unexpectedEOF))
 	// Transport errors the SDK already retries for its full RetryTimeout must not be retried again.
 	connRefused := &url.Error{Op: "Get", URL: "https://example.test/api/2.0/workspace/get-status", Err: errors.New("dial tcp 10.0.0.1:443: connect: connection refused")}
 	assert.False(t, IsTransientRead(ctx, connRefused))

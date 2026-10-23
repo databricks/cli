@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -21,6 +22,10 @@ const MaxRetries = 2
 
 // IntervalMsVariable names the environment variable that overrides the pause between attempts.
 const IntervalMsVariable = "DATABRICKS_BUNDLE_RETRY_INTERVAL_MS"
+
+// DisableWarningVariable names the environment variable that, when set to a non-empty value,
+// suppresses the warning logged before each retry.
+const DisableWarningVariable = "DATABRICKS_BUNDLE_RETRY_DISABLE_WARNING"
 
 const defaultInterval = 15 * time.Second
 
@@ -52,19 +57,28 @@ func IsTransient(ctx context.Context, err error) bool {
 	return apiErr.StatusCode >= 500 || apiErr.StatusCode == http.StatusRequestTimeout
 }
 
+// transientReadMessages are the transport errors, matched by message, that are worth retrying on a read:
+//   - REFUSED_STREAM, the HTTP/2 refusal in issue #6472, where the server refused the stream before
+//     processing the request.
+//   - unexpected EOF, where the connection was cut mid-response. Observed on GET /clusters/get.
+var transientReadMessages = []string{"REFUSED_STREAM", "unexpected EOF"}
+
 // IsTransientRead returns true for errors worth retrying on an idempotent read: the transient
-// server errors IsTransient covers, plus the HTTP/2 REFUSED_STREAM in issue #6472, where the
-// server refused the stream before processing the request so the read is safe to replay. The
-// SDK already retries the transport errors it recognizes (connection reset/refused, i/o timeout,
+// server errors IsTransient covers, plus the transport errors in transientReadMessages. The SDK
+// already retries the transport errors it recognizes (connection reset/refused, i/o timeout,
 // TLS handshake) for its full RetryTimeout, so retrying every *url.Error would restart that
-// multi-minute loop; REFUSED_STREAM is the gap it leaves. net/http bundles unexported http2
+// multi-minute loop; these are the gaps it leaves. net/http bundles unexported http2
 // types, so we match the message, as the SDK does for its own transient url errors.
 func IsTransientRead(ctx context.Context, err error) bool {
 	if IsTransient(ctx, err) {
 		return true
 	}
-	_, ok := errors.AsType[*url.Error](err)
-	return ok && strings.Contains(err.Error(), "REFUSED_STREAM")
+	if _, ok := errors.AsType[*url.Error](err); !ok {
+		return false
+	}
+	return slices.ContainsFunc(transientReadMessages, func(m string) bool {
+		return strings.Contains(err.Error(), m)
+	})
 }
 
 // With retries fn while check returns true for the error, up to MaxRetries times.
@@ -75,7 +89,9 @@ func With[T any](ctx context.Context, check func(context.Context, error) bool, f
 		if err == nil || attempt >= MaxRetries || !check(ctx, err) {
 			return result, err
 		}
-		log.Warnf(ctx, "%s", retryMessage(err))
+		if env.Get(ctx, DisableWarningVariable) == "" {
+			log.Warnf(ctx, "%s", retryMessage(err))
+		}
 		select {
 		case <-ctx.Done():
 			var zero T

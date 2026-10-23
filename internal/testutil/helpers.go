@@ -2,9 +2,9 @@ package testutil
 
 import (
 	"strings"
+	"uuid"
 
 	"github.com/databricks/cli/libs/env"
-	"github.com/google/uuid"
 )
 
 // GetEnvOrSkipTest proceeds with test only with that env variable.
