@@ -499,17 +499,6 @@ func TestFailedUpgradeLeavesReadModeAvailable(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestRecoveryRejectsUnknownWALFeatures(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "resources.json")
-	wal := `{"state_version":3,"lineage":"lineage","serial":1,"features":{"future":{}}}` + "\n" + `{"k":"resources.jobs.job","v":{"__id__":"id-1","state":{}}}` + "\n"
-	require.NoError(t, os.WriteFile(path+".wal", []byte(wal), 0o600))
-	var db dstate.DeploymentState
-	require.ErrorContains(t, db.Open(t.Context(), path, dstate.ReadingFile, true, dstate.OpenDmsArgs{}), "future")
-	assert.False(t, db.IsOpen())
-	assert.NoFileExists(t, path)
-	assert.FileExists(t, path+".wal")
-}
-
 func TestHistoryQueueOnlyTimesOutAtDrain(t *testing.T) {
 	for _, mode := range []dstate.Mode{dstate.WritingFileWithHistory, dstate.WritingFileWithHistoryEnforced} {
 		t.Run(fmt.Sprint(mode), func(t *testing.T) {

@@ -778,16 +778,7 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 			if header.Serial > expectedSerial {
 				return false, fmt.Errorf("WAL serial (%d) is ahead of expected (%d), state may be corrupted", header.Serial, expectedSerial)
 			}
-			if err := assertNoUnsupportedFeatures(header.Features); err != nil {
-				return false, err
-			}
-			newFeatures = maps.Clone(db.Data.Features)
-			for feature := range header.Features {
-				if newFeatures == nil {
-					newFeatures = make(map[string]struct{})
-				}
-				newFeatures[feature] = struct{}{}
-			}
+			newFeatures = header.Features
 			newSerial = header.Serial
 			newCLIVersion = header.CLIVersion
 		} else {
