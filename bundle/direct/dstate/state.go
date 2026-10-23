@@ -637,10 +637,6 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, mode M
 	if recording && recorded && db.Data.Serial > dmsDeployment.LastVersionID {
 		return fmt.Errorf("inconsistent deployment state: resource state serial (%d) is ahead of deployment history version (%d)", db.Data.Serial, dmsDeployment.LastVersionID)
 	}
-	_, bestEffort := db.Data.Features[FeatureDeploymentHistoryBestEffort]
-	if bestEffort && (recorded || recording) {
-		return errors.New("deployment_history_best_effort file state cannot be opened as DMS-authoritative state")
-	}
 	switch {
 	case recording && !recorded && len(db.Data.State) == 0:
 		if db.Data.Features == nil {

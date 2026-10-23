@@ -428,8 +428,7 @@ func TestOpenRejectsIncompatibleModesAndFeatures(t *testing.T) {
 		wantErr  string
 	}{
 		{"unknown feature", dstate.ReadingFile, `{"future":{}}`, "requires features"},
-		{"conflicting features", dstate.ReadingFile, `{"deployment_history":{},"deployment_history_best_effort":{}}`, "deployment_history_best_effort"},
-		{"DMS with best effort history", dstate.WritingDMS, `{"deployment_history_best_effort":{}}`, "deployment_history_best_effort"},
+		{"file reading DMS with best effort marker", dstate.ReadingFile, `{"deployment_history":{},"deployment_history_best_effort":{}}`, "not supported"},
 		{"file writing DMS", dstate.WritingFile, `{"deployment_history":{}}`, "not supported"},
 		{"file writing best effort history", dstate.WritingFile, `{"deployment_history_best_effort":{}}`, "deployment_history_best_effort"},
 	} {
