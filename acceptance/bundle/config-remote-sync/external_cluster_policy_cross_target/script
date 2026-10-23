@@ -1,0 +1,35 @@
+title "Create policies outside the bundle"
+export POLICY_ENVIRONMENT=dev
+export DEV_POLICY_ID
+DEV_POLICY_ID=$($CLI cluster-policies create --json "$(envsubst < policy.json.tmpl)" -o json | jq -r .policy_id)
+add_repl "$DEV_POLICY_ID" DEV_POLICY_ID
+export POLICY_ENVIRONMENT=prod
+export PROD_POLICY_ID
+PROD_POLICY_ID=$($CLI cluster-policies create --json "$(envsubst < policy.json.tmpl)" -o json | jq -r .policy_id)
+add_repl "$PROD_POLICY_ID" PROD_POLICY_ID
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy -t prod --auto-approve
+    trace $CLI bundle destroy -t dev --auto-approve
+    trace $CLI cluster-policies delete "$DEV_POLICY_ID"
+    trace $CLI cluster-policies delete "$PROD_POLICY_ID"
+}
+trap cleanup EXIT
+
+title "Deploy with the dev policy"
+trace $CLI bundle deploy -t dev
+job_id=$(read_id.py -t dev policy_sync)
+
+edit_resource.py jobs "$job_id" <<'EOF'
+r["description"] = "Edited in the UI"
+EOF
+
+title "Sync the UI edit into shared YAML"
+cp databricks.yml databricks.yml.backup
+trace $CLI bundle config-remote-sync -t dev --save
+trace diff.py databricks.yml.backup databricks.yml
+
+title "Deploy shared YAML with the prod policy"
+trace errcode $CLI bundle deploy -t prod

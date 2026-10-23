@@ -8,10 +8,12 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structdiff"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type OperationType string
@@ -141,6 +143,7 @@ func isPermissionsOrGrantsSubResource(resourceKey string) bool {
 // plan.
 func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (Changes, error) {
 	changes := make(Changes)
+	policyDefinitions := make(clusterPolicyDefinitions)
 
 	for resourceKey, entry := range plan.Plan {
 		// permissions and grants are emitted as their own plan keys
@@ -154,6 +157,10 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 		}
 
 		resourceChanges := make(ResourceChanges)
+		policyFilter, err := policyFilterForResource(b, resourceKey, entry, policyDefinitions)
+		if err != nil {
+			return nil, err
+		}
 
 		if entry.Changes != nil {
 			for path, changeDesc := range entry.Changes {
@@ -168,6 +175,19 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 				}
 				if change.Operation == OperationSkip {
 					continue
+				}
+				if change.Value != nil && policyFilter != nil {
+					fieldPath, err := structpath.ParsePath(path)
+					if err != nil {
+						return nil, fmt.Errorf("parsing change path %s: %w", fullPath, err)
+					}
+					change.Value, err = policyFilter.filter(ctx, b, fieldPath, change.Value)
+					if err != nil {
+						return nil, fmt.Errorf("filtering policy values for %s (no configuration was saved): %w", fullPath, err)
+					}
+					if change.Value == nil {
+						continue
+					}
 				}
 				// The state snapshot holds real per-field values, so New != Old
 				// means the local config diverged from the last deploy and this
@@ -188,4 +208,34 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 	}
 
 	return changes, nil
+}
+
+func policyFilterForResource(b *bundle.Bundle, resourceKey string, entry *deployplan.PlanEntry, definitions clusterPolicyDefinitions) (*clusterPolicyFilter, error) {
+	filter := &clusterPolicyFilter{remote: entry.RemoteState, definitions: definitions}
+	switch entry.RemoteState.(type) {
+	case *dresources.JobRemote:
+		for _, pattern := range []string{"tasks[*].new_cluster", "tasks[*].for_each_task.task.new_cluster", "job_clusters[*].new_cluster"} {
+			root, err := structpath.ParsePattern(pattern)
+			if err != nil {
+				return nil, err
+			}
+			filter.clusterRoots = append(filter.clusterRoots, root)
+		}
+		filter.sliceKeys = (&dresources.ResourceJob{}).KeyedSlices()
+	case *dresources.ClusterRemote:
+		filter.clusterRoots = []*structpath.PatternNode{nil} // nil matches the resource root
+	default:
+		// Only jobs and clusters expand policy values into their remote state.
+		return nil, nil
+	}
+	// Skip entries have no NewState; authored values must come from bundle config.
+	config, err := b.Config.GetResourceConfig(resourceKey)
+	if err != nil {
+		return nil, fmt.Errorf("reading config for %s: %w", resourceKey, err)
+	}
+	if config == nil {
+		return nil, nil
+	}
+	filter.config = config
+	return filter, nil
 }
