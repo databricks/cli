@@ -7,6 +7,7 @@ Error: --use-device-code requires a workspace host. Pass it as an argument or wi
 === Account host
 
 >>> musterr [CLI] auth login --host https://accounts.cloud.databricks.test --profile test --use-device-code
+Warn: [hostmetadata] failed to fetch host metadata for https://accounts.cloud.databricks.test, will skip for 1m0s
 Error: --use-device-code is only supported for workspace hosts
 
 >>> musterr [CLI] auth login --profile account --use-device-code

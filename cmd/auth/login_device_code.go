@@ -28,39 +28,15 @@ var (
 	errDeviceCodeWorkspaceOnly = errors.New("--use-device-code is only supported for workspace hosts")
 )
 
-// validateDeviceCodeHost returns an error if the host is an account or unified
-// host, or a workspace without device code login enabled. It checks the same
-// signals that make setHostAndAccountId prompt for an account ID, so that it
-// can run before the user is prompted for anything.
-func validateDeviceCodeHost(ctx context.Context, authArguments *auth.AuthArguments) error {
-	// Work on a copy: host discovery fills in the account ID even for
-	// workspace hosts, which must not change the default profile name.
-	probe := *authArguments
-	params := auth.ExtractHostQueryParams(probe.Host)
-	probe.Host = params.Host
-	// Like setHostAndAccountId, use the account ID from the host for
-	// discovery, which needs it to resolve some unified hosts.
-	if probe.AccountID == "" {
-		probe.AccountID = params.AccountID
-	}
-	host := (&config.Config{Host: probe.Host}).CanonicalHostName()
-	if auth.IsClassicAccountHost(host) {
+// validateDeviceCodeHost returns an error if the host resolved by setHost is
+// an account or unified host. A workspace without device code login enabled
+// is rejected by DeviceCodeChallenge before it creates a device code.
+func validateDeviceCodeHost(authArguments *auth.AuthArguments) error {
+	if auth.IsClassicAccountHost((&config.Config{Host: authArguments.Host}).CanonicalHostName()) ||
+		auth.HasUnifiedHostSignal(authArguments.DiscoveryURL) {
 		return errDeviceCodeWorkspaceOnly
 	}
-	runHostDiscovery(ctx, &probe)
-	if auth.HasUnifiedHostSignal(probe.DiscoveryURL) {
-		return errDeviceCodeWorkspaceOnly
-	}
-	arg, err := u2m.NewBasicWorkspaceOAuthArgument(host)
-	if err != nil {
-		return err
-	}
-	persistentAuth, err := u2m.NewPersistentAuth(ctx, u2m.WithOAuthArgument(arg))
-	if err != nil {
-		return err
-	}
-	defer persistentAuth.Close()
-	return persistentAuth.CheckDeviceCodeSupported()
+	return nil
 }
 
 // validateDeviceCodeLogin returns an error if device code login is not enabled

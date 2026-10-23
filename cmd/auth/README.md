@@ -89,7 +89,8 @@ Notes on the server behavior the CLI relies on:
 
 - Workspaces advertise `device_authorization_endpoint` in
   `/oidc/.well-known/oauth-authorization-server` only when device code login
-  is enabled for them. The CLI fails early if it is missing.
+  is enabled for them. The CLI fails before requesting a device code if it is
+  missing.
 - The token request carries the confirmation code in the `confirmation_code`
   form parameter. A wrong confirmation code does not consume the device code;
   a successful exchange does. The server answers a wrong confirmation code

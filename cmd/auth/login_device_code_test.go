@@ -5,8 +5,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -170,8 +168,11 @@ func TestFormatCode(t *testing.T) {
 }
 
 func TestValidateDeviceCodeHost(t *testing.T) {
-	workspace := newDeviceCodeWorkspaceServer(t, true)
-	notEnabled := newDeviceCodeWorkspaceServer(t, false)
+	workspace := newDiscoveryServer(t, map[string]any{
+		"account_id":    "acct-123",
+		"workspace_id":  "12345",
+		"oidc_endpoint": "https://workspace.test/oidc",
+	})
 	unified := newDiscoveryServer(t, map[string]any{
 		"account_id":    "acct-123",
 		"oidc_endpoint": "https://spog.test/oidc/accounts/acct-123",
@@ -189,7 +190,6 @@ func TestValidateDeviceCodeHost(t *testing.T) {
 	}{
 		{name: "workspace host", args: auth.AuthArguments{Host: workspace.URL}},
 		{name: "workspace host with query params", args: auth.AuthArguments{Host: workspace.URL + "?o=12345"}},
-		{name: "workspace without device code login", args: auth.AuthArguments{Host: notEnabled.URL}, wantErr: u2m.ErrDeviceCodeNotSupported},
 		{name: "classic account host", args: auth.AuthArguments{Host: "https://accounts.cloud.databricks.test"}, wantErr: errDeviceCodeWorkspaceOnly},
 		{name: "unified host", args: auth.AuthArguments{Host: unified.URL}, wantErr: errDeviceCodeWorkspaceOnly},
 		{name: "unified host with query params", args: auth.AuthArguments{Host: unified.URL + "?o=12345"}, wantErr: errDeviceCodeWorkspaceOnly},
@@ -199,33 +199,8 @@ func TestValidateDeviceCodeHost(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			args := tt.args
-			err := validateDeviceCodeHost(t.Context(), &args)
-			assert.ErrorIs(t, err, tt.wantErr)
-			// Discovery results must not leak into the arguments, where they
-			// would change the default profile name.
-			assert.Equal(t, tt.args, args)
+			require.NoError(t, setHost(t.Context(), nil, &args, nil))
+			assert.ErrorIs(t, validateDeviceCodeHost(&args), tt.wantErr)
 		})
 	}
-}
-
-// newDeviceCodeWorkspaceServer serves the host metadata and OIDC discovery
-// documents of a workspace, optionally with device code login enabled.
-func newDeviceCodeWorkspaceServer(t *testing.T, deviceCodeEnabled bool) *httptest.Server {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch r.URL.Path {
-		case "/.well-known/databricks-config":
-			_, _ = w.Write([]byte(`{"account_id": "acct-123", "workspace_id": "12345", "oidc_endpoint": "https://workspace.test/oidc"}`))
-		case "/oidc/.well-known/oauth-authorization-server":
-			if deviceCodeEnabled {
-				_, _ = w.Write([]byte(`{"token_endpoint": "https://workspace.test/oidc/v1/token", "device_authorization_endpoint": "https://workspace.test/oidc/v1/device/auth"}`))
-			} else {
-				_, _ = w.Write([]byte(`{"token_endpoint": "https://workspace.test/oidc/v1/token"}`))
-			}
-		default:
-			w.WriteHeader(http.StatusNotFound)
-		}
-	}))
-	t.Cleanup(srv.Close)
-	return srv
 }

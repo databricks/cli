@@ -205,17 +205,9 @@ a new profile is created.
 			}
 		}
 
-		// Check a known host before the keyring probe and any prompt, so that
-		// an unsupported host or workspace fails right away. A host that is
-		// only known later is checked as soon as it is known.
 		if useDeviceCode {
 			if err := validateDeviceCodeLogin(ctx, cmd); err != nil {
 				return err
-			}
-			if authArguments.Host != "" {
-				if err := validateDeviceCodeHost(ctx, authArguments); err != nil {
-					return err
-				}
 			}
 		}
 
@@ -261,17 +253,7 @@ a new profile is created.
 					return err
 				}
 				authArguments.Host = host
-				if useDeviceCode {
-					if err := validateDeviceCodeHost(ctx, authArguments); err != nil {
-						return err
-					}
-				}
 			case profilePickerCreateNew:
-				// A new profile without a host uses the discovery login,
-				// which device code login does not support.
-				if useDeviceCode {
-					return errDeviceCodeNeedsHost
-				}
 				// Fall through to the profile name prompt below.
 			}
 		}
@@ -345,18 +327,18 @@ a new profile is created.
 			})
 		}
 
-		// Without a host from the flags or the picker, the host comes from the
-		// profile. Check it before setHostAndAccountId, which prompts for an
-		// account ID for account hosts.
-		if useDeviceCode && authArguments.Host == "" && existingProfile != nil {
-			profileArguments := *authArguments
-			profileArguments.Host = existingProfile.Host
-			if err := validateDeviceCodeHost(ctx, &profileArguments); err != nil {
+		err = setHost(ctx, existingProfile, authArguments, args)
+		if err != nil {
+			return err
+		}
+		// Check the host once it is resolved, before setAccountID prompts for
+		// an account ID for account and unified hosts.
+		if useDeviceCode {
+			if err := validateDeviceCodeHost(authArguments); err != nil {
 				return err
 			}
 		}
-
-		err = setHostAndAccountId(ctx, existingProfile, authArguments, args)
+		err = setAccountID(ctx, existingProfile, authArguments)
 		if err != nil {
 			return err
 		}
@@ -536,18 +518,20 @@ func shouldPromptWorkspace(authArguments *auth.AuthArguments, existingProfile *p
 	return true
 }
 
+// setHostAndAccountId calls setHost and then setAccountID.
+func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, authArguments *auth.AuthArguments, args []string) error {
+	if err := setHost(ctx, existingProfile, authArguments, args); err != nil {
+		return err
+	}
+	return setAccountID(ctx, existingProfile, authArguments)
+}
+
 // Sets the host in the persistentAuth object based on the provided arguments and flags.
 // Follows the following precedence:
 // 1. [HOST] (first positional argument) or --host flag. Error if both are specified.
 // 2. Profile host, if available.
 // 3. Prompt the user for the host.
-//
-// Set the account in the persistentAuth object based on the flags.
-// Follows the following precedence:
-// 1. --account-id flag.
-// 2. account-id from the specified profile, if available.
-// 3. Prompt the user for the account-id.
-func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, authArguments *auth.AuthArguments, args []string) error {
+func setHost(ctx context.Context, existingProfile *profile.Profile, authArguments *auth.AuthArguments, args []string) error {
 	// If both [HOST] and --host are provided, return an error.
 	host := authArguments.Host
 	if len(args) > 0 && host != "" {
@@ -597,7 +581,15 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 	// .well-known/databricks-config endpoint. This is best-effort: failures
 	// are logged as warnings and never block login.
 	runHostDiscovery(ctx, authArguments)
+	return nil
+}
 
+// Set the account in the persistentAuth object based on the flags.
+// Follows the following precedence:
+// 1. --account-id flag.
+// 2. account-id from the specified profile, if available.
+// 3. Prompt the user for the account-id.
+func setAccountID(ctx context.Context, existingProfile *profile.Profile, authArguments *auth.AuthArguments) error {
 	if needsAccountIDPrompt(authArguments.Host, authArguments.DiscoveryURL) && authArguments.AccountID == "" {
 		if existingProfile != nil && existingProfile.AccountID != "" {
 			authArguments.AccountID = existingProfile.AccountID

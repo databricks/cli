@@ -355,20 +355,3 @@ func TestNormalizeCode(t *testing.T) {
 		assert.Equal(t, tc.want, normalizeCode(tc.in), tc.in)
 	}
 }
-
-func TestCheckDeviceCodeSupported(t *testing.T) {
-	tests := []struct {
-		name      string
-		advertise bool
-		wantErr   error
-	}{
-		{name: "advertised", advertise: true},
-		{name: "not advertised", wantErr: ErrDeviceCodeNotSupported},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			p := newDeviceCodeAuth(t, &fakeDeviceServer{}, tc.advertise)
-			assert.ErrorIs(t, p.CheckDeviceCodeSupported(), tc.wantErr)
-		})
-	}
-}

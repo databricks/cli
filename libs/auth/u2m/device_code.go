@@ -50,15 +50,6 @@ const maxConfirmationAttempts = 3
 // the user can still enter, including this one.
 type ConfirmFunc func(ctx context.Context, da DeviceAuthorization, lastErr error, attemptsLeft int) (string, error)
 
-// CheckDeviceCodeSupported returns the error DeviceCodeChallenge would fail
-// with before contacting the device authorization endpoint, such as
-// ErrDeviceCodeNotSupported. Callers use it to fail before prompting the user
-// for anything.
-func (a *PersistentAuth) CheckDeviceCodeSupported() error {
-	_, err := a.deviceCodeConfig()
-	return err
-}
-
 // deviceCodeConfig returns the OAuth config for device code login, or an
 // error if the host does not support it.
 func (a *PersistentAuth) deviceCodeConfig() (*oauth2.Config, error) {
