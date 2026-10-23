@@ -189,6 +189,7 @@ func (db *DeploymentState) InitializeOperationBuffer(ctx context.Context, deploy
 		BestEffort: db.mode == WritingFileWithHistory || db.mode == WritingFileWithHistoryEnforced,
 	}
 	db.operationBuffer = dms.StartOperationBuffer(ctx, deploymentID, versionID, options)
+	// Use the full plan count; the queue length changes as uploads finish.
 	db.historyDrainTimeout = time.Duration(operationCount) * historyDrainTimeoutPerOperation
 	db.DeploymentID = deploymentID
 	db.VersionID = versionID
@@ -889,7 +890,8 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 		}
 	case WritingFileWithHistory, WritingFileWithHistoryEnforced:
 		if db.operationBuffer != nil {
-			// File state is persisted before waiting on optional history recording.
+			// File state is already persisted, so history errors only warn.
+			// Bound the wait so a stalled service cannot hold up deployment.
 			drainCtx, cancel := context.WithTimeout(ctx, db.historyDrainTimeout)
 			drainErr := db.operationBuffer.Drain(drainCtx)
 			cancel()

@@ -33,6 +33,7 @@ type OperationBuffer struct {
 	done      chan struct{}
 	stopQueue func()
 
+	// cancel stops uploads when optional history fails or its drain deadline expires.
 	cancel     context.CancelFunc
 	bestEffort bool
 
@@ -50,7 +51,9 @@ type OperationBuffer struct {
 
 	// File-history recording uses an unbounded queue so it never waits for DMS.
 	historyQueue []string
-	draining     bool
+
+	// draining lets the worker exit once the history queue is empty.
+	draining bool
 
 	// pending holds the newest update per resource key, absent once the writer takes it.
 	pending map[string]OperationUpdate
@@ -67,6 +70,7 @@ type OperationBuffer struct {
 // StartOperationBuffer opens the buffer for the version the caller just created. The version
 // must already exist: operations record under it, and nothing here creates it.
 func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum int, options BufferOptions) *OperationBuffer {
+	// History can stop independently without canceling the deployment.
 	ctx, cancel := context.WithCancel(ctx)
 	b := &OperationBuffer{
 		deploymentID: deploymentID,
@@ -109,6 +113,7 @@ func (b *OperationBuffer) RecordFailure(resourceKey, resourceID string, state js
 // that latest state. latestState and pending are updated under the one lock.
 func (b *OperationBuffer) record(resourceKey string, update OperationUpdate, keepExistingUpdateIfAny bool, cause error) {
 	b.mu.Lock()
+	// Stop building a history backlog after the first recording failure.
 	if b.bestEffort && b.err != nil {
 		b.mu.Unlock()
 		return
@@ -160,6 +165,7 @@ func (b *OperationBuffer) run(ctx context.Context) {
 	for {
 		var resourceKey string
 		if b.bestEffort {
+			// Cancellation comes from the deployment, a drain timeout, or a history error.
 			if err := ctx.Err(); err != nil {
 				b.setErr(err)
 				return
@@ -171,7 +177,8 @@ func (b *OperationBuffer) run(ctx context.Context) {
 				if draining {
 					return
 				}
-				// Poll only optional history; DMS-state writes retain immediate delivery.
+				// Poll while idle so producers need no wake-up signaling.
+				// Cancellation ends this wait immediately.
 				select {
 				case <-time.After(100 * time.Millisecond):
 				case <-ctx.Done():
@@ -227,8 +234,11 @@ func (b *OperationBuffer) write(ctx context.Context, key string, update Operatio
 	return nil
 }
 
-// Drain waits for buffered writes. Optional history cancels outstanding requests when ctx expires.
-// It returns the first recording error and is safe to call twice.
+// Drain waits for buffered uploads before version completion.
+//   - DMS state: close the channel and wait for queued writes.
+//   - File history: finish the queue, or cancel uploads when ctx expires.
+//
+// It returns the first recording error and is safe to call more than once.
 func (b *OperationBuffer) Drain(ctx context.Context) error {
 	if !b.bestEffort {
 		b.stopQueue()
@@ -243,6 +253,7 @@ func (b *OperationBuffer) Drain(ctx context.Context) error {
 	case <-b.done:
 		return b.Err()
 	case <-ctx.Done():
+		// Stop the in-flight request so history cannot outlive the drain deadline.
 		b.setErr(ctx.Err())
 		b.cancel()
 		return b.Err()
@@ -257,6 +268,7 @@ func (b *OperationBuffer) setErr(err error) {
 	if b.err == nil {
 		b.err = err
 		if b.bestEffort {
+			// Stop polling and uploads even when the producer reports the error.
 			b.cancel()
 		}
 	}
