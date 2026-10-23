@@ -36,7 +36,13 @@ func validateDeviceCodeHost(ctx context.Context, authArguments *auth.AuthArgumen
 	// Work on a copy: host discovery fills in the account ID even for
 	// workspace hosts, which must not change the default profile name.
 	probe := *authArguments
-	probe.Host = auth.ExtractHostQueryParams(probe.Host).Host
+	params := auth.ExtractHostQueryParams(probe.Host)
+	probe.Host = params.Host
+	// Like setHostAndAccountId, use the account ID from the host for
+	// discovery, which needs it to resolve some unified hosts.
+	if probe.AccountID == "" {
+		probe.AccountID = params.AccountID
+	}
 	host := (&config.Config{Host: probe.Host}).CanonicalHostName()
 	if auth.IsClassicAccountHost(host) {
 		return errDeviceCodeWorkspaceOnly

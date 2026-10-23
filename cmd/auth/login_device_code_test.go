@@ -177,6 +177,11 @@ func TestValidateDeviceCodeHost(t *testing.T) {
 		"account_id":    "acct-123",
 		"oidc_endpoint": "https://spog.test/oidc/accounts/acct-123",
 	})
+	// Without an account ID, host discovery cannot fill in the placeholder
+	// and does not resolve the account-scoped discovery URL.
+	unifiedWithoutAccountID := newDiscoveryServer(t, map[string]any{
+		"oidc_endpoint": "https://spog.test/oidc/accounts/{account_id}",
+	})
 
 	tests := []struct {
 		name    string
@@ -189,6 +194,8 @@ func TestValidateDeviceCodeHost(t *testing.T) {
 		{name: "classic account host", args: auth.AuthArguments{Host: "https://accounts.cloud.databricks.test"}, wantErr: errDeviceCodeWorkspaceOnly},
 		{name: "unified host", args: auth.AuthArguments{Host: unified.URL}, wantErr: errDeviceCodeWorkspaceOnly},
 		{name: "unified host with query params", args: auth.AuthArguments{Host: unified.URL + "?o=12345"}, wantErr: errDeviceCodeWorkspaceOnly},
+		{name: "unified host with account ID in query params", args: auth.AuthArguments{Host: unifiedWithoutAccountID.URL + "?a=acct-123"}, wantErr: errDeviceCodeWorkspaceOnly},
+		{name: "unified host with account ID flag", args: auth.AuthArguments{Host: unifiedWithoutAccountID.URL, AccountID: "acct-123"}, wantErr: errDeviceCodeWorkspaceOnly},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
