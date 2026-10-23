@@ -180,7 +180,8 @@ func (b *OperationBuffer) run(ctx context.Context) {
 				if draining {
 					return
 				}
-				// Poll while idle so producers need no wake-up signaling.
+				// Start with polling to keep the design simple.
+				// We can optimize this later by waking the worker when work is queued.
 				// Cancellation ends this wait immediately.
 				select {
 				case <-time.After(100 * time.Millisecond):
