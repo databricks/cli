@@ -1,0 +1,10 @@
+
+>>> python3 make_archives.py [CLI] archives
+
+>>> python3 [TESTROOT]/../tools/build_cli_wheels.py archives wheels [TESTROOT]/../LICENSE
+
+>>> ls wheels
+6
+
+>>> uvx -q --offline --no-index --find-links wheels --from databricks==1.2.3 databricks --version
+Databricks CLI v[CLI_VERSION]

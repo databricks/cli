@@ -185,3 +185,64 @@ jobs:
         with:
           name: wheel
           path: python/dist/*
+
+  # Wraps the signed binaries from the cli job into PyPI wheels (project
+  # "databricks"). Kept as a separate artifact from "wheel" (databricks-bundles)
+  # so each artifact maps to one PyPI project in the databricks-cli release workflow.
+  cli-wheels:
+    needs: cli
+    runs-on:
+      group: databricks-protected-runner-group-large
+      labels: linux-ubuntu-latest-large
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      # The script and LICENSE come from the workflow's own ref, like the
+      # local actions in the other jobs, so building an older tag still works.
+      - name: Checkout workflow ref
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          sparse-checkout: |
+            .github
+            tools/build_cli_wheels.py
+            LICENSE
+
+      - name: Setup JFrog
+        uses: ./.github/actions/setup-jfrog
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.6.5"
+
+      - name: Download signed CLI binaries
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: cli
+          path: cli-artifact
+
+      - name: Build wheels
+        run: python3 tools/build_cli_wheels.py cli-artifact cli-wheels
+
+      - name: Check wheel metadata
+        run: uvx twine@6.2.0 check --strict cli-wheels/*
+
+      - name: Smoke test linux-amd64 wheel
+        run: |
+          cli_version=$(basename cli-artifact/databricks_cli_*_SHA256SUMS)
+          cli_version=${cli_version#databricks_cli_}
+          cli_version=${cli_version%_SHA256SUMS}
+          uv venv "$RUNNER_TEMP/venv"
+          uv pip install --python "$RUNNER_TEMP/venv" cli-wheels/*manylinux*x86_64.whl
+          "$RUNNER_TEMP/venv/bin/databricks" --version | tee /dev/stderr | grep -F "$cli_version"
+
+      - name: Upload CLI wheels
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cli-wheels
+          path: cli-wheels/*.whl
+          if-no-files-found: error
