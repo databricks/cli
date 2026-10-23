@@ -18,6 +18,19 @@ type MaterializationSet struct {
 	BaseResource
 	ID string `json:"id,omitempty" bundle:"readonly"`
 	ml.MaterializationSet
+
+	// SawtoothMaterializedFeatures declares, per entry, the whole materialization of one
+	// sawtooth-window feature: an offline batch member, an online batch member and an online
+	// streaming member. ExpandMaterializationSetMembers fans each entry out into
+	// MaterializedFeatures, taking the offline destination and the batch trigger for the first
+	// member, the online destination and the batch trigger for the second, and the online
+	// destination and the streaming mode for the third.
+	SawtoothMaterializedFeatures []ml.MaterializedFeature `json:"sawtooth_materialized_features,omitempty"`
+
+	// BatchOfflineAndOnlineMaterializedFeatures declares, per entry, one feature materialized to
+	// both stores on one trigger. ExpandMaterializationSetMembers fans each entry out into two
+	// MaterializedFeatures differing only in their destination.
+	BatchOfflineAndOnlineMaterializedFeatures []ml.MaterializedFeature `json:"batch_offline_and_online_materialized_features,omitempty"`
 }
 
 func (s *MaterializationSet) UnmarshalJSON(b []byte) error {

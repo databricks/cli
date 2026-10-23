@@ -238,6 +238,14 @@ func (s *FakeWorkspace) validateBatchAndStreamingFeaturesNotMixed(
 	}
 }
 
+// isDerivedCronSchedule mirrors MaterializedFeatureUtils.isDerivedCronSchedule: only a cron
+// schedule trigger carrying DERIVED opts out of a pinned schedule, and an unset mode reads as
+// MANUAL.
+func isDerivedCronSchedule(member ml.MaterializedFeature) bool {
+	return member.CronScheduleTrigger != nil &&
+		member.CronScheduleTrigger.Mode == ml.CronScheduleModeDerived
+}
+
 // validateSawtoothMaterializedFeatures mirrors the rule that a sawtooth feature declares all three
 // of its materialized features itself. The request is not expanded for it: a materialization set
 // stamps a set id on every member before the backend reaches its normalization, and that
@@ -278,6 +286,20 @@ func (s *FakeWorkspace) validateSawtoothMaterializedFeatures(
 					"Feature '%s' uses a sawtooth window, which requires an offline batch "+
 						"materialization, an online batch materialization and an online streaming "+
 						"materialization. Declare one materialize feature request for each.",
+					featureName),
+			}
+		}
+
+		for _, member := range byFeature[featureName] {
+			if member.StreamingMode != nil || isDerivedCronSchedule(member) {
+				continue
+			}
+			return &materializationSetRefusal{
+				errorCode: "BAD_REQUEST",
+				message: fmt.Sprintf(
+					"Feature '%s' must declare a DERIVED cron schedule on its batch materialize "+
+						"feature requests. The sawtooth batch materializations refresh on a daily "+
+						"schedule the service computes, so a caller neither pins nor omits it.",
 					featureName),
 			}
 		}
