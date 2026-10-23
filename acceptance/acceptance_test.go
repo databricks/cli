@@ -623,6 +623,10 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 				extraVars = append(extraVars, "CONFIG_Cloud=true")
 			}
 
+			if _, ok := config.EnvMatrix["DATABRICKS_BUNDLE_ENGINE"]; ok {
+				t.Fatalf("%s: EnvMatrix.DATABRICKS_BUNDLE_ENGINE is not needed, the direct engine is the only engine; remove it from test.toml", dir)
+			}
+
 			expanded := internal.ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude, extraVars)
 			if Subset {
 				expanded = internal.SubsetExpanded(expanded, dir)
