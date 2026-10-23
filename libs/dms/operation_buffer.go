@@ -49,7 +49,8 @@ type OperationBuffer struct {
 	// mu guards the fields below.
 	mu sync.Mutex
 
-	// File-history recording uses an unbounded queue so it never waits for DMS.
+	// File-history recording uses an unbounded queue so DMS applies no backpressure
+	// to the deployment engine.
 	historyQueue []string
 
 	// draining lets the worker exit once the history queue is empty.
