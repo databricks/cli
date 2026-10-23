@@ -362,6 +362,8 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 					logdiag.LogError(ctx, err)
 					return b, stateDesc, root.ErrAlreadyPrinted
 				}
+				// WAL recovery can introduce the enforced-history marker.
+				stateDesc.Features = b.DeploymentBundle.StateDB.StateFeatures()
 			}
 		}
 
@@ -654,6 +656,7 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{}); err != nil {
 			return err
 		}
+		stateDesc.Features = b.DeploymentBundle.StateDB.StateFeatures()
 		if err := enforceDeploymentHistorySetting(ctx, b, stateDesc, false); err != nil {
 			return err
 		}
