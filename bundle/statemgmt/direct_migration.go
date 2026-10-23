@@ -287,7 +287,7 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 		return tempStatePath, false, nil, err
 	}
 
-	if err := stateDB.UpgradeToWrite(dstate.WritingFile); err != nil {
+	if err := stateDB.UpgradeToWrite(); err != nil {
 		return tempStatePath, false, nil, fmt.Errorf("upgrading state for apply: %w", err)
 	}
 

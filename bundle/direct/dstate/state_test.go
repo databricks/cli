@@ -390,7 +390,7 @@ func TestGetOrInitLineageReadableBeforeWriteAndPersisted(t *testing.T) {
 
 	// Upgrading to write reuses the same lineage (it goes into the WAL header),
 	// and a write makes it durable.
-	require.NoError(t, db.UpgradeToWrite(WritingFile))
+	require.NoError(t, db.UpgradeToWrite())
 	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil))
 	mustFinalize(t, &db)
 

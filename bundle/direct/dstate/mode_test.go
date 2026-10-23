@@ -200,7 +200,7 @@ func TestDMSReadsAndWritesWithoutWAL(t *testing.T) {
 	require.NoError(t, db.Open(ctx, path, dstate.WritingDMS, false, dstate.OpenDmsArgs{DeploymentID: "dep-1", LastVersionID: 7}))
 	assert.Equal(t, "remote-id", db.GetResourceID("resources.jobs.remote"))
 	assert.Equal(t, 7, db.GetSerial())
-	require.NoError(t, db.UpgradeToWrite(dstate.WritingDMS))
+	require.NoError(t, db.UpgradeToWrite())
 	assert.NoFileExists(t, path+".wal")
 	db.InitializeOperationBuffer(ctx, "dep-1", 8, 2)
 	require.NoError(t, db.SaveState(ctx, "resources.jobs.new", "new-id", map[string]string{"name": "new"}, nil))
@@ -219,24 +219,20 @@ func TestDMSReadsAndWritesWithoutWAL(t *testing.T) {
 	assert.Contains(t, marker.Features, dstate.FeatureDeploymentHistory)
 }
 
-func TestUpgradeToWriteValidatesMode(t *testing.T) {
+func TestUpgradeToWrite(t *testing.T) {
 	for _, tc := range []struct {
 		name       string
-		read       dstate.Mode
-		write      dstate.Mode
+		mode       dstate.Mode
 		bestEffort bool
 		wantErr    string
 	}{
-		{"file", dstate.ReadingFile, dstate.WritingFile, false, ""},
-		{"history", dstate.ReadingFile, dstate.WritingFileWithHistory, false, ""},
-		{"enforced history", dstate.ReadingFile, dstate.WritingFileWithHistoryEnforced, false, ""},
-		{"DMS", dstate.WritingDMS, dstate.WritingDMS, false, ""},
-		{"file to DMS", dstate.ReadingFile, dstate.WritingDMS, false, "invalid"},
-		{"DMS needs no WAL upgrade", dstate.WritingDMS, dstate.WritingFile, false, ""},
-		{"reading mode", dstate.ReadingFile, dstate.ReadingFile, false, "invalid"},
-		{"unknown mode", dstate.ReadingFile, dstate.Mode(99), false, "invalid"},
-		{"enforcement retained", dstate.ReadingFile, dstate.WritingFileWithHistory, true, ""},
-		{"enforcement bypass", dstate.ReadingFile, dstate.WritingFile, true, "deployment_history_best_effort"},
+		{"file", dstate.ReadingFile, false, ""},
+		{"DMS", dstate.WritingDMS, false, ""},
+		{"history", dstate.WritingFileWithHistory, false, ""},
+		{"enforced history", dstate.WritingFileWithHistoryEnforced, false, ""},
+		{"file already writable", dstate.WritingFile, false, "already open for write"},
+		{"enforcement retained", dstate.WritingFileWithHistory, true, ""},
+		{"enforcement bypass", dstate.ReadingFile, true, "deployment_history_best_effort"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := modeContext(t, nil)
@@ -245,12 +241,14 @@ func TestUpgradeToWriteValidatesMode(t *testing.T) {
 				require.NoError(t, os.WriteFile(path, []byte(`{"state_version":3,"features":{"deployment_history_best_effort":{}},"state":{}}`), 0o600))
 			}
 			var db dstate.DeploymentState
-			require.NoError(t, db.Open(ctx, path, tc.read, false, dstate.OpenDmsArgs{}))
-			err := db.UpgradeToWrite(tc.write)
+			require.NoError(t, db.Open(ctx, path, tc.mode, false, dstate.OpenDmsArgs{}))
+			err := db.UpgradeToWrite()
 			if tc.wantErr != "" {
 				require.ErrorContains(t, err, tc.wantErr)
-				assert.NotPanics(t, db.AssertOpenedForRead)
-				assert.NoFileExists(t, path+".wal")
+				if tc.mode == dstate.ReadingFile {
+					assert.NotPanics(t, db.AssertOpenedForRead)
+					assert.NoFileExists(t, path+".wal")
+				}
 			} else {
 				require.NoError(t, err)
 				assert.NotPanics(t, db.AssertOpenedForWrite)
@@ -410,7 +408,7 @@ func TestEnforcedHistorySurvivesWALRecovery(t *testing.T) {
 			assert.Equal(t, 1, recovered.GetSerial())
 			assert.FileExists(t, recoveredPath)
 			assert.NoFileExists(t, recoveredPath+".wal")
-			require.ErrorContains(t, recovered.UpgradeToWrite(dstate.WritingFile), "deployment_history_best_effort")
+			require.ErrorContains(t, recovered.UpgradeToWrite(), "deployment_history_best_effort")
 			if withResource {
 				assert.Equal(t, "id-1", recovered.GetResourceID("resources.jobs.job"))
 			}
@@ -491,10 +489,10 @@ func TestFailedUpgradeLeavesReadModeAvailable(t *testing.T) {
 	var db dstate.DeploymentState
 	require.NoError(t, db.Open(t.Context(), path, dstate.ReadingFile, true, dstate.OpenDmsArgs{}))
 	require.NoError(t, os.WriteFile(path+".wal", []byte("occupied"), 0o600))
-	require.Error(t, db.UpgradeToWrite(dstate.WritingFile))
+	require.Error(t, db.UpgradeToWrite())
 	assert.NotPanics(t, db.AssertOpenedForRead)
 	require.NoError(t, os.Remove(path+".wal"))
-	require.NoError(t, db.UpgradeToWrite(dstate.WritingFile))
+	require.NoError(t, db.UpgradeToWrite())
 	_, err := db.Finalize(t.Context())
 	require.NoError(t, err)
 }

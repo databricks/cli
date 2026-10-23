@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/permissions"
@@ -299,7 +298,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// Upgrade from read (opened by process.go, or by Migrate) to write mode. After approval
 	// and the migration commit above, so a declined deploy never opens a WAL it must discard,
 	// and the migration's tf+1 push lands before this advances the WAL header to tf+2.
-	if err := b.DeploymentBundle.StateDB.UpgradeToWrite(dstate.WritingFile); err != nil {
+	if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}

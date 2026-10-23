@@ -431,10 +431,8 @@ func (db *DeploymentState) GetResourceID(key string) string {
 	return db.stateIDs[key]
 }
 
-// StateCLIVersion returns the CLI version that last wrote the state, or an empty
-// string if the state does not record one (a fresh state that this CLI has not
-// written yet). It is the version stored in the on-disk header, not the running
-// build's version.
+// StateCLIVersion returns the CLI version in the current state header.
+// File state retains the last writer's version; DMS stamps the running version during Open.
 func (db *DeploymentState) StateCLIVersion() string {
 	db.AssertOpenedForReadOrWrite()
 	db.mu.Lock()
@@ -690,9 +688,11 @@ Run "databricks bundle destroy" first, then deploy again with deployment history
 	case ReadingFile:
 		return nil
 	case WritingDMS:
+		db.Data.StateVersion = currentStateVersion
+		db.Data.CLIVersion = build.GetInfo().Version
 		return nil
 	case WritingFile, WritingFileWithHistory, WritingFileWithHistoryEnforced:
-		return db.setupWal(mode)
+		return db.setupWal()
 	}
 	return nil
 }
@@ -867,9 +867,8 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 		db.walFile = nil
 		err = db.replayWAL(ctx)
 	} else if db.mode == WritingDMS {
+		// Create a lineage when persisting it so saved plans use a stable value.
 		db.Data.Lineage = db.GetOrInitLineage()
-		db.Data.StateVersion = currentStateVersion
-		db.Data.CLIVersion = build.GetInfo().Version
 		// replayWAL is what normally persists the file. Without one, write the tombstone here so
 		// the header (lineage, state version, CLI version) still lands on disk - even when no
 		// operations were recorded, since the deployment and any version this run created exist
@@ -878,17 +877,24 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 	}
 
 	// Wait until all operations are recorded in the service.
-	if db.isDeploymentMetadataService() && db.operationBuffer != nil {
-		if drainErr := db.operationBuffer.Drain(ctx); drainErr != nil {
-			err = errors.Join(err, drainErr)
+	switch db.mode {
+	case ReadingFile, WritingFile:
+		// File-only modes have no history to drain.
+	case WritingDMS:
+		if db.operationBuffer != nil {
+			if drainErr := db.operationBuffer.Drain(ctx); drainErr != nil {
+				err = errors.Join(err, drainErr)
+			}
 		}
-	} else if (db.mode == WritingFileWithHistory || db.mode == WritingFileWithHistoryEnforced) && db.operationBuffer != nil {
-		// File state is persisted before waiting on optional history recording.
-		drainCtx, cancel := context.WithTimeout(ctx, db.historyDrainTimeout)
-		drainErr := db.operationBuffer.Drain(drainCtx)
-		cancel()
-		if drainErr != nil {
-			log.Warnf(ctx, "Failed to record deployment history: %s", drainErr)
+	case WritingFileWithHistory, WritingFileWithHistoryEnforced:
+		if db.operationBuffer != nil {
+			// File state is persisted before waiting on optional history recording.
+			drainCtx, cancel := context.WithTimeout(ctx, db.historyDrainTimeout)
+			drainErr := db.operationBuffer.Drain(drainCtx)
+			cancel()
+			if drainErr != nil {
+				log.Warnf(ctx, "Failed to record deployment history: %s", drainErr)
+			}
 		}
 	}
 
@@ -899,38 +905,34 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 	return state, err
 }
 
-// UpgradeToWrite opens a WAL for file writes without re-reading resource state.
-// DMS state is writable from Open, so upgrading it is a no-op.
-func (db *DeploymentState) UpgradeToWrite(mode Mode) error {
+// UpgradeToWrite opens a WAL for file state without re-reading resources.
+// DMS and file-history modes are already writable from Open, so upgrading them is a no-op.
+func (db *DeploymentState) UpgradeToWrite() error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
+
 	if db.Path == "" {
 		return errors.New("internal error: DeploymentState must be opened first")
 	}
 	switch db.mode {
-	case ReadingFile:
-		// Set up the requested file write mode below.
-	case WritingDMS:
+	case WritingDMS, WritingFileWithHistory, WritingFileWithHistoryEnforced:
 		return nil
-	case WritingFile, WritingFileWithHistory, WritingFileWithHistoryEnforced:
+	case WritingFile:
 		return errors.New("internal error: DeploymentState is already open for write")
-	}
-
-	switch mode {
-	case WritingFile, WritingFileWithHistory, WritingFileWithHistoryEnforced:
-		if err := db.setupWal(mode); err != nil {
+	case ReadingFile:
+		db.mode = WritingFile
+		if err := db.setupWal(); err != nil {
+			db.mode = ReadingFile
 			return err
 		}
-		db.mode = mode
 		return nil
-	default:
-		return fmt.Errorf("invalid deployment state write mode: %d", mode)
 	}
+	return fmt.Errorf("invalid deployment state mode: %d", db.mode)
 }
 
 // setupWal validates file write compatibility and opens a WAL.
 // Callers must hold db.mu.
-func (db *DeploymentState) setupWal(mode Mode) error {
+func (db *DeploymentState) setupWal() error {
 	if err := assertNoUnsupportedFeatures(db.Data.Features); err != nil {
 		return err
 	}
@@ -939,7 +941,7 @@ func (db *DeploymentState) setupWal(mode Mode) error {
 	if recorded {
 		return errors.New("cannot change the deployment state source when upgrading to write")
 	}
-	if bestEffort && mode != WritingFileWithHistory && mode != WritingFileWithHistoryEnforced {
+	if bestEffort && db.mode != WritingFileWithHistory && db.mode != WritingFileWithHistoryEnforced {
 		return errors.New("deployment_history_best_effort state requires writing with deployment history enabled")
 	}
 
@@ -958,9 +960,9 @@ func (db *DeploymentState) setupWal(mode Mode) error {
 		StateVersion: currentStateVersion,
 		CLIVersion:   build.GetInfo().Version,
 	}
-	if mode == WritingFileWithHistory || mode == WritingFileWithHistoryEnforced {
+	if db.mode == WritingFileWithHistory || db.mode == WritingFileWithHistoryEnforced {
 		walHead.Features = maps.Clone(db.Data.Features)
-		if mode == WritingFileWithHistoryEnforced {
+		if db.mode == WritingFileWithHistoryEnforced {
 			if walHead.Features == nil {
 				walHead.Features = make(map[string]struct{})
 			}

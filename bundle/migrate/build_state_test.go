@@ -48,7 +48,7 @@ func runBuildStateFromTF(
 
 	var db dstate.DeploymentState
 	db.OpenWithData(statePath, dstate.NewDatabase("lineage", 1))
-	require.NoError(t, db.UpgradeToWrite(dstate.WritingFile))
+	require.NoError(t, db.UpgradeToWrite())
 
 	_, err = migrate.BuildStateFromTF(t.Context(), &root, adapters, &db, tfAttrs, tfIDs, "")
 	require.NoError(t, err)
