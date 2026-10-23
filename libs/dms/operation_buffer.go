@@ -118,7 +118,7 @@ func (b *OperationBuffer) RecordFailure(resourceKey, resourceID string, state js
 
 // record queues update for resourceKey. keepExistingUpdateIfAny (a failure) merges onto the
 // resource's last recorded state if one exists; otherwise (a state write) update is saved as
-// that latest state. latestState and pending are updated under the one lock.
+// that latest state.
 func (b *OperationBuffer) record(resourceKey string, update OperationUpdate, keepExistingUpdateIfAny bool, cause error) {
 	b.mu.Lock()
 	if keepExistingUpdateIfAny {
