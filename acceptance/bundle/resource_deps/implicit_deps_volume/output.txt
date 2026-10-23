@@ -8,15 +8,32 @@
   },
   "schemas": {
     "my_schema": {
-      "catalog_name": "${resources.catalogs.my_catalog.name}",
+      "catalog_name": "mycatalog",
+      "lifecycle": {
+        "depends_on": [
+          {
+            "resource": "catalogs.my_catalog"
+          }
+        ]
+      },
       "name": "dev_[USERNAME]_myschema"
     }
   },
   "volumes": {
     "my_volume": {
-      "catalog_name": "${resources.catalogs.my_catalog.name}",
+      "catalog_name": "mycatalog",
+      "lifecycle": {
+        "depends_on": [
+          {
+            "resource": "schemas.my_schema"
+          },
+          {
+            "resource": "catalogs.my_catalog"
+          }
+        ]
+      },
       "name": "myvolume",
-      "schema_name": "${resources.schemas.my_schema.name}",
+      "schema_name": "dev_[USERNAME]_myschema",
       "volume_path": "/Volumes/mycatalog/dev_[USERNAME]_myschema/myvolume",
       "volume_type": "MANAGED"
     }

@@ -8,7 +8,14 @@
   },
   "schemas": {
     "my_schema": {
-      "catalog_name": "${resources.catalogs.my_catalog.name}",
+      "catalog_name": "mycatalog",
+      "lifecycle": {
+        "depends_on": [
+          {
+            "resource": "catalogs.my_catalog"
+          }
+        ]
+      },
       "name": "dev_[USERNAME]_myschema"
     }
   },
@@ -37,7 +44,17 @@
       },
       "endpoint_name": "my-endpoint",
       "index_type": "DIRECT_ACCESS",
-      "name": "${resources.catalogs.my_catalog.name}.${resources.schemas.my_schema.name}.myindex",
+      "lifecycle": {
+        "depends_on": [
+          {
+            "resource": "schemas.my_schema"
+          },
+          {
+            "resource": "catalogs.my_catalog"
+          }
+        ]
+      },
+      "name": "mycatalog.dev_[USERNAME]_myschema.myindex",
       "primary_key": "id"
     }
   }

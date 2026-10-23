@@ -10,17 +10,34 @@
     "my_endpoint": {
       "ai_gateway": {
         "inference_table_config": {
-          "catalog_name": "${resources.catalogs.my_catalog.name}",
+          "catalog_name": "mycatalog",
           "enabled": true,
-          "schema_name": "${resources.schemas.my_schema.name}"
+          "schema_name": "dev_[USERNAME]_myschema"
         }
+      },
+      "lifecycle": {
+        "depends_on": [
+          {
+            "resource": "schemas.my_schema"
+          },
+          {
+            "resource": "catalogs.my_catalog"
+          }
+        ]
       },
       "name": "dev_[USERNAME]_my-endpoint"
     }
   },
   "schemas": {
     "my_schema": {
-      "catalog_name": "${resources.catalogs.my_catalog.name}",
+      "catalog_name": "mycatalog",
+      "lifecycle": {
+        "depends_on": [
+          {
+            "resource": "catalogs.my_catalog"
+          }
+        ]
+      },
       "name": "dev_[USERNAME]_myschema"
     }
   }

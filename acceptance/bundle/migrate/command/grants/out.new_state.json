@@ -80,7 +80,7 @@
    "depends_on": [
     {
      "node": "resources.schemas.my_schema",
-     "label": "${resources.schemas.my_schema.name}"
+     "label": "depends_on"
     }
    ]
   },
