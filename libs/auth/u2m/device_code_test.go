@@ -42,6 +42,9 @@ func (s deviceCodeEndpointSupplier) GetWorkspaceOAuthEndpoints(_ context.Context
 type fakeDeviceServer struct {
 	deviceAuthStatus int
 	deviceAuthBody   string
+	// deviceAuthStalls makes the device authorization request hang until
+	// the client gives up on it.
+	deviceAuthStalls bool
 	tokenStatus      int
 	tokenBody        string
 	expiresIn        int
@@ -55,6 +58,10 @@ func (f *fakeDeviceServer) handler(t *testing.T) http.Handler {
 		assert.NoError(t, r.ParseForm())
 		assert.Equal(t, "databricks-cli", r.PostForm.Get("client_id"))
 		assert.Equal(t, "offline_access all-apis", r.PostForm.Get("scope"))
+		if f.deviceAuthStalls {
+			<-r.Context().Done()
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 		if f.deviceAuthStatus != 0 {
 			w.WriteHeader(f.deviceAuthStatus)
@@ -279,6 +286,22 @@ func TestDeviceCodeChallenge_ConfirmError(t *testing.T) {
 	})
 	assert.ErrorIs(t, err, confirmErr)
 	assert.Equal(t, int32(0), f.tokenRequests.Load())
+}
+
+func TestDeviceCodeChallenge_DeviceAuthorizationCancelled(t *testing.T) {
+	p := newDeviceCodeAuth(t, &fakeDeviceServer{deviceAuthStalls: true}, true)
+	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
+	defer cancel()
+
+	start := time.Now()
+	_, err := p.DeviceCodeChallenge(ctx, func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
+		t.Fatal("confirm must not be called")
+		return "", nil
+	})
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
+	// The HTTP client's own 30 second timeout also ends the request with
+	// DeadlineExceeded, so check that the context ended it.
+	assert.Less(t, time.Since(start), 10*time.Second)
 }
 
 func TestDeviceCodeChallenge_NotAdvertised(t *testing.T) {

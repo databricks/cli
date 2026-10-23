@@ -88,8 +88,7 @@ func (a *PersistentAuth) DeviceCodeChallenge(ctx context.Context, confirm Confir
 		return nil, err
 	}
 
-	ctx = a.setOAuthContext(ctx)
-	da, err := cfg.DeviceAuth(ctx)
+	da, err := a.requestDeviceAuthorization(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("device authorization: %w", oauthError(err))
 	}
@@ -121,6 +120,24 @@ func (a *PersistentAuth) DeviceCodeChallenge(ctx context.Context, confirm Confir
 	return nil, fmt.Errorf("%w. Start login from scratch", lastErr)
 }
 
+// requestDeviceAuthorization makes the RFC 8628 device authorization request.
+// Unlike oauth2.Config.DeviceAuth, it sends the request with ctx, so that the
+// login timeout and cancellation stop a stalled request.
+func (a *PersistentAuth) requestDeviceAuthorization(ctx context.Context, cfg *oauth2.Config) (*oauth2.DeviceAuthResponse, error) {
+	body, err := a.postForm(ctx, cfg.Endpoint.DeviceAuthURL, url.Values{
+		"client_id": {cfg.ClientID},
+		"scope":     {strings.Join(cfg.Scopes, " ")},
+	})
+	if err != nil {
+		return nil, err
+	}
+	var da oauth2.DeviceAuthResponse
+	if err := json.Unmarshal(body, &da); err != nil {
+		return nil, fmt.Errorf("parsing device authorization response: %w", err)
+	}
+	return &da, nil
+}
+
 // exchangeDeviceCode makes a single RFC 8628 device access token request.
 // The server issues the token as soon as it receives a valid confirmation
 // code, so unlike oauth2.Config.DeviceAccessToken this does not wait before
@@ -130,39 +147,14 @@ func (a *PersistentAuth) DeviceCodeChallenge(ctx context.Context, confirm Confir
 func (a *PersistentAuth) exchangeDeviceCode(ctx context.Context, cfg *oauth2.Config, deviceCode, confirmationCode string) (*oauth2.Token, error) {
 	// No scope: the token gets the scopes of the device authorization
 	// request, and the server ignores a scope sent here.
-	form := url.Values{
+	body, err := a.postForm(ctx, cfg.Endpoint.TokenURL, url.Values{
 		"grant_type":          {deviceCodeGrantType},
 		"client_id":           {cfg.ClientID},
 		"device_code":         {deviceCode},
 		confirmationCodeParam: {confirmationCode},
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, cfg.Endpoint.TokenURL, strings.NewReader(form.Encode()))
+	})
 	if err != nil {
 		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := a.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
-	if err != nil {
-		return nil, fmt.Errorf("reading token response: %w", err)
-	}
-
-	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		retrieveErr := &oauth2.RetrieveError{Response: resp, Body: body}
-		var errResp struct {
-			Error            string `json:"error"`
-			ErrorDescription string `json:"error_description"`
-		}
-		if json.Unmarshal(body, &errResp) == nil {
-			retrieveErr.ErrorCode = errResp.Error
-			retrieveErr.ErrorDescription = errResp.ErrorDescription
-		}
-		return nil, retrieveErr
 	}
 
 	var tokenResp struct {
@@ -191,6 +183,42 @@ func (a *PersistentAuth) exchangeDeviceCode(ctx context.Context, cfg *oauth2.Con
 		t.Expiry = time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second)
 	}
 	return t.WithExtra(raw), nil
+}
+
+// postForm sends a form-encoded OAuth request and returns the body of a
+// successful response. An error response is returned as an
+// *oauth2.RetrieveError with the RFC 6749 §5.2 error fields.
+func (a *PersistentAuth) postForm(ctx context.Context, endpoint string, form url.Values) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, strings.NewReader(form.Encode()))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := a.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return nil, fmt.Errorf("reading response: %w", err)
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		retrieveErr := &oauth2.RetrieveError{Response: resp, Body: body}
+		var errResp struct {
+			Error            string `json:"error"`
+			ErrorDescription string `json:"error_description"`
+		}
+		if json.Unmarshal(body, &errResp) == nil {
+			retrieveErr.ErrorCode = errResp.Error
+			retrieveErr.ErrorDescription = errResp.ErrorDescription
+		}
+		return nil, retrieveErr
+	}
+	return body, nil
 }
 
 // normalizeCode lets users enter a code the way it is displayed. Databricks
