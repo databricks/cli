@@ -10,6 +10,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.test_job
+  tasks[task_key='test'].new_cluster.custom_tags: add
   tasks[task_key='test'].new_cluster.spark_conf: add
 
 
@@ -17,9 +18,11 @@ Resource: resources.jobs.test_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -24,4 +24,6 @@
+@@ -24,4 +24,8 @@
              node_type_id: [NODE_TYPE_ID]
              num_workers: 1
++            custom_tags:
++              UserTag: edited-in-ui
 +            spark_conf:
 +              spark.sql.shuffle.partitions: "7"
            spark_python_task:

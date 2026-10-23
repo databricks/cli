@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structdiff"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type OperationType string
@@ -141,6 +142,7 @@ func isPermissionsOrGrantsSubResource(resourceKey string) bool {
 // plan.
 func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (Changes, error) {
 	changes := make(Changes)
+	policyDefinitions := make(clusterPolicyDefinitions)
 
 	for resourceKey, entry := range plan.Plan {
 		// permissions and grants are emitted as their own plan keys
@@ -154,6 +156,7 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 		}
 
 		resourceChanges := make(ResourceChanges)
+		policyFilter := newClusterPolicyFilter(resourceKey, entry, policyDefinitions)
 
 		if entry.Changes != nil {
 			for path, changeDesc := range entry.Changes {
@@ -168,6 +171,19 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 				}
 				if change.Operation == OperationSkip {
 					continue
+				}
+				if change.Value != nil && policyFilter != nil {
+					fieldPath, err := structpath.ParsePath(path)
+					if err != nil {
+						return nil, fmt.Errorf("parsing change path %s: %w", fullPath, err)
+					}
+					change.Value, err = policyFilter.filter(ctx, b, fieldPath, change.Value)
+					if err != nil {
+						return nil, fmt.Errorf("filtering policy values for %s (no configuration was saved): %w", fullPath, err)
+					}
+					if change.Value == nil {
+						continue
+					}
 				}
 				// The state snapshot holds real per-field values, so New != Old
 				// means the local config diverged from the last deploy and this
