@@ -314,6 +314,16 @@ func TestDeviceCodeChallenge_NotAdvertised(t *testing.T) {
 	assert.ErrorIs(t, err, ErrDeviceCodeNotSupported)
 }
 
+func TestDeviceCodeChallenge_Resources(t *testing.T) {
+	p := newDeviceCodeAuth(t, &fakeDeviceServer{}, true, WithResources([]string{"https://resource.test"}))
+
+	_, err := p.DeviceCodeChallenge(t.Context(), func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
+		t.Fatal("confirm must not be called")
+		return "", nil
+	})
+	assert.EqualError(t, err, "device code login does not support resource indicators")
+}
+
 func TestDeviceCodeChallenge_AccountHost(t *testing.T) {
 	arg, err := NewBasicAccountOAuthArgument("https://accounts.cloud.databricks.test", "xyz")
 	require.NoError(t, err)

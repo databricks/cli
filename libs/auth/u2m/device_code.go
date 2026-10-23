@@ -65,6 +65,11 @@ func (a *PersistentAuth) deviceCodeConfig() (*oauth2.Config, error) {
 	if _, ok := a.oAuthArgument.(WorkspaceOAuthArgument); !ok {
 		return nil, errors.New("device code login is only supported for workspace hosts")
 	}
+	// Resource indicators are only sent on the browser authorization request,
+	// so the token would not be scoped to them.
+	if len(a.resources) > 0 {
+		return nil, errors.New("device code login does not support resource indicators")
+	}
 	cfg, err := a.oauth2Config()
 	if err != nil {
 		return nil, fmt.Errorf("fetching oauth config: %w", err)
