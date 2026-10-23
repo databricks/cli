@@ -1285,6 +1285,16 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			}
 		}
 
+		lifecycleDeps, err := LifecycleDependsOn(configRoot, node)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", prefix, err)
+		}
+		for _, dep := range lifecycleDeps {
+			if !slices.Contains(dependsOn, dep) {
+				dependsOn = append(dependsOn, dep)
+			}
+		}
+
 		slices.SortFunc(dependsOn, func(a, b deployplan.DependsOnEntry) int {
 			if a.Node != b.Node {
 				return strings.Compare(a.Node, b.Node)
@@ -1328,6 +1338,14 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		}
 
 		p.Plan[node] = &e
+	}
+
+	// lifecycle.depends_on only orders resources: a target that is not in the plan
+	// (e.g. skipped as empty) needs no ordering.
+	for _, entry := range p.Plan {
+		entry.DependsOn = slices.DeleteFunc(entry.DependsOn, func(dep deployplan.DependsOnEntry) bool {
+			return dep.Label == lifecycleDependsOnLabel && p.Plan[dep.Node] == nil
+		})
 	}
 
 	for n, entry := range existingKeys {
@@ -1428,4 +1446,44 @@ func (b *DeploymentBundle) getAdapterForKey(resourceKey string) (*dresources.Ada
 	}
 
 	return adapter, nil
+}
+
+const lifecycleDependsOnLabel = "depends_on"
+
+// LifecycleDependsOn returns the edges declared in lifecycle.depends_on of the given node.
+func LifecycleDependsOn(configRoot *config.Root, node string) ([]deployplan.DependsOnEntry, error) {
+	nodePath, err := dyn.NewPathFromString(node)
+	if err != nil {
+		return nil, err
+	}
+	// permissions and grants are separate nodes without lifecycle.
+	if len(nodePath) != 3 {
+		return nil, nil
+	}
+	entries, err := dyn.GetByPath(configRoot.Value(), nodePath.Append(dyn.Key("lifecycle"), dyn.Key("depends_on")))
+	if dyn.IsNoSuchKeyError(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	seq, isSeq := entries.AsSequence()
+	if !isSeq {
+		return nil, nil
+	}
+
+	var result []deployplan.DependsOnEntry
+	for _, item := range seq {
+		ref, isStr := item.Get("resource").AsString()
+		if !isStr {
+			continue
+		}
+		res, key, err := configRoot.Resources.ResolveKey(ref)
+		if err != nil {
+			return nil, fmt.Errorf("lifecycle.depends_on: %w", err)
+		}
+		target := "resources." + res.ResourceDescription().PluralName + "." + key
+		result = append(result, deployplan.DependsOnEntry{Node: target, Label: lifecycleDependsOnLabel})
+	}
+	return result, nil
 }

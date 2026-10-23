@@ -10,6 +10,9 @@ __all__ = [
     "DatabaseInstanceRef",
     "DatabaseInstanceRefDict",
     "DatabaseInstanceRefParam",
+    "DependsOn",
+    "DependsOnDict",
+    "DependsOnParam",
     "Lifecycle",
     "LifecycleDict",
     "LifecycleParam",
@@ -35,6 +38,11 @@ from databricks.bundles.database_instances._models.database_instance_ref import 
     DatabaseInstanceRef,
     DatabaseInstanceRefDict,
     DatabaseInstanceRefParam,
+)
+from databricks.bundles.database_instances._models.depends_on import (
+    DependsOn,
+    DependsOnDict,
+    DependsOnParam,
 )
 from databricks.bundles.database_instances._models.lifecycle import (
     Lifecycle,

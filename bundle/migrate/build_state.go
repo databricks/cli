@@ -153,6 +153,15 @@ func BuildStateFromTF(
 				}
 			}
 		}
+		lifecycleDeps, err := direct.LifecycleDependsOn(configRoot, node)
+		if err != nil {
+			return warningsSeen, fmt.Errorf("%s: %w", node, err)
+		}
+		for _, dep := range lifecycleDeps {
+			if !slices.Contains(dependsOn, dep) {
+				dependsOn = append(dependsOn, dep)
+			}
+		}
 		slices.SortFunc(dependsOn, func(a, b deployplan.DependsOnEntry) int {
 			if a.Node != b.Node {
 				return strings.Compare(a.Node, b.Node)
