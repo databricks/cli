@@ -2,15 +2,16 @@ package configsync
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"iter"
+	"maps"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/jsonloader"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structdiff"
@@ -47,91 +48,132 @@ type clusterPolicyFilter struct {
 
 // filter removes omitted policy values from a normalized plan change, including
 // whole-object additions. A nil result means no value needs to be synced.
-func (f *clusterPolicyFilter) filter(ctx context.Context, b *bundle.Bundle, path *structpath.PathNode, changeValue any) (any, error) {
-	normalized, err := convert.FromTyped(changeValue, dyn.NilValue)
-	if err != nil {
+func (f *clusterPolicyFilter) filter(ctx context.Context, b *bundle.Bundle, path *structpath.PathNode, value any) (any, error) {
+	filtered, keep, err := f.prune(ctx, b, path, value, true)
+	if err != nil || !keep {
 		return nil, err
 	}
-	filtered, err := dyn.Walk(normalized, func(relative dyn.Path, value dyn.Value) (dyn.Value, error) {
-		fieldPath, err := structdiff.KeyedPath(f.remote, appendDynPath(path, relative), f.sliceKeys)
-		if err != nil {
-			return dyn.InvalidValue, err
-		}
-		for _, root := range f.clusterRoots {
-			if !fieldPath.HasPatternPrefix(root) || fieldPath.Len() == root.Len() {
-				continue
-			}
-			clusterPath := fieldPath.Prefix(root.Len())
-			// A change may start inside an array, so protecting only sequence
-			// nodes would still allow an element to be emptied or removed.
-			for _, node := range fieldPath.SkipPrefix(root.Len()).AsSlice() {
-				if _, indexed := node.Index(); indexed {
-					return value, dyn.ErrSkip
-				}
-			}
-			// Keep required fields, but still filter their optional children.
-			if len(relative) > 0 && isRequiredField(f.remote, fieldPath) {
-				return value, nil
-			}
-			matches, err := f.matchesOmittedPolicySubtree(ctx, b, clusterPath, fieldPath, value)
-			if err != nil {
-				return dyn.InvalidValue, err
-			}
-			if matches {
-				return dyn.InvalidValue, dyn.ErrDrop
-			}
-			// Removing elements would change indexed policy constraints.
-			if value.Kind() == dyn.KindSequence {
-				return value, dyn.ErrSkip
-			}
-			break
-		}
-		return value, nil
-	})
-	if errors.Is(err, dyn.ErrDrop) {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	return filtered.AsAny(), nil
+	return filtered, nil
 }
 
-// matchesOmittedPolicySubtree requires every leaf to be absent from authored config
+// prune reports keep=false when the whole value comes from the cluster policy.
+func (f *clusterPolicyFilter) prune(ctx context.Context, b *bundle.Bundle, path *structpath.PathNode, value any, isChangeRoot bool) (any, bool, error) {
+	fieldPath, err := structdiff.KeyedPath(f.remote, path, f.sliceKeys)
+	if err != nil {
+		return nil, false, err
+	}
+	for _, root := range f.clusterRoots {
+		if !fieldPath.HasPatternPrefix(root) || fieldPath.Len() == root.Len() {
+			continue
+		}
+		clusterPath := fieldPath.Prefix(root.Len())
+		// A change may start inside an array, so protecting only sequence
+		// nodes would still allow an element to be emptied or removed.
+		for _, node := range fieldPath.SkipPrefix(root.Len()).AsSlice() {
+			if _, indexed := node.Index(); indexed {
+				return value, true, nil
+			}
+		}
+		// Keep required fields, but still filter their optional children.
+		if isChangeRoot || !isRequiredField(f.remote, fieldPath) {
+			matches, err := f.isPolicyOnlySubtree(ctx, b, clusterPath, fieldPath, value)
+			if err != nil {
+				return nil, false, err
+			}
+			if matches {
+				return nil, false, nil
+			}
+		}
+		// Removing elements would change indexed policy constraints.
+		if _, sequence := value.([]any); sequence {
+			return value, true, nil
+		}
+		break
+	}
+
+	switch value := value.(type) {
+	case map[string]any:
+		result := make(map[string]any, len(value))
+		for _, key := range slices.Sorted(maps.Keys(value)) {
+			child := value[key]
+			filtered, keep, err := f.prune(ctx, b, structpath.NewStringKey(path, key), child, false)
+			if err != nil {
+				return nil, false, err
+			}
+			if keep {
+				result[key] = filtered
+			}
+		}
+		return result, true, nil
+	case []any:
+		// Arrays inside clusters return above; elements here cannot be dropped.
+		result := make([]any, len(value))
+		for i, child := range value {
+			filtered, _, err := f.prune(ctx, b, structpath.NewIndex(path, i), child, false)
+			if err != nil {
+				return nil, false, err
+			}
+			result[i] = filtered
+		}
+		return result, true, nil
+	default:
+		return value, true, nil
+	}
+}
+
+// isPolicyOnlySubtree requires every leaf to be absent from authored config
 // and equal to a fixed value or an opted-in default in the remote cluster's policy.
-func (f *clusterPolicyFilter) matchesOmittedPolicySubtree(ctx context.Context, b *bundle.Bundle, clusterPath, path *structpath.PathNode, value dyn.Value) (bool, error) {
-	matches := true
-	leaves := 0
-	_, err := dyn.Walk(value, func(relative dyn.Path, leaf dyn.Value) (dyn.Value, error) {
-		if !matches {
-			return leaf, dyn.ErrSkip
-		}
-		if leaf.Kind() == dyn.KindMap || leaf.Kind() == dyn.KindSequence {
-			return leaf, nil
-		}
-		leaves++
-		fieldPath := appendDynPath(path, relative)
+func (f *clusterPolicyFilter) isPolicyOnlySubtree(ctx context.Context, b *bundle.Bundle, clusterPath, path *structpath.PathNode, value any) (bool, error) {
+	hasLeaves := false
+	for fieldPath, leaf := range normalizedLeaves(path, value) {
+		hasLeaves = true
 		if authored, _ := structaccess.Get(f.config, fieldPath); authored != nil {
-			matches = false
-			return leaf, nil
+			return false, nil
 		}
 		remotePolicyID, _ := structaccess.Get(f.remote, structpath.NewStringKey(clusterPath, "policy_id"))
 		policyID, _ := remotePolicyID.(string)
 		if policyID == "" {
-			matches = false
-			return leaf, nil
+			return false, nil
 		}
 		definition, err := f.definitions.get(ctx, b, policyID)
 		if err != nil {
-			return dyn.InvalidValue, err
+			return false, err
 		}
 		// Remote cluster specs omit this input-only flag; use the authored setting.
 		applyDefaults, _ := structaccess.Get(f.config, structpath.NewStringKey(clusterPath, "apply_policy_default_values"))
 		expected := policyValueForAPIAttribute(definition, policyAttribute(fieldPath.SkipPrefix(clusterPath.Len())), applyDefaults == true)
-		matches = expected.IsValid() && expected.AsAny() != nil && reflect.DeepEqual(expected.AsAny(), leaf.AsAny())
-		return leaf, nil
-	})
-	return matches && leaves > 0, err
+		if !expected.IsValid() || expected.AsAny() == nil || !reflect.DeepEqual(expected.AsAny(), leaf) {
+			return false, nil
+		}
+	}
+	return hasLeaves, nil
+}
+
+// normalizedLeaves preserves the normalized change's scalars, including nulls.
+// Empty containers have no leaves and cannot alone establish a policy match.
+func normalizedLeaves(path *structpath.PathNode, value any) iter.Seq2[*structpath.PathNode, any] {
+	return func(yield func(*structpath.PathNode, any) bool) {
+		switch value := value.(type) {
+		case map[string]any:
+			for _, key := range slices.Sorted(maps.Keys(value)) {
+				for leafPath, leaf := range normalizedLeaves(structpath.NewStringKey(path, key), value[key]) {
+					if !yield(leafPath, leaf) {
+						return
+					}
+				}
+			}
+		case []any:
+			for i, child := range value {
+				for leafPath, leaf := range normalizedLeaves(structpath.NewIndex(path, i), child) {
+					if !yield(leafPath, leaf) {
+						return
+					}
+				}
+			}
+		default:
+			yield(path, value)
+		}
+	}
 }
 
 func isRequiredField(remote any, path *structpath.PathNode) bool {
@@ -149,17 +191,6 @@ func isRequiredField(remote any, path *structpath.PathNode) bool {
 	}
 	field, _, ok := structaccess.FindStructFieldByKeyType(typ, key)
 	return ok && !structtag.JSONTag(field.Tag.Get("json")).OmitEmpty()
-}
-
-func appendDynPath(base *structpath.PathNode, suffix dyn.Path) *structpath.PathNode {
-	for _, component := range suffix {
-		if key := component.Key(); key != "" {
-			base = structpath.NewStringKey(base, key)
-		} else {
-			base = structpath.NewIndex(base, component.Index())
-		}
-	}
-	return base
 }
 
 // policyAttribute preserves dotted map keys, e.g. spark_conf["a.b"] becomes spark_conf.a.b.
