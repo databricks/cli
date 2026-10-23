@@ -1,0 +1,17 @@
+bundle:
+  name: test-bundle
+
+resources:
+  clusters:
+    source:
+      cluster_name: source
+      spark_version: 15.4.x-scala2.12
+      is_single_node: true
+    target:
+      cluster_name: target
+      spark_version: 15.4.x-scala2.12
+      # clients is a required field of workload_type. Both of its fields are references.
+      workload_type:
+        clients:
+          notebooks: ${resources.clusters.source.is_single_node}
+          jobs: ${resources.clusters.source.is_single_node}
