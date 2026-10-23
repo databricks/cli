@@ -204,26 +204,27 @@ func pydabsMetrics(b *bundle.Bundle) *protos.BundleDeployPydabs {
 		experimentalConfig = &config.Experimental{}
 	}
 
-	added := b.Metrics.PythonAddedResources
-	updated := b.Metrics.PythonUpdatedResources
-
-	types := slices.Concat(slices.Collect(maps.Keys(added)), slices.Collect(maps.Keys(updated)))
-	slices.Sort(types)
-	types = slices.Compact(types)
-
 	out := &protos.BundleDeployPydabs{
 		ResourceLoadersCount:  int64(len(experimentalConfig.Python.Resources)),
 		ResourceMutatorsCount: int64(len(experimentalConfig.Python.Mutators)),
 		ConfigSection:         b.Metrics.PythonConfigSection,
 	}
-	for _, t := range types {
-		out.AddedResourcesCount += added[t]
-		out.UpdatedResourcesCount += updated[t]
-		out.Resources = append(out.Resources, protos.PydabsResourceTypeCount{
-			ResourceType: t,
-			AddedCount:   added[t],
-			UpdatedCount: updated[t],
-		})
+
+	byType := make(map[string]*protos.PydabsResourceTypeCount)
+	for t, n := range b.Metrics.PythonAddedResources {
+		byType[t] = &protos.PydabsResourceTypeCount{ResourceType: t, AddedCount: n}
+		out.AddedResourcesCount += n
+	}
+	for t, n := range b.Metrics.PythonUpdatedResources {
+		if byType[t] == nil {
+			byType[t] = &protos.PydabsResourceTypeCount{ResourceType: t}
+		}
+		byType[t].UpdatedCount = n
+		out.UpdatedResourcesCount += n
+	}
+
+	for _, t := range slices.Sorted(maps.Keys(byType)) {
+		out.Resources = append(out.Resources, *byType[t])
 	}
 	return out
 }
