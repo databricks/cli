@@ -3,7 +3,6 @@
 print_pydabs_telemetry() {
   jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event | {
     pydabs,
-    experimental: .experimental | with_entries(select(.key | startswith("python_"))),
     all_resource_types: [.resources_metadata.resources[].resource_type]
   }' "$OUT_REQUESTS"
   rm "$OUT_REQUESTS"

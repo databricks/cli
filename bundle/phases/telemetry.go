@@ -434,10 +434,6 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 				WorkspaceArtifactPathType:    artifactPathType,
 				BoolValues:                   b.Metrics.BoolValues,
 				LocalCacheMeasurementsMs:     b.Metrics.LocalCacheMeasurementsMs,
-				PythonAddedResourcesCount:    pydabs.AddedResourcesCount, //nolint:staticcheck // SA1019: populated alongside Pydabs during the transition
-				PythonUpdatedResourcesCount:  pydabs.UpdatedResourcesCount,
-				PythonResourceLoadersCount:   pydabs.ResourceLoadersCount,
-				PythonResourceMutatorsCount:  pydabs.ResourceMutatorsCount,
 				VariableCount:                int64(variableCount),
 				ComplexVariableCount:         complexVariableCount,
 				LookupVariableCount:          lookupVariableCount,
