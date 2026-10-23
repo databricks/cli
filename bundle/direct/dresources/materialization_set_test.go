@@ -4,8 +4,11 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMaterializationSetMemberKey(t *testing.T) {
@@ -144,4 +147,51 @@ func TestMaterializationSetChangeFailuresWithoutFailedMembers(t *testing.T) {
 		},
 	}))
 	assert.Empty(t, materializationSetChangeFailures(nil))
+}
+
+// TestMaterializationSetMembershipChangeIsAnUpdate enumerates every path shape the planner hands
+// this resource, so the membership carve-out's reach is visible rather than inferred. The two
+// shapes it covers are a member added or removed whole and the member list emptied whole; every
+// other path keeps the action the rules gave it.
+func TestMaterializationSetMembershipChangeIsAnUpdate(t *testing.T) {
+	const member = "materialized_features[member='main.ns.feat|store|false']"
+
+	for _, test := range []struct {
+		path   string
+		action deployplan.ActionType
+	}{
+		{"materialized_features", deployplan.Update},
+		{member, deployplan.Update},
+		{"materialized_features[member='main.ns.feat||false']", deployplan.Update},
+		{member + ".feature_name", deployplan.Recreate},
+		{member + ".cron_schedule_trigger", deployplan.Recreate},
+		{member + ".online_store_config.table_name_prefix", deployplan.Recreate},
+		{"materialization_set_id", deployplan.Recreate},
+	} {
+		t.Run(test.path, func(t *testing.T) {
+			path, err := structpath.ParsePath(test.path)
+			require.NoError(t, err)
+
+			change := &ChangeDesc{Action: deployplan.Recreate, Reason: "immutable"}
+			require.NoError(t, (&ResourceMaterializationSet{}).OverrideChangeDesc(
+				t.Context(), path, change, nil))
+			assert.Equal(t, test.action, change.Action)
+		})
+	}
+}
+
+// TestMaterializationSetDestinationSuppressionStillReachesMemberFields keeps the two blocks of
+// OverrideChangeDesc disjoint: widening the membership carve-out to one segment must not shadow the
+// input-only suppression, which only ever sees a member's destination three segments down.
+func TestMaterializationSetDestinationSuppressionStillReachesMemberFields(t *testing.T) {
+	path, err := structpath.ParsePath(
+		"materialized_features[member='main.ns.feat||false'].offline_store_config")
+	require.NoError(t, err)
+
+	change := &ChangeDesc{Action: deployplan.Recreate, Reason: "spec:immutable", New: "declared"}
+	require.NoError(t, (&ResourceMaterializationSet{}).OverrideChangeDesc(
+		t.Context(), path, change, nil))
+
+	assert.Equal(t, deployplan.Skip, change.Action)
+	assert.Equal(t, "input_only_not_returned", change.Reason)
 }

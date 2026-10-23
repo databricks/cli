@@ -9,7 +9,7 @@ Table danielb.fs2680.src_[UNIQUE_NAME] is now visible (catalog_name=danielb)
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-batch-[UNIQUE_NAME]/default/files...
 Created features.batchfeat
 Created materialization_sets.set1
-Files: 9 uploaded, 0 deleted
+Files: 10 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan -o json
@@ -60,6 +60,13 @@ Files: 2 uploaded, 0 deleted
 
 === Removing both satisfies the cascade but empties the set, which the update endpoint refuses
 === in favour of the delete endpoint. Restoring the pair plans nothing, so no refusal wrote.
+>>> [CLI] bundle plan -o json
+
+>>> set_actions
+{
+  "resources.materialization_sets.set1": "update"
+}
+
 >>> musterr [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-batch-[UNIQUE_NAME]/default/files...
 Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Updating materialization set '[UUID]' with no materialized features is not supported. Delete the set instead. (400 INVALID_PARAMETER_VALUE)
@@ -69,7 +76,28 @@ HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
 API message: Updating materialization set '[UUID]' with no materialized features is not supported. Delete the set instead.
 
-Files: 1 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
+
+=== Writing no value instead of an empty list is the same declaration, and has to reach the same
+=== endpoint: the member field emptied whole is one path rather than one per member, and the
+=== immutable rules match it just as readily.
+>>> [CLI] bundle plan -o json
+
+>>> set_actions
+{
+  "resources.materialization_sets.set1": "update"
+}
+
+>>> musterr [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-batch-[UNIQUE_NAME]/default/files...
+Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Updating materialization set '[UUID]' with no materialized features is not supported. Delete the set instead. (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?request_id=[UUID]&update_mask=materialized_features
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Updating materialization set '[UUID]' with no materialized features is not supported. Delete the set instead.
+
+Files: 2 uploaded, 0 deleted
 
 >>> [CLI] bundle plan -o json
 

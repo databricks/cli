@@ -46,6 +46,16 @@ trace musterr $CLI bundle deploy --auto-approve
 title "Removing both satisfies the cascade but empties the set, which the update endpoint refuses"
 title "in favour of the delete endpoint. Restoring the pair plans nothing, so no refusal wrote."
 render drop-both.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_actions
+trace musterr $CLI bundle deploy --auto-approve
+
+title "Writing no value instead of an empty list is the same declaration, and has to reach the same"
+title "endpoint: the member field emptied whole is one path rather than one per member, and the"
+title "immutable rules match it just as readily."
+render drop-both-null.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_actions
 trace musterr $CLI bundle deploy --auto-approve
 render databricks.yml.tmpl
 trace $CLI bundle plan -o json > out.plan.json

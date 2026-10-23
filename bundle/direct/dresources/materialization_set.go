@@ -118,13 +118,14 @@ func isAbsentRemotely(remote any) bool {
 // destroy-and-recreate, and it suppresses the drift left behind by an ignore_remote_changes rule
 // that cannot fire.
 func (*ResourceMaterializationSet) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *ml.MaterializationSet) error {
-	// A member added to or removed from the set is a two-segment path,
-	// materialized_features[member='<feature name>|<online store name>|<is streaming>'], which an
-	// immutable field rule under materialized_features[*] still matches. That match counts as an
-	// update rather than a destroy-and-recreate, because removing a member is what the update
-	// endpoint reconciles. An addition reaches the same endpoint and is refused there, naming the
-	// feature that matched no member.
-	if path.Len() == 2 && path.HasPatternPrefix(materializedFeaturesPattern) {
+	// A member added or removed whole is a two-segment path,
+	// materialized_features[member='<feature name>|<online store name>|<is streaming>'], and the
+	// member list emptied whole is the one-segment materialized_features. An immutable field rule
+	// under materialized_features[*] matches either, because the matcher truncates a pattern longer
+	// than the path. Both count as an update rather than a destroy-and-recreate, because
+	// reconciling membership is what the update endpoint does: it refuses an addition by naming the
+	// feature that matched no member, and an emptied list by pointing at the delete endpoint.
+	if path.Len() <= 2 && path.HasPatternPrefix(materializedFeaturesPattern) {
 		change.Action = deployplan.Update
 		return nil
 	}
