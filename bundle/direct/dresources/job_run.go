@@ -121,7 +121,7 @@ func makeJobRunRemote(run *jobs.Run) *JobRunRemote {
 			jobParameters[p.Name] = p.Value
 		}
 	}
-	return &JobRunRemote{
+	return &JobRunRemote{ // sdk:copy-skip Parameter flattening and result-state reconstruction need manual mapping.
 		JobId:             run.JobId,
 		JobParameters:     jobParameters,
 		DurationTarget:    run.DurationTarget,

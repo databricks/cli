@@ -84,7 +84,7 @@ func configOutputToInput(output *serving.EndpointCoreConfigOutput) *serving.Endp
 	if output == nil {
 		return nil
 	}
-	return &serving.EndpointCoreConfigInput{
+	return &serving.EndpointCoreConfigInput{ // sdk:copy-skip Nested conversions and deprecated fields need manual review.
 		AutoCaptureConfig: autoCaptureConfigOutputToInput(output.AutoCaptureConfig),
 		ServedEntities:    servedEntitiesOutputToInput(output.ServedEntities),
 		ServedModels:      nil,

@@ -20,6 +20,10 @@ Place the directive on the literal's opening-brace line. The source must be an
 identifier or selector chain, such as `config` or `remote.DeltaSyncIndexSpec`.
 Each nested literal needs its own annotation; the tool does not infer sources.
 
+Use `// sdk:copy-skip <reason>` on the opening-brace line to document an
+intentionally manual mapping. This marker is explanatory: only `sdk:copy-from`
+opts a literal into rewriting, and exhaustruct still checks skipped literals.
+
 For each missing destination field, the tool requires:
 
 - The same exported Go field name on an accessible, unambiguous source field.
