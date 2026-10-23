@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
@@ -193,6 +194,29 @@ func aiRuntimeTaskMetrics(jobs map[string]*resources.Job) (present, scheduled, m
 		}
 	}
 	return present, scheduled, multitask
+}
+
+// bundleGitInfo builds the git metadata for the deploy event, or nil when the
+// bundle root is not inside a git repository. OriginURL already has credentials
+// stripped by the load_git_details mutator.
+func bundleGitInfo(b *bundle.Bundle) *protos.BundleGitInfo {
+	git := b.Config.Bundle.Git
+	if git.Branch == "" && git.Commit == "" && git.OriginURL == "" {
+		return nil
+	}
+	return &protos.BundleGitInfo{
+		OriginURL: git.OriginURL,
+		Branch:    git.Branch,
+		Commit:    git.Commit,
+	}
+}
+
+// fromWorkspaceFolder reports whether the bundle was deployed from a workspace
+// folder: the CLI running on a Databricks cluster with the bundle source under
+// /Workspace/, as opposed to a local checkout. Same signal as the source-linked
+// deployment preset uses to detect a Databricks workspace.
+func fromWorkspaceFolder(ctx context.Context, b *bundle.Bundle) bool {
+	return dbr.RunsOnRuntime(ctx) && strings.HasPrefix(b.SyncRootPath, "/Workspace/")
 }
 
 // LogDeployTelemetry logs a telemetry event for a bundle deploy command.
@@ -385,6 +409,9 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 			ResourceDashboardIDs: dashboardIds,
 
 			ResourcesMetadata: collectResourcesMetadata(ctx, b),
+
+			Git:                 bundleGitInfo(b),
+			FromWorkspaceFolder: fromWorkspaceFolder(ctx, b),
 
 			Experimental: &protos.BundleDeployExperimental{
 				BundleMode:                   mode,
