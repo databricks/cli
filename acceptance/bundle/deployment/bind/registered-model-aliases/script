@@ -1,0 +1,31 @@
+MODEL_NAME="test-registered-model-$UNIQUE_NAME"
+export MODEL_NAME
+envsubst < databricks.yml.tmpl > databricks.yml
+MODEL="main.default.$MODEL_NAME"
+
+title "A model created outside the bundle, with versions 1 and 2 registered the way mlflow.register_model does"
+trace $CLI registered-models create --json "{\"name\": \"$MODEL_NAME\", \"catalog_name\": \"main\", \"schema_name\": \"default\"}" | jq '{full_name}'
+for _ in 1 2; do
+    trace $CLI api post /api/2.0/mlflow/unity-catalog/model-versions/create --json "{\"name\": \"$MODEL\", \"source\": \"dbfs:/tmp/model\"}" | jq '.model_version | {version}'
+done
+
+cleanup() {
+    trace $CLI registered-models delete "$MODEL"
+}
+trap cleanup EXIT
+
+title "Bind reports the comment and aliases the deploy will set"
+trace musterr $CLI bundle deployment bind model1 "$MODEL"
+trace $CLI bundle deployment bind model1 "$MODEL" --auto-approve
+
+title "Deploy sets them"
+rm -f "$OUT_REQUESTS"
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog/models
+trace $CLI registered-models get "$MODEL" --include-aliases | jq '{comment, aliases: [.aliases[]? | {alias_name, version_num}]}'
+
+title "Redeploy is a no-op"
+trace $CLI bundle plan
+
+trace $CLI bundle deployment unbind model1
+trace $CLI bundle destroy --auto-approve

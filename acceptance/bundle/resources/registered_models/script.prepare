@@ -1,0 +1,11 @@
+# alias_fields is the allow-list of alias fields the tests assert on. The backend fills in
+# more per alias (id, catalog_name, schema_name, model_name), which the plan ignores.
+alias_fields() {
+    jq '[.aliases[]? | {alias_name, version_num}]'
+}
+
+# register_model_version registers the next version of a model out of band and prints its
+# number, as a training run's mlflow.register_model does. An alias can only point at one.
+register_model_version() {
+    $CLI api post /api/2.0/mlflow/unity-catalog/model-versions/create --json "{\"name\": \"$1\", \"source\": \"dbfs:/tmp/model\"}" | jq -r '.model_version.version'
+}

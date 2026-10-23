@@ -1,0 +1,82 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+MODEL="main.default.model-aliases-$UNIQUE_NAME"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+# Show the model's alias plan entries; reading the saved plan keeps output identical across READPLAN.
+plan_aliases() {
+    jq '.plan["resources.registered_models.model1"].changes // {} | with_entries(select(.key | startswith("aliases")))' tmp.plan.json
+}
+
+# Plan and deploy, then show the alias requests the deploy sent and the aliases the model ends up with.
+# Deploy output is verbose and differs plan/no-plan; send it to LOG and assert the key line.
+deploy_and_show() {
+    $CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+    trace plan_aliases
+    $CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
+    cat LOG.deploy | contains.py "$1" > /dev/null
+    trace print_requests.py //unity-catalog/models
+    trace $CLI registered-models get "$MODEL" --include-aliases | alias_fields
+}
+
+title "Deploy a model that declares no aliases"
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+$CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
+cat LOG.deploy | contains.py "Created registered_models.model1" > /dev/null
+trace print_requests.py //unity-catalog/models
+
+title "Out of band: a training run registers two versions and points 'champion' at version 1"
+trace register_model_version "$MODEL"
+trace register_model_version "$MODEL"
+$CLI registered-models set-alias "$MODEL" champion 1 > /dev/null
+trace print_requests.py //unity-catalog/models
+
+title "No aliases section: 'champion' is skipped as unmanaged, not drift"
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+trace plan_aliases
+trace $CLI bundle plan
+
+title "Declare aliases: 'champion' moves to version 2 and 'challenger' points at version 1"
+update_file.py databricks.yml "      schema_name: default" "      schema_name: default
+      aliases:
+        - alias_name: champion
+          version_num: 2
+        - alias_name: challenger
+          version_num: 1"
+deploy_and_show "Updated registered_models.model1"
+
+title "Redeploy is a no-op: the fields the backend fills in on each alias are skipped as output_only"
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+trace plan_aliases
+trace $CLI bundle plan
+
+title "Drift: out of band, 'champion' moves back to version 1 and 'challenger' is deleted; deploy restores both"
+$CLI registered-models set-alias "$MODEL" champion 1 > /dev/null
+$CLI registered-models delete-alias "$MODEL" challenger
+trace print_requests.py //unity-catalog/models
+deploy_and_show "Updated registered_models.model1"
+
+title "Drop 'challenger' from the config: it is deleted, and so is 'staging', set out of band meanwhile"
+$CLI registered-models set-alias "$MODEL" staging 1 > /dev/null
+trace print_requests.py //unity-catalog/models
+update_file.py databricks.yml "
+        - alias_name: challenger
+          version_num: 1" ""
+deploy_and_show "Updated registered_models.model1"
+
+title "An empty aliases list keeps the aliases managed and deletes them all"
+update_file.py databricks.yml "      aliases:
+        - alias_name: champion
+          version_num: 2" "      aliases: []"
+deploy_and_show "Updated registered_models.model1"
+
+title "Remove the aliases section: aliases are unmanaged again, so one set out of band stays"
+update_file.py databricks.yml "
+      aliases: []" ""
+$CLI registered-models set-alias "$MODEL" champion 1 > /dev/null
+trace print_requests.py //unity-catalog/models
+deploy_and_show "1 unchanged"

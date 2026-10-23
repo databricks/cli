@@ -228,6 +228,9 @@ type FakeWorkspace struct {
 	McpServices           map[string]catalog.McpService
 	ModelProviderServices map[string]catalog.ModelProviderService
 
+	// RegisteredModelVersions counts the versions registered on each model, keyed by its full name.
+	RegisteredModelVersions map[string]int
+
 	Features              map[string]ml.Feature
 	ServingEndpoints      map[string]serving.ServingEndpointDetailed
 	VectorSearchEndpoints map[string]vectorsearch.EndpointInfo
@@ -576,6 +579,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 			"9876": {PolicyId: "9876", Name: "some-test-cluster-policy"},
 		},
 		VectorSearchIndexesPendingDeletion: map[string]int{},
+		RegisteredModelVersions:            map[string]int{},
 	}
 }
 

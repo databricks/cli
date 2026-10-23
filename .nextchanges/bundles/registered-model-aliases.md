@@ -1,0 +1,1 @@
+* Fixes [#4012](https://github.com/databricks/cli/issues/4012): registered model `aliases` are now set in Unity Catalog on deploy instead of being silently ignored. A model without an `aliases` section keeps the aliases set outside the bundle (for example by MLflow), and `aliases: []` removes them.
