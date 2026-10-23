@@ -125,6 +125,8 @@ EnvMatrixExclude.no_data_quality_monitor_on_cloud = ["CONFIG_Cloud=true", "INPUT
 # Deployment history has no "features." resource-key prefix, so the deploy fails before the feature
 # is created; see dmsResourceTypes in libs/testserver/bundledeployments.go.
 EnvMatrixExclude.no_feature_dms = ["DMS=true", "INPUT_CONFIG=feature.yml.tmpl"]
+# Same for the "postgres_data_apis." prefix.
+EnvMatrixExclude.no_postgres_data_api_dms = ["DMS=true", "INPUT_CONFIG=postgres_data_api.yml.tmpl"]
 # Fake SQL endpoint for local tests
 
 [[Server]]

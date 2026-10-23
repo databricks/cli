@@ -4,6 +4,10 @@ Cloud = true
 CloudEnvs.gcp = false
 CloudEnvs.azure = false
 
+# Deployment history has no "postgres_data_apis." resource-key prefix, so the deploy fails before the
+# Data API is created. See dmsResourceTypes in libs/testserver/bundledeployments.go, which mirrors Universe.
+EnvMatrixExclude.no_data_api_dms = ["DMS=true"]
+
 Ignore = [
     "databricks.yml",
     ".databricks",
