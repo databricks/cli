@@ -73,6 +73,11 @@ func (s *MaterializationSet) GetName() string {
 	return ""
 }
 
-// InitializeURL leaves URL unset because a set has no standalone page in the workspace; its
+// GetURL reports that this type has no workspace URL: a set has no standalone page, and its
 // members surface under their own features.
+func (s *MaterializationSet) GetURL() (string, bool) {
+	return "", false
+}
+
+// InitializeURL leaves URL unset. See GetURL.
 func (s *MaterializationSet) InitializeURL(_ url.URL) {}
