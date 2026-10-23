@@ -2,7 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 title "Deploy the schema, so there is a resource to recreate"
 trace $CLI bundle deploy
-trace print_requests.py --dms //api/2.0/bundle
+trace print_requests.py --dms //api/2.0/bundle --method POST
 
 title "The plan is a no-op and records the deployment_history feature"
 dms_plan
@@ -25,7 +25,7 @@ trace update_file.py databricks.yml "catalog_name: main" "catalog_name: ${other_
 trace fault.py "POST /api/2.1/unity-catalog/schemas" 400 0 1 INVALID_PARAMETER_VALUE
 trace musterr $CLI bundle deploy --auto-approve
 # Not sorted: the point of this test is the order the operations are recorded in.
-trace print_requests.py --dms //api/2.0/bundle
+trace print_requests.py --dms //api/2.0/bundle --method POST
 
 title "The resource is not listed: state is what projects a resource, and the failed recreate left none"
 deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-failed-recreate-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')

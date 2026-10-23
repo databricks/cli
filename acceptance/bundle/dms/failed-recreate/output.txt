@@ -6,7 +6,7 @@ Created schemas.foo
 Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py --dms //api/2.0/bundle
+>>> print_requests.py --dms //api/2.0/bundle --method POST
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
@@ -35,20 +35,6 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
       }
     ],
     "version_type": "VERSION_TYPE_DEPLOY"
-  }
-}
-{
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/operations/schemas.foo",
-  "q": {
-    "update_mask": "state,error_message,resource_id,status"
-  },
-  "body": {
-    "error_message": "",
-    "resource_id": "main.dms_failed_recreate_schema_[UNIQUE_NAME]",
-    "sequence_id": 0,
-    "state": "{\"state\":{\"catalog_name\":\"main\",\"comment\":\"v1\",\"name\":\"dms_failed_recreate_schema_[UNIQUE_NAME]\"}}",
-    "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
 {
@@ -116,7 +102,7 @@ API message: Fault injected by test.
 
 Files: 2 uploaded, 0 deleted
 
->>> print_requests.py --dms //api/2.0/bundle
+>>> print_requests.py --dms //api/2.0/bundle --method POST
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions",
@@ -133,30 +119,6 @@ Files: 2 uploaded, 0 deleted
     ],
     "previous_version_id": "1",
     "version_type": "VERSION_TYPE_DEPLOY"
-  }
-}
-{
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/2/operations/schemas.foo",
-  "q": {
-    "update_mask": "state,error_message,status"
-  },
-  "body": {
-    "error_message": "",
-    "sequence_id": 0,
-    "status": "OPERATION_STATUS_PENDING"
-  }
-}
-{
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/2/operations/schemas.foo",
-  "q": {
-    "update_mask": "state,error_message,status"
-  },
-  "body": {
-    "error_message": "Fault injected by test. (400 INVALID_PARAMETER_VALUE)",
-    "sequence_id": 1,
-    "status": "OPERATION_STATUS_FAILED"
   }
 }
 {

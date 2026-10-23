@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
@@ -22,7 +23,6 @@ type OperationBuffer struct {
 	deploymentID string
 	versionNum   int
 
-	ready      *sync.Cond
 	done       chan struct{}
 	cancel     context.CancelFunc
 	bestEffort bool
@@ -69,7 +69,6 @@ func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum i
 		latestState:  make(map[string]OperationUpdate),
 		sequenceIDs:  make(map[string]int64),
 	}
-	b.ready = sync.NewCond(&b.mu)
 	go b.run(ctx)
 	return b
 }
@@ -122,28 +121,7 @@ func (b *OperationBuffer) record(resourceKey string, update OperationUpdate, kee
 	// Only when the resource is not already queued, enqueue it.
 	if !queued {
 		b.queue = append(b.queue, resourceKey)
-		b.ready.Signal()
 	}
-}
-
-// next waits until work is queued, draining begins, or the context is canceled.
-func (b *OperationBuffer) next(ctx context.Context) (string, bool) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	for len(b.queue) == 0 && !b.draining && ctx.Err() == nil {
-		b.ready.Wait()
-	}
-	if len(b.queue) == 0 {
-		return "", false
-	}
-	key := b.queue[0]
-	b.queue[0] = ""
-	b.queue = b.queue[1:]
-	if len(b.queue) == 0 {
-		b.queue = nil
-	}
-	return key, true
 }
 
 // take claims the update waiting for resourceKey.
@@ -160,23 +138,32 @@ func (b *OperationBuffer) run(ctx context.Context) {
 	defer close(b.done)
 	defer b.cancel()
 
-	// Wake an idle worker when its context is canceled.
-	stopWake := context.AfterFunc(ctx, func() {
-		b.mu.Lock()
-		b.ready.Signal()
-		b.mu.Unlock()
-	})
-	defer stopWake()
-
 	for {
-		resourceKey, ok := b.next(ctx)
 		if err := ctx.Err(); err != nil {
 			b.setErr(err)
 			return
 		}
-		if !ok {
-			return
+		b.mu.Lock()
+		if len(b.queue) == 0 {
+			draining := b.draining
+			b.mu.Unlock()
+			if draining {
+				return
+			}
+			// Poll an empty queue without holding the lock or delaying cancellation.
+			select {
+			case <-time.After(100 * time.Millisecond):
+			case <-ctx.Done():
+			}
+			continue
 		}
+		resourceKey := b.queue[0]
+		b.queue[0] = ""
+		b.queue = b.queue[1:]
+		if len(b.queue) == 0 {
+			b.queue = nil
+		}
+		b.mu.Unlock()
 		update, ok := b.take(resourceKey)
 		if !ok {
 			// Unreachable: a key is queued only when nothing was waiting for it. Guard so
@@ -216,7 +203,6 @@ func (b *OperationBuffer) write(ctx context.Context, key string, update Operatio
 func (b *OperationBuffer) Drain(ctx context.Context) error {
 	b.mu.Lock()
 	b.draining = true
-	b.ready.Signal()
 	b.mu.Unlock()
 	select {
 	case <-b.done:

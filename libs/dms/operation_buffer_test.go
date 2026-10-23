@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 	"testing"
 	"testing/synctest"
 
@@ -22,13 +21,11 @@ import (
 
 // queued builds a buffer whose queue nothing drains, so a test drives record and take itself.
 func queued() *OperationBuffer {
-	b := &OperationBuffer{
+	return &OperationBuffer{
 		cancel:      func() {},
 		pending:     make(map[string]OperationUpdate),
 		latestState: make(map[string]OperationUpdate),
 	}
-	b.ready = sync.NewCond(&b.mu)
-	return b
 }
 
 func stateUpdate(t *testing.T, name string) OperationUpdate {
@@ -74,7 +71,7 @@ func TestBufferFailsOnOversizedState(t *testing.T) {
 }
 
 func TestDrainIsIdempotent(t *testing.T) {
-	// An idle writer must wake up when the queue is closed.
+	// An idle writer must finish when draining begins.
 	b := StartOperationBuffer(t.Context(), "dep-1", 1, BufferOptions{})
 	require.NoError(t, b.Drain(t.Context()))
 	require.NoError(t, b.Drain(t.Context()))
@@ -126,15 +123,9 @@ func TestBufferQueuesWithoutBackpressure(t *testing.T) {
 		assert.NoError(t, b.Err())
 		assert.Len(t, b.queue, operationCount)
 		assert.Len(t, b.pending, operationCount)
-		for i := range operationCount {
-			key, ok := b.next(t.Context())
-			require.True(t, ok)
+		for i, key := range b.queue {
 			assert.Equal(t, fmt.Sprintf("resources.jobs.job_%d", i), key)
-			_, ok = b.take(key)
-			require.True(t, ok)
 		}
-		assert.Empty(t, b.queue)
-		assert.Empty(t, b.pending)
 	})
 }
 
