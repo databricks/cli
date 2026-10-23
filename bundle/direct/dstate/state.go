@@ -564,14 +564,11 @@ func (db *DeploymentState) reset() {
 	db.Data = Database{}
 	db.stateIDs = nil
 	db.historyDrainTimeout = 0
-	// Keep the buffer, mode, and IDs after Finalize so CompleteVersion can use them.
-	// Clear them if no version was started, or CompleteVersion has copied what it needs.
-	if db.operationBuffer == nil || db.versionCompleted {
-		db.mode = ReadingFile
+	// Telemetry and destroy still need the mode and IDs after version completion.
+	// Clear the recording buffer once CompleteVersion has copied it.
+	if db.versionCompleted {
 		db.operationBuffer = nil
 		db.versionCompleted = false
-		db.DeploymentID = ""
-		db.VersionID = 0
 	}
 }
 
@@ -1000,6 +997,8 @@ func (db *DeploymentState) AssertOpenedForReadOrWrite() {
 
 func (db *DeploymentState) AssertOpenedForRead() {
 	db.AssertOpenedForReadOrWrite()
+	// DMS has no separate read-only mode.
+	// Planning reads DMS state while it is already in WritingDMS.
 	if db.mode.isWritable() && db.mode != WritingDMS {
 		panic("internal error: DeploymentState must be opened in read mode")
 	}

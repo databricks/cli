@@ -15,7 +15,7 @@ import (
 // plan reads.
 const bufferedOperations = 10
 
-// BufferOptions controls whether recording continues after an error.
+// BufferOptions selects optional file-history recording behavior.
 type BufferOptions struct {
 	BestEffort bool
 }
@@ -33,7 +33,7 @@ type OperationBuffer struct {
 	done      chan struct{}
 	stopQueue func()
 
-	// cancel stops uploads when optional history fails or its drain deadline expires.
+	// cancel stops in-flight history uploads when the drain deadline expires.
 	cancel     context.CancelFunc
 	bestEffort bool
 
@@ -90,7 +90,7 @@ func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum i
 }
 
 // RecordOperation records a state write. state is the serialized envelope, nil for a delete.
-// Required recording continues after an earlier failure; optional history stops on the first error.
+// An earlier failure does not stop it: keep recording, best effort.
 func (b *OperationBuffer) RecordOperation(ctx context.Context, resourceKey string, inProgress bool, resourceID string, state json.RawMessage) {
 	update, err := NewStateUpdate(resourceID, state, inProgress)
 	if err != nil {
@@ -114,11 +114,6 @@ func (b *OperationBuffer) RecordFailure(resourceKey, resourceID string, state js
 // that latest state. latestState and pending are updated under the one lock.
 func (b *OperationBuffer) record(resourceKey string, update OperationUpdate, keepExistingUpdateIfAny bool, cause error) {
 	b.mu.Lock()
-	// Stop building a history backlog after the first recording failure.
-	if b.bestEffort && b.err != nil {
-		b.mu.Unlock()
-		return
-	}
 	if keepExistingUpdateIfAny {
 		if latest, recorded := b.latestState[resourceKey]; recorded {
 			update = latest.Merge(failureUpdate(cause))
@@ -167,7 +162,7 @@ func (b *OperationBuffer) run(ctx context.Context) {
 		var resourceKey string
 		if b.bestEffort {
 			// Calling b.cancel() makes ctx.Err() return an error. This is the signal to stop.
-			// We expect this after a drain timeout or history recording error.
+			// We expect this after a drain timeout.
 			// Cancellation or expiry of the deployment's context also stops the worker here.
 			if err := ctx.Err(); err != nil {
 				b.setErr(err)
@@ -211,12 +206,9 @@ func (b *OperationBuffer) run(ctx context.Context) {
 			continue
 		}
 
-		// Required recording keeps going so one bad write does not drop everything behind it.
+		// Keep going after a failure, so one bad write does not drop everything behind it.
 		if err := b.write(ctx, resourceKey, update); err != nil {
 			b.setErr(fmt.Errorf("recording operation for %s: %w", resourceKey, err))
-			if b.bestEffort {
-				return
-			}
 		}
 	}
 }
@@ -245,36 +237,35 @@ func (b *OperationBuffer) write(ctx context.Context, key string, update Operatio
 // It returns the first recording error and is safe to call more than once.
 func (b *OperationBuffer) Drain(ctx context.Context) error {
 	if !b.bestEffort {
+		// DMS is authoritative: wait for all queued writes and return any recording error.
 		b.stopQueue()
 		<-b.done
 		return b.Err()
 	}
 
+	// File state is already saved. Try the remaining history writes until ctx expires.
 	b.mu.Lock()
 	b.draining = true
 	b.mu.Unlock()
 	select {
 	case <-b.done:
+		// Report the first upload error even if later uploads succeeded.
 		return b.Err()
 	case <-ctx.Done():
-		// Stop the in-flight request so history cannot outlive the drain deadline.
+		// Deadline or cancellation: stop the upload so deployment can finish promptly.
 		b.setErr(ctx.Err())
 		b.cancel()
 		return b.Err()
 	}
 }
 
-// setErr keeps the first error; one failure is enough to fail the deploy.
+// setErr keeps the first recording error for Drain to report.
 func (b *OperationBuffer) setErr(err error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
 	if b.err == nil {
 		b.err = err
-		if b.bestEffort {
-			// Stop polling and uploads even when the producer reports the error.
-			b.cancel()
-		}
 	}
 }
 

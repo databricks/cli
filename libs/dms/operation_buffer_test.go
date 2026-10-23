@@ -23,7 +23,6 @@ import (
 func queued() *OperationBuffer {
 	return &OperationBuffer{
 		queue:       make(chan string, bufferedOperations),
-		cancel:      func() {},
 		pending:     make(map[string]OperationUpdate),
 		latestState: make(map[string]OperationUpdate),
 	}
@@ -143,24 +142,13 @@ func TestBufferStopsIdleWriterOnCancellation(t *testing.T) {
 	})
 }
 
-func TestBestEffortBufferStopsIdleWriterAfterError(t *testing.T) {
-	synctest.Test(t, func(t *testing.T) {
-		b := StartOperationBuffer(t.Context(), "dep-1", 1, BufferOptions{BestEffort: true})
-		synctest.Wait()
-		cause := errors.New("recording failed")
-		b.setErr(cause)
-		<-b.done
-		assert.ErrorIs(t, b.Drain(t.Context()), cause)
-	})
-}
-
-func TestBestEffortBufferStopsRecordingAfterError(t *testing.T) {
+func TestBestEffortBufferKeepsRecordingAfterError(t *testing.T) {
 	b := queued()
 	b.bestEffort = true
 	b.RecordOperation(t.Context(), "resources.jobs.foo", false, "id-1", json.RawMessage(strings.Repeat("x", maxStateSize+1)))
 	b.RecordOperation(t.Context(), "resources.jobs.bar", false, "id-2", json.RawMessage(`{}`))
 	b.RecordFailure("resources.jobs.bar", "id-2", nil, errors.New("apply failed"))
 	assert.ErrorContains(t, b.Err(), "exceeds")
-	assert.Empty(t, b.historyQueue)
-	assert.Empty(t, b.pending)
+	assert.Len(t, b.historyQueue, 1)
+	assert.Contains(t, b.pending, "resources.jobs.bar")
 }

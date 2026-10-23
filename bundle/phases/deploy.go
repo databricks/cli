@@ -155,7 +155,6 @@ func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]li
 // If readPlanPath is provided, the plan is loaded from that file instead of being calculated.
 func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler, libs map[string][]libraries.LocationToUpdate, plan *deployplan.Plan, dmsDeployment *bundledeployments.Deployment) {
 	log.Info(ctx, "Phase: deploy")
-	b.Metrics.SetBoolValue(metrics.DeploymentHistoryEnabled, b.DeploymentBundle.StateDB.IsDeploymentMetadataService())
 
 	// Core mutators that CRUD resources and modify deployment state. These
 	// mutators need informed consent if they are potentially destructive. The
