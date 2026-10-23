@@ -815,6 +815,9 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 		}
 	}
 
+	// Persist resource entries after the header, or feature changes in the header itself.
+	// Enforced history can add its feature marker without any resource writes; that marker
+	// still needs to reach resources.json before the WAL is removed.
 	hasEntries := lineNumber > 1 || lineNumber == 1 && !maps.Equal(db.Data.Features, newFeatures)
 
 	// Only advance the serial when the WAL carried changes, because the caller
