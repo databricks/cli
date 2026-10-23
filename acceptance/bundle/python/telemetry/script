@@ -1,0 +1,20 @@
+# pydabs covers only resources defined or modified in Python (jobs, pipelines),
+# while resources_metadata covers every resource in the bundle (including schemas).
+print_pydabs_telemetry() {
+  jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event | {
+    pydabs,
+    all_resource_types: [.resources_metadata.resources[].resource_type]
+  }' "$OUT_REQUESTS"
+  rm "$OUT_REQUESTS"
+}
+
+title "Deploy with 'python'"
+trace uv run $UV_ARGS -q $CLI bundle deploy
+print_pydabs_telemetry
+
+title "Deploy with 'experimental/python'"
+trace update_file.py databricks.yml 'python: {resources: ["resources:load_resources"], mutators: ["mutators:update_job"]}' 'experimental: {python: {resources: ["resources:load_resources"], mutators: ["mutators:update_job"]}}'
+trace uv run $UV_ARGS -q $CLI bundle deploy
+print_pydabs_telemetry
+
+rm -fr .databricks __pycache__
