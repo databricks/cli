@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -426,38 +425,12 @@ func (a *PersistentAuth) refresh(oldToken *oauth2.Token) (*oauth2.Token, error) 
 	expired.Expiry = time.Now().Add(-time.Minute)
 	t, err := cfg.TokenSource(ctx, &expired).Token()
 	if err != nil {
-		// The default RoundTripper of our httpclient.ApiClient returns an error
-		// if the response status code is not 2xx. This isn't compliant with the
-		// RoundTripper interface, so this error isn't handled by the oauth2
-		// library. We need to handle it here.
-		if internalHttpError, ok := errors.AsType[*httpclient.HttpError](err); ok {
-			// error fields
-			// https://datatracker.ietf.org/doc/html/rfc6749#section-5.2
-			var errResponse struct {
-				Error            string `json:"error"`
-				ErrorDescription string `json:"error_description"`
-			}
-			if unmarshalErr := json.Unmarshal([]byte(internalHttpError.Message), &errResponse); unmarshalErr != nil {
-				return nil, fmt.Errorf("unmarshal: %w", unmarshalErr)
-			}
-			// Invalid refresh tokens get their own error type so they can be
-			// better presented to users.
-			if errResponse.ErrorDescription == "Refresh token is invalid" {
-				return nil, &InvalidRefreshTokenError{err}
-			}
-			return nil, fmt.Errorf("%s (error code: %s)", errResponse.ErrorDescription, errResponse.Error)
+		// Invalid refresh tokens get their own error type so they can be
+		// better presented to users.
+		if _, _, description := oauthErrorResponse(err); description == "Refresh token is invalid" {
+			return nil, &InvalidRefreshTokenError{err}
 		}
-
-		// Handle responses from well-behaved *http.Client implementations.
-		if httpErr, ok := errors.AsType[*oauth2.RetrieveError](err); ok {
-			// Invalid refresh tokens get their own error type so they can be
-			// better presented to users.
-			if httpErr.ErrorDescription == "Refresh token is invalid" {
-				return nil, &InvalidRefreshTokenError{err}
-			}
-			return nil, fmt.Errorf("%s (error code: %s)", httpErr.ErrorDescription, httpErr.ErrorCode)
-		}
-		return nil, err
+		return nil, oauthError(err)
 	}
 	err = a.store.Put(a.oAuthArgument.GetCacheKey(), storage.Entry{Token: t})
 	if err != nil {
@@ -647,9 +620,10 @@ func (a *PersistentAuth) oauth2Config() (*oauth2.Config, error) {
 	return &oauth2.Config{
 		ClientID: a.clientID,
 		Endpoint: oauth2.Endpoint{
-			AuthURL:   authURL,
-			TokenURL:  endpoints.TokenEndpoint,
-			AuthStyle: oauth2.AuthStyleInParams,
+			AuthURL:       authURL,
+			TokenURL:      endpoints.TokenEndpoint,
+			DeviceAuthURL: endpoints.DeviceAuthorizationEndpoint,
+			AuthStyle:     oauth2.AuthStyleInParams,
 		},
 		RedirectURL: "http://" + a.redirectAddr,
 		Scopes:      scopes,

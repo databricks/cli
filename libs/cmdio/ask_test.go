@@ -1,6 +1,7 @@
 package cmdio
 
 import (
+	"context"
 	"errors"
 	"io"
 	"strings"
@@ -176,4 +177,30 @@ func TestAskYesOrNo(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestAskCancellable(t *testing.T) {
+	ctx := t.Context()
+	ctx = InContext(ctx, NewIO(ctx, flags.OutputText, strings.NewReader("answer\n"), io.Discard, io.Discard, "", ""))
+	got, err := AskCancellable(ctx, "Question", "")
+	require.NoError(t, err)
+	assert.Equal(t, "answer", got)
+}
+
+func TestAskCancellable_ReadError(t *testing.T) {
+	ctx := t.Context()
+	ctx = InContext(ctx, NewIO(ctx, flags.OutputText, strings.NewReader(""), io.Discard, io.Discard, "", ""))
+	_, err := AskCancellable(ctx, "Question", "")
+	assert.ErrorIs(t, err, io.EOF)
+}
+
+func TestAskCancellable_Cancelled(t *testing.T) {
+	// The pipe is never written to, so the read blocks until ctx is done.
+	stdin, _ := io.Pipe()
+	defer stdin.Close()
+	ctx, cancel := context.WithCancel(t.Context())
+	ctx = InContext(ctx, NewIO(ctx, flags.OutputText, stdin, io.Discard, io.Discard, "", ""))
+	cancel()
+	_, err := AskCancellable(ctx, "Question", "")
+	assert.ErrorIs(t, err, context.Canceled)
 }

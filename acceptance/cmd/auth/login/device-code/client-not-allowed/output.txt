@@ -1,0 +1,3 @@
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --client-id custom-client-id
+Error: device authorization: Client is not allowed to use device code login (error code: unauthorized_client)
