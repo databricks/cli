@@ -1,0 +1,28 @@
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+   rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+branch_name="projects/test-pg-proj-${UNIQUE_NAME}/branches/production"
+data_api_name="${branch_name}/databases/my-database/data-api"
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "The first deploy resolves status.url into the job parameter"
+trace $CLI bundle deploy
+rm -f "$OUT_REQUESTS"
+# The URL is served from the branch's read-write endpoint host.
+add_repl "$($CLI postgres get-endpoint "${branch_name}/endpoints/primary" | jq -r .status.hosts.host)" RW_ENDPOINT_HOST
+trace $CLI postgres get-data-api "${data_api_name}" | jq '{url: .status.url}'
+trace $CLI jobs get "$(read_id.py my_job)" | jq '.settings.parameters'
+
+title "An in-place update of the Data API does not update the job that references status.url"
+trace update_file.py databricks.yml "db_max_rows: 100" "db_max_rows: 500"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+rm -f "$OUT_REQUESTS"
+trace $CLI jobs get "$(read_id.py my_job)" | jq '.settings.parameters'
+
+title "Plan after update shows no changes"
+trace $CLI bundle plan

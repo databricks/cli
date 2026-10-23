@@ -890,6 +890,46 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"postgres_data_apis": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// Creating the project implicitly provisions the "production" branch and
+		// its primary read-write endpoint, which the Data API requires.
+		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
+			ProjectId: "test-project-for-data-api",
+			Project: postgres.Project{
+				Spec: &postgres.ProjectSpec{
+					DisplayName: "Test Project for Data API",
+					PgVersion:   16,
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		waiter, err := client.Postgres.CreateDatabase(ctx, postgres.CreateDatabaseRequest{
+			Parent:     "projects/test-project-for-data-api/branches/production",
+			DatabaseId: "test-database",
+			Database: postgres.Database{
+				Spec: &postgres.DatabaseDatabaseSpec{
+					PostgresDatabase: "app_db",
+					Role:             "projects/test-project-for-data-api/branches/production/roles/owner",
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+		database, err := waiter.Wait(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.PostgresDataApi{
+			Parent:    database.Name,
+			DbSchemas: []string{"public"},
+		}, nil
+	},
+
 	"postgres_roles": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		// Create parent project first
 		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{

@@ -1,0 +1,79 @@
+
+=== Deploy the Data API on the first database
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-pg-data-api-[UNIQUE_NAME]/default/files...
+Created postgres_data_apis.my_data_api
+Created postgres_databases.first
+Created postgres_databases.second
+Created postgres_projects.my_project
+Created postgres_roles.owner
+Files: 0 uploaded, 0 deleted
+Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] postgres get-data-api projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/first-database/data-api
+{
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/first-database/data-api",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/first-database",
+  "status": {
+    "db_schemas": [
+      "public"
+    ],
+    "db_max_rows": 100,
+    "server_cors_allowed_origins": [
+      "none"
+    ]
+  }
+}
+
+=== Moving the Data API to another database recreates it
+>>> update_file.py databricks.yml postgres_databases.first.name postgres_databases.second.name
+
+>>> [CLI] bundle plan
+recreate postgres_data_apis.my_data_api
+
+Plan: 1 to add, 0 to change, 1 to delete, 4 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-pg-data-api-[UNIQUE_NAME]/default/files...
+Recreated postgres_data_apis.my_data_api
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 1 deleted, 4 unchanged
+
+>>> musterr [CLI] postgres get-data-api projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/first-database/data-api
+Error: Data API is not enabled for this database
+
+>>> [CLI] postgres get-data-api projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/second-database/data-api
+{
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/second-database/data-api",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/second-database",
+  "status": {
+    "db_schemas": [
+      "public"
+    ],
+    "db_max_rows": 100,
+    "server_cors_allowed_origins": [
+      "none"
+    ]
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_data_apis.my_data_api
+  delete resources.postgres_databases.first
+  delete resources.postgres_databases.second
+  delete resources.postgres_projects.my_project
+  delete resources.postgres_roles.owner
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase databases.
+All data stored in them will be permanently lost:
+  delete resources.postgres_databases.first
+  delete resources.postgres_databases.second
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/recreate-pg-data-api-[UNIQUE_NAME]/default
+
+Destroy: 5 deleted

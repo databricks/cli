@@ -1,0 +1,70 @@
+
+=== The first deploy resolves status.url into the job parameter
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/url-ref-pg-data-api-[UNIQUE_NAME]/default/files...
+Created jobs.my_job
+Created postgres_data_apis.my_data_api
+Created postgres_databases.my_database
+Created postgres_projects.my_project
+Created postgres_roles.owner
+Files: 0 uploaded, 0 deleted
+Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] postgres get-data-api projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database/data-api
+{
+  "url": "https://[RW_ENDPOINT_HOST]/api/2.0/workspace/[WORKSPACE_ID]/rest/app_db"
+}
+
+>>> [CLI] jobs get [MY_JOB_ID]
+[
+  {
+    "default": "https://[RW_ENDPOINT_HOST]/api/2.0/workspace/[WORKSPACE_ID]/rest/app_db",
+    "name": "data_api_url"
+  }
+]
+
+=== An in-place update of the Data API does not update the job that references status.url
+>>> update_file.py databricks.yml db_max_rows: 100 db_max_rows: 500
+
+>>> [CLI] bundle plan
+update postgres_data_apis.my_data_api
+
+Plan: 0 to add, 1 to change, 0 to delete, 4 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/url-ref-pg-data-api-[UNIQUE_NAME]/default/files...
+Updated postgres_data_apis.my_data_api
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 4 unchanged
+
+>>> [CLI] jobs get [MY_JOB_ID]
+[
+  {
+    "default": "https://[RW_ENDPOINT_HOST]/api/2.0/workspace/[WORKSPACE_ID]/rest/app_db",
+    "name": "data_api_url"
+  }
+]
+
+=== Plan after update shows no changes
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+  delete resources.postgres_data_apis.my_data_api
+  delete resources.postgres_databases.my_database
+  delete resources.postgres_projects.my_project
+  delete resources.postgres_roles.owner
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase databases.
+All data stored in them will be permanently lost:
+  delete resources.postgres_databases.my_database
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/url-ref-pg-data-api-[UNIQUE_NAME]/default
+
+Destroy: 5 deleted

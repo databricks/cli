@@ -1,0 +1,31 @@
+DATABASE_NAME="projects/test-project/branches/production/databases/test-database"
+DATA_API_NAME="${DATABASE_NAME}/data-api"
+
+title "Enable the Data API on a database outside the bundle"
+$CLI postgres create-project test-project --json '{"spec": {"display_name": "Test Project", "pg_version": 16}}' &> LOG.setup
+$CLI postgres create-database projects/test-project/branches/production --database-id test-database --json '{"spec": {"postgres_database": "app_db", "role": "projects/test-project/branches/production/roles/owner"}}' >> LOG.setup 2>&1
+$CLI postgres create-data-api "${DATABASE_NAME}" --json '{"spec": {"db_schemas": ["public"]}}' >> LOG.setup 2>&1
+
+title "Deploy fails because the Data API is already enabled"
+trace musterr $CLI bundle deploy
+
+title "Bind adopts the existing Data API"
+# Bind records the config as state. The plan compares it with the spec read back
+# from status, so the configured db_max_rows is applied on the next deploy.
+trace $CLI bundle deployment bind data_api1 "${DATA_API_NAME}" --auto-approve
+trace $CLI bundle summary
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace $CLI postgres get-data-api "${DATA_API_NAME}" | jq '{name, status: (.status | {db_schemas, db_max_rows})}'
+trace $CLI bundle plan
+
+title "Unbind leaves the Data API enabled"
+trace $CLI bundle deployment unbind data_api1
+trace $CLI bundle summary
+trace $CLI postgres get-data-api "${DATA_API_NAME}" | jq '{name}'
+
+title "Bind again; destroy turns off the Data API"
+trace $CLI bundle deployment bind data_api1 "${DATA_API_NAME}" --auto-approve
+trace $CLI bundle destroy --auto-approve
+trace musterr $CLI postgres get-data-api "${DATA_API_NAME}"
+trace $CLI postgres get-database "${DATABASE_NAME}" | jq '{name}'

@@ -1622,6 +1622,23 @@ resources:
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+    "postgres_data_apis":
+      "description": |-
+        The Postgres Data API definitions for the bundle, where each key is the name of the Data API. Each entry enables and configures the Data API (a REST interface) of a database on a Lakebase Autoscaling branch. Removing an entry turns off the Data API; the database and its data are not affected.
+      "$type":
+        "description": |-
+          The Data API (a PostgREST-compatible REST interface) of a Postgres database on a Lakebase Autoscaling branch. A database has at most one Data API. Its serving URL is available as `status.url`; reference it as `${resources.postgres_data_apis.<key>.status.url}`. Durations use the protobuf seconds format, such as `300s`.
+      "$fields":
+        "lifecycle":
+          "description": |-
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+        "openapi_mode":
+          "$type":
+            "description": |-
+              Controls how the Data API exposes the OpenAPI documentation endpoint. `OPEN_API_MODE_IGNORE_PRIVILEGES` serves the OpenAPI document without filtering it by the caller's privileges; `OPEN_API_MODE_DISABLED` turns the endpoint off.
+        "parent":
+          "description": |-
+            The database whose Data API this manages. Format: projects/{project_id}/branches/{branch_id}/databases/{database_id}
     "postgres_databases":
       "description": |-
         The Postgres database definitions for the bundle, where each key is the name of the database. Each entry defines a database on a Lakebase Autoscaling branch.

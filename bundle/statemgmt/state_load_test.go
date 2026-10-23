@@ -60,6 +60,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.postgres_roles.test_postgres_role":                           {ID: "projects/test-project/branches/main/roles/test-role"},
 		"resources.postgres_synced_tables.test_postgres_synced_table":           {ID: "synced_tables/main.public.test_synced_table"},
 		"resources.postgres_snapshot_schedules.test_postgres_snapshot_schedule": {ID: "projects/test-project/branches/main/snapshot-schedule"},
+		"resources.postgres_data_apis.test_postgres_data_api":                   {ID: "projects/test-project/branches/main/databases/test-db/data-api"},
 		"resources.vector_search_endpoints.test_vector_search_endpoint":         {ID: "vs-endpoint-1"},
 		"resources.vector_search_indexes.test_vector_search_index":              {ID: "vs-index-1"},
 		"resources.instance_pools.test_instance_pool":                           {ID: "1"},
@@ -153,6 +154,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 
 	assert.Equal(t, "projects/test-project/branches/main/snapshot-schedule", config.Resources.PostgresSnapshotSchedules["test_postgres_snapshot_schedule"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresSnapshotSchedules["test_postgres_snapshot_schedule"].ModifiedStatus)
+
+	assert.Equal(t, "projects/test-project/branches/main/databases/test-db/data-api", config.Resources.PostgresDataApis["test_postgres_data_api"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresDataApis["test_postgres_data_api"].ModifiedStatus)
 
 	assert.Equal(t, "vs-endpoint-1", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
@@ -415,6 +419,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			PostgresDataApis: map[string]*resources.PostgresDataApi{
+				"test_postgres_data_api": {
+					PostgresDataApiConfig: resources.PostgresDataApiConfig{
+						Parent: "projects/test-project/branches/main/databases/test-db",
+					},
+				},
+			},
 			VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 				"test_vector_search_endpoint": {
 					CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -565,6 +576,9 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Empty(t, config.Resources.PostgresSnapshotSchedules["test_postgres_snapshot_schedule"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresSnapshotSchedules["test_postgres_snapshot_schedule"].ModifiedStatus)
+
+	assert.Empty(t, config.Resources.PostgresDataApis["test_postgres_data_api"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresDataApis["test_postgres_data_api"].ModifiedStatus)
 
 	assert.Empty(t, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
@@ -973,6 +987,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 				"test_postgres_snapshot_schedule": {
 					PostgresSnapshotScheduleConfig: resources.PostgresSnapshotScheduleConfig{
 						Branch: "projects/test-project/branches/main",
+					},
+				},
+			},
+			PostgresDataApis: map[string]*resources.PostgresDataApi{
+				"test_postgres_data_api": {
+					PostgresDataApiConfig: resources.PostgresDataApiConfig{
+						Parent: "projects/test-project/branches/main/databases/test-db",
 					},
 				},
 			},
