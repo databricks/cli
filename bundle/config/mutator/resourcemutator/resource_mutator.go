@@ -153,7 +153,7 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Updates (typed): resources.materialization_sets.*.materialized_features (appends the members each entry is made of)
 		// Clears (typed): both shorthand fields, after the expansion
 		// Expands each shorthand entry into the several materialized features one feature's materialization is made of
-		ExpandMaterializationSetMembers(),
+		ExpandMaterializationSetMaterializedFeatureMembers(),
 
 		// Reads (dynamic): resources.jobs.*.job_clusters (reads job clusters to merge)
 		// Updates (dynamic): resources.jobs.*.job_clusters (merges job clusters with the same job_cluster_key)

@@ -12,8 +12,7 @@ import (
 )
 
 // MaterializationSet is the bundle config for a group of materialized features created and
-// managed as one unit. Members are addressed by content rather than by position, so the set
-// is reconciled against its desired membership rather than updated field by field.
+// managed as one unit.
 type MaterializationSet struct {
 	BaseResource
 	ID string `json:"id,omitempty" bundle:"readonly"`
@@ -21,15 +20,13 @@ type MaterializationSet struct {
 
 	// SawtoothMaterializedFeatures declares, per entry, the whole materialization of one
 	// sawtooth-window feature: an offline batch member, an online batch member and an online
-	// streaming member. ExpandMaterializationSetMembers fans each entry out into
-	// MaterializedFeatures, taking the offline destination and the batch trigger for the first
-	// member, the online destination and the batch trigger for the second, and the online
-	// destination and the streaming mode for the third.
+	// streaming member. ExpandMaterializationSetMaterializedFeatureMembers fans each entry out
+	// into three materialized features.
 	SawtoothMaterializedFeatures []ml.MaterializedFeature `json:"sawtooth_materialized_features,omitempty"`
 
 	// BatchOfflineAndOnlineMaterializedFeatures declares, per entry, one feature materialized to
-	// both stores on one trigger. ExpandMaterializationSetMembers fans each entry out into two
-	// MaterializedFeatures differing only in their destination.
+	// the online and offline destination. ExpandMaterializationSetMaterializedFeatureMembers fans
+	// each entry out into two MaterializedFeatures.
 	BatchOfflineAndOnlineMaterializedFeatures []ml.MaterializedFeature `json:"batch_offline_and_online_materialized_features,omitempty"`
 }
 

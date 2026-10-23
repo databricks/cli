@@ -30,8 +30,7 @@ func (*ResourceMaterializationSet) PrepareState(input *resources.Materialization
 	return &input.MaterializationSet
 }
 
-// materializationSetUpdatableFields is the only mask the update endpoint accepts, so "*" cannot
-// be used. Membership is reconciled whole: the server deletes members the request omits.
+// materializationSetUpdatableFields is the only mask the update endpoint accepts.
 var materializationSetUpdatableFields = []string{"materialized_features"}
 
 // escapeMemberKeyPart percent-escapes the separator so the join in materializationSetMemberKey is
@@ -124,16 +123,15 @@ func (*ResourceMaterializationSet) OverrideChangeDesc(_ context.Context, path *s
 	// one-segment materialized_features. An immutable field rule
 	// under materialized_features[*] matches either, because the matcher truncates a pattern longer
 	// than the path. Both count as an update rather than a destroy-and-recreate, because
-	// reconciling membership is what the update endpoint does: it refuses an addition by naming the
-	// feature that matched no member, and an emptied list by pointing at the delete endpoint.
+	// reconciling membership is what the update endpoint does.
 	if path.Len() <= 2 && path.HasPatternPrefix(materializedFeaturesPattern) {
 		change.Action = deployplan.Update
 		return nil
 	}
 
 	// The ignore_remote_changes suppression on a destination field cannot fire for this resource,
-	// which keys its member slice on a composite of feature name, online store name and whether the
-	// member is streaming. The suppression fires only when the persisted value equals the configured
+	// which keys its member slice on a composite key defined by materializationSetMemberKey. The
+	// suppression fires only when the persisted value equals the configured
 	// one, and the persisted-value lookup resolves that composite against the element's field names,
 	// which never match, so it always returns nothing. An unset change.Old is the surrogate for the
 	// persisted value being unreachable; a repoint the config asked for carries that value in from
@@ -155,9 +153,9 @@ func (r *ResourceMaterializationSet) DoRead(ctx context.Context, id string) (*ml
 // DoCreate submits the set and waits for the long-running operation the create returns. The created
 // set arrives as that operation's response, which Wait reaches by polling GetOperation.
 func (r *ResourceMaterializationSet) DoCreate(ctx context.Context, config *ml.MaterializationSet) (string, *ml.MaterializationSet, error) {
-	// Each verb takes an idempotency token, and a repeat carrying one already used returns the
-	// operation the first request created rather than acting again. Minted here so the token the
-	// server sees is the one this call chose.
+	// The endpoint takes an idempotency token, and a repeated request carrying one already used
+	// returns the operation the first request with the same idempotency token created. Minted here
+	// so the token the server sees is the one this call chose.
 	operation, err := r.client.FeatureEngineering.CreateMaterializationSet(ctx, ml.CreateMaterializationSetRequest{
 		MaterializationSet: *config,
 		RequestId:          uuid.NewString(),
@@ -179,9 +177,10 @@ func (r *ResourceMaterializationSet) DoCreate(ctx context.Context, config *ml.Ma
 	return set.MaterializationSetId, set, nil
 }
 
-// materializationSetChangeFailures names each member a partly applied change could not reach, from
-// whichever progress arm the operation's metadata carries. Empty for a creation, which has no
-// per-member outcome, and for a failure raised before the server touched a member.
+// materializationSetChangeFailures names each materialized feature member a partly applied change
+// in the update or delete action could not reach, from whichever progress arm the operation's
+// metadata carries. Empty for a creation action, and for a failure (e.g. a validation error) raised
+// before the server performed the action.
 func materializationSetChangeFailures(metadata *ml.MaterializationSetOperationMetadata) []string {
 	if metadata == nil {
 		return nil
@@ -202,13 +201,12 @@ func materializationSetChangeFailures(metadata *ml.MaterializationSetOperationMe
 	return failures
 }
 
-// materializationSetOperationFailure restates a settled-but-failed operation as an API error. The
-// generated wait renders the failure's code and message into one string and reads no metadata, so
-// the error code is recovered structurally and the per-member progress is appended.
+// materializationSetOperationFailure restates a response operation with FAILED status as an API
+// error.
 //
-// StatusCode is the 200 the call actually returned, which maps to no sentinel: a member that could
-// not be torn down must not reach the destroy path's permission-denied leniency, whose purpose is
-// to forgive a resource that is already gone.
+// StatusCode is set to 200 because the create, update and delete endpoints always return an
+// operation with FAILED status when an error is raised, except for the errors raised before the
+// action is executed, such as a validation error on the request.
 func (r *ResourceMaterializationSet) materializationSetOperationFailure(
 	ctx context.Context,
 	operation materializationSetOperation,

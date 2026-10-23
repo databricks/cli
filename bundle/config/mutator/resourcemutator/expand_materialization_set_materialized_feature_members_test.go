@@ -44,13 +44,13 @@ func expandSet(t *testing.T, set *resources.MaterializationSet) *resources.Mater
 			},
 		},
 	}
-	diags := bundle.Apply(t.Context(), b, resourcemutator.ExpandMaterializationSetMembers())
+	diags := bundle.Apply(t.Context(), b, resourcemutator.ExpandMaterializationSetMaterializedFeatureMembers())
 	require.NoError(t, diags.Error())
 
 	return b.Config.Resources.MaterializationSets["set1"]
 }
 
-func TestExpandMaterializationSetMembersSawtooth(t *testing.T) {
+func TestExpandMaterializationSetMaterializedFeatureMembersSawtooth(t *testing.T) {
 	set := expandSet(t, &resources.MaterializationSet{
 		MaterializationSet: ml.MaterializationSet{},
 		SawtoothMaterializedFeatures: []ml.MaterializedFeature{{
@@ -88,7 +88,7 @@ func TestExpandMaterializationSetMembersSawtooth(t *testing.T) {
 	assert.Nil(t, set.SawtoothMaterializedFeatures)
 }
 
-func TestExpandMaterializationSetMembersBatchOfflineAndOnline(t *testing.T) {
+func TestExpandMaterializationSetMaterializedFeatureMembersBatchOfflineAndOnline(t *testing.T) {
 	trigger := &ml.CronSchedule{Mode: ml.CronScheduleModeManual, CronExpression: shorthandCronExpr}
 	set := expandSet(t, &resources.MaterializationSet{
 		BatchOfflineAndOnlineMaterializedFeatures: []ml.MaterializedFeature{{
@@ -115,7 +115,7 @@ func TestExpandMaterializationSetMembersBatchOfflineAndOnline(t *testing.T) {
 	assert.Nil(t, set.BatchOfflineAndOnlineMaterializedFeatures)
 }
 
-func TestExpandMaterializationSetMembersCarriesSharedFields(t *testing.T) {
+func TestExpandMaterializationSetMaterializedFeatureMembersCarriesSharedFields(t *testing.T) {
 	notifications := &ml.MaterializationNotifications{
 		OnFailure: &ml.MaterializationFailureNotification{EmailAddresses: []string{"a@example.com"}},
 	}
@@ -150,10 +150,10 @@ func TestExpandMaterializationSetMembersCarriesSharedFields(t *testing.T) {
 	}
 }
 
-// TestExpandMaterializationSetMembersKeepsStreamingModeOnBatchPair pins that the batch pair carries
+// TestExpandMaterializationSetMaterializedFeatureMembersKeepsStreamingModeOnBatchPair pins that the batch pair carries
 // a trigger it has no use for rather than discarding it, so the service reports the mistake instead
 // of the shorthand swallowing it.
-func TestExpandMaterializationSetMembersKeepsStreamingModeOnBatchPair(t *testing.T) {
+func TestExpandMaterializationSetMaterializedFeatureMembersKeepsStreamingModeOnBatchPair(t *testing.T) {
 	set := expandSet(t, &resources.MaterializationSet{
 		BatchOfflineAndOnlineMaterializedFeatures: []ml.MaterializedFeature{{
 			FeatureName:        shorthandFeatureName,
@@ -169,7 +169,7 @@ func TestExpandMaterializationSetMembersKeepsStreamingModeOnBatchPair(t *testing
 	}
 }
 
-func TestExpandMaterializationSetMembersAppendsToDeclaredMembers(t *testing.T) {
+func TestExpandMaterializationSetMaterializedFeatureMembersAppendsToDeclaredMembers(t *testing.T) {
 	declared := ml.MaterializedFeature{
 		FeatureName:         "main.myschema.other",
 		OfflineStoreConfig:  shorthandOfflineStore(),
@@ -200,7 +200,7 @@ func TestExpandMaterializationSetMembersAppendsToDeclaredMembers(t *testing.T) {
 	assert.Nil(t, set.BatchOfflineAndOnlineMaterializedFeatures)
 }
 
-func TestExpandMaterializationSetMembersLeavesASetWithoutShorthandAlone(t *testing.T) {
+func TestExpandMaterializationSetMaterializedFeatureMembersLeavesASetWithoutShorthandAlone(t *testing.T) {
 	declared := ml.MaterializedFeature{
 		FeatureName:         shorthandFeatureName,
 		OfflineStoreConfig:  shorthandOfflineStore(),

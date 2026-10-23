@@ -8,25 +8,26 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
-type expandMaterializationSetMembers struct{}
+type expandMaterializationSetMaterializedFeatureMembers struct{}
 
-func ExpandMaterializationSetMembers() bundle.Mutator {
-	return &expandMaterializationSetMembers{}
+func ExpandMaterializationSetMaterializedFeatureMembers() bundle.Mutator {
+	return &expandMaterializationSetMaterializedFeatureMembers{}
 }
 
-func (m *expandMaterializationSetMembers) Name() string {
-	return "ExpandMaterializationSetMembers"
+func (m *expandMaterializationSetMaterializedFeatureMembers) Name() string {
+	return "ExpandMaterializationSetMaterializedFeatureMembers"
 }
 
-// sawtoothMembers builds the three materialized features a sawtooth-window feature is made of. The
-// destination and the trigger are split across them; every other field the entry carries is held by
-// all three.
+// sawtoothMaterializedFeatureMembers builds the three materialized features a sawtooth-window
+// feature needs to declare for its materialization: a batch offline materialized feature, a batch
+// online materialized feature, and a streaming online materialized feature, where the batch offline
+// and batch online use a DERIVED cron schedule and the streaming online and batch online must have
+// the same online destination.
 //
-// materialized_feature_id is deliberately absent: the server assigns one per member, so a single
-// declared id cannot belong to three. ForceSendFields is absent because the dyn-to-typed
-// conversion rebuilds it per member from the fields that member holds.
-func sawtoothMembers(entry ml.MaterializedFeature) []ml.MaterializedFeature {
+// materialized_feature_id is absent here because it is assigned server side.
+func sawtoothMaterializedFeatureMembers(entry ml.MaterializedFeature) []ml.MaterializedFeature {
 	return []ml.MaterializedFeature{
+		// Batch offline.
 		{
 			FeatureName:           entry.FeatureName,
 			Tags:                  entry.Tags,
@@ -38,6 +39,7 @@ func sawtoothMembers(entry ml.MaterializedFeature) []ml.MaterializedFeature {
 			CronScheduleTrigger:   entry.CronScheduleTrigger,
 			TableTrigger:          entry.TableTrigger,
 		},
+		// Batch online.
 		{
 			FeatureName:           entry.FeatureName,
 			Tags:                  entry.Tags,
@@ -49,6 +51,7 @@ func sawtoothMembers(entry ml.MaterializedFeature) []ml.MaterializedFeature {
 			CronScheduleTrigger:   entry.CronScheduleTrigger,
 			TableTrigger:          entry.TableTrigger,
 		},
+		// Streaming online.
 		{
 			FeatureName:           entry.FeatureName,
 			Tags:                  entry.Tags,
@@ -61,13 +64,11 @@ func sawtoothMembers(entry ml.MaterializedFeature) []ml.MaterializedFeature {
 	}
 }
 
-// batchOfflineAndOnlineMembers builds the two materialized features a feature materialized to both
-// stores is made of. Only the destination is split; every other field the entry carries, trigger
-// included, is held by both.
-//
-// The omissions are the same as in sawtoothMembers.
-func batchOfflineAndOnlineMembers(entry ml.MaterializedFeature) []ml.MaterializedFeature {
+// batchOfflineAndOnlineMaterializedFeatureMembers builds two materializations of the specified
+// feature to the online and offline destination.
+func batchOfflineAndOnlineMaterializedFeatureMembers(entry ml.MaterializedFeature) []ml.MaterializedFeature {
 	return []ml.MaterializedFeature{
+		// Batch offline.
 		{
 			FeatureName:           entry.FeatureName,
 			Tags:                  entry.Tags,
@@ -80,6 +81,7 @@ func batchOfflineAndOnlineMembers(entry ml.MaterializedFeature) []ml.Materialize
 			TableTrigger:          entry.TableTrigger,
 			StreamingMode:         entry.StreamingMode,
 		},
+		// Batch online.
 		{
 			FeatureName:           entry.FeatureName,
 			Tags:                  entry.Tags,
@@ -95,19 +97,22 @@ func batchOfflineAndOnlineMembers(entry ml.MaterializedFeature) []ml.Materialize
 	}
 }
 
-func (m *expandMaterializationSetMembers) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *expandMaterializationSetMaterializedFeatureMembers) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	for _, set := range b.Config.Resources.MaterializationSets {
 		if set == nil {
 			continue
 		}
 
-		// Appended rather than assigned: a set may declare one feature in shorthand and another
-		// as members, and the adapter keys members by content rather than by position.
+		// Append rather than assign because a set can declare one feature in shorthand and another
+		// as individual materialized feature members. The adapter keys materialized feature members
+		// by content rather than by position.
 		for _, entry := range set.SawtoothMaterializedFeatures {
-			set.MaterializedFeatures = append(set.MaterializedFeatures, sawtoothMembers(entry)...)
+			set.MaterializedFeatures = append(set.MaterializedFeatures,
+				sawtoothMaterializedFeatureMembers(entry)...)
 		}
 		for _, entry := range set.BatchOfflineAndOnlineMaterializedFeatures {
-			set.MaterializedFeatures = append(set.MaterializedFeatures, batchOfflineAndOnlineMembers(entry)...)
+			set.MaterializedFeatures = append(set.MaterializedFeatures,
+				batchOfflineAndOnlineMaterializedFeatureMembers(entry)...)
 		}
 
 		set.SawtoothMaterializedFeatures = nil

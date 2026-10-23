@@ -68,10 +68,10 @@ func memberWithEveryFieldSet(t *testing.T) ml.MaterializedFeature {
 	return member
 }
 
-// TestExpandMaterializationSetMembersCoversEveryMemberField keeps each expansion's field list
+// TestExpandMaterializationSetMaterializedFeatureMembersCoversEveryMemberField keeps each expansion's field list
 // exhaustive. Members are built by naming their fields rather than by copying the entry, so a
 // member field added to the proto later reaches no expanded member and nothing else notices.
-func TestExpandMaterializationSetMembersCoversEveryMemberField(t *testing.T) {
+func TestExpandMaterializationSetMaterializedFeatureMembersCoversEveryMemberField(t *testing.T) {
 	entry := memberWithEveryFieldSet(t)
 
 	for name, set := range map[string]*resources.MaterializationSet{
@@ -107,7 +107,7 @@ func TestExpandMaterializationSetMembersCoversEveryMemberField(t *testing.T) {
 				}
 				assert.Truef(t, carried,
 					"field %s reached no member of the %s expansion. Add it to the member "+
-						"literals in expand_materialization_set_members.go, or to "+
+						"literals in expand_materialization_set_materialized_feature_members.go, or to "+
 						"memberFieldsNotCarried with the reason it is server-owned",
 					field.Name, name)
 			}

@@ -1,11 +1,3 @@
-# The set update reconciles membership and nothing else, so a member's own fields are write-once.
-# The spec leaves them OPTIONAL rather than IMMUTABLE because UpdateMaterializedFeature can still
-# change some of them on a member addressed directly, so materialization_sets.generated.yml will
-# never cover them and these entries are permanent.
-#
-# A member added or removed whole also matches these patterns, because the matcher truncates a
-# pattern longer than the path. ResourceMaterializationSet.OverrideChangeDesc downgrades that case
-# to update so reconciling membership does not destroy the siblings the config left alone.
 recreate_on_changes:
   - field: materialized_features[*].feature_name
     reason: immutable
