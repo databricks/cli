@@ -604,8 +604,6 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, mode M
 		db.stateIDs[key] = entry.ID
 	}
 
-	recording := mode == WritingDMS
-
 	walPath := db.Path + walSuffix
 	_, err = os.Stat(walPath)
 	switch {
@@ -615,7 +613,7 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, mode M
 		return fmt.Errorf("failed to stat WAL file %s: %w", walPath, err)
 	default: // WAL exists
 		switch {
-		case recording:
+		case mode == WritingDMS:
 			// A recorded deployment writes no WAL, so finding one means this state was written by a
 			// deployment that did not record history. Refuse rather than discard it: the file is the
 			// only record of that deploy's writes, and recording is refused below anyway.
@@ -634,21 +632,21 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, mode M
 	// the config can neither start recording one that was not (its resources would be created a
 	// second time) nor stop recording one that is (the service still holds it).
 	_, recorded := db.Data.Features[FeatureDeploymentHistory]
-	if recording && recorded && db.Data.Serial > dmsDeployment.LastVersionID {
+	if mode == WritingDMS && recorded && db.Data.Serial > dmsDeployment.LastVersionID {
 		return fmt.Errorf("inconsistent deployment state: resource state serial (%d) is ahead of deployment history version (%d)", db.Data.Serial, dmsDeployment.LastVersionID)
 	}
 	switch {
-	case recording && !recorded && len(db.Data.State) == 0:
+	case mode == WritingDMS && !recorded && len(db.Data.State) == 0:
 		if db.Data.Features == nil {
 			db.Data.Features = make(map[string]struct{}, 1)
 		}
 		db.Data.Features[FeatureDeploymentHistory] = struct{}{}
 		recorded = true
-	case recording && !recorded:
+	case mode == WritingDMS && !recorded:
 		return errors.New(`enabling experimental.deployment_history for an existing deployment is not supported
 
 Run "databricks bundle destroy" first, then deploy again with deployment history enabled`)
-	case !recording && recorded:
+	case mode != WritingDMS && recorded:
 		return ErrUnsettingRecording
 	}
 
