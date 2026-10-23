@@ -327,7 +327,11 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 
 	switch db.mode {
 	case WritingFile:
-		// Use the normal WAL path below.
+		err = appendJSONLine(db.walFile, WALEntry{Key: key, Value: &entry})
+		if err == nil {
+			db.stateIDs[key] = newID
+		}
+		return err
 	case WritingDMS:
 		db.Data.State[key] = entry
 		db.stateIDs[key] = newID
@@ -358,12 +362,6 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 	default:
 		return fmt.Errorf("cannot save state in mode %d", db.mode)
 	}
-
-	err = appendJSONLine(db.walFile, WALEntry{Key: key, Value: &entry})
-	if err == nil {
-		db.stateIDs[key] = newID
-	}
-	return err
 }
 
 // DeleteState drops the resource's state entry: the resource is gone. inProgress records the
@@ -382,7 +380,11 @@ func (db *DeploymentState) DeleteState(ctx context.Context, key string, inProgre
 
 	switch db.mode {
 	case WritingFile:
-		// Use the normal WAL path below.
+		if err := appendJSONLine(db.walFile, WALEntry{Key: key}); err != nil {
+			return err
+		}
+		delete(db.stateIDs, key)
+		return nil
 	case WritingDMS:
 		delete(db.Data.State, key)
 		if buf := db.operationBuffer; buf != nil {
@@ -404,13 +406,6 @@ func (db *DeploymentState) DeleteState(ctx context.Context, key string, inProgre
 	default:
 		return fmt.Errorf("cannot delete state in mode %d", db.mode)
 	}
-
-	if err := appendJSONLine(db.walFile, WALEntry{Key: key}); err != nil {
-		return err
-	}
-
-	delete(db.stateIDs, key)
-	return nil
 }
 
 func (db *DeploymentState) GetResourceEntry(key string) (ResourceEntry, bool) {
