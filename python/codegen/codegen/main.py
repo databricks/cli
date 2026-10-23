@@ -1,7 +1,6 @@
 import argparse
 from dataclasses import replace
 from pathlib import Path
-from textwrap import dedent
 
 import codegen.aliases_patch as aliases_patch
 import codegen.generated_dataclass as generated_dataclass
@@ -44,7 +43,7 @@ def main(output: str):
         dataclasses, enums = _generate_code(namespace, reachable_schemas)
 
         generated_dataclass_patch.reorder_required_fields(dataclasses)
-        generated_dataclass_patch.quote_recursive_references(dataclasses)
+        generated_dataclass_patch.quote_recursive_references(dataclasses, root=resource)
 
         _write_code(dataclasses, enums, output)
 
@@ -180,9 +179,7 @@ def _write_exports(
     generated_imports.append_dataclass_imports(b, dataclasses, exclude_packages=[])
     generated_imports.append_enum_imports(b, enums, exclude_packages=[])
 
-    # FIXME should be better generalized
-    if namespace == "jobs":
-        _append_resolve_recursive_imports(b)
+    _append_resolve_recursive_imports(b, dataclasses)
 
     if aliases:
         b.newline()
@@ -199,28 +196,42 @@ def _write_exports(
     print(f"Writing exports into {source_path}")
 
 
-def _append_resolve_recursive_imports(b: CodeBuilder):
+def _append_resolve_recursive_imports(
+    b: CodeBuilder,
+    dataclasses: dict[str, GeneratedDataclass],
+):
     """
     Resolve forward references for recursive imports so we can assume that there are no forward references
     while inspecting type annotations.
     """
 
-    b.append(
-        dedent("""
-            def _resolve_recursive_imports():
-                import typing
+    resolved = []
 
-                from databricks.bundles.core._variable import VariableOr
-                from databricks.bundles.jobs._models.task import Task
+    for _, dataclass in sorted(dataclasses.items()):
+        imports = _collect_typechecking_imports(dataclass)
+        names = sorted({name for names in imports.values() for name in names})
 
-                ForEachTask.__annotations__ = typing.get_type_hints(
-                    ForEachTask,
-                    globalns={"Task": Task, "VariableOr": VariableOr},
-                )
+        if not names:
+            continue
 
-            _resolve_recursive_imports()
-        """)
-    )
+        # quoted classes are imported at runtime by this __init__.py, see quote_recursive_references
+        globalns = ", ".join(f'"{name}": {name}' for name in names)
+        resolved.append(
+            f"    {dataclass.class_name}.__annotations__ = typing.get_type_hints(\n"
+            f"        {dataclass.class_name},\n"
+            f"        globalns={{{globalns}}},\n"
+            f"    )\n"
+        )
+
+    if not resolved:
+        return
+
+    b.newline()
+    b.append("def _resolve_recursive_imports():\n")
+    b.append("    import typing\n\n")
+    b.append("\n".join(resolved))
+    b.newline()
+    b.append("_resolve_recursive_imports()").newline()
 
 
 def _collect_typechecking_imports(
