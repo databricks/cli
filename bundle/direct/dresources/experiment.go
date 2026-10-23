@@ -23,7 +23,7 @@ func (*ResourceExperiment) New(client *databricks.WorkspaceClient) *ResourceExpe
 }
 
 func (*ResourceExperiment) PrepareState(input *resources.MlflowExperiment) *ml.CreateExperiment {
-	return &ml.CreateExperiment{
+	return &ml.CreateExperiment{ // sdk:copy-from input
 		Name:             input.Name,
 		ArtifactLocation: input.ArtifactLocation,
 		Tags:             input.Tags,
@@ -33,7 +33,7 @@ func (*ResourceExperiment) PrepareState(input *resources.MlflowExperiment) *ml.C
 }
 
 func (*ResourceExperiment) RemapState(experiment *ml.Experiment) *ml.CreateExperiment {
-	return &ml.CreateExperiment{
+	return &ml.CreateExperiment{ // sdk:copy-from experiment
 		Name:             experiment.Name,
 		ArtifactLocation: experiment.ArtifactLocation,
 		Tags:             experiment.Tags,

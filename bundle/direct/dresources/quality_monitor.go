@@ -43,7 +43,7 @@ func (*ResourceQualityMonitor) PrepareState(input *resources.QualityMonitor) *Qu
 
 func (*ResourceQualityMonitor) RemapState(info *catalog.MonitorInfo) *QualityMonitorState {
 	return &QualityMonitorState{
-		CreateMonitor: catalog.CreateMonitor{
+		CreateMonitor: catalog.CreateMonitor{ // sdk:copy-from info
 			AssetsDir:                info.AssetsDir,
 			BaselineTableName:        info.BaselineTableName,
 			CustomMetrics:            info.CustomMetrics,

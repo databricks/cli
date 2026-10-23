@@ -182,7 +182,7 @@ func (r *ResourceJob) DoDelete(ctx context.Context, id string, _ *jobs.JobSettin
 func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {
 	// Note, exhaustruct linter validates that all off CreateJob fields are initialized.
 	// We don't have linter that validates that all of config fields are used.
-	result := jobs.CreateJob{
+	result := jobs.CreateJob{ // sdk:copy-from config
 		AccessControlList:    nil, // Not supported by DABs
 		BudgetPolicyId:       config.BudgetPolicyId,
 		Continuous:           config.Continuous,

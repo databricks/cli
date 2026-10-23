@@ -101,7 +101,7 @@ func makePipelineRemote(p *pipelines.GetPipelineResponse) *PipelineRemote {
 	var createPipeline pipelines.CreatePipeline
 	if p.Spec != nil {
 		spec := p.Spec
-		createPipeline = pipelines.CreatePipeline{
+		createPipeline = pipelines.CreatePipeline{ // sdk:copy-skip New fields need review to choose Spec or response-level sources.
 			// Note: AllowDuplicateNames and DryRun are not in PipelineSpec,
 			// they are request-only fields, so they stay at their zero values.
 			AllowDuplicateNames: false,
@@ -173,7 +173,7 @@ func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *Pipe
 		return nil, nil
 	}
 
-	request := pipelines.EditPipeline{
+	request := pipelines.EditPipeline{ // sdk:copy-from config
 		AllowDuplicateNames:  config.AllowDuplicateNames,
 		BudgetPolicyId:       config.BudgetPolicyId,
 		Catalog:              config.Catalog,

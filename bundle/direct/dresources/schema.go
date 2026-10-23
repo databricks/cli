@@ -24,7 +24,7 @@ func (*ResourceSchema) PrepareState(input *resources.Schema) *catalog.CreateSche
 }
 
 func (*ResourceSchema) RemapState(info *catalog.SchemaInfo) *catalog.CreateSchema {
-	return &catalog.CreateSchema{
+	return &catalog.CreateSchema{ // sdk:copy-from info
 		CatalogName:             info.CatalogName,
 		Comment:                 info.Comment,
 		CustomMaxRetentionHours: info.CustomMaxRetentionHours,

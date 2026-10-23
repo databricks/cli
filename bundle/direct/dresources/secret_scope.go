@@ -50,7 +50,7 @@ func (*ResourceSecretScope) New(client *databricks.WorkspaceClient) *ResourceSec
 }
 
 func (*ResourceSecretScope) PrepareState(input *resources.SecretScope) *SecretScopeConfig {
-	return &SecretScopeConfig{
+	return &SecretScopeConfig{ // sdk:copy-skip Response-to-request field renames need manual mapping.
 		Scope:                  input.Name,
 		ScopeBackendType:       input.BackendType,
 		BackendAzureKeyvault:   input.KeyvaultMetadata,
@@ -60,7 +60,7 @@ func (*ResourceSecretScope) PrepareState(input *resources.SecretScope) *SecretSc
 }
 
 func (*ResourceSecretScope) RemapState(remote *SecretScopeRemote) *SecretScopeConfig {
-	return &SecretScopeConfig{
+	return &SecretScopeConfig{ // sdk:copy-from remote
 		Scope:                  remote.Scope,
 		ScopeBackendType:       remote.ScopeBackendType,
 		BackendAzureKeyvault:   remote.BackendAzureKeyvault,

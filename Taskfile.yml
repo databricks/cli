@@ -962,13 +962,19 @@ tasks:
   # then refresh the acceptance goldens. generate-clijson-post runs it last;
   # run it directly to redo it, e.g. after hand fixes. generate-refschema and
   # test-update build the CLI, so it fails while the bump breaks compilation
-  # (code using a removed SDK field). Those fixes, exhaustruct wiring and the
+  # (code using a removed SDK field). Unresolved field mappings and the
   # changelog PR link stay manual (.agents/skills/bump-sdk).
   bump-sdk-post:
     desc: Regenerate everything downstream of an SDK bump and refresh acceptance goldens
     cmds:
+      - task: fix-sdk-field-copies
       - task: generate-check
       - task: test-update
+
+  fix-sdk-field-copies:
+    desc: Complete explicitly annotated SDK field copies in direct resources
+    cmds:
+      - go run -C tools ./sdkfieldcopies -root ..
 
   # Refreshes out.fields.txt, which records the field paths / types emitted by
   # `bundle debug refschema` (see cmd/bundle/debug/refschema.go). It reflects

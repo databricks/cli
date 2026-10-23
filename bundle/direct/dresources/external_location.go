@@ -23,7 +23,7 @@ func (*ResourceExternalLocation) PrepareState(input *resources.ExternalLocation)
 }
 
 func (*ResourceExternalLocation) RemapState(info *catalog.ExternalLocationInfo) *catalog.CreateExternalLocation {
-	return &catalog.CreateExternalLocation{
+	return &catalog.CreateExternalLocation{ // sdk:copy-from info
 		Comment:        info.Comment,
 		CredentialName: info.CredentialName,
 		// Output-only fields mirrored into state to avoid churn in remapped config.

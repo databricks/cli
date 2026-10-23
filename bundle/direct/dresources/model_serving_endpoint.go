@@ -45,7 +45,7 @@ func autoCaptureConfigOutputToInput(output *serving.AutoCaptureConfigOutput) *se
 	if output == nil {
 		return nil
 	}
-	return &serving.AutoCaptureConfigInput{
+	return &serving.AutoCaptureConfigInput{ // sdk:copy-from output
 		CatalogName:     output.CatalogName,
 		SchemaName:      output.SchemaName,
 		TableNamePrefix: output.TableNamePrefix,
@@ -57,7 +57,7 @@ func autoCaptureConfigOutputToInput(output *serving.AutoCaptureConfigOutput) *se
 func servedEntitiesOutputToInput(output []serving.ServedEntityOutput) []serving.ServedEntityInput {
 	entities := make([]serving.ServedEntityInput, len(output))
 	for i, entity := range output {
-		entities[i] = serving.ServedEntityInput{
+		entities[i] = serving.ServedEntityInput{ // sdk:copy-from entity
 			EntityName:                entity.EntityName,
 			EntityVersion:             entity.EntityVersion,
 			EnvironmentVars:           entity.EnvironmentVars,
@@ -84,7 +84,7 @@ func configOutputToInput(output *serving.EndpointCoreConfigOutput) *serving.Endp
 	if output == nil {
 		return nil
 	}
-	return &serving.EndpointCoreConfigInput{
+	return &serving.EndpointCoreConfigInput{ // sdk:copy-skip Nested conversions and deprecated fields need manual review.
 		AutoCaptureConfig: autoCaptureConfigOutputToInput(output.AutoCaptureConfig),
 		ServedEntities:    servedEntitiesOutputToInput(output.ServedEntities),
 		ServedModels:      nil,
