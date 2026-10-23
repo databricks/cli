@@ -403,7 +403,7 @@ a new profile is created.
 
 		var token *oauth2.Token
 		if useDeviceCode {
-			token, err = persistentAuth.DeviceCodeChallenge(promptForConfirmationCode)
+			token, err = persistentAuth.DeviceCodeChallenge(ctx, promptForConfirmationCode)
 		} else {
 			token, err = persistentAuth.Challenge()
 		}

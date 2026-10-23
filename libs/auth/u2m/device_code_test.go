@@ -115,7 +115,7 @@ func TestDeviceCodeChallenge(t *testing.T) {
 	p := newDeviceCodeAuth(t, f, true)
 
 	var got DeviceAuthorization
-	tok, err := p.DeviceCodeChallenge(func(_ context.Context, da DeviceAuthorization, _ error, _ int) (string, error) {
+	tok, err := p.DeviceCodeChallenge(t.Context(), func(_ context.Context, da DeviceAuthorization, _ error, _ int) (string, error) {
 		got = da
 		return " ftfa-qqky\t", nil
 	})
@@ -138,7 +138,7 @@ func TestDeviceCodeChallenge_ConfirmationAfterInitialExpiry(t *testing.T) {
 	f := &fakeDeviceServer{expiresIn: 1}
 	p := newDeviceCodeAuth(t, f, true)
 
-	tok, err := p.DeviceCodeChallenge(func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
+	tok, err := p.DeviceCodeChallenge(t.Context(), func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
 		time.Sleep(1100 * time.Millisecond)
 		return testConfirmationCode, nil
 	})
@@ -181,7 +181,7 @@ func TestDeviceCodeChallenge_Errors(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.server.expiresIn = 600
 			p := newDeviceCodeAuth(t, tc.server, true)
-			_, err := p.DeviceCodeChallenge(func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
+			_, err := p.DeviceCodeChallenge(t.Context(), func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
 				return testConfirmationCode, nil
 			})
 			assert.EqualError(t, err, tc.wantErr)
@@ -194,7 +194,7 @@ func TestDeviceCodeChallenge_RetriesWrongConfirmationCode(t *testing.T) {
 	p := newDeviceCodeAuth(t, f, true)
 
 	var lastErrs []string
-	tok, err := p.DeviceCodeChallenge(func(_ context.Context, _ DeviceAuthorization, lastErr error, _ int) (string, error) {
+	tok, err := p.DeviceCodeChallenge(t.Context(), func(_ context.Context, _ DeviceAuthorization, lastErr error, _ int) (string, error) {
 		if lastErr == nil {
 			lastErrs = append(lastErrs, "")
 			return "AAAAAAAA", nil
@@ -213,7 +213,7 @@ func TestDeviceCodeChallenge_TooManyWrongConfirmationCodes(t *testing.T) {
 	p := newDeviceCodeAuth(t, f, true)
 
 	var attemptsLeft []int
-	_, err := p.DeviceCodeChallenge(func(_ context.Context, _ DeviceAuthorization, _ error, left int) (string, error) {
+	_, err := p.DeviceCodeChallenge(t.Context(), func(_ context.Context, _ DeviceAuthorization, _ error, left int) (string, error) {
 		attemptsLeft = append(attemptsLeft, left)
 		return "AAAAAAAA", nil
 	})
@@ -227,7 +227,7 @@ func TestDeviceCodeChallenge_ConfirmErrorOnRetry(t *testing.T) {
 	p := newDeviceCodeAuth(t, f, true)
 	confirmErr := errors.New("no input")
 
-	_, err := p.DeviceCodeChallenge(func(_ context.Context, _ DeviceAuthorization, lastErr error, _ int) (string, error) {
+	_, err := p.DeviceCodeChallenge(t.Context(), func(_ context.Context, _ DeviceAuthorization, lastErr error, _ int) (string, error) {
 		if lastErr != nil {
 			return "", confirmErr
 		}
@@ -248,7 +248,7 @@ func TestDeviceCodeChallenge_DoesNotPoll(t *testing.T) {
 	}
 	p := newDeviceCodeAuth(t, f, true, WithHttpClient(&http.Client{}))
 
-	_, err := p.DeviceCodeChallenge(func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
+	_, err := p.DeviceCodeChallenge(t.Context(), func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
 		return testConfirmationCode, nil
 	})
 	assert.EqualError(t, err, "token exchange: Login is not approved yet (error code: authorization_pending)")
@@ -263,7 +263,7 @@ func TestDeviceCodeChallenge_MissingAccessToken(t *testing.T) {
 	}
 	p := newDeviceCodeAuth(t, f, true)
 
-	_, err := p.DeviceCodeChallenge(func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
+	_, err := p.DeviceCodeChallenge(t.Context(), func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
 		return testConfirmationCode, nil
 	})
 	assert.EqualError(t, err, "token exchange: server response missing access_token")
@@ -274,7 +274,7 @@ func TestDeviceCodeChallenge_ConfirmError(t *testing.T) {
 	p := newDeviceCodeAuth(t, f, true)
 	confirmErr := errors.New("no input")
 
-	_, err := p.DeviceCodeChallenge(func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
+	_, err := p.DeviceCodeChallenge(t.Context(), func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
 		return "", confirmErr
 	})
 	assert.ErrorIs(t, err, confirmErr)
@@ -284,7 +284,7 @@ func TestDeviceCodeChallenge_ConfirmError(t *testing.T) {
 func TestDeviceCodeChallenge_NotAdvertised(t *testing.T) {
 	p := newDeviceCodeAuth(t, &fakeDeviceServer{}, false)
 
-	_, err := p.DeviceCodeChallenge(func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
+	_, err := p.DeviceCodeChallenge(t.Context(), func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
 		t.Fatal("confirm must not be called")
 		return "", nil
 	})
@@ -301,7 +301,7 @@ func TestDeviceCodeChallenge_AccountHost(t *testing.T) {
 	require.NoError(t, err)
 	defer p.Close()
 
-	_, err = p.DeviceCodeChallenge(func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
+	_, err = p.DeviceCodeChallenge(t.Context(), func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
 		t.Fatal("confirm must not be called")
 		return "", nil
 	})

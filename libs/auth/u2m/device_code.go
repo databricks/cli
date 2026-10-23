@@ -82,13 +82,13 @@ func (a *PersistentAuth) deviceCodeConfig() (*oauth2.Config, error) {
 // confirmation code leaves the device code valid, so the user can re-enter
 // it up to maxConfirmationAttempts times. Only workspace hosts are supported.
 // The caller is responsible for storing the returned token.
-func (a *PersistentAuth) DeviceCodeChallenge(confirm ConfirmFunc) (*oauth2.Token, error) {
+func (a *PersistentAuth) DeviceCodeChallenge(ctx context.Context, confirm ConfirmFunc) (*oauth2.Token, error) {
 	cfg, err := a.deviceCodeConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	ctx := a.setOAuthContext(a.ctx)
+	ctx = a.setOAuthContext(ctx)
 	da, err := cfg.DeviceAuth(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("device authorization: %w", oauthError(err))
@@ -100,7 +100,7 @@ func (a *PersistentAuth) DeviceCodeChallenge(confirm ConfirmFunc) (*oauth2.Token
 	}
 	var lastErr error
 	for attempt := range maxConfirmationAttempts {
-		code, err := confirm(a.ctx, authorization, lastErr, maxConfirmationAttempts-attempt)
+		code, err := confirm(ctx, authorization, lastErr, maxConfirmationAttempts-attempt)
 		if err != nil {
 			return nil, err
 		}
