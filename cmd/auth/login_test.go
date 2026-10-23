@@ -424,7 +424,7 @@ func TestShouldUseDiscovery(t *testing.T) {
 	}
 }
 
-func TestIsAccountOrUnifiedHost(t *testing.T) {
+func TestNeedsAccountIDPrompt(t *testing.T) {
 	cases := []struct {
 		name         string
 		host         string
@@ -441,7 +441,7 @@ func TestIsAccountOrUnifiedHost(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := isAccountOrUnifiedHost(tc.host, tc.discoveryURL)
+			got := needsAccountIDPrompt(tc.host, tc.discoveryURL)
 			assert.Equal(t, tc.want, got)
 		})
 	}
