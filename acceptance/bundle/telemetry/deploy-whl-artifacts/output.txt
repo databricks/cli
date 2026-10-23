@@ -35,6 +35,8 @@ has_classic_job_compute false
 has_classic_job_compute false
 has_serverless_compute false
 has_serverless_compute false
+immutable_snapshot_used false
+immutable_snapshot_used false
 local.cache.attempt true
 local.cache.attempt true
 local.cache.hit true

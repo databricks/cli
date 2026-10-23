@@ -125,6 +125,10 @@
             {
               "key": "deployment_history_enabled",
               "value": false
+            },
+            {
+              "key": "immutable_snapshot_used",
+              "value": false
             }
           ],
           "bundle_mode": "TYPE_UNSPECIFIED",

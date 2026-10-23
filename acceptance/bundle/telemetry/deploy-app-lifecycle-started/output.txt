@@ -94,6 +94,10 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
       "value": false
     },
     {
+      "key": "immutable_snapshot_used",
+      "value": false
+    },
+    {
       "key": "app_lifecycle_started",
       "value": true
     }
