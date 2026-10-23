@@ -95,7 +95,9 @@ Notes on the server behavior the CLI relies on:
   form parameter. A wrong confirmation code does not consume the device code;
   a successful exchange does. The server answers a wrong confirmation code
   with HTTP 400 and `invalid_request`, and the CLI lets the user enter it up
-  to 3 times in total. Any other error ends the login.
+  to 3 times in total. Any other error ends the login, including an unknown
+  device code, which the server answers the same way but with the
+  description `Invalid device code`.
 - Approving the login in the browser extends the device code's lifetime, so
   the CLI does not enforce the `expires_in` from the device authorization
   response.

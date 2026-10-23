@@ -185,6 +185,14 @@ func TestDeviceCodeChallenge_Errors(t *testing.T) {
 			},
 			wantErr: "token exchange: Device grant rate limit exceeded (error code: invalid_request)",
 		},
+		{
+			name: "unknown device code",
+			server: &fakeDeviceServer{
+				tokenStatus: http.StatusBadRequest,
+				tokenBody:   `{"error": "invalid_request", "error_description": "Invalid device code"}`,
+			},
+			wantErr: "token exchange: Invalid device code (error code: invalid_request)",
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -194,6 +202,8 @@ func TestDeviceCodeChallenge_Errors(t *testing.T) {
 				return testConfirmationCode, nil
 			})
 			assert.EqualError(t, err, tc.wantErr)
+			// None of these errors asks for the confirmation code again.
+			assert.LessOrEqual(t, tc.server.tokenRequests.Load(), int32(1))
 		})
 	}
 }

@@ -23,6 +23,11 @@ const confirmationCodeParam = "confirmation_code"
 // deviceCodeGrantType is the grant type of the RFC 8628 token request.
 const deviceCodeGrantType = "urn:ietf:params:oauth:grant-type:device_code"
 
+// invalidDeviceCodeDescription is the error_description the server sends with
+// HTTP 400 and invalid_request for a device code it does not know, e.g. one
+// it discarded after the login expired.
+const invalidDeviceCodeDescription = "Invalid device code"
+
 // ErrDeviceCodeNotSupported is returned when the workspace does not advertise
 // a device authorization endpoint in its OIDC discovery document.
 var ErrDeviceCodeNotSupported = errors.New("device code login is not enabled for this workspace")
@@ -107,8 +112,12 @@ func (a *PersistentAuth) DeviceCodeChallenge(ctx context.Context, confirm Confir
 		// The server answers a wrong confirmation code with HTTP 400 and
 		// invalid_request. Any other error cannot be fixed by entering the
 		// code again, including invalid_request with HTTP 429 when the server
-		// rate limits the token requests for this device code.
-		if status, errCode, _ := oauthErrorResponse(err); status != http.StatusBadRequest || errCode != "invalid_request" {
+		// rate limits the token requests for this device code. An unknown
+		// device code also gets HTTP 400 and invalid_request, and only the
+		// description tells it apart. If the description changes, the user is
+		// asked for the code again until the attempts run out.
+		status, errCode, description := oauthErrorResponse(err)
+		if status != http.StatusBadRequest || errCode != "invalid_request" || description == invalidDeviceCodeDescription {
 			return nil, fmt.Errorf("token exchange: %w", lastErr)
 		}
 	}
