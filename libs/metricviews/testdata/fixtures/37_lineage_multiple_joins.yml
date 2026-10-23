@@ -1,0 +1,28 @@
+version: 0.1
+source: main.default.t1
+
+joins:
+  - name: t2
+    source: main.default.t2
+    on: a = c
+
+  - name: t3
+    source: main.default.t3
+    on: b = e
+
+dimensions:
+  - name: d1
+    expr: a * 2
+
+  - name: d2
+    expr: b + t2.d
+
+  - name: d3
+    expr: t3.f - t2.d
+
+measures:
+  - name: total
+    expr: count(*)
+
+  - name: avg_f
+    expr: avg(t3.f)
