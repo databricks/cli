@@ -27,15 +27,15 @@ func TestParseExtendedDuration(t *testing.T) {
 		{input: "1w", want: "604800s"},
 		{input: "3d15m", want: "260100s"},
 		{input: "1.5d", want: "129600s"},
-		{input: "0.5s", want: "0.5s"},
-		{input: "", wantErr: true},
+		{input: "0.5s", want: "0.500s"},
+		{input: "", want: ""},
 		{input: "abc", wantErr: true},
 		{input: "7x", wantErr: true},
 		{input: "7dd", wantErr: true},
 		{input: "100000000000w", wantErr: true},
 	} {
 		t.Run(tc.input, func(t *testing.T) {
-			got, err := canonicalDuration(tc.input)
+			got, err := optionalCanonicalDuration(tc.input)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
@@ -46,13 +46,19 @@ func TestParseExtendedDuration(t *testing.T) {
 	}
 }
 
-// TestCanonicalDurationPreservesProtobufForm pins the no-churn guarantee: a value the API already
-// accepts comes back byte-for-byte, so an existing bundle's state does not move.
-func TestCanonicalDurationPreservesProtobufForm(t *testing.T) {
-	for _, input := range []string{"604800s", "0.5s", "0.500s", "1.000000001s", "0s"} {
-		got, err := canonicalDuration(input)
+// TestOptionalCanonicalDurationRendersProtobufForm pins that a value the API already accepts is
+// still rendered the way the API renders it, so state matches what the server answers with.
+func TestOptionalCanonicalDurationRendersProtobufForm(t *testing.T) {
+	for input, want := range map[string]string{
+		"604800s":      "604800s",
+		"0.5s":         "0.500s",
+		"0.500s":       "0.500s",
+		"1.000000001s": "1.000000001s",
+		"0s":           "0s",
+	} {
+		got, err := optionalCanonicalDuration(input)
 		require.NoError(t, err, input)
-		assert.Equal(t, input, got)
+		assert.Equal(t, want, got, input)
 	}
 }
 

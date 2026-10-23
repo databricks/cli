@@ -27,8 +27,8 @@ const (
 	maxDurationHours = int64(math.MaxInt64) / int64(time.Hour)
 )
 
-// duration parses a duration written in the API's protobuf form ("604800s"), Go form ("168h"), or
-// with the day and week units Go lacks ("7d", "3d15m").
+// duration parses a duration composed of week, day, hour, minute and second units ("1w", "7d",
+// "3d15m", "604800s") into the SDK type, which holds only seconds.
 func duration(s string) (*sdkduration.Duration, error) {
 	if parsed, ok := protobufDuration(s); ok {
 		return parsed, nil
@@ -38,26 +38,6 @@ func duration(s string) (*sdkduration.Duration, error) {
 		return nil, fmt.Errorf("invalid duration %q: %w; use e.g. 604800s, 168h, 7d or 3d15m", s, err)
 	}
 	return sdkduration.New(d), nil
-}
-
-// canonicalDuration returns s in the API's protobuf form, returning s unchanged when it already is.
-func canonicalDuration(s string) (string, error) {
-	if _, ok := protobufDuration(s); ok {
-		return s, nil
-	}
-	d, err := parseExtendedDuration(s)
-	if err != nil {
-		return "", fmt.Errorf("invalid duration %q: %w; use e.g. 604800s, 168h, 7d or 3d15m", s, err)
-	}
-	marshalled, err := sdkduration.New(d).MarshalJSON()
-	if err != nil {
-		return "", err
-	}
-	var canonical string
-	if err := json.Unmarshal(marshalled, &canonical); err != nil {
-		return "", err
-	}
-	return canonical, nil
 }
 
 // protobufDuration reports whether s is already a protobuf duration, returning the parsed value.
@@ -77,6 +57,9 @@ func protobufDuration(s string) (*sdkduration.Duration, bool) {
 // 168h) units. Components in those units are summed here; all other components (h and below) are
 // handed to time.ParseDuration unchanged, which keeps its exact integer handling for the common
 // forms.
+//
+// Duplicates parseTTLDuration in cmd/workspace/postgres/overrides.go, which serves the postgres
+// branch --ttl flag.
 func parseExtendedDuration(s string) (time.Duration, error) {
 	// Fast path: no day/week unit means time.ParseDuration handles it all. No other supported unit
 	// contains 'd' or 'w', so this check is exact.
@@ -156,13 +139,25 @@ func optionalDuration(s string) (*sdkduration.Duration, error) {
 	return duration(s)
 }
 
-// optionalCanonicalDuration canonicalizes a duration the API types as a string, under the same two
-// exemptions as optionalDuration.
+// optionalCanonicalDuration renders a duration the API types as a string in the seconds form the
+// API answers with, under the same two exemptions as optionalDuration.
 func optionalCanonicalDuration(s string) (string, error) {
 	if s == "" || dynvar.IsPureVariableReference(s) {
 		return s, nil
 	}
-	return canonicalDuration(s)
+	parsed, err := duration(s)
+	if err != nil {
+		return "", err
+	}
+	marshalled, err := parsed.MarshalJSON()
+	if err != nil {
+		return "", err
+	}
+	var canonical string
+	if err := json.Unmarshal(marshalled, &canonical); err != nil {
+		return "", err
+	}
+	return canonical, nil
 }
 
 // featureState converts the bundle config for a feature into the API type, parsing every duration.
