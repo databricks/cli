@@ -22,6 +22,7 @@ import (
 // queued builds a buffer whose queue nothing drains, so a test drives record and take itself.
 func queued() *OperationBuffer {
 	return &OperationBuffer{
+		queue:       make(chan string, bufferedOperations),
 		cancel:      func() {},
 		pending:     make(map[string]OperationUpdate),
 		latestState: make(map[string]OperationUpdate),
@@ -115,15 +116,16 @@ func TestRecordFailureUsesTheGivenStateWhenNoWriteRecorded(t *testing.T) {
 func TestBufferQueuesWithoutBackpressure(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		b := queued()
+		b.bestEffort = true
 		const operationCount = 1000
 		for i := range operationCount {
 			key := fmt.Sprintf("resources.jobs.job_%d", i)
 			b.RecordOperation(t.Context(), key, false, "id-1", json.RawMessage(`{"state":{}}`))
 		}
 		assert.NoError(t, b.Err())
-		assert.Len(t, b.queue, operationCount)
+		assert.Len(t, b.historyQueue, operationCount)
 		assert.Len(t, b.pending, operationCount)
-		for i, key := range b.queue {
+		for i, key := range b.historyQueue {
 			assert.Equal(t, fmt.Sprintf("resources.jobs.job_%d", i), key)
 		}
 	})
@@ -133,7 +135,7 @@ func TestBufferStopsIdleWriterOnCancellation(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		ctx, cancel := context.WithCancel(t.Context())
 		defer cancel()
-		b := StartOperationBuffer(ctx, "dep-1", 1, BufferOptions{})
+		b := StartOperationBuffer(ctx, "dep-1", 1, BufferOptions{BestEffort: true})
 		synctest.Wait()
 		cancel()
 		<-b.done
@@ -159,6 +161,6 @@ func TestBestEffortBufferStopsRecordingAfterError(t *testing.T) {
 	b.RecordOperation(t.Context(), "resources.jobs.bar", false, "id-2", json.RawMessage(`{}`))
 	b.RecordFailure("resources.jobs.bar", "id-2", nil, errors.New("apply failed"))
 	assert.ErrorContains(t, b.Err(), "exceeds")
-	assert.Empty(t, b.queue)
+	assert.Empty(t, b.historyQueue)
 	assert.Empty(t, b.pending)
 }

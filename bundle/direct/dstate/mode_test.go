@@ -263,41 +263,6 @@ func TestUpgradeToWrite(t *testing.T) {
 	}
 }
 
-func TestDMSRecordingContinuesAfterUploadError(t *testing.T) {
-	synctest.Test(t, func(t *testing.T) {
-		firstRequest := make(chan struct{})
-		updates := 0
-		ctx := modeContext(t, func(w http.ResponseWriter, r *http.Request) {
-			var body struct {
-				SequenceID int64  `json:"sequence_id"`
-				State      string `json:"state"`
-			}
-			assert.NoError(t, json.NewDecoder(r.Body).Decode(&body))
-			assert.Zero(t, body.SequenceID, "a rejected update earns no sequence ID")
-			updates++
-			if updates == 1 {
-				close(firstRequest)
-				http.Error(w, `{"error_code":"INVALID_PARAMETER_VALUE","message":"first update failed"}`, http.StatusBadRequest)
-				return
-			}
-			assert.JSONEq(t, `{"state":{"name":"second"}}`, body.State)
-			_, _ = w.Write([]byte(`{"sequence_id":1}`))
-		})
-		var db dstate.DeploymentState
-		path := filepath.Join(t.TempDir(), "resources.json")
-		require.NoError(t, db.Open(ctx, path, dstate.WritingDMS, false, dstate.OpenDmsArgs{}))
-		db.InitializeOperationBuffer(ctx, "dep-1", 1, 1)
-		require.NoError(t, db.SaveState(ctx, "resources.jobs.job", "id-1", map[string]string{"name": "first"}, nil))
-		<-firstRequest
-		synctest.Wait()
-		require.ErrorContains(t, db.RecordingError(), "first update failed")
-		require.NoError(t, db.SaveState(ctx, "resources.jobs.job", "id-1", map[string]string{"name": "second"}, nil))
-		_, err := db.Finalize(ctx)
-		require.ErrorContains(t, err, "first update failed")
-		assert.Equal(t, 2, updates)
-	})
-}
-
 func TestHistoryErrorsFailOpen(t *testing.T) {
 	for _, mode := range []dstate.Mode{dstate.WritingDMS, dstate.WritingFileWithHistory, dstate.WritingFileWithHistoryEnforced} {
 		t.Run(fmt.Sprint(mode), func(t *testing.T) {

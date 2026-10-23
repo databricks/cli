@@ -11,6 +11,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
+// bufferedOperations caps how far ahead of the service a deploy may get; DMS is what the next
+// plan reads.
+const bufferedOperations = 10
+
 // BufferOptions controls whether recording continues after an error.
 type BufferOptions struct {
 	BestEffort bool
@@ -23,7 +27,12 @@ type OperationBuffer struct {
 	deploymentID string
 	versionNum   int
 
-	done       chan struct{}
+	// The buffer. queue holds bundle state keys, and pending the newest update per key, so a
+	// second write for a resource replaces the first.
+	queue     chan string
+	done      chan struct{}
+	stopQueue func()
+
 	cancel     context.CancelFunc
 	bestEffort bool
 
@@ -39,9 +48,9 @@ type OperationBuffer struct {
 	// mu guards the fields below.
 	mu sync.Mutex
 
-	// queue is unbounded and contains one key per pending update.
-	queue    []string
-	draining bool
+	// File-history recording uses an unbounded queue so it never waits for DMS.
+	historyQueue []string
+	draining     bool
 
 	// pending holds the newest update per resource key, absent once the writer takes it.
 	pending map[string]OperationUpdate
@@ -62,6 +71,7 @@ func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum i
 	b := &OperationBuffer{
 		deploymentID: deploymentID,
 		versionNum:   versionNum,
+		queue:        make(chan string, bufferedOperations),
 		done:         make(chan struct{}),
 		cancel:       cancel,
 		bestEffort:   options.BestEffort,
@@ -69,6 +79,7 @@ func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum i
 		latestState:  make(map[string]OperationUpdate),
 		sequenceIDs:  make(map[string]int64),
 	}
+	b.stopQueue = sync.OnceFunc(func() { close(b.queue) })
 	go b.run(ctx)
 	return b
 }
@@ -98,8 +109,8 @@ func (b *OperationBuffer) RecordFailure(resourceKey, resourceID string, state js
 // that latest state. latestState and pending are updated under the one lock.
 func (b *OperationBuffer) record(resourceKey string, update OperationUpdate, keepExistingUpdateIfAny bool, cause error) {
 	b.mu.Lock()
-	defer b.mu.Unlock()
 	if b.bestEffort && b.err != nil {
+		b.mu.Unlock()
 		return
 	}
 	if keepExistingUpdateIfAny {
@@ -114,13 +125,21 @@ func (b *OperationBuffer) record(resourceKey string, update OperationUpdate, kee
 		update = waiting.Merge(update)
 	}
 	b.pending[resourceKey] = update
+	if b.bestEffort {
+		if !queued {
+			b.historyQueue = append(b.historyQueue, resourceKey)
+		}
+		b.mu.Unlock()
+		return
+	}
+	b.mu.Unlock()
 
 	// when already queued: the writer reads the map when it gets to the key,
 	// so it picks up what was just stored.
 	//
 	// Only when the resource is not already queued, enqueue it.
 	if !queued {
-		b.queue = append(b.queue, resourceKey)
+		b.queue <- resourceKey
 	}
 }
 
@@ -139,31 +158,40 @@ func (b *OperationBuffer) run(ctx context.Context) {
 	defer b.cancel()
 
 	for {
-		if err := ctx.Err(); err != nil {
-			b.setErr(err)
-			return
-		}
-		b.mu.Lock()
-		if len(b.queue) == 0 {
-			draining := b.draining
-			b.mu.Unlock()
-			if draining {
+		var resourceKey string
+		if b.bestEffort {
+			if err := ctx.Err(); err != nil {
+				b.setErr(err)
 				return
 			}
-			// Poll an empty queue without holding the lock or delaying cancellation.
-			select {
-			case <-time.After(100 * time.Millisecond):
-			case <-ctx.Done():
+			b.mu.Lock()
+			if len(b.historyQueue) == 0 {
+				draining := b.draining
+				b.mu.Unlock()
+				if draining {
+					return
+				}
+				// Poll only optional history; DMS-state writes retain immediate delivery.
+				select {
+				case <-time.After(100 * time.Millisecond):
+				case <-ctx.Done():
+				}
+				continue
 			}
-			continue
+			resourceKey = b.historyQueue[0]
+			b.historyQueue[0] = ""
+			b.historyQueue = b.historyQueue[1:]
+			if len(b.historyQueue) == 0 {
+				b.historyQueue = nil
+			}
+			b.mu.Unlock()
+		} else {
+			var ok bool
+			resourceKey, ok = <-b.queue
+			if !ok {
+				return
+			}
 		}
-		resourceKey := b.queue[0]
-		b.queue[0] = ""
-		b.queue = b.queue[1:]
-		if len(b.queue) == 0 {
-			b.queue = nil
-		}
-		b.mu.Unlock()
 		update, ok := b.take(resourceKey)
 		if !ok {
 			// Unreachable: a key is queued only when nothing was waiting for it. Guard so
@@ -198,9 +226,15 @@ func (b *OperationBuffer) write(ctx context.Context, key string, update Operatio
 	return nil
 }
 
-// Drain waits for buffered writes, canceling outstanding requests when ctx expires.
+// Drain waits for buffered writes. Optional history cancels outstanding requests when ctx expires.
 // It returns the first recording error and is safe to call twice.
 func (b *OperationBuffer) Drain(ctx context.Context) error {
+	if !b.bestEffort {
+		b.stopQueue()
+		<-b.done
+		return b.Err()
+	}
+
 	b.mu.Lock()
 	b.draining = true
 	b.mu.Unlock()
