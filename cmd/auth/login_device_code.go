@@ -37,16 +37,15 @@ func validateDeviceCodeHost(ctx context.Context, authArguments *auth.AuthArgumen
 	// workspace hosts, which must not change the default profile name.
 	probe := *authArguments
 	probe.Host = auth.ExtractHostQueryParams(probe.Host).Host
-	if isAccountOrUnifiedHost(probe.Host, probe.DiscoveryURL) {
+	host := (&config.Config{Host: probe.Host}).CanonicalHostName()
+	if auth.IsClassicAccountHost(host) {
 		return errDeviceCodeWorkspaceOnly
 	}
-	if probe.DiscoveryURL == "" {
-		runHostDiscovery(ctx, &probe)
-		if isAccountOrUnifiedHost(probe.Host, probe.DiscoveryURL) {
-			return errDeviceCodeWorkspaceOnly
-		}
+	runHostDiscovery(ctx, &probe)
+	if auth.HasUnifiedHostSignal(probe.DiscoveryURL) {
+		return errDeviceCodeWorkspaceOnly
 	}
-	arg, err := u2m.NewBasicWorkspaceOAuthArgument((&config.Config{Host: probe.Host}).CanonicalHostName())
+	arg, err := u2m.NewBasicWorkspaceOAuthArgument(host)
 	if err != nil {
 		return err
 	}
