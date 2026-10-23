@@ -1,5 +1,4 @@
 sethome "./home"
-export DATABRICKS_CLI_DEVICE_CODE=true
 
 title "No host\n"
 # The profile does not exist yet and no host is given. auth login does not read

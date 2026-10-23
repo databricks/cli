@@ -1,9 +1,10 @@
 sethome "./home"
 
 title "Device code login is disabled by default\n"
-trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code
-
-export DATABRICKS_CLI_DEVICE_CODE=true
+(
+    unset DATABRICKS_CLI_DEVICE_CODE
+    trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code
+)
 
 title "Inputs device code login cannot honor are rejected\n"
 trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code --resource https://resource.test

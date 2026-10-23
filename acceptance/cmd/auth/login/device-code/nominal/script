@@ -1,5 +1,4 @@
 sethome "./home"
-export DATABRICKS_CLI_DEVICE_CODE=true
 
 title "Login with a host\n"
 printf "FTFA-QQKY\n" | trace $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code

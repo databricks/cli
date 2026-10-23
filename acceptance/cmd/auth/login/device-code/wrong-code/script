@@ -1,5 +1,4 @@
 sethome "./home"
-export DATABRICKS_CLI_DEVICE_CODE=true
 
 title "Login fails when no confirmation code is provided\n"
 trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code < /dev/null

@@ -1,6 +1,3 @@
-Ignore = [
-    "home"
-]
 RecordRequests = true
 
 # Workspaces that are not enrolled in the device code preview do not advertise
