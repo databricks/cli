@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
 	"testing/synctest"
+	"time"
 
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/stretchr/testify/assert"
@@ -112,33 +114,43 @@ func TestRecordFailureUsesTheGivenStateWhenNoWriteRecorded(t *testing.T) {
 	assert.Equal(t, bundledeployments.OperationStatusOperationStatusFailed, update.Status)
 }
 
-func TestBufferQueuesWithoutBackpressure(t *testing.T) {
+func TestHistoryQueueDoesNotBlockWhenWriterStops(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
-		b := queued()
-		b.bestEffort = true
 		const operationCount = 1000
-		for i := range operationCount {
-			key := fmt.Sprintf("resources.jobs.job_%d", i)
-			b.RecordOperation(t.Context(), key, false, "id-1", json.RawMessage(`{"state":{}}`))
-		}
-		assert.NoError(t, b.Err())
-		assert.Len(t, b.historyQueue, operationCount)
-		assert.Len(t, b.pending, operationCount)
-		for i, key := range b.historyQueue {
-			assert.Equal(t, fmt.Sprintf("resources.jobs.job_%d", i), key)
-		}
-	})
-}
-
-func TestBufferStopsIdleWriterOnCancellation(t *testing.T) {
-	synctest.Test(t, func(t *testing.T) {
 		ctx, cancel := context.WithCancel(t.Context())
 		defer cancel()
-		b := StartOperationBuffer(ctx, "dep-1", 1, BufferOptions{BestEffort: true})
+		b := StartOperationBuffer(ctx, "dep-1", 1, BufferOptions{BestEffort: true, OperationCount: operationCount})
 		synctest.Wait()
 		cancel()
 		<-b.done
 		assert.ErrorIs(t, b.Err(), context.Canceled)
+
+		// Even with no consumer, every staged key fits. Repeated writes coalesce.
+		for range 2 {
+			for i := range operationCount {
+				key := fmt.Sprintf("resources.jobs.job_%d", i)
+				b.RecordOperation(ctx, key, false, "id-1", json.RawMessage(`{"state":{}}`))
+			}
+		}
+		assert.Len(t, b.queue, operationCount)
+		assert.Len(t, b.pending, operationCount)
+	})
+}
+
+func TestHistoryDrainCancelsStalledWriter(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctx, cancel := context.WithCancel(t.Context())
+		defer cancel()
+		b := queued()
+		b.bestEffort = true
+		b.cancel = cancel
+		b.drainTimeout = time.Second
+		b.done = make(chan struct{}) // Simulate a writer that cannot finish its upload.
+		b.stopQueue = sync.OnceFunc(func() { close(b.queue) })
+		start := time.Now()
+		assert.ErrorIs(t, b.Drain(t.Context()), context.DeadlineExceeded)
+		assert.Equal(t, time.Second, time.Since(start))
+		assert.ErrorIs(t, ctx.Err(), context.Canceled)
 	})
 }
 
@@ -149,6 +161,6 @@ func TestBestEffortBufferKeepsRecordingAfterError(t *testing.T) {
 	b.RecordOperation(t.Context(), "resources.jobs.bar", false, "id-2", json.RawMessage(`{}`))
 	b.RecordFailure("resources.jobs.bar", "id-2", nil, errors.New("apply failed"))
 	assert.ErrorContains(t, b.Err(), "exceeds")
-	assert.Len(t, b.historyQueue, 1)
+	assert.Len(t, b.queue, 1)
 	assert.Contains(t, b.pending, "resources.jobs.bar")
 }

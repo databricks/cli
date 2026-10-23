@@ -14,7 +14,6 @@ import (
 	"slices"
 	"strings"
 	"sync"
-	"time"
 	"uuid"
 
 	"github.com/databricks/cli/bundle/config"
@@ -37,8 +36,6 @@ const (
 	maxWalEntrySize     = 10 * 1024 * 1024
 	walSuffix           = ".wal"
 )
-
-const historyDrainTimeoutPerOperation = 5 * time.Second
 
 // FeatureDeploymentHistory marks a state whose resources are also recorded with the
 // deployment metadata service. Both stores are kept in step, so the marker is what tells a
@@ -106,8 +103,6 @@ type DeploymentState struct {
 	// operationBuffer records each state write with DMS. Nil unless the bundle records deployment
 	// history, in which case InitializeOperationBuffer installs it once the version exists.
 	operationBuffer *dms.OperationBuffer
-
-	historyDrainTimeout time.Duration
 
 	// versionCompleted makes CompleteVersion a no-op after the first call, so a deferred safety-net
 	// completion after an explicit one does nothing.
@@ -186,11 +181,10 @@ func (db *DeploymentState) InitializeOperationBuffer(ctx context.Context, deploy
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	options := dms.BufferOptions{
-		BestEffort: db.mode == WritingFileWithHistory || db.mode == WritingFileWithHistoryEnforced,
+		BestEffort:     db.mode == WritingFileWithHistory || db.mode == WritingFileWithHistoryEnforced,
+		OperationCount: operationCount,
 	}
 	db.operationBuffer = dms.StartOperationBuffer(ctx, deploymentID, versionID, options)
-	// Use the full plan count; the queue length changes as uploads finish.
-	db.historyDrainTimeout = time.Duration(operationCount) * historyDrainTimeoutPerOperation
 	db.DeploymentID = deploymentID
 	db.VersionID = versionID
 }
@@ -563,7 +557,6 @@ func (db *DeploymentState) reset() {
 	db.Path = ""
 	db.Data = Database{}
 	db.stateIDs = nil
-	db.historyDrainTimeout = 0
 	// Telemetry and destroy still need the mode and IDs after version completion.
 	// Clear the recording buffer once CompleteVersion has copied it.
 	if db.versionCompleted {
@@ -888,11 +881,8 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 	case WritingFileWithHistory, WritingFileWithHistoryEnforced:
 		if db.operationBuffer != nil {
 			// File state is already persisted, so history errors only warn.
-			// Bound the wait so a stalled service cannot hold up deployment.
-			drainCtx, cancel := context.WithTimeout(ctx, db.historyDrainTimeout)
-			drainErr := db.operationBuffer.Drain(drainCtx)
-			cancel()
-			if drainErr != nil {
+			// The buffer bounds the wait using the staged operation count.
+			if drainErr := db.operationBuffer.Drain(ctx); drainErr != nil {
 				log.Warnf(ctx, "Failed to record deployment history: %s", drainErr)
 			}
 		}

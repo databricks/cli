@@ -15,9 +15,14 @@ import (
 // plan reads.
 const bufferedOperations = 10
 
+const historyDrainTimeoutPerOperation = 5 * time.Second
+
 // BufferOptions selects optional file-history recording behavior.
 type BufferOptions struct {
 	BestEffort bool
+	// OperationCount counts staged resource keys. All recorded keys must be staged.
+	// File history uses it for queue capacity and the drain timeout.
+	OperationCount int
 }
 
 // OperationBuffer records each state write with DMS for one deployment version, off the apply
@@ -34,8 +39,9 @@ type OperationBuffer struct {
 	stopQueue func()
 
 	// cancel stops in-flight history uploads when the drain deadline expires.
-	cancel     context.CancelFunc
-	bestEffort bool
+	cancel       context.CancelFunc
+	bestEffort   bool
+	drainTimeout time.Duration
 
 	// sequenceIDs holds the token the last update for a resource returned. A missing key reads as
 	// 0, which is what staging leaves. Unguarded: run is the only goroutine that writes, one update at a time.
@@ -48,13 +54,6 @@ type OperationBuffer struct {
 
 	// mu guards the fields below.
 	mu sync.Mutex
-
-	// File-history recording uses an unbounded queue so DMS applies no backpressure
-	// to the deployment engine.
-	historyQueue []string
-
-	// draining lets the worker exit once the history queue is empty.
-	draining bool
 
 	// pending holds the newest update per resource key, absent once the writer takes it.
 	pending map[string]OperationUpdate
@@ -73,13 +72,21 @@ type OperationBuffer struct {
 func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum int, options BufferOptions) *OperationBuffer {
 	// History can stop independently without canceling the deployment.
 	ctx, cancel := context.WithCancel(ctx)
+	capacity := bufferedOperations
+	if options.BestEffort {
+		// Updates coalesce, so each staged key occupies at most one queue slot.
+		// The worker frees that slot before the key can be queued again.
+		// One slot per staged key therefore avoids deployment backpressure.
+		capacity = options.OperationCount
+	}
 	b := &OperationBuffer{
 		deploymentID: deploymentID,
 		versionNum:   versionNum,
-		queue:        make(chan string, bufferedOperations),
+		queue:        make(chan string, capacity),
 		done:         make(chan struct{}),
 		cancel:       cancel,
 		bestEffort:   options.BestEffort,
+		drainTimeout: time.Duration(options.OperationCount) * historyDrainTimeoutPerOperation,
 		pending:      make(map[string]OperationUpdate),
 		latestState:  make(map[string]OperationUpdate),
 		sequenceIDs:  make(map[string]int64),
@@ -126,13 +133,6 @@ func (b *OperationBuffer) record(resourceKey string, update OperationUpdate, kee
 		update = waiting.Merge(update)
 	}
 	b.pending[resourceKey] = update
-	if b.bestEffort {
-		if !queued {
-			b.historyQueue = append(b.historyQueue, resourceKey)
-		}
-		b.mu.Unlock()
-		return
-	}
 	b.mu.Unlock()
 
 	// when already queued: the writer reads the map when it gets to the key,
@@ -160,44 +160,20 @@ func (b *OperationBuffer) run(ctx context.Context) {
 
 	for {
 		var resourceKey string
+		var ok bool
 		if b.bestEffort {
-			// Calling b.cancel() makes ctx.Err() return an error. This is the signal to stop.
-			// We expect this after a drain timeout.
-			// Cancellation or expiry of the deployment's context also stops the worker here.
-			if err := ctx.Err(); err != nil {
-				b.setErr(err)
+			select {
+			case resourceKey, ok = <-b.queue:
+			case <-ctx.Done():
+				// Drain calls cancel on timeout. Parent cancellation can also stop history.
+				b.setErr(ctx.Err())
 				return
 			}
-			b.mu.Lock()
-			if len(b.historyQueue) == 0 {
-				draining := b.draining
-				b.mu.Unlock()
-				if draining {
-					return
-				}
-				// Start with polling to keep the design simple.
-				// We can optimize this later by waking the worker when work is queued.
-				// Cancellation ends this wait immediately.
-				select {
-				case <-time.After(100 * time.Millisecond):
-				case <-ctx.Done():
-				}
-				continue
-			}
-			resourceKey = b.historyQueue[0]
-			b.historyQueue[0] = ""
-			b.historyQueue = b.historyQueue[1:]
-			if len(b.historyQueue) == 0 {
-				// Release the backing array so the garbage collector can reclaim it.
-				b.historyQueue = nil
-			}
-			b.mu.Unlock()
 		} else {
-			var ok bool
 			resourceKey, ok = <-b.queue
-			if !ok {
-				return
-			}
+		}
+		if !ok {
+			return
 		}
 		update, ok := b.take(resourceKey)
 		if !ok {
@@ -232,21 +208,21 @@ func (b *OperationBuffer) write(ctx context.Context, key string, update Operatio
 
 // Drain waits for buffered uploads before version completion.
 //   - DMS state: close the channel and wait for queued writes.
-//   - File history: finish the queue, or cancel uploads when ctx expires.
+//   - File history: wait up to five seconds per staged operation, then cancel uploads.
 //
 // It returns the first recording error and is safe to call more than once.
 func (b *OperationBuffer) Drain(ctx context.Context) error {
+	b.stopQueue()
 	if !b.bestEffort {
 		// DMS is authoritative: wait for all queued writes and return any recording error.
-		b.stopQueue()
 		<-b.done
 		return b.Err()
 	}
 
-	// File state is already saved. Try the remaining history writes until ctx expires.
-	b.mu.Lock()
-	b.draining = true
-	b.mu.Unlock()
+	// File state is already saved. Budget five seconds per staged operation,
+	// including operations already uploaded; caller cancellation can shorten the wait.
+	ctx, cancel := context.WithTimeout(ctx, b.drainTimeout)
+	defer cancel()
 	select {
 	case <-b.done:
 		// Report the first upload error even if later uploads succeeded.
