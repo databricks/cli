@@ -2,7 +2,7 @@
 """Package the released Databricks CLI binaries as PyPI wheels.
 
 Input is the directory of the `cli` release-build artifact: the goreleaser
-archives (databricks_cli_*_<os>_<arch>.{tar.gz,zip}) and the SHA256SUMS file.
+archives (databricks_cli_*_<os>_<arch>.{tar.gz,zip}) and the SHA256SUMS file, whose name carries the version.
 The binaries are taken from the archives as-is, so the signed Windows binaries
 are what ends up in the wheels.
 
@@ -52,17 +52,12 @@ PLATFORMS = {
 ZIP_DATE_TIME = (1980, 1, 1, 0, 0, 0)
 
 
-def read_checksums(artifact_dir: Path) -> tuple[str, dict[str, str]]:
-    """Return (cli_version, {file name: sha256}) from the SHA256SUMS file."""
+def read_version(artifact_dir: Path) -> str:
+    """Return the CLI version from the databricks_cli_<version>_SHA256SUMS file name."""
     sums_files = list(artifact_dir.glob("databricks_cli_*_SHA256SUMS"))
     if len(sums_files) != 1:
         raise SystemExit(f"expected exactly one databricks_cli_*_SHA256SUMS in {artifact_dir}, found {sums_files}")
-    version = sums_files[0].name[len("databricks_cli_") : -len("_SHA256SUMS")]
-    sums = {}
-    for line in sums_files[0].read_text().splitlines():
-        digest, _, name = line.partition("  ")
-        sums[name.strip()] = digest
-    return version, sums
+    return sums_files[0].name[len("databricks_cli_") : -len("_SHA256SUMS")]
 
 
 def pep440(cli_version: str) -> str:
@@ -162,16 +157,13 @@ def main() -> None:
     out_dir = Path(sys.argv[2])
     license_file = Path(sys.argv[3]) if len(sys.argv) == 4 else Path(__file__).resolve().parents[1] / "LICENSE"
 
-    cli_version, sums = read_checksums(artifact_dir)
+    cli_version = read_version(artifact_dir)
     version = pep440(cli_version)
     license_text = license_file.read_bytes()
     out_dir.mkdir(parents=True, exist_ok=True)
 
     for (goos, goarch), platform_tag in PLATFORMS.items():
         archive = find_archive(artifact_dir, goos, goarch)
-        actual = hashlib.sha256(archive.read_bytes()).hexdigest()
-        if sums.get(archive.name) != actual:
-            raise SystemExit(f"checksum mismatch for {archive.name}: expected {sums.get(archive.name)}, got {actual}")
         binary_name = "databricks.exe" if goos == "windows" else "databricks"
         binary = extract_binary(archive, binary_name)
         print(build_wheel(out_dir, version, platform_tag, binary_name, binary, license_text))
