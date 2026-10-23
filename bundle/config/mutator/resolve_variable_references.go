@@ -265,6 +265,14 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 			return dyn.InvalidValue, err
 		}
 
+		// Serialize complex values substituted into for_each_task.inputs before
+		// normalization: the field is a JSON string, so a substituted sequence
+		// or map would otherwise be dropped as a type mismatch.
+		root, err = serializeForEachTaskInputs(root)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+
 		// Normalize the result because variable resolution may have been applied to non-string fields.
 		// For example, a variable reference may have been resolved to a integer.
 		root, normaliseDiags := convert.Normalize(b.Config, root)
