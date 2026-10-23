@@ -57,6 +57,7 @@ type Experimental struct {
 	// Resource state remains in resources.json. History uploads are best effort:
 	// DMS errors do not fail file-backed deployments.
 	// Existing DMS-authoritative deployments keep their current state source.
+	// Terraform state must first be migrated to direct with history disabled.
 	// An explicit value takes priority over the environment setting.
 	DeploymentHistory *bool `json:"deployment_history,omitempty"`
 }

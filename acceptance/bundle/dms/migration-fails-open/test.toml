@@ -1,0 +1,2 @@
+# Fault injection verifies best-effort registration against the local fake.
+Cloud = false

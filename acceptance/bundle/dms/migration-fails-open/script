@@ -1,0 +1,25 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Create file-backed resources without history"
+trace $CLI bundle deploy
+DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false replace_ids.py
+jq '.state | with_entries(.value = .value.__id__)' .databricks/bundle/default/resources.json > .databricks/ids.before.json
+
+title "Fail one registration upload; enable history and deploy an update anyway"
+trace fault.py "PATCH /api/2.0/bundle/*" 400 0 1
+trace update_file.py databricks.yml 'deployment_history: false' 'deployment_history: true'
+trace update_file.py databricks.yml 'name: one' 'name: updated'
+trace $CLI bundle deploy
+
+title "The file still owns both resources, with the original IDs"
+trace jq '{serial, features, resources: (.state | keys), names: (.state | with_entries(.value = .value.state.name))}' .databricks/bundle/default/resources.json
+jq '.state | with_entries(.value = .value.__id__)' .databricks/bundle/default/resources.json > .databricks/ids.after.json
+trace cmp .databricks/ids.before.json .databricks/ids.after.json
+
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-migration-fails-open-${UNIQUE_NAME}/default/state/resources.deployment.json" -o json | jq -r '.object_id')
+add_repl "$deployment_id" DEPLOYMENT_ID
+
+title "Migration failed, but the following deployment completed successfully"
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-versions "deployments/${deployment_id}" -o json | jq -c 'sort_by(.version_id | tonumber) | map({version_id, completion_reason})'
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/2" -o json | jq -c 'sort_by(.resource_key) | map({resource_key, status})'
+rm -f "$OUT_REQUESTS"
