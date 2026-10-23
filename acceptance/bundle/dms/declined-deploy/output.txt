@@ -67,7 +67,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "lineage": "[UUID]",
   "serial": 1,
   "features": {
-    "deployment_history": {}
+    "deployment_history_best_effort": {}
   }
 }
 
@@ -81,15 +81,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 }
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/resources"
-}
-{
-  "method": "GET",
   "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"
-}
-{
-  "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/resources"
 }
 
 >>> print_state.py --no-dms
@@ -99,9 +91,17 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
  "lineage": "[UUID]",
  "serial": 1,
  "features": {
-  "deployment_history": {}
+  "deployment_history_best_effort": {}
  },
- "state": {}
+ "state": {
+  "resources.schemas.foo": {
+   "__id__": "main.dms_declined_deploy_schema_[UNIQUE_NAME]",
+   "state": {
+    "catalog_name": "main",
+    "name": "dms_declined_deploy_schema_[UNIQUE_NAME]"
+   }
+  }
+ }
 }
 
 === A destructive change without --auto-approve is declined: this console cannot prompt
@@ -123,10 +123,6 @@ Files: 2 uploaded, 0 deleted
 {
   "method": "GET",
   "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"
-}
-{
-  "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/resources"
 }
 
 === The recorded resources are unchanged by the decline: the schema is still at version 1
@@ -162,10 +158,6 @@ false
 {
   "method": "GET",
   "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"
-}
-{
-  "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/resources"
 }
 {
   "method": "POST",

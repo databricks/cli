@@ -54,8 +54,9 @@ type Experimental struct {
 	// service (DMS), which records deployment history and tracks what changed
 	// across deployments.
 	//
-	// Only for bundles with no deployed resources yet: DMS becomes the source of
-	// truth for their state.
+	// Resource state remains in resources.json. History uploads are best effort:
+	// DMS errors do not fail file-backed deployments.
+	// Existing DMS-authoritative deployments keep their current state source.
 	// An explicit value takes priority over the environment setting.
 	DeploymentHistory *bool `json:"deployment_history,omitempty"`
 }

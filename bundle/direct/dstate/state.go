@@ -456,7 +456,7 @@ func (db *DeploymentState) GetSerial() int {
 	switch db.mode {
 	case WritingDMS:
 		return db.VersionID
-	case WritingFileWithHistory, WritingFileWithHistoryEnforced:
+	case ReadingFile, WritingFileWithHistory, WritingFileWithHistoryEnforced:
 		return max(db.VersionID, db.Data.Serial)
 	default:
 		return db.Data.Serial
@@ -898,6 +898,16 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 // UpgradeToWrite opens a WAL for file state without re-reading resources.
 // DMS and file-history modes are already writable from Open, so upgrading them is a no-op.
 func (db *DeploymentState) UpgradeToWrite() error {
+	return db.upgradeToWrite(WritingFile)
+}
+
+// UpgradeToWriteWithHistory enables enforced file-backed history after approval.
+// Reads still use the same file state; only the write policy changes.
+func (db *DeploymentState) UpgradeToWriteWithHistory() error {
+	return db.upgradeToWrite(WritingFileWithHistoryEnforced)
+}
+
+func (db *DeploymentState) upgradeToWrite(mode Mode) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -910,7 +920,7 @@ func (db *DeploymentState) UpgradeToWrite() error {
 	case WritingFile:
 		return errors.New("internal error: DeploymentState is already open for write")
 	case ReadingFile:
-		db.mode = WritingFile
+		db.mode = mode
 		if err := db.setupWal(); err != nil {
 			db.mode = ReadingFile
 			return err

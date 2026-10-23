@@ -6,7 +6,9 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/statemgmt"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,13 +21,24 @@ func TestResolveDeploymentHistory(t *testing.T) {
 
 	newState := &statemgmt.StateDesc{}
 	assert.True(t, resolveDeploymentHistory(t.Context(), b, newState))
-	assert.True(t, newState.IsDMS())
-	assert.False(t, resolveDeploymentHistory(t.Context(), b, &statemgmt.StateDesc{SourcePath: "resources.json"}))
+	assert.False(t, newState.IsDMS())
+	assert.True(t, newState.RecordsHistory())
+	assert.Contains(t, newState.Features, dstate.FeatureDeploymentHistoryBestEffort)
+	assert.True(t, usesFileHistory(b, newState))
+	assert.True(t, resolveDeploymentHistory(t.Context(), b, &statemgmt.StateDesc{SourcePath: "resources.json"}))
 	b.Config.Experimental.DeploymentHistory = new(false)
 	assert.True(t, resolveDeploymentHistory(t.Context(), b, &statemgmt.StateDesc{
 		SourcePath: "resources.json",
 		Features:   map[string]struct{}{dstate.FeatureDeploymentHistory: {}},
 	}))
+
+	// The internal env-only switch continues to exercise DMS-authoritative state.
+	b.Config.Experimental.DeploymentHistory = nil
+	ctx := env.Set(t.Context(), bundleenv.DeploymentHistoryVariable, "true")
+	legacy := &statemgmt.StateDesc{}
+	assert.True(t, resolveDeploymentHistory(ctx, b, legacy))
+	assert.True(t, legacy.IsDMS())
+	assert.False(t, usesFileHistory(b, legacy))
 }
 
 func TestIsNewerVersion(t *testing.T) {

@@ -13,6 +13,7 @@ import json
 import os
 import posixpath
 import subprocess
+from pathlib import Path
 
 from nostamp import scrub
 
@@ -123,9 +124,23 @@ def get_deployment_id(target):
 def get_resources(target):
     """Map every recorded resource key ("jobs.foo") to its {"id", "state"}.
 
-    Empty when the bundle has no deployment recorded yet. Cached because a lookup costs three
-    round trips and a script asks for one resource at a time.
+    File-history state is read locally. Legacy DMS state is read from the service,
+    or is empty when no deployment has been recorded. Cached for repeated resource lookups.
     """
+    filename = get_state_file(target, False)
+    if filename.endswith("resources.json") and os.path.exists(filename):
+        data = json.loads(Path(filename).read_text())
+        if "deployment_history_best_effort" in (data.get("features") or {}):
+            # DMS can miss history updates. The file remains authoritative in this mode.
+            return {
+                key.removeprefix("resources."): {
+                    "id": entry.get("__id__"),
+                    "state": entry.get("state") or {},
+                    "depends_on": entry.get("depends_on") or [],
+                }
+                for key, entry in data.get("state", {}).items()
+            }
+
     deployment_id = get_deployment_id(target)
     if not deployment_id:
         return {}
@@ -174,10 +189,9 @@ def get_last_version_id(target):
 
 
 def print_recorded_state(filename, target):
-    """Print the state file with its resources filled in from the deployment metadata service.
+    """Normalize history state for comparisons with ordinary file-backed deployments.
 
-    While recording, the file itself carries only the header - the service holds the resources - so
-    printing it raw would show an empty state and differ from the same test's non-recording run.
+    get_resources uses the file for best-effort history and the service for legacy DMS state.
     """
     data = json.loads(open(filename).read())
     # Recording stamps each resource payload with the deployment and version; drop it here so the
@@ -186,11 +200,18 @@ def print_recorded_state(filename, target):
 
     # The file's serial is a copy of the DMS version to ensure outdated resource state is not read.
     # Rebuild in header order with the authoritative serial from the deployment.
-    last_version_id = get_last_version_id(target)
-    serial = int(last_version_id) if last_version_id else 0
+    if "deployment_history_best_effort" in (data.get("features") or {}):
+        serial = data.get("serial", 0)
+    else:
+        last_version_id = get_last_version_id(target)
+        serial = int(last_version_id) if last_version_id else 0
 
     # Recording itself is not what these tests assert, so drop the feature that marks it.
-    features = {k: v for k, v in (data.get("features") or {}).items() if k != "deployment_history"}
+    features = {
+        k: v
+        for k, v in (data.get("features") or {}).items()
+        if k not in {"deployment_history", "deployment_history_best_effort"}
+    }
 
     rebuilt = {}
     for key in ("state_version", "cli_version", "lineage"):
@@ -213,7 +234,7 @@ def main():
         "--no-dms",
         action="store_true",
         help="Print resources.json as-is without fetching state from DMS. "
-        "Use in bundle/dms tests to assert the tombstone content of the file.",
+        "Use in bundle/dms tests to assert the file state and its feature markers.",
     )
     args = parser.parse_args()
 
