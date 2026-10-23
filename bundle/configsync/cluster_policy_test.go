@@ -46,6 +46,27 @@ func TestExtractChangesDropsPolicyAppliedValues(t *testing.T) {
 			want:          map[string]any{"s3": map[string]any{"destination": "s3://logs", "region": "us-east-1"}},
 		},
 		{
+			name:       "edited log destination keeps required field and drops policy region",
+			attribute:  "cluster_log_conf",
+			definition: `{"cluster_log_conf.path":{"type":"unlimited"},"cluster_log_conf.region":{"type":"fixed","value":"us-west-2"}}`,
+			remote:     map[string]any{"s3": map[string]any{"destination": "s3://user-logs", "region": "us-west-2"}},
+			want:       map[string]any{"s3": map[string]any{"destination": "s3://user-logs"}},
+		},
+		{
+			name:       "required parent retains user field and drops optional policy sibling",
+			attribute:  "workload_type",
+			definition: `{"workload_type.clients.notebooks":{"type":"fixed","value":false}}`,
+			remote:     map[string]any{"clients": map[string]any{"jobs": true, "notebooks": false}},
+			want:       map[string]any{"clients": map[string]any{"jobs": true}},
+		},
+		{
+			name:       "partial struct match drops optional policy fields",
+			attribute:  "autoscale",
+			definition: `{"autoscale.min_workers":{"type":"fixed","value":1}}`,
+			remote:     map[string]any{"min_workers": int64(1), "max_workers": int64(4)},
+			want:       map[string]any{"max_workers": int64(4)},
+		},
+		{
 			name:       "fixed scalar dropped when absent from config",
 			attribute:  "autotermination_minutes",
 			definition: `{"autotermination_minutes":{"type":"fixed","value":60}}`,
@@ -400,4 +421,87 @@ func TestExtractChangesKeepsCompleteLogConfigurationWhenStorageChanges(t *testin
 	require.Contains(t, changes[key], path)
 	assert.Equal(t, newDestination, changes[key][path].Value)
 	assert.Equal(t, configsync.OperationRemove, changes[key][prefix+"cluster_log_conf.dbfs"].Operation)
+}
+
+func TestExtractChangesUsesEffectivePolicyFamilyDefinition(t *testing.T) {
+	b := policyTestBundle(t, "resources.clusters.test", map[string]any{"policy_id": "family-policy"})
+	client := mocks.NewMockWorkspaceClient(t)
+	b.SetWorkpaceClient(client.WorkspaceClient)
+	// GET supplies the merged definition; the bundle does not own this policy.
+	client.GetMockClusterPoliciesAPI().EXPECT().GetByPolicyId(mock.Anything, "family-policy").Return(&compute.Policy{
+		PolicyFamilyId:                  "job-cluster",
+		PolicyFamilyDefinitionOverrides: `{"custom_tags.Environment":{"type":"fixed","value":"dev"}}`,
+		Definition:                      `{"custom_tags.Inherited":{"type":"fixed","value":"family"},"custom_tags.Environment":{"type":"fixed","value":"dev"}}`,
+	}, nil).Once()
+	remoteTags := map[string]string{"Inherited": "family", "Environment": "dev", "Owner": "user"}
+	entry := &deployplan.PlanEntry{
+		RemoteState: &dresources.ClusterRemote{PolicyId: "family-policy", CustomTags: remoteTags},
+		Changes: deployplan.Changes{
+			"custom_tags": {Action: deployplan.Skip, Reason: deployplan.ReasonRemoteAddition, Remote: remoteTags},
+		},
+	}
+	changes, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
+	require.NoError(t, err)
+	require.Contains(t, changes, "resources.clusters.test")
+	require.Contains(t, changes["resources.clusters.test"], "custom_tags")
+	assert.Equal(t, map[string]any{"Owner": "user"}, changes["resources.clusters.test"]["custom_tags"].Value)
+}
+
+func TestExtractChangesDropsPolicyAdditionBesideAuthoredField(t *testing.T) {
+	b := policyTestBundle(t, "resources.clusters.test", map[string]any{
+		"policy_id": "policy", "autoscale": map[string]any{"max_workers": int64(4)},
+	})
+	client := mocks.NewMockWorkspaceClient(t)
+	b.SetWorkpaceClient(client.WorkspaceClient)
+	client.GetMockClusterPoliciesAPI().EXPECT().GetByPolicyId(mock.Anything, "policy").
+		Return(&compute.Policy{Definition: `{"autoscale.min_workers":{"type":"fixed","value":1}}`}, nil).Once()
+	remote := &compute.AutoScale{MinWorkers: 1, MaxWorkers: 4}
+	entry := &deployplan.PlanEntry{
+		RemoteState: &dresources.ClusterRemote{PolicyId: "policy", Autoscale: remote},
+		Changes:     deployplan.Changes{"autoscale": {Action: deployplan.Update, New: &compute.AutoScale{MaxWorkers: 4}, Remote: remote}},
+	}
+	changes, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
+	require.NoError(t, err)
+	require.Contains(t, changes, "resources.clusters.test")
+	require.Contains(t, changes["resources.clusters.test"], "autoscale")
+	assert.Equal(t, map[string]any{"max_workers": int64(4)}, changes["resources.clusters.test"]["autoscale"].Value)
+}
+
+func TestExtractChangesKeepsPolicyValuesInsidePositionalArray(t *testing.T) {
+	b := policyTestBundle(t, "resources.clusters.test", map[string]any{
+		"policy_id": "policy", "init_scripts": []any{map[string]any{"workspace": map[string]any{"destination": "/Workspace/init.sh"}}},
+	})
+	volumeScript := &compute.VolumesStorageInfo{Destination: "/Volumes/c/s/v/init.sh"}
+	entry := &deployplan.PlanEntry{
+		RemoteState: &dresources.ClusterRemote{PolicyId: "policy", InitScripts: []compute.InitScriptInfo{{Volumes: volumeScript}}},
+		Changes:     deployplan.Changes{"init_scripts[0].volumes": {Action: deployplan.Update, Remote: volumeScript}},
+	}
+	// Array positions must be preserved regardless of whether the value matches a policy.
+	client := mocks.NewMockWorkspaceClient(t)
+	b.SetWorkpaceClient(client.WorkspaceClient)
+	changes, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
+	require.NoError(t, err)
+	require.Contains(t, changes, "resources.clusters.test")
+	require.Contains(t, changes["resources.clusters.test"], "init_scripts[0].volumes")
+	assert.Equal(t, map[string]any{"destination": "/Volumes/c/s/v/init.sh"}, changes["resources.clusters.test"]["init_scripts[0].volumes"].Value)
+}
+
+func TestExtractChangesDropsPolicyOnlyObjectAtChangeRoot(t *testing.T) {
+	b := policyTestBundle(t, "resources.clusters.test", map[string]any{"policy_id": "policy"})
+	client := mocks.NewMockWorkspaceClient(t)
+	b.SetWorkpaceClient(client.WorkspaceClient)
+	client.GetMockClusterPoliciesAPI().EXPECT().GetByPolicyId(mock.Anything, "policy").
+		Return(&compute.Policy{Definition: `{"workload_type.clients.notebooks":{"type":"fixed","value":false}}`}, nil).Once()
+	remote := typedPolicyResource(t, "standalone", map[string]any{
+		"policy_id": "policy", "workload_type": map[string]any{"clients": map[string]any{"notebooks": false}},
+	})
+	clients, err := structaccess.GetByString(remote, "workload_type.clients")
+	require.NoError(t, err)
+	entry := &deployplan.PlanEntry{
+		RemoteState: remote,
+		Changes:     deployplan.Changes{"workload_type.clients": {Action: deployplan.Update, Remote: clients}},
+	}
+	changes, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
+	require.NoError(t, err)
+	assert.Empty(t, changes)
 }

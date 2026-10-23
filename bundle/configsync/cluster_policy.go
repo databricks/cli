@@ -2,18 +2,20 @@ package configsync
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/jsonloader"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structaccess"
+	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structtag"
 )
 
 type clusterPolicyDefinitions map[string]dyn.Value
@@ -36,192 +38,174 @@ func (definitions clusterPolicyDefinitions) get(ctx context.Context, b *bundle.B
 }
 
 type clusterPolicyFilter struct {
-	definitions clusterPolicyDefinitions
-	resourceKey string
-	config      any
-	remote      any
-	standalone  bool
+	definitions  clusterPolicyDefinitions
+	config       any
+	remote       any
+	clusterRoots []*structpath.PatternNode
+	sliceKeys    map[string]structdiff.KeyFunc
 }
 
-func newClusterPolicyFilter(resourceKey string, entry *deployplan.PlanEntry, definitions clusterPolicyDefinitions) *clusterPolicyFilter {
-	if !strings.HasPrefix(resourceKey, "resources.jobs.") && !strings.HasPrefix(resourceKey, "resources.clusters.") {
-		return nil
-	}
-	if entry.RemoteState == nil {
-		return nil
-	}
-	return &clusterPolicyFilter{
-		definitions: definitions,
-		resourceKey: resourceKey,
-		remote:      entry.RemoteState,
-		standalone:  strings.HasPrefix(resourceKey, "resources.clusters."),
-	}
-}
-
-// filter removes only omitted values that match the attached policy. It also handles
-// whole-object additions, where the plan does not expose individual policy-applied leaves.
-// A nil result means the value should be omitted from YAML.
-func (f *clusterPolicyFilter) filter(ctx context.Context, b *bundle.Bundle, path *structpath.PathNode, value any) (any, error) {
-	if value == nil {
-		return nil, nil
-	}
-	applied, err := f.isPolicyApplied(ctx, b, path, value)
+// filter removes omitted policy values from a normalized plan change, including
+// whole-object additions. A nil result means no value needs to be synced.
+func (f *clusterPolicyFilter) filter(ctx context.Context, b *bundle.Bundle, path *structpath.PathNode, changeValue any) (any, error) {
+	normalized, err := convert.FromTyped(changeValue, dyn.NilValue)
 	if err != nil {
 		return nil, err
 	}
-	if applied {
-		return nil, nil
-	}
-
-	switch value := value.(type) {
-	case map[string]any:
-		result := make(map[string]any, len(value))
-		for key, child := range value {
-			filtered, err := f.filter(ctx, b, structpath.NewStringKey(path, key), child)
-			if err != nil {
-				return nil, err
-			}
-			if filtered != nil {
-				result[key] = filtered
-			}
-		}
-		if len(value) > 0 && len(result) == 0 {
-			return nil, nil
-		}
-		_, attribute, _ := clusterPolicyAttribute(path, f.standalone)
-		if (attribute == "cluster_log_conf" || strings.HasPrefix(attribute, "cluster_log_conf.")) && !reflect.DeepEqual(value, result) {
-			// Log destinations are required. Removing only policy-matched leaves
-			// can leave an invalid object, such as an S3 region without a destination.
-			log.Warnf(ctx, "Keeping policy-applied values in %s to preserve the complete log configuration; review this field before deploying with another policy", path)
-			return value, nil
-		}
-		return result, nil
-	case []any:
-		result := make([]any, 0, len(value))
-		for i, child := range value {
-			childPath := structpath.NewIndex(path, i)
-			// Match cluster owners by identity even when the UI reorders tasks.
-			if object, ok := child.(map[string]any); ok {
-				field, _ := path.StringKey()
-				var key string
-				switch field {
-				case "tasks":
-					key = "task_key"
-				case "job_clusters":
-					key = "job_cluster_key"
-				}
-				if name, ok := object[key].(string); ok && key != "" {
-					childPath = structpath.NewKeyValue(path, key, name)
-				}
-			}
-			filtered, err := f.filter(ctx, b, childPath, child)
-			if err != nil {
-				return nil, err
-			}
-			if filtered != nil {
-				result = append(result, filtered)
-			}
-		}
-		if len(value) > 0 && len(result) == 0 {
-			return nil, nil
-		}
-		// Indexed policy rules depend on positions. A partial removal would
-		// move a user-authored element into a different policy constraint.
-		if len(result) != len(value) {
-			log.Warnf(ctx, "Keeping policy-applied values in %s to preserve array positions; review this field before deploying with another policy", path)
-			return value, nil
-		}
-		return result, nil
-	default:
-		return value, nil
-	}
-}
-
-func (f *clusterPolicyFilter) isPolicyApplied(ctx context.Context, b *bundle.Bundle, path *structpath.PathNode, value any) (bool, error) {
-	clusterPath, attribute, ok := clusterPolicyAttribute(path, f.standalone)
-	if !ok {
-		return false, nil
-	}
-	remotePolicyID, _ := structaccess.Get(f.remote, structpath.NewStringKey(clusterPath, "policy_id"))
-	policyID, _ := remotePolicyID.(string)
-	if policyID == "" {
-		return false, nil
-	}
-	if f.config == nil {
-		// Skip-only plans omit NewState. Load bundle config only when a
-		// policy-backed cluster field needs comparison, not for unrelated edits.
-		config, err := b.Config.GetResourceConfig(f.resourceKey)
+	filtered, err := dyn.Walk(normalized, func(relative dyn.Path, value dyn.Value) (dyn.Value, error) {
+		fieldPath, err := structdiff.KeyedPath(f.remote, appendDynPath(path, relative), f.sliceKeys)
 		if err != nil {
-			return false, fmt.Errorf("reading config for %s: %w", f.resourceKey, err)
+			return dyn.InvalidValue, err
 		}
-		if config == nil {
-			// A deleted resource has no source configuration to filter against.
-			return false, nil
-		}
-		f.config = config
-	}
-	// Missing fields and newly added keyed elements have no authored value.
-	if configValue, _ := structaccess.Get(f.config, path); configValue != nil {
-		return false, nil
-	}
-	definition, err := f.definitions.get(ctx, b, policyID)
-	if err != nil {
-		return false, err
-	}
-	// Jobs GET omits this input-only flag; use the authored setting.
-	applyDefaults, _ := structaccess.Get(f.config, structpath.NewStringKey(clusterPath, "apply_policy_default_values"))
-	return isPolicyAppliedValue(definition, attribute, value, applyDefaults == true), nil
-}
-
-// clusterPolicyAttribute returns the enclosing cluster path and policy attribute name,
-// preserving map keys such as spark_conf["a.b"] as the attribute spark_conf.a.b.
-func clusterPolicyAttribute(path *structpath.PathNode, standalone bool) (*structpath.PathNode, string, bool) {
-	var clusterPath *structpath.PathNode
-	var parts []string
-	insideCluster := standalone
-	for _, node := range path.AsSlice() {
-		if key, ok := node.StringKey(); ok {
-			if !insideCluster && key == "new_cluster" {
-				clusterPath = node
-				insideCluster = true
+		for _, root := range f.clusterRoots {
+			if !fieldPath.HasPatternPrefix(root) || fieldPath.Len() == root.Len() {
 				continue
 			}
-			if insideCluster {
-				parts = append(parts, key)
+			clusterPath := fieldPath.Prefix(root.Len())
+			// A change may start inside an array, so protecting only sequence
+			// nodes would still allow an element to be emptied or removed.
+			for _, node := range fieldPath.SkipPrefix(root.Len()).AsSlice() {
+				if _, indexed := node.Index(); indexed {
+					return value, dyn.ErrSkip
+				}
 			}
-		} else if index, ok := node.Index(); ok && insideCluster {
+			// Keep required fields, but still filter their optional children.
+			if len(relative) > 0 && isRequiredField(f.remote, fieldPath) {
+				return value, nil
+			}
+			matches, err := f.matchesOmittedPolicySubtree(ctx, b, clusterPath, fieldPath, value)
+			if err != nil {
+				return dyn.InvalidValue, err
+			}
+			if matches {
+				return dyn.InvalidValue, dyn.ErrDrop
+			}
+			// Removing elements would change indexed policy constraints.
+			if value.Kind() == dyn.KindSequence {
+				return value, dyn.ErrSkip
+			}
+			break
+		}
+		return value, nil
+	})
+	if errors.Is(err, dyn.ErrDrop) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return filtered.AsAny(), nil
+}
+
+// matchesOmittedPolicySubtree requires every leaf to be absent from authored config
+// and equal to a fixed value or an opted-in default in the remote cluster's policy.
+func (f *clusterPolicyFilter) matchesOmittedPolicySubtree(ctx context.Context, b *bundle.Bundle, clusterPath, path *structpath.PathNode, value dyn.Value) (bool, error) {
+	matches := true
+	leaves := 0
+	_, err := dyn.Walk(value, func(relative dyn.Path, leaf dyn.Value) (dyn.Value, error) {
+		if !matches {
+			return leaf, dyn.ErrSkip
+		}
+		if leaf.Kind() == dyn.KindMap || leaf.Kind() == dyn.KindSequence {
+			return leaf, nil
+		}
+		leaves++
+		fieldPath := appendDynPath(path, relative)
+		if authored, _ := structaccess.Get(f.config, fieldPath); authored != nil {
+			matches = false
+			return leaf, nil
+		}
+		remotePolicyID, _ := structaccess.Get(f.remote, structpath.NewStringKey(clusterPath, "policy_id"))
+		policyID, _ := remotePolicyID.(string)
+		if policyID == "" {
+			matches = false
+			return leaf, nil
+		}
+		definition, err := f.definitions.get(ctx, b, policyID)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+		// Remote cluster specs omit this input-only flag; use the authored setting.
+		applyDefaults, _ := structaccess.Get(f.config, structpath.NewStringKey(clusterPath, "apply_policy_default_values"))
+		expected := policyValueForAPIAttribute(definition, policyAttribute(fieldPath.SkipPrefix(clusterPath.Len())), applyDefaults == true)
+		matches = expected.IsValid() && expected.AsAny() != nil && reflect.DeepEqual(expected.AsAny(), leaf.AsAny())
+		return leaf, nil
+	})
+	return matches && leaves > 0, err
+}
+
+func isRequiredField(remote any, path *structpath.PathNode) bool {
+	key, ok := path.StringKey()
+	if !ok {
+		return false
+	}
+	parent, _ := structaccess.Get(remote, path.Parent())
+	typ := reflect.TypeOf(parent)
+	if typ == nil {
+		return false
+	}
+	for typ.Kind() == reflect.Pointer {
+		typ = typ.Elem()
+	}
+	field, _, ok := structaccess.FindStructFieldByKeyType(typ, key)
+	return ok && !structtag.JSONTag(field.Tag.Get("json")).OmitEmpty()
+}
+
+func appendDynPath(base *structpath.PathNode, suffix dyn.Path) *structpath.PathNode {
+	for _, component := range suffix {
+		if key := component.Key(); key != "" {
+			base = structpath.NewStringKey(base, key)
+		} else {
+			base = structpath.NewIndex(base, component.Index())
+		}
+	}
+	return base
+}
+
+// policyAttribute preserves dotted map keys, e.g. spark_conf["a.b"] becomes spark_conf.a.b.
+func policyAttribute(path *structpath.PathNode) string {
+	var parts []string
+	for _, node := range path.AsSlice() {
+		if key, ok := node.StringKey(); ok {
+			parts = append(parts, key)
+		} else if index, ok := node.Index(); ok {
 			parts = append(parts, strconv.Itoa(index))
 		}
 	}
-	return clusterPath, strings.Join(parts, "."), insideCluster && len(parts) > 0
+	return strings.Join(parts, ".")
 }
 
-func isPolicyAppliedValue(definition dyn.Value, attribute string, remoteValue any, applyDefaults bool) bool {
-	// Policies describe log delivery with type/path, while the API nests the
-	// destination under its storage type (e.g. cluster_log_conf.dbfs.destination).
-	// https://docs.databricks.com/aws/en/admin/clusters/policy-definition
+// policyValueForAPIAttribute translates the policy language's log-delivery aliases.
+// https://docs.databricks.com/aws/en/admin/clusters/policy-definition
+func policyValueForAPIAttribute(definition dyn.Value, attribute string, applyDefaults bool) dyn.Value {
 	if attribute == "cluster_log_conf.s3.region" {
 		attribute = "cluster_log_conf.region"
 	}
 	if storage, ok := strings.CutPrefix(attribute, "cluster_log_conf."); ok {
 		if storage, ok := strings.CutSuffix(storage, ".destination"); ok {
-			return isPolicyAppliedValue(definition, "cluster_log_conf.type", strings.ToUpper(storage), applyDefaults) &&
-				isPolicyAppliedValue(definition, "cluster_log_conf.path", remoteValue, applyDefaults)
+			logType := policyRuleValue(definition, "cluster_log_conf.type", applyDefaults)
+			if !logType.IsValid() || logType.AsAny() != strings.ToUpper(storage) {
+				return dyn.InvalidValue
+			}
+			return policyRuleValue(definition, "cluster_log_conf.path", applyDefaults)
 		}
 	}
+	return policyRuleValue(definition, attribute, applyDefaults)
+}
+
+// policyRuleValue returns the value supplied by a rule, or InvalidValue if it supplies none.
+func policyRuleValue(definition dyn.Value, attribute string, applyDefaults bool) dyn.Value {
 	rule, err := dyn.GetByPath(definition, dyn.NewPath(dyn.Key(attribute)))
 	if err != nil {
-		return false
+		return dyn.InvalidValue
 	}
-	typeValue, _ := dyn.Get(rule, "type")
-	var policyValue dyn.Value
+	ruleType, _ := dyn.Get(rule, "type")
+	var value dyn.Value
 	switch {
-	case typeValue.AsAny() == "fixed":
-		policyValue, _ = dyn.Get(rule, "value")
-	case applyDefaults && typeValue.AsAny() != "forbidden":
-		policyValue, _ = dyn.Get(rule, "defaultValue")
-	default:
-		return false
+	case ruleType.AsAny() == "fixed":
+		value, _ = dyn.Get(rule, "value")
+	case applyDefaults && ruleType.AsAny() != "forbidden":
+		value, _ = dyn.Get(rule, "defaultValue")
 	}
-	return policyValue.IsValid() && policyValue.AsAny() != nil && reflect.DeepEqual(policyValue.AsAny(), remoteValue)
+	return value
 }

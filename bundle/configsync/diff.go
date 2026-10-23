@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
@@ -156,7 +157,10 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 		}
 
 		resourceChanges := make(ResourceChanges)
-		policyFilter := newClusterPolicyFilter(resourceKey, entry, policyDefinitions)
+		policyFilter, err := policyFilterForResource(b, resourceKey, entry, policyDefinitions)
+		if err != nil {
+			return nil, err
+		}
 
 		if entry.Changes != nil {
 			for path, changeDesc := range entry.Changes {
@@ -204,4 +208,34 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 	}
 
 	return changes, nil
+}
+
+func policyFilterForResource(b *bundle.Bundle, resourceKey string, entry *deployplan.PlanEntry, definitions clusterPolicyDefinitions) (*clusterPolicyFilter, error) {
+	filter := &clusterPolicyFilter{remote: entry.RemoteState, definitions: definitions}
+	switch entry.RemoteState.(type) {
+	case *dresources.JobRemote:
+		for _, pattern := range []string{"tasks[*].new_cluster", "tasks[*].for_each_task.task.new_cluster", "job_clusters[*].new_cluster"} {
+			root, err := structpath.ParsePattern(pattern)
+			if err != nil {
+				return nil, err
+			}
+			filter.clusterRoots = append(filter.clusterRoots, root)
+		}
+		filter.sliceKeys = (&dresources.ResourceJob{}).KeyedSlices()
+	case *dresources.ClusterRemote:
+		filter.clusterRoots = []*structpath.PatternNode{nil} // nil matches the resource root
+	default:
+		// Only jobs and clusters expand policy values into their remote state.
+		return nil, nil
+	}
+	// Skip entries have no NewState; authored values must come from bundle config.
+	config, err := b.Config.GetResourceConfig(resourceKey)
+	if err != nil {
+		return nil, fmt.Errorf("reading config for %s: %w", resourceKey, err)
+	}
+	if config == nil {
+		return nil, nil
+	}
+	filter.config = config
+	return filter, nil
 }
