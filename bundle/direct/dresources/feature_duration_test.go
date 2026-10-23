@@ -253,6 +253,61 @@ func isDurationTyped(typ reflect.Type) bool {
 	return typ == durationType
 }
 
+// featureDurationRegistries returns every registry keyed by the json path its fields hang from in
+// ml.Feature. Each window is reached by two paths, the deprecated top-level time_window and the one
+// under the aggregation function, so each window registry is listed under both.
+func featureDurationRegistries() map[string][]durationConversion {
+	windows := map[string][]durationConversion{
+		"rolling":    rollingWindowDurations(&resources.FeatureRollingWindow{}, &ml.RollingWindow{}),
+		"sawtooth":   sawtoothWindowDurations(&resources.FeatureSawtoothWindow{}, &ml.SawtoothWindow{}),
+		"sliding":    slidingWindowDurations(&resources.FeatureSlidingWindow{}, &ml.SlidingWindow{}),
+		"tumbling":   tumblingWindowDurations(&resources.FeatureTumblingWindow{}, &ml.TumblingWindow{}),
+		"continuous": continuousWindowDurations(&ml.ContinuousWindow{}),
+	}
+
+	registries := map[string][]durationConversion{
+		"source.lateness": featureSourceLatenessDurations(&resources.FeatureSourceLateness{}, &ml.SourceLateness{}),
+	}
+	for _, timeWindow := range []string{"time_window", "function.aggregation_function.time_window"} {
+		for window, conversions := range windows {
+			registries[timeWindow+"."+window] = conversions
+		}
+	}
+	return registries
+}
+
+// TestFeatureDurationRegistryIsComplete fails when the API gains a duration field, or a window
+// carrying one, that no registry converts, and when a registry still names a field the API dropped.
+// A field whose SDK type flips between *sdkduration.Duration and string is reported by the compiler
+// instead, because shadowedDuration and inPlaceDuration take different pointer types.
+func TestFeatureDurationRegistryIsComplete(t *testing.T) {
+	registered := map[string]bool{}
+	for path, conversions := range featureDurationRegistries() {
+		for _, conversion := range conversions {
+			registered[path+"."+conversion.field] = true
+		}
+	}
+
+	found := 0
+	for path, typ := range jsonLeaves(reflect.TypeFor[ml.Feature]()) {
+		if !isDurationTyped(typ) && !(typ.Kind() == reflect.String && durationNamed(path)) {
+			continue
+		}
+		found++
+		assert.Truef(t, registered[path],
+			"ml.Feature has duration field %q that no registry converts; add one line to the registry "+
+				"in bundle/direct/dresources/feature_duration.go", path)
+		delete(registered, path)
+	}
+	assert.Positive(t, found, "walked no duration fields, the walker is broken")
+
+	var stale []string
+	for path := range registered {
+		stale = append(stale, path)
+	}
+	assert.Emptyf(t, stale, "the registry converts fields ml.Feature does not have: %v", stale)
+}
+
 // TestFeatureDurationFieldsAreRetyped fails when the API gains a duration field the bundle config
 // does not re-type as a string, including one on a window kind that does not exist yet.
 func TestFeatureDurationFieldsAreRetyped(t *testing.T) {

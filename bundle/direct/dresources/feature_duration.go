@@ -160,6 +160,98 @@ func optionalCanonicalDuration(s string) (string, error) {
 	return canonical, nil
 }
 
+// durationConversion is one duration field's conversion: the API field name, which names it in the
+// error, and the assignment itself.
+type durationConversion struct {
+	field string
+	apply func() error
+}
+
+// shadowedDuration parses the string the bundle config shadows an SDK duration field with.
+func shadowedDuration(field, source string, dest **sdkduration.Duration) durationConversion {
+	return durationConversion{field: field, apply: func() error {
+		parsed, err := optionalDuration(source)
+		if err != nil {
+			return err
+		}
+		*dest = parsed
+		return nil
+	}}
+}
+
+// inPlaceDuration rewrites a duration the SDK types as a string, which the config does not shadow.
+func inPlaceDuration(field string, dest *string) durationConversion {
+	return durationConversion{field: field, apply: func() error {
+		rewritten, err := optionalCanonicalDuration(*dest)
+		if err != nil {
+			return err
+		}
+		*dest = rewritten
+		return nil
+	}}
+}
+
+// convertDurations applies a registry, naming the field that failed.
+//
+// A field whose SDK type flips between *sdkduration.Duration and string has to move between
+// shadowedDuration and inPlaceDuration, which take different pointer types, so the compiler reports
+// it. A duration field the API adds is reported by TestFeatureDurationRegistryIsComplete.
+func convertDurations(conversions []durationConversion) error {
+	for _, conversion := range conversions {
+		if err := conversion.apply(); err != nil {
+			return fmt.Errorf("%s: %w", conversion.field, err)
+		}
+	}
+	return nil
+}
+
+// The registry: every duration field the adapter converts, one entry per field. A spec change that
+// adds a duration field is one line here.
+
+func featureSourceLatenessDurations(input *resources.FeatureSourceLateness, state *ml.SourceLateness) []durationConversion {
+	return []durationConversion{
+		shadowedDuration("settling_delay", input.SettlingDelay, &state.SettlingDelay),
+	}
+}
+
+func rollingWindowDurations(input *resources.FeatureRollingWindow, state *ml.RollingWindow) []durationConversion {
+	return []durationConversion{
+		shadowedDuration("delay", input.Delay, &state.Delay),
+		shadowedDuration("window_duration", input.WindowDuration, &state.WindowDuration),
+	}
+}
+
+func sawtoothWindowDurations(input *resources.FeatureSawtoothWindow, state *ml.SawtoothWindow) []durationConversion {
+	return []durationConversion{
+		shadowedDuration("delay", input.Delay, &state.Delay),
+		shadowedDuration("window_duration", input.WindowDuration, &state.WindowDuration),
+	}
+}
+
+func slidingWindowDurations(input *resources.FeatureSlidingWindow, state *ml.SlidingWindow) []durationConversion {
+	return []durationConversion{
+		shadowedDuration("delay", input.Delay, &state.Delay),
+		shadowedDuration("offset", input.Offset, &state.Offset),
+		inPlaceDuration("window_duration", &state.WindowDuration),
+		inPlaceDuration("slide_duration", &state.SlideDuration),
+	}
+}
+
+func tumblingWindowDurations(input *resources.FeatureTumblingWindow, state *ml.TumblingWindow) []durationConversion {
+	return []durationConversion{
+		shadowedDuration("delay", input.Delay, &state.Delay),
+		shadowedDuration("offset", input.Offset, &state.Offset),
+		inPlaceDuration("window_duration", &state.WindowDuration),
+	}
+}
+
+func continuousWindowDurations(state *ml.ContinuousWindow) []durationConversion {
+	return []durationConversion{
+		inPlaceDuration("offset", &state.Offset),
+		inPlaceDuration("window_duration", &state.WindowDuration),
+	}
+}
+
 // featureState converts the bundle config for a feature into the API type, parsing every duration.
 // The config declares durations as strings; see the override note in
 // bundle/config/resources/feature.go.
@@ -247,12 +339,8 @@ func rollingWindowState(input *resources.FeatureRollingWindow) (*ml.RollingWindo
 	}
 	state := input.RollingWindow
 
-	var err error
-	if state.Delay, err = optionalDuration(input.Delay); err != nil {
-		return nil, fmt.Errorf("delay: %w", err)
-	}
-	if state.WindowDuration, err = optionalDuration(input.WindowDuration); err != nil {
-		return nil, fmt.Errorf("window_duration: %w", err)
+	if err := convertDurations(rollingWindowDurations(input, &state)); err != nil {
+		return nil, err
 	}
 
 	return &state, nil
@@ -264,12 +352,8 @@ func sawtoothWindowState(input *resources.FeatureSawtoothWindow) (*ml.SawtoothWi
 	}
 	state := input.SawtoothWindow
 
-	var err error
-	if state.Delay, err = optionalDuration(input.Delay); err != nil {
-		return nil, fmt.Errorf("delay: %w", err)
-	}
-	if state.WindowDuration, err = optionalDuration(input.WindowDuration); err != nil {
-		return nil, fmt.Errorf("window_duration: %w", err)
+	if err := convertDurations(sawtoothWindowDurations(input, &state)); err != nil {
+		return nil, err
 	}
 
 	return &state, nil
@@ -281,18 +365,8 @@ func slidingWindowState(input *resources.FeatureSlidingWindow) (*ml.SlidingWindo
 	}
 	state := input.SlidingWindow
 
-	var err error
-	if state.Delay, err = optionalDuration(input.Delay); err != nil {
-		return nil, fmt.Errorf("delay: %w", err)
-	}
-	if state.Offset, err = optionalDuration(input.Offset); err != nil {
-		return nil, fmt.Errorf("offset: %w", err)
-	}
-	if state.WindowDuration, err = optionalCanonicalDuration(state.WindowDuration); err != nil {
-		return nil, fmt.Errorf("window_duration: %w", err)
-	}
-	if state.SlideDuration, err = optionalCanonicalDuration(state.SlideDuration); err != nil {
-		return nil, fmt.Errorf("slide_duration: %w", err)
+	if err := convertDurations(slidingWindowDurations(input, &state)); err != nil {
+		return nil, err
 	}
 
 	return &state, nil
@@ -304,15 +378,8 @@ func tumblingWindowState(input *resources.FeatureTumblingWindow) (*ml.TumblingWi
 	}
 	state := input.TumblingWindow
 
-	var err error
-	if state.Delay, err = optionalDuration(input.Delay); err != nil {
-		return nil, fmt.Errorf("delay: %w", err)
-	}
-	if state.Offset, err = optionalDuration(input.Offset); err != nil {
-		return nil, fmt.Errorf("offset: %w", err)
-	}
-	if state.WindowDuration, err = optionalCanonicalDuration(state.WindowDuration); err != nil {
-		return nil, fmt.Errorf("window_duration: %w", err)
+	if err := convertDurations(tumblingWindowDurations(input, &state)); err != nil {
+		return nil, err
 	}
 
 	return &state, nil
@@ -324,12 +391,8 @@ func continuousWindowState(input *ml.ContinuousWindow) (*ml.ContinuousWindow, er
 	}
 	state := *input
 
-	var err error
-	if state.Offset, err = optionalCanonicalDuration(state.Offset); err != nil {
-		return nil, fmt.Errorf("offset: %w", err)
-	}
-	if state.WindowDuration, err = optionalCanonicalDuration(state.WindowDuration); err != nil {
-		return nil, fmt.Errorf("window_duration: %w", err)
+	if err := convertDurations(continuousWindowDurations(&state)); err != nil {
+		return nil, err
 	}
 
 	return &state, nil
@@ -353,9 +416,8 @@ func featureSourceLatenessState(input *resources.FeatureSourceLateness) (*ml.Sou
 	}
 	state := input.SourceLateness
 
-	var err error
-	if state.SettlingDelay, err = optionalDuration(input.SettlingDelay); err != nil {
-		return nil, fmt.Errorf("settling_delay: %w", err)
+	if err := convertDurations(featureSourceLatenessDurations(input, &state)); err != nil {
+		return nil, err
 	}
 
 	return &state, nil
