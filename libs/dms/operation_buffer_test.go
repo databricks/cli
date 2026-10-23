@@ -139,7 +139,9 @@ func TestHistoryQueueDoesNotBlockWhenWriterStops(t *testing.T) {
 
 func TestHistoryDrainCancelsStalledWriter(t *testing.T) {
 	// A stalled upload must time out and cancel its worker.
-	// Fake time lets us test the one-second timeout without a real one-second wait.
+	// synctest runs this function with a fake clock. When the test blocks waiting
+	// for Drain, it advances time to the next timer: the one-second drain deadline.
+	// No real second passes, and time.Since(start) reports exactly one second.
 	synctest.Test(t, func(t *testing.T) {
 		// Track the writer's cancellation separately from Drain's deadline.
 		ctx, cancel := context.WithCancel(t.Context())
