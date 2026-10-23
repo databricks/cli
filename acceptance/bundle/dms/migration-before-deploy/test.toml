@@ -1,0 +1,2 @@
+# Fault injection exercises a real planner failure against the local testserver.
+Cloud = false

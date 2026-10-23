@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/direct/dstate"
 	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/statemgmt"
+	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/stretchr/testify/assert"
@@ -94,7 +95,7 @@ func TestParseLastVersionID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseLastVersionID(tt.deployment)
+			got, err := dms.ParseLastVersionID(tt.deployment)
 			if tt.wantErr {
 				require.Error(t, err)
 				return
