@@ -73,8 +73,11 @@ zero with its state dropped. The deployment-history leg is the one path that rec
 
 ## Running against a workspace
 
-`batch`, `sawtooth` and `streaming` carry `Cloud = true`. All three reference an existing `Stream`,
-because a Stream is not a bundle resource; override `MATSET_CATALOG`, `MATSET_SCHEMA`,
+`batch`, `sawtooth`, `streaming` and `shorthand` reference an existing `Stream`, because a Stream
+is not a bundle resource. **The `MATSET_STREAM` default names one developer's Stream and goes stale
+when it is deleted**, which fails the run at the feature create with `Stream '...' not found`; list
+what the workspace has with `GET /api/2.0/feature-engineering/streams?parent=<catalog>.<schema>` and
+override. Override `MATSET_CATALOG`, `MATSET_SCHEMA`,
 `MATSET_ONLINE_STORE` and `MATSET_STREAM` to move them to another workspace, and set
 `MATSET_PROFILE` to pin the bundle to a named profile. **`DATABRICKS_CONFIG_PROFILE` does not reach
 the CLI subprocess**, and the harness builds its own workspace client from the ambient environment
@@ -89,8 +92,8 @@ does run, because the fake only requires the key to carry a prefix at all.
 
 ### Running a cloud leg
 
-Six cases carry `Cloud = true`: `batch`, `sawtooth`, `streaming`, `immutable`, `membership` and
-`removal_scope`. `basic`, `bind`, `destination` and `schedule_state` stay local, because every
+Seven cases carry `Cloud = true`: `batch`, `sawtooth`, `streaming`, `immutable`, `membership`,
+`removal_scope` and `shorthand`. `basic`, `bind`, `destination` and `schedule_state` stay local, because every
 server-dependent claim they make is already exercised by `batch`.
 
 The cases default to the shared acceptance schema; override `MATSET_CATALOG`, `MATSET_SCHEMA`,
@@ -213,6 +216,28 @@ reworded (`materializationSetMembersCannotBeRemovedAlone`, and both partial-chan
 now count what got through and point at the operation's progress), and two refusals moved from an
 HTTP 400 to a settled FAILED operation. The fake and four goldens were corrected from what the live
 run returned.
+
+**Fifth build, universe `92bd718e722a0`** -- the tip of `stack/fs2680-update-set-lro`, run through
+the `daniel-bai-fs2680` swap on 2026-10-23. All seven `Cloud = true` cases pass with no golden
+changed, run one at a time, as does `features/lifecycle` on its `DMS=` leg. Two of them had claims
+nothing live had settled: `shorthand` had never run against a workspace at all, and `batch` carried
+two arms -- the null member-list spelling and the drop-the-resource delete route -- that had only
+run against the fake. So the emptied-set refusal's "Delete the set instead" is the service's own
+text, and the one-segment `materialized_features` path classifies as an update on the live API and
+not just in the unit tests.
+
+`shorthand` is the case that run first justified: a sawtooth entry creates the three members the
+service wants, a redeploy plans nothing, one edit to the online destination recreates exactly the
+two online members, a shorthand entry and members written out in full coexist in one set, and the
+DERIVED-schedule refusal its first arm asserts is the service's own text.
+
+The swap's own log is what proves the routing: during the 63-second run it served 5
+`CreateMaterializationSetRequest`, 7 `DeleteMaterializationSetRequest`, 6
+`GetMaterializationSetRequest`, 15 `ListMaterializationSetMembersRequest`, 3
+`CreateMaterializationSetMembersRequest` and 4 `DeleteMaterializedFeatureRequest`, interleaved with
+this run's own fixture names. Zero `UpdateMaterializationSetRequest`, which is the case's one
+coverage limit: every membership edit it makes is to an immutable field, so it plans a recreate and
+never reaches the update endpoint. `batch`'s emptied-member arms are what exercise that.
 
 ## Verified against a workspace, with no case of their own
 
