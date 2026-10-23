@@ -183,7 +183,6 @@ type WALEntry struct {
 // (after approval) - which is why it is not an Open option. It also records the id a first deploy
 // just created, which Open could not know, so CompleteVersion later has it.
 func (db *DeploymentState) InitializeOperationBuffer(ctx context.Context, deploymentID string, versionID, operationCount int) {
-	db.AssertOpenedForWrite()
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	options := dms.BufferOptions{
