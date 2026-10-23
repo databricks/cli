@@ -29,30 +29,39 @@ type WorkspaceMetadata struct {
 	KeepDetachedProcesses bool `json:"keep_detached_processes,omitempty"`
 }
 
-func getWorkspaceRootDir(ctx context.Context, client *databricks.WorkspaceClient) (string, error) {
+// GetWorkspaceHomeDir returns the current user's workspace home folder.
+func GetWorkspaceHomeDir(ctx context.Context, client *databricks.WorkspaceClient) (string, error) {
 	me, err := client.CurrentUser.Me(ctx, iam.MeRequest{})
 	if err != nil {
 		return "", fmt.Errorf("failed to get current user: %w", err)
 	}
-	return fmt.Sprintf("/Workspace/Users/%s/.databricks/ssh-tunnel", me.UserName), nil
+	return "/Workspace/Users/" + me.UserName, nil
+}
+
+func versionedDir(homeDir, version string) string {
+	return filepath.ToSlash(filepath.Join(homeDir, ".databricks/ssh-tunnel", version))
+}
+
+func contentDir(homeDir, version, sessionID string) string {
+	return filepath.ToSlash(filepath.Join(versionedDir(homeDir, version), sessionID))
 }
 
 func GetWorkspaceVersionedDir(ctx context.Context, client *databricks.WorkspaceClient, version string) (string, error) {
-	contentDir, err := getWorkspaceRootDir(ctx, client)
+	homeDir, err := GetWorkspaceHomeDir(ctx, client)
 	if err != nil {
 		return "", fmt.Errorf("failed to get workspace root directory: %w", err)
 	}
-	return filepath.ToSlash(filepath.Join(contentDir, version)), nil
+	return versionedDir(homeDir, version), nil
 }
 
 // GetWorkspaceContentDir returns the directory for storing session content.
 // sessionID is the unique identifier for the session (cluster ID for dedicated clusters, connection name for serverless).
 func GetWorkspaceContentDir(ctx context.Context, client *databricks.WorkspaceClient, version, sessionID string) (string, error) {
-	contentDir, err := GetWorkspaceVersionedDir(ctx, client, version)
+	homeDir, err := GetWorkspaceHomeDir(ctx, client)
 	if err != nil {
 		return "", fmt.Errorf("failed to get versioned workspace directory: %w", err)
 	}
-	return filepath.ToSlash(filepath.Join(contentDir, sessionID)), nil
+	return contentDir(homeDir, version, sessionID), nil
 }
 
 // GetWorkspaceMetadata loads session metadata from the workspace.
@@ -85,20 +94,15 @@ func GetWorkspaceMetadata(ctx context.Context, client *databricks.WorkspaceClien
 	return &metadata, nil
 }
 
-// SaveWorkspaceMetadata saves session metadata to the workspace.
+// SaveWorkspaceMetadata saves session metadata under the given workspace home.
 // sessionID is the unique identifier for the session (cluster ID for dedicated clusters, connection name for serverless).
-func SaveWorkspaceMetadata(ctx context.Context, client *databricks.WorkspaceClient, version, sessionID string, metadata *WorkspaceMetadata) error {
+func SaveWorkspaceMetadata(ctx context.Context, client *databricks.WorkspaceClient, homeDir, version, sessionID string, metadata *WorkspaceMetadata) error {
 	metadataBytes, err := json.Marshal(metadata)
 	if err != nil {
 		return fmt.Errorf("failed to marshal metadata: %w", err)
 	}
 
-	contentDir, err := GetWorkspaceContentDir(ctx, client, version, sessionID)
-	if err != nil {
-		return fmt.Errorf("failed to get workspace content directory: %w", err)
-	}
-
-	workspaceFiler, err := filer.NewWorkspaceFilesClient(client, contentDir)
+	workspaceFiler, err := filer.NewWorkspaceFilesClient(client, contentDir(homeDir, version, sessionID))
 	if err != nil {
 		return fmt.Errorf("failed to create workspace files client: %w", err)
 	}
