@@ -160,7 +160,7 @@ def main() -> None:
         raise SystemExit(__doc__)
     artifact_dir = Path(sys.argv[1])
     out_dir = Path(sys.argv[2])
-    license_file = Path(sys.argv[3]) if len(sys.argv) == 4 else Path(__file__).resolve().parents[2] / "LICENSE"
+    license_file = Path(sys.argv[3]) if len(sys.argv) == 4 else Path(__file__).resolve().parents[1] / "LICENSE"
 
     cli_version, sums = read_checksums(artifact_dir)
     version = pep440(cli_version)

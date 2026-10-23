@@ -267,7 +267,7 @@ tasks:
 
   test-cli-wheels:
     desc: Unit-test the script that packages CLI binaries as PyPI wheels
-    dir: .github/scripts
+    dir: tools
     cmds:
       - 'uv run -p ">=3.11" --no-project python -m unittest -q test_build_cli_wheels'
 

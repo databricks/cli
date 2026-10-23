@@ -208,6 +208,7 @@ jobs:
           ref: ${{ github.sha }}
           sparse-checkout: |
             .github
+            tools/build_cli_wheels.py
             LICENSE
 
       - name: Setup JFrog
@@ -225,7 +226,7 @@ jobs:
           path: cli-artifact
 
       - name: Build wheels
-        run: python3 .github/scripts/build_cli_wheels.py cli-artifact cli-wheels
+        run: python3 tools/build_cli_wheels.py cli-artifact cli-wheels
 
       - name: Check wheel metadata
         run: uvx twine@6.2.0 check --strict cli-wheels/*
