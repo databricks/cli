@@ -13,7 +13,15 @@ name: release-docker
 # decoupled into this standalone workflow that uses `docker buildx imagetools`
 # directly and is unaffected by the goreleaser/Docker compatibility issue.
 
+# Triggers:
+# - release published: runs automatically once the GitHub release is created by
+#   the "databricks-cli" workflow (the release binaries it downloads only exist
+#   from that point on), so the release process needs no manual step for Docker.
+# - workflow_dispatch: manual rerun or backfill for a given tag.
+
 on:
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       tag:
@@ -27,6 +35,8 @@ on:
 
 jobs:
   docker:
+    env:
+      TAG: ${{ inputs.tag || github.event.release.tag_name }}
     runs-on:
       group: databricks-protected-runner-group-large
       labels: linux-ubuntu-latest-large
@@ -39,7 +49,7 @@ jobs:
       - name: Checkout repository at release tag
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ env.TAG }}
 
       - name: Set up QEMU for cross-platform builds
         uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
@@ -57,13 +67,10 @@ jobs:
       - name: Strip leading 'v' from tag
         id: version
         run: echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
-        env:
-          TAG: ${{ inputs.tag }}
 
       - name: Download CLI release binaries
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          TAG="${{ inputs.tag }}"
           for ARCH in amd64 arm64; do
             curl -sfL \
               "https://github.com/databricks/cli/releases/download/${TAG}/databricks_cli_${VERSION}_linux_${ARCH}.tar.gz" \
@@ -98,7 +105,7 @@ jobs:
             "ghcr.io/databricks/cli:${{ steps.version.outputs.version }}-arm64"
 
       - name: Update latest multi-arch manifest
-        if: inputs.update_latest
+        if: github.event_name == 'release' || inputs.update_latest
         run: |-
           docker buildx imagetools create \
             --tag ghcr.io/databricks/cli:latest-amd64 \
