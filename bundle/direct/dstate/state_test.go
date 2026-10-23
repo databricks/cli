@@ -421,3 +421,36 @@ func TestOpenFailureLeavesStateClosed(t *testing.T) {
 	assert.Equal(t, "test-lineage", db.Data.Lineage)
 	mustFinalize(t, &db)
 }
+
+func TestGetSerialWithHistoryUsesLatestCounter(t *testing.T) {
+	for _, mode := range []Mode{WritingFileWithHistory, WritingFileWithHistoryEnforced} {
+		db := DeploymentState{mode: mode, Data: NewDatabase("", 4), VersionID: 7}
+		assert.Equal(t, 7, db.GetSerial(), "mode=%d: service version is ahead", mode)
+		db.Data.Serial = 9
+		assert.Equal(t, 9, db.GetSerial(), "mode=%d: file serial is ahead", mode)
+	}
+}
+
+func TestHeaderOnlyWALPreservesHistoryFeature(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+	header := Header{
+		Lineage:      "lineage",
+		Serial:       1,
+		StateVersion: currentStateVersion,
+		Features:     map[string]struct{}{FeatureDeploymentHistoryBestEffort: {}},
+	}
+	wal, err := json.Marshal(header)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(path+walSuffix, append(wal, '\n'), 0o600))
+
+	var db DeploymentState
+	require.NoError(t, db.Open(t.Context(), path, ReadingFile, WithRecovery(true), OpenDmsArgs{}))
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	var persisted Database
+	require.NoError(t, json.Unmarshal(data, &persisted))
+	assert.Contains(t, persisted.Features, FeatureDeploymentHistoryBestEffort)
+	assert.Equal(t, 1, persisted.Serial)
+	assert.NoFileExists(t, path+walSuffix)
+	mustFinalize(t, &db)
+}
