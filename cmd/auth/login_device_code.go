@@ -102,17 +102,14 @@ func promptForConfirmationCode(ctx context.Context, da u2m.DeviceAuthorization, 
 		cmdio.LogString(ctx, fmt.Sprintf("%v. Enter the confirmation code again (%d %s left).", lastErr, attemptsLeft, attempts))
 	}
 
-	// Ask again on a blank line, e.g. when the user pressed Enter by accident.
-	// A cancelled read fails the login, so stdin is not read again after it.
-	for {
-		code, err := cmdio.AskCancellable(ctx, "Confirmation code", "")
-		if err != nil {
-			return "", fmt.Errorf("reading confirmation code: %w", err)
-		}
-		if strings.TrimSpace(code) != "" {
-			return code, nil
-		}
+	// A blank line is sent like any other code, so the server rejects it and
+	// it counts as one of the attempts. A cancelled read fails the login, so
+	// stdin is not read again after it.
+	code, err := cmdio.AskCancellable(ctx, "Confirmation code", "")
+	if err != nil {
+		return "", fmt.Errorf("reading confirmation code: %w", err)
 	}
+	return code, nil
 }
 
 // formatCode displays an 8-character device code as two groups of four

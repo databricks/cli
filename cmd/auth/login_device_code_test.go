@@ -92,9 +92,8 @@ func TestPromptForConfirmationCode(t *testing.T) {
 	}{
 		{name: "code", input: "FTFA-QQKY\n", want: "FTFA-QQKY"},
 		{name: "code without newline", input: "FTFA-QQKY", want: "FTFA-QQKY"},
-		{name: "blank line", input: "  \nFTFA-QQKY\n", want: "FTFA-QQKY"},
+		{name: "blank line", input: "  \nFTFA-QQKY\n", want: "  "},
 		{name: "no input", input: "", wantErr: "reading confirmation code: EOF"},
-		{name: "blank line without code", input: "  \n", wantErr: "reading confirmation code: EOF"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -60,7 +60,7 @@ fail with a token refresh error and you need to run the login again.
 | `device code login is not enabled for this workspace` | The workspace does not advertise device code login. | Use a workspace where the feature is enabled. |
 | `--use-device-code is only supported for workspace hosts` | The host is an account or unified host. | Log in to a workspace host instead. |
 | The browser says the code is invalid or expired | The code was mistyped, or more than ~10 minutes passed. | Re-enter the code carefully, or run the login again for a new code. Codes never contain `0`, `1`, `2`, `O`, `Z`, or `I`. |
-| `Invalid confirmation code` | The confirmation code was mistyped. | Re-enter the code. After 3 rejected codes, the login fails with `Invalid confirmation code (error code: invalid_request). Start login from scratch` and you need to run it again. |
+| `Invalid confirmation code` | The confirmation code was mistyped or left blank. | Re-enter the code. After 3 rejected codes, the login fails with `Invalid confirmation code (error code: invalid_request). Start login from scratch` and you need to run it again. |
 | `Invalid device code` | The login expired. A confirmation code entered after the login expired is first rejected as `Invalid confirmation code`, and the workspace then discards the login. | Re-entering the code does not help. Run the login again to get a new code. |
 | `token exchange: Device grant rate limit exceeded` | Too many confirmation codes were sent for this login. | Run the login again to get a new code. |
 | `unauthorized_client` or `invalid_client` | The OAuth client is not allowed to use device code login in this workspace. | Use the default `databricks-cli` client, or ask your admin to enable the custom client. |

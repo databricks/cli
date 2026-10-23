@@ -36,4 +36,5 @@ WDJB-MJHT
 
 Once finished, enter the confirmation code provided in your browser.
 Confirmation code: Invalid confirmation code (error code: invalid_request). Enter the confirmation code again (2 attempts left).
-Confirmation code: Confirmation code: Profile test was successfully saved
+Confirmation code: Invalid confirmation code (error code: invalid_request). Enter the confirmation code again (1 attempt left).
+Confirmation code: Profile test was successfully saved
