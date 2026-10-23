@@ -609,6 +609,13 @@ func setAccountID(ctx context.Context, existingProfile *profile.Profile, authArg
 // for OAuth URL construction. True for classic account hosts (accounts.*) and
 // for unified hosts detected via account-scoped DiscoveryURL.
 func needsAccountIDPrompt(host, discoveryURL string) bool {
+	return isAccountOrUnifiedHost(host, discoveryURL)
+}
+
+// isAccountOrUnifiedHost reports whether host is a classic account host
+// (accounts.* or accounts-dod.*) or a unified host with an account-scoped
+// discoveryURL.
+func isAccountOrUnifiedHost(host, discoveryURL string) bool {
 	canonicalHost := (&config.Config{Host: host}).CanonicalHostName()
 	if auth.IsClassicAccountHost(canonicalHost) {
 		return true

@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
 
@@ -32,8 +31,7 @@ var (
 // an account or unified host. A workspace without device code login enabled
 // is rejected by DeviceCodeChallenge before it creates a device code.
 func validateDeviceCodeHost(authArguments *auth.AuthArguments) error {
-	if auth.IsClassicAccountHost((&config.Config{Host: authArguments.Host}).CanonicalHostName()) ||
-		auth.HasUnifiedHostSignal(authArguments.DiscoveryURL) {
+	if isAccountOrUnifiedHost(authArguments.Host, authArguments.DiscoveryURL) {
 		return errDeviceCodeWorkspaceOnly
 	}
 	return nil
