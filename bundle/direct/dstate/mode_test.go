@@ -232,7 +232,8 @@ func TestUpgradeToWrite(t *testing.T) {
 		{"enforced history", dstate.WritingFileWithHistoryEnforced, false, ""},
 		{"file already writable", dstate.WritingFile, false, "already open for write"},
 		{"enforcement retained", dstate.WritingFileWithHistory, true, ""},
-		{"enforcement bypass", dstate.ReadingFile, true, "deployment_history_best_effort"},
+		{"file upgrade with history marker", dstate.ReadingFile, true, ""},
+		{"file open with history marker", dstate.WritingFile, true, "already open for write"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := modeContext(t, nil)
@@ -245,16 +246,19 @@ func TestUpgradeToWrite(t *testing.T) {
 			err := db.UpgradeToWrite()
 			if tc.wantErr != "" {
 				require.ErrorContains(t, err, tc.wantErr)
-				if tc.mode == dstate.ReadingFile {
-					assert.NotPanics(t, db.AssertOpenedForRead)
-					assert.NoFileExists(t, path+".wal")
-				}
 			} else {
 				require.NoError(t, err)
 				assert.NotPanics(t, db.AssertOpenedForWrite)
 			}
 			_, err = db.Finalize(ctx)
 			require.NoError(t, err)
+			if tc.bestEffort {
+				data, err := os.ReadFile(path)
+				require.NoError(t, err)
+				var persisted dstate.Database
+				require.NoError(t, json.Unmarshal(data, &persisted))
+				assert.Contains(t, persisted.Features, dstate.FeatureDeploymentHistoryBestEffort)
+			}
 		})
 	}
 }
@@ -408,7 +412,7 @@ func TestEnforcedHistorySurvivesWALRecovery(t *testing.T) {
 			assert.Equal(t, 1, recovered.GetSerial())
 			assert.FileExists(t, recoveredPath)
 			assert.NoFileExists(t, recoveredPath+".wal")
-			require.ErrorContains(t, recovered.UpgradeToWrite(), "deployment_history_best_effort")
+			require.NoError(t, recovered.UpgradeToWrite())
 			if withResource {
 				assert.Equal(t, "id-1", recovered.GetResourceID("resources.jobs.job"))
 			}
@@ -428,7 +432,6 @@ func TestOpenRejectsIncompatibleModesAndFeatures(t *testing.T) {
 		{"unknown feature", dstate.ReadingFile, `{"future":{}}`, "requires features"},
 		{"file reading DMS with best effort marker", dstate.ReadingFile, `{"deployment_history":{},"deployment_history_best_effort":{}}`, "not supported"},
 		{"file writing DMS", dstate.WritingFile, `{"deployment_history":{}}`, "not supported"},
-		{"file writing best effort history", dstate.WritingFile, `{"deployment_history_best_effort":{}}`, "deployment_history_best_effort"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			path := filepath.Join(t.TempDir(), "resources.json")

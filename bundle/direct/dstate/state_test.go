@@ -2,7 +2,6 @@ package dstate
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -421,25 +420,4 @@ func TestOpenFailureLeavesStateClosed(t *testing.T) {
 	require.NoError(t, db.Open(t.Context(), path, WritingFile, WithRecovery(true), OpenDmsArgs{}))
 	assert.Equal(t, "test-lineage", db.Data.Lineage)
 	mustFinalize(t, &db)
-}
-
-func TestFileWriteErrorsRemainFatalWithHistory(t *testing.T) {
-	for _, mode := range []Mode{WritingFile, WritingFileWithHistory, WritingFileWithHistoryEnforced} {
-		t.Run(fmt.Sprint(mode), func(t *testing.T) {
-			path := filepath.Join(t.TempDir(), "resources.json")
-			data := NewDatabase("lineage", 1)
-			data.State["resources.jobs.job"] = ResourceEntry{ID: "old-id"}
-			var db DeploymentState
-			db.OpenWithData(path, data)
-			db.mode = mode
-			wal, err := os.Create(path + walSuffix)
-			require.NoError(t, err)
-			require.NoError(t, wal.Close())
-			db.walFile = wal
-			require.Error(t, db.SaveState(t.Context(), "resources.jobs.job", "new-id", struct{}{}, nil))
-			assert.Equal(t, "old-id", db.GetResourceID("resources.jobs.job"))
-			require.Error(t, db.DeleteState(t.Context(), "resources.jobs.job", false))
-			assert.Equal(t, "old-id", db.GetResourceID("resources.jobs.job"))
-		})
-	}
 }

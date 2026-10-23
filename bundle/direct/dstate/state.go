@@ -931,19 +931,11 @@ func (db *DeploymentState) UpgradeToWrite() error {
 	return fmt.Errorf("invalid deployment state mode: %d", db.mode)
 }
 
-// setupWal validates file write compatibility and opens a WAL.
+// setupWal opens a WAL and writes its header.
 // Callers must hold db.mu.
 func (db *DeploymentState) setupWal() error {
 	if err := assertNoUnsupportedFeatures(db.Data.Features); err != nil {
 		return err
-	}
-	_, recorded := db.Data.Features[FeatureDeploymentHistory]
-	_, bestEffort := db.Data.Features[FeatureDeploymentHistoryBestEffort]
-	if recorded {
-		return errors.New("cannot change the deployment state source when upgrading to write")
-	}
-	if bestEffort && db.mode != WritingFileWithHistory && db.mode != WritingFileWithHistoryEnforced {
-		return errors.New("deployment_history_best_effort state requires writing with deployment history enabled")
 	}
 
 	walPath := db.Path + walSuffix
@@ -960,15 +952,13 @@ func (db *DeploymentState) setupWal() error {
 		Serial:       db.Data.Serial + 1,
 		StateVersion: currentStateVersion,
 		CLIVersion:   build.GetInfo().Version,
+		Features:     maps.Clone(db.Data.Features),
 	}
-	if db.mode == WritingFileWithHistory || db.mode == WritingFileWithHistoryEnforced {
-		walHead.Features = maps.Clone(db.Data.Features)
-		if db.mode == WritingFileWithHistoryEnforced {
-			if walHead.Features == nil {
-				walHead.Features = make(map[string]struct{})
-			}
-			walHead.Features[FeatureDeploymentHistoryBestEffort] = struct{}{}
+	if db.mode == WritingFileWithHistoryEnforced {
+		if walHead.Features == nil {
+			walHead.Features = make(map[string]struct{})
 		}
+		walHead.Features[FeatureDeploymentHistoryBestEffort] = struct{}{}
 	}
 	if err := appendJSONLine(db.walFile, walHead); err != nil {
 		// Remove the WAL created just above: O_EXCL means it is ours, and
