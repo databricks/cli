@@ -1,0 +1,10 @@
+title "Reject cluster settings with serverless compute before deployment"
+musterr trace $CLI bundle validate -t invalid
+musterr trace $CLI bundle plan -t invalid
+musterr trace $CLI bundle deploy -t invalid
+
+title "Allow classic pipeline cluster settings"
+trace $CLI bundle validate -t classic
+
+title "Allow serverless pipelines without cluster settings"
+trace $CLI bundle validate -t serverless
