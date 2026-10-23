@@ -423,7 +423,7 @@ func TestOpenFailureLeavesStateClosed(t *testing.T) {
 }
 
 func TestGetSerialWithHistoryUsesLatestCounter(t *testing.T) {
-	for _, mode := range []Mode{WritingFileWithHistory, WritingFileWithHistoryEnforced} {
+	for _, mode := range []Mode{ReadingFile, WritingFileWithHistory, WritingFileWithHistoryEnforced} {
 		db := DeploymentState{mode: mode, Data: NewDatabase("", 4), VersionID: 7}
 		assert.Equal(t, 7, db.GetSerial(), "mode=%d: service version is ahead", mode)
 		db.Data.Serial = 9

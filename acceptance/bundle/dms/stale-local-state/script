@@ -2,15 +2,20 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 title "Setup (LOG.setup): reconstruct full version 1 without a history marker, then deploy version 2"
 {
-    $CLI bundle deploy
+    DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
     DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true print_state.py > .databricks/resources.v1.json
     DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true replace_ids.py
     update_file.py databricks.yml 'name: foo' 'name: updated'
-    $CLI bundle deploy
+    DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
     cp .databricks/bundle/default/resources.json .databricks/resources.v2.json
     deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-stale-local-state-${UNIQUE_NAME}/default/state/resources.deployment.json" -o json | jq -r '.object_id')
     add_repl "$deployment_id" DEPLOYMENT_ID
 } &> LOG.setup
+# Start from legacy DMS state, then exercise explicit YAML overrides below.
+update_file.py databricks.yml 'bundle:' 'experimental:
+  deployment_history: true
+
+bundle:'
 trace jq -c '{serial, features}' .databricks/resources.v1.json
 trace jq -c '{serial, features}' .databricks/resources.v2.json
 

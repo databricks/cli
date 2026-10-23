@@ -1,17 +1,18 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
-title "Deploy records version 3 and the deployment_history feature, with resources held in DMS"
+title "Deploy keeps resource state in the file and enforces best-effort history"
 trace $CLI bundle deploy
+replace_ids.py
 trace jq '{state_version, features, state}' .databricks/bundle/default/resources.json
 deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-state-features-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
 add_repl "$deployment_id" DEPLOYMENT_ID
 rm -f "$OUT_REQUESTS"
 
-title "Reopening version 3 reads resources from DMS and produces a no-op plan"
+title "Reopening reads resources from the file and produces a no-op plan"
 trace $CLI bundle plan
 trace print_requests.py --dms //resources --get --oneline
 
-title "Disabling deployment history is refused by plan and deploy, while destroy keeps using DMS from state"
+title "Disabling deployment history is refused by plan and deploy, while destroy follows the recorded history setting"
 update_file.py databricks.yml 'deployment_history: true' 'deployment_history: false'
 for command in plan deploy; do
     musterr trace env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false $CLI bundle "$command"

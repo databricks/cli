@@ -138,7 +138,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   "lineage": "[UUID]",
   "serial": 2,
   "features": {
-    "deployment_history": {}
+    "deployment_history_best_effort": {}
   }
 }
 
@@ -163,9 +163,17 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
  "lineage": "[UUID]",
  "serial": 2,
  "features": {
-  "deployment_history": {}
+  "deployment_history_best_effort": {}
  },
- "state": {}
+ "state": {
+  "resources.schemas.foo": {
+   "__id__": "main.dms_empty_grants_[UNIQUE_NAME]",
+   "state": {
+    "catalog_name": "main",
+    "name": "dms_empty_grants_[UNIQUE_NAME]"
+   }
+  }
+ }
 }
 
 >>> [CLI] bundle destroy --auto-approve
