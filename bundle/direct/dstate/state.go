@@ -685,10 +685,14 @@ Run "databricks bundle destroy" first, then deploy again with deployment history
 		db.VersionID = dmsDeployment.LastVersionID
 	}
 
-	if mode.isWritable() && mode != WritingDMS {
-		return db.initializeFileWrites(mode)
+	switch mode {
+	case ReadingFile:
+		return nil
+	case WritingDMS:
+		return nil
+	case WritingFile, WritingFileWithHistory, WritingFileWithHistoryEnforced:
+		return db.setupWal(mode)
 	}
-
 	return nil
 }
 
@@ -904,25 +908,30 @@ func (db *DeploymentState) UpgradeToWrite(mode Mode) error {
 	if db.Path == "" {
 		return errors.New("internal error: DeploymentState must be opened first")
 	}
-	if db.mode == WritingDMS {
+	switch db.mode {
+	case ReadingFile:
+		// Set up the requested file write mode below.
+	case WritingDMS:
 		return nil
-	}
-	if db.mode.isWritable() {
+	case WritingFile, WritingFileWithHistory, WritingFileWithHistoryEnforced:
 		return errors.New("internal error: DeploymentState is already open for write")
 	}
-	if !mode.isWritable() || mode == WritingDMS {
+
+	switch mode {
+	case WritingFile, WritingFileWithHistory, WritingFileWithHistoryEnforced:
+		if err := db.setupWal(mode); err != nil {
+			return err
+		}
+		db.mode = mode
+		return nil
+	default:
 		return fmt.Errorf("invalid deployment state write mode: %d", mode)
 	}
-	if err := db.initializeFileWrites(mode); err != nil {
-		return err
-	}
-	db.mode = mode
-	return nil
 }
 
-// initializeFileWrites validates file write compatibility and opens a WAL.
+// setupWal validates file write compatibility and opens a WAL.
 // Callers must hold db.mu.
-func (db *DeploymentState) initializeFileWrites(mode Mode) error {
+func (db *DeploymentState) setupWal(mode Mode) error {
 	if err := assertNoUnsupportedFeatures(db.Data.Features); err != nil {
 		return err
 	}
