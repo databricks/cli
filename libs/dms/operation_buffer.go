@@ -182,6 +182,7 @@ func (b *OperationBuffer) run(ctx context.Context) {
 			b.historyQueue[0] = ""
 			b.historyQueue = b.historyQueue[1:]
 			if len(b.historyQueue) == 0 {
+				// Release the backing array so the garbage collector can reclaim it.
 				b.historyQueue = nil
 			}
 			b.mu.Unlock()
