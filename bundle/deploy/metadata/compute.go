@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/metadata"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
@@ -125,6 +126,12 @@ func (m *compute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 	if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
 		b.Metadata.Config.Workspace.FilePath = b.SyncRootPath
 		b.Metadata.Config.Presets.SourceLinkedDeployment = true
+	}
+
+	// For immutable-folder deployments the content lives in a snapshot rather than a regular
+	// workspace directory. Record its path so downstream services (e.g. the jobs UI) can locate it.
+	if snap, ok := b.Config.Resources.Snapshots[resources.SnapshotResourceKey]; ok {
+		b.Metadata.Config.Workspace.SnapshotContentPath = snap.FullPath()
 	}
 
 	// Set the git folder path for deployments from the workspace

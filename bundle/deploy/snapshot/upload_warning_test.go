@@ -6,14 +6,17 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/snapshot"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
@@ -90,6 +93,48 @@ func TestUploadNoWarningBelowFileLimit(t *testing.T) {
 	assert.True(t, diags.HasError() == false && len(diags) == 0, "expected no diagnostics")
 }
 
+// canManageBundle returns a bundle deployed by deployer@example.test with the given permissions.
+func canManageBundle(permissions []resources.Permission) *bundle.Bundle {
+	return &bundle.Bundle{
+		Config: config.Root{
+			Workspace: config.Workspace{
+				CurrentUser: &config.User{
+					User: &iam.User{UserName: "deployer@example.test"},
+				},
+			},
+			Permissions: permissions,
+		},
+	}
+}
+
+func TestBuildCanManage(t *testing.T) {
+	b := canManageBundle([]resources.Permission{
+		{Level: "CAN_MANAGE", UserName: "manager@example.test"},
+		{Level: "CAN_VIEW", UserName: "viewer@example.test"},
+		{Level: "CAN_MANAGE", GroupName: "admins"},
+		{Level: "CAN_MANAGE", ServicePrincipalName: "sp-1"},
+	})
+
+	// The deploying identity, then only the CAN_MANAGE principals.
+	assert.Equal(t, []snapshot.ManagePrincipal{
+		{UserName: "deployer@example.test"},
+		{UserName: "manager@example.test"},
+		{GroupName: "admins"},
+		{ServicePrincipalName: "sp-1"},
+	}, BuildCanManage(b))
+}
+
+func TestBuildCanManageWithoutManagers(t *testing.T) {
+	b := canManageBundle([]resources.Permission{
+		{Level: "CAN_VIEW", UserName: "viewer@example.test"},
+	})
+
+	// The API rejects an empty list, so the deploying identity is always there.
+	assert.Equal(t, []snapshot.ManagePrincipal{
+		{UserName: "deployer@example.test"},
+	}, BuildCanManage(b))
+}
+
 func TestUploadReusesStagedZipWhenNotClean(t *testing.T) {
 	// clean=false is the deploy --plan path: the zip staged when the plan was produced is
 	// registered on the config as is, without rebuilding or warning again, even for a
@@ -120,4 +165,62 @@ func TestUploadNotCleanWithoutStagedZip(t *testing.T) {
 
 	require.True(t, diags.HasError())
 	assert.Contains(t, diags[0].Summary, "run 'bundle plan' again")
+}
+
+func TestSnapshotName(t *testing.T) {
+	const hash = "e3b0c4"
+	const prevName = hash + "-0199e2c1-7b1a-7c2d-8e3f-4a5b6c7d8e9f"
+	snap := &resources.Snapshot{
+		BundleID:   "bundle-id",
+		ACL:        []snapshot.ACLEntry{{UserName: "deployer@example.test", PermissionLevel: "CAN_READ"}},
+		CanManage:  []snapshot.ManagePrincipal{{UserName: "deployer@example.test"}},
+		RemoteRoot: "/Workspace/Users/sp/.snapshots",
+	}
+	unchanged := &dresources.SnapshotState{
+		RelativePath: "bundle-id/" + prevName,
+		FullPath:     "/Workspace/Users/sp/.snapshots/bundle-id/" + prevName + "/snapshot",
+		BundleID:     "bundle-id",
+		ACL:          []snapshot.ACLEntry{{UserName: "deployer@example.test", PermissionLevel: "CAN_READ"}},
+		CanManage:    []snapshot.ManagePrincipal{{UserName: "deployer@example.test"}},
+		ZipPath:      "/stage/" + prevName + ".zip",
+	}
+	otherManagers := *unchanged
+	otherManagers.CanManage = []snapshot.ManagePrincipal{{GroupName: "admins"}}
+
+	tests := []struct {
+		name   string
+		prev   *dresources.SnapshotState
+		dir    string
+		hash   string
+		reused bool
+	}{
+		{name: "no previous snapshot", prev: nil, dir: "/stage", hash: hash, reused: false},
+		{name: "unchanged", prev: unchanged, dir: "/stage", hash: hash, reused: true},
+		{name: "content changed", prev: unchanged, dir: "/stage", hash: "a1b2c3", reused: false},
+		{name: "staged elsewhere", prev: unchanged, dir: "/other", hash: hash, reused: false},
+		{name: "managers changed", prev: &otherManagers, dir: "/stage", hash: hash, reused: false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			name, err := snapshotName(snap, tc.prev, tc.dir, tc.hash)
+			require.NoError(t, err)
+			if tc.reused {
+				assert.Equal(t, prevName, name)
+				return
+			}
+			assert.NotEqual(t, prevName, name)
+			assert.True(t, strings.HasPrefix(name, tc.hash+"-"), name)
+		})
+	}
+}
+
+func TestSnapshotNameIsUniquePerUpload(t *testing.T) {
+	snap := &resources.Snapshot{BundleID: "bundle-id"}
+
+	first, err := snapshotName(snap, nil, "/stage", "e3b0c4")
+	require.NoError(t, err)
+	second, err := snapshotName(snap, nil, "/stage", "e3b0c4")
+	require.NoError(t, err)
+
+	assert.NotEqual(t, first, second)
 }

@@ -56,6 +56,7 @@ var knownMissingInRemoteType = map[string][]string{
 	"internal_immutable_snapshots": {
 		"bundle_id",
 		"acl",
+		"can_manage",
 		"zip_path",
 	},
 	"job_runs": {

@@ -181,6 +181,16 @@ type fakeDashboard struct {
 	InputSerializedDashboard string `json:"-"`
 }
 
+// snapshotRecord holds the create-request fields and the out-of-band modification flag for one
+// immutable snapshot. Its JSON tags match what the accept test's info endpoint returns so the
+// test script can call the endpoint and assert the fields with jq.
+type snapshotRecord struct {
+	Dirty     bool             `json:"dirty"`
+	RelPath   string           `json:"relative_path"`
+	ACL       []map[string]any `json:"access_control_list"`
+	CanManage []map[string]any `json:"can_manage_principals"`
+}
+
 // FakeWorkspace holds a state of a workspace for acceptance tests.
 type FakeWorkspace struct {
 	mu                 sync.Mutex
@@ -197,6 +207,10 @@ type FakeWorkspace struct {
 	directories  map[string]workspace.ObjectInfo
 	files        map[string]FileEntry
 	repoIdByPath map[string]int64
+
+	// snapshots records immutable-snapshot content paths. Breaking the glass on a
+	// recorded path flips it dirty for good, as in the real API.
+	snapshots map[string]*snapshotRecord
 
 	Jobs                  map[int64]jobs.Job
 	JobRuns               map[int64]jobs.Run
@@ -495,6 +509,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		},
 		files:        make(map[string]FileEntry),
 		repoIdByPath: make(map[string]int64),
+		snapshots:    make(map[string]*snapshotRecord),
 
 		Jobs:                  map[int64]jobs.Job{},
 		JobRuns:               map[int64]jobs.Run{},
@@ -830,6 +845,48 @@ func (s *FakeWorkspace) FsDeleteFile(filePath string) Response {
 	return Response{}
 }
 
+// RecordSnapshot stores a create-request record for the snapshot at contentPath.
+func (s *FakeWorkspace) RecordSnapshot(contentPath, relPath string, acl, canManage []map[string]any) {
+	defer s.LockUnlock()()
+	s.snapshots[contentPath] = &snapshotRecord{
+		Dirty:     false,
+		RelPath:   relPath,
+		ACL:       acl,
+		CanManage: canManage,
+	}
+}
+
+// SnapshotDirty reports whether the immutable snapshot at contentPath was modified out of band,
+// and whether a snapshot is recorded there at all.
+func (s *FakeWorkspace) SnapshotDirty(contentPath string) (dirty, ok bool) {
+	defer s.LockUnlock()()
+	rec, ok := s.snapshots[contentPath]
+	if !ok {
+		return false, false
+	}
+	return rec.Dirty, true
+}
+
+// SnapshotInfo returns the stored create-request record for the snapshot at contentPath.
+// ok is false when no snapshot is recorded there.
+func (s *FakeWorkspace) SnapshotInfo(contentPath string) (*snapshotRecord, bool) {
+	defer s.LockUnlock()()
+	rec, ok := s.snapshots[contentPath]
+	return rec, ok
+}
+
+// BreakGlassSnapshot marks the snapshot at contentPath dirty. The real API flips the flag when
+// the glass is broken, not when a file changes: until then the content is read-only to callers.
+// ok is false when no snapshot is recorded there.
+func (s *FakeWorkspace) BreakGlassSnapshot(contentPath string) (ok bool) {
+	defer s.LockUnlock()()
+	rec, ok := s.snapshots[contentPath]
+	if ok {
+		rec.Dirty = true
+	}
+	return ok
+}
+
 func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
 	defer s.LockUnlock()()
 	// The real mkdirs API creates all intermediate directories ("mkdir -p"),
@@ -1099,7 +1156,6 @@ func (s *FakeWorkspace) importFile(filePath string, body []byte, overwrite, dete
 			Data: body,
 		}
 	}
-
 	return Response{}
 }
 
@@ -1156,7 +1212,6 @@ func (s *FakeWorkspace) WorkspaceImportNotebook(filePath string, body []byte, la
 		},
 		Data: body,
 	}
-
 	return Response{}
 }
 
