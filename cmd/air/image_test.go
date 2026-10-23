@@ -37,17 +37,6 @@ func newImagePushTestCommand(t *testing.T, profile string) (*cobra.Command, *byt
 	return withOutput(cmd, flags.OutputText), stdout, stderr
 }
 
-func TestImagesCommandsBetaAnnotations(t *testing.T) {
-	images := newImagesCommand()
-	push, _, err := images.Find([]string{"push"})
-	require.NoError(t, err)
-
-	for _, cmd := range []*cobra.Command{images, push} {
-		assert.Equal(t, airImagesLaunchStage, cmd.Annotations["launch_stage"])
-		assert.Equal(t, airImagesLaunchStageDisplay, cmd.Annotations["launch_stage_display"])
-	}
-}
-
 func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 	cmd, stdout, stderr := newImagePushTestCommand(t, "workspace")
 	var commands []recordedImageCommand
@@ -94,7 +83,7 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 		stdout.String(),
 	)
 	stderrLines := strings.Split(stderr.String(), "\n")
-	assert.Equal(t, "Warning: This feature is in Beta. The workspace must enable the required previews.", stderrLines[0])
+	assert.Equal(t, "Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.", stderrLines[0])
 	assert.Contains(t, stderr.String(), "Pushed image")
 }
 

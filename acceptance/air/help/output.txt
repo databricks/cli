@@ -12,7 +12,7 @@ Available Commands:
   cancel          Cancel one or more runs
   convert-to-dabs Convert an AIR run YAML into a Databricks Asset Bundle
   get             Show status, configuration, and timing details for a specified run
-  images          *Beta* Manage container images for AI Runtime
+  images          Manage container images for AI Runtime
   list            List active runs for the current user
   logs            Stream or fetch logs for a run
   pools           View provisioned GPU pools
@@ -108,14 +108,14 @@ Use "databricks air pools [command] --help" for more information about a command
 
 === images help
 >>> [CLI] air images --help
-*Beta* Manage container images for AI Runtime
+Manage container images for AI Runtime
 
 Usage:
   databricks air images [flags]
   databricks air images [command]
 
 Available Commands:
-  push        *Beta* Push a container image to Databricks Artifact Registry
+  push        *Preview* Push a container image to Databricks Artifact Registry
 
 Flags:
   -h, --help   help for images
@@ -130,7 +130,7 @@ Use "databricks air images [command] --help" for more information about a comman
 
 === images push help
 >>> [CLI] air images push --help
-This command is in Beta.
+This CLI command is in Preview. For current feature status and requirements, see https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/docker-images.
 
 Push a container image to Databricks Artifact Registry under the specified Unity Catalog catalog and schema.
 
