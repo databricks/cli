@@ -977,7 +977,7 @@ type testIgnoreFilter struct {
 // It also ignores fields that exist in StateType but not in RemoteType, because
 // those are automatically suppressed by the planner (reason: missing_in_remote)
 // and RemapState cannot populate them from remote state.
-func newTestIgnoreFilter(adapter *Adapter) *testIgnoreFilter {
+func newTestIgnoreFilter(adapter *Adapter, group string) *testIgnoreFilter {
 	ignoreFields := make(map[string]bool)
 	var ignorePatterns []*structpath.PatternNode
 	for _, cfg := range []*ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
@@ -986,7 +986,9 @@ func newTestIgnoreFilter(adapter *Adapter) *testIgnoreFilter {
 		}
 		for _, p := range cfg.IgnoreRemoteChanges {
 			ignoreFields[p.Field.String()] = true
-			ignorePatterns = append(ignorePatterns, p.Field)
+			if group == "materialization_sets" {
+				ignorePatterns = append(ignorePatterns, p.Field)
+			}
 		}
 	}
 	// Auto-include fields present in StateType but absent from RemoteType.
@@ -1023,8 +1025,10 @@ func (f *testIgnoreFilter) shouldIgnore(path string) bool {
 		return true
 	}
 
-	// A rule inside a slice is written as a pattern (foo[*].bar) while a walked path is indexed
-	// (foo[0].bar), so the lookups above never match one. Compare with the pattern matcher.
+	// Pattern rules are collected for materialization_sets alone, so this loop is empty for every
+	// other resource. A rule inside a slice (foo[*].bar) never matches the indexed path a walk
+	// produces (foo[0].bar); jobs, apps and database_instances carry such rules too, so widening
+	// the comparison to them is its own change.
 	parsed, err := structpath.ParsePath(path)
 	if err != nil {
 		return false
@@ -1125,7 +1129,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	require.NotNil(t, remappedState)
 
 	// Create filter for fields that should be ignored based on ignore_remote_changes config.
-	ignoreFilter := newTestIgnoreFilter(adapter)
+	ignoreFilter := newTestIgnoreFilter(adapter, group)
 
 	if remoteStateFromCreate != nil {
 		remappedRemoteStateFromCreate, err := adapter.RemapState(remoteStateFromCreate)
