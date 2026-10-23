@@ -22,7 +22,7 @@ type OperationBuffer struct {
 	deploymentID string
 	versionNum   int
 
-	wake       chan struct{}
+	ready      *sync.Cond
 	done       chan struct{}
 	cancel     context.CancelFunc
 	bestEffort bool
@@ -40,8 +40,8 @@ type OperationBuffer struct {
 	mu sync.Mutex
 
 	// queue is unbounded and contains one key per pending update.
-	queue  []string
-	closed bool
+	queue    []string
+	draining bool
 
 	// pending holds the newest update per resource key, absent once the writer takes it.
 	pending map[string]OperationUpdate
@@ -62,7 +62,6 @@ func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum i
 	b := &OperationBuffer{
 		deploymentID: deploymentID,
 		versionNum:   versionNum,
-		wake:         make(chan struct{}, 1),
 		done:         make(chan struct{}),
 		cancel:       cancel,
 		bestEffort:   options.BestEffort,
@@ -70,6 +69,7 @@ func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum i
 		latestState:  make(map[string]OperationUpdate),
 		sequenceIDs:  make(map[string]int64),
 	}
+	b.ready = sync.NewCond(&b.mu)
 	go b.run(ctx)
 	return b
 }
@@ -122,43 +122,28 @@ func (b *OperationBuffer) record(resourceKey string, update OperationUpdate, kee
 	// Only when the resource is not already queued, enqueue it.
 	if !queued {
 		b.queue = append(b.queue, resourceKey)
-		b.notify()
+		b.ready.Signal()
 	}
 }
 
-// notify wakes the writer without blocking producers.
-func (b *OperationBuffer) notify() {
-	select {
-	case b.wake <- struct{}{}:
-	default:
-	}
-}
-
-// next waits for a queued key, drain, or cancellation.
+// next waits until work is queued, draining begins, or the context is canceled.
 func (b *OperationBuffer) next(ctx context.Context) (string, bool) {
-	for {
-		b.mu.Lock()
-		if len(b.queue) > 0 {
-			key := b.queue[0]
-			b.queue[0] = ""
-			b.queue = b.queue[1:]
-			if len(b.queue) == 0 {
-				b.queue = nil
-			}
-			b.mu.Unlock()
-			return key, true
-		}
-		closed := b.closed
-		b.mu.Unlock()
-		if closed {
-			return "", false
-		}
-		select {
-		case <-b.wake:
-		case <-ctx.Done():
-			return "", false
-		}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	for len(b.queue) == 0 && !b.draining && ctx.Err() == nil {
+		b.ready.Wait()
 	}
+	if len(b.queue) == 0 {
+		return "", false
+	}
+	key := b.queue[0]
+	b.queue[0] = ""
+	b.queue = b.queue[1:]
+	if len(b.queue) == 0 {
+		b.queue = nil
+	}
+	return key, true
 }
 
 // take claims the update waiting for resourceKey.
@@ -174,6 +159,14 @@ func (b *OperationBuffer) take(resourceKey string) (OperationUpdate, bool) {
 func (b *OperationBuffer) run(ctx context.Context) {
 	defer close(b.done)
 	defer b.cancel()
+
+	// Wake an idle worker when its context is canceled.
+	stopWake := context.AfterFunc(ctx, func() {
+		b.mu.Lock()
+		b.ready.Signal()
+		b.mu.Unlock()
+	})
+	defer stopWake()
 
 	for {
 		resourceKey, ok := b.next(ctx)
@@ -222,9 +215,9 @@ func (b *OperationBuffer) write(ctx context.Context, key string, update Operatio
 // It returns the first recording error and is safe to call twice.
 func (b *OperationBuffer) Drain(ctx context.Context) error {
 	b.mu.Lock()
-	b.closed = true
+	b.draining = true
+	b.ready.Signal()
 	b.mu.Unlock()
-	b.notify()
 	select {
 	case <-b.done:
 		return b.Err()

@@ -1,10 +1,12 @@
 package dms
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
 	"testing/synctest"
 
@@ -20,12 +22,13 @@ import (
 
 // queued builds a buffer whose queue nothing drains, so a test drives record and take itself.
 func queued() *OperationBuffer {
-	return &OperationBuffer{
-		wake:        make(chan struct{}, 1),
+	b := &OperationBuffer{
 		cancel:      func() {},
 		pending:     make(map[string]OperationUpdate),
 		latestState: make(map[string]OperationUpdate),
 	}
+	b.ready = sync.NewCond(&b.mu)
+	return b
 }
 
 func stateUpdate(t *testing.T, name string) OperationUpdate {
@@ -132,6 +135,18 @@ func TestBufferQueuesWithoutBackpressure(t *testing.T) {
 		}
 		assert.Empty(t, b.queue)
 		assert.Empty(t, b.pending)
+	})
+}
+
+func TestBufferStopsIdleWriterOnCancellation(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctx, cancel := context.WithCancel(t.Context())
+		defer cancel()
+		b := StartOperationBuffer(ctx, "dep-1", 1, BufferOptions{})
+		synctest.Wait()
+		cancel()
+		<-b.done
+		assert.ErrorIs(t, b.Err(), context.Canceled)
 	})
 }
 
