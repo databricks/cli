@@ -907,6 +907,7 @@ func (db *DeploymentState) UpgradeToWrite(mode Mode) error {
 	if !mode.isWritable() {
 		return fmt.Errorf("invalid deployment state write mode: %d", mode)
 	}
+	// Keep the state source unchanged: DMS reads require DMS writes; file reads require file writes.
 	if (db.mode == ReadingDMS) != (mode == WritingDMS) {
 		return errors.New("cannot change the deployment state source when upgrading to write")
 	}
