@@ -1007,6 +1007,9 @@ func TestForceRefreshToken_FailsOnRefreshError(t *testing.T) {
 	if got := err.Error(); got != want {
 		t.Errorf("ForceRefreshToken(): want error %q, got %q", want, got)
 	}
+	if _, ok := errors.AsType[*oauth2.RetrieveError](err); !ok {
+		t.Errorf("ForceRefreshToken(): want error wrapping *oauth2.RetrieveError, got %v", err)
+	}
 }
 
 func TestForceRefreshToken_InvalidRefreshTokenError(t *testing.T) {

@@ -10,8 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -194,6 +196,29 @@ func TestDeviceCodeChallenge_Errors(t *testing.T) {
 			assert.EqualError(t, err, tc.wantErr)
 		})
 	}
+}
+
+func TestDeviceCodeChallenge_ErrorKeepsHTTPError(t *testing.T) {
+	f := &fakeDeviceServer{
+		expiresIn:   600,
+		tokenStatus: http.StatusBadRequest,
+		tokenBody:   `{"error": "invalid_client", "error_description": "Client is not allowed to use device code"}`,
+	}
+	confirm := func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
+		return testConfirmationCode, nil
+	}
+
+	_, err := newDeviceCodeAuth(t, f, true).DeviceCodeChallenge(t.Context(), confirm)
+	httpErr, ok := errors.AsType[*httpclient.HttpError](err)
+	require.True(t, ok, "want *httpclient.HttpError in %v", err)
+	assert.Equal(t, http.StatusBadRequest, httpErr.StatusCode)
+
+	// A plain HTTP client hands the error response to the CLI as is.
+	_, err = newDeviceCodeAuth(t, f, true, WithHttpClient(&http.Client{})).DeviceCodeChallenge(t.Context(), confirm)
+	retrieveErr, ok := errors.AsType[*oauth2.RetrieveError](err)
+	require.True(t, ok, "want *oauth2.RetrieveError in %v", err)
+	assert.Equal(t, http.StatusBadRequest, retrieveErr.Response.StatusCode)
+	assert.EqualError(t, err, "token exchange: Client is not allowed to use device code (error code: invalid_client)")
 }
 
 func TestDeviceCodeChallenge_RetriesWrongConfirmationCode(t *testing.T) {
