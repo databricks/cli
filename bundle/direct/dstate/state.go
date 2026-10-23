@@ -236,9 +236,7 @@ func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (b
 	db.versionCompleted = true
 	deploymentID, versionID := db.DeploymentID, db.VersionID
 	bestEffort := db.mode == WritingFileWithHistory || db.mode == WritingFileWithHistoryEnforced
-	if db.Path == "" {
-		db.reset()
-	}
+	db.reset()
 	db.mu.Unlock()
 
 	// A recording failure fails the version even when the caller counted the deploy a success: the
