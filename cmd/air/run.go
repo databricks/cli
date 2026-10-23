@@ -24,6 +24,9 @@ import (
 // dryRunValidationTimeout bounds only the config:validate request.
 const dryRunValidationTimeout = 15 * time.Second
 
+// Bounds the workspace lookup performed by config help.
+const computeOptionsHelpTimeout = 3 * time.Second
+
 // runResult is the JSON payload for `air run`.
 type runResult struct {
 	Status       string `json:"status"`
@@ -112,9 +115,17 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 			_ = c.Usage()
 			return
 		}
-		if err := writeConfigFieldHelp(c.OutOrStdout(), fields[0]); err != nil {
+		field, err := resolveConfigField(fields[0])
+		if err != nil {
 			c.PrintErrln("Error:", err)
+			return
 		}
+
+		var computeOptions []computeOption
+		if field.path == "config.compute" {
+			computeOptions = loadComputeOptionsForHelp(c, args)
+		}
+		renderConfigField(c.OutOrStdout(), field, computeOptions)
 	})
 
 	cmd.Flags().StringVarP(&file, "file", "f", "", "Path to the workload YAML config")
@@ -263,6 +274,32 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 	}
 
 	return cmd
+}
+
+func loadComputeOptionsForHelp(cmd *cobra.Command, args []string) []computeOption {
+	ctx, cancel := context.WithTimeout(cmd.Context(), computeOptionsHelpTimeout)
+	defer cancel()
+	cmd.SetContext(root.SkipLoadBundle(root.SkipPrompt(ctx)))
+
+	if !cmdctx.HasWorkspaceClient(cmd.Context()) {
+		if err := root.MustWorkspaceClient(cmd, args); err != nil {
+			cmd.PrintErrf("Warning: couldn't resolve a workspace to list accelerator types; showing the built-in list instead: %v\n", err)
+			return fallbackComputeOptions()
+		}
+	}
+
+	options, err := listWorkspaceComputeOptions(cmd.Context(), cmdctx.WorkspaceClient(cmd.Context()))
+	if err != nil {
+		unavailable, retryable := classifyValidationFailure(err)
+		if !unavailable || retryable {
+			cmd.PrintErrf("Warning: couldn't fetch the accelerator types available in this workspace; showing the built-in list instead: %v\n", err)
+		}
+		return fallbackComputeOptions()
+	}
+	if options == nil {
+		return []computeOption{}
+	}
+	return options
 }
 
 func airLogsCommand(profile, runID string) string {
