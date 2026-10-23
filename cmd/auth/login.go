@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth/authconv"
@@ -43,7 +44,6 @@ func promptForProfile(ctx context.Context, defaultValue string) (string, error) 
 const (
 	minimalDbConnectVersion = "13.1"
 	defaultTimeout          = 1 * time.Hour
-	authTypeDatabricksCLI   = "databricks-cli"
 	discoveryFallbackTip    = "\n\nTip: you can specify a workspace directly with: databricks auth login --host <url>"
 	// discoveryHostEnvVar overrides the default https://login.databricks.com
 	// host used by the discovery login flow. Intended for testing and
@@ -280,10 +280,10 @@ a new profile is created.
 			return err
 		}
 		if clientID == "" {
-			clientID = u2mClientIDFromProfile(existingProfile)
+			clientID = u2m.ClientIDFromProfile(existingProfile)
 		}
 		if len(resources) == 0 {
-			resources = u2mResourcesFromProfile(existingProfile)
+			resources = u2m.ResourcesFromProfile(existingProfile)
 		}
 
 		// If no host is available from any source, use the discovery flow
@@ -316,11 +316,11 @@ a new profile is created.
 		switch {
 		case scopes != "":
 			// Explicit --scopes flag takes precedence.
-			scopesList = splitScopes(scopes)
+			scopesList = textutil.SplitAndTrim(scopes)
 		case existingProfile != nil && existingProfile.Scopes != "":
 			// Preserve scopes from the existing profile so re-login
 			// uses the same scopes the user previously configured.
-			scopesList = splitScopes(existingProfile.Scopes)
+			scopesList = textutil.SplitAndTrim(existingProfile.Scopes)
 		}
 
 		oauthArgument, err := authArguments.ToOAuthArgument()
@@ -420,7 +420,7 @@ a new profile is created.
 			err := databrickscfg.SaveToProfile(ctx, &config.Config{
 				Profile:             profileName,
 				Host:                authArguments.Host,
-				AuthType:            authTypeDatabricksCLI,
+				AuthType:            u2m.AuthTypeDatabricksCLI,
 				AccountID:           authArguments.AccountID,
 				WorkspaceID:         authArguments.WorkspaceID,
 				ClusterID:           clusterID,
@@ -700,9 +700,9 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		return discoveryErr("setting up login.databricks.com", err)
 	}
 
-	scopesList := splitScopes(in.scopes)
+	scopesList := textutil.SplitAndTrim(in.scopes)
 	if len(scopesList) == 0 && in.existingProfile != nil && in.existingProfile.Scopes != "" {
-		scopesList = splitScopes(in.existingProfile.Scopes)
+		scopesList = textutil.SplitAndTrim(in.existingProfile.Scopes)
 	}
 
 	opts := []u2m.PersistentAuthOption{
@@ -793,7 +793,7 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 	err = databrickscfg.SaveToProfile(ctx, &config.Config{
 		Profile:     in.profileName,
 		Host:        discoveredHost,
-		AuthType:    authTypeDatabricksCLI,
+		AuthType:    u2m.AuthTypeDatabricksCLI,
 		AccountID:   accountID,
 		WorkspaceID: workspaceID,
 		Scopes:      scopesList,
@@ -814,44 +814,11 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 	return nil
 }
 
-// splitScopes splits a comma-separated scopes string into a trimmed slice.
-func splitScopes(scopes string) []string {
-	var result []string
-	for s := range strings.SplitSeq(scopes, ",") {
-		scope := strings.TrimSpace(s)
-		if scope == "" {
-			continue
-		}
-		result = append(result, scope)
-	}
-	if len(result) == 0 {
-		return nil
-	}
-	return result
-}
-
 // oauthLoginClearKeys returns profile keys that should be explicitly removed
 // when performing an OAuth login. Derives auth credential fields dynamically
 // from the SDK's ConfigAttributes to stay in sync as new auth methods are added.
 func oauthLoginClearKeys() []string {
 	return databrickscfg.AuthCredentialKeys()
-}
-
-// u2mClientIDFromProfile excludes client IDs belonging to other auth types.
-func u2mClientIDFromProfile(p *profile.Profile) string {
-	if p == nil || p.AuthType != authTypeDatabricksCLI {
-		return ""
-	}
-	return p.ClientID
-}
-
-// u2mResourcesFromProfile returns the RFC 8707 resource indicators saved on a
-// databricks-cli-auth profile, so `login`/`auth token` re-request the same ones.
-func u2mResourcesFromProfile(p *profile.Profile) []string {
-	if p == nil || p.AuthType != authTypeDatabricksCLI {
-		return nil
-	}
-	return splitScopes(p.Resources)
 }
 
 // promptForWorkspaceSelection lists workspaces for a SPOG account and lets the

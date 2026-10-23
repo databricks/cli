@@ -172,7 +172,7 @@ func TestToken_loadToken(t *testing.T) {
 				Name:      "custom-client",
 				Host:      "https://accounts.cloud.databricks.com",
 				AccountID: "custom-client",
-				AuthType:  authTypeDatabricksCLI,
+				AuthType:  u2m.AuthTypeDatabricksCLI,
 				ClientID:  "custom-client-id",
 			},
 		},

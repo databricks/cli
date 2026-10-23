@@ -20,6 +20,7 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
@@ -288,10 +289,10 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		return nil, err
 	}
 	allArgs := append([]u2m.PersistentAuthOption{u2m.WithTokenStore(storage.OAuthTokenStore(ctx, args.tokenStore, args.mode))}, args.persistentAuthOpts...)
-	if clientID := u2mClientIDFromProfile(existingProfile); clientID != "" {
+	if clientID := u2m.ClientIDFromProfile(existingProfile); clientID != "" {
 		allArgs = append(allArgs, u2m.WithClientID(clientID))
 	}
-	if resources := u2mResourcesFromProfile(existingProfile); len(resources) > 0 {
+	if resources := u2m.ResourcesFromProfile(existingProfile); len(resources) > 0 {
 		allArgs = append(allArgs, u2m.WithResources(resources))
 	}
 	allArgs = append(allArgs, u2m.WithOAuthArgument(oauthArgument))
@@ -447,12 +448,12 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 	// uses the same scopes the user previously configured.
 	var scopesList []string
 	if existingProfile != nil && existingProfile.Scopes != "" {
-		scopesList = splitScopes(existingProfile.Scopes)
+		scopesList = textutil.SplitAndTrim(existingProfile.Scopes)
 	}
 
 	// Preserve RFC 8707 resource indicators from the existing profile so the
 	// inline login requests the same resources the user previously configured.
-	resourcesList := u2mResourcesFromProfile(existingProfile)
+	resourcesList := u2m.ResourcesFromProfile(existingProfile)
 
 	oauthArgument, err := loginArgs.ToOAuthArgument()
 	if err != nil {
@@ -462,7 +463,7 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 		u2m.WithOAuthArgument(oauthArgument),
 		u2m.WithBrowser(func(url string) error { return browser.Open(ctx, url) }),
 	}
-	if clientID := u2mClientIDFromProfile(existingProfile); clientID != "" {
+	if clientID := u2m.ClientIDFromProfile(existingProfile); clientID != "" {
 		persistentAuthOpts = append(persistentAuthOpts, u2m.WithClientID(clientID))
 	}
 	if len(scopesList) > 0 {
@@ -491,12 +492,12 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 	err = databrickscfg.SaveToProfile(ctx, &config.Config{
 		Profile:     profileName,
 		Host:        loginArgs.Host,
-		AuthType:    authTypeDatabricksCLI,
+		AuthType:    u2m.AuthTypeDatabricksCLI,
 		AccountID:   loginArgs.AccountID,
 		WorkspaceID: loginArgs.WorkspaceID,
 		ConfigFile:  env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
 		Scopes:      scopesList,
-		ClientID:    u2mClientIDFromProfile(existingProfile),
+		ClientID:    u2m.ClientIDFromProfile(existingProfile),
 	}, clearKeys...)
 	if err != nil {
 		return "", nil, err

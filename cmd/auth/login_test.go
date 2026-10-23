@@ -447,109 +447,6 @@ func TestNeedsAccountIDPrompt(t *testing.T) {
 	}
 }
 
-func TestSplitScopes(t *testing.T) {
-	tests := []struct {
-		name   string
-		input  string
-		output []string
-	}{
-		{
-			name:   "empty input",
-			input:  "",
-			output: nil,
-		},
-		{
-			name:   "single scope",
-			input:  "all-apis",
-			output: []string{"all-apis"},
-		},
-		{
-			name:   "trims whitespace",
-			input:  " all-apis , sql ",
-			output: []string{"all-apis", "sql"},
-		},
-		{
-			name:   "drops empty entries",
-			input:  "all-apis, ,sql,,",
-			output: []string{"all-apis", "sql"},
-		},
-		{
-			name:   "only empty entries",
-			input:  " , , ",
-			output: nil,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.output, splitScopes(tt.input))
-		})
-	}
-}
-
-func TestU2MClientIDFromProfile(t *testing.T) {
-	tests := []struct {
-		name    string
-		profile *profile.Profile
-		want    string
-	}{
-		{name: "no profile"},
-		{
-			name:    "implicit auth type",
-			profile: &profile.Profile{ClientID: "custom-client-id"},
-		},
-		{
-			name:    "M2M auth type",
-			profile: &profile.Profile{AuthType: "oauth-m2m", ClientID: "custom-client-id"},
-		},
-		{
-			name:    "U2M auth type",
-			profile: &profile.Profile{AuthType: authTypeDatabricksCLI, ClientID: "custom-client-id"},
-			want:    "custom-client-id",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, u2mClientIDFromProfile(tt.profile))
-		})
-	}
-}
-
-func TestU2MResourcesFromProfile(t *testing.T) {
-	tests := []struct {
-		name    string
-		profile *profile.Profile
-		want    []string
-	}{
-		{name: "no profile"},
-		{
-			name:    "implicit auth type",
-			profile: &profile.Profile{Resources: "https://workspace.test/ai-gateway/mcp/system.ai.github"},
-		},
-		{
-			name:    "M2M auth type",
-			profile: &profile.Profile{AuthType: "oauth-m2m", Resources: "https://workspace.test/ai-gateway/mcp/system.ai.github"},
-		},
-		{
-			name:    "U2M auth type single resource",
-			profile: &profile.Profile{AuthType: authTypeDatabricksCLI, Resources: "https://workspace.test/ai-gateway/mcp/system.ai.github"},
-			want:    []string{"https://workspace.test/ai-gateway/mcp/system.ai.github"},
-		},
-		{
-			name:    "U2M auth type multiple resources",
-			profile: &profile.Profile{AuthType: authTypeDatabricksCLI, Resources: "https://workspace.test/ai-gateway/mcp/system.ai.github, https://workspace.test/ai-gateway/mcp/system.ai.slack"},
-			want:    []string{"https://workspace.test/ai-gateway/mcp/system.ai.github", "https://workspace.test/ai-gateway/mcp/system.ai.slack"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, u2mResourcesFromProfile(tt.profile))
-		})
-	}
-}
-
 func TestRunHostDiscovery_NoHost(t *testing.T) {
 	ctx := t.Context()
 	args := &auth.AuthArguments{}
@@ -1086,7 +983,7 @@ func TestDiscoveryLogin_ReloginPreservesExistingProfileScopes(t *testing.T) {
 		Name:     "DISCOVERY",
 		Host:     "https://old-workspace.example.com",
 		Scopes:   "sql,clusters",
-		AuthType: authTypeDatabricksCLI,
+		AuthType: u2m.AuthTypeDatabricksCLI,
 		ClientID: "custom-client-id",
 	}
 
@@ -1133,7 +1030,7 @@ func TestDiscoveryLogin_ExplicitClientIDOverridesExistingProfile(t *testing.T) {
 	existingProfile := &profile.Profile{
 		Name:     "DISCOVERY",
 		Host:     "https://old-workspace.example.com",
-		AuthType: authTypeDatabricksCLI,
+		AuthType: u2m.AuthTypeDatabricksCLI,
 		ClientID: "profile-client-id",
 	}
 
