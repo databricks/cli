@@ -61,6 +61,17 @@ render databricks.yml.tmpl
 trace $CLI bundle plan -o json > out.plan.json
 trace set_actions
 
+title "Taking the refusal's advice: dropping the set resource rather than its members plans as a"
+title "delete and settles. This is the deploy path's delete, not bundle destroy's."
+render no-set.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_actions
+trace $CLI bundle deploy --auto-approve
+render databricks.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_actions
+trace $CLI bundle deploy
+
 title "Repointing the destinations is a recreate, not a silent no-op. The server cannot move a"
 title "materialization in place, so the set is rebuilt at the new location."
 render moved.yml.tmpl

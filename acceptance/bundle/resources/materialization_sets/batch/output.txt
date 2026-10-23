@@ -9,7 +9,7 @@ Table danielb.fs2680.src_[UNIQUE_NAME] is now visible (catalog_name=danielb)
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-batch-[UNIQUE_NAME]/default/files...
 Created features.batchfeat
 Created materialization_sets.set1
-Files: 10 uploaded, 0 deleted
+Files: 11 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan -o json
@@ -105,6 +105,39 @@ Files: 2 uploaded, 0 deleted
 {
   "resources.materialization_sets.set1": "skip"
 }
+
+=== Taking the refusal's advice: dropping the set resource rather than its members plans as a
+=== delete and settles. This is the deploy path's delete, not bundle destroy's.
+>>> [CLI] bundle plan -o json
+
+>>> set_actions
+{
+  "resources.materialization_sets.set1": "delete"
+}
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-batch-[UNIQUE_NAME]/default/files...
+
+This action will result in the deletion or recreation of the following materialization sets.
+Every materialized feature in a recreated set is dropped and recomputed from scratch, including
+the members whose configuration did not change:
+  delete resources.materialization_sets.set1
+Deleted materialization_sets.set1
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 1 deleted, 1 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> set_actions
+{
+  "resources.materialization_sets.set1": "create"
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-batch-[UNIQUE_NAME]/default/files...
+Created materialization_sets.set1
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
 
 === Repointing the destinations is a recreate, not a silent no-op. The server cannot move a
 === materialization in place, so the set is rebuilt at the new location.
