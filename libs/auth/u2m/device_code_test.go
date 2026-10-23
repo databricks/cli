@@ -208,6 +208,31 @@ func TestDeviceCodeChallenge_Errors(t *testing.T) {
 	}
 }
 
+func TestDeviceCodeChallenge_IncompleteDeviceAuthorization(t *testing.T) {
+	for _, missing := range []string{"device_code", "user_code", "verification_uri"} {
+		t.Run(missing, func(t *testing.T) {
+			resp := map[string]any{
+				"device_code":      testDeviceCode,
+				"user_code":        testUserCode,
+				"verification_uri": "https://workspace.test/device/verification",
+				"expires_in":       600,
+			}
+			delete(resp, missing)
+			body, err := json.Marshal(resp)
+			require.NoError(t, err)
+			f := &fakeDeviceServer{deviceAuthStatus: http.StatusOK, deviceAuthBody: string(body)}
+			p := newDeviceCodeAuth(t, f, true)
+
+			_, err = p.DeviceCodeChallenge(t.Context(), func(_ context.Context, _ DeviceAuthorization, _ error, _ int) (string, error) {
+				t.Fatal("confirm must not be called")
+				return "", nil
+			})
+			assert.EqualError(t, err, "device authorization: server response missing "+missing)
+			assert.Equal(t, int32(0), f.tokenRequests.Load())
+		})
+	}
+}
+
 func TestDeviceCodeChallenge_ErrorKeepsHTTPError(t *testing.T) {
 	f := &fakeDeviceServer{
 		expiresIn:   600,

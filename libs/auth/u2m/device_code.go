@@ -139,6 +139,16 @@ func (a *PersistentAuth) requestDeviceAuthorization(ctx context.Context, cfg *oa
 	if err := json.Unmarshal(body, &da); err != nil {
 		return nil, fmt.Errorf("parsing device authorization response: %w", err)
 	}
+	// The user needs user_code and verification_uri to approve the login, and
+	// the token request needs device_code.
+	switch {
+	case da.DeviceCode == "":
+		return nil, errors.New("server response missing device_code")
+	case da.UserCode == "":
+		return nil, errors.New("server response missing user_code")
+	case da.VerificationURI == "":
+		return nil, errors.New("server response missing verification_uri")
+	}
 	return &da, nil
 }
 
