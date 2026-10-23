@@ -1,33 +1,14 @@
 package main
 
 import (
-	"bytes"
-	"cmp"
 	"errors"
 	"fmt"
-	"go/format"
-	"maps"
-	"os"
-	"path/filepath"
 	"reflect"
-	"slices"
-	"text/template"
 
-	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/cli/libs/structs/structwalk"
 )
-
-type EnumPatternInfo struct {
-	// The pattern for which the enum values in Values are applicable.
-	// This is a string representation of [dyn.Pattern].
-	Pattern string
-
-	// List of valid enum values for the pattern. This field will be a string of the
-	// form `{value1, value2, ...}` representing a Go slice literal.
-	Values string
-}
 
 // isEnumType checks if a type is an enum (string type with a Values() method)
 func isEnumType(typ reflect.Type) bool {
@@ -109,8 +90,9 @@ func getEnumValues(typ reflect.Type) ([]string, error) {
 	return enumStrings, nil
 }
 
-// extractEnumFields walks through a struct type and extracts enum field patterns
-func extractEnumFields(typ reflect.Type) ([]EnumPatternInfo, error) {
+// extractEnumFields walks through a struct type and returns the valid values of the
+// enum fields by their pattern.
+func extractEnumFields(typ reflect.Type) (map[string][]string, error) {
 	fieldsByPattern := make(map[string][]string)
 
 	err := structwalk.WalkType(typ, func(path *structpath.PatternNode, fieldType reflect.Type, field *reflect.StructField) bool {
@@ -140,129 +122,5 @@ func extractEnumFields(typ reflect.Type) ([]EnumPatternInfo, error) {
 		return true
 	})
 
-	return buildEnumPatternInfos(fieldsByPattern), err
+	return fieldsByPattern, err
 }
-
-// buildEnumPatternInfos converts the field map to EnumPatternInfo slice
-func buildEnumPatternInfos(fieldsByPattern map[string][]string) []EnumPatternInfo {
-	patterns := make([]EnumPatternInfo, 0, len(fieldsByPattern))
-
-	for pattern, values := range fieldsByPattern {
-		patterns = append(patterns, EnumPatternInfo{
-			Pattern: pattern,
-			Values:  formatSliceToString(values),
-		})
-	}
-
-	return patterns
-}
-
-// groupPatternsByKey groups patterns by their logical grouping key
-func groupPatternsByKeyEnum(patterns []EnumPatternInfo) map[string][]EnumPatternInfo {
-	groupedPatterns := make(map[string][]EnumPatternInfo)
-
-	for _, pattern := range patterns {
-		key := getGroupingKey(pattern.Pattern)
-		groupedPatterns[key] = append(groupedPatterns[key], pattern)
-	}
-
-	return groupedPatterns
-}
-
-func filterTargetsAndEnvironmentsEnum(patterns map[string][]EnumPatternInfo) map[string][]EnumPatternInfo {
-	filtered := make(map[string][]EnumPatternInfo)
-	for key, patterns := range patterns {
-		if key == "targets" || key == "environments" {
-			continue
-		}
-		filtered[key] = patterns
-	}
-	return filtered
-}
-
-// sortGroupedPatterns sorts patterns within each group and returns them as a sorted slice
-func sortGroupedPatternsEnum(groupedPatterns map[string][]EnumPatternInfo) [][]EnumPatternInfo {
-	// Get sorted group keys
-	groupKeys := slices.Sorted(maps.Keys(groupedPatterns))
-
-	// Build sorted result
-	result := make([][]EnumPatternInfo, 0, len(groupKeys))
-	for _, key := range groupKeys {
-		patterns := groupedPatterns[key]
-
-		// Sort patterns within each group by pattern
-		slices.SortFunc(patterns, func(a, b EnumPatternInfo) int {
-			return cmp.Compare(a.Pattern, b.Pattern)
-		})
-
-		result = append(result, patterns)
-	}
-
-	return result
-}
-
-// enumFields returns grouped enum field patterns for validation
-func enumFields() ([][]EnumPatternInfo, error) {
-	patterns, err := extractEnumFields(reflect.TypeFor[config.Root]())
-	if err != nil {
-		return nil, err
-	}
-	groupedPatterns := groupPatternsByKeyEnum(patterns)
-	filteredPatterns := filterTargetsAndEnvironmentsEnum(groupedPatterns)
-	return sortGroupedPatternsEnum(filteredPatterns), nil
-}
-
-// Generate creates a Go source file with enum field validation rules
-func generateEnumFields(outPath string) error {
-	enumFields, err := enumFields()
-	if err != nil {
-		return fmt.Errorf("failed to generate enum fields: %w", err)
-	}
-
-	// Ensure output directory exists
-	if err := os.MkdirAll(outPath, 0o755); err != nil {
-		return fmt.Errorf("failed to create output directory: %w", err)
-	}
-
-	// Parse and execute template
-	tmpl, err := template.New("enum_validation").Parse(enumValidationTemplate)
-	if err != nil {
-		return fmt.Errorf("failed to parse template: %w", err)
-	}
-
-	var generatedCode bytes.Buffer
-	if err := tmpl.Execute(&generatedCode, enumFields); err != nil {
-		return fmt.Errorf("failed to execute template: %w", err)
-	}
-
-	// Format the generated source with gofmt-equivalent rules so minor template
-	// whitespace changes don't create noisy diffs in the checked-in artifacts.
-	formatted, err := format.Source(generatedCode.Bytes())
-	if err != nil {
-		return fmt.Errorf("failed to format generated code: %w", err)
-	}
-
-	// Write generated code to file
-	filePath := filepath.Join(outPath, "enum_fields.go")
-	if err := os.WriteFile(filePath, formatted, 0o644); err != nil {
-		return fmt.Errorf("failed to write generated code: %w", err)
-	}
-
-	return nil
-}
-
-// enumValidationTemplate is the Go text template for generating the enum validation map
-const enumValidationTemplate = `package generated
-
-// THIS FILE IS AUTOGENERATED.
-// DO NOT EDIT THIS FILE DIRECTLY.
-
-// EnumFields maps [dyn.Pattern] to valid enum values they should have.
-var EnumFields = map[string][]string{
-{{- range . }}
-{{- range . }}
-	"{{ .Pattern }}": {{ .Values }},
-{{- end }}
-{{ end -}}
-}
-`
