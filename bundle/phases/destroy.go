@@ -348,11 +348,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 		}
 
 		// Upgrade from read (opened by process.go, or by Migrate) to write mode
-		writeMode := dstate.WritingFile
-		if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
-			writeMode = dstate.WritingDMS
-		}
-		if err := b.DeploymentBundle.StateDB.UpgradeToWrite(writeMode); err != nil {
+		if err := b.DeploymentBundle.StateDB.UpgradeToWrite(dstate.WritingFile); err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}

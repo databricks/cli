@@ -63,7 +63,6 @@ func TestGetSerialWithDivergingCounters(t *testing.T) {
 	}{
 		{dstate.ReadingFile, 4, 7},
 		{dstate.WritingFile, 4, 7},
-		{dstate.ReadingDMS, 7, 4},
 		{dstate.WritingDMS, 7, 4},
 		{dstate.WritingFileWithHistory, 7, 7},
 		{dstate.WritingFileWithHistoryEnforced, 7, 7},
@@ -92,7 +91,6 @@ func TestModeAssertions(t *testing.T) {
 	}{
 		{dstate.ReadingFile, false, false, false},
 		{dstate.WritingFile, true, false, false},
-		{dstate.ReadingDMS, false, true, true},
 		{dstate.WritingDMS, true, true, true},
 		{dstate.WritingFileWithHistory, true, false, true},
 		{dstate.WritingFileWithHistoryEnforced, true, false, true},
@@ -109,7 +107,11 @@ func TestModeAssertions(t *testing.T) {
 			assert.NotPanics(t, db.AssertOpenedForReadOrWrite)
 			if tc.writable {
 				assert.NotPanics(t, db.AssertOpenedForWrite)
-				assert.Panics(t, db.AssertOpenedForRead)
+				if tc.dms {
+					assert.NotPanics(t, db.AssertOpenedForRead)
+				} else {
+					assert.Panics(t, db.AssertOpenedForRead)
+				}
 			} else {
 				assert.NotPanics(t, db.AssertOpenedForRead)
 				assert.Panics(t, db.AssertOpenedForWrite)
@@ -195,7 +197,7 @@ func TestDMSReadsAndWritesWithoutWAL(t *testing.T) {
 	})
 	path := filepath.Join(t.TempDir(), "resources.json")
 	var db dstate.DeploymentState
-	require.NoError(t, db.Open(ctx, path, dstate.ReadingDMS, false, dstate.OpenDmsArgs{DeploymentID: "dep-1", LastVersionID: 7}))
+	require.NoError(t, db.Open(ctx, path, dstate.WritingDMS, false, dstate.OpenDmsArgs{DeploymentID: "dep-1", LastVersionID: 7}))
 	assert.Equal(t, "remote-id", db.GetResourceID("resources.jobs.remote"))
 	assert.Equal(t, 7, db.GetSerial())
 	require.NoError(t, db.UpgradeToWrite(dstate.WritingDMS))
@@ -228,10 +230,9 @@ func TestUpgradeToWriteValidatesMode(t *testing.T) {
 		{"file", dstate.ReadingFile, dstate.WritingFile, false, ""},
 		{"history", dstate.ReadingFile, dstate.WritingFileWithHistory, false, ""},
 		{"enforced history", dstate.ReadingFile, dstate.WritingFileWithHistoryEnforced, false, ""},
-		{"DMS", dstate.ReadingDMS, dstate.WritingDMS, false, ""},
-		{"file to DMS", dstate.ReadingFile, dstate.WritingDMS, false, "cannot change"},
-		{"DMS to file", dstate.ReadingDMS, dstate.WritingFile, false, "cannot change"},
-		{"DMS to history", dstate.ReadingDMS, dstate.WritingFileWithHistory, false, "cannot change"},
+		{"DMS", dstate.WritingDMS, dstate.WritingDMS, false, ""},
+		{"file to DMS", dstate.ReadingFile, dstate.WritingDMS, false, "invalid"},
+		{"DMS needs no WAL upgrade", dstate.WritingDMS, dstate.WritingFile, false, ""},
 		{"reading mode", dstate.ReadingFile, dstate.ReadingFile, false, "invalid"},
 		{"unknown mode", dstate.ReadingFile, dstate.Mode(99), false, "invalid"},
 		{"enforcement retained", dstate.ReadingFile, dstate.WritingFileWithHistory, true, ""},
@@ -428,7 +429,7 @@ func TestOpenRejectsIncompatibleModesAndFeatures(t *testing.T) {
 	}{
 		{"unknown feature", dstate.ReadingFile, `{"future":{}}`, "requires features"},
 		{"conflicting features", dstate.ReadingFile, `{"deployment_history":{},"deployment_history_best_effort":{}}`, "deployment_history_best_effort"},
-		{"DMS reading best effort history", dstate.ReadingDMS, `{"deployment_history_best_effort":{}}`, "deployment_history_best_effort"},
+		{"DMS with best effort history", dstate.WritingDMS, `{"deployment_history_best_effort":{}}`, "deployment_history_best_effort"},
 		{"file writing DMS", dstate.WritingFile, `{"deployment_history":{}}`, "not supported"},
 		{"file writing best effort history", dstate.WritingFile, `{"deployment_history_best_effort":{}}`, "deployment_history_best_effort"},
 	} {

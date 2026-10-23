@@ -406,7 +406,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			if !cmdctx.HasWorkspaceClient(ctx) {
 				ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
 			}
-			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.ReadingDMS, dstate.WithRecovery(false), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
+			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WritingDMS, dstate.WithRecovery(false), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
@@ -657,7 +657,7 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 	if !cmdctx.HasWorkspaceClient(ctx) {
 		ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
 	}
-	if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.ReadingDMS, dstate.WithRecovery(false), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
+	if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WritingDMS, dstate.WithRecovery(false), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
 		return err
 	}
 	return enforceDeploymentHistorySetting(ctx, b, stateDesc, false)

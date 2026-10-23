@@ -459,7 +459,7 @@ func (db *DeploymentState) GetSerial() int {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	switch db.mode {
-	case ReadingDMS, WritingDMS:
+	case WritingDMS:
 		return db.VersionID
 	case WritingFileWithHistory, WritingFileWithHistoryEnforced:
 		return max(db.VersionID, db.Data.Serial)
@@ -478,7 +478,7 @@ func (db *DeploymentState) IsDeploymentMetadataService() bool {
 }
 
 func (db *DeploymentState) isDeploymentMetadataService() bool {
-	return db.mode == ReadingDMS || db.mode == WritingDMS
+	return db.mode == WritingDMS
 }
 
 // RecordsHistory reports whether this mode records resource operations with DMS.
@@ -486,7 +486,7 @@ func (db *DeploymentState) RecordsHistory() bool {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	switch db.mode {
-	case ReadingDMS, WritingDMS, WritingFileWithHistory, WritingFileWithHistoryEnforced:
+	case WritingDMS, WritingFileWithHistory, WritingFileWithHistoryEnforced:
 		return true
 	default:
 		return false
@@ -519,7 +519,6 @@ type WithRecovery bool
 // Open loads deployment state and enables reads or writes according to mode:
 //   - ReadingFile: reads resources.json; state writes are disabled.
 //   - WritingFile: reads resources.json and opens a WAL for state writes.
-//   - ReadingDMS: reads resources from DMS; state writes are disabled.
 //   - WritingDMS: reads and writes resources through DMS; no WAL is opened.
 //   - WritingFileWithHistory: behaves like WritingFile and also records DMS history.
 //     History errors do not fail the deployment.
@@ -600,7 +599,7 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, mode M
 		db.stateIDs[key] = entry.ID
 	}
 
-	recording := mode == ReadingDMS || mode == WritingDMS
+	recording := mode == WritingDMS
 
 	walPath := db.Path + walSuffix
 	_, err = os.Stat(walPath)
@@ -686,8 +685,8 @@ Run "databricks bundle destroy" first, then deploy again with deployment history
 		db.VersionID = dmsDeployment.LastVersionID
 	}
 
-	if mode.isWritable() {
-		return db.initializeWrites(mode)
+	if mode.isWritable() && mode != WritingDMS {
+		return db.initializeFileWrites(mode)
 	}
 
 	return nil
@@ -861,6 +860,9 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 		db.walFile = nil
 		err = db.replayWAL(ctx)
 	} else if db.mode == WritingDMS {
+		db.Data.Lineage = db.GetOrInitLineage()
+		db.Data.StateVersion = currentStateVersion
+		db.Data.CLIVersion = build.GetInfo().Version
 		// replayWAL is what normally persists the file. Without one, write the tombstone here so
 		// the header (lineage, state version, CLI version) still lands on disk - even when no
 		// operations were recorded, since the deployment and any version this run created exist
@@ -894,50 +896,43 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 	return state, err
 }
 
-// UpgradeToWrite selects a write policy without re-reading resource state.
+// UpgradeToWrite opens a WAL for file writes without re-reading resource state.
+// DMS state is writable from Open, so upgrading it is a no-op.
 func (db *DeploymentState) UpgradeToWrite(mode Mode) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	if db.Path == "" {
 		return errors.New("internal error: DeploymentState must be opened first")
 	}
+	if db.mode == WritingDMS {
+		return nil
+	}
 	if db.mode.isWritable() {
 		return errors.New("internal error: DeploymentState is already open for write")
 	}
-	if !mode.isWritable() {
+	if !mode.isWritable() || mode == WritingDMS {
 		return fmt.Errorf("invalid deployment state write mode: %d", mode)
 	}
-	// Keep the state source unchanged: DMS reads require DMS writes; file reads require file writes.
-	if (db.mode == ReadingDMS) != (mode == WritingDMS) {
-		return errors.New("cannot change the deployment state source when upgrading to write")
-	}
-	if err := db.initializeWrites(mode); err != nil {
+	if err := db.initializeFileWrites(mode); err != nil {
 		return err
 	}
 	db.mode = mode
 	return nil
 }
 
-// initializeWrites validates write compatibility and prepares DMS metadata or a WAL.
+// initializeFileWrites validates file write compatibility and opens a WAL.
 // Callers must hold db.mu.
-func (db *DeploymentState) initializeWrites(mode Mode) error {
+func (db *DeploymentState) initializeFileWrites(mode Mode) error {
 	if err := assertNoUnsupportedFeatures(db.Data.Features); err != nil {
 		return err
 	}
 	_, recorded := db.Data.Features[FeatureDeploymentHistory]
 	_, bestEffort := db.Data.Features[FeatureDeploymentHistoryBestEffort]
-	if recorded != (mode == WritingDMS) {
+	if recorded {
 		return errors.New("cannot change the deployment state source when upgrading to write")
 	}
 	if bestEffort && mode != WritingFileWithHistory && mode != WritingFileWithHistoryEnforced {
 		return errors.New("deployment_history_best_effort state requires writing with deployment history enabled")
-	}
-
-	if mode == WritingDMS {
-		db.Data.Lineage = db.GetOrInitLineage()
-		db.Data.StateVersion = currentStateVersion
-		db.Data.CLIVersion = build.GetInfo().Version
-		return nil
 	}
 
 	walPath := db.Path + walSuffix
@@ -997,7 +992,7 @@ func (db *DeploymentState) AssertOpenedForReadOrWrite() {
 
 func (db *DeploymentState) AssertOpenedForRead() {
 	db.AssertOpenedForReadOrWrite()
-	if db.mode.isWritable() {
+	if db.mode.isWritable() && db.mode != WritingDMS {
 		panic("internal error: DeploymentState must be opened in read mode")
 	}
 }
@@ -1084,7 +1079,7 @@ func (db *DeploymentState) unlockedSave() error {
 
 // Data to persist in the remote resources.json file.
 func (db *DeploymentState) dataForFile() Database {
-	if db.mode == ReadingDMS || db.mode == WritingDMS {
+	if db.mode == WritingDMS {
 		header := db.Data.Header
 		if header.Features == nil {
 			header.Features = make(map[string]struct{})

@@ -12,11 +12,7 @@ const (
 	// Finalize merges them into resources.json. DMS is unused.
 	WritingFile
 
-	// ReadingDMS reads resource state from DMS.
-	// State writes are disabled.
-	ReadingDMS
-
-	// WritingDMS records resource state in DMS without creating a WAL.
+	// WritingDMS reads and writes resource state through DMS without creating a WAL.
 	// DMS errors fail the deployment.
 	WritingDMS
 
