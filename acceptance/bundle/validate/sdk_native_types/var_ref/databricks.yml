@@ -1,0 +1,19 @@
+bundle:
+  name: sdk-native-types-var-ref
+
+variables:
+  expire_time:
+    default: "2030-01-01"
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj
+      display_name: Test
+      pg_version: 16
+
+  postgres_branches:
+    dev:
+      parent: ${resources.postgres_projects.my_project.id}
+      branch_id: dev
+      expire_time: ${var.expire_time}
