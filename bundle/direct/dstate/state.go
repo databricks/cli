@@ -32,12 +32,13 @@ import (
 const (
 	// currentStateVersion is the schema version written by this CLI and the version
 	// legacy states are migrated up to on load.
-	currentStateVersion             = 3
-	initialBufferSize               = 64 * 1024
-	maxWalEntrySize                 = 10 * 1024 * 1024
-	walSuffix                       = ".wal"
-	historyDrainTimeoutPerOperation = 5 * time.Second
+	currentStateVersion = 3
+	initialBufferSize   = 64 * 1024
+	maxWalEntrySize     = 10 * 1024 * 1024
+	walSuffix           = ".wal"
 )
+
+const historyDrainTimeoutPerOperation = 5 * time.Second
 
 // FeatureDeploymentHistory marks a state whose resources are also recorded with the
 // deployment metadata service. Both stores are kept in step, so the marker is what tells a
@@ -328,6 +329,8 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 	}
 
 	switch db.mode {
+	case WritingFile:
+		// Use the normal WAL path below.
 	case WritingDMS:
 		db.Data.State[key] = entry
 		db.stateIDs[key] = newID
@@ -338,12 +341,7 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 			}
 			buf.RecordOperation(ctx, key, false, newID, recorded)
 		}
-
-	case WritingFile:
-		if err := appendJSONLine(db.walFile, WALEntry{Key: key, Value: &entry}); err != nil {
-			return err
-		}
-		db.stateIDs[key] = newID
+		return nil
 
 	case WritingFileWithHistory, WritingFileWithHistoryEnforced:
 		// File-backed modes record history only after the WAL append succeeds.
@@ -358,11 +356,17 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 			}
 			buf.RecordOperation(ctx, key, false, newID, recorded)
 		}
+		return nil
 
 	default:
 		return fmt.Errorf("cannot save state in mode %d", db.mode)
 	}
-	return nil
+
+	err = appendJSONLine(db.walFile, WALEntry{Key: key, Value: &entry})
+	if err == nil {
+		db.stateIDs[key] = newID
+	}
+	return err
 }
 
 // DeleteState drops the resource's state entry: the resource is gone. inProgress records the
@@ -380,18 +384,15 @@ func (db *DeploymentState) DeleteState(ctx context.Context, key string, inProgre
 	deletedID := db.stateIDs[key]
 
 	switch db.mode {
+	case WritingFile:
+		// Use the normal WAL path below.
 	case WritingDMS:
 		delete(db.Data.State, key)
 		if buf := db.operationBuffer; buf != nil {
 			buf.RecordOperation(ctx, key, inProgress, deletedID, nil)
 		}
 		delete(db.stateIDs, key)
-
-	case WritingFile:
-		if err := appendJSONLine(db.walFile, WALEntry{Key: key}); err != nil {
-			return err
-		}
-		delete(db.stateIDs, key)
+		return nil
 
 	case WritingFileWithHistory, WritingFileWithHistoryEnforced:
 		if err := appendJSONLine(db.walFile, WALEntry{Key: key}); err != nil {
@@ -401,10 +402,17 @@ func (db *DeploymentState) DeleteState(ctx context.Context, key string, inProgre
 			buf.RecordOperation(ctx, key, inProgress, deletedID, nil)
 		}
 		delete(db.stateIDs, key)
+		return nil
 
 	default:
 		return fmt.Errorf("cannot delete state in mode %d", db.mode)
 	}
+
+	if err := appendJSONLine(db.walFile, WALEntry{Key: key}); err != nil {
+		return err
+	}
+
+	delete(db.stateIDs, key)
 	return nil
 }
 
@@ -468,6 +476,11 @@ func (db *DeploymentState) GetSerial() int {
 	}
 }
 
+// isDeploymentMetadataService is IsDeploymentMetadataService for callers already holding db.mu.
+func (db *DeploymentState) isDeploymentMetadataService() bool {
+	return db.mode == WritingDMS
+}
+
 // IsDeploymentMetadataService reports whether this deployment's resource state lives in the
 // deployment metadata service rather than the state file. The state's features are the source of
 // truth; valid only after Open.
@@ -475,10 +488,6 @@ func (db *DeploymentState) IsDeploymentMetadataService() bool {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	return db.isDeploymentMetadataService()
-}
-
-func (db *DeploymentState) isDeploymentMetadataService() bool {
-	return db.mode == WritingDMS
 }
 
 // RecordsHistory reports whether this mode records resource operations with DMS.
@@ -543,7 +552,10 @@ func (db *DeploymentState) Open(ctx context.Context, path string, mode Mode, wit
 
 	err := db.unlockedOpen(ctx, path, mode, withRecovery, dmsDeployment)
 	if err != nil {
-		// A failed open must leave the receiver closed so it can be retried.
+		// A failed open must leave the receiver closed. unlockedOpen assigns
+		// db.Path before every fallible step, so without this the receiver stays
+		// half-initialized and the next Open on it hits the panic above instead
+		// of reporting the real error.
 		db.reset()
 	}
 	return err
@@ -818,14 +830,16 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 		}
 	}
 
-	// Persist resource entries after the header, or feature changes in the header itself.
-	// Enforced history can add its feature marker without any resource writes; that marker
-	// still needs to reach resources.json before the WAL is removed.
-	hasEntries := lineNumber > 1 || lineNumber == 1 && !maps.Equal(db.Data.Features, newFeatures)
+	hasEntries := lineNumber > 1
+	// Enforced history can change the header's features without writing resource entries.
+	// Persist that marker too, before removing the WAL.
+	if lineNumber == 1 && !maps.Equal(db.Data.Features, newFeatures) {
+		hasEntries = true
+	}
 
-	// Only advance the serial when the WAL carried changes, because the caller
+	// Only advance the serial when the WAL carried entries, because the caller
 	// (replayWAL) persists the new state file only in that case. A header-only
-	// WAL with unchanged features is a deploy that started but committed nothing; advancing the serial
+	// WAL is a deploy that started but committed nothing; advancing the serial
 	// for it leaves the in-memory serial ahead of the persisted one, so the
 	// next deploy writes its WAL header at serial+2 and recovery rejects it as
 	// "ahead of expected". See acceptance/bundle/deploy/wal/header-only-wal.
@@ -874,22 +888,18 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 		err = db.unlockedSave()
 	}
 
-	// File state is persisted before waiting on optional history recording.
-	if db.operationBuffer != nil {
-		bestEffort := db.mode == WritingFileWithHistory || db.mode == WritingFileWithHistoryEnforced
-		drainCtx := ctx
-		cancel := func() {}
-		if bestEffort {
-			drainCtx, cancel = context.WithTimeout(ctx, db.historyDrainTimeout)
+	// Wait until all operations are recorded in the service.
+	if db.isDeploymentMetadataService() && db.operationBuffer != nil {
+		if drainErr := db.operationBuffer.Drain(ctx); drainErr != nil {
+			err = errors.Join(err, drainErr)
 		}
+	} else if (db.mode == WritingFileWithHistory || db.mode == WritingFileWithHistoryEnforced) && db.operationBuffer != nil {
+		// File state is persisted before waiting on optional history recording.
+		drainCtx, cancel := context.WithTimeout(ctx, db.historyDrainTimeout)
 		drainErr := db.operationBuffer.Drain(drainCtx)
 		cancel()
 		if drainErr != nil {
-			if bestEffort {
-				log.Warnf(ctx, "Failed to record deployment history: %s", drainErr)
-			} else {
-				err = errors.Join(err, drainErr)
-			}
+			log.Warnf(ctx, "Failed to record deployment history: %s", drainErr)
 		}
 	}
 
@@ -952,27 +962,32 @@ func (db *DeploymentState) setupWal(mode Mode) error {
 	if err != nil {
 		return fmt.Errorf("failed to open WAL file %s: %w", walPath, err)
 	}
-	features := maps.Clone(db.Data.Features)
-	if mode == WritingFileWithHistoryEnforced {
-		if features == nil {
-			features = make(map[string]struct{})
-		}
-		features[FeatureDeploymentHistoryBestEffort] = struct{}{}
-	}
+	db.walFile = walFile
 	walHead := Header{
 		Lineage:      db.GetOrInitLineage(),
 		Serial:       db.Data.Serial + 1,
 		StateVersion: currentStateVersion,
 		CLIVersion:   build.GetInfo().Version,
-		Features:     features,
 	}
-	if err := appendJSONLine(walFile, walHead); err != nil {
-		// O_EXCL guarantees this is ours; an incomplete header cannot be recovered.
-		walFile.Close()
+	if mode == WritingFileWithHistory || mode == WritingFileWithHistoryEnforced {
+		walHead.Features = maps.Clone(db.Data.Features)
+		if mode == WritingFileWithHistoryEnforced {
+			if walHead.Features == nil {
+				walHead.Features = make(map[string]struct{})
+			}
+			walHead.Features[FeatureDeploymentHistoryBestEffort] = struct{}{}
+		}
+	}
+	if err := appendJSONLine(db.walFile, walHead); err != nil {
+		// Remove the WAL created just above: O_EXCL means it is ours, and
+		// without a header it carries nothing to recover. Leaving it makes
+		// every later open fail, with recovery on the header parse and
+		// without it on the unexpected WAL file.
+		db.walFile.Close()
+		db.walFile = nil
 		os.Remove(walPath)
 		return fmt.Errorf("failed to write WAL header to %s: %w", walPath, err)
 	}
-	db.walFile = walFile
 	return nil
 }
 
@@ -1088,7 +1103,7 @@ func (db *DeploymentState) unlockedSave() error {
 
 // Data to persist in the remote resources.json file.
 func (db *DeploymentState) dataForFile() Database {
-	if db.mode == WritingDMS {
+	if db.isDeploymentMetadataService() {
 		header := db.Data.Header
 		if header.Features == nil {
 			header.Features = make(map[string]struct{})
