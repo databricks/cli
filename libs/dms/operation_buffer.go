@@ -166,7 +166,9 @@ func (b *OperationBuffer) run(ctx context.Context) {
 	for {
 		var resourceKey string
 		if b.bestEffort {
-			// Cancellation comes from the deployment, a drain timeout, or a history error.
+			// Calling b.cancel() makes ctx.Err() return an error. This is the signal to stop.
+			// We expect this after a drain timeout or history recording error.
+			// Cancellation or expiry of the deployment's context also stops the worker here.
 			if err := ctx.Err(); err != nil {
 				b.setErr(err)
 				return
