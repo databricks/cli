@@ -13,4 +13,4 @@ $CLI bundle run myapp > /dev/null 2>&1
 DEPLOYMENT_ID=$($CLI apps get "$APP_NAME" | jq -r '.active_deployment.deployment_id')
 add_repl "$DEPLOYMENT_ID" DEPLOYMENT_ID
 
-trace $CLI apps get-deployment "$APP_NAME" "$DEPLOYMENT_ID" | jq '{command, env_vars}'
+trace $CLI apps get-deployment "$APP_NAME" "$DEPLOYMENT_ID" | jq '{command, env_vars, health_check}'

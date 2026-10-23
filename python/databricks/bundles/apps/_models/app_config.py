@@ -4,9 +4,13 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.apps._models.app_env_var import AppEnvVar, AppEnvVarParam
+from databricks.bundles.apps._models.app_health_check import (
+    AppHealthCheck,
+    AppHealthCheckParam,
+)
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import VariableOrList
+from databricks.bundles.core._variable import VariableOrList, VariableOrOptional
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -19,6 +23,8 @@ class AppConfig:
     command: VariableOrList[str] = field(default_factory=list)
 
     env: VariableOrList[AppEnvVar] = field(default_factory=list)
+
+    health_check: VariableOrOptional[AppHealthCheck] = None
 
     @classmethod
     def from_dict(cls, value: "AppConfigDict") -> "Self":
@@ -34,6 +40,8 @@ class AppConfigDict(TypedDict, total=False):
     command: VariableOrList[str]
 
     env: VariableOrList[AppEnvVarParam]
+
+    health_check: VariableOrOptional[AppHealthCheckParam]
 
 
 AppConfigParam = AppConfigDict | AppConfig

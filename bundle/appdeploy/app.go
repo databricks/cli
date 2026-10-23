@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/common/types/duration"
 	sdkapps "github.com/databricks/databricks-sdk-go/service/apps"
 )
 
@@ -43,6 +44,15 @@ func BuildDeployment(sourcePath string, config *resources.AppConfig, gitSource *
 					Value:     env.Value,
 					ValueFrom: env.ValueFrom,
 				}
+			}
+		}
+
+		if config.HealthCheck != nil {
+			deployment.HealthCheck = &sdkapps.AppHealthCheck{
+				Path: config.HealthCheck.Path,
+			}
+			if config.HealthCheck.TimeoutSeconds > 0 {
+				deployment.HealthCheck.Timeout = duration.New(time.Duration(config.HealthCheck.TimeoutSeconds) * time.Second)
 			}
 		}
 	}
