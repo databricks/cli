@@ -167,6 +167,7 @@ func TestOpenUsesDMSVersionForSerial(t *testing.T) {
 			path := filepath.Join(t.TempDir(), "resources.json")
 			seed := map[string]any{
 				"state_version": currentStateVersion,
+				"cli_version":   "99.0.0",
 				"lineage":       "test-lineage",
 				"features":      map[string]struct{}{FeatureDeploymentHistory: {}},
 				"state":         map[string]ResourceEntry{},
@@ -193,6 +194,7 @@ func TestOpenUsesDMSVersionForSerial(t *testing.T) {
 			}
 			require.NoError(t, err)
 			assert.Equal(t, tt.lastVersionID, db.GetSerial())
+			assert.Equal(t, "99.0.0", db.StateCLIVersion(), "preserve the last writer for downgrade warnings")
 			mustFinalize(t, &db)
 		})
 	}

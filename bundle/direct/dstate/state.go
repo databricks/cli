@@ -431,8 +431,10 @@ func (db *DeploymentState) GetResourceID(key string) string {
 	return db.stateIDs[key]
 }
 
-// StateCLIVersion returns the CLI version in the current state header.
-// File state retains the last writer's version; DMS stamps the running version during Open.
+// StateCLIVersion returns the CLI version that last wrote the state, or an empty
+// string if the state does not record one (a fresh state that this CLI has not
+// written yet). It is the version stored in the on-disk header, not the running
+// build's version.
 func (db *DeploymentState) StateCLIVersion() string {
 	db.AssertOpenedForReadOrWrite()
 	db.mu.Lock()
@@ -688,8 +690,6 @@ Run "databricks bundle destroy" first, then deploy again with deployment history
 	case ReadingFile:
 		return nil
 	case WritingDMS:
-		db.Data.StateVersion = currentStateVersion
-		db.Data.CLIVersion = build.GetInfo().Version
 		return nil
 	case WritingFile, WritingFileWithHistory, WritingFileWithHistoryEnforced:
 		return db.setupWal()
@@ -867,8 +867,11 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 		db.walFile = nil
 		err = db.replayWAL(ctx)
 	} else if db.mode == WritingDMS {
-		// Create a lineage when persisting it so saved plans use a stable value.
+		// Stamp the header when persisting it: saved plans need a stable lineage, and
+		// the last writer's CLI version must remain available for downgrade warnings.
 		db.Data.Lineage = db.GetOrInitLineage()
+		db.Data.StateVersion = currentStateVersion
+		db.Data.CLIVersion = build.GetInfo().Version
 		// replayWAL is what normally persists the file. Without one, write the tombstone here so
 		// the header (lineage, state version, CLI version) still lands on disk - even when no
 		// operations were recorded, since the deployment and any version this run created exist
