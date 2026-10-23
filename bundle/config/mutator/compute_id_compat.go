@@ -2,11 +2,13 @@ package mutator
 
 import (
 	"context"
+	"maps"
 	"slices"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type computeIdToClusterId struct{}
@@ -22,68 +24,45 @@ func (m *computeIdToClusterId) Name() string {
 func (m *computeIdToClusterId) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
 
+	// Skip if "compute_id" is not set anywhere.
+	if b.Config.Bundle.ComputeId == "" && !slices.ContainsFunc(slices.Collect(maps.Values(b.Config.Targets)), func(t *config.Target) bool {
+		return t != nil && t.ComputeId != ""
+	}) {
+		return nil
+	}
+
 	// The "compute_id" key is set; rewrite it to "cluster_id".
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		v, d := rewriteComputeIdToClusterId(v, dyn.NewPath(dyn.Key("bundle")), nil)
-		diags = diags.Extend(d)
+	b2 := &b.Config.Bundle
+	diags = diags.Extend(rewriteComputeIdToClusterId(b, structpath.NewStringKey(nil, "bundle"), &b2.ComputeId, &b2.ClusterId))
 
-		// Check if the "compute_id" key is set in any target overrides.
-		return dyn.MapByPattern(v, dyn.NewPattern(dyn.Key("targets"), dyn.AnyKey()), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			v, d := rewriteComputeIdToClusterId(v, dyn.Path{}, p)
-			diags = diags.Extend(d)
-			return v, nil
-		})
-	})
-
-	diags = diags.Extend(diag.FromErr(err))
+	// Check if the "compute_id" key is set in any target overrides.
+	for _, name := range slices.Sorted(maps.Keys(b.Config.Targets)) {
+		if t := b.Config.Targets[name]; t != nil {
+			diags = diags.Extend(rewriteComputeIdToClusterId(b, structpath.NewPath(nil, "targets", name), &t.ComputeId, &t.ClusterId))
+		}
+	}
 	return diags
 }
 
-// rewriteComputeIdToClusterId rewrites p.compute_id to p.cluster_id in v; prefix is the
-// path of v in the configuration, used in the diagnostic.
-func rewriteComputeIdToClusterId(v dyn.Value, p, prefix dyn.Path) (dyn.Value, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	computeIdPath := p.Append(dyn.Key("compute_id"))
-	computeId, err := dyn.GetByPath(v, computeIdPath)
+// rewriteComputeIdToClusterId moves the compute_id of the value at p to its cluster_id,
+// with its locations.
+func rewriteComputeIdToClusterId(b *bundle.Bundle, p *structpath.PathNode, computeId, clusterId *string) diag.Diagnostics {
 	// If the "compute_id" key is not set, we don't need to do anything.
-	if err != nil {
-		return v, nil
+	if *computeId == "" {
+		return nil
 	}
 
-	if computeId.Kind() == dyn.KindInvalid {
-		return v, nil
-	}
-
-	diags = diags.Append(diag.Diagnostic{
+	computeIdPath := structpath.NewStringKey(p, "compute_id")
+	locs := b.Config.GetLocationsOfExact(computeIdPath)
+	diags := diag.Diagnostics{{
 		Severity:  diag.Warning,
 		Summary:   "compute_id is deprecated, please use cluster_id instead",
-		Locations: computeId.Locations(),
-		Paths:     dyn.ToStructPaths(slices.Concat(prefix, computeIdPath)),
-	})
+		Locations: locs,
+		Paths:     []*structpath.PathNode{computeIdPath},
+	}}
 
-	clusterIdPath := p.Append(dyn.Key("cluster_id"))
-	nv, err := dyn.SetByPath(v, clusterIdPath, computeId)
-	if err != nil {
-		return dyn.InvalidValue, diag.FromErr(err)
-	}
+	*clusterId = *computeId
+	b.Config.SetLocations(structpath.NewStringKey(p, "cluster_id"), locs)
 	// Drop the "compute_id" key.
-	vout, err := dyn.Walk(nv, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-		switch len(p) {
-		case 0:
-			return v, nil
-		case 1:
-			if p[0] == dyn.Key("compute_id") {
-				return v, dyn.ErrDrop
-			}
-			return v, nil
-		case 2:
-			if p[1] == dyn.Key("compute_id") {
-				return v, dyn.ErrDrop
-			}
-		}
-		return v, dyn.ErrSkip
-	})
-
-	diags = diags.Extend(diag.FromErr(err))
-	return vout, diags
+	return diags.Extend(diag.FromErr(b.Config.Delete(computeIdPath)))
 }

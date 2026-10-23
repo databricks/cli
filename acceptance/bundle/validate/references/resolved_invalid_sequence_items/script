@@ -1,0 +1,2 @@
+# Several list elements whose reference resolves to the wrong type are dropped, the others keep their order.
+trace $CLI bundle validate -o json | jq .resources.jobs.j.email_notifications

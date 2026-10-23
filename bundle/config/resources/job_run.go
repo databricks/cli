@@ -41,6 +41,14 @@ type JobRunLifecycle struct {
 	TriggersState *JobRunTriggersState `json:"triggers_state,omitempty" bundle:"internal"`
 }
 
+// GetLifecycle returns the lifecycle settings, using JobRunLifecycle.
+func (r *JobRun) GetLifecycle() LifecycleConfig {
+	if r.Lifecycle == nil {
+		return JobRunLifecycle{}
+	}
+	return *r.Lifecycle
+}
+
 // JobRunTrigger is one lifecycle.triggers entry.
 type JobRunTrigger struct {
 	OnBundleDeploy *bool   `json:"on_bundle_deploy,omitempty"`

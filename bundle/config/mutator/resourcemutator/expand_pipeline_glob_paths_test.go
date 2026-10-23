@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/require"
@@ -235,8 +234,8 @@ func TestExpandGlobPathsInPipelinesKeepsOrder(t *testing.T) {
 		{File: &pipelines.FileLibrary{Path: "a/1.py"}},
 		{File: &pipelines.FileLibrary{Path: "a/2.py"}},
 		{File: &pipelines.FileLibrary{Path: "/Workspace/x.py"}},
-		// The empty notebook is kept; the round trip through the dynamic configuration forces it.
-		{Notebook: &pipelines.NotebookLibrary{}, ForceSendFields: []string{"Notebook"}},
+		// The empty notebook is kept.
+		{Notebook: &pipelines.NotebookLibrary{}},
 	}, b.Config.Resources.Pipelines["pipeline"].Libraries)
 
 	// The original library is not modified.
@@ -265,8 +264,4 @@ func TestExpandGlobPathsInPipelinesWithoutLibraries(t *testing.T) {
 
 	assert.Nil(t, b.Config.Resources.Pipelines["unset"].Libraries)
 	assert.Equal(t, []pipelines.PipelineLibrary{}, b.Config.Resources.Pipelines["empty"].Libraries)
-
-	v := b.Config.Value()
-	assert.False(t, v.Get("resources").Get("pipelines").Get("unset").Get("libraries").IsValid())
-	assert.Equal(t, dyn.KindSequence, v.Get("resources").Get("pipelines").Get("empty").Get("libraries").Kind())
 }

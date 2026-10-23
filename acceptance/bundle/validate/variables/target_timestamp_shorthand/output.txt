@@ -1,10 +1,6 @@
 
 >>> [CLI] bundle validate -t dev -o json
-Warning: expected map, found time
-  at targets.dev.variables.x
-  in databricks.yml:11:10
-
 {
-  "default": "base",
-  "value": "base"
+  "default": "2020-01-02",
+  "value": "2020-01-02"
 }

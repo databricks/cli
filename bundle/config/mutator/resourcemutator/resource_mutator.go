@@ -2,17 +2,14 @@ package resourcemutator
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
 
-	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structs/structpath"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/dyn"
 )
 
 // When a new resource is added to configuration, we apply bundle
@@ -46,64 +43,12 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		return
 	}
 
-	defaults := []struct {
-		pattern string
-		value   any
-	}{
-		{"resources.dashboards.*.parent_path", b.Config.Workspace.ResourcePath},
-		{"resources.dashboards.*.embed_credentials", false},
-		{"resources.genie_spaces.*.parent_path", b.Config.Workspace.ResourcePath},
-		{"resources.volumes.*.volume_type", "MANAGED"},
-
-		{"resources.alerts.*.parent_path", b.Config.Workspace.ResourcePath},
-
-		// Jobs:
-
-		// The defaults are the same as for terraform provider latest version (v1.75.0)
-		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/jobs/resource_job.go#L532
-		{"resources.jobs.*.name", "Untitled"},
-		{"resources.jobs.*.max_concurrent_runs", 1},
-		{"resources.jobs.*.schedule.pause_status", "UNPAUSED"},
-		{"resources.jobs.*.trigger.pause_status", "UNPAUSED"},
-		{"resources.jobs.*.continuous.pause_status", "UNPAUSED"},
-
-		// Enable queueing for jobs by default, following the behavior from API 2.2+.
-		// As of 2024-04, we're still using API 2.1 which has queueing disabled by default.
-		{"resources.jobs.*.queue", map[string]dyn.Value{
-			"enabled": dyn.V(true),
-		}},
-
-		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/clusters/resource_cluster.go
-		{"resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.notebooks", true},
-		{"resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.jobs", true},
-
-		// Pipelines (same as terraform)
-		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/pipelines/resource_pipeline.go#L253
-		{"resources.pipelines.*.edition", "ADVANCED"},
-		{"resources.pipelines.*.channel", "CURRENT"},
-
-		// SqlWarehouses (same as terraform)
-		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/sql/resource_sql_endpoint.go#L59
-		{"resources.sql_warehouses.*.auto_stop_mins", 120},
-		{"resources.sql_warehouses.*.enable_photon", true},
-		{"resources.sql_warehouses.*.max_num_clusters", 1},
-		{"resources.sql_warehouses.*.spot_instance_policy", "COST_OPTIMIZED"},
-
-		// Apps:
-		{"resources.apps.*.description", ""},
-
-		// Clusters (same as terraform)
-		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/clusters/resource_cluster.go#L315
-		{"resources.clusters.*.autotermination_minutes", 60},
-		{"resources.clusters.*.workload_type.clients.notebooks", true},
-		{"resources.clusters.*.workload_type.clients.jobs", true},
+	// Set the default values of resource fields that are not set.
+	if err := applyResourceDefaults(b); err != nil {
+		logdiag.LogError(ctx, err)
 	}
-
-	for _, defaultDef := range defaults {
-		bundle.SetDefault(ctx, b, defaultDef.pattern, defaultDef.value)
-		if logdiag.HasError(ctx) {
-			return
-		}
+	if logdiag.HasError(ctx) {
+		return
 	}
 
 	bundle.ApplySeqContext(ctx, b,
@@ -220,17 +165,7 @@ func NormalizeAndInitializeResources(
 		return
 	}
 
-	var snapshot dyn.Value
-
-	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		snapshot = root
-
-		return selectResources(root, addedResources)
-	})
-	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("failed to select resources: %w", err))
-		return
-	}
+	restore := selectResources(b, addedResources)
 
 	applyNormalizeMutators(ctx, b)
 	if logdiag.HasError(ctx) {
@@ -242,13 +177,8 @@ func NormalizeAndInitializeResources(
 		return
 	}
 
-	// after mutators, we merge updated resources back to snapshot to preserve non-selected resources
-	err = b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		return mergeResources(root, snapshot)
-	})
-	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("failed to merge resources: %w", err))
-	}
+	// after mutators, we merge updated resources back to the snapshot to preserve non-selected resources
+	restore()
 }
 
 // NormalizeResources normalizes resources specified resources,
@@ -262,17 +192,7 @@ func NormalizeResources(
 		return
 	}
 
-	var snapshot dyn.Value
-
-	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		snapshot = root
-
-		return selectResources(root, updatedResources)
-	})
-	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("failed to select resources: %w", err))
-		return
-	}
+	restore := selectResources(b, updatedResources)
 
 	applyNormalizeMutators(ctx, b)
 	if logdiag.HasError(ctx) {
@@ -290,129 +210,32 @@ func NormalizeResources(
 		return
 	}
 
-	// after mutators, we merge updated resources back to snapshot to preserve non-selected resources
-	err = b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		return mergeResources(root, snapshot)
-	})
-	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("failed to merge resources: %w", err))
-	}
+	// after mutators, we merge updated resources back to the snapshot to preserve non-selected resources
+	restore()
 }
 
-// selectResources returns bundle configuration with resources only present in resourcePaths.
-func selectResources(root dyn.Value, resourcePaths ResourceKeySet) (dyn.Value, error) {
-	resourcesKeyString := "resources"
-	resourcesPath := dyn.NewPath(dyn.Key(resourcesKeyString))
+// selectResources removes all resources except the ones in resourceKeys from the bundle
+// configuration. It returns a function that restores the removed resources: it puts the
+// configuration back to what it was before, except for the selected resources, which take
+// the values they have at that point. Any other changes to the configuration are discarded.
+func selectResources(b *bundle.Bundle, resourceKeys ResourceKeySet) func() {
+	// A shallow copy of the configuration: the resources maps are replaced below, not
+	// modified, so the copy keeps all resources.
+	snapshot := b.Config
+	b.Config.Resources = b.Config.Resources.Select(resourceKeys)
 
-	newRoot := root
-	var err error
+	return func() {
+		updated := b.Config
+		b.Config = snapshot
 
-	// remove resource types that are not in resourcePaths
-	newRoot, err = dyn.MapByPath(
-		newRoot,
-		resourcesPath,
-		func(p dyn.Path, resources dyn.Value) (dyn.Value, error) {
-			return merge.Select(resources, resourcePaths.Types())
-		},
-	)
-	if err != nil {
-		return dyn.InvalidValue, err
-	}
-
-	// for each resource type, remove resources by name
-	for _, resourceType := range resourcePaths.Types() {
-		resourceTypePath := resourcesPath.Append(dyn.Key(resourceType))
-
-		newRoot, err = dyn.MapByPath(
-			newRoot,
-			resourceTypePath,
-			func(p dyn.Path, resource dyn.Value) (dyn.Value, error) {
-				return merge.Select(resource, resourcePaths.Names(resourceType))
-			},
-		)
-		if err != nil {
-			return dyn.InvalidValue, err
+		for resourceType, names := range resourceKeys {
+			for name := range names {
+				// Keep the resource that was updated, it may have more than the configuration describes.
+				if !b.Config.Resources.CopyResource(&updated.Resources, resourceType, name) {
+					continue
+				}
+				b.Config.CopyMetadata(&updated, structpath.NewPath(nil, "resources", resourceType, name))
+			}
 		}
 	}
-
-	return newRoot, err
-}
-
-// mergeResources returns bundle configuration by merging all resources from src into dst,
-// overriding existing resources if they exist.
-func mergeResources(src, dst dyn.Value) (dyn.Value, error) {
-	resourcesKey := dyn.Key("resources")
-
-	newDst := dst
-
-	// merge 'resources.<type>.<name>'
-	_, err := dyn.MapByPattern(
-		src,
-		dyn.NewPattern(resourcesKey, dyn.AnyKey(), dyn.AnyKey()),
-		func(path dyn.Path, v dyn.Value) (dyn.Value, error) {
-			// if parent 'resources.<type>' doesn't exist, handle it on the next pass
-			updated, _ := dyn.SetByPath(newDst, path, v)
-			if !updated.IsValid() {
-				return v, nil
-			} else {
-				newDst = updated
-			}
-
-			return v, nil
-		},
-	)
-	if err != nil {
-		return newDst, err
-	}
-
-	// merge 'resources.<type>'
-	_, err = dyn.MapByPattern(
-		src,
-		dyn.NewPattern(resourcesKey, dyn.AnyKey()),
-		func(path dyn.Path, v dyn.Value) (dyn.Value, error) {
-			// if already exists, we already handled it in the previous pass
-			existing, _ := dyn.GetByPath(newDst, path)
-			if existing.IsValid() {
-				return v, nil
-			}
-
-			// if parent 'resources' doesn't exist, handle it on the next pass
-			updated, _ := dyn.SetByPath(newDst, path, v)
-			if !updated.IsValid() {
-				return v, nil
-			} else {
-				newDst = updated
-				return v, nil
-			}
-		},
-	)
-	if err != nil {
-		return newDst, err
-	}
-
-	// merge 'resources'
-	_, err = dyn.MapByPattern(
-		src,
-		dyn.NewPattern(resourcesKey),
-		func(path dyn.Path, v dyn.Value) (dyn.Value, error) {
-			// if already exists, we already handled it in the previous pass
-			existing, _ := dyn.GetByPath(newDst, path)
-			if existing.IsValid() {
-				return v, nil
-			}
-
-			updated, _ := dyn.SetByPath(newDst, path, v)
-			if !updated.IsValid() {
-				return v, errors.New("failed to update resources")
-			} else {
-				newDst = updated
-				return v, nil
-			}
-		},
-	)
-	if err != nil {
-		return newDst, err
-	}
-
-	return newDst, nil
 }

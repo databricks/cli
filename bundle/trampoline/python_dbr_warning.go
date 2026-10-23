@@ -10,8 +10,8 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
 	"golang.org/x/mod/semver"
 )
@@ -82,18 +82,18 @@ func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) diag.Diagn
 			// So we can get the version from the cluster definition.
 			// It's defined in a form of resources.clusters.<cluster_key>.id
 			if strings.HasPrefix(task.ExistingClusterId, "${") {
-				p, ok := dynvar.PureReferenceToPath(task.ExistingClusterId)
-				if !ok || len(p) < 3 {
+				p, ok := structvar.PureReferenceToPath(task.ExistingClusterId)
+				if !ok || p.Len() < 3 {
 					log.Warnf(ctx, "unable to parse cluster key from %s", task.ExistingClusterId)
 					continue
 				}
 
-				if p[0].Key() != "resources" || p[1].Key() != "clusters" {
+				if p.KeyAt(0) != "resources" || p.KeyAt(1) != "clusters" {
 					log.Warnf(ctx, "incorrect variable reference for cluster id %s", task.ExistingClusterId)
 					continue
 				}
 
-				clusterKey := p[2].Key()
+				clusterKey := p.KeyAt(2)
 				cluster, ok := b.Config.Resources.Clusters[clusterKey]
 				if !ok {
 					log.Warnf(ctx, "unable to find cluster with key %s", clusterKey)

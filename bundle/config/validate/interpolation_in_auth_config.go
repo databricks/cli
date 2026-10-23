@@ -7,8 +7,8 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type noInterpolationInAuthConfig struct{}
@@ -22,65 +22,58 @@ func (f *noInterpolationInAuthConfig) Name() string {
 }
 
 func (f *noInterpolationInAuthConfig) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	authFields := []string{
+	w := &b.Config.Workspace
+	authFields := []struct {
+		name  string
+		value string
+	}{
 		// Generic attributes.
-		"host",
-		"profile",
-		"auth_type",
-		"metadata_service_url",
+		{"host", w.Host},
+		{"profile", w.Profile},
+		{"auth_type", w.AuthType},
+		{"metadata_service_url", w.MetadataServiceURL},
 
 		// OAuth specific attributes.
-		"client_id",
+		{"client_id", w.ClientID},
 
 		// Google specific attributes.
-		"google_service_account",
+		{"google_service_account", w.GoogleServiceAccount},
 
-		// Azure specific attributes.
-		"azure_resource_id",
-		"azure_use_msi",
-		"azure_client_id",
-		"azure_tenant_id",
-		"azure_environment",
-		"azure_login_app_id",
+		// Azure specific attributes. "azure_resource_id" used to be listed here, but it
+		// is not a workspace key (the field is azure_workspace_resource_id), so it was
+		// never checked.
+		{"azure_use_msi", b.Config.ReferenceAt(structpath.NewPath(nil, "workspace", "azure_use_msi"))},
+		{"azure_client_id", w.AzureClientID},
+		{"azure_tenant_id", w.AzureTenantID},
+		{"azure_environment", w.AzureEnvironment},
+		{"azure_login_app_id", w.AzureLoginAppID},
 
 		// Unified host specific attributes.
-		"account_id",
-		"workspace_id",
+		{"account_id", w.AccountID},
+		{"workspace_id", w.WorkspaceID},
 	}
 
 	diags := diag.Diagnostics{}
 
-	for _, fieldName := range authFields {
-		p := dyn.NewPath(dyn.Key("workspace"), dyn.Key(fieldName))
-		v, err := dyn.GetByPath(b.Config.Value(), p)
-		if dyn.IsNoSuchKeyError(err) {
+	for _, field := range authFields {
+		// Check if the field contains interpolation.
+		if !structvar.ContainsVariableReference(field.value) {
 			continue
 		}
-		if err != nil {
-			return diag.FromErr(err)
-		}
-
-		vv, ok := v.AsString()
+		envVar, ok := auth.GetEnvFor(field.name)
 		if !ok {
 			continue
 		}
 
-		// Check if the field contains interpolation.
-		if dynvar.ContainsVariableReference(vv) {
-			envVar, ok := auth.GetEnvFor(fieldName)
-			if !ok {
-				continue
-			}
-
-			diags = append(diags, diag.Diagnostic{
-				Severity: diag.Warning,
-				Summary:  "Variable interpolation is not supported for fields that configure authentication",
-				Detail: fmt.Sprintf(`Interpolation is not supported for the field %s. Please set
+		p := structpath.NewPath(nil, "workspace", field.name)
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Warning,
+			Summary:  "Variable interpolation is not supported for fields that configure authentication",
+			Detail: fmt.Sprintf(`Interpolation is not supported for the field %s. Please set
 the %s environment variable if you wish to configure this field at runtime.`, p.String(), envVar),
-				Locations: v.Locations(),
-				Paths:     dyn.ToStructPaths(p),
-			})
-		}
+			Locations: b.Config.GetLocationsOfExact(p),
+			Paths:     []*structpath.PathNode{p},
+		})
 	}
 
 	return diags

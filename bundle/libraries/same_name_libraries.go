@@ -7,22 +7,10 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type checkForSameNameLibraries struct{}
-
-var patterns = []dyn.Pattern{
-	taskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
-	taskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
-	forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
-	forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
-	clusterLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
-	clusterLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
-	envDepsPattern.Append(dyn.AnyIndex()),
-	pipelineEnvDepsPattern.Append(dyn.AnyIndex()),
-}
 
 type libData struct {
 	fullPath   string
@@ -35,49 +23,33 @@ func (c checkForSameNameLibraries) Apply(ctx context.Context, b *bundle.Bundle) 
 	var diags diag.Diagnostics
 	libs := make(map[string]*libData)
 
-	err := b.Config.Mutate(func(rootConfig dyn.Value) (dyn.Value, error) {
-		var err error
-		for _, pattern := range patterns {
-			rootConfig, err = dyn.MapByPattern(rootConfig, pattern, func(p dyn.Path, libraryValue dyn.Value) (dyn.Value, error) {
-				libPath, ok := libraryValue.AsString()
-				if !ok {
-					return libraryValue, nil
-				}
+	err := visitLibraryValues(&b.Config.Resources, false, func(p *structpath.PathNode, s *string) error {
+		libPath := *s
 
-				// If not local library, skip the check
-				if !IsLibraryLocal(libPath) {
-					return libraryValue, nil
-				}
+		// If not local library, skip the check
+		if !IsLibraryLocal(libPath) {
+			return nil
+		}
 
-				lib := filepath.Base(libPath)
-				// If the same basename was seen already but full path is different
-				// then it's a duplicate. Add the location to the location list.
-				lp, ok := libs[lib]
-				if !ok {
-					libs[lib] = &libData{
-						fullPath:   libPath,
-						locations:  []diag.Location{libraryValue.Location()},
-						paths:      dyn.ToStructPaths(p),
-						otherPaths: []string{},
-					}
-				} else if lp.fullPath != libPath {
-					lp.locations = append(lp.locations, libraryValue.Location())
-					lp.paths = append(lp.paths, dyn.ToStructPath(p))
-					lp.otherPaths = append(lp.otherPaths, libPath)
-				}
-
-				return libraryValue, nil
-			})
-			if err != nil {
-				return dyn.InvalidValue, err
+		lib := filepath.Base(libPath)
+		loc := b.Config.GetLocationOfExact(p)
+		// If the same basename was seen already but full path is different
+		// then it's a duplicate. Add the location to the location list.
+		lp, ok := libs[lib]
+		if !ok {
+			libs[lib] = &libData{
+				fullPath:   libPath,
+				locations:  []diag.Location{loc},
+				paths:      []*structpath.PathNode{p},
+				otherPaths: []string{},
 			}
+		} else if lp.fullPath != libPath {
+			lp.locations = append(lp.locations, loc)
+			lp.paths = append(lp.paths, p)
+			lp.otherPaths = append(lp.otherPaths, libPath)
 		}
 
-		if err != nil {
-			return dyn.InvalidValue, err
-		}
-
-		return rootConfig, nil
+		return nil
 	})
 
 	// Iterate over all the libraries and check if there are any duplicates.

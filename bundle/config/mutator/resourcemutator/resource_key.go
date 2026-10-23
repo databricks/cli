@@ -1,10 +1,6 @@
 package resourcemutator
 
-import (
-	"errors"
-
-	"github.com/databricks/cli/libs/dyn"
-)
+import "github.com/databricks/cli/bundle/config"
 
 // ResourceKey uniquely identifies a resource in configuration.
 type ResourceKey struct {
@@ -47,24 +43,22 @@ func (r ResourceKeySet) Size() int {
 	return size
 }
 
-// AddPattern adds all resource keys that match the pattern.
-func (r ResourceKeySet) AddPattern(pattern dyn.Pattern, root dyn.Value) error {
-	if len(pattern) != 3 {
-		return errors.New("pattern must have 3 keys")
-	}
-
-	_, err := dyn.MapByPattern(root, pattern, func(path dyn.Path, v dyn.Value) (dyn.Value, error) {
-		parsed, err := getResourceKey(path)
-		if err != nil {
-			return dyn.InvalidValue, err
-		}
-
-		r.AddResourceKey(parsed)
-
-		return v, nil
+// AddResources adds the keys of all resources in r.
+func (r ResourceKeySet) AddResources(resources *config.Resources) {
+	resources.IterateAllResources(func(typ, name string, _ config.ConfigResource) bool {
+		r.AddResourceKey(ResourceKey{Type: typ, Name: name})
+		return true
 	})
+}
 
-	return err
+// AddResourcesOfType adds the keys of the resources of type typ in r.
+func (r ResourceKeySet) AddResourcesOfType(resources *config.Resources, typ string) {
+	resources.IterateAllResources(func(t, name string, _ config.ConfigResource) bool {
+		if t == typ {
+			r.AddResourceKey(ResourceKey{Type: typ, Name: name})
+		}
+		return true
+	})
 }
 
 // Types returns the types of all resources in the set.
@@ -103,26 +97,4 @@ func (r ResourceKeySet) ToArray() []ResourceKey {
 	}
 
 	return result
-}
-
-func getResourceKey(path dyn.Path) (ResourceKey, error) {
-	if len(path) < 3 {
-		return ResourceKey{}, errors.New("can't parse resource key")
-	}
-
-	if path[0].Key() != "resources" {
-		return ResourceKey{}, errors.New("can't parse resource key")
-	}
-
-	resourceType := path[1].Key()
-	resourceName := path[2].Key()
-
-	if resourceType == "" || resourceName == "" {
-		return ResourceKey{}, errors.New("can't parse resource key")
-	}
-
-	return ResourceKey{
-		Type: resourceType,
-		Name: resourceName,
-	}, nil
 }

@@ -6,9 +6,9 @@ import (
 	"regexp"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 )
@@ -92,34 +92,12 @@ type appResourceReference struct {
 	permission   string
 }
 
-// hasPermissions checks if a bundle resource at the given dyn path has a non-empty permissions list.
-func hasPermissions(b *bundle.Bundle, resourcePath string) bool {
-	pv, err := dyn.Get(b.Config.Value(), resourcePath+".permissions")
-	if err != nil {
-		return false
-	}
-	s, ok := pv.AsSequence()
-	return ok && len(s) > 0
-}
-
 // hasAppSPInPermissions checks if any permission entry for the given resource
 // references the app's service principal via variable interpolation.
-func hasAppSPInPermissions(b *bundle.Bundle, resourcePath, appKey string) bool {
+func hasAppSPInPermissions(perms config.PermissionList, appKey string) bool {
 	appSPRef := fmt.Sprintf("${resources.apps.%s.service_principal_client_id}", appKey)
-	pv, err := dyn.Get(b.Config.Value(), resourcePath+".permissions")
-	if err != nil {
-		return false
-	}
-	s, ok := pv.AsSequence()
-	if !ok {
-		return false
-	}
-	for _, entry := range s {
-		spn, err := dyn.Get(entry, "service_principal_name")
-		if err != nil {
-			continue
-		}
-		if str, ok := spn.AsString(); ok && str == appSPRef {
+	for i := range perms.Len() {
+		if perms.At(i).ServicePrincipalName == appSPRef {
 			return true
 		}
 	}
@@ -146,12 +124,12 @@ func warnForAppResourcePermissions(b *bundle.Bundle, appKey string, app *resourc
 		}
 		refType, resourceKey := matches[1], matches[2]
 
-		resourcePath := fmt.Sprintf("resources.%s.%s", refType, resourceKey)
-		if !hasPermissions(b, resourcePath) {
+		perms, ok := b.Config.Resources.PermissionsOf(refType, resourceKey)
+		if !ok || perms.Len() == 0 {
 			continue
 		}
 
-		if hasAppSPInPermissions(b, resourcePath, appKey) {
+		if hasAppSPInPermissions(perms, appKey) {
 			continue
 		}
 

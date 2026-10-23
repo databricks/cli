@@ -2,13 +2,12 @@ package mutator
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type rewriteSyncPaths struct{}
@@ -21,73 +20,52 @@ func (m *rewriteSyncPaths) Name() string {
 	return "RewriteSyncPaths"
 }
 
-// makeRelativeTo returns a dyn.MapFunc that joins the relative path
-// of the file it was defined in w.r.t. the bundle root path, with
-// the contents of the string node.
+// makeRelativeTo joins the relative path of the file the value was defined in
+// (loc) w.r.t. the bundle root path, with the value s.
 //
 // For example:
 //   - The bundle root is /foo
-//   - The configuration file that defines the string node is at /foo/bar/baz.yml
-//   - The string node contains "somefile.*"
+//   - The configuration file that defines the value is at /foo/bar/baz.yml
+//   - The value is "somefile.*"
 //
 // Then the resulting value will be "bar/somefile.*".
-func (m *rewriteSyncPaths) makeRelativeTo(root string) dyn.MapFunc {
-	return func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
-		dir := filepath.Dir(v.Location().File)
-		rel, err := filepath.Rel(root, dir)
-		if err != nil {
-			return dyn.InvalidValue, err
-		}
-
-		return dyn.NewValue(filepath.Join(rel, v.MustString()), v.Locations()), nil
+func (m *rewriteSyncPaths) makeRelativeTo(root string, loc diag.Location, s string) (string, error) {
+	rel, err := filepath.Rel(root, filepath.Dir(loc.File))
+	if err != nil {
+		return "", err
 	}
+	return filepath.Join(rel, s), nil
+}
+
+// rewrite rewrites the sync paths in values (the field key of sync) relative to the
+// bundle root, with Unix-style slashes if toSlash.
+func (m *rewriteSyncPaths) rewrite(b *bundle.Bundle, key string, values []string, toSlash bool) error {
+	for i := range values {
+		loc := b.Config.GetLocationOfExact(structpath.NewPath(nil, "sync", key, i))
+		path, err := m.makeRelativeTo(b.BundleRootPath, loc, values[i])
+		if err != nil {
+			return err
+		}
+		if toSlash {
+			path = filepath.ToSlash(path)
+		}
+		values[i] = path
+	}
+	return nil
 }
 
 func (m *rewriteSyncPaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		return dyn.Map(v, "sync", func(_ dyn.Path, v dyn.Value) (nv dyn.Value, err error) {
-			v, err = dyn.Map(v, "paths", dyn.Foreach(m.makeRelativeTo(b.BundleRootPath)))
-			if err != nil {
-				return dyn.InvalidValue, err
-			}
-
-			makeRelativeFn := m.makeRelativeTo(b.BundleRootPath)
-
-			// Makes include and exclude paths relative to the bundle root first.
-			// Then converts them to use Unix-style slashes.
-			// This is required for the ignore.GitIgnore we use in libs/fileset to work correctly.
-			v, err = dyn.Map(v, "include", dyn.Foreach(func(p dyn.Path, val dyn.Value) (dyn.Value, error) {
-				relPath, err := makeRelativeFn(p, val)
-				if err != nil {
-					return dyn.InvalidValue, err
-				}
-				str, ok := relPath.AsString()
-				if !ok {
-					return dyn.InvalidValue, fmt.Errorf("expected string value but got %s", relPath.Kind())
-				}
-				return dyn.NewValue(filepath.ToSlash(str), relPath.Locations()), nil
-			}))
-			if err != nil {
-				return dyn.InvalidValue, err
-			}
-
-			v, err = dyn.Map(v, "exclude", dyn.Foreach(func(p dyn.Path, val dyn.Value) (dyn.Value, error) {
-				relPath, err := makeRelativeFn(p, val)
-				if err != nil {
-					return dyn.InvalidValue, err
-				}
-				str, ok := relPath.AsString()
-				if !ok {
-					return dyn.InvalidValue, fmt.Errorf("expected string value but got %s", relPath.Kind())
-				}
-				return dyn.NewValue(filepath.ToSlash(str), relPath.Locations()), nil
-			}))
-			if err != nil {
-				return dyn.InvalidValue, err
-			}
-			return v, nil
-		})
-	})
+	// Makes include and exclude paths relative to the bundle root first.
+	// Then converts them to use Unix-style slashes.
+	// This is required for the ignore.GitIgnore we use in libs/fileset to work correctly.
+	sync := &b.Config.Sync
+	err := m.rewrite(b, "paths", sync.Paths, false)
+	if err == nil {
+		err = m.rewrite(b, "include", sync.Include, true)
+	}
+	if err == nil {
+		err = m.rewrite(b, "exclude", sync.Exclude, true)
+	}
 
 	return diag.FromErr(err)
 }

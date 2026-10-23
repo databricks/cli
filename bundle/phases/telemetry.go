@@ -14,8 +14,6 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -201,13 +199,10 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	b.Metrics.SetBoolValue(metrics.DeploymentHistoryEnabled, b.DeploymentBundle.StateDB.IsDeploymentMetadataService())
 
 	resourcesCount := int64(0)
-	_, err := dyn.MapByPattern(b.Config.Value(), dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+	b.Config.Resources.IterateAllResources(func(string, string, config.ConfigResource) bool {
 		resourcesCount++
-		return v, nil
+		return true
 	})
-	if err != nil {
-		log.Debugf(ctx, "failed to count resources: %s", err)
-	}
 
 	var jobsIds []string
 	for _, job := range b.Config.Resources.Jobs {

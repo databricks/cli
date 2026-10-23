@@ -9,8 +9,8 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 type required struct{}
@@ -26,13 +26,9 @@ func (f *required) Name() string {
 // Warn for missing fields, based on annotations in the Go SDK / OpenAPI spec.
 // The walker is generated (required_walk.go) by bundle/internal/validation.
 func warnForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	w := &walker{diags: diag.Diagnostics{}}
-	n := rootNode(b.Config.Value())
-	requiredConfigRoot(w, &n, &b.Config)
-
-	sortDiagnostics(w.diags)
-
-	return w.diags
+	diags := walkConfig(&b.Config, true, requiredConfigRoot)
+	sortDiagnostics(diags)
+	return diags
 }
 
 // sortDiagnostics orders diagnostics deterministically, since they are collected
@@ -64,19 +60,18 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 
 	diags := diag.Diagnostics{}
 	for key, dashboard := range b.Config.Resources.Dashboards {
+		path := structpath.NewPath(nil, "resources", "dashboards", key)
 		if dashboard.DisplayName == "" {
-			path := structpath.NewPath(nil, "resources", "dashboards", key)
 			nameLocations = append(nameLocations, b.Config.GetLocationsOf(path)...)
 			namePaths = append(namePaths, path)
 		}
 		if dashboard.WarehouseId == "" {
-			path := structpath.NewPath(nil, "resources", "dashboards", key)
 			warehouseIdLocations = append(warehouseIdLocations, b.Config.GetLocationsOf(path)...)
 			warehouseIdPaths = append(warehouseIdPaths, path)
 		}
 	}
 
-	if len(nameLocations) > 0 {
+	if len(namePaths) > 0 {
 		diags = diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   "dashboard display_name is required",
@@ -84,7 +79,7 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 			Paths:     namePaths,
 		})
 	}
-	if len(warehouseIdLocations) > 0 {
+	if len(warehouseIdPaths) > 0 {
 		diags = diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   "dashboard warehouse_id is required",
@@ -120,32 +115,29 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 func errorForInvalidGrants(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
-	_, err := dyn.MapByPattern(
-		b.Config.Value(),
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("grants"), dyn.AnyIndex()),
-		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			if isMissingOrEmptyString(v.Get("principal")) {
+	b.Config.Resources.IterateAllGrants(func(typ, name string, grants *[]catalog.PrivilegeAssignment) bool {
+		for i, g := range *grants {
+			np := structpath.NewPath(nil, "resources", typ, name, "grants", i)
+			if g.Principal == "" {
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
 					Summary:   "grant principal is required",
-					Locations: v.Locations(),
-					Paths:     dyn.ToStructPaths(p),
+					Locations: b.Config.GetLocationsOfExact(np),
+					Paths:     []*structpath.PathNode{np},
 				})
 			}
-			if isMissingOrEmptySequence(v.Get("privileges")) {
+			// A pure reference stands for the privileges until it is resolved.
+			if len(g.Privileges) == 0 && !b.Config.IsReferenceAt(structpath.NewPath(np, "privileges")) {
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
 					Summary:   "grant privileges is required",
-					Locations: v.Locations(),
-					Paths:     dyn.ToStructPaths(p),
+					Locations: b.Config.GetLocationsOfExact(np),
+					Paths:     []*structpath.PathNode{np},
 				})
 			}
-			return v, nil
-		},
-	)
-	if err != nil {
-		return diag.FromErr(err)
-	}
+		}
+		return true
+	})
 
 	sortDiagnostics(diags)
 
@@ -162,14 +154,16 @@ func errorForInvalidSecretScopePermissions(ctx context.Context, b *bundle.Bundle
 			if perm.UserName != "" || perm.GroupName != "" || perm.ServicePrincipalName != "" {
 				continue
 			}
+			scopePath := structpath.NewPath(nil, "resources", "secret_scopes", key)
+			path := structpath.NewPath(scopePath, "permissions", i)
 			// ApplyBundlePermissions rebuilds permissions via convert.FromTyped and drops
 			// per-entry locations, so point at the scope.
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "secret scope permission principal is required",
 				Detail:    "Set one of user_name, group_name or service_principal_name",
-				Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "resources", "secret_scopes", key)),
-				Paths:     structpath.NewPathSlice("resources", "secret_scopes", key, "permissions", i),
+				Locations: b.Config.GetLocationsOf(scopePath),
+				Paths:     []*structpath.PathNode{path},
 			})
 		}
 	}
@@ -177,30 +171,6 @@ func errorForInvalidSecretScopePermissions(ctx context.Context, b *bundle.Bundle
 	sortDiagnostics(diags)
 
 	return diags
-}
-
-// isMissingOrEmptyString reports whether v is unset, null, or an empty string.
-func isMissingOrEmptyString(v dyn.Value) bool {
-	switch v.Kind() {
-	case dyn.KindInvalid, dyn.KindNil:
-		return true
-	case dyn.KindString:
-		return v.MustString() == ""
-	default:
-		return false
-	}
-}
-
-// isMissingOrEmptySequence reports whether v is unset, null, or an empty sequence.
-func isMissingOrEmptySequence(v dyn.Value) bool {
-	switch v.Kind() {
-	case dyn.KindInvalid, dyn.KindNil:
-		return true
-	case dyn.KindSequence:
-		return len(v.MustSequence()) == 0
-	default:
-		return false
-	}
 }
 
 func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {

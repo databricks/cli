@@ -3,10 +3,11 @@ package aircmd
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structyaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yaml.in/yaml/v3"
@@ -86,17 +87,71 @@ func TestConvertToDabsCommandShape(t *testing.T) {
 	assert.Error(t, cmd.Args(cmd, []string{"a", "b"}))
 }
 
+// val is a value of the emitted bundle root.
+type val struct{ v any }
+
+func (v val) MustString() string { return v.v.(string) }
+func (v val) MustInt() int64     { return int64(v.v.(int)) }
+func (v val) MustBool() bool     { return v.v.(bool) }
+
+func (v val) MustSequence() []val {
+	if ss, ok := v.v.([]string); ok {
+		out := make([]val, len(ss))
+		for i, s := range ss {
+			out[i] = val{s}
+		}
+		return out
+	}
+	var out []val
+	for _, e := range v.v.([]any) {
+		out = append(out, val{e})
+	}
+	return out
+}
+
+func (v val) Get(key string) val {
+	for _, p := range v.v.(structyaml.Map) {
+		if p.Key == key {
+			return val{p.Value}
+		}
+	}
+	return val{}
+}
+
+// lookup reads a dotted path, with optional [index] suffixes, out of the emitted bundle root.
+func lookup(root structyaml.Map, path string) (val, bool) {
+	v := val{root}
+	for part := range strings.SplitSeq(path, ".") {
+		key, idx, hasIdx := strings.Cut(strings.TrimSuffix(part, "]"), "[")
+		if _, ok := v.v.(structyaml.Map); !ok {
+			return val{}, false
+		}
+		if v = v.Get(key); v.v == nil {
+			return val{}, false
+		}
+		if hasIdx {
+			i, err := strconv.Atoi(idx)
+			seq, ok := v.v.([]any)
+			if err != nil || !ok || i >= len(seq) {
+				return val{}, false
+			}
+			v = val{seq[i]}
+		}
+	}
+	return v, true
+}
+
 // get is a small helper: read a dotted path out of the emitted bundle root.
-func get(t *testing.T, root map[string]dyn.Value, path string) dyn.Value {
+func get(t *testing.T, root structyaml.Map, path string) val {
 	t.Helper()
-	v, err := dyn.GetByPath(dyn.V(root), dyn.MustPathFromString(path))
-	require.NoError(t, err, "path %q should exist", path)
+	v, ok := lookup(root, path)
+	require.True(t, ok, "path %q should exist", path)
 	return v
 }
 
-func has(root map[string]dyn.Value, path string) bool {
-	_, err := dyn.GetByPath(dyn.V(root), dyn.MustPathFromString(path))
-	return err == nil
+func has(root structyaml.Map, path string) bool {
+	_, ok := lookup(root, path)
+	return ok
 }
 
 // A full config maps onto a schema-shaped bundle: bundle name, job/task keys, the
@@ -543,11 +598,7 @@ func TestConvertToDabsSafeJobKey(t *testing.T) {
 			root, _, err := convertToDabs(t.Context(), loaded, path, dir)
 			require.NoError(t, err)
 			// The key is the raw name; name/experiment keep the same value.
-			jobs, err := dyn.GetByPath(dyn.V(root), dyn.MustPathFromString("resources.jobs"))
-			require.NoError(t, err)
-			job := jobs.Get(name)
-			require.True(t, job.IsValid(), "job must be keyed by %q", name)
-			assert.Equal(t, name, job.Get("name").MustString())
+			assert.Equal(t, name, get(t, root, "resources.jobs."+name+".name").MustString())
 
 			// The emitted YAML must load back with the key still a string.
 			_, err = writeBundle(t.Context(), loaded, path, dir, true)
