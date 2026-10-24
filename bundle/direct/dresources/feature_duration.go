@@ -204,22 +204,22 @@ func applyDurationConversions(conversions []durationConversion) error {
 	return nil
 }
 
-// windowWithConvertedDurations copies the API type a window's config wrapper embeds and converts
-// its durations to be strictly in seconds.
+// fieldWithConvertedDurations copies the API type a config wrapper embeds and converts its
+// durations to be strictly in seconds.
 //
-// input is the config-wrapped window. embedded selects the embedded API type from it, which Go does
-// not permit generically: a field on a type parameter is inaccessible. durationConversionsForWindow
-// is this window's registry.
-func windowWithConvertedDurations[Config, State any](
+// input is the config-wrapped field. embedded selects the embedded API type from it, which Go does
+// not permit generically: a field on a type parameter is inaccessible. durationConversionsForField
+// is that field's registry.
+func fieldWithConvertedDurations[Config, State any](
 	input *Config,
 	embedded func(*Config) State,
-	durationConversionsForWindow func(*Config, *State) []durationConversion,
+	durationConversionsForField func(*Config, *State) []durationConversion,
 ) (*State, error) {
 	if input == nil {
 		return nil, nil
 	}
 	state := embedded(input)
-	if err := applyDurationConversions(durationConversionsForWindow(input, &state)); err != nil {
+	if err := applyDurationConversions(durationConversionsForField(input, &state)); err != nil {
 		return nil, err
 	}
 	return &state, nil
@@ -335,27 +335,27 @@ func featureTimeWindowWithConvertedDurations(input *resources.FeatureTimeWindow)
 	state := input.TimeWindow
 
 	var err error
-	if state.Rolling, err = windowWithConvertedDurations(input.Rolling,
+	if state.Rolling, err = fieldWithConvertedDurations(input.Rolling,
 		func(c *resources.FeatureRollingWindow) ml.RollingWindow { return c.RollingWindow },
 		durationConversionsForRollingWindow); err != nil {
 		return nil, fmt.Errorf("rolling: %w", err)
 	}
-	if state.Sawtooth, err = windowWithConvertedDurations(input.Sawtooth,
+	if state.Sawtooth, err = fieldWithConvertedDurations(input.Sawtooth,
 		func(c *resources.FeatureSawtoothWindow) ml.SawtoothWindow { return c.SawtoothWindow },
 		durationConversionsForSawtoothWindow); err != nil {
 		return nil, fmt.Errorf("sawtooth: %w", err)
 	}
-	if state.Sliding, err = windowWithConvertedDurations(input.Sliding,
+	if state.Sliding, err = fieldWithConvertedDurations(input.Sliding,
 		func(c *resources.FeatureSlidingWindow) ml.SlidingWindow { return c.SlidingWindow },
 		durationConversionsForSlidingWindow); err != nil {
 		return nil, fmt.Errorf("sliding: %w", err)
 	}
-	if state.Tumbling, err = windowWithConvertedDurations(input.Tumbling,
+	if state.Tumbling, err = fieldWithConvertedDurations(input.Tumbling,
 		func(c *resources.FeatureTumblingWindow) ml.TumblingWindow { return c.TumblingWindow },
 		durationConversionsForTumblingWindow); err != nil {
 		return nil, fmt.Errorf("tumbling: %w", err)
 	}
-	if state.Continuous, err = windowWithConvertedDurations(state.Continuous,
+	if state.Continuous, err = fieldWithConvertedDurations(state.Continuous,
 		func(c *ml.ContinuousWindow) ml.ContinuousWindow { return *c },
 		durationConversionsForContinuousWindow); err != nil {
 		return nil, fmt.Errorf("continuous: %w", err)
@@ -367,24 +367,13 @@ func featureTimeWindowWithConvertedDurations(input *resources.FeatureTimeWindow)
 func featureDataSourceWithConvertedDurations(input *resources.FeatureDataSource) (*ml.DataSource, error) {
 	state := input.DataSource
 
-	lateness, err := featureSourceLatenessWithConvertedDurations(input.Lateness)
+	lateness, err := fieldWithConvertedDurations(input.Lateness,
+		func(c *resources.FeatureSourceLateness) ml.SourceLateness { return c.SourceLateness },
+		durationConversionsForSourceLateness)
 	if err != nil {
 		return nil, fmt.Errorf("lateness: %w", err)
 	}
 	state.Lateness = lateness
-
-	return &state, nil
-}
-
-func featureSourceLatenessWithConvertedDurations(input *resources.FeatureSourceLateness) (*ml.SourceLateness, error) {
-	if input == nil {
-		return nil, nil
-	}
-	state := input.SourceLateness
-
-	if err := applyDurationConversions(durationConversionsForSourceLateness(input, &state)); err != nil {
-		return nil, err
-	}
 
 	return &state, nil
 }
