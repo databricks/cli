@@ -258,15 +258,15 @@ func isDurationTyped(typ reflect.Type) bool {
 // under the aggregation function, so each window registry is listed under both.
 func featureDurationRegistries() map[string][]durationConversion {
 	windows := map[string][]durationConversion{
-		"rolling":    rollingWindowDurations(&resources.FeatureRollingWindow{}, &ml.RollingWindow{}),
-		"sawtooth":   sawtoothWindowDurations(&resources.FeatureSawtoothWindow{}, &ml.SawtoothWindow{}),
-		"sliding":    slidingWindowDurations(&resources.FeatureSlidingWindow{}, &ml.SlidingWindow{}),
-		"tumbling":   tumblingWindowDurations(&resources.FeatureTumblingWindow{}, &ml.TumblingWindow{}),
-		"continuous": continuousWindowDurations(nil, &ml.ContinuousWindow{}),
+		"rolling":    durationConversionsForRollingWindow(&resources.FeatureRollingWindow{}, &ml.RollingWindow{}),
+		"sawtooth":   durationConversionsForSawtoothWindow(&resources.FeatureSawtoothWindow{}, &ml.SawtoothWindow{}),
+		"sliding":    durationConversionsForSlidingWindow(&resources.FeatureSlidingWindow{}, &ml.SlidingWindow{}),
+		"tumbling":   durationConversionsForTumblingWindow(&resources.FeatureTumblingWindow{}, &ml.TumblingWindow{}),
+		"continuous": durationConversionsForContinuousWindow(nil, &ml.ContinuousWindow{}),
 	}
 
 	registries := map[string][]durationConversion{
-		"source.lateness": featureSourceLatenessDurations(&resources.FeatureSourceLateness{}, &ml.SourceLateness{}),
+		"source.lateness": durationConversionsForSourceLateness(&resources.FeatureSourceLateness{}, &ml.SourceLateness{}),
 	}
 	for _, timeWindow := range []string{"time_window", "function.aggregation_function.time_window"} {
 		for window, conversions := range windows {
@@ -279,7 +279,7 @@ func featureDurationRegistries() map[string][]durationConversion {
 // TestFeatureDurationRegistryIsComplete fails when the API gains a duration field, or a window
 // carrying one, that no registry converts, and when a registry still names a field the API dropped.
 // A field whose SDK type flips between *sdkduration.Duration and string is reported by the compiler
-// instead, because shadowedDuration and inPlaceDuration take different pointer types.
+// instead, because the two registry constructors take different pointer types.
 func TestFeatureDurationRegistryIsComplete(t *testing.T) {
 	registered := map[string]bool{}
 	for path, conversions := range featureDurationRegistries() {

@@ -130,8 +130,9 @@ func parseExtendedDuration(s string) (time.Duration, error) {
 	return total, nil
 }
 
-// optionalDuration converts a configured duration into the API type, leaving an unset value and an
-// unresolved reference alone.
+// optionalDuration converts a duration composed of one or more units (s, h, d, w) into the API type
+// that represents duration strictly in seconds, leaving an unset value and an unresolved reference
+// alone.
 func optionalDuration(s string) (*sdkduration.Duration, error) {
 	if s == "" || dynvar.IsPureVariableReference(s) {
 		return nil, nil
@@ -139,8 +140,9 @@ func optionalDuration(s string) (*sdkduration.Duration, error) {
 	return duration(s)
 }
 
-// optionalCanonicalDuration renders a duration the API types as a string in the seconds form the
-// API answers with, under the same two exemptions as optionalDuration.
+// optionalCanonicalDuration converts a duration composed of one or more units (s, h, d, w) into an
+// untyped string of the form "604800s", leaving an unset value and an unresolved reference alone.
+// The only difference with optionalDuration is the return type.
 func optionalCanonicalDuration(s string) (string, error) {
 	if s == "" || dynvar.IsPureVariableReference(s) {
 		return s, nil
@@ -167,8 +169,8 @@ type durationConversion struct {
 	apply func() error
 }
 
-// shadowedDuration parses the string the bundle config shadows an SDK duration field with.
-func shadowedDuration(field, source string, dest **sdkduration.Duration) durationConversion {
+// durationConversionForNonStringTypedDuration parses a non-string typed duration.
+func durationConversionForNonStringTypedDuration(field, source string, dest **sdkduration.Duration) durationConversion {
 	return durationConversion{field: field, apply: func() error {
 		parsed, err := optionalDuration(source)
 		if err != nil {
@@ -179,8 +181,8 @@ func shadowedDuration(field, source string, dest **sdkduration.Duration) duratio
 	}}
 }
 
-// inPlaceDuration rewrites a duration the SDK types as a string, which the config does not shadow.
-func inPlaceDuration(field string, dest *string) durationConversion {
+// durationConversionForStringTypedDuration parses a string typed duration.
+func durationConversionForStringTypedDuration(field string, dest *string) durationConversion {
 	return durationConversion{field: field, apply: func() error {
 		rewritten, err := optionalCanonicalDuration(*dest)
 		if err != nil {
@@ -191,12 +193,9 @@ func inPlaceDuration(field string, dest *string) durationConversion {
 	}}
 }
 
-// convertDurations applies a registry, naming the field that failed.
-//
-// A field whose SDK type flips between *sdkduration.Duration and string has to move between
-// shadowedDuration and inPlaceDuration, which take different pointer types, so the compiler reports
-// it. A duration field the API adds is reported by TestFeatureDurationRegistryIsComplete.
-func convertDurations(conversions []durationConversion) error {
+// applyDurationConversions walks the registry of duration conversions for each field, applies the
+// duration conversion function and reports the field that failed.
+func applyDurationConversions(conversions []durationConversion) error {
 	for _, conversion := range conversions {
 		if err := conversion.apply(); err != nil {
 			return fmt.Errorf("%s: %w", conversion.field, err)
@@ -205,18 +204,22 @@ func convertDurations(conversions []durationConversion) error {
 	return nil
 }
 
-// windowState copies the API type a window's config wrapper embeds and converts its durations.
-// embedded returns that copy because Go does not permit field access on a type parameter.
-func windowState[Config, State any](
+// windowWithConvertedDurations copies the API type a window's config wrapper embeds and converts
+// its durations to be strictly in seconds.
+//
+// input is the config-wrapped window. embedded selects the embedded API type from it, which Go does
+// not permit generically: a field on a type parameter is inaccessible. durationConversionsForWindow
+// is this window's registry.
+func windowWithConvertedDurations[Config, State any](
 	input *Config,
 	embedded func(*Config) State,
-	durations func(*Config, *State) []durationConversion,
+	durationConversionsForWindow func(*Config, *State) []durationConversion,
 ) (*State, error) {
 	if input == nil {
 		return nil, nil
 	}
 	state := embedded(input)
-	if err := convertDurations(durations(input, &state)); err != nil {
+	if err := applyDurationConversions(durationConversionsForWindow(input, &state)); err != nil {
 		return nil, err
 	}
 	return &state, nil
@@ -225,48 +228,48 @@ func windowState[Config, State any](
 // The registry: every duration field the adapter converts, one entry per field. A spec change that
 // adds a duration field is one line here.
 
-func featureSourceLatenessDurations(input *resources.FeatureSourceLateness, state *ml.SourceLateness) []durationConversion {
+func durationConversionsForSourceLateness(input *resources.FeatureSourceLateness, state *ml.SourceLateness) []durationConversion {
 	return []durationConversion{
-		shadowedDuration("settling_delay", input.SettlingDelay, &state.SettlingDelay),
+		durationConversionForNonStringTypedDuration("settling_delay", input.SettlingDelay, &state.SettlingDelay),
 	}
 }
 
-func rollingWindowDurations(input *resources.FeatureRollingWindow, state *ml.RollingWindow) []durationConversion {
+func durationConversionsForRollingWindow(input *resources.FeatureRollingWindow, state *ml.RollingWindow) []durationConversion {
 	return []durationConversion{
-		shadowedDuration("delay", input.Delay, &state.Delay),
-		shadowedDuration("window_duration", input.WindowDuration, &state.WindowDuration),
+		durationConversionForNonStringTypedDuration("delay", input.Delay, &state.Delay),
+		durationConversionForNonStringTypedDuration("window_duration", input.WindowDuration, &state.WindowDuration),
 	}
 }
 
-func sawtoothWindowDurations(input *resources.FeatureSawtoothWindow, state *ml.SawtoothWindow) []durationConversion {
+func durationConversionsForSawtoothWindow(input *resources.FeatureSawtoothWindow, state *ml.SawtoothWindow) []durationConversion {
 	return []durationConversion{
-		shadowedDuration("delay", input.Delay, &state.Delay),
-		shadowedDuration("window_duration", input.WindowDuration, &state.WindowDuration),
+		durationConversionForNonStringTypedDuration("delay", input.Delay, &state.Delay),
+		durationConversionForNonStringTypedDuration("window_duration", input.WindowDuration, &state.WindowDuration),
 	}
 }
 
-func slidingWindowDurations(input *resources.FeatureSlidingWindow, state *ml.SlidingWindow) []durationConversion {
+func durationConversionsForSlidingWindow(input *resources.FeatureSlidingWindow, state *ml.SlidingWindow) []durationConversion {
 	return []durationConversion{
-		shadowedDuration("delay", input.Delay, &state.Delay),
-		shadowedDuration("offset", input.Offset, &state.Offset),
-		inPlaceDuration("window_duration", &state.WindowDuration),
-		inPlaceDuration("slide_duration", &state.SlideDuration),
+		durationConversionForNonStringTypedDuration("delay", input.Delay, &state.Delay),
+		durationConversionForNonStringTypedDuration("offset", input.Offset, &state.Offset),
+		durationConversionForStringTypedDuration("window_duration", &state.WindowDuration),
+		durationConversionForStringTypedDuration("slide_duration", &state.SlideDuration),
 	}
 }
 
-func tumblingWindowDurations(input *resources.FeatureTumblingWindow, state *ml.TumblingWindow) []durationConversion {
+func durationConversionsForTumblingWindow(input *resources.FeatureTumblingWindow, state *ml.TumblingWindow) []durationConversion {
 	return []durationConversion{
-		shadowedDuration("delay", input.Delay, &state.Delay),
-		shadowedDuration("offset", input.Offset, &state.Offset),
-		inPlaceDuration("window_duration", &state.WindowDuration),
+		durationConversionForNonStringTypedDuration("delay", input.Delay, &state.Delay),
+		durationConversionForNonStringTypedDuration("offset", input.Offset, &state.Offset),
+		durationConversionForStringTypedDuration("window_duration", &state.WindowDuration),
 	}
 }
 
 // The config does not shadow a continuous window's durations, so there is nothing to read from it.
-func continuousWindowDurations(_, state *ml.ContinuousWindow) []durationConversion {
+func durationConversionsForContinuousWindow(_, state *ml.ContinuousWindow) []durationConversion {
 	return []durationConversion{
-		inPlaceDuration("offset", &state.Offset),
-		inPlaceDuration("window_duration", &state.WindowDuration),
+		durationConversionForStringTypedDuration("offset", &state.Offset),
+		durationConversionForStringTypedDuration("window_duration", &state.WindowDuration),
 	}
 }
 
@@ -276,13 +279,13 @@ func continuousWindowDurations(_, state *ml.ContinuousWindow) []durationConversi
 func featureState(input *resources.Feature) (*ml.Feature, error) {
 	state := input.Feature
 
-	function, err := featureFunctionState(&input.Function)
+	function, err := featureFunctionWithConvertedDurations(&input.Function)
 	if err != nil {
 		return nil, fmt.Errorf("function: %w", err)
 	}
 	state.Function = *function
 
-	source, err := featureDataSourceState(&input.Source)
+	source, err := featureDataSourceWithConvertedDurations(&input.Source)
 	if err != nil {
 		return nil, fmt.Errorf("source: %w", err)
 	}
@@ -290,7 +293,7 @@ func featureState(input *resources.Feature) (*ml.Feature, error) {
 
 	// The deprecated top-level time_window is converted on the same terms as the one under the
 	// aggregation function.
-	state.TimeWindow, err = featureTimeWindowState(input.TimeWindow)
+	state.TimeWindow, err = featureTimeWindowWithConvertedDurations(input.TimeWindow)
 	if err != nil {
 		return nil, fmt.Errorf("time_window: %w", err)
 	}
@@ -298,10 +301,10 @@ func featureState(input *resources.Feature) (*ml.Feature, error) {
 	return &state, nil
 }
 
-func featureFunctionState(input *resources.FeatureFunction) (*ml.Function, error) {
+func featureFunctionWithConvertedDurations(input *resources.FeatureFunction) (*ml.Function, error) {
 	state := input.Function
 
-	aggregation, err := featureAggregationFunctionState(input.AggregationFunction)
+	aggregation, err := featureAggregationFunctionWithConvertedDurations(input.AggregationFunction)
 	if err != nil {
 		return nil, fmt.Errorf("aggregation_function: %w", err)
 	}
@@ -310,13 +313,13 @@ func featureFunctionState(input *resources.FeatureFunction) (*ml.Function, error
 	return &state, nil
 }
 
-func featureAggregationFunctionState(input *resources.FeatureAggregationFunction) (*ml.AggregationFunction, error) {
+func featureAggregationFunctionWithConvertedDurations(input *resources.FeatureAggregationFunction) (*ml.AggregationFunction, error) {
 	if input == nil {
 		return nil, nil
 	}
 	state := input.AggregationFunction
 
-	timeWindow, err := featureTimeWindowState(input.TimeWindow)
+	timeWindow, err := featureTimeWindowWithConvertedDurations(input.TimeWindow)
 	if err != nil {
 		return nil, fmt.Errorf("time_window: %w", err)
 	}
@@ -325,46 +328,46 @@ func featureAggregationFunctionState(input *resources.FeatureAggregationFunction
 	return &state, nil
 }
 
-func featureTimeWindowState(input *resources.FeatureTimeWindow) (*ml.TimeWindow, error) {
+func featureTimeWindowWithConvertedDurations(input *resources.FeatureTimeWindow) (*ml.TimeWindow, error) {
 	if input == nil {
 		return nil, nil
 	}
 	state := input.TimeWindow
 
 	var err error
-	if state.Rolling, err = windowState(input.Rolling,
+	if state.Rolling, err = windowWithConvertedDurations(input.Rolling,
 		func(c *resources.FeatureRollingWindow) ml.RollingWindow { return c.RollingWindow },
-		rollingWindowDurations); err != nil {
+		durationConversionsForRollingWindow); err != nil {
 		return nil, fmt.Errorf("rolling: %w", err)
 	}
-	if state.Sawtooth, err = windowState(input.Sawtooth,
+	if state.Sawtooth, err = windowWithConvertedDurations(input.Sawtooth,
 		func(c *resources.FeatureSawtoothWindow) ml.SawtoothWindow { return c.SawtoothWindow },
-		sawtoothWindowDurations); err != nil {
+		durationConversionsForSawtoothWindow); err != nil {
 		return nil, fmt.Errorf("sawtooth: %w", err)
 	}
-	if state.Sliding, err = windowState(input.Sliding,
+	if state.Sliding, err = windowWithConvertedDurations(input.Sliding,
 		func(c *resources.FeatureSlidingWindow) ml.SlidingWindow { return c.SlidingWindow },
-		slidingWindowDurations); err != nil {
+		durationConversionsForSlidingWindow); err != nil {
 		return nil, fmt.Errorf("sliding: %w", err)
 	}
-	if state.Tumbling, err = windowState(input.Tumbling,
+	if state.Tumbling, err = windowWithConvertedDurations(input.Tumbling,
 		func(c *resources.FeatureTumblingWindow) ml.TumblingWindow { return c.TumblingWindow },
-		tumblingWindowDurations); err != nil {
+		durationConversionsForTumblingWindow); err != nil {
 		return nil, fmt.Errorf("tumbling: %w", err)
 	}
-	if state.Continuous, err = windowState(state.Continuous,
+	if state.Continuous, err = windowWithConvertedDurations(state.Continuous,
 		func(c *ml.ContinuousWindow) ml.ContinuousWindow { return *c },
-		continuousWindowDurations); err != nil {
+		durationConversionsForContinuousWindow); err != nil {
 		return nil, fmt.Errorf("continuous: %w", err)
 	}
 
 	return &state, nil
 }
 
-func featureDataSourceState(input *resources.FeatureDataSource) (*ml.DataSource, error) {
+func featureDataSourceWithConvertedDurations(input *resources.FeatureDataSource) (*ml.DataSource, error) {
 	state := input.DataSource
 
-	lateness, err := featureSourceLatenessState(input.Lateness)
+	lateness, err := featureSourceLatenessWithConvertedDurations(input.Lateness)
 	if err != nil {
 		return nil, fmt.Errorf("lateness: %w", err)
 	}
@@ -373,13 +376,13 @@ func featureDataSourceState(input *resources.FeatureDataSource) (*ml.DataSource,
 	return &state, nil
 }
 
-func featureSourceLatenessState(input *resources.FeatureSourceLateness) (*ml.SourceLateness, error) {
+func featureSourceLatenessWithConvertedDurations(input *resources.FeatureSourceLateness) (*ml.SourceLateness, error) {
 	if input == nil {
 		return nil, nil
 	}
 	state := input.SourceLateness
 
-	if err := convertDurations(featureSourceLatenessDurations(input, &state)); err != nil {
+	if err := applyDurationConversions(durationConversionsForSourceLateness(input, &state)); err != nil {
 		return nil, err
 	}
 
