@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
@@ -25,7 +26,7 @@ func (m *expandMaterializationSetMaterializedFeatureMembers) Name() string {
 // the same online destination.
 //
 // materialized_feature_id is absent here because it is assigned server side.
-func sawtoothMaterializedFeatureMembers(entry ml.MaterializedFeature) []ml.MaterializedFeature {
+func sawtoothMaterializedFeatureMembers(entry resources.SawtoothMaterializedFeatures) []ml.MaterializedFeature {
 	return []ml.MaterializedFeature{
 		// Batch offline.
 		{
@@ -66,7 +67,7 @@ func sawtoothMaterializedFeatureMembers(entry ml.MaterializedFeature) []ml.Mater
 
 // batchOfflineAndOnlineMaterializedFeatureMembers builds two materializations of the specified
 // feature to the online and offline destination.
-func batchOfflineAndOnlineMaterializedFeatureMembers(entry ml.MaterializedFeature) []ml.MaterializedFeature {
+func batchOfflineAndOnlineMaterializedFeatureMembers(entry resources.BatchOfflineAndOnlineMaterializedFeatures) []ml.MaterializedFeature {
 	return []ml.MaterializedFeature{
 		// Batch offline.
 		{
@@ -79,7 +80,6 @@ func batchOfflineAndOnlineMaterializedFeatureMembers(entry ml.MaterializedFeatur
 			CronSchedule:          entry.CronSchedule,
 			CronScheduleTrigger:   entry.CronScheduleTrigger,
 			TableTrigger:          entry.TableTrigger,
-			StreamingMode:         entry.StreamingMode,
 		},
 		// Batch online.
 		{
@@ -92,7 +92,6 @@ func batchOfflineAndOnlineMaterializedFeatureMembers(entry ml.MaterializedFeatur
 			CronSchedule:          entry.CronSchedule,
 			CronScheduleTrigger:   entry.CronScheduleTrigger,
 			TableTrigger:          entry.TableTrigger,
-			StreamingMode:         entry.StreamingMode,
 		},
 	}
 }

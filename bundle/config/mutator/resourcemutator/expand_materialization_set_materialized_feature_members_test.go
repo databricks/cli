@@ -53,7 +53,7 @@ func expandSet(t *testing.T, set *resources.MaterializationSet) *resources.Mater
 func TestExpandMaterializationSetMaterializedFeatureMembersSawtooth(t *testing.T) {
 	set := expandSet(t, &resources.MaterializationSet{
 		MaterializationSet: ml.MaterializationSet{},
-		SawtoothMaterializedFeatures: []ml.MaterializedFeature{{
+		SawtoothMaterializedFeatures: []resources.SawtoothMaterializedFeatures{{
 			FeatureName:         shorthandFeatureName,
 			OfflineStoreConfig:  shorthandOfflineStore(),
 			OnlineStoreConfig:   shorthandOnlineStore(),
@@ -91,7 +91,7 @@ func TestExpandMaterializationSetMaterializedFeatureMembersSawtooth(t *testing.T
 func TestExpandMaterializationSetMaterializedFeatureMembersBatchOfflineAndOnline(t *testing.T) {
 	trigger := &ml.CronSchedule{Mode: ml.CronScheduleModeManual, CronExpression: shorthandCronExpr}
 	set := expandSet(t, &resources.MaterializationSet{
-		BatchOfflineAndOnlineMaterializedFeatures: []ml.MaterializedFeature{{
+		BatchOfflineAndOnlineMaterializedFeatures: []resources.BatchOfflineAndOnlineMaterializedFeatures{{
 			FeatureName:         shorthandFeatureName,
 			OfflineStoreConfig:  shorthandOfflineStore(),
 			OnlineStoreConfig:   shorthandOnlineStore(),
@@ -132,8 +132,24 @@ func TestExpandMaterializationSetMaterializedFeatureMembersCarriesSharedFields(t
 	}
 
 	for name, set := range map[string]*resources.MaterializationSet{
-		"sawtooth":   {SawtoothMaterializedFeatures: []ml.MaterializedFeature{entry}},
-		"batch pair": {BatchOfflineAndOnlineMaterializedFeatures: []ml.MaterializedFeature{entry}},
+		"sawtooth": {SawtoothMaterializedFeatures: []resources.SawtoothMaterializedFeatures{{
+			FeatureName:           entry.FeatureName,
+			Tags:                  entry.Tags,
+			BudgetPolicyId:        entry.BudgetPolicyId,
+			Notifications:         entry.Notifications,
+			PipelineScheduleState: entry.PipelineScheduleState,
+			OfflineStoreConfig:    entry.OfflineStoreConfig,
+			OnlineStoreConfig:     entry.OnlineStoreConfig,
+		}}},
+		"batch pair": {BatchOfflineAndOnlineMaterializedFeatures: []resources.BatchOfflineAndOnlineMaterializedFeatures{{
+			FeatureName:           entry.FeatureName,
+			Tags:                  entry.Tags,
+			BudgetPolicyId:        entry.BudgetPolicyId,
+			Notifications:         entry.Notifications,
+			PipelineScheduleState: entry.PipelineScheduleState,
+			OfflineStoreConfig:    entry.OfflineStoreConfig,
+			OnlineStoreConfig:     entry.OnlineStoreConfig,
+		}}},
 	} {
 		t.Run(name, func(t *testing.T) {
 			expanded := expandSet(t, set)
@@ -150,25 +166,6 @@ func TestExpandMaterializationSetMaterializedFeatureMembersCarriesSharedFields(t
 	}
 }
 
-// TestExpandMaterializationSetMaterializedFeatureMembersKeepsStreamingModeOnBatchPair pins that the batch pair carries
-// a trigger it has no use for rather than discarding it, so the service reports the mistake instead
-// of the shorthand swallowing it.
-func TestExpandMaterializationSetMaterializedFeatureMembersKeepsStreamingModeOnBatchPair(t *testing.T) {
-	set := expandSet(t, &resources.MaterializationSet{
-		BatchOfflineAndOnlineMaterializedFeatures: []ml.MaterializedFeature{{
-			FeatureName:        shorthandFeatureName,
-			OfflineStoreConfig: shorthandOfflineStore(),
-			OnlineStoreConfig:  shorthandOnlineStore(),
-			StreamingMode:      &ml.StreamingMode{Mode: ml.StreamingModeStreamingModeTypeStreamingModeTypeRtm},
-		}},
-	})
-
-	require.Len(t, set.MaterializedFeatures, 2)
-	for _, member := range set.MaterializedFeatures {
-		assert.Equal(t, ml.StreamingModeStreamingModeTypeStreamingModeTypeRtm, member.StreamingMode.Mode)
-	}
-}
-
 func TestExpandMaterializationSetMaterializedFeatureMembersAppendsToDeclaredMembers(t *testing.T) {
 	declared := ml.MaterializedFeature{
 		FeatureName:         "main.myschema.other",
@@ -179,14 +176,14 @@ func TestExpandMaterializationSetMaterializedFeatureMembersAppendsToDeclaredMemb
 		MaterializationSet: ml.MaterializationSet{
 			MaterializedFeatures: []ml.MaterializedFeature{declared},
 		},
-		SawtoothMaterializedFeatures: []ml.MaterializedFeature{{
+		SawtoothMaterializedFeatures: []resources.SawtoothMaterializedFeatures{{
 			FeatureName:         shorthandFeatureName,
 			OfflineStoreConfig:  shorthandOfflineStore(),
 			OnlineStoreConfig:   shorthandOnlineStore(),
 			CronScheduleTrigger: &ml.CronSchedule{Mode: ml.CronScheduleModeDerived},
 			StreamingMode:       &ml.StreamingMode{Mode: ml.StreamingModeStreamingModeTypeStreamingModeTypeRtm},
 		}},
-		BatchOfflineAndOnlineMaterializedFeatures: []ml.MaterializedFeature{{
+		BatchOfflineAndOnlineMaterializedFeatures: []resources.BatchOfflineAndOnlineMaterializedFeatures{{
 			FeatureName:         "main.myschema.pair",
 			OfflineStoreConfig:  shorthandOfflineStore(),
 			OnlineStoreConfig:   shorthandOnlineStore(),
@@ -217,8 +214,8 @@ func TestExpandMaterializationSetMaterializedFeatureMembersLeavesASetWithoutShor
 			MaterializationSet: ml.MaterializationSet{
 				MaterializedFeatures: []ml.MaterializedFeature{declared},
 			},
-			SawtoothMaterializedFeatures:              []ml.MaterializedFeature{},
-			BatchOfflineAndOnlineMaterializedFeatures: []ml.MaterializedFeature{},
+			SawtoothMaterializedFeatures:              []resources.SawtoothMaterializedFeatures{},
+			BatchOfflineAndOnlineMaterializedFeatures: []resources.BatchOfflineAndOnlineMaterializedFeatures{},
 		},
 	} {
 		t.Run(name, func(t *testing.T) {

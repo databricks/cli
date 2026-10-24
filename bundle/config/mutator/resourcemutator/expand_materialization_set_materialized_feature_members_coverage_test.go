@@ -1,6 +1,7 @@
 package resourcemutator_test
 
 import (
+	"maps"
 	"reflect"
 	"testing"
 
@@ -10,13 +11,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// memberFieldsNotCarried are the member fields a shorthand entry never contributes to the members
-// it expands into. All but the first are OUTPUT_ONLY in the spec, so the schema generator already
-// keeps them out of the bundle schema and no config can set them.
-//
-// materialized_feature_id is the one field a shorthand entry can set and have ignored: the server
-// assigns one per member, so a single declared id cannot belong to all of them.
-var memberFieldsNotCarried = map[string]bool{
+// serverOwnedMemberFields are the member fields no authoring type declares. All but the first are
+// OUTPUT_ONLY in the spec, so the schema generator keeps them out of the bundle schema;
+// materialized_feature_id is left out because the server assigns one per member and a single
+// declared id cannot belong to all of them.
+var serverOwnedMemberFields = map[string]bool{
 	"MaterializedFeatureId":   true,
 	"MaterializationSetId":    true,
 	"IsOnline":                true,
@@ -35,14 +34,14 @@ var memberFieldsDerivedByConfigLayer = map[string]bool{
 	"ForceSendFields": true,
 }
 
-// memberWithEveryFieldSet returns a materialized feature whose every field holds a non-zero value,
-// so that a field missing from every expanded member is visible as a zero.
-func memberWithEveryFieldSet(t *testing.T) ml.MaterializedFeature {
+// entryWithEveryFieldSet returns an authoring entry whose every field holds a non-zero value, so
+// that a field reaching no expanded member is visible as a zero.
+func entryWithEveryFieldSet[T any](t *testing.T) T {
 	t.Helper()
 
-	var member ml.MaterializedFeature
-	value := reflect.ValueOf(&member).Elem()
-	for field := range reflect.TypeFor[ml.MaterializedFeature]().Fields() {
+	var entry T
+	value := reflect.ValueOf(&entry).Elem()
+	for field := range reflect.TypeFor[T]().Fields() {
 		target := value.FieldByName(field.Name)
 		switch field.Type.Kind() {
 		case reflect.String:
@@ -54,9 +53,9 @@ func memberWithEveryFieldSet(t *testing.T) ml.MaterializedFeature {
 		case reflect.Pointer:
 			target.Set(reflect.New(field.Type.Elem()))
 		case reflect.Map:
-			entry := reflect.MakeMap(field.Type)
-			entry.SetMapIndex(reflect.ValueOf("k"), reflect.ValueOf("v"))
-			target.Set(entry)
+			pair := reflect.MakeMap(field.Type)
+			pair.SetMapIndex(reflect.ValueOf("k"), reflect.ValueOf("v"))
+			target.Set(pair)
 		case reflect.Slice:
 			target.Set(reflect.MakeSlice(field.Type, 1, 1))
 		default:
@@ -65,25 +64,46 @@ func memberWithEveryFieldSet(t *testing.T) ml.MaterializedFeature {
 				field.Name, field.Type.Kind())
 		}
 	}
-	return member
+	return entry
 }
 
-// TestExpandMaterializationSetMaterializedFeatureMembersCoversEveryMemberField keeps each expansion's field list
-// exhaustive. Members are built by naming their fields rather than by copying the entry, so a
-// member field added to the proto later reaches no expanded member and nothing else notices.
-func TestExpandMaterializationSetMaterializedFeatureMembersCoversEveryMemberField(t *testing.T) {
-	entry := memberWithEveryFieldSet(t)
+func notCarried(extra ...string) map[string]bool {
+	out := maps.Clone(serverOwnedMemberFields)
+	for _, name := range extra {
+		out[name] = true
+	}
+	return out
+}
 
-	for name, set := range map[string]*resources.MaterializationSet{
+// TestExpandMaterializationSetMaterializedFeatureMembersCoversEveryMemberField keeps each
+// expansion's field list exhaustive and each authoring type complete against the API. Members are
+// built by naming their fields, and the authoring types are hand-written, so a member field added
+// to the proto later reaches no expanded member and nothing else notices.
+func TestExpandMaterializationSetMaterializedFeatureMembersCoversEveryMemberField(t *testing.T) {
+	for name, tc := range map[string]struct {
+		set        *resources.MaterializationSet
+		notCarried map[string]bool
+	}{
 		"sawtooth_materialized_features": {
-			SawtoothMaterializedFeatures: []ml.MaterializedFeature{entry},
+			set: &resources.MaterializationSet{
+				SawtoothMaterializedFeatures: []resources.SawtoothMaterializedFeatures{
+					entryWithEveryFieldSet[resources.SawtoothMaterializedFeatures](t),
+				},
+			},
+			notCarried: notCarried(),
 		},
 		"batch_offline_and_online_materialized_features": {
-			BatchOfflineAndOnlineMaterializedFeatures: []ml.MaterializedFeature{entry},
+			set: &resources.MaterializationSet{
+				BatchOfflineAndOnlineMaterializedFeatures: []resources.BatchOfflineAndOnlineMaterializedFeatures{
+					entryWithEveryFieldSet[resources.BatchOfflineAndOnlineMaterializedFeatures](t),
+				},
+			},
+			// A feature on the batch path has no streaming mode, so the type declares none.
+			notCarried: notCarried("StreamingMode"),
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			expanded := expandSet(t, set)
+			expanded := expandSet(t, tc.set)
 			require.NotEmpty(t, expanded.MaterializedFeatures)
 
 			for field := range reflect.TypeFor[ml.MaterializedFeature]().Fields() {
@@ -99,16 +119,17 @@ func TestExpandMaterializationSetMaterializedFeatureMembersCoversEveryMemberFiel
 					}
 				}
 
-				if memberFieldsNotCarried[field.Name] {
+				if tc.notCarried[field.Name] {
 					assert.Falsef(t, carried,
-						"field %s is listed in memberFieldsNotCarried but reached an expanded "+
-							"member; drop it from that list or stop carrying it", field.Name)
+						"field %s is listed as not carried but reached an expanded member; drop it "+
+							"from that list or stop carrying it", field.Name)
 					continue
 				}
 				assert.Truef(t, carried,
-					"field %s reached no member of the %s expansion. Add it to the member "+
-						"literals in expand_materialization_set_materialized_feature_members.go, or to "+
-						"memberFieldsNotCarried with the reason it is server-owned",
+					"field %s reached no member of the %s expansion. Declare it on the authoring "+
+						"type in bundle/config/resources/materialization_set.go and carry it in "+
+						"expand_materialization_set_materialized_feature_members.go, or list it as "+
+						"not carried with the reason it is server-owned",
 					field.Name, name)
 			}
 		})
