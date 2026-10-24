@@ -262,7 +262,7 @@ func featureDurationRegistries() map[string][]durationConversion {
 		"sawtooth":   sawtoothWindowDurations(&resources.FeatureSawtoothWindow{}, &ml.SawtoothWindow{}),
 		"sliding":    slidingWindowDurations(&resources.FeatureSlidingWindow{}, &ml.SlidingWindow{}),
 		"tumbling":   tumblingWindowDurations(&resources.FeatureTumblingWindow{}, &ml.TumblingWindow{}),
-		"continuous": continuousWindowDurations(&ml.ContinuousWindow{}),
+		"continuous": continuousWindowDurations(nil, &ml.ContinuousWindow{}),
 	}
 
 	registries := map[string][]durationConversion{

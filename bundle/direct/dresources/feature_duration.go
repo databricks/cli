@@ -205,6 +205,23 @@ func convertDurations(conversions []durationConversion) error {
 	return nil
 }
 
+// windowState copies the API type a window's config wrapper embeds and converts its durations.
+// embedded returns that copy because Go does not permit field access on a type parameter.
+func windowState[Config, State any](
+	input *Config,
+	embedded func(*Config) State,
+	durations func(*Config, *State) []durationConversion,
+) (*State, error) {
+	if input == nil {
+		return nil, nil
+	}
+	state := embedded(input)
+	if err := convertDurations(durations(input, &state)); err != nil {
+		return nil, err
+	}
+	return &state, nil
+}
+
 // The registry: every duration field the adapter converts, one entry per field. A spec change that
 // adds a duration field is one line here.
 
@@ -245,7 +262,8 @@ func tumblingWindowDurations(input *resources.FeatureTumblingWindow, state *ml.T
 	}
 }
 
-func continuousWindowDurations(state *ml.ContinuousWindow) []durationConversion {
+// The config does not shadow a continuous window's durations, so there is nothing to read from it.
+func continuousWindowDurations(_, state *ml.ContinuousWindow) []durationConversion {
 	return []durationConversion{
 		inPlaceDuration("offset", &state.Offset),
 		inPlaceDuration("window_duration", &state.WindowDuration),
@@ -314,85 +332,30 @@ func featureTimeWindowState(input *resources.FeatureTimeWindow) (*ml.TimeWindow,
 	state := input.TimeWindow
 
 	var err error
-	if state.Rolling, err = rollingWindowState(input.Rolling); err != nil {
+	if state.Rolling, err = windowState(input.Rolling,
+		func(c *resources.FeatureRollingWindow) ml.RollingWindow { return c.RollingWindow },
+		rollingWindowDurations); err != nil {
 		return nil, fmt.Errorf("rolling: %w", err)
 	}
-	if state.Sawtooth, err = sawtoothWindowState(input.Sawtooth); err != nil {
+	if state.Sawtooth, err = windowState(input.Sawtooth,
+		func(c *resources.FeatureSawtoothWindow) ml.SawtoothWindow { return c.SawtoothWindow },
+		sawtoothWindowDurations); err != nil {
 		return nil, fmt.Errorf("sawtooth: %w", err)
 	}
-	if state.Sliding, err = slidingWindowState(input.Sliding); err != nil {
+	if state.Sliding, err = windowState(input.Sliding,
+		func(c *resources.FeatureSlidingWindow) ml.SlidingWindow { return c.SlidingWindow },
+		slidingWindowDurations); err != nil {
 		return nil, fmt.Errorf("sliding: %w", err)
 	}
-	if state.Tumbling, err = tumblingWindowState(input.Tumbling); err != nil {
+	if state.Tumbling, err = windowState(input.Tumbling,
+		func(c *resources.FeatureTumblingWindow) ml.TumblingWindow { return c.TumblingWindow },
+		tumblingWindowDurations); err != nil {
 		return nil, fmt.Errorf("tumbling: %w", err)
 	}
-	if state.Continuous, err = continuousWindowState(state.Continuous); err != nil {
+	if state.Continuous, err = windowState(state.Continuous,
+		func(c *ml.ContinuousWindow) ml.ContinuousWindow { return *c },
+		continuousWindowDurations); err != nil {
 		return nil, fmt.Errorf("continuous: %w", err)
-	}
-
-	return &state, nil
-}
-
-func rollingWindowState(input *resources.FeatureRollingWindow) (*ml.RollingWindow, error) {
-	if input == nil {
-		return nil, nil
-	}
-	state := input.RollingWindow
-
-	if err := convertDurations(rollingWindowDurations(input, &state)); err != nil {
-		return nil, err
-	}
-
-	return &state, nil
-}
-
-func sawtoothWindowState(input *resources.FeatureSawtoothWindow) (*ml.SawtoothWindow, error) {
-	if input == nil {
-		return nil, nil
-	}
-	state := input.SawtoothWindow
-
-	if err := convertDurations(sawtoothWindowDurations(input, &state)); err != nil {
-		return nil, err
-	}
-
-	return &state, nil
-}
-
-func slidingWindowState(input *resources.FeatureSlidingWindow) (*ml.SlidingWindow, error) {
-	if input == nil {
-		return nil, nil
-	}
-	state := input.SlidingWindow
-
-	if err := convertDurations(slidingWindowDurations(input, &state)); err != nil {
-		return nil, err
-	}
-
-	return &state, nil
-}
-
-func tumblingWindowState(input *resources.FeatureTumblingWindow) (*ml.TumblingWindow, error) {
-	if input == nil {
-		return nil, nil
-	}
-	state := input.TumblingWindow
-
-	if err := convertDurations(tumblingWindowDurations(input, &state)); err != nil {
-		return nil, err
-	}
-
-	return &state, nil
-}
-
-func continuousWindowState(input *ml.ContinuousWindow) (*ml.ContinuousWindow, error) {
-	if input == nil {
-		return nil, nil
-	}
-	state := *input
-
-	if err := convertDurations(continuousWindowDurations(&state)); err != nil {
-		return nil, err
 	}
 
 	return &state, nil
