@@ -76,4 +76,19 @@ render batch-pair.yml.tmpl
 trace $CLI bundle deploy
 trace members
 
+trace $CLI bundle destroy --auto-approve
+
+title "The batch pair shorthand carries a whole set on its own, with no member written out"
+render batch-only.yml.tmpl
+trace $CLI bundle deploy
+trace members
+
+trace $CLI bundle destroy --auto-approve
+
+title "Both shorthand fields expand in the same set, which the service then refuses: a sawtooth"
+title "entry has to carry a DERIVED schedule and a batch pair a MANUAL one, and one request cannot"
+title "mix the two modes. The CLI expanded both fields and judged neither."
+render both-shorthand.yml.tmpl
+trace musterr $CLI bundle deploy --auto-approve
+
 rm -f out.plan.json

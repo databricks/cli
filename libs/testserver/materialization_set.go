@@ -112,6 +112,27 @@ func validateBatchPipelineScheduleStates(members []ml.MaterializedFeature) *Resp
 	return nil
 }
 
+// validateSingleCronScheduleMode mirrors the create-path rule that one request carries one cron
+// schedule mode. A sawtooth feature must be DERIVED and a batch-only feature MANUAL, so this is
+// what a set holding both runs into first.
+func validateSingleCronScheduleMode(members []ml.MaterializedFeature) *Response {
+	modes := map[ml.CronScheduleMode]bool{}
+	for _, member := range members {
+		if member.CronScheduleTrigger == nil {
+			continue
+		}
+		modes[member.CronScheduleTrigger.Mode] = true
+	}
+	if len(modes) > 1 {
+		response := materializationSetError(http.StatusBadRequest, "INVALID_PARAMETER_VALUE",
+			"All cron-scheduled features in a single request must use the same cron schedule "+
+				"mode; a request cannot mix DERIVED (service-derived) and MANUAL "+
+				"(caller-supplied) schedules.")
+		return &response
+	}
+	return nil
+}
+
 // featureMaterializationDestination renders the destination pair the create compares across
 // features: a feature's offline config plus the online config it is also materialized to, if any.
 func featureMaterializationDestination(members []ml.MaterializedFeature) string {
@@ -321,6 +342,9 @@ func (s *FakeWorkspace) MaterializationSetsCreate(req Request) Response {
 			"A materialization set requires at least one materialized feature.")
 	}
 	if bad := validateBatchPipelineScheduleStates(set.MaterializedFeatures); bad != nil {
+		return *bad
+	}
+	if bad := validateSingleCronScheduleMode(set.MaterializedFeatures); bad != nil {
 		return *bad
 	}
 	set.MaterializationSetId = nextUUID()

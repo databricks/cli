@@ -1,0 +1,72 @@
+bundle:
+  name: test-matset-shorthand-$UNIQUE_NAME
+
+resources:
+  features:
+    bothsaw:
+      full_name: $CATALOG_NAME.$SCHEMA_NAME.bothsaw_$UNIQUE_NAME
+      source:
+        stream_source:
+          full_name: $STREAM_FULL_NAME
+      function:
+        aggregation_function:
+          sum:
+            input: value.passenger_count_1
+          time_window:
+            sawtooth:
+              window_duration: 3d
+      entities:
+        - name: value.pickup_zip
+      timeseries_column:
+        name: value.event_timestamp
+    bothbatch:
+      full_name: $CATALOG_NAME.$SCHEMA_NAME.bothbatch_$UNIQUE_NAME
+      source:
+        delta_table_source:
+          full_name: $TABLE_NAME
+      function:
+        aggregation_function:
+          count_function:
+            input: value
+          time_window:
+            sliding:
+              window_duration: 604800s
+              slide_duration: 86400s
+      entities:
+        - name: id
+      timeseries_column:
+        name: timestamp
+
+  materialization_sets:
+    set1:
+      # Both shorthand fields at once. The two entries name identical destinations, so what the
+      # service refuses is the pair of cron schedule modes the two expansions ask for.
+      sawtooth_materialized_features:
+        - feature_name: ${resources.features.bothsaw.full_name}
+          offline_store_config:
+            catalog_name: $CATALOG_NAME
+            schema_name: $SCHEMA_NAME
+            table_name_prefix: both_${UNIQUE_NAME}_off
+          online_store_config:
+            online_store_name: $ONLINE_STORE_NAME
+            catalog_name: $CATALOG_NAME
+            schema_name: $SCHEMA_NAME
+            table_name_prefix: both_$UNIQUE_NAME
+          cron_schedule_trigger:
+            mode: DERIVED
+          streaming_mode:
+            mode: STREAMING_MODE_TYPE_RTM
+      batch_offline_and_online_materialized_features:
+        - feature_name: ${resources.features.bothbatch.full_name}
+          offline_store_config:
+            catalog_name: $CATALOG_NAME
+            schema_name: $SCHEMA_NAME
+            table_name_prefix: both_${UNIQUE_NAME}_off
+          online_store_config:
+            online_store_name: $ONLINE_STORE_NAME
+            catalog_name: $CATALOG_NAME
+            schema_name: $SCHEMA_NAME
+            table_name_prefix: both_$UNIQUE_NAME
+          cron_schedule_trigger:
+            mode: MANUAL
+            cron_expression: "0 0 * * * ?"
