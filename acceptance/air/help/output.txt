@@ -130,7 +130,9 @@ Use "databricks air images [command] --help" for more information about a comman
 
 === images push help
 >>> [CLI] air images push --help
-This CLI command is in Preview. For current feature status and requirements, see https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/docker-images.
+This CLI command is in Preview. For current feature status and requirements, see:
+  AWS: https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/docker-images
+  Azure: https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/connecting/cli/docker-images
 
 Push a container image to Databricks Artifact Registry under the specified Unity Catalog catalog and schema.
 
