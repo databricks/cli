@@ -242,27 +242,27 @@ func fieldWithConvertedDurations[Config, State any](
 //  4. Set the field in featureWithEveryDuration and assert it in
 //     TestFeatureStateConvertsEveryWindow, which is the only check that the field is converted.
 
-func durationConversionsForSourceLateness(input *resources.FeatureSourceLateness, state *ml.SourceLateness) []durationConversion {
+func durationConversionsForSourceLateness(input *resources.SourceLateness, state *ml.SourceLateness) []durationConversion {
 	return []durationConversion{
 		durationConversionForNonStringTypedDuration("settling_delay", input.SettlingDelay, &state.SettlingDelay),
 	}
 }
 
-func durationConversionsForRollingWindow(input *resources.FeatureRollingWindow, state *ml.RollingWindow) []durationConversion {
+func durationConversionsForRollingWindow(input *resources.RollingWindow, state *ml.RollingWindow) []durationConversion {
 	return []durationConversion{
 		durationConversionForNonStringTypedDuration("delay", input.Delay, &state.Delay),
 		durationConversionForNonStringTypedDuration("window_duration", input.WindowDuration, &state.WindowDuration),
 	}
 }
 
-func durationConversionsForSawtoothWindow(input *resources.FeatureSawtoothWindow, state *ml.SawtoothWindow) []durationConversion {
+func durationConversionsForSawtoothWindow(input *resources.SawtoothWindow, state *ml.SawtoothWindow) []durationConversion {
 	return []durationConversion{
 		durationConversionForNonStringTypedDuration("delay", input.Delay, &state.Delay),
 		durationConversionForNonStringTypedDuration("window_duration", input.WindowDuration, &state.WindowDuration),
 	}
 }
 
-func durationConversionsForSlidingWindow(input *resources.FeatureSlidingWindow, state *ml.SlidingWindow) []durationConversion {
+func durationConversionsForSlidingWindow(input *resources.SlidingWindow, state *ml.SlidingWindow) []durationConversion {
 	return []durationConversion{
 		durationConversionForNonStringTypedDuration("delay", input.Delay, &state.Delay),
 		durationConversionForNonStringTypedDuration("offset", input.Offset, &state.Offset),
@@ -271,7 +271,7 @@ func durationConversionsForSlidingWindow(input *resources.FeatureSlidingWindow, 
 	}
 }
 
-func durationConversionsForTumblingWindow(input *resources.FeatureTumblingWindow, state *ml.TumblingWindow) []durationConversion {
+func durationConversionsForTumblingWindow(input *resources.TumblingWindow, state *ml.TumblingWindow) []durationConversion {
 	return []durationConversion{
 		durationConversionForNonStringTypedDuration("delay", input.Delay, &state.Delay),
 		durationConversionForNonStringTypedDuration("offset", input.Offset, &state.Offset),
@@ -315,7 +315,7 @@ func featureState(input *resources.Feature) (*ml.Feature, error) {
 	return &state, nil
 }
 
-func featureFunctionWithConvertedDurations(input *resources.FeatureFunction) (*ml.Function, error) {
+func featureFunctionWithConvertedDurations(input *resources.Function) (*ml.Function, error) {
 	state := input.Function
 
 	aggregation, err := featureAggregationFunctionWithConvertedDurations(input.AggregationFunction)
@@ -327,7 +327,7 @@ func featureFunctionWithConvertedDurations(input *resources.FeatureFunction) (*m
 	return &state, nil
 }
 
-func featureAggregationFunctionWithConvertedDurations(input *resources.FeatureAggregationFunction) (*ml.AggregationFunction, error) {
+func featureAggregationFunctionWithConvertedDurations(input *resources.AggregationFunction) (*ml.AggregationFunction, error) {
 	if input == nil {
 		return nil, nil
 	}
@@ -342,7 +342,7 @@ func featureAggregationFunctionWithConvertedDurations(input *resources.FeatureAg
 	return &state, nil
 }
 
-func featureTimeWindowWithConvertedDurations(input *resources.FeatureTimeWindow) (*ml.TimeWindow, error) {
+func featureTimeWindowWithConvertedDurations(input *resources.TimeWindow) (*ml.TimeWindow, error) {
 	if input == nil {
 		return nil, nil
 	}
@@ -350,22 +350,22 @@ func featureTimeWindowWithConvertedDurations(input *resources.FeatureTimeWindow)
 
 	var err error
 	if state.Rolling, err = fieldWithConvertedDurations(input.Rolling,
-		func(c *resources.FeatureRollingWindow) ml.RollingWindow { return c.RollingWindow },
+		func(c *resources.RollingWindow) ml.RollingWindow { return c.RollingWindow },
 		durationConversionsForRollingWindow); err != nil {
 		return nil, fmt.Errorf("rolling: %w", err)
 	}
 	if state.Sawtooth, err = fieldWithConvertedDurations(input.Sawtooth,
-		func(c *resources.FeatureSawtoothWindow) ml.SawtoothWindow { return c.SawtoothWindow },
+		func(c *resources.SawtoothWindow) ml.SawtoothWindow { return c.SawtoothWindow },
 		durationConversionsForSawtoothWindow); err != nil {
 		return nil, fmt.Errorf("sawtooth: %w", err)
 	}
 	if state.Sliding, err = fieldWithConvertedDurations(input.Sliding,
-		func(c *resources.FeatureSlidingWindow) ml.SlidingWindow { return c.SlidingWindow },
+		func(c *resources.SlidingWindow) ml.SlidingWindow { return c.SlidingWindow },
 		durationConversionsForSlidingWindow); err != nil {
 		return nil, fmt.Errorf("sliding: %w", err)
 	}
 	if state.Tumbling, err = fieldWithConvertedDurations(input.Tumbling,
-		func(c *resources.FeatureTumblingWindow) ml.TumblingWindow { return c.TumblingWindow },
+		func(c *resources.TumblingWindow) ml.TumblingWindow { return c.TumblingWindow },
 		durationConversionsForTumblingWindow); err != nil {
 		return nil, fmt.Errorf("tumbling: %w", err)
 	}
@@ -378,11 +378,11 @@ func featureTimeWindowWithConvertedDurations(input *resources.FeatureTimeWindow)
 	return &state, nil
 }
 
-func featureDataSourceWithConvertedDurations(input *resources.FeatureDataSource) (*ml.DataSource, error) {
+func featureDataSourceWithConvertedDurations(input *resources.DataSource) (*ml.DataSource, error) {
 	state := input.DataSource
 
 	lateness, err := fieldWithConvertedDurations(input.Lateness,
-		func(c *resources.FeatureSourceLateness) ml.SourceLateness { return c.SourceLateness },
+		func(c *resources.SourceLateness) ml.SourceLateness { return c.SourceLateness },
 		durationConversionsForSourceLateness)
 	if err != nil {
 		return nil, fmt.Errorf("lateness: %w", err)

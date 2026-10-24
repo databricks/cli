@@ -22,138 +22,138 @@ type Feature struct {
 	// === overrides over [ml.Feature] =========
 	// =========================================
 
-	Function   FeatureFunction    `json:"function"`
-	Source     FeatureDataSource  `json:"source"`
-	TimeWindow *FeatureTimeWindow `json:"time_window,omitempty"`
+	Function   Function    `json:"function"`
+	Source     DataSource  `json:"source"`
+	TimeWindow *TimeWindow `json:"time_window,omitempty"`
 }
 
 // The types below re-type the API's duration fields as strings so a bundle can write a duration
 // with day and hour units; featureState converts them before deploy. Each embeds the API type and
 // shadows only the fields it re-types, so every other field resolves through the embedding.
 
-type FeatureFunction struct {
+type Function struct {
 	ml.Function
-	AggregationFunction *FeatureAggregationFunction `json:"aggregation_function,omitempty"`
+	AggregationFunction *AggregationFunction `json:"aggregation_function,omitempty"`
 }
 
-type FeatureAggregationFunction struct {
+type AggregationFunction struct {
 	ml.AggregationFunction
-	TimeWindow *FeatureTimeWindow `json:"time_window,omitempty"`
+	TimeWindow *TimeWindow `json:"time_window,omitempty"`
 }
 
-type FeatureTimeWindow struct {
+type TimeWindow struct {
 	ml.TimeWindow
-	Rolling  *FeatureRollingWindow  `json:"rolling,omitempty"`
-	Sawtooth *FeatureSawtoothWindow `json:"sawtooth,omitempty"`
-	Sliding  *FeatureSlidingWindow  `json:"sliding,omitempty"`
-	Tumbling *FeatureTumblingWindow `json:"tumbling,omitempty"`
+	Rolling  *RollingWindow  `json:"rolling,omitempty"`
+	Sawtooth *SawtoothWindow `json:"sawtooth,omitempty"`
+	Sliding  *SlidingWindow  `json:"sliding,omitempty"`
+	Tumbling *TumblingWindow `json:"tumbling,omitempty"`
 }
 
-type FeatureRollingWindow struct {
+type RollingWindow struct {
 	ml.RollingWindow
 	Delay          string `json:"delay,omitempty"`
 	WindowDuration string `json:"window_duration,omitempty"`
 }
 
-type FeatureSawtoothWindow struct {
+type SawtoothWindow struct {
 	ml.SawtoothWindow
 	Delay          string `json:"delay,omitempty"`
 	WindowDuration string `json:"window_duration,omitempty"`
 }
 
-type FeatureSlidingWindow struct {
+type SlidingWindow struct {
 	ml.SlidingWindow
 	Delay  string `json:"delay,omitempty"`
 	Offset string `json:"offset,omitempty"`
 }
 
-type FeatureTumblingWindow struct {
+type TumblingWindow struct {
 	ml.TumblingWindow
 	Delay  string `json:"delay,omitempty"`
 	Offset string `json:"offset,omitempty"`
 }
 
-type FeatureDataSource struct {
+type DataSource struct {
 	ml.DataSource
-	Lateness *FeatureSourceLateness `json:"lateness,omitempty"`
+	Lateness *SourceLateness `json:"lateness,omitempty"`
 }
 
-type FeatureSourceLateness struct {
+type SourceLateness struct {
 	ml.SourceLateness
 	SettlingDelay string `json:"settling_delay,omitempty"`
 }
 
 // Each wrapper declares its own JSON methods, overriding the ones its embedded API type promotes.
 
-func (c *FeatureFunction) UnmarshalJSON(b []byte) error {
+func (c *Function) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, c)
 }
 
-func (c FeatureFunction) MarshalJSON() ([]byte, error) {
+func (c Function) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(c)
 }
 
-func (c *FeatureAggregationFunction) UnmarshalJSON(b []byte) error {
+func (c *AggregationFunction) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, c)
 }
 
-func (c FeatureAggregationFunction) MarshalJSON() ([]byte, error) {
+func (c AggregationFunction) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(c)
 }
 
-func (c *FeatureTimeWindow) UnmarshalJSON(b []byte) error {
+func (c *TimeWindow) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, c)
 }
 
-func (c FeatureTimeWindow) MarshalJSON() ([]byte, error) {
+func (c TimeWindow) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(c)
 }
 
-func (c *FeatureRollingWindow) UnmarshalJSON(b []byte) error {
+func (c *RollingWindow) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, c)
 }
 
-func (c FeatureRollingWindow) MarshalJSON() ([]byte, error) {
+func (c RollingWindow) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(c)
 }
 
-func (c *FeatureSawtoothWindow) UnmarshalJSON(b []byte) error {
+func (c *SawtoothWindow) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, c)
 }
 
-func (c FeatureSawtoothWindow) MarshalJSON() ([]byte, error) {
+func (c SawtoothWindow) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(c)
 }
 
-func (c *FeatureSlidingWindow) UnmarshalJSON(b []byte) error {
+func (c *SlidingWindow) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, c)
 }
 
-func (c FeatureSlidingWindow) MarshalJSON() ([]byte, error) {
+func (c SlidingWindow) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(c)
 }
 
-func (c *FeatureTumblingWindow) UnmarshalJSON(b []byte) error {
+func (c *TumblingWindow) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, c)
 }
 
-func (c FeatureTumblingWindow) MarshalJSON() ([]byte, error) {
+func (c TumblingWindow) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(c)
 }
 
-func (c *FeatureDataSource) UnmarshalJSON(b []byte) error {
+func (c *DataSource) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, c)
 }
 
-func (c FeatureDataSource) MarshalJSON() ([]byte, error) {
+func (c DataSource) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(c)
 }
 
-func (c *FeatureSourceLateness) UnmarshalJSON(b []byte) error {
+func (c *SourceLateness) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, c)
 }
 
-func (c FeatureSourceLateness) MarshalJSON() ([]byte, error) {
+func (c SourceLateness) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(c)
 }
 

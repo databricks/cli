@@ -84,10 +84,10 @@ func TestFeatureStateConvertsEveryWindow(t *testing.T) {
 
 func TestFeatureStateAcceptsCompoundAndProtobufForms(t *testing.T) {
 	input := &resources.Feature{}
-	input.Function.AggregationFunction = &resources.FeatureAggregationFunction{
-		TimeWindow: &resources.FeatureTimeWindow{
-			Sawtooth: &resources.FeatureSawtoothWindow{WindowDuration: "3d15m"},
-			Sliding:  &resources.FeatureSlidingWindow{},
+	input.Function.AggregationFunction = &resources.AggregationFunction{
+		TimeWindow: &resources.TimeWindow{
+			Sawtooth: &resources.SawtoothWindow{WindowDuration: "3d15m"},
+			Sliding:  &resources.SlidingWindow{},
 		},
 	}
 	input.Function.AggregationFunction.TimeWindow.Sliding.SlideDuration = "604800s"
@@ -101,10 +101,10 @@ func TestFeatureStateAcceptsCompoundAndProtobufForms(t *testing.T) {
 
 func TestFeatureStateLeavesUnsetAndVariableReferences(t *testing.T) {
 	input := &resources.Feature{}
-	input.Function.AggregationFunction = &resources.FeatureAggregationFunction{
-		TimeWindow: &resources.FeatureTimeWindow{
-			Rolling: &resources.FeatureRollingWindow{WindowDuration: "${var.window}"},
-			Sliding: &resources.FeatureSlidingWindow{},
+	input.Function.AggregationFunction = &resources.AggregationFunction{
+		TimeWindow: &resources.TimeWindow{
+			Rolling: &resources.RollingWindow{WindowDuration: "${var.window}"},
+			Sliding: &resources.SlidingWindow{},
 		},
 	}
 
@@ -126,9 +126,9 @@ func TestFeatureStateWithoutWindows(t *testing.T) {
 
 func TestFeaturePrepareInputConfigReportsBadDuration(t *testing.T) {
 	input := &resources.Feature{}
-	input.Function.AggregationFunction = &resources.FeatureAggregationFunction{
-		TimeWindow: &resources.FeatureTimeWindow{
-			Rolling: &resources.FeatureRollingWindow{WindowDuration: "7 fortnights"},
+	input.Function.AggregationFunction = &resources.AggregationFunction{
+		TimeWindow: &resources.TimeWindow{
+			Rolling: &resources.RollingWindow{WindowDuration: "7 fortnights"},
 		},
 	}
 
@@ -151,12 +151,12 @@ func TestFeaturePrepareInputConfigPassesConfigThrough(t *testing.T) {
 func featureWithEveryDuration() *resources.Feature {
 	const day = "1d"
 
-	window := func() *resources.FeatureTimeWindow {
-		w := &resources.FeatureTimeWindow{
-			Rolling:  &resources.FeatureRollingWindow{Delay: day, WindowDuration: day},
-			Sawtooth: &resources.FeatureSawtoothWindow{Delay: day, WindowDuration: day},
-			Sliding:  &resources.FeatureSlidingWindow{Delay: day, Offset: day},
-			Tumbling: &resources.FeatureTumblingWindow{Delay: day, Offset: day},
+	window := func() *resources.TimeWindow {
+		w := &resources.TimeWindow{
+			Rolling:  &resources.RollingWindow{Delay: day, WindowDuration: day},
+			Sawtooth: &resources.SawtoothWindow{Delay: day, WindowDuration: day},
+			Sliding:  &resources.SlidingWindow{Delay: day, Offset: day},
+			Tumbling: &resources.TumblingWindow{Delay: day, Offset: day},
 		}
 		w.Sliding.WindowDuration = day
 		w.Sliding.SlideDuration = day
@@ -166,10 +166,10 @@ func featureWithEveryDuration() *resources.Feature {
 	}
 
 	input := &resources.Feature{
-		Function: resources.FeatureFunction{
-			AggregationFunction: &resources.FeatureAggregationFunction{TimeWindow: window()},
+		Function: resources.Function{
+			AggregationFunction: &resources.AggregationFunction{TimeWindow: window()},
 		},
-		Source:     resources.FeatureDataSource{Lateness: &resources.FeatureSourceLateness{SettlingDelay: day}},
+		Source:     resources.DataSource{Lateness: &resources.SourceLateness{SettlingDelay: day}},
 		TimeWindow: window(),
 	}
 	return input
