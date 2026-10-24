@@ -225,8 +225,22 @@ func fieldWithConvertedDurations[Config, State any](
 	return &state, nil
 }
 
-// The registry: every duration field the adapter converts, one entry per field. A spec change that
-// adds a duration field is one line here.
+// The registry: every duration field the adapter converts, one entry per field.
+//
+// When the API gains a duration field, nothing detects it. Add it here by hand:
+//
+//  1. If the SDK types the field as *sdkduration.Duration, re-type it as a string in
+//     bundle/config/resources/feature.go so a bundle can write "7d". A field the SDK already types
+//     as a string needs no config change.
+//  2. Add one entry to the durationConversionsFor<Message> below that owns the field, picking
+//     durationConversionForNonStringTypedDuration or durationConversionForStringTypedDuration to
+//     match the SDK's type for it.
+//  3. If the field sits on a message that has no registry yet, write one, then convert that message
+//     through fieldWithConvertedDurations from whichever conversion owns it: featureState,
+//     featureFunctionWithConvertedDurations, featureAggregationFunctionWithConvertedDurations,
+//     featureTimeWindowWithConvertedDurations or featureDataSourceWithConvertedDurations.
+//  4. Set the field in featureWithEveryDuration and assert it in
+//     TestFeatureStateConvertsEveryWindow, which is the only check that the field is converted.
 
 func durationConversionsForSourceLateness(input *resources.FeatureSourceLateness, state *ml.SourceLateness) []durationConversion {
 	return []durationConversion{
