@@ -97,6 +97,9 @@ func batchOfflineAndOnlineMaterializedFeatureMembers(entry ml.MaterializedFeatur
 	}
 }
 
+// Apply mutates typed state, and the Python path merges the dynamic tree back once the normalize
+// sequence returns, so this must not be the last entry in applyNormalizeMutators: that tree picks up
+// a typed mutation only when the next mutator enters.
 func (m *expandMaterializationSetMaterializedFeatureMembers) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	for _, set := range b.Config.Resources.MaterializationSets {
 		if set == nil {
