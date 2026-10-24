@@ -1,0 +1,48 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-settled-[UNIQUE_NAME]/default/files...
+Created features.failfeat
+Created features.okfeat
+Created materialization_sets.set1
+Files: 3 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+=== A member the server cannot tear down settles the update's operation as FAILED and returns
+=== it with HTTP 200. The adapter reads the code off the operation and the per-member outcome
+=== off its metadata, so the deploy fails naming each member left behind.
+>>> [CLI] bundle plan -o json
+
+>>> set_action
+update
+
+>>> musterr [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-settled-[UNIQUE_NAME]/default/files...
+Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: materialization set [UUID] operation failed: Changed 0 of 2 materialized features in materialization set '[UUID]'. The operation's progress lists which update succeeded, which failed and why.; members left unchanged: [UUID] (INTERNAL_ERROR): Failed to delete materialized feature '[UUID]'. If the issue persists, please retry or contact support.; [UUID] (INTERNAL_ERROR): Failed to delete materialized feature '[UUID]'. If the issue persists, please retry or contact support. (200 INTERNAL_ERROR)
+
+Endpoint: n/a
+HTTP Status: 200
+API error_code: INTERNAL_ERROR
+API message: materialization set [UUID] operation failed: Changed 0 of 2 materialized features in materialization set '[UUID]'. The operation's progress lists which update succeeded, which failed and why.; members left unchanged: [UUID] (INTERNAL_ERROR): Failed to delete materialized feature '[UUID]'. If the issue persists, please retry or contact support.; [UUID] (INTERNAL_ERROR): Failed to delete materialized feature '[UUID]'. If the issue persists, please retry or contact support.
+
+Files: 2 uploaded, 0 deleted
+
+=== Nothing was written, so the removal is still pending
+>>> [CLI] bundle plan -o json
+
+>>> set_action
+update
+
+=== The delete settles FAILED the same way, and here the engine decides what the user sees:
+=== its destroy step forgives a delete error matching none of the cases it knows, so the
+=== destroy reports success and drops the state while the set stays in the workspace. The leg
+=== with deployment-history recording takes the one branch that records and returns the
+=== failure, which is why this case runs on the other leg only.
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.features.failfeat
+  delete resources.features.okfeat
+  delete resources.materialization_sets.set1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-matset-settled-[UNIQUE_NAME]/default
+
+Destroy: 3 deleted

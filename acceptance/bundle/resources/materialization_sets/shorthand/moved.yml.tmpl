@@ -1,0 +1,41 @@
+bundle:
+  name: test-matset-shorthand-$UNIQUE_NAME
+
+resources:
+  features:
+    sawfeat:
+      full_name: $CATALOG_NAME.$SCHEMA_NAME.shd_$UNIQUE_NAME
+      source:
+        stream_source:
+          full_name: $STREAM_FULL_NAME
+      function:
+        aggregation_function:
+          sum:
+            input: value.passenger_count_1
+          time_window:
+            sawtooth:
+              window_duration: 259200s
+      entities:
+        - name: value.pickup_zip
+      timeseries_column:
+        name: value.event_timestamp
+
+  materialization_sets:
+    set1:
+      # One entry for the whole of this feature's materialization. Both destinations and both
+      # triggers are written once; the CLI splits them across the three members the service wants.
+      sawtooth_materialized_features:
+        - feature_name: ${resources.features.sawfeat.full_name}
+          offline_store_config:
+            catalog_name: $CATALOG_NAME
+            schema_name: $SCHEMA_NAME
+            table_name_prefix: shd_${UNIQUE_NAME}_off
+          online_store_config:
+            online_store_name: $ONLINE_STORE_NAME
+            catalog_name: $CATALOG_NAME
+            schema_name: $SCHEMA_NAME
+            table_name_prefix: shd_${UNIQUE_NAME}_moved
+          cron_schedule_trigger:
+            mode: DERIVED
+          streaming_mode:
+            mode: STREAMING_MODE_TYPE_RTM

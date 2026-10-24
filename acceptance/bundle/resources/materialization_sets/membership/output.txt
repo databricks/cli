@@ -1,0 +1,66 @@
+
+>>> create_table.py main.materialization_set_acceptance_test.src_[UNIQUE_NAME]
+Created table main.materialization_set_acceptance_test.src_[UNIQUE_NAME]
+Inserted sample data into main.materialization_set_acceptance_test.src_[UNIQUE_NAME]
+Table main.materialization_set_acceptance_test.src_[UNIQUE_NAME] is now visible (catalog_name=main)
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-membership-[UNIQUE_NAME]/default/files...
+Created features.feata
+Created features.featb
+Created materialization_sets.set1
+Files: 5 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+=== The cascade is per feature and runs both ways. Removing feata's online member alone is
+=== refused, because the delete also reaches the offline member the config still declares
+>>> musterr [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-membership-[UNIQUE_NAME]/default/files...
+Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Materialized features '[UUID]' of feature 'main.materialization_set_acceptance_test.feata_[UNIQUE_NAME]' are deleted only by deleting materialized features '[UUID]', which the request does not supply. Remove those as well. (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?request_id=[UUID]&update_mask=materialized_features
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Materialized features '[UUID]' of feature 'main.materialization_set_acceptance_test.feata_[UNIQUE_NAME]' are deleted only by deleting materialized features '[UUID]', which the request does not supply. Remove those as well.
+
+Files: 1 uploaded, 0 deleted
+
+=== And removing feata's offline member alone is refused for the same reason, from the other
+=== direction
+>>> musterr [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-membership-[UNIQUE_NAME]/default/files...
+Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Deleting materialized features '[UUID]' of feature 'main.materialization_set_acceptance_test.feata_[UNIQUE_NAME]' also deletes materialized features '[UUID]', which the request does not delete. Delete the unrequested materialized features as well. (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?request_id=[UUID]&update_mask=materialized_features
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Deleting materialized features '[UUID]' of feature 'main.materialization_set_acceptance_test.feata_[UNIQUE_NAME]' also deletes materialized features '[UUID]', which the request does not delete. Delete the unrequested materialized features as well.
+
+Files: 1 uploaded, 0 deleted
+
+=== Removing a whole feature's pair plans as update, not recreate, and the other feature's
+=== members keep their ids, so the set was reconciled rather than rebuilt
+>>> [CLI] bundle plan -o json
+
+>>> set_action
+{
+  "resources.materialization_sets.set1": "update"
+}
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-membership-[UNIQUE_NAME]/default/files...
+Updated materialization_sets.set1
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
+
+>>> set_members
+[
+  {
+    "feature_name": "${resources.features.featb.full_name}",
+    "is_online": null
+  },
+  {
+    "feature_name": "${resources.features.featb.full_name}",
+    "is_online": null
+  }
+]

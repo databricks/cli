@@ -1,0 +1,70 @@
+bundle:
+  name: test-matset-membership-$UNIQUE_NAME
+
+resources:
+  features:
+    feata:
+      full_name: $CATALOG_NAME.$SCHEMA_NAME.feata_$UNIQUE_NAME
+      source:
+        delta_table_source:
+          full_name: $TABLE_NAME
+      function:
+        aggregation_function:
+          count_function:
+            input: value
+          time_window:
+            sliding:
+              window_duration: 604800s
+              slide_duration: 86400s
+      entities:
+        - name: id
+      timeseries_column:
+        name: timestamp
+    featb:
+      full_name: $CATALOG_NAME.$SCHEMA_NAME.featb_$UNIQUE_NAME
+      source:
+        delta_table_source:
+          full_name: $TABLE_NAME
+      function:
+        aggregation_function:
+          count_function:
+            input: value
+          time_window:
+            sliding:
+              window_duration: 604800s
+              slide_duration: 86400s
+      entities:
+        - name: id
+      timeseries_column:
+        name: timestamp
+
+  materialization_sets:
+    set1:
+      # feata's offline member dropped on its own.
+      materialized_features:
+        - feature_name: ${resources.features.feata.full_name}
+          online_store_config:
+            online_store_name: $ONLINE_STORE_NAME
+            catalog_name: $CATALOG_NAME
+            schema_name: $SCHEMA_NAME
+            table_name_prefix: $PREFIX
+          cron_schedule_trigger:
+            mode: MANUAL
+            cron_expression: "0 0 * * * ?"
+        - feature_name: ${resources.features.featb.full_name}
+          offline_store_config:
+            catalog_name: $CATALOG_NAME
+            schema_name: $SCHEMA_NAME
+            table_name_prefix: ${PREFIX}_off
+          cron_schedule_trigger:
+            mode: MANUAL
+            cron_expression: "0 0 * * * ?"
+        - feature_name: ${resources.features.featb.full_name}
+          online_store_config:
+            online_store_name: $ONLINE_STORE_NAME
+            catalog_name: $CATALOG_NAME
+            schema_name: $SCHEMA_NAME
+            table_name_prefix: $PREFIX
+          cron_schedule_trigger:
+            mode: MANUAL
+            cron_expression: "0 0 * * * ?"

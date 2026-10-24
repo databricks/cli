@@ -1,0 +1,45 @@
+bundle:
+  name: test-bundle
+
+resources:
+  features:
+    batchfeat:
+      full_name: main.myschema.batchfeat
+      source:
+        delta_table_source:
+          full_name: main.myschema.mysource
+      function:
+        aggregation_function:
+          count_function:
+            input: amount
+          time_window:
+            sliding:
+              window_duration: 7d
+              slide_duration: 1d
+      entities:
+        - name: account_id
+      timeseries_column:
+        name: event_ts
+
+  materialization_sets:
+    set1:
+      materialized_features:
+        # One feature with both destinations: the offline member a delete cascades from, and the
+        # online member it cascades to.
+        - feature_name: main.myschema.batchfeat
+          offline_store_config:
+            catalog_name: main
+            schema_name: myschema
+            table_name_prefix: offline
+          cron_schedule_trigger:
+            mode: MANUAL
+            cron_expression: "0 0 * * * ?"
+        - feature_name: main.myschema.batchfeat
+          online_store_config:
+            online_store_name: danielb
+            catalog_name: main
+            schema_name: myschema
+            table_name_prefix: batchfeat
+          cron_schedule_trigger:
+            mode: MANUAL
+            cron_expression: "0 0 * * * ?"

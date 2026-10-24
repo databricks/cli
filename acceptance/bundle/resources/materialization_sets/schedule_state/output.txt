@@ -1,0 +1,86 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created materialization_sets.set1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== A member the config leaves unset adopts the state the server set on create, so the next
+=== plan is empty rather than reporting drift the bundle cannot write
+>>> [CLI] bundle plan -o json
+
+>>> jq .plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action) out.plan.json
+{
+  "resources.materialization_sets.set1": "skip"
+}
+
+>>> [CLI] bundle summary -o json
+[
+  {
+    "is_online": null,
+    "pipeline_schedule_state": "ACTIVE"
+  },
+  {
+    "is_online": null,
+    "pipeline_schedule_state": null
+  }
+]
+
+=== The state is write-once, so pausing the feature is a recreate rather than the in-place
+=== update the server would refuse. Every member of the feature has to ask for the same state
+>>> update_file.py databricks.yml pipeline_schedule_state: ACTIVE pipeline_schedule_state: PAUSED
+
+>>> update_file.py databricks.yml             table_name_prefix: feata             table_name_prefix: feata
+          pipeline_schedule_state: PAUSED
+
+>>> [CLI] bundle plan -o json
+
+>>> jq .plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action) out.plan.json
+{
+  "resources.materialization_sets.set1": "recreate"
+}
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+
+This action will result in the deletion or recreation of the following materialization sets.
+Every materialized feature in a recreated set is dropped and recomputed from scratch, including
+the members whose configuration did not change:
+  recreate resources.materialization_sets.set1
+Recreated materialization_sets.set1
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
+
+>>> [CLI] bundle summary -o json
+[
+  {
+    "is_online": null,
+    "pipeline_schedule_state": "PAUSED"
+  },
+  {
+    "is_online": null,
+    "pipeline_schedule_state": "PAUSED"
+  }
+]
+
+=== Resuming one member alone plans as a recreate too, and the create endpoint refuses the
+=== members of one feature disagreeing
+>>> update_file.py databricks.yml           pipeline_schedule_state: PAUSED
+        - feature_name           pipeline_schedule_state: ACTIVE
+        - feature_name
+
+>>> musterr [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+
+This action will result in the deletion or recreation of the following materialization sets.
+Every materialized feature in a recreated set is dropped and recomputed from scratch, including
+the members whose configuration did not change:
+  recreate resources.materialization_sets.set1
+Error: cannot recreate resources.materialization_sets.set1: All materialized features in a BatchCreateMaterializedFeaturesRequest call must have the same pipeline schedule state. (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets?request_id=[UUID]
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: All materialized features in a BatchCreateMaterializedFeaturesRequest call must have the same pipeline schedule state.
+
+Files: 1 uploaded, 0 deleted

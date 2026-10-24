@@ -1,0 +1,26 @@
+title "Summary before deploy"
+trace $CLI bundle summary -o json | jq '.resources.materialization_sets.set1 | {modified_status, materialized_features: [.materialized_features[] | {feature_name, is_online}]}'
+
+trace $CLI bundle deploy
+
+title "The create returns a long-running operation, and the created set is read back from it"
+trace print_requests.py --keep //materialization-sets
+trace print_requests.py --get //feature-engineering/operations
+
+title "The server assigned a set id and a member id per member"
+trace $CLI bundle summary -o json | jq '.resources.materialization_sets.set1 | {id}'
+
+title "Redeploying with no config change must plan nothing"
+trace $CLI bundle deploy
+trace print_requests.py //materialization-sets
+
+title "The schedule state the server assigned must not read as drift"
+trace $CLI bundle plan -o json > out.plan.json
+trace jq '.plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action)' out.plan.json
+
+title "The delete returns a long-running operation too, which the destroy waits on"
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py --keep //materialization-sets
+trace print_requests.py --get //feature-engineering/operations
+
+rm -f out.requests.txt out.plan.json

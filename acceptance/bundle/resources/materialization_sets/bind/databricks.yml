@@ -1,0 +1,18 @@
+bundle:
+  name: test-bundle
+
+resources:
+  materialization_sets:
+    set1:
+      materialized_features:
+        - feature_name: main.myschema.bindfeat
+          offline_store_config:
+            catalog_name: main
+            schema_name: myschema
+            table_name_prefix: shared_off
+        - feature_name: main.myschema.bindfeat
+          online_store_config:
+            online_store_name: danielb
+            catalog_name: main
+            schema_name: myschema
+            table_name_prefix: shared

@@ -1,0 +1,115 @@
+
+=== Summary before deploy
+>>> [CLI] bundle summary -o json
+{
+  "modified_status": "created",
+  "materialized_features": [
+    {
+      "feature_name": "main.myschema.batchfeat",
+      "is_online": null
+    },
+    {
+      "feature_name": "main.myschema.batchfeat",
+      "is_online": null
+    }
+  ]
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created features.batchfeat
+Created materialization_sets.set1
+Files: 1 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== The create returns a long-running operation, and the created set is read back from it
+>>> print_requests.py --keep //materialization-sets
+{
+  "method": "POST",
+  "path": "/api/2.0/feature-engineering/materialization-sets",
+  "q": {
+    "request_id": "[UUID]"
+  },
+  "body": {
+    "materialized_features": [
+      {
+        "cron_schedule_trigger": {
+          "cron_expression": "0 0 * * * ?",
+          "mode": "MANUAL"
+        },
+        "feature_name": "main.myschema.batchfeat",
+        "offline_store_config": {
+          "catalog_name": "main",
+          "schema_name": "myschema",
+          "table_name_prefix": "offline"
+        }
+      },
+      {
+        "cron_schedule_trigger": {
+          "cron_expression": "0 0 * * * ?",
+          "mode": "MANUAL"
+        },
+        "feature_name": "main.myschema.batchfeat",
+        "online_store_config": {
+          "catalog_name": "main",
+          "online_store_name": "danielb",
+          "schema_name": "myschema",
+          "table_name_prefix": "batchfeat"
+        }
+      }
+    ]
+  }
+}
+
+>>> print_requests.py --get //feature-engineering/operations
+{
+  "method": "GET",
+  "path": "/api/2.0/feature-engineering/operations/[UUID]"
+}
+
+=== The server assigned a set id and a member id per member
+>>> [CLI] bundle summary -o json
+{
+  "id": "[UUID]"
+}
+
+=== Redeploying with no config change must plan nothing
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+>>> print_requests.py //materialization-sets
+
+=== The schedule state the server assigned must not read as drift
+>>> [CLI] bundle plan -o json
+
+>>> jq .plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action) out.plan.json
+{
+  "resources.materialization_sets.set1": "skip"
+}
+
+=== The delete returns a long-running operation too, which the destroy waits on
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.features.batchfeat
+  delete resources.materialization_sets.set1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 2 deleted
+
+>>> print_requests.py --keep //materialization-sets
+{
+  "method": "DELETE",
+  "path": "/api/2.0/feature-engineering/materialization-sets/[UUID]",
+  "q": {
+    "request_id": "[UUID]"
+  }
+}
+
+>>> print_requests.py --get //feature-engineering/operations
+{
+  "method": "GET",
+  "path": "/api/2.0/feature-engineering/operations/[UUID]"
+}

@@ -1,0 +1,117 @@
+
+=== A sawtooth feature declaring only the offline and online batch pair is refused at create.
+=== The pair is not expanded into the third materialization: a set stamps its id on every
+=== member before the backend reaches that normalization, and the normalization is skipped
+=== whenever the id is set, so one member stays one materialized feature.
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-sawtooth-[UNIQUE_NAME]/default/files...
+Created features.sawfeat
+Error: cannot create resources.materialization_sets.set1: materialization set [UUID] operation failed: Feature 'danielb.fs2680.saw_[UNIQUE_NAME]' uses a sawtooth window, which requires an offline batch materialization, an online batch materialization and an online streaming materialization. Declare one materialize feature request for each. (200 BAD_REQUEST)
+
+Endpoint: n/a
+HTTP Status: 200
+API error_code: BAD_REQUEST
+API message: materialization set [UUID] operation failed: Feature 'danielb.fs2680.saw_[UNIQUE_NAME]' uses a sawtooth window, which requires an offline batch materialization, an online batch materialization and an online streaming materialization. Declare one materialize feature request for each.
+
+Files: 7 uploaded, 0 deleted
+
+=== Declaring all three creates the set
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-sawtooth-[UNIQUE_NAME]/default/files...
+Created materialization_sets.set1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
+
+=== A redeploy plans nothing. Both online members carry a destination the read never returns,
+=== so this is also what proves the input-only suppression holds for a three-member set.
+>>> [CLI] bundle plan -o json
+
+>>> jq .plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action) out.plan.json
+{
+  "resources.materialization_sets.set1": "skip"
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-sawtooth-[UNIQUE_NAME]/default/files...
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+=== Every suppressed destination change, by reason
+>>> jq -r .plan["resources.materialization_sets.set1"].changes | to_entries | map(select(.value.reason == "input_only_not_returned")) | length out.plan.json
+7
+
+=== A sawtooth feature's three members are one cascade group, so every strict subset of them
+=== is refused. Removing the offline member reaches both online ones,
+>>> [CLI] bundle plan -o json
+
+>>> set_action
+update
+
+>>> musterr [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-sawtooth-[UNIQUE_NAME]/default/files...
+Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Deleting materialized features '[UUID]' of feature 'danielb.fs2680.saw_[UNIQUE_NAME]' also deletes materialized features '[UUID]', '[UUID]', which the request does not delete. Delete the unrequested materialized features as well. (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?request_id=[UUID]&update_mask=materialized_features
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Deleting materialized features '[UUID]' of feature 'danielb.fs2680.saw_[UNIQUE_NAME]' also deletes materialized features '[UUID]', '[UUID]', which the request does not delete. Delete the unrequested materialized features as well.
+
+Files: 2 uploaded, 0 deleted
+
+=== removing the online batch member names no member a delete can be applied to,
+>>> [CLI] bundle plan -o json
+
+>>> set_action
+update
+
+>>> musterr [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-sawtooth-[UNIQUE_NAME]/default/files...
+Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Materialized features '[UUID]' of feature 'danielb.fs2680.saw_[UNIQUE_NAME]' are deleted only by deleting materialized features '[UUID]', '[UUID]', which the request does not supply. Remove those as well. (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?request_id=[UUID]&update_mask=materialized_features
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Materialized features '[UUID]' of feature 'danielb.fs2680.saw_[UNIQUE_NAME]' are deleted only by deleting materialized features '[UUID]', '[UUID]', which the request does not supply. Remove those as well.
+
+Files: 2 uploaded, 0 deleted
+
+=== and removing the batch pair still leaves the streaming member behind
+>>> [CLI] bundle plan -o json
+
+>>> set_action
+update
+
+>>> musterr [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-sawtooth-[UNIQUE_NAME]/default/files...
+Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Deleting materialized features '[UUID]', '[UUID]' of feature 'danielb.fs2680.saw_[UNIQUE_NAME]' also deletes materialized features '[UUID]', which the request does not delete. Delete the unrequested materialized features as well. (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?request_id=[UUID]&update_mask=materialized_features
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Deleting materialized features '[UUID]', '[UUID]' of feature 'danielb.fs2680.saw_[UNIQUE_NAME]' also deletes materialized features '[UUID]', which the request does not delete. Delete the unrequested materialized features as well.
+
+Files: 2 uploaded, 0 deleted
+
+=== Removing all three satisfies the cascade but empties the set, which the update endpoint
+=== refuses in favour of the delete endpoint. None of the four refusals wrote anything, so
+=== restoring the config plans nothing.
+>>> [CLI] bundle plan -o json
+
+>>> set_action
+update
+
+>>> musterr [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-sawtooth-[UNIQUE_NAME]/default/files...
+Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Updating materialization set '[UUID]' with no materialized features is not supported. Delete the set instead. (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?request_id=[UUID]&update_mask=materialized_features
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Updating materialization set '[UUID]' with no materialized features is not supported. Delete the set instead.
+
+Files: 2 uploaded, 0 deleted
+
+>>> [CLI] bundle plan -o json
+
+>>> set_action
+skip

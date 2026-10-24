@@ -1,0 +1,53 @@
+bundle:
+  name: test-matset-immutable-$UNIQUE_NAME
+
+resources:
+  features:
+    feata:
+      full_name: $CATALOG_NAME.$SCHEMA_NAME.imma_$UNIQUE_NAME
+      source:
+        delta_table_source:
+          full_name: $TABLE_NAME
+      function:
+        aggregation_function:
+          count_function:
+            input: value
+          time_window:
+            sliding:
+              window_duration: 604800s
+              slide_duration: 86400s
+      entities:
+        - name: id
+      timeseries_column:
+        name: timestamp
+    # Declared so the set can try to add a member for it. A member names a feature that must
+    # already exist, and the add is refused by the set update rather than by the feature lookup.
+    featb:
+      full_name: $CATALOG_NAME.$SCHEMA_NAME.immb_$UNIQUE_NAME
+      source:
+        delta_table_source:
+          full_name: $TABLE_NAME
+      function:
+        aggregation_function:
+          count_function:
+            input: value
+          time_window:
+            sliding:
+              window_duration: 604800s
+              slide_duration: 86400s
+      entities:
+        - name: id
+      timeseries_column:
+        name: timestamp
+
+  materialization_sets:
+    set1:
+      materialized_features:
+        - feature_name: ${resources.features.feata.full_name}
+          offline_store_config:
+            catalog_name: $CATALOG_NAME
+            schema_name: $SCHEMA_NAME
+            table_name_prefix: imm_${UNIQUE_NAME}_off
+          cron_schedule_trigger:
+            mode: MANUAL
+            cron_expression: "0 0 * * * ?"

@@ -159,6 +159,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				Features: map[string]*resources.Feature{
 					"feature1": {Feature: ml.Feature{FullName: "catalog1.schema1.feature1"}},
 				},
+				MaterializationSets: map[string]*resources.MaterializationSet{
+					"materialization_set1": {MaterializationSet: ml.MaterializationSet{
+						MaterializedFeatures: []ml.MaterializedFeature{
+							{FeatureName: "catalog1.schema1.feature1"},
+						},
+					}},
+				},
 				Clusters: map[string]*resources.Cluster{
 					"cluster1": {ClusterSpec: compute.ClusterSpec{ClusterName: "cluster1", SparkVersion: "13.2.x", NumWorkers: 1}},
 				},

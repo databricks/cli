@@ -1,0 +1,24 @@
+bundle:
+  name: test-bundle
+
+resources:
+  materialization_sets:
+    set1:
+      materialized_features:
+        - feature_name: main.myschema.destfeat
+          offline_store_config:
+            catalog_name: main
+            schema_name: myschema
+            table_name_prefix: destfeat_off
+          cron_schedule_trigger:
+            mode: MANUAL
+            cron_expression: "0 0 * * * ?"
+        - feature_name: main.myschema.destfeat
+          online_store_config:
+            online_store_name: danielb
+            catalog_name: main
+            schema_name: myschema
+            table_name_prefix: destfeat_on
+          cron_schedule_trigger:
+            mode: MANUAL
+            cron_expression: "0 0 * * * ?"

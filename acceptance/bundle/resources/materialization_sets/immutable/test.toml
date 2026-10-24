@@ -1,0 +1,33 @@
+# Pinned to the acceptance schema the materialization-set cases share. Override MATSET_CATALOG /
+# MATSET_SCHEMA to point it elsewhere.
+Cloud = true
+
+# Both legs run locally. A cloud run must select the DMS= leg: the bundle deployments API
+# rejects features. and materialization_sets. as resource-type prefixes.
+EnvMatrix.DMS = ["", "true"]
+
+Ignore = [
+    ".databricks",
+    "databricks.yml",
+]
+
+# A real materialization set or member id is 32 undashed hex characters; the harness's built-in
+# replacement only matches the dashed form the fake produces.
+[[Repls]]
+Old = '\b[0-9a-f]{32}\b'
+New = '[UUID]'
+
+# The workspace host, which only a cloud run puts in the output.
+[[Repls]]
+Old = 'https://[a-z0-9.-]+\.cloud\.databricks\.com'
+New = '[DATABRICKS_URL]'
+
+# Fake SQL endpoint so create_table.py works against the local test server too.
+[[Server]]
+Pattern = "POST /api/2.0/sql/statements/"
+Response.Body = '{"status": {"state": "SUCCEEDED"}, "manifest": {"schema": {"columns": []}}}'
+
+# The cleanup drops the source table; the fake has no delete handler for one.
+[[Server]]
+Pattern = "DELETE /api/2.1/unity-catalog/tables/{full_name}"
+Response.Body = '{}'

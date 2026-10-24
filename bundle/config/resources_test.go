@@ -128,6 +128,9 @@ func TestBundleResourcePluralNamesResolveInWorkspaceURLs(t *testing.T) {
 	// Resources that intentionally have no workspace URL.
 	noURL := map[string]bool{
 		"external_locations": true,
+		// A materialization set has no standalone workspace page; its members
+		// surface under their own features.
+		"materialization_sets": true,
 		// A job run does have a workspace URL, but it's addressed by two IDs
 		// (job + run) so it can't be expressed as a single-ID pattern here; it's
 		// built in JobRun.InitializeURL via workspaceurls.JobRunURL instead.
@@ -368,6 +371,15 @@ func TestResourcesBindSupport(t *testing.T) {
 				},
 			},
 		},
+		MaterializationSets: map[string]*resources.MaterializationSet{
+			"my_materialization_set": {
+				MaterializationSet: ml.MaterializationSet{
+					MaterializedFeatures: []ml.MaterializedFeature{
+						{FeatureName: "main.myschema.my_feature"},
+					},
+				},
+			},
+		},
 		VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 			"my_vector_search_endpoint": {
 				CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -399,6 +411,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockPipelinesAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockExperimentsAPI().EXPECT().GetExperiment(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockFeatureEngineeringAPI().EXPECT().GetFeature(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockFeatureEngineeringAPI().EXPECT().GetMaterializationSet(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockRegisteredModelsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockCatalogsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockExternalLocationsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)

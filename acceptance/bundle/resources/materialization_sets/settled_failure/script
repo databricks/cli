@@ -1,0 +1,36 @@
+export CATALOG_NAME="${MATSET_CATALOG:-main}"
+export SCHEMA_NAME="${MATSET_SCHEMA:-myschema}"
+export ONLINE_STORE_NAME="${MATSET_ONLINE_STORE:-danielb}"
+export TABLE_NAME="$CATALOG_NAME.$SCHEMA_NAME.src_$UNIQUE_NAME"
+
+render() {
+    envsubst < "$1" > databricks.yml
+}
+
+set_action() {
+    jq -r '.plan["resources.materialization_sets.set1"].action' out.plan.json
+}
+
+render databricks.yml.tmpl
+trace $CLI bundle deploy
+
+title "A member the server cannot tear down settles the update's operation as FAILED and returns"
+title "it with HTTP 200. The adapter reads the code off the operation and the per-member outcome"
+title "off its metadata, so the deploy fails naming each member left behind."
+render drop-failing.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
+trace musterr $CLI bundle deploy --auto-approve
+
+title "Nothing was written, so the removal is still pending"
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
+
+title "The delete settles FAILED the same way, and here the engine decides what the user sees:"
+title "its destroy step forgives a delete error matching none of the cases it knows, so the"
+title "destroy reports success and drops the state while the set stays in the workspace. The leg"
+title "with deployment-history recording takes the one branch that records and returns the"
+title "failure, which is why this case runs on the other leg only."
+trace $CLI bundle destroy --auto-approve
+
+rm -f out.requests.txt out.plan.json

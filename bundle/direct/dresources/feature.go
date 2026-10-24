@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
@@ -20,7 +21,18 @@ func (*ResourceFeature) New(client *databricks.WorkspaceClient) *ResourceFeature
 }
 
 func (*ResourceFeature) PrepareState(input *resources.Feature) *ml.Feature {
-	return &input.Feature
+	// An unparseable duration is reported by PrepareInputConfig, which runs first.
+	state, _ := featureState(input)
+	return state
+}
+
+// PrepareInputConfig reports a duration featureState cannot parse, which PrepareState cannot: its
+// signature carries no error.
+func (*ResourceFeature) PrepareInputConfig(input *resources.Feature, _ string) (*structvar.StructVar, error) {
+	if _, err := featureState(input); err != nil {
+		return nil, err
+	}
+	return &structvar.StructVar{Value: input, Refs: nil}, nil
 }
 
 func (r *ResourceFeature) DoRead(ctx context.Context, id string) (*ml.Feature, error) {
