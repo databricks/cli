@@ -43,9 +43,9 @@ func CommandBundleDestroy(cmd *cobra.Command, args []string, autoApprove, forceD
 			}
 		},
 		// Skip context initialization if already initialized by parent command
-		SkipInitContext:                       skipInitContext,
-		AlwaysPull:                            true,
-		SkipEnforcingDeploymentHistorySetting: true,
+		SkipInitContext: skipInitContext,
+		AlwaysPull:      true,
+		Destroy:         true,
 		PostStateFunc: func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
 			phases.Destroy(ctx, b)
 			if logdiag.HasError(ctx) {

@@ -96,8 +96,8 @@ type ProcessOptions struct {
 	// (after state is opened and IDs loaded, before deferred Finalize).
 	PostStateFunc func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error
 
-	// If true, deployment history configuration is ignored after state is resolved.
-	SkipEnforcingDeploymentHistorySetting bool
+	// Destroy selects history from loaded state instead of configuration.
+	Destroy bool
 
 	// Indicate whether the bundle operation originates from the pipelines CLI
 	IsPipelinesCLI bool
@@ -249,9 +249,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 		ctx = WithLineage(ctx, stateDesc)
 		cmd.SetContext(ctx)
-		if stateDesc.Engine.IsDirect() {
-			resolveDeploymentHistory(ctx, b, stateDesc)
-		}
 
 		// Record the engine the resolved state uses now, so deploy telemetry reports
 		// it even when the deploy fails or is cancelled before deployCore runs.
@@ -365,14 +362,44 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			}
 		}
 
-		if stateDesc.Engine.IsDirect() && !opts.SkipEnforcingDeploymentHistorySetting {
+		if stateDesc.Engine.IsDirect() && !opts.Destroy {
 			if err := enforceDeploymentHistorySetting(ctx, b, stateDesc, opts.Deploy || opts.PreDeployChecks); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 		}
 
-		if needDirectState && stateDesc.IsDMS() {
+		stateMode := dstate.WritingFile
+		switch {
+		case stateDesc.IsDMS():
+			// DMS-only state must keep its service-backed source.
+			stateMode = dstate.WritingDMS
+		case opts.Destroy:
+			// Destroy follows loaded state even when the setting has changed.
+			if b.DeploymentBundle.StateDB.RecordsHistory() {
+				stateMode = dstate.WritingFileWithHistoryEnforced
+			}
+		case configuresDeploymentHistory(ctx, b):
+			// Deploy and plan follow the current configuration.
+			stateMode = dstate.WritingFileWithHistoryEnforced
+			if opts.Deploy || opts.PreDeployChecks {
+				// Retain only this history feature for plan/deploy; overwrite all other flags.
+				b.DeploymentBundle.StateDB.Data.Features = map[string]struct{}{dstate.FeatureDeploymentHistoryBestEffort: {}}
+			}
+		}
+
+		if needDirectState && stateMode == dstate.WritingFileWithHistoryEnforced {
+			if !cmdctx.HasWorkspaceClient(ctx) {
+				ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
+			}
+			var err error
+			dmsDeployment, err = prepareFileHistory(ctx, b)
+			if err != nil {
+				log.Warnf(ctx, "Could not read deployment history; continuing with file state: %s", err)
+			}
+		}
+
+		if needDirectState && stateMode == dstate.WritingDMS {
 			var err error
 			dmsDeploymentID, dmsDeployment, err = fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 			if err != nil {
@@ -638,11 +665,19 @@ func parseLastVersionID(dmsDeployment *bundledeployments.Deployment) (int, error
 // read from the deployment metadata service instead.
 func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
 	_, localPath := b.StateFilenameDirect(ctx)
-	if !resolveDeploymentHistory(ctx, b, stateDesc) {
+	if !stateDesc.IsDMS() {
 		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{}); err != nil {
 			return err
 		}
-		return enforceDeploymentHistorySetting(ctx, b, stateDesc, false)
+		if err := enforceDeploymentHistorySetting(ctx, b, stateDesc, false); err != nil {
+			return err
+		}
+		if configuresDeploymentHistory(ctx, b) {
+			if _, err := prepareFileHistory(ctx, b); err != nil {
+				log.Warnf(ctx, "Could not read deployment history; continuing with file state: %s", err)
+			}
+		}
+		return nil
 	}
 
 	dmsDeploymentID, dmsDeployment, err := fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
@@ -663,25 +698,16 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 	return enforceDeploymentHistorySetting(ctx, b, stateDesc, false)
 }
 
-func resolveDeploymentHistory(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) bool {
-	configured := configuresDeploymentHistory(ctx, b)
-	if stateDesc.SourcePath == "" {
-		if configured {
-			stateDesc.Features = map[string]struct{}{dstate.FeatureDeploymentHistory: {}}
-		}
-		return configured
-	}
-
-	return stateDesc.IsDMS()
-}
-
 func enforceDeploymentHistorySetting(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc, requireMatch bool) error {
 	if stateDesc.SourcePath == "" {
 		return nil
 	}
 	configured := configuresDeploymentHistory(ctx, b)
-	recorded := stateDesc.IsDMS()
-	if configured == recorded {
+	recorded := stateDesc.RecordsHistory()
+	if b.DeploymentBundle.StateDB.IsOpen() {
+		recorded = b.DeploymentBundle.StateDB.RecordsHistory()
+	}
+	if configured == recorded || (!configured && !stateDesc.IsDMS()) {
 		return nil
 	}
 	if requireMatch {
@@ -696,6 +722,29 @@ Run "databricks bundle destroy" first, then deploy again with deployment history
 	}
 	log.Warnf(ctx, "Deployment history setting (%t) does not match the existing state (%t). Using the existing state.", configured, recorded)
 	return nil
+}
+
+// prepareFileHistory reads version metadata, never resource state, from DMS.
+func prepareFileHistory(ctx context.Context, b *bundle.Bundle) (*bundledeployments.Deployment, error) {
+	id, deployment, err := fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+	if err != nil {
+		return nil, err
+	}
+	lastVersion, err := parseLastVersionID(deployment)
+	if err != nil {
+		return nil, err
+	}
+	db := &b.DeploymentBundle.StateDB
+	db.DeploymentID, db.VersionID = id, lastVersion
+	bundle.ApplyFuncContext(ctx, b, func(_ context.Context, b *bundle.Bundle) {
+		b.Config.Bundle.Deployment.DeploymentID = id
+		b.Config.Bundle.Deployment.LatestVersionID = lastVersion
+	})
+	bundle.ApplyContext(ctx, b, metadata.AnnotateDeploymentVersion(max(db.Data.Serial, lastVersion)+1))
+	if id != "" {
+		bundle.ApplyContext(ctx, b, metadata.AnnotateDeployment(id))
+	}
+	return deployment, nil
 }
 
 func configuresDeploymentHistory(ctx context.Context, b *bundle.Bundle) bool {

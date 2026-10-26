@@ -15,7 +15,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "lineage": "[UUID]",
   "serial": 1,
   "features": {
-    "deployment_history": {}
+    "deployment_history_best_effort": {}
   }
 }
 
@@ -45,9 +45,50 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
  "lineage": "[UUID]",
  "serial": 1,
  "features": {
-  "deployment_history": {}
+  "deployment_history_best_effort": {}
  },
- "state": {}
+ "state": {
+  "resources.jobs.foo": {
+   "__id__": "[FOO_ID]",
+   "state": {
+    "deployment": {
+     "deployment_id": "[DEPLOYMENT_ID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-failed-update-permissions-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "1"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "foo",
+    "queue": {
+     "enabled": true
+    }
+   }
+  },
+  "resources.jobs.foo.permissions": {
+   "__id__": "/jobs/[FOO_ID]",
+   "state": {
+    "object_id": "/jobs/[FOO_ID]",
+    "__embed__": [
+     {
+      "level": "CAN_VIEW",
+      "user_name": "viewer@example.com"
+     },
+     {
+      "level": "IS_OWNER",
+      "user_name": "[USERNAME]"
+     }
+    ]
+   },
+   "depends_on": [
+    {
+     "node": "resources.jobs.foo",
+     "label": "${resources.jobs.foo.id}"
+    }
+   ]
+  }
+ }
 }
 
 === A permissions update that fails records the failure with the permissions it still has. The resource ID here is a path rather than a number, and the state is the embedded permission list, so this covers a shape the resource tests do not
@@ -100,9 +141,50 @@ Files: 1 uploaded, 0 deleted
  "lineage": "[UUID]",
  "serial": 2,
  "features": {
-  "deployment_history": {}
+  "deployment_history_best_effort": {}
  },
- "state": {}
+ "state": {
+  "resources.jobs.foo": {
+   "__id__": "[FOO_ID]",
+   "state": {
+    "deployment": {
+     "deployment_id": "[DEPLOYMENT_ID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-failed-update-permissions-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "1"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "foo",
+    "queue": {
+     "enabled": true
+    }
+   }
+  },
+  "resources.jobs.foo.permissions": {
+   "__id__": "/jobs/[FOO_ID]",
+   "state": {
+    "object_id": "/jobs/[FOO_ID]",
+    "__embed__": [
+     {
+      "level": "CAN_VIEW",
+      "user_name": "viewer@example.com"
+     },
+     {
+      "level": "IS_OWNER",
+      "user_name": "[USERNAME]"
+     }
+    ]
+   },
+   "depends_on": [
+    {
+     "node": "resources.jobs.foo",
+     "label": "${resources.jobs.foo.id}"
+    }
+   ]
+  }
+ }
 }
 
 >>> print_requests.py --dms //api/2.0/bundle --oneline

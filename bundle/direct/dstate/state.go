@@ -448,7 +448,7 @@ func (db *DeploymentState) StateFeatures() map[string]struct{} {
 }
 
 // GetSerial reports the counter used to validate saved plans.
-// DMS modes use the service version; plain file modes use the file serial.
+// WritingDMS uses the service version; plain file modes use the file serial.
 // File modes with history use the larger counter because either can advance independently.
 func (db *DeploymentState) GetSerial() int {
 	db.mu.Lock()
@@ -456,7 +456,7 @@ func (db *DeploymentState) GetSerial() int {
 	switch db.mode {
 	case WritingDMS:
 		return db.VersionID
-	case WritingFileWithHistory, WritingFileWithHistoryEnforced:
+	case ReadingFile, WritingFileWithHistory, WritingFileWithHistoryEnforced:
 		return max(db.VersionID, db.Data.Serial)
 	default:
 		return db.Data.Serial
@@ -477,11 +477,14 @@ func (db *DeploymentState) IsDeploymentMetadataService() bool {
 	return db.isDeploymentMetadataService()
 }
 
-// RecordsHistory reports whether this mode records resource operations with DMS.
+// RecordsHistory reports whether the loaded file state or selected write mode records DMS history.
 func (db *DeploymentState) RecordsHistory() bool {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	switch db.mode {
+	case ReadingFile:
+		_, history := db.Data.Features[FeatureDeploymentHistoryBestEffort]
+		return history
 	case WritingDMS, WritingFileWithHistory, WritingFileWithHistoryEnforced:
 		return true
 	default:
@@ -809,9 +812,9 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 	}
 
 	hasEntries := lineNumber > 1
-	// Enforced history can change the header's features without writing resource entries.
-	// Persist that marker too, before removing the WAL.
-	if lineNumber == 1 && !maps.Equal(db.Data.Features, newFeatures) {
+	// Persist enforced-history headers even without resource writes. Configured features
+	// may already match in memory while the file still carries different markers.
+	if lineNumber == 1 && (db.mode == WritingFileWithHistoryEnforced || !maps.Equal(db.Data.Features, newFeatures)) {
 		hasEntries = true
 	}
 
@@ -898,6 +901,16 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 // UpgradeToWrite opens a WAL for file state without re-reading resources.
 // DMS and file-history modes are already writable from Open, so upgrading them is a no-op.
 func (db *DeploymentState) UpgradeToWrite() error {
+	return db.upgradeToWrite(WritingFile)
+}
+
+// UpgradeToWriteWithHistory enables enforced file-backed history after approval.
+// Reads still use the same file state; only the write policy changes.
+func (db *DeploymentState) UpgradeToWriteWithHistory() error {
+	return db.upgradeToWrite(WritingFileWithHistoryEnforced)
+}
+
+func (db *DeploymentState) upgradeToWrite(mode Mode) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -910,7 +923,7 @@ func (db *DeploymentState) UpgradeToWrite() error {
 	case WritingFile:
 		return errors.New("internal error: DeploymentState is already open for write")
 	case ReadingFile:
-		db.mode = WritingFile
+		db.mode = mode
 		if err := db.setupWal(); err != nil {
 			db.mode = ReadingFile
 			return err
@@ -943,11 +956,16 @@ func (db *DeploymentState) setupWal() error {
 		CLIVersion:   build.GetInfo().Version,
 		Features:     maps.Clone(db.Data.Features),
 	}
-	if db.mode == WritingFileWithHistoryEnforced {
+	switch db.mode {
+	case WritingFileWithHistoryEnforced:
 		if walHead.Features == nil {
 			walHead.Features = make(map[string]struct{})
 		}
 		walHead.Features[FeatureDeploymentHistoryBestEffort] = struct{}{}
+	case WritingFile:
+		walHead.Features = map[string]struct{}{}
+	default:
+		// Other modes preserve the existing markers.
 	}
 	if err := appendJSONLine(db.walFile, walHead); err != nil {
 		// Remove the WAL created just above: O_EXCL means it is ours, and

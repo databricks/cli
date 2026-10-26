@@ -67,7 +67,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "lineage": "[UUID]",
   "serial": 1,
   "features": {
-    "deployment_history": {}
+    "deployment_history_best_effort": {}
   }
 }
 
@@ -92,9 +92,28 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
  "lineage": "[UUID]",
  "serial": 1,
  "features": {
-  "deployment_history": {}
+  "deployment_history_best_effort": {}
  },
- "state": {}
+ "state": {
+  "resources.jobs.stuck": {
+   "__id__": "[STUCK_ID]",
+   "state": {
+    "deployment": {
+     "deployment_id": "[DEPLOYMENT_ID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-failed-delete-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "1"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "stuck",
+    "queue": {
+     "enabled": true
+    }
+   }
+  }
+ }
 }
 
 === A resource that fails to delete is recorded as a failed operation carrying the error, so the history says why rather than showing the resource gone
@@ -176,7 +195,7 @@ API message: Fault injected by test.
   }
 ]
 
-=== The local state file records failed version 2
+=== The local state file keeps the resource and its serial after the failed delete
 >>> print_state.py --no-dms
 {
  "state_version": 3,
@@ -184,14 +203,33 @@ API message: Fault injected by test.
  "lineage": "[UUID]",
  "serial": 2,
  "features": {
-  "deployment_history": {}
+  "deployment_history_best_effort": {}
  },
- "state": {}
+ "state": {
+  "resources.jobs.stuck": {
+   "__id__": "[STUCK_ID]",
+   "state": {
+    "deployment": {
+     "deployment_id": "[DEPLOYMENT_ID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-failed-delete-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "1"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "stuck",
+    "queue": {
+     "enabled": true
+    }
+   }
+  }
+ }
 }
 
 === The remote checkpoint stays at serial 1 while DMS advances to version 2
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/dms-failed-delete-[UNIQUE_NAME]/default/state/resources.json --format RAW
 {"serial":1}
 
->>> print_state.py
-{"serial":2}
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments get-deployment deployments/[DEPLOYMENT_ID] -o json
+{"last_version_id":"2"}

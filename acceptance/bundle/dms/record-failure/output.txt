@@ -18,7 +18,7 @@ Files: 2 uploaded, 0 deleted
   "lineage": "[UUID]",
   "serial": 1,
   "features": {
-    "deployment_history": {}
+    "deployment_history_best_effort": {}
   }
 }
 
@@ -92,12 +92,12 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
  "lineage": "[UUID]",
  "serial": 1,
  "features": {
-  "deployment_history": {}
+  "deployment_history_best_effort": {}
  },
  "state": {}
 }
 
-=== Redeploying from DMS state alone still creates the failed resource: it was never applied, so it must not be skipped as unchanged
+=== Redeploying after pulling remote file state still creates the failed resource: it was never applied, so it must not be skipped as unchanged
 >>> [CLI] bundle plan
 create jobs.doomed
 

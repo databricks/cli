@@ -174,23 +174,26 @@ def get_last_version_id(target):
 
 
 def print_recorded_state(filename, target):
-    """Print the state file with its resources filled in from the deployment metadata service.
+    """Print DMS resources using the state file's header.
 
-    While recording, the file itself carries only the header - the service holds the resources - so
-    printing it raw would show an empty state and differ from the same test's non-recording run.
+    This checks history uploads even though resources.json remains authoritative.
+    Use --no-dms to inspect the file state instead.
     """
     data = json.loads(open(filename).read())
     # Recording stamps each resource payload with the deployment and version; drop it here so the
     # printed state matches a non-recording run without every caller piping through nostamp.
     data["state"] = scrub(get_recorded_state(target))
 
-    # The file's serial is a copy of the DMS version to ensure outdated resource state is not read.
-    # Rebuild in header order with the authoritative serial from the deployment.
+    # Pair DMS resources with the DMS version. The file serial can advance independently.
     last_version_id = get_last_version_id(target)
     serial = int(last_version_id) if last_version_id else 0
 
     # Recording itself is not what these tests assert, so drop the feature that marks it.
-    features = {k: v for k, v in (data.get("features") or {}).items() if k != "deployment_history"}
+    features = {
+        k: v
+        for k, v in (data.get("features") or {}).items()
+        if k not in {"deployment_history", "deployment_history_best_effort"}
+    }
 
     rebuilt = {}
     for key in ("state_version", "cli_version", "lineage"):
@@ -213,7 +216,7 @@ def main():
         "--no-dms",
         action="store_true",
         help="Print resources.json as-is without fetching state from DMS. "
-        "Use in bundle/dms tests to assert the tombstone content of the file.",
+        "Use in bundle/dms tests to assert the file state and its feature markers.",
     )
     args = parser.parse_args()
 

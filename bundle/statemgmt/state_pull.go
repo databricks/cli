@@ -77,6 +77,12 @@ func (s *StateDesc) IsDMS() bool {
 	return ok
 }
 
+// RecordsHistory includes both DMS-authoritative state and file-backed history.
+func (s *StateDesc) RecordsHistory() bool {
+	_, bestEffort := s.Features["deployment_history_best_effort"]
+	return bestEffort || s.IsDMS()
+}
+
 func localRead(ctx context.Context, fullPath string, engine engine.EngineType) *StateDesc {
 	content, err := os.ReadFile(fullPath)
 	if err != nil {

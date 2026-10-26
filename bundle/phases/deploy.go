@@ -22,7 +22,6 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
@@ -170,9 +169,9 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// The version is created only after approval; CompleteVersion is deferred before
 	// lock.Release and no-ops until then.
 	defer func() {
-		if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
+		if b.DeploymentBundle.StateDB.RecordsHistory() {
 			if _, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, !logdiag.HasError(ctx)); err != nil {
-				logdiag.LogError(ctx, err)
+				log.Warnf(ctx, "Failed to complete deployment history version: %s", err)
 			}
 		}
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
@@ -297,7 +296,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// Upgrade from read (opened by process.go, or by Migrate) to write mode. After approval
 	// and the migration commit above, so a declined deploy never opens a WAL it must discard,
 	// and the migration's tf+1 push lands before this advances the WAL header to tf+2.
-	if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
+	if err := upgradeStateForWrite(ctx, b); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
@@ -320,32 +319,13 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// Create the deployment now that the plan is approved, so a declined deploy leaves none behind.
 	// A first deploy's id did not exist at plan time - the version and any existing id were stamped
 	// then - so stamp the one just created into the plan the apply reads.
-	if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
-		firstDeploy := b.DeploymentBundle.StateDB.DeploymentID == ""
-		createOrUpdateDeployment(ctx, b, dmsDeployment)
-		if logdiag.HasError(ctx) {
-			return
-		}
-		if firstDeploy {
-			if err := b.DeploymentBundle.StampDeploymentIdForFirstVersion(b.DeploymentBundle.StateDB.DeploymentID); err != nil {
+	if b.DeploymentBundle.StateDB.RecordsHistory() {
+		if err := prepareDeploymentHistory(ctx, b, plan, dmsDeployment); err != nil {
+			if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
 				logdiag.LogError(ctx, err)
 				return
 			}
-		}
-
-		// Only create a version when the plan has at least one operation to record, so it moves
-		// with serial. Done after the prompt, so a declined deploy never claims a number.
-		staged, err := stagedOperations(plan)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-		if len(staged) > 0 {
-			if err := startVersion(ctx, b, dms.VersionTypeDeploy, staged); err != nil {
-				logdiag.LogError(ctx, err)
-				return
-			}
-			logDeploymentVersion(ctx, b)
+			log.Warnf(ctx, "Could not record deployment history; continuing with file state: %s", err)
 		}
 	}
 

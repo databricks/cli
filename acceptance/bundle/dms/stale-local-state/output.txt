@@ -4,35 +4,41 @@
 {"serial":1,"features":null}
 
 >>> jq -c {serial, features} .databricks/resources.v2.json
-{"serial":2,"features":{"deployment_history":{}}}
+{"serial":2,"features":{"deployment_history_best_effort":{}}}
 
-=== Local recorded serial 3 ahead of DMS version 2 is rejected
+=== File serial 3 ahead of DMS version 2 is allowed
 >>> update_file.py .databricks/bundle/default/resources.json "serial": 2 "serial": 3
 
->>> musterr [CLI] bundle deploy
-Error: inconsistent deployment state: resource state serial (3) is ahead of deployment history version (2)
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
-
-=== 1. Config false and env false: newer remote state replaces the local copy and reads DMS
+=== 1. Config false and env false: newer remote file state replaces the local copy
 >>> cp .databricks/resources.v1.json .databricks/bundle/default/resources.json
 
 >>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle summary --force-pull -o json
-Warn: Deployment history setting (false) does not match the existing state (true). Using the existing state.
 {"job_id":"[FOO_ID]"}
 
 >>> cmp .databricks/resources.v2.json .databricks/bundle/default/resources.json
 
 >>> print_requests.py --dms //resources --get --oneline
-{"method": "GET", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/resources"}
 
-=== 2. Config removed and env false: restore the same snapshot, then read remote DMS state
+=== 2. Config removed and env false: restore the same snapshot, then read the remote file state
 >>> cp .databricks/resources.v1.json .databricks/bundle/default/resources.json
 
 >>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle summary --force-pull -o json
-Warn: Deployment history setting (false) does not match the existing state (true). Using the existing state.
 {"job_id":"[FOO_ID]"}
 
 >>> cmp .databricks/resources.v2.json .databricks/bundle/default/resources.json
 
 >>> print_requests.py --dms //resources --get --oneline
-{"method": "GET", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/resources"}
+
+=== Destroy follows newer local state even when configuration enables history
+>>> env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-stale-local-state-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
+
+>>> print_requests.py --dms //api/2.0/bundle --oneline

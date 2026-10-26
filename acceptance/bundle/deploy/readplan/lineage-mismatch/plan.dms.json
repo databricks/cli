@@ -5,6 +5,6 @@
   "serial": 0,
   "plan": {},
   "features": {
-    "deployment_history": {}
+    "deployment_history_best_effort": {}
   }
 }
