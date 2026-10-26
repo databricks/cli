@@ -20,4 +20,18 @@ trace $CLI bundle config-remote-sync -t dev --save
 trace diff.py databricks.yml.backup databricks.yml
 
 title "Deploy shared YAML with the prod policy"
-trace errcode $CLI bundle deploy -t prod
+trace $CLI bundle deploy -t prod
+
+title "Add a user tag beside the policy tag in the UI"
+edit_resource.py jobs "$job_id" <<'EOF'
+r["job_clusters"][0]["new_cluster"]["custom_tags"]["UserTag"] = "edited-in-ui"
+EOF
+
+cp databricks.yml databricks.yml.backup
+trace $CLI bundle config-remote-sync -t dev --save
+trace diff.py databricks.yml.backup databricks.yml
+
+title "Deploy the user tag with the prod policy"
+trace $CLI bundle deploy -t prod
+prod_job_id=$(read_id.py -t prod policy_sync)
+trace $CLI jobs get "$prod_job_id" -o json | jq '.settings.job_clusters[0].new_cluster.custom_tags'

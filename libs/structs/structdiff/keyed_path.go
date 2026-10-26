@@ -11,13 +11,13 @@ import (
 // KeyedPath replaces slice indices with the selectors used by GetStructDiff.
 // Indices without a matching key function and existing selectors are preserved.
 func KeyedPath(root any, path *structpath.PathNode, sliceKeys map[string]KeyFunc) (*structpath.PathNode, error) {
-	ctx := &diffContext{sliceKeys: sliceKeys}
+	diff := &diffContext{sliceKeys: sliceKeys}
 	var result *structpath.PathNode
 	for _, node := range path.AsSlice() {
 		index, isIndex := node.Index()
 		switch {
 		case isIndex:
-			keyFunc := ctx.findKeyFunc(result)
+			keyFunc := diff.findKeyFunc(result)
 			if keyFunc == nil {
 				result = structpath.NewIndex(result, index)
 				continue
@@ -38,9 +38,10 @@ func KeyedPath(root any, path *structpath.PathNode, sliceKeys map[string]KeyFunc
 		default:
 			if key, value, ok := node.KeyValue(); ok {
 				result = structpath.NewKeyValue(result, key, value)
-			} else {
-				key, _ := node.StringKey()
+			} else if key, ok := node.StringKey(); ok {
 				result = structpath.NewStringKey(result, key)
+			} else {
+				return nil, fmt.Errorf("unsupported path node: %s", node)
 			}
 		}
 	}

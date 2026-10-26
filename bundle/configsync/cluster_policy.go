@@ -47,7 +47,7 @@ type clusterPolicyFilter struct {
 }
 
 // filter removes omitted policy values from a normalized plan change, including
-// whole-object additions. A nil result means no value needs to be synced.
+// whole-object additions. A nil result means the value comes entirely from the policy.
 func (f *clusterPolicyFilter) filter(ctx context.Context, b *bundle.Bundle, path *structpath.PathNode, value any) (any, error) {
 	filtered, keep, err := f.prune(ctx, b, path, value, true)
 	if err != nil || !keep {
@@ -62,14 +62,10 @@ func (f *clusterPolicyFilter) prune(ctx context.Context, b *bundle.Bundle, path 
 	if err != nil {
 		return nil, false, err
 	}
-	for _, root := range f.clusterRoots {
-		if !fieldPath.HasPatternPrefix(root) || fieldPath.Len() == root.Len() {
-			continue
-		}
-		clusterPath := fieldPath.Prefix(root.Len())
+	if clusterPath, ok := f.clusterPath(fieldPath); ok {
 		// A change may start inside an array, so protecting only sequence
 		// nodes would still allow an element to be emptied or removed.
-		for _, node := range fieldPath.SkipPrefix(root.Len()).AsSlice() {
+		for _, node := range fieldPath.SkipPrefix(clusterPath.Len()).AsSlice() {
 			if _, indexed := node.Index(); indexed {
 				return value, true, nil
 			}
@@ -88,7 +84,6 @@ func (f *clusterPolicyFilter) prune(ctx context.Context, b *bundle.Bundle, path 
 		if _, sequence := value.([]any); sequence {
 			return value, true, nil
 		}
-		break
 	}
 
 	switch value := value.(type) {
@@ -121,32 +116,48 @@ func (f *clusterPolicyFilter) prune(ctx context.Context, b *bundle.Bundle, path 
 	}
 }
 
+// clusterPath finds the cluster containing a field; the cluster itself is excluded.
+func (f *clusterPolicyFilter) clusterPath(path *structpath.PathNode) (*structpath.PathNode, bool) {
+	for _, root := range f.clusterRoots {
+		if path.HasPatternPrefix(root) && path.Len() > root.Len() {
+			return path.Prefix(root.Len()), true
+		}
+	}
+	return nil, false
+}
+
 // isPolicyOnlySubtree requires every leaf to be absent from authored config
 // and equal to a fixed value or an opted-in default in the remote cluster's policy.
 func (f *clusterPolicyFilter) isPolicyOnlySubtree(ctx context.Context, b *bundle.Bundle, clusterPath, path *structpath.PathNode, value any) (bool, error) {
 	hasLeaves := false
-	for fieldPath, leaf := range normalizedLeaves(path, value) {
+	for leafPath := range normalizedLeaves(path, value) {
 		hasLeaves = true
-		if authored, _ := structaccess.Get(f.config, fieldPath); authored != nil {
+		if authored, _ := structaccess.Get(f.config, leafPath); authored != nil {
 			return false, nil
 		}
-		remotePolicyID, _ := structaccess.Get(f.remote, structpath.NewStringKey(clusterPath, "policy_id"))
-		policyID, _ := remotePolicyID.(string)
-		if policyID == "" {
-			return false, nil
-		}
-		definition, err := f.definitions.get(ctx, b, policyID)
-		if err != nil {
-			return false, err
-		}
-		// Remote cluster specs omit this input-only flag; use the authored setting.
-		applyDefaults, _ := structaccess.Get(f.config, structpath.NewStringKey(clusterPath, "apply_policy_default_values"))
-		expected := policyValueForAPIAttribute(definition, policyAttribute(fieldPath.SkipPrefix(clusterPath.Len())), applyDefaults == true)
+	}
+	if !hasLeaves {
+		return false, nil
+	}
+
+	remotePolicyID, _ := structaccess.Get(f.remote, structpath.NewStringKey(clusterPath, "policy_id"))
+	policyID, _ := remotePolicyID.(string)
+	if policyID == "" {
+		return false, nil
+	}
+	definition, err := f.definitions.get(ctx, b, policyID)
+	if err != nil {
+		return false, err
+	}
+	// Remote cluster specs omit this input-only flag; use the authored setting.
+	applyDefaults, _ := structaccess.Get(f.config, structpath.NewStringKey(clusterPath, "apply_policy_default_values"))
+	for leafPath, leaf := range normalizedLeaves(path, value) {
+		expected := policyValueForAPIAttribute(definition, policyAttribute(leafPath.SkipPrefix(clusterPath.Len())), applyDefaults == true)
 		if !expected.IsValid() || expected.AsAny() == nil || !reflect.DeepEqual(expected.AsAny(), leaf) {
 			return false, nil
 		}
 	}
-	return hasLeaves, nil
+	return true, nil
 }
 
 // normalizedLeaves preserves the normalized change's scalars, including nulls.

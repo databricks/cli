@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -157,10 +158,9 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 		}
 
 		resourceChanges := make(ResourceChanges)
-		policyFilter, err := policyFilterForResource(b, resourceKey, entry, policyDefinitions)
-		if err != nil {
-			return nil, err
-		}
+		getPolicyFilter := sync.OnceValues(func() (*clusterPolicyFilter, error) {
+			return policyFilterForResource(b, resourceKey, entry, policyDefinitions)
+		})
 
 		if entry.Changes != nil {
 			for path, changeDesc := range entry.Changes {
@@ -176,6 +176,10 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 				if change.Operation == OperationSkip {
 					continue
 				}
+				policyFilter, err := getPolicyFilter()
+				if err != nil {
+					return nil, err
+				}
 				if change.Value != nil && policyFilter != nil {
 					fieldPath, err := structpath.ParsePath(path)
 					if err != nil {
@@ -186,7 +190,11 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 						return nil, fmt.Errorf("filtering policy values for %s (no configuration was saved): %w", fullPath, err)
 					}
 					if change.Value == nil {
-						continue
+						if change.Operation != OperationReplace {
+							continue
+						}
+						// A policy-only replacement still removes the previous authored value.
+						change.Operation = OperationRemove
 					}
 				}
 				// The state snapshot holds real per-field values, so New != Old
@@ -214,12 +222,10 @@ func policyFilterForResource(b *bundle.Bundle, resourceKey string, entry *deploy
 	filter := &clusterPolicyFilter{remote: entry.RemoteState, definitions: definitions}
 	switch entry.RemoteState.(type) {
 	case *dresources.JobRemote:
-		for _, pattern := range []string{"tasks[*].new_cluster", "tasks[*].for_each_task.task.new_cluster", "job_clusters[*].new_cluster"} {
-			root, err := structpath.ParsePattern(pattern)
-			if err != nil {
-				return nil, err
-			}
-			filter.clusterRoots = append(filter.clusterRoots, root)
+		var err error
+		filter.clusterRoots, err = jobClusterRoots()
+		if err != nil {
+			return nil, err
 		}
 		filter.sliceKeys = (&dresources.ResourceJob{}).KeyedSlices()
 	case *dresources.ClusterRemote:
@@ -239,3 +245,15 @@ func policyFilterForResource(b *bundle.Bundle, resourceKey string, entry *deploy
 	filter.config = config
 	return filter, nil
 }
+
+var jobClusterRoots = sync.OnceValues(func() ([]*structpath.PatternNode, error) {
+	var roots []*structpath.PatternNode
+	for _, pattern := range []string{"tasks[*].new_cluster", "tasks[*].for_each_task.task.new_cluster", "job_clusters[*].new_cluster"} {
+		root, err := structpath.ParsePattern(pattern)
+		if err != nil {
+			return nil, err
+		}
+		roots = append(roots, root)
+	}
+	return roots, nil
+})

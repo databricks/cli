@@ -10,6 +10,9 @@ trap cleanup EXIT
 $CLI bundle deploy
 job1_id="$(read_id.py job1)"
 
+title "Policy values alone do not need to be synced"
+trace $CLI bundle config-remote-sync
+
 title "Simulate a cluster policy injecting custom_tags and cluster_log_conf"
 echo
 echo "These fields exist only remotely (the user never set them in config)."

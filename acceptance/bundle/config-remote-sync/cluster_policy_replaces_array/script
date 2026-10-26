@@ -1,0 +1,34 @@
+export POLICY_ID=""
+bundle_configured=false
+cleanup() {
+    if $bundle_configured; then
+        errcode trace $CLI bundle destroy --auto-approve
+    fi
+    if [ -n "$POLICY_ID" ]; then
+        errcode trace $CLI cluster-policies delete "$POLICY_ID"
+    fi
+}
+trap cleanup EXIT
+
+POLICY_ID=$($CLI cluster-policies create --json "$(envsubst < policy.json.tmpl)" -o json | jq -er .policy_id)
+add_repl "$POLICY_ID" POLICY_ID
+envsubst < databricks.yml.tmpl > databricks.yml
+bundle_configured=true
+
+trace $CLI bundle deploy
+job_id=$(read_id.py test_job)
+
+title "Replace authored scripts with a script from an updated policy"
+trace $CLI cluster-policies edit --json "$(envsubst < updated-policy.json.tmpl)"
+edit_resource.py jobs "$job_id" <<'PY'
+r["tasks"][0]["new_cluster"]["init_scripts"] = [
+    {"volumes": {"destination": "/Volumes/catalog/schema/volume/policy.sh"}}
+]
+PY
+
+cp databricks.yml databricks.yml.backup
+trace $CLI bundle config-remote-sync --save
+trace diff.py databricks.yml.backup databricks.yml
+
+title "Authored scripts are removed without copying the policy script"
+trace $CLI bundle validate -o json | jq -e '.resources.jobs.test_job.tasks[0].new_cluster | has("init_scripts") | not'

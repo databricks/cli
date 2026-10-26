@@ -1,22 +1,29 @@
+export DEV_POLICY_ID="" PROD_POLICY_ID=""
+bundle_configured=false
+cleanup() {
+    if $bundle_configured; then
+        errcode trace $CLI bundle destroy -t prod --auto-approve
+        errcode trace $CLI bundle destroy -t dev --auto-approve
+    fi
+    if [ -n "$DEV_POLICY_ID" ]; then
+        errcode trace $CLI cluster-policies delete "$DEV_POLICY_ID"
+    fi
+    if [ -n "$PROD_POLICY_ID" ]; then
+        errcode trace $CLI cluster-policies delete "$PROD_POLICY_ID"
+    fi
+}
+trap cleanup EXIT
+
 title "Create policies outside the bundle"
 export POLICY_ENVIRONMENT=dev
-export DEV_POLICY_ID
-DEV_POLICY_ID=$($CLI cluster-policies create --json "$(envsubst < policy.json.tmpl)" -o json | jq -r .policy_id)
+DEV_POLICY_ID=$($CLI cluster-policies create --json "$(envsubst < policy.json.tmpl)" -o json | jq -er .policy_id)
 add_repl "$DEV_POLICY_ID" DEV_POLICY_ID
 export POLICY_ENVIRONMENT=prod
-export PROD_POLICY_ID
-PROD_POLICY_ID=$($CLI cluster-policies create --json "$(envsubst < policy.json.tmpl)" -o json | jq -r .policy_id)
+PROD_POLICY_ID=$($CLI cluster-policies create --json "$(envsubst < policy.json.tmpl)" -o json | jq -er .policy_id)
 add_repl "$PROD_POLICY_ID" PROD_POLICY_ID
 
 envsubst < databricks.yml.tmpl > databricks.yml
-
-cleanup() {
-    trace $CLI bundle destroy -t prod --auto-approve
-    trace $CLI bundle destroy -t dev --auto-approve
-    trace $CLI cluster-policies delete "$DEV_POLICY_ID"
-    trace $CLI cluster-policies delete "$PROD_POLICY_ID"
-}
-trap cleanup EXIT
+bundle_configured=true
 
 title "Deploy with the dev policy"
 trace $CLI bundle deploy -t dev
@@ -32,4 +39,16 @@ trace $CLI bundle config-remote-sync -t dev --save
 trace diff.py databricks.yml.backup databricks.yml
 
 title "Deploy shared YAML with the prod policy"
-trace errcode $CLI bundle deploy -t prod
+trace $CLI bundle deploy -t prod
+
+title "A deleted policy must not cause its stored values to be saved"
+edit_resource.py jobs "$job_id" <<'EOF'
+r["description"] = "Another UI edit"
+EOF
+trace $CLI cluster-policies delete "$DEV_POLICY_ID"
+DEV_POLICY_ID=""
+
+cp databricks.yml databricks.yml.backup
+musterr $CLI bundle config-remote-sync -t dev --save > LOG.deleted-policy 2>&1
+contains.py "no configuration was saved" < LOG.deleted-policy > LOG.deleted-policy-check
+trace diff.py databricks.yml.backup databricks.yml

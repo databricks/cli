@@ -28,6 +28,35 @@ Resource: resources.jobs.test_job
            spark_python_task:
              python_file: ./hello.py
 
+=== Add a task with user and policy cluster fields in the UI
+>>> [CLI] bundle config-remote-sync --save
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.test_job
+  tasks[task_key='added_in_ui']: add
+  tasks[task_key='test'].new_cluster.custom_tags: replace
+
+
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -30,2 +30,14 @@
+           spark_python_task:
+             python_file: ./hello.py
++        - new_cluster:
++            custom_tags:
++              UserTag: new-task
++            node_type_id: [NODE_TYPE_ID]
++            num_workers: 1
++            policy_id: ${resources.cluster_policies.policy.id}
++            spark_conf:
++              spark.sql.shuffle.partitions: "7"
++            spark_version: [DEFAULT_SPARK_VERSION]
++          spark_python_task:
++            python_file: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/hello.py
++          task_key: added_in_ui
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.cluster_policies.policy

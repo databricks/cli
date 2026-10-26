@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestExtractChangesDropsPolicyAppliedValues(t *testing.T) {
+func TestExtractChangesFiltersPolicyAppliedValues(t *testing.T) {
 	tests := []struct {
 		name          string
 		attribute     string
@@ -29,16 +29,19 @@ func TestExtractChangesDropsPolicyAppliedValues(t *testing.T) {
 		remote        any
 		applyDefaults bool
 		noPolicy      bool
+		wantLookup    bool
 		want          any
 	}{
 		{
 			name:       "fixed S3 log configuration dropped",
+			wantLookup: true,
 			attribute:  "cluster_log_conf",
 			definition: `{"cluster_log_conf.type":{"type":"fixed","value":"S3"},"cluster_log_conf.path":{"type":"fixed","value":"s3://logs"},"cluster_log_conf.region":{"type":"fixed","value":"us-west-2"}}`,
 			remote:     map[string]any{"s3": map[string]any{"destination": "s3://logs", "region": "us-west-2"}},
 		},
 		{
 			name:          "partial log match keeps complete destination",
+			wantLookup:    true,
 			attribute:     "cluster_log_conf",
 			definition:    `{"cluster_log_conf.type":{"type":"fixed","value":"S3"},"cluster_log_conf.path":{"type":"fixed","value":"s3://logs"},"cluster_log_conf.region":{"type":"unlimited","defaultValue":"us-west-2"}}`,
 			applyDefaults: true,
@@ -47,6 +50,7 @@ func TestExtractChangesDropsPolicyAppliedValues(t *testing.T) {
 		},
 		{
 			name:       "edited log destination keeps required field and drops policy region",
+			wantLookup: true,
 			attribute:  "cluster_log_conf",
 			definition: `{"cluster_log_conf.path":{"type":"unlimited"},"cluster_log_conf.region":{"type":"fixed","value":"us-west-2"}}`,
 			remote:     map[string]any{"s3": map[string]any{"destination": "s3://user-logs", "region": "us-west-2"}},
@@ -54,6 +58,7 @@ func TestExtractChangesDropsPolicyAppliedValues(t *testing.T) {
 		},
 		{
 			name:       "required parent retains user field and drops optional policy sibling",
+			wantLookup: true,
 			attribute:  "workload_type",
 			definition: `{"workload_type.clients.notebooks":{"type":"fixed","value":false}}`,
 			remote:     map[string]any{"clients": map[string]any{"jobs": true, "notebooks": false}},
@@ -61,6 +66,7 @@ func TestExtractChangesDropsPolicyAppliedValues(t *testing.T) {
 		},
 		{
 			name:       "partial struct match drops optional policy fields",
+			wantLookup: true,
 			attribute:  "autoscale",
 			definition: `{"autoscale.min_workers":{"type":"fixed","value":1}}`,
 			remote:     map[string]any{"min_workers": int64(1), "max_workers": int64(4)},
@@ -68,25 +74,30 @@ func TestExtractChangesDropsPolicyAppliedValues(t *testing.T) {
 		},
 		{
 			name:       "fixed scalar dropped when absent from config",
+			wantLookup: true,
 			attribute:  "autotermination_minutes",
 			definition: `{"autotermination_minutes":{"type":"fixed","value":60}}`,
 			remote:     int64(60),
 		},
 		{
 			name:       "fixed value dropped without apply flag",
+			wantLookup: true,
 			attribute:  "spark_env_vars",
 			definition: `{"spark_env_vars.ENV":{"type":"fixed","value":"dev"}}`,
 			remote:     map[string]any{"ENV": "dev"},
 		},
 		{
 			name:       "fixed tag dropped and UI tag kept",
+			wantLookup: true,
 			attribute:  "custom_tags",
 			definition: `{"custom_tags.Environment":{"type":"fixed","value":"dev"}}`,
 			remote:     map[string]any{"Environment": "dev", "Owner": "user"},
 			want:       map[string]any{"Owner": "user"},
 		},
 		{
+			// The policy changed after deploy; the explicitly authored field still syncs.
 			name:       "authored field takes remote value",
+			wantLookup: false,
 			attribute:  "spark_env_vars",
 			definition: `{"spark_env_vars.ENV":{"type":"fixed","value":"dev"}}`,
 			config:     map[string]any{"ENV": "other"},
@@ -95,22 +106,25 @@ func TestExtractChangesDropsPolicyAppliedValues(t *testing.T) {
 		},
 		{
 			name:       "authored false is kept in whole object changes",
+			wantLookup: false,
 			attribute:  "workload_type",
 			definition: `{"workload_type.clients.notebooks":{"type":"fixed","value":false}}`,
-			config:     map[string]any{"clients": map[string]any{"notebooks": false}},
-			remote:     map[string]any{"clients": map[string]any{"notebooks": false}},
-			want:       map[string]any{"clients": map[string]any{"notebooks": false}},
+			config:     map[string]any{"clients": map[string]any{"notebooks": false, "jobs": true}},
+			remote:     map[string]any{"clients": map[string]any{"notebooks": false, "jobs": false}},
+			want:       map[string]any{"clients": map[string]any{"notebooks": false, "jobs": false}},
 		},
 		{
 			name:       "authored zero is kept in whole object changes",
+			wantLookup: false,
 			attribute:  "autoscale",
 			definition: `{"autoscale.min_workers":{"type":"fixed","value":0}}`,
-			config:     map[string]any{"min_workers": int64(0)},
-			remote:     map[string]any{"min_workers": int64(0)},
-			want:       map[string]any{"min_workers": int64(0)},
+			config:     map[string]any{"min_workers": int64(0), "max_workers": int64(4)},
+			remote:     map[string]any{"min_workers": int64(0), "max_workers": int64(8)},
+			want:       map[string]any{"min_workers": int64(0), "max_workers": int64(8)},
 		},
 		{
 			name:          "default dropped with apply flag",
+			wantLookup:    true,
 			attribute:     "spark_env_vars",
 			definition:    `{"spark_env_vars.ENV":{"type":"allowlist","values":["dev","prod"],"defaultValue":"dev"}}`,
 			remote:        map[string]any{"ENV": "dev"},
@@ -118,6 +132,7 @@ func TestExtractChangesDropsPolicyAppliedValues(t *testing.T) {
 		},
 		{
 			name:       "default kept without apply flag",
+			wantLookup: true,
 			attribute:  "spark_env_vars",
 			definition: `{"spark_env_vars.ENV":{"type":"allowlist","values":["dev","prod"],"defaultValue":"dev"}}`,
 			remote:     map[string]any{"ENV": "dev"},
@@ -125,6 +140,7 @@ func TestExtractChangesDropsPolicyAppliedValues(t *testing.T) {
 		},
 		{
 			name:          "non-default value kept",
+			wantLookup:    true,
 			attribute:     "spark_env_vars",
 			definition:    `{"spark_env_vars.ENV":{"type":"allowlist","values":["dev","prod"],"defaultValue":"dev"}}`,
 			remote:        map[string]any{"ENV": "prod"},
@@ -132,13 +148,15 @@ func TestExtractChangesDropsPolicyAppliedValues(t *testing.T) {
 			want:          map[string]any{"ENV": "prod"},
 		},
 		{
-			name:       "fixed false dropped and empty parents pruned",
+			name:       "policy-only subtree with fixed false is dropped",
+			wantLookup: true,
 			attribute:  "workload_type",
 			definition: `{"workload_type.clients.notebooks":{"type":"fixed","value":false}}`,
 			remote:     map[string]any{"clients": map[string]any{"notebooks": false}},
 		},
 		{
 			name:          "zero default dropped",
+			wantLookup:    true,
 			attribute:     "autoscale",
 			definition:    `{"autoscale.min_workers":{"type":"range","minValue":0,"defaultValue":0}}`,
 			remote:        map[string]any{"min_workers": int64(0)},
@@ -146,6 +164,7 @@ func TestExtractChangesDropsPolicyAppliedValues(t *testing.T) {
 		},
 		{
 			name:       "dotted map key matched as one key",
+			wantLookup: true,
 			attribute:  "spark_conf",
 			definition: `{"spark_conf.spark.sql.shuffle.partitions":{"type":"fixed","value":"7"}}`,
 			remote:     map[string]any{"spark.sql.shuffle.partitions": "7", "spark.sql.adaptive.enabled": "true"},
@@ -153,12 +172,14 @@ func TestExtractChangesDropsPolicyAppliedValues(t *testing.T) {
 		},
 		{
 			name:       "indexed rule drops whole array",
+			wantLookup: true,
 			attribute:  "init_scripts",
 			definition: `{"init_scripts.0.volumes.destination":{"type":"fixed","value":"/Volumes/c/s/v/init.sh"}}`,
 			remote:     []any{map[string]any{"volumes": map[string]any{"destination": "/Volumes/c/s/v/init.sh"}}},
 		},
 		{
 			name:       "partial array match keeps whole array",
+			wantLookup: true,
 			attribute:  "init_scripts",
 			definition: `{"init_scripts.0.volumes.destination":{"type":"fixed","value":"/Volumes/c/s/v/policy.sh"}}`,
 			remote: []any{
@@ -172,12 +193,14 @@ func TestExtractChangesDropsPolicyAppliedValues(t *testing.T) {
 		},
 		{
 			name:       "log destination matches policy type and path",
+			wantLookup: true,
 			attribute:  "cluster_log_conf",
 			definition: `{"cluster_log_conf.type":{"type":"fixed","value":"DBFS"},"cluster_log_conf.path":{"type":"fixed","value":"dbfs:/logs"}}`,
 			remote:     map[string]any{"dbfs": map[string]any{"destination": "dbfs:/logs"}},
 		},
 		{
 			name:          "log destination edits remain managed",
+			wantLookup:    true,
 			attribute:     "cluster_log_conf",
 			definition:    `{"cluster_log_conf.type":{"type":"fixed","value":"DBFS"},"cluster_log_conf.path":{"type":"unlimited","defaultValue":"dbfs:/logs"}}`,
 			applyDefaults: true,
@@ -185,25 +208,43 @@ func TestExtractChangesDropsPolicyAppliedValues(t *testing.T) {
 			want:          map[string]any{"dbfs": map[string]any{"destination": "dbfs:/user-logs"}},
 		},
 		{
-			name:      "tags without a policy sync",
-			attribute: "custom_tags",
-			noPolicy:  true,
-			remote:    map[string]any{"Owner": "user"},
-			want:      map[string]any{"Owner": "user"},
+			name:       "tags without a policy sync",
+			wantLookup: false,
+			attribute:  "custom_tags",
+			noPolicy:   true,
+			remote:     map[string]any{"Owner": "user"},
+			want:       map[string]any{"Owner": "user"},
 		},
 		{
-			name:      "log configuration without a policy syncs",
-			attribute: "cluster_log_conf",
-			noPolicy:  true,
-			remote:    map[string]any{"dbfs": map[string]any{"destination": "dbfs:/user-logs"}},
-			want:      map[string]any{"dbfs": map[string]any{"destination": "dbfs:/user-logs"}},
+			name:       "log configuration without a policy syncs",
+			wantLookup: false,
+			attribute:  "cluster_log_conf",
+			noPolicy:   true,
+			remote:     map[string]any{"dbfs": map[string]any{"destination": "dbfs:/user-logs"}},
+			want:       map[string]any{"dbfs": map[string]any{"destination": "dbfs:/user-logs"}},
 		},
 		{
 			name:       "unconstrained values sync",
+			wantLookup: true,
 			attribute:  "custom_tags",
 			definition: `{}`,
 			remote:     map[string]any{"Owner": "user"},
 			want:       map[string]any{"Owner": "user"},
+		},
+		{
+			name:       "volume log destination matches policy type and path",
+			wantLookup: true,
+			attribute:  "cluster_log_conf",
+			definition: `{"cluster_log_conf.type":{"type":"fixed","value":"VOLUMES"},"cluster_log_conf.path":{"type":"fixed","value":"/Volumes/c/s/v/logs"}}`,
+			remote:     map[string]any{"volumes": map[string]any{"destination": "/Volumes/c/s/v/logs"}},
+		},
+		{
+			name:       "authored sibling preserves required destination without policy lookup",
+			wantLookup: false,
+			attribute:  "cluster_log_conf",
+			config:     map[string]any{"s3": map[string]any{"region": "us-west-2"}},
+			remote:     map[string]any{"s3": map[string]any{"destination": "s3://logs", "region": "us-east-1"}},
+			want:       map[string]any{"s3": map[string]any{"destination": "s3://logs", "region": "us-east-1"}},
 		},
 	}
 
@@ -237,7 +278,7 @@ func TestExtractChangesDropsPolicyAppliedValues(t *testing.T) {
 				// Only policy retrieval is mocked; the actual comparison and filtering run.
 				client := mocks.NewMockWorkspaceClient(t)
 				b.SetWorkpaceClient(client.WorkspaceClient)
-				if tt.config == nil && !tt.noPolicy {
+				if tt.wantLookup {
 					client.GetMockClusterPoliciesAPI().EXPECT().GetByPolicyId(mock.Anything, "policy").
 						Return(&compute.Policy{Definition: tt.definition}, nil).Once()
 				}
@@ -274,47 +315,18 @@ func TestExtractChangesFailsOnPolicyLookupError(t *testing.T) {
 	assert.Nil(t, changes)
 }
 
-func policyClusterLocation(location string, cluster map[string]any) (resourceKey, pathPrefix string, root map[string]any) {
-	switch location {
-	case "task":
-		return "resources.jobs.test", "tasks[task_key='main'].new_cluster.", map[string]any{
-			"tasks": []any{map[string]any{"task_key": "main", "new_cluster": cluster}},
-		}
-	case "shared":
-		return "resources.jobs.test", "job_clusters[job_cluster_key='main'].new_cluster.", map[string]any{
-			"job_clusters": []any{map[string]any{"job_cluster_key": "main", "new_cluster": cluster}},
-		}
-	case "for_each":
-		return "resources.jobs.test", "tasks[task_key='each'].for_each_task.task.new_cluster.", map[string]any{
-			"tasks": []any{map[string]any{"task_key": "each", "for_each_task": map[string]any{
-				"task": map[string]any{"task_key": "main", "new_cluster": cluster},
-			}}},
-		}
-	default:
-		return "resources.clusters.test", "", cluster
-	}
-}
-
-func typedPolicyResource(t *testing.T, location string, value map[string]any) any {
-	t.Helper()
-	var resource any = &dresources.JobRemote{}
-	if location == "standalone" {
-		resource = &dresources.ClusterRemote{}
-	}
-	data, err := json.Marshal(value)
-	require.NoError(t, err)
-	require.NoError(t, json.Unmarshal(data, resource))
-	return resource
-}
-
 func TestExtractChangesMatchesClustersByKeyAndRemotePolicy(t *testing.T) {
 	config := map[string]any{"job_clusters": []any{
 		map[string]any{"job_cluster_key": "explicit", "new_cluster": map[string]any{
 			"policy_id": "old-policy", "spark_env_vars": map[string]any{"ENV": "authored"},
 		}},
 		map[string]any{"job_cluster_key": "omitted", "new_cluster": map[string]any{"policy_id": "old-policy"}},
+		map[string]any{"job_cluster_key": "also_omitted", "new_cluster": map[string]any{"policy_id": "old-policy"}},
 	}}
 	remote := map[string]any{"job_clusters": []any{
+		map[string]any{"job_cluster_key": "also_omitted", "new_cluster": map[string]any{
+			"policy_id": "new-policy", "spark_env_vars": map[string]any{"ENV": "dev"},
+		}},
 		map[string]any{"job_cluster_key": "omitted", "new_cluster": map[string]any{
 			"policy_id": "new-policy", "spark_env_vars": map[string]any{"ENV": "dev"},
 		}},
@@ -331,7 +343,7 @@ func TestExtractChangesMatchesClustersByKeyAndRemotePolicy(t *testing.T) {
 	b := policyTestBundle(t, "resources.jobs.test", config)
 	client := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(client.WorkspaceClient)
-	// The omitted cluster uses the remote policy even though config has a different ID.
+	// Both omitted clusters use the remote policy, fetched once despite the different config ID.
 	client.GetMockClusterPoliciesAPI().EXPECT().GetByPolicyId(mock.Anything, "new-policy").
 		Return(&compute.Policy{Definition: `{"spark_env_vars.ENV":{"type":"fixed","value":"dev"}}`}, nil).Once()
 
@@ -340,27 +352,12 @@ func TestExtractChangesMatchesClustersByKeyAndRemotePolicy(t *testing.T) {
 	require.Contains(t, changes, "resources.jobs.test")
 	require.Contains(t, changes["resources.jobs.test"], "job_clusters")
 	assert.Equal(t, []any{
+		map[string]any{"job_cluster_key": "also_omitted", "new_cluster": map[string]any{"policy_id": "new-policy"}},
 		map[string]any{"job_cluster_key": "omitted", "new_cluster": map[string]any{"policy_id": "new-policy"}},
 		map[string]any{"job_cluster_key": "explicit", "new_cluster": map[string]any{
 			"policy_id": "new-policy", "spark_env_vars": map[string]any{"ENV": "dev"},
 		}},
 	}, changes["resources.jobs.test"]["job_clusters"].Value)
-}
-
-func policyTestBundle(t *testing.T, resourceKey string, config map[string]any) *bundle.Bundle {
-	t.Helper()
-	parts := strings.Split(resourceKey, ".")
-	data, err := json.Marshal(map[string]any{"resources": map[string]any{
-		parts[1]: map[string]any{parts[2]: config},
-	}})
-	require.NoError(t, err)
-	value, err := jsonloader.LoadJSON(data, "test config")
-	require.NoError(t, err)
-	b := &bundle.Bundle{}
-	require.NoError(t, b.Config.Mutate(func(_ dyn.Value) (dyn.Value, error) {
-		return value, nil
-	}))
-	return b
 }
 
 func TestExtractChangesDropsPolicyValueAtDottedLeaf(t *testing.T) {
@@ -504,4 +501,53 @@ func TestExtractChangesDropsPolicyOnlyObjectAtChangeRoot(t *testing.T) {
 	changes, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
 	require.NoError(t, err)
 	assert.Empty(t, changes)
+}
+
+func policyClusterLocation(location string, cluster map[string]any) (resourceKey, pathPrefix string, root map[string]any) {
+	switch location {
+	case "task":
+		return "resources.jobs.test", "tasks[task_key='main'].new_cluster.", map[string]any{
+			"tasks": []any{map[string]any{"task_key": "main", "new_cluster": cluster}},
+		}
+	case "shared":
+		return "resources.jobs.test", "job_clusters[job_cluster_key='main'].new_cluster.", map[string]any{
+			"job_clusters": []any{map[string]any{"job_cluster_key": "main", "new_cluster": cluster}},
+		}
+	case "for_each":
+		return "resources.jobs.test", "tasks[task_key='each'].for_each_task.task.new_cluster.", map[string]any{
+			"tasks": []any{map[string]any{"task_key": "each", "for_each_task": map[string]any{
+				"task": map[string]any{"task_key": "main", "new_cluster": cluster},
+			}}},
+		}
+	default:
+		return "resources.clusters.test", "", cluster
+	}
+}
+
+func typedPolicyResource(t *testing.T, location string, value map[string]any) any {
+	t.Helper()
+	var resource any = &dresources.JobRemote{}
+	if location == "standalone" {
+		resource = &dresources.ClusterRemote{}
+	}
+	data, err := json.Marshal(value)
+	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal(data, resource))
+	return resource
+}
+
+func policyTestBundle(t *testing.T, resourceKey string, config map[string]any) *bundle.Bundle {
+	t.Helper()
+	parts := strings.Split(resourceKey, ".")
+	data, err := json.Marshal(map[string]any{"resources": map[string]any{
+		parts[1]: map[string]any{parts[2]: config},
+	}})
+	require.NoError(t, err)
+	value, err := jsonloader.LoadJSON(data, "test config")
+	require.NoError(t, err)
+	b := &bundle.Bundle{}
+	require.NoError(t, b.Config.Mutate(func(_ dyn.Value) (dyn.Value, error) {
+		return value, nil
+	}))
+	return b
 }

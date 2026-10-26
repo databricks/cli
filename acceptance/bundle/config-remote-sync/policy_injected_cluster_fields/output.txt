@@ -4,6 +4,11 @@ Created jobs.job1
 Files: 2 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
+=== Policy values alone do not need to be synced
+>>> [CLI] bundle config-remote-sync
+No changes detected.
+
+
 === Simulate a cluster policy injecting custom_tags and cluster_log_conf
 These fields exist only remotely (the user never set them in config).
 A legitimate edit (max_concurrent_runs) is made too, to show real edits still sync.

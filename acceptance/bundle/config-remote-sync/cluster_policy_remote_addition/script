@@ -1,4 +1,5 @@
 envsubst < databricks.yml.tmpl > databricks.yml
+add_repl "$DEFAULT_SPARK_VERSION" DEFAULT_SPARK_VERSION
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
@@ -11,6 +12,21 @@ job_id=$(read_id.py test_job)
 edit_resource.py jobs "$job_id" <<'EOF'
 r["tasks"][0]["new_cluster"]["spark_conf"] = {"spark.sql.shuffle.partitions": "7"}
 r["tasks"][0]["new_cluster"]["custom_tags"]["UserTag"] = "edited-in-ui"
+EOF
+
+cp databricks.yml databricks.yml.backup
+trace $CLI bundle config-remote-sync --save
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+
+title "Add a task with user and policy cluster fields in the UI"
+edit_resource.py jobs "$job_id" <<'EOF'
+from copy import deepcopy
+
+task = deepcopy(r["tasks"][0])
+task["task_key"] = "added_in_ui"
+task["new_cluster"]["custom_tags"]["UserTag"] = "new-task"
+r["tasks"].append(task)
 EOF
 
 cp databricks.yml databricks.yml.backup

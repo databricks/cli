@@ -28,11 +28,16 @@ Resource: resources.jobs.policy_sync
          - job_cluster_key: main
 
 === Deploy shared YAML with the prod policy
->>> errcode [CLI] bundle deploy -t prod
+>>> [CLI] bundle deploy -t prod
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/prod/files...
 Created jobs.policy_sync
 Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== A deleted policy must not cause its stored values to be saved
+>>> [CLI] cluster-policies delete [DEV_POLICY_ID]
+
+>>> diff.py databricks.yml.backup databricks.yml
 
 >>> [CLI] bundle destroy -t prod --auto-approve
 The following resources will be deleted:
@@ -49,7 +54,5 @@ The following resources will be deleted:
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/dev
 
 Destroy: 1 deleted
-
->>> [CLI] cluster-policies delete [DEV_POLICY_ID]
 
 >>> [CLI] cluster-policies delete [PROD_POLICY_ID]
