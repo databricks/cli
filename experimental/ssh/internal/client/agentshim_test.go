@@ -369,9 +369,12 @@ func TestInjectAgentContext(t *testing.T) {
 }
 
 func TestAgentSystemContext(t *testing.T) {
-	assert.Contains(t, agentSystemContext("/Workspace/Users/me@example.com"), "working directory is /Workspace/Users/me@example.com")
-	// Falls back to a generic phrase when the workspace home is unknown.
-	assert.Contains(t, agentSystemContext(""), "working directory is the user's Databricks workspace home directory")
+	wsHome := "/Workspace/Users/me@example.com"
+	assert.Contains(t, agentSystemContext(wsHome, wsHome), "working directory is "+wsHome)
+	assert.Contains(t, agentSystemContext(wsHome, wsHome), "user's Databricks workspace home directory is "+wsHome)
+	assert.Contains(t, agentSystemContext("/home/spark-1234", wsHome), "working directory is /home/spark-1234")
+	assert.Contains(t, agentSystemContext("/home/spark-1234", ""), "working directory is /home/spark-1234")
+	assert.NotContains(t, agentSystemContext("/home/spark-1234", ""), "user's Databricks workspace home directory")
 }
 
 func newProbeClient(t *testing.T, host string) *databricks.WorkspaceClient {

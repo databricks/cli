@@ -676,7 +676,11 @@ func prepareAgentLaunch(ctx context.Context, home string, agent agentlauncher.Ag
 
 // put the Databricks context where the agent reads it, returning any extra argv.
 func injectAgentContext(ctx context.Context, home string, agent agentlauncher.AgentSpec) ([]string, error) {
-	systemContext := agentSystemContext(env.Get(ctx, workspaceHomeEnv))
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get cwd: %w", err)
+	}
+	systemContext := agentSystemContext(cwd, env.Get(ctx, workspaceHomeEnv))
 	switch {
 	case agent.ContextFlag != "":
 		// Keep the scratch context file under the shim's own directory so it never
@@ -804,14 +808,14 @@ func removePath(ctx context.Context, dir string) {
 	_ = os.Setenv("PATH", strings.Join(dirs, string(os.PathListSeparator)))
 }
 
-func agentSystemContext(wsHome string) string {
-	cwd := "the user's Databricks workspace home directory"
+func agentSystemContext(cwd, wsHome string) string {
+	userHomePart := ""
 	if wsHome != "" {
-		cwd = wsHome
+		userHomePart = ", and the user's Databricks workspace home directory is " + wsHome
 	}
 	return fmt.Sprintf(`You are running inside a "databricks ssh connect" session on the driver node of a
 Databricks serverless cluster.
 - The "databricks" CLI is installed and already authenticated: DATABRICKS_HOST and DATABRICKS_TOKEN are set in the environment, so "databricks ..." commands work with no "databricks auth login". The same token governs Unity Catalog and serving-endpoint access.
-- This container is ephemeral; only paths under /Workspace and /Volumes persist across sessions. Your working directory is %s.
-- You can run shell commands and use the "databricks" CLI to explore the workspace.`, cwd)
+- This container is ephemeral; only paths under /Workspace and /Volumes persist across sessions. Your working directory is %s%s.
+- You can run shell commands and use the "databricks" CLI to explore the workspace.`, cwd, userHomePart)
 }
