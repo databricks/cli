@@ -225,7 +225,9 @@ a new profile is created.
 		// the user re-login to an existing profile, create a new one, or enter
 		// a host URL. With no profiles configured the picker still shows the
 		// two action entries so the user can choose between web-based discovery
-		// (Create a new profile) and a manual host URL.
+		// (Create a new profile) and a manual host URL. Device code login skips
+		// discovery, so for it "Create a new profile" prompts for the host after
+		// the profile name.
 		if profileName == "" && authArguments.Host == "" && len(args) == 0 && cmdio.IsPromptSupported(ctx) {
 			matchProfiles := profile.MatchAllProfiles
 			if useDeviceCode {
@@ -335,7 +337,8 @@ a new profile is created.
 			return err
 		}
 		// Check the host once it is resolved, before setAccountID prompts for
-		// an account ID for account and unified hosts.
+		// an account ID for account and unified hosts. A workspace without
+		// device code login enabled is rejected later by DeviceCodeChallenge.
 		if useDeviceCode && !isDeviceCodeSupportedForHost(authArguments.Host, authArguments.DiscoveryURL) {
 			return errDeviceCodeWorkspaceOnly
 		}

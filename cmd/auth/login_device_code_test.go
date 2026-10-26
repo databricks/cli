@@ -266,23 +266,23 @@ func TestMatchDeviceCodeProfiles(t *testing.T) {
 }
 
 func TestLoginDeviceCodePickerHidesUnsupportedProfiles(t *testing.T) {
-	tm := startDeviceCodeLogin(t, `[workspace]
+	tm := startDeviceCodeLogin(t, `[workspace-prof]
 host = https://workspace.test
 
-[account]
+[account-prof]
 host = https://accounts.cloud.databricks.test
 account_id = acct-123
 
-[scoped]
+[scoped-prof]
 host = https://workspace.test
 auth_type = databricks-cli
 resources = https://workspace.test/ai-gateway/mcp-services/system.ai.github
 `)
 	tm.WaitFor(profilePickerEnterHostLabel)
 	screen := tm.Snapshot()
-	assert.Contains(t, screen, "workspace")
-	assert.NotContains(t, screen, "account")
-	assert.NotContains(t, screen, "scoped")
+	assert.Contains(t, screen, "workspace-prof")
+	assert.NotContains(t, screen, "account-prof")
+	assert.NotContains(t, screen, "scoped-prof")
 	tm.Type(termtest.KeyCtrlC)
 	_, err := tm.Result()
 	assert.EqualError(t, err, "^C")

@@ -24,12 +24,9 @@ var deviceCodeIncompatibleFlags = []string{
 
 var errDeviceCodeWorkspaceOnly = errors.New("--use-device-code is only supported for workspace hosts")
 
-// isDeviceCodeSupportedForHost reports whether device code login is supported
-// for host, which is only the case for workspace hosts. A unified host is only
-// recognized by its account-scoped discoveryURL, so with an empty
-// discoveryURL only classic account hosts are rejected. A workspace without
-// device code login enabled is rejected by DeviceCodeChallenge before it
-// creates a device code.
+// isDeviceCodeSupportedForHost reports whether host is a workspace host. A
+// unified host is only recognized by its account-scoped discoveryURL, so with
+// an empty discoveryURL only classic account hosts are rejected.
 func isDeviceCodeSupportedForHost(host, discoveryURL string) bool {
 	return !isAccountOrUnifiedHost(host, discoveryURL)
 }
