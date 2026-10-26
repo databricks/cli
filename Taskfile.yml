@@ -275,8 +275,8 @@ tasks:
       - task: check-changelog
       # --frozen renders from the committed tagging.py.lock as-is. Re-resolving (what
       # --locked does) hits the package index, which breaks under a newer local uv or the
-      # internal PyPI proxy index and rewrites the lock; CI keeps --locked (pinned uv +
-      # pypi.org) in changelog-preview.yml. --python 3.12 satisfies the lock's
+      # internal PyPI proxy index and rewrites the lock (changelog-preview.yml uses
+      # --frozen too). --python 3.12 satisfies the lock's
       # requires-python >=3.12, which the script omits (so uv would otherwise pick 3.9).
       - "uv run --python 3.12 --frozen --script internal/genkit/tagging.py --preview"
 
