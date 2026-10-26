@@ -206,7 +206,11 @@ func TestValidateDeviceCodeHost(t *testing.T) {
 	}
 }
 
-func TestLoginDeviceCodeCreateNewProfilePromptsForHost(t *testing.T) {
+// The test passes --profile instead of picking "Create a new profile" so that
+// the host prompt is the only prompt. On Windows, bubbletea cannot cancel its
+// read from the test's stdin pipe, so a finished prompt keeps reading and
+// swallows the input typed for the next one.
+func TestLoginDeviceCodeNewProfilePromptsForHost(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
@@ -218,15 +222,11 @@ func TestLoginDeviceCodeCreateNewProfilePromptsForHost(t *testing.T) {
 		cmd := newLoginCommand(&auth.AuthArguments{})
 		cmd.Flags().String("profile", "", "")
 		cmd.SetContext(ctx)
-		cmd.SetArgs([]string{"--use-device-code"})
+		cmd.SetArgs([]string{"--use-device-code", "--profile", "newprof"})
 		cmd.SetOut(io.Discard)
 		cmd.SetErr(io.Discard)
 		return struct{}{}, cmd.Execute()
 	})
-	tm.WaitFor(profilePickerCreateNewLabel)
-	tm.Type("Create" + termtest.KeyEnter)
-	tm.WaitFor("Databricks profile name")
-	tm.Type("newprof" + termtest.KeyEnter)
 	// Without a host, device code login asks for one instead of starting the
 	// discovery login.
 	tm.WaitFor("Databricks host")
