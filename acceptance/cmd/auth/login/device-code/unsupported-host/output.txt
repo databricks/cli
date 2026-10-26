@@ -1,0 +1,31 @@
+
+=== No host
+
+>>> musterr [CLI] auth login --profile new-profile --use-device-code
+Error: --use-device-code requires a workspace host. Pass it as an argument or with --host
+
+=== Account host
+
+>>> musterr [CLI] auth login --host https://accounts.cloud.databricks.test --profile test --use-device-code
+Warn: [hostmetadata] failed to fetch host metadata for https://accounts.cloud.databricks.test, will skip for 1m0s
+Error: --use-device-code is only supported for workspace hosts
+
+>>> musterr [CLI] auth login --profile account --use-device-code
+Error: --use-device-code is only supported for workspace hosts
+
+=== Unified host
+
+>>> DATABRICKS_DISCOVERY_URL=[DATABRICKS_URL]/oidc/accounts/spog-acct-123/.well-known/oauth-authorization-server musterr [CLI] auth login --host [DATABRICKS_URL] --use-device-code
+Error: --use-device-code is only supported for workspace hosts
+
+=== Workspace without device code login
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code
+Error: device code login is not enabled for this workspace
+
+>>> musterr [CLI] auth login --profile workspace --use-device-code
+Error: device code login is not enabled for this workspace
+
+=== Device authorization requests
+
+>>> print_requests.py //oidc/v1/device/auth
