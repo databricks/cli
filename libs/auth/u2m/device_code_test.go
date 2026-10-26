@@ -133,6 +133,7 @@ func TestDeviceCodeChallenge(t *testing.T) {
 	assert.Equal(t, DeviceAuthorization{
 		UserCode:        testUserCode,
 		VerificationURI: "https://workspace.test/device/verification",
+		DeviceCode:      testDeviceCode,
 	}, got)
 	assert.Equal(t, "access-token", tok.AccessToken)
 	assert.Equal(t, "refresh-token", tok.RefreshToken)
@@ -401,6 +402,88 @@ func TestDeviceCodeChallenge_AccountHost(t *testing.T) {
 	assert.EqualError(t, err, "device code login is only supported for workspace hosts")
 }
 
+func TestRequestDeviceAuthorization(t *testing.T) {
+	f := &fakeDeviceServer{expiresIn: 600}
+	p := newDeviceCodeAuth(t, f, true)
+
+	da, err := p.RequestDeviceAuthorization(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, &DeviceAuthorization{
+		UserCode:        testUserCode,
+		VerificationURI: "https://workspace.test/device/verification",
+		DeviceCode:      testDeviceCode,
+	}, da)
+	assert.Equal(t, int32(0), f.tokenRequests.Load())
+}
+
+func TestRequestDeviceAuthorization_Errors(t *testing.T) {
+	_, err := newDeviceCodeAuth(t, &fakeDeviceServer{}, false).RequestDeviceAuthorization(t.Context())
+	assert.ErrorIs(t, err, ErrDeviceCodeNotSupported)
+
+	_, err = newDeviceCodeAuth(t, &fakeDeviceServer{
+		deviceAuthStatus: http.StatusBadRequest,
+		deviceAuthBody:   `{"error": "unauthorized_client", "error_description": "Client is not allowed to use device code"}`,
+	}, true).RequestDeviceAuthorization(t.Context())
+	assert.EqualError(t, err, "device authorization: Client is not allowed to use device code (error code: unauthorized_client)")
+}
+
+func TestExchangeDeviceCode(t *testing.T) {
+	f := &fakeDeviceServer{}
+	p := newDeviceCodeAuth(t, f, true)
+
+	tok, err := p.ExchangeDeviceCode(t.Context(), testDeviceCode, " ftfa-qqky\n")
+	require.NoError(t, err)
+	assert.Equal(t, "access-token", tok.AccessToken)
+	assert.Equal(t, "refresh-token", tok.RefreshToken)
+	assert.Equal(t, int32(1), f.tokenRequests.Load())
+}
+
+func TestExchangeDeviceCode_Errors(t *testing.T) {
+	tests := []struct {
+		name         string
+		server       *fakeDeviceServer
+		wantErr      string
+		wantSentinel error
+	}{
+		{
+			name:         "wrong confirmation code",
+			server:       &fakeDeviceServer{},
+			wantErr:      "Invalid confirmation code (error code: invalid_request)",
+			wantSentinel: ErrInvalidConfirmationCode,
+		},
+		{
+			name: "unknown device code",
+			server: &fakeDeviceServer{
+				tokenStatus: http.StatusBadRequest,
+				tokenBody:   `{"error": "invalid_request", "error_description": "Invalid device code"}`,
+			},
+			wantErr:      "Invalid device code (error code: invalid_request)",
+			wantSentinel: ErrInvalidDeviceCode,
+		},
+		{
+			name: "token request rate limited",
+			server: &fakeDeviceServer{
+				tokenStatus: http.StatusTooManyRequests,
+				tokenBody:   `{"error": "invalid_request", "error_description": "Device grant rate limit exceeded"}`,
+			},
+			wantErr: "Device grant rate limit exceeded (error code: invalid_request)",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			p := newDeviceCodeAuth(t, tc.server, true)
+			_, err := p.ExchangeDeviceCode(t.Context(), testDeviceCode, "AAAAAAAA")
+			assert.EqualError(t, err, tc.wantErr)
+			for _, sentinel := range []error{ErrInvalidConfirmationCode, ErrInvalidDeviceCode} {
+				assert.Equal(t, errors.Is(sentinel, tc.wantSentinel), errors.Is(err, sentinel), sentinel)
+			}
+			_, ok := errors.AsType[*httpclient.HttpError](err)
+			assert.True(t, ok, "want *httpclient.HttpError in %v", err)
+			assert.Equal(t, int32(1), tc.server.tokenRequests.Load())
+		})
+	}
+}
+
 func TestNormalizeCode(t *testing.T) {
 	tests := []struct {
 		in   string
@@ -412,6 +495,6 @@ func TestNormalizeCode(t *testing.T) {
 		{"  FTFA QQKY \n", "FTFAQQKY"},
 	}
 	for _, tc := range tests {
-		assert.Equal(t, tc.want, normalizeCode(tc.in), tc.in)
+		assert.Equal(t, tc.want, NormalizeCode(tc.in), tc.in)
 	}
 }

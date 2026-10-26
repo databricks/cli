@@ -32,14 +32,27 @@ const invalidDeviceCodeDescription = "Invalid device code"
 // a device authorization endpoint in its OIDC discovery document.
 var ErrDeviceCodeNotSupported = errors.New("device code login is not enabled for this workspace")
 
+// ErrInvalidConfirmationCode matches the token exchange error for a
+// confirmation code the server rejects. The device code stays valid, so the
+// exchange can be retried with the right code.
+var ErrInvalidConfirmationCode = errors.New("invalid confirmation code")
+
+// ErrInvalidDeviceCode matches the token exchange error for a device code the
+// server does not know, e.g. one it discarded after the login expired. The
+// login has to be started again.
+var ErrInvalidDeviceCode = errors.New("invalid device code")
+
 // DeviceAuthorization holds what the user needs to approve a device code
-// login from another device.
+// login from another device, and the device code to exchange afterwards.
 type DeviceAuthorization struct {
 	// UserCode is the code the user enters at VerificationURI.
 	UserCode string
 
 	// VerificationURI is the page where the user approves the login.
 	VerificationURI string
+
+	// DeviceCode identifies the login in the token exchange.
+	DeviceCode string
 }
 
 // maxConfirmationAttempts is how many confirmation codes the user can enter
@@ -90,44 +103,113 @@ func (a *PersistentAuth) DeviceCodeChallenge(ctx context.Context, confirm Confir
 
 	da, err := a.requestDeviceAuthorization(ctx, cfg)
 	if err != nil {
-		return nil, fmt.Errorf("device authorization: %w", oauthError(err))
+		return nil, err
 	}
 
-	authorization := DeviceAuthorization{
-		UserCode:        da.UserCode,
-		VerificationURI: da.VerificationURI,
-	}
 	var lastErr error
 	for attempt := range maxConfirmationAttempts {
-		code, err := confirm(ctx, authorization, lastErr, maxConfirmationAttempts-attempt)
+		code, err := confirm(ctx, *da, lastErr, maxConfirmationAttempts-attempt)
 		if err != nil {
 			return nil, err
 		}
 
-		t, err := a.exchangeDeviceCode(ctx, cfg, da.DeviceCode, normalizeCode(code))
+		t, err := a.exchangeConfirmationCode(ctx, cfg, da.DeviceCode, code)
 		if err == nil {
 			return t, nil
 		}
-		lastErr = oauthError(err)
-		// The server answers a wrong confirmation code with HTTP 400 and
-		// invalid_request. Any other error cannot be fixed by entering the
-		// code again, including invalid_request with HTTP 429 when the server
-		// rate limits the token requests for this device code. An unknown
-		// device code also gets HTTP 400 and invalid_request, and only the
-		// description tells it apart. If the description changes, the user is
-		// asked for the code again until the attempts run out.
-		status, errCode, description := oauthErrorResponse(err)
-		if status != http.StatusBadRequest || errCode != "invalid_request" || description == invalidDeviceCodeDescription {
+		lastErr = err
+		if !errors.Is(err, ErrInvalidConfirmationCode) {
 			return nil, fmt.Errorf("token exchange: %w", lastErr)
 		}
 	}
 	return nil, fmt.Errorf("%w. Start login from scratch", lastErr)
 }
 
-// requestDeviceAuthorization makes the RFC 8628 device authorization request.
+// RequestDeviceAuthorization starts a device code login by making the RFC
+// 8628 device authorization request. The caller shows the user code and the
+// verification URI to the user and later passes the device code to
+// ExchangeDeviceCode. Only workspace hosts are supported.
+func (a *PersistentAuth) RequestDeviceAuthorization(ctx context.Context) (*DeviceAuthorization, error) {
+	cfg, err := a.deviceCodeConfig()
+	if err != nil {
+		return nil, err
+	}
+	return a.requestDeviceAuthorization(ctx, cfg)
+}
+
+// ExchangeDeviceCode completes a device code login started by
+// RequestDeviceAuthorization with a single token request, without retries.
+// The confirmation code is accepted the way the browser displays it. An
+// error matches ErrInvalidConfirmationCode or ErrInvalidDeviceCode when the
+// server rejects one of the codes. The caller is responsible for storing the
+// returned token.
+func (a *PersistentAuth) ExchangeDeviceCode(ctx context.Context, deviceCode, confirmationCode string) (*oauth2.Token, error) {
+	cfg, err := a.deviceCodeConfig()
+	if err != nil {
+		return nil, err
+	}
+	return a.exchangeConfirmationCode(ctx, cfg, deviceCode, confirmationCode)
+}
+
+// requestDeviceAuthorization makes the RFC 8628 device authorization request
+// and returns what the user needs to approve the login.
+func (a *PersistentAuth) requestDeviceAuthorization(ctx context.Context, cfg *oauth2.Config) (*DeviceAuthorization, error) {
+	da, err := a.postDeviceAuthorization(ctx, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("device authorization: %w", oauthError(err))
+	}
+	return &DeviceAuthorization{
+		UserCode:        da.UserCode,
+		VerificationURI: da.VerificationURI,
+		DeviceCode:      da.DeviceCode,
+	}, nil
+}
+
+// exchangeConfirmationCode exchanges the device code and the confirmation
+// code for a token, and marks the errors for a rejected code.
+func (a *PersistentAuth) exchangeConfirmationCode(ctx context.Context, cfg *oauth2.Config, deviceCode, confirmationCode string) (*oauth2.Token, error) {
+	t, err := a.exchangeDeviceCode(ctx, cfg, deviceCode, NormalizeCode(confirmationCode))
+	if err == nil {
+		return t, nil
+	}
+	// The server answers a wrong confirmation code with HTTP 400 and
+	// invalid_request. Any other error cannot be fixed by entering the
+	// code again, including invalid_request with HTTP 429 when the server
+	// rate limits the token requests for this device code. An unknown
+	// device code also gets HTTP 400 and invalid_request, and only the
+	// description tells it apart. If the description changes, the error is
+	// reported as a wrong confirmation code.
+	status, errCode, description := oauthErrorResponse(err)
+	err = oauthError(err)
+	switch {
+	case status != http.StatusBadRequest || errCode != "invalid_request":
+		return nil, err
+	case description == invalidDeviceCodeDescription:
+		return nil, &codeRejectedError{err: err, sentinel: ErrInvalidDeviceCode}
+	default:
+		return nil, &codeRejectedError{err: err, sentinel: ErrInvalidConfirmationCode}
+	}
+}
+
+// codeRejectedError shows the server's error for a rejected code and matches
+// sentinel with errors.Is.
+type codeRejectedError struct {
+	err      error
+	sentinel error
+}
+
+func (e *codeRejectedError) Error() string {
+	return e.err.Error()
+}
+
+func (e *codeRejectedError) Unwrap() []error {
+	return []error{e.err, e.sentinel}
+}
+
+// postDeviceAuthorization makes the RFC 8628 device authorization request.
 // Unlike oauth2.Config.DeviceAuth, it sends the request with ctx, so that the
 // login timeout and cancellation stop a stalled request.
-func (a *PersistentAuth) requestDeviceAuthorization(ctx context.Context, cfg *oauth2.Config) (*oauth2.DeviceAuthResponse, error) {
+func (a *PersistentAuth) postDeviceAuthorization(ctx context.Context, cfg *oauth2.Config) (*oauth2.DeviceAuthResponse, error) {
 	body, err := a.postForm(ctx, cfg.Endpoint.DeviceAuthURL, url.Values{
 		"client_id": {cfg.ClientID},
 		"scope":     {strings.Join(cfg.Scopes, " ")},
@@ -235,10 +317,10 @@ func (a *PersistentAuth) postForm(ctx context.Context, endpoint string, form url
 	return body, nil
 }
 
-// normalizeCode lets users enter a code the way it is displayed. Databricks
+// NormalizeCode lets users enter a code the way it is displayed. Databricks
 // codes consist of 8 uppercase alphanumeric characters and are compared
 // case-sensitively, but are often shown as two groups of four separated by a
 // dash (e.g. FTFA-QQKY).
-func normalizeCode(code string) string {
+func NormalizeCode(code string) string {
 	return strings.NewReplacer("-", "", " ", "").Replace(strings.ToUpper(strings.TrimSpace(code)))
 }
