@@ -6,3 +6,7 @@ Ignore = [
     "databricks.yml",
     ".databricks",
 ]
+
+# Endpoint provisioning takes ~20 min on cloud and DMS does not change how these
+# resources are deployed, so a DMS=true variant would double the cost without adding coverage.
+EnvMatrix.DMS = [""]
