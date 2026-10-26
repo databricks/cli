@@ -40,4 +40,3 @@ ssh -F /dev/null -i client_key -l "$(id -un)" \
   -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR \
   -o ProxyCommand="$SSHD -i -f $SERVER_HOME/.ssh-tunnel/sshd_config -o StrictModes=no" \
   localhost 'echo "$PATH"; command -v claude codex'
-
