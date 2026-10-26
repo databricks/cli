@@ -207,29 +207,29 @@ func TestIsDeviceCodeSupportedForHost(t *testing.T) {
 	}
 }
 
-// The test passes --profile instead of picking "Create a new profile" so that
-// the host prompt is the only prompt. On Windows, bubbletea cannot cancel its
-// read from the test's stdin pipe, so a finished prompt keeps reading and
-// swallows the input typed for the next one.
-func TestLoginDeviceCodeNewProfilePromptsForHost(t *testing.T) {
+// startDeviceCodeLogin runs "auth login --use-device-code" with args in a
+// terminal emulator, using config as the contents of .databrickscfg.
+func startDeviceCodeLogin(t *testing.T, config string, args ...string) *termtest.Term[struct{}] {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
-	t.Setenv("DATABRICKS_CONFIG_FILE", writeTempConfig(t, "[myprof]\nhost = https://workspace.test\n"))
+	t.Setenv("DATABRICKS_CONFIG_FILE", writeTempConfig(t, config))
 	t.Setenv("DATABRICKS_AUTH_STORAGE", "plaintext")
 	t.Setenv(deviceCodeEnvVar, "true")
 
-	tm := termtest.Run(t, func(ctx context.Context) (struct{}, error) {
+	return termtest.Run(t, func(ctx context.Context) (struct{}, error) {
 		cmd := newLoginCommand(&auth.AuthArguments{})
 		cmd.Flags().String("profile", "", "")
 		cmd.SetContext(ctx)
-		cmd.SetArgs([]string{"--use-device-code", "--profile", "newprof"})
+		cmd.SetArgs(append([]string{"--use-device-code"}, args...))
 		cmd.SetOut(io.Discard)
 		cmd.SetErr(io.Discard)
 		return struct{}{}, cmd.Execute()
 	})
-	// Without a host, device code login asks for one instead of starting the
-	// discovery login.
+}
+
+func TestLoginDeviceCodeNewProfilePromptsForHost(t *testing.T) {
+	tm := startDeviceCodeLogin(t, "", "--profile", "newprof")
 	tm.WaitFor("Databricks host")
 	tm.Type(termtest.KeyCtrlC)
 	_, err := tm.Result()
@@ -266,10 +266,7 @@ func TestMatchDeviceCodeProfiles(t *testing.T) {
 }
 
 func TestLoginDeviceCodePickerHidesUnsupportedProfiles(t *testing.T) {
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("USERPROFILE", home)
-	t.Setenv("DATABRICKS_CONFIG_FILE", writeTempConfig(t, `[workspace]
+	tm := startDeviceCodeLogin(t, `[workspace]
 host = https://workspace.test
 
 [account]
@@ -280,19 +277,7 @@ account_id = acct-123
 host = https://workspace.test
 auth_type = databricks-cli
 resources = https://workspace.test/ai-gateway/mcp-services/system.ai.github
-`))
-	t.Setenv("DATABRICKS_AUTH_STORAGE", "plaintext")
-	t.Setenv(deviceCodeEnvVar, "true")
-
-	tm := termtest.Run(t, func(ctx context.Context) (struct{}, error) {
-		cmd := newLoginCommand(&auth.AuthArguments{})
-		cmd.Flags().String("profile", "", "")
-		cmd.SetContext(ctx)
-		cmd.SetArgs([]string{"--use-device-code"})
-		cmd.SetOut(io.Discard)
-		cmd.SetErr(io.Discard)
-		return struct{}{}, cmd.Execute()
-	})
+`)
 	tm.WaitFor(profilePickerEnterHostLabel)
 	screen := tm.Snapshot()
 	assert.Contains(t, screen, "workspace")
