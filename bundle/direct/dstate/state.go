@@ -93,6 +93,9 @@ type DeploymentState struct {
 	mu      sync.Mutex
 	walFile *os.File
 
+	// persistedFeatures tracks disk markers separately from configuration changes in Data.
+	persistedFeatures map[string]struct{}
+
 	// mode controls where resource state is read and written, whether DMS
 	// history is recorded, and whether DMS errors fail the deployment.
 	mode Mode
@@ -560,6 +563,7 @@ func (db *DeploymentState) reset() {
 	db.Path = ""
 	db.Data = Database{}
 	db.stateIDs = nil
+	db.persistedFeatures = nil
 	// Telemetry and destroy still need the mode and IDs after version completion.
 	// Clear the recording buffer once CompleteVersion has copied it.
 	if db.versionCompleted {
@@ -593,6 +597,7 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, mode M
 		return fmt.Errorf("migrating state %s: %w", path, err)
 	}
 
+	db.persistedFeatures = maps.Clone(db.Data.Features)
 	db.stateIDs = make(map[string]string)
 	for key, entry := range db.Data.State {
 		db.stateIDs[key] = entry.ID
@@ -812,9 +817,9 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 	}
 
 	hasEntries := lineNumber > 1
-	// Persist enforced-history headers even without resource writes. Configured features
-	// may already match in memory while the file still carries different markers.
-	if lineNumber == 1 && (db.mode == WritingFileWithHistoryEnforced || !maps.Equal(db.Data.Features, newFeatures)) {
+	// Persist marker changes even without resource writes. Compare against disk,
+	// because configuration may already have replaced the in-memory features.
+	if lineNumber == 1 && !maps.Equal(db.persistedFeatures, newFeatures) {
 		hasEntries = true
 	}
 
@@ -1080,7 +1085,8 @@ func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.Export
 // the WAL. A torn write would therefore leave a state file that Open rejects
 // next to an intact WAL it never reads.
 func (db *DeploymentState) unlockedSave() error {
-	data, err := json.MarshalIndent(db.dataForFile(), "", " ")
+	fileData := db.dataForFile()
+	data, err := json.MarshalIndent(fileData, "", " ")
 	if err != nil {
 		return err
 	}
@@ -1089,6 +1095,7 @@ func (db *DeploymentState) unlockedSave() error {
 		return fmt.Errorf("failed to save resources state to %#v: %w", db.Path, err)
 	}
 
+	db.persistedFeatures = maps.Clone(fileData.Features)
 	return nil
 }
 

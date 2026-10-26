@@ -180,7 +180,7 @@ Resources: 0 created, 0 changed, 0 deleted, 5 unchanged
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
-  "serial": 2,
+  "serial": 1,
   "features": {
     "deployment_history_best_effort": {}
   }
@@ -225,7 +225,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
  "state_version": 3,
  "cli_version": "[CLI_VERSION]",
  "lineage": "[UUID]",
- "serial": 2,
+ "serial": 1,
  "features": {
   "deployment_history_best_effort": {}
  },

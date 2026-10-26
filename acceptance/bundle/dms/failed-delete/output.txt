@@ -201,7 +201,7 @@ API message: Fault injected by test.
  "state_version": 3,
  "cli_version": "[CLI_VERSION]",
  "lineage": "[UUID]",
- "serial": 2,
+ "serial": 1,
  "features": {
   "deployment_history_best_effort": {}
  },

@@ -61,12 +61,29 @@ func TestFinalizeWithoutResourceWrites(t *testing.T) {
 		assert.Contains(t, db.StateFeatures(), FeatureDeploymentHistoryBestEffort)
 		mustFinalize(t, &db)
 
+		// Keeping history enabled without changes must not advance the file serial.
+		require.NoError(t, db.Open(t.Context(), path, WritingFileWithHistoryEnforced, WithRecovery(false), OpenDmsArgs{}))
+		mustFinalize(t, &db)
+		require.NoError(t, db.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
+		assert.Equal(t, 1, db.Data.Serial)
+		mustFinalize(t, &db)
+
 		// Turning history off also persists its marker change without resource operations.
 		require.NoError(t, db.Open(t.Context(), path, WritingFile, WithRecovery(false), OpenDmsArgs{}))
 		mustFinalize(t, &db)
 		require.NoError(t, db.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
 		assert.Equal(t, 2, db.Data.Serial)
 		assert.NotContains(t, db.StateFeatures(), FeatureDeploymentHistoryBestEffort)
+		mustFinalize(t, &db)
+
+		// Enabling history on existing state persists the marker, even without resource writes.
+		require.NoError(t, db.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
+		db.Data.Features = map[string]struct{}{FeatureDeploymentHistoryBestEffort: {}}
+		require.NoError(t, db.upgradeToWrite(WritingFileWithHistoryEnforced))
+		mustFinalize(t, &db)
+		require.NoError(t, db.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
+		assert.Equal(t, 3, db.Data.Serial)
+		assert.Contains(t, db.StateFeatures(), FeatureDeploymentHistoryBestEffort)
 		mustFinalize(t, &db)
 	}
 }
