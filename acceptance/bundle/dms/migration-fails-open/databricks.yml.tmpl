@@ -1,0 +1,16 @@
+bundle:
+  name: dms-migration-fails-open-$UNIQUE_NAME
+
+experimental:
+  deployment_history: false
+
+resources:
+  jobs:
+    one:
+      name: one
+    two:
+      name: two
+      tasks:
+        - task_key: run_one
+          run_job_task:
+            job_id: ${resources.jobs.one.id}

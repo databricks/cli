@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/dms"
 )
 
@@ -14,6 +15,24 @@ import (
 type RecordedState struct {
 	State     json.RawMessage             `json:"state"`
 	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
+}
+
+// MarkFileHistory commits the protocol marker without replacing resource state.
+// The caller holds the deployment lock and has attempted initial registration.
+func (db *DeploymentState) MarkFileHistory(versionID int) error {
+	db.AssertOpenedForRead()
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	db.VersionID = max(db.VersionID, versionID)
+	if db.Data.Features == nil {
+		db.Data.Features = make(map[string]struct{})
+	}
+	db.Data.Features[FeatureDeploymentHistoryShadow] = struct{}{}
+	db.Data.Serial++
+	db.Data.Lineage = db.GetOrInitLineage()
+	db.Data.CLIVersion = build.GetInfo().Version
+	return db.unlockedSave()
 }
 
 // applyDMSState fills in the resource state from what DMS recorded. For a deployment that uses DMS

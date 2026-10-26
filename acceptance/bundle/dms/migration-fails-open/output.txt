@@ -1,0 +1,51 @@
+
+=== Create file-backed resources without history
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-migration-fails-open-[UNIQUE_NAME]/default/files...
+Created jobs.one
+Created jobs.two
+Files: 2 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Fail one registration upload; enable history and deploy an update anyway
+>>> fault.py PATCH /api/2.0/bundle/* 400 0 1
+
+>>> update_file.py databricks.yml deployment_history: false deployment_history: true
+
+>>> update_file.py databricks.yml name: one name: updated
+
+>>> [CLI] bundle deploy
+Enabling deployment history...
+Warn: Initial history registration was incomplete; continuing with file state: recording migration version: recording operation for resources.jobs.one: Fault injected by test.
+Deployment history enabled: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=2
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-migration-fails-open-[UNIQUE_NAME]/default/files...
+Updated jobs.one
+Updated jobs.two
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
+
+=== The file still owns both resources, with the original IDs
+>>> jq {serial, features, resources: (.state | keys), names: (.state | with_entries(.value = .value.state.name))} .databricks/bundle/default/resources.json
+{
+  "serial": 3,
+  "features": {
+    "deployment_history_shadow": {}
+  },
+  "resources": [
+    "resources.jobs.one",
+    "resources.jobs.two"
+  ],
+  "names": {
+    "resources.jobs.one": "updated",
+    "resources.jobs.two": "two"
+  }
+}
+
+>>> cmp .databricks/ids.before.json .databricks/ids.after.json
+
+=== Migration failed, but the following deployment completed successfully
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-versions deployments/[DEPLOYMENT_ID] -o json
+[{"version_id":"2","completion_reason":"VERSION_COMPLETE_FAILURE"},{"version_id":"3","completion_reason":"VERSION_COMPLETE_SUCCESS"}]
+
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-operations deployments/[DEPLOYMENT_ID]/versions/2 -o json
+[{"resource_key":"jobs.one","status":"OPERATION_STATUS_PENDING"},{"resource_key":"jobs.two","status":"OPERATION_STATUS_SUCCEEDED"}]
