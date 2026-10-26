@@ -28,18 +28,19 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 		}
 		for i, t := range jr.Lifecycle.Triggers {
 			path := fmt.Sprintf("resources.job_runs.%s.lifecycle.triggers[%d]", name, i)
-			if t.OnBundleDeploy == nil && t.OnFileChange == nil {
+			armed := t.ArmedCount()
+			if armed == 0 {
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
-					Summary:   "lifecycle.triggers entry must set on_bundle_deploy or on_file_change",
+					Summary:   "lifecycle.triggers entry must set on_bundle_deploy, on_file_change, or on_value_change",
 					Locations: b.Config.GetLocations(path),
 				})
 				continue
 			}
-			if t.OnBundleDeploy != nil && t.OnFileChange != nil {
+			if armed > 1 {
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
-					Summary:   "lifecycle.triggers entry must set only one of on_bundle_deploy or on_file_change",
+					Summary:   "lifecycle.triggers entry must set only one of on_bundle_deploy, on_file_change, or on_value_change",
 					Locations: b.Config.GetLocations(path),
 				})
 				continue
