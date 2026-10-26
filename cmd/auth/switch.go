@@ -55,7 +55,7 @@ to see which profile is currently the default.`,
 			if err != nil {
 				return err
 			}
-			// Without IncludeExtras, the picker only returns profile selections.
+			// Without action entries, the picker only returns profile selections.
 			if result != profilePickerProfile {
 				return fmt.Errorf("unexpected picker result: %v", result)
 			}

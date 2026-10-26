@@ -237,9 +237,12 @@ a new profile is created.
 			}
 			currentDefault, _ := databrickscfg.GetDefaultProfile(ctx, env.Get(ctx, "DATABRICKS_CONFIG_FILE"))
 			result, selected, err := pickAuthProfile(ctx, allProfiles, profilePickerOptions{
-				Label:         label,
-				Default:       currentDefault,
-				IncludeExtras: true,
+				Label:   label,
+				Default: currentDefault,
+				// A new profile without a host uses the discovery login,
+				// which device code login does not support.
+				IncludeCreateNew: !useDeviceCode,
+				IncludeEnterHost: true,
 			})
 			if err != nil {
 				return err

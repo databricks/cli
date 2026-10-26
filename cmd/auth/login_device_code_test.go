@@ -5,6 +5,8 @@ import (
 	"context"
 	"errors"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -12,6 +14,7 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
@@ -201,6 +204,47 @@ func TestValidateDeviceCodeHost(t *testing.T) {
 			args := tt.args
 			require.NoError(t, setHost(t.Context(), nil, &args, nil))
 			assert.ErrorIs(t, validateDeviceCodeHost(&args), tt.wantErr)
+		})
+	}
+}
+
+func TestLoginPickerWithDeviceCode(t *testing.T) {
+	tests := []struct {
+		name          string
+		args          []string
+		wantCreateNew bool
+	}{
+		{name: "browser login", wantCreateNew: true},
+		{name: "device code login", args: []string{"--use-device-code"}, wantCreateNew: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			configPath := filepath.Join(t.TempDir(), ".databrickscfg")
+			require.NoError(t, os.WriteFile(configPath, []byte("[workspace]\nhost = https://workspace.test\n"), 0o600))
+			t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+			t.Setenv("DATABRICKS_AUTH_STORAGE", "plaintext")
+			t.Setenv(deviceCodeEnvVar, "true")
+
+			tm := termtest.Run(t, func(ctx context.Context) (struct{}, error) {
+				cmd := newLoginCommand(&auth.AuthArguments{})
+				cmd.Flags().String("profile", "", "")
+				cmd.SetContext(ctx)
+				cmd.SetArgs(tt.args)
+				cmd.SetOut(io.Discard)
+				cmd.SetErr(io.Discard)
+				return struct{}{}, cmd.Execute()
+			})
+			tm.WaitFor(profilePickerEnterHostLabel)
+			screen := tm.Snapshot()
+			assert.Contains(t, screen, "workspace")
+			if tt.wantCreateNew {
+				assert.Contains(t, screen, profilePickerCreateNewLabel)
+			} else {
+				assert.NotContains(t, screen, profilePickerCreateNewLabel)
+			}
+			tm.Type(termtest.KeyCtrlC)
+			_, err := tm.Result()
+			assert.Error(t, err)
 		})
 	}
 }

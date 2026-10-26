@@ -36,10 +36,13 @@ type profilePickerOptions struct {
 	// top of the list and decorated with "[default]".
 	Default string
 
-	// IncludeExtras appends "Create a new profile" and "Enter a host URL
-	// manually" entries after the profile list. Picker action entries are
-	// shown even when the profile list is empty.
-	IncludeExtras bool
+	// IncludeCreateNew appends the "Create a new profile" entry after the
+	// profile list. It is shown even when the profile list is empty.
+	IncludeCreateNew bool
+
+	// IncludeEnterHost appends the "Enter a host URL manually" entry after the
+	// profile list. It is shown even when the profile list is empty.
+	IncludeEnterHost bool
 }
 
 // pickerItem is a single entry rendered by the picker. It can be either a real
@@ -58,8 +61,8 @@ type pickerItem struct {
 }
 
 // buildPickerItems returns the items shown by pickAuthProfile, with the default
-// profile moved to the top and the extras appended (when requested).
-func buildPickerItems(profiles profile.Profiles, defaultName string, includeExtras bool) []pickerItem {
+// profile moved to the top and the requested extras appended.
+func buildPickerItems(profiles profile.Profiles, defaultName string, includeCreateNew, includeEnterHost bool) []pickerItem {
 	defaultIdx := -1
 	if defaultName != "" {
 		for i, p := range profiles {
@@ -89,11 +92,11 @@ func buildPickerItems(profiles profile.Profiles, defaultName string, includeExtr
 		}
 		items = append(items, itemFor(p, false))
 	}
-	if includeExtras {
-		items = append(items,
-			pickerItem{Name: profilePickerCreateNewLabel, IsExtra: true, Extra: profilePickerCreateNew},
-			pickerItem{Name: profilePickerEnterHostLabel, IsExtra: true, Extra: profilePickerEnterHost},
-		)
+	if includeCreateNew {
+		items = append(items, pickerItem{Name: profilePickerCreateNewLabel, IsExtra: true, Extra: profilePickerCreateNew})
+	}
+	if includeEnterHost {
+		items = append(items, pickerItem{Name: profilePickerEnterHostLabel, IsExtra: true, Extra: profilePickerEnterHost})
 	}
 	return items
 }
@@ -102,7 +105,7 @@ func buildPickerItems(profiles profile.Profiles, defaultName string, includeExtr
 // When the result is profilePickerProfile, the second return value is the
 // selected profile name. For the other results it is empty.
 func pickAuthProfile(ctx context.Context, profiles profile.Profiles, opts profilePickerOptions) (profilePickerResult, string, error) {
-	items := buildPickerItems(profiles, opts.Default, opts.IncludeExtras)
+	items := buildPickerItems(profiles, opts.Default, opts.IncludeCreateNew, opts.IncludeEnterHost)
 	if len(items) == 0 {
 		return 0, "", errors.New("no profiles configured. Run 'databricks auth login' to create a profile")
 	}

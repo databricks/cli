@@ -15,12 +15,13 @@ func TestBuildPickerItems(t *testing.T) {
 	}
 
 	cases := []struct {
-		name          string
-		defaultName   string
-		includeExtras bool
-		wantNames     []string
-		wantDefault   string
-		wantExtras    []profilePickerResult
+		name             string
+		defaultName      string
+		includeCreateNew bool
+		includeEnterHost bool
+		wantNames        []string
+		wantDefault      string
+		wantExtras       []profilePickerResult
 	}{
 		{
 			name:        "no default no extras",
@@ -34,18 +35,32 @@ func TestBuildPickerItems(t *testing.T) {
 			wantDefault: "bravo",
 		},
 		{
-			name:          "extras appended after profiles",
-			includeExtras: true,
-			wantNames:     []string{"alpha", "bravo", "charlie", profilePickerCreateNewLabel, profilePickerEnterHostLabel},
-			wantExtras:    []profilePickerResult{profilePickerCreateNew, profilePickerEnterHost},
+			name:             "extras appended after profiles",
+			includeCreateNew: true,
+			includeEnterHost: true,
+			wantNames:        []string{"alpha", "bravo", "charlie", profilePickerCreateNewLabel, profilePickerEnterHostLabel},
+			wantExtras:       []profilePickerResult{profilePickerCreateNew, profilePickerEnterHost},
 		},
 		{
-			name:          "default first, then extras at the bottom",
-			defaultName:   "charlie",
-			includeExtras: true,
-			wantNames:     []string{"charlie", "alpha", "bravo", profilePickerCreateNewLabel, profilePickerEnterHostLabel},
-			wantDefault:   "charlie",
-			wantExtras:    []profilePickerResult{profilePickerCreateNew, profilePickerEnterHost},
+			name:             "default first, then extras at the bottom",
+			defaultName:      "charlie",
+			includeCreateNew: true,
+			includeEnterHost: true,
+			wantNames:        []string{"charlie", "alpha", "bravo", profilePickerCreateNewLabel, profilePickerEnterHostLabel},
+			wantDefault:      "charlie",
+			wantExtras:       []profilePickerResult{profilePickerCreateNew, profilePickerEnterHost},
+		},
+		{
+			name:             "only enter host",
+			includeEnterHost: true,
+			wantNames:        []string{"alpha", "bravo", "charlie", profilePickerEnterHostLabel},
+			wantExtras:       []profilePickerResult{profilePickerEnterHost},
+		},
+		{
+			name:             "only create new",
+			includeCreateNew: true,
+			wantNames:        []string{"alpha", "bravo", "charlie", profilePickerCreateNewLabel},
+			wantExtras:       []profilePickerResult{profilePickerCreateNew},
 		},
 		{
 			name:        "default not in profiles is ignored",
@@ -56,13 +71,13 @@ func TestBuildPickerItems(t *testing.T) {
 	}
 
 	t.Run("empty profiles with extras shows only extras", func(t *testing.T) {
-		items := buildPickerItems(profile.Profiles{}, "", true)
+		items := buildPickerItems(profile.Profiles{}, "", true, true)
 		assert.Equal(t, []string{profilePickerCreateNewLabel, profilePickerEnterHostLabel}, namesOf(items))
 	})
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			items := buildPickerItems(profiles, tc.defaultName, tc.includeExtras)
+			items := buildPickerItems(profiles, tc.defaultName, tc.includeCreateNew, tc.includeEnterHost)
 
 			gotDefault := ""
 			var gotExtras []profilePickerResult

@@ -398,9 +398,10 @@ func resolveNoArgsToken(ctx context.Context, profiler profile.Profiler, authArgs
 	// Interactive: show profile picker.
 	currentDefault, _ := databrickscfg.GetDefaultProfile(ctx, env.Get(ctx, "DATABRICKS_CONFIG_FILE"))
 	result, selectedName, err := pickAuthProfile(ctx, allProfiles, profilePickerOptions{
-		Label:         "Select a profile",
-		Default:       currentDefault,
-		IncludeExtras: true,
+		Label:            "Select a profile",
+		Default:          currentDefault,
+		IncludeCreateNew: true,
+		IncludeEnterHost: true,
 	})
 	if err != nil {
 		return "", nil, err
