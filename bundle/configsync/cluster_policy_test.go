@@ -596,6 +596,63 @@ func TestFilterClusterPolicyValuesDropsPolicyOnlyObjectAtChangeRoot(t *testing.T
 	assert.Empty(t, changes)
 }
 
+func TestFilterClusterPolicyValuesRequiresUniqueTaskIdentityOnlyWithPolicy(t *testing.T) {
+	for _, tt := range []struct{ name, duplicateIn, policyID string }{
+		{"policy with duplicate authored tasks", "config", "policy"},
+		{"policy with duplicate remote tasks", "remote", "policy"},
+		{"no policy with duplicate authored tasks", "config", ""},
+		{"no policy with duplicate remote tasks", "remote", ""},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			task := map[string]any{
+				"task_key": "main", "new_cluster": map[string]any{
+					"policy_id": tt.policyID, "spark_env_vars": map[string]any{"ENV": "dev"},
+				},
+			}
+			configTasks, remoteTasks := []any{task}, []any{task}
+			if tt.duplicateIn == "config" {
+				configTasks = append(configTasks, task)
+			} else {
+				remoteTasks = append(remoteTasks, task)
+			}
+			key := "resources.jobs.test"
+			b := policyTestBundle(t, key, map[string]any{"tasks": configTasks})
+			entry := &deployplan.PlanEntry{
+				RemoteState: typedPolicyResource(t, "task", map[string]any{"tasks": remoteTasks}),
+				Changes:     deployplan.Changes{"tasks": {Action: deployplan.Update, Remote: remoteTasks}},
+			}
+			changes, skipped, err := filterPolicyTestChanges(t, b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{key: entry}})
+			if tt.policyID == "" {
+				require.NoError(t, err)
+				require.Contains(t, changes[key], "tasks")
+				assert.Equal(t, remoteTasks, changes[key]["tasks"].Value)
+				assert.Empty(t, skipped)
+				return
+			}
+			require.ErrorContains(t, err, "ambiguous")
+			assert.Nil(t, changes)
+			assert.Nil(t, skipped)
+		})
+	}
+}
+
+func TestFilterClusterPolicyValuesRejectsInvalidAuthoredPath(t *testing.T) {
+	key := "resources.clusters.test"
+	b := policyTestBundle(t, key, map[string]any{"policy_id": "policy"})
+	client := mocks.NewMockWorkspaceClient(t)
+	b.SetWorkpaceClient(client.WorkspaceClient)
+	entry := &deployplan.PlanEntry{
+		RemoteState: &dresources.ClusterRemote{PolicyId: "policy"},
+		Changes: deployplan.Changes{
+			"unrecognized_field": {Action: deployplan.Update, Remote: "value"},
+		},
+	}
+	changes, skipped, err := filterPolicyTestChanges(t, b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{key: entry}})
+	require.ErrorContains(t, err, "reading authored field unrecognized_field")
+	assert.Nil(t, changes)
+	assert.Nil(t, skipped)
+}
+
 func policyClusterLocation(location string, cluster map[string]any) (resourceKey, pathPrefix string, root map[string]any) {
 	switch location {
 	case "task":

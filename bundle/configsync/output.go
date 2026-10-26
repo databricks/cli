@@ -25,10 +25,8 @@ type SyncStatus string
 
 const (
 	StatusSuccess SyncStatus = "success"
-	// StatusIncomplete means SkippedChanges lists policy-dependent changes that were not synced.
-	StatusIncomplete SyncStatus = "incomplete"
-	// StatusSkipped: nothing to sync against (state missing, or no selector
-	// matched a deployed resource). Not an error for the caller.
+	// StatusSkipped means changes were skipped or there was no deployed state
+	// to sync against. Files and Changes may still contain safe edits.
 	StatusSkipped SyncStatus = "skipped"
 	StatusFailed  SyncStatus = "failed"
 )
@@ -61,7 +59,7 @@ type DiffOutput struct {
 func WriteResult(out io.Writer, jsonOutput bool, stats *Stats, files []FileChange, changes Changes, skipped []SkippedChange, err error) error {
 	status := StatusSuccess
 	if len(skipped) > 0 {
-		status = StatusIncomplete
+		status = StatusSkipped
 	}
 	// Read before the fallback below so unclassified errors carry no code.
 	errorCode := stats.ErrorCategory

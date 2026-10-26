@@ -158,6 +158,11 @@ func (f *clusterPolicyFilter) filter(path *structpath.PathNode, value any) (any,
 // prune reports keep=false when the whole value comes from the cluster policy.
 func (f *clusterPolicyFilter) prune(path *structpath.PathNode, value any, isChangeRoot bool) (any, bool, error) {
 	if clusterPath, ok := f.clusterPath(path); ok {
+		remotePolicyID, _ := structaccess.Get(f.remote, structpath.NewStringKey(clusterPath, "policy_id"))
+		policyID, _ := remotePolicyID.(string)
+		if policyID == "" {
+			return value, true, nil
+		}
 		fieldPath := path
 		if f.sliceKeys != nil {
 			// Whole-object changes use remote indices; authored tasks may have another order.
@@ -177,7 +182,7 @@ func (f *clusterPolicyFilter) prune(path *structpath.PathNode, value any, isChan
 		}
 		// Keep required fields, but still filter their optional children.
 		if isChangeRoot || !isRequiredField(f.remote, fieldPath) {
-			matches, err := f.isPolicyOnlySubtree(clusterPath, fieldPath, value)
+			matches, err := f.isPolicyOnlySubtree(clusterPath, fieldPath, value, policyID)
 			if err != nil {
 				return nil, false, err
 			}
@@ -255,11 +260,15 @@ func (f *clusterPolicyFilter) canSkipField(path *structpath.PathNode) bool {
 
 // isPolicyOnlySubtree requires every leaf to be absent from authored config
 // and equal to a fixed value or an opted-in default in the remote cluster's policy.
-func (f *clusterPolicyFilter) isPolicyOnlySubtree(clusterPath, path *structpath.PathNode, value any) (bool, error) {
+func (f *clusterPolicyFilter) isPolicyOnlySubtree(clusterPath, path *structpath.PathNode, value any, policyID string) (bool, error) {
 	hasLeaves := false
 	for leafPath := range normalizedLeaves(path, value) {
 		hasLeaves = true
-		if authored, _ := structaccess.Get(f.config, leafPath); authored != nil {
+		authored, err := f.authoredValue(leafPath)
+		if err != nil {
+			return false, err
+		}
+		if authored != nil {
 			return false, nil
 		}
 	}
@@ -267,17 +276,15 @@ func (f *clusterPolicyFilter) isPolicyOnlySubtree(clusterPath, path *structpath.
 		return false, nil
 	}
 
-	remotePolicyID, _ := structaccess.Get(f.remote, structpath.NewStringKey(clusterPath, "policy_id"))
-	policyID, _ := remotePolicyID.(string)
-	if policyID == "" {
-		return false, nil
-	}
 	definition, err := f.lookupPolicy(policyID)
 	if err != nil {
 		return false, err
 	}
 	// Remote cluster specs omit this input-only flag; use the authored setting.
-	applyDefaults, _ := structaccess.Get(f.config, structpath.NewStringKey(clusterPath, "apply_policy_default_values"))
+	applyDefaults, err := f.authoredValue(structpath.NewStringKey(clusterPath, "apply_policy_default_values"))
+	if err != nil {
+		return false, err
+	}
 	for leafPath, leaf := range normalizedLeaves(path, value) {
 		expected := policyValueForAPIAttribute(definition, policyAttribute(leafPath.SkipPrefix(clusterPath.Len())), applyDefaults == true)
 		if !expected.IsValid() || expected.AsAny() == nil || !reflect.DeepEqual(expected.AsAny(), leaf) {
@@ -285,6 +292,23 @@ func (f *clusterPolicyFilter) isPolicyOnlySubtree(clusterPath, path *structpath.
 		}
 	}
 	return true, nil
+}
+
+// authoredValue validates selectors before looking up fields so duplicate task
+// identities cannot make an authored value appear absent.
+func (f *clusterPolicyFilter) authoredValue(path *structpath.PathNode) (any, error) {
+	var value any
+	keyed, err := structdiff.KeyedPath(f.config, path, f.sliceKeys)
+	if err == nil {
+		value, err = structaccess.Get(f.config, keyed)
+	}
+	if _, missing := errors.AsType[*structaccess.NotFoundError](err); missing {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("reading authored field %s: %w", path, err)
+	}
+	return value, nil
 }
 
 // normalizedLeaves preserves the normalized change's scalars, including nulls.

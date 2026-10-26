@@ -39,7 +39,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle config-remote-sync -t dev --save -o json
 {
-  "status": "incomplete",
+  "status": "skipped",
   "changes": {
     "resources.jobs.policy_sync": {
       "description": {
@@ -89,7 +89,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 === Only policy-dependent fields remain on the next sync
 >>> [CLI] bundle config-remote-sync -t dev -o json
 {
-  "status": "incomplete",
+  "status": "skipped",
   "changes": {},
   "skippedChanges": [
     {

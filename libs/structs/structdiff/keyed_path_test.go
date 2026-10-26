@@ -58,3 +58,23 @@ func TestKeyedPathRejectsInvalidKeyFunctionsAndIndices(t *testing.T) {
 		})
 	}
 }
+
+func TestKeyedPathRejectsEmptyOrAmbiguousIdentities(t *testing.T) {
+	keys := map[string]structdiff.KeyFunc{
+		"tasks": func(task jobs.Task) (string, string) { return "task_key", task.TaskKey },
+	}
+	for _, tt := range []struct {
+		name, path string
+		tasks      []jobs.Task
+		want       string
+	}{
+		{"duplicate index", "tasks[1].new_cluster", []jobs.Task{{TaskKey: "main"}, {TaskKey: "main"}}, "ambiguous identity"},
+		{"duplicate selector", "tasks[task_key='main'].new_cluster", []jobs.Task{{TaskKey: "main"}, {TaskKey: "main"}}, "ambiguous identity"},
+		{"empty identity", "tasks[0].new_cluster", []jobs.Task{{}}, "empty identity"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := structdiff.KeyedPath(&jobs.JobSettings{Tasks: tt.tasks}, structpath.MustParsePath(tt.path), keys)
+			require.ErrorContains(t, err, tt.want)
+		})
+	}
+}
