@@ -306,11 +306,10 @@ a new profile is created.
 		}
 
 		// If no host is available from any source, use the discovery flow
-		// via login.databricks.com.
-		if shouldUseDiscovery(authArguments.Host, args, existingProfile) {
-			if useDeviceCode {
-				return errDeviceCodeNeedsHost
-			}
+		// via login.databricks.com. Discovery opens a browser on this machine,
+		// and device code login is meant for machines without one, so it skips
+		// discovery and setHost resolves the host instead.
+		if !useDeviceCode && shouldUseDiscovery(authArguments.Host, args, existingProfile) {
 			if err := validateDiscoveryFlagCompatibility(cmd); err != nil {
 				return err
 			}

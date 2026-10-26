@@ -22,10 +22,7 @@ var deviceCodeIncompatibleFlags = []string{
 	"skip-workspace",
 }
 
-var (
-	errDeviceCodeNeedsHost     = errors.New("--use-device-code requires a workspace host. Pass it as an argument or with --host")
-	errDeviceCodeWorkspaceOnly = errors.New("--use-device-code is only supported for workspace hosts")
-)
+var errDeviceCodeWorkspaceOnly = errors.New("--use-device-code is only supported for workspace hosts")
 
 // validateDeviceCodeHost returns an error if the host resolved by setHost is
 // an account or unified host. A workspace without device code login enabled

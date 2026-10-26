@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
@@ -203,4 +204,33 @@ func TestValidateDeviceCodeHost(t *testing.T) {
 			assert.ErrorIs(t, validateDeviceCodeHost(&args), tt.wantErr)
 		})
 	}
+}
+
+func TestLoginDeviceCodeCreateNewProfilePromptsForHost(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	t.Setenv("DATABRICKS_CONFIG_FILE", writeTempConfig(t, "[myprof]\nhost = https://workspace.test\n"))
+	t.Setenv("DATABRICKS_AUTH_STORAGE", "plaintext")
+	t.Setenv(deviceCodeEnvVar, "true")
+
+	tm := termtest.Run(t, func(ctx context.Context) (struct{}, error) {
+		cmd := newLoginCommand(&auth.AuthArguments{})
+		cmd.Flags().String("profile", "", "")
+		cmd.SetContext(ctx)
+		cmd.SetArgs([]string{"--use-device-code"})
+		cmd.SetOut(io.Discard)
+		cmd.SetErr(io.Discard)
+		return struct{}{}, cmd.Execute()
+	})
+	tm.WaitFor(profilePickerCreateNewLabel)
+	tm.Type("Create" + termtest.KeyEnter)
+	tm.WaitFor("Databricks profile name")
+	tm.Type("newprof" + termtest.KeyEnter)
+	// Without a host, device code login asks for one instead of starting the
+	// discovery login.
+	tm.WaitFor("Databricks host")
+	tm.Type(termtest.KeyCtrlC)
+	_, err := tm.Result()
+	assert.EqualError(t, err, "^C")
 }
