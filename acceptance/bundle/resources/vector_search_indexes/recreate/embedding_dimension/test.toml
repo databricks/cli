@@ -1,0 +1,3 @@
+# The initial deploy waits ~20 min for the endpoint and index on cloud; DMS does not affect
+# recreation, so a DMS variant would double the cost without adding coverage.
+EnvMatrix.DMS = [""]
