@@ -1,0 +1,1 @@
+* Add the `workspace.sync_mode` setting with the values `overwrite` (default), `in-place`, and `immutable`. It replaces `presets.source_linked_deployment` (use `in-place`) and `experimental.immutable_folder` (use `immutable`), which are now deprecated and emit a warning.

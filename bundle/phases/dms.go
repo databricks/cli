@@ -228,7 +228,7 @@ func deploymentMetadata(b *bundle.Bundle) (dms.Metadata, error) {
 	}
 	// In a source-linked deployment files are not copied, so resources read them
 	// from the sync root instead of file_path (see bundle/deploy/metadata.Compute).
-	if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
+	if b.IsSourceLinkedDeployment() {
 		ws.FilePath = b.SyncRootPath
 		ws.SourceLinked = true
 	}
