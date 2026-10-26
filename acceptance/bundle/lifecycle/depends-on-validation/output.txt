@@ -1,14 +1,18 @@
+Error: invalid lifecycle.depends_on: no such resource: missing_for_run
+  at resources.job_runs.a_run.lifecycle.depends_on[0].resource
+  in databricks.yml:25:23
+
 Error: invalid lifecycle.depends_on: resource "a_job" cannot depend on itself
   at resources.jobs.a_job.lifecycle.depends_on[0].resource
-  in databricks.yml:10:13
+  in databricks.yml:10:23
 
 Error: invalid lifecycle.depends_on: no such resource: missing
   at resources.jobs.a_job.lifecycle.depends_on[1].resource
-  in databricks.yml:11:13
+  in databricks.yml:11:23
 
 Error: invalid lifecycle.depends_on: no such resource: a.b.c
   at resources.jobs.b_job.lifecycle.depends_on[0].resource
-  in databricks.yml:16:13
+  in databricks.yml:16:23
 
 Name: test-bundle
 Target: default
@@ -16,4 +20,4 @@ Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Found 3 errors
+Found 4 errors

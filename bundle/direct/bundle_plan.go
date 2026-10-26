@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
@@ -1285,7 +1286,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			}
 		}
 
-		lifecycleDeps, err := LifecycleDependsOn(configRoot, node)
+		lifecycleDeps, err := LifecycleDependsOn(configRoot, inputConfig)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", prefix, err)
 		}
@@ -1450,35 +1451,20 @@ func (b *DeploymentBundle) getAdapterForKey(resourceKey string) (*dresources.Ada
 
 const lifecycleDependsOnLabel = "depends_on"
 
-// LifecycleDependsOn returns the edges declared in lifecycle.depends_on of the given node.
-func LifecycleDependsOn(configRoot *config.Root, node string) ([]deployplan.DependsOnEntry, error) {
-	nodePath, err := dyn.NewPathFromString(node)
-	if err != nil {
-		return nil, err
-	}
-	// permissions and grants are separate nodes without lifecycle.
-	if len(nodePath) != 3 {
-		return nil, nil
-	}
-	entries, err := dyn.GetByPath(configRoot.Value(), nodePath.Append(dyn.Key("lifecycle"), dyn.Key("depends_on")))
-	if dyn.IsNoSuchKeyError(err) {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	seq, isSeq := entries.AsSequence()
-	if !isSeq {
+// LifecycleDependsOn returns the edges declared in lifecycle.depends_on of a resource,
+// given its config as returned by [config.Root.GetResourceConfig].
+func LifecycleDependsOn(configRoot *config.Root, inputConfig any) ([]deployplan.DependsOnEntry, error) {
+	// Not every node has a lifecycle, e.g. permissions and grants.
+	resource, ok := inputConfig.(interface {
+		GetLifecycle() resources.LifecycleConfig
+	})
+	if !ok {
 		return nil, nil
 	}
 
 	var result []deployplan.DependsOnEntry
-	for _, item := range seq {
-		ref, isStr := item.Get("resource").AsString()
-		if !isStr {
-			continue
-		}
-		res, key, err := configRoot.Resources.ResolveKey(ref)
+	for _, dep := range resource.GetLifecycle().GetDependsOn() {
+		res, key, err := configRoot.Resources.ResolveKey(dep.Resource)
 		if err != nil {
 			return nil, fmt.Errorf("lifecycle.depends_on: %w", err)
 		}

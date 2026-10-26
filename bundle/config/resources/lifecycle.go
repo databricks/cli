@@ -3,6 +3,7 @@ package resources
 // LifecycleConfig is implemented by Lifecycle and LifecycleWithStarted.
 type LifecycleConfig interface {
 	HasPreventDestroy() bool
+	GetDependsOn() []DependsOn
 }
 
 // Lifecycle contains base lifecycle settings supported by all resources.
@@ -29,6 +30,11 @@ type DependsOn struct {
 // HasPreventDestroy returns true if prevent_destroy is set.
 func (l Lifecycle) HasPreventDestroy() bool {
 	return l.PreventDestroy
+}
+
+// GetDependsOn returns the lifecycle.depends_on entries.
+func (l Lifecycle) GetDependsOn() []DependsOn {
+	return l.DependsOn
 }
 
 // LifecycleWithStarted contains lifecycle settings for resources that support lifecycle.started.

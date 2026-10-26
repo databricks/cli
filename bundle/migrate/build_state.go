@@ -153,7 +153,7 @@ func BuildStateFromTF(
 				}
 			}
 		}
-		lifecycleDeps, err := direct.LifecycleDependsOn(configRoot, node)
+		lifecycleDeps, err := direct.LifecycleDependsOn(configRoot, inputConfig)
 		if err != nil {
 			return warningsSeen, fmt.Errorf("%s: %w", node, err)
 		}
