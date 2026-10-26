@@ -1,0 +1,93 @@
+# Clearing a Genie space description sometimes does not stick on cloud: right after an update that
+# sends description="", a GET can still return the old value (seen as a flaky drift in
+# bundle/invariant/no_drift with genie_space.yml.tmpl). This test replays the same requests the
+# direct engine sends, using plain CLI commands, and polls GET afterwards. The poll pattern tells
+# a stale read (old value, then cleared for good) from a lost update (cleared, then the old value
+# comes back), e.g. from the backend migrating serialized_space v1 -> v2 in the background.
+#
+# Expected output is CONVERGED for every round; anything else prints the timeline.
+
+me=$($CLI current-user me -o json | jq -r .userName)
+parent_path="/Workspace/Users/$me/genie-clear-description-$UNIQUE_NAME"
+$CLI workspace mkdirs "$parent_path"
+
+space_ids=()
+cleanup() {
+    for id in "${space_ids[@]}"; do
+        $CLI genie trash-space "$id" > /dev/null
+    done
+    $CLI workspace delete --recursive "$parent_path"
+}
+trap cleanup EXIT
+
+if [ -n "${CLOUD_ENV:-}" ]; then
+    delays="0 3 6 10"
+    polls=15
+    poll_interval=2
+else
+    delays="0 0 0 0"
+    polls=3
+    poll_interval=0
+fi
+
+round=0
+for delay in $delays; do
+    round=$((round + 1))
+    timeline="LOG.timeline.$round"
+
+    # Same create body as the direct engine (ResourceGenieSpace.DoCreate).
+    space_id=$($CLI genie create-space -o json --json "{
+        \"warehouse_id\": \"$TEST_DEFAULT_WAREHOUSE_ID\",
+        \"title\": \"test-genie-space-$UNIQUE_NAME-$round\",
+        \"description\": \"This is a test genie space\",
+        \"parent_path\": \"$parent_path\",
+        \"serialized_space\": \"{\\\"version\\\":1}\"
+    }" | jq -r .space_id)
+    space_ids+=("$space_id")
+    start=$SECONDS
+
+    sleep "$delay"
+
+    # Same update body as ResourceGenieSpace.DoUpdate after the description is removed from config:
+    # every field is sent, description is force-sent as empty, etag is omitted.
+    update_desc=$($CLI genie update-space "$space_id" -o json --json "{
+        \"description\": \"\",
+        \"title\": \"test-genie-space-$UNIQUE_NAME-$round\",
+        \"warehouse_id\": \"$TEST_DEFAULT_WAREHOUSE_ID\",
+        \"parent_path\": \"$parent_path\",
+        \"serialized_space\": \"{\\\"version\\\":1}\"
+    }" | jq -r '.description // ""')
+    echo "t=$((SECONDS - start)) update-response desc='$update_desc'" > "$timeline"
+
+    # One letter per poll: C = description cleared, O = old description returned.
+    pattern=""
+    for i in $(seq "$polls"); do
+        $CLI genie get-space "$space_id" --include-serialized-space -o json > LOG.get
+        desc=$(jq -r '.description // ""' LOG.get)
+        version=$(jq -r '.serialized_space // "{}" | fromjson | .version' LOG.get)
+        etag=$(jq -r '.etag // ""' LOG.get)
+        echo "t=$((SECONDS - start)) get desc='$desc' serialized_space.version=$version etag=$etag" >> "$timeline"
+        if [ -z "$desc" ]; then
+            pattern="${pattern}C"
+        else
+            pattern="${pattern}O"
+        fi
+        sleep "$poll_interval"
+    done
+
+    case "$pattern" in
+        *C*O*) result="LOST_UPDATE" ;;
+        *C*) [[ "$pattern" == C* ]] && result="CONVERGED" || result="STALE_READ" ;;
+        *) result="NOT_APPLIED" ;;
+    esac
+    if [ -n "$update_desc" ]; then
+        result="$result (update response still had the old description)"
+    fi
+
+    echo "round $round: $result"
+    if [ "$result" != "CONVERGED" ]; then
+        echo "  delay before update: ${delay}s, polls: $pattern"
+        sed 's/^/  /' "$timeline"
+    fi
+done
+rm -f LOG.get
