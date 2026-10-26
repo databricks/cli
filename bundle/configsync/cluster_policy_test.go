@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/jsonloader"
 	"github.com/databricks/cli/libs/structs/structaccess"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/assert"
@@ -283,8 +284,9 @@ func TestExtractChangesFiltersPolicyAppliedValues(t *testing.T) {
 						Return(&compute.Policy{Definition: tt.definition}, nil).Once()
 				}
 
-				changes, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{key: entry}})
+				changes, skipped, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{key: entry}})
 				require.NoError(t, err)
+				assert.Empty(t, skipped)
 				if tt.want == nil {
 					assert.Empty(t, changes)
 				} else {
@@ -298,21 +300,91 @@ func TestExtractChangesFiltersPolicyAppliedValues(t *testing.T) {
 }
 
 func TestExtractChangesFailsOnPolicyLookupError(t *testing.T) {
-	b := policyTestBundle(t, "resources.clusters.test", map[string]any{"policy_id": "policy"})
+	for _, tt := range []struct {
+		name string
+		err  error
+	}{
+		{"permission denied", apierr.ErrPermissionDenied},
+		{"service unavailable", errors.New("policy service unavailable")},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			lookupError := tt.err
+			b := policyTestBundle(t, "resources.clusters.test", map[string]any{"policy_id": "policy"})
+			client := mocks.NewMockWorkspaceClient(t)
+			b.SetWorkpaceClient(client.WorkspaceClient)
+			client.GetMockClusterPoliciesAPI().EXPECT().GetByPolicyId(mock.Anything, "policy").Return(nil, lookupError).Once()
+			entry := &deployplan.PlanEntry{
+				RemoteState: &dresources.ClusterRemote{PolicyId: "policy"},
+				Changes: deployplan.Changes{
+					"spark_env_vars": {Action: deployplan.Update, Remote: map[string]any{"ENV": "dev"}},
+				},
+			}
+			changes, skipped, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
+			require.ErrorIs(t, err, lookupError)
+			assert.Empty(t, skipped)
+			assert.ErrorContains(t, err, "no configuration was saved")
+			assert.Nil(t, changes)
+		})
+	}
+}
+
+func TestExtractChangesDoesNotHidePolicyErrorsAfterStructuralSkip(t *testing.T) {
+	key := "resources.jobs.test"
+	b := policyTestBundle(t, key, map[string]any{"job_clusters": []any{
+		map[string]any{"job_cluster_key": "a", "new_cluster": map[string]any{"policy_id": "missing"}},
+		map[string]any{"job_cluster_key": "b", "new_cluster": map[string]any{"policy_id": "denied"}},
+	}})
 	client := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(client.WorkspaceClient)
-	lookupError := errors.New("policy access denied")
-	client.GetMockClusterPoliciesAPI().EXPECT().GetByPolicyId(mock.Anything, "policy").Return(nil, lookupError).Once()
+	client.GetMockClusterPoliciesAPI().EXPECT().GetByPolicyId(mock.Anything, "missing").Return(nil, apierr.ErrNotFound).Once()
+	client.GetMockClusterPoliciesAPI().EXPECT().GetByPolicyId(mock.Anything, "denied").Return(nil, apierr.ErrPermissionDenied).Once()
+	remote := &dresources.JobRemote{}
+	require.NoError(t, json.Unmarshal([]byte(`{"job_clusters":[
+		{"job_cluster_key":"a","new_cluster":{"policy_id":"missing"}},
+		{"job_cluster_key":"b","new_cluster":{"policy_id":"denied"}}
+	]}`), remote))
 	entry := &deployplan.PlanEntry{
-		RemoteState: &dresources.ClusterRemote{PolicyId: "policy"},
+		RemoteState: remote,
 		Changes: deployplan.Changes{
-			"spark_env_vars": {Action: deployplan.Update, Remote: map[string]any{"ENV": "dev"}},
+			"job_clusters[job_cluster_key='a']":                            {Action: deployplan.Update, Remote: map[string]any{"new_cluster": map[string]any{"spark_env_vars": map[string]any{"ENV": "dev"}}}},
+			"job_clusters[job_cluster_key='b'].new_cluster.spark_env_vars": {Action: deployplan.Update, Remote: map[string]string{"ENV": "dev"}},
 		},
 	}
-	changes, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
-	assert.ErrorIs(t, err, lookupError)
-	assert.ErrorContains(t, err, "no configuration was saved")
+	changes, skipped, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{key: entry}})
+	assert.ErrorIs(t, err, apierr.ErrPermissionDenied)
 	assert.Nil(t, changes)
+	assert.Nil(t, skipped)
+}
+
+func TestExtractChangesLooksUpMissingPolicyOnce(t *testing.T) {
+	b := policyTestBundle(t, "resources.clusters.test", map[string]any{
+		"policy_id": "policy", "cluster_name": "before",
+	})
+	client := mocks.NewMockWorkspaceClient(t)
+	b.SetWorkpaceClient(client.WorkspaceClient)
+	client.GetMockClusterPoliciesAPI().EXPECT().GetByPolicyId(mock.Anything, "policy").
+		Return(nil, apierr.ErrResourceDoesNotExist).Once()
+	entry := &deployplan.PlanEntry{
+		RemoteState: &dresources.ClusterRemote{
+			PolicyId: "policy", ClusterName: "after",
+			CustomTags:   map[string]string{"environment": "dev"},
+			SparkEnvVars: map[string]string{"ENVIRONMENT": "dev"},
+		},
+		Changes: deployplan.Changes{
+			"cluster_name":   {Action: deployplan.Update, Old: "before", New: "before", Remote: "after"},
+			"custom_tags":    {Action: deployplan.Skip, Reason: deployplan.ReasonRemoteAddition, Remote: map[string]string{"environment": "dev"}},
+			"spark_env_vars": {Action: deployplan.Skip, Reason: deployplan.ReasonRemoteAddition, Remote: map[string]string{"ENVIRONMENT": "dev"}},
+		},
+	}
+	changes, skipped, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
+	require.NoError(t, err)
+	assert.Equal(t, configsync.Changes{"resources.clusters.test": {
+		"cluster_name": {Operation: configsync.OperationReplace, Value: "after"},
+	}}, changes)
+	assert.Equal(t, []configsync.SkippedChange{
+		{ResourceKey: "resources.clusters.test", Path: "custom_tags", Reason: configsync.SkipReasonClusterPolicyNotFound, PolicyID: "policy"},
+		{ResourceKey: "resources.clusters.test", Path: "spark_env_vars", Reason: configsync.SkipReasonClusterPolicyNotFound, PolicyID: "policy"},
+	}, skipped)
 }
 
 func TestExtractChangesMatchesClustersByKeyAndRemotePolicy(t *testing.T) {
@@ -347,8 +419,9 @@ func TestExtractChangesMatchesClustersByKeyAndRemotePolicy(t *testing.T) {
 	client.GetMockClusterPoliciesAPI().EXPECT().GetByPolicyId(mock.Anything, "new-policy").
 		Return(&compute.Policy{Definition: `{"spark_env_vars.ENV":{"type":"fixed","value":"dev"}}`}, nil).Once()
 
-	changes, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.jobs.test": entry}})
+	changes, skipped, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.jobs.test": entry}})
 	require.NoError(t, err)
+	assert.Empty(t, skipped)
 	require.Contains(t, changes, "resources.jobs.test")
 	require.Contains(t, changes["resources.jobs.test"], "job_clusters")
 	assert.Equal(t, []any{
@@ -381,8 +454,9 @@ func TestExtractChangesDropsPolicyValueAtDottedLeaf(t *testing.T) {
 			Action: deployplan.Skip, Reason: deployplan.ReasonRemoteAddition, Remote: "7",
 		}},
 	}
-	changes, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{key: entry}})
+	changes, skipped, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{key: entry}})
 	require.NoError(t, err)
+	assert.Empty(t, skipped)
 	assert.Empty(t, changes)
 }
 
@@ -412,8 +486,9 @@ func TestExtractChangesKeepsCompleteLogConfigurationWhenStorageChanges(t *testin
 	client.GetMockClusterPoliciesAPI().EXPECT().GetByPolicyId(mock.Anything, "policy").
 		Return(&compute.Policy{Definition: `{"cluster_log_conf.type":{"type":"fixed","value":"S3"},"cluster_log_conf.path":{"type":"fixed","value":"s3://logs"},"cluster_log_conf.region":{"type":"unlimited","defaultValue":"us-west-2"}}`}, nil).Once()
 
-	changes, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{key: entry}})
+	changes, skipped, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{key: entry}})
 	require.NoError(t, err)
+	assert.Empty(t, skipped)
 	require.Contains(t, changes, key)
 	require.Contains(t, changes[key], path)
 	assert.Equal(t, newDestination, changes[key][path].Value)
@@ -437,8 +512,9 @@ func TestExtractChangesUsesEffectivePolicyFamilyDefinition(t *testing.T) {
 			"custom_tags": {Action: deployplan.Skip, Reason: deployplan.ReasonRemoteAddition, Remote: remoteTags},
 		},
 	}
-	changes, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
+	changes, skipped, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
 	require.NoError(t, err)
+	assert.Empty(t, skipped)
 	require.Contains(t, changes, "resources.clusters.test")
 	require.Contains(t, changes["resources.clusters.test"], "custom_tags")
 	assert.Equal(t, map[string]any{"Owner": "user"}, changes["resources.clusters.test"]["custom_tags"].Value)
@@ -457,8 +533,9 @@ func TestExtractChangesDropsPolicyAdditionBesideAuthoredField(t *testing.T) {
 		RemoteState: &dresources.ClusterRemote{PolicyId: "policy", Autoscale: remote},
 		Changes:     deployplan.Changes{"autoscale": {Action: deployplan.Update, New: &compute.AutoScale{MaxWorkers: 4}, Remote: remote}},
 	}
-	changes, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
+	changes, skipped, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
 	require.NoError(t, err)
+	assert.Empty(t, skipped)
 	require.Contains(t, changes, "resources.clusters.test")
 	require.Contains(t, changes["resources.clusters.test"], "autoscale")
 	assert.Equal(t, map[string]any{"max_workers": int64(4)}, changes["resources.clusters.test"]["autoscale"].Value)
@@ -476,8 +553,9 @@ func TestExtractChangesKeepsPolicyValuesInsidePositionalArray(t *testing.T) {
 	// Array positions must be preserved regardless of whether the value matches a policy.
 	client := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(client.WorkspaceClient)
-	changes, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
+	changes, skipped, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
 	require.NoError(t, err)
+	assert.Empty(t, skipped)
 	require.Contains(t, changes, "resources.clusters.test")
 	require.Contains(t, changes["resources.clusters.test"], "init_scripts[0].volumes")
 	assert.Equal(t, map[string]any{"destination": "/Volumes/c/s/v/init.sh"}, changes["resources.clusters.test"]["init_scripts[0].volumes"].Value)
@@ -498,8 +576,9 @@ func TestExtractChangesDropsPolicyOnlyObjectAtChangeRoot(t *testing.T) {
 		RemoteState: remote,
 		Changes:     deployplan.Changes{"workload_type.clients": {Action: deployplan.Update, Remote: clients}},
 	}
-	changes, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
+	changes, skipped, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
 	require.NoError(t, err)
+	assert.Empty(t, skipped)
 	assert.Empty(t, changes)
 }
 

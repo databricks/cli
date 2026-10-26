@@ -25,27 +25,44 @@ type SyncStatus string
 
 const (
 	StatusSuccess SyncStatus = "success"
+	// StatusIncomplete means SkippedChanges lists policy-dependent changes that were not synced.
+	StatusIncomplete SyncStatus = "incomplete"
 	// StatusSkipped: nothing to sync against (state missing, or no selector
 	// matched a deployed resource). Not an error for the caller.
 	StatusSkipped SyncStatus = "skipped"
 	StatusFailed  SyncStatus = "failed"
 )
 
+const SkipReasonClusterPolicyNotFound = "cluster_policy_not_found"
+
+// SkippedChange identifies a change that could not be classified safely.
+// An empty Path means that the entire resource was left unchanged.
+type SkippedChange struct {
+	ResourceKey string `json:"resourceKey"`
+	Path        string `json:"path,omitempty"`
+	Reason      string `json:"reason"`
+	PolicyID    string `json:"policyId"`
+}
+
 // DiffOutput represents the complete output of the config-remote-sync command
 type DiffOutput struct {
-	Status    SyncStatus                                 `json:"status"`
-	Error     string                                     `json:"error,omitempty"`
-	ErrorCode protos.BundleConfigRemoteSyncErrorCategory `json:"errorCode,omitempty"`
-	Files     []FileChange                               `json:"files"`
-	Changes   Changes                                    `json:"changes"`
+	Status         SyncStatus                                 `json:"status"`
+	Error          string                                     `json:"error,omitempty"`
+	ErrorCode      protos.BundleConfigRemoteSyncErrorCategory `json:"errorCode,omitempty"`
+	Files          []FileChange                               `json:"files"`
+	Changes        Changes                                    `json:"changes"`
+	SkippedChanges []SkippedChange                            `json:"skippedChanges,omitempty"`
 }
 
 // WriteResult renders the result and records the error payload on stats for
 // telemetry. In JSON mode the process never fails: the outcome is carried in
 // DiffOutput.Status so the caller branches on it, not the exit code. Text mode
 // returns the error so the CLI still fails loudly for humans.
-func WriteResult(out io.Writer, jsonOutput bool, stats *Stats, files []FileChange, changes Changes, err error) error {
+func WriteResult(out io.Writer, jsonOutput bool, stats *Stats, files []FileChange, changes Changes, skipped []SkippedChange, err error) error {
 	status := StatusSuccess
+	if len(skipped) > 0 {
+		status = StatusIncomplete
+	}
 	// Read before the fallback below so unclassified errors carry no code.
 	errorCode := stats.ErrorCategory
 	if err != nil {
@@ -65,12 +82,26 @@ func WriteResult(out io.Writer, jsonOutput bool, stats *Stats, files []FileChang
 		if err != nil {
 			return err
 		}
+		if len(skipped) > 0 {
+			_, _ = fmt.Fprintln(out, "Sync is incomplete: some remote changes were skipped.")
+			for _, skip := range skipped {
+				if skip.Path == "" {
+					_, _ = fmt.Fprintf(out, "Left %s unchanged: cluster policy %s was not found.\n", skip.ResourceKey, skip.PolicyID)
+				} else {
+					_, _ = fmt.Fprintf(out, "Skipped %s.%s: cluster policy %s was not found.\n", skip.ResourceKey, skip.Path, skip.PolicyID)
+				}
+			}
+		}
+		if len(files) == 0 && len(skipped) > 0 {
+			_, _ = fmt.Fprintln(out, "No changes could be synced.")
+			return nil
+		}
 		_, _ = io.WriteString(out, FormatTextOutput(changes))
 		_, _ = out.Write([]byte{'\n'})
 		return nil
 	}
 
-	output := DiffOutput{Status: status, Files: files, Changes: changes}
+	output := DiffOutput{Status: status, Files: files, Changes: changes, SkippedChanges: skipped}
 	if output.Changes == nil {
 		// Serialize as {} rather than null so a consumer can iterate it unconditionally.
 		output.Changes = Changes{}

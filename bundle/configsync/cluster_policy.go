@@ -19,22 +19,40 @@ import (
 	"github.com/databricks/cli/libs/structs/structtag"
 )
 
-type clusterPolicyDefinitions map[string]dyn.Value
+type clusterPolicyDefinition struct {
+	value dyn.Value
+	err   error
+}
 
-// get reads the effective definition, including policy-family overrides, once per sync.
+type clusterPolicyDefinitions map[string]clusterPolicyDefinition
+
+type clusterPolicyLookupError struct {
+	policyID string
+	err      error
+}
+
+func (e *clusterPolicyLookupError) Error() string {
+	return fmt.Sprintf("reading cluster policy %s: %v", e.policyID, e.err)
+}
+
+func (e *clusterPolicyLookupError) Unwrap() error { return e.err }
+
+// get caches effective definitions, including policy-family overrides, and lookup failures per sync.
 func (definitions clusterPolicyDefinitions) get(ctx context.Context, b *bundle.Bundle, id string) (dyn.Value, error) {
 	if definition, ok := definitions[id]; ok {
-		return definition, nil
+		return definition.value, definition.err
 	}
 	policy, err := b.WorkspaceClient(ctx).ClusterPolicies.GetByPolicyId(ctx, id)
 	if err != nil {
-		return dyn.InvalidValue, fmt.Errorf("reading cluster policy %s: %w", id, err)
+		lookupErr := &clusterPolicyLookupError{policyID: id, err: err}
+		definitions[id] = clusterPolicyDefinition{err: lookupErr}
+		return dyn.InvalidValue, lookupErr
 	}
 	definition, err := jsonloader.LoadJSON([]byte(policy.Definition), "cluster policy "+id)
 	if err != nil {
 		return dyn.InvalidValue, err
 	}
-	definitions[id] = definition
+	definitions[id] = clusterPolicyDefinition{value: definition}
 	return definition, nil
 }
 
@@ -124,6 +142,28 @@ func (f *clusterPolicyFilter) clusterPath(path *structpath.PathNode) (*structpat
 		}
 	}
 	return nil, false
+}
+
+// canSkipField allows scalar and map changes strictly inside a cluster spec.
+// The caller must also check for removals paired with a skipped addition.
+func (f *clusterPolicyFilter) canSkipField(path *structpath.PathNode) bool {
+	if _, ok := f.clusterPath(path); !ok {
+		return false
+	}
+	remote, err := structaccess.Get(f.remote, path)
+	if err != nil || remote == nil {
+		return false
+	}
+	typ := reflect.TypeOf(remote)
+	for typ.Kind() == reflect.Pointer {
+		typ = typ.Elem()
+	}
+	switch typ.Kind() {
+	case reflect.Struct, reflect.Slice, reflect.Array:
+		return false
+	default:
+		return true
+	}
 }
 
 // isPolicyOnlySubtree requires every leaf to be absent from authored config

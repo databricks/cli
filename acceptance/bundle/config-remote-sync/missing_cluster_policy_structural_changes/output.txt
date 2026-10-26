@@ -1,0 +1,150 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Created jobs.array_change
+Created jobs.log_storage_change
+Created jobs.new_task
+Created jobs.unaffected
+Created jobs.worker_count_change
+Files: 5 uploaded, 0 deleted
+Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] cluster-policies delete [POLICY_ID]
+
+=== Selecting the unaffected job does not read policies for unselected jobs
+>>> [CLI] bundle config-remote-sync --select-ids jobs:[UNAFFECTED_ID] -o json
+{
+  "status": "success",
+  "changes": {
+    "resources.jobs.unaffected": {
+      "description": {
+        "operation": "replace",
+        "value": "Unrelated UI edit"
+      }
+    }
+  },
+  "skippedChanges": null
+}
+
+>>> print_requests.py //policies/clusters/get --get --oneline
+
+=== A selected job's policy permission error fails sync without saving
+>>> [CLI] bundle config-remote-sync --select-ids jobs:[ARRAY_CHANGE_ID] --save -o json
+{
+  "status": "failed",
+  "error": "failed to extract changes: filtering policy values for resources.jobs.array_change.tasks[task_key='main'].new_cluster.init_scripts (no configuration was saved): reading cluster policy [POLICY_ID]: Fault injected by test.",
+  "changes": {},
+  "skippedChanges": null
+}
+
+>>> diff.py databricks.yml.backup databricks.yml
+
+>>> print_requests.py //policies/clusters/get --get --oneline
+{"method": "GET", "path": "/api/2.0/policies/clusters/get", "q": {"policy_id": "[POLICY_ID]"}}
+
+=== An indivisible array replacement leaves the whole selected job unchanged
+>>> [CLI] bundle config-remote-sync --select-ids jobs:[ARRAY_CHANGE_ID] --save -o json
+{
+  "status": "incomplete",
+  "changes": {},
+  "skippedChanges": [
+    {
+      "resourceKey": "resources.jobs.array_change",
+      "reason": "cluster_policy_not_found",
+      "policyId": "[POLICY_ID]"
+    }
+  ]
+}
+
+>>> diff.py databricks.yml.backup databricks.yml
+
+=== A log-storage switch leaves the whole selected job unchanged
+>>> [CLI] bundle config-remote-sync --select-ids jobs:[LOG_STORAGE_CHANGE_ID] --save -o json
+{
+  "status": "incomplete",
+  "changes": {},
+  "skippedChanges": [
+    {
+      "resourceKey": "resources.jobs.log_storage_change",
+      "reason": "cluster_policy_not_found",
+      "policyId": "[POLICY_ID]"
+    }
+  ]
+}
+
+>>> diff.py databricks.yml.backup databricks.yml
+
+=== Switching autoscale to a fixed worker count leaves the whole selected job unchanged
+>>> [CLI] bundle config-remote-sync --select-ids jobs:[WORKER_COUNT_CHANGE_ID] --save -o json
+{
+  "status": "incomplete",
+  "changes": {},
+  "skippedChanges": [
+    {
+      "resourceKey": "resources.jobs.worker_count_change",
+      "reason": "cluster_policy_not_found",
+      "policyId": "[POLICY_ID]"
+    }
+  ]
+}
+
+>>> diff.py databricks.yml.backup databricks.yml
+
+=== Unrelated edits still sync when other jobs have structural changes
+>>> [CLI] bundle config-remote-sync --save -o json
+{
+  "status": "incomplete",
+  "changes": {
+    "resources.jobs.unaffected": {
+      "description": {
+        "operation": "replace",
+        "value": "Unrelated UI edit"
+      }
+    }
+  },
+  "skippedChanges": [
+    {
+      "resourceKey": "resources.jobs.array_change",
+      "reason": "cluster_policy_not_found",
+      "policyId": "[POLICY_ID]"
+    },
+    {
+      "resourceKey": "resources.jobs.log_storage_change",
+      "reason": "cluster_policy_not_found",
+      "policyId": "[POLICY_ID]"
+    },
+    {
+      "resourceKey": "resources.jobs.new_task",
+      "reason": "cluster_policy_not_found",
+      "policyId": "[POLICY_ID]"
+    },
+    {
+      "resourceKey": "resources.jobs.worker_count_change",
+      "reason": "cluster_policy_not_found",
+      "policyId": "[POLICY_ID]"
+    }
+  ]
+}
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -67,5 +67,5 @@
+     unaffected:
+       name: test-unaffected-[UNIQUE_NAME]
+-      description: Before UI edit
++      description: Unrelated UI edit
+       tasks:
+         - task_key: main
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.array_change
+  delete resources.jobs.log_storage_change
+  delete resources.jobs.new_task
+  delete resources.jobs.unaffected
+  delete resources.jobs.worker_count_change
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Destroy: 5 deleted

@@ -1,0 +1,94 @@
+export POLICY_ID=""
+bundle_configured=false
+cleanup() {
+    if $bundle_configured; then
+        errcode trace $CLI bundle destroy --auto-approve
+    fi
+    if [ -n "$POLICY_ID" ]; then
+        errcode trace $CLI cluster-policies delete "$POLICY_ID"
+    fi
+    print_requests.py //policies/clusters/get --get --oneline > LOG.cleanup-requests
+}
+trap cleanup EXIT
+
+POLICY_ID=$($CLI cluster-policies create --json "$(envsubst < policy.json.tmpl)" -o json | jq -er .policy_id)
+add_repl "$POLICY_ID" POLICY_ID
+envsubst < databricks.yml.tmpl > databricks.yml
+bundle_configured=true
+
+trace $CLI bundle deploy
+array_job_id=$(read_id.py array_change)
+log_job_id=$(read_id.py log_storage_change)
+new_task_job_id=$(read_id.py new_task)
+worker_count_job_id=$(read_id.py worker_count_change)
+unaffected_job_id=$(read_id.py unaffected)
+
+edit_resource.py jobs "$log_job_id" <<'PY'
+r["description"] = "Log storage changed in the UI"
+r["tasks"][0]["new_cluster"]["cluster_log_conf"] = {
+    "volumes": {"destination": "/Volumes/catalog/schema/volume/logs"}
+}
+PY
+
+edit_resource.py jobs "$worker_count_job_id" <<'PY'
+r["description"] = "Worker count changed in the UI"
+cluster = r["tasks"][0]["new_cluster"]
+del cluster["autoscale"]
+cluster["num_workers"] = 4
+PY
+
+# Only the following array/task edits should pick up the updated policy's injected values.
+$CLI cluster-policies edit --json "$(envsubst < updated-policy.json.tmpl)"
+edit_resource.py jobs "$array_job_id" <<'PY'
+r["description"] = "Array changed in the UI"
+r["tasks"][0]["new_cluster"]["init_scripts"] = [
+    {"volumes": {"destination": "/Volumes/catalog/schema/volume/policy.sh"}}
+]
+PY
+edit_resource.py jobs "$new_task_job_id" <<'PY'
+from copy import deepcopy
+
+r["description"] = "Task added in the UI"
+task = deepcopy(r["tasks"][0])
+task["task_key"] = "added_in_ui"
+r["tasks"].append(task)
+PY
+edit_resource.py jobs "$unaffected_job_id" <<'PY'
+r["description"] = "Unrelated UI edit"
+PY
+
+trace $CLI cluster-policies delete "$POLICY_ID"
+POLICY_ID=""
+
+# Isolate sync requests; the unselected job must leave this fault for the selected job.
+print_requests.py //policies/clusters/get --get --oneline > LOG.setup-requests
+fault.py 'GET /api/2.0/policies/clusters/get' 403 0 1 PERMISSION_DENIED
+
+title "Selecting the unaffected job does not read policies for unselected jobs"
+trace $CLI bundle config-remote-sync --select-ids "jobs:$unaffected_job_id" -o json | jq '{status, changes, skippedChanges}'
+trace print_requests.py //policies/clusters/get --get --oneline
+
+title "A selected job's policy permission error fails sync without saving"
+cp databricks.yml databricks.yml.backup
+trace $CLI bundle config-remote-sync --select-ids "jobs:$array_job_id" --save -o json | jq '{status, error, changes, skippedChanges}'
+trace diff.py databricks.yml.backup databricks.yml
+cmp databricks.yml.backup databricks.yml
+trace print_requests.py //policies/clusters/get --get --oneline
+
+title "An indivisible array replacement leaves the whole selected job unchanged"
+cp databricks.yml databricks.yml.backup
+trace $CLI bundle config-remote-sync --select-ids "jobs:$array_job_id" --save -o json | jq '{status, changes, skippedChanges}'
+trace diff.py databricks.yml.backup databricks.yml
+
+title "A log-storage switch leaves the whole selected job unchanged"
+trace $CLI bundle config-remote-sync --select-ids "jobs:$log_job_id" --save -o json | jq '{status, changes, skippedChanges}'
+trace diff.py databricks.yml.backup databricks.yml
+
+title "Switching autoscale to a fixed worker count leaves the whole selected job unchanged"
+trace $CLI bundle config-remote-sync --select-ids "jobs:$worker_count_job_id" --save -o json | jq '{status, changes, skippedChanges}'
+trace diff.py databricks.yml.backup databricks.yml
+cmp databricks.yml.backup databricks.yml
+
+title "Unrelated edits still sync when other jobs have structural changes"
+trace $CLI bundle config-remote-sync --save -o json | jq '{status, changes, skippedChanges}'
+trace diff.py databricks.yml.backup databricks.yml

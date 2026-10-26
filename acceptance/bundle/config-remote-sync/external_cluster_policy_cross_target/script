@@ -41,14 +41,20 @@ trace diff.py databricks.yml.backup databricks.yml
 title "Deploy shared YAML with the prod policy"
 trace $CLI bundle deploy -t prod
 
-title "A deleted policy must not cause its stored values to be saved"
+title "A deleted policy skips policy-dependent fields but still syncs authored edits"
 edit_resource.py jobs "$job_id" <<'EOF'
 r["description"] = "Another UI edit"
+r["job_clusters"][0]["new_cluster"]["custom_tags"]["owner"] = "edited-owner"
 EOF
 trace $CLI cluster-policies delete "$DEV_POLICY_ID"
 DEV_POLICY_ID=""
 
 cp databricks.yml databricks.yml.backup
-musterr $CLI bundle config-remote-sync -t dev --save > LOG.deleted-policy 2>&1
-contains.py "no configuration was saved" < LOG.deleted-policy > LOG.deleted-policy-check
+trace $CLI bundle config-remote-sync -t dev --save -o json | jq '{status, changes, skippedChanges}'
 trace diff.py databricks.yml.backup databricks.yml
+
+title "Only policy-dependent fields remain on the next sync"
+trace $CLI bundle config-remote-sync -t dev -o json | jq '{status, changes, skippedChanges}'
+
+title "Text output reports the incomplete sync"
+trace $CLI bundle config-remote-sync -t dev

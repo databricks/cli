@@ -71,8 +71,9 @@ Examples:
 		// Populated by PostStateFunc on success; rendered after the run so an
 		// error raised anywhere in ProcessBundleRet takes the same output path.
 		var (
-			files   []configsync.FileChange
-			changes configsync.Changes
+			files          []configsync.FileChange
+			changes        configsync.Changes
+			skippedChanges []configsync.SkippedChange
 		)
 
 		_, _, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
@@ -95,22 +96,14 @@ Examples:
 					return fmt.Errorf("failed to detect changes: %w", err)
 				}
 
-				detected, err := configsync.ExtractChanges(ctx, b, plan)
-				if err != nil {
-					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryDetectChangesFailed
-					return fmt.Errorf("failed to extract changes: %w", err)
-				}
-				stats.CollectChangeStats(ctx, detected)
-
 				// Record the ids present in state and the ids requested: on failure
 				// they are what classifies the miss.
 				stats.CollectStateIDs(slices.Collect(maps.Keys(configsync.IndexDeployedResources(&deployBundle.StateDB))))
 
 				if len(selectIDs) > 0 {
 					stats.CollectSelectedIDs(selectIDs)
-					// Filter after planning, never before: the plan must cover every
-					// resource so ${resources.*} references resolve; only the emitted
-					// changes are restricted to the selected resources.
+					// Plan all resources so references resolve, then restrict extraction
+					// to selected entries to avoid unrelated policy lookups.
 					selected, err := configsync.ResolveResourceSelectors(ctx, &deployBundle.StateDB, selectIDs)
 					if err != nil {
 						return err
@@ -127,8 +120,15 @@ Examples:
 						stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryResourceNotInConfig
 						return fmt.Errorf("deployed resources missing from the bundle configuration (renamed or removed since the last deploy): %s", strings.Join(missing, ", "))
 					}
-					detected = configsync.FilterChanges(detected, selected)
+					plan.Plan = configsync.FilterPlanEntries(plan.Plan, selected)
 				}
+
+				detected, policySkipped, err := configsync.ExtractChanges(ctx, b, plan)
+				if err != nil {
+					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryDetectChangesFailed
+					return fmt.Errorf("failed to extract changes: %w", err)
+				}
+				stats.CollectChangeStats(ctx, detected)
 
 				// Loaded once and shared: ResolveChanges uses it to skip changes whose
 				// parent is a variable reference, RestoreVariableReferences to restore refs.
@@ -139,7 +139,7 @@ Examples:
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryResolveFailed
 					return fmt.Errorf("failed to resolve field changes: %w", err)
 				}
-				stats.SkippedChangesCount = int64(skipped)
+				stats.SkippedChangesCount = int64(skipped + len(policySkipped))
 
 				if err := configsync.RestoreVariableReferences(ctx, b, fieldChanges, preResolved, &stats.Restore); err != nil {
 					log.Warnf(ctx, "variable restoration skipped: %v", err)
@@ -162,11 +162,12 @@ Examples:
 
 				files = applied
 				changes = detected
+				skippedChanges = policySkipped
 				return nil
 			},
 		})
 
-		return configsync.WriteResult(cmd.OutOrStdout(), root.OutputType(cmd) == flags.OutputJSON, &stats, files, changes, err)
+		return configsync.WriteResult(cmd.OutOrStdout(), root.OutputType(cmd) == flags.OutputJSON, &stats, files, changes, skippedChanges, err)
 	}
 
 	return cmd

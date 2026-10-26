@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/log"
 )
@@ -169,11 +170,11 @@ func describeStateIDs(byTypeID map[string]string, resourceType string) string {
 	return fmt.Sprintf("deployed %s ids in state: %s%s", resourceType, strings.Join(listed, ", "), suffix)
 }
 
-// FilterChanges returns the subset of changes that belong to the resources in
+// FilterPlanEntries returns the entries that belong to the resources in
 // selected, a list of plan keys ("resources.<type>.<name>") as returned by
-// ResolveResourceSelectors. Change keys are plan keys too.
+// ResolveResourceSelectors.
 //
-// Selection is at the resource level: a change node is kept when it is the
+// Selection is at the resource level: an entry is kept when it is the
 // selected resource itself or any node beneath it, matched by prefix on the "."
 // path boundary. This groups a resource's permissions/grants sub-nodes
 // ("resources.<type>.<name>.permissions") with their parent, so selecting a
@@ -185,12 +186,12 @@ func describeStateIDs(byTypeID map[string]string, resourceType string) string {
 // dependencies matter only when planning (the plan always covers the full
 // resource set so ${resources.*} references resolve), not when deciding which
 // resources' configuration may be rewritten.
-func FilterChanges(changes Changes, selected []string) Changes {
-	filtered := make(Changes)
-	for key, resourceChanges := range changes {
+func FilterPlanEntries(entries map[string]*deployplan.PlanEntry, selected []string) map[string]*deployplan.PlanEntry {
+	filtered := make(map[string]*deployplan.PlanEntry)
+	for key, entry := range entries {
 		for _, sel := range selected {
 			if key == sel || strings.HasPrefix(key, sel+".") {
-				filtered[key] = resourceChanges
+				filtered[key] = entry
 				break
 			}
 		}

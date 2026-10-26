@@ -2,7 +2,10 @@ package configsync
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"sync"
 
@@ -15,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 type OperationType string
@@ -140,13 +144,14 @@ func isPermissionsOrGrantsSubResource(resourceKey string) bool {
 	return strings.HasSuffix(nodeType, ".permissions") || strings.HasSuffix(nodeType, ".grants")
 }
 
-// ExtractChanges extracts the map of remote-vs-config changes from a deploy
-// plan.
-func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (Changes, error) {
+// ExtractChanges separates applicable remote changes from changes skipped because
+// their cluster policy is missing. Other lookup failures abort extraction.
+func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (Changes, []SkippedChange, error) {
 	changes := make(Changes)
+	var skipped []SkippedChange
 	policyDefinitions := make(clusterPolicyDefinitions)
 
-	for resourceKey, entry := range plan.Plan {
+	for _, resourceKey := range slices.Sorted(maps.Keys(plan.Plan)) {
 		// permissions and grants are emitted as their own plan keys
 		// ("resources.<type>.<name>.permissions" / ".grants"; see splitResourcePath
 		// in bundle/direct/bundle_plan.go). config-remote-sync cannot write them back
@@ -156,66 +161,89 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 		if isPermissionsOrGrantsSubResource(resourceKey) {
 			continue
 		}
-
-		resourceChanges := make(ResourceChanges)
-		getPolicyFilter := sync.OnceValues(func() (*clusterPolicyFilter, error) {
-			return policyFilterForResource(b, resourceKey, entry, policyDefinitions)
-		})
-
-		if entry.Changes != nil {
-			for path, changeDesc := range entry.Changes {
-				if changeDesc.Action == deployplan.Skip && changeDesc.Reason != deployplan.ReasonRemoteAddition {
-					continue
-				}
-
-				fullPath := resourceKey + "." + path
-				change, err := convertChangeDesc(fullPath, changeDesc)
-				if err != nil {
-					return nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
-				}
-				if change.Operation == OperationSkip {
-					continue
-				}
-				policyFilter, err := getPolicyFilter()
-				if err != nil {
-					return nil, err
-				}
-				if change.Value != nil && policyFilter != nil {
-					fieldPath, err := structpath.ParsePath(path)
-					if err != nil {
-						return nil, fmt.Errorf("parsing change path %s: %w", fullPath, err)
-					}
-					change.Value, err = policyFilter.filter(ctx, b, fieldPath, change.Value)
-					if err != nil {
-						return nil, fmt.Errorf("filtering policy values for %s (no configuration was saved): %w", fullPath, err)
-					}
-					if change.Value == nil {
-						if change.Operation != OperationReplace {
-							continue
-						}
-						// A policy-only replacement still removes the previous authored value.
-						change.Operation = OperationRemove
-					}
-				}
-				// The state snapshot holds real per-field values, so New != Old
-				// means the local config diverged from the last deploy and this
-				// change overwrites that pending edit.
-				if !structdiff.IsEqual(changeDesc.Old, changeDesc.New) {
-					change.LocalEdit = true
-				}
-				change.Value = stripNamePrefix(fullPath, change.Value, b.Config.Presets.NamePrefix)
-				resourceChanges[path] = change
-			}
+		resourceChanges, resourceSkipped, err := extractResourceChanges(ctx, b, resourceKey, plan.Plan[resourceKey], policyDefinitions)
+		if err != nil {
+			return nil, nil, err
 		}
-
-		if len(resourceChanges) != 0 {
+		if len(resourceChanges) > 0 {
 			changes[resourceKey] = resourceChanges
 		}
-
+		skipped = append(skipped, resourceSkipped...)
 		log.Debugf(ctx, "Resource %s has %d changes", resourceKey, len(resourceChanges))
 	}
+	return changes, skipped, nil
+}
 
-	return changes, nil
+func extractResourceChanges(ctx context.Context, b *bundle.Bundle, resourceKey string, entry *deployplan.PlanEntry, policyDefinitions clusterPolicyDefinitions) (ResourceChanges, []SkippedChange, error) {
+	resourceChanges := make(ResourceChanges)
+	var resourceSkipped []SkippedChange
+	hasStructuralSkip, hasRemoval := false, false
+	getPolicyFilter := sync.OnceValues(func() (*clusterPolicyFilter, error) {
+		return policyFilterForResource(b, resourceKey, entry, policyDefinitions)
+	})
+
+	for _, path := range slices.Sorted(maps.Keys(entry.Changes)) {
+		changeDesc := entry.Changes[path]
+		if changeDesc.Action == deployplan.Skip && changeDesc.Reason != deployplan.ReasonRemoteAddition {
+			continue
+		}
+
+		fullPath := resourceKey + "." + path
+		change, err := convertChangeDesc(fullPath, changeDesc)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
+		}
+		if change.Operation == OperationSkip {
+			continue
+		}
+		policyFilter, err := getPolicyFilter()
+		if err != nil {
+			return nil, nil, err
+		}
+		if change.Value != nil && policyFilter != nil {
+			fieldPath, err := structpath.ParsePath(path)
+			if err != nil {
+				return nil, nil, fmt.Errorf("parsing change path %s: %w", fullPath, err)
+			}
+			change.Value, err = policyFilter.filter(ctx, b, fieldPath, change.Value)
+			if err != nil {
+				lookupErr, ok := errors.AsType[*clusterPolicyLookupError](err)
+				if !ok || !errors.Is(err, apierr.ErrNotFound) {
+					return nil, nil, fmt.Errorf("filtering policy values for %s (no configuration was saved): %w", fullPath, err)
+				}
+				skip := SkippedChange{
+					ResourceKey: resourceKey, Path: path,
+					Reason: SkipReasonClusterPolicyNotFound, PolicyID: lookupErr.policyID,
+				}
+				hasStructuralSkip = hasStructuralSkip || !policyFilter.canSkipField(fieldPath)
+				resourceSkipped = append(resourceSkipped, skip)
+				continue
+			}
+			if change.Value == nil {
+				if change.Operation != OperationReplace {
+					continue
+				}
+				// A policy-only replacement still removes the previous authored value.
+				change.Operation = OperationRemove
+			}
+		}
+		// The state snapshot holds real per-field values, so New != Old
+		// means the local config diverged from the last deploy and this
+		// change overwrites that pending edit.
+		if !structdiff.IsEqual(changeDesc.Old, changeDesc.New) {
+			change.LocalEdit = true
+		}
+		change.Value = stripNamePrefix(fullPath, change.Value, b.Config.Presets.NamePrefix)
+		resourceChanges[path] = change
+		// A removal may be paired with a skipped addition, e.g. autoscale -> num_workers.
+		hasRemoval = hasRemoval || change.Operation == OperationRemove
+	}
+	if hasStructuralSkip || (len(resourceSkipped) > 0 && hasRemoval) {
+		return nil, []SkippedChange{{
+			ResourceKey: resourceKey, Reason: SkipReasonClusterPolicyNotFound, PolicyID: resourceSkipped[0].PolicyID,
+		}}, nil
+	}
+	return resourceChanges, resourceSkipped, nil
 }
 
 func policyFilterForResource(b *bundle.Bundle, resourceKey string, entry *deployplan.PlanEntry, definitions clusterPolicyDefinitions) (*clusterPolicyFilter, error) {
