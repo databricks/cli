@@ -128,6 +128,21 @@ func TestLoadInstance(t *testing.T) {
 	assert.EqualError(t, err, "incorrect type for property string_val: expected type string, but value is 123")
 }
 
+func TestLoadInstanceFromBytes(t *testing.T) {
+	schema := &Schema{
+		Properties: map[string]*Schema{
+			"name": {Type: StringType},
+		},
+	}
+
+	instance, err := schema.LoadInstanceFromBytes([]byte(`{"name":"value"}`))
+	require.NoError(t, err)
+	assert.Equal(t, "value", instance["name"])
+
+	_, err = schema.LoadInstanceFromBytes([]byte(`{"name":`))
+	assert.ErrorContains(t, err, "unexpected end of JSON input")
+}
+
 func TestValidateInstanceEnum(t *testing.T) {
 	schema, err := Load("./testdata/instance-validate/test-schema-enum.json")
 	require.NoError(t, err)
