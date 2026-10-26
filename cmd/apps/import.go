@@ -330,6 +330,13 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 			return fmt.Errorf("app '%s' no longer exists in workspace", app.Name)
 		}
 
+		// A recorded deployment's resources are read from the metadata service.
+		if stateDesc.IsDMS() {
+			if err := bundleutils.OpenDirectStateForRead(ctx, b, stateDesc); err != nil {
+				return err
+			}
+		}
+
 		// Bind the resource
 		phases.Bind(ctx, b, &phases.BindOptions{
 			AutoApprove: true,

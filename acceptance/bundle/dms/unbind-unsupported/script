@@ -1,0 +1,6 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+# unbind refuses when it opens an existing recording state, so it needs a deployment first.
+title "Deploy so the bundle records state, then unbind is refused"
+trace $CLI bundle deploy
+trace musterr $CLI bundle deployment unbind foo

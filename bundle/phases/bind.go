@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"os"
 	"slices"
 
 	"github.com/databricks/cli/bundle"
@@ -47,14 +48,22 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		return
 	}
 
-	if stateDesc.IsDMS() {
-		logdiag.LogError(ctx, errors.New("bind is not supported for a bundle target that records deployment history"))
-		return
-	}
-
 	// Direct engine: import into temp state, run plan, check for changes.
 	resourceKey := fmt.Sprintf("resources.%s.%s", opts.Group, opts.ResourceKey)
 	_, statePath := b.StateFilenameDirect(ctx)
+
+	// A recorded deployment keeps its resources in the metadata service, so the bind plans against
+	// a local copy of them and registers the result with the service instead of the state file.
+	var recorded recordedDeployment
+	if stateDesc.IsDMS() {
+		var err error
+		recorded, statePath, err = snapshotRecordedState(ctx, b)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		defer os.Remove(statePath)
+	}
 
 	result, err := b.DeploymentBundle.Bind(ctx, b.WorkspaceClient(ctx), &b.Config, statePath, resourceKey, opts.ResourceId)
 	if err != nil {
@@ -98,6 +107,12 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 			logdiag.LogError(ctx, errors.New("import aborted"))
 			return
 		}
+	}
+
+	if stateDesc.IsDMS() {
+		recordBind(ctx, b, recorded, result.TempStatePath, resourceKey)
+		result.Cancel()
+		return
 	}
 
 	// Finalize: rename temp state to final location

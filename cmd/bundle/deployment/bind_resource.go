@@ -42,6 +42,13 @@ func BindResource(cmd *cobra.Command, resourceKey, resourceId string, autoApprov
 		return fmt.Errorf("%s with an id '%s' is not found", resource.ResourceDescription().SingularName, resourceId)
 	}
 
+	// A recorded deployment's resources are read from the metadata service.
+	if stateDesc.IsDMS() {
+		if err := utils.OpenDirectStateForRead(ctx, b, stateDesc); err != nil {
+			return err
+		}
+	}
+
 	phases.Bind(ctx, b, &phases.BindOptions{
 		AutoApprove: autoApprove,
 		Group:       resource.ResourceDescription().PluralName,
