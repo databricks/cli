@@ -20,10 +20,11 @@ import (
 )
 
 type targetInfo struct {
-	Name    string      `json:"name"`
-	Default bool        `json:"default,omitempty"`
-	Mode    config.Mode `json:"mode,omitempty"`
-	Host    string      `json:"host,omitempty"`
+	Name        string      `json:"name"`
+	Default     bool        `json:"default,omitempty"`
+	Mode        config.Mode `json:"mode,omitempty"`
+	Host        string      `json:"host,omitempty"`
+	WorkspaceID string      `json:"workspace_id,omitempty"`
 
 	// Engine is only reported for targets that use the removed Terraform engine.
 	Engine engine.EngineType `json:"engine,omitempty"`
@@ -53,7 +54,12 @@ func collectTargets(targets map[string]*config.Target, rootEngine engine.EngineT
 			Mode:    t.Mode,
 		}
 		if t.Workspace != nil {
-			info.Host = t.Workspace.Host
+			// Normalize a copy so the host and workspace ID match what
+			// authentication uses, e.g. ?o= in a custom host becomes the ID.
+			w := *t.Workspace
+			w.NormalizeHostURL()
+			info.Host = w.Host
+			info.WorkspaceID = w.WorkspaceID
 		}
 		targetEngine := rootEngine
 		if t.Bundle != nil && t.Bundle.Engine != engine.EngineNotSet {
@@ -73,7 +79,7 @@ func terraformOnly(e engine.EngineType) engine.EngineType {
 }
 
 // NewListTargetsCommand returns a command that lists all bundle targets
-// with their name, default, mode, workspace host, and (if terraform) engine fields.
+// with their name, default, mode, workspace host and ID, and (if terraform) engine fields.
 func NewListTargetsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:    "list-targets",
@@ -111,6 +117,9 @@ func NewListTargetsCommand() *cobra.Command {
 				}
 				if t.Host != "" {
 					parts = append(parts, t.Host)
+				}
+				if t.WorkspaceID != "" {
+					parts = append(parts, "workspace_id:"+t.WorkspaceID)
 				}
 				if t.Engine != "" {
 					parts = append(parts, "engine:"+string(t.Engine))
