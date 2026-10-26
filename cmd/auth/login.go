@@ -227,7 +227,11 @@ a new profile is created.
 		// two action entries so the user can choose between web-based discovery
 		// (Create a new profile) and a manual host URL.
 		if profileName == "" && authArguments.Host == "" && len(args) == 0 && cmdio.IsPromptSupported(ctx) {
-			allProfiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.MatchAllProfiles)
+			matchProfiles := profile.MatchAllProfiles
+			if useDeviceCode {
+				matchProfiles = matchDeviceCodeProfiles
+			}
+			allProfiles, err := profile.DefaultProfiler.LoadProfiles(ctx, matchProfiles)
 			if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
 				return err
 			}
@@ -332,10 +336,8 @@ a new profile is created.
 		}
 		// Check the host once it is resolved, before setAccountID prompts for
 		// an account ID for account and unified hosts.
-		if useDeviceCode {
-			if err := validateDeviceCodeHost(authArguments); err != nil {
-				return err
-			}
+		if useDeviceCode && !isDeviceCodeSupportedForHost(authArguments.Host, authArguments.DiscoveryURL) {
+			return errDeviceCodeWorkspaceOnly
 		}
 		err = setAccountID(ctx, existingProfile, authArguments)
 		if err != nil {

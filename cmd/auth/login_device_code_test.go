@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
@@ -168,7 +169,7 @@ func TestFormatCode(t *testing.T) {
 	assert.Equal(t, "ABC", formatCode("ABC"))
 }
 
-func TestValidateDeviceCodeHost(t *testing.T) {
+func TestIsDeviceCodeSupportedForHost(t *testing.T) {
 	workspace := newDiscoveryServer(t, map[string]any{
 		"account_id":    "acct-123",
 		"workspace_id":  "12345",
@@ -185,23 +186,23 @@ func TestValidateDeviceCodeHost(t *testing.T) {
 	})
 
 	tests := []struct {
-		name    string
-		args    auth.AuthArguments
-		wantErr error
+		name string
+		args auth.AuthArguments
+		want bool
 	}{
-		{name: "workspace host", args: auth.AuthArguments{Host: workspace.URL}},
-		{name: "workspace host with query params", args: auth.AuthArguments{Host: workspace.URL + "?o=12345"}},
-		{name: "classic account host", args: auth.AuthArguments{Host: "https://accounts.cloud.databricks.test"}, wantErr: errDeviceCodeWorkspaceOnly},
-		{name: "unified host", args: auth.AuthArguments{Host: unified.URL}, wantErr: errDeviceCodeWorkspaceOnly},
-		{name: "unified host with query params", args: auth.AuthArguments{Host: unified.URL + "?o=12345"}, wantErr: errDeviceCodeWorkspaceOnly},
-		{name: "unified host with account ID in query params", args: auth.AuthArguments{Host: unifiedWithoutAccountID.URL + "?a=acct-123"}, wantErr: errDeviceCodeWorkspaceOnly},
-		{name: "unified host with account ID flag", args: auth.AuthArguments{Host: unifiedWithoutAccountID.URL, AccountID: "acct-123"}, wantErr: errDeviceCodeWorkspaceOnly},
+		{name: "workspace host", args: auth.AuthArguments{Host: workspace.URL}, want: true},
+		{name: "workspace host with query params", args: auth.AuthArguments{Host: workspace.URL + "?o=12345"}, want: true},
+		{name: "classic account host", args: auth.AuthArguments{Host: "https://accounts.cloud.databricks.test"}},
+		{name: "unified host", args: auth.AuthArguments{Host: unified.URL}},
+		{name: "unified host with query params", args: auth.AuthArguments{Host: unified.URL + "?o=12345"}},
+		{name: "unified host with account ID in query params", args: auth.AuthArguments{Host: unifiedWithoutAccountID.URL + "?a=acct-123"}},
+		{name: "unified host with account ID flag", args: auth.AuthArguments{Host: unifiedWithoutAccountID.URL, AccountID: "acct-123"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			args := tt.args
 			require.NoError(t, setHost(t.Context(), nil, &args, nil))
-			assert.ErrorIs(t, validateDeviceCodeHost(&args), tt.wantErr)
+			assert.Equal(t, tt.want, isDeviceCodeSupportedForHost(args.Host, args.DiscoveryURL))
 		})
 	}
 }
@@ -230,6 +231,73 @@ func TestLoginDeviceCodeNewProfilePromptsForHost(t *testing.T) {
 	// Without a host, device code login asks for one instead of starting the
 	// discovery login.
 	tm.WaitFor("Databricks host")
+	tm.Type(termtest.KeyCtrlC)
+	_, err := tm.Result()
+	assert.EqualError(t, err, "^C")
+}
+
+func TestMatchDeviceCodeProfiles(t *testing.T) {
+	tests := []struct {
+		name    string
+		profile profile.Profile
+		want    bool
+	}{
+		{name: "workspace host", profile: profile.Profile{Host: "https://workspace.test"}, want: true},
+		// setHost prompts for the host of a profile without one.
+		{name: "no host", profile: profile.Profile{}, want: true},
+		{name: "classic account host", profile: profile.Profile{Host: "https://accounts.cloud.databricks.test", AccountID: "acct-123"}},
+		{name: "classic account host for DoD", profile: profile.Profile{Host: "https://accounts-dod.cloud.databricks.test", AccountID: "acct-123"}},
+		{
+			name:    "scoped to resources",
+			profile: profile.Profile{Host: "https://workspace.test", AuthType: authTypeDatabricksCLI, Resources: "https://workspace.test/ai-gateway/mcp-services/system.ai.github"},
+		},
+		// Login only reuses the resources of a databricks-cli profile.
+		{
+			name:    "resources on another auth type",
+			profile: profile.Profile{Host: "https://workspace.test", AuthType: "pat", Resources: "https://workspace.test/ai-gateway/mcp-services/system.ai.github"},
+			want:    true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, matchDeviceCodeProfiles(tt.profile))
+		})
+	}
+}
+
+func TestLoginDeviceCodePickerHidesUnsupportedProfiles(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	t.Setenv("DATABRICKS_CONFIG_FILE", writeTempConfig(t, `[workspace]
+host = https://workspace.test
+
+[account]
+host = https://accounts.cloud.databricks.test
+account_id = acct-123
+
+[scoped]
+host = https://workspace.test
+auth_type = databricks-cli
+resources = https://workspace.test/ai-gateway/mcp-services/system.ai.github
+`))
+	t.Setenv("DATABRICKS_AUTH_STORAGE", "plaintext")
+	t.Setenv(deviceCodeEnvVar, "true")
+
+	tm := termtest.Run(t, func(ctx context.Context) (struct{}, error) {
+		cmd := newLoginCommand(&auth.AuthArguments{})
+		cmd.Flags().String("profile", "", "")
+		cmd.SetContext(ctx)
+		cmd.SetArgs([]string{"--use-device-code"})
+		cmd.SetOut(io.Discard)
+		cmd.SetErr(io.Discard)
+		return struct{}{}, cmd.Execute()
+	})
+	tm.WaitFor(profilePickerEnterHostLabel)
+	screen := tm.Snapshot()
+	assert.Contains(t, screen, "workspace")
+	assert.NotContains(t, screen, "account")
+	assert.NotContains(t, screen, "scoped")
 	tm.Type(termtest.KeyCtrlC)
 	_, err := tm.Result()
 	assert.EqualError(t, err, "^C")

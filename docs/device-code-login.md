@@ -34,7 +34,10 @@ Profile my-profile was successfully saved
 
 1. Run `databricks auth login` with `--use-device-code`. The host can be passed as
    an argument, with `--host`, or come from an existing profile. Otherwise the
-   CLI prompts for it.
+   CLI prompts for it. The profile picker leaves out profiles that device code
+   login cannot use: profiles for an account host and profiles saved with
+   `--resource`. Profiles for a unified host are still listed and are rejected
+   after you pick one.
 2. On another device, open the URL that the CLI shows, sign in to the
    workspace if needed, and enter the code. The code expires after about 10
    minutes.
