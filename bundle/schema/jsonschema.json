@@ -284,6 +284,9 @@
                       },
                       "env": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.AppEnvVar"
+                      },
+                      "health_check": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.AppHealthCheck"
                       }
                     },
                     "additionalProperties": false
@@ -312,6 +315,29 @@
                     "additionalProperties": false,
                     "required": [
                       "name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.AppHealthCheck": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "path": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "timeout_seconds": {
+                        "$ref": "#/$defs/int"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "path"
                     ]
                   },
                   {
