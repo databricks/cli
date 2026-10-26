@@ -282,8 +282,7 @@ func TestExtractChangesSkipsPermissionsAndGrants(t *testing.T) {
 		},
 	}}
 
-	changes, skipped, err := ExtractChanges(ctx, &bundle.Bundle{}, plan)
-	assert.Empty(t, skipped)
+	changes, err := ExtractChanges(ctx, &bundle.Bundle{}, plan)
 	require.NoError(t, err)
 
 	_, hasPerms := changes["resources.jobs.my_job.permissions"]

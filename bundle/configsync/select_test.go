@@ -6,36 +6,35 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFilterPlanEntries(t *testing.T) {
-	entries := map[string]*deployplan.PlanEntry{
+func TestFilterChanges(t *testing.T) {
+	changes := Changes{
 		"resources.jobs.foo": {
-			Action: deployplan.Update,
+			"max_concurrent_runs": {Operation: OperationReplace, Value: 5},
 		},
 		"resources.jobs.foo.permissions": {
-			Action: deployplan.Update,
+			"[0].level": {Operation: OperationReplace, Value: "CAN_MANAGE"},
 		},
 		// Boundary: shares the "resources.jobs.foo" prefix but is a different
 		// resource, so selecting "resources.jobs.foo" must not pull it in.
 		"resources.jobs.foobar": {
-			Action: deployplan.Update,
+			"name": {Operation: OperationReplace, Value: "foobar"},
 		},
 		"resources.jobs.bar": {
-			Action: deployplan.Update,
+			"name": {Operation: OperationReplace, Value: "bar"},
 		},
 		"resources.schemas.baz": {
-			Action: deployplan.Update,
+			"comment": {Operation: OperationAdd, Value: "c"},
 		},
 		"resources.schemas.baz.grants": {
-			Action: deployplan.Update,
+			"[0].principal": {Operation: OperationAdd, Value: "users"},
 		},
 		// A resource whose name is literally "permissions" is the resource itself,
 		// not a sub-node, and is kept only when selected by its own key.
 		"resources.jobs.permissions": {
-			Action: deployplan.Update,
+			"name": {Operation: OperationReplace, Value: "p"},
 		},
 	}
 
@@ -83,16 +82,16 @@ func TestFilterPlanEntries(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := FilterPlanEntries(entries, tt.selected)
+			got := FilterChanges(changes, tt.selected)
 			assert.ElementsMatch(t, tt.wantKeys, slices.Collect(maps.Keys(got)))
 			for _, key := range tt.wantKeys {
-				assert.Same(t, entries[key], got[key])
+				assert.Equal(t, changes[key], got[key])
 			}
 		})
 	}
 
 	// The input map is never mutated.
-	assert.Len(t, entries, 7)
+	assert.Len(t, changes, 7)
 }
 
 func TestDescribeStateIDs(t *testing.T) {

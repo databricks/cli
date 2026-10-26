@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestExtractChangesFiltersPolicyAppliedValues(t *testing.T) {
+func TestFilterClusterPolicyValuesFiltersPolicyAppliedValues(t *testing.T) {
 	tests := []struct {
 		name          string
 		attribute     string
@@ -72,6 +72,20 @@ func TestExtractChangesFiltersPolicyAppliedValues(t *testing.T) {
 			definition: `{"autoscale.min_workers":{"type":"fixed","value":1}}`,
 			remote:     map[string]any{"min_workers": int64(1), "max_workers": int64(4)},
 			want:       map[string]any{"max_workers": int64(4)},
+		},
+		{
+			name:      "authored zero scalar is kept",
+			attribute: "num_workers",
+			config:    int64(0),
+			remote:    int64(2),
+			want:      int64(2),
+		},
+		{
+			name:      "authored false scalar is kept",
+			attribute: "enable_local_disk_encryption",
+			config:    false,
+			remote:    true,
+			want:      true,
 		},
 		{
 			name:       "fixed scalar dropped when absent from config",
@@ -284,7 +298,7 @@ func TestExtractChangesFiltersPolicyAppliedValues(t *testing.T) {
 						Return(&compute.Policy{Definition: tt.definition}, nil).Once()
 				}
 
-				changes, skipped, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{key: entry}})
+				changes, skipped, err := filterPolicyTestChanges(t, b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{key: entry}})
 				require.NoError(t, err)
 				assert.Empty(t, skipped)
 				if tt.want == nil {
@@ -299,7 +313,7 @@ func TestExtractChangesFiltersPolicyAppliedValues(t *testing.T) {
 	}
 }
 
-func TestExtractChangesFailsOnPolicyLookupError(t *testing.T) {
+func TestFilterClusterPolicyValuesFailsOnPolicyLookupError(t *testing.T) {
 	for _, tt := range []struct {
 		name string
 		err  error
@@ -319,7 +333,7 @@ func TestExtractChangesFailsOnPolicyLookupError(t *testing.T) {
 					"spark_env_vars": {Action: deployplan.Update, Remote: map[string]any{"ENV": "dev"}},
 				},
 			}
-			changes, skipped, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
+			changes, skipped, err := filterPolicyTestChanges(t, b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
 			require.ErrorIs(t, err, lookupError)
 			assert.Empty(t, skipped)
 			assert.ErrorContains(t, err, "no configuration was saved")
@@ -328,7 +342,7 @@ func TestExtractChangesFailsOnPolicyLookupError(t *testing.T) {
 	}
 }
 
-func TestExtractChangesDoesNotHidePolicyErrorsAfterStructuralSkip(t *testing.T) {
+func TestFilterClusterPolicyValuesDoesNotHidePolicyErrorsAfterStructuralSkip(t *testing.T) {
 	key := "resources.jobs.test"
 	b := policyTestBundle(t, key, map[string]any{"job_clusters": []any{
 		map[string]any{"job_cluster_key": "a", "new_cluster": map[string]any{"policy_id": "missing"}},
@@ -350,13 +364,13 @@ func TestExtractChangesDoesNotHidePolicyErrorsAfterStructuralSkip(t *testing.T) 
 			"job_clusters[job_cluster_key='b'].new_cluster.spark_env_vars": {Action: deployplan.Update, Remote: map[string]string{"ENV": "dev"}},
 		},
 	}
-	changes, skipped, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{key: entry}})
+	changes, skipped, err := filterPolicyTestChanges(t, b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{key: entry}})
 	assert.ErrorIs(t, err, apierr.ErrPermissionDenied)
 	assert.Nil(t, changes)
 	assert.Nil(t, skipped)
 }
 
-func TestExtractChangesLooksUpMissingPolicyOnce(t *testing.T) {
+func TestFilterClusterPolicyValuesLooksUpMissingPolicyOnce(t *testing.T) {
 	b := policyTestBundle(t, "resources.clusters.test", map[string]any{
 		"policy_id": "policy", "cluster_name": "before",
 	})
@@ -376,7 +390,7 @@ func TestExtractChangesLooksUpMissingPolicyOnce(t *testing.T) {
 			"spark_env_vars": {Action: deployplan.Skip, Reason: deployplan.ReasonRemoteAddition, Remote: map[string]string{"ENVIRONMENT": "dev"}},
 		},
 	}
-	changes, skipped, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
+	changes, skipped, err := filterPolicyTestChanges(t, b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
 	require.NoError(t, err)
 	assert.Equal(t, configsync.Changes{"resources.clusters.test": {
 		"cluster_name": {Operation: configsync.OperationReplace, Value: "after"},
@@ -387,7 +401,7 @@ func TestExtractChangesLooksUpMissingPolicyOnce(t *testing.T) {
 	}, skipped)
 }
 
-func TestExtractChangesMatchesClustersByKeyAndRemotePolicy(t *testing.T) {
+func TestFilterClusterPolicyValuesMatchesClustersByKeyAndRemotePolicy(t *testing.T) {
 	config := map[string]any{"job_clusters": []any{
 		map[string]any{"job_cluster_key": "explicit", "new_cluster": map[string]any{
 			"policy_id": "old-policy", "spark_env_vars": map[string]any{"ENV": "authored"},
@@ -419,7 +433,7 @@ func TestExtractChangesMatchesClustersByKeyAndRemotePolicy(t *testing.T) {
 	client.GetMockClusterPoliciesAPI().EXPECT().GetByPolicyId(mock.Anything, "new-policy").
 		Return(&compute.Policy{Definition: `{"spark_env_vars.ENV":{"type":"fixed","value":"dev"}}`}, nil).Once()
 
-	changes, skipped, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.jobs.test": entry}})
+	changes, skipped, err := filterPolicyTestChanges(t, b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.jobs.test": entry}})
 	require.NoError(t, err)
 	assert.Empty(t, skipped)
 	require.Contains(t, changes, "resources.jobs.test")
@@ -433,7 +447,7 @@ func TestExtractChangesMatchesClustersByKeyAndRemotePolicy(t *testing.T) {
 	}, changes["resources.jobs.test"]["job_clusters"].Value)
 }
 
-func TestExtractChangesDropsPolicyValueAtDottedLeaf(t *testing.T) {
+func TestFilterClusterPolicyValuesDropsPolicyValueAtDottedLeaf(t *testing.T) {
 	key, prefix, config := policyClusterLocation("task", map[string]any{
 		"policy_id":  "policy",
 		"spark_conf": map[string]any{"spark.sql.adaptive.enabled": "true"},
@@ -454,13 +468,13 @@ func TestExtractChangesDropsPolicyValueAtDottedLeaf(t *testing.T) {
 			Action: deployplan.Skip, Reason: deployplan.ReasonRemoteAddition, Remote: "7",
 		}},
 	}
-	changes, skipped, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{key: entry}})
+	changes, skipped, err := filterPolicyTestChanges(t, b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{key: entry}})
 	require.NoError(t, err)
 	assert.Empty(t, skipped)
 	assert.Empty(t, changes)
 }
 
-func TestExtractChangesKeepsCompleteLogConfigurationWhenStorageChanges(t *testing.T) {
+func TestFilterClusterPolicyValuesKeepsCompleteLogConfigurationWhenStorageChanges(t *testing.T) {
 	key, prefix, config := policyClusterLocation("task", map[string]any{
 		"policy_id": "policy", "apply_policy_default_values": true,
 		"cluster_log_conf": map[string]any{"dbfs": map[string]any{"destination": "dbfs:/old-logs"}},
@@ -486,7 +500,7 @@ func TestExtractChangesKeepsCompleteLogConfigurationWhenStorageChanges(t *testin
 	client.GetMockClusterPoliciesAPI().EXPECT().GetByPolicyId(mock.Anything, "policy").
 		Return(&compute.Policy{Definition: `{"cluster_log_conf.type":{"type":"fixed","value":"S3"},"cluster_log_conf.path":{"type":"fixed","value":"s3://logs"},"cluster_log_conf.region":{"type":"unlimited","defaultValue":"us-west-2"}}`}, nil).Once()
 
-	changes, skipped, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{key: entry}})
+	changes, skipped, err := filterPolicyTestChanges(t, b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{key: entry}})
 	require.NoError(t, err)
 	assert.Empty(t, skipped)
 	require.Contains(t, changes, key)
@@ -495,7 +509,7 @@ func TestExtractChangesKeepsCompleteLogConfigurationWhenStorageChanges(t *testin
 	assert.Equal(t, configsync.OperationRemove, changes[key][prefix+"cluster_log_conf.dbfs"].Operation)
 }
 
-func TestExtractChangesUsesEffectivePolicyFamilyDefinition(t *testing.T) {
+func TestFilterClusterPolicyValuesUsesEffectivePolicyFamilyDefinition(t *testing.T) {
 	b := policyTestBundle(t, "resources.clusters.test", map[string]any{"policy_id": "family-policy"})
 	client := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(client.WorkspaceClient)
@@ -512,7 +526,7 @@ func TestExtractChangesUsesEffectivePolicyFamilyDefinition(t *testing.T) {
 			"custom_tags": {Action: deployplan.Skip, Reason: deployplan.ReasonRemoteAddition, Remote: remoteTags},
 		},
 	}
-	changes, skipped, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
+	changes, skipped, err := filterPolicyTestChanges(t, b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
 	require.NoError(t, err)
 	assert.Empty(t, skipped)
 	require.Contains(t, changes, "resources.clusters.test")
@@ -520,7 +534,7 @@ func TestExtractChangesUsesEffectivePolicyFamilyDefinition(t *testing.T) {
 	assert.Equal(t, map[string]any{"Owner": "user"}, changes["resources.clusters.test"]["custom_tags"].Value)
 }
 
-func TestExtractChangesDropsPolicyAdditionBesideAuthoredField(t *testing.T) {
+func TestFilterClusterPolicyValuesDropsPolicyAdditionBesideAuthoredField(t *testing.T) {
 	b := policyTestBundle(t, "resources.clusters.test", map[string]any{
 		"policy_id": "policy", "autoscale": map[string]any{"max_workers": int64(4)},
 	})
@@ -533,7 +547,7 @@ func TestExtractChangesDropsPolicyAdditionBesideAuthoredField(t *testing.T) {
 		RemoteState: &dresources.ClusterRemote{PolicyId: "policy", Autoscale: remote},
 		Changes:     deployplan.Changes{"autoscale": {Action: deployplan.Update, New: &compute.AutoScale{MaxWorkers: 4}, Remote: remote}},
 	}
-	changes, skipped, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
+	changes, skipped, err := filterPolicyTestChanges(t, b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
 	require.NoError(t, err)
 	assert.Empty(t, skipped)
 	require.Contains(t, changes, "resources.clusters.test")
@@ -541,7 +555,7 @@ func TestExtractChangesDropsPolicyAdditionBesideAuthoredField(t *testing.T) {
 	assert.Equal(t, map[string]any{"max_workers": int64(4)}, changes["resources.clusters.test"]["autoscale"].Value)
 }
 
-func TestExtractChangesKeepsPolicyValuesInsidePositionalArray(t *testing.T) {
+func TestFilterClusterPolicyValuesKeepsPolicyValuesInsidePositionalArray(t *testing.T) {
 	b := policyTestBundle(t, "resources.clusters.test", map[string]any{
 		"policy_id": "policy", "init_scripts": []any{map[string]any{"workspace": map[string]any{"destination": "/Workspace/init.sh"}}},
 	})
@@ -553,7 +567,7 @@ func TestExtractChangesKeepsPolicyValuesInsidePositionalArray(t *testing.T) {
 	// Array positions must be preserved regardless of whether the value matches a policy.
 	client := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(client.WorkspaceClient)
-	changes, skipped, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
+	changes, skipped, err := filterPolicyTestChanges(t, b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
 	require.NoError(t, err)
 	assert.Empty(t, skipped)
 	require.Contains(t, changes, "resources.clusters.test")
@@ -561,7 +575,7 @@ func TestExtractChangesKeepsPolicyValuesInsidePositionalArray(t *testing.T) {
 	assert.Equal(t, map[string]any{"destination": "/Volumes/c/s/v/init.sh"}, changes["resources.clusters.test"]["init_scripts[0].volumes"].Value)
 }
 
-func TestExtractChangesDropsPolicyOnlyObjectAtChangeRoot(t *testing.T) {
+func TestFilterClusterPolicyValuesDropsPolicyOnlyObjectAtChangeRoot(t *testing.T) {
 	b := policyTestBundle(t, "resources.clusters.test", map[string]any{"policy_id": "policy"})
 	client := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(client.WorkspaceClient)
@@ -576,7 +590,7 @@ func TestExtractChangesDropsPolicyOnlyObjectAtChangeRoot(t *testing.T) {
 		RemoteState: remote,
 		Changes:     deployplan.Changes{"workload_type.clients": {Action: deployplan.Update, Remote: clients}},
 	}
-	changes, skipped, err := configsync.ExtractChanges(t.Context(), b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
+	changes, skipped, err := filterPolicyTestChanges(t, b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
 	require.NoError(t, err)
 	assert.Empty(t, skipped)
 	assert.Empty(t, changes)
@@ -629,4 +643,22 @@ func policyTestBundle(t *testing.T, resourceKey string, config map[string]any) *
 		return value, nil
 	}))
 	return b
+}
+
+func filterPolicyTestChanges(t *testing.T, b *bundle.Bundle, plan *deployplan.Plan) (configsync.Changes, []configsync.SkippedChange, error) {
+	t.Helper()
+	changes, err := configsync.ExtractChanges(t.Context(), b, plan)
+	require.NoError(t, err)
+	inputs := []any{plan, changes}
+	for _, entry := range plan.Plan {
+		// RemoteState is excluded from the plan's JSON representation.
+		inputs = append(inputs, entry.RemoteState)
+	}
+	before, err := json.Marshal(inputs)
+	require.NoError(t, err)
+	filtered, skipped, filterErr := configsync.FilterClusterPolicyValues(t.Context(), b, plan, changes)
+	after, err := json.Marshal(inputs)
+	require.NoError(t, err)
+	assert.Equal(t, string(before), string(after), "policy filtering must not mutate the plan or input changes")
+	return filtered, skipped, filterErr
 }
