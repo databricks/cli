@@ -66,7 +66,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	// The state is opened without a DMS client, so the writes below record nothing;
 	// phases.Bind and phases.Unbind refuse to run at all when recording is enabled.
 	var checkStateDB dstate.DeploymentState
-	if err := checkStateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
+	if err := checkStateDB.Open(ctx, statePath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{}); err != nil {
 		// State that cannot be read is not the same as state without a binding:
 		// the resource may well be managed already, and binding on top of it
 		// would take over a resource whose ownership was never checked. A state
@@ -95,7 +95,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	}
 
 	// Open temp state
-	err := b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(false), dstate.WithWrite(true), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{})
+	err := b.StateDB.Open(ctx, tmpStatePath, dstate.WritingFile, dstate.WithRecovery(false), dstate.OpenDmsArgs{})
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
@@ -118,7 +118,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	log.Infof(ctx, "Bound %s to id=%s (in temp state)", resourceKey, resourceID)
 
 	// First plan + update: populate state with resolved config
-	err = b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{})
+	err = b.StateDB.Open(ctx, tmpStatePath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{})
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
@@ -167,7 +167,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 			return nil, fmt.Errorf("compacting state: %w", err)
 		}
 
-		err = b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(true), dstate.WithWrite(true), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{})
+		err = b.StateDB.Open(ctx, tmpStatePath, dstate.WritingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{})
 		if err != nil {
 			os.Remove(tmpStatePath)
 			return nil, err
@@ -187,7 +187,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	}
 
 	// Second plan: this is the plan to present to the user (change between remote resource and config)
-	err = b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{})
+	err = b.StateDB.Open(ctx, tmpStatePath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{})
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
@@ -237,7 +237,7 @@ func (result *BindResult) Cancel() {
 // Unbind removes a resource from direct engine state without deleting
 // the workspace resource. Also removes associated permissions/grants entries.
 func (b *DeploymentBundle) Unbind(ctx context.Context, statePath, resourceKey string) error {
-	err := b.StateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(true), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{})
+	err := b.StateDB.Open(ctx, statePath, dstate.WritingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{})
 	if err != nil {
 		if errors.Is(err, dstate.ErrUnsettingRecording) {
 			return errors.New("unbind is not supported for a bundle target that records deployment history")
