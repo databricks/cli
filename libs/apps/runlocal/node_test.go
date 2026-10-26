@@ -44,7 +44,7 @@ func TestNodeAppGetCommand(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			config := &Config{}
 			spec := &AppSpec{config: config, Command: tt.command}
-			app := NewNodeApp(config, spec, &PackageJson{})
+			app := NewNodeApp(config, spec, &PackageJson{}, "npm")
 			ctx := env.Set(t.Context(), "NODE_OPTIONS", "") // unset ambient NODE_OPTIONS to keep env clean
 			cmd, cmdEnv, err := app.GetCommand(ctx, tt.debug)
 			require.NoError(t, err)
@@ -60,7 +60,7 @@ func TestNodeAppGetCommandDebugAppendsToExistingNodeOptions(t *testing.T) {
 
 	config := &Config{}
 	spec := &AppSpec{config: config}
-	app := NewNodeApp(config, spec, &PackageJson{})
+	app := NewNodeApp(config, spec, &PackageJson{}, "npm")
 	_, cmdEnv, err := app.GetCommand(ctx, true)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"NODE_OPTIONS=--max-old-space-size=4096 --inspect=9229"}, cmdEnv)
@@ -69,7 +69,7 @@ func TestNodeAppGetCommandDebugAppendsToExistingNodeOptions(t *testing.T) {
 func TestNodeAppGetCommandDebugCustomPort(t *testing.T) {
 	config := &Config{DebugPort: "5555"}
 	spec := &AppSpec{config: config}
-	app := NewNodeApp(config, spec, &PackageJson{})
+	app := NewNodeApp(config, spec, &PackageJson{}, "npm")
 	ctx := env.Set(t.Context(), "NODE_OPTIONS", "") // unset ambient NODE_OPTIONS to keep env clean
 	_, cmdEnv, err := app.GetCommand(ctx, true)
 	require.NoError(t, err)
