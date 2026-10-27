@@ -233,7 +233,6 @@ func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (b
 	}
 	db.versionCompleted = true
 	deploymentID, versionID := db.DeploymentID, db.VersionID
-	bestEffort := db.mode == WritingDeploymentHistoryShadow
 	db.reset()
 	db.mu.Unlock()
 
@@ -254,10 +253,6 @@ func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (b
 		CompletionReason: reason,
 	})
 	if err != nil {
-		if bestEffort {
-			log.Warnf(ctx, "Failed to complete deployment history version: %s", err)
-			return false, nil
-		}
 		return false, err
 	}
 	log.Infof(ctx, "Completed deployment version: deployment=%s version=%d reason=%s", deploymentID, versionID, reason)

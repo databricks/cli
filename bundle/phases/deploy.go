@@ -171,7 +171,11 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	defer func() {
 		if b.DeploymentBundle.StateDB.RecordsHistory() {
 			if _, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, !logdiag.HasError(ctx)); err != nil {
-				log.Warnf(ctx, "Failed to complete deployment history version: %s", err)
+				if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
+					logdiag.LogError(ctx, err)
+				} else {
+					log.Warnf(ctx, "Failed to complete deployment history version: %s", err)
+				}
 			}
 		}
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
