@@ -1621,6 +1621,12 @@ func stringsResourcesJob(c *stringsWalk, n *Node, v *resources.Job) {
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
+		}
+	}
 	if c.mode == EmptyFields && v.JobSettings.BudgetPolicyId == "" && Forced(v.JobSettings.ForceSendFields, "BudgetPolicyId") {
 		ch := n.Child("budget_policy_id")
 		c.fn(&ch, "")
@@ -2062,6 +2068,12 @@ func stringsResourcesPipeline(c *stringsWalk, n *Node, v *resources.Pipeline) {
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
+		}
+	}
 	if c.mode == EmptyFields && v.CreatePipeline.BudgetPolicyId == "" && Forced(v.CreatePipeline.ForceSendFields, "BudgetPolicyId") {
 		ch := n.Child("budget_policy_id")
 		c.fn(&ch, "")
@@ -2332,6 +2344,12 @@ func stringsResourcesFeature(c *stringsWalk, n *Node, v *resources.Feature) {
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
+		}
+	}
 	if c.mode == EmptyFields && v.Feature.CatalogName == "" && Forced(v.Feature.ForceSendFields, "CatalogName") {
 		ch := n.Child("catalog_name")
 		c.fn(&ch, "")
@@ -2481,6 +2499,12 @@ func stringsResourcesMlflowModel(c *stringsWalk, n *Node, v *resources.MlflowMod
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
+		}
+	}
 	if c.mode == EmptyFields && v.CreateModelRequest.Description == "" && Forced(v.CreateModelRequest.ForceSendFields, "Description") {
 		ch := n.Child("description")
 		c.fn(&ch, "")
@@ -2541,6 +2565,12 @@ func stringsResourcesMlflowExperiment(c *stringsWalk, n *Node, v *resources.Mlfl
 		ch := n.Child("modified_status")
 		if r, ok := c.fn(&ch, s); ok {
 			v.BaseResource.ModifiedStatus = (r)
+		}
+	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
 		}
 	}
 	if c.mode == EmptyFields && v.CreateExperiment.ArtifactLocation == "" && Forced(v.CreateExperiment.ForceSendFields, "ArtifactLocation") {
@@ -2609,6 +2639,12 @@ func stringsResourcesModelServingEndpoint(c *stringsWalk, n *Node, v *resources.
 		ch := n.Child("modified_status")
 		if r, ok := c.fn(&ch, s); ok {
 			v.BaseResource.ModifiedStatus = (r)
+		}
+	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
 		}
 	}
 	if !n.IsRef("ai_gateway") {
@@ -2718,6 +2754,12 @@ func stringsResourcesModelService(c *stringsWalk, n *Node, v *resources.ModelSer
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
+		}
+	}
 	if s := string(v.ModelServiceConfig.Parent); c.match(s) {
 		ch := n.Child("parent")
 		if r, ok := c.fn(&ch, s); ok {
@@ -2779,6 +2821,12 @@ func stringsResourcesMcpService(c *stringsWalk, n *Node, v *resources.McpService
 		ch := n.Child("modified_status")
 		if r, ok := c.fn(&ch, s); ok {
 			v.BaseResource.ModifiedStatus = (r)
+		}
+	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
 		}
 	}
 	if s := string(v.McpServiceConfig.Parent); c.match(s) {
@@ -2844,6 +2892,12 @@ func stringsResourcesModelProviderService(c *stringsWalk, n *Node, v *resources.
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
+		}
+	}
 	if s := string(v.ModelProviderServiceConfig.Parent); c.match(s) {
 		ch := n.Child("parent")
 		if r, ok := c.fn(&ch, s); ok {
@@ -2905,6 +2959,12 @@ func stringsResourcesRegisteredModel(c *stringsWalk, n *Node, v *resources.Regis
 		ch := n.Child("modified_status")
 		if r, ok := c.fn(&ch, s); ok {
 			v.BaseResource.ModifiedStatus = (r)
+		}
+	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
 		}
 	}
 	if !n.IsRef("aliases") {
@@ -3048,6 +3108,12 @@ func stringsResourcesQualityMonitor(c *stringsWalk, n *Node, v *resources.Qualit
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
+		}
+	}
 	if s := string(v.CreateMonitor.AssetsDir); c.match(s) {
 		ch := n.Child("assets_dir")
 		if r, ok := c.fn(&ch, s); ok {
@@ -3173,6 +3239,12 @@ func stringsResourcesCatalog(c *stringsWalk, n *Node, v *resources.Catalog) {
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
+		}
+	}
 	if c.mode == EmptyFields && v.CreateCatalog.Comment == "" && Forced(v.CreateCatalog.ForceSendFields, "Comment") {
 		ch := n.Child("comment")
 		c.fn(&ch, "")
@@ -3296,6 +3368,12 @@ func stringsResourcesSchema(c *stringsWalk, n *Node, v *resources.Schema) {
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
+		}
+	}
 	if s := string(v.CreateSchema.CatalogName); c.match(s) {
 		ch := n.Child("catalog_name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -3382,6 +3460,12 @@ func stringsResourcesVolume(c *stringsWalk, n *Node, v *resources.Volume) {
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
+		}
+	}
 	if s := string(v.CreateVolumeRequestContent.CatalogName); c.match(s) {
 		ch := n.Child("catalog_name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -3442,6 +3526,12 @@ func stringsResourcesExternalLocation(c *stringsWalk, n *Node, v *resources.Exte
 		ch := n.Child("modified_status")
 		if r, ok := c.fn(&ch, s); ok {
 			v.ModifiedStatus = (r)
+		}
+	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.Lifecycle)
 		}
 	}
 	if !n.IsRef("grants") {
@@ -3511,6 +3601,12 @@ func stringsResourcesCluster(c *stringsWalk, n *Node, v *resources.Cluster) {
 		ch := n.Child("id")
 		if r, ok := c.fn(&ch, s); ok {
 			v.ID = (r)
+		}
+	}
+	if !n.IsRef("lifecycle") {
+		if x := v.Lifecycle; x != nil {
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycleWithStarted(c, &ch, x)
 		}
 	}
 	if !n.IsRef("libraries") {
@@ -3813,6 +3909,12 @@ func stringsResourcesDashboard(c *stringsWalk, n *Node, v *resources.Dashboard) 
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
+		}
+	}
 	if c.mode == EmptyFields && v.DashboardConfig.CreateTime == "" && Forced(v.DashboardConfig.ForceSendFields, "CreateTime") {
 		ch := n.Child("create_time")
 		c.fn(&ch, "")
@@ -3972,6 +4074,12 @@ func stringsResourcesGenieSpace(c *stringsWalk, n *Node, v *resources.GenieSpace
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
+		}
+	}
 	if c.mode == EmptyFields && v.GenieSpaceConfig.Description == "" && Forced(v.GenieSpaceConfig.ForceSendFields, "Description") {
 		ch := n.Child("description")
 		c.fn(&ch, "")
@@ -4046,6 +4154,12 @@ func stringsResourcesApp(c *stringsWalk, n *Node, v *resources.App) {
 		ch := n.Child("url")
 		if r, ok := c.fn(&ch, s); ok {
 			v.URL = (r)
+		}
+	}
+	if !n.IsRef("lifecycle") {
+		if x := v.Lifecycle; x != nil {
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycleWithStarted(c, &ch, x)
 		}
 	}
 	if !n.IsRef("config") {
@@ -4400,6 +4514,12 @@ func stringsResourcesSecretScope(c *stringsWalk, n *Node, v *resources.SecretSco
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
+		}
+	}
 }
 
 func stringsResourcesAlert(c *stringsWalk, n *Node, v *resources.Alert) {
@@ -4439,6 +4559,12 @@ func stringsResourcesAlert(c *stringsWalk, n *Node, v *resources.Alert) {
 		ch := n.Child("modified_status")
 		if r, ok := c.fn(&ch, s); ok {
 			v.BaseResource.ModifiedStatus = (r)
+		}
+	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
 		}
 	}
 	if c.mode == EmptyFields && v.AlertV2.CreateTime == "" && Forced(v.AlertV2.ForceSendFields, "CreateTime") {
@@ -4596,6 +4722,12 @@ func stringsResourcesSqlWarehouse(c *stringsWalk, n *Node, v *resources.SqlWareh
 			v.ID = (r)
 		}
 	}
+	if !n.IsRef("lifecycle") {
+		if x := v.Lifecycle; x != nil {
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycleWithStarted(c, &ch, x)
+		}
+	}
 	if !n.IsRef("permissions") {
 		if len(v.Permissions) > 0 {
 			cn := n.Child("permissions")
@@ -4734,6 +4866,12 @@ func stringsResourcesDatabaseInstance(c *stringsWalk, n *Node, v *resources.Data
 		ch := n.Child("modified_status")
 		if r, ok := c.fn(&ch, s); ok {
 			v.BaseResource.ModifiedStatus = (r)
+		}
+	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
 		}
 	}
 	if c.mode == EmptyFields && v.DatabaseInstance.Capacity == "" && Forced(v.DatabaseInstance.ForceSendFields, "Capacity") {
@@ -4915,6 +5053,12 @@ func stringsResourcesDatabaseCatalog(c *stringsWalk, n *Node, v *resources.Datab
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
+		}
+	}
 	if s := string(v.DatabaseCatalog.DatabaseInstanceName); c.match(s) {
 		ch := n.Child("database_instance_name")
 		if r, ok := c.fn(&ch, s); ok {
@@ -4965,6 +5109,12 @@ func stringsResourcesSyncedDatabaseTable(c *stringsWalk, n *Node, v *resources.S
 		ch := n.Child("modified_status")
 		if r, ok := c.fn(&ch, s); ok {
 			v.BaseResource.ModifiedStatus = (r)
+		}
+	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
 		}
 	}
 	if !n.IsRef("data_synchronization_status") {
@@ -5070,6 +5220,12 @@ func stringsResourcesPostgresProject(c *stringsWalk, n *Node, v *resources.Postg
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
+		}
+	}
 	if s := string(v.PostgresProjectConfig.ProjectId); c.match(s) {
 		ch := n.Child("project_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -5147,6 +5303,12 @@ func stringsResourcesPostgresBranch(c *stringsWalk, n *Node, v *resources.Postgr
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
+		}
+	}
 	if s := string(v.PostgresBranchConfig.BranchId); c.match(s) {
 		ch := n.Child("branch_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -5213,6 +5375,12 @@ func stringsResourcesPostgresEndpoint(c *stringsWalk, n *Node, v *resources.Post
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
+		}
+	}
 	if s := string(v.PostgresEndpointConfig.EndpointId); c.match(s) {
 		ch := n.Child("endpoint_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -5261,6 +5429,12 @@ func stringsResourcesPostgresCatalog(c *stringsWalk, n *Node, v *resources.Postg
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
+		}
+	}
 	if s := string(v.PostgresCatalogConfig.CatalogId); c.match(s) {
 		ch := n.Child("catalog_id")
 		if r, ok := c.fn(&ch, s); ok {
@@ -5305,6 +5479,12 @@ func stringsResourcesPostgresDatabase(c *stringsWalk, n *Node, v *resources.Post
 		ch := n.Child("modified_status")
 		if r, ok := c.fn(&ch, s); ok {
 			v.BaseResource.ModifiedStatus = (r)
+		}
+	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
 		}
 	}
 	if s := string(v.PostgresDatabaseConfig.DatabaseId); c.match(s) {
@@ -5357,6 +5537,12 @@ func stringsResourcesPostgresRole(c *stringsWalk, n *Node, v *resources.Postgres
 		ch := n.Child("modified_status")
 		if r, ok := c.fn(&ch, s); ok {
 			v.BaseResource.ModifiedStatus = (r)
+		}
+	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
 		}
 	}
 	if s := string(v.PostgresRoleConfig.RoleId); c.match(s) {
@@ -5436,6 +5622,12 @@ func stringsResourcesPostgresSyncedTable(c *stringsWalk, n *Node, v *resources.P
 		ch := n.Child("modified_status")
 		if r, ok := c.fn(&ch, s); ok {
 			v.BaseResource.ModifiedStatus = (r)
+		}
+	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
 		}
 	}
 	if s := string(v.PostgresSyncedTableConfig.SyncedTableId); c.match(s) {
@@ -5569,6 +5761,12 @@ func stringsResourcesPostgresSnapshotSchedule(c *stringsWalk, n *Node, v *resour
 			v.BaseResource.ModifiedStatus = (r)
 		}
 	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
+		}
+	}
 	if s := string(v.PostgresSnapshotScheduleConfig.Branch); c.match(s) {
 		ch := n.Child("branch")
 		if r, ok := c.fn(&ch, s); ok {
@@ -5619,6 +5817,12 @@ func stringsResourcesVectorSearchEndpoint(c *stringsWalk, n *Node, v *resources.
 		ch := n.Child("modified_status")
 		if r, ok := c.fn(&ch, s); ok {
 			v.BaseResource.ModifiedStatus = (r)
+		}
+	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
 		}
 	}
 	if c.mode == EmptyFields && v.CreateEndpoint.BudgetPolicyId == "" && Forced(v.CreateEndpoint.ForceSendFields, "BudgetPolicyId") {
@@ -5686,6 +5890,12 @@ func stringsResourcesVectorSearchIndex(c *stringsWalk, n *Node, v *resources.Vec
 		ch := n.Child("modified_status")
 		if r, ok := c.fn(&ch, s); ok {
 			v.BaseResource.ModifiedStatus = (r)
+		}
+	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
 		}
 	}
 	if !n.IsRef("delta_sync_index_spec") {
@@ -5763,6 +5973,12 @@ func stringsResourcesInstancePool(c *stringsWalk, n *Node, v *resources.Instance
 		ch := n.Child("modified_status")
 		if r, ok := c.fn(&ch, s); ok {
 			v.BaseResource.ModifiedStatus = (r)
+		}
+	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
 		}
 	}
 	if !n.IsRef("aws_attributes") {
@@ -5877,6 +6093,12 @@ func stringsResourcesSecret(c *stringsWalk, n *Node, v *resources.Secret) {
 		ch := n.Child("modified_status")
 		if r, ok := c.fn(&ch, s); ok {
 			v.BaseResource.ModifiedStatus = (r)
+		}
+	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
 		}
 	}
 	if s := string(v.Secret.CatalogName); c.match(s) {
@@ -6032,6 +6254,12 @@ func stringsResourcesClusterPolicy(c *stringsWalk, n *Node, v *resources.Cluster
 		ch := n.Child("modified_status")
 		if r, ok := c.fn(&ch, s); ok {
 			v.BaseResource.ModifiedStatus = (r)
+		}
+	}
+	if !n.IsRef("lifecycle") {
+		{
+			ch := n.Child("lifecycle")
+			stringsResourcesLifecycle(c, &ch, &v.BaseResource.Lifecycle)
 		}
 	}
 	if c.mode == EmptyFields && v.CreatePolicy.Description == "" && Forced(v.CreatePolicy.ForceSendFields, "Description") {
@@ -6250,6 +6478,23 @@ func stringsResourcesJobPermission(c *stringsWalk, n *Node, v *resources.JobPerm
 		ch := n.Child("group_name")
 		if r, ok := c.fn(&ch, s); ok {
 			v.GroupName = (r)
+		}
+	}
+}
+
+func stringsResourcesLifecycle(c *stringsWalk, n *Node, v *resources.Lifecycle) {
+	if n.isRef() {
+		return
+	}
+	if !n.IsRef("depends_on") {
+		if len(v.DependsOn) > 0 {
+			cn := n.Child("depends_on")
+			for i := range v.DependsOn {
+				{
+					ch := cn.Elem(i)
+					stringsResourcesDependsOn(c, &ch, &v.DependsOn[i])
+				}
+			}
 		}
 	}
 }
@@ -7054,6 +7299,17 @@ func stringsResourcesJobRunLifecycle(c *stringsWalk, n *Node, v *resources.JobRu
 		if x := v.TriggersState; x != nil {
 			ch := n.Child("triggers_state")
 			stringsResourcesJobRunTriggersState(c, &ch, x)
+		}
+	}
+	if !n.IsRef("depends_on") {
+		if len(v.Lifecycle.DependsOn) > 0 {
+			cn := n.Child("depends_on")
+			for i := range v.Lifecycle.DependsOn {
+				{
+					ch := cn.Elem(i)
+					stringsResourcesDependsOn(c, &ch, &v.Lifecycle.DependsOn[i])
+				}
+			}
 		}
 	}
 }
@@ -8713,6 +8969,23 @@ func stringsCatalogEncryptionDetails(c *stringsWalk, n *Node, v *catalog.Encrypt
 		if x := v.SseEncryptionDetails; x != nil {
 			ch := n.Child("sse_encryption_details")
 			stringsCatalogSseEncryptionDetails(c, &ch, x)
+		}
+	}
+}
+
+func stringsResourcesLifecycleWithStarted(c *stringsWalk, n *Node, v *resources.LifecycleWithStarted) {
+	if n.isRef() {
+		return
+	}
+	if !n.IsRef("depends_on") {
+		if len(v.Lifecycle.DependsOn) > 0 {
+			cn := n.Child("depends_on")
+			for i := range v.Lifecycle.DependsOn {
+				{
+					ch := cn.Elem(i)
+					stringsResourcesDependsOn(c, &ch, &v.Lifecycle.DependsOn[i])
+				}
+			}
 		}
 	}
 }
@@ -10461,6 +10734,18 @@ func stringsSnapshotACLEntry(c *stringsWalk, n *Node, v *snapshot.ACLEntry) {
 		ch := n.Child("permission_level")
 		if r, ok := c.fn(&ch, s); ok {
 			v.PermissionLevel = (r)
+		}
+	}
+}
+
+func stringsResourcesDependsOn(c *stringsWalk, n *Node, v *resources.DependsOn) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.Resource); c.match(s) {
+		ch := n.Child("resource")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Resource = (r)
 		}
 	}
 }
