@@ -73,6 +73,7 @@ GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git rebase or
 - `bundle/phases/` - High-level deployment phases
 
 **libs/** - Shared libraries and utilities
+- `libs/dyn/` - Dynamic configuration value tree: loads `databricks.yml` and its includes and merges targets, before the configuration is converted to typed structs
 - `libs/structs/structvar/` - Typed configuration values with references and locations
 - `libs/filer/` - File system abstraction (local, DBFS, workspace)
 - `libs/auth/` - Databricks authentication handling
