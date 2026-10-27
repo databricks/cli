@@ -44,6 +44,11 @@ func pipelineRewritePatterns() []pipelineRewritePattern {
 			mode:        TranslateModeDirectory,
 			skipRewrite: noSkipRewrite,
 		},
+		{
+			pattern:     base.Append(dyn.Key("testing"), dyn.Key("sources"), dyn.AnyIndex(), dyn.Key("glob"), dyn.Key("include")),
+			mode:        TranslateModeGlob,
+			skipRewrite: noSkipRewrite,
+		},
 	}
 
 	return allPatterns
@@ -51,8 +56,10 @@ func pipelineRewritePatterns() []pipelineRewritePattern {
 
 func pipelineLibrariesRewritePatterns() []pipelineRewritePattern {
 	var patterns []pipelineRewritePattern
+	// Test dependencies take the same forms as the pipeline's environment dependencies.
 	for _, dependencies := range []dyn.Pattern{
 		base.Append(dyn.Key("environment"), dyn.Key("dependencies"), dyn.AnyIndex()),
+		base.Append(dyn.Key("testing"), dyn.Key("environment"), dyn.Key("dependencies"), dyn.AnyIndex()),
 	} {
 		patterns = append(patterns,
 			pipelineRewritePattern{

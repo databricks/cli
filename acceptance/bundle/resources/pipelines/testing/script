@@ -1,0 +1,24 @@
+title "Relative test paths resolve to the deployed workspace paths"
+trace $CLI bundle validate -o json | jq .resources.pipelines.orders.testing
+
+trace $CLI bundle deploy
+trace print_requests.py //api/2.0/pipelines --nostamp
+
+title "No changes after the deploy"
+trace $CLI bundle plan
+rm "$OUT_REQUESTS"
+
+title "Changing testing updates the pipeline"
+trace update_file.py databricks.yml './tests/**' './tests/unit/**'
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //api/2.0/pipelines --nostamp
+
+title "Removing testing sends an update without it"
+update_file.py databricks.yml "$(sed -n '/^      testing:/,$p' databricks.yml)" ""
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //api/2.0/pipelines --nostamp
+
+trace $CLI bundle destroy --auto-approve
+rm "$OUT_REQUESTS"

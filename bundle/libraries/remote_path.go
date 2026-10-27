@@ -143,6 +143,7 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]LocationToUpdate, err
 		clusterLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
 		envDepsPattern.Append(dyn.AnyIndex()),
 		pipelineEnvDepsPattern.Append(dyn.AnyIndex()),
+		pipelineTestingEnvDepsPattern.Append(dyn.AnyIndex()),
 		// The AI Runtime task's code_source_path is a local archive (typically an
 		// artifact-built .tar.gz) that must be uploaded and referenced by its remote
 		// path, exactly like a wheel or jar library.
