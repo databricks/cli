@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -140,4 +141,15 @@ func TestProfileHostCompatibleViaCobra(t *testing.T) {
 	if err != nil {
 		assert.NotContains(t, err.Error(), "conflicts with --host")
 	}
+}
+
+func TestPromptForHostRejectsEmptyHost(t *testing.T) {
+	tm := termtest.Run(t, promptForHost)
+	tm.WaitFor("Databricks host")
+	tm.Type(termtest.KeyEnter)
+	tm.WaitFor(">> host is required")
+	tm.Type("https://workspace.test" + termtest.KeyEnter)
+	host, err := tm.Result()
+	require.NoError(t, err)
+	assert.Equal(t, "https://workspace.test", host)
 }
