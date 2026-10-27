@@ -1,0 +1,44 @@
+
+=== The DEV switch creates DMS-authoritative state
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-history-only-[UNIQUE_NAME]/default/files...
+Created jobs.foo
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> jq {features, state} .databricks/bundle/default/resources.json
+{
+  "features": {
+    "deployment_history": {}
+  },
+  "state": {}
+}
+
+=== The persisted state keeps DMS authoritative after the DEV switch is removed
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> print_requests.py --dms //resources --get --summary
+GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]/resources
+
+=== DMS errors fail operations when DMS is authoritative
+>>> fault.py GET /api/2.0/bundle/deployments/* 500 0 1000
+
+>>> musterr [CLI] bundle plan
+Error: Fault injected by test. (500 INJECTED)
+
+Endpoint: GET [DATABRICKS_URL]/api/2.0/bundle/deployments/[DEPLOYMENT_ID]?
+HTTP Status: 500 Internal Server Error
+API error_code: INJECTED
+API message: Fault injected by test.
+
+
+>>> fault.py GET /api/2.0/bundle/deployments/* 500 0 0
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-history-only-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

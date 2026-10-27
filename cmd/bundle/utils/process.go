@@ -29,6 +29,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/retry"
@@ -348,10 +349,11 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// Open direct engine state once for all subsequent operations (ExportState, CalculatePlan, Apply, etc.)
 		// A migrated-from-Terraform state is already open (seeded in memory above), so skip the disk open.
 		needDirectState := stateDesc.Engine.IsDirect() && needsState
+		historyOnly := usesDeploymentHistoryOnly(ctx, b, stateDesc)
 		var localPath string
 		if needDirectState && !b.DeploymentBundle.StateDB.IsOpen() {
 			_, localPath = b.StateFilenameDirect(ctx)
-			if !stateDesc.IsDMS() {
+			if !historyOnly {
 				if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{}); err != nil {
 					logdiag.LogError(ctx, err)
 					return b, stateDesc, root.ErrAlreadyPrinted
@@ -368,7 +370,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 		stateMode := dstate.WritingFile
 		switch {
-		case stateDesc.IsDMS():
+		case historyOnly:
 			// DMS-only state must keep its service-backed source.
 			stateMode = dstate.WritingDeploymentHistoryOnly
 		case opts.Deploy || opts.PreDeployChecks:
@@ -752,6 +754,14 @@ func configuresDeploymentHistory(ctx context.Context, b *bundle.Bundle) bool {
 		configured = b.Config.Experimental.DeploymentHistory
 	}
 	return bundleenv.RecordsDeploymentHistory(ctx, configured)
+}
+
+// usesDeploymentHistoryOnly preserves existing state modes and allows opting new deployments into DMS-authoritative state.
+func usesDeploymentHistoryOnly(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) bool {
+	if stateDesc.IsDMS() {
+		return true
+	}
+	return stateDesc.SourcePath == "" && configuresDeploymentHistory(ctx, b) && env.Get(ctx, bundleenv.DevDeploymentHistoryOnlyVariable) == "true"
 }
 
 // isNewerVersion reports whether the state's recorded CLI version is strictly

@@ -3,10 +3,50 @@ package utils
 import (
 	"testing"
 
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/direct/dstate"
+	bundleenv "github.com/databricks/cli/bundle/env"
+	"github.com/databricks/cli/bundle/statemgmt"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestUsesDeploymentHistoryOnly(t *testing.T) {
+	for _, tt := range []struct {
+		name       string
+		configured *bool
+		historyEnv string
+		devEnv     string
+		sourcePath string
+		feature    string
+		want       bool
+	}{
+		{name: "default best effort", configured: new(true)},
+		{name: "config enabled", configured: new(true), devEnv: "true", want: true},
+		{name: "env enabled", historyEnv: "true", devEnv: "true", want: true},
+		{name: "history disabled", configured: new(false), historyEnv: "true", devEnv: "true"},
+		{name: "history unset", devEnv: "true"},
+		{name: "dev disabled", configured: new(true), devEnv: "false"},
+		{name: "dev invalid", configured: new(true), devEnv: "TRUE"},
+		{name: "existing file state", configured: new(true), devEnv: "true", sourcePath: "resources.json"},
+		{name: "existing shadow state", configured: new(true), devEnv: "true", sourcePath: "resources.json", feature: dstate.FeatureDeploymentHistoryShadow},
+		{name: "existing DMS state", sourcePath: "resources.json", feature: dstate.FeatureDeploymentHistory, want: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := env.Set(t.Context(), bundleenv.DeploymentHistoryVariable, tt.historyEnv)
+			ctx = env.Set(ctx, bundleenv.DevDeploymentHistoryOnlyVariable, tt.devEnv)
+			b := &bundle.Bundle{Config: config.Root{Experimental: &config.Experimental{DeploymentHistory: tt.configured}}}
+			state := &statemgmt.StateDesc{SourcePath: tt.sourcePath, Features: map[string]struct{}{}}
+			if tt.feature != "" {
+				state.Features[tt.feature] = struct{}{}
+			}
+			assert.Equal(t, tt.want, usesDeploymentHistoryOnly(ctx, b, state))
+		})
+	}
+}
 
 func TestIsNewerVersion(t *testing.T) {
 	tests := []struct {
