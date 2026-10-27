@@ -111,6 +111,8 @@ var enumValuesComputeRuntimeEngine = []string{"NULL", "PHOTON", "STANDARD"}
 
 var enumValuesConfigArtifactType = []string{"whl", "jar", "tgz"}
 
+var enumValuesConfigSyncMode = []string{"overwrite", "in-place", "immutable"}
+
 var enumValuesDashboardsLifecycleState = []string{"ACTIVE", "TRASHED"}
 
 var enumValuesDatabaseDatabaseInstanceState = []string{"AVAILABLE", "DELETING", "FAILING_OVER", "STARTING", "STOPPED", "UPDATING"}
@@ -338,6 +340,9 @@ func enumConfigRoot(w *walker, n *node, v *config.Root) {
 			e := c.child(k0)
 			enumVariableVariable(w, &e, x0)
 		}
+	}
+	if c := n.child("workspace"); c.exists() {
+		enumConfigWorkspace(w, &c, &v.Workspace)
 	}
 }
 
@@ -717,6 +722,13 @@ func enumVariableVariable(w *walker, n *node, v *variable.Variable) {
 		v = &variable.Variable{}
 	}
 	w.enumField(n, "type", string(v.Type), enumValuesVariableVariableType)
+}
+
+func enumConfigWorkspace(w *walker, n *node, v *config.Workspace) {
+	if v == nil {
+		v = &config.Workspace{}
+	}
+	w.enumField(n, "sync_mode", string(v.SyncMode), enumValuesConfigSyncMode)
 }
 
 func enumResourcesAlert(w *walker, n *node, v *resources.Alert) {
