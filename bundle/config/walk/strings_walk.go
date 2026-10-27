@@ -6326,6 +6326,17 @@ func stringsResourcesSnapshot(c *stringsWalk, n *Node, v *resources.Snapshot) {
 			}
 		}
 	}
+	if !n.IsRef("can_manage") {
+		if len(v.CanManage) > 0 {
+			cn := n.Child("can_manage")
+			for i := range v.CanManage {
+				{
+					ch := cn.Elem(i)
+					stringsSnapshotManagePrincipal(c, &ch, &v.CanManage[i])
+				}
+			}
+		}
+	}
 	if s := string(v.ZipPath); c.match(s) {
 		ch := n.Child("zip_path")
 		if r, ok := c.fn(&ch, s); ok {
@@ -10734,6 +10745,30 @@ func stringsSnapshotACLEntry(c *stringsWalk, n *Node, v *snapshot.ACLEntry) {
 		ch := n.Child("permission_level")
 		if r, ok := c.fn(&ch, s); ok {
 			v.PermissionLevel = (r)
+		}
+	}
+}
+
+func stringsSnapshotManagePrincipal(c *stringsWalk, n *Node, v *snapshot.ManagePrincipal) {
+	if n.isRef() {
+		return
+	}
+	if s := string(v.UserName); c.match(s) {
+		ch := n.Child("user_name")
+		if r, ok := c.fn(&ch, s); ok {
+			v.UserName = (r)
+		}
+	}
+	if s := string(v.GroupName); c.match(s) {
+		ch := n.Child("group_name")
+		if r, ok := c.fn(&ch, s); ok {
+			v.GroupName = (r)
+		}
+	}
+	if s := string(v.ServicePrincipalName); c.match(s) {
+		ch := n.Child("service_principal_name")
+		if r, ok := c.fn(&ch, s); ok {
+			v.ServicePrincipalName = (r)
 		}
 	}
 }
