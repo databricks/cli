@@ -394,6 +394,16 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 			requiredResourcesQualityMonitor(w, &e, x0)
 		}
 	}
+	if len(v.RegisteredModels) > 0 {
+		c := n.child("registered_models")
+		for k0, x0 := range v.RegisteredModels {
+			if k0 == "" {
+				continue
+			}
+			e := c.child(k0)
+			requiredResourcesRegisteredModel(w, &e, x0)
+		}
+	}
 	if len(v.Schemas) > 0 {
 		c := n.child("schemas")
 		for k0, x0 := range v.Schemas {
@@ -516,6 +526,9 @@ func requiredResourcesAlert(w *walker, n *node, v *resources.Alert) {
 	if c := n.child("evaluation"); c.exists() {
 		requiredSqlAlertV2Evaluation(w, &c, &v.AlertV2.Evaluation)
 	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
+	}
 	if len(v.AlertV2.Parameters) > 0 {
 		c := n.child("parameters")
 		for i0 := range v.AlertV2.Parameters {
@@ -557,6 +570,9 @@ func requiredResourcesApp(w *walker, n *node, v *resources.App) {
 	if c := n.child("git_source"); c.exists() {
 		requiredAppsGitSource(w, &c, v.App.GitSource)
 	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycleWithStarted(w, &c, v.Lifecycle)
+	}
 	if c := n.child("pending_deployment"); c.exists() {
 		requiredAppsAppDeployment(w, &c, v.App.PendingDeployment)
 	}
@@ -590,6 +606,9 @@ func requiredResourcesCatalog(w *walker, n *node, v *resources.Catalog) {
 	if !(v.CreateCatalog.Name != "") && !n.has("name") {
 		w.missing(n, "name")
 	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
+	}
 	if c := n.child("managed_encryption_settings"); c.exists() {
 		requiredCatalogEncryptionSettings(w, &c, v.CreateCatalog.ManagedEncryptionSettings)
 	}
@@ -605,6 +624,9 @@ func requiredResourcesClusterPolicy(w *walker, n *node, v *resources.ClusterPoli
 			e := c.elem(i0)
 			requiredComputeLibrary(w, &e, &v.CreatePolicy.Libraries[i0])
 		}
+	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
 	}
 	if len(v.Permissions) > 0 {
 		c := n.child("permissions")
@@ -636,6 +658,9 @@ func requiredResourcesCluster(w *walker, n *node, v *resources.Cluster) {
 			requiredComputeLibrary(w, &e, &v.Libraries[i0])
 		}
 	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycleWithStarted(w, &c, v.Lifecycle)
+	}
 	if len(v.Permissions) > 0 {
 		c := n.child("permissions")
 		for i0 := range v.Permissions {
@@ -651,6 +676,9 @@ func requiredResourcesCluster(w *walker, n *node, v *resources.Cluster) {
 func requiredResourcesDashboard(w *walker, n *node, v *resources.Dashboard) {
 	if v == nil {
 		v = &resources.Dashboard{}
+	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
 	}
 	if len(v.Permissions) > 0 {
 		c := n.child("permissions")
@@ -674,6 +702,9 @@ func requiredResourcesDatabaseCatalog(w *walker, n *node, v *resources.DatabaseC
 	if !(v.DatabaseCatalog.Name != "") && !n.has("name") {
 		w.missing(n, "name")
 	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
+	}
 }
 
 func requiredResourcesDatabaseInstance(w *walker, n *node, v *resources.DatabaseInstance) {
@@ -682,6 +713,9 @@ func requiredResourcesDatabaseInstance(w *walker, n *node, v *resources.Database
 	}
 	if !(v.DatabaseInstance.Name != "") && !n.has("name") {
 		w.missing(n, "name")
+	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
 	}
 	if len(v.Permissions) > 0 {
 		c := n.child("permissions")
@@ -698,6 +732,9 @@ func requiredResourcesMlflowExperiment(w *walker, n *node, v *resources.MlflowEx
 	}
 	if !(v.CreateExperiment.Name != "") && !n.has("name") {
 		w.missing(n, "name")
+	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
 	}
 	if len(v.Permissions) > 0 {
 		c := n.child("permissions")
@@ -724,6 +761,9 @@ func requiredResourcesExternalLocation(w *walker, n *node, v *resources.External
 	if !(v.CreateExternalLocation.Url != "") && !n.has("url") {
 		w.missing(n, "url")
 	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.Lifecycle)
+	}
 }
 
 func requiredResourcesFeature(w *walker, n *node, v *resources.Feature) {
@@ -749,6 +789,9 @@ func requiredResourcesFeature(w *walker, n *node, v *resources.Feature) {
 	if c := n.child("function"); c.exists() {
 		requiredMlFunction(w, &c, &v.Feature.Function)
 	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
+	}
 	if c := n.child("source"); c.exists() {
 		requiredMlDataSource(w, &c, &v.Feature.Source)
 	}
@@ -763,6 +806,9 @@ func requiredResourcesFeature(w *walker, n *node, v *resources.Feature) {
 func requiredResourcesGenieSpace(w *walker, n *node, v *resources.GenieSpace) {
 	if v == nil {
 		v = &resources.GenieSpace{}
+	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
 	}
 	if len(v.Permissions) > 0 {
 		c := n.child("permissions")
@@ -783,6 +829,9 @@ func requiredResourcesInstancePool(w *walker, n *node, v *resources.InstancePool
 	if !(v.CreateInstancePool.NodeTypeId != "") && !n.has("node_type_id") {
 		w.missing(n, "node_type_id")
 	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
+	}
 	if len(v.Permissions) > 0 {
 		c := n.child("permissions")
 		for i0 := range v.Permissions {
@@ -798,6 +847,9 @@ func requiredResourcesJobRun(w *walker, n *node, v *resources.JobRun) {
 	}
 	if !(v.RunNow.JobId != 0) && !n.has("job_id") {
 		w.missing(n, "job_id")
+	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesJobRunLifecycle(w, &c, v.Lifecycle)
 	}
 	if c := n.child("queue"); c.exists() {
 		requiredJobsQueueSettings(w, &c, v.RunNow.Queue)
@@ -840,6 +892,9 @@ func requiredResourcesJob(w *walker, n *node, v *resources.Job) {
 			e := c.elem(i0)
 			requiredJobsJobCluster(w, &e, &v.JobSettings.JobClusters[i0])
 		}
+	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
 	}
 	if len(v.JobSettings.Parameters) > 0 {
 		c := n.child("parameters")
@@ -896,6 +951,9 @@ func requiredResourcesMcpService(w *walker, n *node, v *resources.McpService) {
 	if c := n.child("config"); c.exists() {
 		requiredCatalogMcpServiceConfig(w, &c, v.McpServiceConfig.Config)
 	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
+	}
 }
 
 func requiredResourcesModelProviderService(w *walker, n *node, v *resources.ModelProviderService) {
@@ -910,6 +968,9 @@ func requiredResourcesModelProviderService(w *walker, n *node, v *resources.Mode
 	}
 	if c := n.child("config"); c.exists() {
 		requiredCatalogModelProviderServiceConfig(w, &c, v.ModelProviderServiceConfig.Config)
+	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
 	}
 }
 
@@ -926,6 +987,9 @@ func requiredResourcesModelService(w *walker, n *node, v *resources.ModelService
 	if c := n.child("config"); c.exists() {
 		requiredCatalogModelServiceConfig(w, &c, v.ModelServiceConfig.Config)
 	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
+	}
 }
 
 func requiredResourcesModelServingEndpoint(w *walker, n *node, v *resources.ModelServingEndpoint) {
@@ -940,6 +1004,9 @@ func requiredResourcesModelServingEndpoint(w *walker, n *node, v *resources.Mode
 	}
 	if c := n.child("config"); c.exists() {
 		requiredServingEndpointCoreConfigInput(w, &c, v.CreateServingEndpoint.Config)
+	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
 	}
 	if len(v.Permissions) > 0 {
 		c := n.child("permissions")
@@ -970,6 +1037,9 @@ func requiredResourcesMlflowModel(w *walker, n *node, v *resources.MlflowModel) 
 	}
 	if !(v.CreateModelRequest.Name != "") && !n.has("name") {
 		w.missing(n, "name")
+	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
 	}
 	if len(v.Permissions) > 0 {
 		c := n.child("permissions")
@@ -1007,6 +1077,9 @@ func requiredResourcesPipeline(w *walker, n *node, v *resources.Pipeline) {
 			requiredPipelinesPipelineLibrary(w, &e, &v.CreatePipeline.Libraries[i0])
 		}
 	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
+	}
 	if len(v.Permissions) > 0 {
 		c := n.child("permissions")
 		for i0 := range v.Permissions {
@@ -1029,6 +1102,9 @@ func requiredResourcesPostgresBranch(w *walker, n *node, v *resources.PostgresBr
 	if !(v.PostgresBranchConfig.Parent != "") && !n.has("parent") {
 		w.missing(n, "parent")
 	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
+	}
 }
 
 func requiredResourcesPostgresCatalog(w *walker, n *node, v *resources.PostgresCatalog) {
@@ -1040,6 +1116,9 @@ func requiredResourcesPostgresCatalog(w *walker, n *node, v *resources.PostgresC
 	}
 	if !(v.PostgresCatalogConfig.CatalogId != "") && !n.has("catalog_id") {
 		w.missing(n, "catalog_id")
+	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
 	}
 }
 
@@ -1055,6 +1134,9 @@ func requiredResourcesPostgresDatabase(w *walker, n *node, v *resources.Postgres
 	}
 	if !(v.PostgresDatabaseConfig.Parent != "") && !n.has("parent") {
 		w.missing(n, "parent")
+	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
 	}
 }
 
@@ -1074,6 +1156,9 @@ func requiredResourcesPostgresEndpoint(w *walker, n *node, v *resources.Postgres
 	if c := n.child("group"); c.exists() {
 		requiredPostgresEndpointGroupSpec(w, &c, v.PostgresEndpointConfig.EndpointSpec.Group)
 	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
+	}
 }
 
 func requiredResourcesPostgresProject(w *walker, n *node, v *resources.PostgresProject) {
@@ -1082,6 +1167,9 @@ func requiredResourcesPostgresProject(w *walker, n *node, v *resources.PostgresP
 	}
 	if !(v.PostgresProjectConfig.ProjectId != "") && !n.has("project_id") {
 		w.missing(n, "project_id")
+	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
 	}
 	if len(v.Permissions) > 0 {
 		c := n.child("permissions")
@@ -1102,6 +1190,9 @@ func requiredResourcesPostgresRole(w *walker, n *node, v *resources.PostgresRole
 	if !(v.PostgresRoleConfig.Parent != "") && !n.has("parent") {
 		w.missing(n, "parent")
 	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
+	}
 }
 
 func requiredResourcesPostgresSnapshotSchedule(w *walker, n *node, v *resources.PostgresSnapshotSchedule) {
@@ -1110,6 +1201,9 @@ func requiredResourcesPostgresSnapshotSchedule(w *walker, n *node, v *resources.
 	}
 	if !(v.PostgresSnapshotScheduleConfig.Branch != "") && !n.has("branch") {
 		w.missing(n, "branch")
+	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
 	}
 	if len(v.PostgresSnapshotScheduleConfig.Schedule) > 0 {
 		c := n.child("schedule")
@@ -1133,6 +1227,9 @@ func requiredResourcesPostgresSyncedTable(w *walker, n *node, v *resources.Postg
 			e := c.elem(i0)
 			requiredPostgresSyncedTableSyncedTableSpecExtraColumn(w, &e, &v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.ExtraColumns[i0])
 		}
+	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
 	}
 	if len(v.PostgresSyncedTableConfig.SyncedTableSyncedTableSpec.TypeOverrides) > 0 {
 		c := n.child("type_overrides")
@@ -1166,11 +1263,23 @@ func requiredResourcesQualityMonitor(w *walker, n *node, v *resources.QualityMon
 	if c := n.child("inference_log"); c.exists() {
 		requiredCatalogMonitorInferenceLog(w, &c, v.CreateMonitor.InferenceLog)
 	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
+	}
 	if c := n.child("schedule"); c.exists() {
 		requiredCatalogMonitorCronSchedule(w, &c, v.CreateMonitor.Schedule)
 	}
 	if c := n.child("time_series"); c.exists() {
 		requiredCatalogMonitorTimeSeries(w, &c, v.CreateMonitor.TimeSeries)
+	}
+}
+
+func requiredResourcesRegisteredModel(w *walker, n *node, v *resources.RegisteredModel) {
+	if v == nil {
+		v = &resources.RegisteredModel{}
+	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
 	}
 }
 
@@ -1184,6 +1293,9 @@ func requiredResourcesSchema(w *walker, n *node, v *resources.Schema) {
 	if !(v.CreateSchema.Name != "") && !n.has("name") {
 		w.missing(n, "name")
 	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
+	}
 }
 
 func requiredResourcesSecretScope(w *walker, n *node, v *resources.SecretScope) {
@@ -1195,6 +1307,9 @@ func requiredResourcesSecretScope(w *walker, n *node, v *resources.SecretScope) 
 	}
 	if c := n.child("keyvault_metadata"); c.exists() {
 		requiredWorkspaceAzureKeyVaultSecretScopeMetadata(w, &c, v.KeyvaultMetadata)
+	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
 	}
 	if len(v.Permissions) > 0 {
 		c := n.child("permissions")
@@ -1221,11 +1336,17 @@ func requiredResourcesSecret(w *walker, n *node, v *resources.Secret) {
 	if !(v.Secret.Value != "") && !n.has("value") {
 		w.missing(n, "value")
 	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
+	}
 }
 
 func requiredResourcesSqlWarehouse(w *walker, n *node, v *resources.SqlWarehouse) {
 	if v == nil {
 		v = &resources.SqlWarehouse{}
+	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycleWithStarted(w, &c, v.Lifecycle)
 	}
 	if len(v.Permissions) > 0 {
 		c := n.child("permissions")
@@ -1243,6 +1364,9 @@ func requiredResourcesSyncedDatabaseTable(w *walker, n *node, v *resources.Synce
 	if !(v.SyncedDatabaseTable.Name != "") && !n.has("name") {
 		w.missing(n, "name")
 	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
+	}
 	if c := n.child("spec"); c.exists() {
 		requiredDatabaseSyncedTableSpec(w, &c, v.SyncedDatabaseTable.Spec)
 	}
@@ -1257,6 +1381,9 @@ func requiredResourcesVectorSearchEndpoint(w *walker, n *node, v *resources.Vect
 	}
 	if !(v.CreateEndpoint.Name != "") && !n.has("name") {
 		w.missing(n, "name")
+	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
 	}
 	if len(v.Permissions) > 0 {
 		c := n.child("permissions")
@@ -1283,6 +1410,9 @@ func requiredResourcesVectorSearchIndex(w *walker, n *node, v *resources.VectorS
 	if !(v.CreateVectorIndexRequest.PrimaryKey != "") && !n.has("primary_key") {
 		w.missing(n, "primary_key")
 	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
+	}
 }
 
 func requiredResourcesVolume(w *walker, n *node, v *resources.Volume) {
@@ -1301,6 +1431,9 @@ func requiredResourcesVolume(w *walker, n *node, v *resources.Volume) {
 	if !(v.CreateVolumeRequestContent.VolumeType != "") && !n.has("volume_type") {
 		w.missing(n, "volume_type")
 	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
+	}
 }
 
 func requiredSqlAlertV2Evaluation(w *walker, n *node, v *sql.AlertV2Evaluation) {
@@ -1318,6 +1451,19 @@ func requiredSqlAlertV2Evaluation(w *walker, n *node, v *sql.AlertV2Evaluation) 
 	}
 	if c := n.child("threshold"); c.exists() {
 		requiredSqlAlertV2Operand(w, &c, v.Threshold)
+	}
+}
+
+func requiredResourcesLifecycle(w *walker, n *node, v *resources.Lifecycle) {
+	if v == nil {
+		v = &resources.Lifecycle{}
+	}
+	if len(v.DependsOn) > 0 {
+		c := n.child("depends_on")
+		for i0 := range v.DependsOn {
+			e := c.elem(i0)
+			requiredResourcesDependsOn(w, &e, &v.DependsOn[i0])
+		}
 	}
 }
 
@@ -1382,6 +1528,19 @@ func requiredAppsGitRepository(w *walker, n *node, v *apps.GitRepository) {
 	}
 	if !(v.Url != "") && !n.has("url") {
 		w.missing(n, "url")
+	}
+}
+
+func requiredResourcesLifecycleWithStarted(w *walker, n *node, v *resources.LifecycleWithStarted) {
+	if v == nil {
+		v = &resources.LifecycleWithStarted{}
+	}
+	if len(v.Lifecycle.DependsOn) > 0 {
+		c := n.child("depends_on")
+		for i0 := range v.Lifecycle.DependsOn {
+			e := c.elem(i0)
+			requiredResourcesDependsOn(w, &e, &v.Lifecycle.DependsOn[i0])
+		}
 	}
 }
 
@@ -1629,6 +1788,19 @@ func requiredResourcesInstancePoolPermission(w *walker, n *node, v *resources.In
 	}
 	if !(v.Level != "") && !n.has("level") {
 		w.missing(n, "level")
+	}
+}
+
+func requiredResourcesJobRunLifecycle(w *walker, n *node, v *resources.JobRunLifecycle) {
+	if v == nil {
+		v = &resources.JobRunLifecycle{}
+	}
+	if len(v.Lifecycle.DependsOn) > 0 {
+		c := n.child("depends_on")
+		for i0 := range v.Lifecycle.DependsOn {
+			e := c.elem(i0)
+			requiredResourcesDependsOn(w, &e, &v.Lifecycle.DependsOn[i0])
+		}
 	}
 }
 
@@ -2363,6 +2535,15 @@ func requiredSqlAlertV2Operand(w *walker, n *node, v *sql.AlertV2Operand) {
 	}
 	if c := n.child("column"); c.exists() {
 		requiredSqlAlertV2OperandColumn2(w, &c, v.Column)
+	}
+}
+
+func requiredResourcesDependsOn(w *walker, n *node, v *resources.DependsOn) {
+	if v == nil {
+		v = &resources.DependsOn{}
+	}
+	if !(v.Resource != "") && !n.has("resource") {
+		w.missing(n, "resource")
 	}
 }
 
