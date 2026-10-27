@@ -7,7 +7,7 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/structs/structvar"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	sdkduration "github.com/databricks/databricks-sdk-go/common/types/duration"
 	sdkfieldmask "github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
@@ -30,7 +30,7 @@ func fromTypedSDKNative(src reflect.Value, ref dyn.Value, options ...fromTypedOp
 	switch ref.Kind() {
 	case dyn.KindString:
 		// Ignore pure variable references (e.g. ${var.foo}).
-		if structvar.IsPureVariableReference(ref.MustString()) {
+		if dynvar.IsPureVariableReference(ref.MustString()) {
 			return ref, nil
 		}
 	case dyn.KindNil:
@@ -72,7 +72,7 @@ func toTypedSDKNative(dst reflect.Value, src dyn.Value) error {
 	switch src.Kind() {
 	case dyn.KindString:
 		// Ignore pure variable references (e.g. ${var.foo}).
-		if structvar.IsPureVariableReference(src.MustString()) {
+		if dynvar.IsPureVariableReference(src.MustString()) {
 			dst.SetZero()
 			return nil
 		}

@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/structs/structvar"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 )
 
 // Populate a destination typed value from a source dynamic value.
@@ -118,7 +118,7 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 		return nil
 	case dyn.KindString:
 		// Ignore pure variable references (e.g. ${var.foo}).
-		if structvar.IsPureVariableReference(src.MustString()) {
+		if dynvar.IsPureVariableReference(src.MustString()) {
 			dst.SetZero()
 			return nil
 		}
@@ -175,7 +175,7 @@ func toTypedMap(dst reflect.Value, src dyn.Value) error {
 		return nil
 	case dyn.KindString:
 		// Ignore pure variable references (e.g. ${var.foo}).
-		if structvar.IsPureVariableReference(src.MustString()) {
+		if dynvar.IsPureVariableReference(src.MustString()) {
 			dst.SetZero()
 			return nil
 		}
@@ -208,7 +208,7 @@ func toTypedSlice(dst reflect.Value, src dyn.Value) error {
 		return nil
 	case dyn.KindString:
 		// Ignore pure variable references (e.g. ${var.foo}).
-		if structvar.IsPureVariableReference(src.MustString()) {
+		if dynvar.IsPureVariableReference(src.MustString()) {
 			dst.SetZero()
 			return nil
 		}
@@ -262,7 +262,7 @@ func toTypedBool(dst reflect.Value, src dyn.Value) error {
 			return nil
 		}
 		// Ignore pure variable references (e.g. ${var.foo}).
-		if structvar.IsPureVariableReference(src.MustString()) {
+		if dynvar.IsPureVariableReference(src.MustString()) {
 			dst.SetZero()
 			return nil
 		}
@@ -300,7 +300,7 @@ func toTypedInt(dst reflect.Value, src dyn.Value) error {
 			return nil
 		}
 		// Ignore pure variable references (e.g. ${var.foo}).
-		if structvar.IsPureVariableReference(src.MustString()) {
+		if dynvar.IsPureVariableReference(src.MustString()) {
 			dst.SetZero()
 			return nil
 		}
@@ -325,7 +325,7 @@ func toTypedFloat(dst reflect.Value, src dyn.Value) error {
 			return nil
 		}
 		// Ignore pure variable references (e.g. ${var.foo}).
-		if structvar.IsPureVariableReference(src.MustString()) {
+		if dynvar.IsPureVariableReference(src.MustString()) {
 			dst.SetZero()
 			return nil
 		}
