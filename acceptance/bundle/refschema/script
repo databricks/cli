@@ -1,2 +1,7 @@
 trace $CLI bundle debug refschema --help
-trace $CLI bundle debug refschema > out.fields.txt
+
+$CLI bundle debug refschema > out.all.tmp
+mkdir -p output
+# resources.<type>.* goes to output/<type>.txt, everything else to output/root.txt
+awk -F'\t' '{ n = split($1, p, "."); f = (p[1] == "resources") ? p[2] : "root"; print > ("output/" f ".txt") }' out.all.tmp
+rm out.all.tmp
