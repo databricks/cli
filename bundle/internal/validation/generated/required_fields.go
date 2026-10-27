@@ -23,6 +23,7 @@ var RequiredFields = map[string][]string{
 	"resources.apps.*": {"name"},
 	"resources.apps.*.active_deployment.git_source.git_repository":    {"provider", "url"},
 	"resources.apps.*.config.env[*]":                                  {"name"},
+	"resources.apps.*.config.health_check":                            {"path"},
 	"resources.apps.*.default_git_source.git_repository":              {"provider", "url"},
 	"resources.apps.*.git_repository":                                 {"provider", "url"},
 	"resources.apps.*.git_source.git_repository":                      {"provider", "url"},

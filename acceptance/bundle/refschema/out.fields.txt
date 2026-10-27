@@ -118,6 +118,9 @@ resources.apps.*.config.env[*]	resources.AppEnvVar	ALL
 resources.apps.*.config.env[*].name	string	ALL
 resources.apps.*.config.env[*].value	string	ALL
 resources.apps.*.config.env[*].value_from	string	ALL
+resources.apps.*.config.health_check	*resources.AppHealthCheck	ALL
+resources.apps.*.config.health_check.path	string	ALL
+resources.apps.*.config.health_check.timeout_seconds	int	ALL
 resources.apps.*.create_time	string	ALL
 resources.apps.*.creator	string	ALL
 resources.apps.*.default_git_source	*apps.GitSource	ALL

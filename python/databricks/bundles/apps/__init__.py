@@ -9,6 +9,9 @@ __all__ = [
     "AppEnvVar",
     "AppEnvVarDict",
     "AppEnvVarParam",
+    "AppHealthCheck",
+    "AppHealthCheckDict",
+    "AppHealthCheckParam",
     "AppParam",
     "AppPermission",
     "AppPermissionDict",
@@ -103,6 +106,11 @@ from databricks.bundles.apps._models.app_env_var import (
     AppEnvVar,
     AppEnvVarDict,
     AppEnvVarParam,
+)
+from databricks.bundles.apps._models.app_health_check import (
+    AppHealthCheck,
+    AppHealthCheckDict,
+    AppHealthCheckParam,
 )
 from databricks.bundles.apps._models.app_permission import (
     AppPermission,
