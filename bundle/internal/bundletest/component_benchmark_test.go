@@ -75,8 +75,8 @@ func BenchmarkComponentExpandGlobReferences(b *testing.B) {
 	benchmarkMutator(b, libraries.ExpandGlobReferences())
 }
 
-// BenchmarkComponentLoad loads a configuration file with 1000 jobs (JSON is valid YAML).
-func BenchmarkComponentLoad(b *testing.B) {
+// componentLoadInput returns a configuration file with 1000 jobs (JSON is valid YAML).
+func componentLoadInput(b *testing.B) []byte {
 	var job map[string]any
 	require.NoError(b, json.Unmarshal([]byte(jobExample), &job))
 	jobs := map[string]any{}
@@ -89,9 +89,37 @@ func BenchmarkComponentLoad(b *testing.B) {
 	})
 	require.NoError(b, err)
 	require.True(b, strings.HasPrefix(string(raw), "{"))
+	return raw
+}
 
+// BenchmarkComponentLoad loads a configuration file with 1000 jobs into the typed
+// configuration: [BenchmarkComponentLoadDyn] plus [BenchmarkComponentFinishLoading].
+func BenchmarkComponentLoad(b *testing.B) {
+	raw := componentLoadInput(b)
 	for b.Loop() {
 		_, diags := config.LoadFromBytes("databricks.yml", raw)
 		require.False(b, diags.HasError(), "%v", diags)
+	}
+}
+
+// BenchmarkComponentLoadDyn loads a configuration file with 1000 jobs into a loading
+// configuration (configuration tree), like the load phase does for every file.
+func BenchmarkComponentLoadDyn(b *testing.B) {
+	raw := componentLoadInput(b)
+	for b.Loop() {
+		_, diags := config.LoadDynFromBytes("databricks.yml", raw)
+		require.False(b, diags.HasError(), "%v", diags)
+	}
+}
+
+// BenchmarkComponentFinishLoading converts a loading configuration with 1000 jobs into
+// the typed configuration, which the load phase does once.
+func BenchmarkComponentFinishLoading(b *testing.B) {
+	r, diags := config.LoadDynFromBytes("databricks.yml", componentLoadInput(b))
+	require.False(b, diags.HasError(), "%v", diags)
+	for b.Loop() {
+		c := *r
+		_, err := c.FinishLoading()
+		require.NoError(b, err)
 	}
 }

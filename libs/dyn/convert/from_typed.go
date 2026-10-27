@@ -6,7 +6,7 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type fromTypedOptions int
@@ -96,7 +96,7 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 	switch ref.Kind() {
 	case dyn.KindString:
 		// Ignore pure variable references (e.g. ${var.foo}).
-		if dynvar.IsPureVariableReference(ref.MustString()) {
+		if structvar.IsPureVariableReference(ref.MustString()) {
 			return ref, nil
 		}
 	case dyn.KindMap, dyn.KindNil:
@@ -174,7 +174,7 @@ func fromTypedMap(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 	switch ref.Kind() {
 	case dyn.KindString:
 		// Ignore pure variable references (e.g. ${var.foo}).
-		if dynvar.IsPureVariableReference(ref.MustString()) {
+		if structvar.IsPureVariableReference(ref.MustString()) {
 			return ref, nil
 		}
 	case dyn.KindMap, dyn.KindNil:
@@ -222,7 +222,7 @@ func fromTypedSlice(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 	switch ref.Kind() {
 	case dyn.KindString:
 		// Ignore pure variable references (e.g. ${var.foo}).
-		if dynvar.IsPureVariableReference(ref.MustString()) {
+		if structvar.IsPureVariableReference(ref.MustString()) {
 			return ref, nil
 		}
 	case dyn.KindSequence, dyn.KindNil:
@@ -297,7 +297,7 @@ func fromTypedBool(src reflect.Value, ref dyn.Value, options ...fromTypedOptions
 		return dyn.V(src.Bool()), nil
 	case dyn.KindString:
 		// Ignore pure variable references (e.g. ${var.foo}).
-		if dynvar.IsPureVariableReference(ref.MustString()) {
+		if structvar.IsPureVariableReference(ref.MustString()) {
 			return ref, nil
 		}
 	default:
@@ -324,7 +324,7 @@ func fromTypedInt(src reflect.Value, ref dyn.Value, options ...fromTypedOptions)
 		return dyn.V(src.Int()), nil
 	case dyn.KindString:
 		// Ignore pure variable references (e.g. ${var.foo}).
-		if dynvar.IsPureVariableReference(ref.MustString()) {
+		if structvar.IsPureVariableReference(ref.MustString()) {
 			return ref, nil
 		}
 	default:
@@ -351,7 +351,7 @@ func fromTypedFloat(src reflect.Value, ref dyn.Value, options ...fromTypedOption
 		return dyn.V(src.Float()), nil
 	case dyn.KindString:
 		// Ignore pure variable references (e.g. ${var.foo}).
-		if dynvar.IsPureVariableReference(ref.MustString()) {
+		if structvar.IsPureVariableReference(ref.MustString()) {
 			return ref, nil
 		}
 	default:
