@@ -231,9 +231,9 @@ func startDeviceCodeLogin(t *testing.T, config string, args ...string) *termtest
 func TestLoginDeviceCodeNewProfilePromptsForHost(t *testing.T) {
 	tm := startDeviceCodeLogin(t, "", "--profile", "newprof")
 	tm.WaitFor("Databricks host")
-	tm.Type(termtest.KeyCtrlC)
+	tm.Type(termtest.KeyEnter)
 	_, err := tm.Result()
-	assert.EqualError(t, err, "^C")
+	assert.ErrorIs(t, err, errDeviceCodeNeedsHost)
 }
 
 func TestMatchDeviceCodeProfiles(t *testing.T) {

@@ -339,8 +339,15 @@ a new profile is created.
 		// Check the host once it is resolved, before setAccountID prompts for
 		// an account ID for account and unified hosts. A workspace without
 		// device code login enabled is rejected later by DeviceCodeChallenge.
-		if useDeviceCode && !isDeviceCodeSupportedForHost(authArguments.Host, authArguments.DiscoveryURL) {
-			return errDeviceCodeWorkspaceOnly
+		if useDeviceCode {
+			// The host prompt accepts an empty answer. Without this check,
+			// login would resolve the host from DATABRICKS_HOST instead.
+			if authArguments.Host == "" {
+				return errDeviceCodeNeedsHost
+			}
+			if !isDeviceCodeSupportedForHost(authArguments.Host, authArguments.DiscoveryURL) {
+				return errDeviceCodeWorkspaceOnly
+			}
 		}
 		err = setAccountID(ctx, existingProfile, authArguments)
 		if err != nil {
