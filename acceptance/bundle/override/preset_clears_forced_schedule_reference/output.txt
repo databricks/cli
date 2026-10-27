@@ -1,15 +1,5 @@
 
 >>> [CLI] bundle deploy
-Warning: required field "quartz_cron_expression" is not set
-  at resources.quality_monitors.dst.schedule
-  in databricks.yml:39:21
-     databricks.yml:30:17
-
-Warning: required field "timezone_id" is not set
-  at resources.quality_monitors.dst.schedule
-  in databricks.yml:39:21
-     databricks.yml:30:17
-
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/files...
 Created quality_monitors.dst
 Created quality_monitors.src

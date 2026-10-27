@@ -1,2 +1,1 @@
 RecordRequests = true
-Badness = "Required-field warnings are reported for a schedule that is a reference to a complete schedule."
