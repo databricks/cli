@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -237,6 +238,12 @@ func TestLoginDeviceCodeNewProfilePromptsForHost(t *testing.T) {
 }
 
 func TestLoginDeviceCodePickerEmptyHost(t *testing.T) {
+	// termtest feeds stdin through a pipe. On Windows, bubbletea cannot
+	// cancel its read on a pipe, so the picker's reader is still blocked
+	// after it exits and takes the Enter meant for the host prompt.
+	if runtime.GOOS == "windows" {
+		t.Skip("bubbletea cannot cancel reads on non-console input on Windows")
+	}
 	tm := startDeviceCodeLogin(t, "")
 	tm.WaitFor(profilePickerEnterHostLabel)
 	tm.Type(termtest.KeyDown + termtest.KeyEnter)
