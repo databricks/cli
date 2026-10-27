@@ -43,10 +43,9 @@ tests/test_orders.py::test_valid_order  PASSED (1.00s)
   "method": "GET",
   "path": "/api/2.0/pipelines/[UUID]/events",
   "q": {
-    "filter": "update_id='[UUID]'",
+    "filter": "update_id='[UUID]' AND timestamp >= '[TIMESTAMP]'",
     "max_results": "250",
-    "order_by": "timestamp asc",
-    "since_event_id": "[UUID]"
+    "order_by": "timestamp asc"
   }
 }
 {

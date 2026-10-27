@@ -190,7 +190,7 @@ func TestTestEventReaderFollowsPages(t *testing.T) {
 	reader, err := newTestEventReader(w, "p1", "u1")
 	require.NoError(t, err)
 
-	events, err := reader.read(t.Context(), "e0")
+	events, err := reader.read(t.Context(), "2026-01-01T00:00:01.000Z")
 	require.NoError(t, err)
 
 	var ids []string
@@ -200,10 +200,9 @@ func TestTestEventReaderFollowsPages(t *testing.T) {
 	assert.Equal(t, []string{"e1", "e2"}, ids)
 	assert.Equal(t, []url.Values{
 		{
-			"filter":         {"update_id='u1'"},
-			"order_by":       {"timestamp asc"},
-			"max_results":    {"250"},
-			"since_event_id": {"e0"},
+			"filter":      {"update_id='u1' AND timestamp >= '2026-01-01T00:00:01.000Z'"},
+			"order_by":    {"timestamp asc"},
+			"max_results": {"250"},
 		},
 		{
 			"page_token":  {"page2"},

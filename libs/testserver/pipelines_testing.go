@@ -215,7 +215,10 @@ func (s *FakeWorkspace) startPipelineTestRun(pipelineID, updateID string, caseID
 	return update
 }
 
-var pipelineEventsUpdateIDFilter = regexp.MustCompile(`update_id\s*=\s*'([^']*)'`)
+var (
+	pipelineEventsUpdateIDFilter  = regexp.MustCompile(`update_id\s*=\s*'([^']*)'`)
+	pipelineEventsTimestampFilter = regexp.MustCompile(`timestamp\s*>=\s*'([^']*)'`)
+)
 
 // pipelineEventsPageToken is the query of the first page plus the offset of the next one.
 type pipelineEventsPageToken struct {
@@ -223,8 +226,8 @@ type pipelineEventsPageToken struct {
 	Offset int        `json:"offset"`
 }
 
-// PipelineEvents lists the visible events of a pipeline. Only the update_id condition of the
-// filter is applied.
+// PipelineEvents lists the visible events of a pipeline. Only the update_id and timestamp >=
+// conditions of the filter are applied.
 func (s *FakeWorkspace) PipelineEvents(pipelineId string, query url.Values) Response {
 	defer s.LockUnlock()()
 
@@ -275,6 +278,14 @@ func (s *FakeWorkspace) PipelineEvents(pipelineId string, query url.Values) Resp
 	if match := pipelineEventsUpdateIDFilter.FindStringSubmatch(query.Get("filter")); match != nil {
 		updateID = match[1]
 	}
+	var since time.Time
+	if match := pipelineEventsTimestampFilter.FindStringSubmatch(query.Get("filter")); match != nil {
+		var err error
+		since, err = time.Parse(time.RFC3339Nano, match[1])
+		if err != nil {
+			return invalid(fmt.Sprintf("Invalid timestamp in filter: %s.", match[1]))
+		}
+	}
 
 	var events []fakePipelineEvent
 	for _, event := range s.pipelineEvents {
@@ -285,15 +296,10 @@ func (s *FakeWorkspace) PipelineEvents(pipelineId string, query url.Values) Resp
 		if updateID != "" && event.Origin.UpdateId != updateID {
 			continue
 		}
-		events = append(events, event)
-	}
-
-	if since := query.Get("since_event_id"); since != "" {
-		i := slices.IndexFunc(events, func(e fakePipelineEvent) bool { return e.Id == since })
-		if i < 0 {
-			return invalid(fmt.Sprintf("Event %s was not found.", since))
+		if timestamp, _ := time.Parse(time.RFC3339Nano, event.Timestamp); timestamp.Before(since) {
+			continue
 		}
-		events = events[i+1:]
+		events = append(events, event)
 	}
 
 	// Events are returned newest first unless ascending order is requested.

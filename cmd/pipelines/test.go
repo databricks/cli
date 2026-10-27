@@ -414,7 +414,7 @@ func (tw *testWatcher) addEvents(events []testPipelineEvent) {
 
 // watch polls the update until it ends and returns its final state.
 func (tw *testWatcher) watch(ctx context.Context) (pipelines.UpdateInfoState, error) {
-	lastEventID := ""
+	lastTimestamp := ""
 	for {
 		response, err := tw.w.Pipelines.GetUpdate(ctx, pipelines.GetUpdateRequest{
 			PipelineId: tw.pipelineID,
@@ -429,12 +429,13 @@ func (tw *testWatcher) watch(ctx context.Context) (pipelines.UpdateInfoState, er
 		state := response.Update.State
 		tw.printer.updateState(state)
 
-		events, err := tw.events.read(ctx, lastEventID)
+		// Reading from the last timestamp returns its events again; the run ignores duplicates.
+		events, err := tw.events.read(ctx, lastTimestamp)
 		if err != nil {
 			return "", err
 		}
 		if len(events) > 0 {
-			lastEventID = events[len(events)-1].Id
+			lastTimestamp = events[len(events)-1].Timestamp
 		}
 		tw.addEvents(events)
 

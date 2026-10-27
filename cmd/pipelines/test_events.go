@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -54,6 +53,7 @@ type testRunSummary struct {
 
 // testPipelineEvent is an entry of List Pipeline Events. The Go SDK PipelineEvent has no
 // details or origin.test_case_id, so test events are decoded from the raw response.
+// Remove this type and testEventReader once the SDK has those fields.
 type testPipelineEvent struct {
 	Id        string               `json:"id"`
 	EventType string               `json:"event_type"`
@@ -110,16 +110,18 @@ func newTestEventReader(w *databricks.WorkspaceClient, pipelineID, updateID stri
 }
 
 // read returns the update's events in timestamp order, following every page. With
-// sinceEventID it returns only the events after that event.
-func (r *testEventReader) read(ctx context.Context, sinceEventID string) ([]testPipelineEvent, error) {
+// sinceTimestamp it returns only the events at or after that timestamp, which must be a
+// timestamp string exactly as the API returned it.
+func (r *testEventReader) read(ctx context.Context, sinceTimestamp string) ([]testPipelineEvent, error) {
 	path := fmt.Sprintf("/api/2.0/pipelines/%s/events", r.pipelineID)
-	query := map[string]string{
-		"filter":      fmt.Sprintf("update_id='%s'", r.updateID),
-		"order_by":    "timestamp asc",
-		"max_results": strconv.Itoa(testEventsPageSize),
+	filter := fmt.Sprintf("update_id='%s'", r.updateID)
+	if sinceTimestamp != "" {
+		filter += fmt.Sprintf(" AND timestamp >= '%s'", sinceTimestamp)
 	}
-	if sinceEventID != "" {
-		query["since_event_id"] = sinceEventID
+	request := pipelines.ListPipelineEventsRequest{
+		Filter:     filter,
+		OrderBy:    []string{"timestamp asc"},
+		MaxResults: testEventsPageSize,
 	}
 
 	var events []testPipelineEvent
@@ -128,7 +130,7 @@ func (r *testEventReader) read(ctx context.Context, sinceEventID string) ([]test
 			Events        []testPipelineEvent `json:"events"`
 			NextPageToken string              `json:"next_page_token"`
 		}
-		err := r.apiClient.Do(ctx, http.MethodGet, path, r.headers, nil, query, &response)
+		err := r.apiClient.Do(ctx, http.MethodGet, path, r.headers, nil, request, &response)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read events of update %s: %w", r.updateID, err)
 		}
@@ -136,10 +138,11 @@ func (r *testEventReader) read(ctx context.Context, sinceEventID string) ([]test
 		if response.NextPageToken == "" {
 			return events, nil
 		}
-		// Later pages accept only page_token and max_results.
-		query = map[string]string{
-			"page_token":  response.NextPageToken,
-			"max_results": strconv.Itoa(testEventsPageSize),
+		// A request with page_token must not repeat filter or order_by; the token carries
+		// them. The SDK iterator repeats them, which is another reason not to use it here.
+		request = pipelines.ListPipelineEventsRequest{
+			PageToken:  response.NextPageToken,
+			MaxResults: testEventsPageSize,
 		}
 	}
 }

@@ -79,10 +79,15 @@ func TestPipelineTestUpdate(t *testing.T) {
 	}, statuses)
 
 	assert.Equal(t, pipelines.UpdateInfoStateFailed, getUpdateState(workspace, pipelineID, updateID))
-	query.Set("since_event_id", events[len(events)-1].Id)
+	last := events[len(events)-1]
+	query.Set("filter", "update_id='"+updateID+"' AND timestamp >= '"+last.Timestamp+"'")
 	events, _ = listEvents(t, workspace, pipelineID, query)
-	require.Len(t, events, 1)
-	assert.Equal(t, map[string]any{"total": 2, "passed": 1, "failed": 1, "skipped": 0, "errors": 0}, events[0].Details["test_run_summary"])
+	require.Len(t, events, 2)
+	assert.Equal(t, last.Id, events[0].Id)
+	assert.Equal(t, map[string]any{"total": 2, "passed": 1, "failed": 1, "skipped": 0, "errors": 0}, events[1].Details["test_run_summary"])
+
+	query.Set("filter", "timestamp >= 'yesterday'")
+	assert.Equal(t, 400, workspace.PipelineEvents(pipelineID, query).StatusCode)
 }
 
 func TestPipelineEventsPages(t *testing.T) {
