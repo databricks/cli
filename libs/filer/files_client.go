@@ -190,6 +190,8 @@ func newTransferClient(n int) *http.Client {
 // config, reusing its auth instead of re-reading a profile. cfg is passed by
 // pointer because config.Config embeds a sync.Mutex and must not be copied.
 func newFilesAPIClient(ctx context.Context, cfg *config.Config) (*files.Client, error) {
+	registerUserAgentForFilesAPI(ctx)
+
 	copts := []client.Option{
 		client.WithHost(cfg.Host),
 		client.WithCredentials(configCredentials{cfg: cfg}),
