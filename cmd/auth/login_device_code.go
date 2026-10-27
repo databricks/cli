@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/spf13/cobra"
 )
@@ -27,14 +27,18 @@ var (
 	errDeviceCodeWorkspaceOnly = errors.New("--use-device-code is only supported for workspace hosts")
 )
 
-// validateDeviceCodeHost returns an error if the host resolved by setHost is
-// an account or unified host. A workspace without device code login enabled
-// is rejected by DeviceCodeChallenge before it creates a device code.
-func validateDeviceCodeHost(authArguments *auth.AuthArguments) error {
-	if isAccountOrUnifiedHost(authArguments.Host, authArguments.DiscoveryURL) {
-		return errDeviceCodeWorkspaceOnly
-	}
-	return nil
+// isDeviceCodeSupportedForHost reports whether host is a workspace host. A
+// unified host is only recognized by its account-scoped discoveryURL, so with
+// an empty discoveryURL only classic account hosts are rejected.
+func isDeviceCodeSupportedForHost(host, discoveryURL string) bool {
+	return !isAccountOrUnifiedHost(host, discoveryURL)
+}
+
+// matchDeviceCodeProfiles matches the profiles that device code login does not
+// always reject. Profiles on unified hosts still match, because the discovery
+// URL that identifies them is not saved on the profile.
+func matchDeviceCodeProfiles(p profile.Profile) bool {
+	return isDeviceCodeSupportedForHost(p.Host, "") && len(u2mResourcesFromProfile(&p)) == 0
 }
 
 // validateDeviceCodeLogin returns an error if device code login is not enabled

@@ -225,9 +225,15 @@ a new profile is created.
 		// the user re-login to an existing profile, create a new one, or enter
 		// a host URL. With no profiles configured the picker still shows the
 		// two action entries so the user can choose between web-based discovery
-		// (Create a new profile) and a manual host URL.
+		// (Create a new profile) and a manual host URL. Device code login skips
+		// discovery, so its "Create a new profile" asks for the host after the
+		// profile name, unless a profile with that name already has a host.
 		if profileName == "" && authArguments.Host == "" && len(args) == 0 && cmdio.IsPromptSupported(ctx) {
-			allProfiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.MatchAllProfiles)
+			matchProfiles := profile.MatchAllProfiles
+			if useDeviceCode {
+				matchProfiles = matchDeviceCodeProfiles
+			}
+			allProfiles, err := profile.DefaultProfiler.LoadProfiles(ctx, matchProfiles)
 			if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
 				return err
 			}
@@ -251,6 +257,11 @@ a new profile is created.
 				host, err := promptForHost(ctx)
 				if err != nil {
 					return err
+				}
+				// Fail here rather than prompting for the host again after
+				// the profile name.
+				if useDeviceCode && host == "" {
+					return errDeviceCodeNeedsHost
 				}
 				authArguments.Host = host
 			case profilePickerCreateNew:
@@ -306,11 +317,10 @@ a new profile is created.
 		}
 
 		// If no host is available from any source, use the discovery flow
-		// via login.databricks.com.
-		if shouldUseDiscovery(authArguments.Host, args, existingProfile) {
-			if useDeviceCode {
-				return errDeviceCodeNeedsHost
-			}
+		// via login.databricks.com. Discovery opens a browser on this machine,
+		// and device code login is meant for machines without one, so it skips
+		// discovery and setHost resolves the host instead.
+		if !useDeviceCode && shouldUseDiscovery(authArguments.Host, args, existingProfile) {
 			if err := validateDiscoveryFlagCompatibility(cmd); err != nil {
 				return err
 			}
@@ -332,10 +342,16 @@ a new profile is created.
 			return err
 		}
 		// Check the host once it is resolved, before setAccountID prompts for
-		// an account ID for account and unified hosts.
+		// an account ID for account and unified hosts. A workspace without
+		// device code login enabled is rejected later by DeviceCodeChallenge.
 		if useDeviceCode {
-			if err := validateDeviceCodeHost(authArguments); err != nil {
-				return err
+			// The host prompt accepts an empty answer. Without this check,
+			// login would resolve the host from DATABRICKS_HOST instead.
+			if authArguments.Host == "" {
+				return errDeviceCodeNeedsHost
+			}
+			if !isDeviceCodeSupportedForHost(authArguments.Host, authArguments.DiscoveryURL) {
+				return errDeviceCodeWorkspaceOnly
 			}
 		}
 		err = setAccountID(ctx, existingProfile, authArguments)

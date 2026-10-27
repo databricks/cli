@@ -2,7 +2,7 @@
 === No host
 
 >>> musterr [CLI] auth login --profile new-profile --use-device-code
-Error: --use-device-code requires a workspace host. Pass it as an argument or with --host
+Error: the command is being run in a non-interactive environment, please specify a host using --host
 
 === Account host
 
