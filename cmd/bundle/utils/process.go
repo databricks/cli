@@ -693,11 +693,6 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{}); err != nil {
 			return err
 		}
-		if configuresDeploymentHistory(ctx, b) {
-			if _, err := prepareDeploymentHistoryShadow(ctx, b); err != nil {
-				log.Warnf(ctx, "Could not read deployment history: %s", err)
-			}
-		}
 		return nil
 	}
 
