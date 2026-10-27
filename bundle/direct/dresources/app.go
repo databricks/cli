@@ -197,12 +197,12 @@ const userApiScopes = "user_api_scopes"
 // is left out of the mask. Naming it while the body omits it asks the backend to reset the
 // size to its default on every deploy, even when the app was resized out of band.
 //
-// Sending user_api_scopes in the mask clears it unless the body carries the full value, and
-// some scopes (e.g. "jobs") can only be added outside this API. So only write it when the
-// bundle changed it; remote-only drift is skipped (ignore_remote_changes).
+// Sending user_api_scopes in the mask clears it unless the body carries a value, and some
+// scopes (e.g. "jobs") can only be added outside this API. So leave it out unless the
+// bundle manages it: declares it, or removed it (the mask is what clears it).
 func appUpdateMask(app *apps.App, entry *PlanEntry) string {
 	change := entry.Changes[userApiScopes]
-	writeScopes := change != nil && change.Action != deployplan.Skip
+	writeScopes := len(app.UserApiScopes) > 0 || (change != nil && change.Action != deployplan.Skip)
 	fields := slices.DeleteFunc(slices.Clone(UpdateMaskFields), func(f string) bool {
 		return (f == "compute_size" && app.ComputeSize == "") || (f == userApiScopes && !writeScopes)
 	})

@@ -13,13 +13,13 @@ rm "$OUT_REQUESTS"
 title "Plan after out-of-band change"
 trace $CLI bundle plan
 
-title "Change description and re-deploy; the update must only touch description"
+title "Change description and re-deploy; declared scopes are in the mask, so the remote value is replaced"
 trace update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
 trace $CLI bundle deploy
 trace print_requests > out.description.requests.json
 trace $CLI apps get myappname | jq '{description, user_api_scopes}'
 
-title "Change the declared scopes; they are written in full, replacing the remote value"
+title "Change the declared scopes"
 trace update_file.py databricks.yml "[sql, files.files]" "[sql, iam.access-control:read]"
 trace $CLI bundle deploy
 trace print_requests > out.scopes.requests.json

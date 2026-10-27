@@ -19,7 +19,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
-=== Change description and re-deploy; the update must only touch description
+=== Change description and re-deploy; declared scopes are in the mask, so the remote value is replaced
 >>> update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
 
 >>> [CLI] bundle deploy
@@ -35,12 +35,11 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "description": "MY_APP_DESCRIPTION",
   "user_api_scopes": [
     "sql",
-    "files.files",
-    "jobs"
+    "files.files"
   ]
 }
 
-=== Change the declared scopes; they are written in full, replacing the remote value
+=== Change the declared scopes
 >>> update_file.py databricks.yml [sql, files.files] [sql, iam.access-control:read]
 
 >>> [CLI] bundle deploy
