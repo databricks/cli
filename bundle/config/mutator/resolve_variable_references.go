@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/bundle/config/walk"
 	"github.com/databricks/cli/libs/diag"
