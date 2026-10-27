@@ -1465,13 +1465,25 @@ func TestPromptForProfileRejectsTakenName(t *testing.T) {
 	tm := termtest.Run(t, func(ctx context.Context) (string, error) {
 		return promptForProfile(ctx, "DEFAULT", []string{"DEFAULT", "taken"})
 	})
-	tm.WaitFor("Databricks profile name [DEFAULT]")
+	screen := tm.WaitFor("Databricks profile name")
+	assert.NotContains(t, screen, "[DEFAULT]")
 	tm.Type(termtest.KeyEnter)
-	tm.WaitFor(">> profile DEFAULT already exists")
+	tm.WaitFor(">> profile name is required")
 	tm.Type("taken" + termtest.KeyEnter)
 	tm.WaitFor(">> profile taken already exists")
 	tm.Type(termtest.KeyBackspace + termtest.KeyEnter)
 	name, err := tm.Result()
 	require.NoError(t, err)
 	assert.Equal(t, "take", name)
+}
+
+func TestPromptForProfileSuggestsFreeDefault(t *testing.T) {
+	tm := termtest.Run(t, func(ctx context.Context) (string, error) {
+		return promptForProfile(ctx, "DEFAULT", []string{"taken"})
+	})
+	tm.WaitFor("Databricks profile name [DEFAULT]")
+	tm.Type(termtest.KeyEnter)
+	name, err := tm.Result()
+	require.NoError(t, err)
+	assert.Equal(t, "DEFAULT", name)
 }

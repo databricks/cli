@@ -28,17 +28,26 @@ import (
 )
 
 // promptForProfile prompts for a profile name, rejecting the names in
-// takenNames.
+// takenNames. A taken defaultValue is not suggested.
 func promptForProfile(ctx context.Context, defaultValue string, takenNames []string) (string, error) {
 	if !cmdio.IsPromptSupported(ctx) {
 		return "", nil
 	}
 
+	label := "Databricks profile name"
+	if slices.Contains(takenNames, defaultValue) {
+		defaultValue = ""
+	} else {
+		label += " [" + defaultValue + "]"
+	}
 	result, err := cmdio.RunPrompt(ctx, cmdio.PromptOptions{
-		Label: "Databricks profile name [" + defaultValue + "]",
+		Label: label,
 		Validate: func(input string) error {
 			if input == "" {
 				input = defaultValue
+			}
+			if input == "" {
+				return errors.New("profile name is required")
 			}
 			if slices.Contains(takenNames, input) {
 				return fmt.Errorf("profile %s already exists. Select it from the list to log in to it again", input)
