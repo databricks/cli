@@ -1,0 +1,47 @@
+for outage in first-deploy existing-deployment during-deploy; do
+    title "DMS outage: ${outage}"
+    envsubst < databricks.yml.tmpl > databricks.yml
+    job_name=original
+
+    for method in GET POST PATCH DELETE; do
+        fault.py "${method} /api/2.0/bundle/*" 500 0 0
+    done
+
+    if [ "$outage" != first-deploy ]; then
+        trace $CLI bundle deploy
+        job_name=before-outage
+        trace update_file.py databricks.yml 'name: original' "name: ${job_name}"
+    fi
+    rm -f "$OUT_REQUESTS"
+
+    # Let the current deployment and new version be read/created before DMS goes down.
+    offset=0
+    if [ "$outage" = during-deploy ]; then
+        offset=1
+    fi
+    trace fault.py "GET /api/2.0/bundle/*" 500 "$offset" 1000
+    trace fault.py "POST /api/2.0/bundle/*" 500 "$offset" 1000
+    trace fault.py "PATCH /api/2.0/bundle/*" 500 0 1000
+    trace fault.py "DELETE /api/2.0/bundle/*" 500 0 1000
+    trace $CLI bundle deploy
+    job_id=$(DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false read_id.py foo)
+    trace print_state.py --no-dms | jq '{serial, features, job: (.state["resources.jobs.foo"] | {id: .__id__, name: .state.name})}'
+
+    title "A fresh client updates the existing job using workspace file state"
+    trace update_file.py databricks.yml "name: ${job_name}" 'name: after-outage'
+    rm -rf .databricks
+    trace $CLI bundle deploy
+    trace $CLI jobs get "$job_id" -o json | jq '{job_id, name: .settings.name}'
+    trace print_state.py --no-dms | jq '{serial, features, job: (.state["resources.jobs.foo"] | {id: .__id__, name: .state.name})}'
+
+    title "Planning still works with all DMS calls failing"
+    rm -rf .databricks
+    trace $CLI bundle plan
+    trace print_requests.py --dms //api/2.0/bundle --get | jq -c '{method, path}'
+
+    title "Destroy still deletes the job and workspace state"
+    trace $CLI bundle destroy --auto-approve
+    trace musterr $CLI jobs get "$job_id"
+    trace musterr env MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-service-outage-${UNIQUE_NAME}/default/state/resources.json"
+    trace print_requests.py --dms //api/2.0/bundle --get | jq -c '{method, path}'
+done

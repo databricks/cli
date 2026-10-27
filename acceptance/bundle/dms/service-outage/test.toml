@@ -1,0 +1,3 @@
+# Fault injection requires the local testserver.
+Cloud = false
+Env.DATABRICKS_BUNDLE_RETRY_INTERVAL_MS = "0"
