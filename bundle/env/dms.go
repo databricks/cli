@@ -7,6 +7,10 @@ import "context"
 // Deliberately undocumented.
 const DeploymentHistoryVariable = "DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY"
 
+// DevDeploymentHistoryOnlyVariable selects DMS-authoritative state for new deployments with history enabled.
+// Used for development and acceptance tests: https://github.com/databricks/cli/pull/7169.
+const DevDeploymentHistoryOnlyVariable = "DATABRICKS_BUNDLE_DEV_DEPLOYMENT_HISTORY_ONLY"
+
 // RecordsDeploymentHistory reports whether recording is on, from config or env var. Single predicate
 // for all recording code paths, keeping them in sync. Explicit config takes priority over the env var.
 // The env var only counts as "true": anything
