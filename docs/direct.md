@@ -87,4 +87,4 @@ The resolution of $resources references in direct engine (e.g. $resources.pipeli
 1. References pointing to fields that are present in the config ("local") are resolved during the plan phase to the value provided in the local config.
 2. References that are not present in the config, are resolved from remote state, that is state fetched via appropriate GET request for a given resource.
 
-The schema that is used for $resource resolution is available in [acceptance/bundle/refschema/out.fields.txt](https://github.com/databricks/cli/blob/main/acceptance/bundle/refschema/out.fields.txt). The fields marked as "ALL" and "STATE" can be used for local resolution. The fields marked as "ALL" or "REMOTE" can be used for remote resolution.
+The schema that is used for $resource resolution is available in [acceptance/bundle/refschema/output](https://github.com/databricks/cli/blob/main/acceptance/bundle/refschema/output). The fields marked as "ALL" and "STATE" can be used for local resolution. The fields marked as "ALL" or "REMOTE" can be used for remote resolution.
