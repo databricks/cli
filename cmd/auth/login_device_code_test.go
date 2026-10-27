@@ -354,6 +354,16 @@ account_id = acct-123
 	assert.EqualError(t, err, "^C")
 }
 
+func TestLoginDeviceCodeHostEmptyAfterNormalization(t *testing.T) {
+	for _, host := range []string{"/", "?o=123"} {
+		t.Run(host, func(t *testing.T) {
+			tm := startDeviceCodeLogin(t, "", "--profile", "newprof", "--host", host)
+			_, err := tm.Result()
+			assert.ErrorIs(t, err, errHostRequired)
+		})
+	}
+}
+
 func TestMatchDeviceCodeProfiles(t *testing.T) {
 	tests := []struct {
 		name    string
