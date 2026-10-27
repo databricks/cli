@@ -1,0 +1,7 @@
+# The top-level workspace_id takes precedence over ?o= in the target's host, so
+# list-targets must report the workspace ID that authentication uses.
+title "list-targets reports the inherited workspace ID"
+trace $CLI bundle debug list-targets -o json
+
+title "Authentication uses the same workspace ID"
+trace errcode $CLI bundle run -t inherited_workspace_id show_auth
