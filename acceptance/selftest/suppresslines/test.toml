@@ -1,0 +1,4 @@
+# Runs once: suppression is independent of the deployment engine.
+
+# Lines matching the pattern are logged instead of being compared.
+SuppressLines.noise = '^Noise: '
