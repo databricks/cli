@@ -5,6 +5,21 @@ Warning: required field "enabled" is not set
   in databricks.yml:18:18
 
 {
-  "has_queue": true,
-  "queue": null
+  "deployment": {
+    "kind": "BUNDLE",
+    "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/state/metadata.json"
+  },
+  "edit_mode": "UI_LOCKED",
+  "format": "MULTI_TASK",
+  "max_concurrent_runs": 1,
+  "name": "j",
+  "queue": null,
+  "tasks": [
+    {
+      "notebook_task": {
+        "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/files/nb"
+      },
+      "task_key": "t"
+    }
+  ]
 }
