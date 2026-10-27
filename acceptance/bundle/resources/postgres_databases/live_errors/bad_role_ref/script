@@ -5,4 +5,4 @@ cleanup() {
 }
 trap cleanup EXIT
 
-musterr $CLI bundle deploy 2>&1 | contains.py "role not found"
+musterr $CLI bundle deploy 2>&1 | contains.py "Role with name 'projects/" "/branches/main/roles/does-not-exist' not found"
