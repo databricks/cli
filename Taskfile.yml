@@ -799,7 +799,7 @@ tasks:
       # .codegen/cli.json (no universe checkout needed). Refreshing cli.json
       # itself from the OpenAPI spec is the separate `generate-clijson` task.
       - task: generate-cligen
-      # Refreshes acceptance/bundle/refschema/out.fields.txt, which feeds
+      # Refreshes acceptance/bundle/refschema/output/*.txt, which feeds
       # generate-direct-apitypes and generate-direct-resources below.
       - task: generate-refschema
       - task: generate-schema
@@ -970,12 +970,12 @@ tasks:
       - task: generate-check
       - task: test-update
 
-  # Refreshes out.fields.txt, which records the field paths / types emitted by
+  # Refreshes acceptance/bundle/refschema/output/*.txt, which record the field paths / types emitted by
   # `bundle debug refschema` (see cmd/bundle/debug/refschema.go). It reflects
   # over types reachable from bundle/, so any bundle change or SDK bump (go.mod
   # / go.sum) can affect the output.
   generate-refschema:
-    desc: Regenerate acceptance/bundle/refschema/out.fields.txt
+    desc: Regenerate acceptance/bundle/refschema/output/*.txt
     sources:
       - bundle/**/*.go
       - exclude: bundle/**/*_test.go
@@ -985,7 +985,7 @@ tasks:
       - go.sum
       - "{{.EMBED_SOURCES}}"
     generates:
-      - acceptance/bundle/refschema/out.fields.txt
+      - acceptance/bundle/refschema/output/*.txt
     cmds:
       - go test ./acceptance -run TestAccept/bundle/refschema -update
 
@@ -1038,11 +1038,11 @@ tasks:
     sources:
       - bundle/direct/tools/generate_apitypes.py
       - .codegen/cli.json
-      - acceptance/bundle/refschema/out.fields.txt
+      - acceptance/bundle/refschema/output/*.txt
     generates:
       - bundle/direct/dresources/apitypes.generated.yml
     cmds:
-      - "sh -c 'uv run -p \">=3.11\" --no-project python bundle/direct/tools/generate_apitypes.py .codegen/cli.json acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/apitypes.generated.yml'"
+      - "sh -c 'uv run -p \">=3.11\" --no-project python bundle/direct/tools/generate_apitypes.py .codegen/cli.json acceptance/bundle/refschema/output > bundle/direct/dresources/apitypes.generated.yml'"
 
   generate-direct-resources:
     desc: Generate direct engine resources YAML
@@ -1052,11 +1052,11 @@ tasks:
       - .codegen/cli.json
       - bundle/direct/dresources/apitypes.generated.yml
       - bundle/direct/dresources/apitypes.yml
-      - acceptance/bundle/refschema/out.fields.txt
+      - acceptance/bundle/refschema/output/*.txt
     generates:
       - bundle/direct/dresources/configs/*.generated.yml
     cmds:
-      - "uv run --script bundle/direct/tools/generate_resources.py .codegen/cli.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/out.fields.txt bundle/direct/dresources/configs"
+      - "uv run --script bundle/direct/tools/generate_resources.py .codegen/cli.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/output bundle/direct/dresources/configs"
 
   # pydabs-* tasks are defined in python/Taskfile.yml (included above).
 
