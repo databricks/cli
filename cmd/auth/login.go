@@ -257,22 +257,20 @@ a new profile is created.
 		// profile name.
 		var takenProfileNames []string
 		if profileName == "" && authArguments.Host == "" && len(args) == 0 && cmdio.IsPromptSupported(ctx) {
-			allProfiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.MatchAllProfiles)
+			matchProfiles := profile.MatchAllProfiles
+			if useDeviceCode {
+				matchProfiles = matchDeviceCodeProfiles
+			}
+			allProfiles, err := profile.DefaultProfiler.LoadProfiles(ctx, matchProfiles)
 			if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
 				return err
 			}
-			pickerProfiles := allProfiles
-			if useDeviceCode {
-				pickerProfiles = slices.DeleteFunc(slices.Clone(allProfiles), func(p profile.Profile) bool {
-					return !matchDeviceCodeProfiles(p)
-				})
-			}
 			label := "Select a profile"
-			if len(pickerProfiles) == 0 {
+			if len(allProfiles) == 0 {
 				label = "How would you like to log in?"
 			}
 			currentDefault, _ := databrickscfg.GetDefaultProfile(ctx, env.Get(ctx, "DATABRICKS_CONFIG_FILE"))
-			result, selected, err := pickAuthProfile(ctx, pickerProfiles, profilePickerOptions{
+			result, selected, err := pickAuthProfile(ctx, allProfiles, profilePickerOptions{
 				Label:         label,
 				Default:       currentDefault,
 				IncludeExtras: true,
