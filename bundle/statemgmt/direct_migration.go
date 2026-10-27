@@ -194,7 +194,9 @@ func checkPlanOnTempState(ctx context.Context, b *bundle.Bundle, tempStatePath s
 
 	var planBundle direct.DeploymentBundle
 
-	if err := planBundle.StateDB.Open(planCtx, tempStatePath, dstate.WithRecovery(false), nil); err != nil {
+	// This plan is not created with the deployment history feature enabled,
+	// so we can safely pass false for withDeploymentHistory.
+	if err := planBundle.StateDB.Open(planCtx, tempStatePath, dstate.ReadingFile, dstate.WithRecovery(false), dstate.OpenDmsArgs{}); err != nil {
 		return nil, fmt.Errorf("opening migrated state for plan check: %w", err)
 	}
 

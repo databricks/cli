@@ -15,8 +15,6 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> jq {features, state} .databricks/bundle/default/resources.json
 {
-  "features": {
-    "deployment_history_shadow": {}
-  },
+  "features": null,
   "state": {}
 }
