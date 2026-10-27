@@ -1,6 +1,7 @@
 package debug
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"maps"
@@ -35,28 +36,22 @@ type listTargetsOutput struct {
 }
 
 // collectTargets returns the targets sorted by name. The engine of a target is
-// its own bundle.engine if set, otherwise the top-level bundle.engine. The host
-// and workspace ID come from the target's workspace merged over the top-level
-// one, normalized the same way authentication normalizes them.
-func collectTargets(cfg *config.Root) ([]targetInfo, error) {
+// its own bundle.engine if set, otherwise the top-level bundle.engine.
+func collectTargets(cfg *config.Root) []targetInfo {
 	targets := cfg.Targets
 	rootEngine := cfg.Bundle.Engine
 	names := slices.Sorted(maps.Keys(targets))
 
 	result := make([]targetInfo, 0, len(names))
 	for _, name := range names {
-		w, err := cfg.TargetWorkspace(name)
-		if err != nil {
-			return nil, err
-		}
-		w.NormalizeHostURL()
+		t := targets[name]
+		host, workspaceID := targetHostAndWorkspaceID(&cfg.Workspace, t)
 		info := targetInfo{
 			Name:        name,
-			Host:        w.Host,
-			WorkspaceID: w.WorkspaceID,
+			Host:        host,
+			WorkspaceID: workspaceID,
 		}
 
-		t := targets[name]
 		// YAML decoding can leave a nil entry in the map when a target is
 		// declared with a null value. Skip rather than dereference and panic.
 		if t == nil {
@@ -73,7 +68,25 @@ func collectTargets(cfg *config.Root) ([]targetInfo, error) {
 		info.Engine = terraformOnly(targetEngine)
 		result = append(result, info)
 	}
-	return result, nil
+	return result
+}
+
+// targetHostAndWorkspaceID returns the host and workspace ID of target t, which
+// may be nil, normalized the same way authentication normalizes them. As in
+// MergeTargetOverrides, the target's values take precedence over the top-level
+// ones, except that an explicit empty value cannot be told apart from an unset
+// one, so it does not clear the top-level value.
+func targetHostAndWorkspaceID(rootWorkspace *config.Workspace, t *config.Target) (string, string) {
+	w := config.Workspace{
+		Host:        rootWorkspace.Host,
+		WorkspaceID: rootWorkspace.WorkspaceID,
+	}
+	if t != nil && t.Workspace != nil {
+		w.Host = cmp.Or(t.Workspace.Host, w.Host)
+		w.WorkspaceID = cmp.Or(t.Workspace.WorkspaceID, w.WorkspaceID)
+	}
+	w.NormalizeHostURL()
+	return w.Host, w.WorkspaceID
 }
 
 func terraformOnly(e engine.EngineType) engine.EngineType {
@@ -108,10 +121,7 @@ func NewListTargetsCommand() *cobra.Command {
 			return root.ErrAlreadyPrinted
 		}
 
-		targets, err := collectTargets(&b.Config)
-		if err != nil {
-			return err
-		}
+		targets := collectTargets(&b.Config)
 
 		switch root.OutputType(cmd) {
 		case flags.OutputText:

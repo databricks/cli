@@ -326,28 +326,6 @@ func mergeField(rv, ov dyn.Value, name string) (dyn.Value, error) {
 	return dyn.SetByPath(rv, path, out)
 }
 
-// TargetWorkspace returns the workspace settings of the named target as
-// [Root.MergeTargetOverrides] merges them, without modifying the root.
-func (r *Root) TargetWorkspace(name string) (Workspace, error) {
-	target, err := dyn.GetByPath(r.value, dyn.NewPath(dyn.Key("targets"), dyn.Key(name)))
-	if err != nil {
-		return Workspace{}, err
-	}
-	merged, err := mergeField(r.value, target, "workspace")
-	if err != nil {
-		return Workspace{}, fmt.Errorf("failed to merge target=%s field=workspace: %w", name, err)
-	}
-
-	var w Workspace
-	// Neither the root nor the target sets a workspace section.
-	v := merged.Get("workspace")
-	if !v.IsValid() {
-		return w, nil
-	}
-	err = convert.ToTyped(&w, v)
-	return w, err
-}
-
 func (r *Root) MergeTargetOverrides(name string) error {
 	root := r.value
 	target, err := dyn.GetByPath(root, dyn.NewPath(dyn.Key("targets"), dyn.Key(name)))
