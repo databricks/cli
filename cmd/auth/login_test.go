@@ -806,7 +806,7 @@ func TestSkipWorkspaceProfileNameUsesDiscoveredAccountID(t *testing.T) {
 	args := &auth.AuthArguments{Host: server.URL}
 
 	// Mirrors the pre-naming block in newLoginCommand's RunE for --skip-workspace.
-	require.NoError(t, normalizeHost(args))
+	require.NoError(t, normalizeLoginHost(args))
 	runHostDiscovery(ctx, args)
 
 	assert.Equal(t, "abc-123", args.AccountID)
