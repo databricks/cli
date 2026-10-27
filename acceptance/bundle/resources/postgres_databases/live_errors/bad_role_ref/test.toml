@@ -5,3 +5,12 @@
 Pattern = "POST /api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases"
 Response.StatusCode = 404
 Response.Body = '''{"error_code": "NOT_FOUND", "message": "Role with name 'projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/does-not-exist' not found"}'''
+
+# Backend error wording is not part of the CLI contract.
+[[Repls]]
+Old = '(?m)^(Error: cannot create resources\.postgres_databases\.my_database: )[^\r\n]*( \(404 NOT_FOUND\))$'
+New = '${1}[API_MESSAGE]${2}'
+
+[[Repls]]
+Old = '(?m)^API message: [^\r\n]*$'
+New = 'API message: [API_MESSAGE]'

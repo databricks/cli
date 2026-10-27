@@ -1,12 +1,12 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bad-role-ref-[UNIQUE_NAME]/default/files...
 Created postgres_branches.main
 Created postgres_projects.my_project
-Error: cannot create resources.postgres_databases.my_database: Role with name 'projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/does-not-exist' not found (404 NOT_FOUND)
+Error: cannot create resources.postgres_databases.my_database: [API_MESSAGE] (404 NOT_FOUND)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases?database_id=my-database
 HTTP Status: 404 Not Found
 API error_code: NOT_FOUND
-API message: Role with name 'projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/does-not-exist' not found
+API message: [API_MESSAGE]
 
 Files: 0 uploaded, 0 deleted
 
