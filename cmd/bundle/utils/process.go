@@ -393,7 +393,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
 			}
 			var err error
-			dmsDeployment, err = prepareFileHistory(ctx, b)
+			dmsDeployment, err = prepareDeploymentHistoryShadow(ctx, b)
 			if err != nil {
 				log.Warnf(ctx, "Could not read deployment history; continuing with file state: %s", err)
 			}
@@ -673,7 +673,7 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 			return err
 		}
 		if configuresDeploymentHistory(ctx, b) {
-			if _, err := prepareFileHistory(ctx, b); err != nil {
+			if _, err := prepareDeploymentHistoryShadow(ctx, b); err != nil {
 				log.Warnf(ctx, "Could not read deployment history; continuing with file state: %s", err)
 			}
 		}
@@ -724,8 +724,8 @@ Run "databricks bundle destroy" first, then deploy again with deployment history
 	return nil
 }
 
-// prepareFileHistory reads version metadata, never resource state, from DMS.
-func prepareFileHistory(ctx context.Context, b *bundle.Bundle) (*bundledeployments.Deployment, error) {
+// prepareDeploymentHistoryShadow reads version metadata, never resource state, from DMS.
+func prepareDeploymentHistoryShadow(ctx context.Context, b *bundle.Bundle) (*bundledeployments.Deployment, error) {
 	id, deployment, err := fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 	if err != nil {
 		return nil, err
