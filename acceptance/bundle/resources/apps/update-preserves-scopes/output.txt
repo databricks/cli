@@ -22,8 +22,6 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 === Change description and re-deploy; the update must only touch description
 >>> update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
 
->>> print_requests
-
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Updated apps.mykey

@@ -7,21 +7,6 @@
       "name": "myappname",
       "user_api_scopes": [
         "sql",
-        "files.files"
-      ]
-    },
-    "update_mask": "description,budget_policy_id,usage_policy_id,resources,compute_size,compute_min_instances,compute_max_instances,git_repository,telemetry_export_destinations"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/apps/myappname/update",
-  "body": {
-    "app": {
-      "description": "MY_APP_DESCRIPTION",
-      "name": "myappname",
-      "user_api_scopes": [
-        "sql",
         "iam.access-control:read"
       ]
     },

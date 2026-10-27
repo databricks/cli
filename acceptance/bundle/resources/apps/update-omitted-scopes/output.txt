@@ -5,8 +5,6 @@ Created apps.mykey
 Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests
-
 === Out-of-band: set scopes on an app whose bundle does not declare any
 >>> [CLI] api post /api/2.0/apps/myappname/update --json {"app": {"name": "myappname", "user_api_scopes": ["sql", "jobs"]}, "update_mask": "user_api_scopes"}
 
