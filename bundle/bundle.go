@@ -433,7 +433,32 @@ func (b *Bundle) StateFilenameTerraform(ctx context.Context) (string, string) {
 	return terraformStateFilename, filepath.ToSlash(filepath.Join(b.GetLocalStateDir(ctx), "terraform", terraformStateFilename))
 }
 
-// IsImmutableFolder reports whether experimental.immutable_folder is enabled.
+// SyncMode returns workspace.sync_mode or, if it is not set, the sync mode selected by the
+// deprecated experimental.immutable_folder or presets.source_linked_deployment setting, in that
+// order of precedence. It returns "" if none of them is set.
+func (b *Bundle) SyncMode() config.SyncMode {
+	sourceLinked := b.Config.Presets.SourceLinkedDeployment
+	switch {
+	case b.Config.Workspace.SyncMode != "":
+		return b.Config.Workspace.SyncMode
+	case b.Config.Experimental != nil && b.Config.Experimental.ImmutableFolder:
+		return config.SyncModeImmutable
+	case config.IsExplicitlyEnabled(sourceLinked):
+		return config.SyncModeInPlace
+	case config.IsExplicitlyDisabled(sourceLinked):
+		return config.SyncModeOverwrite
+	default:
+		return ""
+	}
+}
+
+// IsImmutableFolder reports whether bundle files and artifacts are deployed as an immutable snapshot.
 func (b *Bundle) IsImmutableFolder() bool {
-	return b.Config.Experimental != nil && b.Config.Experimental.ImmutableFolder
+	return b.SyncMode() == config.SyncModeImmutable
+}
+
+// IsSourceLinkedDeployment reports whether deployed resources reference the source files in the
+// workspace directly instead of uploaded copies.
+func (b *Bundle) IsSourceLinkedDeployment() bool {
+	return b.SyncMode() == config.SyncModeInPlace
 }

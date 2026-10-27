@@ -8,6 +8,8 @@ type Experimental struct {
 	// the deployment calls /api/2.0/repos/snapshots with a zip of all files and sets
 	// workspace.file_path and workspace.artifact_path to the returned content-addressed
 	// path.
+	//
+	// ImmutableFolder is deprecated, use workspace.sync_mode: immutable instead.
 	ImmutableFolder bool `json:"immutable_folder,omitempty"`
 
 	// By default Python wheel tasks deployed as is to Databricks platform.

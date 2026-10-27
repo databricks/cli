@@ -203,3 +203,37 @@ func TestClearWorkspaceClient(t *testing.T) {
 	assert.Contains(t, err2.Error(), "profile-B", "expected re-execution to pick up new profile")
 	assert.NotContains(t, err2.Error(), "profile-A", "stale cached error should not appear")
 }
+
+func TestBundleSyncMode(t *testing.T) {
+	enabled := true
+	disabled := false
+
+	tests := []struct {
+		name         string
+		syncMode     config.SyncMode
+		sourceLinked *bool
+		immutable    bool
+		expected     config.SyncMode
+	}{
+		{name: "nothing set", expected: ""},
+		{name: "sync_mode", syncMode: config.SyncModeInPlace, expected: config.SyncModeInPlace},
+		{name: "deprecated source_linked_deployment enabled", sourceLinked: &enabled, expected: config.SyncModeInPlace},
+		{name: "deprecated source_linked_deployment disabled", sourceLinked: &disabled, expected: config.SyncModeOverwrite},
+		{name: "deprecated immutable_folder", immutable: true, expected: config.SyncModeImmutable},
+		{name: "deprecated immutable_folder over source_linked_deployment", sourceLinked: &enabled, immutable: true, expected: config.SyncModeImmutable},
+		{name: "sync_mode over deprecated settings", syncMode: config.SyncModeOverwrite, sourceLinked: &enabled, immutable: true, expected: config.SyncModeOverwrite},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := &Bundle{Config: config.Root{
+				Workspace:    config.Workspace{SyncMode: tt.syncMode},
+				Presets:      config.Presets{SourceLinkedDeployment: tt.sourceLinked},
+				Experimental: &config.Experimental{ImmutableFolder: tt.immutable},
+			}}
+			assert.Equal(t, tt.expected, b.SyncMode())
+			assert.Equal(t, tt.expected == config.SyncModeImmutable, b.IsImmutableFolder())
+			assert.Equal(t, tt.expected == config.SyncModeInPlace, b.IsSourceLinkedDeployment())
+		})
+	}
+}

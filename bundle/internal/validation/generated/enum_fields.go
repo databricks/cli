@@ -319,4 +319,6 @@ var EnumFields = map[string][]string{
 	"resources.volumes.*.volume_type":             {"EXTERNAL", "MANAGED"},
 
 	"variables.*.type": {"complex"},
+
+	"workspace.sync_mode": {"overwrite", "in-place", "immutable"},
 }

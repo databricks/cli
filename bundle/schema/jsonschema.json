@@ -3960,7 +3960,9 @@
                     },
                     "immutable_folder": {
                       "description": "Whether to deploy bundle files and artifacts as a single immutable snapshot. When true, all files are packaged into a content-addressed archive and workspace.file_path and workspace.artifact_path are set to the resulting location.",
-                      "$ref": "#/$defs/bool"
+                      "$ref": "#/$defs/bool",
+                      "deprecationMessage": "Deprecated: please set workspace.sync_mode to immutable instead",
+                      "deprecated": true
                     },
                     "pydabs": {
                       "description": "The PyDABs configuration.",
@@ -4073,7 +4075,9 @@
                     },
                     "source_linked_deployment": {
                       "description": "Whether to link the deployment to the bundle source.",
-                      "$ref": "#/$defs/bool"
+                      "$ref": "#/$defs/bool",
+                      "deprecationMessage": "Deprecated: please set workspace.sync_mode to in-place instead",
+                      "deprecated": true
                     },
                     "tags": {
                       "description": "The tags for the bundle deployment.",
@@ -4360,6 +4364,27 @@
                 }
               ]
             },
+            "config.SyncMode": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "overwrite",
+                    "in-place",
+                    "immutable"
+                  ],
+                  "enumDescriptions": [
+                    "Upload bundle files to workspace.file_path, replacing the files of the previous deployment.",
+                    "Do not upload bundle files. Deployed resources reference the source files in the workspace directly. Available only when deploying from the Databricks Workspace.",
+                    "Upload bundle files and artifacts as a single immutable snapshot and set workspace.file_path and workspace.artifact_path to its location."
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "config.Target": {
               "oneOf": [
                 {
@@ -4510,6 +4535,10 @@
                     "state_path": {
                       "description": "The workspace state path",
                       "$ref": "#/$defs/string"
+                    },
+                    "sync_mode": {
+                      "description": "How bundle files are made available to deployed resources. Valid values are `overwrite`, `in-place`, and `immutable`. Defaults to `in-place` for development deployments from the Databricks Workspace and to `overwrite` otherwise.",
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.SyncMode"
                     },
                     "workspace_id": {
                       "description": "The Databricks workspace ID",
