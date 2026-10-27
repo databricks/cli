@@ -1,2 +1,2 @@
-# A target can add an explicit null that is kept, like a null in the base file: the default queue is not applied.
-trace $CLI bundle validate -t dev -o json | jq '.resources.jobs.j.queue'
+# A target can add an explicit null that is kept, like a null in the base file: queue stays null and the default queue is not applied.
+trace $CLI bundle validate -t dev -o json | jq '.resources.jobs.j | {has_queue: has("queue"), queue}'
