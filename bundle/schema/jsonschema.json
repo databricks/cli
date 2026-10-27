@@ -980,6 +980,27 @@
                   }
                 ]
               },
+              "resources.DependsOn": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "resource": {
+                        "description": "Key of the resource to depend on, as `foo` or `jobs.foo`.",
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "resource"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.ExternalLocation": {
                 "oneOf": [
                   {
@@ -1639,6 +1660,10 @@
                   {
                     "type": "object",
                     "properties": {
+                      "depends_on": {
+                        "description": "Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DependsOn"
+                      },
                       "prevent_destroy": {
                         "description": "Lifecycle setting to prevent the resource from being destroyed.",
                         "$ref": "#/$defs/bool"
@@ -1683,6 +1708,10 @@
                   {
                     "type": "object",
                     "properties": {
+                      "depends_on": {
+                        "description": "Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DependsOn"
+                      },
                       "prevent_destroy": {
                         "description": "Lifecycle setting to prevent the resource from being destroyed.",
                         "$ref": "#/$defs/bool"
@@ -1701,6 +1730,10 @@
                   {
                     "type": "object",
                     "properties": {
+                      "depends_on": {
+                        "description": "Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DependsOn"
+                      },
                       "prevent_destroy": {
                         "description": "Lifecycle setting to prevent the resource from being destroyed.",
                         "$ref": "#/$defs/bool"
@@ -3305,6 +3338,12 @@
                         "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.LifecycleWithStarted"
                       },
+                      "max_dbu": {
+                        "description": "[Private Preview] Maximum compute capacity of a real-time SQL warehouse, in DBU per hour.\nMust be a multiple of 3 between 3 and 960. The effective maximum cannot be\nlower than the warehouse's minimum capacity.",
+                        "$ref": "#/$defs/int",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
                       "max_num_clusters": {
                         "description": "Maximum number of clusters that the autoscaler will create to handle\nconcurrent queries.\n\nSupported values:\n- Must be \u003e= min_num_clusters\n- Must be \u003c= 40.\n\nDefaults to min_clusters if unset.",
                         "$ref": "#/$defs/int",
@@ -3324,6 +3363,12 @@
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission",
                         "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                      },
+                      "reyden_cluster_size_multiplier": {
+                        "description": "[Private Preview] Cluster size multiplier for Reyden warehouses. Scales the effective compute\ncapacity relative to the nominal virtual cluster size. Only meaningful when\nthe warehouse is of Reyden type.\n\nAccepted range: 1.0 to the workspace-configured maximum (decimals\nallowed). The default maximum is 100.0.\n- Values below 1.0 are normalized to 1.0.\n- Values above the configured maximum are capped at that maximum.\n- When absent, the warehouse is treated as having a multiplier of 1.0.",
+                        "$ref": "#/$defs/float64",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
                       },
                       "spot_instance_policy": {
                         "description": "Configurations whether the endpoint should use spot instances.",
@@ -5751,7 +5796,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "custom": {
-                      "description": "Custom OpenAI-compatible provider configuration with bearer-token\nauthentication.",
+                      "description": "Custom OpenAI-compatible provider configuration.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigCustomProviderConfig",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -6036,7 +6081,7 @@
               "oneOf": [
                 {
                   "type": "object",
-                  "description": "Custom OpenAI-compatible provider configuration with bearer-token\nauthentication.",
+                  "description": "Custom OpenAI-compatible provider configuration.",
                   "properties": {
                     "direct": {
                       "description": "Endpoint and authentication configuration for the custom provider.",
@@ -11711,10 +11756,9 @@
                   "type": "object",
                   "properties": {
                     "attachment": {
-                      "description": "[Private Preview] Optional: The configuration for the files attached to the dashboard snapshot notification. It\ncontrols the underlying data of dashboard widgets that is attached as data files and which\npages are included in the attached PDF. If not specified, the notification is sent with only\nthe default snapshot.",
+                      "description": "[Beta] Optional: The configuration for the files attached to the dashboard snapshot notification. It\ncontrols the underlying data of dashboard widgets that is attached as data files and which\npages are included in the attached PDF. If not specified, the notification is sent with only\nthe default snapshot.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionAttachment",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "custom_subject": {
                       "description": "Optional: Allows users to specify a custom subject line on the email sent\nto subscribers.",
@@ -11747,16 +11791,14 @@
                   "description": "The configuration for the files attached to the dashboard snapshot notification sent to\nsubscribers. `data_attachment` describes the underlying data of dashboard widgets attached\nas data files, and `page_attachment` describes which dashboard pages are included in the\nattached PDF.",
                   "properties": {
                     "data_attachment": {
-                      "description": "[Private Preview] Optional: The configuration for the underlying data of dashboard widgets attached as tabular\ndata files. If not specified, no tabular data is attached.",
+                      "description": "[Beta] Optional: The configuration for the underlying data of dashboard widgets attached as tabular\ndata files. If not specified, no tabular data is attached.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionAttachmentDataAttachment",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "page_attachment": {
-                      "description": "[Private Preview] Optional: The selection of dashboard pages included in the attached PDF. If not specified,\nonly the first page is included.",
+                      "description": "[Beta] Optional: The selection of dashboard pages included in the attached PDF. If not specified,\nonly the first page is included.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionAttachmentPageAttachment",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false
@@ -11774,22 +11816,19 @@
                   "description": "The configuration for the tabular data files attached to the dashboard snapshot. `widgets`\nlists the widgets whose data is exported and `file_format` is the output format; each\nreferenced widget's data is exported as a separate file.",
                   "properties": {
                     "file_format": {
-                      "description": "[Private Preview] The file format of the exported tabular data files.",
+                      "description": "[Beta] The file format of the exported tabular data files.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionAttachmentDataAttachmentFileFormat",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "include_applied_filters": {
-                      "description": "[Private Preview] When true, the dashboard's applied filter values are included alongside the tabular data as\nan additional attached file.",
+                      "description": "[Beta] When true, the dashboard's applied filter values are included alongside the tabular data as\nan additional attached file.",
                       "$ref": "#/$defs/bool",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "widgets": {
-                      "description": "[Private Preview] The widgets whose underlying data is exported. At least one widget must be referenced.",
+                      "description": "[Beta] The widgets whose underlying data is exported. At least one widget must be referenced.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionAttachmentDataAttachmentWidget",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false,
@@ -11815,9 +11854,9 @@
                     "FILE_FORMAT_EXCEL"
                   ],
                   "enumDescriptions": [
-                    "[Private Preview]",
-                    "[Private Preview]",
-                    "[Private Preview]"
+                    "[Beta]",
+                    "[Beta]",
+                    "[Beta]"
                   ]
                 },
                 {
@@ -11833,16 +11872,14 @@
                   "description": "Identifies a dashboard widget whose data to attach. `page_id` and `widget_id` are\nthe URL identifiers from the dashboard's serialized definition returned by the Get dashboard\nAPI (`serialized_dashboard`), and together they uniquely identify the widget.",
                   "properties": {
                     "page_id": {
-                      "description": "[Private Preview] The URL identifier of the page containing the widget. This is the value of the `name`\nfield of the corresponding entry under `pages` in the serialized dashboard definition.\nFormat: alphanumeric, hyphen, and underscore characters allowed, max length 63.",
+                      "description": "[Beta] The URL identifier of the page containing the widget. This is the value of the `name`\nfield of the corresponding entry under `pages` in the serialized dashboard definition.\nFormat: alphanumeric, hyphen, and underscore characters allowed, max length 63.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "widget_id": {
-                      "description": "[Private Preview] The URL identifier of the widget. This is the value of the `name` field of the\ncorresponding widget under that page's `layout` in the serialized dashboard definition.\nFormat: alphanumeric, hyphen, and underscore characters allowed, max length 63.",
+                      "description": "[Beta] The URL identifier of the widget. This is the value of the `name` field of the\ncorresponding widget under that page's `layout` in the serialized dashboard definition.\nFormat: alphanumeric, hyphen, and underscore characters allowed, max length 63.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false,
@@ -11864,16 +11901,14 @@
                   "description": "The selection of dashboard pages included in the attached PDF. `page_selection` chooses\nbetween all pages, the first page only, or an explicit subset listed in `page_ids`.",
                   "properties": {
                     "page_ids": {
-                      "description": "[Private Preview] The identifiers of the pages to include in the PDF. Only specified when `page_selection` is\n`PAGE_SELECTION_SUBSET`. Each value is the identifier of a page in the dashboard's\nserialized definition returned by the Get dashboard API (`serialized_dashboard`): the value\nof the `name` field of an entry under `pages`.\nFormat: alphanumeric, hyphen, and underscore characters allowed, max length 63.",
+                      "description": "[Beta] The identifiers of the pages to include in the PDF. Only specified when `page_selection` is\n`PAGE_SELECTION_SUBSET`. Each value is the identifier of a page in the dashboard's\nserialized definition returned by the Get dashboard API (`serialized_dashboard`): the value\nof the `name` field of an entry under `pages`.\nFormat: alphanumeric, hyphen, and underscore characters allowed, max length 63.",
                       "$ref": "#/$defs/slice/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "page_selection": {
-                      "description": "[Private Preview] How the attached pages are selected. When set to `PAGE_SELECTION_SUBSET`, the pages to\ninclude are listed in `page_ids`.",
+                      "description": "[Beta] How the attached pages are selected. When set to `PAGE_SELECTION_SUBSET`, the pages to\ninclude are listed in `page_ids`.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionAttachmentPageAttachmentPageSelection",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false
@@ -11894,8 +11929,8 @@
                     "PAGE_SELECTION_SUBSET"
                   ],
                   "enumDescriptions": [
-                    "[Private Preview]",
-                    "[Private Preview]"
+                    "[Beta]",
+                    "[Beta]"
                   ]
                 },
                 {
@@ -12850,6 +12885,12 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.RequestSource",
                       "x-databricks-launch-stage": "GA"
                     },
+                    "sdp_source": {
+                      "description": "[Private Preview] A Spark Declarative Pipeline data source.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.SdpSource",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
                     "stream_source": {
                       "description": "A Stream data source.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.StreamSource",
@@ -13700,6 +13741,79 @@
                     "SHORT",
                     "BINARY",
                     "DECIMAL"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.SdpSource": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A Spark Declarative Pipeline (SDP) data source.",
+                  "properties": {
+                    "dataframe_schema": {
+                      "description": "[Private Preview] Schema of the resulting dataframe after transformations, in Spark StructType JSON format (from df.schema.json()).\nRequired if transformation_sql is specified.\nExample: {\"type\":\"struct\",\"fields\":[{\"name\":\"col_a\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"col_c\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}}]}",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "filter_condition": {
+                      "description": "[Private Preview] Single WHERE clause to filter the pipeline's output table before applying transformations. Will be row-wise evaluated, so should only include conditionals and projections.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "input_tables": {
+                      "description": "[Private Preview] The full three-part names of the tables the pipeline reads from. Required to materialize this\nfeature with a TableTrigger, which starts a run when these tables update. Each table must exist\nwhen the feature is created. After the pipeline runs, Feature Store checks that it reads from\nthese tables, and the run fails if it doesn't. At most 100 tables.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "output_table": {
+                      "description": "[Private Preview] The full three-part (catalog, schema, table) name of the pipeline's output table to read from.\nThe table doesn't need to exist until the pipeline first runs. Required.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "pipeline_id": {
+                      "description": "[Private Preview] The ID of the Spark Declarative Pipeline that Feature Store runs to produce this source, before\neach materialization or backfill. The pipeline must already exist when the feature is created,\nand you need CAN_RUN, CAN_MANAGE, or owner permission on it. It doesn't need to have run yet.\nDeleting the feature doesn't delete the pipeline. If the pipeline is deleted, this field reads\nback empty. Required.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "transformation_sql": {
+                      "description": "[Private Preview] A single SQL SELECT expression applied after filter_condition.\nShould contain all the columns needed (eg. \"SELECT *, col_a + col_b AS col_c FROM x.y.z WHERE col_a \u003e 0\" would have `transformation_sql` \"*, col_a + col_b AS col_c\")\nIf transformation_sql is not provided, all columns of the pipeline's output table are present in the DataSource dataframe.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.SdpSourceState": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "State of the SDP source relative to pipeline execution and output table validation.",
+                  "enum": [
+                    "PENDING",
+                    "RESOLVED",
+                    "ERROR"
+                  ],
+                  "enumDescriptions": [
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]"
                   ]
                 },
                 {
@@ -20563,6 +20677,20 @@
                       "type": "array",
                       "items": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.ClusterPolicyPermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.DependsOn": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DependsOn"
                       }
                     },
                     {

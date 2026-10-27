@@ -6,7 +6,9 @@ vars:
   EXE_EXT: '{{if eq OS "windows"}}.exe{{end}}'
   # Pinned ruff (linter + formatter). Keep in sync with the version in
   # .github/workflows/check.yml and python/Taskfile.yml.
-  RUFF: uvx ruff@0.15.17
+  # `uv tool run` rather than its `uvx` alias: the SDK bumper's image ships
+  # only the `uv` binary.
+  RUFF: uv tool run ruff@0.15.17
   TEST_PACKAGES: ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... .
   ACCEPTANCE_TEST_FILTER: ""
   # Single brace-expansion glob covering every //go:embed target in the repo,
@@ -273,8 +275,8 @@ tasks:
       - task: check-changelog
       # --frozen renders from the committed tagging.py.lock as-is. Re-resolving (what
       # --locked does) hits the package index, which breaks under a newer local uv or the
-      # internal PyPI proxy index and rewrites the lock; CI keeps --locked (pinned uv +
-      # pypi.org) in changelog-preview.yml. --python 3.12 satisfies the lock's
+      # internal PyPI proxy index and rewrites the lock (changelog-preview.yml uses
+      # --frozen too). --python 3.12 satisfies the lock's
       # requires-python >=3.12, which the script omits (so uv would otherwise pick 3.9).
       - "uv run --python 3.12 --frozen --script internal/genkit/tagging.py --preview"
 
@@ -648,6 +650,8 @@ tasks:
       - libs/aitools/**
       - experimental/aitools/**
       - acceptance/apps/**
+      # acceptance/cmd/aitools is not listed on purpose: a change there runs
+      # `test`, which also runs on Windows. The -run pattern below still runs it.
       - acceptance/experimental/aitools/**
       - "{{.EMBED_SOURCES}}"
     cmds:
@@ -662,7 +666,7 @@ tasks:
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./acceptance/... \
-          -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/(apps|experimental/aitools)"
+          -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/apps|TestAccept/cmd/aitools|TestAccept/experimental/aitools"
 
   test-exp-ssh:
     desc: Run experimental SSH unit and acceptance tests

@@ -1,0 +1,5 @@
+# Generated, do not edit.
+
+ignore_remote_changes:
+  - field: customer_version_label
+    reason: spec:output_only

@@ -9,6 +9,9 @@ __all__ = [
     "ClusterPolicyPermissionLevel",
     "ClusterPolicyPermissionLevelParam",
     "ClusterPolicyPermissionParam",
+    "DependsOn",
+    "DependsOnDict",
+    "DependsOnParam",
     "Library",
     "LibraryDict",
     "LibraryParam",
@@ -40,6 +43,11 @@ from databricks.bundles.cluster_policies._models.cluster_policy_permission impor
 from databricks.bundles.cluster_policies._models.cluster_policy_permission_level import (
     ClusterPolicyPermissionLevel,
     ClusterPolicyPermissionLevelParam,
+)
+from databricks.bundles.cluster_policies._models.depends_on import (
+    DependsOn,
+    DependsOnDict,
+    DependsOnParam,
 )
 from databricks.bundles.cluster_policies._models.library import (
     Library,

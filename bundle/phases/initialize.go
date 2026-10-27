@@ -204,6 +204,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Reject invalid job_runs.lifecycle.triggers (empty, false, prevent_destroy).
 		mutator.ValidateJobRunTriggers(),
 
+		// Reads (dynamic): resources.*.*.lifecycle.depends_on
+		// Rejects entries that point to a missing or ambiguous resource, or to the resource itself.
+		validate.LifecycleDependsOn(),
+
 		// Reads (dynamic): * (strings) (searches for ${resources.*} references)
 		// Errors when a cross-resource reference points to a Terraform-only field
 		// with no DABs equivalent.

@@ -39,6 +39,9 @@ __all__ = [
     "CronScheduleParam",
     "CustomTemplateFormat",
     "CustomTemplateFormatParam",
+    "DependsOn",
+    "DependsOnDict",
+    "DependsOnParam",
     "Lifecycle",
     "LifecycleDict",
     "LifecycleParam",
@@ -110,6 +113,11 @@ from databricks.bundles.alerts._models.cron_schedule import (
 from databricks.bundles.alerts._models.custom_template_format import (
     CustomTemplateFormat,
     CustomTemplateFormatParam,
+)
+from databricks.bundles.alerts._models.depends_on import (
+    DependsOn,
+    DependsOnDict,
+    DependsOnParam,
 )
 from databricks.bundles.alerts._models.lifecycle import (
     Lifecycle,

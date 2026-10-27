@@ -26,8 +26,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class SubscriptionAttachmentDataAttachment:
     """
-    :meta private: [EXPERIMENTAL]
-
     The configuration for the tabular data files attached to the dashboard snapshot. `widgets`
     lists the widgets whose data is exported and `file_format` is the output format; each
     referenced widget's data is exported as a separate file.
@@ -37,14 +35,14 @@ class SubscriptionAttachmentDataAttachment:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The file format of the exported tabular data files.
+    [Beta] The file format of the exported tabular data files.
     """
 
     include_applied_filters: VariableOrOptional[bool] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] When true, the dashboard's applied filter values are included alongside the tabular data as
+    [Beta] When true, the dashboard's applied filter values are included alongside the tabular data as
     an additional attached file.
     """
 
@@ -54,7 +52,7 @@ class SubscriptionAttachmentDataAttachment:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The widgets whose underlying data is exported. At least one widget must be referenced.
+    [Beta] The widgets whose underlying data is exported. At least one widget must be referenced.
     """
 
     @classmethod
@@ -72,14 +70,14 @@ class SubscriptionAttachmentDataAttachmentDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The file format of the exported tabular data files.
+    [Beta] The file format of the exported tabular data files.
     """
 
     include_applied_filters: VariableOrOptional[bool]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] When true, the dashboard's applied filter values are included alongside the tabular data as
+    [Beta] When true, the dashboard's applied filter values are included alongside the tabular data as
     an additional attached file.
     """
 
@@ -87,7 +85,7 @@ class SubscriptionAttachmentDataAttachmentDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The widgets whose underlying data is exported. At least one widget must be referenced.
+    [Beta] The widgets whose underlying data is exported. At least one widget must be referenced.
     """
 
 

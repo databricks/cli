@@ -1,0 +1,16 @@
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
+
+[test]
+host         = [DATABRICKS_URL]
+workspace_id = [WORKSPACE_ID]
+auth_type    = databricks-cli
+
+[__settings__]
+default_profile = test
+
+[scoped]
+host         = [DATABRICKS_URL]
+workspace_id = [WORKSPACE_ID]
+scopes       = sql
+auth_type    = databricks-cli

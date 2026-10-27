@@ -191,6 +191,50 @@ func TestMultiImageExample(t *testing.T) {
 	assert.Len(t, cfg.Containers, 2)
 }
 
+func TestLoadRunConfigContainerNames(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		valid bool
+	}{
+		{"a", true},
+		{"trainer1", true},
+		{"data-proc", true},
+		{"a--b", true},
+		{strings.Repeat("a", 17), true},
+		{strings.Repeat("a", 32), true},
+		{"", false},
+		{"Trainer", false},
+		{"data_proc", false},
+		{"_trainer", false},
+		{"1trainer", false},
+		{"-trainer", false},
+		{"trainer-", false},
+		{"data.proc", false},
+		{"data proc", false},
+		{strings.Repeat("a", 33), false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg, err := loadRunConfig(writeConfig(t, fmt.Sprintf(`
+experiment_name: roles
+compute:
+  accelerator_type: GPU_1xH100
+  num_accelerators: 1
+containers:
+  - name: %q
+    command: echo train
+    ranks: [0]
+    unity_catalog_image: main.ml.trainer:v1
+`, tc.name)))
+			if tc.valid {
+				require.NoError(t, err)
+				assert.Equal(t, tc.name, cfg.Containers[0].Name)
+			} else {
+				require.ErrorContains(t, err, "containers[0].name must start with a lowercase letter")
+			}
+		})
+	}
+}
+
 func TestLoadRunConfigContainerValidation(t *testing.T) {
 	base := `
 experiment_name: roles

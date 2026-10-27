@@ -107,8 +107,7 @@ class ModelProviderServiceConfig:
 
     custom: VariableOrOptional[ModelProviderServiceConfigCustomProviderConfig] = None
     """
-    Custom OpenAI-compatible provider configuration with bearer-token
-    authentication.
+    Custom OpenAI-compatible provider configuration.
     """
 
     forward_headers: VariableOrOptional[bool] = None
@@ -245,8 +244,7 @@ class ModelProviderServiceConfigDict(TypedDict, total=False):
 
     custom: VariableOrOptional[ModelProviderServiceConfigCustomProviderConfigParam]
     """
-    Custom OpenAI-compatible provider configuration with bearer-token
-    authentication.
+    Custom OpenAI-compatible provider configuration.
     """
 
     forward_headers: VariableOrOptional[bool]

@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrList, VariableOrOptional
+from databricks.bundles.job_runs._models.depends_on import DependsOn, DependsOnParam
 from databricks.bundles.job_runs._models.job_run_trigger import (
     JobRunTrigger,
     JobRunTriggerParam,
@@ -18,6 +19,11 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class JobRunLifecycle:
     """"""
+
+    depends_on: VariableOrList[DependsOn] = field(default_factory=list)
+    """
+    Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.
+    """
 
     prevent_destroy: VariableOrOptional[bool] = None
     """
@@ -39,6 +45,11 @@ class JobRunLifecycle:
 
 class JobRunLifecycleDict(TypedDict, total=False):
     """"""
+
+    depends_on: VariableOrList[DependsOnParam]
+    """
+    Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.
+    """
 
     prevent_destroy: VariableOrOptional[bool]
     """

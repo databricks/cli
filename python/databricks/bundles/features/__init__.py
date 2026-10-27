@@ -28,6 +28,9 @@ __all__ = [
     "DeltaTableSource",
     "DeltaTableSourceDict",
     "DeltaTableSourceParam",
+    "DependsOn",
+    "DependsOnDict",
+    "DependsOnParam",
     "EntityColumn",
     "EntityColumnDict",
     "EntityColumnParam",
@@ -99,6 +102,9 @@ __all__ = [
     "SawtoothWindowParam",
     "ScalarDataType",
     "ScalarDataTypeParam",
+    "SdpSource",
+    "SdpSourceDict",
+    "SdpSourceParam",
     "SlidingWindow",
     "SlidingWindowDict",
     "SlidingWindowParam",
@@ -179,6 +185,11 @@ from databricks.bundles.features._models.delta_table_source import (
     DeltaTableSource,
     DeltaTableSourceDict,
     DeltaTableSourceParam,
+)
+from databricks.bundles.features._models.depends_on import (
+    DependsOn,
+    DependsOnDict,
+    DependsOnParam,
 )
 from databricks.bundles.features._models.entity_column import (
     EntityColumn,
@@ -298,6 +309,11 @@ from databricks.bundles.features._models.sawtooth_window import (
 from databricks.bundles.features._models.scalar_data_type import (
     ScalarDataType,
     ScalarDataTypeParam,
+)
+from databricks.bundles.features._models.sdp_source import (
+    SdpSource,
+    SdpSourceDict,
+    SdpSourceParam,
 )
 from databricks.bundles.features._models.sliding_window import (
     SlidingWindow,

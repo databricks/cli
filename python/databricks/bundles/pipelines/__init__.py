@@ -53,6 +53,9 @@ __all__ = [
     "DbfsStorageInfo",
     "DbfsStorageInfoDict",
     "DbfsStorageInfoParam",
+    "DependsOn",
+    "DependsOnDict",
+    "DependsOnParam",
     "EbsVolumeType",
     "EbsVolumeTypeParam",
     "EventLogSpec",
@@ -373,6 +376,11 @@ from databricks.bundles.pipelines._models.dbfs_storage_info import (
     DbfsStorageInfo,
     DbfsStorageInfoDict,
     DbfsStorageInfoParam,
+)
+from databricks.bundles.pipelines._models.depends_on import (
+    DependsOn,
+    DependsOnDict,
+    DependsOnParam,
 )
 from databricks.bundles.pipelines._models.ebs_volume_type import (
     EbsVolumeType,

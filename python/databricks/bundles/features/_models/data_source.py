@@ -22,6 +22,7 @@ from databricks.bundles.features._models.request_source import (
     RequestSource,
     RequestSourceParam,
 )
+from databricks.bundles.features._models.sdp_source import SdpSource, SdpSourceParam
 from databricks.bundles.features._models.source_lateness import (
     SourceLateness,
     SourceLatenessParam,
@@ -71,6 +72,13 @@ class DataSource:
     A request-time data source.
     """
 
+    sdp_source: VariableOrOptional[SdpSource] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] A Spark Declarative Pipeline data source.
+    """
+
     stream_source: VariableOrOptional[StreamSource] = None
     """
     A Stream data source.
@@ -115,6 +123,13 @@ class DataSourceDict(TypedDict, total=False):
     request_source: VariableOrOptional[RequestSourceParam]
     """
     A request-time data source.
+    """
+
+    sdp_source: VariableOrOptional[SdpSourceParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] A Spark Declarative Pipeline data source.
     """
 
     stream_source: VariableOrOptional[StreamSourceParam]

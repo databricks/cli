@@ -75,6 +75,9 @@ __all__ = [
     "AppResourceUcSecurableUcSecurableTypeParam",
     "ComputeSize",
     "ComputeSizeParam",
+    "DependsOn",
+    "DependsOnDict",
+    "DependsOnParam",
     "GitRepository",
     "GitRepositoryDict",
     "GitRepositoryParam",
@@ -218,6 +221,11 @@ from databricks.bundles.apps._models.app_resource_uc_securable_uc_securable_type
     AppResourceUcSecurableUcSecurableTypeParam,
 )
 from databricks.bundles.apps._models.compute_size import ComputeSize, ComputeSizeParam
+from databricks.bundles.apps._models.depends_on import (
+    DependsOn,
+    DependsOnDict,
+    DependsOnParam,
+)
 from databricks.bundles.apps._models.git_repository import (
     GitRepository,
     GitRepositoryDict,

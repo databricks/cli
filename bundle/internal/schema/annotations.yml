@@ -637,6 +637,9 @@ resources:
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
           "$fields":
+            "depends_on":
+              "description": |-
+                Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.
             "prevent_destroy":
               "description": |-
                 Lifecycle setting to prevent the resource from being destroyed.
@@ -1092,6 +1095,9 @@ resources:
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed and when the run re-fires.
           "$fields":
+            "depends_on":
+              "description": |-
+                Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.
             "prevent_destroy":
               "description": |-
                 Lifecycle setting to prevent the resource from being destroyed.
@@ -1172,6 +1178,13 @@ resources:
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
           "$fields":
+            "depends_on":
+              "description": |-
+                Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.
+              "$fields":
+                "resource":
+                  "description": |-
+                    Key of the resource to depend on, as `foo` or `jobs.foo`.
             "prevent_destroy":
               "description": |-
                 Lifecycle setting to prevent the resource from being destroyed.
