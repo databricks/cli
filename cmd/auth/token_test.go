@@ -974,6 +974,9 @@ func TestResolveNoArgsTokenCreateNewProfileRejectsTakenName(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("bubbletea cannot cancel reads on non-console input on Windows")
 	}
+	// Either one would resolve the profile before the picker is shown.
+	t.Setenv("DATABRICKS_HOST", "")
+	t.Setenv("DATABRICKS_CONFIG_PROFILE", "")
 	t.Setenv("DATABRICKS_CONFIG_FILE", writeTempConfig(t, `[prod]
 host = https://prod.cloud.databricks.test
 
