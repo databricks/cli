@@ -48,6 +48,7 @@ func TestFinalizeWithoutResourceWrites(t *testing.T) {
 			db.Data.Features = map[string]struct{}{FeatureDeploymentHistoryShadow: {}}
 		}
 		require.NoError(t, db.UpgradeToWrite())
+		require.EqualError(t, db.UpgradeToWrite(), "internal error: DeploymentState is already open for write")
 		mustFinalize(t, &db)
 
 		if mode == WritingFile {

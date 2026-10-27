@@ -909,9 +909,10 @@ func (db *DeploymentState) UpgradeToWrite() error {
 	}
 
 	switch db.mode {
-	case WritingDeploymentHistoryOnly, WritingDeploymentHistoryShadow:
+	case WritingDeploymentHistoryOnly:
+		// Open already selects write mode for DMS-authoritative state.
 		return nil
-	case WritingFile:
+	case WritingFile, WritingDeploymentHistoryShadow:
 		return errors.New("internal error: DeploymentState is already open for write")
 	case ReadingFile:
 		if _, only := db.Data.Features[FeatureDeploymentHistory]; only {
