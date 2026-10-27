@@ -50,7 +50,7 @@ func promptForProfile(ctx context.Context, defaultValue string, takenNames []str
 				return errors.New("profile name is required")
 			}
 			if slices.Contains(takenNames, input) {
-				return fmt.Errorf("profile %s already exists. Select it from the list to log in to it again", input)
+				return fmt.Errorf("profile %s already exists. Choose a different name", input)
 			}
 			return nil
 		},
@@ -251,20 +251,22 @@ a new profile is created.
 		// profile name.
 		var takenProfileNames []string
 		if profileName == "" && authArguments.Host == "" && len(args) == 0 && cmdio.IsPromptSupported(ctx) {
-			matchProfiles := profile.MatchAllProfiles
-			if useDeviceCode {
-				matchProfiles = matchDeviceCodeProfiles
-			}
-			allProfiles, err := profile.DefaultProfiler.LoadProfiles(ctx, matchProfiles)
+			allProfiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.MatchAllProfiles)
 			if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
 				return err
 			}
+			pickerProfiles := allProfiles
+			if useDeviceCode {
+				pickerProfiles = slices.DeleteFunc(slices.Clone(allProfiles), func(p profile.Profile) bool {
+					return !matchDeviceCodeProfiles(p)
+				})
+			}
 			label := "Select a profile"
-			if len(allProfiles) == 0 {
+			if len(pickerProfiles) == 0 {
 				label = "How would you like to log in?"
 			}
 			currentDefault, _ := databrickscfg.GetDefaultProfile(ctx, env.Get(ctx, "DATABRICKS_CONFIG_FILE"))
-			result, selected, err := pickAuthProfile(ctx, allProfiles, profilePickerOptions{
+			result, selected, err := pickAuthProfile(ctx, pickerProfiles, profilePickerOptions{
 				Label:         label,
 				Default:       currentDefault,
 				IncludeExtras: true,
@@ -290,11 +292,7 @@ a new profile is created.
 				// Reject the names of existing profiles, including those the
 				// picker hid, so that the profile name prompt below cannot
 				// log in to an existing profile and reuse its host.
-				existingProfiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.MatchAllProfiles)
-				if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
-					return err
-				}
-				takenProfileNames = existingProfiles.Names()
+				takenProfileNames = allProfiles.Names()
 			}
 		}
 

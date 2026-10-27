@@ -410,7 +410,7 @@ func resolveNoArgsToken(ctx context.Context, profiler profile.Profiler, authArgs
 		// Fall through — setHostAndAccountId will prompt for the host.
 		return "", nil, nil
 	case profilePickerCreateNew:
-		return runInlineLogin(ctx, profiler, tokenStore, mode)
+		return runInlineLogin(ctx, profiler, allProfiles.Names(), tokenStore, mode)
 	default:
 		p, err := loadProfileByName(ctx, selectedName, profiler)
 		if err != nil {
@@ -422,9 +422,10 @@ func resolveNoArgsToken(ctx context.Context, profiler profile.Profiler, authArgs
 
 // runInlineLogin runs a minimal interactive login flow: prompts for a profile
 // name and host, performs the OAuth challenge, saves the profile to
-// .databrickscfg, and returns the new profile name and profile.
-func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore storage.Store, mode storage.StorageMode) (string, *profile.Profile, error) {
-	profileName, err := promptForProfile(ctx, "DEFAULT", nil)
+// .databrickscfg, and returns the new profile name and profile. It rejects
+// the names in takenNames so that it cannot log in to an existing profile.
+func runInlineLogin(ctx context.Context, profiler profile.Profiler, takenNames []string, tokenStore storage.Store, mode storage.StorageMode) (string, *profile.Profile, error) {
+	profileName, err := promptForProfile(ctx, "DEFAULT", takenNames)
 	if err != nil {
 		return "", nil, err
 	}
