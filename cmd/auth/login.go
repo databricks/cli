@@ -50,6 +50,10 @@ func promptForProfile(ctx context.Context, defaultValue string, takenNames []str
 			if input == "" {
 				return errors.New("profile name is required")
 			}
+			// Fail here rather than after the OAuth flow, in SaveToProfile.
+			if err := databrickscfg.ValidateProfileName(input); err != nil {
+				return err
+			}
 			if slices.Contains(takenNames, input) {
 				return fmt.Errorf("profile %s already exists. Choose a different name", input)
 			}

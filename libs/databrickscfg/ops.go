@@ -210,10 +210,19 @@ func isFirstProfileInFile(configFile *config.File) bool {
 	return true
 }
 
-// SetDefaultProfile writes the default_profile key to the [__settings__] section.
-func SetDefaultProfile(ctx context.Context, profileName, configFilePath string) error {
+// ValidateProfileName returns an error if profileName is reserved for the
+// [__settings__] section.
+func ValidateProfileName(profileName string) error {
 	if profileName == databricksSettingsSection {
 		return fmt.Errorf("profile name %q is reserved for internal use", databricksSettingsSection)
+	}
+	return nil
+}
+
+// SetDefaultProfile writes the default_profile key to the [__settings__] section.
+func SetDefaultProfile(ctx context.Context, profileName, configFilePath string) error {
+	if err := ValidateProfileName(profileName); err != nil {
+		return err
 	}
 
 	configFile, err := loadOrCreateConfigFile(ctx, configFilePath)
@@ -428,8 +437,8 @@ func backupConfigFile(ctx context.Context, configFile *config.File) error {
 // removed (use this for mutually exclusive fields like cluster_id vs
 // serverless_compute_id, or to drop stale auth credentials on auth-type switch).
 func SaveToProfile(ctx context.Context, cfg *config.Config, clearKeys ...string) error {
-	if cfg.Profile == databricksSettingsSection {
-		return fmt.Errorf("profile name %q is reserved for internal use", databricksSettingsSection)
+	if err := ValidateProfileName(cfg.Profile); err != nil {
+		return err
 	}
 
 	configFile, err := loadOrCreateConfigFile(ctx, cfg.ConfigFile)
