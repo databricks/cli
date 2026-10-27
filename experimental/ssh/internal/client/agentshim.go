@@ -50,15 +50,18 @@ const (
 	ugExecutable = "ug"
 
 	// pins the version of uv downloaded
-	uvBaseURL = "https://github.com/astral-sh/uv/releases/download/0.12.18/"
+	uvVersion = "0.12.18"
+	uvBaseURL = "https://github.com/astral-sh/uv/releases/download/" + uvVersion + "/"
 
 	// SHA-256 of each pinned uv release tarball
 	uvX64LinuxChecksum   = "89eadd7c76fc063887959510d5ba0ab1264dfd5f1143b925ddb73021a40acf16"
 	uvArm64LinuxChecksum = "afb6291f3f0a6b4521fc67b947822506c41dde5b60d2189dd8f3695b2ac8c9e7"
 
-	// overrides for uv tool installs so they are isolated to a directory we control
-	uvToolDir    = agentDepsDir + "/uv_tools"
-	uvToolBinDir = agentDepsDir + "/uv_tools_bin"
+	// overrides for uv tool installs so they are isolated to a directory we control.
+	// Keyed by ugCommit so bumping the pin installs it afresh on a long-lived cluster
+	// rather than reusing the previous commit's install.
+	uvToolDir    = agentDepsDir + "/uv_tools-" + ugCommit
+	uvToolBinDir = agentDepsDir + "/uv_tools_bin-" + ugCommit
 
 	// pins the version of node/npm downloaded
 	nodeVersion = "v24.21.0"
@@ -464,10 +467,17 @@ func bootstrapToolchain(ctx context.Context, home string) (string, error) {
 	return ugPath, nil
 }
 
-func toolchainReady() bool {
-	_, ugErr := exec.LookPath(ugExecutable)
+// toolchainReady reports whether the pinned Unity Gateway CLI and some npm are
+// installed. npm (and uv) shipped with the image are used as-is, but ug must be the
+// pinned commit, so it is checked at its versioned path rather than looked up on PATH.
+func toolchainReady(home string) bool {
 	_, npmErr := exec.LookPath(npmExecutable)
-	return ugErr == nil && npmErr == nil
+	return ugInstalled(home) && npmErr == nil
+}
+
+func ugInstalled(home string) bool {
+	_, err := os.Stat(filepath.Join(home, uvToolBinDir, ugExecutable))
+	return err == nil
 }
 
 func ensureToolchain(ctx context.Context, home, arch string) error {
@@ -478,11 +488,10 @@ func ensureToolchain(ctx context.Context, home, arch string) error {
 	uvToolBinDirAbsolute := filepath.Join(home, uvToolBinDir)
 	prependPath(ctx, uvToolBinDirAbsolute)
 	for _, spec := range []archiveSpec{uvSpec, nodeSpec} {
-		binDir := filepath.Join(home, agentDepsDir, spec.dirName, spec.binDirName)
-		prependPath(ctx, binDir)
+		prependPath(ctx, spec.binDir(home))
 	}
 
-	if toolchainReady() {
+	if toolchainReady(home) {
 		return nil
 	}
 	unlock, err := acquireSetupLock(ctx, home)
@@ -491,7 +500,7 @@ func ensureToolchain(ctx context.Context, home, arch string) error {
 	}
 	defer unlock()
 	// Another client may have finished the install while we waited for the lock.
-	if toolchainReady() {
+	if toolchainReady(home) {
 		return nil
 	}
 
@@ -506,7 +515,7 @@ func ensureToolchain(ctx context.Context, home, arch string) error {
 		}
 	}
 
-	if _, err := exec.LookPath(ugExecutable); err != nil {
+	if !ugInstalled(home) {
 		if err := runStep(ctx, "Installing Unity Gateway CLI", func(out io.Writer) error {
 			env := os.Environ()
 			env = append(env, "UV_TOOL_DIR="+uvToolDirAbsolute, "UV_TOOL_BIN_DIR="+uvToolBinDirAbsolute)
@@ -535,9 +544,20 @@ type archiveSpec struct {
 	archiveURL string
 	binaryName string
 	dirName    string
-	// sub-directory inside dirName where the binary is located, "" if it's the same as dirName
+	// installed under dirName-version, so a version bump installs afresh on a
+	// long-lived cluster instead of reusing the previous version
+	version string
+	// sub-directory inside the install dir where the binary is located, "" if it's the install dir itself
 	binDirName string
 	checksum   string
+}
+
+func (s archiveSpec) installDirName() string {
+	return s.dirName + "-" + s.version
+}
+
+func (s archiveSpec) binDir(home string) string {
+	return filepath.Join(home, agentDepsDir, s.installDirName(), s.binDirName)
 }
 
 // ensure the specified binary is installed, installing it if it's not already
@@ -549,9 +569,8 @@ func ensureBinary(ctx context.Context, home string, out io.Writer, spec archiveS
 	}
 
 	depsRoot := filepath.Join(home, agentDepsDir)
-	depsDir := filepath.Join(depsRoot, spec.dirName)
-	binDir := filepath.Join(depsDir, spec.binDirName)
-	if _, err := os.Stat(filepath.Join(binDir, spec.binaryName)); err == nil {
+	depsDir := filepath.Join(depsRoot, spec.installDirName())
+	if _, err := os.Stat(filepath.Join(spec.binDir(home), spec.binaryName)); err == nil {
 		return nil
 	}
 
@@ -588,7 +607,7 @@ func ensureBinary(ctx context.Context, home string, out io.Writer, spec archiveS
 }
 
 func uvArchiveSpec(goarch string) archiveSpec {
-	spec := archiveSpec{dirName: "uv", binaryName: "uv"}
+	spec := archiveSpec{dirName: "uv", version: uvVersion, binaryName: "uv"}
 	switch goarch {
 	case "amd64":
 		spec.archiveURL = uvBaseURL + "uv-x86_64-unknown-linux-gnu.tar.gz"
@@ -749,7 +768,7 @@ func downloadVerified(ctx context.Context, spec archiveSpec) (string, error) {
 }
 
 func nodeArchiveSpec(goarch string) archiveSpec {
-	spec := archiveSpec{binDirName: "bin", dirName: "node", binaryName: "npm"}
+	spec := archiveSpec{binDirName: "bin", dirName: "node", version: nodeVersion, binaryName: "npm"}
 	switch goarch {
 	case "amd64":
 		spec.archiveURL = nodeBaseURL + "node-" + nodeVersion + "-linux-x64.tar.xz"

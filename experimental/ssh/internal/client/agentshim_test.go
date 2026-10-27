@@ -190,6 +190,15 @@ func TestEnsureBinary(t *testing.T) {
 	defer srv.Close()
 
 	home := t.TempDir()
+	// Older installs: an unversioned one from a CLI before versioned installs, and a
+	// previous version. Neither counts as the pinned version being installed.
+	depsRoot := filepath.Join(home, agentDepsDir)
+	for _, dir := range []string{"node", "node-v1"} {
+		writeFakeExec(t, filepath.Join(depsRoot, dir, "bin"), "npm", ":")
+	}
+	for _, dir := range []string{"uv", "uv-1"} {
+		writeFakeExec(t, filepath.Join(depsRoot, dir), "uv", ":")
+	}
 	for _, c := range []struct {
 		spec       archiveSpec
 		wantBinDir string
@@ -200,8 +209,9 @@ func TestEnsureBinary(t *testing.T) {
 				binaryName: "npm",
 				checksum:   hex.EncodeToString(nodeSum[:]),
 				dirName:    "node",
+				version:    "v2",
 				binDirName: "bin",
-			}, wantBinDir: filepath.Join(home, agentDepsDir, "node", "bin"),
+			}, wantBinDir: filepath.Join(home, agentDepsDir, "node-v2", "bin"),
 		},
 		{
 			spec: archiveSpec{
@@ -209,7 +219,8 @@ func TestEnsureBinary(t *testing.T) {
 				binaryName: "uv",
 				checksum:   hex.EncodeToString(uvSum[:]),
 				dirName:    "uv",
-			}, wantBinDir: filepath.Join(home, agentDepsDir, "uv"),
+				version:    "2",
+			}, wantBinDir: filepath.Join(home, agentDepsDir, "uv-2"),
 		},
 	} {
 		t.Run("downloads, extracts, and returns the bin dir ("+c.spec.binaryName+")", func(t *testing.T) {
@@ -255,8 +266,8 @@ func TestEnsureToolchain(t *testing.T) {
 		t.Run(fmt.Sprintf("no-op when the toolchain is already present (staleLock=%v)", staleLock), func(t *testing.T) {
 			home := t.TempDir()
 			writeFakeExec(t, filepath.Join(home, uvToolBinDir), ugExecutable, ":")
-			writeFakeExec(t, filepath.Join(home, agentDepsDir, "node", "bin"), "npm", ":")
-			writeFakeExec(t, filepath.Join(home, agentDepsDir, "uv"), "uv", fakeUvRecorder)
+			writeFakeExec(t, nodeArchiveSpec("amd64").binDir(home), "npm", ":")
+			writeFakeExec(t, uvArchiveSpec("amd64").binDir(home), "uv", fakeUvRecorder)
 			if staleLock {
 				// left by a session killed mid-install
 				writeFakeExec(t, filepath.Join(home, agentRootDir), setupLockName, "")
@@ -274,8 +285,8 @@ func TestEnsureToolchain(t *testing.T) {
 		home := t.TempDir()
 		// uv and npm are present; ug is not, so only ug gets installed and no
 		// download happens
-		writeFakeExec(t, filepath.Join(home, agentDepsDir, "uv"), "uv", fakeUvRecorder)
-		writeFakeExec(t, filepath.Join(home, agentDepsDir, "node", "bin"), "npm", ":")
+		writeFakeExec(t, uvArchiveSpec("amd64").binDir(home), "uv", fakeUvRecorder)
+		writeFakeExec(t, nodeArchiveSpec("amd64").binDir(home), "npm", ":")
 		marker := filepath.Join(t.TempDir(), "uv.log")
 		t.Setenv("FAKE_UV_LOG", marker)
 		t.Setenv("PATH", t.TempDir())
@@ -290,11 +301,33 @@ func TestEnsureToolchain(t *testing.T) {
 		assert.NoFileExists(t, filepath.Join(home, agentRootDir, setupLockName), "the setup lock is released once setup finishes")
 	})
 
+	t.Run("replaces a Unity Gateway CLI from another commit with the pinned one", func(t *testing.T) {
+		home := t.TempDir()
+		writeFakeExec(t, uvArchiveSpec("amd64").binDir(home), "uv", fakeUvRecorder)
+		writeFakeExec(t, nodeArchiveSpec("amd64").binDir(home), "npm", ":")
+		// Installs from an older pin and from a CLI before installs were versioned. Both
+		// put a ug on PATH, but neither is the pinned commit.
+		depsRoot := filepath.Join(home, agentDepsDir)
+		oldBinDirs := []string{filepath.Join(depsRoot, "uv_tools_bin"), filepath.Join(depsRoot, "uv_tools_bin-oldcommit")}
+		for _, dir := range oldBinDirs {
+			writeFakeExec(t, dir, ugExecutable, ":")
+		}
+		marker := filepath.Join(t.TempDir(), "uv.log")
+		t.Setenv("FAKE_UV_LOG", marker)
+		t.Setenv("PATH", strings.Join(oldBinDirs, string(os.PathListSeparator)))
+
+		require.NoError(t, ensureToolchain(cmdio.MockDiscard(t.Context()), home, "amd64"))
+
+		out, err := os.ReadFile(marker)
+		require.NoError(t, err)
+		assert.Contains(t, string(out), "tool install git+https://github.com/"+ugRepo+"@"+ugCommit)
+	})
+
 	t.Run("recheck after acquiring the lock skips a redundant install", func(t *testing.T) {
 		home := t.TempDir()
 		// uv is present and records if it ever installs; it must not be called once a
 		// concurrent client finishes the toolchain while we wait for the lock.
-		writeFakeExec(t, filepath.Join(home, agentDepsDir, "uv"), "uv", fakeUvRecorder)
+		writeFakeExec(t, uvArchiveSpec("amd64").binDir(home), "uv", fakeUvRecorder)
 		marker := filepath.Join(t.TempDir(), "uv.log")
 		t.Setenv("FAKE_UV_LOG", marker)
 		t.Setenv("PATH", t.TempDir())
@@ -310,7 +343,7 @@ func TestEnsureToolchain(t *testing.T) {
 		// The other client finishes: publish ug+npm into the PATH dir, then release
 		// the lock so the waiting ensureToolchain can proceed.
 		writeFakeExec(t, filepath.Join(home, uvToolBinDir), ugExecutable, ":")
-		writeFakeExec(t, filepath.Join(home, agentDepsDir, "node", "bin"), "npm", ":")
+		writeFakeExec(t, nodeArchiveSpec("amd64").binDir(home), "npm", ":")
 		unlock()
 
 		require.NoError(t, <-done)
@@ -635,7 +668,7 @@ func TestBootstrapToolchain(t *testing.T) {
 	t.Run("returns the path to the Unity Gateway CLI", func(t *testing.T) {
 		home := t.TempDir()
 		writeFakeExec(t, filepath.Join(home, uvToolBinDir), ugExecutable, ":")
-		writeFakeExec(t, filepath.Join(home, agentDepsDir, "node", "bin"), npmExecutable, ":")
+		writeFakeExec(t, nodeArchiveSpec("amd64").binDir(home), npmExecutable, ":")
 		t.Setenv("PATH", t.TempDir())
 
 		ugPath, err := bootstrapToolchain(cmdio.MockDiscard(t.Context()), home)
@@ -646,8 +679,8 @@ func TestBootstrapToolchain(t *testing.T) {
 	t.Run("reports UNITY_GATEWAY_CLI_NOT_FOUND when the install leaves no CLI on PATH", func(t *testing.T) {
 		home := t.TempDir()
 		// uv "succeeds" without installing anything, so the post-setup lookup fails.
-		writeFakeExec(t, filepath.Join(home, agentDepsDir, "uv"), "uv", ":")
-		writeFakeExec(t, filepath.Join(home, agentDepsDir, "node", "bin"), npmExecutable, ":")
+		writeFakeExec(t, uvArchiveSpec("amd64").binDir(home), "uv", ":")
+		writeFakeExec(t, nodeArchiveSpec("amd64").binDir(home), npmExecutable, ":")
 		t.Setenv("PATH", t.TempDir())
 
 		_, err := bootstrapToolchain(cmdio.MockDiscard(t.Context()), home)
