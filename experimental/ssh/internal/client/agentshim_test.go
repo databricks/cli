@@ -20,10 +20,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/BurntSushi/toml"
 	"github.com/databricks/cli/experimental/ssh/internal/agentlauncher"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -360,9 +362,8 @@ func TestEnsureToolchain(t *testing.T) {
 func TestInjectAgentContext(t *testing.T) {
 	claude, _ := agentlauncher.AgentByName("claude")
 	codex, _ := agentlauncher.AgentByName("codex")
-	noContext := agentlauncher.AgentSpec{Name: "none"} // an agent with neither mechanism
 
-	t.Run("flag agent writes a scratch file and returns the flag", func(t *testing.T) {
+	t.Run("claude gets the context as a scratch file", func(t *testing.T) {
 		home := t.TempDir()
 		args, err := injectAgentContext(dbr.MockRuntime(t.Context(), serverlessRuntime), home, claude)
 		require.NoError(t, err)
@@ -373,27 +374,20 @@ func TestInjectAgentContext(t *testing.T) {
 		assert.Contains(t, string(data), "databricks ssh connect")
 	})
 
-	t.Run("home-file agent writes the global instructions file, no args", func(t *testing.T) {
+	t.Run("codex gets the context as a TOML config override", func(t *testing.T) {
 		home := t.TempDir()
-		args, err := injectAgentContext(dbr.MockRuntime(t.Context(), serverlessRuntime), home, codex)
+		ctx := env.Set(dbr.MockRuntime(t.Context(), serverlessRuntime), workspaceHomeEnv, "/Workspace/Users/a\"b@example.com")
+		args, err := injectAgentContext(ctx, home, codex)
 		require.NoError(t, err)
-		assert.Nil(t, args)
-		data, err := os.ReadFile(filepath.Join(home, ".codex", "AGENTS.md"))
+		require.Len(t, args, 2)
+		assert.Equal(t, "-c", args[0])
+		// codex splits the override on the first '=' and parses the rest as TOML
+		var got map[string]string
+		require.NoError(t, toml.Unmarshal([]byte(args[1]), &got))
+		assert.Equal(t, map[string]string{"developer_instructions": agentSystemContext("/Workspace/Users/a\"b@example.com", true)}, got)
+		entries, err := os.ReadDir(home)
 		require.NoError(t, err)
-		assert.Contains(t, string(data), "databricks ssh connect")
-	})
-
-	t.Run("home-file agent does not clobber an existing file", func(t *testing.T) {
-		home := t.TempDir()
-		target := filepath.Join(home, ".codex", "AGENTS.md")
-		require.NoError(t, os.MkdirAll(filepath.Dir(target), 0o755))
-		require.NoError(t, os.WriteFile(target, []byte("user's own instructions"), 0o644))
-		args, err := injectAgentContext(dbr.MockRuntime(t.Context(), serverlessRuntime), home, codex)
-		require.NoError(t, err)
-		assert.Nil(t, args)
-		data, err := os.ReadFile(target)
-		require.NoError(t, err)
-		assert.Equal(t, "user's own instructions", string(data))
+		assert.Empty(t, entries)
 	})
 
 	t.Run("context describes the compute the shim runs on", func(t *testing.T) {
@@ -412,16 +406,6 @@ func TestInjectAgentContext(t *testing.T) {
 			require.NoError(t, err)
 			assert.Contains(t, string(data), c.want)
 		}
-	})
-
-	t.Run("agent without a mechanism writes nothing", func(t *testing.T) {
-		home := t.TempDir()
-		args, err := injectAgentContext(dbr.MockRuntime(t.Context(), serverlessRuntime), home, noContext)
-		require.NoError(t, err)
-		assert.Nil(t, args)
-		entries, err := os.ReadDir(home)
-		require.NoError(t, err)
-		assert.Empty(t, entries)
 	})
 }
 
