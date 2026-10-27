@@ -1,0 +1,3 @@
+# trigger_pause_status needs to set pause_status inside the schedule, but the schedule of viaref is a reference to the whole
+# schedule of another job and is still unresolved at that point.
+trace $CLI bundle validate
