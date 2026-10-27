@@ -305,13 +305,8 @@ a new profile is created.
 		// only populated by setHostAndAccountId further down, which runs after
 		// the profile-name prompt.
 		if skipWorkspace && profileName == "" && authArguments.Host != "" && authArguments.AccountID == "" {
-			params := auth.ExtractHostQueryParams(authArguments.Host)
-			authArguments.Host = params.Host
-			if authArguments.AccountID == "" {
-				authArguments.AccountID = params.AccountID
-			}
-			if authArguments.WorkspaceID == "" {
-				authArguments.WorkspaceID = params.WorkspaceID
+			if err := normalizeHost(authArguments); err != nil {
+				return err
 			}
 			runHostDiscovery(ctx, authArguments)
 		}
@@ -565,7 +560,31 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 	return setAccountID(ctx, existingProfile, authArguments)
 }
 
-var errHostRequired = errors.New("host is required. Pass it as an argument or with --host")
+var errInvalidHost = errors.New("invalid host")
+
+// normalizeHost strips the trailing slash and the query params from the host
+// and moves ?o= and ?a= into WorkspaceID and AccountID unless they are set.
+// It fails if nothing is left of the host, e.g. for "/" or "?o=123", because
+// with an empty host login would use discovery or DATABRICKS_HOST instead.
+func normalizeHost(authArguments *auth.AuthArguments) error {
+	rawHost := authArguments.Host
+	authArguments.Host = strings.TrimSuffix(authArguments.Host, "/")
+
+	// Extract query parameters from the host URL (?o=workspace_id, ?a=account_id).
+	// URL params from explicit --host override stale profile values.
+	params := auth.ExtractHostQueryParams(authArguments.Host)
+	authArguments.Host = params.Host
+	if authArguments.Host == "" {
+		return fmt.Errorf("%w %q", errInvalidHost, rawHost)
+	}
+	if authArguments.WorkspaceID == "" {
+		authArguments.WorkspaceID = params.WorkspaceID
+	}
+	if authArguments.AccountID == "" {
+		authArguments.AccountID = params.AccountID
+	}
+	return nil
+}
 
 // Sets the host in the persistentAuth object based on the provided arguments and flags.
 // Follows the following precedence:
@@ -598,22 +617,8 @@ func setHost(ctx context.Context, existingProfile *profile.Profile, authArgument
 		}
 	}
 
-	authArguments.Host = strings.TrimSuffix(authArguments.Host, "/")
-
-	// Extract query parameters from the host URL (?o=workspace_id, ?a=account_id).
-	// URL params from explicit --host override stale profile values.
-	params := auth.ExtractHostQueryParams(authArguments.Host)
-	authArguments.Host = params.Host
-	// Checked after normalization because a host like "/" or "?o=123" becomes
-	// empty. Without a host, login would resolve one from DATABRICKS_HOST.
-	if authArguments.Host == "" {
-		return errHostRequired
-	}
-	if authArguments.WorkspaceID == "" {
-		authArguments.WorkspaceID = params.WorkspaceID
-	}
-	if authArguments.AccountID == "" {
-		authArguments.AccountID = params.AccountID
+	if err := normalizeHost(authArguments); err != nil {
+		return err
 	}
 
 	// Inherit workspace_id from the existing profile AFTER URL param extraction.

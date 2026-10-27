@@ -297,7 +297,7 @@ func TestLoginDeviceCodeHostEmptyAfterNormalization(t *testing.T) {
 		t.Run(host, func(t *testing.T) {
 			tm := startDeviceCodeLogin(t, "", "--profile", "newprof", "--host", host)
 			_, err := tm.Result()
-			assert.ErrorIs(t, err, errHostRequired)
+			assert.ErrorIs(t, err, errInvalidHost)
 		})
 	}
 }

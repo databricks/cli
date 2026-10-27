@@ -209,17 +209,17 @@ func TestSetHost(t *testing.T) {
 	// Test host that is empty after normalization from flag
 	authArguments.Host = "?o=123"
 	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
-	assert.ErrorIs(t, err, errHostRequired)
+	assert.ErrorIs(t, err, errInvalidHost)
 
 	// Test host that is empty after normalization from argument
 	authArguments.Host = ""
 	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{"/"})
-	assert.ErrorIs(t, err, errHostRequired)
+	assert.ErrorIs(t, err, errInvalidHost)
 
 	// Test host that is empty after normalization from profile
 	authArguments.Host = ""
 	err = setHostAndAccountId(ctx, &profile.Profile{Host: "/"}, &authArguments, []string{})
-	assert.ErrorIs(t, err, errHostRequired)
+	assert.ErrorIs(t, err, errInvalidHost)
 
 	// Test host is not set. Should prompt.
 	authArguments.Host = ""
@@ -806,11 +806,7 @@ func TestSkipWorkspaceProfileNameUsesDiscoveredAccountID(t *testing.T) {
 	args := &auth.AuthArguments{Host: server.URL}
 
 	// Mirrors the pre-naming block in newLoginCommand's RunE for --skip-workspace.
-	params := auth.ExtractHostQueryParams(args.Host)
-	args.Host = params.Host
-	if args.AccountID == "" {
-		args.AccountID = params.AccountID
-	}
+	require.NoError(t, normalizeHost(args))
 	runHostDiscovery(ctx, args)
 
 	assert.Equal(t, "abc-123", args.AccountID)
@@ -1465,6 +1461,23 @@ func TestLoginRejectsPositionalArgWithHostFlag(t *testing.T) {
 	cmd.SetArgs([]string{"myprofile"})
 	err := cmd.Execute()
 	assert.ErrorContains(t, err, `argument "myprofile" cannot be combined with --host or --profile`)
+}
+
+func TestLoginSkipWorkspaceHostEmptyAfterNormalization(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	t.Setenv("DATABRICKS_CONFIG_FILE", writeTempConfig(t, ""))
+	t.Setenv("DATABRICKS_AUTH_STORAGE", "plaintext")
+
+	ctx := cmdio.MockDiscard(t.Context())
+	authArgs := &auth.AuthArguments{Host: "?a=123"}
+	cmd := newLoginCommand(authArgs)
+	cmd.Flags().String("profile", "", "")
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--skip-workspace"})
+	err := cmd.Execute()
+	assert.EqualError(t, err, `invalid host "?a=123"`)
 }
 
 func TestLoginRejectsPositionalArgWithProfileFlag(t *testing.T) {
