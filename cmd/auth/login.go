@@ -305,7 +305,7 @@ a new profile is created.
 		// only populated by setHostAndAccountId further down, which runs after
 		// the profile-name prompt.
 		if skipWorkspace && profileName == "" && authArguments.Host != "" && authArguments.AccountID == "" {
-			if err := normalizeHost(authArguments); err != nil {
+			if err := normalizeLoginHost(authArguments); err != nil {
 				return err
 			}
 			runHostDiscovery(ctx, authArguments)
@@ -562,11 +562,11 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 
 var errInvalidHost = errors.New("invalid host")
 
-// normalizeHost strips the trailing slash and the query params from the host
-// and moves ?o= and ?a= into WorkspaceID and AccountID unless they are set.
+// normalizeLoginHost strips the trailing slash and the query params from the
+// host and moves ?o= and ?a= into WorkspaceID and AccountID unless they are set.
 // It fails if nothing is left of the host, e.g. for "/" or "?o=123", because
 // with an empty host login would use discovery or DATABRICKS_HOST instead.
-func normalizeHost(authArguments *auth.AuthArguments) error {
+func normalizeLoginHost(authArguments *auth.AuthArguments) error {
 	rawHost := authArguments.Host
 	authArguments.Host = strings.TrimSuffix(authArguments.Host, "/")
 
@@ -617,7 +617,7 @@ func setHost(ctx context.Context, existingProfile *profile.Profile, authArgument
 		}
 	}
 
-	if err := normalizeHost(authArguments); err != nil {
+	if err := normalizeLoginHost(authArguments); err != nil {
 		return err
 	}
 
