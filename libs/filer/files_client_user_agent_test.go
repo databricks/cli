@@ -26,8 +26,7 @@ func TestFilesAPIClientCarriesCommandUserAgent(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// The registered segments are process-wide, so the values are unique to
-	// this test to keep it independent of other tests in the package.
+	// Segments are process-wide, so use values unique to this test.
 	ctx := useragent.InContext(t.Context(), "cmd", "test_files-user-agent")
 	ctx = useragent.InContext(ctx, "engine", "direct")
 

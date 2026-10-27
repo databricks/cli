@@ -9,10 +9,8 @@ import (
 	"github.com/databricks/sdk-go/core/clientinfo"
 )
 
-// filesAPIOwnedUserAgentKeys are segments that only describe the classic SDK
-// or that the files/v2 client already renders on its own (from the
-// environment or its credentials). Copying them would misreport or duplicate
-// them.
+// filesAPIOwnedUserAgentKeys are classic-SDK-only segments or segments that
+// files/v2 renders itself, so copying them would misreport or duplicate them.
 var filesAPIOwnedUserAgentKeys = map[string]bool{
 	"databricks-sdk-go": true,
 	"go":                true,
@@ -24,13 +22,9 @@ var filesAPIOwnedUserAgentKeys = map[string]bool{
 	"meta-harness":      true,
 }
 
-// registerUserAgentForFilesAPI copies the segments the CLI attaches to the
-// classic SDK context (cmd, cmd-exec-id, interactive, engine, ...) into the
-// files/v2 client's process-wide user agent, so that files/v2 requests are
-// attributed to the same command as the rest of the CLI's traffic.
-//
-// files/v2 has no request-scoped segments. A CLI process runs a single
-// command, so process-wide segments carry the same information.
+// registerUserAgentForFilesAPI copies the CLI's classic SDK context segments
+// (cmd, engine, ...) into the files/v2 user agent. files/v2 only supports
+// process-wide segments, which is equivalent for a single-command process.
 func registerUserAgentForFilesAPI(ctx context.Context) {
 	rendered := map[string]bool{}
 	for s := range strings.FieldsSeq(clientinfo.Default().String()) {
