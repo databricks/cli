@@ -2,6 +2,7 @@ package main
 
 import (
 	"reflect"
+	"slices"
 
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
