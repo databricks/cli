@@ -1072,13 +1072,14 @@ func runTest(t *testing.T,
 
 	pathFilter := preparePathFilter(config, customEnv)
 	sortLines := compileSortLines(t, config)
+	suppressLines := compileSuppressLines(t, config)
 
 	// output.txt lives in outputDir, not tmpDir, so the bundle sync never uploads it;
 	// compare it from there. Every run produces it, so compare it explicitly rather
 	// than relying on it turning up in the tmpDir scan below. out.requests.txt also
 	// stays in outputDir and is never compared: tests assert on recorded requests
 	// through print_requests.py, not by committing the raw recording.
-	doComparison(t, repls, sortLines, dir, outputDir, "output.txt", &printedRepls)
+	doComparison(t, repls, sortLines, suppressLines, dir, outputDir, "output.txt", &printedRepls)
 
 	// Compare expected outputs
 	for relPath := range outputs {
@@ -1090,7 +1091,7 @@ func runTest(t *testing.T,
 			continue
 		}
 
-		doComparison(t, repls, sortLines, dir, tmpDir, relPath, &printedRepls)
+		doComparison(t, repls, sortLines, suppressLines, dir, tmpDir, relPath, &printedRepls)
 	}
 
 	// Make sure there are not unaccounted for new files
@@ -1122,7 +1123,7 @@ func runTest(t *testing.T,
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
-			doComparison(t, repls, sortLines, dir, tmpDir, relPath, &printedRepls)
+			doComparison(t, repls, sortLines, suppressLines, dir, tmpDir, relPath, &printedRepls)
 		}
 	}
 
@@ -1239,7 +1240,25 @@ func compileSortLines(t *testing.T, config internal.TestConfig) []*regexp.Regexp
 	return result
 }
 
-func doComparison(t *testing.T, repls testdiff.ReplacementsContext, sortLines []*regexp.Regexp, dirRef, dirNew, relPath string, printedRepls *bool) {
+// compileSuppressLines compiles the non-empty SuppressLines patterns from the test config.
+// Patterns are returned in name order so the result does not depend on map iteration.
+func compileSuppressLines(t *testing.T, config internal.TestConfig) []*regexp.Regexp {
+	result := make([]*regexp.Regexp, 0, len(config.SuppressLines))
+	for _, name := range slices.Sorted(maps.Keys(config.SuppressLines)) {
+		pattern := config.SuppressLines[name]
+		if pattern == "" {
+			continue
+		}
+		re, err := regexp.Compile(pattern)
+		if err != nil {
+			t.Fatalf("Invalid SuppressLines pattern %s = %#v: %s", name, pattern, err)
+		}
+		result = append(result, re)
+	}
+	return result
+}
+
+func doComparison(t *testing.T, repls testdiff.ReplacementsContext, sortLines, suppressLines []*regexp.Regexp, dirRef, dirNew, relPath string, printedRepls *bool) {
 	pathRef := filepath.Join(dirRef, relPath)
 	pathNew := filepath.Join(dirNew, relPath)
 	bufRef, okRef := tryReading(t, pathRef)
@@ -1256,6 +1275,17 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, sortLines []
 	// The reference value is stored after applying replacements.
 	if !NoRepl {
 		valueNew = repls.Replace(valueNew)
+	}
+
+	// Move lines the test does not pin (e.g. retry warnings) from the compared output to the log.
+	// Applied to the reference too, so a golden that still contains them compares the same way.
+	for _, re := range suppressLines {
+		var removed []string
+		valueNew, removed = testdiff.RemoveLines(valueNew, re)
+		valueRef, _ = testdiff.RemoveLines(valueRef, re)
+		if len(removed) > 0 {
+			t.Logf("Suppressed from %s:\n%s", relPath, strings.Join(removed, "\n"))
+		}
 	}
 
 	// Canonicalize line runs whose order the command does not guarantee. Applied to
