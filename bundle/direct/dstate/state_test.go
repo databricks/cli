@@ -38,15 +38,55 @@ func TestOpenSaveFinalizeRoundTrip(t *testing.T) {
 	mustFinalize(t, &db2)
 }
 
-func TestFinalizeWithNoEntriesDoesNotWriteStateFile(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "state.json")
+func TestFinalizeWithoutResourceWrites(t *testing.T) {
+	for _, mode := range []Mode{WritingFile, WritingDeploymentHistoryShadow} {
+		path := filepath.Join(t.TempDir(), "state.json")
+		var db DeploymentState
+		require.NoError(t, db.Open(t.Context(), path, ReadingFile, WithRecovery(true), OpenDmsArgs{}))
+		if mode == WritingDeploymentHistoryShadow {
+			// A first plan already knows history is enabled, before a state file exists.
+			db.Data.Features = map[string]struct{}{FeatureDeploymentHistoryShadow: {}}
+		}
+		require.NoError(t, db.UpgradeToWrite())
+		require.EqualError(t, db.UpgradeToWrite(), "internal error: DeploymentState is already open for write")
+		mustFinalize(t, &db)
 
-	var db DeploymentState
-	require.NoError(t, db.Open(t.Context(), path, WritingFile, WithRecovery(true), OpenDmsArgs{}))
-	mustFinalize(t, &db)
+		if mode == WritingFile {
+			assert.NoFileExists(t, path)
+			continue
+		}
+		// Even an empty deployment must persist its history marker and stable lineage.
+		require.NoError(t, db.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
+		assert.Equal(t, 1, db.Data.Serial)
+		assert.NotEmpty(t, db.Data.Lineage)
+		assert.Contains(t, db.StateFeatures(), FeatureDeploymentHistoryShadow)
+		mustFinalize(t, &db)
 
-	_, err := os.Stat(path)
-	assert.ErrorIs(t, err, os.ErrNotExist)
+		// Keeping history enabled without changes must not advance the file serial.
+		require.NoError(t, db.Open(t.Context(), path, WritingDeploymentHistoryShadow, WithRecovery(false), OpenDmsArgs{}))
+		mustFinalize(t, &db)
+		require.NoError(t, db.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
+		assert.Equal(t, 1, db.Data.Serial)
+		mustFinalize(t, &db)
+
+		// Turning history off also persists its marker change without resource operations.
+		require.NoError(t, db.Open(t.Context(), path, WritingFile, WithRecovery(false), OpenDmsArgs{}))
+		mustFinalize(t, &db)
+		require.NoError(t, db.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
+		assert.Equal(t, 2, db.Data.Serial)
+		assert.NotContains(t, db.StateFeatures(), FeatureDeploymentHistoryShadow)
+		mustFinalize(t, &db)
+
+		// Enabling history on existing state persists the marker, even without resource writes.
+		require.NoError(t, db.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
+		db.Data.Features = map[string]struct{}{FeatureDeploymentHistoryShadow: {}}
+		require.NoError(t, db.UpgradeToWrite())
+		mustFinalize(t, &db)
+		require.NoError(t, db.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
+		assert.Equal(t, 3, db.Data.Serial)
+		assert.Contains(t, db.StateFeatures(), FeatureDeploymentHistoryShadow)
+		mustFinalize(t, &db)
+	}
 }
 
 func TestDataForFileSerial(t *testing.T) {
@@ -68,7 +108,7 @@ func TestDataForFileSerial(t *testing.T) {
 				VersionID: tt.versionID,
 			}
 			if tt.recording {
-				db.mode = WritingDMS
+				db.mode = WritingDeploymentHistoryOnly
 			}
 			db.Data.State["resources.jobs.foo"] = ResourceEntry{ID: "123", State: json.RawMessage(`{"name":"foo"}`)}
 
@@ -183,7 +223,7 @@ func TestOpenUsesDMSVersionForSerial(t *testing.T) {
 
 			ctx := cmdctx.SetWorkspaceClient(t.Context(), client)
 			var db DeploymentState
-			err = db.Open(ctx, path, WritingDMS, WithRecovery(false), OpenDmsArgs{
+			err = db.Open(ctx, path, WritingDeploymentHistoryOnly, WithRecovery(false), OpenDmsArgs{
 				DeploymentID: tt.deploymentID, LastVersionID: tt.lastVersionID,
 			})
 			if tt.wantErr != "" {
@@ -423,7 +463,7 @@ func TestOpenFailureLeavesStateClosed(t *testing.T) {
 }
 
 func TestGetSerialWithHistoryUsesLatestCounter(t *testing.T) {
-	for _, mode := range []Mode{WritingFileWithHistory, WritingFileWithHistoryEnforced} {
+	for _, mode := range []Mode{ReadingFile, WritingDeploymentHistoryShadow} {
 		db := DeploymentState{mode: mode, Data: NewDatabase("", 4), VersionID: 7}
 		assert.Equal(t, 7, db.GetSerial(), "mode=%d: service version is ahead", mode)
 		db.Data.Serial = 9

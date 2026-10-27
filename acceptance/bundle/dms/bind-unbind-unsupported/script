@@ -8,7 +8,8 @@ job_id=$($CLI jobs create --json '{"name": "bind-target-'$UNIQUE_NAME'"}' | jq -
 add_repl "$job_id" JOB_ID
 trace musterr $CLI bundle deployment bind foo "$job_id"
 
-# unbind refuses when it opens an existing recording state, so it needs a deployment first.
-title "Deploy so the bundle records state, then unbind is refused too"
+# File state remains writable even when it carries the history marker.
+title "Unbind is allowed for file-backed history state"
 trace $CLI bundle deploy
-trace musterr $CLI bundle deployment unbind foo
+trace $CLI bundle deployment unbind foo
+trace jq '{features, state}' .databricks/bundle/default/resources.json

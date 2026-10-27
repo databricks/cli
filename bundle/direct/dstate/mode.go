@@ -12,23 +12,19 @@ const (
 	// Finalize merges them into resources.json. DMS is unused.
 	WritingFile
 
-	// WritingDMS reads and writes resource state through DMS without creating a WAL.
+	// WritingDeploymentHistoryOnly reads and writes resource state through DMS without creating a WAL.
 	// DMS errors fail the deployment.
-	WritingDMS
+	WritingDeploymentHistoryOnly
 
-	// WritingFileWithHistory writes state through WAL to resources.json and records DMS history.
+	// WritingDeploymentHistoryShadow writes state through WAL to resources.json and records DMS history.
 	// DMS errors and drain timeouts let the deployment continue.
-	WritingFileWithHistory
-
-	// WritingFileWithHistoryEnforced writes state through WAL to resources.json and records DMS history.
-	// DMS errors and drain timeouts let the deployment continue.
-	// Persists deployment_history_best_effort to reject clients that cannot honor history recording.
-	WritingFileWithHistoryEnforced
+	// Persists deployment_history_shadow to reject clients that cannot honor history recording.
+	WritingDeploymentHistoryShadow
 )
 
 func (m Mode) isWritable() bool {
 	switch m {
-	case WritingFile, WritingDMS, WritingFileWithHistory, WritingFileWithHistoryEnforced:
+	case WritingFile, WritingDeploymentHistoryOnly, WritingDeploymentHistoryShadow:
 		return true
 	default:
 		return false

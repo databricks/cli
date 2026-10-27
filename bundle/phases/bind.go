@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deployplan"
+	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
@@ -47,7 +48,11 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		return
 	}
 
-	if stateDesc.IsDMS() {
+	var configured *bool
+	if b.Config.Experimental != nil {
+		configured = b.Config.Experimental.DeploymentHistory
+	}
+	if stateDesc.IsDMS() || bundleenv.RecordsDeploymentHistory(ctx, configured) {
 		logdiag.LogError(ctx, errors.New("bind is not supported for a bundle target that records deployment history"))
 		return
 	}

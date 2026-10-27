@@ -17,7 +17,7 @@ const bufferedOperations = 10
 
 const historyDrainTimeoutPerOperation = 5 * time.Second
 
-// BufferOptions selects optional file-history recording behavior.
+// BufferOptions selects optional deployment history shadow recording behavior.
 type BufferOptions struct {
 	BestEffort bool
 	// OperationCount counts staged resource keys. All recorded keys must be staged.
@@ -207,11 +207,10 @@ func (b *OperationBuffer) write(ctx context.Context, key string, update Operatio
 }
 
 // Drain waits for buffered uploads before version completion.
-//   - WritingDMS: close the channel and wait for queued writes.
-//   - WritingFileWithHistory: wait up to five seconds per staged operation.
-//   - WritingFileWithHistoryEnforced: wait up to five seconds per staged operation.
+//   - WritingDeploymentHistoryOnly: close the channel and wait for queued writes.
+//   - WritingDeploymentHistoryShadow: wait up to five seconds per staged operation.
 //
-// Both history modes cancel outstanding uploads when the timeout or ctx expires.
+// Shadow history cancels outstanding uploads when the timeout or ctx expires.
 // It returns the first recording error and is safe to call more than once.
 func (b *OperationBuffer) Drain(ctx context.Context) error {
 	b.stopQueue()
