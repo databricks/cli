@@ -1,0 +1,50 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+state_path="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-migration-before-deploy-${UNIQUE_NAME}/default/state"
+other_catalog="dms_other_${UNIQUE_NAME}"
+
+title "Setup (LOG.setup): create a job and schema without history\nNext deploy enables history and recreates the schema in another catalog, requiring approval."
+{
+    $CLI bundle deploy -qq
+    DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false replace_ids.py
+    cp .databricks/bundle/default/resources.json .databricks/resources.before-migration.json
+    $CLI catalogs create "$other_catalog"
+    update_file.py databricks.yml 'deployment_history: false' 'deployment_history: true'
+    update_file.py databricks.yml 'catalog_name: main' "catalog_name: ${other_catalog}"
+} &> LOG.setup
+trap '$CLI bundle destroy --auto-approve >> LOG.cleanup 2>&1; $CLI catalogs delete "$other_catalog" --force >> LOG.cleanup 2>&1; rm -f "$OUT_REQUESTS"' EXIT
+rm -f "$OUT_REQUESTS"
+
+title "1. Fail deployment planning\nExpect: migration version 2 stays complete; no deployment version is created."
+trace fault.py 'GET /api/2.2/jobs/get*' 403 0 1
+trace musterr $CLI bundle deploy -qq
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "$state_path/resources.deployment.json" -o json | jq -r '.object_id')
+add_repl "$deployment_id" DEPLOYMENT_ID
+title "Request order: complete migration -> upload full file state -> plan jobs"
+trace print_requests.py --dms --get //api/2.0/bundle //jobs/get //workspace/import //workspace-files/import-file --oneline |
+    MSYS_NO_PATHCONV=1 jq -c --arg marker "$state_path/resources.json" '
+        (.body.multipart_form.path // .body.path // (.path | ltrimstr("/api/2.0/workspace-files/import-file"))) as $destination |
+        select((.path | endswith("/complete")) or (.path | endswith("/resources")) or .path == "/api/2.2/jobs/get" or $destination == $marker) |
+        {method, path: (if $destination == $marker then $destination else .path end)}'
+title "Remote state: version 2 file state with resources; original snapshot preserved in the backup"
+trace MSYS_NO_PATHCONV=1 $CLI workspace export "$state_path/resources.json" --format AUTO --file .databricks/resources.marker.json
+trace jq -c '{serial, features, state}' .databricks/resources.marker.json
+trace MSYS_NO_PATHCONV=1 $CLI workspace export "$state_path/resources.json.backup" --format AUTO --file .databricks/resources.backup.json
+trace cmp .databricks/resources.before-migration.json .databricks/resources.backup.json
+title "Migration result: only completed version 2, with INITIAL_REGISTER operations"
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-versions "deployments/${deployment_id}" -o json | jq -c 'map({version_id, status, completion_reason})'
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/2" -o json | jq -c 'sort_by(.resource_key) | map({resource_key, action_type, status})'
+
+title "2. Retry without approval\nExpect: deployment declined; migration stays at version 2 and is not repeated."
+trace musterr $CLI bundle deploy -qq
+title "Local and remote markers must stay byte-for-byte unchanged"
+trace cmp .databricks/resources.marker.json .databricks/bundle/default/resources.json
+trace MSYS_NO_PATHCONV=1 $CLI workspace export "$state_path/resources.json" --format AUTO --file .databricks/resources.after-decline.json
+trace cmp .databricks/resources.marker.json .databricks/resources.after-decline.json
+title "No DMS writes and no extra version on the declined retry"
+trace print_requests.py --dms //api/2.0/bundle
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-versions "deployments/${deployment_id}" -o json | jq -c 'map({version_id, status, completion_reason})'
+
+title "3. Approve deployment\nExpect: ordinary deployment version 3; version 2 remains the only migration."
+trace $CLI bundle deploy --auto-approve -qq
+trace $CLI bundle summary -o json | jq -c '.bundle.deployment | {latest_version_id}'
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-versions "deployments/${deployment_id}" -o json | jq -c 'sort_by(.version_id | tonumber) | map({version_id, status, completion_reason})'

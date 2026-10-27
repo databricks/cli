@@ -4,11 +4,7 @@
 
 === Direct + deployment-history requested against a terraform state is rejected before commit
 >>> DATABRICKS_BUNDLE_ENGINE=direct DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true errcode [CLI] bundle deploy
-Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
-Error: deployment history setting (true) does not match the existing state (false)
-
-Update experimental.deployment_history to match the existing deployment, or run "databricks bundle destroy" to start over
-
+Error: deployment history is not supported with Terraform state; first migrate to direct deployment with deployment history disabled
 
 Exit code: 1
 
