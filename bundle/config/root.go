@@ -339,6 +339,14 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		return err
 	}
 
+	// Main converted the configuration to the typed configuration and back around
+	// every mutator, so the target only held what its typed form holds (e.g. not an
+	// explicitly null run_as, which would otherwise replace the root's run_as below).
+	target, err = roundTripTarget(target)
+	if err != nil {
+		return err
+	}
+
 	// Confirm validity of variable overrides.
 	err = validateVariableOverrides(root, target)
 	if err != nil {
@@ -454,6 +462,15 @@ func (r *Root) MergeTargetOverrides(name string) error {
 
 	r.value = root
 	return nil
+}
+
+// roundTripTarget converts the target to the typed [Target] and back.
+func roundTripTarget(v dyn.Value) (dyn.Value, error) {
+	var t *Target
+	if err := convert.ToTyped(&t, v); err != nil {
+		return dyn.InvalidValue, err
+	}
+	return convert.FromTyped(t, v)
 }
 
 var allowedVariableDefinitions = []([]string){
