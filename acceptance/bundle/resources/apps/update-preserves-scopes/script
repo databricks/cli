@@ -1,0 +1,27 @@
+print_requests() {
+    print_requests.py //apps '^//api/2.0/bundle' --del-body url
+}
+
+trace $CLI bundle deploy
+
+title "Out-of-band: add a scope the bundle cannot declare (e.g. via account-level update)"
+trace $CLI api post /api/2.0/apps/myappname/update --json '{"app": {"name": "myappname", "user_api_scopes": ["sql", "files.files", "jobs"]}, "update_mask": "user_api_scopes"}' > /dev/null
+trace $CLI apps get myappname | jq .user_api_scopes
+
+title "Plan after out-of-band change"
+trace $CLI bundle plan
+
+title "Change description and re-deploy; the update must only touch description"
+trace update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
+trace print_requests > /dev/null
+trace $CLI bundle deploy
+trace print_requests > out.requests.json
+trace $CLI apps get myappname | jq '{description, user_api_scopes}'
+
+title "Change the declared scopes; they are written in full, replacing the remote value"
+trace update_file.py databricks.yml "[sql, files.files]" "[sql, iam.access-control:read]"
+trace $CLI bundle deploy
+trace print_requests >> out.requests.json
+trace $CLI apps get myappname | jq .user_api_scopes
+
+trace $CLI bundle destroy --auto-approve
