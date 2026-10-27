@@ -294,6 +294,32 @@ func TestGetDefaultProfile_NoFile(t *testing.T) {
 	assert.NoFileExists(t, path)
 }
 
+func TestGetSectionNames(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "databrickscfg")
+	err := os.WriteFile(path, []byte(`[__settings__]
+default_profile = ws
+
+[ws]
+host = https://ws.cloud.databricks.test
+
+[hostless]
+cluster_id = abc
+
+[empty]
+`), 0o600)
+	require.NoError(t, err)
+
+	got, err := GetSectionNames(t.Context(), path)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"__settings__", "ws", "hostless"}, got)
+}
+
+func TestGetSectionNames_NoFile(t *testing.T) {
+	got, err := GetSectionNames(t.Context(), filepath.Join(t.TempDir(), "databrickscfg"))
+	require.NoError(t, err)
+	assert.Nil(t, got)
+}
+
 func TestGetConfiguredDefaultProfile(t *testing.T) {
 	testCases := []struct {
 		name    string

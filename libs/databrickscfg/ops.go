@@ -123,6 +123,27 @@ func GetDefaultProfile(ctx context.Context, configFilePath string) (string, erro
 	return GetDefaultProfileFrom(configFile), nil
 }
 
+// GetSectionNames returns the names of the non-empty sections in the config
+// file at configFilePath. Unlike LoadProfiles, it includes sections without a
+// host. SaveToProfile merges into an existing section with the same name, so
+// none of these names is free for a new profile. Returns nil if the file
+// doesn't exist.
+func GetSectionNames(ctx context.Context, configFilePath string) ([]string, error) {
+	configFile, err := loadConfigFile(ctx, configFilePath)
+	if err != nil || configFile == nil {
+		return nil, err
+	}
+	var names []string
+	for _, s := range configFile.Sections() {
+		// go-ini always has a DEFAULT section, even if the file does not.
+		if len(s.Keys()) == 0 {
+			continue
+		}
+		names = append(names, s.Name())
+	}
+	return names, nil
+}
+
 // loadConfigFile loads a config file without creating it if it doesn't exist.
 // Returns (nil, nil) when the file is not found.
 func loadConfigFile(ctx context.Context, filename string) (*config.File, error) {

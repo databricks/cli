@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -975,6 +976,9 @@ func TestResolveNoArgsTokenCreateNewProfileRejectsTakenName(t *testing.T) {
 	}
 	t.Setenv("DATABRICKS_CONFIG_FILE", writeTempConfig(t, `[prod]
 host = https://prod.cloud.databricks.test
+
+[hostless]
+cluster_id = abc
 `))
 	tm := termtest.Run(t, func(ctx context.Context) (string, error) {
 		name, _, err := resolveNoArgsToken(ctx, profile.DefaultProfiler, &auth.AuthArguments{}, nil, storage.StorageModePlaintext)
@@ -985,6 +989,8 @@ host = https://prod.cloud.databricks.test
 	tm.WaitFor("Databricks profile name [DEFAULT]")
 	tm.Type("prod" + termtest.KeyEnter)
 	tm.WaitFor(">> profile prod already exists")
+	tm.Type(strings.Repeat(termtest.KeyBackspace, len("prod")) + "hostless" + termtest.KeyEnter)
+	tm.WaitFor(">> profile hostless already exists")
 	tm.Type(termtest.KeyCtrlC)
 	_, err := tm.Result()
 	assert.EqualError(t, err, "^C")

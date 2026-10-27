@@ -296,9 +296,13 @@ a new profile is created.
 				authArguments.Host = host
 			case profilePickerCreateNew:
 				// Reject the names of existing profiles, including those the
-				// picker hid, so that the profile name prompt below cannot
-				// log in to an existing profile and reuse its host.
-				takenProfileNames = allProfiles.Names()
+				// picker hid and sections without a host, so that the profile
+				// name prompt below cannot log in to an existing profile and
+				// reuse its host or keys.
+				takenProfileNames, err = databrickscfg.GetSectionNames(ctx, env.Get(ctx, "DATABRICKS_CONFIG_FILE"))
+				if err != nil {
+					return err
+				}
 			}
 		}
 
