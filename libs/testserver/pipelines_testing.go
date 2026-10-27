@@ -117,6 +117,7 @@ func (s *FakeWorkspace) collectPipelineTests(rootPath string, selection []string
 //   - "fail": FAILED, "error": ERROR (a fixture failed), "skip": SKIPPED, otherwise PASSED.
 //   - "crash": compute terminates when the case starts and the update fails without a summary.
 //   - "hang": the case never finishes and the update stays RUNNING until the pipeline is stopped.
+//   - "breaks_update": the case passes, but the update fails after the summary.
 func (s *FakeWorkspace) startPipelineTestRun(pipelineID, updateID string, caseIDs []string) *fakePipelineUpdate {
 	const (
 		running = 1
@@ -161,6 +162,7 @@ func (s *FakeWorkspace) startPipelineTestRun(pipelineID, updateID string, caseID
 	}
 
 	counts := map[string]int{}
+	breaksUpdate := false
 	for _, id := range caseIDs {
 		emitCase(id, "RUNNING", nil)
 		_, name, _ := strings.Cut(id, "::")
@@ -177,6 +179,10 @@ func (s *FakeWorkspace) startPipelineTestRun(pipelineID, updateID string, caseID
 			})
 			update.states = append(update.states, pipelines.UpdateInfoStateFailed)
 			return update
+		case strings.Contains(name, "breaks_update"):
+			emitCase(id, "PASSED", nil)
+			counts["passed"]++
+			breaksUpdate = true
 		case strings.Contains(name, "fail"):
 			emitCase(id, "FAILED", exception("AssertionError", "assert 100 == 150"))
 			counts["failed"]++
@@ -203,7 +209,16 @@ func (s *FakeWorkspace) startPipelineTestRun(pipelineID, updateID string, caseID
 			"errors":  counts["errors"],
 		}},
 	})
-	if len(caseIDs) == 0 || counts["failed"] > 0 || counts["errors"] > 0 {
+	if breaksUpdate {
+		emit(ended, fakePipelineEvent{
+			EventType: "update_progress",
+			Level:     pipelines.EventLevelError,
+			Message:   fmt.Sprintf("Update %s is FAILED.", updateID[:6]),
+			Error:     &pipelines.ErrorDetail{Fatal: true, Exceptions: []pipelines.SerializedException{{ClassName: "ResultDeliveryException", Message: "Test results could not be verified."}}},
+			Details:   map[string]any{"update_progress": map[string]any{"state": "FAILED"}},
+		})
+	}
+	if len(caseIDs) == 0 || counts["failed"] > 0 || counts["errors"] > 0 || breaksUpdate {
 		update.states = append(update.states, pipelines.UpdateInfoStateFailed)
 	} else {
 		update.states = append(update.states, pipelines.UpdateInfoStateCompleted)
