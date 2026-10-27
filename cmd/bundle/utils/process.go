@@ -359,13 +359,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			}
 		}
 
-		if stateDesc.Engine.IsDirect() && (opts.Deploy || opts.PreDeployChecks) {
-			if err := enforceDeploymentHistorySetting(ctx, b, stateDesc, true); err != nil {
-				logdiag.LogError(ctx, err)
-				return b, stateDesc, root.ErrAlreadyPrinted
-			}
-		}
-
 		stateMode := dstate.WritingFile
 		switch {
 		case stateDesc.IsDMS():
@@ -666,9 +659,6 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{}); err != nil {
 			return err
 		}
-		if err := enforceDeploymentHistorySetting(ctx, b, stateDesc, false); err != nil {
-			return err
-		}
 		if configuresDeploymentHistory(ctx, b) {
 			if _, err := prepareDeploymentHistoryShadow(ctx, b); err != nil {
 				log.Warnf(ctx, "Could not read deployment history; continuing with file state: %s", err)
@@ -692,32 +682,6 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 	if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WritingDeploymentHistoryOnly, dstate.WithRecovery(false), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
 		return err
 	}
-	return enforceDeploymentHistorySetting(ctx, b, stateDesc, false)
-}
-
-func enforceDeploymentHistorySetting(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc, requireMatch bool) error {
-	if stateDesc.SourcePath == "" {
-		return nil
-	}
-	configured := configuresDeploymentHistory(ctx, b)
-	recorded := stateDesc.RecordsHistory()
-	if b.DeploymentBundle.StateDB.IsOpen() {
-		recorded = b.DeploymentBundle.StateDB.RecordsHistory()
-	}
-	if configured == recorded || (!configured && !stateDesc.IsDMS()) {
-		return nil
-	}
-	if requireMatch {
-		return fmt.Errorf(`deployment history setting (%t) does not match the existing state (%t)
-
-Update experimental.deployment_history to match the existing deployment, or run "databricks bundle destroy" to start over`, configured, recorded)
-	}
-	if configured {
-		return errors.New(`enabling experimental.deployment_history for an existing deployment is not supported
-
-Run "databricks bundle destroy" first, then deploy again with deployment history enabled`)
-	}
-	log.Warnf(ctx, "Deployment history setting (%t) does not match the existing state (%t). Using the existing state.", configured, recorded)
 	return nil
 }
 
