@@ -226,8 +226,8 @@ a new profile is created.
 		// a host URL. With no profiles configured the picker still shows the
 		// two action entries so the user can choose between web-based discovery
 		// (Create a new profile) and a manual host URL. Device code login skips
-		// discovery, so for it "Create a new profile" prompts for the host after
-		// the profile name.
+		// discovery, so its "Create a new profile" asks for the host after the
+		// profile name, unless a profile with that name already has a host.
 		if profileName == "" && authArguments.Host == "" && len(args) == 0 && cmdio.IsPromptSupported(ctx) {
 			matchProfiles := profile.MatchAllProfiles
 			if useDeviceCode {
