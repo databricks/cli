@@ -4,8 +4,8 @@ RecordRequests = false
 RunsOnDbr = true
 
 Ignore = [
+    ".databricks",
     "databricks.yml",
-    "databricks.yml.tmpl",
     "hello_world.py",
 ]
 

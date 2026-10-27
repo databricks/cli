@@ -1,5 +1,4 @@
 trace cp $TESTDIR/../../deploy/simple/hello_world.py .
-trace cp $TESTDIR/../../deploy/simple/databricks.yml.tmpl .
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
