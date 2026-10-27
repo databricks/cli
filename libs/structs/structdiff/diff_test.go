@@ -974,6 +974,14 @@ func TestGetStructDiffNamedStringMapKey(t *testing.T) {
 	assert.Equal(t, []ResolvedChange{{Field: "m['pre']", Old: "a", New: "b"}}, resolveChanges(got))
 }
 
+func TestIsEqualNamedStringMapKey(t *testing.T) {
+	a := namedKeyMapHolder{M: map[namedMapKey]string{"pre": "a", "post": "x"}}
+	b := namedKeyMapHolder{M: map[namedMapKey]string{"pre": "b", "post": "x"}}
+
+	assert.True(t, IsEqual(&a, &a))
+	assert.False(t, IsEqual(&a, &b))
+}
+
 // Types for the "whole block" tests below: two levels of nesting under an
 // optional pointer, mirroring a schema like Outer{Field *Mid{A *Inner{b,c}}}.
 type wbInner struct {

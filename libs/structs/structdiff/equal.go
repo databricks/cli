@@ -155,13 +155,12 @@ func equalStruct(s1, s2 reflect.Value) bool {
 func equalMapStringKey(m1, m2 reflect.Value) bool {
 	keySet := map[string]reflect.Value{}
 	for _, k := range m1.MapKeys() {
-		// Key is always string at this point
-		ks := k.Interface().(string)
-		keySet[ks] = k
+		// Key kind is always String at this point; Value.String() also handles a
+		// named string key type, where a .(string) assertion panics.
+		keySet[k.String()] = k
 	}
 	for _, k := range m2.MapKeys() {
-		ks := k.Interface().(string)
-		keySet[ks] = k
+		keySet[k.String()] = k
 	}
 
 	for _, k := range keySet {
