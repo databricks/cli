@@ -190,11 +190,11 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 	// from the request body; see appRequestBody.
 	if hasAppChanges(entry) {
 		app := appRequestBody(config)
-		// Sending user_api_scopes in the mask clears it unless the body carries the full value, and
-		// some scopes (e.g. "jobs") can only be added outside this API. So only write it when the
-		// bundle changed it; remote-only drift is skipped (ignore_remote_changes).
+		// Sending user_api_scopes in the mask clears it unless the body carries a value, and some
+		// scopes (e.g. "jobs") can only be added outside this API. So leave it out unless the
+		// bundle manages it: declares it, or removed it (the mask is what clears it).
 		mask := updateMaskWithoutScopes
-		if change := entry.Changes[userApiScopes]; change != nil && change.Action != deployplan.Skip {
+		if change := entry.Changes[userApiScopes]; len(config.UserApiScopes) > 0 || (change != nil && change.Action != deployplan.Skip) {
 			mask = updateMask
 		}
 		request := apps.AsyncUpdateAppRequest{
