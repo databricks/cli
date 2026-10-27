@@ -212,6 +212,7 @@ environments.*.workspace.profile	string	INPUT
 environments.*.workspace.resource_path	string	INPUT
 environments.*.workspace.root_path	string	INPUT
 environments.*.workspace.state_path	string	INPUT
+environments.*.workspace.sync_mode	config.SyncMode	INPUT
 environments.*.workspace.workspace_id	string	INPUT
 experimental	*config.Experimental	INPUT
 experimental.deployment_history	*bool	INPUT
@@ -427,6 +428,7 @@ targets.*.workspace.profile	string	INPUT
 targets.*.workspace.resource_path	string	INPUT
 targets.*.workspace.root_path	string	INPUT
 targets.*.workspace.state_path	string	INPUT
+targets.*.workspace.sync_mode	config.SyncMode	INPUT
 targets.*.workspace.workspace_id	string	INPUT
 variables	map[string]*variable.Variable	INPUT
 variables.*	*variable.Variable	INPUT
@@ -509,4 +511,5 @@ workspace.profile	string	INPUT
 workspace.resource_path	string	INPUT
 workspace.root_path	string	INPUT
 workspace.state_path	string	INPUT
+workspace.sync_mode	config.SyncMode	INPUT
 workspace.workspace_id	string	INPUT
