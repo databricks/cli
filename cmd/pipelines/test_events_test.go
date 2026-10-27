@@ -41,7 +41,7 @@ func decodeTestEvent(t *testing.T, data string) testPipelineEvent {
 }
 
 func TestTestRunAdd(t *testing.T) {
-	run := newTestRun()
+	run := newTestRun("")
 	events := []testPipelineEvent{
 		caseEvent(t, "tests/test_a.py::test_ok", "PENDING", "2026-01-01T00:00:00.000Z"),
 		caseEvent(t, "tests/test_a.py::test_ok", "RUNNING", "2026-01-01T00:00:01.000Z"),
@@ -156,7 +156,7 @@ func TestTestRunIncompleteReason(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			run := newTestRun()
+			run := newTestRun("")
 			for _, e := range tc.events {
 				run.add(e)
 			}
@@ -166,7 +166,7 @@ func TestTestRunIncompleteReason(t *testing.T) {
 }
 
 func TestTestRunFatalError(t *testing.T) {
-	run := newTestRun()
+	run := newTestRun("")
 	run.add(decodeTestEvent(t, `{
 		"id": "fatal", "event_type": "update_progress", "level": "ERROR",
 		"error": {"fatal": true, "exceptions": [{"class_name": "ComputeTerminated", "message": "Compute stopped."}]}
@@ -209,4 +209,12 @@ func TestTestEventReaderFollowsPages(t *testing.T) {
 			"max_results": {"250"},
 		},
 	}, queries)
+}
+
+func TestTestRunCaseName(t *testing.T) {
+	run := newTestRun("/Workspace/Users/someone/orders")
+	assert.Equal(t, "tests/test_orders.py::test_a", run.caseName("/Workspace/Users/someone/orders/tests/test_orders.py::test_a"))
+	assert.Equal(t, "/Workspace/Users/someone/orders2/tests/test_x.py::test_x", run.caseName("/Workspace/Users/someone/orders2/tests/test_x.py::test_x"))
+	assert.Equal(t, "/Workspace/Shared/test_x.py::test_x", run.caseName("/Workspace/Shared/test_x.py::test_x"))
+	assert.Equal(t, "/Workspace/Shared/test_x.py::test_x", newTestRun("").caseName("/Workspace/Shared/test_x.py::test_x"))
 }

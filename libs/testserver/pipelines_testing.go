@@ -77,7 +77,7 @@ var pipelineTestFunctionRegexp = regexp.MustCompile(`(?m)^def (test_\w+)\(`)
 
 // collectPipelineTests stands in for pytest collection: it finds the top-level "def test_*"
 // functions in the workspace test_*.py files under each selection, or under rootPath without one.
-// Test IDs are relative to rootPath when the file is under it.
+// Like origin.test_case_id, test IDs are the absolute file path followed by the test name.
 func (s *FakeWorkspace) collectPipelineTests(rootPath string, selection []string) []string {
 	if len(selection) == 0 && rootPath != "" {
 		selection = []string{rootPath}
@@ -100,13 +100,9 @@ func (s *FakeWorkspace) collectPipelineTests(rootPath string, selection []string
 		}
 
 		for _, filePath := range files {
-			fileID, underRoot := strings.CutPrefix(filePath, rootPath+"/")
-			if rootPath == "" || !underRoot {
-				fileID = filePath
-			}
 			for _, match := range pipelineTestFunctionRegexp.FindAllSubmatch(s.files[filePath].Data, -1) {
 				name := string(match[1])
-				id := fileID + "::" + name
+				id := filePath + "::" + name
 				if (testName == "" || testName == name) && !slices.Contains(ids, id) {
 					ids = append(ids, id)
 				}

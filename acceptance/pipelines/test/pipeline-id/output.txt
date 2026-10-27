@@ -19,6 +19,16 @@ Update: [UUID]
   }
 }
 
+=== Test case IDs are shown relative to the pipeline root_path
+>>> [CLI] pipelines test --pipeline-id [UUID] tests
+Pipeline: [UUID]
+Update: [UUID]
+Waiting for compute...
+Running tests...
+tests/test_orders.py::test_valid_order  PASSED (1.00s)
+
+1 test: 1 passed, 0 failed, 0 skipped, 0 errors
+
 === Without a root_path, test selections must be workspace paths
 >>> musterr [CLI] pipelines test --pipeline-id [UUID] tests
 Error: cannot resolve test selection "tests": the pipeline has no root_path or testing.sources; use an absolute workspace path such as /Workspace/Users/someone@example.com/tests
@@ -40,6 +50,16 @@ Update: [UUID]
     }
   }
 }
+
+=== Without a root_path, test case IDs are absolute workspace paths
+>>> [CLI] pipelines test --pipeline-id [UUID] /Workspace/Users/someone@example.com/orders/tests/test_orders.py
+Pipeline: [UUID]
+Update: [UUID]
+Waiting for compute...
+Running tests...
+/Workspace/Users/someone@example.com/orders/tests/test_orders.py::test_valid_order  PASSED (1.00s)
+
+1 test: 1 passed, 0 failed, 0 skipped, 0 errors
 
 === Outside a project, --pipeline-id is required
 >>> musterr [CLI] pipelines test tests

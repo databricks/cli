@@ -343,7 +343,7 @@ func TestTestRunError(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			run := newTestRun()
+			run := newTestRun("")
 			for _, e := range tc.events() {
 				run.add(e)
 			}

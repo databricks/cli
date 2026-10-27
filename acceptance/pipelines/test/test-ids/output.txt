@@ -15,6 +15,11 @@ If you've made local changes, run 'databricks pipelines deploy' first to ensure 
 
 Pipeline: my_pipeline ([UUID])
 Update: [UUID]
+Waiting for compute...
+Running tests...
+tests/test_a.py::test_one  PASSED (1.00s)
+
+1 test: 1 passed, 0 failed, 0 skipped, 0 errors
 
 >>> print_requests.py //updates
 {"test_selection":["/Workspace/Users/[USERNAME]/.bundle/test-pipeline-test-ids/default/files/pipeline/tests/test_a.py::test_one"]}
@@ -28,6 +33,11 @@ If you've made local changes, run 'databricks pipelines deploy' first to ensure 
 
 Pipeline: my_pipeline ([UUID])
 Update: [UUID]
+Waiting for compute...
+Running tests...
+tests/test_a.py::test_one  PASSED (1.00s)
+
+1 test: 1 passed, 0 failed, 0 skipped, 0 errors
 
 >>> print_requests.py //updates
 {"test_selection":["/Workspace/Users/[USERNAME]/.bundle/test-pipeline-test-ids/default/files/pipeline/tests/test_a.py::test_one"]}
@@ -41,6 +51,11 @@ If you've made local changes, run 'databricks pipelines deploy' first to ensure 
 
 Pipeline: my_pipeline ([UUID])
 Update: [UUID]
+Waiting for compute...
+Running tests...
+tests/test_a.py::test_one  PASSED (1.00s)
+
+1 test: 1 passed, 0 failed, 0 skipped, 0 errors
 
 >>> print_requests.py //updates
 {"test_selection":["/Workspace/Users/[USERNAME]/.bundle/test-pipeline-test-ids/default/files/pipeline/tests/test_a.py"]}

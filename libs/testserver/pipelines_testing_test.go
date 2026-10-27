@@ -42,11 +42,11 @@ func TestCollectPipelineTests(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 	createTestPipelineWithTests(t, workspace)
 
-	assert.Equal(t, []string{"tests/test_orders.py::test_ok", "tests/test_orders.py::test_fails", "tests/test_slow.py::test_hang"},
+	assert.Equal(t, []string{testRootPath + "/tests/test_orders.py::test_ok", testRootPath + "/tests/test_orders.py::test_fails", testRootPath + "/tests/test_slow.py::test_hang"},
 		workspace.collectPipelineTests(testRootPath, nil))
-	assert.Equal(t, []string{"tests/test_orders.py::test_fails"},
+	assert.Equal(t, []string{testRootPath + "/tests/test_orders.py::test_fails"},
 		workspace.collectPipelineTests(testRootPath, []string{testRootPath + "/tests/test_orders.py::test_fails", testRootPath + "/tests/test_orders.py::test_fails"}))
-	assert.Equal(t, []string{"tests/helpers.py::test_helper"},
+	assert.Equal(t, []string{testRootPath + "/tests/helpers.py::test_helper"},
 		workspace.collectPipelineTests(testRootPath, []string{testRootPath + "/tests/helpers.py"}))
 	assert.Equal(t, []string{testRootPath + "/tests/test_slow.py::test_hang"},
 		workspace.collectPipelineTests("", []string{testRootPath + "/tests/test_slow.py"}))
@@ -69,13 +69,14 @@ func TestPipelineTestUpdate(t *testing.T) {
 	for _, e := range events {
 		statuses = append(statuses, e.Origin.TestCaseId+" "+e.Details["test_case_progress"].(map[string]any)["status"].(string))
 	}
+	file := testRootPath + "/tests/test_orders.py"
 	assert.Equal(t, []string{
-		"tests/test_orders.py::test_ok PENDING",
-		"tests/test_orders.py::test_fails PENDING",
-		"tests/test_orders.py::test_ok RUNNING",
-		"tests/test_orders.py::test_ok PASSED",
-		"tests/test_orders.py::test_fails RUNNING",
-		"tests/test_orders.py::test_fails FAILED",
+		file + "::test_ok PENDING",
+		file + "::test_fails PENDING",
+		file + "::test_ok RUNNING",
+		file + "::test_ok PASSED",
+		file + "::test_fails RUNNING",
+		file + "::test_fails FAILED",
 	}, statuses)
 
 	assert.Equal(t, pipelines.UpdateInfoStateFailed, getUpdateState(workspace, pipelineID, updateID))
