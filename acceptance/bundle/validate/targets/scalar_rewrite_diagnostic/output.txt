@@ -1,13 +1,8 @@
 
 >>> [CLI] bundle validate
-Warning: expected map, found bool
-  at targets
-  in databricks.yml:4:10
+Error: failed to rewrite [TEST_TMP_DIR]/databricks.yml: expected a map or sequence, found bool
 
-Name: test-bundle
-Target: default
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Found 1 warning
+Found 1 error
+
+Exit code: 1
