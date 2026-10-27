@@ -2,10 +2,11 @@ package mutator
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/dyn"
 )
 
 type environmentsToTargets struct{}
@@ -21,25 +22,45 @@ func (m *environmentsToTargets) Name() string {
 func (m *environmentsToTargets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Short circuit if the "environments" key is not set.
 	// This is the common case.
-	if b.Config.Environments == nil {
+	if k := b.Config.Value().Get("environments").Kind(); k == dyn.KindInvalid || k == dyn.KindNil {
 		return nil
 	}
 
 	// The "environments" key is set; validate and rewrite it to "targets".
-	environmentsPath := structpath.NewStringKey(nil, "environments")
-	targetsPath := structpath.NewStringKey(nil, "targets")
+	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		environments := v.Get("environments")
+		targets := v.Get("targets")
 
-	// Return an error if both "environments" and "targets" are set.
-	if b.Config.Targets != nil || b.Config.IsReferenceAt(targetsPath) {
-		return diag.Errorf(
-			"both 'environments' and 'targets' are specified; only 'targets' should be used: %s",
-			b.Config.GetLocationOfExact(environmentsPath).String(),
-		)
-	}
+		// Return an error if both "environments" and "targets" are set.
+		if environments.Kind() != dyn.KindInvalid && targets.Kind() != dyn.KindInvalid {
+			return dyn.InvalidValue, fmt.Errorf(
+				"both 'environments' and 'targets' are specified; only 'targets' should be used: %s",
+				environments.Location().String(),
+			)
+		}
 
-	// Rewrite "environments" to "targets" and drop the "environments" key.
-	b.Config.Targets = b.Config.Environments
-	b.Config.Environments = nil
-	b.Config.MoveMetadata(environmentsPath, targetsPath)
-	return nil
+		// Rewrite "environments" to "targets".
+		if environments.Kind() != dyn.KindInvalid && targets.Kind() == dyn.KindInvalid {
+			nv, err := dyn.Set(v, "targets", environments)
+			if err != nil {
+				return dyn.InvalidValue, err
+			}
+			// Drop the "environments" key.
+			return dyn.Walk(nv, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+				switch len(p) {
+				case 0:
+					return v, nil
+				case 1:
+					if p[0] == dyn.Key("environments") {
+						return v, dyn.ErrDrop
+					}
+				}
+				return v, dyn.ErrSkip
+			})
+		}
+
+		return v, nil
+	})
+
+	return diag.FromErr(err)
 }

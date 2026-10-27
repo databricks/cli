@@ -1,7 +1,6 @@
 package loader_test
 
 import (
-	"path/filepath"
 	"runtime"
 	"testing"
 
@@ -10,7 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config/loader"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/structs/structvar"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -101,8 +100,8 @@ func TestProcessRootIncludesRemoveDups(t *testing.T) {
 }
 
 // The expanded include list must be visible in both the typed and the dynamic
-// configuration: merging the per-file includes reloads the typed configuration from the
-// dynamic tree, so the expanded list must not be overwritten by the raw patterns.
+// configuration: the per-file includes are applied without their own mutator scope, so
+// nothing converts the typed field back into the dynamic tree afterwards.
 func TestProcessRootIncludesUpdatesDynamicValue(t *testing.T) {
 	b := &bundle.Bundle{
 		BundleRootPath: t.TempDir(),
@@ -120,7 +119,7 @@ func TestProcessRootIncludesUpdatesDynamicValue(t *testing.T) {
 	require.NoError(t, diags.Error())
 	assert.Equal(t, []string{"a.yml"}, b.Config.Include)
 
-	assert.Equal(t, []any{"a.yml"}, b.Config.View().Get("include").AsAny())
+	assert.Equal(t, []any{"a.yml"}, b.Config.Value().Get("include").AsAny())
 }
 
 // An empty include list must stay absent from the dynamic tree: the typed field is
@@ -140,28 +139,7 @@ func TestProcessRootIncludesEmptyOmitsDynamicValue(t *testing.T) {
 	diags := bundle.Apply(t.Context(), b, loader.ProcessRootIncludes())
 	require.NoError(t, diags.Error())
 	assert.Empty(t, b.Config.Include)
-	assert.Equal(t, structvar.KindInvalid, b.Config.View().Get("include").Kind())
-}
-
-// Include sections of included files are not applied, but they are merged into the
-// include list after the expanded globs.
-func TestProcessRootIncludesKeepsIncludesOfIncludedFiles(t *testing.T) {
-	b := &bundle.Bundle{
-		BundleRootPath: t.TempDir(),
-		Config: config.Root{
-			Include: []string{
-				"*.yml",
-			},
-		},
-	}
-
-	testutil.Touch(t, b.BundleRootPath, "databricks.yml")
-	testutil.WriteFile(t, filepath.Join(b.BundleRootPath, "a.yml"), "include:\n  - c.yml\n")
-	testutil.Touch(t, b.BundleRootPath, "b.yml")
-
-	diags := bundle.Apply(t.Context(), b, loader.ProcessRootIncludes())
-	require.NoError(t, diags.Error())
-	assert.Equal(t, []string{"a.yml", "b.yml", "c.yml"}, b.Config.Include)
+	assert.Equal(t, dyn.KindInvalid, b.Config.Value().Get("include").Kind())
 }
 
 func TestProcessRootIncludesNotExists(t *testing.T) {

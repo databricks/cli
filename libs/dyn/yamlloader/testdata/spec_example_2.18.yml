@@ -1,0 +1,8 @@
+# Example 2.18 Multi-line Flow Scalars
+
+plain:
+  This unquoted scalar
+  spans many lines.
+
+quoted: "So does this
+  quoted scalar.\n"
