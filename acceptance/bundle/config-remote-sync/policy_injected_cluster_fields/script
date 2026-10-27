@@ -45,3 +45,7 @@ title "Configuration changes"
 echo
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup
+
+title "Synced config deploys and converges under the policy"
+trace $CLI bundle deploy
+trace $CLI bundle plan

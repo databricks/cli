@@ -45,7 +45,7 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 === An indivisible array replacement leaves the whole selected job unchanged
 >>> [CLI] bundle config-remote-sync --select-ids jobs:[ARRAY_CHANGE_ID] --save -o json
 {
-  "status": "skipped",
+  "status": "partial",
   "changes": {},
   "skippedChanges": [
     {
@@ -61,7 +61,7 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 === A log-storage switch leaves the whole selected job unchanged
 >>> [CLI] bundle config-remote-sync --select-ids jobs:[LOG_STORAGE_CHANGE_ID] --save -o json
 {
-  "status": "skipped",
+  "status": "partial",
   "changes": {},
   "skippedChanges": [
     {
@@ -77,7 +77,7 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 === Switching autoscale to a fixed worker count leaves the whole selected job unchanged
 >>> [CLI] bundle config-remote-sync --select-ids jobs:[WORKER_COUNT_CHANGE_ID] --save -o json
 {
-  "status": "skipped",
+  "status": "partial",
   "changes": {},
   "skippedChanges": [
     {
@@ -93,7 +93,7 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 === Unrelated edits still sync when other jobs have structural changes
 >>> [CLI] bundle config-remote-sync --save -o json
 {
-  "status": "skipped",
+  "status": "partial",
   "changes": {
     "resources.jobs.unaffected": {
       "description": {

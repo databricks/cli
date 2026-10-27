@@ -30,5 +30,9 @@ cp databricks.yml databricks.yml.backup
 trace $CLI bundle config-remote-sync --save
 trace diff.py databricks.yml.backup databricks.yml
 
-title "Authored scripts are removed without copying the policy script"
-trace $CLI bundle validate -o json | jq -e '.resources.jobs.test_job.tasks[0].new_cluster | has("init_scripts") | not'
+title "Authored scripts are kept without copying the policy script"
+trace $CLI bundle validate -o json | jq -e '.resources.jobs.test_job.tasks[0].new_cluster.init_scripts | map(keys) == [["workspace"], ["workspace"]]'
+
+title "Synced config deploys and converges under the policy"
+trace $CLI bundle deploy
+trace $CLI bundle plan

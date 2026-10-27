@@ -193,6 +193,38 @@ func TestFilterClusterPolicyValuesFiltersPolicyAppliedValues(t *testing.T) {
 			remote:     []any{map[string]any{"volumes": map[string]any{"destination": "/Volumes/c/s/v/init.sh"}}},
 		},
 		{
+			name:       "wildcard rule drops whole array",
+			wantLookup: true,
+			attribute:  "init_scripts",
+			definition: `{"init_scripts.*.volumes.destination":{"type":"fixed","value":"/Volumes/c/s/v/init.sh"}}`,
+			remote:     []any{map[string]any{"volumes": map[string]any{"destination": "/Volumes/c/s/v/init.sh"}}},
+		},
+		{
+			name:       "policy-only replacement keeps authored array",
+			wantLookup: true,
+			attribute:  "init_scripts",
+			definition: `{"init_scripts.0.volumes.destination":{"type":"fixed","value":"/Volumes/c/s/v/policy.sh"}}`,
+			config:     []any{map[string]any{"workspace": map[string]any{"destination": "/Workspace/init.sh"}}},
+			remote:     []any{map[string]any{"volumes": map[string]any{"destination": "/Volumes/c/s/v/policy.sh"}}},
+		},
+		{
+			// The policy changed after deploy; the backend rejects any other value for a fixed field.
+			name:       "stale fixed value dropped",
+			wantLookup: true,
+			attribute:  "custom_tags",
+			definition: `{"custom_tags.Environment":{"type":"fixed","value":"prod"}}`,
+			remote:     map[string]any{"Environment": "dev", "Owner": "user"},
+			want:       map[string]any{"Owner": "user"},
+		},
+		{
+			name:          "numeric default matches string map value",
+			wantLookup:    true,
+			attribute:     "spark_conf",
+			definition:    `{"spark_conf.spark.sql.shuffle.partitions":{"type":"unlimited","defaultValue":7}}`,
+			applyDefaults: true,
+			remote:        map[string]any{"spark.sql.shuffle.partitions": "7"},
+		},
+		{
 			name:       "partial array match keeps whole array",
 			wantLookup: true,
 			attribute:  "init_scripts",
@@ -542,7 +574,7 @@ func TestFilterClusterPolicyValuesDropsPolicyAdditionBesideAuthoredField(t *test
 	b.SetWorkpaceClient(client.WorkspaceClient)
 	client.GetMockClusterPoliciesAPI().EXPECT().GetByPolicyId(mock.Anything, "policy").
 		Return(&compute.Policy{Definition: `{"autoscale.min_workers":{"type":"fixed","value":1}}`}, nil).Once()
-	remote := &compute.AutoScale{MinWorkers: 1, MaxWorkers: 4}
+	remote := &compute.AutoScale{MinWorkers: 1, MaxWorkers: 8}
 	entry := &deployplan.PlanEntry{
 		RemoteState: &dresources.ClusterRemote{PolicyId: "policy", Autoscale: remote},
 		Changes:     deployplan.Changes{"autoscale": {Action: deployplan.Update, New: &compute.AutoScale{MaxWorkers: 4}, Remote: remote}},
@@ -552,7 +584,26 @@ func TestFilterClusterPolicyValuesDropsPolicyAdditionBesideAuthoredField(t *test
 	assert.Empty(t, skipped)
 	require.Contains(t, changes, "resources.clusters.test")
 	require.Contains(t, changes["resources.clusters.test"], "autoscale")
-	assert.Equal(t, map[string]any{"max_workers": int64(4)}, changes["resources.clusters.test"]["autoscale"].Value)
+	assert.Equal(t, map[string]any{"max_workers": int64(8)}, changes["resources.clusters.test"]["autoscale"].Value)
+}
+
+func TestFilterClusterPolicyValuesDropsReplacementLeftWithAuthoredValue(t *testing.T) {
+	b := policyTestBundle(t, "resources.clusters.test", map[string]any{
+		"policy_id": "policy", "custom_tags": map[string]any{"Owner": "user"},
+	})
+	client := mocks.NewMockWorkspaceClient(t)
+	b.SetWorkpaceClient(client.WorkspaceClient)
+	client.GetMockClusterPoliciesAPI().EXPECT().GetByPolicyId(mock.Anything, "policy").
+		Return(&compute.Policy{Definition: `{"custom_tags.Environment":{"type":"fixed","value":"dev"}}`}, nil).Once()
+	remoteTags := map[string]string{"Environment": "dev", "Owner": "user"}
+	entry := &deployplan.PlanEntry{
+		RemoteState: &dresources.ClusterRemote{PolicyId: "policy", CustomTags: remoteTags},
+		Changes:     deployplan.Changes{"custom_tags": {Action: deployplan.Update, New: map[string]string{"Owner": "user"}, Remote: remoteTags}},
+	}
+	changes, skipped, err := filterPolicyTestChanges(t, b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
+	require.NoError(t, err)
+	assert.Empty(t, skipped)
+	assert.Empty(t, changes)
 }
 
 func TestFilterClusterPolicyValuesKeepsPolicyValuesInsidePositionalArray(t *testing.T) {

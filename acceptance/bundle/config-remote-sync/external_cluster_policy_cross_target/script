@@ -50,11 +50,11 @@ trace $CLI cluster-policies delete "$DEV_POLICY_ID"
 DEV_POLICY_ID=""
 
 cp databricks.yml databricks.yml.backup
-trace $CLI bundle config-remote-sync -t dev --save -o json | jq '{status, changes, skippedChanges}' | contains.py '"status": "skipped"'
+trace $CLI bundle config-remote-sync -t dev --save -o json | jq '{status, changes, skippedChanges}' | contains.py '"status": "partial"'
 trace diff.py databricks.yml.backup databricks.yml
 
 title "Only policy-dependent fields remain on the next sync"
-trace $CLI bundle config-remote-sync -t dev -o json | jq '{status, changes, skippedChanges}' | contains.py '"status": "skipped"'
+trace $CLI bundle config-remote-sync -t dev -o json | jq '{status, changes, skippedChanges}' | contains.py '"status": "partial"'
 
 title "Text output reports the incomplete sync"
 trace $CLI bundle config-remote-sync -t dev

@@ -19,6 +19,10 @@ trace $CLI bundle config-remote-sync --save
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup
 
+title "Synced config deploys and converges under the policy"
+trace $CLI bundle deploy
+trace $CLI bundle plan
+
 title "Add a task with user and policy cluster fields in the UI"
 edit_resource.py jobs "$job_id" <<'EOF'
 from copy import deepcopy
@@ -33,3 +37,7 @@ cp databricks.yml databricks.yml.backup
 trace $CLI bundle config-remote-sync --save
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup
+
+title "Synced config deploys and converges under the policy"
+trace $CLI bundle deploy
+trace $CLI bundle plan
