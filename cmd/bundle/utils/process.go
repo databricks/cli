@@ -375,8 +375,10 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			// Deploy and plan follow the current configuration.
 			if configuresDeploymentHistory(ctx, b) {
 				stateMode = dstate.WritingDeploymentHistoryShadow
-				// Retain only this history feature for plan/deploy; overwrite all other flags.
-				b.DeploymentBundle.StateDB.Data.Features = map[string]struct{}{dstate.FeatureDeploymentHistoryShadow: {}}
+				if b.DeploymentBundle.StateDB.Data.Features == nil {
+					b.DeploymentBundle.StateDB.Data.Features = make(map[string]struct{})
+				}
+				b.DeploymentBundle.StateDB.Data.Features[dstate.FeatureDeploymentHistoryShadow] = struct{}{}
 			}
 		case b.DeploymentBundle.StateDB.RecordsHistory():
 			// Other operations, including destroy, follow loaded state instead of configuration.
