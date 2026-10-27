@@ -167,12 +167,14 @@ func LoadDynFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 	}
 
 	// Normalize dynamic configuration tree according to configuration type.
-	v, diags := convert.Normalize(Root{}, v)
-	if !v.IsValid() {
-		// An empty document is null; keep the configuration loading.
-		v = dyn.NilValue
+	nv, diags := convert.Normalize(Root{}, v)
+	if !nv.IsValid() {
+		// The document is not a map: report the error main's conversion to the
+		// typed configuration reported.
+		err := convert.ToTyped(&Root{}, v)
+		return nil, diags.Extend(diag.Errorf("failed to load %s: %v", path, err))
 	}
-	return &Root{value: v}, diags
+	return &Root{value: nv}, diags
 }
 
 // LoadFromReader decodes the configuration in r, recording the locations mapLocations
@@ -205,22 +207,25 @@ func (r *Root) Value() dyn.Value {
 	return r.value
 }
 
-// startLoading makes an empty configuration loading. A bundle's configuration starts
-// out empty and the entry point merges the loaded configuration into it.
-func (r *Root) startLoading() error {
+// StartLoading makes the configuration loading, converting the typed configuration
+// into a configuration tree if it is not (like main did on entry of the first
+// mutator). A bundle's configuration starts out empty and the entry point merges the
+// loaded configuration into it; tests may start with a typed configuration.
+func (r *Root) StartLoading() error {
 	if r.Loading() {
 		return nil
 	}
-	if !reflect.ValueOf(r).Elem().IsZero() {
-		return errors.New("cannot load into a typed configuration")
+	v, err := convert.FromTyped(r, dyn.NilValue)
+	if err != nil {
+		return err
 	}
-	r.value = dyn.V(map[string]dyn.Value{})
+	*r = Root{value: v}
 	return nil
 }
 
 // Mutate applies fn to the configuration tree of a loading configuration.
 func (r *Root) Mutate(fn func(dyn.Value) (dyn.Value, error)) error {
-	if err := r.startLoading(); err != nil {
+	if err := r.StartLoading(); err != nil {
 		return err
 	}
 	nv, err := fn(r.value)
@@ -289,7 +294,7 @@ func (r *Root) InitializeVariables(vars []string) error {
 
 // Merge merges the other loading configurations into this one, in order.
 func (r *Root) Merge(others ...*Root) error {
-	if err := r.startLoading(); err != nil {
+	if err := r.StartLoading(); err != nil {
 		return err
 	}
 	for _, other := range others {

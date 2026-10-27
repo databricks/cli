@@ -6,13 +6,14 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestDefaultTarget(t *testing.T) {
 	b := &bundle.Bundle{}
-	diags := bundle.Apply(t.Context(), b, mutator.DefineDefaultTarget())
+	diags := bundletest.ApplyLoading(t, b, mutator.DefineDefaultTarget())
 	require.NoError(t, diags.Error())
 
 	env, ok := b.Config.Targets["default"]
@@ -28,7 +29,7 @@ func TestDefaultTargetAlreadySpecified(t *testing.T) {
 			},
 		},
 	}
-	diags := bundle.Apply(t.Context(), b, mutator.DefineDefaultTarget())
+	diags := bundletest.ApplyLoading(t, b, mutator.DefineDefaultTarget())
 	require.NoError(t, diags.Error())
 
 	_, ok := b.Config.Targets["default"]

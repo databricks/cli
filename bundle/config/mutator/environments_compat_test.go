@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,7 +27,7 @@ func TestEnvironmentsToTargetsWithBothDefined(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(t.Context(), b, mutator.EnvironmentsToTargets())
+	diags := bundletest.ApplyLoading(t, b, mutator.EnvironmentsToTargets())
 	assert.ErrorContains(t, diags.Error(), `both 'environments' and 'targets' are specified;`)
 }
 
@@ -41,7 +42,7 @@ func TestEnvironmentsToTargetsWithEnvironmentsDefined(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(t.Context(), b, mutator.EnvironmentsToTargets())
+	diags := bundletest.ApplyLoading(t, b, mutator.EnvironmentsToTargets())
 	require.NoError(t, diags.Error())
 	assert.Empty(t, b.Config.Environments)
 	assert.Len(t, b.Config.Targets, 1)
@@ -58,7 +59,7 @@ func TestEnvironmentsToTargetsWithTargetsDefined(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(t.Context(), b, mutator.EnvironmentsToTargets())
+	diags := bundletest.ApplyLoading(t, b, mutator.EnvironmentsToTargets())
 	require.NoError(t, diags.Error())
 	assert.Empty(t, b.Config.Environments)
 	assert.Len(t, b.Config.Targets, 1)

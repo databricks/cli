@@ -67,9 +67,9 @@ func (s dynSource) scalar() any {
 	case dyn.KindTime:
 		return s.v.MustTime().String()
 	case dyn.KindInt:
-		// The decoder expects int or int64.
+		// Like YAML values: int if it fits, int64 otherwise.
 		i, _ := s.v.AsInt()
-		return i
+		return intValue(i)
 	case dyn.KindFloat:
 		// The decoder expects float64.
 		f, _ := s.v.AsFloat()
