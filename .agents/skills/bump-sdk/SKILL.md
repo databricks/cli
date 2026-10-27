@@ -61,7 +61,7 @@ Run it in CI's environment, or the goldens pick up local drift:
 - Python: CI installs the managed interpreters with `./task install-pythons`; do the same.
 - Go: the `toolchain` in `go.mod`. A newer local `go` also changes goldens and generated `gofmt` output; use `GOTOOLCHAIN=<pinned>` if they differ.
 
-Before going on, account for every changed file outside the generated set, including the bumper's (its environment is not CI's either): a bump without fallout changes `cmd/**`, `bundle/schema/jsonschema.json`, `bundle/internal/validation/generated/*`, `python/databricks/bundles/**`, `acceptance/bundle/refschema/acceptance/bundle/refschema/output` and help-text goldens (`acceptance/help/output.txt`, `acceptance/cmd/account/account-help/output.txt`).
+Before going on, account for every changed file outside the generated set, including the bumper's (its environment is not CI's either): a bump without fallout changes `cmd/**`, `bundle/schema/jsonschema.json`, `bundle/internal/validation/generated/*`, `python/databricks/bundles/**`, `acceptance/bundle/refschema/output` and help-text goldens (`acceptance/help/output.txt`, `acceptance/cmd/account/account-help/output.txt`).
 Revert any golden change you can't attribute to the new SDK or spec.
 
 **5. Handle SDK breaking changes.**
