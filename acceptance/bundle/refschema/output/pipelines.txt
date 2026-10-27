@@ -867,6 +867,14 @@ resources.pipelines.*.storage	string	ALL
 resources.pipelines.*.tags	map[string]string	ALL
 resources.pipelines.*.tags.*	string	ALL
 resources.pipelines.*.target	string	ALL
+resources.pipelines.*.testing	*resources.PipelineTesting	INPUT	STATE
+resources.pipelines.*.testing.environment	*resources.PipelineTestEnvironment	INPUT	STATE
+resources.pipelines.*.testing.environment.dependencies	[]string	INPUT	STATE
+resources.pipelines.*.testing.environment.dependencies[*]	string	INPUT	STATE
+resources.pipelines.*.testing.sources	[]resources.PipelineTestSource	INPUT	STATE
+resources.pipelines.*.testing.sources[*]	resources.PipelineTestSource	INPUT	STATE
+resources.pipelines.*.testing.sources[*].glob	*pipelines.PathPattern	INPUT	STATE
+resources.pipelines.*.testing.sources[*].glob.include	string	INPUT	STATE
 resources.pipelines.*.trigger	*pipelines.PipelineTrigger	ALL
 resources.pipelines.*.trigger.cron	*pipelines.CronTrigger	ALL
 resources.pipelines.*.trigger.cron.quartz_cron_schedule	string	ALL

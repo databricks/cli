@@ -47,6 +47,10 @@ from databricks.bundles.pipelines._models.pipeline_permission import (
     PipelinePermission,
     PipelinePermissionParam,
 )
+from databricks.bundles.pipelines._models.pipeline_testing import (
+    PipelineTesting,
+    PipelineTestingParam,
+)
 from databricks.bundles.pipelines._models.pipelines_environment import (
     PipelinesEnvironment,
     PipelinesEnvironmentParam,
@@ -260,6 +264,13 @@ class Pipeline(Resource):
     [DEPRECATED] Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.
     """
 
+    testing: VariableOrOptional[PipelineTesting] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The test configuration of the pipeline. Only test-only updates, such as those started by `databricks pipelines test`, use it.
+    """
+
     usage_policy_id: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
@@ -471,6 +482,13 @@ class PipelineDict(TypedDict, total=False):
     target: VariableOrOptional[str]
     """
     [DEPRECATED] Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.
+    """
+
+    testing: VariableOrOptional[PipelineTestingParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The test configuration of the pipeline. Only test-only updates, such as those started by `databricks pipelines test`, use it.
     """
 
     usage_policy_id: VariableOrOptional[str]

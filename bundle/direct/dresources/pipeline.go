@@ -2,13 +2,18 @@ package dresources
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
@@ -22,6 +27,10 @@ type PipelineState struct {
 	// STs, Views). Nil means the server default (cascade) applies. Read from persisted state at
 	// delete time; never sent on create/update.
 	CascadeOnDestroy *bool `json:"cascade_on_destroy,omitempty"`
+
+	// Testing is PipelineSpec.testing, which the Go SDK does not have yet. It is absent from
+	// PipelineRemote because the SDK cannot read it back, so remote changes to it are not detected.
+	Testing *resources.PipelineTesting `json:"testing,omitempty"`
 }
 
 func (s *PipelineState) UnmarshalJSON(b []byte) error {
@@ -78,6 +87,7 @@ func (*ResourcePipeline) PrepareState(input *resources.Pipeline) *PipelineState 
 	return &PipelineState{
 		CreatePipeline:   input.CreatePipeline,
 		CascadeOnDestroy: input.CascadeOnDestroy,
+		Testing:          input.Testing,
 	}
 }
 
@@ -86,6 +96,8 @@ func (*ResourcePipeline) RemapState(remote *PipelineRemote) *PipelineState {
 		CreatePipeline: remote.CreatePipeline,
 		// cascade_on_destroy is input-only and absent from PipelineRemote, so it stays nil here.
 		CascadeOnDestroy: nil,
+		// testing is absent from PipelineRemote until the SDK has it.
+		Testing: nil,
 	}
 }
 
@@ -159,6 +171,14 @@ func makePipelineRemote(p *pipelines.GetPipelineResponse) *PipelineRemote {
 }
 
 func (r *ResourcePipeline) DoCreate(ctx context.Context, config *PipelineState) (string, *PipelineRemote, error) {
+	if config.Testing != nil {
+		var response pipelines.CreatePipelineResponse
+		err := r.doWithTesting(ctx, http.MethodPost, "/api/2.0/pipelines", config.CreatePipeline, config.Testing, &response)
+		if err != nil {
+			return "", nil, err
+		}
+		return response.PipelineId, nil, nil
+	}
 	response, err := r.client.Pipelines.Create(ctx, config.CreatePipeline)
 	if err != nil {
 		return "", nil, err
@@ -212,6 +232,9 @@ func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *Pipe
 		ForceSendFields:      utils.FilterFields[pipelines.EditPipeline](config.ForceSendFields),
 	}
 
+	if config.Testing != nil {
+		return nil, r.doWithTesting(ctx, http.MethodPut, "/api/2.0/pipelines/"+id, request, config.Testing, nil)
+	}
 	return nil, r.client.Pipelines.Update(ctx, request)
 }
 
@@ -240,6 +263,31 @@ func (*ResourcePipeline) OverrideChangeDesc(_ context.Context, path *structpath.
 		change.Action = deployplan.Update
 	}
 	return nil
+}
+
+// doWithTesting sends a Create or Edit request with the testing field, which the Go SDK does not
+// have yet. The body is the SDK's JSON for the request plus testing. Remove this once
+// CreatePipeline and EditPipeline have the field; pipelines without testing already use the SDK.
+func (r *ResourcePipeline) doWithTesting(ctx context.Context, method, path string, request any, testing *resources.PipelineTesting, response any) error {
+	data, err := json.Marshal(request)
+	if err != nil {
+		return err
+	}
+	// RawMessage values keep the SDK's encoding, including large integers, unchanged.
+	var body map[string]json.RawMessage
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	body["testing"], err = json.Marshal(testing)
+	if err != nil {
+		return err
+	}
+
+	apiClient, err := client.New(r.client.Config)
+	if err != nil {
+		return fmt.Errorf("failed to create API client: %w", err)
+	}
+	return apiClient.Do(ctx, method, path, auth.WorkspaceIDHeaders(r.client.Config), nil, body, response)
 }
 
 // Note, terraform provider either

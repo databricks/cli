@@ -4,8 +4,11 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/testserver"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -52,4 +55,48 @@ func TestPipelineOverrideChangeDescCascadeOnDestroy(t *testing.T) {
 		require.NoError(t, r.OverrideChangeDesc(t.Context(), namePath, change, nil))
 		assert.Equal(t, deployplan.Skip, change.Action)
 	})
+}
+
+func TestPipelineCreateAndUpdateSendTesting(t *testing.T) {
+	server := testserver.New(t)
+	var bodies []string
+	server.Handle("POST", "/api/2.0/pipelines", func(req testserver.Request) any {
+		bodies = append(bodies, string(req.Body))
+		return pipelines.CreatePipelineResponse{PipelineId: "p1"}
+	})
+	server.Handle("PUT", "/api/2.0/pipelines/{pipeline_id}", func(req testserver.Request) any {
+		bodies = append(bodies, string(req.Body))
+		return map[string]any{}
+	})
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+	r := (&ResourcePipeline{}).New(w)
+
+	testConfig := &resources.PipelineTesting{
+		Sources:     []resources.PipelineTestSource{{Glob: &pipelines.PathPattern{Include: "/Workspace/orders/tests/**"}}},
+		Environment: &resources.PipelineTestEnvironment{Dependencies: []string{"--editable /Workspace/orders[test]"}},
+	}
+	state := &PipelineState{Name: "orders", Testing: testConfig}
+	id, _, err := r.DoCreate(t.Context(), state)
+	require.NoError(t, err)
+	assert.Equal(t, "p1", id)
+	_, err = r.DoUpdate(t.Context(), id, state, &PlanEntry{Changes: Changes{"testing": &ChangeDesc{Action: deployplan.Update}}})
+	require.NoError(t, err)
+
+	// Without testing, the requests are the SDK's.
+	state.Testing = nil
+	_, _, err = r.DoCreate(t.Context(), state)
+	require.NoError(t, err)
+	_, err = r.DoUpdate(t.Context(), id, state, &PlanEntry{Changes: Changes{"testing": &ChangeDesc{Action: deployplan.Update}}})
+	require.NoError(t, err)
+
+	wantTesting := `"testing": {
+		"sources": [{"glob": {"include": "/Workspace/orders/tests/**"}}],
+		"environment": {"dependencies": ["--editable /Workspace/orders[test]"]}
+	}`
+	require.Len(t, bodies, 4)
+	assert.JSONEq(t, `{"name": "orders", `+wantTesting+`}`, bodies[0])
+	assert.JSONEq(t, `{"name": "orders", `+wantTesting+`}`, bodies[1])
+	assert.JSONEq(t, `{"name": "orders"}`, bodies[2])
+	assert.JSONEq(t, `{"name": "orders"}`, bodies[3])
 }

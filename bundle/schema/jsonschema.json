@@ -2309,6 +2309,12 @@
                         "deprecationMessage": "This field is deprecated",
                         "deprecated": true
                       },
+                      "testing": {
+                        "description": "[Private Preview] The test configuration of the pipeline. Only test-only updates, such as those started by `databricks pipelines test`, use it.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PipelineTesting",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
                       "trigger": {
                         "description": "Which pipeline trigger to use. Deprecated: Use `continuous` instead.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger",
@@ -2358,6 +2364,64 @@
                     "required": [
                       "level"
                     ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.PipelineTestEnvironment": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "dependencies": {
+                        "description": "A list of files that declare the packages the tests need: a project folder, a requirements file, or a wheel, in the workspace or a UC volume. A project folder can take `--editable` and an extra, for example `--editable ${workspace.file_path}[test]`. Package names and URLs are rejected.",
+                        "$ref": "#/$defs/slice/string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.PipelineTestSource": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "glob": {
+                        "description": "A test file, or a folder followed by `/**`.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PathPattern"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.PipelineTesting": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "environment": {
+                        "description": "The packages that only the tests need. Test-only updates install them in addition to the pipeline's `environment`. Other updates do not.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PipelineTestEnvironment"
+                      },
+                      "sources": {
+                        "description": "The workspace files and folders that hold the pipeline's tests. They must not overlap the pipeline's `libraries`.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.PipelineTestSource"
+                      }
+                    },
+                    "additionalProperties": false
                   },
                   {
                     "type": "string",
@@ -20867,6 +20931,20 @@
                       "type": "array",
                       "items": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PipelinePermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.PipelineTestSource": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PipelineTestSource"
                       }
                     },
                     {
