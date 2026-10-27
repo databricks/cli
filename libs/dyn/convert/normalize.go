@@ -8,7 +8,7 @@ import (
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/structs/structvar"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 )
 
 // NormalizeOption is the type for options that can be passed to Normalize.
@@ -242,7 +242,7 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 
 	case dyn.KindString:
 		// Return verbatim if it's a pure variable reference.
-		if structvar.IsPureVariableReference(src.MustString()) {
+		if dynvar.IsPureVariableReference(src.MustString()) {
 			return src, nil
 		}
 	default:
@@ -282,7 +282,7 @@ func (n normalizeOptions) normalizeMap(typ reflect.Type, src dyn.Value, seen []r
 
 	case dyn.KindString:
 		// Return verbatim if it's a pure variable reference.
-		if structvar.IsPureVariableReference(src.MustString()) {
+		if dynvar.IsPureVariableReference(src.MustString()) {
 			return src, nil
 		}
 	default:
@@ -319,7 +319,7 @@ func (n normalizeOptions) normalizeSlice(typ reflect.Type, src dyn.Value, seen [
 
 	case dyn.KindString:
 		// Return verbatim if it's a pure variable reference.
-		if structvar.IsPureVariableReference(src.MustString()) {
+		if dynvar.IsPureVariableReference(src.MustString()) {
 			return src, nil
 		}
 	default:
@@ -369,7 +369,7 @@ func (n normalizeOptions) normalizeBool(typ reflect.Type, src dyn.Value, path dy
 			return dyn.NewValue(false, src.Locations()), nil
 		default:
 			// Return verbatim if it's a pure variable reference.
-			if structvar.IsPureVariableReference(src.MustString()) {
+			if dynvar.IsPureVariableReference(src.MustString()) {
 				return src, nil
 			}
 
@@ -408,7 +408,7 @@ func (n normalizeOptions) normalizeInt(typ reflect.Type, src dyn.Value, path dyn
 		out, err := strconv.ParseInt(src.MustString(), 10, 64)
 		if err != nil {
 			// Return verbatim if it's a pure variable reference.
-			if structvar.IsPureVariableReference(src.MustString()) {
+			if dynvar.IsPureVariableReference(src.MustString()) {
 				return src, nil
 			}
 
@@ -452,7 +452,7 @@ func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value, path d
 		out, err := strconv.ParseFloat(src.MustString(), 64)
 		if err != nil {
 			// Return verbatim if it's a pure variable reference.
-			if structvar.IsPureVariableReference(src.MustString()) {
+			if dynvar.IsPureVariableReference(src.MustString()) {
 				return src, nil
 			}
 

@@ -10,6 +10,12 @@ func Get(v Value, path string) (Value, error) {
 	return GetByPath(v, p)
 }
 
+// GetValue returns the value without the error (InvalidValue indicates that error did happen)
+func GetValue(v Value, path string) Value {
+	val, _ := Get(v, path)
+	return val
+}
+
 // GetByPath returns the value inside the specified value at the specified path.
 // If the path doesn't exist, it returns InvalidValue and an error.
 func GetByPath(v Value, p Path) (Value, error) {
