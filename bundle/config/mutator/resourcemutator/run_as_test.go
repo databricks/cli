@@ -463,9 +463,12 @@ resources:
     sp: {run_as: {service_principal_name: other_sp}}
     group: {run_as: {group_name: other_group}}
 `, tc.root, tc.target)
-			r, diags := config.LoadFromBytes("databricks.yml", []byte(yaml))
+			r, diags := config.LoadDynFromBytes("databricks.yml", []byte(yaml))
 			require.NoError(t, diags.Error())
 			require.NoError(t, r.MergeTargetOverrides("test"))
+			diags, err := r.FinishLoading()
+			require.NoError(t, err)
+			require.Empty(t, diags)
 			b := &bundle.Bundle{Config: *r}
 			diags = bundle.Apply(t.Context(), b, SetRunAs())
 			require.NoError(t, diags.Error())
