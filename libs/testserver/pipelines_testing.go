@@ -134,18 +134,65 @@ func pipelineTestRootDir(rootPath string, sources []string) string {
 	return "/" + strings.Join(common, "/")
 }
 
-// collectPipelineTests stands in for pytest collection: it finds the top-level "def test_*"
-// functions in the workspace test_*.py files under each selection, or under rootPath without one.
-// Like origin.test_case_id, test IDs are relative to pytest's rootdir, such as
-// tests/test_orders.py::test_backfill.
-func (s *FakeWorkspace) collectPipelineTests(rootPath string, selection []string) []string {
-	rootDir := pipelineTestRootDir(rootPath, nil)
-	if len(selection) == 0 && rootPath != "" {
-		selection = []string{rootPath}
-	}
+// pipelineTestingRequest holds the testing field of a Create or Edit request, which is not in the
+// Go SDK yet.
+type pipelineTestingRequest struct {
+	Testing *struct {
+		Sources []struct {
+			Glob *struct {
+				Include string `json:"include"`
+			} `json:"glob"`
+		} `json:"sources"`
+	} `json:"testing"`
+}
 
-	var ids []string
+// setPipelineTestSources records the glob includes of testing.sources from a Create or Edit body.
+// Like the rest of the spec, an Edit without testing removes it.
+func (s *FakeWorkspace) setPipelineTestSources(pipelineID string, body []byte) {
+	var request pipelineTestingRequest
+	_ = json.Unmarshal(body, &request)
+	var sources []string
+	if request.Testing != nil {
+		for _, source := range request.Testing.Sources {
+			if source.Glob != nil {
+				sources = append(sources, source.Glob.Include)
+			}
+		}
+	}
+	s.pipelineTestSources[pipelineID] = sources
+}
+
+// pipelineTestTargets returns the paths to collect tests from: the selection, which must be
+// within the test sources, or the test sources themselves. A non-empty message rejects the request.
+func pipelineTestTargets(sources, selection []string) ([]string, string) {
+	if len(sources) == 0 {
+		return nil, "Test-only updates require the pipeline to have testing.sources."
+	}
+	if len(selection) == 0 {
+		var targets []string
+		for _, source := range sources {
+			targets = append(targets, strings.TrimSuffix(source, "/**"))
+		}
+		return targets, ""
+	}
 	for _, target := range selection {
+		targetPath, _, _ := strings.Cut(target, "::")
+		if !slices.ContainsFunc(sources, func(source string) bool {
+			folder, recursive := strings.CutSuffix(source, "/**")
+			return targetPath == folder || (recursive && strings.HasPrefix(targetPath, folder+"/"))
+		}) {
+			return nil, fmt.Sprintf("Test selection %s is not in the pipeline's testing.sources.", targetPath)
+		}
+	}
+	return selection, ""
+}
+
+// collectPipelineTests stands in for pytest collection: it finds the top-level "def test_*"
+// functions in the workspace test_*.py files under each target. Like origin.test_case_id, test
+// IDs are relative to rootDir, pytest's rootdir, such as tests/test_orders.py::test_backfill.
+func (s *FakeWorkspace) collectPipelineTests(rootDir string, targets []string) []string {
+	var ids []string
+	for _, target := range targets {
 		targetPath, testName, _ := strings.Cut(target, "::")
 		var files []string
 		if _, ok := s.files[targetPath]; ok {

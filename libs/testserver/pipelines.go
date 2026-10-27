@@ -80,6 +80,7 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 
 	setSpecDefaults(&spec, pipelineId)
 	s.Pipelines[pipelineId] = r
+	s.setPipelineTestSources(pipelineId, req.Body)
 
 	return Response{
 		Body: pipelines.CreatePipelineResponse{
@@ -139,6 +140,7 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 	}
 	setSpecDefaults(&spec, pipelineId)
 	s.Pipelines[pipelineId] = item
+	s.setPipelineTestSources(pipelineId, req.Body)
 
 	return Response{}
 }
@@ -192,11 +194,19 @@ func (s *FakeWorkspace) PipelineStartUpdate(pipelineId string, body []byte) Resp
 		if test.TestOptions != nil {
 			selection = test.TestOptions.TestSelection
 		}
+		targets, message := pipelineTestTargets(s.pipelineTestSources[pipelineId], selection)
+		if message != "" {
+			return Response{
+				StatusCode: 400,
+				Body:       map[string]string{"error_code": "INVALID_PARAMETER_VALUE", "message": message},
+			}
+		}
 		var rootPath string
 		if pipeline.Spec != nil {
 			rootPath = pipeline.Spec.RootPath
 		}
-		update = s.startPipelineTestRun(pipelineId, updateId, s.collectPipelineTests(rootPath, selection))
+		rootDir := pipelineTestRootDir(rootPath, s.pipelineTestSources[pipelineId])
+		update = s.startPipelineTestRun(pipelineId, updateId, s.collectPipelineTests(rootDir, targets))
 	}
 	s.PipelineUpdates[updateId] = update
 

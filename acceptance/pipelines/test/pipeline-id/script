@@ -1,5 +1,7 @@
-pipeline_id=$($CLI pipelines create --json '{"name": "orders", "root_path": "/Workspace/Users/someone@example.com/orders"}' | jq -r .pipeline_id)
-no_root_pipeline_id=$($CLI pipelines create --json '{"name": "no-root"}' | jq -r .pipeline_id)
+# testing is not in the Go SDK yet, so "pipelines create" would drop it.
+testing='{"sources": [{"glob": {"include": "/Workspace/Users/someone@example.com/orders/tests/**"}}, {"glob": {"include": "/Workspace/Shared/tests/**"}}]}'
+pipeline_id=$($CLI api post /api/2.0/pipelines --json '{"name": "orders", "root_path": "/Workspace/Users/someone@example.com/orders", "testing": '"$testing"'}' | jq -r .pipeline_id)
+no_root_pipeline_id=$($CLI api post /api/2.0/pipelines --json '{"name": "no-root", "testing": '"$testing"'}' | jq -r .pipeline_id)
 $CLI workspace import-dir orders /Workspace/Users/someone@example.com/orders &> LOG.import
 rm "$OUT_REQUESTS"
 

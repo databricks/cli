@@ -12,7 +12,7 @@ import (
 const testRootPath = "/Workspace/Users/someone/orders"
 
 func createTestPipelineWithTests(t *testing.T, workspace *FakeWorkspace) string {
-	response := workspace.PipelineCreate(Request{Body: []byte(`{"name": "orders", "root_path": "` + testRootPath + `"}`)})
+	response := workspace.PipelineCreate(Request{Body: []byte(`{"name": "orders", "testing": {"sources": [{"glob": {"include": "` + testRootPath + `/tests/**"}}]}}`)})
 	require.Equal(t, 0, response.StatusCode)
 	workspace.files[testRootPath+"/tests/test_orders.py"] = FileEntry{Data: []byte("def test_ok():\n    pass\n\ndef test_fails():\n    pass\n\n    def test_nested():\n        pass\n")}
 	workspace.files[testRootPath+"/tests/test_slow.py"] = FileEntry{Data: []byte("def test_hang():\n    pass\n")}
@@ -42,16 +42,47 @@ func TestCollectPipelineTests(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 	createTestPipelineWithTests(t, workspace)
 
-	// Like the service, IDs are relative to pytest's rootdir, which is the root path here.
+	// Like the service, IDs are relative to pytest's rootdir.
 	assert.Equal(t, []string{"tests/test_orders.py::test_ok", "tests/test_orders.py::test_fails", "tests/test_slow.py::test_hang"},
-		workspace.collectPipelineTests(testRootPath, nil))
+		workspace.collectPipelineTests(testRootPath, []string{testRootPath + "/tests"}))
 	assert.Equal(t, []string{"tests/test_orders.py::test_fails"},
 		workspace.collectPipelineTests(testRootPath, []string{testRootPath + "/tests/test_orders.py::test_fails", testRootPath + "/tests/test_orders.py::test_fails"}))
 	assert.Equal(t, []string{"tests/helpers.py::test_helper"},
 		workspace.collectPipelineTests(testRootPath, []string{testRootPath + "/tests/helpers.py"}))
 	assert.Equal(t, []string{testRootPath + "/tests/test_slow.py::test_hang"},
 		workspace.collectPipelineTests("", []string{testRootPath + "/tests/test_slow.py"}))
-	assert.Empty(t, workspace.collectPipelineTests("", nil))
+	assert.Empty(t, workspace.collectPipelineTests(testRootPath, nil))
+}
+
+func TestPipelineTestTargets(t *testing.T) {
+	sources := []string{"/Workspace/orders/tests/**", "/Workspace/orders/checks/test_x.py"}
+
+	targets, message := pipelineTestTargets(sources, nil)
+	assert.Empty(t, message)
+	assert.Equal(t, []string{"/Workspace/orders/tests", "/Workspace/orders/checks/test_x.py"}, targets)
+
+	selection := []string{"/Workspace/orders/tests/unit/test_a.py::test_a", "/Workspace/orders/tests", "/Workspace/orders/checks/test_x.py::test_x"}
+	targets, message = pipelineTestTargets(sources, selection)
+	assert.Empty(t, message)
+	assert.Equal(t, selection, targets)
+
+	_, message = pipelineTestTargets(sources, []string{"/Workspace/orders/transformations/orders.py"})
+	assert.Equal(t, "Test selection /Workspace/orders/transformations/orders.py is not in the pipeline's testing.sources.", message)
+	_, message = pipelineTestTargets(sources, []string{"/Workspace/orders/tests2/test_a.py"})
+	assert.NotEmpty(t, message)
+	_, message = pipelineTestTargets(nil, nil)
+	assert.Equal(t, "Test-only updates require the pipeline to have testing.sources.", message)
+}
+
+func TestPipelineEditReplacesTestSources(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	pipelineID := createTestPipelineWithTests(t, workspace)
+	assert.Equal(t, []string{testRootPath + "/tests/**"}, workspace.pipelineTestSources[pipelineID])
+
+	response := workspace.PipelineUpdate(Request{Body: []byte(`{"name": "orders"}`)}, pipelineID)
+	require.Equal(t, 0, response.StatusCode)
+	assert.Empty(t, workspace.pipelineTestSources[pipelineID])
+	assert.Equal(t, 400, workspace.PipelineStartUpdate(pipelineID, []byte(`{"test_only": true}`)).StatusCode)
 }
 
 func TestPipelineTestUpdate(t *testing.T) {
