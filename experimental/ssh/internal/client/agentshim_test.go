@@ -23,11 +23,17 @@ import (
 	"github.com/databricks/cli/experimental/ssh/internal/agentlauncher"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+)
+
+var (
+	serverlessRuntime = dbr.Environment{IsDbr: true, Version: "client.4.9"}
+	dedicatedRuntime  = dbr.Environment{IsDbr: true, Version: "16.4"}
 )
 
 func TestPrependPath(t *testing.T) {
@@ -358,7 +364,7 @@ func TestInjectAgentContext(t *testing.T) {
 
 	t.Run("flag agent writes a scratch file and returns the flag", func(t *testing.T) {
 		home := t.TempDir()
-		args, err := injectAgentContext(t.Context(), home, claude)
+		args, err := injectAgentContext(dbr.MockRuntime(t.Context(), serverlessRuntime), home, claude)
 		require.NoError(t, err)
 		require.Len(t, args, 2)
 		assert.Equal(t, "--append-system-prompt-file", args[0])
@@ -369,7 +375,7 @@ func TestInjectAgentContext(t *testing.T) {
 
 	t.Run("home-file agent writes the global instructions file, no args", func(t *testing.T) {
 		home := t.TempDir()
-		args, err := injectAgentContext(t.Context(), home, codex)
+		args, err := injectAgentContext(dbr.MockRuntime(t.Context(), serverlessRuntime), home, codex)
 		require.NoError(t, err)
 		assert.Nil(t, args)
 		data, err := os.ReadFile(filepath.Join(home, ".codex", "AGENTS.md"))
@@ -382,7 +388,7 @@ func TestInjectAgentContext(t *testing.T) {
 		target := filepath.Join(home, ".codex", "AGENTS.md")
 		require.NoError(t, os.MkdirAll(filepath.Dir(target), 0o755))
 		require.NoError(t, os.WriteFile(target, []byte("user's own instructions"), 0o644))
-		args, err := injectAgentContext(t.Context(), home, codex)
+		args, err := injectAgentContext(dbr.MockRuntime(t.Context(), serverlessRuntime), home, codex)
 		require.NoError(t, err)
 		assert.Nil(t, args)
 		data, err := os.ReadFile(target)
@@ -390,9 +396,27 @@ func TestInjectAgentContext(t *testing.T) {
 		assert.Equal(t, "user's own instructions", string(data))
 	})
 
+	t.Run("context describes the compute the shim runs on", func(t *testing.T) {
+		for _, c := range []struct {
+			runtime dbr.Environment
+			want    string
+		}{
+			{serverlessRuntime, "Databricks serverless cluster."},
+			{dedicatedRuntime, "Databricks dedicated cluster."},
+		} {
+			home := t.TempDir()
+			args, err := injectAgentContext(dbr.MockRuntime(t.Context(), c.runtime), home, claude)
+			require.NoError(t, err)
+			require.Len(t, args, 2)
+			data, err := os.ReadFile(args[1])
+			require.NoError(t, err)
+			assert.Contains(t, string(data), c.want)
+		}
+	})
+
 	t.Run("agent without a mechanism writes nothing", func(t *testing.T) {
 		home := t.TempDir()
-		args, err := injectAgentContext(t.Context(), home, noContext)
+		args, err := injectAgentContext(dbr.MockRuntime(t.Context(), serverlessRuntime), home, noContext)
 		require.NoError(t, err)
 		assert.Nil(t, args)
 		entries, err := os.ReadDir(home)
@@ -403,8 +427,20 @@ func TestInjectAgentContext(t *testing.T) {
 
 func TestAgentSystemContext(t *testing.T) {
 	wsHome := "/Workspace/Users/me@example.com"
-	assert.Contains(t, agentSystemContext(wsHome), "user's Databricks workspace home directory is "+wsHome)
-	assert.NotContains(t, agentSystemContext(""), "user's Databricks workspace home directory")
+	for _, serverless := range []bool{true, false} {
+		assert.Contains(t, agentSystemContext(wsHome, serverless), "user's Databricks workspace home directory is "+wsHome)
+		assert.NotContains(t, agentSystemContext("", serverless), "user's Databricks workspace home directory")
+	}
+
+	serverless := agentSystemContext(wsHome, true)
+	assert.Contains(t, serverless, "Databricks serverless cluster.")
+	assert.Contains(t, serverless, "This container is ephemeral")
+
+	dedicated := agentSystemContext(wsHome, false)
+	assert.Contains(t, dedicated, "Databricks dedicated cluster.")
+	assert.Contains(t, dedicated, "until the cluster restarts or terminates")
+	assert.NotContains(t, dedicated, "serverless")
+	assert.NotContains(t, dedicated, "ephemeral")
 }
 
 func newProbeClient(t *testing.T, host string) *databricks.WorkspaceClient {
@@ -762,7 +798,7 @@ func TestPrepareAgentLaunch(t *testing.T) {
 
 	t.Run("passes the context args before the user's agent args", func(t *testing.T) {
 		home := t.TempDir()
-		argv, environ, err := prepareAgentLaunch(t.Context(), home, agent, []string{"--resume"})
+		argv, environ, err := prepareAgentLaunch(dbr.MockRuntime(t.Context(), serverlessRuntime), home, agent, []string{"--resume"})
 		require.NoError(t, err)
 		require.NotEmpty(t, argv)
 		assert.Equal(t, []string{"claude", "--", "--append-system-prompt-file", filepath.Join(home, agentRootDir, contextFile), "--resume"}, argv[1:])
@@ -775,7 +811,7 @@ func TestPrepareAgentLaunch(t *testing.T) {
 		home := filepath.Join(t.TempDir(), "home")
 		require.NoError(t, os.WriteFile(home, nil, 0o644))
 
-		_, _, err := prepareAgentLaunch(t.Context(), home, agent, nil)
+		_, _, err := prepareAgentLaunch(dbr.MockRuntime(t.Context(), serverlessRuntime), home, agent, nil)
 		require.Error(t, err)
 		assert.Equal(t, protos.SshAgentShimErrorCategoryAgentContextSetupFailed, agentShimOutcome{err: err}.category())
 	})

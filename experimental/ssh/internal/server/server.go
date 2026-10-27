@@ -117,13 +117,9 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 		log.Warnf(ctx, "Failed to seed environment activation, bare python/pip may resolve to the wrong interpreter in interactive sessions: %v", err)
 	}
 
-	// The agent launchers are serverless-only for now: dedicated clusters have no
-	// story for persisting the shims or respecting existing installs. Best-effort
-	// for the same reason as seedEnvActivation: the tunnel works without them.
-	if opts.Serverless {
-		if err := installAgentLaunchers(ctx, wsHome); err != nil {
-			log.Warnf(ctx, "Failed to install agent launchers, the affected agents won't be available in SSH sessions: %v", err)
-		}
+	// Best-effort for the same reason as seedEnvActivation: the tunnel works without them.
+	if err := installAgentLaunchers(ctx, wsHome); err != nil {
+		log.Warnf(ctx, "Failed to install agent launchers, the affected agents won't be available in SSH sessions: %v", err)
 	}
 
 	createServerCommand := func(ctx context.Context) *exec.Cmd {

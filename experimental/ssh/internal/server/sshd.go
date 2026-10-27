@@ -109,7 +109,7 @@ func sshdSetEnv(environ []string, homeDir string, opts ServerOptions) string {
 			// interactive or not, IDE or terminal, bash or sh, with no startup file
 			// involved. Appended (not prepended) so the launchers never shadow a real
 			// binary of the same name earlier on PATH.
-			if opts.Serverless && parts[0] == "PATH" {
+			if parts[0] == "PATH" {
 				value += ":" + path.Join(homeDir, agentlauncher.BinDir)
 			}
 			fmt.Fprintf(&setEnvBuf, ` %s="%s"`, parts[0], escapeEnvValue(value))

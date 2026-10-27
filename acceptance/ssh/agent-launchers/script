@@ -40,3 +40,22 @@ ssh -F /dev/null -i client_key -l "$(id -un)" \
   -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR \
   -o ProxyCommand="$SSHD -i -f $SERVER_HOME/.ssh-tunnel/sshd_config -o StrictModes=no" \
   localhost 'echo "$PATH"; command -v claude codex'
+
+# Dedicated clusters get the same launchers and PATH entry as serverless.
+rm -rf "$SERVER_HOME"
+mkdir -p "$SERVER_HOME"
+title "Dedicated server\n"
+env -i HOME="$SERVER_HOME" PATH=/usr/bin:/bin DATABRICKS_HOST="$DATABRICKS_HOST" DATABRICKS_TOKEN="$DATABRICKS_TOKEN" \
+  $CLI ssh server --cluster=test-cluster --session-id=test-session --secret-scope-name=ssh-scope \
+  --authorized-key-secret-name=client-public-key --shutdown-delay=1s 2>LOG.dedicated-server
+
+title "SetEnv appends the launcher directory to PATH\n"
+grep '^SetEnv ' server-home/.ssh-tunnel/sshd_config | tr ' ' '\n' | grep '^PATH='
+
+trace ls server-home/.agent-shim/bin
+
+title "A non-interactive session finds the launchers on PATH\n"
+ssh -F /dev/null -i client_key -l "$(id -un)" \
+  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR \
+  -o ProxyCommand="$SSHD -i -f $SERVER_HOME/.ssh-tunnel/sshd_config -o StrictModes=no" \
+  localhost 'command -v claude codex'

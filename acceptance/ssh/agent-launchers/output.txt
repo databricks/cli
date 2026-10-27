@@ -33,3 +33,16 @@ exec [CLI] ssh agent-shim claude "$@"
 /usr/bin:/bin:[TEST_TMP_DIR]/server-home/.agent-shim/bin
 [TEST_TMP_DIR]/server-home/.agent-shim/bin/claude
 [TEST_TMP_DIR]/server-home/.agent-shim/bin/codex
+
+=== Dedicated server
+
+=== SetEnv appends the launcher directory to PATH
+PATH="/usr/bin:/bin:[TEST_TMP_DIR]/server-home/.agent-shim/bin"
+
+>>> ls server-home/.agent-shim/bin
+claude
+codex
+
+=== A non-interactive session finds the launchers on PATH
+[TEST_TMP_DIR]/server-home/.agent-shim/bin/claude
+[TEST_TMP_DIR]/server-home/.agent-shim/bin/codex

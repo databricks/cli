@@ -91,10 +91,9 @@ func TestSSHDConfigSetsClientAliveInterval(t *testing.T) {
 func TestSSHDSetEnvAppendsAgentLaunchersToPath(t *testing.T) {
 	environ := []string{"PATH=/usr/bin:/bin", "FOO=bar"}
 
-	serverless := sshdSetEnv(environ, "/home/spark", ServerOptions{Serverless: true})
-	assert.Contains(t, serverless, ` PATH="/usr/bin:/bin:/home/spark/.agent-shim/bin"`)
-	assert.Contains(t, serverless, ` FOO="bar"`)
-
-	dedicated := sshdSetEnv(environ, "/home/spark", ServerOptions{})
-	assert.Contains(t, dedicated, ` PATH="/usr/bin:/bin"`)
+	for _, opts := range []ServerOptions{{Serverless: true}, {}} {
+		setEnv := sshdSetEnv(environ, "/home/spark", opts)
+		assert.Contains(t, setEnv, ` PATH="/usr/bin:/bin:/home/spark/.agent-shim/bin"`, "serverless=%v", opts.Serverless)
+		assert.Contains(t, setEnv, ` FOO="bar"`, "serverless=%v", opts.Serverless)
+	}
 }
