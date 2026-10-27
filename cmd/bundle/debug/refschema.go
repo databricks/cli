@@ -20,7 +20,7 @@ func NewRefSchemaCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "refschema",
 		Short: "Dump all relevant fields of the bundle config and its resources",
-		Long: `Dumps all available fields of the bundle config (paths outside of "resources") and of each resource type by walking the relevant types. Each line is a path to a field, type and set of tags:
+		Long: `Dumps all available fields of the bundle config and of each resource type by walking the relevant types. Each line is a path to a field, type and set of tags:
 - INPUT: field is present in bundle config.
 - STATE: field is present in the state of the resource (direct deployment only).
 - REMOTE: field is present in the remote state of the resource (direct deployment only).
