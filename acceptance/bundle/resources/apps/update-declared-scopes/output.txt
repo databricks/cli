@@ -6,7 +6,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Out-of-band: add a scope the bundle cannot declare (e.g. via account-level update)
->>> [CLI] api post /api/2.0/apps/myappname/update --json {"app": {"name": "myappname", "user_api_scopes": ["sql", "files.files", "jobs"]}, "update_mask": "user_api_scopes"}
+>>> MSYS_NO_PATHCONV=1 [CLI] api post /api/2.0/apps/myappname/update --json {"app": {"name": "myappname", "user_api_scopes": ["sql", "files.files", "jobs"]}, "update_mask": "user_api_scopes"}
 
 >>> [CLI] apps get myappname
 [

@@ -6,7 +6,7 @@ trace $CLI bundle deploy
 rm "$OUT_REQUESTS"
 
 title "Out-of-band: set scopes on an app whose bundle does not declare any"
-trace $CLI api post /api/2.0/apps/myappname/update --json '{"app": {"name": "myappname", "user_api_scopes": ["sql", "jobs"]}, "update_mask": "user_api_scopes"}' > /dev/null
+trace MSYS_NO_PATHCONV=1 $CLI api post /api/2.0/apps/myappname/update --json '{"app": {"name": "myappname", "user_api_scopes": ["sql", "jobs"]}, "update_mask": "user_api_scopes"}' > /dev/null
 rm "$OUT_REQUESTS"
 
 title "Change description and re-deploy; user_api_scopes must not be in the update mask"

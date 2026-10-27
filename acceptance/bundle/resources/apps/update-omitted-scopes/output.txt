@@ -6,7 +6,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Out-of-band: set scopes on an app whose bundle does not declare any
->>> [CLI] api post /api/2.0/apps/myappname/update --json {"app": {"name": "myappname", "user_api_scopes": ["sql", "jobs"]}, "update_mask": "user_api_scopes"}
+>>> MSYS_NO_PATHCONV=1 [CLI] api post /api/2.0/apps/myappname/update --json {"app": {"name": "myappname", "user_api_scopes": ["sql", "jobs"]}, "update_mask": "user_api_scopes"}
 
 === Change description and re-deploy; user_api_scopes must not be in the update mask
 >>> update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
