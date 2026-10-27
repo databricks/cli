@@ -1,3 +1,0 @@
-# When a whole map is a reference, the entries a preset adds to it are not applied: the job gets the
-# tags of the referenced schema only, and depends on the schema.
-trace $CLI bundle plan -o json | jq '.plan["resources.jobs.j"] | {tags: .new_state.value.tags, depends_on}'

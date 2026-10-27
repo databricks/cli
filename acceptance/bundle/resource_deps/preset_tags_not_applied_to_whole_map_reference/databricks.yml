@@ -14,5 +14,5 @@ resources:
   jobs:
     j:
       name: j
-      # The whole tags map is a reference, so the preset tag above is not added to it.
+      # tags is a reference to a whole map, and the preset tag above is not added to it.
       tags: ${resources.schemas.s.properties}
