@@ -424,7 +424,7 @@ func resolveNoArgsToken(ctx context.Context, profiler profile.Profiler, authArgs
 // name and host, performs the OAuth challenge, saves the profile to
 // .databrickscfg, and returns the new profile name and profile.
 func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore storage.Store, mode storage.StorageMode) (string, *profile.Profile, error) {
-	profileName, err := promptForProfile(ctx, "DEFAULT")
+	profileName, err := promptForProfile(ctx, "DEFAULT", nil)
 	if err != nil {
 		return "", nil, err
 	}

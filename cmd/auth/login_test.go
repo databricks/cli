@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
@@ -1458,4 +1459,19 @@ func TestLoginRejectsPositionalArgWithProfileFlag(t *testing.T) {
 	cmd.SetArgs([]string{"--profile", "myprofile", "https://example.com"})
 	err := cmd.Execute()
 	assert.ErrorContains(t, err, `argument "https://example.com" cannot be combined with --host or --profile`)
+}
+
+func TestPromptForProfileRejectsTakenName(t *testing.T) {
+	tm := termtest.Run(t, func(ctx context.Context) (string, error) {
+		return promptForProfile(ctx, "DEFAULT", []string{"DEFAULT", "taken"})
+	})
+	tm.WaitFor("Databricks profile name [DEFAULT]")
+	tm.Type(termtest.KeyEnter)
+	tm.WaitFor(">> profile DEFAULT already exists")
+	tm.Type("taken" + termtest.KeyEnter)
+	tm.WaitFor(">> profile taken already exists")
+	tm.Type(termtest.KeyBackspace + termtest.KeyEnter)
+	name, err := tm.Result()
+	require.NoError(t, err)
+	assert.Equal(t, "take", name)
 }

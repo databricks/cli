@@ -253,6 +253,27 @@ func TestLoginDeviceCodePickerEmptyHost(t *testing.T) {
 	assert.ErrorIs(t, err, errDeviceCodeNeedsHost)
 }
 
+func TestLoginDeviceCodeCreateNewProfileRejectsHiddenProfileName(t *testing.T) {
+	// See TestLoginDeviceCodePickerEmptyHost.
+	if runtime.GOOS == "windows" {
+		t.Skip("bubbletea cannot cancel reads on non-console input on Windows")
+	}
+	tm := startDeviceCodeLogin(t, `[DEFAULT]
+host = https://accounts.cloud.databricks.test
+account_id = acct-123
+`)
+	tm.WaitFor(profilePickerCreateNewLabel)
+	tm.Type(termtest.KeyEnter)
+	tm.WaitFor("Databricks profile name [DEFAULT]")
+	tm.Type(termtest.KeyEnter)
+	tm.WaitFor(">> profile DEFAULT already exists")
+	tm.Type("newprof" + termtest.KeyEnter)
+	tm.WaitFor("Databricks host")
+	tm.Type(termtest.KeyCtrlC)
+	_, err := tm.Result()
+	assert.EqualError(t, err, "^C")
+}
+
 func TestMatchDeviceCodeProfiles(t *testing.T) {
 	tests := []struct {
 		name    string
