@@ -191,7 +191,7 @@ func NewService(deps ServiceDeps) *Service { ... }
 
 ### Configuration patterns
 
-- Bundle config is typed structs; `libs/structs/structvar` carries `${...}` references and source locations
+- Bundle config is loaded, included and target-merged as a `dyn.Value`, then converted once to typed structs (`bundle/config.Root`) at the end of the load phase; after that, mutators use the structs, and `libs/structs/structvar` carries `${...}` references and source locations
 - Config loading supports includes, variable interpolation, and target overrides
 - Schema generation is automated from Go struct tags
 
