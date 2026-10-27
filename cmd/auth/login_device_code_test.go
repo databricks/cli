@@ -243,8 +243,10 @@ func TestLoginDeviceCodeNewProfilePromptsForHost(t *testing.T) {
 	tm := startDeviceCodeLogin(t, "", "--profile", "newprof")
 	tm.WaitFor("Databricks host")
 	tm.Type(termtest.KeyEnter)
+	tm.WaitFor(">> host is required")
+	tm.Type(termtest.KeyCtrlC)
 	_, err := tm.Result()
-	assert.ErrorIs(t, err, errDeviceCodeNeedsHost)
+	assert.EqualError(t, err, "^C")
 }
 
 func TestLoginDeviceCodePickerEmptyHost(t *testing.T) {
@@ -259,8 +261,10 @@ func TestLoginDeviceCodePickerEmptyHost(t *testing.T) {
 	tm.Type(termtest.KeyDown + termtest.KeyEnter)
 	tm.WaitFor("Databricks host")
 	tm.Type(termtest.KeyEnter)
+	tm.WaitFor(">> host is required")
+	tm.Type(termtest.KeyCtrlC)
 	_, err := tm.Result()
-	assert.ErrorIs(t, err, errDeviceCodeNeedsHost)
+	assert.EqualError(t, err, "^C")
 }
 
 func TestLoginDeviceCodeCreateNewProfileRejectsHiddenProfileName(t *testing.T) {

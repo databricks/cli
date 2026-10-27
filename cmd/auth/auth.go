@@ -53,6 +53,12 @@ func promptForHost(ctx context.Context) (string, error) {
 	cmdio.LogString(ctx, "Example: https://<databricks-instance>.cloud.databricks.com")
 	return cmdio.RunPrompt(ctx, cmdio.PromptOptions{
 		Label: "Databricks host",
+		Validate: func(input string) error {
+			if input == "" {
+				return errors.New("host is required")
+			}
+			return nil
+		},
 	})
 }
 

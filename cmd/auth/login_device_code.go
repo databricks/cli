@@ -27,10 +27,7 @@ var deviceCodeIncompatibleFlags = []string{
 	"skip-workspace",
 }
 
-var (
-	errDeviceCodeNeedsHost     = errors.New("--use-device-code requires a workspace host. Pass it as an argument or with --host")
-	errDeviceCodeWorkspaceOnly = errors.New("--use-device-code is only supported for workspace hosts")
-)
+var errDeviceCodeWorkspaceOnly = errors.New("--use-device-code is only supported for workspace hosts")
 
 // isDeviceCodeSupportedForHost reports whether host is a workspace host. A
 // unified host is only recognized by its account-scoped discoveryURL, so with
