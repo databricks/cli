@@ -2,7 +2,7 @@
 === Version creation fails, but file-backed deployment still succeeds
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-version-never-created/default/files...
-Warn: Could not record deployment history; continuing with file state: failed to create deployment version: Internal error
+Warn: Could not enable deployment history for this deploy: failed to create deployment version: Internal error
 Created jobs.foo
 Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
@@ -40,7 +40,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-version-never-created/default/files...
-Warn: Could not record deployment history; continuing with file state: failed to create deployment version: Internal error
+Warn: Could not enable deployment history for this deploy: failed to create deployment version: Internal error
 Updated jobs.foo
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged

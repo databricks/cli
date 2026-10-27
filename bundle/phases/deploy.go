@@ -329,7 +329,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 				logdiag.LogError(ctx, err)
 				return
 			}
-			log.Warnf(ctx, "Could not record deployment history; continuing with file state: %s", err)
+			log.Warnf(ctx, "Could not enable deployment history for this deploy: %s", err)
 		}
 	}
 

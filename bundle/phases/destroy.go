@@ -379,7 +379,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 					logdiag.LogError(ctx, err)
 					return
 				}
-				log.Warnf(ctx, "Could not record deployment history; continuing with file state: %s", err)
+				log.Warnf(ctx, "Could not record deployment history for this destroy: %s", err)
 			}
 		}
 		destroyCore(ctx, b, plan)

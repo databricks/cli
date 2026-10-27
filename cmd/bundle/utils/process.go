@@ -392,7 +392,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			var err error
 			dmsDeployment, err = prepareDeploymentHistoryShadow(ctx, b)
 			if err != nil {
-				log.Warnf(ctx, "Could not read deployment history; continuing with file state: %s", err)
+				log.Warnf(ctx, "Could not read deployment history: %s", err)
 			}
 		}
 
@@ -671,7 +671,7 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 		}
 		if configuresDeploymentHistory(ctx, b) {
 			if _, err := prepareDeploymentHistoryShadow(ctx, b); err != nil {
-				log.Warnf(ctx, "Could not read deployment history; continuing with file state: %s", err)
+				log.Warnf(ctx, "Could not read deployment history: %s", err)
 			}
 		}
 		return nil
