@@ -42,7 +42,8 @@ fi
 echo "OK: new snapshot reused on redeploy"
 
 title "Save a plan for a content change, then break the glass before deploying it"
-update_file.py src/main.py "Hello from" "Hello again from"
+# Unset MSYS_NO_PATHCONV for the Python helper, otherwise Python cannot find update_file.py on Windows.
+env -u MSYS_NO_PATHCONV update_file.py src/main.py "Hello from" "Hello again from"
 trace $CLI bundle plan -o json > plan.json
 CONTENT_PATH_2="${SNAPSHOT_PATH_2%/files/src/main.py}"
 trace $CLI api post /api/2.0/snapshots:breakGlass --json "{\"snapshot_content_path\": \"$CONTENT_PATH_2\"}" | jq .status.dirty

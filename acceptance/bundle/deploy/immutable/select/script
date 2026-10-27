@@ -25,7 +25,8 @@ fi
 echo "OK: metadata points at the deployed snapshot"
 
 title "Deploying only that job after a content change keeps the deployed snapshot in the metadata"
-update_file.py src/main.py "Hello from" "Hello again from"
+# Unset MSYS_NO_PATHCONV for the Python helper, otherwise Python cannot find update_file.py on Windows.
+env -u MSYS_NO_PATHCONV update_file.py src/main.py "Hello from" "Hello again from"
 trace $CLI bundle deploy --select jobs.other_job
 METADATA_SNAPSHOT_2=$($CLI workspace export "$METADATA_PATH" | jq -r .config.workspace.snapshot_content_path)
 echo "Metadata snapshot path: $METADATA_SNAPSHOT_2"
