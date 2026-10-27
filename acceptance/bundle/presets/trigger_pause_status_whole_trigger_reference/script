@@ -1,0 +1,2 @@
+# Same as with a schedule: pause_status cannot be set inside a trigger that is a reference to the whole trigger of another job.
+trace $CLI bundle validate
