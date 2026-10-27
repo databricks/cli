@@ -435,30 +435,14 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 		return "", nil, err
 	}
 
-	existingProfile, err := loadProfileByName(ctx, profileName, profiler)
-	if err != nil {
-		return "", nil, err
-	}
-
 	loginArgs := &auth.AuthArguments{}
 
-	err = setHostAndAccountId(ctx, existingProfile, loginArgs, nil)
+	err = setHostAndAccountId(ctx, nil, loginArgs, nil)
 	if err != nil {
 		return "", nil, err
 	}
 
 	loginArgs.Profile = profileName
-
-	// Preserve scopes from the existing profile so the inline login
-	// uses the same scopes the user previously configured.
-	var scopesList []string
-	if existingProfile != nil && existingProfile.Scopes != "" {
-		scopesList = splitScopes(existingProfile.Scopes)
-	}
-
-	// Preserve RFC 8707 resource indicators from the existing profile so the
-	// inline login requests the same resources the user previously configured.
-	resourcesList := u2mResourcesFromProfile(existingProfile)
 
 	oauthArgument, err := loginArgs.ToOAuthArgument()
 	if err != nil {
@@ -467,15 +451,6 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 	persistentAuthOpts := []u2m.PersistentAuthOption{
 		u2m.WithOAuthArgument(oauthArgument),
 		u2m.WithBrowser(func(url string) error { return browser.Open(ctx, url) }),
-	}
-	if clientID := u2mClientIDFromProfile(existingProfile); clientID != "" {
-		persistentAuthOpts = append(persistentAuthOpts, u2m.WithClientID(clientID))
-	}
-	if len(scopesList) > 0 {
-		persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
-	}
-	if len(resourcesList) > 0 {
-		persistentAuthOpts = append(persistentAuthOpts, u2m.WithResources(resourcesList))
 	}
 	persistentAuth, err := u2m.NewPersistentAuth(ctx, persistentAuthOpts...)
 	if err != nil {
@@ -491,9 +466,6 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 		return "", nil, err
 	}
 
-	clearKeys := oauthLoginClearKeys()
-	clearKeys = append(clearKeys, databrickscfg.ExperimentalIsUnifiedHostKey)
-
 	err = databrickscfg.SaveToProfile(ctx, &config.Config{
 		Profile:     profileName,
 		Host:        loginArgs.Host,
@@ -501,16 +473,8 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 		AccountID:   loginArgs.AccountID,
 		WorkspaceID: loginArgs.WorkspaceID,
 		ConfigFile:  env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
-		Scopes:      scopesList,
-		ClientID:    u2mClientIDFromProfile(existingProfile),
-	}, clearKeys...)
+	})
 	if err != nil {
-		return "", nil, err
-	}
-	// TODO: resources is not supported in the SDK yet. This function is
-	// a short-cut to add the property to the profile until it is supported
-	// in the SDK.
-	if err := databrickscfg.SaveResourcesToProfile(ctx, profileName, env.Get(ctx, "DATABRICKS_CONFIG_FILE"), resourcesList); err != nil {
 		return "", nil, err
 	}
 	if err := storeLoginToken(ctx, tokenStore, mode, oauthArgument, token); err != nil {
