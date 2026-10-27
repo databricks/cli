@@ -16,7 +16,7 @@ musterr trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
 
 title "A leftover local WAL with the wrong lineage is still refused"
 mkdir -p .databricks/bundle/default
-printf '{"lineage":"stale","serial":99,"state_version":2,"features":{"deployment_history_best_effort":{}}}\n' > .databricks/bundle/default/resources.json.wal
+printf '{"lineage":"stale","serial":99,"state_version":2,"features":{"deployment_history_shadow":{}}}\n' > .databricks/bundle/default/resources.json.wal
 musterr trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
 
 title "Destroy clears the deployment. With nothing recorded remotely the bundle is treated as new, so recording can be enabled once the stale WAL is gone"

@@ -45,7 +45,7 @@ func TestFinalizeWithoutResourceWrites(t *testing.T) {
 		require.NoError(t, db.Open(t.Context(), path, ReadingFile, WithRecovery(true), OpenDmsArgs{}))
 		if mode == WritingFileWithHistoryEnforced {
 			// A first plan already knows history is enabled, before a state file exists.
-			db.Data.Features = map[string]struct{}{FeatureDeploymentHistoryBestEffort: {}}
+			db.Data.Features = map[string]struct{}{FeatureDeploymentHistoryShadow: {}}
 		}
 		require.NoError(t, db.upgradeToWrite(mode))
 		mustFinalize(t, &db)
@@ -58,7 +58,7 @@ func TestFinalizeWithoutResourceWrites(t *testing.T) {
 		require.NoError(t, db.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
 		assert.Equal(t, 1, db.Data.Serial)
 		assert.NotEmpty(t, db.Data.Lineage)
-		assert.Contains(t, db.StateFeatures(), FeatureDeploymentHistoryBestEffort)
+		assert.Contains(t, db.StateFeatures(), FeatureDeploymentHistoryShadow)
 		mustFinalize(t, &db)
 
 		// Keeping history enabled without changes must not advance the file serial.
@@ -73,17 +73,17 @@ func TestFinalizeWithoutResourceWrites(t *testing.T) {
 		mustFinalize(t, &db)
 		require.NoError(t, db.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
 		assert.Equal(t, 2, db.Data.Serial)
-		assert.NotContains(t, db.StateFeatures(), FeatureDeploymentHistoryBestEffort)
+		assert.NotContains(t, db.StateFeatures(), FeatureDeploymentHistoryShadow)
 		mustFinalize(t, &db)
 
 		// Enabling history on existing state persists the marker, even without resource writes.
 		require.NoError(t, db.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
-		db.Data.Features = map[string]struct{}{FeatureDeploymentHistoryBestEffort: {}}
+		db.Data.Features = map[string]struct{}{FeatureDeploymentHistoryShadow: {}}
 		require.NoError(t, db.upgradeToWrite(WritingFileWithHistoryEnforced))
 		mustFinalize(t, &db)
 		require.NoError(t, db.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
 		assert.Equal(t, 3, db.Data.Serial)
-		assert.Contains(t, db.StateFeatures(), FeatureDeploymentHistoryBestEffort)
+		assert.Contains(t, db.StateFeatures(), FeatureDeploymentHistoryShadow)
 		mustFinalize(t, &db)
 	}
 }

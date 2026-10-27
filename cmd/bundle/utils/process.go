@@ -384,7 +384,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			stateMode = dstate.WritingFileWithHistoryEnforced
 			if opts.Deploy || opts.PreDeployChecks {
 				// Retain only this history feature for plan/deploy; overwrite all other flags.
-				b.DeploymentBundle.StateDB.Data.Features = map[string]struct{}{dstate.FeatureDeploymentHistoryBestEffort: {}}
+				b.DeploymentBundle.StateDB.Data.Features = map[string]struct{}{dstate.FeatureDeploymentHistoryShadow: {}}
 			}
 		}
 

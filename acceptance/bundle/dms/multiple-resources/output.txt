@@ -25,7 +25,7 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
   "lineage": "[UUID]",
   "serial": 1,
   "features": {
-    "deployment_history_best_effort": {}
+    "deployment_history_shadow": {}
   }
 }
 
@@ -70,7 +70,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
  "lineage": "[UUID]",
  "serial": 1,
  "features": {
-  "deployment_history_best_effort": {}
+  "deployment_history_shadow": {}
  },
  "state": {
   "resources.jobs.five": {
@@ -182,7 +182,7 @@ Resources: 0 created, 0 changed, 0 deleted, 5 unchanged
   "lineage": "[UUID]",
   "serial": 1,
   "features": {
-    "deployment_history_best_effort": {}
+    "deployment_history_shadow": {}
   }
 }
 
@@ -227,7 +227,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
  "lineage": "[UUID]",
  "serial": 1,
  "features": {
-  "deployment_history_best_effort": {}
+  "deployment_history_shadow": {}
  },
  "state": {
   "resources.jobs.five": {

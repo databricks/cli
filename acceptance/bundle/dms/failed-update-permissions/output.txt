@@ -15,7 +15,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "lineage": "[UUID]",
   "serial": 1,
   "features": {
-    "deployment_history_best_effort": {}
+    "deployment_history_shadow": {}
   }
 }
 
@@ -45,7 +45,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
  "lineage": "[UUID]",
  "serial": 1,
  "features": {
-  "deployment_history_best_effort": {}
+  "deployment_history_shadow": {}
  },
  "state": {
   "resources.jobs.foo": {
@@ -141,7 +141,7 @@ Files: 1 uploaded, 0 deleted
  "lineage": "[UUID]",
  "serial": 1,
  "features": {
-  "deployment_history_best_effort": {}
+  "deployment_history_shadow": {}
  },
  "state": {
   "resources.jobs.foo": {

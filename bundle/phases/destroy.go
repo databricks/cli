@@ -354,7 +354,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 
 		// History follows the opened state, not configuration.
 		var err error
-		if _, history := b.DeploymentBundle.StateDB.StateFeatures()[dstate.FeatureDeploymentHistoryBestEffort]; history {
+		if _, history := b.DeploymentBundle.StateDB.StateFeatures()[dstate.FeatureDeploymentHistoryShadow]; history {
 			err = b.DeploymentBundle.StateDB.UpgradeToWriteWithHistory()
 		} else {
 			err = b.DeploymentBundle.StateDB.UpgradeToWrite()

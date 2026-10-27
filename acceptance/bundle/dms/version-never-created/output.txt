@@ -14,7 +14,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "lineage": "[UUID]",
   "serial": 1,
   "features": {
-    "deployment_history_best_effort": {}
+    "deployment_history_shadow": {}
   }
 }
 

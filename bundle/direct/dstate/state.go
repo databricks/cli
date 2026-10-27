@@ -47,9 +47,9 @@ const (
 // deploying such a state without recording is refused.
 const FeatureDeploymentHistory = "deployment_history"
 
-// FeatureDeploymentHistoryBestEffort requires writers to attempt DMS history recording.
+// FeatureDeploymentHistoryShadow requires writers to attempt DMS history recording.
 // Resource state stays in resources.json; recording errors only warn.
-const FeatureDeploymentHistoryBestEffort = "deployment_history_best_effort"
+const FeatureDeploymentHistoryShadow = "deployment_history_shadow"
 
 // featuresDocURL explains the state-features mechanism in the error shown when this CLI refuses a
 // state that depends on a feature it does not recognize.
@@ -59,8 +59,8 @@ const featuresDocURL = "https://docs.databricks.com/aws/en/dev-tools/bundles/sta
 // any feature not listed here is refused (see checkStateFeatures), so a newer CLI's feature is not
 // silently clobbered by this one.
 var recognizedFeatures = map[string]struct{}{
-	FeatureDeploymentHistory:           {},
-	FeatureDeploymentHistoryBestEffort: {},
+	FeatureDeploymentHistory:       {},
+	FeatureDeploymentHistoryShadow: {},
 }
 
 // assertNoUnsupportedFeatures refuses a state that depends on a feature this CLI does not recognize.
@@ -486,7 +486,7 @@ func (db *DeploymentState) RecordsHistory() bool {
 	defer db.mu.Unlock()
 	switch db.mode {
 	case ReadingFile:
-		_, history := db.Data.Features[FeatureDeploymentHistoryBestEffort]
+		_, history := db.Data.Features[FeatureDeploymentHistoryShadow]
 		return history
 	case WritingDMS, WritingFileWithHistory, WritingFileWithHistoryEnforced:
 		return true
@@ -966,7 +966,7 @@ func (db *DeploymentState) setupWal() error {
 		if walHead.Features == nil {
 			walHead.Features = make(map[string]struct{})
 		}
-		walHead.Features[FeatureDeploymentHistoryBestEffort] = struct{}{}
+		walHead.Features[FeatureDeploymentHistoryShadow] = struct{}{}
 	case WritingFile:
 		walHead.Features = map[string]struct{}{}
 	default:

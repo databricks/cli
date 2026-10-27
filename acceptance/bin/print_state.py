@@ -192,7 +192,7 @@ def print_recorded_state(filename, target):
     features = {
         k: v
         for k, v in (data.get("features") or {}).items()
-        if k not in {"deployment_history", "deployment_history_best_effort"}
+        if k not in {"deployment_history", "deployment_history_shadow"}
     }
 
     rebuilt = {}

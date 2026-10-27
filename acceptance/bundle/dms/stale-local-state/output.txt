@@ -4,7 +4,7 @@
 {"serial":1,"features":null}
 
 >>> jq -c {serial, features} .databricks/resources.v2.json
-{"serial":2,"features":{"deployment_history_best_effort":{}}}
+{"serial":2,"features":{"deployment_history_shadow":{}}}
 
 === File serial 3 ahead of DMS version 2 is allowed
 >>> update_file.py .databricks/bundle/default/resources.json "serial": 2 "serial": 3
