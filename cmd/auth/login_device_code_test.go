@@ -236,6 +236,16 @@ func TestLoginDeviceCodeNewProfilePromptsForHost(t *testing.T) {
 	assert.ErrorIs(t, err, errDeviceCodeNeedsHost)
 }
 
+func TestLoginDeviceCodePickerEmptyHost(t *testing.T) {
+	tm := startDeviceCodeLogin(t, "")
+	tm.WaitFor(profilePickerEnterHostLabel)
+	tm.Type(termtest.KeyDown + termtest.KeyEnter)
+	tm.WaitFor("Databricks host")
+	tm.Type(termtest.KeyEnter)
+	_, err := tm.Result()
+	assert.ErrorIs(t, err, errDeviceCodeNeedsHost)
+}
+
 func TestMatchDeviceCodeProfiles(t *testing.T) {
 	tests := []struct {
 		name    string

@@ -258,6 +258,11 @@ a new profile is created.
 				if err != nil {
 					return err
 				}
+				// Fail here rather than prompting for the host again after
+				// the profile name.
+				if useDeviceCode && host == "" {
+					return errDeviceCodeNeedsHost
+				}
 				authArguments.Host = host
 			case profilePickerCreateNew:
 				// Fall through to the profile name prompt below.
