@@ -1,0 +1,5 @@
+# The preset tag is not applied to a job whose tags is a reference to a whole map: the job gets the
+# tags of the referenced schema only, and depends on the schema.
+# The preset value references the job itself. If the preset tag were applied, this plan would fail
+# with a cycle error.
+trace $CLI bundle plan -o json | jq '.plan["resources.jobs.j"] | {tags: .new_state.value.tags, depends_on}'
