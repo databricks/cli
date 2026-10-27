@@ -1,10 +1,6 @@
 
 >>> [CLI] bundle validate -t dev -o json
-Warning: expected map, found string
-  at targets.dev.variables.x
-  in databricks.yml:11:10
-
 {
-  "default": "base",
-  "value": "base"
+  "default": "overridden",
+  "value": "overridden"
 }
