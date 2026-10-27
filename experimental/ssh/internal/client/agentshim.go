@@ -695,7 +695,8 @@ func prepareAgentLaunch(ctx context.Context, home string, agent agentlauncher.Ag
 
 // put the Databricks context where the agent reads it, returning any extra argv.
 func injectAgentContext(ctx context.Context, home string, agent agentlauncher.AgentSpec) ([]string, error) {
-	systemContext := agentSystemContext(env.Get(ctx, workspaceHomeEnv))
+	serverless := dbr.RuntimeVersion(ctx).Type == dbr.ClusterTypeServerless
+	systemContext := agentSystemContext(env.Get(ctx, workspaceHomeEnv), serverless)
 	switch {
 	case agent.ContextFlag != "":
 		// Keep the scratch context file under the shim's own directory so it never
@@ -823,14 +824,20 @@ func removePath(ctx context.Context, dir string) {
 	_ = os.Setenv("PATH", strings.Join(dirs, string(os.PathListSeparator)))
 }
 
-func agentSystemContext(wsHome string) string {
+func agentSystemContext(wsHome string, serverless bool) string {
 	userHomePart := ""
 	if wsHome != "" {
 		userHomePart = " The user's Databricks workspace home directory is " + wsHome + "."
 	}
+	computePart := "dedicated cluster"
+	persistencePart := "Local files persist across sessions until the cluster restarts or terminates; only paths under /Workspace and /Volumes persist beyond that."
+	if serverless {
+		computePart = "serverless cluster"
+		persistencePart = "This container is ephemeral; only paths under /Workspace and /Volumes persist across sessions."
+	}
 	return fmt.Sprintf(`You are running inside a "databricks ssh connect" session on the driver node of a
-Databricks serverless cluster.
+Databricks %s.
 - The "databricks" CLI is installed and already authenticated: DATABRICKS_HOST and DATABRICKS_TOKEN are set in the environment, so "databricks ..." commands work with no "databricks auth login". The same token governs Unity Catalog and serving-endpoint access.
-- This container is ephemeral; only paths under /Workspace and /Volumes persist across sessions.%s
-- You can run shell commands and use the "databricks" CLI to explore the workspace.`, userHomePart)
+- %s%s
+- You can run shell commands and use the "databricks" CLI to explore the workspace.`, computePart, persistencePart, userHomePart)
 }
