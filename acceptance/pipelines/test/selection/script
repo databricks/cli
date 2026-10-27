@@ -9,6 +9,10 @@ title "Select tests by relative path and test ID, with pytest arguments"
 trace $CLI pipelines test my_pipeline tests tests/test_orders.py::test_backfill /Workspace/Shared/tests/test_shared.py --pytest-arg=-k --pytest-arg='orders and not slow' --pytest-arg=-msmoke,fast
 trace print_requests.py //updates
 
+title "--pytest-arg also takes its value as the next argument"
+trace $CLI pipelines test my_pipeline --pytest-arg -k --pytest-arg 'orders, returns' --pytest-arg -m --pytest-arg smoke
+trace print_requests.py //updates
+
 title "Relative paths resolve from the working directory"
 cd tests
 trace $CLI pipelines test my_pipeline test_orders.py::test_valid_order

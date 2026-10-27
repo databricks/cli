@@ -35,6 +35,19 @@ func TestValidatePytestArgs(t *testing.T) {
 	}
 }
 
+// TestValidatePytestArgsRejectsUnsupportedOptions covers every pytest option that the API rejects.
+func TestValidatePytestArgsRejectsUnsupportedOptions(t *testing.T) {
+	for _, arg := range []string{
+		"--collect-only", "-x", "--exitfirst", "--maxfail=1", "--lf", "--ff", "--cache-clear", "-n",
+		"--pdb", "--trace", "-q", "-v", "--color=yes", "--tb=short", "-s", "--capture=no", "-p",
+		"--junitxml=out.xml", "--html=out.html", "--basetemp=/tmp", "-c", "--rootdir=/", "--confcutdir=/",
+		"--pyargs", "--timeout=10", "--no-wait", "--junit-xml=out.xml",
+	} {
+		err := validatePytestArgs([]string{arg})
+		assert.EqualError(t, err, `unsupported pytest argument "`+arg+`": only -k and -m are supported`)
+	}
+}
+
 func TestResolveTestSelections(t *testing.T) {
 	toWorkspacePath := func(p string) (string, error) {
 		if p == "missing" {
