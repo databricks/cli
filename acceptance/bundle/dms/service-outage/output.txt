@@ -1,0 +1,297 @@
+
+=== DMS outage: first-deploy
+>>> fault.py GET /api/2.0/bundle/* 500 0 1000
+
+>>> fault.py POST /api/2.0/bundle/* 500 0 1000
+
+>>> fault.py PATCH /api/2.0/bundle/* 500 0 1000
+
+>>> fault.py DELETE /api/2.0/bundle/* 500 0 1000
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-service-outage-[UNIQUE_NAME]/default/files...
+Warn: Could not enable deployment history for this deploy: failed to create deployment: Fault injected by test.
+Created jobs.foo
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_state.py --no-dms
+{
+  "serial": 1,
+  "features": {
+    "deployment_history_shadow": {}
+  },
+  "job": {
+    "id": "[FOO_ID]",
+    "name": "original"
+  }
+}
+
+=== A fresh client updates the existing job using workspace file state
+>>> update_file.py databricks.yml name: original name: after-outage
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-service-outage-[UNIQUE_NAME]/default/files...
+Warn: Could not enable deployment history for this deploy: failed to create deployment: Fault injected by test.
+Updated jobs.foo
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] jobs get [FOO_ID] -o json
+{
+  "job_id": [FOO_ID],
+  "name": "after-outage"
+}
+
+>>> print_state.py --no-dms
+{
+  "serial": 2,
+  "features": {
+    "deployment_history_shadow": {}
+  },
+  "job": {
+    "id": "[FOO_ID]",
+    "name": "after-outage"
+  }
+}
+
+=== Planning still works with all DMS calls failing
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> print_requests.py --dms //api/2.0/bundle --get
+{"method":"POST","path":"/api/2.0/bundle/deployments"}
+{"method":"POST","path":"/api/2.0/bundle/deployments"}
+
+=== Destroy still deletes the job and workspace state
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-service-outage-[UNIQUE_NAME]/default
+
+Warn: Could not record deployment history for this destroy: failed to create deployment: Fault injected by test.
+Destroy: 1 deleted
+
+>>> musterr [CLI] jobs get [FOO_ID]
+Error: Job [FOO_ID] does not exist.
+
+>>> musterr env MSYS_NO_PATHCONV=1 [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-service-outage-[UNIQUE_NAME]/default/state/resources.json
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/dms-service-outage-[UNIQUE_NAME]/default/state/resources.json) doesn't exist.
+
+>>> print_requests.py --dms //api/2.0/bundle --get
+{"method":"POST","path":"/api/2.0/bundle/deployments"}
+
+=== DMS outage: existing-deployment
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-service-outage-[UNIQUE_NAME]/default/files...
+Created jobs.foo
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> update_file.py databricks.yml name: original name: before-outage
+
+>>> fault.py GET /api/2.0/bundle/* 500 0 1000
+
+>>> fault.py POST /api/2.0/bundle/* 500 0 1000
+
+>>> fault.py PATCH /api/2.0/bundle/* 500 0 1000
+
+>>> fault.py DELETE /api/2.0/bundle/* 500 0 1000
+
+>>> [CLI] bundle deploy
+Warn: Could not read deployment history: Fault injected by test.
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-service-outage-[UNIQUE_NAME]/default/files...
+Warn: Could not enable deployment history for this deploy: failed to create deployment: Fault injected by test.
+Updated jobs.foo
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_state.py --no-dms
+{
+  "serial": 2,
+  "features": {
+    "deployment_history_shadow": {}
+  },
+  "job": {
+    "id": "[FOO_ID_2]",
+    "name": "before-outage"
+  }
+}
+
+=== A fresh client updates the existing job using workspace file state
+>>> update_file.py databricks.yml name: before-outage name: after-outage
+
+>>> [CLI] bundle deploy
+Warn: Could not read deployment history: Fault injected by test.
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-service-outage-[UNIQUE_NAME]/default/files...
+Warn: Could not enable deployment history for this deploy: failed to create deployment: Fault injected by test.
+Updated jobs.foo
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] jobs get [FOO_ID_2] -o json
+{
+  "job_id": [FOO_ID_2],
+  "name": "after-outage"
+}
+
+>>> print_state.py --no-dms
+{
+  "serial": 3,
+  "features": {
+    "deployment_history_shadow": {}
+  },
+  "job": {
+    "id": "[FOO_ID_2]",
+    "name": "after-outage"
+  }
+}
+
+=== Planning still works with all DMS calls failing
+>>> [CLI] bundle plan
+Warn: Could not read deployment history: Fault injected by test.
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> print_requests.py --dms //api/2.0/bundle --get
+{"method":"GET","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
+{"method":"GET","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
+{"method":"GET","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
+{"method":"POST","path":"/api/2.0/bundle/deployments"}
+{"method":"GET","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
+{"method":"GET","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
+{"method":"GET","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
+{"method":"POST","path":"/api/2.0/bundle/deployments"}
+{"method":"GET","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
+{"method":"GET","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
+{"method":"GET","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
+
+=== Destroy still deletes the job and workspace state
+>>> [CLI] bundle destroy --auto-approve
+Warn: Could not read deployment history: Fault injected by test.
+The following resources will be deleted:
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-service-outage-[UNIQUE_NAME]/default
+
+Warn: Could not record deployment history for this destroy: failed to create deployment: Fault injected by test.
+Destroy: 1 deleted
+
+>>> musterr [CLI] jobs get [FOO_ID_2]
+Error: Job [FOO_ID_2] does not exist.
+
+>>> musterr env MSYS_NO_PATHCONV=1 [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-service-outage-[UNIQUE_NAME]/default/state/resources.json
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/dms-service-outage-[UNIQUE_NAME]/default/state/resources.json) doesn't exist.
+
+>>> print_requests.py --dms //api/2.0/bundle --get
+{"method":"GET","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
+{"method":"GET","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
+{"method":"GET","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
+{"method":"POST","path":"/api/2.0/bundle/deployments"}
+
+=== DMS outage: during-deploy
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-service-outage-[UNIQUE_NAME]/default/files...
+Created jobs.foo
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> update_file.py databricks.yml name: original name: before-outage
+
+>>> fault.py GET /api/2.0/bundle/* 500 1 1000
+
+>>> fault.py POST /api/2.0/bundle/* 500 1 1000
+
+>>> fault.py PATCH /api/2.0/bundle/* 500 0 1000
+
+>>> fault.py DELETE /api/2.0/bundle/* 500 0 1000
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-service-outage-[UNIQUE_NAME]/default/files...
+Updated jobs.foo
+Warn: Failed to record deployment history: recording operation for resources.jobs.foo: Fault injected by test.
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+Warn: Failed to complete deployment history version: Fault injected by test.
+
+>>> print_state.py --no-dms
+{
+  "serial": 2,
+  "features": {
+    "deployment_history_shadow": {}
+  },
+  "job": {
+    "id": "[FOO_ID_3]",
+    "name": "before-outage"
+  }
+}
+
+=== A fresh client updates the existing job using workspace file state
+>>> update_file.py databricks.yml name: before-outage name: after-outage
+
+>>> [CLI] bundle deploy
+Warn: Could not read deployment history: Fault injected by test.
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-service-outage-[UNIQUE_NAME]/default/files...
+Warn: Could not enable deployment history for this deploy: failed to create deployment: Fault injected by test.
+Updated jobs.foo
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] jobs get [FOO_ID_3] -o json
+{
+  "job_id": [FOO_ID_3],
+  "name": "after-outage"
+}
+
+>>> print_state.py --no-dms
+{
+  "serial": 3,
+  "features": {
+    "deployment_history_shadow": {}
+  },
+  "job": {
+    "id": "[FOO_ID_3]",
+    "name": "after-outage"
+  }
+}
+
+=== Planning still works with all DMS calls failing
+>>> [CLI] bundle plan
+Warn: Could not read deployment history: Fault injected by test.
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> print_requests.py --dms //api/2.0/bundle --get
+{"method":"GET","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
+{"method":"POST","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions"}
+{"method":"PATCH","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/2/operations/jobs.foo"}
+{"method":"POST","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/2/complete"}
+{"method":"GET","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
+{"method":"GET","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
+{"method":"GET","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
+{"method":"POST","path":"/api/2.0/bundle/deployments"}
+{"method":"GET","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
+{"method":"GET","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
+{"method":"GET","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
+
+=== Destroy still deletes the job and workspace state
+>>> [CLI] bundle destroy --auto-approve
+Warn: Could not read deployment history: Fault injected by test.
+The following resources will be deleted:
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-service-outage-[UNIQUE_NAME]/default
+
+Warn: Could not record deployment history for this destroy: failed to create deployment: Fault injected by test.
+Destroy: 1 deleted
+
+>>> musterr [CLI] jobs get [FOO_ID_3]
+Error: Job [FOO_ID_3] does not exist.
+
+>>> musterr env MSYS_NO_PATHCONV=1 [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-service-outage-[UNIQUE_NAME]/default/state/resources.json
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/dms-service-outage-[UNIQUE_NAME]/default/state/resources.json) doesn't exist.
+
+>>> print_requests.py --dms //api/2.0/bundle --get
+{"method":"GET","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
+{"method":"GET","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
+{"method":"GET","path":"/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
+{"method":"POST","path":"/api/2.0/bundle/deployments"}
