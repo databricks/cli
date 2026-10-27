@@ -565,6 +565,8 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 	return setAccountID(ctx, existingProfile, authArguments)
 }
 
+var errHostRequired = errors.New("host is required. Pass it as an argument or with --host")
+
 // Sets the host in the persistentAuth object based on the provided arguments and flags.
 // Follows the following precedence:
 // 1. [HOST] (first positional argument) or --host flag. Error if both are specified.
@@ -602,6 +604,11 @@ func setHost(ctx context.Context, existingProfile *profile.Profile, authArgument
 	// URL params from explicit --host override stale profile values.
 	params := auth.ExtractHostQueryParams(authArguments.Host)
 	authArguments.Host = params.Host
+	// Checked after normalization because a host like "/" or "?o=123" becomes
+	// empty. Without a host, login would resolve one from DATABRICKS_HOST.
+	if authArguments.Host == "" {
+		return errHostRequired
+	}
 	if authArguments.WorkspaceID == "" {
 		authArguments.WorkspaceID = params.WorkspaceID
 	}

@@ -206,6 +206,21 @@ func TestSetHost(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://www.host2.test", authArguments.Host)
 
+	// Test host that is empty after normalization from flag
+	authArguments.Host = "?o=123"
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
+	assert.ErrorIs(t, err, errHostRequired)
+
+	// Test host that is empty after normalization from argument
+	authArguments.Host = ""
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{"/"})
+	assert.ErrorIs(t, err, errHostRequired)
+
+	// Test host that is empty after normalization from profile
+	authArguments.Host = ""
+	err = setHostAndAccountId(ctx, &profile.Profile{Host: "/"}, &authArguments, []string{})
+	assert.ErrorIs(t, err, errHostRequired)
+
 	// Test host is not set. Should prompt.
 	authArguments.Host = ""
 	err = setHostAndAccountId(ctx, nil, &authArguments, []string{})

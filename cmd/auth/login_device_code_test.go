@@ -221,8 +221,10 @@ func startLogin(t *testing.T, config string, args ...string) *termtest.Term[stru
 	t.Setenv("DATABRICKS_AUTH_STORAGE", "plaintext")
 
 	return termtest.Run(t, func(ctx context.Context) (struct{}, error) {
-		cmd := newLoginCommand(&auth.AuthArguments{})
+		authArguments := &auth.AuthArguments{}
+		cmd := newLoginCommand(authArguments)
 		cmd.Flags().String("profile", "", "")
+		cmd.Flags().StringVar(&authArguments.Host, "host", "", "")
 		cmd.SetContext(ctx)
 		// Cobra reads os.Args when the args are nil.
 		cmd.SetArgs(append([]string{}, args...))
@@ -288,6 +290,16 @@ account_id = acct-123
 	tm.Type(termtest.KeyCtrlC)
 	_, err := tm.Result()
 	assert.EqualError(t, err, "^C")
+}
+
+func TestLoginDeviceCodeHostEmptyAfterNormalization(t *testing.T) {
+	for _, host := range []string{"/", "?o=123"} {
+		t.Run(host, func(t *testing.T) {
+			tm := startDeviceCodeLogin(t, "", "--profile", "newprof", "--host", host)
+			_, err := tm.Result()
+			assert.ErrorIs(t, err, errHostRequired)
+		})
+	}
 }
 
 func TestMatchDeviceCodeProfiles(t *testing.T) {
