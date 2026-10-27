@@ -43,6 +43,7 @@ func promptForProfile(ctx context.Context, defaultValue string, takenNames []str
 	result, err := cmdio.RunPrompt(ctx, cmdio.PromptOptions{
 		Label: label,
 		Validate: func(input string) error {
+			input = strings.TrimSpace(input)
 			if input == "" {
 				input = defaultValue
 			}
@@ -55,6 +56,7 @@ func promptForProfile(ctx context.Context, defaultValue string, takenNames []str
 			return nil
 		},
 	})
+	result = strings.TrimSpace(result)
 	if result == "" {
 		return defaultValue, err
 	}

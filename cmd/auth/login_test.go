@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -1486,4 +1487,21 @@ func TestPromptForProfileSuggestsFreeDefault(t *testing.T) {
 	name, err := tm.Result()
 	require.NoError(t, err)
 	assert.Equal(t, "DEFAULT", name)
+}
+
+func TestPromptForProfileTrimsPastedName(t *testing.T) {
+	tm := termtest.Run(t, func(ctx context.Context) (string, error) {
+		return promptForProfile(ctx, "DEFAULT", []string{"DEFAULT", "taken"})
+	})
+	tm.WaitFor("Databricks profile name")
+	// A bracketed paste arrives as a single input event, so the trailing
+	// newline lands in the buffer instead of submitting the prompt.
+	tm.Type("\x1b[200~taken\n\x1b[201~" + termtest.KeyEnter)
+	tm.WaitFor(">> profile taken already exists")
+	tm.Type(strings.Repeat(termtest.KeyBackspace, len("taken\n")) + "   " + termtest.KeyEnter)
+	tm.WaitFor(">> profile name is required")
+	tm.Type(" new " + termtest.KeyEnter)
+	name, err := tm.Result()
+	require.NoError(t, err)
+	assert.Equal(t, "new", name)
 }
