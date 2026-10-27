@@ -14,7 +14,6 @@ import (
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
@@ -361,13 +360,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 		}
 
 		// History follows the opened state, not configuration.
-		var err error
-		if _, history := b.DeploymentBundle.StateDB.StateFeatures()[dstate.FeatureDeploymentHistoryShadow]; history {
-			err = b.DeploymentBundle.StateDB.UpgradeToWriteDeploymentHistoryShadow()
-		} else {
-			err = b.DeploymentBundle.StateDB.UpgradeToWrite()
-		}
-		if err != nil {
+		if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}

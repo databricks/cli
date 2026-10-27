@@ -379,6 +379,8 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 					b.DeploymentBundle.StateDB.Data.Features = make(map[string]struct{})
 				}
 				b.DeploymentBundle.StateDB.Data.Features[dstate.FeatureDeploymentHistoryShadow] = struct{}{}
+			} else {
+				delete(b.DeploymentBundle.StateDB.Data.Features, dstate.FeatureDeploymentHistoryShadow)
 			}
 		case b.DeploymentBundle.StateDB.RecordsHistory():
 			// Other operations, including destroy, follow loaded state instead of configuration.

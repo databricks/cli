@@ -898,32 +898,30 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 	return state, err
 }
 
-// UpgradeToWrite opens a WAL for file state without re-reading resources.
-// DMS and deployment history shadow modes are already writable from Open, so upgrading them is a no-op.
+// UpgradeToWrite enables writes using the history features already selected in Data.
+// DMS-authoritative state writes to the service; file state opens a WAL.
 func (db *DeploymentState) UpgradeToWrite() error {
-	return db.upgradeToWrite(WritingFile)
-}
-
-// UpgradeToWriteDeploymentHistoryShadow enables enforced deployment history shadow after approval.
-// Reads still use the same file state; only the write policy changes.
-func (db *DeploymentState) UpgradeToWriteDeploymentHistoryShadow() error {
-	return db.upgradeToWrite(WritingDeploymentHistoryShadow)
-}
-
-func (db *DeploymentState) upgradeToWrite(mode Mode) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
 	if db.Path == "" {
 		return errors.New("internal error: DeploymentState must be opened first")
 	}
+
 	switch db.mode {
 	case WritingDeploymentHistoryOnly, WritingDeploymentHistoryShadow:
 		return nil
 	case WritingFile:
 		return errors.New("internal error: DeploymentState is already open for write")
 	case ReadingFile:
-		db.mode = mode
+		if _, only := db.Data.Features[FeatureDeploymentHistory]; only {
+			db.mode = WritingDeploymentHistoryOnly
+			return nil
+		}
+		db.mode = WritingFile
+		if _, shadow := db.Data.Features[FeatureDeploymentHistoryShadow]; shadow {
+			db.mode = WritingDeploymentHistoryShadow
+		}
 		if err := db.setupWal(); err != nil {
 			db.mode = ReadingFile
 			return err

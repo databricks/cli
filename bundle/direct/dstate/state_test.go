@@ -47,7 +47,7 @@ func TestFinalizeWithoutResourceWrites(t *testing.T) {
 			// A first plan already knows history is enabled, before a state file exists.
 			db.Data.Features = map[string]struct{}{FeatureDeploymentHistoryShadow: {}}
 		}
-		require.NoError(t, db.upgradeToWrite(mode))
+		require.NoError(t, db.UpgradeToWrite())
 		mustFinalize(t, &db)
 
 		if mode == WritingFile {
@@ -79,7 +79,7 @@ func TestFinalizeWithoutResourceWrites(t *testing.T) {
 		// Enabling history on existing state persists the marker, even without resource writes.
 		require.NoError(t, db.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
 		db.Data.Features = map[string]struct{}{FeatureDeploymentHistoryShadow: {}}
-		require.NoError(t, db.upgradeToWrite(WritingDeploymentHistoryShadow))
+		require.NoError(t, db.UpgradeToWrite())
 		mustFinalize(t, &db)
 		require.NoError(t, db.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
 		assert.Equal(t, 3, db.Data.Serial)

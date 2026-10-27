@@ -12,7 +12,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
-	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dms"
@@ -127,19 +126,6 @@ func deleteDeployment(ctx context.Context, w *databricks.WorkspaceClient, deploy
 		return struct{}{}, err
 	})
 	return err
-}
-
-// upgradeStateForWrite delays the history WAL until the operation is approved.
-func upgradeStateForWrite(ctx context.Context, b *bundle.Bundle) error {
-	db := &b.DeploymentBundle.StateDB
-	var configured *bool
-	if b.Config.Experimental != nil {
-		configured = b.Config.Experimental.DeploymentHistory
-	}
-	if !db.IsDeploymentMetadataService() && bundleenv.RecordsDeploymentHistory(ctx, configured) {
-		return db.UpgradeToWriteDeploymentHistoryShadow()
-	}
-	return db.UpgradeToWrite()
 }
 
 // prepareDeploymentHistory creates history metadata and a version after approval.

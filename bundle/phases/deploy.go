@@ -300,7 +300,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// Upgrade from read (opened by process.go, or by Migrate) to write mode. After approval
 	// and the migration commit above, so a declined deploy never opens a WAL it must discard,
 	// and the migration's tf+1 push lands before this advances the WAL header to tf+2.
-	if err := upgradeStateForWrite(ctx, b); err != nil {
+	if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
