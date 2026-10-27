@@ -97,6 +97,13 @@ func executeHook(ctx context.Context, executor *exec.Executor, command config.Co
 }
 
 func getCommand(b *bundle.Bundle, hook config.ScriptHook) config.Command {
+	// The preinit script runs while the configuration is loading.
+	if b.Config.Loading() {
+		var command config.Command
+		_ = b.Config.DecodeLoading(&command, "experimental", "scripts", string(hook))
+		return command
+	}
+
 	if b.Config.Experimental == nil || b.Config.Experimental.Scripts == nil {
 		return ""
 	}

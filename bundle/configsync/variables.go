@@ -122,10 +122,11 @@ func LoadPreResolvedConfig(ctx context.Context, b *bundle.Bundle) structvar.View
 	}
 	mutator.DefaultMutators(ctx, fresh)
 	if target := b.Config.Bundle.Target; target != "" {
-		if _, ok := fresh.Config.Targets[target]; ok {
+		if fresh.Config.HasTarget(target) {
 			bundle.ApplyContext(ctx, fresh, mutator.SelectTarget(target))
 		}
 	}
+	mutator.FinishLoading(ctx, fresh)
 
 	// Keyed sequences merge in the initialize phase, which this reload skips. Without
 	// them the sequences here stay in file order while the change paths address the
