@@ -18,17 +18,13 @@ const (
 
 	// WritingDeploymentHistoryShadow writes state through WAL to resources.json and records DMS history.
 	// DMS errors and drain timeouts let the deployment continue.
-	WritingDeploymentHistoryShadow
-
-	// WritingDeploymentHistoryShadowEnforced writes state through WAL to resources.json and records DMS history.
-	// DMS errors and drain timeouts let the deployment continue.
 	// Persists deployment_history_shadow to reject clients that cannot honor history recording.
-	WritingDeploymentHistoryShadowEnforced
+	WritingDeploymentHistoryShadow
 )
 
 func (m Mode) isWritable() bool {
 	switch m {
-	case WritingFile, WritingDMS, WritingDeploymentHistoryShadow, WritingDeploymentHistoryShadowEnforced:
+	case WritingFile, WritingDMS, WritingDeploymentHistoryShadow:
 		return true
 	default:
 		return false
