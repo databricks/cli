@@ -1,0 +1,20 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Deploy an immutable snapshot"
+trace $CLI bundle deploy
+
+title "Point the state at a snapshot that is not there"
+# This is what a deployment made by a CLI without this feature looks like: its content sits one
+# level above the content subfolder, so nothing is stored where the snapshot is looked up now.
+# The same shape arises when the snapshot folder is deleted out of band.
+STATE=.databricks/bundle/default/resources.json
+jq '.state["resources.internal_immutable_snapshots.immutable"].state.relative_path += "-missing"' "$STATE" > tmp.json
+mv tmp.json "$STATE"
+
+title "Deploying still works instead of failing on the snapshot that is not there"
+trace $CLI bundle deploy

@@ -2,20 +2,28 @@ package metadata
 
 import (
 	"context"
+	"path"
 	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/metadata"
+	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/snapshot"
 )
 
-type compute struct{}
+type compute struct {
+	state resourcestate.ExportedResourcesMap
+}
 
-func Compute() bundle.Mutator {
-	return &compute{}
+// Compute returns a mutator that computes the deployment metadata. state is the deployment
+// state after the deploy, which records the immutable snapshot that is actually deployed.
+func Compute(state resourcestate.ExportedResourcesMap) bundle.Mutator {
+	return &compute{state: state}
 }
 
 func (m *compute) Name() string {
@@ -125,6 +133,17 @@ func (m *compute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 	if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
 		b.Metadata.Config.Workspace.FilePath = b.SyncRootPath
 		b.Metadata.Config.Presets.SourceLinkedDeployment = true
+	}
+
+	// For immutable-folder deployments the content lives in a snapshot rather than a regular
+	// workspace directory. Record its path so downstream services (e.g. the jobs UI) can locate it.
+	// Take the path from the state rather than the config: "bundle deploy --select" can leave the
+	// snapshot out, and then the config points at a snapshot that was never uploaded. The
+	// snapshot's ID is its relative path.
+	if snap, ok := b.Config.Resources.Snapshots[resources.SnapshotResourceKey]; ok {
+		if deployed, ok := m.state[resources.SnapshotKey]; ok {
+			b.Metadata.Config.Workspace.SnapshotContentPath = path.Join(snap.RemoteRoot, deployed.ID, snapshot.ContentSubdir)
+		}
 	}
 
 	// Set the git folder path for deployments from the workspace

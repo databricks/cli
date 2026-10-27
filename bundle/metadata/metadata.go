@@ -15,6 +15,10 @@ type Bundle struct {
 
 type Workspace struct {
 	FilePath string `json:"file_path"`
+
+	// SnapshotContentPath is the workspace path of the immutable snapshot, present only when
+	// experimental.immutable_folder is true. The jobs UI uses it to display the file origin.
+	SnapshotContentPath string `json:"snapshot_content_path,omitempty"`
 }
 
 type Resource struct {

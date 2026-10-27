@@ -1,0 +1,24 @@
+bundle:
+  name: test-bundle-immutable-select-$UNIQUE_NAME
+
+experimental:
+  immutable_folder: true
+
+resources:
+  jobs:
+    my_job:
+      name: my job
+      tasks:
+        - task_key: spark_python_task
+          spark_python_task:
+            python_file: ./src/main.py
+          environment_key: env
+      environments:
+        - environment_key: env
+          spec:
+            environment_version: "4"
+
+    # References no bundle files, so it does not depend on the snapshot and
+    # "--select jobs.other_job" leaves the snapshot out of the deploy.
+    other_job:
+      name: other job

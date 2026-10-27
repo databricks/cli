@@ -97,7 +97,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 	bundle.ApplySeqContext(
 		ctx, b,
 		statemgmt.Load(state),
-		metadata.Compute(),
+		metadata.Compute(state),
 		metadata.Upload(),
 	)
 }
