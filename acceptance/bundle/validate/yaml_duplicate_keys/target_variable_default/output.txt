@@ -1,10 +1,6 @@
 
 >>> [CLI] bundle validate -t dev -o json
 {
-  "default": {
-    "default": "second"
-  },
-  "value": {
-    "default": "second"
-  }
+  "default": "second",
+  "value": "second"
 }

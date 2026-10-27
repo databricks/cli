@@ -1,15 +1,17 @@
 
 >>> [CLI] bundle validate -t dev
-Name: test-bundle
-Target: dev
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev
+Error: duplicate YAML merge key ('<<') is not allowed; to merge multiple maps, use a sequence: '<<: [*anchor1, *anchor2]'
+  in databricks.yml:18:7
 
-Validation OK!
+
+Found 1 error
+
+Exit code: 1
 
 >>> [CLI] bundle validate -t dev -o json
-{
-  "default": "second",
-  "value": "second"
-}
+Error: duplicate YAML merge key ('<<') is not allowed; to merge multiple maps, use a sequence: '<<: [*anchor1, *anchor2]'
+  in databricks.yml:18:7
+
+
+Exit code: 1
+null

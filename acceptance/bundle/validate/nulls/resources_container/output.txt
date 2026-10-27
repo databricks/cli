@@ -1,9 +1,9 @@
 
 >>> [CLI] bundle validate
-Name: test-bundle
-Target: default
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Error: expected a map at "resources", found nil
 
-Validation OK!
+Name: test-bundle
+
+Found 1 error
+
+Exit code: 1
