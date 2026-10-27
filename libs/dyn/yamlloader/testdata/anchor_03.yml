@@ -1,0 +1,10 @@
+# 3. Overriding Merged Anchor Values
+# You can override values when merging.
+defaults: &DEFAULTS
+  color: red
+  size: large
+  pattern: plain
+
+shirt:
+  <<: *DEFAULTS
+  color: blue

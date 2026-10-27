@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config/loader"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/scripts"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 func DefaultMutators(ctx context.Context, b *bundle.Bundle) {
@@ -33,4 +34,18 @@ func DefaultMutators(ctx context.Context, b *bundle.Bundle) {
 		validate.NoVariableReferenceInResourceKey(),
 		validate.UniqueResourceKeys(),
 	)
+}
+
+// FinishLoading converts the configuration of b, loaded and merged by
+// [DefaultMutators] (and a target selection), into the typed configuration. It is not
+// a mutator: it runs once, at the end of the load phase, also if loading failed so
+// that the configuration can still be inspected.
+func FinishLoading(ctx context.Context, b *bundle.Bundle) {
+	diags, err := b.Config.FinishLoading()
+	for _, d := range diags {
+		logdiag.LogDiag(ctx, d)
+	}
+	if err != nil {
+		logdiag.LogError(ctx, err)
+	}
 }
