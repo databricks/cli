@@ -2,7 +2,7 @@
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-test-results/default/files...
 Created pipelines.my_pipeline
-Files: 6 uploaded, 0 deleted
+Files: 7 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
 
@@ -111,6 +111,28 @@ Running tests...
 tests/test_delivery.py::test_breaks_update_after_summary  PASSED (1.00s)
 
 1 test: 1 passed, 0 failed, 0 skipped, 0 errors
+Error: update [UUID] is FAILED: ResultDeliveryException: Test results could not be verified.
+
+Exit code: 1
+
+=== The update fails with an error of its own after a test failed
+>>> errcode [CLI] pipelines test my_pipeline tests/test_late_failure.py
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Pipeline: my_pipeline ([UUID])
+Update: [UUID]
+Waiting for compute...
+Running tests...
+tests/test_late_failure.py::test_backfill_fails  FAILED (1.00s)
+tests/test_late_failure.py::test_breaks_update_after_summary  PASSED (1.00s)
+
+FAILURES
+tests/test_late_failure.py::test_backfill_fails
+  AssertionError: assert 100 == 150
+
+2 tests: 1 passed, 1 failed, 0 skipped, 0 errors
 Error: update [UUID] is FAILED: ResultDeliveryException: Test results could not be verified.
 
 Exit code: 1

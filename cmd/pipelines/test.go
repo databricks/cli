@@ -468,12 +468,14 @@ func (tw *testWatcher) watch(ctx context.Context) (pipelines.UpdateInfoState, er
 func testRunError(updateID string, state pipelines.UpdateInfoState, run *testRun, incompleteReason string) error {
 	if incompleteReason == "" {
 		summary := run.summaries[0]
-		// A test update fails when its tests fail; the printed result explains it.
-		if summary.Total == 0 || summary.Failed > 0 || summary.Errors > 0 {
-			return root.ErrAlreadyPrinted
-		}
-		if state == pipelines.UpdateInfoStateCompleted {
+		testsFailed := summary.Total == 0 || summary.Failed > 0 || summary.Errors > 0
+		if !testsFailed && state == pipelines.UpdateInfoStateCompleted {
 			return nil
+		}
+		// A test update fails when its tests fail; the printed result explains it, unless the
+		// update ended in another way or reports an error of its own.
+		if testsFailed && state == pipelines.UpdateInfoStateFailed && run.fatalError == "" {
+			return root.ErrAlreadyPrinted
 		}
 	} else if state == pipelines.UpdateInfoStateCompleted {
 		return root.ErrAlreadyPrinted

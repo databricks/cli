@@ -335,6 +335,26 @@ func TestTestRunError(t *testing.T) {
 			wantErr: "update u1 is FAILED: Commit failed.",
 		},
 		{
+			name: "update failed with an error of its own after tests failed",
+			events: func() []testPipelineEvent {
+				return []testPipelineEvent{
+					caseEvent(t, "t::a", "FAILED", ""),
+					summaryEvent(t, 1, 0, 1, 0, 0),
+					decodeTestEvent(t, `{"id": "fatal", "error": {"fatal": true, "exceptions": [{"message": "Commit failed."}]}}`),
+				}
+			},
+			state:   pipelines.UpdateInfoStateFailed,
+			wantErr: "update u1 is FAILED: Commit failed.",
+		},
+		{
+			name: "canceled after tests failed",
+			events: func() []testPipelineEvent {
+				return []testPipelineEvent{caseEvent(t, "t::a", "FAILED", ""), summaryEvent(t, 1, 0, 1, 0, 0)}
+			},
+			state:   pipelines.UpdateInfoStateCanceled,
+			wantErr: "update u1 is CANCELED",
+		},
+		{
 			name:    "canceled",
 			events:  func() []testPipelineEvent { return nil },
 			state:   pipelines.UpdateInfoStateCanceled,

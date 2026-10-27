@@ -14,6 +14,9 @@ trace errcode $CLI pipelines test my_pipeline tests/helpers.py
 title "The update fails after all tests passed"
 trace errcode $CLI pipelines test my_pipeline tests/test_delivery.py
 
+title "The update fails with an error of its own after a test failed"
+trace errcode $CLI pipelines test my_pipeline tests/test_late_failure.py
+
 title "Compute terminates before all results are received"
 trace errcode $CLI pipelines test my_pipeline tests/test_compute.py
 rm "$OUT_REQUESTS"
