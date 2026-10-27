@@ -96,9 +96,6 @@ type ProcessOptions struct {
 	// (after state is opened and IDs loaded, before deferred Finalize).
 	PostStateFunc func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error
 
-	// Destroy selects history from loaded state instead of configuration.
-	Destroy bool
-
 	// Indicate whether the bundle operation originates from the pipelines CLI
 	IsPipelinesCLI bool
 }
@@ -362,8 +359,8 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			}
 		}
 
-		if stateDesc.Engine.IsDirect() && !opts.Destroy {
-			if err := enforceDeploymentHistorySetting(ctx, b, stateDesc, opts.Deploy || opts.PreDeployChecks); err != nil {
+		if stateDesc.Engine.IsDirect() && (opts.Deploy || opts.PreDeployChecks) {
+			if err := enforceDeploymentHistorySetting(ctx, b, stateDesc, true); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
@@ -374,18 +371,16 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		case stateDesc.IsDMS():
 			// DMS-only state must keep its service-backed source.
 			stateMode = dstate.WritingDMS
-		case opts.Destroy:
-			// Destroy follows loaded state even when the setting has changed.
-			if b.DeploymentBundle.StateDB.RecordsHistory() {
-				stateMode = dstate.WritingDeploymentHistoryShadowEnforced
-			}
-		case configuresDeploymentHistory(ctx, b):
+		case opts.Deploy || opts.PreDeployChecks:
 			// Deploy and plan follow the current configuration.
-			stateMode = dstate.WritingDeploymentHistoryShadowEnforced
-			if opts.Deploy || opts.PreDeployChecks {
+			if configuresDeploymentHistory(ctx, b) {
+				stateMode = dstate.WritingDeploymentHistoryShadowEnforced
 				// Retain only this history feature for plan/deploy; overwrite all other flags.
 				b.DeploymentBundle.StateDB.Data.Features = map[string]struct{}{dstate.FeatureDeploymentHistoryShadow: {}}
 			}
+		case b.DeploymentBundle.StateDB.RecordsHistory():
+			// Other operations, including destroy, follow loaded state instead of configuration.
+			stateMode = dstate.WritingDeploymentHistoryShadowEnforced
 		}
 
 		if needDirectState && stateMode == dstate.WritingDeploymentHistoryShadowEnforced {
