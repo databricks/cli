@@ -202,8 +202,7 @@ func TestSnapshotName(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			name, err := snapshotName(snap, tc.prev, tc.dir, tc.hash)
-			require.NoError(t, err)
+			name := snapshotName(snap, tc.prev, tc.dir, tc.hash)
 			if tc.reused {
 				assert.Equal(t, prevName, name)
 				return
@@ -217,10 +216,8 @@ func TestSnapshotName(t *testing.T) {
 func TestSnapshotNameIsUniquePerUpload(t *testing.T) {
 	snap := &resources.Snapshot{BundleID: "bundle-id"}
 
-	first, err := snapshotName(snap, nil, "/stage", "e3b0c4")
-	require.NoError(t, err)
-	second, err := snapshotName(snap, nil, "/stage", "e3b0c4")
-	require.NoError(t, err)
+	first := snapshotName(snap, nil, "/stage", "e3b0c4")
+	second := snapshotName(snap, nil, "/stage", "e3b0c4")
 
 	assert.NotEqual(t, first, second)
 }

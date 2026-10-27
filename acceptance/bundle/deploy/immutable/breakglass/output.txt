@@ -33,6 +33,27 @@ Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 Third snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/files/src/main.py
 OK: new snapshot reused on redeploy
 
+=== Save a plan for a content change, then break the glass before deploying it
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] api post /api/2.0/snapshots:breakGlass --json {"snapshot_content_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot"}
+true
+
+=== Deploying the saved plan without --force fails
+>>> musterr [CLI] bundle deploy --plan plan.json
+Error: the last deployment was modified in the workspace. Changes might be overwritten by this deployment. To confirm it, use the --force flag
+
+Files: 0 uploaded, 0 deleted
+
+=== Deploying the saved plan with --force moves to the planned snapshot
+>>> [CLI] bundle deploy --plan plan.json --force
+Recreated internal_immutable_snapshots.immutable
+Updated jobs.my_job
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 1 changed, 1 deleted, 0 unchanged
+Fourth snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/files/src/main.py
+OK: the saved plan moved the deployment to a new snapshot
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.my_job

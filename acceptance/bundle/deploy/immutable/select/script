@@ -1,0 +1,48 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+METADATA_PATH="$($CLI bundle validate -o json | jq -r .workspace.state_path)/metadata.json"
+
+title "Deploying only a job that does not use the snapshot records no snapshot in the metadata"
+trace $CLI bundle deploy --select jobs.other_job
+trace $CLI workspace export "$METADATA_PATH" | jq .config.workspace.snapshot_content_path
+
+title "Deploy the immutable snapshot"
+trace $CLI bundle deploy
+JOB_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.my_job.id')
+SNAPSHOT_PATH_1=$($CLI jobs get "$JOB_ID" | jq -r '.settings.tasks[0].spark_python_task.python_file')
+CONTENT_PATH_1="${SNAPSHOT_PATH_1%/files/src/main.py}"
+METADATA_SNAPSHOT_1=$($CLI workspace export "$METADATA_PATH" | jq -r .config.workspace.snapshot_content_path)
+echo "Metadata snapshot path: $METADATA_SNAPSHOT_1"
+if [ "$METADATA_SNAPSHOT_1" != "$CONTENT_PATH_1" ]; then
+    echo "ERROR: metadata does not point at the deployed snapshot"
+    exit 1
+fi
+echo "OK: metadata points at the deployed snapshot"
+
+title "Deploying only that job after a content change keeps the deployed snapshot in the metadata"
+update_file.py src/main.py "Hello from" "Hello again from"
+trace $CLI bundle deploy --select jobs.other_job
+METADATA_SNAPSHOT_2=$($CLI workspace export "$METADATA_PATH" | jq -r .config.workspace.snapshot_content_path)
+echo "Metadata snapshot path: $METADATA_SNAPSHOT_2"
+if [ "$METADATA_SNAPSHOT_2" != "$CONTENT_PATH_1" ]; then
+    echo "ERROR: metadata points at a snapshot that was not deployed"
+    exit 1
+fi
+echo "OK: metadata still points at the deployed snapshot"
+
+title "A full deploy moves the metadata to the new snapshot"
+trace $CLI bundle deploy
+SNAPSHOT_PATH_3=$($CLI jobs get "$JOB_ID" | jq -r '.settings.tasks[0].spark_python_task.python_file')
+CONTENT_PATH_3="${SNAPSHOT_PATH_3%/files/src/main.py}"
+METADATA_SNAPSHOT_3=$($CLI workspace export "$METADATA_PATH" | jq -r .config.workspace.snapshot_content_path)
+echo "Metadata snapshot path: $METADATA_SNAPSHOT_3"
+if [ "$CONTENT_PATH_3" = "$CONTENT_PATH_1" ] || [ "$METADATA_SNAPSHOT_3" != "$CONTENT_PATH_3" ]; then
+    echo "ERROR: metadata does not point at the new snapshot"
+    exit 1
+fi
+echo "OK: metadata points at the new snapshot"

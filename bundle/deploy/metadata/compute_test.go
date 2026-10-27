@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/bundle/metadata"
+	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -142,7 +143,7 @@ func TestComputeMetadataMutator(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(t.Context(), b, Compute())
+	diags := bundle.Apply(t.Context(), b, Compute(nil))
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, expectedMetadata, b.Metadata)
@@ -173,7 +174,7 @@ func TestComputeMetadataMutatorStateOnlyResources(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(t.Context(), b, Compute())
+	diags := bundle.Apply(t.Context(), b, Compute(nil))
 	require.NoError(t, diags.Error())
 
 	assert.Empty(t, b.Metadata.Config.Resources.Jobs)
@@ -196,7 +197,7 @@ func TestComputeMetadataMutatorSourceLinked(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(t.Context(), b, Compute())
+	diags := bundle.Apply(t.Context(), b, Compute(nil))
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, syncRootPath, b.Metadata.Config.Workspace.FilePath)
@@ -216,29 +217,56 @@ func TestComputeMetadataMutatorGitFolderPath(t *testing.T) {
 		WorktreeRoot: path,
 	}
 
-	diags := bundle.Apply(t.Context(), b, Compute())
+	diags := bundle.Apply(t.Context(), b, Compute(nil))
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, gitFolderPath, b.Metadata.Extra.GitFolderPath)
 }
 
 func TestComputeMetadataMutatorSnapshotContentPath(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Resources: config.Resources{
-				Snapshots: map[string]*resources.Snapshot{
-					resources.SnapshotResourceKey: {
-						RemoteRoot: "/Workspace/Users/test@databricks.com/.snapshots",
-						BundleID:   "bundle-id",
-						ZipPath:    "/tmp/content-hash.zip",
-					},
-				},
-			},
+	const remoteRoot = "/Workspace/Users/test@databricks.com/.snapshots"
+
+	tests := []struct {
+		name     string
+		state    resourcestate.ExportedResourcesMap
+		expected string
+	}{
+		{
+			name:     "deployed",
+			state:    resourcestate.ExportedResourcesMap{resources.SnapshotKey: {ID: "bundle-id/content-hash"}},
+			expected: remoteRoot + "/bundle-id/content-hash/snapshot",
+		},
+		{
+			name:     "not selected",
+			state:    resourcestate.ExportedResourcesMap{resources.SnapshotKey: {ID: "bundle-id/previous-hash"}},
+			expected: remoteRoot + "/bundle-id/previous-hash/snapshot",
+		},
+		{
+			name:     "never deployed",
+			state:    resourcestate.ExportedResourcesMap{},
+			expected: "",
 		},
 	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			b := &bundle.Bundle{
+				Config: config.Root{
+					Resources: config.Resources{
+						Snapshots: map[string]*resources.Snapshot{
+							resources.SnapshotResourceKey: {
+								RemoteRoot: remoteRoot,
+								BundleID:   "bundle-id",
+								ZipPath:    "/tmp/content-hash.zip",
+							},
+						},
+					},
+				},
+			}
 
-	diags := bundle.Apply(t.Context(), b, Compute())
-	require.NoError(t, diags.Error())
+			diags := bundle.Apply(t.Context(), b, Compute(tc.state))
+			require.NoError(t, diags.Error())
 
-	assert.Equal(t, "/Workspace/Users/test@databricks.com/.snapshots/bundle-id/content-hash/snapshot", b.Metadata.Config.Workspace.SnapshotContentPath)
+			assert.Equal(t, tc.expected, b.Metadata.Config.Workspace.SnapshotContentPath)
+		})
+	}
 }

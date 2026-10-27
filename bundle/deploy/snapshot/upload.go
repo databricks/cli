@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"uuid"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
@@ -20,7 +21,6 @@ import (
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/snapshot"
 	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/google/uuid"
 )
 
 // fileLimitWarning is the file count above which immutable folder deployments may fail.
@@ -79,10 +79,18 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		RemoteRoot: remoteRoot,
 	}
 
+	// Check the previous snapshot before doing any work, so a deploy onto a snapshot that was
+	// modified outside the bundle fails before building a zip. A saved plan is checked as well:
+	// the snapshot may have been modified after the plan was produced.
+	prev, err := checkPrevSnapshot(ctx, b, uploader, remoteRoot)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	var zipPath string
 	var diags diag.Diagnostics
 	if m.clean {
-		zipPath, diags, err = stageZip(ctx, b, uploader, snap)
+		zipPath, diags, err = stageZip(ctx, b, snap, prev)
 	} else {
 		zipPath, err = stagedZipPath(ctx, b)
 	}
@@ -99,14 +107,7 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 // stageZip builds the bundle zip and stages it under the bundle's local state directory as
 // "<name>.zip" (see snapshotName), discarding zips staged by a previous run so they don't
 // accumulate.
-func stageZip(ctx context.Context, b *bundle.Bundle, uploader *snapshot.SnapshotClient, snap *resources.Snapshot) (string, diag.Diagnostics, error) {
-	// Check the previous snapshot before doing any work, so a deploy onto a snapshot that was
-	// modified outside the bundle fails before building a zip.
-	prev, err := checkPrevSnapshot(ctx, b, uploader, snap.RemoteRoot)
-	if err != nil {
-		return "", nil, err
-	}
-
+func stageZip(ctx context.Context, b *bundle.Bundle, snap *resources.Snapshot, prev *dresources.SnapshotState) (string, diag.Diagnostics, error) {
 	zipContent, fileCount, err := BundleZip(ctx, b)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to build snapshot zip: %w", err)
@@ -119,10 +120,7 @@ func stageZip(ctx context.Context, b *bundle.Bundle, uploader *snapshot.Snapshot
 	if err != nil {
 		return "", nil, err
 	}
-	name, err := snapshotName(snap, prev, dir, snapshot.HashFromContent(zipContent))
-	if err != nil {
-		return "", nil, err
-	}
+	name := snapshotName(snap, prev, dir, snapshot.HashFromContent(zipContent))
 	zipPath := filepath.Join(dir, name+".zip")
 	if err := os.WriteFile(zipPath, zipContent, 0o600); err != nil {
 		return "", nil, fmt.Errorf("failed to write snapshot zip: %w", err)
@@ -144,7 +142,7 @@ func stageZip(ctx context.Context, b *bundle.Bundle, uploader *snapshot.Snapshot
 // content. Every new snapshot therefore goes to a path of its own, made unique by a UUIDv7
 // (a timestamp followed by random bits). The previous snapshot's name is kept only when nothing
 // about the snapshot would change, so the deploy leaves it in place instead of uploading it again.
-func snapshotName(snap *resources.Snapshot, prev *dresources.SnapshotState, dir, hash string) (string, error) {
+func snapshotName(snap *resources.Snapshot, prev *dresources.SnapshotState, dir, hash string) string {
 	if prev != nil {
 		name := path.Base(prev.RelativePath)
 		reused := *snap
@@ -152,15 +150,11 @@ func snapshotName(snap *resources.Snapshot, prev *dresources.SnapshotState, dir,
 		// The name carries the hash of the content uploaded to it. The rest of the state has to
 		// match as well: any difference makes the engine recreate the snapshot, which needs a new path.
 		if strings.HasPrefix(name, hash+"-") && reflect.DeepEqual((&dresources.ResourceSnapshot{}).PrepareState(&reused), prev) {
-			return name, nil
+			return name
 		}
 	}
 
-	id, err := uuid.NewV7()
-	if err != nil {
-		return "", err
-	}
-	return hash + "-" + id.String(), nil
+	return hash + "-" + uuid.NewV7().String()
 }
 
 // stagedZipPath returns the zip staged when the plan being applied was produced. Each fresh
