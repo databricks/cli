@@ -411,6 +411,12 @@ func stringsConfigWorkspace(c *stringsWalk, n *Node, v *config.Workspace) {
 			v.StatePath = (r)
 		}
 	}
+	if s := string(v.SyncMode); c.match(s) {
+		ch := n.Child("sync_mode")
+		if r, ok := c.fn(&ch, s); ok {
+			v.SyncMode = config.SyncMode(r)
+		}
+	}
 }
 
 func stringsConfigArtifact(c *stringsWalk, n *Node, v *config.Artifact) {

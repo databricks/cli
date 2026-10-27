@@ -917,7 +917,7 @@ tasks:
   # generate-clijson so the SDK bumper can run the same cleanup after its own
   # update-sdk invocation.
   generate-clijson-post:
-    desc: Clean up genkit update-sdk output (shared by generate-clijson and the SDK bumper)
+    desc: Clean up genkit update-sdk output, then run bump-sdk-post (shared by generate-clijson and the SDK bumper)
     cmds:
       # genkit also writes .gitattributes, but that file is owned by
       # generate-cligen (which derives it from .gitattributes.manual plus the
@@ -950,6 +950,25 @@ tasks:
         fi
       - "{{.GO_TOOL}} yamlfmt .github/workflows/tagging.yml"
       - task: ws
+      # Last, so generate-cligen rewrites the .gitattributes restored above.
+      # The SDK bumper aborts before opening a PR on any error from this task,
+      # and bump-sdk-post fails whenever the bump needs hand fixes, so ignore
+      # its error: the PR then carries what was regenerated.
+      - task: bump-sdk-post
+        ignore_error: true
+
+  # The mechanical rest of an SDK bump once go.mod, .codegen/_openapi_sha and
+  # .codegen/cli.json are updated: regenerate every artifact derived from them,
+  # then refresh the acceptance goldens. generate-clijson-post runs it last;
+  # run it directly to redo it, e.g. after hand fixes. generate-refschema and
+  # test-update build the CLI, so it fails while the bump breaks compilation
+  # (code using a removed SDK field). Those fixes, exhaustruct wiring and the
+  # changelog PR link stay manual (.agents/skills/bump-sdk).
+  bump-sdk-post:
+    desc: Regenerate everything downstream of an SDK bump and refresh acceptance goldens
+    cmds:
+      - task: generate-check
+      - task: test-update
 
   # Refreshes acceptance/bundle/refschema/output/*.txt, which record the field paths / types emitted by
   # `bundle debug refschema` (see cmd/bundle/debug/refschema.go). It reflects
