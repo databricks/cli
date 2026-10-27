@@ -370,7 +370,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		switch {
 		case stateDesc.IsDMS():
 			// DMS-only state must keep its service-backed source.
-			stateMode = dstate.WritingDMS
+			stateMode = dstate.WritingDeploymentHistoryOnly
 		case opts.Deploy || opts.PreDeployChecks:
 			// Deploy and plan follow the current configuration.
 			if configuresDeploymentHistory(ctx, b) {
@@ -394,7 +394,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			}
 		}
 
-		if needDirectState && stateMode == dstate.WritingDMS {
+		if needDirectState && stateMode == dstate.WritingDeploymentHistoryOnly {
 			var err error
 			dmsDeploymentID, dmsDeployment, err = fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 			if err != nil {
@@ -428,7 +428,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			if !cmdctx.HasWorkspaceClient(ctx) {
 				ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
 			}
-			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WritingDMS, dstate.WithRecovery(false), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
+			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WritingDeploymentHistoryOnly, dstate.WithRecovery(false), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
@@ -687,7 +687,7 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 	if !cmdctx.HasWorkspaceClient(ctx) {
 		ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
 	}
-	if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WritingDMS, dstate.WithRecovery(false), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
+	if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WritingDeploymentHistoryOnly, dstate.WithRecovery(false), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
 		return err
 	}
 	return enforceDeploymentHistorySetting(ctx, b, stateDesc, false)

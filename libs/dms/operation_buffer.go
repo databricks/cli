@@ -207,7 +207,7 @@ func (b *OperationBuffer) write(ctx context.Context, key string, update Operatio
 }
 
 // Drain waits for buffered uploads before version completion.
-//   - WritingDMS: close the channel and wait for queued writes.
+//   - WritingDeploymentHistoryOnly: close the channel and wait for queued writes.
 //   - WritingDeploymentHistoryShadow: wait up to five seconds per staged operation.
 //
 // Shadow history cancels outstanding uploads when the timeout or ctx expires.

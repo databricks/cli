@@ -107,7 +107,7 @@ func TestDataForFileSerial(t *testing.T) {
 				VersionID: tt.versionID,
 			}
 			if tt.recording {
-				db.mode = WritingDMS
+				db.mode = WritingDeploymentHistoryOnly
 			}
 			db.Data.State["resources.jobs.foo"] = ResourceEntry{ID: "123", State: json.RawMessage(`{"name":"foo"}`)}
 
@@ -222,7 +222,7 @@ func TestOpenUsesDMSVersionForSerial(t *testing.T) {
 
 			ctx := cmdctx.SetWorkspaceClient(t.Context(), client)
 			var db DeploymentState
-			err = db.Open(ctx, path, WritingDMS, WithRecovery(false), OpenDmsArgs{
+			err = db.Open(ctx, path, WritingDeploymentHistoryOnly, WithRecovery(false), OpenDmsArgs{
 				DeploymentID: tt.deploymentID, LastVersionID: tt.lastVersionID,
 			})
 			if tt.wantErr != "" {
