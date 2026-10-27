@@ -184,7 +184,7 @@ func (db *DeploymentState) InitializeOperationBuffer(ctx context.Context, deploy
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	options := dms.BufferOptions{
-		BestEffort:     db.mode == WritingFileWithHistory || db.mode == WritingFileWithHistoryEnforced,
+		BestEffort:     db.mode == WritingDeploymentHistoryShadow || db.mode == WritingDeploymentHistoryShadowEnforced,
 		OperationCount: operationCount,
 	}
 	db.operationBuffer = dms.StartOperationBuffer(ctx, deploymentID, versionID, options)
@@ -205,7 +205,7 @@ func (db *DeploymentState) getOperationBuffer() *dms.OperationBuffer {
 // remains recoverable from the WAL.
 func (db *DeploymentState) RecordingError() error {
 	if !db.IsDeploymentMetadataService() {
-		// TODO: Warn users when history recording fails in file-backed history modes.
+		// TODO: Warn users when history recording fails in deployment history shadow modes.
 		return nil
 	}
 	buf := db.getOperationBuffer()
@@ -233,7 +233,7 @@ func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (b
 	}
 	db.versionCompleted = true
 	deploymentID, versionID := db.DeploymentID, db.VersionID
-	bestEffort := db.mode == WritingFileWithHistory || db.mode == WritingFileWithHistoryEnforced
+	bestEffort := db.mode == WritingDeploymentHistoryShadow || db.mode == WritingDeploymentHistoryShadowEnforced
 	db.reset()
 	db.mu.Unlock()
 
@@ -342,7 +342,7 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 		}
 		return nil
 
-	case WritingFileWithHistory, WritingFileWithHistoryEnforced:
+	case WritingDeploymentHistoryShadow, WritingDeploymentHistoryShadowEnforced:
 		// File-backed modes record history only after the WAL append succeeds.
 		if err := appendJSONLine(db.walFile, WALEntry{Key: key, Value: &entry}); err != nil {
 			return err
@@ -391,7 +391,7 @@ func (db *DeploymentState) DeleteState(ctx context.Context, key string, inProgre
 		delete(db.stateIDs, key)
 		return nil
 
-	case WritingFileWithHistory, WritingFileWithHistoryEnforced:
+	case WritingDeploymentHistoryShadow, WritingDeploymentHistoryShadowEnforced:
 		if err := appendJSONLine(db.walFile, WALEntry{Key: key}); err != nil {
 			return err
 		}
@@ -459,7 +459,7 @@ func (db *DeploymentState) GetSerial() int {
 	switch db.mode {
 	case WritingDMS:
 		return db.VersionID
-	case ReadingFile, WritingFileWithHistory, WritingFileWithHistoryEnforced:
+	case ReadingFile, WritingDeploymentHistoryShadow, WritingDeploymentHistoryShadowEnforced:
 		return max(db.VersionID, db.Data.Serial)
 	default:
 		return db.Data.Serial
@@ -488,7 +488,7 @@ func (db *DeploymentState) RecordsHistory() bool {
 	case ReadingFile:
 		_, history := db.Data.Features[FeatureDeploymentHistoryShadow]
 		return history
-	case WritingDMS, WritingFileWithHistory, WritingFileWithHistoryEnforced:
+	case WritingDMS, WritingDeploymentHistoryShadow, WritingDeploymentHistoryShadowEnforced:
 		return true
 	default:
 		return false
@@ -522,9 +522,9 @@ type WithRecovery bool
 //   - ReadingFile: reads resources.json; state writes are disabled.
 //   - WritingFile: reads resources.json and opens a WAL for state writes.
 //   - WritingDMS: reads and writes resources through DMS; no WAL is opened.
-//   - WritingFileWithHistory: behaves like WritingFile and also records DMS history.
+//   - WritingDeploymentHistoryShadow: behaves like WritingFile and also records DMS history.
 //     History errors do not fail the deployment.
-//   - WritingFileWithHistoryEnforced: also persists a feature marker that rejects
+//   - WritingDeploymentHistoryShadowEnforced: also persists a feature marker that rejects
 //     older clients that do not support history recording.
 //
 // All modes read deployment metadata and feature markers from resources.json.
@@ -688,7 +688,7 @@ Run "databricks bundle destroy" first, then deploy again with deployment history
 		return nil
 	case WritingDMS:
 		return nil
-	case WritingFile, WritingFileWithHistory, WritingFileWithHistoryEnforced:
+	case WritingFile, WritingDeploymentHistoryShadow, WritingDeploymentHistoryShadowEnforced:
 		return db.setupWal()
 	}
 	return nil
@@ -886,7 +886,7 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 				err = errors.Join(err, drainErr)
 			}
 		}
-	case WritingFileWithHistory, WritingFileWithHistoryEnforced:
+	case WritingDeploymentHistoryShadow, WritingDeploymentHistoryShadowEnforced:
 		if db.operationBuffer != nil {
 			// File state is already persisted, so history errors only warn.
 			// The buffer bounds the wait using the staged operation count.
@@ -904,15 +904,15 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 }
 
 // UpgradeToWrite opens a WAL for file state without re-reading resources.
-// DMS and file-history modes are already writable from Open, so upgrading them is a no-op.
+// DMS and deployment history shadow modes are already writable from Open, so upgrading them is a no-op.
 func (db *DeploymentState) UpgradeToWrite() error {
 	return db.upgradeToWrite(WritingFile)
 }
 
-// UpgradeToWriteWithHistory enables enforced file-backed history after approval.
+// UpgradeToWriteDeploymentHistoryShadow enables enforced deployment history shadow after approval.
 // Reads still use the same file state; only the write policy changes.
-func (db *DeploymentState) UpgradeToWriteWithHistory() error {
-	return db.upgradeToWrite(WritingFileWithHistoryEnforced)
+func (db *DeploymentState) UpgradeToWriteDeploymentHistoryShadow() error {
+	return db.upgradeToWrite(WritingDeploymentHistoryShadowEnforced)
 }
 
 func (db *DeploymentState) upgradeToWrite(mode Mode) error {
@@ -923,7 +923,7 @@ func (db *DeploymentState) upgradeToWrite(mode Mode) error {
 		return errors.New("internal error: DeploymentState must be opened first")
 	}
 	switch db.mode {
-	case WritingDMS, WritingFileWithHistory, WritingFileWithHistoryEnforced:
+	case WritingDMS, WritingDeploymentHistoryShadow, WritingDeploymentHistoryShadowEnforced:
 		return nil
 	case WritingFile:
 		return errors.New("internal error: DeploymentState is already open for write")
@@ -962,7 +962,7 @@ func (db *DeploymentState) setupWal() error {
 		Features:     maps.Clone(db.Data.Features),
 	}
 	switch db.mode {
-	case WritingFileWithHistoryEnforced:
+	case WritingDeploymentHistoryShadowEnforced:
 		if walHead.Features == nil {
 			walHead.Features = make(map[string]struct{})
 		}

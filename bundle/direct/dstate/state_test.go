@@ -39,11 +39,11 @@ func TestOpenSaveFinalizeRoundTrip(t *testing.T) {
 }
 
 func TestFinalizeWithoutResourceWrites(t *testing.T) {
-	for _, mode := range []Mode{WritingFile, WritingFileWithHistoryEnforced} {
+	for _, mode := range []Mode{WritingFile, WritingDeploymentHistoryShadowEnforced} {
 		path := filepath.Join(t.TempDir(), "state.json")
 		var db DeploymentState
 		require.NoError(t, db.Open(t.Context(), path, ReadingFile, WithRecovery(true), OpenDmsArgs{}))
-		if mode == WritingFileWithHistoryEnforced {
+		if mode == WritingDeploymentHistoryShadowEnforced {
 			// A first plan already knows history is enabled, before a state file exists.
 			db.Data.Features = map[string]struct{}{FeatureDeploymentHistoryShadow: {}}
 		}
@@ -62,7 +62,7 @@ func TestFinalizeWithoutResourceWrites(t *testing.T) {
 		mustFinalize(t, &db)
 
 		// Keeping history enabled without changes must not advance the file serial.
-		require.NoError(t, db.Open(t.Context(), path, WritingFileWithHistoryEnforced, WithRecovery(false), OpenDmsArgs{}))
+		require.NoError(t, db.Open(t.Context(), path, WritingDeploymentHistoryShadowEnforced, WithRecovery(false), OpenDmsArgs{}))
 		mustFinalize(t, &db)
 		require.NoError(t, db.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
 		assert.Equal(t, 1, db.Data.Serial)
@@ -79,7 +79,7 @@ func TestFinalizeWithoutResourceWrites(t *testing.T) {
 		// Enabling history on existing state persists the marker, even without resource writes.
 		require.NoError(t, db.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
 		db.Data.Features = map[string]struct{}{FeatureDeploymentHistoryShadow: {}}
-		require.NoError(t, db.upgradeToWrite(WritingFileWithHistoryEnforced))
+		require.NoError(t, db.upgradeToWrite(WritingDeploymentHistoryShadowEnforced))
 		mustFinalize(t, &db)
 		require.NoError(t, db.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
 		assert.Equal(t, 3, db.Data.Serial)
@@ -462,7 +462,7 @@ func TestOpenFailureLeavesStateClosed(t *testing.T) {
 }
 
 func TestGetSerialWithHistoryUsesLatestCounter(t *testing.T) {
-	for _, mode := range []Mode{ReadingFile, WritingFileWithHistory, WritingFileWithHistoryEnforced} {
+	for _, mode := range []Mode{ReadingFile, WritingDeploymentHistoryShadow, WritingDeploymentHistoryShadowEnforced} {
 		db := DeploymentState{mode: mode, Data: NewDatabase("", 4), VersionID: 7}
 		assert.Equal(t, 7, db.GetSerial(), "mode=%d: service version is ahead", mode)
 		db.Data.Serial = 9

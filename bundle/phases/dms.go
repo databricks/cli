@@ -137,7 +137,7 @@ func upgradeStateForWrite(ctx context.Context, b *bundle.Bundle) error {
 		configured = b.Config.Experimental.DeploymentHistory
 	}
 	if !db.IsDeploymentMetadataService() && bundleenv.RecordsDeploymentHistory(ctx, configured) {
-		return db.UpgradeToWriteWithHistory()
+		return db.UpgradeToWriteDeploymentHistoryShadow()
 	}
 	return db.UpgradeToWrite()
 }

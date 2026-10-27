@@ -355,7 +355,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 		// History follows the opened state, not configuration.
 		var err error
 		if _, history := b.DeploymentBundle.StateDB.StateFeatures()[dstate.FeatureDeploymentHistoryShadow]; history {
-			err = b.DeploymentBundle.StateDB.UpgradeToWriteWithHistory()
+			err = b.DeploymentBundle.StateDB.UpgradeToWriteDeploymentHistoryShadow()
 		} else {
 			err = b.DeploymentBundle.StateDB.UpgradeToWrite()
 		}
@@ -364,7 +364,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 			return
 		}
 
-		// Record the approved destroy; file-backed history errors only warn.
+		// Record the approved destroy; deployment history shadow errors only warn.
 		if b.DeploymentBundle.StateDB.RecordsHistory() {
 			if err := prepareDestroyHistory(ctx, b, plan); err != nil {
 				if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {

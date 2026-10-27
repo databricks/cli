@@ -77,7 +77,7 @@ func (s *StateDesc) IsDMS() bool {
 	return ok
 }
 
-// RecordsHistory includes both DMS-authoritative state and file-backed history.
+// RecordsHistory includes both DMS-authoritative state and deployment history shadow.
 func (s *StateDesc) RecordsHistory() bool {
 	_, bestEffort := s.Features["deployment_history_shadow"]
 	return bestEffort || s.IsDMS()

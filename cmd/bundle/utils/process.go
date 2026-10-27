@@ -377,18 +377,18 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		case opts.Destroy:
 			// Destroy follows loaded state even when the setting has changed.
 			if b.DeploymentBundle.StateDB.RecordsHistory() {
-				stateMode = dstate.WritingFileWithHistoryEnforced
+				stateMode = dstate.WritingDeploymentHistoryShadowEnforced
 			}
 		case configuresDeploymentHistory(ctx, b):
 			// Deploy and plan follow the current configuration.
-			stateMode = dstate.WritingFileWithHistoryEnforced
+			stateMode = dstate.WritingDeploymentHistoryShadowEnforced
 			if opts.Deploy || opts.PreDeployChecks {
 				// Retain only this history feature for plan/deploy; overwrite all other flags.
 				b.DeploymentBundle.StateDB.Data.Features = map[string]struct{}{dstate.FeatureDeploymentHistoryShadow: {}}
 			}
 		}
 
-		if needDirectState && stateMode == dstate.WritingFileWithHistoryEnforced {
+		if needDirectState && stateMode == dstate.WritingDeploymentHistoryShadowEnforced {
 			if !cmdctx.HasWorkspaceClient(ctx) {
 				ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
 			}
