@@ -98,10 +98,6 @@ func ElementsByKey(key string, keyFunc func(dyn.Value) string) dyn.MapFunc {
 	return elementsByKey{key, keyFunc, false}.Map
 }
 
-func ElementsBySortedKey(key string, keyFunc func(dyn.Value) string) dyn.MapFunc {
-	return elementsByKey{key, keyFunc, true}.Map
-}
-
 func ElementsByKeyWithOverride(key string, keyFunc func(dyn.Value) string) dyn.MapFunc {
 	return elementsByKey{key, keyFunc, false}.MapWithOverride
 }

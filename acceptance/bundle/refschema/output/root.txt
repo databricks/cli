@@ -1,4 +1,4 @@
-__locations	*dynloc.Locations	INPUT
+__locations	*loctable.Locations	INPUT
 __locations.files	[]string	INPUT
 __locations.files[*]	string	INPUT
 __locations.locations	map[string][][]int	INPUT
