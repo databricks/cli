@@ -1,0 +1,21 @@
+
+>>> musterr [CLI] bundle validate
+Error: testing.environment.dependencies must point at files, not "faker==33.0"
+  at resources.pipelines.orders.testing.environment.dependencies[1]
+  in databricks.yml:15:15
+
+Declare test packages in a project file, such as the test extra of a pyproject.toml, and reference that file, for example --editable ${workspace.file_path}[test].
+
+Error: testing.environment.dependencies must point at files, not "git+https://github.com/example/helpers"
+  at resources.pipelines.orders.testing.environment.dependencies[2]
+  in databricks.yml:16:15
+
+Declare test packages in a project file, such as the test extra of a pyproject.toml, and reference that file, for example --editable ${workspace.file_path}[test].
+
+Name: pipeline-testing-dependencies
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/pipeline-testing-dependencies/default
+
+Found 2 errors

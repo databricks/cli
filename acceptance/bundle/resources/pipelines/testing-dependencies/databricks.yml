@@ -1,0 +1,16 @@
+bundle:
+  name: pipeline-testing-dependencies
+
+resources:
+  pipelines:
+    orders:
+      name: orders
+      testing:
+        sources:
+          - glob:
+              include: /Workspace/Shared/orders/tests/**
+        environment:
+          dependencies:
+            - --editable /Workspace/Shared/orders[test]
+            - faker==33.0
+            - git+https://github.com/example/helpers
