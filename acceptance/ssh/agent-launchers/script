@@ -1,0 +1,42 @@
+# Runs the real "ssh server" (normally started on the cluster by the bootstrap job)
+# against the test server, then opens a non-interactive SSH session through the
+# sshd config it wrote. That session never reads a shell startup file, so it only
+# finds the agent launchers if sshd's SetEnv puts them on PATH.
+SSHD="$(command -v sshd || ls /usr/sbin/sshd /usr/local/sbin/sshd /sbin/sshd 2>/dev/null | head -n 1)"
+if [ -z "$SSHD" ]; then
+  echo "SKIP_TEST sshd (openssh-server) not installed"
+  exit 0
+fi
+
+# The client's half of what "ssh connect" sets up: a key pair whose public half the
+# server authorizes from the session's secret scope.
+ssh-keygen -q -t ed25519 -N '' -f client_key
+$CLI secrets create-scope ssh-scope
+$CLI secrets put-secret ssh-scope client-public-key --string-value "$(cat client_key.pub)"
+
+# The server copies its whole environment into SetEnv, so start it from a fixed one:
+# that keeps the generated config independent of the machine running the test. HOME
+# is where the server writes its sshd config and the launchers. A short shutdown
+# delay makes the server exit on its own once it is set up.
+SERVER_HOME="$PWD/server-home"
+mkdir -p "$SERVER_HOME"
+title "Serverless server\n"
+env -i HOME="$SERVER_HOME" PATH=/usr/bin:/bin DATABRICKS_HOST="$DATABRICKS_HOST" DATABRICKS_TOKEN="$DATABRICKS_TOKEN" \
+  $CLI ssh server --serverless --cluster=test-cluster --session-id=test-session --secret-scope-name=ssh-scope \
+  --authorized-key-secret-name=client-public-key --shutdown-delay=1s 2>LOG.server
+
+# One variable per line; no value here contains a space.
+title "SetEnv appends the launcher directory to PATH\n"
+grep '^SetEnv ' server-home/.ssh-tunnel/sshd_config | tr ' ' '\n'
+
+title "Each supported agent has a launcher that delegates to the agent shim\n"
+trace ls server-home/.agent-shim/bin
+trace cat server-home/.agent-shim/bin/claude
+
+# A non-interactive session, as "ssh connect -- <cmd>" or an IDE's remote exec opens:
+# ssh runs the command through the login shell without a PTY.
+title "A non-interactive session finds the launchers on PATH\n"
+ssh -F /dev/null -i client_key -l "$(id -un)" \
+  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR \
+  -o ProxyCommand="$SSHD -i -f $SERVER_HOME/.ssh-tunnel/sshd_config -o StrictModes=no" \
+  localhost 'echo "$PATH"; command -v claude codex'

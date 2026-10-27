@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/experimental/ssh/internal/agentlauncher"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -35,10 +36,7 @@ import (
 
 const (
 	// home-relative directory to hold files/dependencies for the shim.
-	agentRootDir = ".agent-shim"
-
-	// directory which holds the per-agent wrappers; must match remoteShimDir in client.go.
-	agentBinDir = agentRootDir + "/bin"
+	agentRootDir = agentlauncher.RootDir
 
 	// directory which holds toolchain deps (npm, uv) fetched when the image ships none.
 	agentDepsDir = agentRootDir + "/deps"
@@ -73,7 +71,7 @@ const (
 	npmExecutable = "npm"
 
 	// environment variable used to pass the user's workspace home to the shim for the agent context.
-	workspaceHomeEnv = "DATABRICKS_WORKSPACE_HOME"
+	workspaceHomeEnv = agentlauncher.WorkspaceHomeEnv
 
 	// the file holding the Databricks session context.
 	contextFile = "agent-system-context.md"
@@ -87,39 +85,6 @@ const (
 	// ug, and Node
 	setupLockStaleAfter = 2 * time.Minute
 )
-
-type agentSpec struct {
-	name          string
-	telemetryName protos.SshAgentShimAgent
-	// contextFlag passes the context file via this CLI flag (Claude's --append-system-prompt-file).
-	contextFlag string
-	// contextHomeFile writes the context to this $HOME instructions file (codex's AGENTS.md).
-	contextHomeFile string
-}
-
-// Currently limited to the agents whose Unity Gateway CLI command supports --workspace
-var supportedAgents = []agentSpec{
-	{name: "claude", telemetryName: protos.SshAgentShimAgentClaudeCode, contextFlag: "--append-system-prompt-file"},
-	{name: "codex", telemetryName: protos.SshAgentShimAgentCodex, contextHomeFile: ".codex/AGENTS.md"},
-}
-
-// SupportedAgentNames lists the agents the ssh command registers a subcommand for.
-func SupportedAgentNames() []string {
-	names := make([]string, len(supportedAgents))
-	for i, a := range supportedAgents {
-		names[i] = a.name
-	}
-	return names
-}
-
-func agentByName(name string) (agentSpec, bool) {
-	for _, a := range supportedAgents {
-		if a.name == name {
-			return a, true
-		}
-	}
-	return agentSpec{}, false
-}
 
 func RunAgentShim(ctx context.Context, client *databricks.WorkspaceClient, agentName string, agentArgs []string) (retErr error) {
 	// Report the outcome of the launch. Setup runs from here to the exec below, so time it
@@ -142,7 +107,7 @@ func RunAgentShim(ctx context.Context, client *databricks.WorkspaceClient, agent
 		logAgentShimEvent(ctx, agentName, outcome, time.Since(start))
 	}()
 
-	agent, ok := agentByName(agentName)
+	agent, ok := agentlauncher.AgentByName(agentName)
 	if !ok {
 		return categorize(protos.SshAgentShimErrorCategoryUnsupportedAgent, fmt.Errorf("unsupported agent %q", agentName))
 	}
@@ -255,9 +220,9 @@ func buildAgentShimEvent(agentName string, outcome agentShimOutcome, setupDurati
 	// lookup agent by name so this function is the single decision point for
 	// telemetry and is easily testable
 	telemetryName := protos.SshAgentShimAgentUnspecified
-	agent, ok := agentByName(agentName)
+	agent, ok := agentlauncher.AgentByName(agentName)
 	if ok {
-		telemetryName = agent.telemetryName
+		telemetryName = agent.TelemetryName
 	}
 	return &protos.SshAgentShimEvent{
 		Agent:           telemetryName,
@@ -476,7 +441,7 @@ func bootstrapToolchain(ctx context.Context, home string) (string, error) {
 	// it: every entry is a known location, so deriving it can't restore a stale
 	// path (e.g. a versioned CLI dir from an older session). Drop the shim dir so
 	// Unity Gateway CLI execs the real agent rather than this wrapper
-	removePath(ctx, filepath.Join(home, agentBinDir))
+	removePath(ctx, filepath.Join(home, agentlauncher.BinDir))
 	// add this CLI to PATH so agents can use it
 	if self, err := os.Executable(); err == nil {
 		prependPath(ctx, filepath.Dir(self))
@@ -686,10 +651,10 @@ func setEnvForUnityGateway(ctx context.Context) error {
 	return nil
 }
 
-func runAgentConfiguration(ctx context.Context, agent agentSpec, workspace string) error {
-	if err := runStep(ctx, "Configuring "+agent.name, func(out io.Writer) error {
-		if err := runCommand(ctx, out, nil, ugExecutable, "configure", "--agent", agent.name, "--workspace", workspace, "--enable-databricks-ai-tools"); err != nil {
-			return fmt.Errorf("failed to configure %s: %w", agent.name, err)
+func runAgentConfiguration(ctx context.Context, agent agentlauncher.AgentSpec, workspace string) error {
+	if err := runStep(ctx, "Configuring "+agent.Name, func(out io.Writer) error {
+		if err := runCommand(ctx, out, nil, ugExecutable, "configure", "--agent", agent.Name, "--workspace", workspace, "--enable-databricks-ai-tools"); err != nil {
+			return fmt.Errorf("failed to configure %s: %w", agent.Name, err)
 		}
 		return nil
 	}); err != nil {
@@ -698,22 +663,22 @@ func runAgentConfiguration(ctx context.Context, agent agentSpec, workspace strin
 	return nil
 }
 
-func prepareAgentLaunch(ctx context.Context, home string, agent agentSpec, agentArgs []string) (argv, environ []string, err error) {
+func prepareAgentLaunch(ctx context.Context, home string, agent agentlauncher.AgentSpec, agentArgs []string) (argv, environ []string, err error) {
 	contextArgs, err := injectAgentContext(ctx, home, agent)
 	if err != nil {
 		return nil, nil, categorize(protos.SshAgentShimErrorCategoryAgentContextSetupFailed, err)
 	}
-	argv = []string{ugExecutable, agent.name, "--"}
+	argv = []string{ugExecutable, agent.Name, "--"}
 	argv = append(argv, contextArgs...)
 	argv = append(argv, agentArgs...)
 	return argv, os.Environ(), nil
 }
 
 // put the Databricks context where the agent reads it, returning any extra argv.
-func injectAgentContext(ctx context.Context, home string, agent agentSpec) ([]string, error) {
+func injectAgentContext(ctx context.Context, home string, agent agentlauncher.AgentSpec) ([]string, error) {
 	systemContext := agentSystemContext(env.Get(ctx, workspaceHomeEnv))
 	switch {
-	case agent.contextFlag != "":
+	case agent.ContextFlag != "":
 		// Keep the scratch context file under the shim's own directory so it never
 		// clobbers an unrelated file the user happens to have in their home.
 		dir := filepath.Join(home, agentRootDir)
@@ -724,9 +689,9 @@ func injectAgentContext(ctx context.Context, home string, agent agentSpec) ([]st
 		if err := os.WriteFile(f, []byte(systemContext), 0o644); err != nil {
 			return nil, fmt.Errorf("failed to write agent context file: %w", err)
 		}
-		return []string{agent.contextFlag, f}, nil
-	case agent.contextHomeFile != "":
-		f := filepath.Join(home, agent.contextHomeFile)
+		return []string{agent.ContextFlag, f}, nil
+	case agent.ContextHomeFile != "":
+		f := filepath.Join(home, agent.ContextHomeFile)
 		if _, err := os.Stat(f); err == nil {
 			return nil, nil // already present — don't clobber
 		} else if !errors.Is(err, os.ErrNotExist) {
@@ -840,13 +805,13 @@ func removePath(ctx context.Context, dir string) {
 }
 
 func agentSystemContext(wsHome string) string {
-	cwd := "the user's Databricks workspace home directory"
+	userHomePart := ""
 	if wsHome != "" {
-		cwd = wsHome
+		userHomePart = " The user's Databricks workspace home directory is " + wsHome + "."
 	}
 	return fmt.Sprintf(`You are running inside a "databricks ssh connect" session on the driver node of a
 Databricks serverless cluster.
 - The "databricks" CLI is installed and already authenticated: DATABRICKS_HOST and DATABRICKS_TOKEN are set in the environment, so "databricks ..." commands work with no "databricks auth login". The same token governs Unity Catalog and serving-endpoint access.
-- This container is ephemeral; only paths under /Workspace and /Volumes persist across sessions. Your working directory is %s.
-- You can run shell commands and use the "databricks" CLI to explore the workspace.`, cwd)
+- This container is ephemeral; only paths under /Workspace and /Volumes persist across sessions.%s
+- You can run shell commands and use the "databricks" CLI to explore the workspace.`, userHomePart)
 }

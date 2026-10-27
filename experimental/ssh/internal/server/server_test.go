@@ -6,7 +6,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/experimental/ssh/internal/agentlauncher"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/shellquote"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -82,4 +84,18 @@ func TestSeedEnvActivation(t *testing.T) {
 		assert.Equal(t, 1, strings.Count(string(again), envActivationMarker))
 		assert.Contains(t, string(again), "export FOO=bar")
 	})
+}
+
+func TestInstallAgentLaunchers(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv(env.HomeEnvVar(), home)
+	require.NoError(t, installAgentLaunchers(t.Context(), "/Workspace/Users/me@example.com"))
+
+	// The launcher runs the shim from this binary and forwards the user's workspace home.
+	self, err := os.Executable()
+	require.NoError(t, err)
+	launcher, err := os.ReadFile(filepath.Join(home, agentlauncher.BinDir, "claude"))
+	require.NoError(t, err)
+	assert.Contains(t, string(launcher), "export DATABRICKS_WORKSPACE_HOME='/Workspace/Users/me@example.com'\n")
+	assert.Contains(t, string(launcher), "exec "+shellquote.BashArg(self)+" ssh agent-shim claude")
 }

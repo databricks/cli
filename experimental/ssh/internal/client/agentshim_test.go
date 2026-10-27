@@ -20,6 +20,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/experimental/ssh/internal/agentlauncher"
+
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
@@ -316,31 +318,10 @@ func TestEnsureToolchain(t *testing.T) {
 	})
 }
 
-func TestSupportedAgents(t *testing.T) {
-	names := SupportedAgentNames()
-	assert.Equal(t, []string{"claude", "codex"}, names)
-
-	// Each agent injects context by exactly one mechanism (flag OR home file);
-	// the two are never both set.
-	expect := map[string]struct{ flag, home string }{
-		"claude": {flag: "--append-system-prompt-file"},
-		"codex":  {home: ".codex/AGENTS.md"},
-	}
-	for name, want := range expect {
-		a, ok := agentByName(name)
-		require.True(t, ok)
-		assert.Equal(t, want.flag, a.contextFlag, "%s contextFlag", name)
-		assert.Equal(t, want.home, a.contextHomeFile, "%s contextHomeFile", name)
-	}
-
-	_, ok := agentByName("not-an-agent")
-	assert.False(t, ok)
-}
-
 func TestInjectAgentContext(t *testing.T) {
-	claude, _ := agentByName("claude")
-	codex, _ := agentByName("codex")
-	noContext := agentSpec{name: "none"} // an agent with neither mechanism
+	claude, _ := agentlauncher.AgentByName("claude")
+	codex, _ := agentlauncher.AgentByName("codex")
+	noContext := agentlauncher.AgentSpec{Name: "none"} // an agent with neither mechanism
 
 	t.Run("flag agent writes a scratch file and returns the flag", func(t *testing.T) {
 		home := t.TempDir()
@@ -388,9 +369,9 @@ func TestInjectAgentContext(t *testing.T) {
 }
 
 func TestAgentSystemContext(t *testing.T) {
-	assert.Contains(t, agentSystemContext("/Workspace/Users/me@example.com"), "working directory is /Workspace/Users/me@example.com")
-	// Falls back to a generic phrase when the workspace home is unknown.
-	assert.Contains(t, agentSystemContext(""), "working directory is the user's Databricks workspace home directory")
+	wsHome := "/Workspace/Users/me@example.com"
+	assert.Contains(t, agentSystemContext(wsHome), "user's Databricks workspace home directory is "+wsHome)
+	assert.NotContains(t, agentSystemContext(""), "user's Databricks workspace home directory")
 }
 
 func newProbeClient(t *testing.T, host string) *databricks.WorkspaceClient {
@@ -565,9 +546,9 @@ func TestProbeModelServicesPageError(t *testing.T) {
 }
 
 func TestBuildAgentShimEvent(t *testing.T) {
-	for _, agent := range supportedAgents {
-		t.Run(agent.name+" has an appropriate enum for telemetry", func(t *testing.T) {
-			got := buildAgentShimEvent(agent.name, agentShimOutcome{}, 0)
+	for _, agent := range agentlauncher.SupportedAgents {
+		t.Run(agent.Name+" has an appropriate enum for telemetry", func(t *testing.T) {
+			got := buildAgentShimEvent(agent.Name, agentShimOutcome{}, 0)
 			assert.NotEqual(t, protos.SshAgentShimAgentUnspecified, got.Agent)
 		})
 	}
@@ -713,7 +694,7 @@ func TestRunAgentConfiguration(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		return
 	}
-	agent, ok := agentByName("claude")
+	agent, ok := agentlauncher.AgentByName("claude")
 	require.True(t, ok)
 
 	t.Run("configures the agent for the workspace", func(t *testing.T) {
@@ -743,7 +724,7 @@ func TestRunAgentConfiguration(t *testing.T) {
 }
 
 func TestPrepareAgentLaunch(t *testing.T) {
-	agent, ok := agentByName("claude")
+	agent, ok := agentlauncher.AgentByName("claude")
 	require.True(t, ok)
 
 	t.Run("passes the context args before the user's agent args", func(t *testing.T) {
