@@ -1,9 +1,6 @@
 bundle:
   name: test-bundle
 
-presets:
-  trigger_pause_status: PAUSED
-
 resources:
   jobs:
     base:
@@ -13,5 +10,5 @@ resources:
       tasks: [{task_key: t, notebook_task: {notebook_path: ./nb.py}}]
     viaref:
       name: viaref
-      schedule: ${resources.jobs.base.schedule}
+      trigger: ${resources.jobs.base.trigger}
       tasks: [{task_key: t, notebook_task: {notebook_path: ./nb.py}}]
