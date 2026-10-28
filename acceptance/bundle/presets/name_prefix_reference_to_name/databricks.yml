@@ -8,10 +8,5 @@ resources:
   jobs:
     base:
       name: base
-      schedule: {quartz_cron_expression: "0 0 * * * ?", timezone_id: UTC}
-      trigger: {file_arrival: {url: "s3://bucket/path"}}
-      tasks: [{task_key: t, notebook_task: {notebook_path: ./nb.py}}]
     viaref:
-      name: viaref
       name: ${resources.jobs.base.name}
-      tasks: [{task_key: t, notebook_task: {notebook_path: ./nb.py}}]
