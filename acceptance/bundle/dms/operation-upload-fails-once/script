@@ -16,7 +16,7 @@ title "The raw recorded state after deploy"
 trace print_state.py --no-dms
 
 title "A recreate records twice, and the first one fails: the second must still carry the sequence id staging left, because a rejected update earned no new one"
-trace fault.py "PATCH /api/2.0/bundle/*" 500 0 1
+trace fault.py "PATCH /api/2.0/bundle/**" 500 0 1
 # Unity Catalog has no catalog called "other", so make one to move the schema into.
 other_catalog="dms_other_${UNIQUE_NAME}"
 $CLI catalogs create "$other_catalog" &> LOG.catalog
