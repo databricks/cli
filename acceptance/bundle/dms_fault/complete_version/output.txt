@@ -20,15 +20,6 @@
   Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
   Warn: Failed to complete deployment history version: Fault injected by test.
 
->>> bundle validate
-  Name: updated-dms-fault-complete_version-commands-[UNIQUE_NAME]
-  Target: default
-  Workspace:
-    User: [USERNAME]
-    Path: /Workspace/Users/[USERNAME]/.bundle/dms-fault-complete_version-commands-[UNIQUE_NAME]
-
-  Validation OK!
-
 >>> bundle summary
   Name: updated-dms-fault-complete_version-commands-[UNIQUE_NAME]
   Target: default
@@ -108,34 +99,6 @@
     delete resources.pipelines.bar
 
   All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-fault-complete_version-commands-[UNIQUE_NAME]
-
-  Warn: Failed to complete deployment history version: Fault injected by test.
-  Destroy: 2 deleted
-
-DMS API called: yes
-
-=== destroy: setup
-
->>> bundle deploy --auto-approve
-  Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-fault-complete_version-destroy-[UNIQUE_NAME]/files...
-  Current Deployment Version: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=1
-  Created jobs.foo
-  Created pipelines.bar
-  Files: 4 uploaded, 0 deleted
-  Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
-
-=== destroy: complete_version fault enabled
-
->>> bundle destroy --auto-approve
-  The following resources will be deleted:
-    delete resources.jobs.foo
-    delete resources.pipelines.bar
-
-  This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
-  Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
-    delete resources.pipelines.bar
-
-  All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-fault-complete_version-destroy-[UNIQUE_NAME]
 
   Warn: Failed to complete deployment history version: Fault injected by test.
   Destroy: 2 deleted

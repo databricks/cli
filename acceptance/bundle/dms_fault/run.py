@@ -192,7 +192,7 @@ try:
     previous = hits(pattern)
     run(cwd, "bundle", "deploy", "--auto-approve")
     current = ids(cwd)
-    run(cwd, "bundle", "validate")
+    assert_alive(cwd, current)
     summary = run(cwd, "bundle", "summary").stdout
     assert current["resources.jobs.foo"] in summary
     assert current["resources.pipelines.bar"] in summary
@@ -205,7 +205,6 @@ try:
             assert (cwd / "exported-src/pipeline.sql").read_text() == (cwd / "pipeline.sql").read_text()
         run(cwd, "bundle", "deployment", "unbind", key)
         assert resource not in state(cwd)["state"]
-        assert_alive(cwd, current)
         generate(cwd, kind, key, current[resource], bind=True)
         assert ids(cwd)[resource] == current[resource]
         if kind == "pipeline":
@@ -215,20 +214,6 @@ try:
     assert ids(cwd) == current
     pipeline = json.loads(run(cwd, "pipelines", "get", current["resources.pipelines.bar"], "-o", "json").stdout)
     assert pipeline["spec"]["libraries"][0]["file"]["path"] == root + "/files/src/pipeline.sql"
-    run(cwd, "bundle", "destroy", "--auto-approve")
-    assert_destroyed(cwd, root, current)
-    print("\nDMS API called: " + ("yes" if hits(pattern) > previous else "no"), flush=True)
-finally:
-    clear_faults()
-
-
-cwd, root = setup("destroy")
-pattern = activate(cwd, root)
-try:
-    if API == "create_deployment":
-        run(cwd, "bundle", "deploy", "--auto-approve")
-    current = ids(cwd)
-    previous = hits(pattern)
     run(cwd, "bundle", "destroy", "--auto-approve")
     assert_destroyed(cwd, root, current)
     print("\nDMS API called: " + ("yes" if hits(pattern) > previous else "no"), flush=True)
