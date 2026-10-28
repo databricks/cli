@@ -448,7 +448,7 @@ func TestExchangeDeviceCode_Errors(t *testing.T) {
 		{
 			name:         "wrong confirmation code",
 			server:       &fakeDeviceServer{},
-			wantErr:      "Invalid confirmation code (error code: invalid_request)",
+			wantErr:      "token exchange: Invalid confirmation code (error code: invalid_request)",
 			wantSentinel: ErrInvalidConfirmationCode,
 		},
 		{
@@ -457,7 +457,7 @@ func TestExchangeDeviceCode_Errors(t *testing.T) {
 				tokenStatus: http.StatusBadRequest,
 				tokenBody:   `{"error": "invalid_request", "error_description": "Invalid device code"}`,
 			},
-			wantErr:      "Invalid device code (error code: invalid_request)",
+			wantErr:      "token exchange: Invalid device code (error code: invalid_request)",
 			wantSentinel: ErrInvalidDeviceCode,
 		},
 		{
@@ -466,7 +466,7 @@ func TestExchangeDeviceCode_Errors(t *testing.T) {
 				tokenStatus: http.StatusTooManyRequests,
 				tokenBody:   `{"error": "invalid_request", "error_description": "Device grant rate limit exceeded"}`,
 			},
-			wantErr: "Device grant rate limit exceeded (error code: invalid_request)",
+			wantErr: "token exchange: Device grant rate limit exceeded (error code: invalid_request)",
 		},
 	}
 	for _, tc := range tests {

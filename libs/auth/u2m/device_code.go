@@ -148,7 +148,11 @@ func (a *PersistentAuth) ExchangeDeviceCode(ctx context.Context, deviceCode, con
 	if err != nil {
 		return nil, err
 	}
-	return a.exchangeConfirmationCode(ctx, cfg, deviceCode, confirmationCode)
+	t, err := a.exchangeConfirmationCode(ctx, cfg, deviceCode, confirmationCode)
+	if err != nil {
+		return nil, fmt.Errorf("token exchange: %w", err)
+	}
+	return t, nil
 }
 
 // requestDeviceAuthorization makes the RFC 8628 device authorization request
