@@ -31,6 +31,7 @@ type OperationBufferStats struct {
 	MaxQueueSize            int
 	UndrainedOperationCount int
 	RecordingErrorCount     int
+	RecordingSuccessCount   int
 }
 
 // OperationBuffer records each state write with DMS for one deployment version, off the apply
@@ -111,7 +112,10 @@ func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum i
 func (b *OperationBuffer) RecordOperation(ctx context.Context, resourceKey string, inProgress bool, resourceID string, state json.RawMessage) {
 	update, err := NewStateUpdate(resourceID, state, inProgress)
 	if err != nil {
-		b.setErr(ctx, fmt.Errorf("recording operation for %s: %w", resourceKey, err))
+		b.mu.Lock()
+		b.stats.RecordingErrorCount++
+		b.mu.Unlock()
+		b.setErr(fmt.Errorf("recording operation for %s: %w", resourceKey, err))
 		return
 	}
 
@@ -177,7 +181,7 @@ func (b *OperationBuffer) run(ctx context.Context) {
 			case resourceKey, ok = <-b.queue:
 			case <-ctx.Done():
 				// Drain calls cancel on timeout. Parent cancellation can also stop history.
-				b.setErr(ctx, ctx.Err())
+				b.setErr(ctx.Err())
 				return
 			}
 		} else {
@@ -195,7 +199,7 @@ func (b *OperationBuffer) run(ctx context.Context) {
 
 		// Keep going after a failure, so one bad write does not drop everything behind it.
 		if err := b.write(ctx, resourceKey, update); err != nil {
-			b.setErr(ctx, fmt.Errorf("recording operation for %s: %w", resourceKey, err))
+			b.setErr(fmt.Errorf("recording operation for %s: %w", resourceKey, err))
 		}
 	}
 }
@@ -208,9 +212,13 @@ func (b *OperationBuffer) write(ctx context.Context, key string, update Operatio
 		Operation:  update.operation(b.sequenceIDs[key]),
 		UpdateMask: update.Fields.Mask(),
 	})
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	if err != nil {
+		b.stats.RecordingErrorCount++
 		return err
 	}
+	b.stats.RecordingSuccessCount++
 
 	// The next write for this resource echoes the sequence id this one earned.
 	b.sequenceIDs[key] = result.SequenceId
@@ -259,14 +267,11 @@ func (b *OperationBuffer) Stats() OperationBufferStats {
 	return b.stats
 }
 
-// setErr counts recording errors while ctx is active and keeps the first error for Drain.
-func (b *OperationBuffer) setErr(ctx context.Context, err error) {
+// setErr keeps the first recording error for Drain to report.
+func (b *OperationBuffer) setErr(err error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	if ctx.Err() == nil {
-		b.stats.RecordingErrorCount++
-	}
 	if b.err == nil {
 		b.err = err
 	}

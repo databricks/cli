@@ -411,6 +411,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 			MaxQueueSize:            int64(stats.MaxQueueSize),
 			UndrainedOperationCount: int64(stats.UndrainedOperationCount),
 			RecordingErrorCount:     int64(stats.RecordingErrorCount),
+			RecordingSuccessCount:   int64(stats.RecordingSuccessCount),
 		}
 	}
 

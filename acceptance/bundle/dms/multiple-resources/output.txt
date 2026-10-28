@@ -16,6 +16,7 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
   "operation_count": 5,
   "undrained_operation_count": 0,
   "recording_error_count": 0,
+  "recording_success_count": 5,
   "queue_size_in_range": true
 }
 
