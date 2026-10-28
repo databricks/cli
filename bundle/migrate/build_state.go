@@ -199,6 +199,8 @@ func BuildStateFromTF(
 			pendingRefs = append(pendingRefs, refEntry{fieldPathStr, refTemplate})
 		}
 
+		// Entries of a permissions or grants node to drop, see below.
+		var droppedEntries []int
 		for _, pending := range pendingRefs {
 			fieldPath, err := structpath.ParsePath(pending.fieldPathStr)
 			if err != nil {
@@ -209,6 +211,13 @@ func BuildStateFromTF(
 			// resource cannot have the field set either. Record it as unset: the first direct
 			// plan sees the difference and applies it once the referenced resource exists.
 			if referencesUndeployed(pending.refTemplate, tfIDs) {
+				// Entries of a permissions or grants node are keyed by their principal, so an
+				// entry without it is invalid. Drop the whole entry instead: it was not deployed.
+				if idx, ok := fieldPath.AsSlice()[0].Index(); ok && len(parts) == 4 {
+					droppedEntries = append(droppedEntries, idx)
+					delete(sv.Refs, pending.fieldPathStr)
+					continue
+				}
 				current, err := structaccess.Get(sv.Value, fieldPath)
 				if err != nil {
 					return warningsSeen, fmt.Errorf("%s: reading field %q: %w", node, pending.fieldPathStr, err)
@@ -239,6 +248,10 @@ func BuildStateFromTF(
 				return warningsSeen, fmt.Errorf("%s: cannot set resolved value for field %q: %w", node, pending.fieldPathStr, err)
 			}
 			delete(sv.Refs, pending.fieldPathStr)
+		}
+
+		if err := dropEntries(sv.Value, droppedEntries); err != nil {
+			return warningsSeen, fmt.Errorf("%s: dropping undeployed entries: %w", node, err)
 		}
 
 		if len(sv.Refs) > 0 {
@@ -277,6 +290,23 @@ func BuildStateFromTF(
 	}
 
 	return warningsSeen, nil
+}
+
+// dropEntries removes the given entries from the slice embedded in a permissions or grants state.
+func dropEntries(state any, indexes []int) error {
+	if len(indexes) == 0 {
+		return nil
+	}
+	slice := reflect.ValueOf(state).Elem().FieldByName("EmbeddedSlice")
+	if !slice.IsValid() {
+		return fmt.Errorf("%T has no embedded slice", state)
+	}
+	slices.Sort(indexes)
+	// Delete from the end so the remaining indexes stay valid.
+	for _, idx := range slices.Backward(slices.Compact(indexes)) {
+		slice.Set(reflect.AppendSlice(slice.Slice(0, idx), slice.Slice(idx+1, slice.Len())))
+	}
+	return nil
 }
 
 // referencesUndeployed reports whether refTemplate references a resource that is not in the terraform state.

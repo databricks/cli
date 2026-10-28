@@ -1,0 +1,25 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+title "Replay a prior terraform deployment of a job and a pipeline with permissions"
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
+replace_ids.py
+rm -f "$OUT_REQUESTS"
+
+# The job gains a permission for the service principal of a new app. Terraform never deployed
+# either, so the migrated state must not hold a permission entry without a principal.
+title "Add a new app and a job permission that references its service principal"
+update_file.py databricks.yml '# ' ''
+
+title "Plan shows the new app and the added permission"
+trace $CLI bundle plan -o json
+rm -f "$OUT_REQUESTS"
+
+title "Deploy migrates to direct, creates the app and grants the permission"
+trace $CLI bundle deploy
+rm -f "$OUT_REQUESTS"
+
+title "Redeploy is a no-op"
+trace $CLI bundle plan
+
+trace $CLI bundle destroy --auto-approve
+rm -f "$OUT_REQUESTS"
