@@ -1469,7 +1469,7 @@ func newListModelServices() *cobra.Command {
 
   Requires USE_CATALOG on the parent catalog and USE_SCHEMA on the parent
   schema. Only model services the caller can access (as owner or through
-  EXECUTE, READ_METADATA, or MANAGE) are returned.`
+  EXECUTE, READ_METADATA, or MANAGE) are returned by default.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

@@ -11,11 +11,13 @@ resources.features.*.function	ml.Function	ALL
 resources.features.*.function.aggregation_function	*ml.AggregationFunction	ALL
 resources.features.*.function.aggregation_function.approx_count_distinct	*ml.ApproxCountDistinctFunction	ALL
 resources.features.*.function.aggregation_function.approx_count_distinct.input	string	ALL
+resources.features.*.function.aggregation_function.approx_count_distinct.relative_error	float64	ALL
 resources.features.*.function.aggregation_function.approx_count_distinct.relative_sd	float64	ALL
 resources.features.*.function.aggregation_function.approx_percentile	*ml.ApproxPercentileFunction	ALL
 resources.features.*.function.aggregation_function.approx_percentile.accuracy	int64	ALL
 resources.features.*.function.aggregation_function.approx_percentile.input	string	ALL
 resources.features.*.function.aggregation_function.approx_percentile.percentile	float64	ALL
+resources.features.*.function.aggregation_function.approx_percentile.relative_error	float64	ALL
 resources.features.*.function.aggregation_function.avg	*ml.AvgFunction	ALL
 resources.features.*.function.aggregation_function.avg.input	string	ALL
 resources.features.*.function.aggregation_function.count_function	*ml.CountFunction	ALL

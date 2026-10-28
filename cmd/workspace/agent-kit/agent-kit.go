@@ -51,14 +51,22 @@ APIs for managing agent memory and durable session state. This interface is
 	cmd.AddCommand(newForkSession())
 	cmd.AddCommand(newGetMemory())
 	cmd.AddCommand(newGetMemoryStore())
+	cmd.AddCommand(newGetMemoryStorePermission())
 	cmd.AddCommand(newGetSession())
 	cmd.AddCommand(newGetSessionStore())
+	cmd.AddCommand(newGetSessionStorePermission())
+	cmd.AddCommand(newGrantMemoryStorePermission())
+	cmd.AddCommand(newGrantSessionStorePermission())
 	cmd.AddCommand(newListMemories())
+	cmd.AddCommand(newListMemoryStorePermissions())
 	cmd.AddCommand(newListMemoryStores())
 	cmd.AddCommand(newListSessionItems())
+	cmd.AddCommand(newListSessionStorePermissions())
 	cmd.AddCommand(newListSessionStores())
 	cmd.AddCommand(newListSessions())
 	cmd.AddCommand(newPopSessionItem())
+	cmd.AddCommand(newRevokeMemoryStorePermission())
+	cmd.AddCommand(newRevokeSessionStorePermission())
 	cmd.AddCommand(newSearchMemories())
 	cmd.AddCommand(newUpdateMemory())
 	cmd.AddCommand(newUpdateMemoryStore())
@@ -235,6 +243,7 @@ func newCreateMemory() *cobra.Command {
 	cmd.Flags().StringVar(&createMemoryReq.ManagedMemoryEntryId, "managed-memory-entry-id", createMemoryReq.ManagedMemoryEntryId, `Optional caller-selected memory entry ID.`)
 	cmd.Flags().StringVar(&createMemoryReq.ManagedMemoryEntry.Content, "content", createMemoryReq.ManagedMemoryEntry.Content, `Optional free-form memory content.`)
 	cmd.Flags().StringVar(&createMemoryReq.ManagedMemoryEntry.Description, "description", createMemoryReq.ManagedMemoryEntry.Description, `Human-readable description of the memory entry.`)
+	cmd.Flags().StringVar(&createMemoryReq.ManagedMemoryEntry.Name, "name", createMemoryReq.ManagedMemoryEntry.Name, `Resource name in the form memory-stores/{managed_memory_store_id}/entries/{managed_memory_entry_id}.`)
 	cmd.Flags().StringVar(&createMemoryReq.ManagedMemoryEntry.SessionId, "session-id", createMemoryReq.ManagedMemoryEntry.SessionId, `Optional identifier for the session associated with this memory entry.`)
 	cmd.Flags().Var(&createMemoryReq.ManagedMemoryEntry.SourceType, "source-type", `Which writer created this entry. Supported values: [MANAGED_MEMORY_ENTRY_SOURCE_TYPE_AGENT, MANAGED_MEMORY_ENTRY_SOURCE_TYPE_DREAMER]`)
 
@@ -1151,6 +1160,69 @@ Get a memory store by resource name.
 	return cmd
 }
 
+// start get-memory-store-permission command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getMemoryStorePermissionOverrides []func(
+	*cobra.Command,
+	*agentkit.GetMemoryStorePermissionRequest,
+)
+
+func newGetMemoryStorePermission() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getMemoryStorePermissionReq agentkit.GetMemoryStorePermissionRequest
+
+	cmd.Use = "get-memory-store-permission NAME"
+	cmd.Short = `Get memory store permission.`
+	cmd.Long = `Get memory store permission.
+
+  Retrieves the current caller's effective memory store permission. Returns
+  PERMISSION_LEVEL_UNSPECIFIED when the caller has no access.
+
+  Arguments:
+    NAME: Resource name in the form memory-stores/{managed_memory_store_id}.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getMemoryStorePermissionReq.Name = args[0]
+
+		response, err := w.AgentKit.GetMemoryStorePermission(ctx, getMemoryStorePermissionReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getMemoryStorePermissionOverrides {
+		fn(cmd, &getMemoryStorePermissionReq)
+	}
+
+	return cmd
+}
+
 // start get-session command
 
 // Slice with functions to override default command behavior.
@@ -1274,6 +1346,229 @@ Get a session store.
 	return cmd
 }
 
+// start get-session-store-permission command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getSessionStorePermissionOverrides []func(
+	*cobra.Command,
+	*agentkit.GetSessionStorePermissionRequest,
+)
+
+func newGetSessionStorePermission() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getSessionStorePermissionReq agentkit.GetSessionStorePermissionRequest
+
+	cmd.Use = "get-session-store-permission NAME"
+	cmd.Short = `Get session store permission.`
+	cmd.Long = `Get session store permission.
+
+  Retrieves the current caller's effective session store permission. Returns
+  PERMISSION_LEVEL_UNSPECIFIED when the caller has no access.
+
+  Arguments:
+    NAME: Resource name in the form session-stores/{session_store_id}.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getSessionStorePermissionReq.Name = args[0]
+
+		response, err := w.AgentKit.GetSessionStorePermission(ctx, getSessionStorePermissionReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getSessionStorePermissionOverrides {
+		fn(cmd, &getSessionStorePermissionReq)
+	}
+
+	return cmd
+}
+
+// start grant-memory-store-permission command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var grantMemoryStorePermissionOverrides []func(
+	*cobra.Command,
+	*agentkit.GrantMemoryStorePermissionRequest,
+)
+
+func newGrantMemoryStorePermission() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var grantMemoryStorePermissionReq agentkit.GrantMemoryStorePermissionRequest
+	var grantMemoryStorePermissionJson flags.JsonFlag
+
+	cmd.Flags().Var(&grantMemoryStorePermissionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Use = "grant-memory-store-permission NAME"
+	cmd.Short = `Grant memory store permission.`
+	cmd.Long = `Grant memory store permission.
+
+  Grants a READ or WRITE permission on a memory store to a principal. Only the
+  owner or a workspace admin may grant permissions.
+
+  Arguments:
+    NAME: Resource name in the form memory-stores/{managed_memory_store_id}.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := grantMemoryStorePermissionJson.Unmarshal(&grantMemoryStorePermissionReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
+		}
+		grantMemoryStorePermissionReq.Name = args[0]
+
+		response, err := w.AgentKit.GrantMemoryStorePermission(ctx, grantMemoryStorePermissionReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range grantMemoryStorePermissionOverrides {
+		fn(cmd, &grantMemoryStorePermissionReq)
+	}
+
+	return cmd
+}
+
+// start grant-session-store-permission command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var grantSessionStorePermissionOverrides []func(
+	*cobra.Command,
+	*agentkit.GrantSessionStorePermissionRequest,
+)
+
+func newGrantSessionStorePermission() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var grantSessionStorePermissionReq agentkit.GrantSessionStorePermissionRequest
+	var grantSessionStorePermissionJson flags.JsonFlag
+
+	cmd.Flags().Var(&grantSessionStorePermissionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Use = "grant-session-store-permission NAME"
+	cmd.Short = `Grant session store permission.`
+	cmd.Long = `Grant session store permission.
+
+  Grants a READ or WRITE permission on a session store to a principal. Only the
+  owner or a workspace admin may grant permissions.
+
+  Arguments:
+    NAME: Resource name in the form session-stores/{session_store_id}.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := grantSessionStorePermissionJson.Unmarshal(&grantSessionStorePermissionReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
+		}
+		grantSessionStorePermissionReq.Name = args[0]
+
+		response, err := w.AgentKit.GrantSessionStorePermission(ctx, grantSessionStorePermissionReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range grantSessionStorePermissionOverrides {
+		fn(cmd, &grantSessionStorePermissionReq)
+	}
+
+	return cmd
+}
+
 // start list-memories command
 
 // Slice with functions to override default command behavior.
@@ -1355,6 +1650,86 @@ List memory entries.
 	// Apply optional overrides to this command.
 	for _, fn := range listMemoriesOverrides {
 		fn(cmd, &listMemoriesReq)
+	}
+
+	return cmd
+}
+
+// start list-memory-store-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listMemoryStorePermissionsOverrides []func(
+	*cobra.Command,
+	*agentkit.ListMemoryStorePermissionsRequest,
+)
+
+func newListMemoryStorePermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listMemoryStorePermissionsReq agentkit.ListMemoryStorePermissionsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listMemoryStorePermissionsLimit int
+
+	cmd.Flags().IntVar(&listMemoryStorePermissionsReq.PageSize, "page-size", listMemoryStorePermissionsReq.PageSize, `Maximum number of permissions to return.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listMemoryStorePermissionsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listMemoryStorePermissionsReq.PageToken, "page-token", listMemoryStorePermissionsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-memory-store-permissions PARENT"
+	cmd.Short = `List memory store permissions.`
+	cmd.Long = `List memory store permissions.
+
+  Lists explicit memory store grants. Only the owner or a workspace admin may
+  list permissions.
+
+  Arguments:
+    PARENT: Resource name of the store, in the form
+      memory-stores/{managed_memory_store_id}.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		listMemoryStorePermissionsReq.Parent = args[0]
+
+		response := w.AgentKit.ListMemoryStorePermissions(ctx, listMemoryStorePermissionsReq)
+		if listMemoryStorePermissionsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listMemoryStorePermissionsLimit)
+		}
+		if listMemoryStorePermissionsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listMemoryStorePermissionsLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listMemoryStorePermissionsOverrides {
+		fn(cmd, &listMemoryStorePermissionsReq)
 	}
 
 	return cmd
@@ -1506,6 +1881,86 @@ List session items.
 	// Apply optional overrides to this command.
 	for _, fn := range listSessionItemsOverrides {
 		fn(cmd, &listSessionItemsReq)
+	}
+
+	return cmd
+}
+
+// start list-session-store-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listSessionStorePermissionsOverrides []func(
+	*cobra.Command,
+	*agentkit.ListSessionStorePermissionsRequest,
+)
+
+func newListSessionStorePermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listSessionStorePermissionsReq agentkit.ListSessionStorePermissionsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listSessionStorePermissionsLimit int
+
+	cmd.Flags().IntVar(&listSessionStorePermissionsReq.PageSize, "page-size", listSessionStorePermissionsReq.PageSize, `Maximum number of permissions to return.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listSessionStorePermissionsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listSessionStorePermissionsReq.PageToken, "page-token", listSessionStorePermissionsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-session-store-permissions PARENT"
+	cmd.Short = `List session store permissions.`
+	cmd.Long = `List session store permissions.
+
+  Lists explicit session store grants. Only the owner or a workspace admin may
+  list permissions.
+
+  Arguments:
+    PARENT: Resource name of the store, in the form
+      session-stores/{session_store_id}.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		listSessionStorePermissionsReq.Parent = args[0]
+
+		response := w.AgentKit.ListSessionStorePermissions(ctx, listSessionStorePermissionsReq)
+		if listSessionStorePermissionsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listSessionStorePermissionsLimit)
+		}
+		if listSessionStorePermissionsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listSessionStorePermissionsLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listSessionStorePermissionsOverrides {
+		fn(cmd, &listSessionStorePermissionsReq)
 	}
 
 	return cmd
@@ -1725,6 +2180,168 @@ Pop an item from a session.
 	return cmd
 }
 
+// start revoke-memory-store-permission command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var revokeMemoryStorePermissionOverrides []func(
+	*cobra.Command,
+	*agentkit.RevokeMemoryStorePermissionRequest,
+)
+
+func newRevokeMemoryStorePermission() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var revokeMemoryStorePermissionReq agentkit.RevokeMemoryStorePermissionRequest
+	var revokeMemoryStorePermissionJson flags.JsonFlag
+
+	cmd.Flags().Var(&revokeMemoryStorePermissionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Use = "revoke-memory-store-permission NAME"
+	cmd.Short = `Revoke memory store permission.`
+	cmd.Long = `Revoke memory store permission.
+
+  Removes a principal's explicit READ and WRITE grants on a memory store. Only
+  the owner or a workspace admin may revoke permissions. Ownership and inherited
+  access are unaffected.
+
+  Arguments:
+    NAME: Resource name in the form memory-stores/{managed_memory_store_id}.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := revokeMemoryStorePermissionJson.Unmarshal(&revokeMemoryStorePermissionReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
+		}
+		revokeMemoryStorePermissionReq.Name = args[0]
+
+		response, err := w.AgentKit.RevokeMemoryStorePermission(ctx, revokeMemoryStorePermissionReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range revokeMemoryStorePermissionOverrides {
+		fn(cmd, &revokeMemoryStorePermissionReq)
+	}
+
+	return cmd
+}
+
+// start revoke-session-store-permission command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var revokeSessionStorePermissionOverrides []func(
+	*cobra.Command,
+	*agentkit.RevokeSessionStorePermissionRequest,
+)
+
+func newRevokeSessionStorePermission() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var revokeSessionStorePermissionReq agentkit.RevokeSessionStorePermissionRequest
+	var revokeSessionStorePermissionJson flags.JsonFlag
+
+	cmd.Flags().Var(&revokeSessionStorePermissionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Use = "revoke-session-store-permission NAME"
+	cmd.Short = `Revoke session store permission.`
+	cmd.Long = `Revoke session store permission.
+
+  Removes a principal's explicit READ and WRITE grants on a session store. Only
+  the owner or a workspace admin may revoke permissions. Ownership and inherited
+  access are unaffected.
+
+  Arguments:
+    NAME: Resource name in the form session-stores/{session_store_id}.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := revokeSessionStorePermissionJson.Unmarshal(&revokeSessionStorePermissionReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
+		}
+		revokeSessionStorePermissionReq.Name = args[0]
+
+		response, err := w.AgentKit.RevokeSessionStorePermission(ctx, revokeSessionStorePermissionReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range revokeSessionStorePermissionOverrides {
+		fn(cmd, &revokeSessionStorePermissionReq)
+	}
+
+	return cmd
+}
+
 // start search-memories command
 
 // Slice with functions to override default command behavior.
@@ -1858,6 +2475,7 @@ func newUpdateMemory() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateMemoryReq.ManagedMemoryEntry.Content, "content", updateMemoryReq.ManagedMemoryEntry.Content, `Optional free-form memory content.`)
 	cmd.Flags().StringVar(&updateMemoryReq.ManagedMemoryEntry.Description, "description", updateMemoryReq.ManagedMemoryEntry.Description, `Human-readable description of the memory entry.`)
+	cmd.Flags().StringVar(&updateMemoryReq.ManagedMemoryEntry.Name, "name", updateMemoryReq.ManagedMemoryEntry.Name, `Resource name in the form memory-stores/{managed_memory_store_id}/entries/{managed_memory_entry_id}.`)
 	cmd.Flags().StringVar(&updateMemoryReq.ManagedMemoryEntry.SessionId, "session-id", updateMemoryReq.ManagedMemoryEntry.SessionId, `Optional identifier for the session associated with this memory entry.`)
 	cmd.Flags().Var(&updateMemoryReq.ManagedMemoryEntry.SourceType, "source-type", `Which writer created this entry. Supported values: [MANAGED_MEMORY_ENTRY_SOURCE_TYPE_AGENT, MANAGED_MEMORY_ENTRY_SOURCE_TYPE_DREAMER]`)
 
@@ -1873,6 +2491,7 @@ Update a memory entry.
   Arguments:
     NAME: Resource name in the form
       memory-stores/{managed_memory_store_id}/entries/{managed_memory_entry_id}.
+      Required for updates; assigned by the service on creation.
     UPDATE_MASK: Fields to update. Only content and description may be updated.
     ACTOR_ID: Customer-provided identifier for the actor whose memory this entry
       represents.

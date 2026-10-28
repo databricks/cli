@@ -1543,6 +1543,9 @@ resources:
                                 "protobuf_options":
                                   "description": |-
                                     PLACEHOLDER
+                        "onedrive_options":
+                          "description": |-
+                            PLACEHOLDER
                         "sharepoint_options":
                           "description": |-
                             PLACEHOLDER
