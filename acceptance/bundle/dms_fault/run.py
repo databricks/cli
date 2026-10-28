@@ -98,7 +98,7 @@ def ids(cwd, history=True):
     return current
 
 
-# Create a unique bundle from the job, pipeline, and SQL fixtures.
+# Write the test bundle files with unique resource names and a workspace path.
 def setup(phase):
     cwd = Path("work", phase).resolve()
     (cwd / "resources").mkdir(parents=True)
