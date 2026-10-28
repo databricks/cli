@@ -648,7 +648,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("POST", "/api/2.0/pipelines/{pipeline_id}/updates", func(req Request) any {
-		return req.Workspace.PipelineStartUpdate(req.Vars["pipeline_id"])
+		return req.Workspace.PipelineStartUpdate(req, req.Vars["pipeline_id"])
 	})
 
 	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}/events", func(req Request) any {
