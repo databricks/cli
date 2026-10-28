@@ -19,7 +19,7 @@ require (
 	github.com/databricks/sdk-go/files v0.2.0 // Apache-2.0
 	github.com/databricks/sdk-go/options v0.2.0 // Apache-2.0
 	github.com/google/jsonschema-go v0.4.3 // MIT
-	github.com/google/uuid v1.6.0
+	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/gorilla/websocket v1.5.3 // BSD-2-Clause
 	github.com/hexops/gotextdiff v1.0.3 // BSD-3-Clause
 	github.com/jackc/pgx/v5 v5.11.0 // MIT
