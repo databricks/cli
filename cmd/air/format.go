@@ -77,12 +77,13 @@ func forceLiteralBlockStrings(node *yaml.Node) {
 // gpuDisplayNames maps the GPU identifiers returned by the backend to the short
 // names we show to users. Unknown identifiers are shown unchanged.
 var gpuDisplayNames = map[string]string{
-	"h100_80gb":  "H100",
-	"a10":        "A10",
-	"GPU_1xA10":  "A10",
-	"GPU_8xH100": "H100",
-	"GPU_1xH100": "H100",
-	"GPU_8xB300": "B300",
+	"h100_80gb":     "H100",
+	"a10":           "A10",
+	"GPU_1xA10":     "A10",
+	"GPU_8xH100":    "H100",
+	"GPU_1xH100":    "H100",
+	"GPU_8xB300":    "B300",
+	"GPU_1xRTX6000": "RTX6000",
 }
 
 // isRunning reports whether a run is currently executing (lifecycle RUNNING), as

@@ -808,7 +808,8 @@ func TestRunCommandHelpComputeOptions(t *testing.T) {
 	builtInOptions := `    GPU_1xA10 - 1 accelerator per node
     GPU_1xH100 - 1 accelerator per node
     GPU_8xH100 - 8 accelerators per node
-    GPU_8xB300 - 8 accelerators per node`
+    GPU_8xB300 - 8 accelerators per node
+    GPU_1xRTX6000 - 1 accelerator per node`
 	tests := []struct {
 		name        string
 		statusCode  int
