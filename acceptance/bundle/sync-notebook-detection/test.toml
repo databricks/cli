@@ -1,6 +1,0 @@
-Cloud = true
-Badness = "A notebook whose first line isn't exactly the header (here: a byte order mark) is uploaded as a file, while v1.20 and earlier uploaded it as a notebook. Deploying the same bundle with both fails in either order (#7216)."
-
-Env.MSYS_NO_PATHCONV = "1"
-
-Ignore = [".databricks"]

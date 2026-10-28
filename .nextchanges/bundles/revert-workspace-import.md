@@ -1,0 +1,1 @@
+* Upload bundle files through the legacy `import-file` endpoint again, because `/workspace/import` in v1.21.0 imported some notebooks as plain files; a remote file or notebook whose type differs from the upload is now replaced. ([#7218](https://github.com/databricks/cli/pull/7218))

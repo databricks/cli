@@ -170,6 +170,18 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 
 	err = w.apiClient.Do(ctx, http.MethodPost, urlPath, w.workspaceIDHeaders(), nil, body, nil)
 
+	// Overwrite can't change a node's type. If a node of the other type holds the
+	// path, delete it and upload again so the remote matches the local file.
+	if err != nil && overwrite {
+		deleted, derr := w.deleteNodeOfOtherType(ctx, absPath, err)
+		if derr != nil {
+			return derr
+		}
+		if deleted {
+			err = w.apiClient.Do(ctx, http.MethodPost, urlPath, w.workspaceIDHeaders(), nil, body, nil)
+		}
+	}
+
 	// Return early on success.
 	if err == nil {
 		return nil
@@ -221,6 +233,46 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 	}
 
 	return err
+}
+
+// deleteNodeOfOtherType deletes the node that blocks an overwrite of absPath
+// because its type differs from the upload's, and reports whether it did.
+// import-file returns 400 when a file holds the name of a notebook upload, and
+// 409 when a notebook holds the name of a file upload (SQL notebook "x" holds
+// "x.sql"). CLI v1.21 and v1.22 uploaded some notebooks as files this way.
+func (w *WorkspaceFilesClient) deleteNodeOfOtherType(ctx context.Context, absPath string, uploadErr error) (bool, error) {
+	aerr, ok := errors.AsType[*apierr.APIError](uploadErr)
+	if !ok {
+		return false, nil
+	}
+
+	var nodePath string
+	var nodeType workspace.ObjectType
+	switch aerr.StatusCode {
+	case http.StatusBadRequest:
+		nodePath, nodeType = absPath, workspace.ObjectTypeFile
+	case http.StatusConflict:
+		nodePath, nodeType = strings.TrimSuffix(absPath, path.Ext(absPath)), workspace.ObjectTypeNotebook
+	default:
+		return false, nil
+	}
+
+	info, err := w.workspaceClient.Workspace.GetStatusByPath(ctx, nodePath)
+	if errors.Is(err, apierr.ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	if info.ObjectType != nodeType {
+		return false, nil
+	}
+
+	err = w.workspaceClient.Workspace.Delete(ctx, workspace.Delete{Path: nodePath})
+	if err != nil {
+		return false, fmt.Errorf("failed to delete %s to replace it with %s: %w", nodePath, absPath, err)
+	}
+	return true, nil
 }
 
 func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {
