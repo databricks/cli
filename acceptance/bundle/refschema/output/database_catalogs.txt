@@ -1,0 +1,13 @@
+resources.database_catalogs.*.create_database_if_not_exists	bool	ALL
+resources.database_catalogs.*.database_instance_name	string	ALL
+resources.database_catalogs.*.database_name	string	ALL
+resources.database_catalogs.*.id	string	INPUT
+resources.database_catalogs.*.lifecycle	resources.Lifecycle	INPUT
+resources.database_catalogs.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
+resources.database_catalogs.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
+resources.database_catalogs.*.lifecycle.depends_on[*].resource	string	INPUT
+resources.database_catalogs.*.lifecycle.prevent_destroy	bool	INPUT
+resources.database_catalogs.*.modified_status	string	INPUT
+resources.database_catalogs.*.name	string	ALL
+resources.database_catalogs.*.uid	string	ALL
+resources.database_catalogs.*.url	string	INPUT

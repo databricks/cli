@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/structs/structaccess"
+
 	"github.com/databricks/databricks-sdk-go/common/types/duration"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -974,6 +976,14 @@ func TestGetStructDiffNamedStringMapKey(t *testing.T) {
 	assert.Equal(t, []ResolvedChange{{Field: "m['pre']", Old: "a", New: "b"}}, resolveChanges(got))
 }
 
+func TestIsEqualNamedStringMapKey(t *testing.T) {
+	a := namedKeyMapHolder{M: map[namedMapKey]string{"pre": "a", "post": "x"}}
+	b := namedKeyMapHolder{M: map[namedMapKey]string{"pre": "b", "post": "x"}}
+
+	assert.True(t, IsEqual(&a, &a))
+	assert.False(t, IsEqual(&a, &b))
+}
+
 // Types for the "whole block" tests below: two levels of nesting under an
 // optional pointer, mirroring a schema like Outer{Field *Mid{A *Inner{b,c}}}.
 type wbInner struct {
@@ -1033,4 +1043,27 @@ func TestGetStructDiffWholeBlock(t *testing.T) {
 			assert.Equal(t, tt.want, resolveChanges(got))
 		})
 	}
+}
+
+type dashNamed struct {
+	Skipped string `json:"-"`
+	Named   string `json:"-,omitempty"` //nolint:staticcheck // odd tag is the point
+}
+
+// TestGetStructDiffDashNamedField checks that only the exact tag json:"-" skips a
+// field: encoding/json serializes json:"-,omitempty" under the key "-", and
+// structaccess resolves the path "-" to it.
+func TestGetStructDiffDashNamedField(t *testing.T) {
+	before := &dashNamed{Skipped: "a", Named: "a"}
+	after := &dashNamed{Skipped: "b", Named: "b"}
+
+	changes, err := GetStructDiff(before, after, nil)
+	require.NoError(t, err)
+	assert.Equal(t, []ResolvedChange{{Field: "-", Old: "a", New: "b"}}, resolveChanges(changes))
+
+	value, err := structaccess.Get(after, changes[0].Path)
+	require.NoError(t, err)
+	assert.Equal(t, "b", value)
+
+	assert.Equal(t, len(changes) == 0, IsEqual(before, after))
 }

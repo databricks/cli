@@ -23,7 +23,10 @@ from databricks.bundles.alerts._models.custom_template_format import (
     CustomTemplateFormat,
     CustomTemplateFormatParam,
 )
-from databricks.bundles.alerts._models.lifecycle import Lifecycle, LifecycleParam
+from databricks.bundles.alerts._models.lifecycle import (
+    Lifecycle,
+    LifecycleParam,
+)
 from databricks.bundles.alerts._models.permission import Permission, PermissionParam
 from databricks.bundles.core._resource import Resource
 from databricks.bundles.core._transform import _transform
@@ -63,19 +66,19 @@ class Alert(Resource):
 
     custom_description: VariableOrOptional[str] = None
     """
-    Custom description for the alert. support mustache template.
+    Custom description for the alert. Interpreted according to `custom_template_format`.
     """
 
     custom_summary: VariableOrOptional[str] = None
     """
-    Custom summary for the alert. support mustache template.
+    Custom summary for the alert. Interpreted according to `custom_template_format`.
     """
 
     custom_template_format: VariableOrOptional[CustomTemplateFormat] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The format used to interpret the `custom_summary` and `custom_description` templates.
+    [Beta] The format used to interpret the `custom_summary` and `custom_description` templates.
     
     `HTML` treats both templates as HTML with Mustache `{{VARIABLE_NAME}}` placeholders.
     `MARKDOWN` treats them as Markdown with allowlisted `@VARIABLE_NAME` placeholders and converts
@@ -168,19 +171,19 @@ class AlertDict(TypedDict, total=False):
 
     custom_description: VariableOrOptional[str]
     """
-    Custom description for the alert. support mustache template.
+    Custom description for the alert. Interpreted according to `custom_template_format`.
     """
 
     custom_summary: VariableOrOptional[str]
     """
-    Custom summary for the alert. support mustache template.
+    Custom summary for the alert. Interpreted according to `custom_template_format`.
     """
 
     custom_template_format: VariableOrOptional[CustomTemplateFormatParam]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The format used to interpret the `custom_summary` and `custom_description` templates.
+    [Beta] The format used to interpret the `custom_summary` and `custom_description` templates.
     
     `HTML` treats both templates as HTML with Mustache `{{VARIABLE_NAME}}` placeholders.
     `MARKDOWN` treats them as Markdown with allowlisted `@VARIABLE_NAME` placeholders and converts

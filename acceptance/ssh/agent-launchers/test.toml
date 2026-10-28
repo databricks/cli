@@ -1,0 +1,16 @@
+Cloud = false
+
+# Linux-only: the test drives a real sshd, reliable only there (and where
+# task test-exp-ssh provisions it). Absent GOOS keys default to enabled, so the
+# other OSes must be disabled explicitly.
+GOOS.linux = true
+GOOS.darwin = false
+GOOS.windows = false
+
+# The client key pair is generated per run; the server's home holds its sshd
+# config, host key and the files it seeds, which the script prints selectively.
+Ignore = [
+  "client_key",
+  "client_key.pub",
+  "server-home",
+]

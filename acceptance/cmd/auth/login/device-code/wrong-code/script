@@ -1,0 +1,13 @@
+sethome "./home"
+
+title "Login fails when no confirmation code is provided\n"
+trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code < /dev/null
+
+title "Login fails after 3 wrong confirmation codes\n"
+printf "AAAA-AAAA\nBBBB-BBBB\nCCCC-CCCC\n" | trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code
+
+# A wrong confirmation code leaves the device code valid, so the user can
+# enter it again. A blank line counts as a wrong confirmation code.
+# The confirmation code is accepted the way the browser displays it, in any case.
+title "Login succeeds after re-entering the confirmation code\n"
+printf "AAAA-AAAA\n\nftfa-qqky\n" | trace $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code

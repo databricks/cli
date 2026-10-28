@@ -42,6 +42,8 @@ func New() *cobra.Command {
 	cmd.AddCommand(newPatchEndpoint())
 	cmd.AddCommand(newRetrieveUserVisibleMetrics())
 	cmd.AddCommand(newSetPermissions())
+	cmd.AddCommand(newStartEndpoint())
+	cmd.AddCommand(newStopEndpoint())
 	cmd.AddCommand(newUpdateEndpointBudgetPolicy())
 	cmd.AddCommand(newUpdateEndpointCustomTags())
 	cmd.AddCommand(newUpdatePermissions())
@@ -709,6 +711,133 @@ func newSetPermissions() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range setPermissionsOverrides {
 		fn(cmd, &setPermissionsReq)
+	}
+
+	return cmd
+}
+
+// start start-endpoint command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var startEndpointOverrides []func(
+	*cobra.Command,
+	*vectorsearch.StartEndpointRequest,
+)
+
+func newStartEndpoint() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var startEndpointReq vectorsearch.StartEndpointRequest
+
+	cmd.Use = "start-endpoint ENDPOINT_NAME"
+	cmd.Short = `Start an endpoint.`
+	cmd.Long = `Start an endpoint.
+
+  Start a stopped endpoint. The endpoint serves the same indexes it had when it
+  stopped.
+
+  Arguments:
+    ENDPOINT_NAME: Name of the AI Search endpoint`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		startEndpointReq.EndpointName = args[0]
+
+		response, err := w.VectorSearchEndpoints.StartEndpoint(ctx, startEndpointReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range startEndpointOverrides {
+		fn(cmd, &startEndpointReq)
+	}
+
+	return cmd
+}
+
+// start stop-endpoint command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var stopEndpointOverrides []func(
+	*cobra.Command,
+	*vectorsearch.StopEndpointRequest,
+)
+
+func newStopEndpoint() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var stopEndpointReq vectorsearch.StopEndpointRequest
+
+	cmd.Use = "stop-endpoint ENDPOINT_NAME"
+	cmd.Short = `Stop an endpoint.`
+	cmd.Long = `Stop an endpoint.
+
+  Stop an endpoint. Stopping removes the endpoint's serving compute and retains
+  its indexes. A stopped endpoint can't serve queries or sync indexes until it
+  is started.
+
+  Arguments:
+    ENDPOINT_NAME: Name of the AI Search endpoint`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		stopEndpointReq.EndpointName = args[0]
+
+		response, err := w.VectorSearchEndpoints.StopEndpoint(ctx, stopEndpointReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range stopEndpointOverrides {
+		fn(cmd, &stopEndpointReq)
 	}
 
 	return cmd

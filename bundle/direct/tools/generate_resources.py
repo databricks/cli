@@ -36,11 +36,11 @@ def parse_apitypes(generated_path, override_path):
 
 
 def parse_out_fields(path):
-    """Parse out.fields.txt to extract STATE field names per resource and array element types."""
+    """Parse the refschema output files to extract STATE field names per resource and array element types."""
     state_fields = {}
     array_element_types = {}  # (resource, base_path) -> element_type
 
-    for line in path.read_text().splitlines():
+    for line in "\n".join(f.read_text() for f in sorted(path.glob("*.txt"))).splitlines():
         parts = line.split("\t")
         if len(parts) < 3 or not parts[0].startswith("resources."):
             continue
@@ -103,7 +103,7 @@ def get_field_behaviors(schemas, type_name, resource_name=None, array_element_ty
                     results.update(extract(schemas[ref], path, visited | {ref}, depth + 1, propagate))
             elif resource_name is not None:
                 # For array fields with no ref in the schema, use the element type from
-                # out.fields.txt (e.g. App.resources[] -> AppResource).
+                # output/*.txt (e.g. App.resources[] -> AppResource).
                 elem_type = array_element_types.get((resource_name, path))
                 if elem_type and elem_type in schemas and elem_type not in visited:
                     propagate = [b for b in behaviors if b in ("INPUT_ONLY", "OUTPUT_ONLY")]
@@ -215,7 +215,7 @@ def main():
     parser.add_argument("apischema", type=Path, help="Path to cli.json schema block")
     parser.add_argument("apitypes", type=Path, help="Path to apitypes.generated.yml file")
     parser.add_argument("apitypes_override", type=Path, help="Path to apitypes.yml override file")
-    parser.add_argument("out_fields", type=Path, help="Path to out.fields.txt file")
+    parser.add_argument("out_fields", type=Path, help="Path to the refschema output directory")
     parser.add_argument("outdir", type=Path, help="Directory to write <resource_type>.generated.yml files to")
     args = parser.parse_args()
 

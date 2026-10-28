@@ -11,7 +11,10 @@ from databricks.bundles.core._variable import (
     VariableOrList,
     VariableOrOptional,
 )
-from databricks.bundles.models._models.lifecycle import Lifecycle, LifecycleParam
+from databricks.bundles.models._models.lifecycle import (
+    Lifecycle,
+    LifecycleParam,
+)
 from databricks.bundles.models._models.mlflow_model_permission import (
     MlflowModelPermission,
     MlflowModelPermissionParam,

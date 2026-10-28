@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/databricks/cli/experimental/ssh/internal/agentlauncher"
 	"github.com/databricks/cli/experimental/ssh/internal/keys"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
@@ -68,27 +69,7 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 		return "", err
 	}
 
-	// Set all available env vars, wrapping values in quotes, escaping quotes, and stripping newlines
-	var setEnvBuf strings.Builder
-	setEnvBuf.WriteString("SetEnv")
-	for _, env := range os.Environ() {
-		parts := strings.SplitN(env, "=", 2)
-		if len(parts) == 2 {
-			fmt.Fprintf(&setEnvBuf, ` %s="%s"`, parts[0], escapeEnvValue(parts[1]))
-		}
-	}
-	setEnvBuf.WriteString(" DATABRICKS_CLI_UPSTREAM=databricks_ssh_tunnel")
-	setEnvBuf.WriteString(" DATABRICKS_CLI_UPSTREAM_VERSION=" + opts.Version)
-	setEnvBuf.WriteString(" DATABRICKS_SDK_UPSTREAM=databricks_ssh_tunnel")
-	setEnvBuf.WriteString(" DATABRICKS_SDK_UPSTREAM_VERSION=" + opts.Version)
-	setEnvBuf.WriteString(" GIT_CONFIG_GLOBAL=/Workspace/.proc/self/git/config")
-	setEnvBuf.WriteString(" ENABLE_DATABRICKS_CLI=true")
-	setEnvBuf.WriteString(" PYTHONPYCACHEPREFIX=/tmp/pycache")
-	if opts.Serverless {
-		setEnvBuf.WriteString(" DATABRICKS_JUPYTER_SERVERLESS=true")
-	}
-	setEnv := setEnvBuf.String()
-
+	setEnv := sshdSetEnv(os.Environ(), homeDir, opts)
 	if err := os.WriteFile(sshdConfig, []byte(sshdConfigContent(keyPath, authKeysPath, setEnv)), 0o600); err != nil {
 		return "", err
 	}
@@ -112,6 +93,39 @@ func sshdConfigContent(hostKeyPath, authorizedKeysPath, setEnv string) string {
 		"HostKey " + hostKeyPath + "\n" +
 		"AuthorizedKeysFile " + authorizedKeysPath + "\n" +
 		setEnv + "\n"
+}
+
+// sshdSetEnv returns the SetEnv directive that seeds every session's environment.
+func sshdSetEnv(environ []string, homeDir string, opts ServerOptions) string {
+	// Set all available env vars, wrapping values in quotes, escaping quotes, and stripping newlines
+	var setEnvBuf strings.Builder
+	setEnvBuf.WriteString("SetEnv")
+	for _, env := range environ {
+		parts := strings.SplitN(env, "=", 2)
+		if len(parts) == 2 {
+			value := parts[1]
+			// sshd applies SetEnv before any shell starts, so this puts the agent
+			// launchers (see installAgentLaunchers) on PATH for every session:
+			// interactive or not, IDE or terminal, bash or sh, with no startup file
+			// involved. Appended (not prepended) so the launchers never shadow a real
+			// binary of the same name earlier on PATH.
+			if parts[0] == "PATH" {
+				value += ":" + path.Join(homeDir, agentlauncher.BinDir)
+			}
+			fmt.Fprintf(&setEnvBuf, ` %s="%s"`, parts[0], escapeEnvValue(value))
+		}
+	}
+	setEnvBuf.WriteString(" DATABRICKS_CLI_UPSTREAM=databricks_ssh_tunnel")
+	setEnvBuf.WriteString(" DATABRICKS_CLI_UPSTREAM_VERSION=" + opts.Version)
+	setEnvBuf.WriteString(" DATABRICKS_SDK_UPSTREAM=databricks_ssh_tunnel")
+	setEnvBuf.WriteString(" DATABRICKS_SDK_UPSTREAM_VERSION=" + opts.Version)
+	setEnvBuf.WriteString(" GIT_CONFIG_GLOBAL=/Workspace/.proc/self/git/config")
+	setEnvBuf.WriteString(" ENABLE_DATABRICKS_CLI=true")
+	setEnvBuf.WriteString(" PYTHONPYCACHEPREFIX=/tmp/pycache")
+	if opts.Serverless {
+		setEnvBuf.WriteString(" DATABRICKS_JUPYTER_SERVERLESS=true")
+	}
+	return setEnvBuf.String()
 }
 
 func createSSHDProcess(ctx context.Context, configPath string) *exec.Cmd {

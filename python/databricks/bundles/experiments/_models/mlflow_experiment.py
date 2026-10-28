@@ -19,10 +19,7 @@ from databricks.bundles.experiments._models.experiment_trace_location import (
     ExperimentTraceLocation,
     ExperimentTraceLocationParam,
 )
-from databricks.bundles.experiments._models.lifecycle import (
-    Lifecycle,
-    LifecycleParam,
-)
+from databricks.bundles.experiments._models.lifecycle import Lifecycle, LifecycleParam
 from databricks.bundles.experiments._models.mlflow_experiment_permission import (
     MlflowExperimentPermission,
     MlflowExperimentPermissionParam,
