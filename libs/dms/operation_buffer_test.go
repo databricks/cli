@@ -94,13 +94,14 @@ func TestBufferMaxQueueSize(t *testing.T) {
 
 func TestHistoryDrainStats(t *testing.T) {
 	for _, tc := range []struct {
-		name     string
-		inFlight string
-		want     int
+		name    string
+		take    bool
+		requeue bool
+		want    int
 	}{
 		{name: "queued", want: 2},
-		{name: "in flight", inFlight: "c", want: 3},
-		{name: "in flight and queued for the same operation", inFlight: "a", want: 2},
+		{name: "active upload is excluded", take: true, want: 1},
+		{name: "new update queued for the active resource", take: true, requeue: true, want: 2},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
@@ -112,13 +113,21 @@ func TestHistoryDrainStats(t *testing.T) {
 				b.stopQueue = sync.OnceFunc(func() { close(b.queue) })
 				b.record("a", stateUpdate(t, "a"), false, nil)
 				b.record("b", stateUpdate(t, "b"), false, nil)
-				b.inFlight = tc.inFlight
+				if tc.take {
+					key := <-b.queue
+					_, ok := b.take(key)
+					require.True(t, ok)
+					if tc.requeue {
+						b.record(key, stateUpdate(t, key), false, nil)
+					}
+				}
 
 				require.ErrorIs(t, b.Drain(t.Context()), context.DeadlineExceeded)
 				assert.Equal(t, tc.want, b.Stats().UndrainedOperationCount)
 
-				// Cancellation may finish the upload after Drain returns.
-				b.inFlight = ""
+				// The worker may empty the queue after Drain returns.
+				for range b.queue {
+				}
 				clear(b.pending)
 				close(b.done)
 				require.ErrorIs(t, b.Drain(t.Context()), context.DeadlineExceeded)
