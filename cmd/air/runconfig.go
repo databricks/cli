@@ -902,6 +902,10 @@ func renderConfigField(w io.Writer, f configField, computeOptions []computeOptio
 func fallbackComputeOptions() []computeOption {
 	options := make([]computeOption, 0, len(gpuTypes))
 	for _, acceleratorType := range gpuTypes {
+		// RTX6000 availability must be confirmed by the workspace API during rollout.
+		if acceleratorType == gpuType1xRTX6000 {
+			continue
+		}
 		perNode, err := gpusPerNode(acceleratorType)
 		if err != nil {
 			continue
