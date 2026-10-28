@@ -1,6 +1,6 @@
 # Let the two deploy lock requests through, then inject a single 504 on the next import request, which is a file upload.
 # Uploads overwrite, so they are retried and the deploy succeeds.
-fault.py "POST /api/2.0/workspace-files/import-file/*" 504 2 1
+fault.py "POST /api/2.0/workspace-files/import-file/**" 504 2 1
 
 $CLI bundle deploy
 

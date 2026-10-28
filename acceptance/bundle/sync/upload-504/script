@@ -1,5 +1,5 @@
 # Inject a single 504 on the first file upload. Uploads overwrite, so they are retried and the sync succeeds.
-fault.py "POST /api/2.0/workspace-files/import-file/*" 504 0 1
+fault.py "POST /api/2.0/workspace-files/import-file/**" 504 0 1
 
 $CLI bundle sync
 
