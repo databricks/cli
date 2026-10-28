@@ -1,1 +1,2 @@
 RecordRequests = true
+Badness = "The required-field check looks inside a schedule that is a reference and reports quartz_cron_expression and timezone_id as not set; main does the same for a queue reference (enabled)."
