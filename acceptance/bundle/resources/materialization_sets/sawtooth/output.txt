@@ -51,7 +51,7 @@ update
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-sawtooth-[UNIQUE_NAME]/default/files...
 Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Deleting materialized features '[UUID]' of feature 'danielb.fs2680.saw_[UNIQUE_NAME]' also deletes materialized features '[UUID]', '[UUID]', which the request does not delete. Delete the unrequested materialized features as well. (400 INVALID_PARAMETER_VALUE)
 
-Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?request_id=[UUID]&update_mask=materialized_features
+Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?request_id=[UUID]&update_mask=%2A
 HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
 API message: Deleting materialized features '[UUID]' of feature 'danielb.fs2680.saw_[UNIQUE_NAME]' also deletes materialized features '[UUID]', '[UUID]', which the request does not delete. Delete the unrequested materialized features as well.
@@ -68,7 +68,7 @@ update
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-sawtooth-[UNIQUE_NAME]/default/files...
 Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Materialized features '[UUID]' of feature 'danielb.fs2680.saw_[UNIQUE_NAME]' are deleted only by deleting materialized features '[UUID]', '[UUID]', which the request does not supply. Remove those as well. (400 INVALID_PARAMETER_VALUE)
 
-Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?request_id=[UUID]&update_mask=materialized_features
+Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?request_id=[UUID]&update_mask=%2A
 HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
 API message: Materialized features '[UUID]' of feature 'danielb.fs2680.saw_[UNIQUE_NAME]' are deleted only by deleting materialized features '[UUID]', '[UUID]', which the request does not supply. Remove those as well.
@@ -85,7 +85,7 @@ update
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-sawtooth-[UNIQUE_NAME]/default/files...
 Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Deleting materialized features '[UUID]', '[UUID]' of feature 'danielb.fs2680.saw_[UNIQUE_NAME]' also deletes materialized features '[UUID]', which the request does not delete. Delete the unrequested materialized features as well. (400 INVALID_PARAMETER_VALUE)
 
-Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?request_id=[UUID]&update_mask=materialized_features
+Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?request_id=[UUID]&update_mask=%2A
 HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
 API message: Deleting materialized features '[UUID]', '[UUID]' of feature 'danielb.fs2680.saw_[UNIQUE_NAME]' also deletes materialized features '[UUID]', which the request does not delete. Delete the unrequested materialized features as well.
@@ -104,7 +104,7 @@ update
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-sawtooth-[UNIQUE_NAME]/default/files...
 Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Updating materialization set '[UUID]' with no materialized features is not supported. Delete the set instead. (400 INVALID_PARAMETER_VALUE)
 
-Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?request_id=[UUID]&update_mask=materialized_features
+Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?request_id=[UUID]&update_mask=%2A
 HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
 API message: Updating materialization set '[UUID]' with no materialized features is not supported. Delete the set instead.
