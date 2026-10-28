@@ -60,6 +60,12 @@ type BundleDeploymentHistory struct {
 	RecordingErrorCount int64 `json:"recording_error_count"`
 	// Successful upload attempts. Repeated updates to a resource count separately.
 	RecordingSuccessCount int64 `json:"recording_success_count"`
+	// Resource operations whose final history update uploaded successfully.
+	RecordedOperationCount int64 `json:"recorded_operation_count"`
+	// Resource operations whose final history update failed to build or upload.
+	RecordingFailedOperationCount int64 `json:"recording_failed_operation_count"`
+	// Staged resource operations with no completed final history update.
+	UnrecordedOperationCount int64 `json:"unrecorded_operation_count"`
 }
 
 // These metrics are experimental and are often added in an adhoc manner. There

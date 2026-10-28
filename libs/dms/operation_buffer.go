@@ -17,6 +17,14 @@ const bufferedOperations = 10
 
 const historyDrainTimeoutPerOperation = 5 * time.Second
 
+type recordingOutcome uint8
+
+const (
+	recordingPending recordingOutcome = iota
+	recordingSucceeded
+	recordingFailed
+)
+
 // BufferOptions selects optional deployment history shadow recording behavior.
 type BufferOptions struct {
 	BestEffort bool
@@ -27,11 +35,14 @@ type BufferOptions struct {
 
 // OperationBufferStats describes one deployment version's history uploads.
 type OperationBufferStats struct {
-	OperationCount          int
-	MaxQueueSize            int
-	UndrainedOperationCount int
-	RecordingErrorCount     int
-	RecordingSuccessCount   int
+	OperationCount                int
+	MaxQueueSize                  int
+	UndrainedOperationCount       int
+	RecordingErrorCount           int
+	RecordingSuccessCount         int
+	RecordedOperationCount        int
+	RecordingFailedOperationCount int
+	UnrecordedOperationCount      int
 }
 
 // OperationBuffer records each state write with DMS for one deployment version, off the apply
@@ -67,6 +78,8 @@ type OperationBuffer struct {
 	// pending holds the newest update per resource key, absent once the writer takes it.
 	pending map[string]OperationUpdate
 	stats   OperationBufferStats
+	// Missing staged keys are pending, including operations never queued.
+	outcomes map[string]recordingOutcome
 
 	// latestState is the newest state-bearing update per resource key, kept for the buffer's
 	// whole life - unlike pending, which the writer removes on take. RecordFailure merges its
@@ -101,6 +114,7 @@ func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum i
 		latestState:  make(map[string]OperationUpdate),
 		sequenceIDs:  make(map[string]int64),
 		stats:        OperationBufferStats{OperationCount: options.OperationCount},
+		outcomes:     make(map[string]recordingOutcome, options.OperationCount),
 	}
 	b.stopQueue = sync.OnceFunc(func() { close(b.queue) })
 	go b.run(ctx)
@@ -114,6 +128,9 @@ func (b *OperationBuffer) RecordOperation(ctx context.Context, resourceKey strin
 	if err != nil {
 		b.mu.Lock()
 		b.stats.RecordingErrorCount++
+		if !inProgress {
+			b.outcomes[resourceKey] = recordingFailed
+		}
 		b.mu.Unlock()
 		b.setErr(fmt.Errorf("recording operation for %s: %w", resourceKey, err))
 		return
@@ -147,6 +164,7 @@ func (b *OperationBuffer) record(resourceKey string, update OperationUpdate, kee
 		update = waiting.Merge(update)
 	}
 	b.pending[resourceKey] = update
+	delete(b.outcomes, resourceKey)
 	b.stats.MaxQueueSize = max(b.stats.MaxQueueSize, len(b.pending))
 	b.mu.Unlock()
 
@@ -214,11 +232,21 @@ func (b *OperationBuffer) write(ctx context.Context, key string, update Operatio
 	})
 	b.mu.Lock()
 	defer b.mu.Unlock()
+	outcome := recordingSucceeded
 	if err != nil {
 		b.stats.RecordingErrorCount++
+		outcome = recordingFailed
+	} else {
+		b.stats.RecordingSuccessCount++
+	}
+	// A newer queued update or build failure takes precedence over this upload.
+	_, queued := b.pending[key]
+	if !queued && update.Status != StatusPending && b.outcomes[key] == recordingPending {
+		b.outcomes[key] = outcome
+	}
+	if err != nil {
 		return err
 	}
-	b.stats.RecordingSuccessCount++
 
 	// The next write for this resource echoes the sequence id this one earned.
 	b.sequenceIDs[key] = result.SequenceId
@@ -264,7 +292,19 @@ func (b *OperationBuffer) Drain(ctx context.Context) error {
 func (b *OperationBuffer) Stats() OperationBufferStats {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	return b.stats
+	stats := b.stats
+	for _, outcome := range b.outcomes {
+		switch outcome {
+		case recordingPending:
+			continue
+		case recordingSucceeded:
+			stats.RecordedOperationCount++
+		case recordingFailed:
+			stats.RecordingFailedOperationCount++
+		}
+	}
+	stats.UnrecordedOperationCount = stats.OperationCount - stats.RecordedOperationCount - stats.RecordingFailedOperationCount
+	return stats
 }
 
 // setErr keeps the first recording error for Drain to report.
