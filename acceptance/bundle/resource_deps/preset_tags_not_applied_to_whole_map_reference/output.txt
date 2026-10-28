@@ -1,13 +1,5 @@
 
 >>> [CLI] bundle plan -o json
 {
-  "tags": {
-    "owner": "fixed"
-  },
-  "depends_on": [
-    {
-      "node": "resources.schemas.s",
-      "label": "${resources.schemas.s.properties}"
-    }
-  ]
+  "owner": "fixed"
 }

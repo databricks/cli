@@ -2,19 +2,16 @@
 >>> [CLI] bundle validate -o json
 [
   {
-    "task_key": "resource_ref",
     "existing_cluster_id": "existing-cluster",
-    "new_cluster": null
+    "task_key": "resource_ref"
   },
   {
-    "task_key": "scalar_ref",
     "existing_cluster_id": "existing-cluster",
-    "new_cluster": null
+    "task_key": "scalar_ref"
   },
   {
-    "task_key": "variable_ref",
     "existing_cluster_id": "existing-cluster",
-    "new_cluster": null
+    "task_key": "variable_ref"
   }
 ]
 

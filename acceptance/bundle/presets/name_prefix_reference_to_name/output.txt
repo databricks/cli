@@ -1,5 +1,3 @@
 
 >>> [CLI] bundle plan -o json
-{
-  "resources.jobs.viaref": "pre-pre-base"
-}
+"pre-pre-base"
