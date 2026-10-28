@@ -26,6 +26,8 @@ Each case registers one fault rule. A version wildcard such as
 `POST .../versions/*/complete` covers every version the workflow accesses or creates.
 Each `*` stays within one path segment, so a version read fault cannot also match
 nested operation endpoints.
+`GetDeployment` also uses a deployment-ID wildcard so its fault stays active if a
+failed lookup triggers a replacement deployment record.
 
 Each snapshot records the command invocations and output, including warnings and
 deployment-version links, then reports whether the injected endpoint was called.

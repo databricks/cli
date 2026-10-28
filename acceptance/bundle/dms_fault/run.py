@@ -25,7 +25,8 @@ PATTERNS = {
     "create_deployment": "POST /api/2.0/bundle/deployments",
     "create_version": "POST /api/2.0/bundle/deployments/{id}/versions",
     "delete_deployment": "DELETE /api/2.0/bundle/deployments/{id}",
-    "get_deployment": "GET /api/2.0/bundle/deployments/{id}",
+    # Keep failing lookups even if the CLI registers a replacement deployment.
+    "get_deployment": "GET /api/2.0/bundle/deployments/*",
     "get_operation": "GET /api/2.0/bundle/deployments/{id}/versions/*/operations/*",
     "get_resource": "GET /api/2.0/bundle/deployments/{id}/resources/*",
     "get_version": "GET /api/2.0/bundle/deployments/{id}/versions/*",
