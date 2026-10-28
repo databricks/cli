@@ -1,4 +1,4 @@
 # trigger_pause_status: PAUSED removes the schedules. The target override replaces the null schedule of dst
 # with a reference to the schedule of src, which is removed too: the request carries no schedule.
 trace $CLI bundle deploy
-trace print_requests.py //tables/main.default.dst/monitor | jq '.body | {has_schedule: has("schedule"), schedule}'
+trace print_requests.py //tables/main.default.dst/monitor | jq .body
