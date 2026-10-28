@@ -36,21 +36,34 @@ trap cleanup EXIT
 trace $CLI workspace mkdirs "${PYTHON_NOTEBOOK_DIR}"
 trace $CLI workspace import "${PYTHON_NOTEBOOK}" --file test.py --language PYTHON
 
+title "Create a pre-defined pipeline:\n"
+PIPELINE_ID=$($CLI pipelines create --json '{
+  "name": "auto-bind-pipeline-'${UNIQUE_NAME}'",
+  "libraries": [{"notebook": {"path": "'${PYTHON_NOTEBOOK}'"}}]
+}' | jq -r '.pipeline_id')
+add_repl "$PIPELINE_ID" PIPELINE_ID
+echo "Created pipeline with ID: $PIPELINE_ID"
+
 title "Generate and bind in one step:"
 trace $CLI bundle generate job --key test_job --existing-job-id $JOB_ID --config-dir resources --source-dir src --bind
+trace $CLI bundle generate pipeline --key test_pipeline --existing-pipeline-id $PIPELINE_ID --config-dir resources --source-dir src --bind --force
 trace ls src/
 # The output of the job is difference per cloud so we only check the name.
 trace cat resources/test_job.job.yml | grep "name: auto-bind-job-${UNIQUE_NAME}"
+trace cat resources/test_pipeline.pipeline.yml | grep "name: auto-bind-pipeline-${UNIQUE_NAME}"
 
-title "Deploy the bound job:"
+title "Deploy the bound resources:"
 trace $CLI bundle deploy
 
-title "Regenerate and bind the deployed job:"
+title "Regenerate and bind the deployed resources:"
 trace $CLI bundle deployment unbind test_job
 trace $CLI bundle generate job --key test_job --existing-job-id $JOB_ID --config-dir resources --source-dir src --bind --force
+trace $CLI bundle deployment unbind test_pipeline
+trace $CLI bundle generate pipeline --key test_pipeline --existing-pipeline-id $PIPELINE_ID --config-dir resources --source-dir src --bind --force
 
 title "Destroy the bundle:"
 trace $CLI bundle destroy --auto-approve
 
-title "Check that job is bound and does not exist after bundle is destroyed:"
+title "Check that resources are bound and do not exist after bundle is destroyed:"
 trace errcode $CLI jobs get "${JOB_ID}" --output json
+trace musterr $CLI pipelines get "${PIPELINE_ID}" --output json
