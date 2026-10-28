@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -63,12 +64,7 @@ var (
 
 // isRedactedDestinationField reports whether path names a destination field the read never returns.
 func isRedactedDestinationField(path *structpath.PathNode) bool {
-	for _, pattern := range redactedDestinationPatterns {
-		if path.HasPatternPrefix(pattern) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(redactedDestinationPatterns, path.HasPatternPrefix)
 }
 
 // isAbsentRemotely reports whether a read returned nothing for a field, which for a redacted field
@@ -127,6 +123,7 @@ func (r *ResourceMaterializationSet) DoCreate(ctx context.Context, config *ml.Ma
 	operation, err := r.client.FeatureEngineering.CreateMaterializationSet(ctx, ml.CreateMaterializationSetRequest{
 		MaterializationSet: *config,
 		RequestId:          uuid.NewString(),
+		ForceSendFields:    nil,
 	})
 	if err != nil {
 		return "", nil, err
@@ -195,9 +192,11 @@ func (r *ResourceMaterializationSet) materializationSetOperationFailure(
 		}
 	}
 	return &apierr.APIError{
-		ErrorCode:  string(settled.Error.ErrorCode),
-		Message:    target + " operation failed: " + message,
-		StatusCode: http.StatusOK,
+		ErrorCode:       string(settled.Error.ErrorCode),
+		Message:         target + " operation failed: " + message,
+		StatusCode:      http.StatusOK,
+		ResponseWrapper: nil,
+		Details:         nil, //nolint:staticcheck // SA1019: deprecated, but exhaustruct requires every field
 	}
 }
 
@@ -229,6 +228,7 @@ func (r *ResourceMaterializationSet) DoUpdate(ctx context.Context, id string, co
 		MaterializationSet:   update,
 		UpdateMask:           *fieldmask.New(materializationSetUpdatableFields),
 		RequestId:            uuid.NewString(),
+		ForceSendFields:      nil,
 	})
 	if err != nil {
 		return nil, err
@@ -247,6 +247,8 @@ func (r *ResourceMaterializationSet) DoDelete(ctx context.Context, id string, _ 
 	operation, err := r.client.FeatureEngineering.DeleteMaterializationSet(ctx, ml.DeleteMaterializationSetRequest{
 		MaterializationSetId: id,
 		RequestId:            uuid.NewString(),
+		AllowMissing:         false,
+		ForceSendFields:      nil,
 	})
 	if err != nil {
 		return err

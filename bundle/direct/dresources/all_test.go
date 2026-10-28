@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -1037,12 +1038,7 @@ func (f *testIgnoreFilter) shouldIgnore(path string) bool {
 	if err != nil {
 		return false
 	}
-	for _, pattern := range f.ignorePatterns {
-		if parsed.HasPatternPrefix(pattern) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(f.ignorePatterns, parsed.HasPatternPrefix)
 }
 
 // filterChanges returns only the changes that should not be ignored.

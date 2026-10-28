@@ -188,9 +188,7 @@ func TestNormalizeMaterializationSetMaterializedFeatureMembersAppendsToDeclaredM
 		CronScheduleTrigger: &ml.CronSchedule{Mode: ml.CronScheduleModeManual, CronExpression: shorthandCronExpr},
 	}
 	set := normalizeSet(t, &resources.MaterializationSet{
-		MaterializationSet: ml.MaterializationSet{
-			MaterializedFeatures: []ml.MaterializedFeature{declared},
-		},
+		MaterializedFeatures: []ml.MaterializedFeature{declared},
 		SawtoothMaterializedFeatures: []resources.SawtoothMaterializedFeatures{{
 			FeatureName:         shorthandFeatureName,
 			OfflineStoreConfig:  shorthandOfflineStore(),

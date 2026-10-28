@@ -68,18 +68,18 @@ func TestFeatureStateConvertsEveryWindow(t *testing.T) {
 	require.NoError(t, err)
 
 	window := state.Function.AggregationFunction.TimeWindow
-	assert.Equal(t, 86400.0, seconds(t, window.Rolling.WindowDuration))
-	assert.Equal(t, 86400.0, seconds(t, window.Rolling.Delay))
-	assert.Equal(t, 86400.0, seconds(t, window.Sawtooth.WindowDuration))
-	assert.Equal(t, 86400.0, seconds(t, window.Sliding.Offset))
+	assert.InDelta(t, 86400.0, seconds(t, window.Rolling.WindowDuration), 0)
+	assert.InDelta(t, 86400.0, seconds(t, window.Rolling.Delay), 0)
+	assert.InDelta(t, 86400.0, seconds(t, window.Sawtooth.WindowDuration), 0)
+	assert.InDelta(t, 86400.0, seconds(t, window.Sliding.Offset), 0)
 	assert.Equal(t, "86400s", window.Sliding.WindowDuration)
 	assert.Equal(t, "86400s", window.Sliding.SlideDuration)
 	assert.Equal(t, "86400s", window.Tumbling.WindowDuration)
 	assert.Equal(t, "86400s", window.Continuous.WindowDuration)
-	assert.Equal(t, 86400.0, seconds(t, state.Source.Lateness.SettlingDelay))
+	assert.InDelta(t, 86400.0, seconds(t, state.Source.Lateness.SettlingDelay), 0)
 
 	// The deprecated top-level time_window is converted on the same terms.
-	assert.Equal(t, 86400.0, seconds(t, state.TimeWindow.Rolling.WindowDuration))
+	assert.InDelta(t, 86400.0, seconds(t, state.TimeWindow.Rolling.WindowDuration), 0)
 }
 
 func TestFeatureStateAcceptsCompoundAndProtobufForms(t *testing.T) {
@@ -95,7 +95,7 @@ func TestFeatureStateAcceptsCompoundAndProtobufForms(t *testing.T) {
 	state, err := featureState(input)
 	require.NoError(t, err)
 	window := state.Function.AggregationFunction.TimeWindow
-	assert.Equal(t, 260100.0, seconds(t, window.Sawtooth.WindowDuration))
+	assert.InDelta(t, 260100.0, seconds(t, window.Sawtooth.WindowDuration), 0)
 	assert.Equal(t, "604800s", window.Sliding.SlideDuration)
 }
 

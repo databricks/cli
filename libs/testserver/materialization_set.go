@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -154,7 +154,7 @@ func featureMaterializationDestination(members []ml.MaterializedFeature) string 
 // cannot mix a feature materialized to both stores with one materialized offline only.
 func validateSharedMaterializationDestination(members []ml.MaterializedFeature) *materializationSetRefusal {
 	membersByFeature := map[string][]ml.MaterializedFeature{}
-	featureOrder := []string{}
+	var featureOrder []string
 	for _, member := range members {
 		if _, seen := membersByFeature[member.FeatureName]; !seen {
 			featureOrder = append(featureOrder, member.FeatureName)
@@ -722,7 +722,7 @@ func (s *FakeWorkspace) MaterializationSetsUpdate(req Request, setID string) Res
 		}
 		featureName := target[0].FeatureName
 		removedForFeature := append([]string(nil), featureNameToRemovedIDs[featureName]...)
-		sort.Strings(removedForFeature)
+		slices.Sort(removedForFeature)
 		// The server has a message for each direction. target[0] is the member a delete is applied
 		// to, so naming it means the delete reaches past what the request asked for, and omitting
 		// it means the named members have no delete of their own.

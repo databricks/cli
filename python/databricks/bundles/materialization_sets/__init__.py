@@ -9,6 +9,9 @@ __all__ = [
     "CronScheduleMode",
     "CronScheduleModeParam",
     "CronScheduleParam",
+    "DependsOn",
+    "DependsOnDict",
+    "DependsOnParam",
     "Lifecycle",
     "LifecycleDict",
     "LifecycleParam",
@@ -64,6 +67,11 @@ from databricks.bundles.materialization_sets._models.cron_schedule import (
 from databricks.bundles.materialization_sets._models.cron_schedule_mode import (
     CronScheduleMode,
     CronScheduleModeParam,
+)
+from databricks.bundles.materialization_sets._models.depends_on import (
+    DependsOn,
+    DependsOnDict,
+    DependsOnParam,
 )
 from databricks.bundles.materialization_sets._models.lifecycle import (
     Lifecycle,

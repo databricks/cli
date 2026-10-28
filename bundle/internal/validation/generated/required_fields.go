@@ -271,6 +271,17 @@ var RequiredFields = map[string][]string{
 	"resources.jobs.*.webhook_notifications.on_streaming_backlog_exceeded[*]":                                        {"id"},
 	"resources.jobs.*.webhook_notifications.on_success[*]":                                                           {"id"},
 
+	"resources.materialization_sets.*.batch_offline_and_online_materialized_features[*]":                      {"feature_name"},
+	"resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].offline_store_config": {"catalog_name", "schema_name", "table_name_prefix"},
+	"resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].online_store_config":  {"catalog_name", "online_store_name", "schema_name", "table_name_prefix"},
+	"resources.materialization_sets.*.lifecycle.depends_on[*]":                                                {"resource"},
+	"resources.materialization_sets.*.materialized_features[*]":                                               {"feature_name"},
+	"resources.materialization_sets.*.materialized_features[*].offline_store_config":                          {"catalog_name", "schema_name", "table_name_prefix"},
+	"resources.materialization_sets.*.materialized_features[*].online_store_config":                           {"catalog_name", "online_store_name", "schema_name", "table_name_prefix"},
+	"resources.materialization_sets.*.sawtooth_materialized_features[*]":                                      {"feature_name"},
+	"resources.materialization_sets.*.sawtooth_materialized_features[*].offline_store_config":                 {"catalog_name", "schema_name", "table_name_prefix"},
+	"resources.materialization_sets.*.sawtooth_materialized_features[*].online_store_config":                  {"catalog_name", "online_store_name", "schema_name", "table_name_prefix"},
+
 	"resources.mcp_services.*":                          {"parent", "mcp_service_id"},
 	"resources.mcp_services.*.config.rate_limits[*]":    {"key", "renewal_period"},
 	"resources.mcp_services.*.config.source_connection": {"name"},
