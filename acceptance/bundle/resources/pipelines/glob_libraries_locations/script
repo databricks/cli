@@ -1,0 +1,2 @@
+# The glob expands to three libraries. The warning of each one points at the line of the glob.
+trace $CLI bundle validate
