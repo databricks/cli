@@ -404,6 +404,15 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 		uploadFileSizers[i] = f
 	}
 
+	var deploymentHistory *protos.BundleDeploymentHistory
+	if stats := b.DeploymentBundle.StateDB.OperationBufferStats(); stats != nil {
+		deploymentHistory = &protos.BundleDeploymentHistory{
+			OperationCount:          int64(stats.OperationCount),
+			MaxQueueSize:            int64(stats.MaxQueueSize),
+			UndrainedOperationCount: int64(stats.UndrainedOperationCount),
+		}
+	}
+
 	telemetry.Log(ctx, protos.DatabricksCliLog{
 		BundleDeployEvent: &protos.BundleDeployEvent{
 			BundleUuid:   bundleUuid,
@@ -430,6 +439,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 			ResourceDashboardIDs: dashboardIds,
 
 			ResourcesMetadata: collectResourcesMetadata(ctx, b),
+			DeploymentHistory: deploymentHistory,
 
 			Pydabs: pydabsSection,
 

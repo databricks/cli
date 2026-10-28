@@ -105,7 +105,8 @@ type DeploymentState struct {
 
 	// operationBuffer records each state write with DMS. Nil unless the bundle records deployment
 	// history, in which case InitializeOperationBuffer installs it once the version exists.
-	operationBuffer *dms.OperationBuffer
+	operationBuffer      *dms.OperationBuffer
+	operationBufferStats *dms.OperationBufferStats
 
 	// versionCompleted makes CompleteVersion a no-op after the first call, so a deferred safety-net
 	// completion after an explicit one does nothing.
@@ -197,6 +198,17 @@ func (db *DeploymentState) getOperationBuffer() *dms.OperationBuffer {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	return db.operationBuffer
+}
+
+// OperationBufferStats returns history measurements, including after version completion.
+func (db *DeploymentState) OperationBufferStats() *dms.OperationBufferStats {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	if db.operationBuffer != nil {
+		stats := db.operationBuffer.Stats()
+		return &stats
+	}
+	return db.operationBufferStats
 }
 
 // RecordingError reports whether recording state writes to the service has failed, so the apply
@@ -562,6 +574,8 @@ func (db *DeploymentState) reset() {
 	// Telemetry and destroy still need the mode and IDs after version completion.
 	// Clear the recording buffer once CompleteVersion has copied it.
 	if db.versionCompleted {
+		stats := db.operationBuffer.Stats()
+		db.operationBufferStats = &stats
 		db.operationBuffer = nil
 		db.versionCompleted = false
 	}
@@ -569,6 +583,7 @@ func (db *DeploymentState) reset() {
 
 func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, mode Mode, withRecovery WithRecovery, dmsDeployment OpenDmsArgs) error {
 	db.Path = path
+	db.operationBufferStats = nil
 	db.mode = mode
 	db.DeploymentID = dmsDeployment.DeploymentID
 	db.VersionID = dmsDeployment.LastVersionID

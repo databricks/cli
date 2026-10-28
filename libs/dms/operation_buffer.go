@@ -25,6 +25,13 @@ type BufferOptions struct {
 	OperationCount int
 }
 
+// OperationBufferStats describes one deployment version's history uploads.
+type OperationBufferStats struct {
+	OperationCount          int
+	MaxQueueSize            int
+	UndrainedOperationCount int
+}
+
 // OperationBuffer records each state write with DMS for one deployment version, off the apply
 // path: writes are queued and sent on one background goroutine. It exists only while a bundle
 // records deployment history; callers hold a nil buffer otherwise and must not call it.
@@ -56,7 +63,10 @@ type OperationBuffer struct {
 	mu sync.Mutex
 
 	// pending holds the newest update per resource key, absent once the writer takes it.
-	pending map[string]OperationUpdate
+	pending            map[string]OperationUpdate
+	inFlight           string
+	stats              OperationBufferStats
+	drainStatsRecorded bool
 
 	// latestState is the newest state-bearing update per resource key, kept for the buffer's
 	// whole life - unlike pending, which the writer removes on take. RecordFailure merges its
@@ -90,6 +100,7 @@ func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum i
 		pending:      make(map[string]OperationUpdate),
 		latestState:  make(map[string]OperationUpdate),
 		sequenceIDs:  make(map[string]int64),
+		stats:        OperationBufferStats{OperationCount: options.OperationCount},
 	}
 	b.stopQueue = sync.OnceFunc(func() { close(b.queue) })
 	go b.run(ctx)
@@ -133,6 +144,7 @@ func (b *OperationBuffer) record(resourceKey string, update OperationUpdate, kee
 		update = waiting.Merge(update)
 	}
 	b.pending[resourceKey] = update
+	b.stats.MaxQueueSize = max(b.stats.MaxQueueSize, len(b.pending))
 	b.mu.Unlock()
 
 	// when already queued: the writer reads the map when it gets to the key,
@@ -151,6 +163,9 @@ func (b *OperationBuffer) take(resourceKey string) (OperationUpdate, bool) {
 
 	update, ok := b.pending[resourceKey]
 	delete(b.pending, resourceKey)
+	if ok {
+		b.inFlight = resourceKey
+	}
 	return update, ok
 }
 
@@ -186,6 +201,9 @@ func (b *OperationBuffer) run(ctx context.Context) {
 		if err := b.write(ctx, resourceKey, update); err != nil {
 			b.setErr(fmt.Errorf("recording operation for %s: %w", resourceKey, err))
 		}
+		b.mu.Lock()
+		b.inFlight = ""
+		b.mu.Unlock()
 	}
 }
 
@@ -217,6 +235,7 @@ func (b *OperationBuffer) Drain(ctx context.Context) error {
 	if !b.bestEffort {
 		// DMS is authoritative: wait for all queued writes and return any recording error.
 		<-b.done
+		b.recordDrainStats()
 		return b.Err()
 	}
 
@@ -227,13 +246,36 @@ func (b *OperationBuffer) Drain(ctx context.Context) error {
 	select {
 	case <-b.done:
 		// Report the first upload error even if later uploads succeeded.
+		b.recordDrainStats()
 		return b.Err()
 	case <-ctx.Done():
 		// Deadline or cancellation: stop the upload so deployment can finish promptly.
+		b.recordDrainStats()
 		b.setErr(ctx.Err())
 		b.cancel()
 		return b.Err()
 	}
+}
+
+// recordDrainStats freezes outstanding resource counts before cancellation can clear an upload.
+func (b *OperationBuffer) recordDrainStats() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.drainStatsRecorded {
+		return
+	}
+	b.drainStatsRecorded = true
+	b.stats.UndrainedOperationCount = len(b.pending)
+	if _, queued := b.pending[b.inFlight]; b.inFlight != "" && !queued {
+		b.stats.UndrainedOperationCount++
+	}
+}
+
+// Stats returns a snapshot; undrained operations are counted once when Drain ends.
+func (b *OperationBuffer) Stats() OperationBufferStats {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.stats
 }
 
 // setErr keeps the first recording error for Drain to report.

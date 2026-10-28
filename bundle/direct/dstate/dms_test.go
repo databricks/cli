@@ -10,6 +10,26 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestOperationBufferStatsSurviveVersionCompletion(t *testing.T) {
+	var db DeploymentState
+	assert.Nil(t, db.OperationBufferStats())
+	db.InitializeOperationBuffer(t.Context(), "dep-1", 1, 5)
+	require.NoError(t, db.operationBuffer.Drain(t.Context()))
+	want := &dms.OperationBufferStats{OperationCount: 5}
+	assert.Equal(t, want, db.OperationBufferStats())
+
+	db.mu.Lock()
+	db.reset()
+	db.versionCompleted = true
+	db.reset()
+	db.mu.Unlock()
+	assert.Nil(t, db.operationBuffer)
+	assert.Equal(t, want, db.OperationBufferStats())
+
+	require.NoError(t, db.Open(t.Context(), t.TempDir()+"/resources.json", ReadingFile, WithRecovery(false), OpenDmsArgs{}))
+	assert.Nil(t, db.OperationBufferStats())
+}
+
 func TestApplyDMSState(t *testing.T) {
 	// The service stores state as an opaque string, so the envelope the write path sent
 	// arrives verbatim.

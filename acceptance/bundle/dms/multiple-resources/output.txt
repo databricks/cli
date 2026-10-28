@@ -10,6 +10,14 @@ Created jobs.two
 Files: 2 uploaded, 0 deleted
 Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 
+=== History telemetry survives version completion and counts all five staged operations
+>>> cat [OUTPUT_DIR]/out.requests.txt
+{
+  "operation_count": 5,
+  "undrained_operation_count": 0,
+  "queue_size_in_range": true
+}
+
 >>> print_requests.py --dms //versions/1/operations --sort --del-body state --oneline
 {"method": "PATCH", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/operations/jobs.five", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[FIVE_ID]", "sequence_id": 0, "status": "OPERATION_STATUS_SUCCEEDED"}}
 {"method": "PATCH", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/operations/jobs.four", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[FOUR_ID]", "sequence_id": 0, "status": "OPERATION_STATUS_SUCCEEDED"}}
@@ -171,6 +179,10 @@ Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/files...
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 5 unchanged
+
+=== A deploy with no version omits operation buffer telemetry
+>>> cat [OUTPUT_DIR]/out.requests.txt
+false
 
 >>> print_requests.py --dms //api/2.0/bundle --sort --oneline
 
