@@ -2,9 +2,15 @@
 
 from databricks.bundles.core import Resources, materialization_set_mutator
 from databricks.bundles.core._generated.materialization_sets import _resource_type
+from databricks.bundles.materialization_sets._models.batch_offline_and_online_materialized_features import (
+    BatchOfflineAndOnlineMaterializedFeatures,
+)
 from databricks.bundles.materialization_sets._models.lifecycle import Lifecycle
 from databricks.bundles.materialization_sets._models.materialization_set import (
     MaterializationSet,
+)
+from databricks.bundles.materialization_sets._models.sawtooth_materialized_features import (
+    SawtoothMaterializedFeatures,
 )
 from databricks_tests.core._resource_test_case import ResourceTestCase
 
@@ -13,8 +19,24 @@ def _test_case():
     return (
         ResourceTestCase(
             add_resource=Resources.add_materialization_set,
-            dict_example={"lifecycle": {}},
-            dataclass_example=MaterializationSet(lifecycle=Lifecycle()),
+            dict_example={
+                "batch_offline_and_online_materialized_features": [
+                    {"feature_name": "feature_name"}
+                ],
+                "lifecycle": {},
+                "sawtooth_materialized_features": [{"feature_name": "feature_name"}],
+            },
+            dataclass_example=MaterializationSet(
+                batch_offline_and_online_materialized_features=[
+                    BatchOfflineAndOnlineMaterializedFeatures(
+                        feature_name="feature_name"
+                    )
+                ],
+                lifecycle=Lifecycle(),
+                sawtooth_materialized_features=[
+                    SawtoothMaterializedFeatures(feature_name="feature_name")
+                ],
+            ),
             mutator=materialization_set_mutator,
         ),
         _resource_type(),

@@ -5,10 +5,6 @@ from typing import Literal
 
 
 class MaterializedFeaturePipelineScheduleState(Enum):
-    """
-    :meta private: [EXPERIMENTAL]
-    """
-
     SNAPSHOT = "SNAPSHOT"
     ACTIVE = "ACTIVE"
     PAUSED = "PAUSED"

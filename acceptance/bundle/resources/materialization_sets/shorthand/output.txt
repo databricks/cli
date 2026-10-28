@@ -1,0 +1,191 @@
+
+=== The shorthand judges nothing it is given. A batch schedule the service refuses is reported
+=== by the service, naming the feature, rather than rejected while the config is being read.
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-shorthand-[UNIQUE_NAME]/default/files...
+Created features.sawfeat
+Error: cannot create resources.materialization_sets.set1: materialization set [UUID] operation failed: Feature 'danielb.fs2680.shd_[UNIQUE_NAME]' must declare a DERIVED cron schedule on its batch materialize feature requests. The sawtooth batch materializations refresh on a daily schedule the service computes, so a caller neither pins nor omits it. (200 BAD_REQUEST)
+
+Endpoint: n/a
+HTTP Status: 200
+API error_code: BAD_REQUEST
+API message: materialization set [UUID] operation failed: Feature 'danielb.fs2680.shd_[UNIQUE_NAME]' must declare a DERIVED cron schedule on its batch materialize feature requests. The sawtooth batch materializations refresh on a daily schedule the service computes, so a caller neither pins nor omits it.
+
+Files: 7 uploaded, 0 deleted
+
+=== Declaring the same feature once with a DERIVED batch schedule creates the three members it
+=== is made of, and neither shorthand field survives into the summary
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-shorthand-[UNIQUE_NAME]/default/files...
+Created materialization_sets.set1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> members
+{
+  "sawtooth_shorthand_remains": false,
+  "batch_pair_shorthand_remains": false,
+  "members": [
+    {
+      "feature": "sawfeat",
+      "destination": "offline",
+      "trigger": "batch"
+    },
+    {
+      "feature": "sawfeat",
+      "destination": "online",
+      "trigger": "batch"
+    },
+    {
+      "feature": "sawfeat",
+      "destination": "online",
+      "trigger": "streaming"
+    }
+  ]
+}
+
+=== A redeploy plans nothing, so the expansion is the same on every invocation
+>>> [CLI] bundle plan -o json
+
+>>> set_action
+skip
+
+=== The online destination is written once, so one edit reaches both online members. The offline
+=== member, whose destination did not change, is absent from the changes.
+>>> [CLI] bundle plan -o json
+
+>>> set_action
+recreate
+
+>>> recreated_fields
+materialized_features[member='feature_name=danielb.fs2680.shd_[UNIQUE_NAME]|online_store_name=[ONLINE_STORE]|is_streaming_mode=false'].online_store_config.table_name_prefix
+materialized_features[member='feature_name=danielb.fs2680.shd_[UNIQUE_NAME]|online_store_name=[ONLINE_STORE]|is_streaming_mode=true'].online_store_config.table_name_prefix
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-shorthand-[UNIQUE_NAME]/default/files...
+
+This action will result in the deletion or recreation of the following materialization sets.
+Every materialized feature in a recreated set is dropped and recomputed from scratch, including
+the members whose configuration did not change:
+  recreate resources.materialization_sets.set1
+Recreated materialization_sets.set1
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> set_action
+skip
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.features.sawfeat
+  delete resources.materialization_sets.set1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-matset-shorthand-[UNIQUE_NAME]/default
+
+Destroy: 2 deleted
+
+=== A set may mix a feature declared in shorthand with members written out in full: the
+=== expansion is appended to what the config already lists
+>>> create_table.py danielb.fs2680.src_[UNIQUE_NAME]
+Created table danielb.fs2680.src_[UNIQUE_NAME]
+Inserted sample data into danielb.fs2680.src_[UNIQUE_NAME]
+Table danielb.fs2680.src_[UNIQUE_NAME] is now visible (catalog_name=danielb)
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-shorthand-[UNIQUE_NAME]/default/files...
+Created features.otherfeat
+Created features.pairfeat
+Created materialization_sets.set1
+Files: 8 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> members
+{
+  "sawtooth_shorthand_remains": false,
+  "batch_pair_shorthand_remains": false,
+  "members": [
+    {
+      "feature": "otherfeat",
+      "destination": "offline",
+      "trigger": "batch"
+    },
+    {
+      "feature": "otherfeat",
+      "destination": "online",
+      "trigger": "batch"
+    },
+    {
+      "feature": "pairfeat",
+      "destination": "offline",
+      "trigger": "batch"
+    },
+    {
+      "feature": "pairfeat",
+      "destination": "online",
+      "trigger": "batch"
+    }
+  ]
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.features.otherfeat
+  delete resources.features.pairfeat
+  delete resources.materialization_sets.set1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-matset-shorthand-[UNIQUE_NAME]/default
+
+Destroy: 3 deleted
+
+=== The batch pair shorthand carries a whole set on its own, with no member written out
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-shorthand-[UNIQUE_NAME]/default/files...
+Created features.pairfeat
+Created materialization_sets.set1
+Files: 8 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> members
+{
+  "sawtooth_shorthand_remains": false,
+  "batch_pair_shorthand_remains": false,
+  "members": [
+    {
+      "feature": "pairfeat",
+      "destination": "offline",
+      "trigger": "batch"
+    },
+    {
+      "feature": "pairfeat",
+      "destination": "online",
+      "trigger": "batch"
+    }
+  ]
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.features.pairfeat
+  delete resources.materialization_sets.set1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-matset-shorthand-[UNIQUE_NAME]/default
+
+Destroy: 2 deleted
+
+=== Both shorthand fields expand in the same set, which the service then refuses: a sawtooth
+=== entry has to carry a DERIVED schedule and a batch pair a MANUAL one, and one request cannot
+=== mix the two modes. The CLI expanded both fields and judged neither.
+>>> musterr [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-shorthand-[UNIQUE_NAME]/default/files...
+Created features.bothbatch
+Created features.bothsaw
+Error: cannot create resources.materialization_sets.set1: All cron-scheduled features in a single request must use the same cron schedule mode; a request cannot mix DERIVED (service-derived) and MANUAL (caller-supplied) schedules. (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets?request_id=[UUID]
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: All cron-scheduled features in a single request must use the same cron schedule mode; a request cannot mix DERIVED (service-derived) and MANUAL (caller-supplied) schedules.
+
+Files: 8 uploaded, 0 deleted

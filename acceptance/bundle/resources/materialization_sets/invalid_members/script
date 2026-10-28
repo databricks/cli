@@ -6,3 +6,8 @@ render() {
 title "Two members differing only outside the member key are the same member declared twice"
 render duplicate.yml
 trace musterr $CLI bundle validate
+
+title "A shorthand entry and a member written out can reach the same member, which neither"
+title "declaration shows on its own"
+render shorthand-collision.yml
+trace musterr $CLI bundle validate

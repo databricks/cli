@@ -1,0 +1,38 @@
+# Local only. These cases need a Stream source, and a Stream is neither a bundle resource nor a CLI
+# command, so the integration suite has no way to provision one; it also needs a Unity Catalog
+# connection to a Kafka topic whose payload the feature definitions name. Run them against a
+# workspace by hand, overriding MATSET_CATALOG / MATSET_SCHEMA / MATSET_ONLINE_STORE /
+# MATSET_STREAM -- see README.md.
+Cloud = false
+
+Ignore = [
+    ".databricks",
+    "databricks.yml",
+]
+
+# A real materialization set or member id is 32 undashed hex characters; the harness's built-in
+# replacement only matches the dashed form the fake produces.
+[[Repls]]
+Old = '\b[0-9a-f]{32}\b'
+New = '[UUID]'
+
+# The workspace host, which only a cloud run puts in the output.
+[[Repls]]
+Old = 'https://[a-z0-9.-]+\.cloud\.databricks\.com'
+New = '[DATABRICKS_URL]'
+
+# The batch half creates and drops a Delta source, so the local run needs the same two stubs
+# batch/test.toml carries.
+[[Server]]
+Pattern = "POST /api/2.0/sql/statements/"
+Response.Body = '{"status": {"state": "SUCCEEDED"}, "manifest": {"schema": {"columns": []}}}'
+
+[[Server]]
+Pattern = "DELETE /api/2.1/unity-catalog/tables/{full_name}"
+Response.Body = '{}'
+
+# The member key is built from the online store name, so spelling it in a golden pins one
+# workspace's store. Override MATSET_ONLINE_STORE to move the case.
+[[Repls]]
+Old = 'online_store_name=[a-zA-Z0-9_-]+'
+New = 'online_store_name=[ONLINE_STORE]'

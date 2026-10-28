@@ -1,0 +1,94 @@
+# The sawtooth half needs a Stream source, and a Stream is not a bundle resource, so it references
+# one that already exists. The batch half creates its own Delta source.
+export CATALOG_NAME="${MATSET_CATALOG:-danielb}"
+export SCHEMA_NAME="${MATSET_SCHEMA:-fs2680}"
+export ONLINE_STORE_NAME="${MATSET_ONLINE_STORE:-danielb}"
+export STREAM_FULL_NAME="${MATSET_STREAM:-danielb.fs2680.fs2680_dch48o_stream}"
+export TABLE_NAME="$CATALOG_NAME.$SCHEMA_NAME.src_$UNIQUE_NAME"
+
+render() {
+    envsubst < "$1" > databricks.yml
+    [ -n "${MATSET_PROFILE:-}" ] || return 0
+    printf "\nworkspace:\n  profile: %s\n" "$MATSET_PROFILE" >> databricks.yml
+}
+
+set_action() {
+    jq -r '.plan["resources.materialization_sets.set1"].action' out.plan.json
+}
+
+# The shorthand fields must not survive the expansion, so the summary is the whole picture of what
+# was declared.
+members() {
+    $CLI bundle summary -o json | jq '.resources.materialization_sets.set1 | {
+        sawtooth_shorthand_remains: has("sawtooth_materialized_features"),
+        batch_pair_shorthand_remains: has("batch_offline_and_online_materialized_features"),
+        members: [.materialized_features[] | {
+            feature: (.feature_name | ltrimstr("${resources.features.") | rtrimstr(".full_name}")),
+            destination: (if .online_store_config != null then "online" else "offline" end),
+            trigger: (if .streaming_mode != null then "streaming" else "batch" end)
+        }]
+    }'
+}
+
+# Only the fields that force the recreate, so the claim is which members the one edit reached.
+recreated_fields() {
+    jq -r '.plan["resources.materialization_sets.set1"].changes | to_entries
+        | map(select(.value.action == "recreate")) | map(.key)[]' out.plan.json
+}
+
+cleanup() {
+    $CLI bundle destroy --auto-approve > /dev/null 2>&1 || true
+    $CLI tables delete "$TABLE_NAME" > /dev/null 2>&1 || true
+}
+trap cleanup EXIT
+
+title "The shorthand judges nothing it is given. A batch schedule the service refuses is reported"
+title "by the service, naming the feature, rather than rejected while the config is being read."
+render manual-schedule.yml.tmpl
+trace musterr $CLI bundle deploy
+
+title "Declaring the same feature once with a DERIVED batch schedule creates the three members it"
+title "is made of, and neither shorthand field survives into the summary"
+render databricks.yml.tmpl
+trace $CLI bundle deploy
+trace members
+
+title "A redeploy plans nothing, so the expansion is the same on every invocation"
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
+
+title "The online destination is written once, so one edit reaches both online members. The offline"
+title "member, whose destination did not change, is absent from the changes."
+render moved.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
+trace recreated_fields
+trace $CLI bundle deploy --auto-approve
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
+
+trace $CLI bundle destroy --auto-approve
+
+title "A set may mix a feature declared in shorthand with members written out in full: the"
+title "expansion is appended to what the config already lists"
+trace create_table.py "$TABLE_NAME"
+render batch-pair.yml.tmpl
+trace $CLI bundle deploy
+trace members
+
+trace $CLI bundle destroy --auto-approve
+
+title "The batch pair shorthand carries a whole set on its own, with no member written out"
+render batch-only.yml.tmpl
+trace $CLI bundle deploy
+trace members
+
+trace $CLI bundle destroy --auto-approve
+
+title "Both shorthand fields expand in the same set, which the service then refuses: a sawtooth"
+title "entry has to carry a DERIVED schedule and a batch pair a MANUAL one, and one request cannot"
+title "mix the two modes. The CLI expanded both fields and judged neither."
+render both-shorthand.yml.tmpl
+trace musterr $CLI bundle deploy --auto-approve
+
+rm -f out.plan.json

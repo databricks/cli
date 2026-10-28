@@ -18,8 +18,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class StreamingMode:
     """
-    :meta private: [EXPERIMENTAL]
-
     The streaming mode configuration for a streaming materialization pipeline.
     """
 

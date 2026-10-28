@@ -351,6 +351,53 @@
                   }
                 ]
               },
+              "resources.BatchOfflineAndOnlineMaterializedFeatures": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "budget_policy_id": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "cron_schedule": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "cron_schedule_trigger": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.CronSchedule"
+                      },
+                      "feature_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "notifications": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializationNotifications"
+                      },
+                      "offline_store_config": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.OfflineStoreConfig"
+                      },
+                      "online_store_config": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.OnlineStoreConfig"
+                      },
+                      "pipeline_schedule_state": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializedFeaturePipelineScheduleState"
+                      },
+                      "table_trigger": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.TableTrigger"
+                      },
+                      "tags": {
+                        "$ref": "#/$defs/map/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "feature_name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.Catalog": {
                 "oneOf": [
                   {
@@ -1729,6 +1776,9 @@
                     "type": "object",
                     "description": "A group of materialized features created and managed as a single unit.",
                     "properties": {
+                      "batch_offline_and_online_materialized_features": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.BatchOfflineAndOnlineMaterializedFeatures"
+                      },
                       "lifecycle": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
@@ -1743,6 +1793,9 @@
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.MaterializedFeature",
                         "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                         "doNotSuggest": true
+                      },
+                      "sawtooth_materialized_features": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.SawtoothMaterializedFeatures"
                       }
                     },
                     "additionalProperties": false
@@ -3078,6 +3131,56 @@
                     },
                     "additionalProperties": false,
                     "markdownDescription": "The registered model resource allows you to define models in Unity Catalog. For information about Unity Catalog [registered models](https://docs.databricks.com/api/workspace/registeredmodels/create), see [link](https://docs.databricks.com/machine-learning/manage-model-lifecycle/index.html)."
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.SawtoothMaterializedFeatures": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "budget_policy_id": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "cron_schedule": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "cron_schedule_trigger": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.CronSchedule"
+                      },
+                      "feature_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "notifications": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializationNotifications"
+                      },
+                      "offline_store_config": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.OfflineStoreConfig"
+                      },
+                      "online_store_config": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.OnlineStoreConfig"
+                      },
+                      "pipeline_schedule_state": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializedFeaturePipelineScheduleState"
+                      },
+                      "streaming_mode": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.StreamingMode"
+                      },
+                      "table_trigger": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.TableTrigger"
+                      },
+                      "tags": {
+                        "$ref": "#/$defs/map/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "feature_name"
+                    ]
                   },
                   {
                     "type": "string",
@@ -21189,6 +21292,20 @@
                     }
                   ]
                 },
+                "resources.BatchOfflineAndOnlineMaterializedFeatures": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.BatchOfflineAndOnlineMaterializedFeatures"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.ClusterPermission": {
                   "oneOf": [
                     {
@@ -21335,6 +21452,20 @@
                       "type": "array",
                       "items": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PipelinePermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.SawtoothMaterializedFeatures": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SawtoothMaterializedFeatures"
                       }
                     },
                     {
