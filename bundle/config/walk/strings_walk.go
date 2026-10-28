@@ -16615,6 +16615,12 @@ func stringsPipelinesConnectorOptions(c *stringsWalk, n *Node, v *pipelines.Conn
 			stringsPipelinesMetaMarketingOptions(c, &ch, x)
 		}
 	}
+	if !n.IsRef("onedrive_options") {
+		if x := v.OnedriveOptions; x != nil {
+			ch := n.Child("onedrive_options")
+			stringsPipelinesOneDriveOptions(c, &ch, x)
+		}
+	}
 	if !n.IsRef("outlook_options") {
 		if x := v.OutlookOptions; x != nil {
 			ch := n.Child("outlook_options")
@@ -17666,6 +17672,38 @@ func stringsPipelinesMetaMarketingOptions(c *stringsWalk, n *Node, v *pipelines.
 		ch := n.Child("time_increment")
 		if r, ok := c.fn(&ch, s); ok {
 			v.TimeIncrement = (r)
+		}
+	}
+}
+
+func stringsPipelinesOneDriveOptions(c *stringsWalk, n *Node, v *pipelines.OneDriveOptions) {
+	if n.isRef() {
+		return
+	}
+	if c.mode == EmptyFields && v.EntityType == "" && Forced(v.ForceSendFields, "EntityType") {
+		ch := n.Child("entity_type")
+		c.fn(&ch, "")
+	}
+	if s := string(v.EntityType); c.match(s) {
+		ch := n.Child("entity_type")
+		if r, ok := c.fn(&ch, s); ok {
+			v.EntityType = pipelines.OneDriveOptionsOneDriveEntityType(r)
+		}
+	}
+	if !n.IsRef("file_ingestion_options") {
+		if x := v.FileIngestionOptions; x != nil {
+			ch := n.Child("file_ingestion_options")
+			stringsPipelinesFileIngestionOptions(c, &ch, x)
+		}
+	}
+	if c.mode == EmptyFields && v.Url == "" && Forced(v.ForceSendFields, "Url") {
+		ch := n.Child("url")
+		c.fn(&ch, "")
+	}
+	if s := string(v.Url); c.match(s) {
+		ch := n.Child("url")
+		if r, ok := c.fn(&ch, s); ok {
+			v.Url = (r)
 		}
 	}
 }

@@ -64,31 +64,33 @@ var enumValues115 = []string{"PAGE_SELECTION_ALL", "PAGE_SELECTION_SUBSET"}
 
 var enumValues116 = []string{"FILE", "FILE_METADATA", "PERMISSION"}
 
-var enumValues117 = []string{"ALL", "INLINE_ONLY", "NONE", "NON_INLINE_ONLY"}
+var enumValues117 = []string{"FILE", "FILE_METADATA"}
 
-var enumValues118 = []string{"TEXT_HTML", "TEXT_PLAIN"}
+var enumValues118 = []string{"ALL", "INLINE_ONLY", "NONE", "NON_INLINE_ONLY"}
 
-var enumValues119 = []string{"FILE", "FILE_METADATA", "LIST", "PERMISSION"}
+var enumValues119 = []string{"TEXT_HTML", "TEXT_PLAIN"}
 
 var enumValues12 = []string{"ACTIVE", "TRASHED"}
 
-var enumValues120 = []string{"AUCTION_AD", "AUCTION_ADGROUP", "AUCTION_ADVERTISER", "AUCTION_CAMPAIGN"}
+var enumValues120 = []string{"FILE", "FILE_METADATA", "LIST", "PERMISSION"}
 
-var enumValues121 = []string{"AUDIENCE", "BASIC", "BUSINESS_CENTER", "DSA", "GMV_MAX", "PLAYABLE_AD"}
+var enumValues121 = []string{"AUCTION_AD", "AUCTION_ADGROUP", "AUCTION_ADVERTISER", "AUCTION_CAMPAIGN"}
 
-var enumValues122 = []string{"AVRO", "JSON", "PROTOBUF", "STRING"}
+var enumValues122 = []string{"AUDIENCE", "BASIC", "BUSINESS_CENTER", "DSA", "GMV_MAX", "PLAYABLE_AD"}
 
-var enumValues123 = []string{"AVRO", "BINARYFILE", "CSV", "EXCEL", "JSON", "ORC", "PARQUET", "XML"}
+var enumValues123 = []string{"AVRO", "JSON", "PROTOBUF", "STRING"}
 
-var enumValues124 = []string{"ADD_NEW_COLUMNS", "ADD_NEW_COLUMNS_WITH_TYPE_WIDENING", "FAIL_ON_NEW_COLUMNS", "NONE", "RESCUE"}
+var enumValues124 = []string{"AVRO", "BINARYFILE", "CSV", "EXCEL", "JSON", "ORC", "PARQUET", "XML"}
 
-var enumValues125 = []string{"CAMPAIGN", "CAMPAIGN_GROUP", "CREATIVE"}
+var enumValues125 = []string{"ADD_NEW_COLUMNS", "ADD_NEW_COLUMNS_WITH_TYPE_WIDENING", "FAIL_ON_NEW_COLUMNS", "NONE", "RESCUE"}
 
-var enumValues126 = []string{"ANALYTICS", "ATTRIBUTED_REVENUE_METRICS", "STATISTICS"}
+var enumValues126 = []string{"CAMPAIGN", "CAMPAIGN_GROUP", "CREATIVE"}
 
-var enumValues127 = []string{"ALL", "DAILY", "MONTHLY", "YEARLY"}
+var enumValues127 = []string{"ANALYTICS", "ATTRIBUTED_REVENUE_METRICS", "STATISTICS"}
 
-var enumValues128 = []string{"FAILFAST", "PERMISSIVE"}
+var enumValues128 = []string{"ALL", "DAILY", "MONTHLY", "YEARLY"}
+
+var enumValues129 = []string{"FAILFAST", "PERMISSIVE"}
 
 var enumValues13 = []string{"AVAILABLE", "DELETING", "FAILING_OVER", "STARTING", "STOPPED", "UPDATING"}
 
@@ -200,7 +202,7 @@ var enumValues61 = []string{"BUNDLE"}
 
 var enumValues62 = []string{"CDC", "QUERY_BASED"}
 
-var enumValues63 = []string{"BIGQUERY", "CONFLUENCE", "DYNAMICS365", "FOREIGN_CATALOG", "GA4_RAW_DATA", "GOOGLE_DRIVE", "JIRA", "MANAGED_POSTGRESQL", "META_MARKETING", "MYSQL", "NETSUITE", "ORACLE", "POSTGRESQL", "RABBITMQ", "SALESFORCE", "SERVICENOW", "SHAREPOINT", "SMARTSHEET", "SQLSERVER", "TERADATA", "TIKTOK_ADS", "WORKDAY_RAAS", "ZENDESK"}
+var enumValues63 = []string{"BIGQUERY", "CONFLUENCE", "DYNAMICS365", "FOREIGN_CATALOG", "GA4_RAW_DATA", "GOOGLE_DRIVE", "JIRA", "MANAGED_POSTGRESQL", "META_MARKETING", "MYSQL", "NETSUITE", "ONEDRIVE", "ORACLE", "POSTGRESQL", "RABBITMQ", "SALESFORCE", "SERVICENOW", "SHAREPOINT", "SMARTSHEET", "SQLSERVER", "TERADATA", "TIKTOK_ADS", "WORKDAY_RAAS", "ZENDESK"}
 
 var enumValues64 = []string{"CAN_MANAGE", "CAN_RUN", "CAN_VIEW", "IS_OWNER"}
 
@@ -3233,6 +3235,10 @@ func enumPipelinesConnectorOptions(w *walker, n *walk.Node, v *pipelines.Connect
 		c := n.Child("linkedin_ads_options")
 		enumPipelinesLinkedInAdsOptions(w, &c, x)
 	}
+	if x := v.OnedriveOptions; x != nil {
+		c := n.Child("onedrive_options")
+		enumPipelinesOneDriveOptions(w, &c, x)
+	}
 	if x := v.OutlookOptions; x != nil {
 		c := n.Child("outlook_options")
 		enumPipelinesOutlookOptions(w, &c, x)
@@ -3318,17 +3324,31 @@ func enumPipelinesLinkedInAdsOptions(w *walker, n *walk.Node, v *pipelines.Linke
 	}
 }
 
+func enumPipelinesOneDriveOptions(w *walker, n *walk.Node, v *pipelines.OneDriveOptions) {
+	if v == nil {
+		return
+	}
+	if s := string(v.EntityType); s != "" || walk.Forced(v.ForceSendFields, "EntityType") {
+		c := n.Child("entity_type")
+		w.enumValue(&c, s, enumValues117)
+	}
+	if x := v.FileIngestionOptions; x != nil {
+		c := n.Child("file_ingestion_options")
+		enumPipelinesFileIngestionOptions(w, &c, x)
+	}
+}
+
 func enumPipelinesOutlookOptions(w *walker, n *walk.Node, v *pipelines.OutlookOptions) {
 	if v == nil {
 		return
 	}
 	if s := string(v.AttachmentMode); s != "" || walk.Forced(v.ForceSendFields, "AttachmentMode") {
 		c := n.Child("attachment_mode")
-		w.enumValue(&c, s, enumValues117)
+		w.enumValue(&c, s, enumValues118)
 	}
 	if s := string(v.BodyFormat); s != "" || walk.Forced(v.ForceSendFields, "BodyFormat") {
 		c := n.Child("body_format")
-		w.enumValue(&c, s, enumValues118)
+		w.enumValue(&c, s, enumValues119)
 	}
 }
 
@@ -3338,7 +3358,7 @@ func enumPipelinesSharepointOptions(w *walker, n *walk.Node, v *pipelines.Sharep
 	}
 	if s := string(v.EntityType); s != "" || walk.Forced(v.ForceSendFields, "EntityType") {
 		c := n.Child("entity_type")
-		w.enumValue(&c, s, enumValues119)
+		w.enumValue(&c, s, enumValues120)
 	}
 	if x := v.FileIngestionOptions; x != nil {
 		c := n.Child("file_ingestion_options")
@@ -3356,11 +3376,11 @@ func enumPipelinesTikTokAdsOptions(w *walker, n *walk.Node, v *pipelines.TikTokA
 	}
 	if s := string(v.DataLevel); s != "" || walk.Forced(v.ForceSendFields, "DataLevel") {
 		c := n.Child("data_level")
-		w.enumValue(&c, s, enumValues120)
+		w.enumValue(&c, s, enumValues121)
 	}
 	if s := string(v.ReportType); s != "" || walk.Forced(v.ForceSendFields, "ReportType") {
 		c := n.Child("report_type")
-		w.enumValue(&c, s, enumValues121)
+		w.enumValue(&c, s, enumValues122)
 	}
 }
 
@@ -3374,7 +3394,7 @@ func enumPipelinesTransformer(w *walker, n *walk.Node, v *pipelines.Transformer)
 	}
 	if s := string(v.Format); s != "" || walk.Forced(v.ForceSendFields, "Format") {
 		c := n.Child("format")
-		w.enumValue(&c, s, enumValues122)
+		w.enumValue(&c, s, enumValues123)
 	}
 	if x := v.JsonOptions; x != nil {
 		c := n.Child("json_options")
@@ -3392,11 +3412,11 @@ func enumPipelinesFileIngestionOptions(w *walker, n *walk.Node, v *pipelines.Fil
 	}
 	if s := string(v.Format); s != "" || walk.Forced(v.ForceSendFields, "Format") {
 		c := n.Child("format")
-		w.enumValue(&c, s, enumValues123)
+		w.enumValue(&c, s, enumValues124)
 	}
 	if s := string(v.SchemaEvolutionMode); s != "" || walk.Forced(v.ForceSendFields, "SchemaEvolutionMode") {
 		c := n.Child("schema_evolution_mode")
-		w.enumValue(&c, s, enumValues124)
+		w.enumValue(&c, s, enumValues125)
 	}
 }
 
@@ -3410,7 +3430,7 @@ func enumPipelinesTransformer2(w *walker, n *walk.Node, v *pipelines.Transformer
 	}
 	if s := string(v.Format); s != "" || walk.Forced(v.ForceSendFields, "Format") {
 		c := n.Child("format")
-		w.enumValue(&c, s, enumValues122)
+		w.enumValue(&c, s, enumValues123)
 	}
 	if x := v.JsonOptions; x != nil {
 		c := n.Child("json_options")
@@ -3430,16 +3450,16 @@ func enumPipelinesLinkedInAdsOptionsLinkedInAdsCustomReportOptions(w *walker, n 
 		c := n.Child("entity_granularity")
 		for i := range v.EntityGranularity {
 			e := c.Elem(i)
-			w.enumValue(&e, string(v.EntityGranularity[i]), enumValues125)
+			w.enumValue(&e, string(v.EntityGranularity[i]), enumValues126)
 		}
 	}
 	if s := string(v.Finder); s != "" {
 		c := n.Child("finder")
-		w.enumValue(&c, s, enumValues126)
+		w.enumValue(&c, s, enumValues127)
 	}
 	if s := string(v.TimeGranularity); s != "" {
 		c := n.Child("time_granularity")
-		w.enumValue(&c, s, enumValues127)
+		w.enumValue(&c, s, enumValues128)
 	}
 }
 
@@ -3449,11 +3469,11 @@ func enumPipelinesTikTokAdsOptionsTikTokAdsCustomReportOptions(w *walker, n *wal
 	}
 	if s := string(v.DataLevel); s != "" || walk.Forced(v.ForceSendFields, "DataLevel") {
 		c := n.Child("data_level")
-		w.enumValue(&c, s, enumValues120)
+		w.enumValue(&c, s, enumValues121)
 	}
 	if s := string(v.ReportType); s != "" || walk.Forced(v.ForceSendFields, "ReportType") {
 		c := n.Child("report_type")
-		w.enumValue(&c, s, enumValues121)
+		w.enumValue(&c, s, enumValues122)
 	}
 }
 
@@ -3463,7 +3483,7 @@ func enumPipelinesAvroTransformerOptions(w *walker, n *walk.Node, v *pipelines.A
 	}
 	if s := string(v.ParseMode); s != "" || walk.Forced(v.ForceSendFields, "ParseMode") {
 		c := n.Child("parse_mode")
-		w.enumValue(&c, s, enumValues128)
+		w.enumValue(&c, s, enumValues129)
 	}
 }
 
@@ -3473,7 +3493,7 @@ func enumPipelinesJsonTransformerOptions(w *walker, n *walk.Node, v *pipelines.J
 	}
 	if s := string(v.SchemaEvolutionMode); s != "" || walk.Forced(v.ForceSendFields, "SchemaEvolutionMode") {
 		c := n.Child("schema_evolution_mode")
-		w.enumValue(&c, s, enumValues124)
+		w.enumValue(&c, s, enumValues125)
 	}
 }
 
@@ -3483,6 +3503,6 @@ func enumPipelinesProtobufTransformerOptions(w *walker, n *walk.Node, v *pipelin
 	}
 	if s := string(v.ParseMode); s != "" || walk.Forced(v.ForceSendFields, "ParseMode") {
 		c := n.Child("parse_mode")
-		w.enumValue(&c, s, enumValues128)
+		w.enumValue(&c, s, enumValues129)
 	}
 }
