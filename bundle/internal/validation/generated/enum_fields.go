@@ -171,6 +171,7 @@ var EnumFields = map[string][]string{
 
 	"resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].cron_schedule_trigger.mode": {"DERIVED", "MANUAL"},
 	"resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].pipeline_schedule_state":    {"ACTIVE", "PAUSED", "SNAPSHOT"},
+	"resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].streaming_mode.mode":        {"STREAMING_MODE_TYPE_MBM", "STREAMING_MODE_TYPE_RTM"},
 	"resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].table_trigger.condition":    {"TABLE_TRIGGER_CONDITION_ALL_UPDATED", "TABLE_TRIGGER_CONDITION_ANY_UPDATED"},
 	"resources.materialization_sets.*.materialized_features[*].cron_schedule_trigger.mode":                          {"DERIVED", "MANUAL"},
 	"resources.materialization_sets.*.materialized_features[*].pipeline_schedule_state":                             {"ACTIVE", "PAUSED", "SNAPSHOT"},

@@ -30,6 +30,10 @@ from databricks.bundles.materialization_sets._models.online_store_config import 
     OnlineStoreConfig,
     OnlineStoreConfigParam,
 )
+from databricks.bundles.materialization_sets._models.streaming_mode import (
+    StreamingMode,
+    StreamingModeParam,
+)
 from databricks.bundles.materialization_sets._models.table_trigger import (
     TableTrigger,
     TableTriggerParam,
@@ -41,29 +45,88 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class BatchOfflineAndOnlineMaterializedFeatures:
-    """"""
+    """
+    A materialized feature represents a feature that is continuously computed and stored.
+    """
 
     feature_name: VariableOr[str]
+    """
+    The full name of the feature in Unity Catalog.
+    """
 
     budget_policy_id: VariableOrOptional[str] = None
-
-    cron_schedule: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The ID of the budget policy used to attribute the serverless compute cost of this
+    materialization. If not specified, a default budget policy may be applied.
+    """
 
     cron_schedule_trigger: VariableOrOptional[CronSchedule] = None
+    """
+    A cron-based schedule trigger for the materialization pipeline.
+    """
+
+    materialized_feature_id: VariableOrOptional[str] = None
+    """
+    Server-assigned unique identifier for the materialized feature.
+    """
 
     notifications: VariableOrOptional[MaterializationNotifications] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Notification configuration around the materialization job or pipeline lifecycle. They are
+    applied to every job and pipeline that materializes this feature. Features which are
+    materialized in the same pipeline will share the same notification.
+    """
 
     offline_store_config: VariableOrOptional[OfflineStoreConfig] = None
+    """
+    Destination for writing feature values to an offline Delta table. The resulting table is
+    returned as `table_name`.
+    """
 
     online_store_config: VariableOrOptional[OnlineStoreConfig] = None
+    """
+    Destination for writing feature values to an online Lakebase table. The resulting table is
+    returned as `table_name`.
+    """
 
     pipeline_schedule_state: VariableOrOptional[
         MaterializedFeaturePipelineScheduleState
     ] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The schedule state of the materialization pipeline.
+    Hidden from GraphQL: being deprecated, so not exposed to Catalog Explorer.
+    """
+
+    streaming_mode: VariableOrOptional[StreamingMode] = None
+    """
+    The Structured Streaming trigger mode used for materialization. Real-time mode (RTM) targets
+    sub-second latency for operational workloads; micro-batch mode (MBM) favors cost efficiency
+    for ETL and analytics workloads.
+    """
 
     table_trigger: VariableOrOptional[TableTrigger] = None
+    """
+    A trigger that fires when the upstream source table changes.
+    """
 
     tags: VariableOrDict[str] = field(default_factory=dict)
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Custom tags to associate with this materialization. They are applied to the materialization
+    job (for batch features) or pipeline (for streaming features) and forwarded to the underlying
+    compute as cluster tags, so materialization cost can be attributed in the billing system
+    tables. These tags apply only to the materialization compute; they are not applied to the
+    Unity Catalog Feature resource itself, whose tags are managed separately through the Unity
+    Catalog tagging API. A maximum of 25 tags is supported; keys and values are subject to the
+    same limitations as cluster tags.
+    """
 
     @classmethod
     def from_dict(
@@ -79,26 +142,83 @@ class BatchOfflineAndOnlineMaterializedFeaturesDict(TypedDict, total=False):
     """"""
 
     feature_name: VariableOr[str]
+    """
+    The full name of the feature in Unity Catalog.
+    """
 
     budget_policy_id: VariableOrOptional[str]
-
-    cron_schedule: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The ID of the budget policy used to attribute the serverless compute cost of this
+    materialization. If not specified, a default budget policy may be applied.
+    """
 
     cron_schedule_trigger: VariableOrOptional[CronScheduleParam]
+    """
+    A cron-based schedule trigger for the materialization pipeline.
+    """
+
+    materialized_feature_id: VariableOrOptional[str]
+    """
+    Server-assigned unique identifier for the materialized feature.
+    """
 
     notifications: VariableOrOptional[MaterializationNotificationsParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Notification configuration around the materialization job or pipeline lifecycle. They are
+    applied to every job and pipeline that materializes this feature. Features which are
+    materialized in the same pipeline will share the same notification.
+    """
 
     offline_store_config: VariableOrOptional[OfflineStoreConfigParam]
+    """
+    Destination for writing feature values to an offline Delta table. The resulting table is
+    returned as `table_name`.
+    """
 
     online_store_config: VariableOrOptional[OnlineStoreConfigParam]
+    """
+    Destination for writing feature values to an online Lakebase table. The resulting table is
+    returned as `table_name`.
+    """
 
     pipeline_schedule_state: VariableOrOptional[
         MaterializedFeaturePipelineScheduleStateParam
     ]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The schedule state of the materialization pipeline.
+    Hidden from GraphQL: being deprecated, so not exposed to Catalog Explorer.
+    """
+
+    streaming_mode: VariableOrOptional[StreamingModeParam]
+    """
+    The Structured Streaming trigger mode used for materialization. Real-time mode (RTM) targets
+    sub-second latency for operational workloads; micro-batch mode (MBM) favors cost efficiency
+    for ETL and analytics workloads.
+    """
 
     table_trigger: VariableOrOptional[TableTriggerParam]
+    """
+    A trigger that fires when the upstream source table changes.
+    """
 
     tags: VariableOrDict[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Custom tags to associate with this materialization. They are applied to the materialization
+    job (for batch features) or pipeline (for streaming features) and forwarded to the underlying
+    compute as cluster tags, so materialization cost can be attributed in the billing system
+    tables. These tags apply only to the materialization compute; they are not applied to the
+    Unity Catalog Feature resource itself, whose tags are managed separately through the Unity
+    Catalog tagging API. A maximum of 25 tags is supported; keys and values are subject to the
+    same limitations as cluster tags.
+    """
 
 
 BatchOfflineAndOnlineMaterializedFeaturesParam = (

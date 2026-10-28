@@ -395,3 +395,51 @@ func pathStrings(paths []*structpath.PathNode) []string {
 	}
 	return out
 }
+
+// --- fields a shorthand shape cannot carry -----------------------------------------------------
+
+// The entry embeds the API's member, so every member field is expressible; the ones a shape cannot
+// use are refused here instead of being left out of the type.
+func TestNormalizeMaterializationSetMaterializedFeatureMembersRejectsADeclaredMemberId(t *testing.T) {
+	_, diags := normalizeSetDiags(t, &resources.MaterializationSet{
+		SawtoothMaterializedFeatures: []resources.SawtoothMaterializedFeatures{{
+			FeatureName:           shorthandFeatureName,
+			MaterializedFeatureId: "mf-1",
+			OfflineStoreConfig:    shorthandOfflineStore(),
+			OnlineStoreConfig:     shorthandOnlineStore(),
+			CronScheduleTrigger:   &ml.CronSchedule{Mode: ml.CronScheduleModeDerived},
+			StreamingMode:         &ml.StreamingMode{Mode: ml.StreamingModeStreamingModeTypeStreamingModeTypeRtm},
+		}},
+	})
+
+	require.Len(t, diags, 1)
+	assert.Equal(t, diag.Error, diags[0].Severity)
+	assert.Equal(t,
+		"materialized_feature_id must not be set on a sawtooth materialized feature: the server "+
+			"assigns one per expanded member",
+		diags[0].Summary)
+	assert.Equal(t,
+		[]string{"resources.materialization_sets.set1.sawtooth_materialized_features[0]"},
+		pathStrings(diags[0].Paths))
+}
+
+func TestNormalizeMaterializationSetMaterializedFeatureMembersRejectsAStreamingModeOnABatchPair(t *testing.T) {
+	_, diags := normalizeSetDiags(t, &resources.MaterializationSet{
+		BatchOfflineAndOnlineMaterializedFeatures: []resources.BatchOfflineAndOnlineMaterializedFeatures{{
+			FeatureName:         shorthandFeatureName,
+			OfflineStoreConfig:  shorthandOfflineStore(),
+			OnlineStoreConfig:   shorthandOnlineStore(),
+			CronScheduleTrigger: &ml.CronSchedule{Mode: ml.CronScheduleModeDerived},
+			StreamingMode:       &ml.StreamingMode{Mode: ml.StreamingModeStreamingModeTypeStreamingModeTypeRtm},
+		}},
+	})
+
+	require.Len(t, diags, 1)
+	assert.Equal(t,
+		"streaming_mode must not be set on a batch offline and online materialized feature: a "+
+			"feature on the batch path has none",
+		diags[0].Summary)
+	assert.Equal(t,
+		[]string{"resources.materialization_sets.set1.batch_offline_and_online_materialized_features[0]"},
+		pathStrings(diags[0].Paths))
+}

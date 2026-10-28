@@ -201,6 +201,58 @@ func duplicateMemberKeyDiagnostic(
 	}
 }
 
+// unsettableShorthandFields names the member fields the entry carries but the shape cannot use. A
+// promoted field cannot be removed from the generated schema, so a shorthand rejects them here
+// instead of omitting them.
+func unsettableShorthandFields(member ml.MaterializedFeature, batchPair bool) []string {
+	var fields []string
+	if member.MaterializedFeatureId != "" {
+		fields = append(fields, "materialized_feature_id")
+	}
+	if batchPair && member.StreamingMode != nil {
+		fields = append(fields, "streaming_mode")
+	}
+	return fields
+}
+
+// unsettableFieldDiagnostics rejects each shorthand entry setting a field its shape cannot use,
+// naming the entry through Paths so a reader is sent to the line that set it.
+func unsettableFieldDiagnostics(b *bundle.Bundle, setKey string, set *resources.MaterializationSet) diag.Diagnostics {
+	setPath := structpath.NewPath(nil, "resources", "materialization_sets", setKey)
+
+	var diags diag.Diagnostics
+	report := func(field, key string, index int, shape string) {
+		path := structpath.NewPath(setPath, key, index)
+		diags = diags.Append(diag.Diagnostic{
+			Severity: diag.Error,
+			Summary: fmt.Sprintf("%s must not be set on a %s: %s", field, shape,
+				unsettableFieldReasons[field]),
+			Paths:     []*structpath.PathNode{path},
+			Locations: b.Config.GetLocationsOf(path),
+		})
+	}
+
+	for i, entry := range set.SawtoothMaterializedFeatures {
+		for _, field := range unsettableShorthandFields(entry.MaterializedFeature, false) {
+			report(field, "sawtooth_materialized_features", i, "sawtooth materialized feature")
+		}
+	}
+	for i, entry := range set.BatchOfflineAndOnlineMaterializedFeatures {
+		for _, field := range unsettableShorthandFields(entry.MaterializedFeature, true) {
+			report(field, "batch_offline_and_online_materialized_features", i,
+				"batch offline and online materialized feature")
+		}
+	}
+
+	return diags
+}
+
+// unsettableFieldReasons is why each field cannot be set, in the message naming it.
+var unsettableFieldReasons = map[string]string{
+	"materialized_feature_id": "the server assigns one per expanded member",
+	"streaming_mode":          "a feature on the batch path has none",
+}
+
 // Apply mutates typed state, and the Python path merges the dynamic tree back once the normalize
 // sequence returns, so this must not be the last entry in applyNormalizeMutators: that tree picks up
 // a typed mutation only when the next mutator enters.
@@ -217,6 +269,8 @@ func (m *normalizeMaterializationSetMaterializedFeatureMembers) Apply(_ context.
 		if set == nil {
 			continue
 		}
+
+		diags = diags.Extend(unsettableFieldDiagnostics(b, setKey, set))
 
 		declared := declaredMaterializationSetMembers(setKey, set)
 		if duplicate := duplicateMemberKeyDiagnostic(b, setKey, declared); duplicate != nil {

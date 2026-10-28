@@ -34,15 +34,21 @@ var memberFieldsDerivedByConfigLayer = map[string]bool{
 	"ForceSendFields": true,
 }
 
-// entryWithEveryFieldSet returns an authoring entry whose every field holds a non-zero value, so
-// that a field reaching no expanded member is visible as a zero.
-func entryWithEveryFieldSet[T any](t *testing.T) T {
+// entryWithEveryFieldSet returns an authoring entry whose every carried field holds a non-zero
+// value, so that a field reaching no expanded member is visible as a zero. The fields the shape
+// cannot carry are skipped, which is the same list the expansion is not expected to distribute.
+func entryWithEveryFieldSet[T any](t *testing.T, notCarried map[string]bool) T {
 	t.Helper()
 
 	var entry T
 	value := reflect.ValueOf(&entry).Elem()
-	for field := range reflect.TypeFor[T]().Fields() {
-		target := value.FieldByName(field.Name)
+	// VisibleFields flattens the embedded API member, so the entry is filled through the promoted
+	// fields rather than the embedding itself.
+	for _, field := range reflect.VisibleFields(reflect.TypeFor[T]()) {
+		if field.Anonymous || notCarried[field.Name] {
+			continue
+		}
+		target := value.FieldByIndex(field.Index)
 		switch field.Type.Kind() {
 		case reflect.String:
 			target.SetString("x")
@@ -76,9 +82,8 @@ func notCarried(extra ...string) map[string]bool {
 }
 
 // TestNormalizeMaterializationSetMaterializedFeatureMembersCoversEveryMemberField keeps each
-// expansion's field list exhaustive and each authoring type complete against the API. Members are
-// built by naming their fields, and the authoring types are hand-written, so a member field added
-// to the proto later reaches no expanded member and nothing else notices.
+// expansion's field list exhaustive. Members are built by naming their fields, so a member field
+// added to the proto later reaches no expanded member and nothing else notices.
 func TestNormalizeMaterializationSetMaterializedFeatureMembersCoversEveryMemberField(t *testing.T) {
 	for name, tc := range map[string]struct {
 		set        *resources.MaterializationSet
@@ -87,7 +92,7 @@ func TestNormalizeMaterializationSetMaterializedFeatureMembersCoversEveryMemberF
 		"sawtooth_materialized_features": {
 			set: &resources.MaterializationSet{
 				SawtoothMaterializedFeatures: []resources.SawtoothMaterializedFeatures{
-					entryWithEveryFieldSet[resources.SawtoothMaterializedFeatures](t),
+					entryWithEveryFieldSet[resources.SawtoothMaterializedFeatures](t, notCarried()),
 				},
 			},
 			notCarried: notCarried(),
@@ -95,7 +100,7 @@ func TestNormalizeMaterializationSetMaterializedFeatureMembersCoversEveryMemberF
 		"batch_offline_and_online_materialized_features": {
 			set: &resources.MaterializationSet{
 				BatchOfflineAndOnlineMaterializedFeatures: []resources.BatchOfflineAndOnlineMaterializedFeatures{
-					entryWithEveryFieldSet[resources.BatchOfflineAndOnlineMaterializedFeatures](t),
+					entryWithEveryFieldSet[resources.BatchOfflineAndOnlineMaterializedFeatures](t, notCarried("StreamingMode")),
 				},
 			},
 			// A feature on the batch path has no streaming mode, so the type declares none.

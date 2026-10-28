@@ -1,4 +1,5 @@
 resources.materialization_sets.*.batch_offline_and_online_materialized_features	[]resources.BatchOfflineAndOnlineMaterializedFeatures	INPUT
+resources.materialization_sets.*.batch_offline_and_online_materialized_features[*]	ml.MaterializedFeature	INPUT
 resources.materialization_sets.*.batch_offline_and_online_materialized_features[*]	resources.BatchOfflineAndOnlineMaterializedFeatures	INPUT
 resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].budget_policy_id	string	INPUT
 resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].cron_schedule	string	INPUT
@@ -7,6 +8,12 @@ resources.materialization_sets.*.batch_offline_and_online_materialized_features[
 resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].cron_schedule_trigger.mode	ml.CronScheduleMode	INPUT
 resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].cron_schedule_trigger.timezone_id	string	INPUT
 resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].feature_name	string	INPUT
+resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].is_online	bool	INPUT
+resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].job_id	int64	INPUT
+resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].last_materialization_time	string	INPUT
+resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].latest_backfill_operation	string	INPUT
+resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].materialization_set_id	string	INPUT
+resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].materialized_feature_id	string	INPUT
 resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].notifications	*ml.MaterializationNotifications	INPUT
 resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].notifications.on_failure	*ml.MaterializationFailureNotification	INPUT
 resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].notifications.on_failure.destination_ids	[]string	INPUT
@@ -28,7 +35,13 @@ resources.materialization_sets.*.batch_offline_and_online_materialized_features[
 resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].online_store_config.online_store_name	string	INPUT
 resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].online_store_config.schema_name	string	INPUT
 resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].online_store_config.table_name_prefix	string	INPUT
+resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].pipeline_id	string	INPUT
 resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].pipeline_schedule_state	ml.MaterializedFeaturePipelineScheduleState	INPUT
+resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].streaming_mode	*ml.StreamingMode	INPUT
+resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].streaming_mode.freshness_target	string	INPUT
+resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].streaming_mode.mode	ml.StreamingModeStreamingModeType	INPUT
+resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].streaming_mode.shuffle_partitions	int	INPUT
+resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].table_name	string	INPUT
 resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].table_trigger	*ml.TableTrigger	INPUT
 resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].table_trigger.condition	ml.TableTriggerTableTriggerCondition	INPUT
 resources.materialization_sets.*.batch_offline_and_online_materialized_features[*].table_trigger.min_time_between_triggers	*duration.Duration	INPUT
@@ -93,6 +106,7 @@ resources.materialization_sets.*.materialized_features[*].tags	map[string]string
 resources.materialization_sets.*.materialized_features[*].tags.*	string	ALL
 resources.materialization_sets.*.modified_status	string	INPUT
 resources.materialization_sets.*.sawtooth_materialized_features	[]resources.SawtoothMaterializedFeatures	INPUT
+resources.materialization_sets.*.sawtooth_materialized_features[*]	ml.MaterializedFeature	INPUT
 resources.materialization_sets.*.sawtooth_materialized_features[*]	resources.SawtoothMaterializedFeatures	INPUT
 resources.materialization_sets.*.sawtooth_materialized_features[*].budget_policy_id	string	INPUT
 resources.materialization_sets.*.sawtooth_materialized_features[*].cron_schedule	string	INPUT
@@ -101,6 +115,12 @@ resources.materialization_sets.*.sawtooth_materialized_features[*].cron_schedule
 resources.materialization_sets.*.sawtooth_materialized_features[*].cron_schedule_trigger.mode	ml.CronScheduleMode	INPUT
 resources.materialization_sets.*.sawtooth_materialized_features[*].cron_schedule_trigger.timezone_id	string	INPUT
 resources.materialization_sets.*.sawtooth_materialized_features[*].feature_name	string	INPUT
+resources.materialization_sets.*.sawtooth_materialized_features[*].is_online	bool	INPUT
+resources.materialization_sets.*.sawtooth_materialized_features[*].job_id	int64	INPUT
+resources.materialization_sets.*.sawtooth_materialized_features[*].last_materialization_time	string	INPUT
+resources.materialization_sets.*.sawtooth_materialized_features[*].latest_backfill_operation	string	INPUT
+resources.materialization_sets.*.sawtooth_materialized_features[*].materialization_set_id	string	INPUT
+resources.materialization_sets.*.sawtooth_materialized_features[*].materialized_feature_id	string	INPUT
 resources.materialization_sets.*.sawtooth_materialized_features[*].notifications	*ml.MaterializationNotifications	INPUT
 resources.materialization_sets.*.sawtooth_materialized_features[*].notifications.on_failure	*ml.MaterializationFailureNotification	INPUT
 resources.materialization_sets.*.sawtooth_materialized_features[*].notifications.on_failure.destination_ids	[]string	INPUT
@@ -122,11 +142,13 @@ resources.materialization_sets.*.sawtooth_materialized_features[*].online_store_
 resources.materialization_sets.*.sawtooth_materialized_features[*].online_store_config.online_store_name	string	INPUT
 resources.materialization_sets.*.sawtooth_materialized_features[*].online_store_config.schema_name	string	INPUT
 resources.materialization_sets.*.sawtooth_materialized_features[*].online_store_config.table_name_prefix	string	INPUT
+resources.materialization_sets.*.sawtooth_materialized_features[*].pipeline_id	string	INPUT
 resources.materialization_sets.*.sawtooth_materialized_features[*].pipeline_schedule_state	ml.MaterializedFeaturePipelineScheduleState	INPUT
 resources.materialization_sets.*.sawtooth_materialized_features[*].streaming_mode	*ml.StreamingMode	INPUT
 resources.materialization_sets.*.sawtooth_materialized_features[*].streaming_mode.freshness_target	string	INPUT
 resources.materialization_sets.*.sawtooth_materialized_features[*].streaming_mode.mode	ml.StreamingModeStreamingModeType	INPUT
 resources.materialization_sets.*.sawtooth_materialized_features[*].streaming_mode.shuffle_partitions	int	INPUT
+resources.materialization_sets.*.sawtooth_materialized_features[*].table_name	string	INPUT
 resources.materialization_sets.*.sawtooth_materialized_features[*].table_trigger	*ml.TableTrigger	INPUT
 resources.materialization_sets.*.sawtooth_materialized_features[*].table_trigger.condition	ml.TableTriggerTableTriggerCondition	INPUT
 resources.materialization_sets.*.sawtooth_materialized_features[*].table_trigger.min_time_between_triggers	*duration.Duration	INPUT

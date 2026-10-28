@@ -355,36 +355,74 @@
                 "oneOf": [
                   {
                     "type": "object",
+                    "description": "A materialized feature represents a feature that is continuously computed and stored.",
                     "properties": {
                       "budget_policy_id": {
-                        "$ref": "#/$defs/string"
+                        "description": "[Private Preview] The ID of the budget policy used to attribute the serverless compute cost of this\nmaterialization. If not specified, a default budget policy may be applied.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
                       },
                       "cron_schedule": {
-                        "$ref": "#/$defs/string"
+                        "description": "[Private Preview]",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "deprecationMessage": "This field is deprecated",
+                        "doNotSuggest": true,
+                        "deprecated": true
                       },
                       "cron_schedule_trigger": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.CronSchedule"
+                        "description": "A cron-based schedule trigger for the materialization pipeline.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.CronSchedule",
+                        "x-databricks-launch-stage": "GA"
                       },
                       "feature_name": {
-                        "$ref": "#/$defs/string"
+                        "description": "The full name of the feature in Unity Catalog.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "GA"
+                      },
+                      "materialized_feature_id": {
+                        "description": "Server-assigned unique identifier for the materialized feature.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "GA"
                       },
                       "notifications": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializationNotifications"
+                        "description": "[Private Preview] Notification configuration around the materialization job or pipeline lifecycle. They are\napplied to every job and pipeline that materializes this feature. Features which are\nmaterialized in the same pipeline will share the same notification.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializationNotifications",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
                       },
                       "offline_store_config": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.OfflineStoreConfig"
+                        "description": "Destination for writing feature values to an offline Delta table. The resulting table is\nreturned as `table_name`.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.OfflineStoreConfig",
+                        "x-databricks-launch-stage": "GA"
                       },
                       "online_store_config": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.OnlineStoreConfig"
+                        "description": "Destination for writing feature values to an online Lakebase table. The resulting table is\nreturned as `table_name`.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.OnlineStoreConfig",
+                        "x-databricks-launch-stage": "GA"
                       },
                       "pipeline_schedule_state": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializedFeaturePipelineScheduleState"
+                        "description": "[Private Preview] The schedule state of the materialization pipeline.\nHidden from GraphQL: being deprecated, so not exposed to Catalog Explorer.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializedFeaturePipelineScheduleState",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "streaming_mode": {
+                        "description": "The Structured Streaming trigger mode used for materialization. Real-time mode (RTM) targets\nsub-second latency for operational workloads; micro-batch mode (MBM) favors cost efficiency\nfor ETL and analytics workloads.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.StreamingMode",
+                        "x-databricks-launch-stage": "GA"
                       },
                       "table_trigger": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.TableTrigger"
+                        "description": "A trigger that fires when the upstream source table changes.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.TableTrigger",
+                        "x-databricks-launch-stage": "GA"
                       },
                       "tags": {
-                        "$ref": "#/$defs/map/string"
+                        "description": "[Private Preview] Custom tags to associate with this materialization. They are applied to the materialization\njob (for batch features) or pipeline (for streaming features) and forwarded to the underlying\ncompute as cluster tags, so materialization cost can be attributed in the billing system\ntables. These tags apply only to the materialization compute; they are not applied to the\nUnity Catalog Feature resource itself, whose tags are managed separately through the Unity\nCatalog tagging API. A maximum of 25 tags is supported; keys and values are subject to the\nsame limitations as cluster tags.",
+                        "$ref": "#/$defs/map/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
                       }
                     },
                     "additionalProperties": false,
@@ -3142,39 +3180,74 @@
                 "oneOf": [
                   {
                     "type": "object",
+                    "description": "A materialized feature represents a feature that is continuously computed and stored.",
                     "properties": {
                       "budget_policy_id": {
-                        "$ref": "#/$defs/string"
+                        "description": "[Private Preview] The ID of the budget policy used to attribute the serverless compute cost of this\nmaterialization. If not specified, a default budget policy may be applied.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
                       },
                       "cron_schedule": {
-                        "$ref": "#/$defs/string"
+                        "description": "[Private Preview]",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "deprecationMessage": "This field is deprecated",
+                        "doNotSuggest": true,
+                        "deprecated": true
                       },
                       "cron_schedule_trigger": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.CronSchedule"
+                        "description": "A cron-based schedule trigger for the materialization pipeline.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.CronSchedule",
+                        "x-databricks-launch-stage": "GA"
                       },
                       "feature_name": {
-                        "$ref": "#/$defs/string"
+                        "description": "The full name of the feature in Unity Catalog.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "GA"
+                      },
+                      "materialized_feature_id": {
+                        "description": "Server-assigned unique identifier for the materialized feature.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "GA"
                       },
                       "notifications": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializationNotifications"
+                        "description": "[Private Preview] Notification configuration around the materialization job or pipeline lifecycle. They are\napplied to every job and pipeline that materializes this feature. Features which are\nmaterialized in the same pipeline will share the same notification.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializationNotifications",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
                       },
                       "offline_store_config": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.OfflineStoreConfig"
+                        "description": "Destination for writing feature values to an offline Delta table. The resulting table is\nreturned as `table_name`.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.OfflineStoreConfig",
+                        "x-databricks-launch-stage": "GA"
                       },
                       "online_store_config": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.OnlineStoreConfig"
+                        "description": "Destination for writing feature values to an online Lakebase table. The resulting table is\nreturned as `table_name`.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.OnlineStoreConfig",
+                        "x-databricks-launch-stage": "GA"
                       },
                       "pipeline_schedule_state": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializedFeaturePipelineScheduleState"
+                        "description": "[Private Preview] The schedule state of the materialization pipeline.\nHidden from GraphQL: being deprecated, so not exposed to Catalog Explorer.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializedFeaturePipelineScheduleState",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
                       },
                       "streaming_mode": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.StreamingMode"
+                        "description": "The Structured Streaming trigger mode used for materialization. Real-time mode (RTM) targets\nsub-second latency for operational workloads; micro-batch mode (MBM) favors cost efficiency\nfor ETL and analytics workloads.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.StreamingMode",
+                        "x-databricks-launch-stage": "GA"
                       },
                       "table_trigger": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.TableTrigger"
+                        "description": "A trigger that fires when the upstream source table changes.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.TableTrigger",
+                        "x-databricks-launch-stage": "GA"
                       },
                       "tags": {
-                        "$ref": "#/$defs/map/string"
+                        "description": "[Private Preview] Custom tags to associate with this materialization. They are applied to the materialization\njob (for batch features) or pipeline (for streaming features) and forwarded to the underlying\ncompute as cluster tags, so materialization cost can be attributed in the billing system\ntables. These tags apply only to the materialization compute; they are not applied to the\nUnity Catalog Feature resource itself, whose tags are managed separately through the Unity\nCatalog tagging API. A maximum of 25 tags is supported; keys and values are subject to the\nsame limitations as cluster tags.",
+                        "$ref": "#/$defs/map/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
                       }
                     },
                     "additionalProperties": false,
