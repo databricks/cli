@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -235,11 +236,19 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 	return err
 }
 
+// Messages import-file returns when an overwrite would change a node's type. The
+// endpoint sets no error code for them. Matching is best-effort: if the wording
+// changes, the original error is returned as before.
+var (
+	// A file holds the name of a notebook upload.
+	fileHoldsNotebookName = regexp.MustCompile(`Node named '.*' already exists`)
+	// A notebook holds the name of a file upload (SQL notebook "x" holds "x.sql").
+	notebookHoldsFileName = regexp.MustCompile(`Creating file failed\. An item with path .* already exists`)
+)
+
 // deleteNodeOfOtherType deletes the node that blocks an overwrite of absPath
 // because its type differs from the upload's, and reports whether it did.
-// import-file returns 400 when a file holds the name of a notebook upload, and
-// 409 when a notebook holds the name of a file upload (SQL notebook "x" holds
-// "x.sql"). CLI v1.21 and v1.22 uploaded some notebooks as files this way.
+// CLI v1.21 and v1.22 uploaded some notebooks as files this way.
 func (w *WorkspaceFilesClient) deleteNodeOfOtherType(ctx context.Context, absPath string, uploadErr error) (bool, error) {
 	aerr, ok := errors.AsType[*apierr.APIError](uploadErr)
 	if !ok {
@@ -248,15 +257,17 @@ func (w *WorkspaceFilesClient) deleteNodeOfOtherType(ctx context.Context, absPat
 
 	var nodePath string
 	var nodeType workspace.ObjectType
-	switch aerr.StatusCode {
-	case http.StatusBadRequest:
+	switch {
+	case fileHoldsNotebookName.MatchString(aerr.Message):
 		nodePath, nodeType = absPath, workspace.ObjectTypeFile
-	case http.StatusConflict:
+	case notebookHoldsFileName.MatchString(aerr.Message):
 		nodePath, nodeType = strings.TrimSuffix(absPath, path.Ext(absPath)), workspace.ObjectTypeNotebook
 	default:
 		return false, nil
 	}
 
+	// Concurrent creates of the same path return the second message too, so
+	// only delete a node of the expected type.
 	info, err := w.workspaceClient.Workspace.GetStatusByPath(ctx, nodePath)
 	if errors.Is(err, apierr.ErrNotFound) {
 		return false, nil
