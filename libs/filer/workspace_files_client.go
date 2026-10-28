@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
@@ -240,11 +241,18 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 // endpoint sets no error code for them. Matching is best-effort: if the wording
 // changes, the original error is returned as before.
 var (
-	// A file holds the name of a notebook upload.
-	fileHoldsNotebookName = regexp.MustCompile(`Node named '.*' already exists`)
+	// A file holds the name of a notebook upload. Captures the file's name.
+	fileHoldsNotebookName = regexp.MustCompile(`Node named '(.+)' already exists`)
 	// A notebook holds the name of a file upload (SQL notebook "x" holds "x.sql").
-	notebookHoldsFileName = regexp.MustCompile(`Creating file failed\. An item with path .* already exists`)
+	// Captures the upload's path.
+	notebookHoldsFileName = regexp.MustCompile(`Creating file failed\. An item with path (.+) already exists`)
 )
+
+// messageNames reports whether msg matches re and names name.
+func messageNames(re *regexp.Regexp, msg, name string) bool {
+	m := re.FindStringSubmatch(msg)
+	return m != nil && m[1] == name
+}
 
 // deleteNodeOfOtherType deletes the node that blocks an overwrite of absPath
 // because its type differs from the upload's, and reports whether it did.
@@ -258,16 +266,18 @@ func (w *WorkspaceFilesClient) deleteNodeOfOtherType(ctx context.Context, absPat
 	var nodePath string
 	var nodeType workspace.ObjectType
 	switch {
-	case fileHoldsNotebookName.MatchString(aerr.Message):
+	case messageNames(fileHoldsNotebookName, aerr.Message, path.Base(absPath)):
 		nodePath, nodeType = absPath, workspace.ObjectTypeFile
-	case notebookHoldsFileName.MatchString(aerr.Message):
+	case messageNames(notebookHoldsFileName, aerr.Message, absPath):
 		nodePath, nodeType = strings.TrimSuffix(absPath, path.Ext(absPath)), workspace.ObjectTypeNotebook
 	default:
 		return false, nil
 	}
 
-	// Concurrent creates of the same path return the second message too, so
-	// only delete a node of the expected type.
+	// The second message is also returned when a directory holds the path or
+	// when two writers create it at once, so only delete a node of the expected
+	// type. A notebook only holds the name with its language's extension: SQL
+	// notebook "x" holds "x.sql", not "x.py".
 	info, err := w.workspaceClient.Workspace.GetStatusByPath(ctx, nodePath)
 	if errors.Is(err, apierr.ErrNotFound) {
 		return false, nil
@@ -276,6 +286,9 @@ func (w *WorkspaceFilesClient) deleteNodeOfOtherType(ctx context.Context, absPat
 		return false, err
 	}
 	if info.ObjectType != nodeType {
+		return false, nil
+	}
+	if nodeType == workspace.ObjectTypeNotebook && info.Language != notebook.ExtensionToLanguage[strings.ToLower(path.Ext(absPath))] {
 		return false, nil
 	}
 
