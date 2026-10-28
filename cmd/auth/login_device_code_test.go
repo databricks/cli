@@ -208,25 +208,32 @@ func TestIsDeviceCodeSupportedForHost(t *testing.T) {
 	}
 }
 
-// startDeviceCodeLogin runs "auth login --use-device-code" with args in a
-// terminal emulator, using config as the contents of .databrickscfg.
-func startDeviceCodeLogin(t *testing.T, config string, args ...string) *termtest.Term[struct{}] {
+// startLogin runs "auth login" with args in a terminal emulator, using config
+// as the contents of .databrickscfg.
+func startLogin(t *testing.T, config string, args ...string) *termtest.Term[struct{}] {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
 	t.Setenv("DATABRICKS_CONFIG_FILE", writeTempConfig(t, config))
 	t.Setenv("DATABRICKS_AUTH_STORAGE", "plaintext")
-	t.Setenv(deviceCodeEnvVar, "true")
 
 	return termtest.Run(t, func(ctx context.Context) (struct{}, error) {
 		cmd := newLoginCommand(&auth.AuthArguments{})
 		cmd.Flags().String("profile", "", "")
 		cmd.SetContext(ctx)
-		cmd.SetArgs(append([]string{"--use-device-code"}, args...))
+		// Cobra reads os.Args when the args are nil.
+		cmd.SetArgs(append([]string{}, args...))
 		cmd.SetOut(io.Discard)
 		cmd.SetErr(io.Discard)
 		return struct{}{}, cmd.Execute()
 	})
+}
+
+// startDeviceCodeLogin runs "auth login --use-device-code" with args in a
+// terminal emulator, using config as the contents of .databrickscfg.
+func startDeviceCodeLogin(t *testing.T, config string, args ...string) *termtest.Term[struct{}] {
+	t.Setenv(deviceCodeEnvVar, "true")
+	return startLogin(t, config, append([]string{"--use-device-code"}, args...)...)
 }
 
 func TestLoginDeviceCodeNewProfilePromptsForHost(t *testing.T) {

@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -1515,24 +1514,9 @@ func TestLoginCreateNewProfileRejectsTakenName(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("bubbletea cannot cancel reads on non-console input on Windows")
 	}
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("USERPROFILE", home)
-	t.Setenv("DATABRICKS_CONFIG_FILE", writeTempConfig(t, `[DEFAULT]
+	tm := startLogin(t, `[DEFAULT]
 host = https://default.cloud.databricks.test
-`))
-	t.Setenv("DATABRICKS_AUTH_STORAGE", "plaintext")
-	t.Setenv(deviceCodeEnvVar, "")
-
-	tm := termtest.Run(t, func(ctx context.Context) (struct{}, error) {
-		cmd := newLoginCommand(&auth.AuthArguments{})
-		cmd.Flags().String("profile", "", "")
-		cmd.SetContext(ctx)
-		cmd.SetArgs([]string{})
-		cmd.SetOut(io.Discard)
-		cmd.SetErr(io.Discard)
-		return struct{}{}, cmd.Execute()
-	})
+`)
 	tm.WaitFor(profilePickerCreateNewLabel)
 	tm.Type(termtest.KeyDown + termtest.KeyEnter)
 	screen := tm.WaitFor("Databricks profile name")
