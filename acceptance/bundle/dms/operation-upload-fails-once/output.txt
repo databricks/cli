@@ -54,7 +54,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 }
 
 === A recreate records twice, and the first one fails: the second must still carry the sequence id staging left, because a rejected update earned no new one
->>> fault.py PATCH /api/2.0/bundle/* 500 0 1
+>>> fault.py PATCH /api/2.0/bundle/** 500 0 1
 
 >>> update_file.py databricks.yml catalog_name: main catalog_name: dms_other_[UNIQUE_NAME]
 

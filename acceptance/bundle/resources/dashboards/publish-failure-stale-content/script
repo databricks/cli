@@ -20,7 +20,7 @@ trace $CLI bundle plan -o json | nostamp | gron.py | grep -E "etag|published"
 rm "$OUT_REQUESTS"
 
 # Inject a single publish failure for the update below.
-fault.py "POST /api/2.0/lakeview/dashboards/*" 400 0 1
+fault.py "POST /api/2.0/lakeview/dashboards/*/published" 400 0 1
 
 # Rename the dashboard to trigger an Update.
 update_file.py databricks.yml "my dashboard" "my dashboard renamed"
