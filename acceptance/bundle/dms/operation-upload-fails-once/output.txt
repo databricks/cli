@@ -68,6 +68,18 @@ Warn: Failed to record deployment history: recording operation for resources.sch
 Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 
+=== A failed history upload is counted separately from the queued operations
+>>> cat [OUTPUT_DIR]/out.requests.txt
+{
+  "staged_operation_count": 1,
+  "operation_recording_success_count": 1,
+  "operation_recording_failure_count": 0,
+  "operation_recording_pending_count": 0,
+  "recording_attempt_failure_count": 1,
+  "recording_attempt_success_count": 1,
+  "queued_update_count_at_timeout": 0
+}
+
 === The service lists the schema with the failure
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[DEPLOYMENT_ID] -o json
 [

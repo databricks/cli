@@ -2,6 +2,8 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 title "Deploy several resources: operations are uploaded from background workers, so exactly one is recorded per resource no matter what order the uploads finish in. The serialized state is dropped from the output here; other bundle/dms tests cover it."
 trace $CLI bundle deploy
+title "History telemetry survives version completion and counts all five staged operations"
+trace cat "$OUT_REQUESTS" | jq 'select(.path? == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event.deployment_history | {staged_operation_count, operation_recording_success_count, operation_recording_failure_count, operation_recording_pending_count, queued_update_count_at_timeout, recording_attempt_failure_count, recording_attempt_success_count, queue_size_in_range: (.peak_pending_update_count >= 1 and .peak_pending_update_count <= 5)}'
 replace_ids.py
 trace print_requests.py --dms //versions/1/operations --sort --del-body state --oneline
 
@@ -18,6 +20,8 @@ trace print_state.py --no-dms
 
 title "Redeploy with no changes: nothing is applied, so no version is created at all - the deployment's version tracks state changes, like serial"
 trace $CLI bundle deploy
+title "A deploy with no version omits operation buffer telemetry"
+trace cat "$OUT_REQUESTS" | jq 'select(.path? == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event | has("deployment_history")'
 trace print_requests.py --dms //api/2.0/bundle --sort --oneline
 
 title "The plan records the deployment_history feature"
