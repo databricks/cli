@@ -1,1 +1,1 @@
-Badness = "The default of schedule.pause_status is written by path, which fails with 'expected a map to index pause_status, found string' when the schedule is a reference to a whole schedule of another job; validate should accept it."
+Badness = "The required-field check looks inside the reference: it warns that quartz_cron_expression and timezone_id are not set at resources.jobs.viaref.schedule, although the referenced schedule sets both."
