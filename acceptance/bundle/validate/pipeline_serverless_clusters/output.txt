@@ -1,0 +1,52 @@
+
+=== Reject cluster settings with serverless compute before deployment
+>>> [CLI] bundle validate -t invalid
+Error: Cannot configure clusters for a serverless pipeline
+  at resources.pipelines.my_pipeline.clusters
+  in databricks.yml:12:13
+
+Remove the clusters setting or set serverless to false.
+
+Name: pipeline-serverless-clusters
+Target: invalid
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/pipeline-serverless-clusters/invalid
+
+Found 1 error
+
+>>> [CLI] bundle plan -t invalid
+Error: Cannot configure clusters for a serverless pipeline
+  at resources.pipelines.my_pipeline.clusters
+  in databricks.yml:12:13
+
+Remove the clusters setting or set serverless to false.
+
+
+>>> [CLI] bundle deploy -t invalid
+Error: Cannot configure clusters for a serverless pipeline
+  at resources.pipelines.my_pipeline.clusters
+  in databricks.yml:12:13
+
+Remove the clusters setting or set serverless to false.
+
+
+=== Allow classic pipeline cluster settings
+>>> [CLI] bundle validate -t classic
+Name: pipeline-serverless-clusters
+Target: classic
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/pipeline-serverless-clusters/classic
+
+Validation OK!
+
+=== Allow serverless pipelines without cluster settings
+>>> [CLI] bundle validate -t serverless
+Name: pipeline-serverless-clusters
+Target: serverless
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/pipeline-serverless-clusters/serverless
+
+Validation OK!
