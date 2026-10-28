@@ -7,7 +7,13 @@ genie_space_id=$($CLI bundle summary --output json | jq -r '.resources.genie_spa
 title "update the genie space"
 trace $CLI genie update-space $genie_space_id --serialized-space '{"a":"b"}'
 
+# Generating from file-backed state must not depend on the history service.
+rm -f "$OUT_REQUESTS"
+trace fault.py "GET /api/2.0/bundle/deployments/*" 403 0 1 PERMISSION_DENIED
+
 title "update the genie space file using bundle generate"
 trace $CLI bundle generate genie-space --resource test_genie_space --force
 
 trace cat space.geniespace.json
+
+trace print_requests.py --dms //api/2.0/bundle --get --oneline

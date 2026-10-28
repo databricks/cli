@@ -1,0 +1,1 @@
+Badness = "The default of trigger.pause_status is written by path, which fails with 'expected a map to index pause_status, found string' when the trigger is a reference to a whole trigger of another job; validate should accept it."

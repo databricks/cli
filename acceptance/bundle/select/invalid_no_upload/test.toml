@@ -1,0 +1,4 @@
+RecordRequests = true
+# databricks.yml is generated at runtime from the committed template. predeploy_ran.marker
+# is a guard artifact the predeploy script would create if it wrongly ran.
+Ignore = [".databricks", ".gitignore", "databricks.yml", "predeploy_ran.marker"]

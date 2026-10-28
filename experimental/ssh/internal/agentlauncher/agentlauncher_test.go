@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/BurntSushi/toml"
 	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -62,20 +63,40 @@ func TestInstallContinuesPastFailure(t *testing.T) {
 }
 
 func TestSupportedAgents(t *testing.T) {
-	// Each agent injects context by exactly one mechanism (flag OR home file);
-	// the two are never both set.
-	expect := map[string]struct{ flag, home string }{
-		"claude": {flag: "--append-system-prompt-file"},
-		"codex":  {home: ".codex/AGENTS.md"},
-	}
-	require.Len(t, SupportedAgents, len(expect))
-	for name, want := range expect {
+	for _, name := range []string{"claude", "codex"} {
 		a, ok := AgentByName(name)
 		require.True(t, ok)
-		assert.Equal(t, want.flag, a.ContextFlag, "%s ContextFlag", name)
-		assert.Equal(t, want.home, a.ContextHomeFile, "%s ContextHomeFile", name)
+		assert.NotNil(t, a.ContextArg, "%s ContextArg", name)
 	}
+	assert.Len(t, SupportedAgents, 2)
 
 	_, ok := AgentByName("not-an-agent")
 	assert.False(t, ok)
+}
+
+func TestClaudeContextArg(t *testing.T) {
+	home := t.TempDir()
+	args, err := claudeContextArg(home, "the context")
+	require.NoError(t, err)
+	path := filepath.Join(home, RootDir, ContextFile)
+	assert.Equal(t, []string{"--append-system-prompt-file", path}, args)
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Equal(t, "the context", string(data))
+}
+
+func TestCodexContextArg(t *testing.T) {
+	home := t.TempDir()
+	const systemContext = "line \"one\"\nline two"
+	args, err := codexContextArg(home, systemContext)
+	require.NoError(t, err)
+	require.Len(t, args, 2)
+	assert.Equal(t, "-c", args[0])
+	// codex splits the override on the first '=' and parses the rest as TOML
+	var got map[string]string
+	require.NoError(t, toml.Unmarshal([]byte(args[1]), &got))
+	assert.Equal(t, map[string]string{"developer_instructions": systemContext}, got)
+	entries, err := os.ReadDir(home)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
 }

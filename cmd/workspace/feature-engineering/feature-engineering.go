@@ -41,14 +41,17 @@ func New() *cobra.Command {
 	cmd.AddCommand(newCancelOperation())
 	cmd.AddCommand(newCreateFeature())
 	cmd.AddCommand(newCreateKafkaConfig())
+	cmd.AddCommand(newCreateMaterializationSet())
 	cmd.AddCommand(newCreateMaterializedFeature())
 	cmd.AddCommand(newCreateStream())
 	cmd.AddCommand(newDeleteFeature())
 	cmd.AddCommand(newDeleteKafkaConfig())
+	cmd.AddCommand(newDeleteMaterializationSet())
 	cmd.AddCommand(newDeleteMaterializedFeature())
 	cmd.AddCommand(newDeleteStream())
 	cmd.AddCommand(newGetFeature())
 	cmd.AddCommand(newGetKafkaConfig())
+	cmd.AddCommand(newGetMaterializationSet())
 	cmd.AddCommand(newGetMaterializedFeature())
 	cmd.AddCommand(newGetOperation())
 	cmd.AddCommand(newGetStream())
@@ -59,6 +62,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newPurgeFeatureEntities())
 	cmd.AddCommand(newUpdateFeature())
 	cmd.AddCommand(newUpdateKafkaConfig())
+	cmd.AddCommand(newUpdateMaterializationSet())
 	cmd.AddCommand(newUpdateMaterializedFeature())
 	cmd.AddCommand(newUpdateStream())
 
@@ -467,6 +471,123 @@ func newCreateKafkaConfig() *cobra.Command {
 	return cmd
 }
 
+// start create-materialization-set command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createMaterializationSetOverrides []func(
+	*cobra.Command,
+	*ml.CreateMaterializationSetRequest,
+)
+
+func newCreateMaterializationSet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createMaterializationSetReq ml.CreateMaterializationSetRequest
+	createMaterializationSetReq.MaterializationSet = ml.MaterializationSet{}
+	var createMaterializationSetJson flags.JsonFlag
+
+	var createMaterializationSetSkipWait bool
+	var createMaterializationSetTimeout time.Duration
+
+	cmd.Flags().BoolVar(&createMaterializationSetSkipWait, "no-wait", createMaterializationSetSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&createMaterializationSetTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Flags().Var(&createMaterializationSetJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createMaterializationSetReq.RequestId, "request-id", createMaterializationSetReq.RequestId, `Idempotency token for the request.`)
+	cmd.Flags().StringVar(&createMaterializationSetReq.MaterializationSet.MaterializationSetId, "materialization-set-id", createMaterializationSetReq.MaterializationSet.MaterializationSetId, `Server-assigned unique identifier for the materialization set.`)
+	// TODO: array: materialized_features
+
+	cmd.Use = "create-materialization-set"
+	cmd.Short = `Create a materialization set.`
+	cmd.Long = `Create a materialization set.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createMaterializationSetJson.Unmarshal(&createMaterializationSetReq.MaterializationSet)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case createMaterializationSetSkipWait:
+			wait, err := w.FeatureEngineering.CreateMaterializationSet(ctx, createMaterializationSetReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.FeatureEngineering.GetOperation(ctx, ml.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.FeatureEngineering.CreateMaterializationSet(ctx, createMaterializationSetReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for create-materialization-set to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(createMaterializationSetTimeout)
+			response, err := wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return cmdio.Render(ctx, response)
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createMaterializationSetOverrides {
+		fn(cmd, &createMaterializationSetReq)
+	}
+
+	return cmd
+}
+
 // start create-materialized-feature command
 
 // Slice with functions to override default command behavior.
@@ -805,6 +926,115 @@ func newDeleteKafkaConfig() *cobra.Command {
 	return cmd
 }
 
+// start delete-materialization-set command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteMaterializationSetOverrides []func(
+	*cobra.Command,
+	*ml.DeleteMaterializationSetRequest,
+)
+
+func newDeleteMaterializationSet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteMaterializationSetReq ml.DeleteMaterializationSetRequest
+
+	var deleteMaterializationSetSkipWait bool
+	var deleteMaterializationSetTimeout time.Duration
+
+	cmd.Flags().BoolVar(&deleteMaterializationSetSkipWait, "no-wait", deleteMaterializationSetSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&deleteMaterializationSetTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Flags().BoolVar(&deleteMaterializationSetReq.AllowMissing, "allow-missing", deleteMaterializationSetReq.AllowMissing, `Return success instead of NOT_FOUND when the set does not exist, so a repeated destroy is idempotent.`)
+	cmd.Flags().StringVar(&deleteMaterializationSetReq.RequestId, "request-id", deleteMaterializationSetReq.RequestId, `Idempotency token for the request.`)
+
+	cmd.Use = "delete-materialization-set MATERIALIZATION_SET_ID"
+	cmd.Short = `Delete a materialization set.`
+	cmd.Long = `Delete a materialization set.
+
+  Delete a materialization set and every materialized feature in it. The set is
+  gone afterwards, so a later read returns NOT_FOUND and the set id is free to
+  use again.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    MATERIALIZATION_SET_ID: The ID of the materialization set to delete.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteMaterializationSetReq.MaterializationSetId = args[0]
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case deleteMaterializationSetSkipWait:
+			wait, err := w.FeatureEngineering.DeleteMaterializationSet(ctx, deleteMaterializationSetReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.FeatureEngineering.GetOperation(ctx, ml.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.FeatureEngineering.DeleteMaterializationSet(ctx, deleteMaterializationSetReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for delete-materialization-set to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(deleteMaterializationSetTimeout)
+
+			err = wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return nil
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteMaterializationSetOverrides {
+		fn(cmd, &deleteMaterializationSetReq)
+	}
+
+	return cmd
+}
+
 // start delete-materialized-feature command
 
 // Slice with functions to override default command behavior.
@@ -1037,6 +1267,70 @@ func newGetKafkaConfig() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range getKafkaConfigOverrides {
 		fn(cmd, &getKafkaConfigReq)
+	}
+
+	return cmd
+}
+
+// start get-materialization-set command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getMaterializationSetOverrides []func(
+	*cobra.Command,
+	*ml.GetMaterializationSetRequest,
+)
+
+func newGetMaterializationSet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getMaterializationSetReq ml.GetMaterializationSetRequest
+
+	cmd.Use = "get-materialization-set MATERIALIZATION_SET_ID"
+	cmd.Short = `Get a materialization set.`
+	cmd.Long = `Get a materialization set.
+
+  Get a materialization set and the materialized features in it. A set whose
+  materialized feature members have all been deleted is returned with an empty
+  member list.
+
+  Arguments:
+    MATERIALIZATION_SET_ID: The ID of the materialization set.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getMaterializationSetReq.MaterializationSetId = args[0]
+
+		response, err := w.FeatureEngineering.GetMaterializationSet(ctx, getMaterializationSetReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getMaterializationSetOverrides {
+		fn(cmd, &getMaterializationSetReq)
 	}
 
 	return cmd
@@ -1534,6 +1828,7 @@ func newPurgeFeatureEntities() *cobra.Command {
 	cmd.Flags().Var(&purgeFeatureEntitiesJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&purgeFeatureEntitiesReq.BudgetPolicyId, "budget-policy-id", purgeFeatureEntitiesReq.BudgetPolicyId, `The budget policy ID, in UUID format, used to attribute the serverless compute cost of this purge.`)
+	cmd.Flags().BoolVar(&purgeFeatureEntitiesReq.DeleteRows, "delete-rows", purgeFeatureEntitiesReq.DeleteRows, `If false feature values are set to null on purge but rows are not deleted.`)
 	cmd.Flags().StringVar(&purgeFeatureEntitiesReq.RequestId, "request-id", purgeFeatureEntitiesReq.RequestId, `Optional UUID4 idempotency token for the request.`)
 	// TODO: map via StringToStringVar: tags
 
@@ -1848,6 +2143,136 @@ func newUpdateKafkaConfig() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range updateKafkaConfigOverrides {
 		fn(cmd, &updateKafkaConfigReq)
+	}
+
+	return cmd
+}
+
+// start update-materialization-set command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateMaterializationSetOverrides []func(
+	*cobra.Command,
+	*ml.UpdateMaterializationSetRequest,
+)
+
+func newUpdateMaterializationSet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateMaterializationSetReq ml.UpdateMaterializationSetRequest
+	updateMaterializationSetReq.MaterializationSet = ml.MaterializationSet{}
+	var updateMaterializationSetJson flags.JsonFlag
+
+	var updateMaterializationSetSkipWait bool
+	var updateMaterializationSetTimeout time.Duration
+
+	cmd.Flags().BoolVar(&updateMaterializationSetSkipWait, "no-wait", updateMaterializationSetSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&updateMaterializationSetTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Flags().Var(&updateMaterializationSetJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&updateMaterializationSetReq.RequestId, "request-id", updateMaterializationSetReq.RequestId, `Idempotency token for the request.`)
+	cmd.Flags().StringVar(&updateMaterializationSetReq.MaterializationSet.MaterializationSetId, "materialization-set-id", updateMaterializationSetReq.MaterializationSet.MaterializationSetId, `Server-assigned unique identifier for the materialization set.`)
+	// TODO: array: materialized_features
+
+	cmd.Use = "update-materialization-set MATERIALIZATION_SET_ID UPDATE_MASK"
+	cmd.Short = `Update a materialization set.`
+	cmd.Long = `Update a materialization set.
+
+  Update the materialization set's state to match the supplied materialization
+  set. Changes are applied member by member and are not atomic: when one member
+  fails, the error reports which members were already changed.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    MATERIALIZATION_SET_ID: Server-assigned unique identifier for the materialization set.
+    UPDATE_MASK: The fields to update. Only 'materialized_features' is supported.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateMaterializationSetJson.Unmarshal(&updateMaterializationSetReq.MaterializationSet)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateMaterializationSetReq.MaterializationSetId = args[0]
+		if args[1] != "" {
+			updateMaskArray := strings.Split(args[1], ",")
+			updateMaterializationSetReq.UpdateMask = *fieldmask.New(updateMaskArray)
+		}
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case updateMaterializationSetSkipWait:
+			wait, err := w.FeatureEngineering.UpdateMaterializationSet(ctx, updateMaterializationSetReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.FeatureEngineering.GetOperation(ctx, ml.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.FeatureEngineering.UpdateMaterializationSet(ctx, updateMaterializationSetReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for update-materialization-set to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(updateMaterializationSetTimeout)
+			response, err := wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return cmdio.Render(ctx, response)
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateMaterializationSetOverrides {
+		fn(cmd, &updateMaterializationSetReq)
 	}
 
 	return cmd

@@ -1,0 +1,12 @@
+bundle:
+  name: test-bundle
+
+presets:
+  name_prefix: "pre-"
+
+resources:
+  jobs:
+    base:
+      name: base
+    viaref:
+      name: ${resources.jobs.base.name}

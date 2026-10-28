@@ -1,0 +1,20 @@
+bundle:
+  name: test-bundle
+
+workspace:
+  sync_mode: immutable
+
+resources:
+  jobs:
+    foo:
+      name: foo
+      tasks:
+        - task_key: task1
+          spark_python_task:
+            python_file: ./src/main.py
+          environment_key: env
+
+      environments:
+        - environment_key: env
+          spec:
+            environment_version: "4"

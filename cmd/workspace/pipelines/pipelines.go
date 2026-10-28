@@ -986,8 +986,10 @@ func newStartUpdate() *cobra.Command {
 	cmd.Flags().BoolVar(&startUpdateReq.Development, "development", startUpdateReq.Development, `Whether the update is started in the development mode.`)
 	cmd.Flags().BoolVar(&startUpdateReq.FullRefresh, "full-refresh", startUpdateReq.FullRefresh, `If true, this update will reset all tables before running.`)
 	// TODO: array: full_refresh_selection
+	// TODO: array: full_refresh_selection_by_path
 	// TODO: map via StringToStringVar: parameters
 	// TODO: array: refresh_selection
+	// TODO: array: refresh_selection_by_path
 	// TODO: array: replace_where_overrides
 	// TODO: array: reset_checkpoint_selection
 	// TODO: complex arg: rewind_spec
