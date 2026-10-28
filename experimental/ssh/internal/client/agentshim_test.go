@@ -780,12 +780,21 @@ func TestPrepareAgentLaunch(t *testing.T) {
 	agent, ok := agentlauncher.AgentByName("claude")
 	require.True(t, ok)
 
-	t.Run("passes the context args before the user's agent args", func(t *testing.T) {
+	t.Run("passes the context args after the user's args", func(t *testing.T) {
 		home := t.TempDir()
 		argv, environ, err := prepareAgentLaunch(dbr.MockRuntime(t.Context(), serverlessRuntime), home, agent, []string{"--resume"})
 		require.NoError(t, err)
 		require.NotEmpty(t, argv)
-		assert.Equal(t, []string{"claude", "--", "--append-system-prompt-file", filepath.Join(home, agentRootDir, contextFile), "--resume"}, argv[1:])
+		assert.Equal(t, []string{"claude", "--", "--resume", "--append-system-prompt-file", filepath.Join(home, agentRootDir, contextFile)}, argv[1:])
+		assert.Equal(t, os.Environ(), environ)
+	})
+
+	t.Run("passes the context args before a '--' arg", func(t *testing.T) {
+		home := t.TempDir()
+		argv, environ, err := prepareAgentLaunch(dbr.MockRuntime(t.Context(), serverlessRuntime), home, agent, []string{"--max-budget-usd", "1", "--", "hello there"})
+		require.NoError(t, err)
+		require.NotEmpty(t, argv)
+		assert.Equal(t, []string{"claude", "--", "--max-budget-usd", "1", "--append-system-prompt-file", filepath.Join(home, agentRootDir, contextFile), "--", "hello there"}, argv[1:])
 		assert.Equal(t, os.Environ(), environ)
 	})
 

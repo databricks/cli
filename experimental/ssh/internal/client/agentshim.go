@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
@@ -688,8 +689,16 @@ func prepareAgentLaunch(ctx context.Context, home string, agent agentlauncher.Ag
 		return nil, nil, categorize(protos.SshAgentShimErrorCategoryAgentContextSetupFailed, err)
 	}
 	argv = []string{ugExecutable, agent.Name, "--"}
-	argv = append(argv, contextArgs...)
-	argv = append(argv, agentArgs...)
+	// If the user passed `--` then inject context args just before, otherwise add
+	// them after the user's args. This is needed so we don't interfere with `ug`'s
+	// heuristics around positional args
+	i := slices.Index(agentArgs, "--")
+	if i == -1 {
+		argv = append(argv, agentArgs...)
+		argv = append(argv, contextArgs...)
+	} else {
+		argv = slices.Concat(argv, agentArgs[:i], contextArgs, agentArgs[i:])
+	}
 	return argv, os.Environ(), nil
 }
 
