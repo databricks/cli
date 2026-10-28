@@ -24,121 +24,6 @@ func (m *normalizeMaterializationSetMaterializedFeatureMembers) Name() string {
 	return "NormalizeMaterializationSetMaterializedFeatureMembers"
 }
 
-// sawtoothMaterializedFeatureMembers builds the three materialized features a sawtooth-window
-// feature needs to declare for its materialization: a batch offline materialized feature, a batch
-// online materialized feature, and a streaming online materialized feature, where the batch offline
-// and batch online use a DERIVED cron schedule and the streaming online and batch online must have
-// the same online destination.
-//
-// materialized_feature_id is absent here because it is assigned server side.
-func sawtoothMaterializedFeatureMembers(entry resources.SawtoothMaterializedFeatures) []ml.MaterializedFeature {
-	return []ml.MaterializedFeature{
-		// Batch offline.
-		{
-			FeatureName:           entry.FeatureName,
-			Tags:                  entry.Tags,
-			BudgetPolicyId:        entry.BudgetPolicyId,
-			Notifications:         entry.Notifications,
-			PipelineScheduleState: entry.PipelineScheduleState,
-			OfflineStoreConfig:    entry.OfflineStoreConfig,
-			CronSchedule:          entry.CronSchedule,
-			CronScheduleTrigger:   entry.CronScheduleTrigger,
-			TableTrigger:          entry.TableTrigger,
-		},
-		// Batch online.
-		{
-			FeatureName:           entry.FeatureName,
-			Tags:                  entry.Tags,
-			BudgetPolicyId:        entry.BudgetPolicyId,
-			Notifications:         entry.Notifications,
-			PipelineScheduleState: entry.PipelineScheduleState,
-			OnlineStoreConfig:     entry.OnlineStoreConfig,
-			CronSchedule:          entry.CronSchedule,
-			CronScheduleTrigger:   entry.CronScheduleTrigger,
-			TableTrigger:          entry.TableTrigger,
-		},
-		// Streaming online.
-		{
-			FeatureName:           entry.FeatureName,
-			Tags:                  entry.Tags,
-			BudgetPolicyId:        entry.BudgetPolicyId,
-			Notifications:         entry.Notifications,
-			PipelineScheduleState: entry.PipelineScheduleState,
-			OnlineStoreConfig:     entry.OnlineStoreConfig,
-			StreamingMode:         entry.StreamingMode,
-		},
-	}
-}
-
-// batchOfflineAndOnlineMaterializedFeatureMembers builds two materializations of the specified
-// feature to the online and offline destination.
-func batchOfflineAndOnlineMaterializedFeatureMembers(entry resources.BatchOfflineAndOnlineMaterializedFeatures) []ml.MaterializedFeature {
-	return []ml.MaterializedFeature{
-		// Batch offline.
-		{
-			FeatureName:           entry.FeatureName,
-			Tags:                  entry.Tags,
-			BudgetPolicyId:        entry.BudgetPolicyId,
-			Notifications:         entry.Notifications,
-			PipelineScheduleState: entry.PipelineScheduleState,
-			OfflineStoreConfig:    entry.OfflineStoreConfig,
-			CronSchedule:          entry.CronSchedule,
-			CronScheduleTrigger:   entry.CronScheduleTrigger,
-			TableTrigger:          entry.TableTrigger,
-		},
-		// Batch online.
-		{
-			FeatureName:           entry.FeatureName,
-			Tags:                  entry.Tags,
-			BudgetPolicyId:        entry.BudgetPolicyId,
-			Notifications:         entry.Notifications,
-			PipelineScheduleState: entry.PipelineScheduleState,
-			OnlineStoreConfig:     entry.OnlineStoreConfig,
-			CronSchedule:          entry.CronSchedule,
-			CronScheduleTrigger:   entry.CronScheduleTrigger,
-			TableTrigger:          entry.TableTrigger,
-		},
-	}
-}
-
-// declaredMaterializedFeature is an expanded member together with the entry that declared it, so a
-// duplicate can name where it was written.
-type declaredMaterializedFeature struct {
-	member ml.MaterializedFeature
-	path   *structpath.PathNode
-}
-
-// declaredMaterializationSetMembers is every member the set asks for, in the order the request
-// carries them: the members written out, then each shorthand entry's expansion.
-func declaredMaterializationSetMembers(
-	setKey string,
-	set *resources.MaterializationSet,
-) []declaredMaterializedFeature {
-	setPath := structpath.NewPath(nil, "resources", "materialization_sets", setKey)
-	var declared []declaredMaterializedFeature
-
-	for i, member := range set.MaterializedFeatures {
-		declared = append(declared, declaredMaterializedFeature{
-			member: member,
-			path:   structpath.NewPath(setPath, "materialized_features", i),
-		})
-	}
-	for i, entry := range set.SawtoothMaterializedFeatures {
-		path := structpath.NewPath(setPath, "sawtooth_materialized_features", i)
-		for _, member := range sawtoothMaterializedFeatureMembers(entry) {
-			declared = append(declared, declaredMaterializedFeature{member: member, path: path})
-		}
-	}
-	for i, entry := range set.BatchOfflineAndOnlineMaterializedFeatures {
-		path := structpath.NewPath(setPath, "batch_offline_and_online_materialized_features", i)
-		for _, member := range batchOfflineAndOnlineMaterializedFeatureMembers(entry) {
-			declared = append(declared, declaredMaterializedFeature{member: member, path: path})
-		}
-	}
-
-	return declared
-}
-
 // quotedFeatureNames renders a feature name list the way FeatureStoreMessages.quotedIds does.
 func quotedFeatureNames(names []string) string {
 	quoted := make([]string, len(names))
@@ -148,8 +33,8 @@ func quotedFeatureNames(names []string) string {
 	return strings.Join(quoted, ", ")
 }
 
-// duplicateMemberKeyDiagnostic rejects a set asking for two members with the same member key, which
-// is the identity resources.MaterializedFeatureMemberKey builds and the server's own
+// duplicateMemberKeyDiagnostic rejects a set listing two members with the same member key, which is
+// the identity resources.MaterializedFeatureMemberKey builds and the server's own
 // MaterializationSetMemberKey shares.
 //
 // It mirrors MaterializationSetUtils.validateMaterializationSetMemberKeysAreUnique: group the
@@ -158,33 +43,36 @@ func quotedFeatureNames(names []string) string {
 func duplicateMemberKeyDiagnostic(
 	b *bundle.Bundle,
 	setKey string,
-	declared []declaredMaterializedFeature,
+	members []ml.MaterializedFeature,
 ) *diag.Diagnostic {
-	membersByKey := map[string][]declaredMaterializedFeature{}
-	for _, entry := range declared {
-		_, memberKey := resources.MaterializedFeatureMemberKey(entry.member)
-		membersByKey[memberKey] = append(membersByKey[memberKey], entry)
+	indicesByKey := map[string][]int{}
+	for i, member := range members {
+		_, memberKey := resources.MaterializedFeatureMemberKey(member)
+		indicesByKey[memberKey] = append(indicesByKey[memberKey], i)
 	}
 
 	featureNames := map[string]bool{}
-	pathsByString := map[string]*structpath.PathNode{}
-	for _, members := range membersByKey {
-		if len(members) < 2 {
+	var indices []int
+	for _, group := range indicesByKey {
+		if len(group) < 2 {
 			continue
 		}
-		for _, entry := range members {
-			featureNames[entry.member.FeatureName] = true
-			pathsByString[entry.path.String()] = entry.path
+		for _, i := range group {
+			featureNames[members[i].FeatureName] = true
+			indices = append(indices, i)
 		}
 	}
 	if len(featureNames) == 0 {
 		return nil
 	}
 
+	setPath := structpath.NewPath(nil, "resources", "materialization_sets", setKey)
+	slices.Sort(indices)
+
 	var paths []*structpath.PathNode
 	var locations []diag.Location
-	for _, pathString := range slices.Sorted(maps.Keys(pathsByString)) {
-		path := pathsByString[pathString]
+	for _, i := range indices {
+		path := structpath.NewPath(setPath, "materialized_features", i)
 		paths = append(paths, path)
 		locations = append(locations, b.Config.GetLocationsOf(path)...)
 	}
@@ -201,13 +89,6 @@ func duplicateMemberKeyDiagnostic(
 	}
 }
 
-// Apply mutates typed state, and the Python path merges the dynamic tree back once the normalize
-// sequence returns, so this must not be the last entry in applyNormalizeMutators: that tree picks up
-// a typed mutation only when the next mutator enters.
-//
-// The duplicate check belongs here rather than in a mutator of its own: this clears both shorthand
-// fields, and the dynamic tree is rebuilt from typed state on the next mutator's entry, so only
-// while this runs can a diagnostic name the entry an author wrote.
 func (m *normalizeMaterializationSetMaterializedFeatureMembers) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -218,24 +99,9 @@ func (m *normalizeMaterializationSetMaterializedFeatureMembers) Apply(_ context.
 			continue
 		}
 
-		declared := declaredMaterializationSetMembers(setKey, set)
-		if duplicate := duplicateMemberKeyDiagnostic(b, setKey, declared); duplicate != nil {
+		if duplicate := duplicateMemberKeyDiagnostic(b, setKey, set.MaterializedFeatures); duplicate != nil {
 			diags = diags.Append(*duplicate)
 		}
-
-		// Assigned only when a shorthand entry contributed, so a set that writes every member out
-		// keeps the list it declared, empty or unset as written.
-		if len(set.SawtoothMaterializedFeatures) > 0 ||
-			len(set.BatchOfflineAndOnlineMaterializedFeatures) > 0 {
-			members := make([]ml.MaterializedFeature, 0, len(declared))
-			for _, entry := range declared {
-				members = append(members, entry.member)
-			}
-			set.MaterializedFeatures = members
-		}
-
-		set.SawtoothMaterializedFeatures = nil
-		set.BatchOfflineAndOnlineMaterializedFeatures = nil
 	}
 
 	return diags

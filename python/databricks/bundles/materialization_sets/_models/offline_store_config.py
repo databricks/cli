@@ -14,6 +14,8 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class OfflineStoreConfig:
     """
+    :meta private: [EXPERIMENTAL]
+
     Configuration for offline store destination.
     """
 

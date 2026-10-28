@@ -109,12 +109,6 @@ var knownMissingInStateType = map[string][]string{
 		"keyvault_metadata",
 		"name",
 	},
-	"materialization_sets": {
-		// NormalizeMaterializationSetMaterializedFeatureMembers expands both into
-		// materialized_features and clears them, so neither reaches state.
-		"sawtooth_materialized_features",
-		"batch_offline_and_online_materialized_features",
-	},
 	"internal_immutable_snapshots": {
 		// RemoteRoot is only the input used to compose FullPath; the state persists
 		// the composed FullPath (and RelativePath), so it isn't kept in state.

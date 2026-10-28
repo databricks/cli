@@ -149,10 +149,8 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Expands glob patterns in pipeline library paths to include all matching files
 		ExpandPipelineGlobPaths(),
 
-		// Reads (typed): resources.materialization_sets.*.{sawtooth,batch_offline_and_online}_materialized_features
-		// Updates (typed): resources.materialization_sets.*.materialized_features (appends the members each entry is made of)
-		// Clears (typed): both shorthand fields, after the expansion
-		// Expands each shorthand entry into the several materialized features one feature's materialization is made of, and rejects a set asking for two members with the same member key
+		// Reads (typed): resources.materialization_sets.*.materialized_features
+		// Rejects a set listing two materialized features with the same member key
 		NormalizeMaterializationSetMaterializedFeatureMembers(),
 
 		// Reads (dynamic): resources.jobs.*.job_clusters (reads job clusters to merge)

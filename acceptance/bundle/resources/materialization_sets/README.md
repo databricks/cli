@@ -68,13 +68,12 @@ zero with its state dropped. The deployment-history leg is the one path that rec
 | `batch` | a batch feature with both destinations creates and settles; neither member of its pair can be removed alone, and removing both empties the set, which the update endpoint refuses in favour of delete; repointing the destinations is a `recreate`; pausing the feature is a `recreate` that succeeds when every member agrees and is refused by the create endpoint when they do not; a set mixing a batch-path feature with a streaming-path one is refused at create |
 | `sawtooth` | the offline-and-online batch pair is refused at create, because a set is not expanded into the third materialization; all three declared creates and then plans nothing; the three members are one cascade group, so each of the three strict subsets of them is refused -- with the message depending on whether the removal names the member a delete is applied to -- and removing all three empties the set, which the update endpoint refuses |
 | `settled_failure` | a failure the server hits after reserving an operation comes back as HTTP 200 with the operation FAILED: the adapter recovers the error code from the operation and the per-member outcome from its metadata, the update fails naming each member left behind and writes nothing, and the destroy reports success anyway because the engine forgives a delete error it cannot classify |
-| `shorthand` | a feature's whole materialization declared once in `sawtooth_materialized_features` expands into its three members, and in `batch_offline_and_online_materialized_features` into its two; neither authoring field survives into the summary, a redeploy plans nothing, and one edit to the online destination reaches both online members while the offline one stays put. A batch schedule the service refuses is reported by the service naming the feature, not by the CLI -- the expansion judges nothing it is given. One arm mixes a shorthand entry with members written out in full, so the expansion is appended rather than substituted; another carries the batch pair shorthand alone, with no member written out. The last declares both authoring fields in one set, which the service refuses because a sawtooth entry has to carry a DERIVED schedule and a batch pair a MANUAL one, and one request cannot mix cron schedule modes. Its fixtures write the feature windows three ways: seconds only, extended units alone (`3d`), and units mixed (`2d1h35m40s`) |
-| `invalid_members` | two declarations reaching one member are refused while the config is being read, with no request made: two members differing only outside the member key, and a shorthand entry colliding with a member written out. The message is the service's own wording for the same rejection, and both offenders are named |
+| `invalid_members` | two members reaching one member key are refused while the config is being read, with no request made. The message is the service's own wording for the same rejection, and both offenders are named |
 | `streaming` | a streaming online member needs no schedule and no cron; declaring a schedule state on it, or repointing its destination, plans as a `recreate` rather than an in-place update; with two features materialized to one destination and no offline member between them, each online member is its own cascade group, so one can be removed alone as an `update` |
 
 ## Running against a workspace
 
-`batch`, `sawtooth`, `streaming` and `shorthand` reference an existing `Stream`, because a Stream
+`batch`, `sawtooth` and `streaming` reference an existing `Stream`, because a Stream
 is not a bundle resource. **The `MATSET_STREAM` default names one developer's Stream and goes stale
 when it is deleted**, which fails the run at the feature create with `Stream '...' not found`; list
 what the workspace has with `GET /api/2.0/feature-engineering/streams?parent=<catalog>.<schema>` and
@@ -95,7 +94,7 @@ does run, because the fake only requires the key to carry a prefix at all.
 
 Three cases carry `Cloud = true`: `immutable`, `membership` and `removal_scope`.
 
-`batch`, `sawtooth`, `streaming` and `shorthand` are local only, because each needs a Stream source
+`batch`, `sawtooth` and `streaming` are local only, because each needs a Stream source
 and a Stream is neither a bundle resource nor a CLI command -- so the integration suite has no way
 to provision one, and it would also need a Unity Catalog connection to a Kafka topic whose payload
 the feature definitions name. Run those four against a workspace by hand, with the overrides below.
@@ -224,18 +223,12 @@ HTTP 400 to a settled FAILED operation. The fake and four goldens were corrected
 run returned.
 
 **Fifth build, universe `92bd718e722a0`** -- the tip of `stack/fs2680-update-set-lro`, run through
-the `daniel-bai-fs2680` swap on 2026-10-23. All seven `Cloud = true` cases pass with no golden
-changed, run one at a time, as does `features/lifecycle` on its `DMS=` leg. Two of them had claims
-nothing live had settled: `shorthand` had never run against a workspace at all, and `batch` carried
-two arms -- the null member-list spelling and the drop-the-resource delete route -- that had only
-run against the fake. So the emptied-set refusal's "Delete the set instead" is the service's own
+the `daniel-bai-fs2680` swap on 2026-10-23. All six `Cloud = true` cases pass with no golden
+changed, run one at a time, as does `features/lifecycle` on its `DMS=` leg. One of them had claims
+nothing live had settled: `batch` carried two arms -- the null member-list spelling and the
+drop-the-resource delete route -- that had only run against the fake. So the emptied-set refusal's "Delete the set instead" is the service's own
 text, and the one-segment `materialized_features` path classifies as an update on the live API and
 not just in the unit tests.
-
-`shorthand` is the case that run first justified: a sawtooth entry creates the three members the
-service wants, a redeploy plans nothing, one edit to the online destination recreates exactly the
-two online members, a shorthand entry and members written out in full coexist in one set, and the
-DERIVED-schedule refusal its first arm asserts is the service's own text.
 
 The swap's own log is what proves the routing: during the 63-second run it served 5
 `CreateMaterializationSetRequest`, 7 `DeleteMaterializationSetRequest`, 6

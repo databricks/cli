@@ -7,10 +7,6 @@ from databricks.bundles.core._resource import Resource
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrList, VariableOrOptional
-from databricks.bundles.materialization_sets._models.batch_offline_and_online_materialized_features import (
-    BatchOfflineAndOnlineMaterializedFeatures,
-    BatchOfflineAndOnlineMaterializedFeaturesParam,
-)
 from databricks.bundles.materialization_sets._models.lifecycle import (
     Lifecycle,
     LifecycleParam,
@@ -18,10 +14,6 @@ from databricks.bundles.materialization_sets._models.lifecycle import (
 from databricks.bundles.materialization_sets._models.materialized_feature import (
     MaterializedFeature,
     MaterializedFeatureParam,
-)
-from databricks.bundles.materialization_sets._models.sawtooth_materialized_features import (
-    SawtoothMaterializedFeatures,
-    SawtoothMaterializedFeaturesParam,
 )
 
 if TYPE_CHECKING:
@@ -33,10 +25,6 @@ class MaterializationSet(Resource):
     """
     A group of materialized features created and managed as a single unit.
     """
-
-    batch_offline_and_online_materialized_features: VariableOrList[
-        BatchOfflineAndOnlineMaterializedFeatures
-    ] = field(default_factory=list)
 
     lifecycle: VariableOrOptional[Lifecycle] = None
 
@@ -57,10 +45,6 @@ class MaterializationSet(Resource):
     Updating the set with a materialized feature removed from this set will cause it to be deleted.
     """
 
-    sawtooth_materialized_features: VariableOrList[SawtoothMaterializedFeatures] = (
-        field(default_factory=list)
-    )
-
     @classmethod
     def from_dict(cls, value: "MaterializationSetDict") -> "Self":
         return _transform(cls, value)
@@ -71,10 +55,6 @@ class MaterializationSet(Resource):
 
 class MaterializationSetDict(TypedDict, total=False):
     """"""
-
-    batch_offline_and_online_materialized_features: VariableOrList[
-        BatchOfflineAndOnlineMaterializedFeaturesParam
-    ]
 
     lifecycle: VariableOrOptional[LifecycleParam]
 
@@ -92,8 +72,6 @@ class MaterializationSetDict(TypedDict, total=False):
     [Private Preview] The materialized features in this set. Order is not significant.
     Updating the set with a materialized feature removed from this set will cause it to be deleted.
     """
-
-    sawtooth_materialized_features: VariableOrList[SawtoothMaterializedFeaturesParam]
 
 
 MaterializationSetParam = MaterializationSetDict | MaterializationSet

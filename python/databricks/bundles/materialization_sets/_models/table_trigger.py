@@ -18,6 +18,8 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class TableTrigger:
     """
+    :meta private: [EXPERIMENTAL]
+
     A trigger that fires when the feature's source table changes: a DeltaTableSource's table, or an
     SdpSource's input_tables.
     """

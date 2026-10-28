@@ -18,6 +18,8 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class CronSchedule:
     """
+    :meta private: [EXPERIMENTAL]
+
     A cron-based schedule trigger for the materialization pipeline.
     """
 

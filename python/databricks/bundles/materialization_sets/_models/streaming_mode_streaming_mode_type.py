@@ -5,6 +5,10 @@ from typing import Literal
 
 
 class StreamingModeStreamingModeType(Enum):
+    """
+    :meta private: [EXPERIMENTAL]
+    """
+
     STREAMING_MODE_TYPE_RTM = "STREAMING_MODE_TYPE_RTM"
     STREAMING_MODE_TYPE_MBM = "STREAMING_MODE_TYPE_MBM"
 
