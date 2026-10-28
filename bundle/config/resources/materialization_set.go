@@ -33,52 +33,39 @@ type MaterializationSet struct {
 }
 
 // SawtoothMaterializedFeatures is the materialized features of one sawtooth-window feature, which
-// the author declares once. ml.MaterializedFeature cannot stand in for it: a materialized feature
-// holds one destination and one trigger, both declared as proto oneofs, while this holds both
-// destinations and both trigger kinds and the expansion splits them across the three members.
+// the author declares once. It embeds the API's member, so a field added to the proto reaches the
+// bundle without a change here; the expansion splits the destinations and the triggers the entry
+// carries across the three members.
 //
-// materialized_feature_id is absent because the server assigns one per member.
+// The members a shorthand cannot carry are rejected by
+// NormalizeMaterializationSetMaterializedFeatureMembers rather than left out of the type: a
+// promoted field cannot be removed from the generated schema.
 type SawtoothMaterializedFeatures struct {
-	FeatureName           string                                      `json:"feature_name"`
-	Tags                  map[string]string                           `json:"tags,omitempty"`
-	BudgetPolicyId        string                                      `json:"budget_policy_id,omitempty"`
-	Notifications         *ml.MaterializationNotifications            `json:"notifications,omitempty"`
-	PipelineScheduleState ml.MaterializedFeaturePipelineScheduleState `json:"pipeline_schedule_state,omitempty"`
-
-	OfflineStoreConfig *ml.OfflineStoreConfig `json:"offline_store_config,omitempty"`
-	OnlineStoreConfig  *ml.OnlineStoreConfig  `json:"online_store_config,omitempty"`
-
-	// The batch members take the cron schedule and the table trigger; the streaming member takes
-	// the streaming mode.
-	CronSchedule        string            `json:"cron_schedule,omitempty"`
-	CronScheduleTrigger *ml.CronSchedule  `json:"cron_schedule_trigger,omitempty"`
-	TableTrigger        *ml.TableTrigger  `json:"table_trigger,omitempty"`
-	StreamingMode       *ml.StreamingMode `json:"streaming_mode,omitempty"`
-
-	ForceSendFields []string `json:"-" url:"-"`
+	ml.MaterializedFeature
 }
 
-// BatchOfflineAndOnlineMaterializedFeatures is the materialized features of one feature taken to
-// both stores on the batch path, which the author declares once. It carries no streaming mode: a
-// feature on the batch path has none, and the two members it expands into differ only in their
-// destination.
-//
-// materialized_feature_id is absent because the server assigns one per member.
+// BatchOfflineAndOnlineMaterializedFeatures is one feature materialized to both stores on the batch
+// path, which the author declares once. Its two members differ only in their destination.
 type BatchOfflineAndOnlineMaterializedFeatures struct {
-	FeatureName           string                                      `json:"feature_name"`
-	Tags                  map[string]string                           `json:"tags,omitempty"`
-	BudgetPolicyId        string                                      `json:"budget_policy_id,omitempty"`
-	Notifications         *ml.MaterializationNotifications            `json:"notifications,omitempty"`
-	PipelineScheduleState ml.MaterializedFeaturePipelineScheduleState `json:"pipeline_schedule_state,omitempty"`
+	ml.MaterializedFeature
+}
 
-	OfflineStoreConfig *ml.OfflineStoreConfig `json:"offline_store_config,omitempty"`
-	OnlineStoreConfig  *ml.OnlineStoreConfig  `json:"online_store_config,omitempty"`
+// Each wrapper needs its own pair: the embedded type's methods promote, so a field added to the
+// wrapper later would not be serialized.
+func (s *SawtoothMaterializedFeatures) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
 
-	CronSchedule        string           `json:"cron_schedule,omitempty"`
-	CronScheduleTrigger *ml.CronSchedule `json:"cron_schedule_trigger,omitempty"`
-	TableTrigger        *ml.TableTrigger `json:"table_trigger,omitempty"`
+func (s SawtoothMaterializedFeatures) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
+}
 
-	ForceSendFields []string `json:"-" url:"-"`
+func (s *BatchOfflineAndOnlineMaterializedFeatures) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s BatchOfflineAndOnlineMaterializedFeatures) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
 }
 
 func (s *MaterializationSet) UnmarshalJSON(b []byte) error {
