@@ -55,6 +55,9 @@ type BundleDeploymentHistory struct {
 	MaxQueueSize int64 `json:"max_queue_size"`
 	// Resource operations still queued when Drain ends, excluding the active upload.
 	UndrainedOperationCount int64 `json:"undrained_operation_count"`
+	// Failed update-building or upload attempts, excluding context cancellation.
+	// Later successful updates do not clear the count.
+	RecordingErrorCount int64 `json:"recording_error_count"`
 }
 
 // These metrics are experimental and are often added in an adhoc manner. There
