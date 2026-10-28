@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/require"
@@ -197,4 +198,75 @@ func collectFiles(libraries []pipelines.PipelineLibrary) []string {
 	}
 
 	return paths
+}
+
+func TestExpandGlobPathsInPipelinesKeepsOrder(t *testing.T) {
+	dir := t.TempDir()
+	touchEmptyFile(t, filepath.Join(dir, "a/1.py"))
+	touchEmptyFile(t, filepath.Join(dir, "a/2.py"))
+	touchEmptyFile(t, filepath.Join(dir, "n.ipynb"))
+
+	glob := &pipelines.FileLibrary{Path: "a/*.py"}
+	b := &bundle.Bundle{
+		BundleRootPath: dir,
+		Config: config.Root{
+			Resources: config.Resources{
+				Pipelines: map[string]*resources.Pipeline{
+					"pipeline": {
+						CreatePipeline: pipelines.CreatePipeline{
+							Libraries: []pipelines.PipelineLibrary{
+								{Notebook: &pipelines.NotebookLibrary{Path: "n.ipynb"}},
+								{File: glob},
+								{File: &pipelines.FileLibrary{Path: "/Workspace/x.py"}},
+								{Notebook: &pipelines.NotebookLibrary{}},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	diags := bundle.Apply(t.Context(), b, resourcemutator.ExpandPipelineGlobPaths())
+	require.NoError(t, diags.Error())
+
+	assert.Equal(t, []pipelines.PipelineLibrary{
+		{Notebook: &pipelines.NotebookLibrary{Path: "n.ipynb"}},
+		{File: &pipelines.FileLibrary{Path: "a/1.py"}},
+		{File: &pipelines.FileLibrary{Path: "a/2.py"}},
+		{File: &pipelines.FileLibrary{Path: "/Workspace/x.py"}},
+		// The empty notebook is kept; the round trip through the dynamic configuration forces it.
+		{Notebook: &pipelines.NotebookLibrary{}, ForceSendFields: []string{"Notebook"}},
+	}, b.Config.Resources.Pipelines["pipeline"].Libraries)
+
+	// The original library is not modified.
+	assert.Equal(t, "a/*.py", glob.Path)
+}
+
+func TestExpandGlobPathsInPipelinesWithoutLibraries(t *testing.T) {
+	b := &bundle.Bundle{
+		BundleRootPath: t.TempDir(),
+		Config: config.Root{
+			Resources: config.Resources{
+				Pipelines: map[string]*resources.Pipeline{
+					"unset": {},
+					"empty": {
+						CreatePipeline: pipelines.CreatePipeline{
+							Libraries: []pipelines.PipelineLibrary{},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	diags := bundle.Apply(t.Context(), b, resourcemutator.ExpandPipelineGlobPaths())
+	require.NoError(t, diags.Error())
+
+	assert.Nil(t, b.Config.Resources.Pipelines["unset"].Libraries)
+	assert.Equal(t, []pipelines.PipelineLibrary{}, b.Config.Resources.Pipelines["empty"].Libraries)
+
+	v := b.Config.Value()
+	assert.False(t, v.Get("resources").Get("pipelines").Get("unset").Get("libraries").IsValid())
+	assert.Equal(t, dyn.KindSequence, v.Get("resources").Get("pipelines").Get("empty").Get("libraries").Kind())
 }

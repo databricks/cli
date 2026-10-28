@@ -1,0 +1,49 @@
+envsubst '$UNIQUE_NAME' < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    title "Destroy"
+    trace $CLI bundle destroy --auto-approve
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+# Deploy three jobs; consumer references producer, so state records consumer's
+# dependency on producer.
+title "Initial deploy\n"
+trace $CLI bundle deploy
+replace_ids.py
+
+# --- error case: consumer is still live and references producer ---
+# Remove only producer from config; consumer stays with its reference intact.
+# Selecting producer for deletion must error: it would leave consumer broken.
+envsubst '$UNIQUE_NAME' < databricks.yml.live_consumer.tmpl > databricks.yml
+
+musterr trace $CLI bundle plan --select jobs.producer
+
+# bundle deploy --select also errors before sending any delete request.
+musterr trace $CLI bundle deploy --select jobs.producer
+
+# No delete request was sent by either command.
+trace print_requests.py --sort //jobs/delete --keep
+
+# A full plan still works and shows producer as a pending delete.
+trace $CLI bundle plan
+
+# --- success case: both producer and consumer are removed from config ---
+# Remove producer and consumer from config; both are now planned for deletion.
+envsubst '$UNIQUE_NAME' < databricks.yml.after.tmpl > databricks.yml
+
+# Selecting the depended-upon producer for deletion also deletes its dependent
+# consumer (which would otherwise be left referencing a deleted job). 'keep' is
+# untouched. The dependency direction is reversed for deletes.
+trace $CLI bundle plan --select jobs.producer
+
+title "bundle deploy --select jobs.producer\n"
+trace $CLI bundle deploy --select jobs.producer
+
+# Both producer and consumer were deleted, dependent first; keep was not. Not sorted:
+# --sort orders by the raw job ID, which is random on a real workspace.
+trace print_requests.py //jobs/delete
+
+# A full plan now has nothing to delete and 'keep' is unchanged.
+trace $CLI bundle plan

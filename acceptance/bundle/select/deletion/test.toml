@@ -1,0 +1,4 @@
+Cloud = true
+RecordRequests = true
+# databricks.yml is generated at runtime from the committed templates.
+Ignore = [".databricks", ".gitignore", "databricks.yml"]

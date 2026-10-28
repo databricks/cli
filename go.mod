@@ -13,7 +13,7 @@ require (
 	github.com/charmbracelet/huh v1.0.0 // MIT
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
 	github.com/charmbracelet/x/ansi v0.11.9 // MIT
-	github.com/databricks/databricks-sdk-go v0.190.0 // Apache-2.0
+	github.com/databricks/databricks-sdk-go v0.191.0 // Apache-2.0
 	github.com/databricks/sdk-go/auth v0.2.0 // Apache-2.0
 	github.com/databricks/sdk-go/core v0.1.0 // Apache-2.0
 	github.com/databricks/sdk-go/files v0.2.0 // Apache-2.0
@@ -37,7 +37,7 @@ require (
 	go.yaml.in/yaml/v3 v3.0.5 // MIT AND Apache-2.0
 	golang.org/x/crypto v0.58.0 // BSD-3-Clause
 	golang.org/x/mod v0.42.0 // BSD-3-Clause
-	golang.org/x/net v0.61.0 // BSD-3-Clause
+	golang.org/x/net v0.62.0 // BSD-3-Clause
 	golang.org/x/oauth2 v0.37.0 // BSD-3-Clause
 	golang.org/x/sync v0.24.0 // BSD-3-Clause
 	golang.org/x/sys v0.49.0 // BSD-3-Clause
