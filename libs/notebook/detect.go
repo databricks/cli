@@ -3,6 +3,7 @@ package notebook
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"io"
 	"io/fs"
 	"os"
@@ -48,7 +49,7 @@ func (f file) readHeader() (string, error) {
 	// Scan header line with some padding.
 	buf := make([]byte, headerLength)
 	n, err := f.f.Read(buf)
-	if err != nil && err != io.EOF {
+	if err != nil && !errors.Is(err, io.EOF) {
 		return "", err
 	}
 
