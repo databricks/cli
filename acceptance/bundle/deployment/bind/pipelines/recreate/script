@@ -19,4 +19,4 @@ trace musterr $CLI bundle deploy
 
 rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy --auto-approve
-trace print_requests.py '^//workspace/' '^//telemetry-ext' > out.deploy.requests.json
+trace print_requests.py --nostamp '^//workspace/' '^//telemetry-ext' > out.deploy.requests.json
