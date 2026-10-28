@@ -40,6 +40,8 @@ PATTERNS = {
 KNOWN_IDS = set()
 
 
+# Run the CLI and check its exit code.
+# Log all commands; show bundle commands in the snapshot.
 def run(cwd, *args, expected=0):
     visible = args[0] == "bundle"
     result = subprocess.run(
@@ -60,12 +62,15 @@ def run(cwd, *args, expected=0):
     return result
 
 
+# Enable or clear an HTTP 500 fault for this endpoint.
 def fault(pattern, enabled):
     subprocess.run(
         [sys.executable, shutil.which("fault.py"), pattern, "500", "0", "1000" if enabled else "0"], check=True
     )
 
 
+# Count recorded method/path matches to report whether this API was called.
+# Here * stays within one path segment; ** can span /.
 def hits(pattern):
     if not REQUESTS.exists():
         return 0
@@ -73,10 +78,12 @@ def hits(pattern):
     return sum(bool(re.fullmatch(regex, f"{r['method']} {r['path']}")) for r in read_json_many(REQUESTS.read_text()))
 
 
+# Read the bundle's local deployment state.
 def state(cwd):
     return json.loads((cwd / ".databricks/bundle/default/resources.json").read_text())
 
 
+# Check that files remain the source of truth, then collect and label resource IDs.
 def ids(cwd):
     data = state(cwd)
     assert "deployment_history_shadow" in data["features"], data
@@ -89,6 +96,7 @@ def ids(cwd):
     return current
 
 
+# Create a unique bundle from the job, pipeline, and SQL fixtures.
 def setup(phase):
     cwd = Path("work", phase).resolve()
     (cwd / "resources").mkdir(parents=True)
@@ -105,6 +113,8 @@ def setup(phase):
     return cwd, root
 
 
+# Prepare an existing deployment and enable its API fault.
+# Skip the initial deploy for CreateDeployment so its first call fails.
 def activate(cwd, root):
     print(f"\n=== {cwd.name}: setup", flush=True)
     deployment = None
@@ -120,6 +130,7 @@ def activate(cwd, root):
     return pattern
 
 
+# Verify both remote resources exist with their updated names.
 def assert_alive(cwd, current):
     job = json.loads(run(cwd, "jobs", "get", current["resources.jobs.foo"], "-o", "json").stdout)
     pipeline = json.loads(run(cwd, "pipelines", "get", current["resources.pipelines.bar"], "-o", "json").stdout)
@@ -129,6 +140,7 @@ def assert_alive(cwd, current):
     assert pipeline["spec"]["name"].startswith("updated-dms-fault-")
 
 
+# Export a resource, optionally adding it to the bundle and binding its original ID.
 def generate(cwd, kind, key, identifier, bind=False):
     args = ["bundle", "generate", kind, f"--existing-{kind}-id", identifier, "--key", key]
     args += [
@@ -143,6 +155,7 @@ def generate(cwd, kind, key, identifier, bind=False):
     run(cwd, *args)
 
 
+# Verify the job, pipeline, and remote state were deleted.
 def assert_destroyed(cwd, root, current):
     job = run(cwd, "jobs", "get", current["resources.jobs.foo"], expected=1)
     assert "does not exist" in job.stderr.lower(), job.stderr
