@@ -2,7 +2,13 @@
 # import-file endpoint, used up to v1.20, imports it as notebook "bom" because its first line
 # contains "Databricks notebook source". This CLI requires the exact header, so it uploads
 # file "bom.sql". Overwrite can't turn one into the other.
+envsubst < databricks.yml.tmpl > databricks.yml
 remote=$($CLI bundle summary -o json | jq -r .workspace.file_path)
+
+cleanup() {
+  $CLI workspace delete "$($CLI bundle summary -o json | jq -r .workspace.root_path)" --recursive
+}
+trap cleanup EXIT
 
 list() {
   $CLI workspace list -o json "$remote" | jq -r '.[] | "\(.object_type) \(.path | sub(".*/"; ""))"'

@@ -1,10 +1,11 @@
 bundle:
-  name: sync-notebook-detection
+  name: sync-notebook-detection-$UNIQUE_NAME
 
 # Only sync bom.sql.
 sync:
   exclude:
     - databricks.yml
+    - databricks.yml.tmpl
     - script
     - test.toml
     - output.txt
