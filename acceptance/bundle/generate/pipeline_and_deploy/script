@@ -1,7 +1,7 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
 title "Upload files to workspace"
-# The terraform and direct engine variants run concurrently against the same workspace user,
+# The history-enabled and history-disabled variants run concurrently against the same workspace user,
 # so embed $UNIQUE_NAME in the remote paths: otherwise one variant's cleanup deletes the shared
 # files out from under the other variant's bundle generate read.
 trace $CLI workspace import "/Workspace/Users/${CURRENT_USER_NAME}/notebook-${UNIQUE_NAME}.py" --file notebook.py --format AUTO --overwrite
@@ -36,12 +36,13 @@ trap cleanup EXIT
 
 title "Generate bundle config from the pipeline"
 # The concurrent downloader emits the "File successfully saved" lines in
-# nondeterministic order, so sort just those; the remaining lines (including the
-# multi-line include warning) are deterministic and kept in their natural order.
-$CLI bundle generate pipeline --existing-pipeline-id "$PIPELINE_ID" --key out --config-dir resources --source-dir src --force > out.gen.txt 2>&1
-grep '^File successfully saved to' out.gen.txt | sort
-grep -v '^File successfully saved to' out.gen.txt
-rm out.gen.txt
+# nondeterministic order, so sort just those.
+generate_pipeline() {
+    trace "$@" $CLI bundle generate pipeline --existing-pipeline-id "$PIPELINE_ID" --key out --config-dir resources --source-dir src --bind --force &> LOG.generate
+    grep '^File successfully saved to' LOG.generate | sort
+    grep -v '^File successfully saved to' LOG.generate
+}
+generate_pipeline
 
 title "Verify generated yaml has expected fields"
 cat resources/out.pipeline.yml | env -u MSYS_NO_PATHCONV contains.py "libraries:" "- notebook:" "path: ../src/notebook-${UNIQUE_NAME}.py" "- file:" "path: ../src/test-${UNIQUE_NAME}.py" > /dev/null
@@ -49,5 +50,25 @@ cat resources/out.pipeline.yml | env -u MSYS_NO_PATHCONV contains.py "libraries:
 title "Deploy the generated bundle"
 trace $CLI bundle deploy
 
+if [ "${DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY:-}" = true ]; then
+    $CLI pipelines get "$PIPELINE_ID" | jq -e '.spec.deployment | (.deployment_id | length > 0) and (.version_id | length > 0)' > LOG.deployment
+fi
+
+title "Regenerate the already-bound pipeline"
+generate_pipeline musterr | contains.py 'Resource already managed'
+cat resources/out.pipeline.yml | contains.py '!deployment:' '!deployment_id:' '!version_id:' > LOG.generated
+trace $CLI bundle validate
+
+title "Unbind and regenerate the deployed pipeline"
+trace $CLI bundle deployment unbind out
+generate_pipeline
+
+title "Redeploy the regenerated pipeline"
+trace $CLI bundle deploy
+trace test "$(read_id.py out)" = "$PIPELINE_ID"
+
 title "Destroy the deployed bundle"
 trace $CLI bundle destroy --auto-approve
+
+title "Check that the bound pipeline was destroyed"
+trace musterr $CLI pipelines get "$PIPELINE_ID"

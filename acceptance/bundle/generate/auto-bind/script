@@ -45,6 +45,23 @@ trace cat resources/test_job.job.yml | grep "name: auto-bind-job-${UNIQUE_NAME}"
 title "Deploy the bound job:"
 trace $CLI bundle deploy
 
+if [ "${DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY:-}" = true ]; then
+    $CLI jobs get "$JOB_ID" | jq -e '.settings.deployment | (.deployment_id | length > 0) and (.version_id | length > 0)' > LOG.deployment
+fi
+
+title "Regenerate the already-bound job:"
+trace musterr $CLI bundle generate job --key test_job --existing-job-id $JOB_ID --config-dir resources --source-dir src --bind --force 2>&1 | contains.py 'Resource already managed'
+cat resources/test_job.job.yml | contains.py '!deployment:' '!deployment_id:' '!version_id:' > LOG.generated
+trace $CLI bundle validate
+
+title "Unbind and regenerate the deployed job:"
+trace $CLI bundle deployment unbind test_job
+trace $CLI bundle generate job --key test_job --existing-job-id $JOB_ID --config-dir resources --source-dir src --bind --force
+
+title "Redeploy the regenerated job:"
+trace $CLI bundle deploy
+trace test "$(read_id.py test_job)" = "$JOB_ID"
+
 title "Destroy the bundle:"
 trace $CLI bundle destroy --auto-approve
 

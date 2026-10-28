@@ -8,31 +8,77 @@
 
 === Generate bundle config from the pipelineFile successfully saved to src/notebook-[UNIQUE_NAME].py
 File successfully saved to src/test-[UNIQUE_NAME].py
+
+>>> [CLI] bundle generate pipeline --existing-pipeline-id [PIPELINE_ID] --key out --config-dir resources --source-dir src --bind --force
 Pipeline configuration successfully saved to resources/out.pipeline.yml
-Warning: Generated configuration is not included in the bundle
-
-The file resources/out.pipeline.yml is not matched by any pattern in the 'include' section of databricks.yml,
-so it will not be deployed. Add a matching entry to the 'include' section, for example:
-
-include:
-  - resources/*.yml
-
+Successfully bound pipeline with an id '[PIPELINE_ID]'
 
 === Verify generated yaml has expected fields
 === Deploy the generated bundle
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipeline_and_deploy-[UNIQUE_NAME]/default/files...
+Updated pipelines.out
 Files: 7 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+=== Regenerate the already-bound pipelineFile successfully saved to src/notebook-[UNIQUE_NAME].py
+File successfully saved to src/test-[UNIQUE_NAME].py
+
+>>> musterr [CLI] bundle generate pipeline --existing-pipeline-id [PIPELINE_ID] --key out --config-dir resources --source-dir src --bind --force
+Pipeline configuration successfully saved to resources/out.pipeline.yml
+Error: Resource already managed
+
+The bundle is already managing resource for resources.pipelines.out and it is bound to the requested ID [PIPELINE_ID].
+
+
+>>> [CLI] bundle validate
+Name: pipeline_and_deploy-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/pipeline_and_deploy-[UNIQUE_NAME]/default
+
+Validation OK!
+
+=== Unbind and regenerate the deployed pipeline
+>>> [CLI] bundle deployment unbind out
+File successfully saved to src/notebook-[UNIQUE_NAME].py
+File successfully saved to src/test-[UNIQUE_NAME].py
+
+>>> [CLI] bundle generate pipeline --existing-pipeline-id [PIPELINE_ID] --key out --config-dir resources --source-dir src --bind --force
+Pipeline configuration successfully saved to resources/out.pipeline.yml
+Successfully bound pipeline with an id '[PIPELINE_ID]'
+
+=== Redeploy the regenerated pipeline
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipeline_and_deploy-[UNIQUE_NAME]/default/files...
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> test [PIPELINE_ID] = [PIPELINE_ID]
 
 === Destroy the deployed bundle
 >>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.pipelines.out
+
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
+  delete resources.pipelines.out
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/pipeline_and_deploy-[UNIQUE_NAME]/default
 
-Destroy: 0 deleted
+Destroy: 1 deleted
+
+=== Check that the bound pipeline was destroyed
+>>> musterr [CLI] pipelines get [PIPELINE_ID]
+Error: The specified pipeline [PIPELINE_ID] was not found.
 
 === Cleanup: delete the original pipeline and files
 >>> errcode [CLI] pipelines delete [PIPELINE_ID]
+Error: Not Found
+
+Exit code: 1
 
 >>> errcode [CLI] workspace delete /Workspace/Users/[USERNAME]/notebook-[UNIQUE_NAME]
 
