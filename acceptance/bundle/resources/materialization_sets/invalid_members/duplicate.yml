@@ -1,0 +1,23 @@
+bundle:
+  name: test-matset-invalid-members
+
+resources:
+  materialization_sets:
+    set1:
+      # The offline destination is outside the member key, because the read never returns it, so
+      # these two are the same member however their destinations are spelled.
+      materialized_features:
+        - feature_name: main.default.feat
+          offline_store_config:
+            catalog_name: main
+            schema_name: default
+            table_name_prefix: feat_off
+          cron_schedule_trigger:
+            mode: DERIVED
+        - feature_name: main.default.feat
+          offline_store_config:
+            catalog_name: main
+            schema_name: default
+            table_name_prefix: feat_elsewhere
+          cron_schedule_trigger:
+            mode: DERIVED

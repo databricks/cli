@@ -75,11 +75,11 @@ func notCarried(extra ...string) map[string]bool {
 	return out
 }
 
-// TestExpandMaterializationSetMaterializedFeatureMembersCoversEveryMemberField keeps each
+// TestNormalizeMaterializationSetMaterializedFeatureMembersCoversEveryMemberField keeps each
 // expansion's field list exhaustive and each authoring type complete against the API. Members are
 // built by naming their fields, and the authoring types are hand-written, so a member field added
 // to the proto later reaches no expanded member and nothing else notices.
-func TestExpandMaterializationSetMaterializedFeatureMembersCoversEveryMemberField(t *testing.T) {
+func TestNormalizeMaterializationSetMaterializedFeatureMembersCoversEveryMemberField(t *testing.T) {
 	for name, tc := range map[string]struct {
 		set        *resources.MaterializationSet
 		notCarried map[string]bool
@@ -103,7 +103,7 @@ func TestExpandMaterializationSetMaterializedFeatureMembersCoversEveryMemberFiel
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			expanded := expandSet(t, tc.set)
+			expanded := normalizeSet(t, tc.set)
 			require.NotEmpty(t, expanded.MaterializedFeatures)
 
 			for field := range reflect.TypeFor[ml.MaterializedFeature]().Fields() {

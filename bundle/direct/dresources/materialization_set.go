@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -33,40 +32,9 @@ func (*ResourceMaterializationSet) PrepareState(input *resources.Materialization
 // materializationSetUpdatableFields is the only mask the update endpoint accepts.
 var materializationSetUpdatableFields = []string{"materialized_features"}
 
-// escapeMemberKeyPart percent-escapes the separator so the join in materializationSetMemberKey is
-// injective. A feature name is validated only for length and non-emptiness, so it may contain the
-// separator; two members sharing a key would be diffed as one, and the request would then omit a
-// member the server deletes because it cannot see it.
-func escapeMemberKeyPart(part string) string {
-	part = strings.ReplaceAll(part, "%", "%25")
-	return strings.ReplaceAll(part, "|", "%7C")
-}
-
-// materializationSetMemberKey identifies a materialized feature member by content rather than
-// position, as labelled components joined by the separator escapeMemberKeyPart escapes.
-//
-// online_store_name is omitted rather than left empty when the member has no online destination,
-// which is what keeps an offline member distinct from an online one whose store name is unset.
-//
-// The server pairs members by the same components in MaterializationSetMemberKey -- see
-// feature-store/src/main/scala/com/databricks/feature-store/utils/materialized-features/MaterializationSetUtils.scala
-// -- holding them in a case class rather than a joined string, so this encoding is the CLI's own
-// and only the component list has to agree. Adding, dropping or redefining one takes the same
-// change there.
-func materializationSetMemberKey(member ml.MaterializedFeature) (string, string) {
-	parts := []string{"feature_name=" + escapeMemberKeyPart(member.FeatureName)}
-	if member.OnlineStoreConfig != nil {
-		parts = append(parts,
-			"online_store_name="+escapeMemberKeyPart(member.OnlineStoreConfig.OnlineStoreName))
-	}
-	parts = append(parts, "is_streaming_mode="+strconv.FormatBool(member.StreamingMode != nil))
-
-	return "member", strings.Join(parts, "|")
-}
-
 func (*ResourceMaterializationSet) KeyedSlices() map[string]any {
 	return map[string]any{
-		"materialized_features": materializationSetMemberKey,
+		"materialized_features": resources.MaterializedFeatureMemberKey,
 	}
 }
 

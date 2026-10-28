@@ -1,0 +1,33 @@
+
+=== Two members differing only outside the member key are the same member declared twice
+>>> musterr [CLI] bundle validate
+Error: Features 'main.default.feat' in materialization set 'set1' each declares more than one materialized feature with the following same fields: feature name, online store name, trigger is streaming mode, which is not allowed.
+  at resources.materialization_sets.set1.materialized_features[0]
+     resources.materialization_sets.set1.materialized_features[1]
+  in databricks.yml:10:11
+     databricks.yml:17:11
+
+Name: test-matset-invalid-members
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-matset-invalid-members/default
+
+Found 1 error
+
+=== A shorthand entry and a member written out can reach the same member, which neither
+=== declaration shows on its own
+>>> musterr [CLI] bundle validate
+Error: Features 'main.default.feat' in materialization set 'set1' each declares more than one materialized feature with the following same fields: feature name, online store name, trigger is streaming mode, which is not allowed.
+  at resources.materialization_sets.set1.batch_offline_and_online_materialized_features[0]
+     resources.materialization_sets.set1.materialized_features[0]
+  in databricks.yml:10:11
+     databricks.yml:23:11
+
+Name: test-matset-invalid-members
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-matset-invalid-members/default
+
+Found 1 error

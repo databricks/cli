@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/stretchr/testify/assert"
@@ -110,8 +111,8 @@ func TestMaterializationSetDestinationFieldsAreSuppressed(t *testing.T) {
 	}
 
 	for _, field := range []string{"catalog_name", "schema_name", "table_name_prefix"} {
-		_, offlineKey := materializationSetMemberKey(*offline)
-		_, onlineKey := materializationSetMemberKey(*online)
+		_, offlineKey := resources.MaterializedFeatureMemberKey(*offline)
+		_, onlineKey := resources.MaterializedFeatureMemberKey(*online)
 		assert.Truef(t,
 			isRedactedDestinationField(memberFieldPath(t, offlineKey, "offline_store_config."+field)),
 			"offline_store_config.%s must be suppressed", field)
@@ -121,7 +122,7 @@ func TestMaterializationSetDestinationFieldsAreSuppressed(t *testing.T) {
 	}
 
 	// online_store_name is returned by the read, so a repoint of it must stay visible.
-	_, onlineKey := materializationSetMemberKey(*online)
+	_, onlineKey := resources.MaterializedFeatureMemberKey(*online)
 	assert.False(t,
 		isRedactedDestinationField(memberFieldPath(t, onlineKey, "online_store_config.online_store_name")))
 }
