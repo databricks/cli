@@ -14,8 +14,8 @@ resources:
             input: amount
           time_window:
             sliding:
-              window_duration: 7d
-              slide_duration: 1d
+              window_duration: 604800s
+              slide_duration: 86400s
       entities:
         - name: account_id
       timeseries_column:

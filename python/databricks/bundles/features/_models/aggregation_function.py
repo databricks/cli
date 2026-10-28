@@ -66,10 +66,7 @@ from databricks.bundles.features._models.sum_function import (
     SumFunction,
     SumFunctionParam,
 )
-from databricks.bundles.features._models.time_window import (
-    TimeWindow,
-    TimeWindowParam,
-)
+from databricks.bundles.features._models.time_window import TimeWindow, TimeWindowParam
 from databricks.bundles.features._models.var_pop_function import (
     VarPopFunction,
     VarPopFunctionParam,

@@ -112,17 +112,13 @@ var testConfig map[string]any = map[string]any{
 	"features": &resources.Feature{
 		FullName:    "main.default.my_feature",
 		Description: "Test feature",
-		Source: resources.DataSource{
-			DataSource: ml.DataSource{
-				DeltaTableSource: &ml.DeltaTableSource{
-					FullName: "main.default.my_source",
-				},
+		Source: ml.DataSource{
+			DeltaTableSource: &ml.DeltaTableSource{
+				FullName: "main.default.my_source",
 			},
 		},
-		Function: resources.Function{
-			Function: ml.Function{
-				ColumnSelection: &ml.ColumnSelection{Column: "amount"},
-			},
+		Function: ml.Function{
+			ColumnSelection: &ml.ColumnSelection{Column: "amount"},
 		},
 		Entities:         []ml.EntityColumn{{Name: "id"}},
 		TimeseriesColumn: &ml.TimeseriesColumn{Name: "ts"},
