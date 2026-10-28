@@ -37,7 +37,7 @@ func loadStateForGenerate(ctx context.Context, b *bundle.Bundle) context.Context
 
 	var state statemgmt.ExportedResourcesMap
 	if stateDesc.Engine.IsDirect() {
-		if err := utils.OpenDirectStateForRead(ctx, b, stateDesc); err != nil {
+		if err := utils.OpenDirectStateForRead(ctx, b); err != nil {
 			logdiag.LogError(ctx, err)
 			return ctx
 		}
