@@ -23,6 +23,9 @@
   Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
 
 >>> bundle summary
+  Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
+  Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
+  Warn: Could not read deployment history: Fault injected by test.
   Name: updated-dms-fault-get_deployment-commands-[UNIQUE_NAME]
   Target: default
   Workspace:
@@ -84,11 +87,15 @@
   Validation OK!
 
 >>> bundle deploy --auto-approve
+  Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
+  Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
+  Warn: Could not read deployment history: Fault injected by test.
   Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-fault-get_deployment-commands-[UNIQUE_NAME]/files...
   Current Deployment Version: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=9
+  Updated jobs.foo
   Updated pipelines.bar
   Files: 6 uploaded, 0 deleted
-  Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+  Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
 
 === deployment_history: false
 
@@ -102,14 +109,19 @@
 === deployment_history: true
 
 >>> bundle deploy --auto-approve
+  Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
+  Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
+  Warn: Could not read deployment history: Fault injected by test.
   Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-fault-get_deployment-commands-[UNIQUE_NAME]/files...
   Current Deployment Version: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=11
   Updated jobs.foo
-  Updated pipelines.bar
   Files: 2 uploaded, 0 deleted
-  Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
+  Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> bundle destroy --auto-approve
+  Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
+  Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
+  Warn: Could not read deployment history: Fault injected by test.
   The following resources will be deleted:
     delete resources.jobs.foo
     delete resources.pipelines.bar
