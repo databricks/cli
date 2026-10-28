@@ -109,25 +109,33 @@ func (fr *FaultRules) Check(method, path, token string, body []byte) *FaultRule 
 	return nil
 }
 
+// Register decodes and registers a rule for token using the fault.py wire format.
+func (fr *FaultRules) Register(token string, data []byte) error {
+	var body struct {
+		Pattern      string `json:"pattern"`
+		StatusCode   int    `json:"status_code"`
+		Body         string `json:"body"`
+		Offset       int    `json:"offset"`
+		Times        int    `json:"times"`
+		AfterHandler bool   `json:"after_handler"`
+		BodyContains string `json:"body_contains"`
+	}
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	if body.AfterHandler {
+		fr.SetAfterHandler(token, body.Pattern, body.StatusCode, body.Body, body.Offset, body.Times, body.BodyContains)
+	} else {
+		fr.Set(token, body.Pattern, body.StatusCode, body.Body, body.Offset, body.Times, body.BodyContains)
+	}
+	return nil
+}
+
 // faultEndpointHandler handles POST /__testserver/fault.
 func faultEndpointHandler(fr *FaultRules) HandlerFunc {
 	return func(req Request) any {
-		var body struct {
-			Pattern      string `json:"pattern"`
-			StatusCode   int    `json:"status_code"`
-			Body         string `json:"body"`
-			Offset       int    `json:"offset"`
-			Times        int    `json:"times"`
-			AfterHandler bool   `json:"after_handler"`
-			BodyContains string `json:"body_contains"`
-		}
-		if err := json.Unmarshal(req.Body, &body); err != nil {
+		if err := fr.Register(req.Token, req.Body); err != nil {
 			return Response{StatusCode: 400, Body: map[string]string{"error": err.Error()}}
-		}
-		if body.AfterHandler {
-			fr.SetAfterHandler(req.Token, body.Pattern, body.StatusCode, body.Body, body.Offset, body.Times, body.BodyContains)
-		} else {
-			fr.Set(req.Token, body.Pattern, body.StatusCode, body.Body, body.Offset, body.Times, body.BodyContains)
 		}
 		return Response{StatusCode: 200}
 	}

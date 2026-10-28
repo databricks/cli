@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Set up a fault rule on the testserver for the current test token.
+"""Set up a fault rule on the testserver or test proxy for the current test token.
 
 Usage: fault.py [--after-handler] [--body-contains SUBSTR] PATTERN STATUS_CODE OFFSET TIMES [ERROR_CODE]
 
@@ -16,6 +16,7 @@ Usage: fault.py [--after-handler] [--body-contains SUBSTR] PATTERN STATUS_CODE O
 
 The rule is scoped to the current DATABRICKS_TOKEN so it only affects
 the test that registers it, even when tests share a server.
+Cloud runs require Proxy = true in test.toml.
 """
 
 import json

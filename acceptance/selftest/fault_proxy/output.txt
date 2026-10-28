@@ -1,0 +1,38 @@
+
+=== a fault before forwarding prevents the mutation
+>>> musterr [CLI] workspace mkdirs /Users/[USERNAME]/fault-proxy-[UNIQUE_NAME]/blocked
+Error: Fault injected by test.
+
+Host:      [DATABRICKS_URL]
+Auth type: Personal Access Token (pat)
+
+Next steps:
+  - Verify you have the required permissions for this operation
+  - Check your identity: databricks auth describe
+  - Consider setting up a profile: databricks auth login --profile <name>
+blocked directory does not exist
+
+=== an after-handler fault preserves the upstream mutation
+>>> musterr [CLI] workspace mkdirs /Users/[USERNAME]/fault-proxy-[UNIQUE_NAME]/committed
+Error: Fault injected by test.
+
+Host:      [DATABRICKS_URL]
+Auth type: Personal Access Token (pat)
+
+Next steps:
+  - Verify you have the required permissions for this operation
+  - Check your identity: databricks auth describe
+  - Consider setting up a profile: databricks auth login --profile <name>
+
+>>> [CLI] workspace get-status /Users/[USERNAME]/fault-proxy-[UNIQUE_NAME]/committed
+{
+  "object_type": "DIRECTORY"
+}
+
+=== the CLI recovers from a retryable error after the mutation
+>>> [CLI] workspace mkdirs /Users/[USERNAME]/fault-proxy-[UNIQUE_NAME]/retried
+
+>>> [CLI] workspace get-status /Users/[USERNAME]/fault-proxy-[UNIQUE_NAME]/retried
+{
+  "object_type": "DIRECTORY"
+}

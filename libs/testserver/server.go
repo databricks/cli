@@ -106,6 +106,7 @@ func NewRequest(t testutil.TestingT, r *http.Request, fakeWorkspace *FakeWorkspa
 
 	return Request{
 		Method:    r.Method,
+		Token:     getToken(r),
 		URL:       r.URL,
 		Headers:   r.Header,
 		Body:      body,
