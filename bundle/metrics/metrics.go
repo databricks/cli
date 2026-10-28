@@ -12,6 +12,19 @@ const (
 	SqlWarehouseLifecycleStarted        = "sql_warehouse_lifecycle_started"
 	SelectUsed                          = "select_used"
 
+	// Whether the deploy registered an immutable snapshot. Derived from the snapshot
+	// resource, not from experimental.immutable_folder: the flag may change, and the
+	// resource is what the deploy actually uploads.
+	ImmutableSnapshotUsed = "immutable_snapshot_used"
+
+	// Key under which the snapshot upload duration is reported in
+	// bundle_mutator_execution_time_ms, next to files.(upload) so the two can be
+	// compared. Covers creating the snapshot resource (the upload plus recording it in
+	// state), not building the zip, which is snapshot.(snapshotUpload). Absent when no
+	// snapshot was uploaded. It lacks the parentheses of a mutator name because it is
+	// not a mutator.
+	SnapshotUploadDuration = "snapshot.upload"
+
 	// Outcome of an automatic migration of terraform state to the direct engine.
 	//   - migrate_error:        state conversion itself errored.
 	//   - migrate_commit_error: the state was converted, but committing it
