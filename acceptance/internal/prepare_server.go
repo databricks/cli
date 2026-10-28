@@ -129,10 +129,10 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 		cfg := w.Config
 
 		// If we are running in a cloud environment AND we need to intercept requests
-		// (for recording or logging), start a proxy server.
-		if recordRequests || logRequests {
-			// An empty config resolves the real workspace from the environment.
-			host := startProxyServer(t, &sdkconfig.Config{}, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
+		// (for fault injection, recording or logging), start a proxy server.
+		if isTruePtr(config.Proxy) || recordRequests || logRequests {
+			// Reuse the resolved cloud config for upstream auth and workspace routing.
+			host := startProxyServer(t, cfg, token, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
 			cfg = &sdkconfig.Config{
 				Host:  host,
 				Token: token,
@@ -155,7 +155,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 		host := startProxyServer(t, &sdkconfig.Config{
 			Host:  upstream,
 			Token: token,
-		}, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
+		}, token, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
 
 		cfg := &sdkconfig.Config{
 			Host:  host,
@@ -284,12 +284,13 @@ func startLocalServer(t *testing.T,
 
 func startProxyServer(t *testing.T,
 	upstream *sdkconfig.Config,
+	token string,
 	recordRequests bool,
 	logRequests bool,
 	includeHeaders []string,
 	outputDir string,
 ) string {
-	s := testproxy.New(t, upstream)
+	s := testproxy.New(t, upstream, token)
 
 	// Record API requests in out.requests.txt if RecordRequests is true in test.toml.
 	if recordRequests {

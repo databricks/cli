@@ -15,6 +15,19 @@ The cloud run is keyed off `CLOUD_ENV`; see `getSkipReason` in `acceptance/accep
 
 To run tests against a real workspace: `deco env run -i -n aws-prod-ucws -- <go test command>` (requires the `deco` tool and access to a test env).
 
+## Fault injection
+
+Set `Proxy = true` in `test.toml` to use `fault.py` against either the fake server or a real workspace. Add `Cloud = true` for cloud runs. Recording is optional.
+
+```bash
+fault.py "POST /api/2.0/workspace/mkdirs" 403 0 1
+fault.py --after-handler "POST /api/2.2/jobs/run-now" 503 0 1
+```
+
+A normal fault prevents the upstream call. `--after-handler` forwards the call first and replaces its response, preserving its effects. Rules match the incoming test token; the proxy uses separate upstream credentials. Offsets and counts include client retries. Use precise patterns or `--body-contains` to select a resource, and clean up real resources after testing a failed response.
+
+The proxy requires localhost access and cannot be used with `RunsOnDbr`.
+
 ## Authoring
 
 To author a test,

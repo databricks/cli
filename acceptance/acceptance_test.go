@@ -919,6 +919,8 @@ func runTest(t *testing.T,
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 
+	require.False(t, isTruePtr(config.RunsOnDbr) && LogRequests,
+		"RunsOnDbr cannot be combined with -logrequests: the proxy requires localhost access")
 	cfg, user, workspaceID := internal.PrepareServerAndClient(t, config, LogRequests, outputDir, testEnv)
 	testdiff.PrepareReplacementsUser(t, &repls, user)
 	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)

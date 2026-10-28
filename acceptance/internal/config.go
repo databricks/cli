@@ -78,8 +78,8 @@ type TestConfig struct {
 	// out.requests.txt
 	RecordRequests *bool
 
-	// If true, local runs route the CLI through the recording proxy (libs/testproxy)
-	// instead of straight to the testserver, matching the cloud topology.
+	// If true, route the CLI through libs/testproxy for fault injection,
+	// independently of recording. Supported locally and on cloud.
 	Proxy *bool
 
 	// List of request headers to include when recording requests.
@@ -252,10 +252,10 @@ func LoadConfig(t *testing.T, dir string) (TestConfig, string) {
 
 // validateConfig checks for incompatible configuration combinations.
 func validateConfig(t *testing.T, config TestConfig, configPath string) {
-	// RunsOnDbr and RecordRequests are incompatible because serverless does not
+	// RunsOnDbr cannot use the proxy because serverless does not
 	// allow access to localhost ports, which the test proxy server requires.
-	if isTruePtr(config.RunsOnDbr) && isTruePtr(config.RecordRequests) {
-		t.Fatalf("Invalid config %s: RunsOnDbr and RecordRequests cannot both be true. "+
+	if isTruePtr(config.RunsOnDbr) && (isTruePtr(config.RecordRequests) || isTruePtr(config.Proxy)) {
+		t.Fatalf("Invalid config %s: RunsOnDbr cannot be combined with RecordRequests or Proxy. "+
 			"Serverless does not allow access to localhost ports, which the test proxy server requires.", configPath)
 	}
 

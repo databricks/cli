@@ -2,186 +2,173 @@ package testproxy
 
 import (
 	"bytes"
-	"errors"
+	"crypto/tls"
+	"fmt"
+	"io"
+	"maps"
 	"net/http"
 	"net/http/httptest"
+	"net/http/httputil"
+	"net/url"
+	"strings"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/fault"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+const faultEndpoint = "/__testserver/fault"
+
 type ProxyServer struct {
 	*httptest.Server
 
-	t testutil.TestingT
-
-	apiClient        *httpclient.ApiClient
+	t                testutil.TestingT
+	upstream         *url.URL
+	transport        http.RoundTripper
+	token            string
+	faults           *fault.Rules
 	RequestCallback  func(request *testserver.Request)
 	ResponseCallback func(request *testserver.Request, response *testserver.EncodedResponse)
 }
 
-// New creates a reverse proxy server that sits in front of the upstream
-// workspace. This is useful for recording API requests and responses in
-// integration tests.
-//
-// Note: We cannot directly proxy the request from a localhost URL to a real
-// workspace as is. This is because auth resolution in the Databricks SDK relies
-// what the URL actually looks like to determine the auth method to use.
-// For example, in OAuth flows, the SDK can make requests to different Microsoft
-// OAuth endpoints based on the nature of the URL.
-// For reference, see:
+// New creates a reverse proxy with token-scoped fault injection and optional recording.
+// The upstream config resolves real workspace credentials; token identifies the test
+// locally and is never forwarded. Resolving auth against localhost would break OAuth:
 // https://github.com/databricks/databricks-sdk-go/blob/79e4b3a6e9b0b7dcb1af9ad4025deb447b01d933/common/environment/environments.go#L57
-//
-// An upstream with no fields set resolves a real workspace and its auth from the
-// environment; an explicit host and token point at a testserver instead.
-func New(t testutil.TestingT, upstream *config.Config) *ProxyServer {
-	s := &ProxyServer{
-		t: t,
-	}
-
-	clientCfg, err := config.HTTPClientConfigFromConfig(upstream)
+func New(t testutil.TestingT, upstream *config.Config, token string) *ProxyServer {
+	require.NoError(t, upstream.EnsureResolved())
+	upstreamURL, err := url.Parse(upstream.Host)
 	require.NoError(t, err)
-	s.apiClient = httpclient.NewApiClient(clientCfg)
 
-	// Set up the proxy handler as the default handler for all requests.
-	server := httptest.NewServer(http.HandlerFunc(s.proxyToUpstream))
-	t.Cleanup(server.Close)
-
-	s.Server = server
+	transport := upstream.HTTPTransport
+	if transport == nil {
+		tr := http.DefaultTransport.(*http.Transport).Clone()
+		tr.TLSClientConfig = &tls.Config{MinVersion: tls.VersionTLS12, InsecureSkipVerify: upstream.InsecureSkipVerify} //nolint:gosec // Honor the upstream SDK config.
+		t.Cleanup(tr.CloseIdleConnections)
+		transport = tr
+	}
+	s := &ProxyServer{
+		t:         t,
+		upstream:  upstreamURL,
+		transport: &authenticatedTransport{upstream: upstream, next: transport},
+		token:     token,
+		faults:    fault.NewRules(),
+	}
+	s.Server = httptest.NewServer(http.HandlerFunc(s.proxyToUpstream))
+	t.Cleanup(s.Close)
 	return s
 }
 
-func (s *ProxyServer) reqBody(r testserver.Request) any {
-	// The SDK expects the query parameters to be specified in the "request body"
-	// argument for GET, DELETE, and HEAD requests in the .Do method.
-	if r.Method == http.MethodGet || r.Method == http.MethodDelete || r.Method == http.MethodHead {
-		queryParams := make(map[string]any)
-		for k, v := range r.URL.Query() {
-			queryParams[k] = v[0]
-		}
-		return queryParams
-	}
+type authenticatedTransport struct {
+	upstream *config.Config
+	next     http.RoundTripper
+}
 
-	// Otherwise, return the raw body.
-	return r.Body
+func (tr *authenticatedTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	r.Header.Del("Authorization")
+	if err := tr.upstream.Authenticate(r); err != nil {
+		return nil, fmt.Errorf("authenticate upstream request: %w", err)
+	}
+	for key, value := range auth.WorkspaceIDHeaders(tr.upstream) {
+		r.Header.Set(key, value)
+	}
+	if tr.upstream.Headers != nil {
+		if err := tr.upstream.Headers(r); err != nil {
+			return nil, err
+		}
+	}
+	return tr.next.RoundTrip(r)
 }
 
 func (s *ProxyServer) proxyToUpstream(w http.ResponseWriter, r *http.Request) {
 	request := testserver.NewRequest(s.t, r, nil)
+	if strings.HasPrefix(r.URL.Path, "/__testserver/") {
+		if r.URL.Path != faultEndpoint || r.Method != http.MethodPost {
+			http.NotFound(w, r)
+			return
+		}
+		if request.Token == "" || request.Token != s.token {
+			http.Error(w, "invalid test token", http.StatusUnauthorized)
+			return
+		}
+		if err := s.faults.Register(request.Token, request.Body); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	if s.RequestCallback != nil {
 		s.RequestCallback(&request)
 	}
-
-	headers := make(map[string]string)
-	for k, v := range r.Header {
-		// Authorization headers will be set by the SDK. Do not pass them along here.
-		if k == "Authorization" {
-			continue
-		}
-		// The default HTTP client in Go sets the Accept-Encoding header to
-		// "gzip". Since it is originally meant to be read by the server and
-		// will be set again when the SDK makes the request to the workspace, do
-		// not pass it along here.
-		if k == "Accept-Encoding" {
-			continue
-		}
-		headers[k] = v[0]
+	rule := s.faults.Check(r.Method, r.URL.Path, request.Token, request.Body)
+	if rule != nil && !rule.AfterHandler {
+		s.writeResponse(w, &request, injectedResponse(rule))
+		return
 	}
 
-	queryParams := make(map[string]any)
-	for k, v := range r.URL.Query() {
-		queryParams[k] = v[0]
-	}
-
-	reqBody := s.reqBody(request)
-	respBody := bytes.Buffer{}
-
-	// List of response headers to pass through to the client.
-	// We can extend this code to pass all X-Databricks headers if we introduce a
-	// more powerful visitor like `WithRequestHeaders` to the SDK. That is left
-	// as a future exercise for now.
-	includeResponseHeaders := []string{"X-Databricks-Org-Id"}
-	responseHeaders := make(map[string]*string)
-
-	visitors := []httpclient.DoOption{
-		httpclient.WithRequestHeaders(headers),
-		httpclient.WithQueryParameters(queryParams),
-		httpclient.WithRequestData(reqBody),
-		httpclient.WithResponseUnmarshal(&respBody),
-	}
-
-	for _, header := range includeResponseHeaders {
-		responseHeaders[header] = new(string)
-		visitors = append(visitors, httpclient.WithResponseHeader(header, responseHeaders[header]))
-	}
-
-	err := s.apiClient.Do(s.t.Context(), r.Method, r.URL.Path,
-		visitors...,
-	)
-
-	var encodedResponse *testserver.EncodedResponse
-
-	// API errors from the SDK are of type [apierr.APIError]. Forward the raw
-	// response bytes verbatim — including any error details — so callers see
-	// exactly what the workspace returned. Re-marshalling from the parsed
-	// APIError would drop fields the SDK doesn't surface (e.g. metadata in
-	// details[]) and silently break callers that inspect them.
-	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok {
-		rw := apiErr.ResponseWrapper
-		if rw == nil {
-			// The SDK populates ResponseWrapper for every APIError produced
-			// from a real HTTP response. If this ever fires the SDK changed
-			// shape and we need to revisit how we forward error bodies.
-			panic("apierr.APIError has no ResponseWrapper")
-		}
-		encodedResponse = &testserver.EncodedResponse{
-			StatusCode: rw.Response.StatusCode,
-			Body:       rw.DebugBytes,
-		}
-		// Visitors registered via WithResponseHeader are not invoked when
-		// the SDK returns an error, so populate the include list directly
-		// from the original response headers.
-		for _, header := range includeResponseHeaders {
-			if v := rw.Response.Header.Get(header); v != "" {
-				*responseHeaders[header] = v
+	r.Body = io.NopCloser(bytes.NewReader(request.Body))
+	proxy := httputil.ReverseProxy{
+		Rewrite: func(pr *httputil.ProxyRequest) {
+			pr.SetURL(s.upstream)
+			// Let the transport negotiate compression so response logging sees decoded bytes.
+			pr.Out.Header.Del("Accept-Encoding")
+			// Preserve the client's query encoding and repeated parameters.
+			pr.Out.URL.RawQuery = pr.In.URL.RawQuery
+		},
+		Transport: s.transport,
+		ModifyResponse: func(response *http.Response) error {
+			body, err := io.ReadAll(response.Body)
+			response.Body.Close()
+			if err != nil {
+				return err
 			}
-		}
+			encoded := testserver.EncodedResponse{
+				StatusCode: response.StatusCode,
+				Headers:    response.Header,
+				Body:       body,
+			}
+			if rule != nil {
+				encoded = injectedResponse(rule)
+			}
+			if s.ResponseCallback != nil {
+				s.ResponseCallback(&request, &encoded)
+			}
+			response.StatusCode = encoded.StatusCode
+			response.Header = encoded.Headers
+			response.Body = io.NopCloser(bytes.NewReader(encoded.Body))
+			response.ContentLength = int64(len(encoded.Body))
+			return nil
+		},
+		ErrorHandler: func(w http.ResponseWriter, _ *http.Request, err error) {
+			s.writeResponse(w, &request, testserver.EncodedResponse{
+				StatusCode: http.StatusBadGateway,
+				Body:       []byte(err.Error()),
+			})
+		},
 	}
+	proxy.ServeHTTP(w, r)
+}
 
-	// Something else went wrong.
-	if encodedResponse == nil && err != nil {
-		encodedResponse = &testserver.EncodedResponse{
-			StatusCode: 500,
-			Body:       []byte(err.Error()),
-		}
+func injectedResponse(rule *fault.Rule) testserver.EncodedResponse {
+	return testserver.EncodedResponse{
+		StatusCode: rule.StatusCode,
+		Headers:    http.Header{"Content-Type": {"application/json"}},
+		Body:       []byte(rule.Body),
 	}
+}
 
-	// Successful response
-	if encodedResponse == nil {
-		encodedResponse = &testserver.EncodedResponse{
-			StatusCode: 200,
-			Body:       respBody.Bytes(),
-		}
-	}
-
-	// Send response to client.
-	if len(responseHeaders) > 0 {
-		for k, v := range responseHeaders {
-			w.Header()[k] = []string{*v}
-		}
-	}
-
-	w.WriteHeader(encodedResponse.StatusCode)
-
-	_, err = w.Write(encodedResponse.Body)
-	assert.NoError(s.t, err)
-
+func (s *ProxyServer) writeResponse(w http.ResponseWriter, request *testserver.Request, response testserver.EncodedResponse) {
 	if s.ResponseCallback != nil {
-		s.ResponseCallback(&request, encodedResponse)
+		s.ResponseCallback(request, &response)
 	}
+	maps.Copy(w.Header(), response.Headers)
+	w.WriteHeader(response.StatusCode)
+	_, err := w.Write(response.Body)
+	assert.NoError(s.t, err)
 }
