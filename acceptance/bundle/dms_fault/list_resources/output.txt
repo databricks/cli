@@ -1,0 +1,139 @@
+
+=== commands: setup
+
+>>> bundle deploy --auto-approve
+  Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-fault-list_resources-commands-[UNIQUE_NAME]/files...
+  Current Deployment Version: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=1
+  Created jobs.foo
+  Created pipelines.bar
+  Files: 4 uploaded, 0 deleted
+  Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== commands: list_resources fault enabled
+
+>>> bundle deploy --auto-approve
+  Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-fault-list_resources-commands-[UNIQUE_NAME]/files...
+  Current Deployment Version: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=2
+  Updated jobs.foo
+  Updated pipelines.bar
+  Files: 3 uploaded, 0 deleted
+  Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
+
+>>> bundle validate
+  Name: updated-dms-fault-list_resources-commands-[UNIQUE_NAME]
+  Target: default
+  Workspace:
+    User: [USERNAME]
+    Path: /Workspace/Users/[USERNAME]/.bundle/dms-fault-list_resources-commands-[UNIQUE_NAME]
+
+  Validation OK!
+
+>>> bundle summary
+  Name: updated-dms-fault-list_resources-commands-[UNIQUE_NAME]
+  Target: default
+  Workspace:
+    User: [USERNAME]
+    Path: /Workspace/Users/[USERNAME]/.bundle/dms-fault-list_resources-commands-[UNIQUE_NAME]
+  Resources:
+    Jobs:
+      foo:
+        Name: updated-dms-fault-list_resources-commands-[UNIQUE_NAME]
+        URL:  [DATABRICKS_URL]/jobs/[FOO_ID]?w=[WORKSPACE_ID]
+    Pipelines:
+      bar:
+        Name: updated-dms-fault-list_resources-commands-[UNIQUE_NAME]
+        URL:  [DATABRICKS_URL]/pipelines/[BAR_ID]?w=[WORKSPACE_ID]
+
+>>> bundle generate job --existing-job-id [FOO_ID] --key foo --config-dir exported --source-dir exported-src --force
+  Job configuration successfully saved to exported/foo.job.yml
+  Warning: Generated configuration is not included in the bundle
+
+  The file exported/foo.job.yml is not matched by any pattern in the 'include' section of databricks.yml,
+  so it will not be deployed. Add a matching entry to the 'include' section, for example:
+
+  include:
+    - exported/*.yml
+
+
+>>> bundle deployment unbind foo
+
+>>> bundle generate job --existing-job-id [FOO_ID] --key foo --config-dir resources --source-dir src --force --bind
+  Job configuration successfully saved to resources/foo.job.yml
+  Successfully bound job with an id '[FOO_ID]'
+
+>>> bundle generate pipeline --existing-pipeline-id [BAR_ID] --key bar --config-dir exported --source-dir exported-src --force
+  File successfully saved to exported-src/pipeline.sql
+  Pipeline configuration successfully saved to exported/bar.pipeline.yml
+  Warning: Generated configuration is not included in the bundle
+
+  The file exported/bar.pipeline.yml is not matched by any pattern in the 'include' section of databricks.yml,
+  so it will not be deployed. Add a matching entry to the 'include' section, for example:
+
+  include:
+    - exported/*.yml
+
+
+>>> bundle deployment unbind bar
+
+>>> bundle generate pipeline --existing-pipeline-id [BAR_ID] --key bar --config-dir resources --source-dir src --force --bind
+  File successfully saved to src/pipeline.sql
+  Pipeline configuration successfully saved to resources/bar.pipeline.yml
+  Successfully bound pipeline with an id '[BAR_ID]'
+
+>>> bundle validate
+  Name: updated-dms-fault-list_resources-commands-[UNIQUE_NAME]
+  Target: default
+  Workspace:
+    User: [USERNAME]
+    Path: /Workspace/Users/[USERNAME]/.bundle/dms-fault-list_resources-commands-[UNIQUE_NAME]
+
+  Validation OK!
+
+>>> bundle deploy --auto-approve
+  Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-fault-list_resources-commands-[UNIQUE_NAME]/files...
+  Current Deployment Version: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=9
+  Updated pipelines.bar
+  Files: 6 uploaded, 0 deleted
+  Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+
+>>> bundle destroy --auto-approve
+  The following resources will be deleted:
+    delete resources.jobs.foo
+    delete resources.pipelines.bar
+
+  This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+  Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
+    delete resources.pipelines.bar
+
+  All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-fault-list_resources-commands-[UNIQUE_NAME]
+
+  Destroy: 2 deleted
+
+DMS API called: no
+
+=== destroy: setup
+
+>>> bundle deploy --auto-approve
+  Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-fault-list_resources-destroy-[UNIQUE_NAME]/files...
+  Current Deployment Version: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=1
+  Created jobs.foo
+  Created pipelines.bar
+  Files: 4 uploaded, 0 deleted
+  Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== destroy: list_resources fault enabled
+
+>>> bundle destroy --auto-approve
+  The following resources will be deleted:
+    delete resources.jobs.foo
+    delete resources.pipelines.bar
+
+  This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+  Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
+    delete resources.pipelines.bar
+
+  All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-fault-list_resources-destroy-[UNIQUE_NAME]
+
+  Destroy: 2 deleted
+
+DMS API called: no
