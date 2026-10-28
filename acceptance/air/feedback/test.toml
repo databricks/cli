@@ -1,0 +1,6 @@
+# Explicit feedback still submits when automatic usage telemetry is disabled.
+Env.DATABRICKS_CLI_DISABLE_TELEMETRY = "1"
+
+[[Repls]]
+Old = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+New = '[FEEDBACK_ID]'
