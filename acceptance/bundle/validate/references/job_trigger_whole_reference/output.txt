@@ -1,11 +1,17 @@
 
->>> musterr [CLI] bundle validate
-Error: expected a map to index "pause_status", found string
-
+>>> [CLI] bundle validate
 Name: test-bundle
 Target: default
 Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Found 1 error
+Validation OK!
+
+>>> [CLI] bundle plan -o json
+{
+  "file_arrival": {
+    "url": "s3://bucket/path"
+  },
+  "pause_status": "UNPAUSED"
+}

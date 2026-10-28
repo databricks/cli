@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/logdiag"
 )
 
@@ -30,6 +31,11 @@ func (m *setDefault) Name() string {
 func (m *setDefault) Apply(ctx context.Context, b *Bundle) diag.Diagnostics {
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		return dyn.MapByPattern(v, m.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			// A default cannot be written into a pure reference to a whole block
+			// (e.g. "${resources.jobs.base.schedule}"), so leave it to the referenced value.
+			if s, ok := v.AsString(); ok && dynvar.IsPureVariableReference(s) {
+				return v, nil
+			}
 			_, err := dyn.GetByPath(v, m.key)
 			switch {
 			case dyn.IsNoSuchKeyError(err):
