@@ -145,8 +145,14 @@ func TestRoundtripAllFieldsRemoteType(t *testing.T) {
 // marshal.Unmarshal hands the whole payload to the embedded member, so the shadowed
 // string comes back holding the raw JSON text and reads as a lost field. Its other
 // fields go unchecked on this surface as a result.
+//
+// features is exempt for the same reason. Its window types declare their durations as strings and
+// deliberately shadow the same-named duration fields of the embedded API types, so a bundle can
+// write "7d" (featureState parses it to the protobuf form before deploy). Only the shallower string
+// is reachable by that JSON name, so the shadowed duration cannot round-trip, and marshal.Unmarshal
+// leaves the embedded members' other fields unset. Its other fields go unchecked here as a result.
 func TestRoundtripAllFieldsInputConfigType(t *testing.T) {
-	testRoundtripAllFields(t, "InputConfigType", (*Adapter).InputConfigType, []string{"cluster_policies"})
+	testRoundtripAllFields(t, "InputConfigType", (*Adapter).InputConfigType, []string{"cluster_policies", "features"})
 }
 
 var jsonMarshalerType = reflect.TypeFor[json.Marshaler]()
