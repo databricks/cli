@@ -1,0 +1,7 @@
+Cloud = false
+RecordRequests = true
+Timeout = '120s'
+EnvMatrix.DMS = ['true']
+Env.DATABRICKS_BUNDLE_DEV_DEPLOYMENT_HISTORY_ONLY = 'false'
+Env.DATABRICKS_BUNDLE_RETRY_INTERVAL_MS = '0'
+Ignore = ['work']

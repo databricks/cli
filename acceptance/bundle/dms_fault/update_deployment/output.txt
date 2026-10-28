@@ -1,0 +1,7 @@
+deploy: ok
+validate: ok
+summary: ok
+generate job, unbind, generate --bind: ok
+generate pipeline, unbind, generate --bind: ok
+redeploy preserves IDs: ok
+destroy: ok
