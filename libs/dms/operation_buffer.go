@@ -234,24 +234,22 @@ func (b *OperationBuffer) Drain(ctx context.Context) error {
 	// including operations already uploaded; caller cancellation can shorten the wait.
 	ctx, cancel := context.WithTimeout(ctx, b.drainTimeout)
 	defer cancel()
-	var drainErr error
 	select {
 	case <-b.done:
 		// Report the first upload error even if later uploads succeeded.
+		return b.Err()
 	case <-ctx.Done():
 		// Deadline or cancellation: stop the upload so deployment can finish promptly.
-		drainErr = ctx.Err()
+		b.mu.Lock()
+		defer b.mu.Unlock()
+		// No writes can be queued after Drain starts, so retain the first drain's count.
+		b.stats.UndrainedOperationCount = max(b.stats.UndrainedOperationCount, len(b.queue))
+		if b.err == nil {
+			b.err = ctx.Err()
+		}
+		b.cancel()
+		return b.err
 	}
-
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	// No writes can be queued after Drain starts, so retain the first drain's count.
-	b.stats.UndrainedOperationCount = max(b.stats.UndrainedOperationCount, len(b.queue))
-	if b.err == nil {
-		b.err = drainErr
-	}
-	b.cancel()
-	return b.err
 }
 
 // Stats returns a snapshot; undrained operations are counted once when Drain ends.
