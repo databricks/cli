@@ -27,7 +27,7 @@ trace $CLI bundle deploy
 
 title "A member field the endpoint cannot alter is caught by the planner as a recreate, so the"
 title "request never reaches the server"
-sed -i 's/0 0 \* \* \* ?/0 30 * * * ?/' databricks.yml
+update_file.py databricks.yml '0 0 * * * ?' '0 30 * * * ?'
 trace $CLI bundle plan -o json > out.plan.json
 trace set_action
 
