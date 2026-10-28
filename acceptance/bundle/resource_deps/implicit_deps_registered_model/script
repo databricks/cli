@@ -1,1 +1,1 @@
-trace $CLI bundle validate -t dev -o json | jq .resources
+trace $CLI bundle plan -t dev -o json | jq '.plan | map_values({depends_on, new_state: .new_state.value})'

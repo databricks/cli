@@ -1,59 +1,79 @@
 
->>> [CLI] bundle validate -t dev -o json
+>>> [CLI] bundle plan -t dev -o json
 {
-  "catalogs": {
-    "my_catalog": {
+  "resources.catalogs.my_catalog": {
+    "depends_on": null,
+    "new_state": {
       "name": "mycatalog"
     }
   },
-  "schemas": {
-    "my_schema": {
+  "resources.schemas.my_schema": {
+    "depends_on": [
+      {
+        "node": "resources.catalogs.my_catalog",
+        "label": "depends_on"
+      }
+    ],
+    "new_state": {
       "catalog_name": "mycatalog",
-      "lifecycle": {
-        "depends_on": [
-          {
-            "resource": "catalogs.my_catalog"
-          }
-        ]
-      },
       "name": "dev_[USERNAME]_myschema"
     }
   },
-  "vector_search_indexes": {
-    "full_ref_index": {
+  "resources.vector_search_indexes.full_ref_index": {
+    "depends_on": [
+      {
+        "node": "resources.catalogs.my_catalog",
+        "label": "${resources.catalogs.my_catalog.name}"
+      },
+      {
+        "node": "resources.schemas.my_schema",
+        "label": "${resources.schemas.my_schema.name}"
+      }
+    ],
+    "new_state": {
       "direct_access_index_spec": {
         "schema_json": "{\"id\":\"integer\",\"vector\":\"array<float>\"}"
       },
       "endpoint_name": "my-endpoint",
       "index_type": "DIRECT_ACCESS",
-      "name": "${resources.catalogs.my_catalog.name}.${resources.schemas.my_schema.name}.myindex",
+      "name": "mycatalog.dev_[USERNAME]_myschema.myindex",
       "primary_key": "id"
-    },
-    "mixed_ref_index": {
+    }
+  },
+  "resources.vector_search_indexes.mixed_ref_index": {
+    "depends_on": [
+      {
+        "node": "resources.catalogs.my_catalog",
+        "label": "${resources.catalogs.my_catalog.name}"
+      }
+    ],
+    "new_state": {
       "direct_access_index_spec": {
         "schema_json": "{\"id\":\"integer\",\"vector\":\"array<float>\"}"
       },
       "endpoint_name": "my-endpoint",
       "index_type": "DIRECT_ACCESS",
-      "name": "${resources.catalogs.my_catalog.name}.myschema.myindex",
+      "name": "mycatalog.myschema.myindex",
       "primary_key": "id"
-    },
-    "my_index": {
+    }
+  },
+  "resources.vector_search_indexes.my_index": {
+    "depends_on": [
+      {
+        "node": "resources.catalogs.my_catalog",
+        "label": "depends_on"
+      },
+      {
+        "node": "resources.schemas.my_schema",
+        "label": "depends_on"
+      }
+    ],
+    "new_state": {
       "direct_access_index_spec": {
         "schema_json": "{\"id\":\"integer\",\"vector\":\"array<float>\"}"
       },
       "endpoint_name": "my-endpoint",
       "index_type": "DIRECT_ACCESS",
-      "lifecycle": {
-        "depends_on": [
-          {
-            "resource": "schemas.my_schema"
-          },
-          {
-            "resource": "catalogs.my_catalog"
-          }
-        ]
-      },
       "name": "mycatalog.dev_[USERNAME]_myschema.myindex",
       "primary_key": "id"
     }

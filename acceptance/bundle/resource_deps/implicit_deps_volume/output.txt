@@ -1,40 +1,39 @@
 
->>> [CLI] bundle validate -t dev -o json
+>>> [CLI] bundle plan -t dev -o json
 {
-  "catalogs": {
-    "my_catalog": {
+  "resources.catalogs.my_catalog": {
+    "depends_on": null,
+    "new_state": {
       "name": "mycatalog"
     }
   },
-  "schemas": {
-    "my_schema": {
+  "resources.schemas.my_schema": {
+    "depends_on": [
+      {
+        "node": "resources.catalogs.my_catalog",
+        "label": "depends_on"
+      }
+    ],
+    "new_state": {
       "catalog_name": "mycatalog",
-      "lifecycle": {
-        "depends_on": [
-          {
-            "resource": "catalogs.my_catalog"
-          }
-        ]
-      },
       "name": "dev_[USERNAME]_myschema"
     }
   },
-  "volumes": {
-    "my_volume": {
-      "catalog_name": "mycatalog",
-      "lifecycle": {
-        "depends_on": [
-          {
-            "resource": "schemas.my_schema"
-          },
-          {
-            "resource": "catalogs.my_catalog"
-          }
-        ]
+  "resources.volumes.my_volume": {
+    "depends_on": [
+      {
+        "node": "resources.catalogs.my_catalog",
+        "label": "depends_on"
       },
+      {
+        "node": "resources.schemas.my_schema",
+        "label": "depends_on"
+      }
+    ],
+    "new_state": {
+      "catalog_name": "mycatalog",
       "name": "myvolume",
       "schema_name": "dev_[USERNAME]_myschema",
-      "volume_path": "/Volumes/mycatalog/dev_[USERNAME]_myschema/myvolume",
       "volume_type": "MANAGED"
     }
   }
