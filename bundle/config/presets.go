@@ -22,6 +22,8 @@ type Presets struct {
 	// SourceLinkedDeployment indicates whether source-linked deployment is enabled. Works only in Databricks Workspace
 	// When set to true, resources created during deployment will point to source files in the workspace instead of their workspace copies.
 	// File synchronization to ${workspace.file_path} is skipped.
+	//
+	// SourceLinkedDeployment is deprecated, use workspace.sync_mode: in-place instead.
 	SourceLinkedDeployment *bool `json:"source_linked_deployment,omitempty"`
 
 	// ArtifactsDynamicVersion enables dynamic_version on every artifact.

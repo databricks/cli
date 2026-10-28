@@ -1,0 +1,17 @@
+bundle:
+  name: test-bundle
+
+workspace:
+  host: https://custom.test
+  workspace_id: "5678"
+
+targets:
+  inherited:
+    default: true
+  target_query_id:
+    workspace:
+      host: https://custom.test/?o=1234
+  target_workspace_id:
+    workspace:
+      workspace_id: "9012"
+  null_target:

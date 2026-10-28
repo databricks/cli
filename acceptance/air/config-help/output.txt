@@ -74,6 +74,10 @@ Use "-h config.<field>" for details on a field.
 config.compute
   Which accelerators to run on and how many.
 
+  Supported accelerator types:
+    GPU_1xH100 - 1 accelerator per node [Private Preview]
+    GPU_8xH100 - 8 accelerators per node
+
   Fields:
     num_accelerators  Total number of GPUs to allocate.
     accelerator_type  Which accelerator to run on, e.g. GPU_1xA10.

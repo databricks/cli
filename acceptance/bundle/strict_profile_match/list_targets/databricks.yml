@@ -1,0 +1,14 @@
+bundle:
+  name: strict-profile-match
+
+include:
+  - scripts.yml
+
+workspace:
+  workspace_id: "$WORKSPACE_ID"
+
+targets:
+  inherited_workspace_id:
+    default: true
+    workspace:
+      host: $CUSTOM_HOST/?o=2222222222

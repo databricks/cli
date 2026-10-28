@@ -1,0 +1,34 @@
+
+=== Deploy an immutable snapshot
+>>> [CLI] bundle deploy
+Created internal_immutable_snapshots.immutable
+Created jobs.my_job
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Rewrite the state the way a CLI without this feature wrote it
+=== Deploying on top of that state succeeds and moves to the current layout
+>>> [CLI] bundle deploy
+Recreated internal_immutable_snapshots.immutable
+Updated jobs.my_job
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 1 changed, 1 deleted, 0 unchanged
+Snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/files/src/main.py
+OK: deployed to the current snapshot layout
+
+=== The check still applies to a deployment carried over from the older layout
+>>> [CLI] api post /api/2.0/snapshots:breakGlass --json {"snapshot_content_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot"}
+true
+
+>>> musterr [CLI] bundle deploy
+Error: the last deployment was modified in the workspace. Changes might be overwritten by this deployment. To confirm it, use the --force flag
+
+Files: 0 uploaded, 0 deleted
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-legacy-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

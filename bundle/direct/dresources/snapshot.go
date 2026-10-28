@@ -23,10 +23,12 @@ type SnapshotState struct {
 	FullPath string              `json:"full_path"`
 	BundleID string              `json:"bundle_id"`
 	ACL      []snapshot.ACLEntry `json:"acl"`
+	// CanManage lists the principals allowed to break the glass on the snapshot.
+	CanManage []snapshot.ManagePrincipal `json:"can_manage,omitempty"`
 	// ZipPath locates the bundle zip staged locally by the deploy pipeline. It is
 	// small enough to round-trip through the plan file, so deploying from a plan
-	// restores it directly (no re-injection needed). The file name is the content
-	// hash, which is also the last component of RelativePath.
+	// restores it directly (no re-injection needed). The file name is also the last
+	// component of RelativePath.
 	ZipPath string `json:"zip_path"`
 }
 
@@ -59,6 +61,7 @@ func (s *ResourceSnapshot) PrepareState(input *resources.Snapshot) *SnapshotStat
 		FullPath:     input.FullPath(),
 		BundleID:     input.BundleID,
 		ACL:          input.ACL,
+		CanManage:    input.CanManage,
 		ZipPath:      input.ZipPath,
 	}
 }
@@ -69,6 +72,7 @@ func (s *ResourceSnapshot) RemapState(remote *SnapshotRemote) *SnapshotState {
 		FullPath:     remote.FullPath,
 		BundleID:     "",
 		ACL:          nil,
+		CanManage:    nil,
 		ZipPath:      "",
 	}
 }
@@ -91,7 +95,7 @@ func (s *ResourceSnapshot) DoCreate(ctx context.Context, state *SnapshotState) (
 	}
 
 	path := state.RelativePath
-	info, err := s.uploader.Upload(ctx, path, state.BundleID, state.ACL, content)
+	info, err := s.uploader.Upload(ctx, path, state.ACL, state.CanManage, content)
 	if err != nil {
 		return "", nil, err
 	}

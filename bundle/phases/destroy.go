@@ -16,7 +16,6 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -156,20 +155,26 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 		return
 	}
 
-	if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
+	if b.DeploymentBundle.StateDB.RecordsHistory() {
 		// Complete version before deleting remote files; the deployment node is under statePath.
 		completed, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, true)
 		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
+			if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
+				logdiag.LogError(ctx, err)
+				return
+			}
+			log.Warnf(ctx, "Failed to complete deployment history version: %s", err)
 		}
 		// A completed destroy's resources are gone, so its deployment record is deleted too.
 		if completed {
 			deploymentID := b.DeploymentBundle.StateDB.DeploymentID
 			w := b.WorkspaceClient(ctx)
 			if err := deleteDeployment(ctx, w, deploymentID); err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("failed to delete deployment: %w", err))
-				return
+				if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
+					logdiag.LogError(ctx, fmt.Errorf("failed to delete deployment: %w", err))
+					return
+				}
+				log.Warnf(ctx, "Could not delete deployment history: %s", err)
 			}
 		}
 	}
@@ -293,15 +298,23 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 	// destroy records nothing. Deferred before lock.Release to hold the lock; a no-op once
 	// destroyCore has completed the version.
 	defer func() {
-		if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
+		if b.DeploymentBundle.StateDB.RecordsHistory() {
 			completed, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, !logdiag.HasError(ctx))
 			if err != nil {
-				logdiag.LogError(ctx, err)
+				if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
+					logdiag.LogError(ctx, err)
+				} else {
+					log.Warnf(ctx, "Failed to complete deployment history version: %s", err)
+				}
 			} else if completed {
 				deploymentID := b.DeploymentBundle.StateDB.DeploymentID
 				w := b.WorkspaceClient(ctx)
 				if err := deleteDeployment(ctx, w, deploymentID); err != nil {
-					logdiag.LogError(ctx, fmt.Errorf("failed to delete deployment: %w", err))
+					if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
+						logdiag.LogError(ctx, fmt.Errorf("failed to delete deployment: %w", err))
+					} else {
+						log.Warnf(ctx, "Could not delete deployment history: %s", err)
+					}
 				}
 			}
 		}
@@ -346,23 +359,20 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 			}
 		}
 
-		// Upgrade from read (opened by process.go, or by Migrate) to write mode
+		// History follows the opened state, not configuration.
 		if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}
 
-		// Start the version for this destroy, now that it is approved. Everything else recording
-		// does follows from the buffer this opens.
-		if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
-			staged, err := stagedOperations(plan)
-			if err != nil {
-				logdiag.LogError(ctx, err)
-				return
-			}
-			if err := startVersion(ctx, b, dms.VersionTypeDestroy, staged); err != nil {
-				logdiag.LogError(ctx, err)
-				return
+		// Record the approved destroy; deployment history shadow errors only warn.
+		if b.DeploymentBundle.StateDB.RecordsHistory() {
+			if err := prepareDestroyHistory(ctx, b, plan); err != nil {
+				if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
+					logdiag.LogError(ctx, err)
+					return
+				}
+				log.Warnf(ctx, "Could not record deployment history for this destroy: %s", err)
 			}
 		}
 		destroyCore(ctx, b, plan)

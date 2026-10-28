@@ -1,0 +1,24 @@
+
+>>> [CLI] bundle validate -o json
+[
+  {
+    "existing_cluster_id": "existing-cluster",
+    "task_key": "resource_ref"
+  },
+  {
+    "existing_cluster_id": "existing-cluster",
+    "task_key": "scalar_ref"
+  },
+  {
+    "existing_cluster_id": "existing-cluster",
+    "task_key": "variable_ref"
+  }
+]
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created clusters.source
+Created jobs.job
+Created jobs.other
+Files: 1 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged

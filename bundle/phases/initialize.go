@@ -71,12 +71,14 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Loads git repository information and updates bundle configuration with git details
 		mutator.LoadGitDetails(),
 
+		// Reads (typed): b.Config.Workspace.SyncMode, b.Config.Presets.SourceLinkedDeployment, b.Config.Experimental.ImmutableFolder (warns about the deprecated settings)
+		// Updates (typed): b.Config.Workspace.SyncMode (in-place for development deployments in the Databricks Workspace, overwrite where in-place is unavailable)
 		// This mutator needs to be run before variable interpolation and defining default workspace paths
 		// because it affects how workspace variables are resolved.
-		mutator.ApplySourceLinkedDeploymentPreset(),
+		mutator.ApplySyncMode(),
 
 		// Reads (env): __TEST_DATABRICKS_IMMUTABLE_FOLDER (non-empty value enables immutable folder mode)
-		// Updates (typed): b.Config.Experimental.ImmutableFolder (forces to true when env var is set)
+		// Updates (typed): b.Config.Workspace.SyncMode (forces to immutable when env var is set)
 		// Allows running the full test suite against the immutable folder code path without
 		// modifying any databricks.yml files.
 		mutator.OverrideImmutableFolder(),
@@ -175,11 +177,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// required fields (no omitempty) still error if empty.
 		mutator.DropEmptyStrings(),
 
-		// Resolve --select selectors against the materialized resources: normalize
-		// each to its "type.name" form and validate it exists. Runs after all resource
-		// mutations so that dynamically added resources are visible. This does not
-		// filter resources; the direct engine selects against the resolved keys later.
-		mutator.ResolveSelect(),
+		// Record in telemetry whether --select was used. Selectors are validated once
+		// state is open (process.go) and resolved against the computed plan
+		// (Plan.FilterToSelected), so resources removed from config and planned for
+		// deletion are selectable too.
+		mutator.MarkSelectUsed(),
 
 		// Validate all required fields are set. This is run after variable interpolation and PyDABs mutators
 		// since they can also set and modify resources.
@@ -204,6 +206,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Reject invalid job_runs.lifecycle.triggers (empty, false, prevent_destroy).
 		mutator.ValidateJobRunTriggers(),
 
+		// Reads (dynamic): resources.*.*.lifecycle.depends_on
+		// Rejects entries that point to a missing or ambiguous resource, or to the resource itself.
+		validate.LifecycleDependsOn(),
+
 		// Reads (dynamic): * (strings) (searches for ${resources.*} references)
 		// Errors when a cross-resource reference points to a Terraform-only field
 		// with no DABs equivalent.
@@ -216,7 +222,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 
 		mutator.TranslatePaths(),
 
-		// Reads (typed): b.Config.Experimental.PythonWheelWrapper, b.Config.Presets.SourceLinkedDeployment (checks Python wheel wrapper and deployment mode settings)
+		// Reads (typed): b.Config.Experimental.PythonWheelWrapper, b.Config.Workspace.SyncMode (checks Python wheel wrapper and deployment mode settings)
 		// Reads (dynamic): resources.jobs.*.tasks (checks for tasks with local libraries and incompatible DBR versions)
 		// Provides warnings when Python wheel tasks are used with DBR < 13.3 or when wheel wrapper is incompatible with source-linked deployment
 		trampoline.WrapperWarning(),

@@ -1,0 +1,8 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "clients": {
+    "jobs": "${resources.clusters.source.is_single_node}",
+    "notebooks": "${resources.clusters.source.is_single_node}"
+  }
+}

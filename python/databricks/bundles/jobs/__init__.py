@@ -92,6 +92,9 @@ __all__ = [
     "DbtTaskParam",
     "DependencyMode",
     "DependencyModeParam",
+    "DependsOn",
+    "DependsOnDict",
+    "DependsOnParam",
     "DeploymentSpec",
     "DeploymentSpecDict",
     "DeploymentSpecParam",
@@ -504,6 +507,11 @@ from databricks.bundles.jobs._models.dbt_task import DbtTask, DbtTaskDict, DbtTa
 from databricks.bundles.jobs._models.dependency_mode import (
     DependencyMode,
     DependencyModeParam,
+)
+from databricks.bundles.jobs._models.depends_on import (
+    DependsOn,
+    DependsOnDict,
+    DependsOnParam,
 )
 from databricks.bundles.jobs._models.deployment_spec import (
     DeploymentSpec,

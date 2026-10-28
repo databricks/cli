@@ -1,0 +1,25 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    a_job:
+      name: a_job
+      lifecycle:
+        depends_on:
+          - resource: a_job
+          - resource: missing
+    b_job:
+      name: b_job
+      lifecycle:
+        depends_on:
+          - resource: a.b.c
+  # lifecycle is a separate type on job_runs.
+  job_runs:
+    a_run:
+      job_id: ${resources.jobs.b_job.id}
+      lifecycle:
+        triggers:
+          - on_bundle_deploy: true
+        depends_on:
+          - resource: missing_for_run

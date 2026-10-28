@@ -1,0 +1,5 @@
+
+>>> [CLI] bundle plan -o json
+{
+  "owner": "fixed"
+}

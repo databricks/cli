@@ -1,0 +1,16 @@
+
+=== list-targets reports the inherited workspace ID
+>>> [CLI] bundle debug list-targets -o json
+{
+  "targets": [
+    {
+      "name": "inherited_workspace_id",
+      "default": true,
+      "host": "[CUSTOM_HOST]",
+      "workspace_id": "[WORKSPACE_ID]"
+    }
+  ]
+}
+=== Authentication uses the same workspace ID
+>>> errcode [CLI] bundle run -t inherited_workspace_id show_auth
+profile=workspace_custom_host host=[CUSTOM_HOST] workspace_id=[WORKSPACE_ID]

@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/structs/structaccess"
+
 	"github.com/databricks/databricks-sdk-go/common/types/duration"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -974,6 +976,14 @@ func TestGetStructDiffNamedStringMapKey(t *testing.T) {
 	assert.Equal(t, []ResolvedChange{{Field: "m['pre']", Old: "a", New: "b"}}, resolveChanges(got))
 }
 
+func TestIsEqualNamedStringMapKey(t *testing.T) {
+	a := namedKeyMapHolder{M: map[namedMapKey]string{"pre": "a", "post": "x"}}
+	b := namedKeyMapHolder{M: map[namedMapKey]string{"pre": "b", "post": "x"}}
+
+	assert.True(t, IsEqual(&a, &a))
+	assert.False(t, IsEqual(&a, &b))
+}
+
 // Types for the "whole block" tests below: two levels of nesting under an
 // optional pointer, mirroring a schema like Outer{Field *Mid{A *Inner{b,c}}}.
 type wbInner struct {
@@ -1033,4 +1043,85 @@ func TestGetStructDiffWholeBlock(t *testing.T) {
 			assert.Equal(t, tt.want, resolveChanges(got))
 		})
 	}
+}
+
+type dashNamed struct {
+	Skipped string `json:"-"`
+	Named   string `json:"-,omitempty"` //nolint:staticcheck // odd tag is the point
+}
+
+// TestGetStructDiffDashNamedField checks that only the exact tag json:"-" skips a
+// field: encoding/json serializes json:"-,omitempty" under the key "-", and
+// structaccess resolves the path "-" to it.
+func TestGetStructDiffDashNamedField(t *testing.T) {
+	before := &dashNamed{Skipped: "a", Named: "a"}
+	after := &dashNamed{Skipped: "b", Named: "b"}
+
+	changes, err := GetStructDiff(before, after, nil)
+	require.NoError(t, err)
+	assert.Equal(t, []ResolvedChange{{Field: "-", Old: "a", New: "b"}}, resolveChanges(changes))
+
+	value, err := structaccess.Get(after, changes[0].Path)
+	require.NoError(t, err)
+	assert.Equal(t, "b", value)
+
+	assert.Equal(t, len(changes) == 0, IsEqual(before, after))
+}
+
+type pathsInner struct {
+	X string            `json:"x"`
+	Y string            `json:"y"`
+	M map[string]string `json:"m"`
+}
+
+type pathsOuter struct {
+	A     pathsInner   `json:"a"`
+	B     pathsInner   `json:"b"`
+	L     []pathsInner `json:"l"`
+	Tasks []jobs.Task  `json:"tasks"`
+}
+
+// TestGetStructDiffPathsSharingPrefix covers paths of changes in sibling subtrees,
+// including map[string]string keys present on only one side.
+func TestGetStructDiffPathsSharingPrefix(t *testing.T) {
+	before := pathsOuter{
+		A:     pathsInner{X: "1", Y: "1", M: map[string]string{"k1": "1", "k-2": "1", "gone": "1", "same": "1"}},
+		B:     pathsInner{X: "1"},
+		L:     []pathsInner{{X: "1"}, {Y: "1"}},
+		Tasks: []jobs.Task{{TaskKey: "t1", Description: "1"}, {TaskKey: "t2", Description: "1"}},
+	}
+	after := pathsOuter{
+		A:     pathsInner{X: "2", Y: "2", M: map[string]string{"k1": "2", "k-2": "2", "added": "2", "same": "1"}},
+		B:     pathsInner{Y: "2"},
+		L:     []pathsInner{{X: "2"}, {Y: "2"}},
+		Tasks: []jobs.Task{{TaskKey: "t2", Description: "2"}, {TaskKey: "t3"}},
+	}
+
+	changes, err := GetStructDiff(before, after, map[string]KeyFunc{
+		"tasks": func(task jobs.Task) (string, string) { return "task_key", task.TaskKey },
+	})
+	require.NoError(t, err)
+
+	var paths []string
+	for _, ch := range changes {
+		paths = append(paths, ch.Path.String())
+	}
+	assert.Equal(t, []string{
+		"a.x",
+		"a.y",
+		"a.m['added']",
+		"a.m['gone']",
+		"a.m['k-2']",
+		"a.m['k1']",
+		"b.x",
+		"b.y",
+		"l[0].x",
+		"l[1].y",
+		"tasks[task_key='t1']",
+		"tasks[task_key='t2'].description",
+		"tasks[task_key='t3']",
+	}, paths)
+
+	assert.Equal(t, Change{Path: changes[2].Path, Old: nil, New: "2"}, changes[2])
+	assert.Equal(t, Change{Path: changes[3].Path, Old: "1", New: nil}, changes[3])
 }

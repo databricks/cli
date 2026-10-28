@@ -1,0 +1,7 @@
+Ignore = [
+    "dist",
+    "build",
+    ".venv",
+    "*.pyc",
+    "src/*.egg-info",
+]

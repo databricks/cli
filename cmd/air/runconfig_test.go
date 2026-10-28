@@ -2,11 +2,15 @@ package aircmd
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -798,6 +802,133 @@ func TestWriteConfigFieldHelp(t *testing.T) {
 	assert.Contains(t, root.String(), "(required) Which accelerators to run on")
 
 	require.Error(t, writeConfigFieldHelp(&strings.Builder{}, "config.nope"))
+}
+
+func TestRunCommandHelpComputeOptions(t *testing.T) {
+	builtInOptions := `    GPU_1xA10 - 1 accelerator per node
+    GPU_1xH100 - 1 accelerator per node
+    GPU_8xH100 - 8 accelerators per node
+    GPU_8xB300 - 8 accelerators per node`
+	tests := []struct {
+		name        string
+		statusCode  int
+		response    string
+		wantOptions string
+		wantWarning bool
+	}{
+		{
+			name:        "workspace subset",
+			response:    `{"compute_options":[{"hardware_accelerator":"GPU_8xH100","per_node_accelerator_count":4,"launch_stage":"PUBLIC_PREVIEW"},{"hardware_accelerator":"GPU_FUTURE","per_node_accelerator_count":16},{"hardware_accelerator":"GPU_1xA10"}]}`,
+			wantOptions: "    GPU_8xH100 - 4 accelerators per node [Public Preview]\n    GPU_FUTURE - 16 accelerators per node\n    GPU_1xA10 - 1 accelerator per node",
+		},
+		{
+			name:        "empty response",
+			response:    `{}`,
+			wantOptions: "    No accelerator types are currently available for AI Runtime in this workspace.",
+		},
+		{
+			name:        "endpoint unavailable falls back",
+			statusCode:  http.StatusNotFound,
+			response:    `{"error_code":"NOT_FOUND","message":"ListComputeOptions is not yet enabled."}`,
+			wantOptions: builtInOptions,
+		},
+		{
+			name:        "unexpected API error warns and falls back",
+			statusCode:  http.StatusInternalServerError,
+			response:    `{"error_code":"INTERNAL_ERROR","message":"Internal error."}`,
+			wantOptions: builtInOptions,
+			wantWarning: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if tt.statusCode != 0 {
+					w.WriteHeader(tt.statusCode)
+				}
+				_, _ = w.Write([]byte(tt.response))
+			}))
+			t.Cleanup(srv.Close)
+
+			var out, errOut strings.Builder
+			cmd := newRunCommand()
+			cmd.SetContext(cmdctx.SetWorkspaceClient(t.Context(), newTestWorkspaceClient(t, srv.URL)))
+			cmd.SetOut(&out)
+			cmd.SetErr(&errOut)
+			cmd.SetArgs([]string{"-h", "config.compute"})
+			require.NoError(t, cmd.Execute())
+
+			options, found := strings.CutPrefix(out.String(), "config.compute\n  Which accelerators to run on and how many.\n\n  Supported accelerator types:\n")
+			require.True(t, found)
+			options, _, found = strings.Cut(options, "\n\n  Fields:")
+			require.True(t, found)
+			assert.Equal(t, tt.wantOptions, options)
+			if tt.wantWarning {
+				assert.Contains(t, errOut.String(), "showing the built-in list")
+			} else {
+				assert.Empty(t, errOut.String())
+			}
+		})
+	}
+}
+
+func TestRunCommandHelpComputeOptionsUsesBundleTarget(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	var defaultHit, targetHit bool
+	defaultServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == computeOptionsPath {
+			defaultHit = true
+			_, _ = w.Write([]byte(`{"compute_options":[{"hardware_accelerator":"GPU_DEFAULT","per_node_accelerator_count":1}]}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(defaultServer.Close)
+	targetServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == computeOptionsPath {
+			targetHit = true
+			_, _ = w.Write([]byte(`{"compute_options":[{"hardware_accelerator":"GPU_TARGET","per_node_accelerator_count":1}]}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(targetServer.Close)
+
+	dir := t.TempDir()
+	t.Chdir(dir)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".databrickscfg"), []byte(fmt.Sprintf(`
+[DEFAULT]
+host = %s
+token = token
+
+[TARGET]
+host = %s
+token = token
+`, defaultServer.URL, targetServer.URL)), 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(dir, ".databrickscfg"))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "databricks.yml"), []byte(`
+bundle:
+  name: compute-help-test
+targets:
+  selected:
+    workspace:
+      profile: TARGET
+`), 0o600))
+
+	var out strings.Builder
+	cmd := newRunCommand()
+	cmd.Flags().String("target", "", "bundle target")
+	cmd.SetContext(t.Context())
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--target", "selected", "-h", "config.compute"})
+	require.NoError(t, cmd.Execute())
+
+	assert.True(t, targetHit)
+	assert.False(t, defaultHit)
+	assert.Contains(t, out.String(), "GPU_TARGET - 1 accelerator per node")
+	assert.NotContains(t, out.String(), "GPU_DEFAULT")
 }
 
 // Guards against adding a schema field without a help: tag.

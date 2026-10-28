@@ -230,6 +230,9 @@ var EnumFields = map[string][]string{
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.linkedin_ads_options.custom_report_options.entity_granularity[*]":   {"CAMPAIGN", "CAMPAIGN_GROUP", "CREATIVE"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.linkedin_ads_options.custom_report_options.finder":                  {"ANALYTICS", "ATTRIBUTED_REVENUE_METRICS", "STATISTICS"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.linkedin_ads_options.custom_report_options.time_granularity":        {"ALL", "DAILY", "MONTHLY", "YEARLY"},
+	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.onedrive_options.entity_type":                                       {"FILE", "FILE_METADATA"},
+	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.onedrive_options.file_ingestion_options.format":                     {"AVRO", "BINARYFILE", "CSV", "EXCEL", "JSON", "ORC", "PARQUET", "XML"},
+	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.onedrive_options.file_ingestion_options.schema_evolution_mode":      {"ADD_NEW_COLUMNS", "ADD_NEW_COLUMNS_WITH_TYPE_WIDENING", "FAIL_ON_NEW_COLUMNS", "NONE", "RESCUE"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.attachment_mode":                                    {"ALL", "INLINE_ONLY", "NONE", "NON_INLINE_ONLY"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.body_format":                                        {"TEXT_HTML", "TEXT_PLAIN"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.sharepoint_options.entity_type":                                     {"FILE", "FILE_METADATA", "LIST", "PERMISSION"},
@@ -258,6 +261,9 @@ var EnumFields = map[string][]string{
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.linkedin_ads_options.custom_report_options.entity_granularity[*]":    {"CAMPAIGN", "CAMPAIGN_GROUP", "CREATIVE"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.linkedin_ads_options.custom_report_options.finder":                   {"ANALYTICS", "ATTRIBUTED_REVENUE_METRICS", "STATISTICS"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.linkedin_ads_options.custom_report_options.time_granularity":         {"ALL", "DAILY", "MONTHLY", "YEARLY"},
+	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.onedrive_options.entity_type":                                        {"FILE", "FILE_METADATA"},
+	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.onedrive_options.file_ingestion_options.format":                      {"AVRO", "BINARYFILE", "CSV", "EXCEL", "JSON", "ORC", "PARQUET", "XML"},
+	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.onedrive_options.file_ingestion_options.schema_evolution_mode":       {"ADD_NEW_COLUMNS", "ADD_NEW_COLUMNS_WITH_TYPE_WIDENING", "FAIL_ON_NEW_COLUMNS", "NONE", "RESCUE"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.attachment_mode":                                     {"ALL", "INLINE_ONLY", "NONE", "NON_INLINE_ONLY"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.body_format":                                         {"TEXT_HTML", "TEXT_PLAIN"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.sharepoint_options.entity_type":                                      {"FILE", "FILE_METADATA", "LIST", "PERMISSION"},
@@ -268,7 +274,7 @@ var EnumFields = map[string][]string{
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.tiktok_ads_options.data_level":                                       {"AUCTION_AD", "AUCTION_ADGROUP", "AUCTION_ADVERTISER", "AUCTION_CAMPAIGN"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.tiktok_ads_options.report_type":                                      {"AUDIENCE", "BASIC", "BUSINESS_CENTER", "DSA", "GMV_MAX", "PLAYABLE_AD"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.scd_type":                                                          {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
-	"resources.pipelines.*.ingestion_definition.source_type":                                                                                            {"BIGQUERY", "CONFLUENCE", "DYNAMICS365", "FOREIGN_CATALOG", "GA4_RAW_DATA", "GOOGLE_DRIVE", "JIRA", "MANAGED_POSTGRESQL", "META_MARKETING", "MYSQL", "NETSUITE", "ORACLE", "POSTGRESQL", "RABBITMQ", "SALESFORCE", "SERVICENOW", "SHAREPOINT", "SMARTSHEET", "SQLSERVER", "TERADATA", "TIKTOK_ADS", "WORKDAY_RAAS", "ZENDESK"},
+	"resources.pipelines.*.ingestion_definition.source_type":                                                                                            {"BIGQUERY", "CONFLUENCE", "DYNAMICS365", "FOREIGN_CATALOG", "GA4_RAW_DATA", "GOOGLE_DRIVE", "JIRA", "MANAGED_POSTGRESQL", "META_MARKETING", "MYSQL", "NETSUITE", "ONEDRIVE", "ORACLE", "POSTGRESQL", "RABBITMQ", "SALESFORCE", "SERVICENOW", "SHAREPOINT", "SMARTSHEET", "SQLSERVER", "TERADATA", "TIKTOK_ADS", "WORKDAY_RAAS", "ZENDESK"},
 	"resources.pipelines.*.ingestion_definition.table_configuration.scd_type":                                                                           {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
 	"resources.pipelines.*.permissions[*].level":           {"CAN_MANAGE", "CAN_RUN", "CAN_VIEW", "IS_OWNER"},
 	"resources.pipelines.*.restart_window.days_of_week[*]": {"FRIDAY", "MONDAY", "SATURDAY", "SUNDAY", "THURSDAY", "TUESDAY", "WEDNESDAY"},
@@ -326,4 +332,6 @@ var EnumFields = map[string][]string{
 	"resources.volumes.*.volume_type":             {"EXTERNAL", "MANAGED"},
 
 	"variables.*.type": {"complex"},
+
+	"workspace.sync_mode": {"overwrite", "in-place", "immutable"},
 }

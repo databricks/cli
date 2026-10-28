@@ -1,0 +1,32 @@
+
+>>> [CLI] bundle validate
+Warning: required field "quartz_cron_expression" is not set
+  at resources.jobs.viaref.schedule
+  in databricks.yml:9:17
+
+Warning: required field "timezone_id" is not set
+  at resources.jobs.viaref.schedule
+  in databricks.yml:9:17
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 2 warnings
+
+>>> [CLI] bundle plan -o json
+Warning: required field "quartz_cron_expression" is not set
+  at resources.jobs.viaref.schedule
+  in databricks.yml:9:17
+
+Warning: required field "timezone_id" is not set
+  at resources.jobs.viaref.schedule
+  in databricks.yml:9:17
+
+{
+  "pause_status": "UNPAUSED",
+  "quartz_cron_expression": "0 0 * * * ?",
+  "timezone_id": "UTC"
+}
