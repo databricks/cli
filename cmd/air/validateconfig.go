@@ -2,7 +2,6 @@ package aircmd
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -147,15 +146,14 @@ func validateConfigOnce(ctx context.Context, w *databricks.WorkspaceClient, cfg 
 	req.Header.Set("User-Agent", useragent.FromContext(req.Context()))
 	traceparent.AddTraceparent(req)
 
-	transport := clientCfg.Transport
-	if transport == nil {
-		defaultTransport := http.DefaultTransport.(*http.Transport).Clone()
-		if clientCfg.InsecureSkipVerify {
-			defaultTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-		}
-		transport = defaultTransport
-	}
-	resp, err := (&http.Client{Transport: transport}).Do(req)
+	// Send through an SDK client so the request reuses the connection the CLI's
+	// other calls already opened, instead of a new TCP and TLS handshake. It makes
+	// one attempt: the SDK retries some connection errors whatever ErrorRetriable
+	// says, so a minimal retry window stops it after the first.
+	clientCfg.ErrorRetriable = func(context.Context, error) bool { return false }
+	clientCfg.TransientErrors = nil
+	clientCfg.RetryTimeout = time.Nanosecond
+	resp, err := (&http.Client{Transport: httpclient.NewApiClient(clientCfg)}).Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to validate config: %w", err)
 	}
