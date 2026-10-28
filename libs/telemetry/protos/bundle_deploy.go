@@ -38,6 +38,8 @@ type BundleDeployEvent struct {
 	// Per-resource-type metadata (counts and state-size statistics).
 	ResourcesMetadata *BundleResourcesMetadata `json:"resources_metadata,omitempty"`
 
+	DeploymentHistory *BundleDeploymentHistory `json:"deployment_history,omitempty"`
+
 	// Usage of Python support (PyDABs). Set only when the bundle declares
 	// Python resource loaders or mutators.
 	Pydabs *BundleDeployPydabs `json:"pydabs,omitempty"`
@@ -68,6 +70,16 @@ type BundleGitInfo struct {
 
 	// Full SHA of the HEAD commit deployed.
 	Commit string `json:"commit,omitempty"`
+}
+
+// BundleDeploymentHistory measures history recording for one deployment version.
+type BundleDeploymentHistory struct {
+	// Number of resource operations staged for this deployment version.
+	OperationCount int64 `json:"operation_count"`
+	// Peak number of queued resource keys, excluding the in-flight upload.
+	MaxQueueSize int64 `json:"max_queue_size"`
+	// Distinct resource operations still queued or in flight when Drain ends.
+	UndrainedOperationCount int64 `json:"undrained_operation_count"`
 }
 
 // These metrics are experimental and are often added in an adhoc manner. There

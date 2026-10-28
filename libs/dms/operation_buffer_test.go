@@ -74,9 +74,58 @@ func TestBufferFailsOnOversizedState(t *testing.T) {
 
 func TestDrainIsIdempotent(t *testing.T) {
 	// An idle writer must finish when draining begins.
-	b := StartOperationBuffer(t.Context(), "dep-1", 1, BufferOptions{})
+	b := StartOperationBuffer(t.Context(), "dep-1", 1, BufferOptions{OperationCount: 5})
 	require.NoError(t, b.Drain(t.Context()))
 	require.NoError(t, b.Drain(t.Context()))
+	assert.Equal(t, OperationBufferStats{OperationCount: 5}, b.Stats())
+}
+
+func TestBufferMaxQueueSize(t *testing.T) {
+	b := queued()
+	for _, key := range []string{"a", "b", "a", "c"} {
+		b.record(key, stateUpdate(t, key), false, nil)
+	}
+	assert.Equal(t, 3, b.Stats().MaxQueueSize)
+	_, ok := b.take("a")
+	require.True(t, ok)
+	b.RecordFailure("b", "id-1", nil, errors.New("apply failed"))
+	assert.Equal(t, 3, b.Stats().MaxQueueSize)
+}
+
+func TestHistoryDrainStats(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		inFlight string
+		want     int
+	}{
+		{name: "queued", want: 2},
+		{name: "in flight", inFlight: "c", want: 3},
+		{name: "in flight and queued for the same operation", inFlight: "a", want: 2},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				b := queued()
+				b.bestEffort = true
+				_, b.cancel = context.WithCancel(t.Context())
+				b.drainTimeout = time.Second
+				b.done = make(chan struct{})
+				b.stopQueue = sync.OnceFunc(func() { close(b.queue) })
+				b.record("a", stateUpdate(t, "a"), false, nil)
+				b.record("b", stateUpdate(t, "b"), false, nil)
+				b.inFlight = tc.inFlight
+
+				require.ErrorIs(t, b.Drain(t.Context()), context.DeadlineExceeded)
+				assert.Equal(t, tc.want, b.Stats().UndrainedOperationCount)
+
+				// Cancellation may finish the upload after Drain returns.
+				b.inFlight = ""
+				clear(b.pending)
+				close(b.done)
+				require.ErrorIs(t, b.Drain(t.Context()), context.DeadlineExceeded)
+				assert.Equal(t, tc.want, b.Stats().UndrainedOperationCount)
+			})
+		})
+	}
 }
 
 func TestRecordFailureKeepsTheStateTheLastWriteRecorded(t *testing.T) {
