@@ -1,0 +1,15 @@
+envsubst '$UNIQUE_NAME' < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    title "Destroy"
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Initial deploy\n"
+trace $CLI bundle deploy
+
+# Redeploy selecting the resource by its unqualified name. It exists in both config
+# and state now; that must not read as an ambiguous match.
+title "Redeploy with unqualified --select\n"
+trace $CLI bundle deploy --select my_job
