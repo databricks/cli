@@ -52,6 +52,18 @@ func (fr *FaultRules) SetAfterHandler(token, pattern string, statusCode int, bod
 }
 
 func (fr *FaultRules) set(token, pattern string, statusCode int, body string, offset, times int, afterHandler bool, bodyContains string) {
+	// Escape regex characters so the pattern starts as literal text.
+	escapedPattern := regexp.QuoteMeta(pattern)
+
+	// Replace ** before * so a recursive wildcard stays intact.
+	wildcards := strings.NewReplacer(
+		`\*\*`, ".*", // ** can cross path segments.
+		`\*`, "[^/]*", // * stays within one path segment.
+	)
+
+	// Anchor both ends to match the whole request.
+	matcher := regexp.MustCompile("^" + wildcards.Replace(escapedPattern) + "$")
+
 	fr.mu.Lock()
 	defer fr.mu.Unlock()
 	fr.rules[faultRuleKey{token: token, pattern: pattern}] = &FaultRule{
@@ -60,7 +72,7 @@ func (fr *FaultRules) set(token, pattern string, statusCode int, body string, of
 		AfterHandler: afterHandler,
 		offset:       offset,
 		times:        times,
-		pattern:      regexp.MustCompile("^" + strings.NewReplacer(`\*\*`, ".*", `\*`, "[^/]*").Replace(regexp.QuoteMeta(pattern)) + "$"),
+		pattern:      matcher,
 		bodyContains: bodyContains,
 	}
 }
