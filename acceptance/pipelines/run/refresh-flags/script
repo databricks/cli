@@ -14,5 +14,24 @@ trace $CLI pipelines run --full-refresh table1,table2
 trace print_requests.py //pipelines
 
 title "Running pipeline with --full-refresh flag and --refresh flag"
-trace $CLI pipelines run --full-refresh table1,table2 --refresh table3,table4
+trace $CLI pipelines run --full-refresh table1 --refresh table2
 trace print_requests.py //pipelines
+
+title "Refreshing tables defined in a source file"
+trace $CLI pipelines run --refresh pipeline_file.py
+trace print_requests.py //pipelines
+
+title "Fully refreshing tables defined in a source file"
+trace $CLI pipelines run --full-refresh pipeline_file.py
+trace print_requests.py //pipelines
+
+title "Rejecting missing sources and incompatible refresh modes"
+trace musterr $CLI pipelines run --refresh ./missing.sql --no-wait
+trace musterr $CLI pipelines run --refresh pipeline_file.py --full-refresh-all --no-wait
+trace musterr $CLI pipelines run --full-refresh ./missing.sql --restart --no-wait
+trace test ! -e "$OUT_REQUESTS"
+
+title "Rejecting mixed selectors before restarting the pipeline"
+trace musterr $CLI pipelines run --refresh table1,pipeline_file.py --restart --no-wait
+trace musterr $CLI pipelines run --full-refresh table2,pipeline_file.py --restart --no-wait
+trace test ! -e "$OUT_REQUESTS"
