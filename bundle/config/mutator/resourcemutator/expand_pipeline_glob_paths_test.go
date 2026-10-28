@@ -1,6 +1,7 @@
 package resourcemutator_test
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -264,4 +265,50 @@ func TestExpandGlobPathsInPipelinesWithoutLibraries(t *testing.T) {
 
 	assert.Nil(t, b.Config.Resources.Pipelines["unset"].Libraries)
 	assert.Equal(t, []pipelines.PipelineLibrary{}, b.Config.Resources.Pipelines["empty"].Libraries)
+}
+
+func TestExpandGlobPathsInPipelinesKeepsLocations(t *testing.T) {
+	dir := t.TempDir()
+	touchEmptyFile(t, filepath.Join(dir, "plain.py"))
+	touchEmptyFile(t, filepath.Join(dir, "nbs/a.py"))
+	touchEmptyFile(t, filepath.Join(dir, "nbs/b.py"))
+	touchEmptyFile(t, filepath.Join(dir, "nbs/c.py"))
+
+	root, diags := config.LoadFromBytes("databricks.yml", []byte(`bundle:
+  name: test-bundle
+resources:
+  pipelines:
+    p:
+      name: p
+      libraries:
+        - file:
+            path: ./plain.py
+        - notebook:
+            path: ./nbs/*.py
+        - file:
+            path: ./plain.py
+`))
+	require.Empty(t, diags)
+	b := &bundle.Bundle{BundleRootPath: dir, Config: *root}
+
+	diags = bundle.Apply(t.Context(), b, resourcemutator.ExpandPipelineGlobPaths())
+	require.NoError(t, diags.Error())
+
+	// Each expanded library has the location of the glob it comes from, and the
+	// library after the glob keeps its own.
+	var got []string
+	for i, lib := range b.Config.Resources.Pipelines["p"].Libraries {
+		field := "file"
+		if lib.Notebook != nil {
+			field = "notebook"
+		}
+		got = append(got, b.Config.GetLocation(fmt.Sprintf("resources.pipelines.p.libraries[%d].%s.path", i, field)).String())
+	}
+	assert.Equal(t, []string{
+		"databricks.yml:9:19",
+		"databricks.yml:11:19",
+		"databricks.yml:11:19",
+		"databricks.yml:11:19",
+		"databricks.yml:13:19",
+	}, got)
 }
