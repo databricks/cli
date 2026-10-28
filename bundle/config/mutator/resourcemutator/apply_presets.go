@@ -49,13 +49,6 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 
 	b.Metrics.AddBoolValue(metrics.PresetsNamePrefixIsSet, prefix != "")
 
-	addPrefix := func(prefix, name string) string {
-		if refersToPrefixedName(b, name) {
-			return name
-		}
-		return prefix + name
-	}
-
 	tags := toTagArray(t.Tags)
 
 	// Jobs presets: Prefix, Tags, JobsMaxConcurrentRuns, TriggerPauseStatus
@@ -67,7 +60,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if j == nil {
 			continue
 		}
-		j.Name = addPrefix(prefix, j.Name)
+		j.Name = addPrefix(b, prefix, j.Name)
 		if len(tags) > 0 {
 			if j.Tags == nil {
 				// Note: only create this map if tags is not empty, to avoid inserting "tags: {}" entry in the config
@@ -105,7 +98,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if p == nil {
 			continue
 		}
-		p.Name = addPrefix(prefix, p.Name)
+		p.Name = addPrefix(b, prefix, p.Name)
 		if config.IsExplicitlyEnabled(t.PipelinesDevelopment) {
 			//nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 			p.Development = true
@@ -133,7 +126,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if m == nil {
 			continue
 		}
-		m.Name = addPrefix(prefix, m.Name)
+		m.Name = addPrefix(b, prefix, m.Name)
 		for _, t := range tags {
 			exists := slices.ContainsFunc(m.Tags, func(modelTag ml.ModelTag) bool {
 				return modelTag.Key == t.Key
@@ -179,7 +172,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if e == nil {
 			continue
 		}
-		e.Name = addPrefix(normalizePrefix(prefix), e.Name)
+		e.Name = addPrefix(b, normalizePrefix(prefix), e.Name)
 
 		// As of 2024-06, model serving endpoints don't yet support tags
 	}
@@ -189,7 +182,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if m == nil {
 			continue
 		}
-		m.Name = addPrefix(normalizePrefix(prefix), m.Name)
+		m.Name = addPrefix(b, normalizePrefix(prefix), m.Name)
 
 		// As of 2024-06, registered models don't yet support tags
 	}
@@ -218,7 +211,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if s == nil {
 			continue
 		}
-		s.Name = addPrefix(normalizePrefix(prefix), s.Name)
+		s.Name = addPrefix(b, normalizePrefix(prefix), s.Name)
 		// HTTP API for schemas doesn't yet support tags. It's only supported in
 		// the Databricks UI and via the SQL API.
 	}
@@ -228,7 +221,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if c == nil {
 			continue
 		}
-		c.ClusterName = addPrefix(prefix, c.ClusterName)
+		c.ClusterName = addPrefix(b, prefix, c.ClusterName)
 		if len(tags) > 0 {
 			if c.CustomTags == nil {
 				c.CustomTags = make(map[string]string, len(tags))
@@ -248,7 +241,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if pool == nil {
 			continue
 		}
-		pool.InstancePoolName = addPrefix(prefix, pool.InstancePoolName)
+		pool.InstancePoolName = addPrefix(b, prefix, pool.InstancePoolName)
 		if len(tags) > 0 {
 			if pool.CustomTags == nil {
 				pool.CustomTags = make(map[string]string, len(tags))
@@ -268,7 +261,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if dashboard == nil {
 			continue
 		}
-		dashboard.DisplayName = addPrefix(prefix, dashboard.DisplayName)
+		dashboard.DisplayName = addPrefix(b, prefix, dashboard.DisplayName)
 	}
 
 	// Genie Spaces: Prefix
@@ -276,7 +269,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if genieSpace == nil {
 			continue
 		}
-		genieSpace.Title = addPrefix(prefix, genieSpace.Title)
+		genieSpace.Title = addPrefix(b, prefix, genieSpace.Title)
 	}
 
 	// Apps: No presets
@@ -286,7 +279,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if a == nil {
 			continue
 		}
-		a.DisplayName = addPrefix(prefix, a.DisplayName)
+		a.DisplayName = addPrefix(b, prefix, a.DisplayName)
 		if t.TriggerPauseStatus != "" {
 			paused := sql.SchedulePauseStatusPaused
 			if t.TriggerPauseStatus == config.Unpaused {
@@ -304,7 +297,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if w == nil {
 			continue
 		}
-		w.Name = addPrefix(prefix, w.Name)
+		w.Name = addPrefix(b, prefix, w.Name)
 		if len(tags) > 0 {
 			if w.Tags == nil {
 				w.Tags = &sql.EndpointTags{}
@@ -339,7 +332,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if cp == nil {
 			continue
 		}
-		cp.Name = addPrefix(prefix, cp.Name)
+		cp.Name = addPrefix(b, prefix, cp.Name)
 	}
 
 	// Vector Search Endpoints: no prefix. The endpoint name is the primary key
@@ -398,6 +391,15 @@ var prefixedNameFields = map[string]string{
 	"alerts":                  "display_name",
 	"sql_warehouses":          "name",
 	"cluster_policies":        "name",
+}
+
+// addPrefix returns name with prefix, except when name is a reference to a name that
+// is prefixed too.
+func addPrefix(b *bundle.Bundle, prefix, name string) string {
+	if refersToPrefixedName(b, name) {
+		return name
+	}
+	return prefix + name
 }
 
 // refersToPrefixedName reports whether name is a pure reference to a name that
