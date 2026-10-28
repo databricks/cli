@@ -21,31 +21,27 @@ CLI = os.environ["CLI"]
 REQUESTS = Path(os.environ["OUT_REQUESTS"])
 LOG = Path("LOG.commands").resolve()
 PATTERNS = {
-    "complete_version": "POST /api/2.0/bundle/deployments/{id}/versions/{version}/complete",
+    "complete_version": "POST /api/2.0/bundle/deployments/{id}/versions/*/complete",
     "create_deployment": "POST /api/2.0/bundle/deployments",
     "create_version": "POST /api/2.0/bundle/deployments/{id}/versions",
     "delete_deployment": "DELETE /api/2.0/bundle/deployments/{id}",
     "get_deployment": "GET /api/2.0/bundle/deployments/{id}",
-    "get_operation": "GET /api/2.0/bundle/deployments/{id}/versions/{version}/operations/*",
+    "get_operation": "GET /api/2.0/bundle/deployments/{id}/versions/*/operations/*",
     "get_resource": "GET /api/2.0/bundle/deployments/{id}/resources/*",
-    "get_version": "GET /api/2.0/bundle/deployments/{id}/versions/{version}",
-    "heartbeat": "POST /api/2.0/bundle/deployments/{id}/versions/{version}/heartbeat",
+    "get_version": "GET /api/2.0/bundle/deployments/{id}/versions/*",
+    "heartbeat": "POST /api/2.0/bundle/deployments/{id}/versions/*/heartbeat",
     "list_deployments": "GET /api/2.0/bundle/deployments",
-    "list_operations": "GET /api/2.0/bundle/deployments/{id}/versions/{version}/operations",
+    "list_operations": "GET /api/2.0/bundle/deployments/{id}/versions/*/operations",
     "list_resources": "GET /api/2.0/bundle/deployments/{id}/resources",
     "list_versions": "GET /api/2.0/bundle/deployments/{id}/versions",
     "update_deployment": "PATCH /api/2.0/bundle/deployments/{id}",
-    "update_operation": "PATCH /api/2.0/bundle/deployments/{id}/versions/*",
+    "update_operation": "PATCH /api/2.0/bundle/deployments/{id}/versions/*/operations/*",
 }
-ACTIVE = None
-REGISTERED = set()
 KNOWN_IDS = set()
 
 
 def run(cwd, *args, expected=0):
     visible = args[0] == "bundle"
-    if visible:
-        refresh_faults(cwd)
     result = subprocess.run(
         [CLI, *args],
         cwd=cwd,
@@ -70,33 +66,10 @@ def fault(pattern, enabled):
     )
 
 
-def refresh_faults(cwd):
-    if ACTIVE is None:
-        return
-    if "{version}" in ACTIVE:
-        # Cover existing versions and the next version a command can create.
-        serial = state(cwd).get("serial", 0)
-        patterns = [ACTIVE.format(version=version) for version in range(1, serial + 2)]
-    else:
-        patterns = [ACTIVE]
-    for pattern in patterns:
-        if pattern not in REGISTERED:
-            fault(pattern, True)
-            REGISTERED.add(pattern)
-
-
-def clear_faults():
-    global ACTIVE
-    ACTIVE = None
-    for pattern in REGISTERED:
-        fault(pattern, False)
-    REGISTERED.clear()
-
-
 def hits(pattern):
     if not REQUESTS.exists():
         return 0
-    regex = re.escape(pattern).replace(r"\{version\}", r"[^/]+").replace(r"\*", ".*") + "$"
+    regex = re.escape(pattern).replace(r"\*\*", ".*").replace(r"\*", "[^/]*")
     return sum(bool(re.fullmatch(regex, f"{r['method']} {r['path']}")) for r in read_json_many(REQUESTS.read_text()))
 
 
@@ -133,7 +106,6 @@ def setup(phase):
 
 
 def activate(cwd, root):
-    global ACTIVE
     print(f"\n=== {cwd.name}: setup", flush=True)
     deployment = None
     if API != "create_deployment":
@@ -142,9 +114,8 @@ def activate(cwd, root):
             run(cwd, "workspace", "get-status", root + "/state/resources.deployment.json", "-o", "json").stdout
         )
         deployment = str(node["object_id"])
-    pattern = PATTERNS[API].format(id=deployment, version="{version}")
-    ACTIVE = pattern
-    refresh_faults(cwd)
+    pattern = PATTERNS[API].format(id=deployment)
+    fault(pattern, True)
     print(f"\n=== {cwd.name}: {API} fault enabled", flush=True)
     return pattern
 
@@ -218,4 +189,4 @@ try:
     assert_destroyed(cwd, root, current)
     print("\nDMS API called: " + ("yes" if hits(pattern) > previous else "no"), flush=True)
 finally:
-    clear_faults()
+    fault(pattern, False)

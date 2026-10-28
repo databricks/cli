@@ -17,6 +17,11 @@ Steps 4–6 run first for the job, then for the pipeline. The fault stays enable
 through step 8 and is cleared in `finally`. For `CreateDeployment`, skip the healthy
 setup deployment so the fault applies to the first deployment.
 
+Each case registers one fault rule. A version wildcard such as
+`POST .../versions/*/complete` covers every version the workflow accesses or creates.
+Each `*` stays within one path segment, so a version read fault cannot also match
+nested operation endpoints.
+
 Each snapshot records the command invocations and output, including warnings and
 deployment-version links, then reports whether the injected endpoint was called.
 An unused endpoint records `DMS API called: no`.
