@@ -13,7 +13,9 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"testing/fstest"
 
+	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -80,6 +82,10 @@ func workspaceImport(w *FakeWorkspace, form ImportForm) Response {
 		resp = w.WorkspaceImportRawFile(form.Path, form.Content, form.Overwrite)
 	case string(workspace.ImportFormatSource):
 		resp = w.WorkspaceImportNotebook(form.Path, form.Content, workspace.Language(form.Language), form.Overwrite)
+	case string(workspace.ImportFormatJupyter):
+		// The real endpoint reads the language from the notebook metadata.
+		_, language, _ := notebook.DetectJupyterWithFS(fstest.MapFS{"nb.ipynb": {Data: form.Content}}, "nb.ipynb")
+		resp = w.WorkspaceImportNotebook(form.Path, form.Content, language, form.Overwrite)
 	case string(workspace.ImportFormatAuto):
 		if strings.HasSuffix(strings.ToLower(form.Path), ".zip") {
 			return w.WorkspaceImportZipFolder(form.Path, form.Content, form.Overwrite)
@@ -90,7 +96,7 @@ func workspaceImport(w *FakeWorkspace, form ImportForm) Response {
 		resp = w.WorkspaceImportAutoFile(form.Path, form.Content, form.Overwrite)
 	default:
 		return Response{
-			Body:       fmt.Sprintf("internal error: The test server only supports AUTO, RAW and SOURCE formats, got %q.", form.Format),
+			Body:       fmt.Sprintf("internal error: The test server only supports AUTO, RAW, SOURCE and JUPYTER formats, got %q.", form.Format),
 			StatusCode: http.StatusInternalServerError,
 		}
 	}
