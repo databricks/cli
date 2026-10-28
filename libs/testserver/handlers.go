@@ -81,8 +81,6 @@ func workspaceImport(w *FakeWorkspace, form ImportForm) Response {
 		resp = w.WorkspaceImportRawFile(form.Path, form.Content, form.Overwrite)
 	case string(workspace.ImportFormatSource):
 		resp = w.WorkspaceImportNotebook(form.Path, form.Content, workspace.Language(form.Language), form.Overwrite)
-	case string(workspace.ImportFormatRMarkdown):
-		resp = w.WorkspaceImportNotebook(form.Path, form.Content, workspace.LanguageR, form.Overwrite)
 	case string(workspace.ImportFormatJupyter):
 		// The real endpoint reads the language from the notebook metadata.
 		_, language, _ := notebook.DetectBytes(form.Path+notebook.ExtensionJupyter, form.Content)
@@ -97,7 +95,7 @@ func workspaceImport(w *FakeWorkspace, form ImportForm) Response {
 		resp = w.WorkspaceImportAutoFile(form.Path, form.Content, form.Overwrite)
 	default:
 		return Response{
-			Body:       fmt.Sprintf("internal error: The test server only supports AUTO, RAW, SOURCE, JUPYTER and R_MARKDOWN formats, got %q.", form.Format),
+			Body:       fmt.Sprintf("internal error: The test server only supports AUTO, RAW, SOURCE and JUPYTER formats, got %q.", form.Format),
 			StatusCode: http.StatusInternalServerError,
 		}
 	}

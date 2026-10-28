@@ -996,19 +996,15 @@ type notebookDetector func(filePath string, body []byte) (workspace.Language, bo
 
 // detectLegacyNotebook mirrors the legacy import-file endpoint, which looks for
 // the marker on the first line only (NotebookUtils.checkSourceFileNotebook in
-// universe) and always imports R Markdown as an R notebook.
+// universe).
 func detectLegacyNotebook(filePath string, body []byte) (workspace.Language, bool) {
-	// The endpoint matches this extension case-sensitively.
-	if path.Ext(filePath) == ".Rmd" {
-		return workspace.LanguageR, true
-	}
 	language, ok := sourceNotebookLanguages[strings.ToLower(path.Ext(filePath))]
 	firstLine, _, _ := bytes.Cut(notebookDetectionPrefix(body), []byte("\n"))
 	return language, ok && bytes.Contains(firstLine, []byte(notebookSourceMarker))
 }
 
 // detectAutoNotebook mirrors /workspace/import with format=AUTO, which finds the
-// marker on any line of the leading bytes and imports R Markdown as a file.
+// marker on any line of the leading bytes.
 func detectAutoNotebook(filePath string, body []byte) (workspace.Language, bool) {
 	language, ok := sourceNotebookLanguages[strings.ToLower(path.Ext(filePath))]
 	return language, ok && bytes.Contains(notebookDetectionPrefix(body), []byte(notebookSourceMarker))

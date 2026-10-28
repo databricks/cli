@@ -1,8 +1,0 @@
-# bom.sql starts with a UTF-8 byte order mark. This CLI uploads it as file bom.sql; the
-# legacy import-file endpoint then tries to import it as notebook "bom", whose name the
-# file already holds.
-trace $CLI bundle sync --output text 2>&1 | sort
-trace remote_objects
-
-trace musterr legacy_import_bom
-trace remote_objects

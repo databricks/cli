@@ -1,1 +1,0 @@
-Badness = "After this CLI uploads a file it no longer detects as a notebook, v1.20 or earlier fails to upload it with RESOURCE_ALREADY_EXISTS: Node named '...' already exists, the error reported in #7216."

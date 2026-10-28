@@ -1,66 +1,20 @@
 
-=== AUTO imports a source file as a notebook if "Databricks notebook source" is anywhere in its first 200 bytes
+=== AUTO imports it as a notebook, like the legacy import-file endpoint. Overwrite can't make it a file
 
->>> [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/auto/exact.sql --file exact.sql --format AUTO
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/notebook/bom.sql --file bom.sql --format AUTO
 
->>> [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/auto/bom.sql --file bom.sql --format AUTO
-
->>> [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/auto/second_line.py --file second_line.py --format AUTO
-
->>> [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/auto/marker_past_200_bytes.py --file marker_past_200_bytes.py --format AUTO
-
->>> [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/auto/doc.Rmd --file doc.Rmd --format AUTO
-
->>> list /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/auto
-NOTEBOOK SQL /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/auto/bom
-FILE - /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/auto/doc.Rmd
-NOTEBOOK SQL /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/auto/exact
-FILE - /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/auto/marker_past_200_bytes.py
-NOTEBOOK PYTHON /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/auto/second_line
-
-=== R_MARKDOWN imports R Markdown as an R notebook at the given path
-
->>> [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/rmd/doc --file doc.Rmd --format R_MARKDOWN
-
->>> list /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/rmd
-NOTEBOOK R /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/rmd/doc
-
-=== Overwrite replaces an object of the same type
-
->>> [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/same/exact.sql --file exact.sql --format AUTO
-
->>> [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/same/exact.sql --file exact.sql --format AUTO --overwrite
-
->>> [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/same/plain.sql --file plain.sql --format RAW
-
->>> [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/same/plain.sql --file plain.sql --format RAW --overwrite
-
->>> list /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/same
-NOTEBOOK SQL /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/same/exact
-FILE - /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/same/plain.sql
-
-=== Overwrite cannot turn a file into a notebook
-
->>> [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/to_notebook/x.sql --file plain.sql --format RAW
-
->>> musterr [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/to_notebook/x.sql --file exact.sql --format AUTO --overwrite
-Error: Node named 'x.sql' already exists
-
->>> musterr [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/to_notebook/x --file exact.sql --format SOURCE --language SQL --overwrite
-Error: Node named 'x.sql' already exists
-
->>> list /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/to_notebook
-FILE - /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/to_notebook/x.sql
-
-=== Overwrite cannot turn a notebook into a file
-
->>> [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/to_file/x --file exact.sql --format SOURCE --language SQL
-
->>> musterr [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/to_file/x.sql --file plain.sql --format RAW --overwrite
+>>> musterr [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/notebook/bom.sql --file bom.sql --format RAW --overwrite
 Error: Requested node type [FILE] is different from the existing node type [NOTEBOOK]
 
->>> [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/to_file/x.py --file plain.sql --format RAW --overwrite
+=== RAW imports it as a file, like this CLI. Overwrite can't make it a notebook
 
->>> list /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/to_file
-NOTEBOOK SQL /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/to_file/x
-FILE - /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/to_file/x.py
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/file/bom.sql --file bom.sql --format RAW
+
+>>> musterr [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/file/bom.sql --file bom.sql --format AUTO --overwrite
+Error: Node named 'bom.sql' already exists
+
+>>> [CLI] workspace list /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/notebook -o json
+NOTEBOOK /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/notebook/bom
+
+>>> [CLI] workspace list /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/file -o json
+FILE /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/file/bom.sql

@@ -1,0 +1,27 @@
+# bom.sql is a SQL notebook whose first line starts with a UTF-8 byte order mark. The legacy
+# import-file endpoint, used up to v1.20, imports it as notebook "bom" because its first line
+# contains "Databricks notebook source". This CLI requires the exact header, so it uploads
+# file "bom.sql". Overwrite can't turn one into the other.
+remote=$($CLI bundle summary -o json | jq -r .workspace.file_path)
+
+list() {
+  $CLI workspace list -o json "$remote" | jq -r '.[] | "\(.object_type) \(.path | sub(".*/"; ""))"'
+}
+
+# Uploads bom.sql the way v1.20 did. `api post` only sends JSON; a JSON string whose
+# first line contains the marker is imported as a notebook, just like bom.sql.
+legacy_import() {
+  $CLI api post "/api/2.0/workspace-files/import-file$remote/bom.sql?overwrite=true" --json '"-- Databricks notebook source"'
+}
+
+title "Upgrade: this CLI syncs over the notebook v1.20 created\n"
+$CLI workspace mkdirs "$remote"
+trace legacy_import
+trace list
+trace musterr $CLI bundle sync
+
+title "Downgrade: v1.20 uploads over the file this CLI created\n"
+$CLI workspace delete "$remote" --recursive
+trace $CLI bundle sync --full
+trace list
+trace musterr legacy_import

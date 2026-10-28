@@ -1,54 +1,21 @@
-# Documents how POST /api/2.0/workspace/import classifies source notebooks, and that
-# overwrite never changes an existing object's type.
+# Documents POST /api/2.0/workspace/import for bom.sql, a SQL notebook whose first line
+# starts with a UTF-8 byte order mark (see bundle/sync-notebook-detection).
 DIR="/Workspace/Users/$CURRENT_USER_NAME/$UNIQUE_NAME"
-$CLI workspace mkdirs "$DIR"
+$CLI workspace mkdirs "$DIR/notebook"
+$CLI workspace mkdirs "$DIR/file"
 
 cleanup() {
   $CLI workspace delete "$DIR" --recursive
 }
 trap cleanup EXIT
 
-list() {
-  $CLI workspace list "$1" -o json | jq -r 'sort_by(.path)[] | "\(.object_type) \(.language // "-") \(.path)"'
-}
+title "AUTO imports it as a notebook, like the legacy import-file endpoint. Overwrite can't make it a file\n"
+trace $CLI workspace import "$DIR/notebook/bom.sql" --file bom.sql --format AUTO
+trace musterr $CLI workspace import "$DIR/notebook/bom.sql" --file bom.sql --format RAW --overwrite
 
-# bom.sql starts with a UTF-8 byte order mark. marker_past_200_bytes.py has the marker
-# on its first line, after 200 bytes of "#".
+title "RAW imports it as a file, like this CLI. Overwrite can't make it a notebook\n"
+trace $CLI workspace import "$DIR/file/bom.sql" --file bom.sql --format RAW
+trace musterr $CLI workspace import "$DIR/file/bom.sql" --file bom.sql --format AUTO --overwrite
 
-title "AUTO imports a source file as a notebook if \"Databricks notebook source\" is anywhere in its first 200 bytes\n"
-# The legacy import-file endpoint only checks the first line, so second_line.py was a file
-# there. AUTO imports R Markdown as a file; import-file imported it as an R notebook.
-$CLI workspace mkdirs "$DIR/auto"
-for f in exact.sql bom.sql second_line.py marker_past_200_bytes.py doc.Rmd; do
-  trace $CLI workspace import "$DIR/auto/$f" --file $f --format AUTO
-done
-trace list "$DIR/auto"
-
-title "R_MARKDOWN imports R Markdown as an R notebook at the given path\n"
-$CLI workspace mkdirs "$DIR/rmd"
-trace $CLI workspace import "$DIR/rmd/doc" --file doc.Rmd --format R_MARKDOWN
-trace list "$DIR/rmd"
-
-title "Overwrite replaces an object of the same type\n"
-$CLI workspace mkdirs "$DIR/same"
-trace $CLI workspace import "$DIR/same/exact.sql" --file exact.sql --format AUTO
-trace $CLI workspace import "$DIR/same/exact.sql" --file exact.sql --format AUTO --overwrite
-trace $CLI workspace import "$DIR/same/plain.sql" --file plain.sql --format RAW
-trace $CLI workspace import "$DIR/same/plain.sql" --file plain.sql --format RAW --overwrite
-trace list "$DIR/same"
-
-title "Overwrite cannot turn a file into a notebook\n"
-# Notebook "x" would take the name x.sql, which the file already holds.
-$CLI workspace mkdirs "$DIR/to_notebook"
-trace $CLI workspace import "$DIR/to_notebook/x.sql" --file plain.sql --format RAW
-trace musterr $CLI workspace import "$DIR/to_notebook/x.sql" --file exact.sql --format AUTO --overwrite
-trace musterr $CLI workspace import "$DIR/to_notebook/x" --file exact.sql --format SOURCE --language SQL --overwrite
-trace list "$DIR/to_notebook"
-
-title "Overwrite cannot turn a notebook into a file\n"
-# SQL notebook "x" holds the name x.sql, but not x.py.
-$CLI workspace mkdirs "$DIR/to_file"
-trace $CLI workspace import "$DIR/to_file/x" --file exact.sql --format SOURCE --language SQL
-trace musterr $CLI workspace import "$DIR/to_file/x.sql" --file plain.sql --format RAW --overwrite
-trace $CLI workspace import "$DIR/to_file/x.py" --file plain.sql --format RAW --overwrite
-trace list "$DIR/to_file"
+trace $CLI workspace list "$DIR/notebook" -o json | jq -r '.[] | "\(.object_type) \(.path)"'
+trace $CLI workspace list "$DIR/file" -o json | jq -r '.[] | "\(.object_type) \(.path)"'

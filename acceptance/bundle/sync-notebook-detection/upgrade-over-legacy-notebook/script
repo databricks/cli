@@ -1,8 +1,0 @@
-# bom.sql starts with a UTF-8 byte order mark. v1.20 and earlier imported it as notebook
-# "bom"; this CLI uploads it as file bom.sql, which the notebook already holds the name of.
-$CLI workspace mkdirs "$(remote_files)"
-trace legacy_import_bom
-trace remote_objects
-
-trace musterr $CLI bundle sync --output text
-trace remote_objects

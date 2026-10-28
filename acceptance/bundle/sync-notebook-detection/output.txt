@@ -1,0 +1,25 @@
+
+=== Upgrade: this CLI syncs over the notebook v1.20 created
+
+>>> legacy_import
+null
+
+>>> list
+NOTEBOOK bom
+
+>>> musterr [CLI] bundle sync
+Action: PUT: bom.sql
+Error: file already exists: /Workspace/Users/[USERNAME]/.bundle/sync-notebook-detection/default/files/bom.sql
+
+=== Downgrade: v1.20 uploads over the file this CLI created
+
+>>> [CLI] bundle sync --full
+Action: PUT: bom.sql
+Uploaded bom.sql
+Initial Sync Complete
+
+>>> list
+FILE bom.sql
+
+>>> musterr legacy_import
+Error: Request failed for POST /Workspace/Users/[USERNAME]/.bundle/sync-notebook-detection/default/files/bom.sql: RESOURCE_ALREADY_EXISTS: Node named 'bom.sql' already exists

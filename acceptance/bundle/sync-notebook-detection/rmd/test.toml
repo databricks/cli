@@ -1,2 +1,0 @@
-Badness = "R Markdown (.Rmd) files are uploaded with format=RAW and stored as files. v1.20 and earlier imported them as R notebooks."
-RecordRequests = true

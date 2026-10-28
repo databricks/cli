@@ -1,1 +1,0 @@
-Badness = "Syncing over a notebook that v1.20 or earlier created fails with \"file already exists\" when the CLI no longer detects the file as a notebook (#7216)."

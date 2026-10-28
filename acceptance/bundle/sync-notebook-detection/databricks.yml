@@ -1,9 +1,10 @@
 bundle:
-  name: sync-notebook-detection-rmd
+  name: sync-notebook-detection
 
-# Only sync the committed inputs, not the test harness files.
+# Only sync bom.sql.
 sync:
   exclude:
+    - databricks.yml
     - script
     - test.toml
     - output.txt
