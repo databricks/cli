@@ -27,6 +27,7 @@ func queued() *OperationBuffer {
 		queue:       make(chan string, bufferedOperations),
 		pending:     make(map[string]OperationUpdate),
 		latestState: make(map[string]OperationUpdate),
+		outcomes:    make(map[string]recordingOutcome),
 	}
 }
 
@@ -64,12 +65,15 @@ func TestBufferFailsOnOversizedState(t *testing.T) {
 	// Failing here says so, where reporting nothing would leave DMS without the resource
 	// and the next plan would create it again.
 	s := queued()
+	s.stats.OperationCount = 1
 
 	s.RecordOperation(t.Context(), "resources.jobs.foo", false, "id-1", json.RawMessage(strings.Repeat("x", maxStateSize+1)))
 
 	assert.ErrorContains(t, s.Err(), "exceeds the 65536 byte limit")
 	assert.Empty(t, s.queue)
 	assert.Empty(t, s.pending)
+	assert.Equal(t, 1, s.Stats().RecordingFailedOperationCount)
+	assert.Zero(t, s.Stats().UnrecordedOperationCount)
 }
 
 func TestDrainIsIdempotent(t *testing.T) {

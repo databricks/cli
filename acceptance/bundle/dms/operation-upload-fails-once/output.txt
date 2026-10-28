@@ -72,6 +72,9 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 >>> cat [OUTPUT_DIR]/out.requests.txt
 {
   "operation_count": 1,
+  "recorded_operation_count": 1,
+  "recording_failed_operation_count": 0,
+  "unrecorded_operation_count": 0,
   "recording_error_count": 1,
   "recording_success_count": 1,
   "undrained_operation_count": 0

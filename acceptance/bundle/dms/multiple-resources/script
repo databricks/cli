@@ -3,7 +3,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 title "Deploy several resources: operations are uploaded from background workers, so exactly one is recorded per resource no matter what order the uploads finish in. The serialized state is dropped from the output here; other bundle/dms tests cover it."
 trace $CLI bundle deploy
 title "History telemetry survives version completion and counts all five staged operations"
-trace cat "$OUT_REQUESTS" | jq 'select(.path? == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event.deployment_history | {operation_count, undrained_operation_count, recording_error_count, recording_success_count, queue_size_in_range: (.max_queue_size >= 1 and .max_queue_size <= 5)}'
+trace cat "$OUT_REQUESTS" | jq 'select(.path? == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event.deployment_history | {operation_count, recorded_operation_count, recording_failed_operation_count, unrecorded_operation_count, undrained_operation_count, recording_error_count, recording_success_count, queue_size_in_range: (.max_queue_size >= 1 and .max_queue_size <= 5)}'
 replace_ids.py
 trace print_requests.py --dms //versions/1/operations --sort --del-body state --oneline
 
