@@ -203,13 +203,15 @@ var enumValuesPipelinesFileIngestionOptionsSchemaEvolutionMode = []string{"ADD_N
 
 var enumValuesPipelinesGoogleDriveOptionsGoogleDriveEntityType = []string{"FILE", "FILE_METADATA", "PERMISSION"}
 
-var enumValuesPipelinesIngestionSourceType = []string{"BIGQUERY", "CONFLUENCE", "DYNAMICS365", "FOREIGN_CATALOG", "GA4_RAW_DATA", "GOOGLE_DRIVE", "JIRA", "MANAGED_POSTGRESQL", "META_MARKETING", "MYSQL", "NETSUITE", "ORACLE", "POSTGRESQL", "RABBITMQ", "SALESFORCE", "SERVICENOW", "SHAREPOINT", "SMARTSHEET", "SQLSERVER", "TERADATA", "TIKTOK_ADS", "WORKDAY_RAAS", "ZENDESK"}
+var enumValuesPipelinesIngestionSourceType = []string{"BIGQUERY", "CONFLUENCE", "DYNAMICS365", "FOREIGN_CATALOG", "GA4_RAW_DATA", "GOOGLE_DRIVE", "JIRA", "MANAGED_POSTGRESQL", "META_MARKETING", "MYSQL", "NETSUITE", "ONEDRIVE", "ORACLE", "POSTGRESQL", "RABBITMQ", "SALESFORCE", "SERVICENOW", "SHAREPOINT", "SMARTSHEET", "SQLSERVER", "TERADATA", "TIKTOK_ADS", "WORKDAY_RAAS", "ZENDESK"}
 
 var enumValuesPipelinesLinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsEntityGranularity = []string{"CAMPAIGN", "CAMPAIGN_GROUP", "CREATIVE"}
 
 var enumValuesPipelinesLinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsFinder = []string{"ANALYTICS", "ATTRIBUTED_REVENUE_METRICS", "STATISTICS"}
 
 var enumValuesPipelinesLinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsTimeGranularity = []string{"ALL", "DAILY", "MONTHLY", "YEARLY"}
+
+var enumValuesPipelinesOneDriveOptionsOneDriveEntityType = []string{"FILE", "FILE_METADATA"}
 
 var enumValuesPipelinesOutlookAttachmentMode = []string{"ALL", "INLINE_ONLY", "NONE", "NON_INLINE_ONLY"}
 
@@ -2692,6 +2694,9 @@ func enumPipelinesConnectorOptions(w *walker, n *node, v *pipelines.ConnectorOpt
 	if c := n.child("linkedin_ads_options"); c.exists() {
 		enumPipelinesLinkedInAdsOptions(w, &c, v.LinkedinAdsOptions)
 	}
+	if c := n.child("onedrive_options"); c.exists() {
+		enumPipelinesOneDriveOptions(w, &c, v.OnedriveOptions)
+	}
 	if c := n.child("outlook_options"); c.exists() {
 		enumPipelinesOutlookOptions(w, &c, v.OutlookOptions)
 	}
@@ -2758,6 +2763,16 @@ func enumPipelinesLinkedInAdsOptions(w *walker, n *node, v *pipelines.LinkedInAd
 	}
 	if c := n.child("custom_report_options"); c.exists() {
 		enumPipelinesLinkedInAdsOptionsLinkedInAdsCustomReportOptions(w, &c, v.CustomReportOptions)
+	}
+}
+
+func enumPipelinesOneDriveOptions(w *walker, n *node, v *pipelines.OneDriveOptions) {
+	if v == nil {
+		v = &pipelines.OneDriveOptions{}
+	}
+	w.enumField(n, "entity_type", string(v.EntityType), enumValuesPipelinesOneDriveOptionsOneDriveEntityType)
+	if c := n.child("file_ingestion_options"); c.exists() {
+		enumPipelinesFileIngestionOptions(w, &c, v.FileIngestionOptions)
 	}
 }
 
