@@ -11,10 +11,10 @@ if [ -z "$(command -v sshd || ls /usr/sbin/sshd /usr/local/sbin/sshd /sbin/sshd 
   exit 0
 fi
 
-# No release artifacts locally and they're never executed; stand in empty archives.
+# No release artifacts locally and they're never executed; stand in placeholder archives.
 mkdir -p releases
-: >releases/databricks_cli_linux_amd64.zip
-: >releases/databricks_cli_linux_arm64.zip
+fake_release releases/databricks_cli_linux_amd64.zip
+fake_release releases/databricks_cli_linux_arm64.zip
 CLI_RELEASES_DIR="$PWD/releases"
 
 # The state a user reconnecting with a reused name is in: an entry for this connection

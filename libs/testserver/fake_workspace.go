@@ -1093,7 +1093,55 @@ func importFileNotebookTaken(filePath string) Response {
 
 // WorkspaceFilesImportFile mirrors the legacy import-file endpoint.
 func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, overwrite bool) Response {
+	// The endpoint matches this extension case-sensitively.
+	if path.Ext(filePath) == ".zip" {
+		return s.importFileZip(filePath, body, overwrite)
+	}
 	return s.importFile(filePath, body, overwrite, detectLegacyNotebook, importFileConflicts)
+}
+
+// importFileZip mirrors import-file for a .zip (importZipFile in universe): each
+// entry is imported into the archive's parent folder, the archive itself is not
+// stored, and directories must have their own entry.
+func (s *FakeWorkspace) importFileZip(zipPath string, body []byte, overwrite bool) Response {
+	if !strings.HasPrefix(zipPath, "/") {
+		zipPath = "/" + zipPath
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+	if err != nil {
+		return Response{
+			StatusCode: http.StatusBadRequest,
+			Body:       map[string]string{"message": "Failed to unzip with error: " + err.Error()},
+		}
+	}
+
+	parent := path.Dir(zipPath)
+	for _, entry := range zr.File {
+		// macOS archives carry an extra __MACOSX directory.
+		if strings.HasPrefix(entry.Name, "__MACOSX") {
+			continue
+		}
+		entryPath := path.Join(parent, entry.Name)
+		if entry.FileInfo().IsDir() {
+			s.WorkspaceMkdirs(workspace.Mkdirs{Path: entryPath})
+			continue
+		}
+		if strings.HasSuffix(entry.Name, ".zip") {
+			return Response{
+				StatusCode: http.StatusBadRequest,
+				Body:       map[string]string{"message": fmt.Sprintf("Request failed for POST %s: don't support importing nested zip files", zipPath)},
+			}
+		}
+		data, err := readZipEntry(entry)
+		if err != nil {
+			return Response{StatusCode: http.StatusBadRequest, Body: map[string]string{"message": err.Error()}}
+		}
+		if resp := s.importFile(entryPath, data, overwrite, detectLegacyNotebook, importFileConflicts); resp.StatusCode != 0 {
+			return resp
+		}
+	}
+	return Response{}
 }
 
 // WorkspaceImportAutoFile mirrors /workspace/import with format=AUTO for a
