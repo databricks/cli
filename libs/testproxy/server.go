@@ -14,7 +14,6 @@ import (
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/auth"
-	"github.com/databricks/cli/libs/fault"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
@@ -30,7 +29,7 @@ type ProxyServer struct {
 	upstream         *url.URL
 	transport        http.RoundTripper
 	token            string
-	faults           *fault.Rules
+	faults           *testserver.FaultRules
 	RequestCallback  func(request *testserver.Request)
 	ResponseCallback func(request *testserver.Request, response *testserver.EncodedResponse)
 }
@@ -56,7 +55,7 @@ func New(t testutil.TestingT, upstream *config.Config, token string) *ProxyServe
 		upstream:  upstreamURL,
 		transport: &authenticatedTransport{upstream: upstream, next: transport},
 		token:     token,
-		faults:    fault.NewRules(),
+		faults:    testserver.NewFaultRules(),
 	}
 	s.Server = httptest.NewServer(http.HandlerFunc(s.proxyToUpstream))
 	t.Cleanup(s.Close)
@@ -155,7 +154,7 @@ func (s *ProxyServer) proxyToUpstream(w http.ResponseWriter, r *http.Request) {
 	proxy.ServeHTTP(w, r)
 }
 
-func injectedResponse(rule *fault.Rule) testserver.EncodedResponse {
+func injectedResponse(rule *testserver.FaultRule) testserver.EncodedResponse {
 	return testserver.EncodedResponse{
 		StatusCode: rule.StatusCode,
 		Headers:    http.Header{"Content-Type": {"application/json"}},

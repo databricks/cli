@@ -18,7 +18,6 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/databricks/cli/libs/fault"
 	"github.com/databricks/cli/libs/testserver/testsql"
 )
 
@@ -68,7 +67,7 @@ type Server struct {
 	mu             sync.Mutex
 
 	kills  *killRules
-	faults *fault.Rules
+	faults *FaultRules
 
 	sqlHandler *testsql.Handler
 
@@ -229,7 +228,7 @@ func getHeaders(value []byte) http.Header {
 func New(t testutil.TestingT) *Server {
 	router := NewRouter()
 	kills := newKillRules()
-	faults := fault.NewRules()
+	faults := NewFaultRules()
 
 	// Wrap the router so kill rules fire for ALL requests, including those with
 	// no registered handler that would otherwise bypass serve() entirely.
@@ -366,6 +365,7 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request, handler HandlerFu
 
 	request := NewRequest(s.t, r, fakeWorkspace)
 	request.Vars = vars
+	request.Token = token
 
 	if s.RequestCallback != nil {
 		s.RequestCallback(&request)
