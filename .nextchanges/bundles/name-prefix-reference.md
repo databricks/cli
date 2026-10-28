@@ -1,0 +1,1 @@
+* `presets.name_prefix` (and the development-mode prefix) is no longer added twice to a name that is a reference to the name of another resource, such as `name: ${resources.jobs.base.name}`.
