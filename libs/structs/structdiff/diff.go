@@ -193,8 +193,27 @@ func diffValues(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.Valu
 }
 
 func deepEqualValues(path *structpath.PathNode, v1, v2 reflect.Value, changes *[]Change) {
-	if !reflect.DeepEqual(v1.Interface(), v2.Interface()) {
+	if !equalLeaf(v1, v2) {
 		*changes = append(*changes, Change{Path: path, Old: v1.Interface(), New: v2.Interface()})
+	}
+}
+
+// equalLeaf compares values that are not walked into. Basic kinds are compared
+// directly: reflect.DeepEqual needs Interface(), which allocates for each of them.
+func equalLeaf(v1, v2 reflect.Value) bool {
+	switch v1.Kind() {
+	case reflect.String:
+		return v1.String() == v2.String()
+	case reflect.Bool:
+		return v1.Bool() == v2.Bool()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return v1.Int() == v2.Int()
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return v1.Uint() == v2.Uint()
+	case reflect.Float32, reflect.Float64:
+		return v1.Float() == v2.Float()
+	default:
+		return reflect.DeepEqual(v1.Interface(), v2.Interface())
 	}
 }
 
@@ -272,6 +291,12 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 }
 
 func diffMapStringKey(ctx *diffContext, path *structpath.PathNode, m1, m2 reflect.Value, changes *[]Change) error {
+	if s1, ok := reflect.TypeAssert[map[string]string](m1); ok {
+		s2, _ := reflect.TypeAssert[map[string]string](m2)
+		diffStringMaps(path, s1, s2, changes)
+		return nil
+	}
+
 	keySet := map[string]reflect.Value{}
 	for _, k := range m1.MapKeys() {
 		// Caller guarantees the key kind is String; use Value.String() rather
@@ -295,6 +320,36 @@ func diffMapStringKey(ctx *diffContext, path *structpath.PathNode, m1, m2 reflec
 		}
 	}
 	return nil
+}
+
+// diffStringMaps is diffMapStringKey for map[string]string, the most common map
+// type in configs (tags, spark_conf, ...). Going through reflect would copy every
+// key and value to the heap.
+func diffStringMaps(path *structpath.PathNode, m1, m2 map[string]string, changes *[]Change) {
+	keys := slices.Sorted(maps.Keys(m1))
+	for k := range m2 {
+		if _, ok := m1[k]; !ok {
+			keys = append(keys, k)
+		}
+	}
+	slices.Sort(keys)
+
+	for _, k := range keys {
+		s1, ok1 := m1[k]
+		s2, ok2 := m2[k]
+		if ok1 && ok2 && s1 == s2 {
+			continue
+		}
+		node := structpath.NewBracketString(path, k)
+		switch {
+		case !ok1:
+			*changes = append(*changes, Change{Path: node, Old: nil, New: s2})
+		case !ok2:
+			*changes = append(*changes, Change{Path: node, Old: s1, New: nil})
+		default:
+			*changes = append(*changes, Change{Path: node, Old: s1, New: s2})
+		}
+	}
 }
 
 func getForceSendFields(v reflect.Value) []string {
