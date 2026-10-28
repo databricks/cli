@@ -83,11 +83,12 @@ def state(cwd):
     return json.loads((cwd / ".databricks/bundle/default/resources.json").read_text())
 
 
-# Check that files remain the source of truth, then collect and label resource IDs.
-def ids(cwd):
+# Check the history marker and file-backed state, then collect and label resource IDs.
+def ids(cwd, history=True):
     data = state(cwd)
-    assert "deployment_history_shadow" in data["features"], data
-    assert "deployment_history" not in data["features"], data
+    features = data.get("features", {})
+    assert ("deployment_history_shadow" in features) == history, data
+    assert "deployment_history" not in features, data
     current = {key: value["__id__"] for key, value in data["state"].items()}
     for key, value in current.items():
         if value not in KNOWN_IDS:
@@ -130,13 +131,14 @@ def activate(cwd, root):
     return pattern
 
 
-# Verify both remote resources exist with their updated names.
-def assert_alive(cwd, current):
+# Verify resource names and IDs, plus the job's updated description.
+def assert_alive(cwd, current, history=True):
     job = json.loads(run(cwd, "jobs", "get", current["resources.jobs.foo"], "-o", "json").stdout)
     pipeline = json.loads(run(cwd, "pipelines", "get", current["resources.pipelines.bar"], "-o", "json").stdout)
     assert str(job["job_id"]) == current["resources.jobs.foo"]
     assert pipeline["pipeline_id"] == current["resources.pipelines.bar"]
     assert job["settings"]["name"].startswith("updated-dms-fault-")
+    assert job["settings"]["description"] == f"history-{str(history).lower()}"
     assert pipeline["spec"]["name"].startswith("updated-dms-fault-")
 
 
@@ -153,6 +155,21 @@ def generate(cwd, kind, key, identifier, bind=False):
     if bind:
         args.append("--bind")
     run(cwd, *args)
+
+
+# Toggle YAML history and change the job description to force a real update.
+def set_history(cwd, enabled):
+    value = str(enabled).lower()
+    previous = str(not enabled).lower()
+    print(f"\n=== deployment_history: {value}", flush=True)
+    for filename, prefix in [
+        ("databricks.yml", "deployment_history: "),
+        ("resources/foo.job.yml", "description: history-"),
+    ]:
+        subprocess.run(
+            [sys.executable, shutil.which("update_file.py"), str(cwd / filename), prefix + previous, prefix + value],
+            check=True,
+        )
 
 
 # Verify the job, pipeline, and remote state were deleted.
@@ -198,8 +215,30 @@ try:
     assert ids(cwd) == current
     pipeline = json.loads(run(cwd, "pipelines", "get", current["resources.pipelines.bar"], "-o", "json").stdout)
     assert pipeline["spec"]["libraries"][0]["file"]["path"] == root + "/files/src/pipeline.sql"
+
+    # Toggle existing resources without replacing them. Disabled history must make no DMS calls.
+    all_dms = "* /api/2.0/bundle/**"
+    for enabled in [False, True]:
+        set_history(cwd, enabled)
+        before = hits(all_dms)
+        run(cwd, "bundle", "deploy", "--auto-approve")
+        assert ids(cwd, history=enabled) == current
+        assert_alive(cwd, current, history=enabled)
+        if not enabled:
+            assert hits(all_dms) == before, "History-disabled deploy called DMS"
+
     run(cwd, "bundle", "destroy", "--auto-approve")
     assert_destroyed(cwd, root, current)
+
+    # A fresh deployment and its destroy must also work with history disabled.
+    set_history(cwd, False)
+    before = hits(all_dms)
+    run(cwd, "bundle", "deploy", "--auto-approve")
+    current = ids(cwd, history=False)
+    assert_alive(cwd, current, history=False)
+    run(cwd, "bundle", "destroy", "--auto-approve")
+    assert_destroyed(cwd, root, current)
+    assert hits(all_dms) == before, "History-disabled deploy/destroy called DMS"
     print("\nDMS API called: " + ("yes" if hits(pattern) > previous else "no"), flush=True)
 finally:
     fault(pattern, False)
