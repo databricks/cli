@@ -407,14 +407,14 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	var deploymentHistory *protos.BundleDeploymentHistory
 	if stats := b.DeploymentBundle.StateDB.OperationBufferStats(); stats != nil {
 		deploymentHistory = &protos.BundleDeploymentHistory{
-			OperationCount:                int64(stats.OperationCount),
-			MaxQueueSize:                  int64(stats.MaxQueueSize),
-			UndrainedOperationCount:       int64(stats.UndrainedOperationCount),
-			RecordingErrorCount:           int64(stats.RecordingErrorCount),
-			RecordingSuccessCount:         int64(stats.RecordingSuccessCount),
-			RecordedOperationCount:        int64(stats.RecordedOperationCount),
-			RecordingFailedOperationCount: int64(stats.RecordingFailedOperationCount),
-			UnrecordedOperationCount:      int64(stats.UnrecordedOperationCount),
+			StagedOperationCount:           int64(stats.StagedOperationCount),
+			PeakPendingUpdateCount:         int64(stats.PeakPendingUpdateCount),
+			QueuedUpdateCountAtTimeout:     int64(stats.QueuedUpdateCountAtTimeout),
+			RecordingAttemptFailureCount:   int64(stats.RecordingAttemptFailureCount),
+			RecordingAttemptSuccessCount:   int64(stats.RecordingAttemptSuccessCount),
+			OperationRecordingSuccessCount: int64(stats.OperationRecordingSuccessCount),
+			OperationRecordingFailureCount: int64(stats.OperationRecordingFailureCount),
+			OperationRecordingPendingCount: int64(stats.OperationRecordingPendingCount),
 		}
 	}
 

@@ -50,22 +50,22 @@ type BundleDeployEvent struct {
 // BundleDeploymentHistory measures history recording for one deployment version.
 type BundleDeploymentHistory struct {
 	// Number of resource operations staged for this deployment version.
-	OperationCount int64 `json:"operation_count"`
+	StagedOperationCount int64 `json:"staged_operation_count"`
 	// Peak number of queued resource keys, excluding the in-flight upload.
-	MaxQueueSize int64 `json:"max_queue_size"`
+	PeakPendingUpdateCount int64 `json:"peak_pending_update_count"`
 	// Resource operations still queued when Drain ends, excluding the active upload.
-	UndrainedOperationCount int64 `json:"undrained_operation_count"`
+	QueuedUpdateCountAtTimeout int64 `json:"queued_update_count_at_timeout"`
 	// Failed update-building or upload attempts.
 	// Later successful updates do not clear the count.
-	RecordingErrorCount int64 `json:"recording_error_count"`
+	RecordingAttemptFailureCount int64 `json:"recording_attempt_failure_count"`
 	// Successful upload attempts. Repeated updates to a resource count separately.
-	RecordingSuccessCount int64 `json:"recording_success_count"`
+	RecordingAttemptSuccessCount int64 `json:"recording_attempt_success_count"`
 	// Resource operations whose final history update uploaded successfully.
-	RecordedOperationCount int64 `json:"recorded_operation_count"`
+	OperationRecordingSuccessCount int64 `json:"operation_recording_success_count"`
 	// Resource operations whose final history update failed to build or upload.
-	RecordingFailedOperationCount int64 `json:"recording_failed_operation_count"`
+	OperationRecordingFailureCount int64 `json:"operation_recording_failure_count"`
 	// Staged resource operations with no completed final history update.
-	UnrecordedOperationCount int64 `json:"unrecorded_operation_count"`
+	OperationRecordingPendingCount int64 `json:"operation_recording_pending_count"`
 }
 
 // These metrics are experimental and are often added in an adhoc manner. There

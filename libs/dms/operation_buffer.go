@@ -28,21 +28,21 @@ const (
 // BufferOptions selects optional deployment history shadow recording behavior.
 type BufferOptions struct {
 	BestEffort bool
-	// OperationCount counts staged resource keys. All recorded keys must be staged.
+	// StagedOperationCount counts staged resource keys. All recorded keys must be staged.
 	// File history uses it for queue capacity and the drain timeout.
-	OperationCount int
+	StagedOperationCount int
 }
 
 // OperationBufferStats describes one deployment version's history uploads.
 type OperationBufferStats struct {
-	OperationCount                int
-	MaxQueueSize                  int
-	UndrainedOperationCount       int
-	RecordingErrorCount           int
-	RecordingSuccessCount         int
-	RecordedOperationCount        int
-	RecordingFailedOperationCount int
-	UnrecordedOperationCount      int
+	StagedOperationCount           int
+	PeakPendingUpdateCount         int
+	QueuedUpdateCountAtTimeout     int
+	RecordingAttemptFailureCount   int
+	RecordingAttemptSuccessCount   int
+	OperationRecordingSuccessCount int
+	OperationRecordingFailureCount int
+	OperationRecordingPendingCount int
 }
 
 // OperationBuffer records each state write with DMS for one deployment version, off the apply
@@ -100,7 +100,7 @@ func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum i
 		// Updates coalesce, so each staged key occupies at most one queue slot.
 		// The worker frees that slot before the key can be queued again.
 		// One slot per staged key therefore avoids deployment backpressure.
-		capacity = options.OperationCount
+		capacity = options.StagedOperationCount
 	}
 	b := &OperationBuffer{
 		deploymentID: deploymentID,
@@ -109,12 +109,12 @@ func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum i
 		done:         make(chan struct{}),
 		cancel:       cancel,
 		bestEffort:   options.BestEffort,
-		drainTimeout: time.Duration(options.OperationCount) * historyDrainTimeoutPerOperation,
+		drainTimeout: time.Duration(options.StagedOperationCount) * historyDrainTimeoutPerOperation,
 		pending:      make(map[string]OperationUpdate),
 		latestState:  make(map[string]OperationUpdate),
 		sequenceIDs:  make(map[string]int64),
-		stats:        OperationBufferStats{OperationCount: options.OperationCount},
-		outcomes:     make(map[string]recordingOutcome, options.OperationCount),
+		stats:        OperationBufferStats{StagedOperationCount: options.StagedOperationCount},
+		outcomes:     make(map[string]recordingOutcome, options.StagedOperationCount),
 	}
 	b.stopQueue = sync.OnceFunc(func() { close(b.queue) })
 	go b.run(ctx)
@@ -127,7 +127,7 @@ func (b *OperationBuffer) RecordOperation(ctx context.Context, resourceKey strin
 	update, err := NewStateUpdate(resourceID, state, inProgress)
 	if err != nil {
 		b.mu.Lock()
-		b.stats.RecordingErrorCount++
+		b.stats.RecordingAttemptFailureCount++
 		if !inProgress {
 			b.outcomes[resourceKey] = recordingFailed
 		}
@@ -165,7 +165,7 @@ func (b *OperationBuffer) record(resourceKey string, update OperationUpdate, kee
 	}
 	b.pending[resourceKey] = update
 	delete(b.outcomes, resourceKey)
-	b.stats.MaxQueueSize = max(b.stats.MaxQueueSize, len(b.pending))
+	b.stats.PeakPendingUpdateCount = max(b.stats.PeakPendingUpdateCount, len(b.pending))
 	b.mu.Unlock()
 
 	// when already queued: the writer reads the map when it gets to the key,
@@ -234,10 +234,10 @@ func (b *OperationBuffer) write(ctx context.Context, key string, update Operatio
 	defer b.mu.Unlock()
 	outcome := recordingSucceeded
 	if err != nil {
-		b.stats.RecordingErrorCount++
+		b.stats.RecordingAttemptFailureCount++
 		outcome = recordingFailed
 	} else {
-		b.stats.RecordingSuccessCount++
+		b.stats.RecordingAttemptSuccessCount++
 	}
 	// A newer queued update or build failure takes precedence over this upload.
 	_, queued := b.pending[key]
@@ -279,7 +279,7 @@ func (b *OperationBuffer) Drain(ctx context.Context) error {
 		// Deadline or cancellation: stop the upload so deployment can finish promptly.
 		b.mu.Lock()
 		defer b.mu.Unlock()
-		b.stats.UndrainedOperationCount = len(b.queue)
+		b.stats.QueuedUpdateCountAtTimeout = len(b.queue)
 		if b.err == nil {
 			b.err = ctx.Err()
 		}
@@ -298,12 +298,12 @@ func (b *OperationBuffer) Stats() OperationBufferStats {
 		case recordingPending:
 			continue
 		case recordingSucceeded:
-			stats.RecordedOperationCount++
+			stats.OperationRecordingSuccessCount++
 		case recordingFailed:
-			stats.RecordingFailedOperationCount++
+			stats.OperationRecordingFailureCount++
 		}
 	}
-	stats.UnrecordedOperationCount = stats.OperationCount - stats.RecordedOperationCount - stats.RecordingFailedOperationCount
+	stats.OperationRecordingPendingCount = stats.StagedOperationCount - stats.OperationRecordingSuccessCount - stats.OperationRecordingFailureCount
 	return stats
 }
 

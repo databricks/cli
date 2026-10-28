@@ -13,13 +13,13 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 === History telemetry survives version completion and counts all five staged operations
 >>> cat [OUTPUT_DIR]/out.requests.txt
 {
-  "operation_count": 5,
-  "recorded_operation_count": 5,
-  "recording_failed_operation_count": 0,
-  "unrecorded_operation_count": 0,
-  "undrained_operation_count": 0,
-  "recording_error_count": 0,
-  "recording_success_count": 5,
+  "staged_operation_count": 5,
+  "operation_recording_success_count": 5,
+  "operation_recording_failure_count": 0,
+  "operation_recording_pending_count": 0,
+  "queued_update_count_at_timeout": 0,
+  "recording_attempt_failure_count": 0,
+  "recording_attempt_success_count": 5,
   "queue_size_in_range": true
 }
 
