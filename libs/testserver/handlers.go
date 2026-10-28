@@ -13,7 +13,6 @@ import (
 	"path"
 	"strconv"
 	"strings"
-	"testing/fstest"
 
 	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -84,7 +83,7 @@ func workspaceImport(w *FakeWorkspace, form ImportForm) Response {
 		resp = w.WorkspaceImportNotebook(form.Path, form.Content, workspace.Language(form.Language), form.Overwrite)
 	case string(workspace.ImportFormatJupyter):
 		// The real endpoint reads the language from the notebook metadata.
-		_, language, _ := notebook.DetectJupyterWithFS(fstest.MapFS{"nb.ipynb": {Data: form.Content}}, "nb.ipynb")
+		_, language, _ := notebook.DetectBytes(form.Path+notebook.ExtensionJupyter, form.Content)
 		resp = w.WorkspaceImportNotebook(form.Path, form.Content, language, form.Overwrite)
 	case string(workspace.ImportFormatAuto):
 		if strings.HasSuffix(strings.ToLower(form.Path), ".zip") {
