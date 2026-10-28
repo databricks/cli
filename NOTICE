@@ -91,10 +91,6 @@ golang.org/x/text - https://github.com/golang/text
 Copyright 2009 The Go Authors.
 License - https://github.com/golang/text/blob/master/LICENSE
 
-google/uuid - https://github.com/google/uuid
-Copyright (c) 2009,2014 Google Inc. All rights reserved.
-License - https://github.com/google/uuid/blob/master/LICENSE
-
 ---
 
 This Software contains code from the following open source projects, licensed under the MIT license:

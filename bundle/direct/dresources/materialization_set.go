@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"slices"
 	"strings"
+	"uuid"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -14,7 +15,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	"github.com/databricks/databricks-sdk-go/service/ml"
-	"github.com/google/uuid"
 )
 
 // https://docs.databricks.com/api/workspace/featureengineering
@@ -122,7 +122,7 @@ func (r *ResourceMaterializationSet) DoCreate(ctx context.Context, config *ml.Ma
 	// so the token the server sees is the one this call chose.
 	operation, err := r.client.FeatureEngineering.CreateMaterializationSet(ctx, ml.CreateMaterializationSetRequest{
 		MaterializationSet: *config,
-		RequestId:          uuid.NewString(),
+		RequestId:          uuid.New().String(),
 		ForceSendFields:    nil,
 	})
 	if err != nil {
@@ -227,7 +227,7 @@ func (r *ResourceMaterializationSet) DoUpdate(ctx context.Context, id string, co
 		MaterializationSetId: id,
 		MaterializationSet:   update,
 		UpdateMask:           *fieldmask.New(materializationSetUpdatableFields),
-		RequestId:            uuid.NewString(),
+		RequestId:            uuid.New().String(),
 		ForceSendFields:      nil,
 	})
 	if err != nil {
@@ -246,7 +246,7 @@ func (r *ResourceMaterializationSet) DoUpdate(ctx context.Context, id string, co
 func (r *ResourceMaterializationSet) DoDelete(ctx context.Context, id string, _ *ml.MaterializationSet) error {
 	operation, err := r.client.FeatureEngineering.DeleteMaterializationSet(ctx, ml.DeleteMaterializationSetRequest{
 		MaterializationSetId: id,
-		RequestId:            uuid.NewString(),
+		RequestId:            uuid.New().String(),
 		AllowMissing:         false,
 		ForceSendFields:      nil,
 	})
