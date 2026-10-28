@@ -1,0 +1,16 @@
+title "A bundle may write a duration with week, day, hour and minute units"
+trace $CLI bundle summary -o json | jq -S '.resources.features | map_values(.function.aggregation_function.time_window)'
+
+title "The create requests carry the seconds form the API accepts"
+trace $CLI bundle deploy
+trace print_requests.py --sort //feature-engineering
+
+title "Rewriting a duration in a different unit of the same length plans nothing"
+trace update_file.py databricks.yml "window_duration: 7d" "window_duration: 168h"
+trace $CLI bundle plan -o json | jq '.plan | with_entries(select(.key | startswith("resources.features"))) | map_values(.action)'
+
+title "An unparseable duration names the field it is on"
+errcode trace $CLI bundle plan --var="settling=7 fortnights"
+
+trace $CLI bundle destroy --auto-approve
+rm -f out.requests.txt out.plan.json
