@@ -22,8 +22,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class MaterializationNotifications:
     """
-    :meta private: [EXPERIMENTAL]
-
     Notifications for the jobs and pipelines that materialize the features in a set, one field per
     trigger.
     """

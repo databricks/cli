@@ -1301,6 +1301,40 @@ resources:
       "markdown_description": |-
         The materialization set definitions for the bundle, where each key is the name of the materialization set.
       "$fields":
+        "batch_offline_and_online_materialized_features":
+          "description": |-
+            PLACEHOLDER
+          "$fields":
+            "budget_policy_id":
+              "description": |-
+                PLACEHOLDER
+            "cron_schedule":
+              "description": |-
+                PLACEHOLDER
+            "cron_schedule_trigger":
+              "description": |-
+                PLACEHOLDER
+            "feature_name":
+              "description": |-
+                PLACEHOLDER
+            "notifications":
+              "description": |-
+                PLACEHOLDER
+            "offline_store_config":
+              "description": |-
+                PLACEHOLDER
+            "online_store_config":
+              "description": |-
+                PLACEHOLDER
+            "pipeline_schedule_state":
+              "description": |-
+                PLACEHOLDER
+            "table_trigger":
+              "description": |-
+                PLACEHOLDER
+            "tags":
+              "description": |-
+                PLACEHOLDER
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
@@ -1309,6 +1343,43 @@ resources:
             "cron_schedule":
               "description": |-
                 Deprecated: setting this field is rejected. Use `cron_schedule_trigger` instead.
+        "sawtooth_materialized_features":
+          "description": |-
+            PLACEHOLDER
+          "$fields":
+            "budget_policy_id":
+              "description": |-
+                PLACEHOLDER
+            "cron_schedule":
+              "description": |-
+                PLACEHOLDER
+            "cron_schedule_trigger":
+              "description": |-
+                PLACEHOLDER
+            "feature_name":
+              "description": |-
+                PLACEHOLDER
+            "notifications":
+              "description": |-
+                PLACEHOLDER
+            "offline_store_config":
+              "description": |-
+                PLACEHOLDER
+            "online_store_config":
+              "description": |-
+                PLACEHOLDER
+            "pipeline_schedule_state":
+              "description": |-
+                PLACEHOLDER
+            "streaming_mode":
+              "description": |-
+                PLACEHOLDER
+            "table_trigger":
+              "description": |-
+                PLACEHOLDER
+            "tags":
+              "description": |-
+                PLACEHOLDER
     "mcp_services":
       "description": |-
         PLACEHOLDER

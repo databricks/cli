@@ -1,0 +1,77 @@
+bundle:
+  name: test-matset-shorthand-$UNIQUE_NAME
+
+resources:
+  features:
+    pairfeat:
+      full_name: $CATALOG_NAME.$SCHEMA_NAME.pair_$UNIQUE_NAME
+      source:
+        delta_table_source:
+          full_name: $TABLE_NAME
+      function:
+        aggregation_function:
+          count_function:
+            input: value
+          time_window:
+            sliding:
+              window_duration: 2d1h35m40s
+              slide_duration: 1h30m
+      entities:
+        - name: id
+      timeseries_column:
+        name: timestamp
+    otherfeat:
+      full_name: $CATALOG_NAME.$SCHEMA_NAME.other_$UNIQUE_NAME
+      source:
+        delta_table_source:
+          full_name: $TABLE_NAME
+      function:
+        aggregation_function:
+          count_function:
+            input: value
+          time_window:
+            sliding:
+              window_duration: 2d1h35m40s
+              slide_duration: 1h30m
+      entities:
+        - name: id
+      timeseries_column:
+        name: timestamp
+
+  materialization_sets:
+    set1:
+      # pairfeat is declared once and expanded into its offline and online members; otherfeat is
+      # written out in full. Every feature in a set must ask for the same destination pair, so the
+      # two declarations name identical destinations.
+      batch_offline_and_online_materialized_features:
+        - feature_name: ${resources.features.pairfeat.full_name}
+          offline_store_config:
+            catalog_name: $CATALOG_NAME
+            schema_name: $SCHEMA_NAME
+            table_name_prefix: pair_${UNIQUE_NAME}_off
+          online_store_config:
+            online_store_name: $ONLINE_STORE_NAME
+            catalog_name: $CATALOG_NAME
+            schema_name: $SCHEMA_NAME
+            table_name_prefix: pair_$UNIQUE_NAME
+          cron_schedule_trigger:
+            mode: MANUAL
+            cron_expression: "0 0 * * * ?"
+      materialized_features:
+        - feature_name: ${resources.features.otherfeat.full_name}
+          offline_store_config:
+            catalog_name: $CATALOG_NAME
+            schema_name: $SCHEMA_NAME
+            table_name_prefix: pair_${UNIQUE_NAME}_off
+          cron_schedule_trigger:
+            mode: MANUAL
+            cron_expression: "0 0 * * * ?"
+        - feature_name: ${resources.features.otherfeat.full_name}
+          online_store_config:
+            online_store_name: $ONLINE_STORE_NAME
+            catalog_name: $CATALOG_NAME
+            schema_name: $SCHEMA_NAME
+            table_name_prefix: pair_$UNIQUE_NAME
+          cron_schedule_trigger:
+            mode: MANUAL
+            cron_expression: "0 0 * * * ?"

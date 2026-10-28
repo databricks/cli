@@ -14,8 +14,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class OnlineStoreConfig:
     """
-    :meta private: [EXPERIMENTAL]
-
     Configuration for online store destination.
     """
 
