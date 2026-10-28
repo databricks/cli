@@ -11,11 +11,16 @@ must succeed with the selected API configured to return HTTP 500.
 | 5 | Run `bundle deployment unbind`. | The resource ID is removed from bundle state. |
 | 6 | Run `bundle generate --bind` into the bundle's resource directory. | Generation and binding succeed for the original resource ID, proving unbind preserved the remote resource. Pipeline SQL is downloaded with its original content. |
 | 7 | Run `bundle validate`, then deploy again. | Generated configuration is valid, both resource IDs stay unchanged, and the pipeline references the newly downloaded SQL path. |
-| 8 | Run `bundle destroy`. | Both remote resources and remote state are gone. |
+| 8 | Disable history and deploy, then enable it and deploy. | Both IDs stay unchanged. The file-backed history marker follows the setting, and disabling history makes no DMS calls. Each toggle changes the job description to exercise an actual resource update. |
+| 9 | Run `bundle destroy` with history enabled. | Both remote resources and remote state are gone. |
+| 10 | Disable history, deploy fresh resources, then destroy. | The resources exist after deploy and are gone after destroy. Neither command calls DMS. |
 
 Steps 4–6 run first for the job, then for the pipeline. The fault stays enabled
-through step 8 and is cleared in `finally`. For `CreateDeployment`, skip the healthy
+through step 10 and is cleared in `finally`. For `CreateDeployment`, skip the healthy
 setup deployment so the fault applies to the first deployment.
+
+History is toggled with `experimental.deployment_history: true/false` in YAML.
+That explicit setting takes priority over the suite's environment override.
 
 Each case registers one fault rule. A version wildcard such as
 `POST .../versions/*/complete` covers every version the workflow accesses or creates.

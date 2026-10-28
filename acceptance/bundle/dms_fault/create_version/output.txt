@@ -87,6 +87,25 @@
   Files: 6 uploaded, 0 deleted
   Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
+=== deployment_history: false
+
+>>> bundle deploy --auto-approve
+  Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-fault-create_version-commands-[UNIQUE_NAME]/files...
+  Updated jobs.foo
+  Updated pipelines.bar
+  Files: 2 uploaded, 0 deleted
+  Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
+
+=== deployment_history: true
+
+>>> bundle deploy --auto-approve
+  Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-fault-create_version-commands-[UNIQUE_NAME]/files...
+  Warn: Could not enable deployment history for this deploy: failed to create deployment version: Fault injected by test.
+  Updated jobs.foo
+  Updated pipelines.bar
+  Files: 2 uploaded, 0 deleted
+  Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
+
 >>> bundle destroy --auto-approve
   The following resources will be deleted:
     delete resources.jobs.foo
@@ -99,6 +118,28 @@
   All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-fault-create_version-commands-[UNIQUE_NAME]
 
   Warn: Could not record deployment history for this destroy: failed to create deployment version: Fault injected by test.
+  Destroy: 2 deleted
+
+=== deployment_history: false
+
+>>> bundle deploy --auto-approve
+  Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-fault-create_version-commands-[UNIQUE_NAME]/files...
+  Created jobs.foo
+  Created pipelines.bar
+  Files: 8 uploaded, 0 deleted
+  Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> bundle destroy --auto-approve
+  The following resources will be deleted:
+    delete resources.jobs.foo
+    delete resources.pipelines.bar
+
+  This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+  Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
+    delete resources.pipelines.bar
+
+  All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-fault-create_version-commands-[UNIQUE_NAME]
+
   Destroy: 2 deleted
 
 DMS API called: yes
