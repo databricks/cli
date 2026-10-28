@@ -10,10 +10,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// Maximum number of concurrent requests during sync. Chosen against the
-// per-endpoint rate limits documented at
-// https://docs.databricks.com/aws/en/resources/limits ("API rate limits" -
-// Workspace API), which sync stays within for the endpoints it calls.
+// Maximum number of concurrent requests during sync.
 const MaxRequestsInFlight = 20
 
 // Delete the specified path.

@@ -8,6 +8,6 @@ title "Expecting 1 wheel in environments section in /jobs/create"
 trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body' "$OUT_REQUESTS" | nostamp
 
 title "Expecting 1 wheel to be uploaded"
-trace print_workspace_imports | grep whl | sort
+trace jq .path < "$OUT_REQUESTS" | grep import | grep whl | sort
 
 rm "$OUT_REQUESTS"

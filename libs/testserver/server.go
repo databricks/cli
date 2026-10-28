@@ -372,7 +372,7 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request, handler HandlerFu
 
 	var resp EncodedResponse
 
-	fault := s.faults.Check(r.Method, r.URL.Path, token, request.Body)
+	fault := s.faults.Check(r.Method, r.URL.Path, token)
 
 	if fault == nil || fault.AfterHandler {
 		if bytes.Contains(request.Body, []byte("INJECT_ERROR")) {

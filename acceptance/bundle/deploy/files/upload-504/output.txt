@@ -1,6 +1,6 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Warn: retrying after 504 Gateway Timeout from POST /api/2.0/workspace/import: failed to upload /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml: Fault injected by test.
+Warn: retrying after 504 Gateway Timeout from POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
-/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml
-/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml
+/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml
+/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml
