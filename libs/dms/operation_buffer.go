@@ -63,10 +63,9 @@ type OperationBuffer struct {
 	mu sync.Mutex
 
 	// pending holds the newest update per resource key, absent once the writer takes it.
-	pending            map[string]OperationUpdate
-	inFlight           string
-	stats              OperationBufferStats
-	drainStatsRecorded bool
+	pending  map[string]OperationUpdate
+	inFlight string
+	stats    OperationBufferStats
 
 	// latestState is the newest state-bearing update per resource key, kept for the buffer's
 	// whole life - unlike pending, which the writer removes on take. RecordFailure merges its
@@ -235,7 +234,6 @@ func (b *OperationBuffer) Drain(ctx context.Context) error {
 	if !b.bestEffort {
 		// DMS is authoritative: wait for all queued writes and return any recording error.
 		<-b.done
-		b.recordDrainStats()
 		return b.Err()
 	}
 
@@ -243,32 +241,28 @@ func (b *OperationBuffer) Drain(ctx context.Context) error {
 	// including operations already uploaded; caller cancellation can shorten the wait.
 	ctx, cancel := context.WithTimeout(ctx, b.drainTimeout)
 	defer cancel()
+	var drainErr error
 	select {
 	case <-b.done:
 		// Report the first upload error even if later uploads succeeded.
-		b.recordDrainStats()
-		return b.Err()
 	case <-ctx.Done():
 		// Deadline or cancellation: stop the upload so deployment can finish promptly.
-		b.recordDrainStats()
-		b.setErr(ctx.Err())
-		b.cancel()
-		return b.Err()
+		drainErr = ctx.Err()
 	}
-}
 
-// recordDrainStats freezes outstanding resource counts before cancellation can clear an upload.
-func (b *OperationBuffer) recordDrainStats() {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.drainStatsRecorded {
-		return
-	}
-	b.drainStatsRecorded = true
-	b.stats.UndrainedOperationCount = len(b.pending)
+	undrained := len(b.pending)
 	if _, queued := b.pending[b.inFlight]; b.inFlight != "" && !queued {
-		b.stats.UndrainedOperationCount++
+		undrained++
 	}
+	// No writes can be queued after Drain starts, so retain the first drain's count.
+	b.stats.UndrainedOperationCount = max(b.stats.UndrainedOperationCount, undrained)
+	if b.err == nil {
+		b.err = drainErr
+	}
+	b.cancel()
+	return b.err
 }
 
 // Stats returns a snapshot; undrained operations are counted once when Drain ends.
