@@ -2688,6 +2688,9 @@ Update a service principal in the account.
   the calling workspace. Only the fields named in the update mask are modified.
   Returns the updated ServicePrincipal resource.
 
+  For locally managed service principals, is_agent must be set to true or false
+  when updated.
+
   When AIM is enabled and the service principal is an external identity (its
   external_id is set), only external_id can be updated; its other fields are
   sourced from your identity provider.

@@ -289,6 +289,7 @@ func newCreateIdentityVisibilityFilter() *cobra.Command {
 	cmd.Flags().StringVar(&createIdentityVisibilityFilterReq.IdentityVisibilityFilterId, "identity-visibility-filter-id", createIdentityVisibilityFilterReq.IdentityVisibilityFilterId, `Optional.`)
 	// TODO: complex arg: exact
 	// TODO: complex arg: prefix
+	// TODO: complex arg: regex
 
 	cmd.Use = "create-identity-visibility-filter PARENT PRINCIPAL_TYPE"
 	cmd.Short = `Create an identity-visibility filter in the account.`
@@ -296,10 +297,11 @@ func newCreateIdentityVisibilityFilter() *cobra.Command {
 
   Creates a group visibility filter in the account. Requires account admin
   privileges. Set principal_type to GROUP and specify exactly one of exact
-  (external ID) or prefix (display-name starts with). The filter applies
-  across all workspaces in the account. A duplicate filter ID or an existing
-  rule with the same type and match value returns ALREADY_EXISTS. Filters are
-  immutable; to change a rule, delete it and create a new one.
+  (external ID), prefix (display-name starts with), or regex (full RE2
+  display-name match). The filter applies across all workspaces in the account.
+  A duplicate filter ID or an existing rule with the same type and match value
+  returns ALREADY_EXISTS. Filters are immutable; to change a rule, delete it
+  and create a new one.
 
   Arguments:
     PARENT: Required. The parent account. Format: accounts/{account_id}
@@ -2993,6 +2995,9 @@ Update a service principal in the account.
   Updates an existing service principal in the Databricks account. Only the
   fields named in the update mask are modified. Returns the updated
   ServicePrincipal resource.
+
+  For locally managed service principals, is_agent must be set to true or false
+  when updated.
 
   When AIM is enabled and the service principal is an external identity (its
   external_id is set), only external_id can be updated; its other fields are
