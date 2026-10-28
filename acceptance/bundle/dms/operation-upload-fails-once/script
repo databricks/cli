@@ -24,7 +24,7 @@ trap '$CLI catalogs delete "$other_catalog" --force >> LOG.catalog 2>&1' EXIT
 trace update_file.py databricks.yml "catalog_name: main" "catalog_name: ${other_catalog}"
 trace $CLI bundle deploy --auto-approve
 title "A failed history upload is counted separately from the queued operations"
-trace cat "$OUT_REQUESTS" | jq 'select(.path? == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event.deployment_history | {recording_error_count, recording_success_count, undrained_operation_count}'
+trace cat "$OUT_REQUESTS" | jq 'select(.path? == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event.deployment_history | {operation_count, recording_error_count, recording_success_count, undrained_operation_count}'
 
 title "The service lists the schema with the failure"
 deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-upload-fails-once-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
