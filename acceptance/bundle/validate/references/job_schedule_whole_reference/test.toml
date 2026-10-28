@@ -1,1 +1,1 @@
-Badness = "The required-field check looks inside the reference and reports quartz_cron_expression and timezone_id as not set; main does the same for a queue reference (enabled)."
+Badness = "The required-field check looks inside the reference: it warns that quartz_cron_expression and timezone_id are not set at resources.jobs.viaref.schedule, although the referenced schedule sets both."

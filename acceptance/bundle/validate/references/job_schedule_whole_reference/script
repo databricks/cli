@@ -1,3 +1,4 @@
 # The schedule of viaref is a reference to the whole schedule of another job.
-# The defaults set schedule.pause_status (and trigger, continuous) of every job by path, which cannot be done in a reference.
+# The defaults (e.g. pause_status) are not written into the reference; the referenced schedule gets them.
 trace $CLI bundle validate
+trace $CLI bundle plan -o json | jq '.plan."resources.jobs.viaref".new_state.value.schedule'
