@@ -242,8 +242,7 @@ func (b *OperationBuffer) Drain(ctx context.Context) error {
 		// Deadline or cancellation: stop the upload so deployment can finish promptly.
 		b.mu.Lock()
 		defer b.mu.Unlock()
-		// No writes can be queued after Drain starts, so retain the first drain's count.
-		b.stats.UndrainedOperationCount = max(b.stats.UndrainedOperationCount, len(b.queue))
+		b.stats.UndrainedOperationCount = len(b.queue)
 		if b.err == nil {
 			b.err = ctx.Err()
 		}
@@ -252,7 +251,7 @@ func (b *OperationBuffer) Drain(ctx context.Context) error {
 	}
 }
 
-// Stats returns a snapshot; undrained operations are counted once when Drain ends.
+// Stats returns a snapshot of the history measurements.
 func (b *OperationBuffer) Stats() OperationBufferStats {
 	b.mu.Lock()
 	defer b.mu.Unlock()
