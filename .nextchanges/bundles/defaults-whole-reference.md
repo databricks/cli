@@ -1,1 +1,1 @@
-* Fixed `bundle validate` failing with "expected a map to index" when a job `schedule`, `trigger` or `continuous` is a reference to a whole block, such as `${resources.jobs.base.schedule}`.
+* Fixed `bundle validate` failing with "expected a map to index" when a job `schedule`, `trigger` or `continuous` is a reference to a whole block, such as `${resources.jobs.base.schedule}`. ([#7225](https://github.com/databricks/cli/pull/7225))
