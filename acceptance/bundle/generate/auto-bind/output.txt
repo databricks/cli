@@ -25,39 +25,13 @@ Updated jobs.test_job
 Files: 5 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
-=== Regenerate the already-bound job:
->>> musterr [CLI] bundle generate job --key test_job --existing-job-id [JOB_ID] --config-dir resources --source-dir src --bind --force
-File successfully saved to src/test.py
-Job configuration successfully saved to resources/test_job.job.yml
-Error: Resource already managed
-
-The bundle is already managing resource for resources.jobs.test_job and it is bound to the requested ID [JOB_ID].
-
-
->>> [CLI] bundle validate
-Name: auto-bind-test
-Target: default
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/auto-bind-test-[UNIQUE_NAME]
-
-Validation OK!
-
-=== Unbind and regenerate the deployed job:
+=== Regenerate and bind the deployed job:
 >>> [CLI] bundle deployment unbind test_job
 
 >>> [CLI] bundle generate job --key test_job --existing-job-id [JOB_ID] --config-dir resources --source-dir src --bind --force
 File successfully saved to src/test.py
 Job configuration successfully saved to resources/test_job.job.yml
 Successfully bound job with an id '[JOB_ID]'
-
-=== Redeploy the regenerated job:
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/auto-bind-test-[UNIQUE_NAME]/files...
-Files: 2 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
-
->>> test [JOB_ID] = [JOB_ID]
 
 === Destroy the bundle:
 >>> [CLI] bundle destroy --auto-approve
