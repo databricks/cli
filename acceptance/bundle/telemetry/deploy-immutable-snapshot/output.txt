@@ -10,8 +10,8 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 >>> print_telemetry_bool_values
 immutable_snapshot_used true
 
->>> print_snapshot_upload_entries
-1
+>>> print_snapshot_upload_duration_included
+true
 
 === Second deploy finds the snapshot already uploaded
 
@@ -22,5 +22,5 @@ Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 >>> print_telemetry_bool_values
 immutable_snapshot_used true
 
->>> print_snapshot_upload_entries
-0
+>>> print_snapshot_upload_duration_included
+false

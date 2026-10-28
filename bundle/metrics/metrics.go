@@ -23,7 +23,7 @@ const (
 	// state), not building the zip, which is snapshot.(snapshotUpload). Absent when no
 	// snapshot was uploaded. It lacks the parentheses of a mutator name because it is
 	// not a mutator.
-	SnapshotUploadTime = "snapshot.upload"
+	SnapshotUploadDuration = "snapshot.upload"
 
 	// Outcome of an automatic migration of terraform state to the direct engine.
 	//   - migrate_error:        state conversion itself errored.
