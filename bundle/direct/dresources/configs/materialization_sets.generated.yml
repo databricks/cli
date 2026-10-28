@@ -1,0 +1,36 @@
+# Generated, do not edit.
+
+recreate_on_changes:
+  - field: materialization_set_id
+    reason: spec:immutable
+  - field: materialized_features[*].materialized_feature_id
+    reason: spec:immutable
+  - field: materialized_features[*].offline_store_config
+    reason: spec:immutable
+  - field: materialized_features[*].online_store_config
+    reason: spec:immutable
+
+ignore_remote_changes:
+  - field: materialized_features[*].offline_store_config
+    reason: spec:input_only
+  - field: materialized_features[*].online_store_config.catalog_name
+    reason: spec:input_only
+  - field: materialized_features[*].online_store_config.schema_name
+    reason: spec:input_only
+  - field: materialized_features[*].online_store_config.table_name_prefix
+    reason: spec:input_only
+
+  - field: materialized_features[*].is_online
+    reason: spec:output_only
+  - field: materialized_features[*].job_id
+    reason: spec:output_only
+  - field: materialized_features[*].last_materialization_time
+    reason: spec:output_only
+  - field: materialized_features[*].latest_backfill_operation
+    reason: spec:output_only
+  - field: materialized_features[*].materialization_set_id
+    reason: spec:output_only
+  - field: materialized_features[*].pipeline_id
+    reason: spec:output_only
+  - field: materialized_features[*].table_name
+    reason: spec:output_only

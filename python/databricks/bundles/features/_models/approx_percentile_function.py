@@ -30,6 +30,20 @@ class ApproxPercentileFunction:
     accuracy: VariableOrOptional[int] = None
     """
     The accuracy parameter (higher is more accurate but slower).
+    Deprecated: use relative_error. When relative_error is set, reads return ceil(1 /
+    relative_error) here for clients that don't have relative_error, and a request may only send
+    that value.
+    """
+
+    relative_error: VariableOrOptional[float] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The error the user accepts, as a fraction of rank, between 0.01 (by default) and 0.3. The
+    result is within this rank error with 99% confidence: at 0.01, the value returned for p95 is
+    between the true p94 and p96 at least 99% of the time. Feature Store picks the sketch size that
+    gives this error.
+    If neither relative_error nor accuracy is set, 0.01 is default chosen at feature creation.
     """
 
     @classmethod
@@ -56,6 +70,20 @@ class ApproxPercentileFunctionDict(TypedDict, total=False):
     accuracy: VariableOrOptional[int]
     """
     The accuracy parameter (higher is more accurate but slower).
+    Deprecated: use relative_error. When relative_error is set, reads return ceil(1 /
+    relative_error) here for clients that don't have relative_error, and a request may only send
+    that value.
+    """
+
+    relative_error: VariableOrOptional[float]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The error the user accepts, as a fraction of rank, between 0.01 (by default) and 0.3. The
+    result is within this rank error with 99% confidence: at 0.01, the value returned for p95 is
+    between the true p94 and p96 at least 99% of the time. Feature Store picks the sketch size that
+    gives this error.
+    If neither relative_error nor accuracy is set, 0.01 is default chosen at feature creation.
     """
 
 

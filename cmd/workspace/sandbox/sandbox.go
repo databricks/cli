@@ -171,6 +171,7 @@ func newCreateSandbox() *cobra.Command {
 	cmd.Flags().Var(&createSandboxJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createSandboxReq.Sandbox.DisplayName, "display-name", createSandboxReq.Sandbox.DisplayName, `Human-readable display label for the sandbox.`)
+	// TODO: complex arg: metadata
 	cmd.Flags().StringVar(&createSandboxReq.Sandbox.Name, "name", createSandboxReq.Sandbox.Name, `The sandbox resource name, in the form sandboxes/{sandbox_id}.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
@@ -1064,6 +1065,7 @@ func newUpdateSandbox() *cobra.Command {
 	cmd.Flags().Var(&updateSandboxJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateSandboxReq.Sandbox.DisplayName, "display-name", updateSandboxReq.Sandbox.DisplayName, `Human-readable display label for the sandbox.`)
+	// TODO: complex arg: metadata
 	cmd.Flags().StringVar(&updateSandboxReq.Sandbox.Name, "name", updateSandboxReq.Sandbox.Name, `The sandbox resource name, in the form sandboxes/{sandbox_id}.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status

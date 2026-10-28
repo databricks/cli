@@ -76,26 +76,134 @@
                   }
                 ]
               },
+              "resources.AggregationFunction": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "description": "An aggregation function applied over a time window.",
+                    "properties": {
+                      "approx_count_distinct": {
+                        "description": "Computes the approximate count of distinct values.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ApproxCountDistinctFunction",
+                        "x-databricks-launch-stage": "GA"
+                      },
+                      "approx_percentile": {
+                        "description": "Computes the approximate percentile of values.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ApproxPercentileFunction",
+                        "x-databricks-launch-stage": "GA"
+                      },
+                      "avg": {
+                        "description": "Computes the average of values.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.AvgFunction",
+                        "x-databricks-launch-stage": "GA"
+                      },
+                      "count_function": {
+                        "description": "Computes the count of values.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.CountFunction",
+                        "x-databricks-launch-stage": "GA"
+                      },
+                      "first": {
+                        "description": "Returns the first value.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FirstFunction",
+                        "x-databricks-launch-stage": "GA"
+                      },
+                      "first_distinct": {
+                        "description": "[Private Preview] Returns the first N distinct values, ordered by the feature's timeseries column.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FirstDistinctFunction",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "first_n": {
+                        "description": "[Private Preview] Returns the first N values, ordered by the feature's timeseries column.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FirstNFunction",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "last": {
+                        "description": "Returns the last value.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.LastFunction",
+                        "x-databricks-launch-stage": "GA"
+                      },
+                      "last_distinct": {
+                        "description": "[Private Preview] Returns the last N distinct values, ordered by the feature's timeseries column.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.LastDistinctFunction",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "last_n": {
+                        "description": "[Private Preview] Returns the last N values, ordered by the feature's timeseries column.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.LastNFunction",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "max": {
+                        "description": "Computes the maximum value.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaxFunction",
+                        "x-databricks-launch-stage": "GA"
+                      },
+                      "min": {
+                        "description": "Computes the minimum value.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MinFunction",
+                        "x-databricks-launch-stage": "GA"
+                      },
+                      "stddev_pop": {
+                        "description": "Computes the population standard deviation.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.StddevPopFunction",
+                        "x-databricks-launch-stage": "GA"
+                      },
+                      "stddev_samp": {
+                        "description": "Computes the sample standard deviation.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.StddevSampFunction",
+                        "x-databricks-launch-stage": "GA"
+                      },
+                      "sum": {
+                        "description": "Computes the sum of values.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.SumFunction",
+                        "x-databricks-launch-stage": "GA"
+                      },
+                      "time_window": {
+                        "description": "The time window over which the aggregation is computed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.TimeWindow",
+                        "x-databricks-launch-stage": "GA"
+                      },
+                      "var_pop": {
+                        "description": "Computes the population variance.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.VarPopFunction",
+                        "x-databricks-launch-stage": "GA"
+                      },
+                      "var_samp": {
+                        "description": "Computes the sample variance.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.VarSampFunction",
+                        "x-databricks-launch-stage": "GA"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.Alert": {
                 "oneOf": [
                   {
                     "type": "object",
                     "properties": {
                       "custom_description": {
-                        "description": "Custom description for the alert. support mustache template.",
+                        "description": "Custom description for the alert. Interpreted according to `custom_template_format`.",
                         "$ref": "#/$defs/string",
                         "x-databricks-launch-stage": "GA"
                       },
                       "custom_summary": {
-                        "description": "Custom summary for the alert. support mustache template.",
+                        "description": "Custom summary for the alert. Interpreted according to `custom_template_format`.",
                         "$ref": "#/$defs/string",
                         "x-databricks-launch-stage": "GA"
                       },
                       "custom_template_format": {
-                        "description": "[Private Preview] The format used to interpret the `custom_summary` and `custom_description` templates.\n\n`HTML` treats both templates as HTML with Mustache `{{VARIABLE_NAME}}` placeholders.\n`MARKDOWN` treats them as Markdown with allowlisted `@VARIABLE_NAME` placeholders and converts\nthem to the format each notification destination expects, so a single template renders\ncorrectly in email, Slack, and Microsoft Teams.\n\nWhen unset, the API applies no default. Responses omit the field unless a format is stored,\nand a template with no format is rendered as HTML.",
+                        "description": "[Beta] The format used to interpret the `custom_summary` and `custom_description` templates.\n\n`HTML` treats both templates as HTML with Mustache `{{VARIABLE_NAME}}` placeholders.\n`MARKDOWN` treats them as Markdown with allowlisted `@VARIABLE_NAME` placeholders and converts\nthem to the format each notification destination expects, so a single template renders\ncorrectly in email, Slack, and Microsoft Teams.\n\nWhen unset, the API applies no default. Responses omit the field unless a format is stored,\nand a template with no format is rendered as HTML.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.CustomTemplateFormat",
-                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                        "doNotSuggest": true
+                        "x-databricks-launch-stage": "PUBLIC_BETA"
                       },
                       "display_name": {
                         "description": "The display name of the alert.",
@@ -243,10 +351,9 @@
                         "x-databricks-launch-stage": "GA"
                       },
                       "space": {
-                        "description": "[Private Preview] Name of the space this app belongs to.",
+                        "description": "[Beta] Name of the space this app belongs to.",
                         "$ref": "#/$defs/string",
-                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                        "doNotSuggest": true
+                        "x-databricks-launch-stage": "PUBLIC_BETA"
                       },
                       "telemetry_export_destinations": {
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/apps.TelemetryExportDestination",
@@ -345,6 +452,53 @@
                     "additionalProperties": false,
                     "required": [
                       "level"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.BatchOfflineAndOnlineMaterializedFeatures": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "budget_policy_id": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "cron_schedule": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "cron_schedule_trigger": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.CronSchedule"
+                      },
+                      "feature_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "notifications": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializationNotifications"
+                      },
+                      "offline_store_config": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.OfflineStoreConfig"
+                      },
+                      "online_store_config": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.OnlineStoreConfig"
+                      },
+                      "pipeline_schedule_state": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializedFeaturePipelineScheduleState"
+                      },
+                      "table_trigger": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.TableTrigger"
+                      },
+                      "tags": {
+                        "$ref": "#/$defs/map/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "feature_name"
                     ]
                   },
                   {
@@ -834,6 +988,59 @@
                   }
                 ]
               },
+              "resources.DataSource": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "description": "Specifies the data source backing a feature. Exactly one source type must be set.",
+                    "properties": {
+                      "delta_table_source": {
+                        "description": "A Delta table data source.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.DeltaTableSource",
+                        "x-databricks-launch-stage": "GA"
+                      },
+                      "feature_view_source": {
+                        "description": "[Private Preview] A data source composed from registered upstream Features.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FeatureViewSource",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "kafka_source": {
+                        "description": "A Kafka stream data source.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.KafkaSource",
+                        "x-databricks-launch-stage": "GA"
+                      },
+                      "lateness": {
+                        "description": "[Private Preview] Completeness timing for this Feature's use of the source. This configuration is part of the\nFeature definition; it does not modify the underlying table or stream.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SourceLateness",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "request_source": {
+                        "description": "A request-time data source.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.RequestSource",
+                        "x-databricks-launch-stage": "GA"
+                      },
+                      "sdp_source": {
+                        "description": "[Private Preview] A Spark Declarative Pipeline data source.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.SdpSource",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "stream_source": {
+                        "description": "A Stream data source.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.StreamSource",
+                        "x-databricks-launch-stage": "GA"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.DatabaseCatalog": {
                 "oneOf": [
                   {
@@ -1062,7 +1269,7 @@
                       },
                       "function": {
                         "description": "The function by which the feature is computed.",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.Function",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Function",
                         "x-databricks-launch-stage": "GA"
                       },
                       "inputs": {
@@ -1084,12 +1291,12 @@
                       },
                       "source": {
                         "description": "The data source of the feature.",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.DataSource",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DataSource",
                         "x-databricks-launch-stage": "GA"
                       },
                       "time_window": {
                         "description": "[Private Preview]",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.TimeWindow",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.TimeWindow",
                         "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                         "deprecationMessage": "This field is deprecated",
                         "doNotSuggest": true,
@@ -1103,10 +1310,56 @@
                     },
                     "additionalProperties": false,
                     "required": [
-                      "full_name",
                       "function",
-                      "source"
+                      "source",
+                      "full_name"
                     ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.Function": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "aggregation_function": {
+                        "description": "An aggregation function applied over a time window.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.AggregationFunction",
+                        "x-databricks-launch-stage": "GA"
+                      },
+                      "column_selection": {
+                        "description": "Selects the latest value of a single column in a data source",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ColumnSelection",
+                        "x-databricks-launch-stage": "GA"
+                      },
+                      "custom_udf": {
+                        "description": "[Private Preview] Applies a registered Unity Catalog function row-wise to source columns.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.CustomUdf",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "extra_parameters": {
+                        "description": "[Private Preview]",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.FunctionExtraParameter",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "deprecationMessage": "This field is deprecated",
+                        "doNotSuggest": true,
+                        "deprecated": true
+                      },
+                      "function_type": {
+                        "description": "[Private Preview]",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FunctionFunctionType",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "deprecationMessage": "This field is deprecated",
+                        "doNotSuggest": true,
+                        "deprecated": true
+                      }
+                    },
+                    "additionalProperties": false
                   },
                   {
                     "type": "string",
@@ -1682,6 +1935,42 @@
                       "started": {
                         "description": "Lifecycle setting to deploy the resource in started mode. Only supported for apps, clusters, and sql_warehouses.",
                         "$ref": "#/$defs/bool"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.MaterializationSet": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "description": "A group of materialized features created and managed as a single unit.",
+                    "properties": {
+                      "batch_offline_and_online_materialized_features": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.BatchOfflineAndOnlineMaterializedFeatures"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "materialization_set_id": {
+                        "description": "[Private Preview] Server-assigned unique identifier for the materialization set.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "materialized_features": {
+                        "description": "[Private Preview] The materialized features in this set. Order is not significant.\nUpdating the set with a materialized feature removed from this set will cause it to be deleted.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.MaterializedFeature",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "sawtooth_materialized_features": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.SawtoothMaterializedFeatures"
                       }
                     },
                     "additionalProperties": false
@@ -3024,6 +3313,108 @@
                   }
                 ]
               },
+              "resources.RollingWindow": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "description": "A rolling time window with an optional non-negative delay.",
+                    "properties": {
+                      "delay": {
+                        "description": "Non-negative analytic lag that evaluates the window this far in the past. Use this for timing\nvariations unrelated to source lateness, such as a 30-day count as of one week ago. If unset,\nthe analytic lag is zero. It composes with source.lateness when both are set.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "GA"
+                      },
+                      "window_duration": {
+                        "description": "The duration of the rolling window. Must be positive when set; absent means lifetime\n(aggregate over the entity's entire history).",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "GA"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.SawtoothMaterializedFeatures": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "budget_policy_id": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "cron_schedule": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "cron_schedule_trigger": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.CronSchedule"
+                      },
+                      "feature_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "notifications": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializationNotifications"
+                      },
+                      "offline_store_config": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.OfflineStoreConfig"
+                      },
+                      "online_store_config": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.OnlineStoreConfig"
+                      },
+                      "pipeline_schedule_state": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializedFeaturePipelineScheduleState"
+                      },
+                      "streaming_mode": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.StreamingMode"
+                      },
+                      "table_trigger": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.TableTrigger"
+                      },
+                      "tags": {
+                        "$ref": "#/$defs/map/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "feature_name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.SawtoothWindow": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "description": "A sawtooth window served via the hybrid batch + streaming path. The batch pipeline maintains\ndaily partial aggregates for the bulk of the window while the streaming pipeline maintains the\nmost recent day(s), and serving merges them on read. Same field shape as RollingWindow, but a\ndistinct type so the control plane can explicitly identify hybrid (sawtooth) features rather\nthan inferring hybrid behavior from window_duration.",
+                    "properties": {
+                      "delay": {
+                        "description": "[Private Preview] Delay is not currently supported for Sawtooth windows.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "window_duration": {
+                        "description": "[Private Preview] The duration of the window. Must be positive and span more than two days when set, so that both\nthe batch (N-1 day) and stale-path (N-2 day) partial aggregates are well defined. The duration\nneed not be a whole number of days (e.g. 3 days 15 minutes is allowed). Absent means lifetime\n(aggregate over the entity's entire history).",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.Schema": {
                 "oneOf": [
                   {
@@ -3232,6 +3623,66 @@
                   }
                 ]
               },
+              "resources.SlidingWindow": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "delay": {
+                        "description": "[Private Preview] Non-negative analytic lag that evaluates the window this far in the past. Use this for timing\nvariations unrelated to source lateness, such as a 30-day count as of one week ago. If unset,\nthe analytic lag is zero. It composes with source.lateness when both are set.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "offset": {
+                        "description": "[Private Preview] Non-negative phase shift from the default midnight UTC alignment. For example, offset=22h on\na 24h slide produces boundaries at 22:00 UTC (17:00 New York in standard time) instead of\nmidnight UTC. If unset, the offset is zero. Must be shorter than slide_duration (and therefore\nwindow_duration).",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "slide_duration": {
+                        "description": "The slide duration (interval by which windows advance, must be positive and less than duration).",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "GA"
+                      },
+                      "window_duration": {
+                        "description": "The duration of the sliding window. Must be positive when set; absent means lifetime\n(aggregate over the entity's entire history).",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "GA"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "slide_duration"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.SourceLateness": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "description": "Configures when event-time data from this source is considered complete for a Feature.",
+                    "properties": {
+                      "settling_delay": {
+                        "description": "[Private Preview] Non-negative time to wait after a window ends before treating its source data as complete.\nTraining shifts the eligible evaluation time backwards by this duration so it does not join\ndata that would still have been settling online. Materialization waits for the duration to\nelapse before publishing the window. If unset, source data is considered settled immediately.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.SqlWarehouse": {
                 "oneOf": [
                   {
@@ -3406,6 +3857,87 @@
                     "additionalProperties": false,
                     "required": [
                       "name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.TimeWindow": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "continuous": {
+                        "description": "[Private Preview]",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ContinuousWindow",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "deprecationMessage": "This field is deprecated",
+                        "doNotSuggest": true,
+                        "deprecated": true
+                      },
+                      "rolling": {
+                        "description": "A rolling time window with an optional non-negative delay.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.RollingWindow",
+                        "x-databricks-launch-stage": "GA"
+                      },
+                      "sawtooth": {
+                        "description": "[Private Preview] A sawtooth window served via the hybrid batch + streaming path.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SawtoothWindow",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "sliding": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SlidingWindow",
+                        "x-databricks-launch-stage": "GA"
+                      },
+                      "start_time": {
+                        "description": "[Private Preview] Earliest event-time boundary at which the Feature may emit an output. This gates outputs, not\nthe historical inputs read by a window. For example, a 365-day window with\nstart_time=2026-01-01 begins emitting partial-window values on that date instead of waiting\nfor 365 days of data; a lifetime window produces no output before start_time. If unset,\ntumbling and fixed-duration sliding windows first emit at an offset-aligned boundary after a\nfull window can be formed. If unset, lifetime sliding windows and rolling windows emit as soon as\neligible source data exists.\nNot currently supported for sawtooth windows or for Features with a stream source.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "tumbling": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.TumblingWindow",
+                        "x-databricks-launch-stage": "GA"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.TumblingWindow": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "delay": {
+                        "description": "[Private Preview] Non-negative analytic lag that evaluates the window this far in the past. Use this for timing\nvariations unrelated to source lateness, such as a 30-day count as of one week ago. If unset,\nthe analytic lag is zero. It composes with source.lateness when both are set.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "offset": {
+                        "description": "[Private Preview] Non-negative phase shift from the default midnight UTC alignment. For example, offset=22h on\na 24h window produces boundaries at 22:00 UTC (17:00 New York in standard time) instead of\nmidnight UTC. If unset, the offset is zero. Must be shorter than window_duration.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "window_duration": {
+                        "description": "The duration of each tumbling window (non-overlapping, fixed-duration windows).",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "GA"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "window_duration"
                     ]
                   },
                   {
@@ -4167,6 +4699,9 @@
                       "description": "The job definitions for the bundle, where each key is the name of the job.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Job",
                       "markdownDescription": "The job definitions for the bundle, where each key is the name of the job. See [jobs](https://docs.databricks.com/dev-tools/bundles/resources.html#jobs)."
+                    },
+                    "materialization_sets": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MaterializationSet"
                     },
                     "mcp_services": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.McpService"
@@ -7992,7 +8527,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "project_environment": {
-                      "description": "[Beta] File path of pyproject.toml file that defines the project-scoped environment.",
+                      "description": "[Beta] Path to the `pyproject.toml` file that defines the project environment.\nThis field cannot be combined with `environment_version`, `base_environment`, dependency fields,\nor any other environment-source fields. Set the environment version and dependencies in `pyproject.toml` instead.\nFor more information, see the serverless dependencies documentation.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
@@ -12471,115 +13006,6 @@
                 }
               ]
             },
-            "ml.AggregationFunction": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "description": "An aggregation function applied over a time window.",
-                  "properties": {
-                    "approx_count_distinct": {
-                      "description": "Computes the approximate count of distinct values.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ApproxCountDistinctFunction",
-                      "x-databricks-launch-stage": "GA"
-                    },
-                    "approx_percentile": {
-                      "description": "Computes the approximate percentile of values.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ApproxPercentileFunction",
-                      "x-databricks-launch-stage": "GA"
-                    },
-                    "avg": {
-                      "description": "Computes the average of values.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.AvgFunction",
-                      "x-databricks-launch-stage": "GA"
-                    },
-                    "count_function": {
-                      "description": "Computes the count of values.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.CountFunction",
-                      "x-databricks-launch-stage": "GA"
-                    },
-                    "first": {
-                      "description": "Returns the first value.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FirstFunction",
-                      "x-databricks-launch-stage": "GA"
-                    },
-                    "first_distinct": {
-                      "description": "[Private Preview] Returns the first N distinct values, ordered by the feature's timeseries column.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FirstDistinctFunction",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
-                    },
-                    "first_n": {
-                      "description": "[Private Preview] Returns the first N values, ordered by the feature's timeseries column.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FirstNFunction",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
-                    },
-                    "last": {
-                      "description": "Returns the last value.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.LastFunction",
-                      "x-databricks-launch-stage": "GA"
-                    },
-                    "last_distinct": {
-                      "description": "[Private Preview] Returns the last N distinct values, ordered by the feature's timeseries column.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.LastDistinctFunction",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
-                    },
-                    "last_n": {
-                      "description": "[Private Preview] Returns the last N values, ordered by the feature's timeseries column.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.LastNFunction",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
-                    },
-                    "max": {
-                      "description": "Computes the maximum value.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaxFunction",
-                      "x-databricks-launch-stage": "GA"
-                    },
-                    "min": {
-                      "description": "Computes the minimum value.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MinFunction",
-                      "x-databricks-launch-stage": "GA"
-                    },
-                    "stddev_pop": {
-                      "description": "Computes the population standard deviation.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.StddevPopFunction",
-                      "x-databricks-launch-stage": "GA"
-                    },
-                    "stddev_samp": {
-                      "description": "Computes the sample standard deviation.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.StddevSampFunction",
-                      "x-databricks-launch-stage": "GA"
-                    },
-                    "sum": {
-                      "description": "Computes the sum of values.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.SumFunction",
-                      "x-databricks-launch-stage": "GA"
-                    },
-                    "time_window": {
-                      "description": "The time window over which the aggregation is computed.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.TimeWindow",
-                      "x-databricks-launch-stage": "GA"
-                    },
-                    "var_pop": {
-                      "description": "Computes the population variance.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.VarPopFunction",
-                      "x-databricks-launch-stage": "GA"
-                    },
-                    "var_samp": {
-                      "description": "Computes the sample variance.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.VarSampFunction",
-                      "x-databricks-launch-stage": "GA"
-                    }
-                  },
-                  "additionalProperties": false
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
-                }
-              ]
-            },
             "ml.ApproxCountDistinctFunction": {
               "oneOf": [
                 {
@@ -12591,8 +13017,14 @@
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },
+                    "relative_error": {
+                      "description": "[Private Preview] The error the user accepts, as a fraction of the count, between 0.02 (by default) and 0.3.\nThis is one standard error of the estimate, the same meaning as Spark's relativeSD: 0.02 means\nthe result is within ±2% of the true count about 68% of the time (one standard deviation covers\n68% of the region). Feature Store picks the sketch size that gives this relative error. If\nneither relative_error nor relative_sd is set, 0.02 is default chosen at feature creation.",
+                      "$ref": "#/$defs/float64",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
                     "relative_sd": {
-                      "description": "The maximum relative standard deviation allowed (default defined by Spark).",
+                      "description": "The maximum relative standard deviation allowed (default defined by Spark).\nDeprecated: use relative_error. When relative_error is set, reads return the same value here\nfor clients that don't have relative_error, and a request may only send that value.",
                       "$ref": "#/$defs/float64",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -12615,7 +13047,7 @@
                   "description": "Computes the approximate percentile of values.",
                   "properties": {
                     "accuracy": {
-                      "description": "The accuracy parameter (higher is more accurate but slower).",
+                      "description": "The accuracy parameter (higher is more accurate but slower).\nDeprecated: use relative_error. When relative_error is set, reads return ceil(1 /\nrelative_error) here for clients that don't have relative_error, and a request may only send\nthat value.",
                       "$ref": "#/$defs/int64",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -12628,6 +13060,12 @@
                       "description": "The percentile value to compute (between 0 and 1).",
                       "$ref": "#/$defs/float64",
                       "x-databricks-launch-stage": "GA"
+                    },
+                    "relative_error": {
+                      "description": "[Private Preview] The error the user accepts, as a fraction of rank, between 0.01 (by default) and 0.3. The\nresult is within this rank error with 99% confidence: at 0.01, the value returned for p95 is\nbetween the true p94 and p96 at least 99% of the time. Feature Store picks the sketch size that\ngives this error.\nIf neither relative_error nor accuracy is set, 0.01 is default chosen at feature creation.",
+                      "$ref": "#/$defs/float64",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false,
@@ -12763,6 +13201,58 @@
                 }
               ]
             },
+            "ml.CronSchedule": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A cron-based schedule trigger for the materialization pipeline.",
+                  "properties": {
+                    "cron_expression": {
+                      "description": "The cron expression defining the schedule (e.g., \"0 0 * * *\" for daily at midnight). The\nschedule is interpreted in timezone_id (defaults to UTC). Required when mode is MANUAL (or\nunset). Left empty when mode is DERIVED, where the service computes it (aligned to UTC) from\nthe features' window timing and fills it in on the response.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "mode": {
+                      "description": "[Private Preview] How the schedule is determined. Defaults to MANUAL when unset.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.CronScheduleMode",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "timezone_id": {
+                      "description": "[Private Preview] A Java timezone ID. The schedule is resolved with respect to this timezone. Defaults to UTC\nwhen omitted. Can only be configured for MANUAL schedules; DERIVED schedules are always aligned\nto UTC.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.CronScheduleMode": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The way a materialization schedule is arrived at.",
+                  "enum": [
+                    "MANUAL",
+                    "DERIVED"
+                  ],
+                  "enumDescriptions": [
+                    "[Private Preview]",
+                    "[Private Preview]"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "ml.CustomUdf": {
               "oneOf": [
                 {
@@ -12786,59 +13276,6 @@
                   "required": [
                     "function_path"
                   ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
-                }
-              ]
-            },
-            "ml.DataSource": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "description": "Specifies the data source backing a feature. Exactly one source type must be set.",
-                  "properties": {
-                    "delta_table_source": {
-                      "description": "A Delta table data source.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.DeltaTableSource",
-                      "x-databricks-launch-stage": "GA"
-                    },
-                    "feature_view_source": {
-                      "description": "[Private Preview] A data source composed from registered upstream Features.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FeatureViewSource",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
-                    },
-                    "kafka_source": {
-                      "description": "A Kafka stream data source.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.KafkaSource",
-                      "x-databricks-launch-stage": "GA"
-                    },
-                    "lateness": {
-                      "description": "[Private Preview] Completeness timing for this Feature's use of the source. This configuration is part of the\nFeature definition; it does not modify the underlying table or stream.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.SourceLateness",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
-                    },
-                    "request_source": {
-                      "description": "A request-time data source.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.RequestSource",
-                      "x-databricks-launch-stage": "GA"
-                    },
-                    "sdp_source": {
-                      "description": "[Private Preview] A Spark Declarative Pipeline data source.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.SdpSource",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
-                    },
-                    "stream_source": {
-                      "description": "A Stream data source.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.StreamSource",
-                      "x-databricks-launch-stage": "GA"
-                    }
-                  },
-                  "additionalProperties": false
                 },
                 {
                   "type": "string",
@@ -13166,52 +13603,6 @@
                 }
               ]
             },
-            "ml.Function": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "aggregation_function": {
-                      "description": "An aggregation function applied over a time window.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.AggregationFunction",
-                      "x-databricks-launch-stage": "GA"
-                    },
-                    "column_selection": {
-                      "description": "Selects the latest value of a single column in a data source",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ColumnSelection",
-                      "x-databricks-launch-stage": "GA"
-                    },
-                    "custom_udf": {
-                      "description": "[Private Preview] Applies a registered Unity Catalog function row-wise to source columns.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.CustomUdf",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
-                    },
-                    "extra_parameters": {
-                      "description": "[Private Preview]",
-                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.FunctionExtraParameter",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "deprecationMessage": "This field is deprecated",
-                      "doNotSuggest": true,
-                      "deprecated": true
-                    },
-                    "function_type": {
-                      "description": "[Private Preview]",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FunctionFunctionType",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "deprecationMessage": "This field is deprecated",
-                      "doNotSuggest": true,
-                      "deprecated": true
-                    }
-                  },
-                  "additionalProperties": false
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
-                }
-              ]
-            },
             "ml.FunctionExtraParameter": {
               "oneOf": [
                 {
@@ -13497,6 +13888,199 @@
                 }
               ]
             },
+            "ml.MaterializationFailureNotification": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Recipients to notify when a materialization run fails.",
+                  "properties": {
+                    "destination_ids": {
+                      "description": "[Private Preview] IDs of the notification destinations (for example Slack, Microsoft Teams, PagerDuty, or a\ngeneric webhook) to notify. Not supported for streaming materialized features.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "email_addresses": {
+                      "description": "[Private Preview] Email addresses to notify.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "final_attempt_only": {
+                      "description": "[Private Preview] If true, notify only when the final attempt of a run fails. If false or unset, notify on\nevery failed attempt, including attempts that will be retried.\n\nBatch materialization does not retry failures that need a fix on your side, such as missing\npermissions or invalid configuration, so the first attempt is the final one. Other batch\nfailures are retried up to twice.\n\nStreaming materialization restarts a failed update indefinitely unless the error cannot be\nretried. With this set, a streaming materialized feature notifies only on errors that cannot\nbe retried, and never on failures that are restarted.",
+                      "$ref": "#/$defs/bool",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.MaterializationNotifications": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Notifications for the jobs and pipelines that materialize a feature, one field per trigger.",
+                  "properties": {
+                    "on_failure": {
+                      "description": "[Private Preview] Who to notify when a run fails, and on which attempts.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializationFailureNotification",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "on_success": {
+                      "description": "[Private Preview] Who to notify when a run succeeds.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializationSuccessNotification",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.MaterializationSuccessNotification": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Recipients to notify when a materialization run succeeds.",
+                  "properties": {
+                    "destination_ids": {
+                      "description": "[Private Preview] IDs of the notification destinations (for example Slack, Microsoft Teams, PagerDuty, or a\ngeneric webhook) to notify. Not supported for streaming materialized features.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "email_addresses": {
+                      "description": "[Private Preview] Email addresses to notify.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.MaterializedFeature": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A materialized feature represents a feature that is continuously computed and stored.",
+                  "properties": {
+                    "budget_policy_id": {
+                      "description": "[Private Preview] The ID of the budget policy used to attribute the serverless compute cost of this\nmaterialization. If not specified, a default budget policy may be applied.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "cron_schedule": {
+                      "description": "[Private Preview]",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true,
+                      "deprecated": true
+                    },
+                    "cron_schedule_trigger": {
+                      "description": "A cron-based schedule trigger for the materialization pipeline.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.CronSchedule",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "feature_name": {
+                      "description": "The full name of the feature in Unity Catalog.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "materialized_feature_id": {
+                      "description": "Server-assigned unique identifier for the materialized feature.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "notifications": {
+                      "description": "[Private Preview] Notification configuration around the materialization job or pipeline lifecycle. They are\napplied to every job and pipeline that materializes this feature. Features which are\nmaterialized in the same pipeline will share the same notification.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializationNotifications",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "offline_store_config": {
+                      "description": "Destination for writing feature values to an offline Delta table. The resulting table is\nreturned as `table_name`.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.OfflineStoreConfig",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "online_store_config": {
+                      "description": "Destination for writing feature values to an online Lakebase table. The resulting table is\nreturned as `table_name`.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.OnlineStoreConfig",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "pipeline_schedule_state": {
+                      "description": "[Private Preview] The schedule state of the materialization pipeline.\nHidden from GraphQL: being deprecated, so not exposed to Catalog Explorer.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializedFeaturePipelineScheduleState",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "streaming_mode": {
+                      "description": "The Structured Streaming trigger mode used for materialization. Real-time mode (RTM) targets\nsub-second latency for operational workloads; micro-batch mode (MBM) favors cost efficiency\nfor ETL and analytics workloads.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.StreamingMode",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "table_trigger": {
+                      "description": "A trigger that fires when the upstream source table changes.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.TableTrigger",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "tags": {
+                      "description": "[Private Preview] Custom tags to associate with this materialization. They are applied to the materialization\njob (for batch features) or pipeline (for streaming features) and forwarded to the underlying\ncompute as cluster tags, so materialization cost can be attributed in the billing system\ntables. These tags apply only to the materialization compute; they are not applied to the\nUnity Catalog Feature resource itself, whose tags are managed separately through the Unity\nCatalog tagging API. A maximum of 25 tags is supported; keys and values are subject to the\nsame limitations as cluster tags.",
+                      "$ref": "#/$defs/map/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "feature_name"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.MaterializedFeaturePipelineScheduleState": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "SNAPSHOT",
+                    "ACTIVE",
+                    "PAUSED"
+                  ],
+                  "enumDescriptions": [
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "ml.MaxFunction": {
               "oneOf": [
                 {
@@ -13568,6 +14152,82 @@
                 }
               ]
             },
+            "ml.OfflineStoreConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Configuration for offline store destination.",
+                  "properties": {
+                    "catalog_name": {
+                      "description": "The Unity Catalog catalog name.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "schema_name": {
+                      "description": "The Unity Catalog schema name.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "table_name_prefix": {
+                      "description": "Prefix for Unity Catalog table name.\nThe materialized feature will be stored in a table with this prefix and a generated postfix.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "catalog_name",
+                    "schema_name",
+                    "table_name_prefix"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.OnlineStoreConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Configuration for online store destination.",
+                  "properties": {
+                    "catalog_name": {
+                      "description": "The Unity Catalog catalog name. This name is also used as the Lakebase logical database name.\nQuoting is handled by the backend where needed, do not pre-quote it.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "online_store_name": {
+                      "description": "The name of the target online store.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "schema_name": {
+                      "description": "The Unity Catalog schema name. This name is also used as the Lakebase schema name under the database.\nQuoting is handled by the backend where needed, do not pre-quote it.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "table_name_prefix": {
+                      "description": "Prefix for Unity Catalog table name.\nThe materialized feature will be stored in a Lakebase table with this prefix and a generated postfix.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "catalog_name",
+                    "online_store_name",
+                    "schema_name",
+                    "table_name_prefix"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "ml.RegisteredModelPermissionLevel": {
               "oneOf": [
                 {
@@ -13603,58 +14263,6 @@
                       "description": "A flat schema with scalar-typed fields only.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FlatSchema",
                       "x-databricks-launch-stage": "GA"
-                    }
-                  },
-                  "additionalProperties": false
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
-                }
-              ]
-            },
-            "ml.RollingWindow": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "description": "A rolling time window with an optional non-negative delay.",
-                  "properties": {
-                    "delay": {
-                      "description": "Non-negative analytic lag that evaluates the window this far in the past. Use this for timing\nvariations unrelated to source lateness, such as a 30-day count as of one week ago. If unset,\nthe analytic lag is zero. It composes with source.lateness when both are set.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
-                      "x-databricks-launch-stage": "GA"
-                    },
-                    "window_duration": {
-                      "description": "The duration of the rolling window. Must be positive when set; absent means lifetime\n(aggregate over the entity's entire history).",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
-                      "x-databricks-launch-stage": "GA"
-                    }
-                  },
-                  "additionalProperties": false
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
-                }
-              ]
-            },
-            "ml.SawtoothWindow": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "description": "A sawtooth window served via the hybrid batch + streaming path. The batch pipeline maintains\ndaily partial aggregates for the bulk of the window while the streaming pipeline maintains the\nmost recent day(s), and serving merges them on read. Same field shape as RollingWindow, but a\ndistinct type so the control plane can explicitly identify hybrid (sawtooth) features rather\nthan inferring hybrid behavior from window_duration.",
-                  "properties": {
-                    "delay": {
-                      "description": "[Private Preview] Delay is not currently supported for Sawtooth windows.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
-                    },
-                    "window_duration": {
-                      "description": "[Private Preview] The duration of the window. Must be positive and span more than two days when set, so that both\nthe batch (N-1 day) and stale-path (N-2 day) partial aggregates are well defined. The duration\nneed not be a whole number of days (e.g. 3 days 15 minutes is allowed). Absent means lifetime\n(aggregate over the entity's entire history).",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false
@@ -13709,7 +14317,7 @@
                       "doNotSuggest": true
                     },
                     "input_tables": {
-                      "description": "[Private Preview] The full three-part names of the tables the pipeline reads from. Required to materialize this\nfeature with a TableTrigger, which starts a run when these tables update. Each table must exist\nwhen the feature is created. After the pipeline runs, Feature Store checks that it reads from\nthese tables, and the run fails if it doesn't. At most 100 tables.",
+                      "description": "[Private Preview] The full three-part names of the tables the pipeline reads from. Required to materialize this\nfeature with a TableTrigger, which starts a run when these tables update. Each table must exist\nwhen the feature is created. Feature Store doesn't confirm that the pipeline reads from these\ntables. At most 100 tables.",
                       "$ref": "#/$defs/slice/string",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
@@ -13756,66 +14364,6 @@
                     "[Private Preview]",
                     "[Private Preview]"
                   ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
-                }
-              ]
-            },
-            "ml.SlidingWindow": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "delay": {
-                      "description": "[Private Preview] Non-negative analytic lag that evaluates the window this far in the past. Use this for timing\nvariations unrelated to source lateness, such as a 30-day count as of one week ago. If unset,\nthe analytic lag is zero. It composes with source.lateness when both are set.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
-                    },
-                    "offset": {
-                      "description": "[Private Preview] Non-negative phase shift from the default midnight UTC alignment. For example, offset=22h on\na 24h slide produces boundaries at 22:00 UTC (17:00 New York in standard time) instead of\nmidnight UTC. If unset, the offset is zero. Must be shorter than slide_duration (and therefore\nwindow_duration).",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
-                    },
-                    "slide_duration": {
-                      "description": "The slide duration (interval by which windows advance, must be positive and less than duration).",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "GA"
-                    },
-                    "window_duration": {
-                      "description": "The duration of the sliding window. Must be positive when set; absent means lifetime\n(aggregate over the entity's entire history).",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "GA"
-                    }
-                  },
-                  "additionalProperties": false,
-                  "required": [
-                    "slide_duration"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
-                }
-              ]
-            },
-            "ml.SourceLateness": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "description": "Configures when event-time data from this source is considered complete for a Feature.",
-                  "properties": {
-                    "settling_delay": {
-                      "description": "[Private Preview] Non-negative time to wait after a window ends before treating its source data as complete.\nTraining shifts the eligible evaluation time backwards by this duration so it does not join\ndata that would still have been settling online. Materialization waits for the duration to\nelapse before publishing the window. If unset, source data is considered settled immediately.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
-                    }
-                  },
-                  "additionalProperties": false
                 },
                 {
                   "type": "string",
@@ -13909,6 +14457,53 @@
                 }
               ]
             },
+            "ml.StreamingMode": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "The streaming mode configuration for a streaming materialization pipeline.",
+                  "properties": {
+                    "freshness_target": {
+                      "description": "[Private Preview] The desired data freshness for feature materialization, expressed as a\nduration string (e.g. \"1 minute\").",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "mode": {
+                      "description": "The type of streaming mode used by the materialization pipeline.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.StreamingModeStreamingModeType",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "shuffle_partitions": {
+                      "description": "[Private Preview] Number of shuffle partitions for streaming materialization of this feature.\nHigher values process high-throughput features with more parallelism at higher compute cost.\nMaterialized features which are computed together will use the largest value set among them.",
+                      "$ref": "#/$defs/int",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.StreamingModeStreamingModeType": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "STREAMING_MODE_TYPE_RTM",
+                    "STREAMING_MODE_TYPE_MBM"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "ml.SumFunction": {
               "oneOf": [
                 {
@@ -13932,46 +14527,52 @@
                 }
               ]
             },
-            "ml.TimeWindow": {
+            "ml.TableTrigger": {
               "oneOf": [
                 {
                   "type": "object",
+                  "description": "A trigger that fires when the feature's source table changes: a DeltaTableSource's table, or an\nSdpSource's input_tables.",
                   "properties": {
-                    "continuous": {
-                      "description": "[Private Preview]",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ContinuousWindow",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "deprecationMessage": "This field is deprecated",
-                      "doNotSuggest": true,
-                      "deprecated": true
-                    },
-                    "rolling": {
-                      "description": "A rolling time window with an optional non-negative delay.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.RollingWindow",
-                      "x-databricks-launch-stage": "GA"
-                    },
-                    "sawtooth": {
-                      "description": "[Private Preview] A sawtooth window served via the hybrid batch + streaming path.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.SawtoothWindow",
+                    "condition": {
+                      "description": "[Private Preview] Which source table updates trigger a materialization run. If not set, any source table update\ntriggers a run.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.TableTriggerTableTriggerCondition",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
                     },
-                    "sliding": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.SlidingWindow",
-                      "x-databricks-launch-stage": "GA"
-                    },
-                    "start_time": {
-                      "description": "[Private Preview] Earliest event-time boundary at which the Feature may emit an output. This gates outputs, not\nthe historical inputs read by a window. For example, a 365-day window with\nstart_time=2026-01-01 begins emitting partial-window values on that date instead of waiting\nfor 365 days of data; a lifetime window produces no output before start_time. If unset,\ntumbling and fixed-duration sliding windows first emit at an offset-aligned boundary after a\nfull window can be formed. If unset, lifetime sliding windows and rolling windows emit as soon as\neligible source data exists.\nNot currently supported for sawtooth windows or for Features with a stream source.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time",
+                    "min_time_between_triggers": {
+                      "description": "[Private Preview] The minimum time between two triggered runs, so a frequently updated source table does not\ntrigger runs too often. If not set, a feature with a sliding window uses half its\nslide_duration and a feature with a tumbling window uses half its window_duration, clamped to\nbetween 5 minutes and 1 hour. Other features have no minimum.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
                     },
-                    "tumbling": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.TumblingWindow",
-                      "x-databricks-launch-stage": "GA"
+                    "wait_after_last_change": {
+                      "description": "[Private Preview] How long the source table must go without updates before a run starts, so a series of\nupdates settles before the run. If not set, a run starts as soon as the source table updates.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.TableTriggerTableTriggerCondition": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Which source table updates trigger a materialization run.",
+                  "enum": [
+                    "TABLE_TRIGGER_CONDITION_ANY_UPDATED",
+                    "TABLE_TRIGGER_CONDITION_ALL_UPDATED"
+                  ],
+                  "enumDescriptions": [
+                    "[Private Preview]",
+                    "[Private Preview]"
+                  ]
                 },
                 {
                   "type": "string",
@@ -13993,40 +14594,6 @@
                   "additionalProperties": false,
                   "required": [
                     "name"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
-                }
-              ]
-            },
-            "ml.TumblingWindow": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "delay": {
-                      "description": "[Private Preview] Non-negative analytic lag that evaluates the window this far in the past. Use this for timing\nvariations unrelated to source lateness, such as a 30-day count as of one week ago. If unset,\nthe analytic lag is zero. It composes with source.lateness when both are set.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
-                    },
-                    "offset": {
-                      "description": "[Private Preview] Non-negative phase shift from the default midnight UTC alignment. For example, offset=22h on\na 24h window produces boundaries at 22:00 UTC (17:00 New York in standard time) instead of\nmidnight UTC. If unset, the offset is zero. Must be shorter than window_duration.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
-                    },
-                    "window_duration": {
-                      "description": "The duration of each tumbling window (non-overlapping, fixed-duration windows).",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "GA"
-                    }
-                  },
-                  "additionalProperties": false,
-                  "required": [
-                    "window_duration"
                   ]
                 },
                 {
@@ -14336,6 +14903,12 @@
                       "description": "[Beta] Meta Marketing (Meta Ads) specific options for ingestion",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.MetaMarketingOptions",
                       "x-databricks-launch-stage": "PUBLIC_BETA"
+                    },
+                    "onedrive_options": {
+                      "description": "[Private Preview]",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.OneDriveOptions",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
                     },
                     "outlook_options": {
                       "description": "[Private Preview] Outlook specific options for ingestion",
@@ -15200,6 +15773,7 @@
                     "ZENDESK",
                     "SMARTSHEET",
                     "RABBITMQ",
+                    "ONEDRIVE",
                     "FOREIGN_CATALOG"
                   ],
                   "enumDescriptions": [
@@ -15225,6 +15799,7 @@
                     "[Public Preview]",
                     "[Public Preview]",
                     "[Beta]",
+                    "[Private Preview]",
                     "[Private Preview]"
                   ]
                 },
@@ -15680,6 +16255,58 @@
                     }
                   },
                   "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.OneDriveOptions": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "entity_type": {
+                      "description": "[Private Preview] (Optional) The type of OneDrive entity to ingest.\nIf not specified, defaults to FILE.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.OneDriveOptionsOneDriveEntityType",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "file_ingestion_options": {
+                      "description": "[Private Preview] (Optional) File ingestion options for processing files.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.FileIngestionOptions",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "url": {
+                      "description": "[Private Preview] Required. The OneDrive URL.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.OneDriveOptionsOneDriveEntityType": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The type of OneDrive entity to ingest.",
+                  "enum": [
+                    "FILE",
+                    "FILE_METADATA"
+                  ],
+                  "enumDescriptions": [
+                    "[Private Preview]",
+                    "[Private Preview]"
+                  ]
                 },
                 {
                   "type": "string",
@@ -17098,9 +17725,9 @@
                   "description": "Take a snapshot once per day, at the configured hour.",
                   "properties": {
                     "hour": {
-                      "description": "[Beta] The hour of the day, in UTC, at which to take the snapshot, in [0, 23].",
+                      "description": "The hour of the day, in UTC, at which to take the snapshot, in [0, 23].",
                       "$ref": "#/$defs/int",
-                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false
@@ -17124,15 +17751,6 @@
                     "FRIDAY",
                     "SATURDAY",
                     "SUNDAY"
-                  ],
-                  "enumDescriptions": [
-                    "[Beta]",
-                    "[Beta]",
-                    "[Beta]",
-                    "[Beta]",
-                    "[Beta]",
-                    "[Beta]",
-                    "[Beta]"
                   ]
                 },
                 {
@@ -17217,14 +17835,14 @@
                   "description": "Take a snapshot once per month, on the configured day at the configured hour.",
                   "properties": {
                     "day": {
-                      "description": "[Beta] The day of the month on which to take the snapshot, in [1, 31]. In shorter\nmonths the snapshot is taken on the last day instead (day 31 runs on Feb 28\nor 29, and on Apr 30), so every month gets exactly one snapshot.",
+                      "description": "The day of the month on which to take the snapshot, in [1, 31]. In shorter\nmonths the snapshot is taken on the last day instead (day 31 runs on Feb 28\nor 29, and on Apr 30), so every month gets exactly one snapshot.",
                       "$ref": "#/$defs/int",
-                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "hour": {
-                      "description": "[Beta] The hour of the day, in UTC, at which to take the snapshot, in [0, 23].",
+                      "description": "The hour of the day, in UTC, at which to take the snapshot, in [0, 23].",
                       "$ref": "#/$defs/int",
-                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -17443,24 +18061,24 @@
                   "description": "One cadence at which automatic snapshots are taken.",
                   "properties": {
                     "daily_schedule": {
-                      "description": "[Beta] Take a snapshot once per day.",
+                      "description": "Take a snapshot once per day.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.DailySchedule",
-                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "monthly_schedule": {
-                      "description": "[Beta] Take a snapshot once per month.",
+                      "description": "Take a snapshot once per month.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.MonthlySchedule",
-                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "retention": {
-                      "description": "[Beta] How long snapshots from this cadence are kept before automatic deletion.\nMust be at least 1 hour. Applied when a snapshot is taken; not retroactive,\nso changing it affects only later snapshots.",
+                      "description": "How long snapshots from this cadence are kept before automatic deletion.\nMust be at least 1 hour. Applied when a snapshot is taken; not retroactive,\nso changing it affects only later snapshots.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
-                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "weekly_schedule": {
-                      "description": "[Beta] Take a snapshot once per week.",
+                      "description": "Take a snapshot once per week.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.WeeklySchedule",
-                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -17610,14 +18228,14 @@
                   "description": "Take a snapshot once per week, on the configured day at the configured hour.",
                   "properties": {
                     "day_of_week": {
-                      "description": "[Beta] The day of the week on which to take the snapshot.",
+                      "description": "The day of the week on which to take the snapshot.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.DayOfWeek",
-                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "hour": {
-                      "description": "[Beta] The hour of the day, in UTC, at which to take the snapshot, in [0, 23].",
+                      "description": "The hour of the day, in UTC, at which to take the snapshot, in [0, 23].",
                       "$ref": "#/$defs/int",
-                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -19477,8 +20095,8 @@
                     "MARKDOWN"
                   ],
                   "enumDescriptions": [
-                    "[Private Preview]",
-                    "[Private Preview]"
+                    "[Beta]",
+                    "[Beta]"
                   ]
                 },
                 {
@@ -20110,6 +20728,20 @@
                     }
                   ]
                 },
+                "resources.MaterializationSet": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.MaterializationSet"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.McpService": {
                   "oneOf": [
                     {
@@ -20598,6 +21230,20 @@
                     }
                   ]
                 },
+                "resources.BatchOfflineAndOnlineMaterializedFeatures": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.BatchOfflineAndOnlineMaterializedFeatures"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.ClusterPermission": {
                   "oneOf": [
                     {
@@ -20730,6 +21376,20 @@
                       "type": "array",
                       "items": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PipelinePermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.SawtoothMaterializedFeatures": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SawtoothMaterializedFeatures"
                       }
                     },
                     {
@@ -21337,6 +21997,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.InputBinding"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "ml.MaterializedFeature": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializedFeature"
                     }
                   },
                   {

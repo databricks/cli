@@ -165,6 +165,11 @@ __all__ = [
     "Notifications",
     "NotificationsDict",
     "NotificationsParam",
+    "OneDriveOptions",
+    "OneDriveOptionsDict",
+    "OneDriveOptionsOneDriveEntityType",
+    "OneDriveOptionsOneDriveEntityTypeParam",
+    "OneDriveOptionsParam",
     "OperationTimeWindow",
     "OperationTimeWindowDict",
     "OperationTimeWindowParam",
@@ -565,6 +570,15 @@ from databricks.bundles.pipelines._models.notifications import (
     Notifications,
     NotificationsDict,
     NotificationsParam,
+)
+from databricks.bundles.pipelines._models.one_drive_options import (
+    OneDriveOptions,
+    OneDriveOptionsDict,
+    OneDriveOptionsParam,
+)
+from databricks.bundles.pipelines._models.one_drive_options_one_drive_entity_type import (
+    OneDriveOptionsOneDriveEntityType,
+    OneDriveOptionsOneDriveEntityTypeParam,
 )
 from databricks.bundles.pipelines._models.operation_time_window import (
     OperationTimeWindow,
