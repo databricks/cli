@@ -165,6 +165,8 @@ experimental:
     "immutable_folder":
       "description": |-
         Whether to deploy bundle files and artifacts as a single immutable snapshot. When true, all files are packaged into a content-addressed archive and workspace.file_path and workspace.artifact_path are set to the resulting location.
+      "deprecation_message": |-
+        Deprecated: please set workspace.sync_mode to immutable instead
     "pydabs":
       "description": |-
         The PyDABs configuration.
@@ -627,6 +629,9 @@ resources:
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
           "$fields":
+            "depends_on":
+              "description": |-
+                Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.
             "prevent_destroy":
               "description": |-
                 Lifecycle setting to prevent the resource from being destroyed.
@@ -1082,6 +1087,9 @@ resources:
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed and when the run re-fires.
           "$fields":
+            "depends_on":
+              "description": |-
+                Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.
             "prevent_destroy":
               "description": |-
                 Lifecycle setting to prevent the resource from being destroyed.
@@ -1162,6 +1170,13 @@ resources:
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
           "$fields":
+            "depends_on":
+              "description": |-
+                Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.
+              "$fields":
+                "resource":
+                  "description": |-
+                    Key of the resource to depend on, as `foo` or `jobs.foo`.
             "prevent_destroy":
               "description": |-
                 Lifecycle setting to prevent the resource from being destroyed.
@@ -2331,6 +2346,8 @@ targets:
         "source_linked_deployment":
           "description": |-
             Whether to link the deployment to the bundle source.
+          "deprecation_message": |-
+            Deprecated: please set workspace.sync_mode to in-place instead
         "tags":
           "description": |-
             The tags for the bundle deployment.
@@ -2497,6 +2514,24 @@ workspace:
     "state_path":
       "description": |-
         The workspace state path
+    "sync_mode":
+      "description": |-
+        How bundle files are made available to deployed resources. Valid values are `overwrite`, `in-place`, and `immutable`. Defaults to `in-place` for development deployments from the Databricks Workspace and to `overwrite` otherwise.
+      "$type":
+        "enum":
+          - |-
+            overwrite
+          - |-
+            in-place
+          - |-
+            immutable
+        "x-databricks-enum-descriptions":
+          "immutable": |-
+            Upload bundle files and artifacts as a single immutable snapshot and set workspace.file_path and workspace.artifact_path to its location.
+          "in-place": |-
+            Do not upload bundle files. Deployed resources reference the source files in the workspace directly. Available only when deploying from the Databricks Workspace.
+          "overwrite": |-
+            Upload bundle files to workspace.file_path, replacing the files of the previous deployment.
     "workspace_id":
       "description": |-
         The Databricks workspace ID

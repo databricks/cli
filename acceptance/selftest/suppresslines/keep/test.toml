@@ -1,0 +1,3 @@
+# An empty pattern disables the inherited one, so these lines are compared again.
+SuppressLines.noise = ""
+SuppressLines.warn_retry = ""

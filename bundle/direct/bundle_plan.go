@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
@@ -1285,6 +1286,16 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			}
 		}
 
+		lifecycleDeps, err := LifecycleDependsOn(configRoot, inputConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", prefix, err)
+		}
+		for _, dep := range lifecycleDeps {
+			if !slices.Contains(dependsOn, dep) {
+				dependsOn = append(dependsOn, dep)
+			}
+		}
+
 		slices.SortFunc(dependsOn, func(a, b deployplan.DependsOnEntry) int {
 			if a.Node != b.Node {
 				return strings.Compare(a.Node, b.Node)
@@ -1328,6 +1339,14 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		}
 
 		p.Plan[node] = &e
+	}
+
+	// lifecycle.depends_on only orders resources: a target that is not in the plan
+	// (e.g. skipped as empty) needs no ordering.
+	for _, entry := range p.Plan {
+		entry.DependsOn = slices.DeleteFunc(entry.DependsOn, func(dep deployplan.DependsOnEntry) bool {
+			return dep.Label == lifecycleDependsOnLabel && p.Plan[dep.Node] == nil
+		})
 	}
 
 	for n, entry := range existingKeys {
@@ -1428,4 +1447,29 @@ func (b *DeploymentBundle) getAdapterForKey(resourceKey string) (*dresources.Ada
 	}
 
 	return adapter, nil
+}
+
+const lifecycleDependsOnLabel = "depends_on"
+
+// LifecycleDependsOn returns the edges declared in lifecycle.depends_on of a resource,
+// given its config as returned by [config.Root.GetResourceConfig].
+func LifecycleDependsOn(configRoot *config.Root, inputConfig any) ([]deployplan.DependsOnEntry, error) {
+	// Not every node has a lifecycle, e.g. permissions and grants.
+	resource, ok := inputConfig.(interface {
+		GetLifecycle() resources.LifecycleConfig
+	})
+	if !ok {
+		return nil, nil
+	}
+
+	var result []deployplan.DependsOnEntry
+	for _, dep := range resource.GetLifecycle().GetDependsOn() {
+		res, key, err := configRoot.Resources.ResolveKey(dep.Resource)
+		if err != nil {
+			return nil, fmt.Errorf("lifecycle.depends_on: %w", err)
+		}
+		target := "resources." + res.ResourceDescription().PluralName + "." + key
+		result = append(result, deployplan.DependsOnEntry{Node: target, Label: lifecycleDependsOnLabel})
+	}
+	return result, nil
 }

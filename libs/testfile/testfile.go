@@ -59,6 +59,16 @@ func (f *TestFile) Overwrite(t *testing.T, s string) {
 
 func (f *TestFile) Remove(t *testing.T) {
 	f.Close(t)
-	err := os.Remove(f.path)
-	assert.NoError(t, err)
+	// On Windows, a file that was just written can be briefly held open by another
+	// process (e.g. antivirus or the search indexer), so remove fails with a sharing
+	// violation. Retry for a bounded time before failing.
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		err := os.Remove(f.path)
+		if err == nil || time.Now().After(deadline) {
+			assert.NoError(t, err)
+			return
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
 }

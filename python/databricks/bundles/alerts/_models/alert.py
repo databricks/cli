@@ -23,7 +23,10 @@ from databricks.bundles.alerts._models.custom_template_format import (
     CustomTemplateFormat,
     CustomTemplateFormatParam,
 )
-from databricks.bundles.alerts._models.lifecycle import Lifecycle, LifecycleParam
+from databricks.bundles.alerts._models.lifecycle import (
+    Lifecycle,
+    LifecycleParam,
+)
 from databricks.bundles.alerts._models.permission import Permission, PermissionParam
 from databricks.bundles.core._resource import Resource
 from databricks.bundles.core._transform import _transform

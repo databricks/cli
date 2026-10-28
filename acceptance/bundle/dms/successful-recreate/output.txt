@@ -67,7 +67,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "lineage": "[UUID]",
   "serial": 1,
   "features": {
-    "deployment_history": {}
+    "deployment_history_shadow": {}
   }
 }
 
@@ -92,9 +92,18 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
  "lineage": "[UUID]",
  "serial": 1,
  "features": {
-  "deployment_history": {}
+  "deployment_history_shadow": {}
  },
- "state": {}
+ "state": {
+  "resources.schemas.foo": {
+   "__id__": "main.dms_successful_recreate_schema_[UNIQUE_NAME]",
+   "state": {
+    "catalog_name": "main",
+    "comment": "v1",
+    "name": "dms_successful_recreate_schema_[UNIQUE_NAME]"
+   }
+  }
+ }
 }
 
 === Recreate writes state twice - the entry is dropped, then the new resource is saved
@@ -170,7 +179,7 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
   "lineage": "[UUID]",
   "serial": 2,
   "features": {
-    "deployment_history": {}
+    "deployment_history_shadow": {}
   }
 }
 
@@ -195,9 +204,18 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
  "lineage": "[UUID]",
  "serial": 2,
  "features": {
-  "deployment_history": {}
+  "deployment_history_shadow": {}
  },
- "state": {}
+ "state": {
+  "resources.schemas.foo": {
+   "__id__": "dms_other_[UNIQUE_NAME].dms_successful_recreate_schema_[UNIQUE_NAME]",
+   "state": {
+    "catalog_name": "dms_other_[UNIQUE_NAME]",
+    "comment": "v1",
+    "name": "dms_successful_recreate_schema_[UNIQUE_NAME]"
+   }
+  }
+ }
 }
 
 === Destroy: the delete is recorded with the id and no state
