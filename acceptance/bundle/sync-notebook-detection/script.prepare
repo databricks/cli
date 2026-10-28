@@ -1,0 +1,29 @@
+# Since v1.21 the CLI decides itself whether a source file is a notebook (libs/notebook):
+# the first line must be exactly the header for the file's language. Up to v1.20 it
+# uploaded through the legacy import-file endpoint, which instead imports a file as a
+# notebook if its first line contains "Databricks notebook source" (and always imports
+# .Rmd as an R notebook). The tests below capture where the two disagree.
+
+remote_files() {
+  $CLI bundle summary -o json | jq -r .workspace.file_path
+}
+
+# Lists the objects synced to the bundle's file path.
+remote_objects() {
+  $CLI workspace list -o json "$(remote_files)" | jq -r 'sort_by(.path)[] | "\(.object_type) \(.language // "-") \(.path | sub(".*/"; ""))"'
+}
+
+# Prints the /workspace/import format the CLI used for each synced file.
+upload_formats() {
+  jq -rs '
+    map(select(.path == "/api/2.0/workspace/import") | .body.multipart_form) |
+    sort_by(.path) | .[] | "\(.format) \(.path | sub(".*/"; ""))"
+  ' "$OUT_REQUESTS"
+}
+
+# Uploads bom.sql the way v1.20 and earlier did, through the legacy import-file endpoint.
+# `api post` only sends JSON bodies; a JSON string whose first line contains the marker
+# takes the same notebook path as the file itself.
+legacy_import_bom() {
+  $CLI api post "/api/2.0/workspace-files/import-file$(remote_files)/bom.sql?overwrite=true" --json '"-- Databricks notebook source"'
+}

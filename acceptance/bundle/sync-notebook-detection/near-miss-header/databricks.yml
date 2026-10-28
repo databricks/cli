@@ -1,0 +1,11 @@
+bundle:
+  name: sync-notebook-detection-near-miss-header
+
+# Only sync the committed inputs, not the test harness files.
+sync:
+  exclude:
+    - script
+    - test.toml
+    - output.txt
+    - out.*
+    - repls.json

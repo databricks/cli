@@ -1,0 +1,13 @@
+
+>>> legacy_import_bom
+null
+
+>>> remote_objects
+NOTEBOOK SQL bom
+
+>>> musterr [CLI] bundle sync --output text
+Action: PUT: bom.sql
+Error: file already exists: /Workspace/Users/[USERNAME]/.bundle/sync-notebook-detection-upgrade-over-legacy-notebook/default/files/bom.sql
+
+>>> remote_objects
+NOTEBOOK SQL bom

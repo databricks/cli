@@ -16,6 +16,10 @@ extend-exclude = [
     # traversal and shields output/ from the acceptance/**/output prune above.
     "acceptance/bundle/templates/default-sql",
     "**/testdata",
+    # Byte-exact notebook headers (leading blank line, tab, invalid Python) that
+    # formatting would rewrite.
+    "acceptance/bundle/sync-notebook-detection",
+    "acceptance/cmd/workspace/import-notebook-detection",
 ]
 
 [lint]

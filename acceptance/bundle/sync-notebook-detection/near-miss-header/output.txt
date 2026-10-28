@@ -1,0 +1,48 @@
+
+>>> [CLI] bundle sync --output text
+Action: PUT: bom.scala, bom.sql, databricks.yml, double_hash.py, exact.sql, hash_comment.sql, leading_tab.py, no_comment.py, no_space.sql, second_line.py, suffix.sql, trailing_space.sql
+Initial Sync Complete
+Uploaded bom.scala
+Uploaded bom.sql
+Uploaded databricks.yml
+Uploaded double_hash.py
+Uploaded exact.sql
+Uploaded hash_comment.sql
+Uploaded leading_tab.py
+Uploaded no_comment.py
+Uploaded no_space.sql
+Uploaded second_line.py
+Uploaded suffix.sql
+Uploaded trailing_space.sql
+
+=== Format per upload: SOURCE only for the exact header
+
+>>> upload_formats
+RAW bom.scala
+RAW bom.sql
+RAW databricks.yml
+RAW double_hash.py
+SOURCE exact
+RAW hash_comment.sql
+RAW leading_tab.py
+RAW no_comment.py
+RAW no_space.sql
+RAW second_line.py
+RAW suffix.sql
+RAW trailing_space.sql
+
+=== Synced objects
+
+>>> remote_objects
+FILE - bom.scala
+FILE - bom.sql
+FILE - databricks.yml
+FILE - double_hash.py
+NOTEBOOK SQL exact
+FILE - hash_comment.sql
+FILE - leading_tab.py
+FILE - no_comment.py
+FILE - no_space.sql
+FILE - second_line.py
+FILE - suffix.sql
+FILE - trailing_space.sql

@@ -1,0 +1,2 @@
+Badness = "Source files whose first line contains \"Databricks notebook source\" but is not the exact header are uploaded with format=RAW and stored as files. v1.20 and earlier imported them as notebooks, so deploying the same bundle with both fails (#7216)."
+RecordRequests = true
