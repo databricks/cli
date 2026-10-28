@@ -185,8 +185,8 @@ func (db *DeploymentState) InitializeOperationBuffer(ctx context.Context, deploy
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	options := dms.BufferOptions{
-		BestEffort:     db.mode == WritingDeploymentHistoryShadow,
-		OperationCount: operationCount,
+		BestEffort:           db.mode == WritingDeploymentHistoryShadow,
+		StagedOperationCount: operationCount,
 	}
 	db.operationBuffer = dms.StartOperationBuffer(ctx, deploymentID, versionID, options)
 	db.DeploymentID = deploymentID
