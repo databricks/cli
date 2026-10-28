@@ -63,9 +63,8 @@ type OperationBuffer struct {
 	mu sync.Mutex
 
 	// pending holds the newest update per resource key, absent once the writer takes it.
-	pending  map[string]OperationUpdate
-	inFlight string
-	stats    OperationBufferStats
+	pending map[string]OperationUpdate
+	stats   OperationBufferStats
 
 	// latestState is the newest state-bearing update per resource key, kept for the buffer's
 	// whole life - unlike pending, which the writer removes on take. RecordFailure merges its
@@ -162,9 +161,6 @@ func (b *OperationBuffer) take(resourceKey string) (OperationUpdate, bool) {
 
 	update, ok := b.pending[resourceKey]
 	delete(b.pending, resourceKey)
-	if ok {
-		b.inFlight = resourceKey
-	}
 	return update, ok
 }
 
@@ -200,9 +196,6 @@ func (b *OperationBuffer) run(ctx context.Context) {
 		if err := b.write(ctx, resourceKey, update); err != nil {
 			b.setErr(fmt.Errorf("recording operation for %s: %w", resourceKey, err))
 		}
-		b.mu.Lock()
-		b.inFlight = ""
-		b.mu.Unlock()
 	}
 }
 
@@ -252,12 +245,8 @@ func (b *OperationBuffer) Drain(ctx context.Context) error {
 
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	undrained := len(b.pending)
-	if _, queued := b.pending[b.inFlight]; b.inFlight != "" && !queued {
-		undrained++
-	}
 	// No writes can be queued after Drain starts, so retain the first drain's count.
-	b.stats.UndrainedOperationCount = max(b.stats.UndrainedOperationCount, undrained)
+	b.stats.UndrainedOperationCount = max(b.stats.UndrainedOperationCount, len(b.queue))
 	if b.err == nil {
 		b.err = drainErr
 	}

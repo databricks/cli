@@ -53,7 +53,7 @@ type BundleDeploymentHistory struct {
 	OperationCount int64 `json:"operation_count"`
 	// Peak number of queued resource keys, excluding the in-flight upload.
 	MaxQueueSize int64 `json:"max_queue_size"`
-	// Distinct resource operations still queued or in flight when Drain ends.
+	// Resource operations still queued when Drain ends, excluding the active upload.
 	UndrainedOperationCount int64 `json:"undrained_operation_count"`
 }
 
