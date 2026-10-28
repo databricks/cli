@@ -10,10 +10,12 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/cmdio"
@@ -216,6 +218,7 @@ func TestIsDeviceCodeSupportedForHost(t *testing.T) {
 // startDeviceCodeLogin runs "auth login --use-device-code" with args in a
 // terminal emulator, using config as the contents of .databrickscfg.
 func startDeviceCodeLogin(t *testing.T, config string, args ...string) *termtest.Term[struct{}] {
+	testutil.CleanupEnvironment(t)
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
@@ -224,7 +227,9 @@ func startDeviceCodeLogin(t *testing.T, config string, args ...string) *termtest
 	t.Setenv(deviceCodeEnvVar, "true")
 
 	return termtest.Run(t, func(ctx context.Context) (struct{}, error) {
-		cmd := newLoginCommand(&auth.AuthArguments{})
+		authArguments := &auth.AuthArguments{}
+		cmd := newLoginCommand(authArguments)
+		cmd.Flags().StringVar(&authArguments.Host, "host", "", "")
 		cmd.Flags().String("profile", "", "")
 		cmd.SetContext(ctx)
 		cmd.SetArgs(append([]string{"--use-device-code"}, args...))
@@ -313,7 +318,6 @@ resources = https://workspace.test/ai-gateway/mcp-services/system.ai.github
 // newDeviceCodeServer returns a fake workspace with device code login.
 func newDeviceCodeServer(t *testing.T) *testserver.Server {
 	server := testserver.New(t)
-	t.Cleanup(server.Close)
 	testserver.AddDefaultHandlers(server)
 	return server
 }
@@ -333,9 +337,12 @@ func TestLoginDeviceCodeReadsConfirmationCode(t *testing.T) {
 	_, err := tm.Result()
 	require.NoError(t, err)
 
-	cfg, err := os.ReadFile(os.Getenv("DATABRICKS_CONFIG_FILE"))
+	p, err := loadProfileByName(t.Context(), "test", profile.DefaultProfiler)
 	require.NoError(t, err)
-	assert.Regexp(t, `auth_type\s+= databricks-cli`, string(cfg))
+	require.NotNil(t, p)
+	assert.Equal(t, server.URL, p.Host)
+	assert.Equal(t, strconv.Itoa(testserver.TestWorkspaceID), p.WorkspaceID)
+	assert.Equal(t, authTypeDatabricksCLI, p.AuthType)
 
 	raw, err := os.ReadFile(filepath.Join(os.Getenv("HOME"), ".databricks", "token-cache.json"))
 	require.NoError(t, err)
@@ -376,10 +383,17 @@ func TestLoginDeviceCodeRequestsScopes(t *testing.T) {
 			scope = form.Get("scope")
 		}
 	}
-	tm := startDeviceCodeLogin(t, "[test]\nhost = "+server.URL+"\n", "--profile", "test", "--scopes", "sql")
+	tm := startDeviceCodeLogin(t, "", "--host", server.URL, "--profile", "test", "--scopes", "sql")
 	tm.WaitFor("Confirmation code")
 	tm.Type("FTFA-QQKY\n")
 	_, err := tm.Result()
 	require.NoError(t, err)
 	assert.Equal(t, "offline_access sql", scope)
+
+	p, err := loadProfileByName(t.Context(), "test", profile.DefaultProfiler)
+	require.NoError(t, err)
+	require.NotNil(t, p)
+	assert.Equal(t, server.URL, p.Host)
+	assert.Equal(t, strconv.Itoa(testserver.TestWorkspaceID), p.WorkspaceID)
+	assert.Equal(t, "sql", p.Scopes)
 }
