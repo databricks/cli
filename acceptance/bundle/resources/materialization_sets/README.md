@@ -93,9 +93,14 @@ does run, because the fake only requires the key to carry a prefix at all.
 
 ### Running a cloud leg
 
-Seven cases carry `Cloud = true`: `batch`, `sawtooth`, `streaming`, `immutable`, `membership`,
-`removal_scope` and `shorthand`. `basic`, `bind`, `destination` and `schedule_state` stay local, because every
-server-dependent claim they make is already exercised by `batch`.
+Three cases carry `Cloud = true`: `immutable`, `membership` and `removal_scope`.
+
+`batch`, `sawtooth`, `streaming` and `shorthand` are local only, because each needs a Stream source
+and a Stream is neither a bundle resource nor a CLI command -- so the integration suite has no way
+to provision one, and it would also need a Unity Catalog connection to a Kafka topic whose payload
+the feature definitions name. Run those four against a workspace by hand, with the overrides below.
+`basic`, `bind`, `destination` and `schedule_state` stay local because every server-dependent claim
+they make is already exercised by `batch`.
 
 The cases default to the shared acceptance schema; override `MATSET_CATALOG`, `MATSET_SCHEMA`,
 `MATSET_ONLINE_STORE` to move them. These reach the script because the harness forwards ambient

@@ -1,7 +1,9 @@
-# Mirrors sawtooth/test.toml: pinned to a workspace holding a Stream, since a Stream is not a
-# bundle resource. Override MATSET_CATALOG / MATSET_SCHEMA / MATSET_ONLINE_STORE / MATSET_STREAM
-# to point it elsewhere.
-Cloud = true
+# Local only. These cases need a Stream source, and a Stream is neither a bundle resource nor a CLI
+# command, so the integration suite has no way to provision one; it also needs a Unity Catalog
+# connection to a Kafka topic whose payload the feature definitions name. Run them against a
+# workspace by hand, overriding MATSET_CATALOG / MATSET_SCHEMA / MATSET_ONLINE_STORE /
+# MATSET_STREAM -- see README.md.
+Cloud = false
 
 Ignore = [
     ".databricks",
