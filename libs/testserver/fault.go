@@ -3,6 +3,7 @@ package testserver
 import (
 	"bytes"
 	"encoding/json"
+	"regexp"
 	"strings"
 	"sync"
 )
@@ -20,6 +21,7 @@ type FaultRule struct {
 	AfterHandler bool
 	offset       int
 	times        int
+	pattern      *regexp.Regexp
 
 	// bodyContains, if non-empty, additionally requires the request body to
 	// contain this substring for the rule to fire. /workspace/import routes
@@ -58,12 +60,14 @@ func (fr *FaultRules) set(token, pattern string, statusCode int, body string, of
 		AfterHandler: afterHandler,
 		offset:       offset,
 		times:        times,
+		pattern:      regexp.MustCompile("^" + strings.NewReplacer(`\*\*`, ".*", `\*`, "[^/]*").Replace(regexp.QuoteMeta(pattern)) + "$"),
 		bodyContains: bodyContains,
 	}
 }
 
 // Check returns a matching fault rule and advances its counters, or nil if no rule matches.
-// Pattern supports a trailing "*" wildcard, e.g. "PUT /api/2.0/permissions/pipelines/*".
+// Pattern supports "*" within a path segment and "**" across path segments.
+// Both wildcards match zero or more characters.
 // A rule with a non-empty bodyContains only matches when body contains that substring.
 func (fr *FaultRules) Check(method, path, token string, body []byte) *FaultRule {
 	requestPattern := method + " " + path
@@ -75,14 +79,7 @@ func (fr *FaultRules) Check(method, path, token string, body []byte) *FaultRule 
 		if key.token != token {
 			continue
 		}
-		rulePattern := key.pattern
-		var matched bool
-		if strings.HasSuffix(rulePattern, "*") {
-			matched = strings.HasPrefix(requestPattern, rulePattern[:len(rulePattern)-1])
-		} else {
-			matched = requestPattern == rulePattern
-		}
-		if !matched {
+		if !rule.pattern.MatchString(requestPattern) {
 			continue
 		}
 		// A non-matching body must not consume the rule's offset/times budget,
