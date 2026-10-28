@@ -188,6 +188,12 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Updates (dynamic): resources.genie_spaces.*.serialized_space
 		ConfigureGenieSpaceSerializedSpace(),
 
+		// Reads (typed): resources.genie_spaces.*.{skip_missing_data_sources,serialized_space}
+		// Updates (typed): resources.genie_spaces.*.serialized_space
+		// When skip_missing_data_sources is set, drops Unity Catalog objects the
+		// workspace reports as missing. Runs after serialized_space is a JSON string.
+		SkipMissingGenieDataSources(),
+
 		// Reads (dynamic): resources.cluster_policies.*.definition
 		// Updates (dynamic): resources.cluster_policies.*.definition (inline YAML -> JSON string)
 		ConfigureClusterPolicyDefinition(),

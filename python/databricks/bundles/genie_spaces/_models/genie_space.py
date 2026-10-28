@@ -56,6 +56,11 @@ class GenieSpace(Resource):
     Serialized Genie space body. May be provided inline as a JSON string (or YAML that will be marshalled to JSON) or referenced via `file_path`. To round-trip an existing space into a bundle, use `databricks bundle generate genie-space`.
     """
 
+    skip_missing_data_sources: VariableOrOptional[bool] = None
+    """
+    When true, deploy removes attached tables, metric views, and SQL functions that Unity Catalog reports as missing, and warns once for each skipped name. Join specs that reference a skipped table or metric view are removed as well. A later deploy attaches them once they exist. Any other lookup error, including permission denied, fails the deploy. Defaults to false.
+    """
+
     title: VariableOrOptional[str] = None
     """
     Title of the Genie space shown in the Databricks UI.
@@ -107,6 +112,11 @@ class GenieSpaceDict(TypedDict, total=False):
     serialized_space: VariableOrOptional[Any]
     """
     Serialized Genie space body. May be provided inline as a JSON string (or YAML that will be marshalled to JSON) or referenced via `file_path`. To round-trip an existing space into a bundle, use `databricks bundle generate genie-space`.
+    """
+
+    skip_missing_data_sources: VariableOrOptional[bool]
+    """
+    When true, deploy removes attached tables, metric views, and SQL functions that Unity Catalog reports as missing, and warns once for each skipped name. Join specs that reference a skipped table or metric view are removed as well. A later deploy attaches them once they exist. Any other lookup error, including permission denied, fails the deploy. Defaults to false.
     """
 
     title: VariableOrOptional[str]
