@@ -3,8 +3,12 @@ package auth
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
+	"net/url"
+	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
@@ -17,6 +21,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -303,4 +308,78 @@ resources = https://workspace.test/ai-gateway/mcp-services/system.ai.github
 	tm.Type(termtest.KeyCtrlC)
 	_, err := tm.Result()
 	assert.EqualError(t, err, "^C")
+}
+
+// newDeviceCodeServer returns a fake workspace with device code login.
+func newDeviceCodeServer(t *testing.T) *testserver.Server {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+	testserver.AddDefaultHandlers(server)
+	return server
+}
+
+// A wrong or blank confirmation code leaves the device code valid, so the user
+// can enter it again. The code is accepted the way the browser displays it, in
+// any case.
+func TestLoginDeviceCodeReadsConfirmationCode(t *testing.T) {
+	server := newDeviceCodeServer(t)
+	tm := startDeviceCodeLogin(t, "[test]\nhost = "+server.URL+"\n", "--profile", "test")
+	tm.WaitFor("Confirmation code")
+	tm.Type("AAAA-AAAA\n")
+	tm.WaitFor("Enter the confirmation code again (2 attempts left)")
+	tm.Type("\n")
+	tm.WaitFor("Enter the confirmation code again (1 attempt left)")
+	tm.Type("ftfa-qqky\n")
+	_, err := tm.Result()
+	require.NoError(t, err)
+
+	cfg, err := os.ReadFile(os.Getenv("DATABRICKS_CONFIG_FILE"))
+	require.NoError(t, err)
+	assert.Regexp(t, `auth_type\s+= databricks-cli`, string(cfg))
+
+	raw, err := os.ReadFile(filepath.Join(os.Getenv("HOME"), ".databricks", "token-cache.json"))
+	require.NoError(t, err)
+	var cache struct {
+		Tokens map[string]json.RawMessage `json:"tokens"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &cache))
+	assert.Contains(t, cache.Tokens, "test")
+}
+
+func TestLoginDeviceCodeFailsAfterWrongConfirmationCodes(t *testing.T) {
+	server := newDeviceCodeServer(t)
+	tm := startDeviceCodeLogin(t, "[test]\nhost = "+server.URL+"\n", "--profile", "test")
+	tm.WaitFor("Confirmation code")
+	tm.Type("AAAA-AAAA\nBBBB-BBBB\nCCCC-CCCC\n")
+	_, err := tm.Result()
+	assert.EqualError(t, err, "Invalid confirmation code (error code: invalid_request). Start login from scratch")
+}
+
+func TestLoginDeviceCodeFailsWithoutConfirmationCode(t *testing.T) {
+	server := newDeviceCodeServer(t)
+	tm := startDeviceCodeLogin(t, "[test]\nhost = "+server.URL+"\n", "--profile", "test")
+	tm.WaitFor("Confirmation code")
+	tm.Close()
+	_, err := tm.Result()
+	assert.EqualError(t, err, "reading confirmation code: EOF")
+}
+
+// The token gets the scopes requested at device authorization, so --scopes is
+// sent there and not with the token request.
+func TestLoginDeviceCodeRequestsScopes(t *testing.T) {
+	server := newDeviceCodeServer(t)
+	var scope string
+	server.RequestCallback = func(r *testserver.Request) {
+		if r.URL.Path == "/oidc/v1/device/auth" {
+			form, err := url.ParseQuery(string(r.Body))
+			assert.NoError(t, err)
+			scope = form.Get("scope")
+		}
+	}
+	tm := startDeviceCodeLogin(t, "[test]\nhost = "+server.URL+"\n", "--profile", "test", "--scopes", "sql")
+	tm.WaitFor("Confirmation code")
+	tm.Type("FTFA-QQKY\n")
+	_, err := tm.Result()
+	require.NoError(t, err)
+	assert.Equal(t, "offline_access sql", scope)
 }
