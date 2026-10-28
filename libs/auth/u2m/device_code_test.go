@@ -440,16 +440,17 @@ func TestExchangeDeviceCode(t *testing.T) {
 
 func TestExchangeDeviceCode_Errors(t *testing.T) {
 	tests := []struct {
-		name         string
-		server       *fakeDeviceServer
-		wantErr      string
-		wantSentinel error
+		name                        string
+		server                      *fakeDeviceServer
+		wantErr                     string
+		wantInvalidConfirmationCode bool
+		wantInvalidDeviceCode       bool
 	}{
 		{
-			name:         "wrong confirmation code",
-			server:       &fakeDeviceServer{},
-			wantErr:      "token exchange: Invalid confirmation code (error code: invalid_request)",
-			wantSentinel: ErrInvalidConfirmationCode,
+			name:                        "wrong confirmation code",
+			server:                      &fakeDeviceServer{},
+			wantErr:                     "token exchange: Invalid confirmation code (error code: invalid_request)",
+			wantInvalidConfirmationCode: true,
 		},
 		{
 			name: "unknown device code",
@@ -457,8 +458,8 @@ func TestExchangeDeviceCode_Errors(t *testing.T) {
 				tokenStatus: http.StatusBadRequest,
 				tokenBody:   `{"error": "invalid_request", "error_description": "Invalid device code"}`,
 			},
-			wantErr:      "token exchange: Invalid device code (error code: invalid_request)",
-			wantSentinel: ErrInvalidDeviceCode,
+			wantErr:               "token exchange: Invalid device code (error code: invalid_request)",
+			wantInvalidDeviceCode: true,
 		},
 		{
 			name: "token request rate limited",
@@ -474,9 +475,8 @@ func TestExchangeDeviceCode_Errors(t *testing.T) {
 			p := newDeviceCodeAuth(t, tc.server, true)
 			_, err := p.ExchangeDeviceCode(t.Context(), testDeviceCode, "AAAAAAAA")
 			assert.EqualError(t, err, tc.wantErr)
-			for _, sentinel := range []error{ErrInvalidConfirmationCode, ErrInvalidDeviceCode} {
-				assert.Equal(t, errors.Is(sentinel, tc.wantSentinel), errors.Is(err, sentinel), sentinel)
-			}
+			assert.Equal(t, tc.wantInvalidConfirmationCode, errors.Is(err, ErrInvalidConfirmationCode))
+			assert.Equal(t, tc.wantInvalidDeviceCode, errors.Is(err, ErrInvalidDeviceCode))
 			_, ok := errors.AsType[*httpclient.HttpError](err)
 			assert.True(t, ok, "want *httpclient.HttpError in %v", err)
 			assert.Equal(t, int32(1), tc.server.tokenRequests.Load())
