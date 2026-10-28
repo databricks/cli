@@ -7,6 +7,9 @@
 #
 # Expected output is CONVERGED for every round; anything else prints the timeline.
 
+# Keep Git Bash on Windows from rewriting /Workspace/... into a C:/Program Files/Git/... path.
+export MSYS_NO_PATHCONV=1
+
 me=$($CLI current-user me -o json | jq -r .userName)
 parent_path="/Workspace/Users/$me/genie-clear-description-$UNIQUE_NAME"
 $CLI workspace mkdirs "$parent_path"
