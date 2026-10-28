@@ -3,7 +3,6 @@ package notebook
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -67,12 +66,8 @@ func DetectJupyterWithFS(fsys fs.FS, name string) (notebook bool, language works
 
 	defer f.Close()
 
-	return detectJupyter(name, f)
-}
-
-func detectJupyter(name string, r io.Reader) (notebook bool, language workspace.Language, err error) {
 	var nb jupyter
-	dec := json.NewDecoder(r)
+	dec := json.NewDecoder(f)
 	err = dec.Decode(&nb)
 	if err != nil {
 		return false, "", fmt.Errorf("%s: error loading Jupyter notebook file: %w", name, err)

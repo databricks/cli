@@ -57,7 +57,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "path": "/api/2.0/workspace/import",
   "body": {
     "multipart_form": {
-      "format": "RAW",
+      "format": "AUTO",
       "overwrite": "true",
       "path": "/Workspace/Users/[USERNAME]/.bundle/outside_of_bundle_root/default/artifacts/.internal/test.whl"
     }

@@ -4,7 +4,7 @@
   "body": {
     "multipart_form": {
       "content": "",
-      "format": "RAW",
+      "format": "AUTO",
       "overwrite": "true",
       "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/conf/dir/test.yml"
     }

@@ -9,14 +9,11 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
-	"net/url"
 	"path"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
-	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
@@ -111,39 +108,6 @@ type apiClient interface {
 		visitors ...func(*http.Request) error) error
 }
 
-// Extensions that format=AUTO imports as the same asset type the legacy import-file
-// endpoint created: dashboards, alerts and Lakeflow Designer files.
-var autoImportAssetExtensions = []string{".lvdash.json", ".dbalert.json", ".designer.py", ".designer.ipynb"}
-
-// importRequest returns the workspace path and /workspace/import options for a file,
-// matching how the legacy import-file endpoint stored it. Other files avoid format=AUTO
-// because it types them by name and rejects names reserved for other assets
-// (e.g. .geniespace.json, .lwquery.ipynb).
-func importRequest(absPath string, content []byte) (string, []workspace.UploadOption) {
-	lower := strings.ToLower(absPath)
-	for _, ext := range autoImportAssetExtensions {
-		if strings.HasSuffix(lower, ext) {
-			return absPath, []workspace.UploadOption{workspace.UploadFormat(workspace.ImportFormatAuto)}
-		}
-	}
-
-	isNotebook, language, _ := notebook.DetectBytes(absPath, content)
-	if !isNotebook {
-		return absPath, []workspace.UploadOption{workspace.UploadFormat(workspace.ImportFormatRaw)}
-	}
-
-	// Notebooks are imported without their extension and with an explicit format.
-	ext := path.Ext(absPath)
-	notebookPath := strings.TrimSuffix(absPath, ext)
-	if strings.EqualFold(ext, notebook.ExtensionJupyter) {
-		return notebookPath, []workspace.UploadOption{workspace.UploadFormat(workspace.ImportFormatJupyter)}
-	}
-	return notebookPath, []workspace.UploadOption{
-		workspace.UploadFormat(workspace.ImportFormatSource),
-		workspace.UploadLanguage(language),
-	}
-}
-
 // WorkspaceFilesClient implements the files-in-workspace API.
 
 // NOTE: This API is available for files under /Repos if a workspace has files-in-repos enabled.
@@ -194,26 +158,15 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return err
 	}
 
-	overwrite := slices.Contains(mode, OverwriteIfExists)
-	if strings.HasSuffix(absPath, ".zip") {
-		// The legacy import-file endpoint extracts a .zip into its parent directory and
-		// overwrites existing entries. /workspace/import imports it as a new folder that
-		// cannot be overwritten, so zips stay on import-file until it supports that.
-		urlPath := fmt.Sprintf(
-			"/api/2.0/workspace-files/import-file/%s?overwrite=%t",
-			url.PathEscape(strings.TrimLeft(absPath, "/")),
-			overwrite,
-		)
-		err = w.apiClient.Do(ctx, http.MethodPost, urlPath, w.workspaceIDHeaders(), nil, body, nil)
-	} else {
-		// Upload with the SDK's multipart Workspace.Upload. The JSON-body workspace.Import
-		// caps content at 10 MB, the multipart form at the 500 MB workspace file limit.
-		uploadPath, opts := importRequest(absPath, body)
-		if overwrite {
-			opts = append(opts, workspace.UploadOverwrite())
-		}
-		err = w.workspaceClient.Workspace.Upload(ctx, uploadPath, bytes.NewReader(body), opts...)
+	// Upload with the SDK's multipart Workspace.Upload; format=AUTO lets the server
+	// classify each payload as file or notebook. The JSON-body workspace.Import caps
+	// content at 10 MB, the multipart form at the 500 MB workspace file limit.
+	opts := []workspace.UploadOption{workspace.UploadFormat(workspace.ImportFormatAuto)}
+	if slices.Contains(mode, OverwriteIfExists) {
+		opts = append(opts, workspace.UploadOverwrite())
 	}
+
+	err = w.workspaceClient.Workspace.Upload(ctx, absPath, bytes.NewReader(body), opts...)
 
 	// Return early on success.
 	if err == nil {
