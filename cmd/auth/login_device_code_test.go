@@ -472,6 +472,31 @@ func TestLoginDeviceCodeCompletesInTerminal(t *testing.T) {
 	assert.Empty(t, profiles)
 }
 
+// A user code that does not match the pending login fails before the token
+// exchange, so the confirmation code is not sent with the device code of
+// another login.
+func TestLoginDeviceCodeCompletionChecksUserCode(t *testing.T) {
+	server := newDeviceCodeServer(t)
+	var tokenRequests atomic.Int32
+	server.RequestCallback = func(req *testserver.Request) {
+		if req.URL.Path == "/oidc/v1/token" {
+			tokenRequests.Add(1)
+		}
+	}
+	setUpDeviceCodeLogin(t, "")
+	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{}, "", ""))
+	require.NoError(t, runDeviceCodeLogin(ctx, "--host", server.URL, "--profile", "test"))
+
+	err := runDeviceCodeLogin(ctx, "--host", server.URL, "--profile", "test", "--user-code", "AAAA-AAAA", "--confirmation-code", "FTFA-QQKY")
+	assert.EqualError(t, err, "a newer login for profile test replaced this one. Complete the newer login with its user code. "+startNewLoginHint)
+	assert.Zero(t, tokenRequests.Load())
+
+	// The pending login is kept, and the user code is compared the way the
+	// user enters it.
+	require.NoError(t, runDeviceCodeLogin(ctx, "--host", server.URL, "--profile", "test", "--user-code", "wdjbmjht", "--confirmation-code", "FTFA-QQKY"))
+	assert.Equal(t, int32(1), tokenRequests.Load())
+}
+
 func TestLoginDeviceCodeCompletionWithoutHostSkipsPicker(t *testing.T) {
 	tm := startDeviceCodeLogin(t, "", "--user-code", "WDJB-MJHT", "--confirmation-code", "FTFA-QQKY")
 	_, err := tm.Result()
