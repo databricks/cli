@@ -120,13 +120,10 @@ in two steps instead:
    flags exchanges the pending device code instead of requesting a new one,
    and the rest of the login runs as usual.
 
-The pending login is kept in the token store (`storage.PendingLoginStore`) under
-the login's cache key (the profile name, or the host without a profile), but
-apart from the tokens: in the `pending_logins` map of the token cache file, or
-under the `databricks-cli-pending-login` keyring service. A pending login can
-therefore neither replace a token nor be read as one, whatever a profile is
-named, and the target's current token keeps working until the login completes.
-The device code never leaves the machine;
+The pending login is a token store entry with `PendingLogin` set instead of a
+token. Its key is the login's cache key (the profile name, or the host without
+a profile) with a `#device-code` suffix, so the target's current token keeps
+working until the login completes. The device code never leaves the machine;
 only the user code and the confirmation code are printed or passed on the
 command line, and the confirmation code is useless without the device code.
 This keeps the confirmation code's protection against phishing: a code read
@@ -134,11 +131,7 @@ from, e.g., an agent's transcript cannot complete the login on another machine.
 
 Each target has one pending login, and a new login for it replaces the old
 one. The second step checks the user code, so a replaced login fails with a
-clear error without sending its confirmation code. It also checks the host,
-client ID and scopes that the pending login stores: the device code only works
-with the same host and client, and the token gets the scopes of the device
-authorization, so a profile saved with other settings would not match its
-token. A wrong confirmation code
+clear error without sending its confirmation code. A wrong confirmation code
 keeps the pending login for a rerun. A device code the server no longer knows
 deletes it, and so does any successful login for the same target
 (`storeLoginToken`), with or without device code. The CLI does not expire
@@ -146,3 +139,8 @@ pending logins itself: the server does. `auth logout` deletes the pending login
 of the profile, and the one of its host when it deletes the host's token. A
 pending login for a profile that was never saved, or for a host that no profile
 uses, stays until a new login for it replaces it.
+
+The second step also checks the host, client ID and scopes that the pending
+login stores: the device code only works with the same host and client, and the
+token gets the scopes of the device authorization, so a profile saved with
+other settings would not match its token.

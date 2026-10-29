@@ -21,6 +21,11 @@ import (
 // for a single device code before the login fails.
 const maxConfirmationAttempts = 3
 
+// pendingLoginKeySuffix marks the token store entry that holds a
+// non-interactive device code login until it completes. The entry sits next to
+// the login's token, so that a token that still works is kept until then.
+const pendingLoginKeySuffix = "#device-code"
+
 // startNewLoginHint ends the errors of a non-interactive device code login
 // that cannot be completed.
 const startNewLoginHint = "Run the same command without --user-code and --confirmation-code to start a new login"
@@ -130,8 +135,8 @@ func validateDeviceCodeCompletionFlags(cmd *cobra.Command, useDeviceCode bool) e
 
 // nonInteractiveDeviceCodeLogin runs the two steps of a device code login
 // that cannot read the confirmation code from stdin. The first step stores the
-// device code as a pending login under key, the cache key of the login, and the
-// second step exchanges it, so that the device code never leaves the machine.
+// device code as a pending login under key, and the second step exchanges it,
+// so that the device code never leaves the machine.
 type nonInteractiveDeviceCodeLogin struct {
 	persistentAuth *u2m.PersistentAuth
 	tokenStore     storage.Store
@@ -142,25 +147,10 @@ type nonInteractiveDeviceCodeLogin struct {
 	scopes         []string
 }
 
-// pendingLoginStore returns the pending logins that tokenStore keeps apart
-// from its tokens. The stores of storage.ResolveStore and
-// storage.ResolveStoreForLogin keep them.
-func pendingLoginStore(tokenStore storage.Store) (storage.PendingLoginStore, error) {
-	s, ok := tokenStore.(storage.PendingLoginStore)
-	if !ok {
-		return nil, fmt.Errorf("%T cannot store a pending device code login", tokenStore)
-	}
-	return s, nil
-}
-
-// deletePendingLogin deletes the pending login under key. A token store that
-// keeps no pending logins has none to delete.
-func deletePendingLogin(tokenStore storage.Store, key string) error {
-	s, ok := tokenStore.(storage.PendingLoginStore)
-	if !ok {
-		return nil
-	}
-	return s.DeletePendingLogin(key)
+// pendingLoginKey returns the token store key of the pending login for the
+// login with cacheKey.
+func pendingLoginKey(cacheKey string) string {
+	return cacheKey + pendingLoginKeySuffix
 }
 
 // target describes the login in errors.
@@ -175,10 +165,6 @@ func (l nonInteractiveDeviceCodeLogin) target() string {
 // prints how to complete the login. A pending login under the same key is
 // replaced.
 func (l nonInteractiveDeviceCodeLogin) start(ctx context.Context) error {
-	pendingLogins, err := pendingLoginStore(l.tokenStore)
-	if err != nil {
-		return err
-	}
 	login, err := l.persistentAuth.NewDeviceCodeLogin(ctx)
 	if err != nil {
 		return err
@@ -187,13 +173,13 @@ func (l nonInteractiveDeviceCodeLogin) start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = pendingLogins.PutPendingLogin(l.key, storage.PendingLogin{
+	err = l.tokenStore.Put(l.key, storage.Entry{PendingLogin: &storage.PendingLogin{
 		DeviceCode: da.DeviceCode,
 		UserCode:   da.UserCode,
 		Host:       l.host,
 		ClientID:   l.clientID,
 		Scopes:     l.scopes,
-	})
+	}})
 	if err != nil {
 		return fmt.Errorf("store pending login: %w", err)
 	}
@@ -208,16 +194,15 @@ func (l nonInteractiveDeviceCodeLogin) start(ctx context.Context) error {
 // complete exchanges the device code of the pending login started with
 // userCode together with confirmationCode for a token.
 func (l nonInteractiveDeviceCodeLogin) complete(ctx context.Context, userCode, confirmationCode string) (*oauth2.Token, error) {
-	pendingLogins, err := pendingLoginStore(l.tokenStore)
-	if err != nil {
-		return nil, err
-	}
-	pending, err := pendingLogins.LookupPendingLogin(l.key)
-	if errors.Is(err, storage.ErrNotFound) {
-		return nil, fmt.Errorf("no pending device code login for %s. %s", l.target(), startNewLoginHint)
-	}
-	if err != nil {
+	e, err := l.tokenStore.Lookup(l.key)
+	if err != nil && !errors.Is(err, storage.ErrNotFound) {
 		return nil, fmt.Errorf("read pending login: %w", err)
+	}
+	// The key can also hold the token of a profile that happens to be named
+	// like a pending login key.
+	pending := e.PendingLogin
+	if pending == nil {
+		return nil, fmt.Errorf("no pending device code login for %s. %s", l.target(), startNewLoginHint)
 	}
 	// Each profile or host has one pending login, so a newer login replaces
 	// it. Checking the user code here avoids sending the confirmation code
@@ -226,7 +211,7 @@ func (l nonInteractiveDeviceCodeLogin) complete(ctx context.Context, userCode, c
 	if !sameCode(pending.UserCode, userCode) {
 		return nil, fmt.Errorf("a newer login for %s replaced this one. Complete the newer login with its user code. %s", l.target(), startNewLoginHint)
 	}
-	if changed := l.changedSetting(pending); changed != "" {
+	if changed := l.changedSetting(*pending); changed != "" {
 		return nil, fmt.Errorf("the login for %s was started with %s. Complete it with the same command that started it. %s", l.target(), changed, startNewLoginHint)
 	}
 
@@ -243,7 +228,7 @@ func (l nonInteractiveDeviceCodeLogin) complete(ctx context.Context, userCode, c
 	// valid, so the pending login is kept for a rerun. After a successful
 	// exchange, storeLoginToken deletes it.
 	if errors.Is(err, u2m.ErrInvalidDeviceCode) {
-		if err := pendingLogins.DeletePendingLogin(l.key); err != nil {
+		if err := l.tokenStore.Delete(l.key); err != nil {
 			log.Debugf(ctx, "Failed to delete the pending device code login: %v", err)
 		}
 	}

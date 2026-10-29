@@ -1,7 +1,6 @@
-# cache_keys lists the keys of the tokens and of the pending logins in the
-# plaintext token cache.
+# cache_keys lists the keys in the plaintext token cache.
 cache_keys() {
-    jq -S '{tokens: (.tokens | keys), pending_logins: (.pending_logins // {} | keys)}' "./home/.databricks/token-cache.json"
+    jq -S '.tokens | keys' "./home/.databricks/token-cache.json"
 }
 
 # start_login traces the first step in "$@" and saves its output to file $1,

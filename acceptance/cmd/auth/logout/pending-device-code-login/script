@@ -16,13 +16,11 @@ cat > "./home/.databricks/token-cache.json" <<EOF
   "version": 1,
   "tokens": {
     "dev": {"access_token": "dev-cached-token", "token_type": "Bearer"},
+    "dev#device-code": {"pending_login": {"device_code": "dev-device-code", "user_code": "WDJBMJHT"}},
     "staging": {"access_token": "staging-cached-token", "token_type": "Bearer"},
-    "${DATABRICKS_HOST}": {"access_token": "shared-host-token", "token_type": "Bearer"}
-  },
-  "pending_logins": {
-    "dev": {"device_code": "dev-device-code", "user_code": "WDJBMJHT"},
-    "staging": {"device_code": "staging-device-code", "user_code": "WDJBMJHT"},
-    "${DATABRICKS_HOST}": {"device_code": "host-device-code", "user_code": "WDJBMJHT"}
+    "staging#device-code": {"pending_login": {"device_code": "staging-device-code", "user_code": "WDJBMJHT"}},
+    "${DATABRICKS_HOST}": {"access_token": "shared-host-token", "token_type": "Bearer"},
+    "${DATABRICKS_HOST}#device-code": {"pending_login": {"device_code": "host-device-code", "user_code": "WDJBMJHT"}}
   }
 }
 EOF
@@ -31,10 +29,10 @@ title "Logout and delete dev"
 trace $CLI auth logout --profile dev --auto-approve --delete
 
 title "Token cache keys after logout — the host keys are kept, staging shares them\n"
-jq -S '{tokens: (.tokens | keys), pending_logins: (.pending_logins // {} | keys)}' "./home/.databricks/token-cache.json"
+jq -S '.tokens | keys' "./home/.databricks/token-cache.json"
 
 title "Logout staging"
 trace $CLI auth logout --profile staging --auto-approve
 
 title "Token cache keys after logout — no profile uses the host anymore\n"
-jq -S '{tokens: (.tokens | keys), pending_logins: (.pending_logins // {} | keys)}' "./home/.databricks/token-cache.json"
+jq -S '.tokens | keys' "./home/.databricks/token-cache.json"
