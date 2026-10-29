@@ -118,6 +118,19 @@ func TestKeyringStore_Lookup_ReturnsStoredToken(t *testing.T) {
 	assert.Equal(t, "Bearer", got.Token.TokenType)
 }
 
+func TestKeyringStore_Lookup_ReturnsStoredPendingLogin(t *testing.T) {
+	backend := newFakeBackend()
+	c := newTestStore(backend)
+
+	want := &PendingLogin{DeviceCode: "device-code", UserCode: "WDJBMJHT"}
+	require.NoError(t, c.Put("my-profile#device-code", Entry{PendingLogin: want}))
+
+	got, err := c.Lookup("my-profile#device-code")
+	require.NoError(t, err)
+	assert.Nil(t, got.Token)
+	assert.Equal(t, want, got.PendingLogin)
+}
+
 func TestKeyringStore_Lookup_MissingReturnsCacheErrNotFound(t *testing.T) {
 	backend := newFakeBackend()
 	c := newTestStore(backend)

@@ -55,6 +55,24 @@ func TestMemoryStore_PutAndLookupUseCopies(t *testing.T) {
 	}
 }
 
+func TestMemoryStore_PendingLoginUsesCopies(t *testing.T) {
+	s := NewMemoryStore()
+	pending := &PendingLogin{DeviceCode: "device-code", UserCode: "WDJBMJHT"}
+	if err := s.Put("key1", Entry{PendingLogin: pending}); err != nil {
+		t.Fatalf("Put: %v", err)
+	}
+
+	pending.DeviceCode = "mutated-after-store"
+
+	got, err := s.Lookup("key1")
+	if err != nil {
+		t.Fatalf("Lookup: %v", err)
+	}
+	if got.PendingLogin.DeviceCode != "device-code" {
+		t.Fatalf("DeviceCode after store mutation: want %q, got %q", "device-code", got.PendingLogin.DeviceCode)
+	}
+}
+
 func TestMemoryStore_Delete(t *testing.T) {
 	s := NewMemoryStore()
 	if err := s.Put("key1", Entry{Token: &oauth2.Token{AccessToken: "abc"}}); err != nil {

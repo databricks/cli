@@ -29,6 +29,10 @@ func cloneToken(t *oauth2.Token) *oauth2.Token {
 
 func cloneEntry(e Entry) Entry {
 	e.Token = cloneToken(e.Token)
+	if e.PendingLogin != nil {
+		pending := *e.PendingLogin
+		e.PendingLogin = &pending
+	}
 	return e
 }
 

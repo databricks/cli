@@ -1,0 +1,56 @@
+sethome "./home"
+
+title "Device code login is disabled by default\n"
+(
+    unset DATABRICKS_CLI_DEVICE_CODE
+    trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code
+    trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+)
+
+title "Flags the non-interactive login cannot honor\n"
+trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code --configure-cluster
+
+# The non-interactive login cannot answer the profile picker or the host prompt.
+title "Missing host\n"
+trace musterr $CLI auth login --use-device-code
+trace musterr $CLI auth login --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+
+title "Incomplete flags of the second step\n"
+trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code --confirmation-code FTFA-QQKY
+trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code --user-code WDJB-MJHT
+trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+
+title "Account host\n"
+trace musterr $CLI auth login --host https://accounts.cloud.databricks.test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+
+envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"
+
+title "Profile scoped to resources\n"
+trace musterr $CLI auth login --profile resources --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+
+title "No pending login\n"
+trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+trace musterr $CLI auth login --host $DATABRICKS_HOST --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+
+start_login LOG.wrong-code $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code
+
+title "Wrong confirmation code\n"
+trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code AAAA-AAAA
+
+# A wrong confirmation code leaves the device code valid, so the pending
+# login is kept.
+title "Rerun with the right confirmation code\n"
+trace $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code --user-code wdjb-mjht --confirmation-code ftfa-qqky
+
+title "Rerun after the login was completed\n"
+trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+
+# The server discards the device code when the login expires. The pending
+# login is then deleted.
+title "Device code unknown to the server\n"
+start_login LOG.expired $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code
+trace update_file.py home/.databricks/token-cache.json device-code-2 unknown-device-code
+trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+trace cache_keys
+
+trace print_requests.py --oneline //oidc/v1/device/auth //oidc/v1/token
