@@ -38,6 +38,14 @@ type PendingLogin struct {
 	// UserCode is the code the user enters in the browser. It identifies the
 	// login when a newer one replaced it under the same key.
 	UserCode string `json:"user_code"`
+
+	// Host, ClientID and Scopes are the settings the login was started with.
+	// The device code only works with the same host and client, and the
+	// token gets the scopes of the device authorization, so the login can
+	// only be completed with the same settings.
+	Host     string   `json:"host"`
+	ClientID string   `json:"client_id,omitempty"`
+	Scopes   []string `json:"scopes,omitempty"`
 }
 
 // PendingLoginStore holds pending logins. The file, keyring and memory stores

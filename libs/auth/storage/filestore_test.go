@@ -41,7 +41,12 @@ func TestPendingLoginIsApartFromTokens(t *testing.T) {
 	c, err := NewFileStore(t.Context(), WithFileLocation(f))
 	require.NoError(t, err)
 	pendingLogins := c.(PendingLoginStore)
-	pending := PendingLogin{DeviceCode: "device-code", UserCode: "WDJBMJHT"}
+	pending := PendingLogin{
+		DeviceCode: "device-code",
+		UserCode:   "WDJBMJHT",
+		Host:       "https://workspace.test",
+		Scopes:     []string{"sql"},
+	}
 	require.NoError(t, c.Put("x", Entry{Token: &oauth2.Token{AccessToken: "abc"}}))
 	require.NoError(t, pendingLogins.PutPendingLogin("x", pending))
 
@@ -62,7 +67,7 @@ func TestPendingLoginIsApartFromTokens(t *testing.T) {
 			"x": {"access_token": "abc", "expiry": "0001-01-01T00:00:00Z"}
 		},
 		"pending_logins": {
-			"x": {"device_code": "device-code", "user_code": "WDJBMJHT"}
+			"x": {"device_code": "device-code", "user_code": "WDJBMJHT", "host": "https://workspace.test", "scopes": ["sql"]}
 		}
 	}`, string(raw))
 

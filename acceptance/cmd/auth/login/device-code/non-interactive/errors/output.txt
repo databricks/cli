@@ -85,9 +85,17 @@ Error: token exchange: Invalid device code (error code: invalid_request). Run th
   ]
 }
 
+=== Scopes changed between the steps
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --scopes sql
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+Error: the login for profile test was started with different scopes. Complete it with the same command that started it. Run the same command without --user-code and --confirmation-code to start a new login
+
 >>> print_requests.py --oneline //oidc/v1/device/auth //oidc/v1/token
 {"method": "POST", "path": "/oidc/v1/device/auth", "raw_body": "client_id=databricks-cli&scope=offline_access+all-apis"}
 {"method": "POST", "path": "/oidc/v1/token", "raw_body": "client_id=databricks-cli&confirmation_code=AAAAAAAA&device_code=device-code-1&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"}
 {"method": "POST", "path": "/oidc/v1/token", "raw_body": "client_id=databricks-cli&confirmation_code=FTFAQQKY&device_code=device-code-1&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"}
 {"method": "POST", "path": "/oidc/v1/device/auth", "raw_body": "client_id=databricks-cli&scope=offline_access+all-apis"}
 {"method": "POST", "path": "/oidc/v1/token", "raw_body": "client_id=databricks-cli&confirmation_code=FTFAQQKY&device_code=unknown-device-code&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"}
+{"method": "POST", "path": "/oidc/v1/device/auth", "raw_body": "client_id=databricks-cli&scope=offline_access+sql"}

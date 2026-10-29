@@ -476,6 +476,8 @@ a new profile is created.
 			key:            oauthArgument.GetCacheKey(),
 			profile:        profileName,
 			host:           authArguments.Host,
+			clientID:       clientID,
+			scopes:         scopesList,
 		}
 		var token *oauth2.Token
 		switch {
