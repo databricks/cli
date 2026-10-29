@@ -6,10 +6,10 @@
 # The body repeats the name: with only {"value": false} in it, the API sees an empty message.
 trace $CLI workspace-settings-v2 patch-public-workspace-setting port_fwd_serverless_enabled --json '{"name": "port_fwd_serverless_enabled", "boolean_val": {"value": false}}' >/dev/null
 
-# No release artifacts locally and they're never executed; stand in empty archives.
+# No release artifacts locally and they're never executed; stand in placeholder archives.
 mkdir -p releases
-: >releases/databricks_cli_linux_amd64.zip
-: >releases/databricks_cli_linux_arm64.zip
+fake_release releases/databricks_cli_linux_amd64.zip
+fake_release releases/databricks_cli_linux_arm64.zip
 
 title "CLI ssh connect\n"
 musterr $CLI ssh connect --name feature-disabled --releases-dir="$PWD/releases" -- "echo 'Connection successful'" >out.connect.txt 2>&1
@@ -19,4 +19,4 @@ title "Reported error category\n"
 trace jq -r 'select(.path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.ssh_tunnel_event.error_category' "$OUT_REQUESTS"
 
 title "Each release archive is uploaded once, and the submitted run is cancelled\n"
-trace print_requests.py //api/2.0/workspace-files/import-file //api/2.2/jobs/runs/cancel
+trace print_requests.py --del-field raw_body //api/2.0/workspace-files/import-file //api/2.2/jobs/runs/cancel

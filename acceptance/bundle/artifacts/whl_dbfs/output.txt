@@ -25,6 +25,6 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 ]
 
 === Expecting no wheels to be uploaded
->>> print_workspace_imports
+>>> errcode sh -c jq .path < "$OUT_REQUESTS" | grep import | grep whl
 
 Exit code: 1

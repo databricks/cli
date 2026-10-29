@@ -19,7 +19,7 @@ title "Migration is recorded in telemetry as via-config\n"
 trace print_migration_telemetry
 
 title "The remote had no terraform state, so nothing terraform-related is backed up remotely\n"
-trace print_requests.py //workspace/import //workspace/delete --sort | jq '.method + " " + (.body.multipart_form.path // .path)' | contains.py '!terraform.tfstate'
+trace print_requests.py //workspace-files/import-file //workspace/delete --sort | jq '.method + " " + .path' | contains.py '!terraform.tfstate'
 
 title "debug states confirms no terraform.tfstate anywhere; only the local .backup remains\n"
 trace $CLI bundle debug states --force-pull

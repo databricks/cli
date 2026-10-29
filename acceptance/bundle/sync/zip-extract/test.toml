@@ -1,0 +1,3 @@
+Cloud = true
+Env.MSYS_NO_PATHCONV = "1"
+Ignore = [".databricks"]

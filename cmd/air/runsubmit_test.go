@@ -430,11 +430,9 @@ func TestSubmitWorkloadValidationOutcome(t *testing.T) {
 			t.Cleanup(server.Close)
 			var uploads, submissions atomic.Int32
 			server.Handle("POST", validateConfigPath, func(req testserver.Request) any { return tt.response })
-			server.Handle("POST", "/api/2.0/workspace/import", func(req testserver.Request) any {
+			server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req testserver.Request) any {
 				uploads.Add(1)
-				form, err := testserver.ParseImportForm(req)
-				assert.NoError(t, err)
-				return req.Workspace.WorkspaceFilesImportFile(form.Path, form.Content, true)
+				return req.Workspace.WorkspaceFilesImportFile(req.Vars["path"], req.Body, true)
 			})
 			server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 				submissions.Add(1)
@@ -751,19 +749,18 @@ func TestSubmitWorkloadPlainTarContentAddressed(t *testing.T) {
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		return jobs.SubmitRunResponse{RunId: 555}
 	})
-	// Count snapshot import calls, preserving fake-workspace persistence so the
+	// Count snapshot import-file calls, preserving fake-workspace persistence so the
 	// second submit's existence Stat sees the first upload. A count (not a set keyed by
 	// path) is what proves the skip: both submits resolve to the same content-addressed
 	// name, so a set could not tell a skipped second submit from one that re-uploaded to
 	// that same path.
 	snapshotUploads := 0
-	server.Handle("POST", "/api/2.0/workspace/import", func(req testserver.Request) any {
-		form, err := testserver.ParseImportForm(req)
-		assert.NoError(t, err)
-		if strings.Contains(form.Path, "/.air/repo_snapshots/") {
+	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req testserver.Request) any {
+		p := req.Vars["path"]
+		if strings.Contains(p, "/.air/repo_snapshots/") {
 			snapshotUploads++
 		}
-		return req.Workspace.WorkspaceFilesImportFile(form.Path, form.Content, form.Overwrite)
+		return req.Workspace.WorkspaceFilesImportFile(p, req.Body, req.URL.Query().Get("overwrite") == "true")
 	})
 	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
@@ -800,7 +797,7 @@ code_source:
 	assert.Regexp(t, `^src_[0-9a-f]{16}\.tar\.gz$`, base)
 
 	// Same unchanged tree → identical remote path, and the second submit moved no bytes:
-	// zero new import calls (a real skip), not a re-upload to the same name.
+	// zero new import-file calls (a real skip), not a re-upload to the same name.
 	assert.Equal(t, first.CodeSourcePath, second.CodeSourcePath)
 	assert.Equal(t, afterFirst, snapshotUploads, "unchanged plain_tar should skip the second upload")
 	require.NotNil(t, first.SizeBytes)
@@ -830,13 +827,12 @@ func TestSubmitWorkloadGitArchiveCaching(t *testing.T) {
 	// Dedupe by path: the filer mkdirs-and-retries the import on a missing
 	// parent dir, so one logical upload can hit this route more than once.
 	uploaded := map[string]bool{}
-	server.Handle("POST", "/api/2.0/workspace/import", func(req testserver.Request) any {
-		form, err := testserver.ParseImportForm(req)
-		assert.NoError(t, err)
-		if strings.Contains(form.Path, "/.air/repo_snapshots/") {
-			uploaded[form.Path] = true
+	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req testserver.Request) any {
+		p := req.Vars["path"]
+		if strings.Contains(p, "/.air/repo_snapshots/") {
+			uploaded[p] = true
 		}
-		return req.Workspace.WorkspaceFilesImportFile(form.Path, form.Content, form.Overwrite)
+		return req.Workspace.WorkspaceFilesImportFile(p, req.Body, req.URL.Query().Get("overwrite") == "true")
 	})
 	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)

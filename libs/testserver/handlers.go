@@ -92,7 +92,7 @@ func workspaceImport(w *FakeWorkspace, form ImportForm) Response {
 		if unsupported, ok := autoImportUnsupported(form.Path); ok {
 			return unsupported
 		}
-		resp = w.WorkspaceFilesImportFile(form.Path, form.Content, form.Overwrite)
+		resp = w.WorkspaceImportAutoFile(form.Path, form.Content, form.Overwrite)
 	default:
 		return Response{
 			Body:       fmt.Sprintf("internal error: The test server only supports AUTO, RAW, SOURCE and JUPYTER formats, got %q.", form.Format),

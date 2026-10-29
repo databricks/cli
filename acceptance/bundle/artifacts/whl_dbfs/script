@@ -8,6 +8,6 @@ title "Expecting 1 wheel in libraries section in /jobs/create"
 trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks' "$OUT_REQUESTS"
 
 title "Expecting no wheels to be uploaded"
-trace print_workspace_imports | errcode grep whl
+trace errcode sh -c 'jq .path < "$OUT_REQUESTS" | grep import | grep whl'
 
 rm "$OUT_REQUESTS"
