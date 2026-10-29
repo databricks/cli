@@ -162,7 +162,7 @@ func (l nonInteractiveDeviceCodeLogin) target() string {
 // prints how to complete the login. A pending login under the same key is
 // replaced.
 func (l nonInteractiveDeviceCodeLogin) start(ctx context.Context) error {
-	login, err := l.persistentAuth.NewDeviceCodeLogin()
+	login, err := l.persistentAuth.NewDeviceCodeLogin(ctx)
 	if err != nil {
 		return err
 	}
@@ -206,7 +206,7 @@ func (l nonInteractiveDeviceCodeLogin) complete(ctx context.Context, userCode, c
 		return nil, fmt.Errorf("a newer login for %s replaced this one. Complete the newer login with its user code. %s", l.target(), startNewLoginHint)
 	}
 
-	login, err := l.persistentAuth.NewDeviceCodeLogin()
+	login, err := l.persistentAuth.NewDeviceCodeLogin(ctx)
 	if err != nil {
 		return nil, err
 	}
