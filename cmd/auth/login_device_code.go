@@ -190,16 +190,11 @@ func (l nonInteractiveDeviceCodeLogin) start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("store pending login: %w", err)
 	}
-	lines := approvalInstructions(*da)
-	if note := agent.Note(deviceCodeAgentNote); note != "" {
-		lines = append(lines, note, "")
-	}
-	lines = append(lines,
+	cmdio.LogString(ctx, strings.Join(append(approvalInstructions(*da),
 		"Once finished, complete the login by running the same command with",
 		"--user-code "+formatCode(da.UserCode)+" and --confirmation-code set to the confirmation code",
 		"provided in your browser.",
-	)
-	cmdio.LogString(ctx, strings.Join(lines, "\n"))
+	), "\n"))
 	return nil
 }
 
@@ -302,8 +297,10 @@ func promptForConfirmationCode(ctx context.Context, da u2m.DeviceAuthorization, 
 
 // approvalInstructions returns the lines that show the user where to approve
 // the login. Both flows print them before saying how to complete the login.
+// An AI agent also gets a note to pass the login on to the user, whether or
+// not it runs the command in a terminal.
 func approvalInstructions(da u2m.DeviceAuthorization) []string {
-	return []string{
+	lines := []string{
 		"Using a browser on another device, visit:",
 		da.VerificationURI,
 		"",
@@ -311,6 +308,10 @@ func approvalInstructions(da u2m.DeviceAuthorization) []string {
 		formatCode(da.UserCode),
 		"",
 	}
+	if note := agent.Note(deviceCodeAgentNote); note != "" {
+		lines = append(lines, note, "")
+	}
+	return lines
 }
 
 // formatCode displays an 8-character device code as two groups of four
