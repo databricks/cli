@@ -1,0 +1,16 @@
+sethome "./home"
+envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"
+
+# The rerun resolves the login from the same flags and profile as the first
+# step, so the token exchange uses the client ID of the profile.
+title "Scopes and client ID from the profile\n"
+trace $CLI auth login --profile scoped --use-device-code
+trace $CLI auth login --profile scoped --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+trace print_requests.py --oneline //oidc/v1/device/auth //oidc/v1/token
+
+# Only the second step saves the profile.
+title "Serverless compute is configured in the second step\n"
+trace $CLI auth login --host $DATABRICKS_HOST --profile serverless --use-device-code --configure-serverless
+trace $CLI auth login --host $DATABRICKS_HOST --profile serverless --use-device-code --configure-serverless --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+
+mv "./home/.databrickscfg" "./out.databrickscfg"

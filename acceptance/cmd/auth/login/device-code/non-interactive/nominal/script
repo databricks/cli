@@ -1,0 +1,35 @@
+sethome "./home"
+
+# Acceptance tests run the CLI without a terminal on stdin, so device code
+# login runs non-interactively.
+title "Start the login without a profile\n"
+trace $CLI auth login --host $DATABRICKS_HOST --use-device-code
+
+title "The first step stores the device code and saves no profile\n"
+trace find.py home
+trace cache_keys
+
+title "Confirm the login\n"
+trace $CLI auth login --host $DATABRICKS_HOST --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+trace $CLI auth token --host $DATABRICKS_HOST | gron.py | grep access_token
+trace cache_keys
+
+title "Start the login with a profile\n"
+trace $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code
+
+title "Confirm the login\n"
+trace $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+trace $CLI auth token --profile test | gron.py | grep access_token
+trace $CLI auth profiles
+
+# The pending login is stored next to the token, so the token keeps working
+# until the login is confirmed.
+title "Start the login again with the host from the saved profile\n"
+trace $CLI auth login --profile test --use-device-code
+trace $CLI auth token --profile test | gron.py | grep access_token
+trace $CLI auth login --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+trace cache_keys
+trace print_requests.py --oneline //oidc/v1/device/auth //oidc/v1/token
+
+# Track the .databrickscfg file that was created to surface changes.
+mv "./home/.databrickscfg" "./out.databrickscfg"

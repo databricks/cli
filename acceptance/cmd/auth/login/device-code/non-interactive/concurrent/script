@@ -1,0 +1,23 @@
+sethome "./home"
+
+# The real server issues a new user code for every login, while the fake server
+# issues the same one. The script gives the second login its own user code.
+title "A second login for the same profile replaces the first\n"
+start_login LOG.first $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code
+start_login LOG.second $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code
+trace update_file.py home/.databricks/token-cache.json WDJBMJHT NEWRCODE
+trace cache_keys
+trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+trace $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code --user-code NEWR-CODE --confirmation-code FTFA-QQKY
+trace print_requests.py --oneline //oidc/v1/token
+
+title "Logins for different targets are independent\n"
+start_login LOG.a $CLI auth login --host $DATABRICKS_HOST --profile a --use-device-code
+start_login LOG.b $CLI auth login --host $DATABRICKS_HOST --profile b --use-device-code
+start_login LOG.host $CLI auth login --host $DATABRICKS_HOST --use-device-code
+trace cache_keys
+trace $CLI auth login --host $DATABRICKS_HOST --profile b --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+trace $CLI auth login --host $DATABRICKS_HOST --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+trace $CLI auth login --host $DATABRICKS_HOST --profile a --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+trace cache_keys
+trace print_requests.py --oneline //oidc/v1/token

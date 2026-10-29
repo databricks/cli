@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
@@ -17,6 +19,15 @@ import (
 // maxConfirmationAttempts is how many confirmation codes the user can enter
 // for a single device code before the login fails.
 const maxConfirmationAttempts = 3
+
+// pendingLoginKeySuffix marks the token store entry that holds a
+// non-interactive device code login until it completes. The entry sits next to
+// the login's token, so that a token that still works is kept until then.
+const pendingLoginKeySuffix = "#device-code"
+
+// startNewLoginHint ends the errors of a non-interactive device code login
+// that cannot be completed.
+const startNewLoginHint = "Run the same command without --user-code and --confirmation-code to start a new login"
 
 // deviceCodeIncompatibleFlags lists flags that device code login cannot honor.
 var deviceCodeIncompatibleFlags = []string{
@@ -30,6 +41,8 @@ var deviceCodeIncompatibleFlags = []string{
 var (
 	errDeviceCodeNeedsHost     = errors.New("--use-device-code requires a workspace host. Pass it as an argument or with --host")
 	errDeviceCodeWorkspaceOnly = errors.New("--use-device-code is only supported for workspace hosts")
+	// The cluster picker is interactive.
+	errDeviceCodeNonInteractiveCluster = errors.New("--configure-cluster is not supported by the non-interactive device code login. Set cluster_id on the profile after the login")
 )
 
 // isDeviceCodeSupportedForHost reports whether host is a workspace host. A
@@ -95,6 +108,131 @@ func deviceCodeLogin(ctx context.Context, persistentAuth *u2m.PersistentAuth) (*
 		}
 	}
 	return nil, fmt.Errorf("%w. Start login from scratch", lastErr)
+}
+
+// validateDeviceCodeCompletionFlags returns an error if the flags that complete
+// a non-interactive device code login are not set together.
+func validateDeviceCodeCompletionFlags(useDeviceCode, hasUserCode, hasConfirmationCode bool) error {
+	switch {
+	case hasConfirmationCode && !hasUserCode:
+		return errors.New("--confirmation-code requires --user-code")
+	case hasUserCode && !hasConfirmationCode:
+		return errors.New("--user-code requires --confirmation-code")
+	case hasConfirmationCode && !useDeviceCode:
+		return errors.New("--confirmation-code requires --use-device-code")
+	}
+	return nil
+}
+
+// nonInteractiveDeviceCodeLogin runs the two steps of a device code login
+// that cannot read the confirmation code from stdin. The first step stores the
+// device code as a pending login under key, and the second step exchanges it,
+// so that the device code never leaves the machine.
+type nonInteractiveDeviceCodeLogin struct {
+	persistentAuth *u2m.PersistentAuth
+	tokenStore     storage.Store
+	key            string
+	profile        string
+	host           string
+}
+
+// pendingLoginKey returns the token store key of the pending login for the
+// login with cacheKey.
+func pendingLoginKey(cacheKey string) string {
+	return cacheKey + pendingLoginKeySuffix
+}
+
+// target describes the login in errors.
+func (l nonInteractiveDeviceCodeLogin) target() string {
+	if l.profile != "" {
+		return "profile " + l.profile
+	}
+	return "host " + l.host
+}
+
+// start requests a device authorization, stores it as the pending login, and
+// prints how to complete the login. A pending login under the same key is
+// replaced.
+func (l nonInteractiveDeviceCodeLogin) start(ctx context.Context) error {
+	login, err := l.persistentAuth.NewDeviceCodeLogin()
+	if err != nil {
+		return err
+	}
+	da, err := login.RequestDeviceAuthorization(ctx)
+	if err != nil {
+		return err
+	}
+	err = l.tokenStore.Put(l.key, storage.Entry{PendingLogin: &storage.PendingLogin{
+		DeviceCode: da.DeviceCode,
+		UserCode:   da.UserCode,
+	}})
+	if err != nil {
+		return fmt.Errorf("store pending login: %w", err)
+	}
+	cmdio.LogString(ctx, strings.Join([]string{
+		"Using a browser on another device, visit:",
+		da.VerificationURI,
+		"",
+		"And enter the code:",
+		formatCode(da.UserCode),
+		"",
+		"Once finished, complete the login by running the same command with",
+		"--user-code " + formatCode(da.UserCode) + " and --confirmation-code set to the confirmation code",
+		"provided in your browser.",
+	}, "\n"))
+	return nil
+}
+
+// complete exchanges the device code of the pending login started with
+// userCode together with confirmationCode for a token.
+func (l nonInteractiveDeviceCodeLogin) complete(ctx context.Context, userCode, confirmationCode string) (*oauth2.Token, error) {
+	e, err := l.tokenStore.Lookup(l.key)
+	if err != nil && !errors.Is(err, storage.ErrNotFound) {
+		return nil, fmt.Errorf("read pending login: %w", err)
+	}
+	// The key can also hold the token of a profile that happens to be named
+	// like a pending login key.
+	pending := e.PendingLogin
+	if pending == nil {
+		return nil, fmt.Errorf("no pending device code login for %s. %s", l.target(), startNewLoginHint)
+	}
+	// Each profile or host has one pending login, so a newer login replaces
+	// it. Checking the user code here avoids sending the confirmation code
+	// with the wrong device code, which the server would reject as a wrong
+	// confirmation code.
+	if !sameCode(pending.UserCode, userCode) {
+		return nil, fmt.Errorf("a newer login for %s replaced this one. Complete the newer login with its user code. %s", l.target(), startNewLoginHint)
+	}
+
+	login, err := l.persistentAuth.NewDeviceCodeLogin()
+	if err != nil {
+		return nil, err
+	}
+	token, err := login.RequestDeviceAccessToken(ctx, pending.DeviceCode, confirmationCode)
+	if err != nil {
+		err = fmt.Errorf("token exchange: %w", err)
+	}
+	// A wrong confirmation code leaves the device code valid, so the pending
+	// login is kept for a rerun. Otherwise the server no longer accepts the
+	// device code.
+	if err == nil || errors.Is(err, u2m.ErrInvalidDeviceCode) {
+		if err := l.tokenStore.Delete(l.key); err != nil {
+			log.Debugf(ctx, "Failed to delete the pending device code login: %v", err)
+		}
+	}
+	switch {
+	case errors.Is(err, u2m.ErrInvalidConfirmationCode):
+		return nil, fmt.Errorf("%w. Check the confirmation code and approve the login if you haven't, then rerun this command. %s if it still fails", err, startNewLoginHint)
+	case errors.Is(err, u2m.ErrInvalidDeviceCode):
+		return nil, fmt.Errorf("%w. %s", err, startNewLoginHint)
+	}
+	return token, err
+}
+
+// sameCode reports whether two device codes match when compared the way the
+// user enters them.
+func sameCode(a, b string) bool {
+	return u2m.NormalizeCode(a) == u2m.NormalizeCode(b)
 }
 
 // promptForConfirmationCode shows the user where to approve the login and

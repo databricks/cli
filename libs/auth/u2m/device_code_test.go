@@ -364,6 +364,6 @@ func TestNormalizeCode(t *testing.T) {
 		{"  FTFA QQKY \n", "FTFAQQKY"},
 	}
 	for _, tc := range tests {
-		assert.Equal(t, tc.want, normalizeCode(tc.in), tc.in)
+		assert.Equal(t, tc.want, NormalizeCode(tc.in), tc.in)
 	}
 }

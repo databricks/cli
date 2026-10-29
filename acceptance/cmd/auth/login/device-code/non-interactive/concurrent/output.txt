@@ -1,0 +1,60 @@
+
+=== A second login for the same profile replaces the first
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code
+
+>>> update_file.py home/.databricks/token-cache.json WDJBMJHT NEWRCODE
+
+>>> cache_keys
+[
+  "test#device-code"
+]
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+Error: a newer login for profile test replaced this one. Complete the newer login with its user code. Run the same command without --user-code and --confirmation-code to start a new login
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --user-code NEWR-CODE --confirmation-code FTFA-QQKY
+Profile test was successfully saved
+
+>>> print_requests.py --oneline //oidc/v1/token
+{"method": "POST", "path": "/oidc/v1/token", "raw_body": "client_id=databricks-cli&confirmation_code=FTFAQQKY&device_code=device-code-2&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"}
+
+=== Logins for different targets are independent
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile a --use-device-code
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile b --use-device-code
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --use-device-code
+
+>>> cache_keys
+[
+  "a#device-code",
+  "b#device-code",
+  "[DATABRICKS_URL]",
+  "[DATABRICKS_URL]#device-code",
+  "test"
+]
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile b --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+Profile b was successfully saved
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile a --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+Profile a was successfully saved
+
+>>> cache_keys
+[
+  "a",
+  "b",
+  "[DATABRICKS_URL]",
+  "test"
+]
+
+>>> print_requests.py --oneline //oidc/v1/token
+{"method": "POST", "path": "/oidc/v1/token", "raw_body": "client_id=databricks-cli&confirmation_code=FTFAQQKY&device_code=device-code-4&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"}
+{"method": "POST", "path": "/oidc/v1/token", "raw_body": "client_id=databricks-cli&confirmation_code=FTFAQQKY&device_code=device-code-5&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"}
+{"method": "POST", "path": "/oidc/v1/token", "raw_body": "client_id=databricks-cli&confirmation_code=FTFAQQKY&device_code=device-code-3&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"}
