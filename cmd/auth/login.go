@@ -221,10 +221,10 @@ a new profile is created.
 			}
 		}
 
-		completeLogin := cmd.Flags().Changed("confirmation-code")
-		if err := validateDeviceCodeCompletionFlags(useDeviceCode, cmd.Flags().Changed("user-code"), completeLogin); err != nil {
+		if err := validateDeviceCodeCompletionFlags(cmd, useDeviceCode); err != nil {
 			return err
 		}
+		completeLogin := cmd.Flags().Changed("confirmation-code")
 		// Device code login reads the confirmation code from stdin. When stdin
 		// is not a terminal, e.g. when an AI agent runs the login as a one-off
 		// command, nobody can type the code in. The non-interactive login then

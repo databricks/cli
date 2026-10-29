@@ -111,8 +111,11 @@ func deviceCodeLogin(ctx context.Context, persistentAuth *u2m.PersistentAuth) (*
 }
 
 // validateDeviceCodeCompletionFlags returns an error if the flags that complete
-// a non-interactive device code login are not set together.
-func validateDeviceCodeCompletionFlags(useDeviceCode, hasUserCode, hasConfirmationCode bool) error {
+// a non-interactive device code login are not set together, or are set to an
+// empty code.
+func validateDeviceCodeCompletionFlags(cmd *cobra.Command, useDeviceCode bool) error {
+	hasUserCode := cmd.Flags().Changed("user-code")
+	hasConfirmationCode := cmd.Flags().Changed("confirmation-code")
 	switch {
 	case hasConfirmationCode && !hasUserCode:
 		return errors.New("--confirmation-code requires --user-code")
@@ -120,6 +123,11 @@ func validateDeviceCodeCompletionFlags(useDeviceCode, hasUserCode, hasConfirmati
 		return errors.New("--user-code requires --confirmation-code")
 	case hasConfirmationCode && !useDeviceCode:
 		return errors.New("--confirmation-code requires --use-device-code")
+	}
+	for _, name := range []string{"user-code", "confirmation-code"} {
+		if f := cmd.Flag(name); f.Changed && strings.TrimSpace(f.Value.String()) == "" {
+			return fmt.Errorf("--%s cannot be empty", name)
+		}
 	}
 	return nil
 }

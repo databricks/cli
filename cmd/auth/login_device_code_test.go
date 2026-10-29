@@ -329,21 +329,29 @@ resources = https://workspace.test/ai-gateway/mcp-services/system.ai.github
 
 func TestValidateDeviceCodeCompletionFlags(t *testing.T) {
 	tests := []struct {
-		name                string
-		useDeviceCode       bool
-		hasUserCode         bool
-		hasConfirmationCode bool
-		wantErr             string
+		name          string
+		useDeviceCode bool
+		flags         map[string]string
+		wantErr       string
 	}{
 		{name: "neither", useDeviceCode: true},
-		{name: "both", useDeviceCode: true, hasUserCode: true, hasConfirmationCode: true},
-		{name: "confirmation code only", useDeviceCode: true, hasConfirmationCode: true, wantErr: "--confirmation-code requires --user-code"},
-		{name: "user code only", useDeviceCode: true, hasUserCode: true, wantErr: "--user-code requires --confirmation-code"},
-		{name: "without device code", hasUserCode: true, hasConfirmationCode: true, wantErr: "--confirmation-code requires --use-device-code"},
+		{name: "both", useDeviceCode: true, flags: map[string]string{"user-code": "WDJB-MJHT", "confirmation-code": "FTFA-QQKY"}},
+		{name: "confirmation code only", useDeviceCode: true, flags: map[string]string{"confirmation-code": "FTFA-QQKY"}, wantErr: "--confirmation-code requires --user-code"},
+		{name: "user code only", useDeviceCode: true, flags: map[string]string{"user-code": "WDJB-MJHT"}, wantErr: "--user-code requires --confirmation-code"},
+		{name: "without device code", flags: map[string]string{"user-code": "WDJB-MJHT", "confirmation-code": "FTFA-QQKY"}, wantErr: "--confirmation-code requires --use-device-code"},
+		{name: "empty user code", useDeviceCode: true, flags: map[string]string{"user-code": "", "confirmation-code": "FTFA-QQKY"}, wantErr: "--user-code cannot be empty"},
+		{name: "blank confirmation code", useDeviceCode: true, flags: map[string]string{"user-code": "WDJB-MJHT", "confirmation-code": "  "}, wantErr: "--confirmation-code cannot be empty"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateDeviceCodeCompletionFlags(tt.useDeviceCode, tt.hasUserCode, tt.hasConfirmationCode)
+			cmd := &cobra.Command{}
+			cmd.Flags().String("user-code", "", "")
+			cmd.Flags().String("confirmation-code", "", "")
+			for name, value := range tt.flags {
+				require.NoError(t, cmd.Flags().Set(name, value))
+			}
+
+			err := validateDeviceCodeCompletionFlags(cmd, tt.useDeviceCode)
 			if tt.wantErr != "" {
 				assert.EqualError(t, err, tt.wantErr)
 			} else {
