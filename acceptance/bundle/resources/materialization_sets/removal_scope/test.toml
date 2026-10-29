@@ -1,5 +1,4 @@
-# Pinned to the acceptance schema the materialization-set cases share. Override MATSET_CATALOG /
-# MATSET_SCHEMA / MATSET_ONLINE_STORE to point it elsewhere.
+# Creates its own schema and deletes it on exit. Override MATSET_CATALOG where `main` is absent.
 Cloud = true
 
 # Both legs run locally. A cloud run must select the DMS= leg: the bundle deployments API

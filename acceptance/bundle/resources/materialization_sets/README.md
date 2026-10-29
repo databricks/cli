@@ -65,7 +65,7 @@ zero with its state dropped. The deployment-history leg is the one path that rec
 | `schedule_state` | a member the config leaves unset adopts the state the server assigned; a declared change to it is a `recreate`, and that recreate still has to satisfy the create endpoint's rule that a feature's members agree |
 | `immutable` | a write-once member field is caught by the planner as `recreate` and never reaches the server; adding a member routes to `update` so the server refuses it by name; destroy then redeploy is the route those refusals leave open, and the re-created set plans clean |
 | `destination` | a destination field the server accepts on write and never returns on read is not drift, while a repoint the config actually asked for still recreates -- the two are told apart by whether the persisted value is recoverable |
-| `batch` | a batch feature with both destinations creates and settles; neither member of its pair can be removed alone, and removing both empties the set, which the update endpoint refuses in favour of delete; repointing the destinations is a `recreate`; pausing the feature is a `recreate` that succeeds when every member agrees and is refused by the create endpoint when they do not |
+| `batch` | a batch feature materialized offline creates and settles; removing its member empties the set, which the update endpoint refuses in favour of delete, whether the list is written empty or left unset; dropping the set resource deletes it; repointing the destination is a `recreate`; pausing the feature is a `recreate` that settles |
 | `sawtooth` | the offline-and-online batch pair is refused at create, because a set is not expanded into the third materialization; all three declared creates and then plans nothing; the three members are one cascade group, so each of the three strict subsets of them is refused -- with the message depending on whether the removal names the member a delete is applied to -- and removing all three empties the set, which the update endpoint refuses |
 | `settled_failure` | a failure the server hits after reserving an operation comes back as HTTP 200 with the operation FAILED: the adapter recovers the error code from the operation and the per-member outcome from its metadata, the update fails naming each member left behind and writes nothing, and the destroy reports success anyway because the engine forgives a delete error it cannot classify |
 | `invalid_members` | two members reaching one member key are refused while the config is being read, with no request made. The message is the service's own wording for the same rejection, and both offenders are named |
@@ -93,17 +93,21 @@ does run, because the fake only requires the key to carry a prefix at all.
 
 ### Running a cloud leg
 
-Four cases carry `Cloud = true`: `batch`, `immutable`, `membership` and `removal_scope`.
+Three cases carry `Cloud = true`: `batch`, `immutable` and `removal_scope`. Each creates its own schema in
+`main` and deletes it on exit, and materializes offline only, because the integration workspaces
+have no online store.
 
 `sawtooth`, `streaming` and `mixed_triggers` are local only, because each needs a Stream source
 and a Stream is neither a bundle resource nor a CLI command -- so the integration suite has no way
 to provision one, and it would also need a Unity Catalog connection to a Kafka topic whose payload
 the feature definitions name. Run those three against a workspace by hand, with the overrides below.
-`basic`, `bind`, `destination` and `schedule_state` stay local because every server-dependent claim
-they make is already exercised by `batch`.
+`basic`, `bind`, `destination`, `membership` and `schedule_state` are local only because each
+declares an online member, so no integration run materializes online. `membership` runs by hand
+against a workspace given a store in `MATSET_ONLINE_STORE`; the other four are written for the
+local test server only.
 
-The cases default to the shared acceptance schema; override `MATSET_CATALOG`, `MATSET_SCHEMA`,
-`MATSET_ONLINE_STORE` to move them. These reach the script because the harness forwards ambient
+Override `MATSET_CATALOG` where `main` is absent, and `MATSET_SCHEMA`, `MATSET_ONLINE_STORE` and
+`MATSET_STREAM` for the cases that read them. These reach the script because the harness forwards ambient
 environment to the CLI subprocess, minus the SDK's own auth variables, which it replaces with the
 ones it resolved.
 

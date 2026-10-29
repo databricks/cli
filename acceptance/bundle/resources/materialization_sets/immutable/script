@@ -1,5 +1,5 @@
 export CATALOG_NAME="${MATSET_CATALOG:-main}"
-export SCHEMA_NAME="${MATSET_SCHEMA:-materialization_set_acceptance_test}"
+export SCHEMA_NAME="matset_${UNIQUE_NAME}"
 export TABLE_NAME="$CATALOG_NAME.$SCHEMA_NAME.src_$UNIQUE_NAME"
 
 # Each phase is its own template rather than a string edit, so the fixture a phase deploys is
@@ -17,9 +17,11 @@ set_action() {
 cleanup() {
     $CLI bundle destroy --auto-approve > /dev/null 2>&1 || true
     $CLI tables delete "$TABLE_NAME" > /dev/null 2>&1 || true
+    $CLI schemas delete "$CATALOG_NAME.$SCHEMA_NAME" --force > /dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
+trace $CLI schemas create "$SCHEMA_NAME" "$CATALOG_NAME" -o json | jq '{full_name}'
 trace create_table.py "$TABLE_NAME"
 render databricks.yml.tmpl
 

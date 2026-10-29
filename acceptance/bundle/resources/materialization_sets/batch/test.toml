@@ -1,6 +1,7 @@
-# Pinned to one developer's catalog and online store; override MATSET_CATALOG / MATSET_SCHEMA /
-# MATSET_ONLINE_STORE to move it. The mixed-trigger refusal this case used to carry lives in
-# mixed_triggers, which needs a Stream and so cannot run here.
+# Creates its own schema and deletes it on exit. Override MATSET_CATALOG where `main` is absent.
+# Offline members only, so the integration workspaces need no online store. The pair cascade and
+# the members-disagree refusal are covered by membership and schedule_state, the mixed-trigger
+# refusal by mixed_triggers.
 Cloud = true
 
 Ignore = [

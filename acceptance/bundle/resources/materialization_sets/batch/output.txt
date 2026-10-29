@@ -1,15 +1,20 @@
 
->>> create_table.py danielb.fs2680.src_[UNIQUE_NAME]
-Created table danielb.fs2680.src_[UNIQUE_NAME]
-Inserted sample data into danielb.fs2680.src_[UNIQUE_NAME]
-Table danielb.fs2680.src_[UNIQUE_NAME] is now visible (catalog_name=danielb)
+>>> [CLI] schemas create matset_[UNIQUE_NAME] main -o json
+{
+  "full_name": "main.matset_[UNIQUE_NAME]"
+}
 
-=== A batch feature with both destinations creates, and a redeploy plans nothing
+>>> create_table.py main.matset_[UNIQUE_NAME].src_[UNIQUE_NAME]
+Created table main.matset_[UNIQUE_NAME].src_[UNIQUE_NAME]
+Inserted sample data into main.matset_[UNIQUE_NAME].src_[UNIQUE_NAME]
+Table main.matset_[UNIQUE_NAME].src_[UNIQUE_NAME] is now visible (catalog_name=main)
+
+=== A batch feature materialized offline creates, and a redeploy plans nothing
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-batch-[UNIQUE_NAME]/default/files...
 Created features.batchfeat
 Created materialization_sets.set1
-Files: 10 uploaded, 0 deleted
+Files: 7 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan -o json
@@ -19,47 +24,8 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "resources.materialization_sets.set1": "skip"
 }
 
-=== Neither member of the pair can be removed on its own. The offline member is the one a
-=== delete is applied to, so removing it reaches the online one too,
->>> [CLI] bundle plan -o json
-
->>> set_actions
-{
-  "resources.materialization_sets.set1": "update"
-}
-
->>> musterr [CLI] bundle deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-batch-[UNIQUE_NAME]/default/files...
-Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Deleting materialized features '[UUID]' of feature 'danielb.fs2680.batch_[UNIQUE_NAME]' also deletes materialized features '[UUID]', which the request does not delete. Delete the unrequested materialized features as well. (400 INVALID_PARAMETER_VALUE)
-
-Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?request_id=[UUID]&update_mask=materialized_features
-HTTP Status: 400 Bad Request
-API error_code: INVALID_PARAMETER_VALUE
-API message: Deleting materialized features '[UUID]' of feature 'danielb.fs2680.batch_[UNIQUE_NAME]' also deletes materialized features '[UUID]', which the request does not delete. Delete the unrequested materialized features as well.
-
-Files: 2 uploaded, 0 deleted
-
-=== and removing the online member names nothing a delete can be applied to
->>> [CLI] bundle plan -o json
-
->>> set_actions
-{
-  "resources.materialization_sets.set1": "update"
-}
-
->>> musterr [CLI] bundle deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-batch-[UNIQUE_NAME]/default/files...
-Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Materialized features '[UUID]' of feature 'danielb.fs2680.batch_[UNIQUE_NAME]' are deleted only by deleting materialized features '[UUID]', which the request does not supply. Remove those as well. (400 INVALID_PARAMETER_VALUE)
-
-Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?request_id=[UUID]&update_mask=materialized_features
-HTTP Status: 400 Bad Request
-API error_code: INVALID_PARAMETER_VALUE
-API message: Materialized features '[UUID]' of feature 'danielb.fs2680.batch_[UNIQUE_NAME]' are deleted only by deleting materialized features '[UUID]', which the request does not supply. Remove those as well.
-
-Files: 2 uploaded, 0 deleted
-
-=== Removing both satisfies the cascade but empties the set, which the update endpoint refuses
-=== in favour of the delete endpoint. Restoring the pair plans nothing, so no refusal wrote.
+=== Removing the member empties the set, which the update endpoint refuses in favour of the
+=== delete endpoint. Restoring the member plans nothing, so no refusal wrote.
 >>> [CLI] bundle plan -o json
 
 >>> set_actions
@@ -139,7 +105,7 @@ Created materialization_sets.set1
 Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
 
-=== Repointing the destinations is a recreate, not a silent no-op. The server cannot move a
+=== Repointing the destination is a recreate, not a silent no-op. The server cannot move a
 === materialization in place, so the set is rebuilt at the new location.
 >>> [CLI] bundle plan -o json
 
@@ -150,7 +116,6 @@ Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> jq -r .plan["resources.materialization_sets.set1"].changes | to_entries | map(select(.value.action == "recreate")) | .[] | "\(.value.reason) old=\(.value.old) new=\(.value.new)" out.plan.json
 spec:immutable old=batch_[UNIQUE_NAME]_off new=moved_[UNIQUE_NAME]_off
-spec:immutable old=batch_[UNIQUE_NAME] new=moved_[UNIQUE_NAME]
 
 === The schedule state is write-once, so pausing the feature is a recreate rather than the
 === in-place update the endpoint would refuse
@@ -178,28 +143,3 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 {
   "resources.materialization_sets.set1": "skip"
 }
-
-=== Pausing the offline member alone plans as a recreate too, and the create refuses the
-=== members of one feature disagreeing on the state
->>> [CLI] bundle plan -o json
-
->>> set_actions
-{
-  "resources.materialization_sets.set1": "recreate"
-}
-
->>> musterr [CLI] bundle deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-batch-[UNIQUE_NAME]/default/files...
-
-This action will result in the deletion or recreation of the following materialization sets.
-Every materialized feature in a recreated set is dropped and recomputed from scratch, including
-the members whose configuration did not change:
-  recreate resources.materialization_sets.set1
-Error: cannot recreate resources.materialization_sets.set1: All materialized features in a BatchCreateMaterializedFeaturesRequest call must have the same pipeline schedule state. (400 INVALID_PARAMETER_VALUE)
-
-Endpoint: POST [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets?request_id=[UUID]
-HTTP Status: 400 Bad Request
-API error_code: INVALID_PARAMETER_VALUE
-API message: All materialized features in a BatchCreateMaterializedFeaturesRequest call must have the same pipeline schedule state.
-
-Files: 2 uploaded, 0 deleted
