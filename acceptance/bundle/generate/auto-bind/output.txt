@@ -6,11 +6,19 @@ Created job with ID: [JOB_ID]
 
 >>> [CLI] workspace import /Workspace/Users/[USERNAME]/python-[UNIQUE_NAME]/test --file test.py --language PYTHON
 
+=== Create a pre-defined pipeline:
+Created pipeline with ID: [PIPELINE_ID]
+
 === Generate and bind in one step:
 >>> [CLI] bundle generate job --key test_job --existing-job-id [JOB_ID] --config-dir resources --source-dir src --bind
 File successfully saved to src/test.py
 Job configuration successfully saved to resources/test_job.job.yml
 Successfully bound job with an id '[JOB_ID]'
+
+>>> [CLI] bundle generate pipeline --key test_pipeline --existing-pipeline-id [PIPELINE_ID] --config-dir resources --source-dir src --bind --force
+File successfully saved to src/test.py
+Pipeline configuration successfully saved to resources/test_pipeline.pipeline.yml
+Successfully bound pipeline with an id '[PIPELINE_ID]'
 
 >>> ls src/
 test.py
@@ -18,27 +26,54 @@ test.py
 >>> cat resources/test_job.job.yml
       name: auto-bind-job-[UNIQUE_NAME]
 
-=== Deploy the bound job:
+>>> cat resources/test_pipeline.pipeline.yml
+      name: auto-bind-pipeline-[UNIQUE_NAME]
+
+=== Deploy the bound resources:
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/auto-bind-test-[UNIQUE_NAME]/files...
 Updated jobs.test_job
-Files: 5 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+Updated pipelines.test_pipeline
+Files: 6 uploaded, 0 deleted
+Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
+
+=== Regenerate and bind the deployed resources:
+>>> [CLI] bundle deployment unbind test_job
+
+>>> [CLI] bundle generate job --key test_job --existing-job-id [JOB_ID] --config-dir resources --source-dir src --bind --force
+File successfully saved to src/test.py
+Job configuration successfully saved to resources/test_job.job.yml
+Successfully bound job with an id '[JOB_ID]'
+
+>>> [CLI] bundle deployment unbind test_pipeline
+
+>>> [CLI] bundle generate pipeline --key test_pipeline --existing-pipeline-id [PIPELINE_ID] --config-dir resources --source-dir src --bind --force
+File successfully saved to src/test.py
+Pipeline configuration successfully saved to resources/test_pipeline.pipeline.yml
+Successfully bound pipeline with an id '[PIPELINE_ID]'
 
 === Destroy the bundle:
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.test_job
+  delete resources.pipelines.test_pipeline
+
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
+  delete resources.pipelines.test_pipeline
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/auto-bind-test-[UNIQUE_NAME]
 
-Destroy: 1 deleted
+Destroy: 2 deleted
 
-=== Check that job is bound and does not exist after bundle is destroyed:
+=== Check that resources are bound and do not exist after bundle is destroyed:
 >>> errcode [CLI] jobs get [JOB_ID] --output json
 Error: Job [JOB_ID] does not exist.
 
 Exit code: 1
+
+>>> musterr [CLI] pipelines get [PIPELINE_ID] --output json
+Error: The specified pipeline [PIPELINE_ID] was not found.
 
 === Delete the tmp folder:
 >>> [CLI] workspace delete /Workspace/Users/[USERNAME]/python-[UNIQUE_NAME]/test
