@@ -120,7 +120,7 @@ func newDeviceCodeAuth(t *testing.T, f *fakeDeviceServer, advertise bool, opts .
 }
 
 func newDeviceCodeLogin(t *testing.T, f *fakeDeviceServer, opts ...PersistentAuthOption) *DeviceCodeLogin {
-	l, err := newDeviceCodeAuth(t, f, true, opts...).DeviceCodeLogin()
+	l, err := newDeviceCodeAuth(t, f, true, opts...).NewDeviceCodeLogin()
 	require.NoError(t, err)
 	return l
 }
@@ -215,6 +215,7 @@ func TestDeviceCodeLogin_Errors(t *testing.T) {
 			tc.server.expiresIn = 600
 			_, err := runDeviceCodeLogin(t.Context(), newDeviceCodeLogin(t, tc.server), testConfirmationCode)
 			assert.EqualError(t, err, tc.wantErr)
+			assert.LessOrEqual(t, tc.server.tokenRequests.Load(), int32(1))
 			// None of these errors can be fixed by entering the confirmation
 			// code again.
 			assert.NotErrorIs(t, err, ErrInvalidConfirmationCode)
@@ -264,7 +265,7 @@ func TestRequestDeviceAccessToken_ErrorKeepsHTTPError(t *testing.T) {
 	assert.EqualError(t, err, "Client is not allowed to use device code (error code: invalid_client)")
 }
 
-func TestRequestDeviceAccessToken_RetriesWrongConfirmationCode(t *testing.T) {
+func TestRequestDeviceAccessToken_WrongConfirmationCode(t *testing.T) {
 	f := &fakeDeviceServer{expiresIn: 600}
 	l := newDeviceCodeLogin(t, f)
 
@@ -320,21 +321,21 @@ func TestRequestDeviceAuthorization_Cancelled(t *testing.T) {
 	assert.Less(t, time.Since(start), 10*time.Second)
 }
 
-func TestDeviceCodeLogin_NotAdvertised(t *testing.T) {
+func TestNewDeviceCodeLogin_NotAdvertised(t *testing.T) {
 	p := newDeviceCodeAuth(t, &fakeDeviceServer{}, false)
 
-	_, err := p.DeviceCodeLogin()
+	_, err := p.NewDeviceCodeLogin()
 	assert.ErrorIs(t, err, ErrDeviceCodeNotSupported)
 }
 
-func TestDeviceCodeLogin_Resources(t *testing.T) {
+func TestNewDeviceCodeLogin_Resources(t *testing.T) {
 	p := newDeviceCodeAuth(t, &fakeDeviceServer{}, true, WithResources([]string{"https://resource.test"}))
 
-	_, err := p.DeviceCodeLogin()
+	_, err := p.NewDeviceCodeLogin()
 	assert.EqualError(t, err, "device code login does not support resource indicators")
 }
 
-func TestDeviceCodeLogin_AccountHost(t *testing.T) {
+func TestNewDeviceCodeLogin_AccountHost(t *testing.T) {
 	arg, err := NewBasicAccountOAuthArgument("https://accounts.cloud.databricks.test", "xyz")
 	require.NoError(t, err)
 	p, err := NewPersistentAuth(t.Context(),
@@ -344,7 +345,7 @@ func TestDeviceCodeLogin_AccountHost(t *testing.T) {
 	require.NoError(t, err)
 	defer p.Close()
 
-	_, err = p.DeviceCodeLogin()
+	_, err = p.NewDeviceCodeLogin()
 	assert.EqualError(t, err, "device code login is only supported for workspace hosts")
 }
 

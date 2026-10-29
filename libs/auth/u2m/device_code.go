@@ -78,16 +78,16 @@ func (a *PersistentAuth) deviceCodeConfig() (*oauth2.Config, error) {
 
 // DeviceCodeLogin makes the requests of a login using the Databricks variant
 // of the RFC 8628 device authorization grant. Get one with
-// PersistentAuth.DeviceCodeLogin.
+// PersistentAuth.NewDeviceCodeLogin.
 type DeviceCodeLogin struct {
 	auth *PersistentAuth
 	cfg  *oauth2.Config
 }
 
-// DeviceCodeLogin fetches the OAuth endpoints for a device code login, or
+// NewDeviceCodeLogin fetches the OAuth endpoints for a device code login, or
 // returns an error if the host does not support it. Only workspace hosts are
 // supported.
-func (a *PersistentAuth) DeviceCodeLogin() (*DeviceCodeLogin, error) {
+func (a *PersistentAuth) NewDeviceCodeLogin() (*DeviceCodeLogin, error) {
 	cfg, err := a.deviceCodeConfig()
 	if err != nil {
 		return nil, err

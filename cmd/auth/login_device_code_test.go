@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"runtime"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -325,4 +326,68 @@ func TestLoginDeviceCodeFailsOnTokenExchangeError(t *testing.T) {
 	tm.Type("FTFA-QQKY\n")
 	_, err := tm.Result()
 	assert.EqualError(t, err, "token exchange: Device grant rate limit exceeded (error code: invalid_request)")
+}
+
+// A wrong confirmation code leaves the device code valid, so the user can
+// enter the code again until the attempts run out.
+func TestLoginDeviceCodeWrongConfirmationCode(t *testing.T) {
+	// The prompt for each attempt, which the test waits for before typing
+	// the next code.
+	prompts := []string{"Confirmation code", "(2 attempts left)", "(1 attempt left)"}
+	tests := []struct {
+		name  string
+		codes []string
+		// closeStdin ends the input after the codes, so that the next
+		// prompt fails.
+		closeStdin        bool
+		wantErr           string
+		wantTokenRequests int32
+	}{
+		{
+			name:              "right code after a wrong one",
+			codes:             []string{"AAAA-AAAA", "FTFA-QQKY"},
+			wantTokenRequests: 2,
+		},
+		{
+			name:              "too many wrong codes",
+			codes:             []string{"AAAA-AAAA", "BBBB-BBBB", "CCCC-CCCC"},
+			wantErr:           "Invalid confirmation code (error code: invalid_request). Start login from scratch",
+			wantTokenRequests: 3,
+		},
+		{
+			name:              "no code after a wrong one",
+			codes:             []string{"AAAA-AAAA"},
+			closeStdin:        true,
+			wantErr:           "reading confirmation code: EOF",
+			wantTokenRequests: 1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := testserver.New(t)
+			testserver.AddDefaultHandlers(server)
+			var tokenRequests atomic.Int32
+			server.RequestCallback = func(req *testserver.Request) {
+				if req.URL.Path == "/oidc/v1/token" {
+					tokenRequests.Add(1)
+				}
+			}
+			tm := startDeviceCodeLogin(t, "[test]\nhost = "+server.URL+"\n", "--profile", "test")
+			for i, code := range tt.codes {
+				tm.WaitFor(prompts[i])
+				tm.Type(code + "\n")
+			}
+			if tt.closeStdin {
+				tm.WaitFor(prompts[len(tt.codes)])
+				tm.Close()
+			}
+			_, err := tm.Result()
+			if tt.wantErr != "" {
+				assert.EqualError(t, err, tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.wantTokenRequests, tokenRequests.Load())
+		})
+	}
 }
