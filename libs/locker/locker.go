@@ -95,27 +95,34 @@ func (locker *Locker) GetActiveLockState(ctx context.Context) (*LockState, error
 	return &remoteLock, nil
 }
 
+// lockNotHeldError reports that the lock file is missing or held by someone else, as opposed
+// to a failure to read it.
+type lockNotHeldError struct{ err error }
+
+func (e lockNotHeldError) Error() string { return e.err.Error() }
+func (e lockNotHeldError) Unwrap() error { return e.err }
+
 // asserts whether lock is held by locker. Returns descriptive error with current
 // holder details if locker does not hold the lock
 func (locker *Locker) assertLockHeld(ctx context.Context) error {
 	activeLockState, err := locker.GetActiveLockState(ctx)
 	if errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("no active lock on target dir: %w", err)
+		return lockNotHeldError{fmt.Errorf("no active lock on target dir: %w", err)}
 	}
 	if err != nil {
 		return err
 	}
 	if activeLockState.ID != locker.State.ID && !activeLockState.IsForced {
-		return fmt.Errorf("deploy lock acquired by %s at %v.\n"+
+		return lockNotHeldError{fmt.Errorf("deploy lock acquired by %s at %v.\n"+
 			"Another deployment may be in progress. Use --force-lock to override, but this may\n"+
 			"conflict with the other deployment if it is still active",
-			activeLockState.User, activeLockState.AcquisitionTime)
+			activeLockState.User, activeLockState.AcquisitionTime)}
 	}
 	if activeLockState.ID != locker.State.ID && activeLockState.IsForced {
-		return fmt.Errorf("deploy lock force-acquired by %s at %v.\n"+
+		return lockNotHeldError{fmt.Errorf("deploy lock force-acquired by %s at %v.\n"+
 			"Another deployment may be in progress. Use --force-lock to override, but this may\n"+
 			"conflict with the other deployment if it is still active",
-			activeLockState.User, activeLockState.AcquisitionTime)
+			activeLockState.User, activeLockState.AcquisitionTime)}
 	}
 	return nil
 }
@@ -192,8 +199,11 @@ func (locker *Locker) Unlock(ctx context.Context, opts ...UnlockOption) error {
 	}
 
 	err := locker.assertLockHeld(ctx)
-	if err != nil {
+	if _, ok := errors.AsType[lockNotHeldError](err); ok {
 		return fmt.Errorf("unlock called when lock is not held: %w", err)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to check the deploy lock before releasing it: %w", err)
 	}
 	err = locker.filer.Delete(ctx, LockFileName)
 	if err != nil {
