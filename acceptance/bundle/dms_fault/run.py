@@ -5,7 +5,6 @@ import json
 import os
 import re
 import shlex
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -14,7 +13,9 @@ from string import Template
 
 # Keep acceptance-only setup out of imports used by doctest.
 def main():
-    sys.path.insert(0, str(Path(shutil.which("print_requests.py")).parent))
+    # Use file paths: Windows does not reliably find Python scripts on PATH.
+    HELPERS = Path(__file__).resolve().parents[2] / "bin"
+    sys.path.insert(0, str(HELPERS))
     from add_repl import add_repl
     from print_requests import read_json_many
 
@@ -67,7 +68,7 @@ def main():
     # Enable or clear an HTTP 500 fault for this endpoint.
     def fault(pattern, enabled):
         subprocess.run(
-            [sys.executable, shutil.which("fault.py"), pattern, "500", "0", "1000" if enabled else "0"], check=True
+            [sys.executable, str(HELPERS / "fault.py"), pattern, "500", "0", "1000" if enabled else "0"], check=True
         )
 
     # Count recorded method/path matches to report whether this API was called.
@@ -165,7 +166,7 @@ def main():
             subprocess.run(
                 [
                     sys.executable,
-                    shutil.which("update_file.py"),
+                    str(HELPERS / "update_file.py"),
                     str(cwd / filename),
                     prefix + previous,
                     prefix + value,
