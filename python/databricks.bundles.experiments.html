@@ -130,6 +130,39 @@
 <section id="module-databricks.bundles.experiments">
 <span id="classes"></span><h2>Classes<a class="headerlink" href="#module-databricks.bundles.experiments" title="Link to this heading">¶</a></h2>
 <dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.experiments.DependsOn">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DependsOn</span></span><a class="headerlink" href="#databricks.bundles.experiments.DependsOn" title="Link to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.experiments.DependsOn.resource">
+<span class="sig-name descname"><span class="pre">resource</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.experiments.DependsOn.resource" title="Link to this definition">¶</a></dt>
+<dd><p>Key of the resource to depend on, as <cite>foo</cite> or <cite>jobs.foo</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.experiments.DependsOn.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.experiments.DependsOn.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.experiments.DependsOn.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.experiments.DependsOn.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.experiments.ExperimentPermissionLevel">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ExperimentPermissionLevel</span></span><a class="headerlink" href="#databricks.bundles.experiments.ExperimentPermissionLevel" title="Link to this definition">¶</a></dt>
 <dd><p>Permission level</p>
@@ -194,6 +227,12 @@
 <dt class="sig sig-object py" id="databricks.bundles.experiments.Lifecycle">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Lifecycle</span></span><a class="headerlink" href="#databricks.bundles.experiments.Lifecycle" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.experiments.Lifecycle.depends_on">
+<span class="sig-name descname"><span class="pre">depends_on</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.experiments.DependsOn" title="databricks.bundles.experiments._models.depends_on.DependsOn"><span class="pre">DependsOn</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.experiments.Lifecycle.depends_on" title="Link to this definition">¶</a></dt>
+<dd><p>Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.</p>
+</dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.experiments.Lifecycle.prevent_destroy">
 <span class="sig-name descname"><span class="pre">prevent_destroy</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.experiments.Lifecycle.prevent_destroy" title="Link to this definition">¶</a></dt>
 <dd><p>Lifecycle setting to prevent the resource from being destroyed.</p>
