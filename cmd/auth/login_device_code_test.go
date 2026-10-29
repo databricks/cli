@@ -361,6 +361,12 @@ func TestLoginDeviceCodeWrongConfirmationCode(t *testing.T) {
 			wantErr:           "reading confirmation code: EOF",
 			wantTokenRequests: 1,
 		},
+		{
+			name:              "no code",
+			closeStdin:        true,
+			wantErr:           "reading confirmation code: EOF",
+			wantTokenRequests: 0,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
