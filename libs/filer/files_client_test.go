@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net/http"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 
 	cliauth "github.com/databricks/cli/libs/auth"
@@ -143,6 +145,49 @@ func TestFilesClientMkdirWhenFileExists(t *testing.T) {
 
 	err := f.Mkdir(ctx, "/Volumes/main/schema/vol/hello")
 	assert.ErrorIs(t, err, fs.ErrExist)
+}
+
+// statDirWithFirstStatus fails the first directory HEAD with the given status
+// and lets later ones succeed. It returns the number of HEAD requests the server
+// saw and the Stat error.
+func statDirWithFirstStatus(t *testing.T, statusCode int) (int, error) {
+	t.Helper()
+
+	server := testserver.New(t)
+	var calls atomic.Int32
+	server.Handle("HEAD", "/api/2.0/fs/directories/{path...}", func(req testserver.Request) any {
+		if calls.Add(1) == 1 {
+			return testserver.Response{
+				StatusCode: statusCode,
+				Body:       map[string]any{"error_code": "TEMPORARILY_UNAVAILABLE", "message": "GCP is temporarily unavailable; try again later."},
+			}
+		}
+		return ""
+	})
+
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:  server.URL,
+		Token: "testtoken",
+	})
+	require.NoError(t, err)
+
+	f, err := NewFilesClient(t.Context(), client, "/Volumes/main/schema/vol")
+	require.NoError(t, err)
+
+	_, err = f.(*FilesClient).statDir(t.Context(), "dir")
+	return int(calls.Load()), err
+}
+
+func TestFilesClientRetriesTransientError(t *testing.T) {
+	calls, err := statDirWithFirstStatus(t, http.StatusServiceUnavailable)
+	require.NoError(t, err)
+	assert.Equal(t, 2, calls)
+}
+
+func TestFilesClientDoesNotRetryInternalError(t *testing.T) {
+	calls, err := statDirWithFirstStatus(t, http.StatusInternalServerError)
+	require.Error(t, err)
+	assert.Equal(t, 1, calls)
 }
 
 // onlyReader hides the Seek method of an underlying reader, modelling a

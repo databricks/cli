@@ -16,7 +16,10 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/sdk-go/core/apierr"
+	"github.com/databricks/sdk-go/core/apiretry"
+	"github.com/databricks/sdk-go/core/ops"
 	files "github.com/databricks/sdk-go/files/v2"
+	"github.com/databricks/sdk-go/options/call"
 	"github.com/databricks/sdk-go/options/client"
 	"golang.org/x/sync/errgroup"
 )
@@ -24,6 +27,32 @@ import (
 // cloudResponseHeaderTimeout bounds the wait for a cloud storage response header
 // on a large-file part transfer. It matches the files/v2 engine's own default.
 const cloudResponseHeaderTimeout = 60 * time.Second
+
+// files/v2 calls are not retried unless a retrier is passed per call, so without
+// these options a transient 5xx (e.g. "GCP is temporarily unavailable") fails the
+// command outright. The status codes match the files/v2 upload engine's
+// control-plane retries; the timeout matches its control-plane retry budget and
+// the default SDK retry timeout. Only idempotent calls get them: uploads cannot
+// replay their body, and a retried delete could turn a success into a 404.
+var (
+	filesAPIRetryStatusCodes = []int{
+		http.StatusRequestTimeout,
+		http.StatusTooManyRequests,
+		http.StatusBadGateway,
+		http.StatusServiceUnavailable,
+		http.StatusGatewayTimeout,
+	}
+	filesAPIRetryTimeout = 5 * time.Minute
+)
+
+func filesAPIRetryOptions() []call.Option {
+	return []call.Option{
+		call.WithRetrier(func() ops.Retrier {
+			return apiretry.NewRetrier(ops.BackoffPolicy{}, apiretry.RetrierConfig{StatusCodes: filesAPIRetryStatusCodes})
+		}),
+		call.WithTimeout(filesAPIRetryTimeout),
+	}
+}
 
 // httpStatus returns the HTTP status code of err if it is (or wraps) an
 // [apierr.APIError], and -1 otherwise. The filer keys its error mapping off the
@@ -213,7 +242,7 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 	// Check that target path exists if CreateParentDirectories mode is not set
 	if !slices.Contains(mode, CreateParentDirectories) {
 		dir := path.Dir(absPath)
-		_, err := w.client.GetDirectoryMetadata(ctx, files.GetDirectoryMetadataRequest{DirectoryPath: &dir})
+		_, err := w.client.GetDirectoryMetadata(ctx, files.GetDirectoryMetadataRequest{DirectoryPath: &dir}, filesAPIRetryOptions()...)
 		if err != nil {
 			// This API returns a 404 if the directory doesn't exist.
 			if httpStatus(err) == http.StatusNotFound {
@@ -295,7 +324,7 @@ func (w *FilesClient) Read(ctx context.Context, name string) (io.ReadCloser, err
 		return nil, err
 	}
 
-	resp, err := w.client.DownloadFile(ctx, files.DownloadFileRequest{FilePath: &absPath})
+	resp, err := w.client.DownloadFile(ctx, files.DownloadFileRequest{FilePath: &absPath}, filesAPIRetryOptions()...)
 
 	// Return early on success.
 	if err == nil {
@@ -477,7 +506,7 @@ func (w *FilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, 
 	var entries []fs.DirEntry
 	for entry, err := range w.client.ListDirectoryContentsIter(ctx, files.ListDirectoryContentsRequest{
 		DirectoryPath: &absPath,
-	}) {
+	}, filesAPIRetryOptions()...) {
 		if err != nil {
 			// This API returns a 404 if the specified path does not exist.
 			if httpStatus(err) == http.StatusNotFound {
@@ -513,7 +542,7 @@ func (w *FilesClient) Mkdir(ctx context.Context, name string) error {
 		return err
 	}
 
-	_, err = w.client.CreateDirectory(ctx, files.CreateDirectoryRequest{DirectoryPath: &absPath})
+	_, err = w.client.CreateDirectory(ctx, files.CreateDirectoryRequest{DirectoryPath: &absPath}, filesAPIRetryOptions()...)
 
 	// This API returns a 409 when a file already exists at the path (the create
 	// is not idempotent over a file).
@@ -531,7 +560,7 @@ func (w *FilesClient) statFile(ctx context.Context, name string) (fs.FileInfo, e
 		return nil, err
 	}
 
-	resp, err := w.client.GetFileMetadata(ctx, files.GetFileMetadataRequest{FilePath: &absPath})
+	resp, err := w.client.GetFileMetadata(ctx, files.GetFileMetadataRequest{FilePath: &absPath}, filesAPIRetryOptions()...)
 
 	// If the HEAD requests succeeds, the file exists.
 	if err == nil {
@@ -557,7 +586,7 @@ func (w *FilesClient) statDir(ctx context.Context, name string) (fs.FileInfo, er
 		return nil, err
 	}
 
-	_, err = w.client.GetDirectoryMetadata(ctx, files.GetDirectoryMetadataRequest{DirectoryPath: &absPath})
+	_, err = w.client.GetDirectoryMetadata(ctx, files.GetDirectoryMetadataRequest{DirectoryPath: &absPath}, filesAPIRetryOptions()...)
 
 	// If the HEAD requests succeeds, the directory exists.
 	if err == nil {
