@@ -120,6 +120,10 @@ in two steps instead:
    flags exchanges the pending device code instead of requesting a new one,
    and the rest of the login runs as usual.
 
+Agent detection (`useragent.AgentProvider()`) does not pick the flow. It only
+adds a note to the first step's output that tells the agent to pass the login
+on to the user.
+
 The pending login is a token store entry with `PendingLogin` set instead of a
 token. Its key is the login's cache key (the profile name, or the host without
 a profile) with a `#device-code` suffix, so the target's current token keeps
