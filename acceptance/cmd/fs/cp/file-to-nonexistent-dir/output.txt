@@ -1,0 +1,49 @@
+
+=== foo.txt -> local
+>>> [CLI] fs cp foo.txt local/existing-from-local/
+foo.txt -> local/existing-from-local/foo.txt
+
+>>> [CLI] fs cp foo.txt local/nonexistent/mydir/
+Error: no such directory: local/nonexistent/mydir
+
+Exit code: 1
+
+=== foo.txt -> dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]
+>>> [CLI] fs cp foo.txt dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/existing-from-local/
+foo.txt -> dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/existing-from-local/foo.txt
+
+>>> [CLI] fs cp foo.txt dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/nonexistent/mydir/
+Error: no such directory: /Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/nonexistent
+
+Exit code: 1
+
+=== dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/src/foo.txt -> local
+>>> [CLI] fs cp dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/src/foo.txt local/existing-from-volume/
+dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/src/foo.txt -> local/existing-from-volume/foo.txt
+
+>>> [CLI] fs cp dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/src/foo.txt local/nonexistent/mydir/
+Error: no such directory: local/nonexistent/mydir
+
+Exit code: 1
+
+=== dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/src/foo.txt -> dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]
+>>> [CLI] fs cp dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/src/foo.txt dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/existing-from-volume/
+dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/src/foo.txt -> dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/existing-from-volume/foo.txt
+
+>>> [CLI] fs cp dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/src/foo.txt dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/nonexistent/mydir/
+Error: no such directory: /Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/nonexistent
+
+Exit code: 1
+
+=== Copies landed in the existing directories
+>>> cat local/existing-from-local/foo.txt
+abc
+
+>>> [CLI] fs cat dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/existing-from-local/foo.txt
+abc
+
+>>> cat local/existing-from-volume/foo.txt
+abc
+
+>>> [CLI] fs cat dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/existing-from-volume/foo.txt
+abc
