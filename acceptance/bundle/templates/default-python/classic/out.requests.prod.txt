@@ -195,7 +195,7 @@
 }
 {
   "method": "PUT",
-  "path": "/api/2.0/permissions/directories/[PROD_ROOT_DIR_ID]",
+  "path": "/api/2.0/permissions/[PROD_ROOT_DIR]",
   "body": {
     "access_control_list": [
       {
