@@ -85,6 +85,16 @@ Profile my-profile was successfully saved
    confirmation code. It saves the profile and the token. Without
    `--profile`, it only stores the token for the host.
 
+When the CLI detects an AI agent, it also prints a note that tells the agent to
+pass the URL and the code on to you, not to approve the login itself, and to
+ask you for the confirmation code:
+
+```console
+Note for AI agents (claude-code): give the URL and the code above to the user.
+Do not open the URL or approve the login yourself: the user must approve it.
+Ask the user for the confirmation code their browser shows.
+```
+
 The pending login stays on your machine, so a confirmation code that ends up
 somewhere else, such as an agent's conversation, cannot complete the login on
 another machine.

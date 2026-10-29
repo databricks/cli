@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
@@ -183,11 +184,23 @@ func (l nonInteractiveDeviceCodeLogin) start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("store pending login: %w", err)
 	}
-	cmdio.LogString(ctx, strings.Join(append(approvalInstructions(*da),
+	lines := approvalInstructions(*da)
+	// An agent passes the login on to the user, who approves it in the
+	// browser.
+	if agent := useragent.AgentProvider(); agent != "" {
+		lines = append(lines,
+			"Note for AI agents ("+agent+"): give the URL and the code above to the user.",
+			"Do not open the URL or approve the login yourself: the user must approve it.",
+			"Ask the user for the confirmation code their browser shows.",
+			"",
+		)
+	}
+	lines = append(lines,
 		"Once finished, complete the login by running the same command with",
 		"--user-code "+formatCode(da.UserCode)+" and --confirmation-code set to the confirmation code",
 		"provided in your browser.",
-	), "\n"))
+	)
+	cmdio.LogString(ctx, strings.Join(lines, "\n"))
 	return nil
 }
 
