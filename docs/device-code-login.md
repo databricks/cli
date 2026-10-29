@@ -96,6 +96,9 @@ Do not open the URL or approve the login yourself: the user must approve it.
 Ask the user for the confirmation code their browser shows.
 ```
 
+In a terminal, the note also tells the agent to enter the confirmation code
+at the `Confirmation code` prompt of the running command.
+
 The pending login stays on your machine, so a confirmation code that ends up
 somewhere else, such as an agent's conversation, cannot complete the login on
 another machine.

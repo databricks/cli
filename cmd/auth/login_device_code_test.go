@@ -135,8 +135,8 @@ func TestPromptForConfirmationCode(t *testing.T) {
 	}
 }
 
-// An AI agent that runs the login in a terminal gets the same note as in the
-// non-interactive login.
+// An AI agent that runs the login in a terminal is told to enter the
+// confirmation code at the prompt.
 func TestPromptForConfirmationCode_Agent(t *testing.T) {
 	testutil.SetAgent(t, "test-agent")
 	var stderr bytes.Buffer
@@ -157,7 +157,8 @@ func TestPromptForConfirmationCode_Agent(t *testing.T) {
 		"",
 		"Note for AI agents (test-agent): give the URL and the code above to the user.",
 		"Do not open the URL or approve the login yourself: the user must approve it.",
-		"Ask the user for the confirmation code their browser shows.",
+		"Ask the user for the confirmation code their browser shows, and enter it",
+		`at the "Confirmation code" prompt of this command.`,
 		"",
 		"Once finished, enter the confirmation code provided in your browser.",
 		"Confirmation code: ",
