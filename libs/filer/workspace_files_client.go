@@ -256,11 +256,22 @@ func messageNames(re *regexp.Regexp, msg, name string) bool {
 
 // deleteNodeOfOtherType deletes the node that blocks an overwrite of absPath
 // because its type differs from the upload's, and reports whether it did.
-// CLI v1.21 and v1.22 uploaded some notebooks as files this way.
 //
-// Changes to how uploads are classified as files or notebooks can leave existing
-// nodes with the previous type. Keep this recovery path so future classification
-// changes do not break redeployments: overwrite alone cannot change a node's type.
+// Regression: CLI v1.21 switched from /workspace-files/import-file to
+// /workspace/import (https://github.com/databricks/cli/pull/6149). The follow-up
+// https://github.com/databricks/cli/pull/7034 added client-side notebook detection.
+// These upload paths use different rules to recognize notebooks. For example,
+// import-file accepts a notebook marker anywhere on the first line, but the CLI
+// required an exact header match. A SQL notebook with a UTF-8 BOM was therefore
+// uploaded as a file in v1.21/v1.22.
+//
+// Recovery: https://github.com/databricks/cli/pull/7218 restored import-file, so
+// the same bytes can now be recognized as a notebook. Overwrite cannot change
+// an existing node's type; delete and retry to keep those deployments working
+// after an upgrade.
+//
+// Removal: this compatibility code can be removed once the risk of users
+// upgrading directly from v1.21/v1.22 to the latest CLI is negligible.
 func (w *WorkspaceFilesClient) deleteNodeOfOtherType(ctx context.Context, absPath string, uploadErr error) (bool, error) {
 	aerr, ok := errors.AsType[*apierr.APIError](uploadErr)
 	if !ok {
