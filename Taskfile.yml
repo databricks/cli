@@ -265,6 +265,12 @@ tasks:
     cmds:
       - 'uv run -p ">=3.11" --no-project python tools/validate_codeowners.py'
 
+  test-cli-wheels:
+    desc: Unit-test the script that packages CLI binaries as PyPI wheels
+    dir: tools
+    cmds:
+      - 'uv run -p ">=3.11" --no-project python -m unittest -q test_build_cli_wheels'
+
   changelog-preview:
     desc: Print the CHANGELOG.md section the next release would add from .nextchanges/
     env:
@@ -314,6 +320,7 @@ tasks:
       - task: check-codeowners
       - task: check-lockfiles
       - task: check-agents-setup
+      - task: test-cli-wheels
 
   install-pythons:
     desc: Install Python 3.9-3.13 via uv
