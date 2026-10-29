@@ -311,25 +311,51 @@ resources = https://workspace.test/ai-gateway/mcp-services/system.ai.github
 // Only a wrong confirmation code can be fixed by entering the code again, so
 // any other token exchange error ends the login.
 func TestLoginDeviceCodeFailsOnTokenExchangeError(t *testing.T) {
-	server := testserver.New(t)
-	// The router keeps the first handler registered for a route, so this one
-	// replaces the default token endpoint.
-	server.Handle("POST", "/oidc/v1/token", func(_ testserver.Request) any {
-		return testserver.Response{
-			StatusCode: http.StatusTooManyRequests,
-			Body:       map[string]string{"error": "invalid_request", "error_description": "Device grant rate limit exceeded"},
-		}
-	})
-	testserver.AddDefaultHandlers(server)
-	tm := startDeviceCodeLogin(t, "[test]\nhost = "+server.URL+"\n", "--profile", "test")
-	tm.WaitFor("Confirmation code")
-	tm.Type("FTFA-QQKY\n")
-	_, err := tm.Result()
-	assert.EqualError(t, err, "token exchange: Device grant rate limit exceeded (error code: invalid_request)")
+	// Neither error can be fixed by entering the confirmation code again, so
+	// the login fails after one token request instead of asking again.
+	tests := []struct {
+		name        string
+		status      int
+		description string
+		wantErr     string
+	}{
+		{
+			name:        "rate limited",
+			status:      http.StatusTooManyRequests,
+			description: "Device grant rate limit exceeded",
+			wantErr:     "token exchange: Device grant rate limit exceeded (error code: invalid_request)",
+		},
+		{
+			name:        "unknown device code",
+			status:      http.StatusBadRequest,
+			description: "Invalid device code",
+			wantErr:     "token exchange: Invalid device code (error code: invalid_request)",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := testserver.New(t)
+			var tokenRequests atomic.Int32
+			// The router keeps the first handler registered for a route, so
+			// this one replaces the default token endpoint.
+			server.Handle("POST", "/oidc/v1/token", func(_ testserver.Request) any {
+				tokenRequests.Add(1)
+				return testserver.Response{
+					StatusCode: tt.status,
+					Body:       map[string]string{"error": "invalid_request", "error_description": tt.description},
+				}
+			})
+			testserver.AddDefaultHandlers(server)
+			tm := startDeviceCodeLogin(t, "[test]\nhost = "+server.URL+"\n", "--profile", "test")
+			tm.WaitFor("Confirmation code")
+			tm.Type("FTFA-QQKY\n")
+			_, err := tm.Result()
+			assert.EqualError(t, err, tt.wantErr)
+			assert.Equal(t, int32(1), tokenRequests.Load())
+		})
+	}
 }
 
-// A wrong confirmation code leaves the device code valid, so the user can
-// enter the code again until the attempts run out.
 func TestLoginDeviceCodeWrongConfirmationCode(t *testing.T) {
 	// The prompt for each attempt, which the test waits for before typing
 	// the next code.
