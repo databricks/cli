@@ -1018,6 +1018,9 @@ resources:
         "serialized_space":
           "description": |-
             Serialized Genie space body. May be provided inline as a JSON string (or YAML that will be marshalled to JSON) or referenced via `file_path`. To round-trip an existing space into a bundle, use `databricks bundle generate genie-space`.
+        "skip_missing_data_sources":
+          "description": |-
+            When true, deploy removes attached tables, metric views, and SQL functions that Unity Catalog reports as missing, and warns once for each skipped name. Join specs that reference a skipped table or metric view are removed as well. A later deploy attaches them once they exist. Any other lookup error, including permission denied, fails the deploy. Defaults to false.
         "title":
           "description": |-
             Title of the Genie space shown in the Databricks UI.
