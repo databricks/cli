@@ -1,0 +1,21 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "The DEV switch creates DMS-authoritative state"
+trace $CLI bundle deploy
+trace jq '{features, state}' .databricks/bundle/default/resources.json
+rm -f "$OUT_REQUESTS"
+
+title "The persisted state keeps DMS authoritative after the DEV switch is removed"
+unset DATABRICKS_BUNDLE_DEV_DEPLOYMENT_HISTORY_ONLY
+rm -rf .databricks
+trace $CLI bundle plan
+trace print_requests.py --dms //resources --get --summary
+
+title "DMS errors fail operations when DMS is authoritative"
+trace fault.py "GET /api/2.0/bundle/deployments/*" 500 0 1000
+trace musterr $CLI bundle plan
+rm -f "$OUT_REQUESTS"
+
+trace fault.py "GET /api/2.0/bundle/deployments/*" 500 0 0
+trace $CLI bundle destroy --auto-approve
+rm -f "$OUT_REQUESTS"
