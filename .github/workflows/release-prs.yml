@@ -59,6 +59,9 @@ jobs:
         id: latest
         if: ${{ github.event_name == 'release' }}
         run: |
+          # `sort -V` orders vX.Y.Z tags numerically per component (v0.299.0 < v1.0.0).
+          # It would misorder tags without the "v" prefix, but the tagging workflow
+          # (internal/genkit/tagging.py) always creates "v"-prefixed tags.
           highest=$(gh api --paginate "repos/${{ github.repository }}/releases" \
             --jq '.[] | select((.draft or .prerelease) | not) | .tag_name' | sort -V | tail -n 1)
           echo "Release: $TAG"
