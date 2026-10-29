@@ -917,6 +917,10 @@ tasks:
   # inspection. Readers always use the .gz, so edits to the copy have no effect.
   unzip-clijson:
     desc: Decompress .codegen/cli.json.gz to .codegen/cli.json for inspection
+    sources:
+      - .codegen/cli.json.gz
+    generates:
+      - .codegen/cli.json
     cmds:
       - gzip -d -k -f .codegen/cli.json.gz
 
