@@ -120,7 +120,7 @@ func newDeviceCodeAuth(t *testing.T, f *fakeDeviceServer, advertise bool, opts .
 }
 
 func newDeviceCodeLogin(t *testing.T, f *fakeDeviceServer, opts ...PersistentAuthOption) *DeviceCodeLogin {
-	l, err := newDeviceCodeAuth(t, f, true, opts...).NewDeviceCodeLogin()
+	l, err := newDeviceCodeAuth(t, f, true, opts...).NewDeviceCodeLogin(t.Context())
 	require.NoError(t, err)
 	return l
 }
@@ -324,14 +324,14 @@ func TestRequestDeviceAuthorization_Cancelled(t *testing.T) {
 func TestNewDeviceCodeLogin_NotAdvertised(t *testing.T) {
 	p := newDeviceCodeAuth(t, &fakeDeviceServer{}, false)
 
-	_, err := p.NewDeviceCodeLogin()
+	_, err := p.NewDeviceCodeLogin(t.Context())
 	assert.ErrorIs(t, err, ErrDeviceCodeNotSupported)
 }
 
 func TestNewDeviceCodeLogin_Resources(t *testing.T) {
 	p := newDeviceCodeAuth(t, &fakeDeviceServer{}, true, WithResources([]string{"https://resource.test"}))
 
-	_, err := p.NewDeviceCodeLogin()
+	_, err := p.NewDeviceCodeLogin(t.Context())
 	assert.EqualError(t, err, "device code login does not support resource indicators")
 }
 
@@ -345,7 +345,7 @@ func TestNewDeviceCodeLogin_AccountHost(t *testing.T) {
 	require.NoError(t, err)
 	defer p.Close()
 
-	_, err = p.NewDeviceCodeLogin()
+	_, err = p.NewDeviceCodeLogin(t.Context())
 	assert.EqualError(t, err, "device code login is only supported for workspace hosts")
 }
 

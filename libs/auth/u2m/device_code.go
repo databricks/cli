@@ -57,7 +57,7 @@ type DeviceAuthorization struct {
 
 // deviceCodeConfig returns the OAuth config for device code login, or an
 // error if the host does not support it.
-func (a *PersistentAuth) deviceCodeConfig() (*oauth2.Config, error) {
+func (a *PersistentAuth) deviceCodeConfig(ctx context.Context) (*oauth2.Config, error) {
 	if _, ok := a.oAuthArgument.(WorkspaceOAuthArgument); !ok {
 		return nil, errors.New("device code login is only supported for workspace hosts")
 	}
@@ -66,7 +66,7 @@ func (a *PersistentAuth) deviceCodeConfig() (*oauth2.Config, error) {
 	if len(a.resources) > 0 {
 		return nil, errors.New("device code login does not support resource indicators")
 	}
-	cfg, err := a.oauth2Config()
+	cfg, err := a.oauth2Config(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("fetching oauth config: %w", err)
 	}
@@ -87,8 +87,8 @@ type DeviceCodeLogin struct {
 // NewDeviceCodeLogin fetches the OAuth endpoints for a device code login, or
 // returns an error if the host does not support it. Only workspace hosts are
 // supported.
-func (a *PersistentAuth) NewDeviceCodeLogin() (*DeviceCodeLogin, error) {
-	cfg, err := a.deviceCodeConfig()
+func (a *PersistentAuth) NewDeviceCodeLogin(ctx context.Context) (*DeviceCodeLogin, error) {
+	cfg, err := a.deviceCodeConfig(ctx)
 	if err != nil {
 		return nil, err
 	}

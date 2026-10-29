@@ -69,7 +69,7 @@ func validateDeviceCodeLogin(ctx context.Context, cmd *cobra.Command) error {
 // code valid, so the user can re-enter it up to maxConfirmationAttempts
 // times.
 func deviceCodeLogin(ctx context.Context, persistentAuth *u2m.PersistentAuth) (*oauth2.Token, error) {
-	login, err := persistentAuth.NewDeviceCodeLogin()
+	login, err := persistentAuth.NewDeviceCodeLogin(ctx)
 	if err != nil {
 		return nil, err
 	}
