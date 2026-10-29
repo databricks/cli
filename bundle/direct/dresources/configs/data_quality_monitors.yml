@@ -11,11 +11,3 @@ recreate_on_changes:
   # Same as quality_monitors.assets_dir.
   - field: data_profiling_config.assets_dir
     reason: immutable
-
-ignore_remote_changes:
-  # Create-time options for the built-in dashboard; quality_monitors treats the
-  # same fields as not returned on read.
-  - field: data_profiling_config.skip_builtin_dashboard
-    reason: input_only
-  - field: data_profiling_config.warehouse_id
-    reason: input_only

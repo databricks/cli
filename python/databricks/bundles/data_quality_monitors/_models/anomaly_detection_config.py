@@ -5,7 +5,11 @@ from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import VariableOrList
+from databricks.bundles.core._variable import VariableOrList, VariableOrOptional
+from databricks.bundles.data_quality_monitors._models.notification_settings import (
+    NotificationSettings,
+    NotificationSettingsParam,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -24,6 +28,23 @@ class AnomalyDetectionConfig:
     [Beta] List of fully qualified table names to exclude from anomaly detection.
     """
 
+    notification_settings: VariableOrOptional[NotificationSettings] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] Who to alert when anomaly detection finds unhealthy tables in this schema. Applicable to
+    `schema` monitors only. This is the same schema alert you manage from **Manage alerts** in the
+    Data Quality Monitoring UI, so a change made in either place shows in both.
+    
+    Set the recipients in `on_unhealthy_table`; `on_failure` is not supported here. Only
+    `destination_ids` and `destination_user_ids` are supported.
+    
+    On update, an update mask of `*`, `anomaly_detection_config`, or
+    `anomaly_detection_config.notification_settings` replaces the alert's recipients with the ones
+    in the request; omitting the field, or leaving both recipient lists empty, removes the alert.
+    Other masks leave the alert unchanged.
+    """
+
     @classmethod
     def from_dict(cls, value: "AnomalyDetectionConfigDict") -> "Self":
         return _transform(cls, value)
@@ -40,6 +61,23 @@ class AnomalyDetectionConfigDict(TypedDict, total=False):
     :meta private: [EXPERIMENTAL]
     
     [Beta] List of fully qualified table names to exclude from anomaly detection.
+    """
+
+    notification_settings: VariableOrOptional[NotificationSettingsParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] Who to alert when anomaly detection finds unhealthy tables in this schema. Applicable to
+    `schema` monitors only. This is the same schema alert you manage from **Manage alerts** in the
+    Data Quality Monitoring UI, so a change made in either place shows in both.
+    
+    Set the recipients in `on_unhealthy_table`; `on_failure` is not supported here. Only
+    `destination_ids` and `destination_user_ids` are supported.
+    
+    On update, an update mask of `*`, `anomaly_detection_config`, or
+    `anomaly_detection_config.notification_settings` replaces the alert's recipients with the ones
+    in the request; omitting the field, or leaving both recipient lists empty, removes the alert.
+    Other masks leave the alert unchanged.
     """
 
 

@@ -17,6 +17,24 @@ class NotificationDestination:
     Destination of the data quality monitoring notification.
     """
 
+    destination_ids: VariableOrList[str] = field(default_factory=list)
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] The notification-destination IDs (Slack / Teams / webhook) to send the notification to. The
+    destinations must already exist in the workspace; a workspace admin creates them. A maximum of
+    25 destination IDs is supported.
+    Only supported on schema monitors, via `anomaly_detection_config`; rejected on table monitors.
+    """
+
+    destination_user_ids: VariableOrList[int] = field(default_factory=list)
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] The IDs of the workspace users to notify by email. A maximum of 25 user IDs is supported.
+    Only supported on schema monitors, via `anomaly_detection_config`; rejected on table monitors.
+    """
+
     email_addresses: VariableOrList[str] = field(default_factory=list)
     """
     [Public Preview] The list of email addresses to send the notification to. A maximum of 5 email addresses is supported.
@@ -32,6 +50,24 @@ class NotificationDestination:
 
 class NotificationDestinationDict(TypedDict, total=False):
     """"""
+
+    destination_ids: VariableOrList[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] The notification-destination IDs (Slack / Teams / webhook) to send the notification to. The
+    destinations must already exist in the workspace; a workspace admin creates them. A maximum of
+    25 destination IDs is supported.
+    Only supported on schema monitors, via `anomaly_detection_config`; rejected on table monitors.
+    """
+
+    destination_user_ids: VariableOrList[int]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] The IDs of the workspace users to notify by email. A maximum of 25 user IDs is supported.
+    Only supported on schema monitors, via `anomaly_detection_config`; rejected on table monitors.
+    """
 
     email_addresses: VariableOrList[str]
     """

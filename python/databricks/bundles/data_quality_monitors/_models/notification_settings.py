@@ -26,6 +26,15 @@ class NotificationSettings:
     [Public Preview] Destinations to send notifications on failure/timeout.
     """
 
+    on_unhealthy_table: VariableOrOptional[NotificationDestination] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] Recipients to notify when anomaly detection finds unhealthy tables in the schema. Each
+    recipient gets one notification per important unhealthy table. Only supported on schema
+    monitors, via `anomaly_detection_config`.
+    """
+
     @classmethod
     def from_dict(cls, value: "NotificationSettingsDict") -> "Self":
         return _transform(cls, value)
@@ -40,6 +49,15 @@ class NotificationSettingsDict(TypedDict, total=False):
     on_failure: VariableOrOptional[NotificationDestinationParam]
     """
     [Public Preview] Destinations to send notifications on failure/timeout.
+    """
+
+    on_unhealthy_table: VariableOrOptional[NotificationDestinationParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] Recipients to notify when anomaly detection finds unhealthy tables in the schema. Each
+    recipient gets one notification per important unhealthy table. Only supported on schema
+    monitors, via `anomaly_detection_config`.
     """
 
 

@@ -9316,6 +9316,11 @@
                       "description": "[Beta] List of fully qualified table names to exclude from anomaly detection.",
                       "$ref": "#/$defs/slice/string",
                       "x-databricks-launch-stage": "PUBLIC_BETA"
+                    },
+                    "notification_settings": {
+                      "description": "[Beta] Who to alert when anomaly detection finds unhealthy tables in this schema. Applicable to\n`schema` monitors only. This is the same schema alert you manage from **Manage alerts** in the\nData Quality Monitoring UI, so a change made in either place shows in both.\n\nSet the recipients in `on_unhealthy_table`; `on_failure` is not supported here. Only\n`destination_ids` and `destination_user_ids` are supported.\n\nOn update, an update mask of `*`, `anomaly_detection_config`, or\n`anomaly_detection_config.notification_settings` replaces the alert's recipients with the ones\nin the request; omitting the field, or leaving both recipient lists empty, removes the alert.\nOther masks leave the alert unchanged.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.NotificationSettings",
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false
@@ -9626,6 +9631,16 @@
                   "type": "object",
                   "description": "Destination of the data quality monitoring notification.",
                   "properties": {
+                    "destination_ids": {
+                      "description": "[Beta] The notification-destination IDs (Slack / Teams / webhook) to send the notification to. The\ndestinations must already exist in the workspace; a workspace admin creates them. A maximum of\n25 destination IDs is supported.\nOnly supported on schema monitors, via `anomaly_detection_config`; rejected on table monitors.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                    },
+                    "destination_user_ids": {
+                      "description": "[Beta] The IDs of the workspace users to notify by email. A maximum of 25 user IDs is supported.\nOnly supported on schema monitors, via `anomaly_detection_config`; rejected on table monitors.",
+                      "$ref": "#/$defs/slice/int64",
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                    },
                     "email_addresses": {
                       "description": "[Public Preview] The list of email addresses to send the notification to. A maximum of 5 email addresses is supported.",
                       "$ref": "#/$defs/slice/string",
@@ -9650,6 +9665,11 @@
                       "description": "[Public Preview] Destinations to send notifications on failure/timeout.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.NotificationDestination",
                       "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    },
+                    "on_unhealthy_table": {
+                      "description": "[Beta] Recipients to notify when anomaly detection finds unhealthy tables in the schema. Each\nrecipient gets one notification per important unhealthy table. Only supported on schema\nmonitors, via `anomaly_detection_config`.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.NotificationDestination",
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false
@@ -22400,6 +22420,20 @@
             }
           }
         }
+      },
+      "int64": {
+        "oneOf": [
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/int64"
+            }
+          },
+          {
+            "type": "string",
+            "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+          }
+        ]
       },
       "string": {
         "oneOf": [

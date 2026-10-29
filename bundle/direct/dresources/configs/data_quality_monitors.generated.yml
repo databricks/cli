@@ -1,6 +1,11 @@
 # Generated, do not edit.
 
 ignore_remote_changes:
+  - field: data_profiling_config.skip_builtin_dashboard
+    reason: spec:input_only
+  - field: data_profiling_config.warehouse_id
+    reason: spec:input_only
+
   - field: data_profiling_config.dashboard_id
     reason: spec:output_only
   - field: data_profiling_config.drift_metrics_table_name

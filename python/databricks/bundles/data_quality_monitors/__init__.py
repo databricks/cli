@@ -20,6 +20,9 @@ __all__ = [
     "DataQualityMonitor",
     "DataQualityMonitorDict",
     "DataQualityMonitorParam",
+    "DependsOn",
+    "DependsOnDict",
+    "DependsOnParam",
     "InferenceLogConfig",
     "InferenceLogConfigDict",
     "InferenceLogConfigParam",
@@ -75,6 +78,11 @@ from databricks.bundles.data_quality_monitors._models.data_quality_monitor impor
     DataQualityMonitor,
     DataQualityMonitorDict,
     DataQualityMonitorParam,
+)
+from databricks.bundles.data_quality_monitors._models.depends_on import (
+    DependsOn,
+    DependsOnDict,
+    DependsOnParam,
 )
 from databricks.bundles.data_quality_monitors._models.inference_log_config import (
     InferenceLogConfig,
