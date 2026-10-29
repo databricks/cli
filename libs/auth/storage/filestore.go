@@ -41,12 +41,6 @@ const (
 	//       "refresh_token": "<refresh_token>",
 	//       "expiry": "<expiry>"
 	//     }
-	//   },
-	//   "pending_logins": {
-	//     "<key>": {
-	//       "device_code": "<device_code>",
-	//       "user_code": "<user_code>"
-	//     }
 	//   }
 	// }
 	tokenStoreVersion = 1
@@ -57,17 +51,13 @@ const (
 // the historical bare-token format, leaving room for additive sibling fields.
 type fileEntry struct {
 	*oauth2.Token
+	PendingLogin *PendingLogin `json:"pending_login,omitempty"`
 }
 
 // tokenStoreFile is the format of the token store file.
 type tokenStoreFile struct {
 	Version int                   `json:"version"`
 	Tokens  map[string]*fileEntry `json:"tokens"`
-
-	// PendingLogins are apart from Tokens, so that their keys cannot clash.
-	// Older CLI versions drop them when they write the file, which only means
-	// that a pending login has to be started again.
-	PendingLogins map[string]PendingLogin `json:"pending_logins,omitempty"`
 }
 
 type FileStoreOption func(*fileStore)
@@ -118,7 +108,7 @@ func (c *fileStore) Put(key string, e Entry) error {
 	if f.Tokens == nil {
 		f.Tokens = map[string]*fileEntry{}
 	}
-	f.Tokens[key] = &fileEntry{Token: e.Token}
+	f.Tokens[key] = &fileEntry{Token: e.Token, PendingLogin: e.PendingLogin}
 	return c.write(f)
 }
 
@@ -134,7 +124,7 @@ func (c *fileStore) Lookup(key string) (Entry, error) {
 	if !ok {
 		return Entry{}, ErrNotFound
 	}
-	return Entry{Token: fe.Token}, nil
+	return Entry{Token: fe.Token, PendingLogin: fe.PendingLogin}, nil
 }
 
 // Delete implements the Store interface. Removing a missing key is a no-op.
@@ -146,53 +136,6 @@ func (c *fileStore) Delete(key string) error {
 		return fmt.Errorf("load: %w", err)
 	}
 	delete(f.Tokens, key)
-	return c.write(f)
-}
-
-// PutPendingLogin implements the PendingLoginStore interface.
-func (c *fileStore) PutPendingLogin(key string, p PendingLogin) error {
-	c.locker.Lock()
-	defer c.locker.Unlock()
-	f, err := c.load()
-	if err != nil {
-		return fmt.Errorf("load: %w", err)
-	}
-	if f.PendingLogins == nil {
-		f.PendingLogins = map[string]PendingLogin{}
-	}
-	f.PendingLogins[key] = p
-	return c.write(f)
-}
-
-// LookupPendingLogin implements the PendingLoginStore interface.
-func (c *fileStore) LookupPendingLogin(key string) (PendingLogin, error) {
-	c.locker.Lock()
-	defer c.locker.Unlock()
-	f, err := c.load()
-	if err != nil {
-		return PendingLogin{}, fmt.Errorf("load: %w", err)
-	}
-	p, ok := f.PendingLogins[key]
-	if !ok {
-		return PendingLogin{}, ErrNotFound
-	}
-	return p, nil
-}
-
-// DeletePendingLogin implements the PendingLoginStore interface. Every login
-// deletes the pending login of its target, so the file is only written when
-// there is one.
-func (c *fileStore) DeletePendingLogin(key string) error {
-	c.locker.Lock()
-	defer c.locker.Unlock()
-	f, err := c.load()
-	if err != nil {
-		return fmt.Errorf("load: %w", err)
-	}
-	if _, ok := f.PendingLogins[key]; !ok {
-		return nil
-	}
-	delete(f.PendingLogins, key)
 	return c.write(f)
 }
 
@@ -264,6 +207,3 @@ func (c *fileStore) load() (*tokenStoreFile, error) {
 	}
 	return f, nil
 }
-
-// Compile-time confirmation that fileStore keeps pending logins.
-var _ PendingLoginStore = (*fileStore)(nil)

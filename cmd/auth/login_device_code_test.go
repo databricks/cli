@@ -454,12 +454,11 @@ func TestLoginDeviceCodeCompletesInTerminal(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join(os.Getenv("HOME"), ".databricks", "token-cache.json"))
 	require.NoError(t, err)
 	var cache struct {
-		Tokens        map[string]json.RawMessage `json:"tokens"`
-		PendingLogins map[string]json.RawMessage `json:"pending_logins"`
+		Tokens map[string]json.RawMessage `json:"tokens"`
 	}
 	require.NoError(t, json.Unmarshal(raw, &cache))
 	assert.Contains(t, cache.Tokens, server.URL)
-	assert.Empty(t, cache.PendingLogins)
+	assert.NotContains(t, cache.Tokens, pendingLoginKey(server.URL))
 
 	profiles, err := profile.DefaultProfiler.LoadProfiles(t.Context(), profile.MatchAllProfiles)
 	require.NoError(t, err)

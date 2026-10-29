@@ -24,13 +24,18 @@ var ErrNotFound = errors.New("token not found")
 // without changing the Store interface. Backends persist it verbatim and never
 // interpret its contents.
 type Entry struct {
-	// Token is the cached OAuth token. Always set for stored entries.
+	// Token is the cached OAuth token. Set for every stored entry except a
+	// pending login.
 	Token *oauth2.Token
+
+	// PendingLogin is set instead of Token for a login that one CLI
+	// invocation started and a later one completes.
+	PendingLogin *PendingLogin
 }
 
-// PendingLogin is a device code login that one CLI invocation started and a
-// later one completes once the user has the confirmation code. Keeping the
-// device code in the store means it is never printed.
+// PendingLogin is a device code login that is waiting for the user's
+// confirmation code. Keeping the device code in the store means it never
+// leaves the machine that started the login.
 type PendingLogin struct {
 	// DeviceCode is exchanged together with the confirmation code for a token.
 	DeviceCode string `json:"device_code"`
@@ -46,24 +51,6 @@ type PendingLogin struct {
 	Host     string   `json:"host"`
 	ClientID string   `json:"client_id,omitempty"`
 	Scopes   []string `json:"scopes,omitempty"`
-}
-
-// PendingLoginStore holds pending logins. The file, keyring and memory stores
-// implement it next to Store and keep pending logins apart from the tokens,
-// so that a pending login can neither replace a token nor be read as one,
-// whatever a profile is named.
-type PendingLoginStore interface {
-	// PutPendingLogin writes p under key, replacing any existing pending
-	// login.
-	PutPendingLogin(key string, p PendingLogin) error
-
-	// LookupPendingLogin returns the pending login stored under key, or
-	// ErrNotFound.
-	LookupPendingLogin(key string) (PendingLogin, error)
-
-	// DeletePendingLogin removes the pending login under key. Deleting a
-	// missing pending login is not an error.
-	DeletePendingLogin(key string) error
 }
 
 // Store is the CLI's token-storage abstraction: a key/value store with no

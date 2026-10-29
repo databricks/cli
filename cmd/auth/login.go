@@ -96,20 +96,20 @@ func (d *defaultDiscoveryClient) IntrospectToken(ctx context.Context, host, acce
 // storeLoginToken persists a token after login has finished any optional
 // profile update.
 func storeLoginToken(ctx context.Context, tokenStore storage.Store, mode storage.StorageMode, arg u2m.OAuthArgument, token *oauth2.Token) error {
-	store := storage.WrapForOAuthArgument(ctx, tokenStore, mode, arg)
+	tokenStore = storage.WrapForOAuthArgument(ctx, tokenStore, mode, arg)
 	key := arg.GetCacheKey()
-	if err := store.Put(key, storage.Entry{Token: token}); err != nil {
+	if err := tokenStore.Put(key, storage.Entry{Token: token}); err != nil {
 		storeErr := fmt.Errorf("store token: %w", err)
 		// The profile is already saved, but the old token may still be present.
 		// Delete it so later commands cannot use it with the updated profile.
-		if deleteErr := store.Delete(key); deleteErr != nil {
+		if deleteErr := tokenStore.Delete(key); deleteErr != nil {
 			return errors.Join(storeErr, fmt.Errorf("delete stale token: %w", deleteErr))
 		}
 		return storeErr
 	}
 	// A pending device code login for the same profile or host is left over
-	// once a login succeeds. The wrapped store does not keep pending logins.
-	if err := deletePendingLogin(tokenStore, key); err != nil {
+	// once a login succeeds.
+	if err := tokenStore.Delete(pendingLoginKey(key)); err != nil {
 		log.Debugf(ctx, "Failed to delete the pending device code login: %v", err)
 	}
 	storage.PinSecureMode(ctx, mode, storage.StorageModeUnknown)
@@ -441,7 +441,7 @@ a new profile is created.
 		nonInteractiveLogin := nonInteractiveDeviceCodeLogin{
 			persistentAuth: persistentAuth,
 			tokenStore:     tokenStore,
-			key:            oauthArgument.GetCacheKey(),
+			key:            pendingLoginKey(oauthArgument.GetCacheKey()),
 			profile:        profileName,
 			host:           authArguments.Host,
 			clientID:       clientID,

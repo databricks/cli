@@ -11,13 +11,12 @@ import (
 // default store used by PersistentAuth when no WithTokenStore option is
 // provided. Most production consumers should supply a persistent Store.
 func NewMemoryStore() Store {
-	return &memoryStore{entries: map[string]Entry{}, pendingLogins: map[string]PendingLogin{}}
+	return &memoryStore{entries: map[string]Entry{}}
 }
 
 type memoryStore struct {
-	mu            sync.Mutex
-	entries       map[string]Entry
-	pendingLogins map[string]PendingLogin
+	mu      sync.Mutex
+	entries map[string]Entry
 }
 
 func cloneToken(t *oauth2.Token) *oauth2.Token {
@@ -30,6 +29,10 @@ func cloneToken(t *oauth2.Token) *oauth2.Token {
 
 func cloneEntry(e Entry) Entry {
 	e.Token = cloneToken(e.Token)
+	if e.PendingLogin != nil {
+		pending := *e.PendingLogin
+		e.PendingLogin = &pending
+	}
 	return e
 }
 
@@ -59,34 +62,3 @@ func (s *memoryStore) Delete(key string) error {
 	delete(s.entries, key)
 	return nil
 }
-
-// PutPendingLogin implements PendingLoginStore.
-func (s *memoryStore) PutPendingLogin(key string, p PendingLogin) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.pendingLogins[key] = p
-	return nil
-}
-
-// LookupPendingLogin implements PendingLoginStore. Returns ErrNotFound when
-// the key is absent.
-func (s *memoryStore) LookupPendingLogin(key string) (PendingLogin, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	p, ok := s.pendingLogins[key]
-	if !ok {
-		return PendingLogin{}, ErrNotFound
-	}
-	return p, nil
-}
-
-// DeletePendingLogin implements PendingLoginStore.
-func (s *memoryStore) DeletePendingLogin(key string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	delete(s.pendingLogins, key)
-	return nil
-}
-
-// Compile-time confirmation that memoryStore keeps pending logins.
-var _ PendingLoginStore = (*memoryStore)(nil)

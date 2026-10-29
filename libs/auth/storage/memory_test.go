@@ -57,25 +57,16 @@ func TestMemoryStore_PutAndLookupUseCopies(t *testing.T) {
 	}
 }
 
-func TestMemoryStore_PendingLoginIsApartFromTokens(t *testing.T) {
+func TestMemoryStore_PendingLoginUsesCopies(t *testing.T) {
 	s := NewMemoryStore()
-	pendingLogins := s.(PendingLoginStore)
-	pending := PendingLogin{DeviceCode: "device-code", UserCode: "WDJBMJHT"}
-	require.NoError(t, s.Put("key1", Entry{Token: &oauth2.Token{AccessToken: "abc"}}))
-	require.NoError(t, pendingLogins.PutPendingLogin("key1", pending))
+	pending := &PendingLogin{DeviceCode: "device-code", UserCode: "WDJBMJHT"}
+	require.NoError(t, s.Put("key1", Entry{PendingLogin: pending}))
+
+	pending.DeviceCode = "mutated-after-store"
 
 	got, err := s.Lookup("key1")
 	require.NoError(t, err)
-	assert.Equal(t, "abc", got.Token.AccessToken)
-	gotPending, err := pendingLogins.LookupPendingLogin("key1")
-	require.NoError(t, err)
-	assert.Equal(t, pending, gotPending)
-
-	require.NoError(t, pendingLogins.DeletePendingLogin("key1"))
-	_, err = pendingLogins.LookupPendingLogin("key1")
-	assert.ErrorIs(t, err, ErrNotFound)
-	_, err = s.Lookup("key1")
-	assert.NoError(t, err)
+	assert.Equal(t, "device-code", got.PendingLogin.DeviceCode)
 }
 
 func TestMemoryStore_Delete(t *testing.T) {
