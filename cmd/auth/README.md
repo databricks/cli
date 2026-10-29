@@ -121,8 +121,8 @@ in two steps instead:
    and the rest of the login runs as usual.
 
 Agent detection (`useragent.AgentProvider()`) does not pick the flow. It only
-adds a note to the first step's output that tells the agent to pass the login
-on to the user.
+adds a note after the user code, in both flows, that tells the agent to pass
+the login on to the user.
 
 The pending login is a token store entry with `PendingLogin` set instead of a
 token. Its key is the login's cache key (the profile name, or the host without

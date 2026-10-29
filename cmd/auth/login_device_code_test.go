@@ -94,6 +94,7 @@ func TestValidateDeviceCodeLogin(t *testing.T) {
 }
 
 func TestPromptForConfirmationCode(t *testing.T) {
+	testutil.SetAgent(t, "")
 	tests := []struct {
 		name    string
 		input   string
@@ -132,6 +133,35 @@ func TestPromptForConfirmationCode(t *testing.T) {
 			}, "\n")), stderr.String())
 		})
 	}
+}
+
+// An AI agent that runs the login in a terminal gets the same note as in the
+// non-interactive login.
+func TestPromptForConfirmationCode_Agent(t *testing.T) {
+	testutil.SetAgent(t, "test-agent")
+	var stderr bytes.Buffer
+	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, strings.NewReader("FTFA-QQKY\n"), &bytes.Buffer{}, &stderr, "", ""))
+
+	code, err := promptForConfirmationCode(ctx, u2m.DeviceAuthorization{
+		UserCode:        "WDJBMJHT",
+		VerificationURI: "https://workspace.test/device/verification",
+	}, nil, 3)
+	require.NoError(t, err)
+	assert.Equal(t, "FTFA-QQKY", code)
+	assert.True(t, strings.HasPrefix(stderr.String(), strings.Join([]string{
+		"Using a browser on another device, visit:",
+		"https://workspace.test/device/verification",
+		"",
+		"And enter the code:",
+		"WDJB-MJHT",
+		"",
+		"Note for AI agents (test-agent): give the URL and the code above to the user.",
+		"Do not open the URL or approve the login yourself: the user must approve it.",
+		"Ask the user for the confirmation code their browser shows.",
+		"",
+		"Once finished, enter the confirmation code provided in your browser.",
+		"Confirmation code: ",
+	}, "\n")), stderr.String())
 }
 
 func TestPromptForConfirmationCode_Retry(t *testing.T) {
