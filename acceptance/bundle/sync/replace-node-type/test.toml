@@ -1,3 +1,5 @@
+Badness = "After a BOM-prefixed SQL notebook is removed locally, sync reports deleting bom.sql but leaves the remote notebook bom because the sync snapshot retains the .sql extension."
+
 Cloud = true
 Env.MSYS_NO_PATHCONV = "1"
 Ignore = [".databricks"]
