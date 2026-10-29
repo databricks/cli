@@ -68,8 +68,13 @@ type walker struct {
 	diags diag.Diagnostics
 }
 
-// missing reports that the required field of n is not set.
+// missing reports that the required field of n is not set. A pure reference
+// (e.g. "${resources.jobs.base.schedule}") has no fields of its own; the referenced
+// value is checked where it is defined.
 func (w *walker) missing(n *node, field string) {
+	if s, ok := n.v.AsString(); ok && dynvar.IsPureVariableReference(s) {
+		return
+	}
 	w.diags = append(w.diags, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   fmt.Sprintf("required field %q is not set", field),
