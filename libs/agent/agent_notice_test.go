@@ -7,14 +7,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNote(t *testing.T) {
+func TestAgentNote(t *testing.T) {
 	testutil.SetAgent(t, "test-agent")
-	assert.Equal(t, "Note for AI agents (test-agent): ask the user.", Note("ask the user."))
+	assert.Equal(t, "Note for AI agents (test-agent): ask the user.", AgentNote("ask the user."))
 }
 
-func TestNoteWithoutAgent(t *testing.T) {
+func TestAgentNoteWithoutAgent(t *testing.T) {
 	testutil.SetAgent(t, "")
-	assert.Empty(t, Note("ask the user."))
+	assert.Empty(t, AgentNote("ask the user."))
 }
 
 func TestAgentNotice(t *testing.T) {

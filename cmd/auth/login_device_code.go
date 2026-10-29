@@ -319,7 +319,7 @@ func approvalInstructions(da u2m.DeviceAuthorization, agentNote string) []string
 		formatCode(da.UserCode),
 		"",
 	}
-	if note := agent.Note(agentNote); note != "" {
+	if note := agent.AgentNote(agentNote); note != "" {
 		lines = append(lines, note, "")
 	}
 	return lines
