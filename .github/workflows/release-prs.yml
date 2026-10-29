@@ -1,6 +1,11 @@
 name: release-prs
 
 on:
+  # The release is published only after all its assets are uploaded, which the
+  # homebrew-tap and winget jobs depend on. `released` excludes prereleases.
+  release:
+    types: [released]
+
   workflow_dispatch:
     inputs:
       tag:
@@ -34,8 +39,43 @@ on:
         default: false
 
 jobs:
+  resolve:
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
+    outputs:
+      tag: ${{ inputs.tag || github.event.release.tag_name }}
+      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+      latest: ${{ steps.latest.outputs.latest }}
+
+    steps:
+      # The downstream repos only track the latest version, so a patch release for
+      # an older version (e.g. the backports published on 2026-04-19) must not
+      # move them backwards. Compare against the highest released version rather
+      # than the release marked "latest", which is set by the publishing bot.
+      # Manual dispatches skip this check.
+      - name: Check if release is the highest version
+        id: latest
+        if: ${{ github.event_name == 'release' }}
+        run: |
+          highest=$(gh api --paginate "repos/${{ github.repository }}/releases" \
+            --jq '.[] | select((.draft or .prerelease) | not) | .tag_name' | sort -V | tail -n 1)
+          echo "Release: $TAG"
+          echo "Highest: $highest"
+          if [ "$TAG" = "$highest" ]; then
+            echo "latest=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Skipping release PRs: $TAG is not the highest released version ($highest)"
+            echo "latest=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name }}
+
   create-setup-cli-release-pr:
-    if: ${{ inputs.setup_cli }}
+    needs: resolve
+    if: ${{ inputs.setup_cli || needs.resolve.outputs.latest == 'true' }}
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
@@ -43,7 +83,7 @@ jobs:
     steps:
       - name: Derive version from tag
         run: |
-          VERSION="${{ inputs.tag }}"
+          VERSION="${{ needs.resolve.outputs.tag }}"
           echo "VERSION=${VERSION#v}" >> $GITHUB_ENV
 
       - name: Log dispatch
@@ -51,10 +91,10 @@ jobs:
           echo "Repository: databricks/setup-cli"
           echo "Workflow:   release-pr.yml"
           echo "Version:    $VERSION"
-          echo "Dry run:    ${{ inputs.dry_run }}"
+          echo "Dry run:    ${{ needs.resolve.outputs.dry_run }}"
 
       - name: Dispatch setup-cli release PR
-        if: ${{ !inputs.dry_run }}
+        if: ${{ needs.resolve.outputs.dry_run != 'true' }}
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ secrets.DECO_GITHUB_TOKEN }}
@@ -70,7 +110,8 @@ jobs:
             });
 
   create-homebrew-tap-release-pr:
-    if: ${{ inputs.homebrew_tap }}
+    needs: resolve
+    if: ${{ inputs.homebrew_tap || needs.resolve.outputs.latest == 'true' }}
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
@@ -78,12 +119,12 @@ jobs:
     steps:
       - name: Derive version from tag
         run: |
-          VERSION="${{ inputs.tag }}"
+          VERSION="${{ needs.resolve.outputs.tag }}"
           echo "VERSION=${VERSION#v}" >> $GITHUB_ENV
 
       - name: Download checksums from release
         run: |
-          gh release download "${{ inputs.tag }}" \
+          gh release download "${{ needs.resolve.outputs.tag }}" \
             --pattern "databricks_cli_${VERSION}_SHA256SUMS" \
             --dir . \
             --repo "${{ github.repository }}"
@@ -113,10 +154,10 @@ jobs:
           echo "darwin_arm64_sha: $DARWIN_ARM64_SHA"
           echo "linux_amd64_sha:  $LINUX_AMD64_SHA"
           echo "linux_arm64_sha:  $LINUX_ARM64_SHA"
-          echo "Dry run:          ${{ inputs.dry_run }}"
+          echo "Dry run:          ${{ needs.resolve.outputs.dry_run }}"
 
       - name: Dispatch homebrew-tap release PR
-        if: ${{ !inputs.dry_run }}
+        if: ${{ needs.resolve.outputs.dry_run != 'true' }}
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ secrets.DECO_GITHUB_TOKEN }}
@@ -136,7 +177,8 @@ jobs:
             });
 
   create-vscode-extension-update-pr:
-    if: ${{ inputs.vscode_extension }}
+    needs: resolve
+    if: ${{ inputs.vscode_extension || needs.resolve.outputs.latest == 'true' }}
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
@@ -144,7 +186,7 @@ jobs:
     steps:
       - name: Derive version from tag
         run: |
-          VERSION="${{ inputs.tag }}"
+          VERSION="${{ needs.resolve.outputs.tag }}"
           echo "VERSION=${VERSION#v}" >> $GITHUB_ENV
 
       - name: Log dispatch
@@ -152,10 +194,10 @@ jobs:
           echo "Repository: databricks/databricks-vscode"
           echo "Workflow:   update-cli-version.yml"
           echo "Version:    $VERSION"
-          echo "Dry run:    ${{ inputs.dry_run }}"
+          echo "Dry run:    ${{ needs.resolve.outputs.dry_run }}"
 
       - name: Dispatch VS Code extension update PR
-        if: ${{ !inputs.dry_run }}
+        if: ${{ needs.resolve.outputs.dry_run != 'true' }}
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ secrets.DECO_GITHUB_TOKEN }}
@@ -171,7 +213,8 @@ jobs:
             });
 
   publish-to-winget-pkgs:
-    if: ${{ inputs.winget }}
+    needs: resolve
+    if: ${{ inputs.winget || needs.resolve.outputs.latest == 'true' }}
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
@@ -181,14 +224,14 @@ jobs:
     steps:
       - name: Derive version from tag
         run: |
-          VERSION="${{ inputs.tag }}"
+          VERSION="${{ needs.resolve.outputs.tag }}"
           echo "VERSION=${VERSION#v}" >> $GITHUB_ENV
 
       - name: Get URLs of signed Windows binaries
         id: get_windows_urls
         run: |
           urls=$(
-            gh api "repos/${{ github.repository }}/releases/tags/${{ inputs.tag }}" | \
+            gh api "repos/${{ github.repository }}/releases/tags/${{ needs.resolve.outputs.tag }}" | \
             jq -r .assets[].browser_download_url | \
             grep -E '_windows_.*\.zip$' | \
             tr '\n' ' '
@@ -206,42 +249,42 @@ jobs:
           echo "Package:  Databricks.DatabricksCLI"
           echo "Version:  $VERSION"
           echo "URLs:     ${{ steps.get_windows_urls.outputs.urls }}"
-          echo "Dry run:  ${{ inputs.dry_run }}"
+          echo "Dry run:  ${{ needs.resolve.outputs.dry_run }}"
 
       # When updating the version of komac, make sure to update the checksum in the next step.
       # Find both at https://github.com/russellbanks/Komac/releases.
       - name: Download komac binary
-        if: ${{ !inputs.dry_run }}
+        if: ${{ needs.resolve.outputs.dry_run != 'true' }}
         run: |
           curl -s -L -o $RUNNER_TEMP/komac-2.9.0-x86_64-unknown-linux-gnu.tar.gz https://github.com/russellbanks/Komac/releases/download/v2.9.0/komac-2.9.0-x86_64-unknown-linux-gnu.tar.gz
 
       - name: Verify komac binary
-        if: ${{ !inputs.dry_run }}
+        if: ${{ needs.resolve.outputs.dry_run != 'true' }}
         run: |
           echo "d07a12831ad5418fee715488542a98ce3c0e591d05c850dd149fe78432be8c4c  $RUNNER_TEMP/komac-2.9.0-x86_64-unknown-linux-gnu.tar.gz" | sha256sum -c -
 
       - name: Untar komac binary to temporary path
-        if: ${{ !inputs.dry_run }}
+        if: ${{ needs.resolve.outputs.dry_run != 'true' }}
         run: |
           mkdir -p $RUNNER_TEMP/komac
           tar -xzf $RUNNER_TEMP/komac-2.9.0-x86_64-unknown-linux-gnu.tar.gz -C $RUNNER_TEMP/komac
 
       - name: Add komac to PATH
-        if: ${{ !inputs.dry_run }}
+        if: ${{ needs.resolve.outputs.dry_run != 'true' }}
         run: echo "$RUNNER_TEMP/komac" >> $GITHUB_PATH
 
       # komac creates the winget PR branch in the fork at upstream's HEAD commit; when
       # the fork's default branch drifts far behind, GitHub rejects the branch creation
       # with a misleading CreateRef permissions error. Fast-forward the fork first.
       - name: Sync winget-pkgs fork with upstream
-        if: ${{ !inputs.dry_run }}
+        if: ${{ needs.resolve.outputs.dry_run != 'true' }}
         run: komac sync-fork
         env:
           KOMAC_FORK_OWNER: eng-dev-ecosystem-bot
           GITHUB_TOKEN: ${{ secrets.ENG_DEV_ECOSYSTEM_BOT_TOKEN }}
 
       - name: Publish to Winget
-        if: ${{ !inputs.dry_run }}
+        if: ${{ needs.resolve.outputs.dry_run != 'true' }}
         run: |
           komac update Databricks.DatabricksCLI \
             --version $VERSION \
