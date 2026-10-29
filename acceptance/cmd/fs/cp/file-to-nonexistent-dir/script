@@ -1,0 +1,37 @@
+# A trailing slash on the target means "copy into this directory": it works when the directory
+# exists and fails with "no such directory" when it does not. Covers local and UC Volume
+# sources and targets.
+CATALOG_NAME="main"
+SCHEMA_NAME="default"
+VOLUME_NAME="fs-cp-test-${UNIQUE_NAME}"
+VOLUME="dbfs:/Volumes/${CATALOG_NAME}/${SCHEMA_NAME}/${VOLUME_NAME}"
+
+cleanup() {
+  $CLI volumes delete "${CATALOG_NAME}.${SCHEMA_NAME}.${VOLUME_NAME}" 2>/dev/null || true
+}
+trap cleanup EXIT
+
+$CLI volumes create "${CATALOG_NAME}" "${SCHEMA_NAME}" "${VOLUME_NAME}" MANAGED >/dev/null
+$CLI fs mkdir ${VOLUME}/src
+$CLI fs cp foo.txt ${VOLUME}/src/foo.txt >/dev/null
+
+for src_kind in local volume; do
+  src=foo.txt
+  [ "$src_kind" = volume ] && src=${VOLUME}/src/foo.txt
+  # Separate existing directory per source, so the second copy is not skipped as already existing.
+  existing="existing-from-$src_kind"
+  mkdir -p local/$existing
+  $CLI fs mkdir ${VOLUME}/$existing
+  for dst in local ${VOLUME}; do
+    title "$src -> $dst"
+    trace $CLI fs cp $src $dst/$existing/
+    errcode trace $CLI fs cp $src $dst/nonexistent/mydir/
+  done
+done
+
+title "Copies landed in the existing directories"
+for existing in existing-from-local existing-from-volume; do
+  trace cat local/$existing/foo.txt
+  trace $CLI fs cat ${VOLUME}/$existing/foo.txt
+done
+rm -rf local
