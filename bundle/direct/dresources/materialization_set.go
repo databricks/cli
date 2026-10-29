@@ -30,6 +30,9 @@ func (*ResourceMaterializationSet) PrepareState(input *resources.Materialization
 	return &input.MaterializationSet
 }
 
+// materializationSetUpdatableFields is the only mask the update endpoint accepts.
+var materializationSetUpdatableFields = []string{"materialized_features"}
+
 func (*ResourceMaterializationSet) KeyedSlices() map[string]any {
 	return map[string]any{
 		"materialized_features": resources.MaterializedFeatureMemberKey,
@@ -223,7 +226,7 @@ func (r *ResourceMaterializationSet) DoUpdate(ctx context.Context, id string, co
 	operation, err := r.client.FeatureEngineering.UpdateMaterializationSet(ctx, ml.UpdateMaterializationSetRequest{
 		MaterializationSetId: id,
 		MaterializationSet:   update,
-		UpdateMask:           *fieldmask.New([]string{"*"}),
+		UpdateMask:           *fieldmask.New(materializationSetUpdatableFields),
 		RequestId:            uuid.New().String(),
 		ForceSendFields:      nil,
 	})
