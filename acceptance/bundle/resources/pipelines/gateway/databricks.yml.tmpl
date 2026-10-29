@@ -1,0 +1,17 @@
+bundle:
+  name: acc-$UNIQUE_NAME
+
+resources:
+  schemas:
+    storage:
+      catalog_name: main
+      name: gateway_storage_$UNIQUE_NAME
+
+  pipelines:
+    gw:
+      name: test-gateway-$UNIQUE_NAME
+      # continuous, catalog and schema are deliberately not declared: the backend sets them.
+      gateway_definition:
+        connection_name: conn_$UNIQUE_NAME
+        gateway_storage_catalog: main
+        gateway_storage_schema: ${resources.schemas.storage.name}
