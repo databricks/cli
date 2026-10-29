@@ -488,6 +488,64 @@ func TestLoginDeviceCodeCompletionChecksUserCode(t *testing.T) {
 	assert.Equal(t, int32(1), tokenRequests.Load())
 }
 
+func TestLoginDeviceCodeCompletionChecksSettings(t *testing.T) {
+	tests := []struct {
+		name string
+		// startArgs and completeArgs are added to the flags of each step.
+		startArgs    []string
+		completeArgs []string
+		// completeOnOtherHost completes the login on a second server.
+		completeOnOtherHost bool
+		wantChanged         string
+	}{
+		{
+			name:                "host",
+			completeOnOtherHost: true,
+			wantChanged:         "a different host",
+		},
+		{
+			name:         "client ID",
+			completeArgs: []string{"--client-id", "other-client"},
+			wantChanged:  "a different client ID",
+		},
+		{
+			name:        "scopes dropped",
+			startArgs:   []string{"--scopes", "sql"},
+			wantChanged: "different scopes",
+		},
+		{
+			name:         "scopes added",
+			completeArgs: []string{"--scopes", "sql"},
+			wantChanged:  "different scopes",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := newDeviceCodeServer(t)
+			var tokenRequests atomic.Int32
+			server.RequestCallback = func(req *testserver.Request) {
+				if req.URL.Path == "/oidc/v1/token" {
+					tokenRequests.Add(1)
+				}
+			}
+			setUpDeviceCodeLogin(t, "")
+			ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{}, "", ""))
+			require.NoError(t, runDeviceCodeLogin(ctx, append([]string{"--host", server.URL, "--profile", "test"}, tt.startArgs...)...))
+
+			host := server.URL
+			if tt.completeOnOtherHost {
+				other := newDeviceCodeServer(t)
+				other.RequestCallback = server.RequestCallback
+				host = other.URL
+			}
+			args := append([]string{"--host", host, "--profile", "test", "--user-code", "WDJB-MJHT", "--confirmation-code", "FTFA-QQKY"}, tt.completeArgs...)
+			err := runDeviceCodeLogin(ctx, args...)
+			assert.EqualError(t, err, "the login for profile test was started with "+tt.wantChanged+". Complete it with the same command that started it. "+startNewLoginHint)
+			assert.Zero(t, tokenRequests.Load())
+		})
+	}
+}
+
 func TestLoginDeviceCodeCompletionWithoutHostSkipsPicker(t *testing.T) {
 	tm := startDeviceCodeLogin(t, "", "--user-code", "WDJB-MJHT", "--confirmation-code", "FTFA-QQKY")
 	_, err := tm.Result()

@@ -123,6 +123,7 @@ fail with a token refresh error and you need to run the login again.
 | `token exchange: Invalid confirmation code (error code: invalid_request). Check the confirmation code ...` | The confirmation code was mistyped, or the login was not approved yet. | Check the code and approve the login, then run the command again. If it still fails, start a new login. |
 | `token exchange: Invalid device code (error code: invalid_request). Run the same command without --user-code and --confirmation-code ...` | The login expired. | Start a new login. |
 | `a newer login for profile ... replaced this one` | A second login was started for the same profile or host. | Approve the newest code, and complete the newest login with its user code. |
+| `the login for profile ... was started with a different host` (or client ID, or scopes) | The second command does not use the host, `--client-id` or `--scopes` of the first one. | Complete the login with the same command that started it, plus `--user-code` and `--confirmation-code`. |
 | `no pending device code login for profile ...` | The login was already completed, or no login was started for this profile or host. | Start a new login. |
 | `--confirmation-code requires --user-code` | `--user-code` is missing from the command. | Add `--user-code` with the code from the first step. |
 | `--confirmation-code requires --use-device-code` | `--use-device-code` is missing from the command. | Run the same command as the first step, with `--user-code` and `--confirmation-code`. |

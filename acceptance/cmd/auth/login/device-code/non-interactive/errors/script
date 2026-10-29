@@ -53,4 +53,10 @@ trace update_file.py home/.databricks/token-cache.json device-code-2 unknown-dev
 trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
 trace cache_keys
 
+# The token gets the scopes of the device authorization, so the second step
+# cannot change them.
+title "Scopes changed between the steps\n"
+start_login LOG.scopes $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code --scopes sql
+trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+
 trace print_requests.py --oneline //oidc/v1/device/auth //oidc/v1/token

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/auth/storage"
@@ -137,6 +138,8 @@ type nonInteractiveDeviceCodeLogin struct {
 	key            string
 	profile        string
 	host           string
+	clientID       string
+	scopes         []string
 }
 
 // pendingLoginStore returns the pending logins that tokenStore keeps apart
@@ -187,6 +190,9 @@ func (l nonInteractiveDeviceCodeLogin) start(ctx context.Context) error {
 	err = pendingLogins.PutPendingLogin(l.key, storage.PendingLogin{
 		DeviceCode: da.DeviceCode,
 		UserCode:   da.UserCode,
+		Host:       l.host,
+		ClientID:   l.clientID,
+		Scopes:     l.scopes,
 	})
 	if err != nil {
 		return fmt.Errorf("store pending login: %w", err)
@@ -220,6 +226,9 @@ func (l nonInteractiveDeviceCodeLogin) complete(ctx context.Context, userCode, c
 	if !sameCode(pending.UserCode, userCode) {
 		return nil, fmt.Errorf("a newer login for %s replaced this one. Complete the newer login with its user code. %s", l.target(), startNewLoginHint)
 	}
+	if changed := l.changedSetting(pending); changed != "" {
+		return nil, fmt.Errorf("the login for %s was started with %s. Complete it with the same command that started it. %s", l.target(), changed, startNewLoginHint)
+	}
 
 	login, err := l.persistentAuth.NewDeviceCodeLogin(ctx)
 	if err != nil {
@@ -245,6 +254,20 @@ func (l nonInteractiveDeviceCodeLogin) complete(ctx context.Context, userCode, c
 		return nil, fmt.Errorf("%w. %s", err, startNewLoginHint)
 	}
 	return token, err
+}
+
+// changedSetting describes the setting that differs from the one pending was
+// started with, or returns "" if none does.
+func (l nonInteractiveDeviceCodeLogin) changedSetting(pending storage.PendingLogin) string {
+	switch {
+	case pending.Host != l.host:
+		return "a different host"
+	case pending.ClientID != l.clientID:
+		return "a different client ID"
+	case !slices.Equal(pending.Scopes, l.scopes):
+		return "different scopes"
+	}
+	return ""
 }
 
 // sameCode reports whether two device codes match when compared the way the
