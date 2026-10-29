@@ -1,7 +1,7 @@
 ---
 description: Rules for how to deal with auto-generated files
 globs:
-  - ".codegen/cli.json"
+  - ".codegen/cli.json.gz"
   - ".gitattributes"
   - "acceptance/**/out*"
   - "acceptance/**/output.txt"
@@ -20,7 +20,7 @@ globs:
   - "python/databricks/bundles/*/__init__.py"
   - "python/databricks/bundles/*/_models/*.py"
 paths:
-  - ".codegen/cli.json"
+  - ".codegen/cli.json.gz"
   - ".gitattributes"
   - "acceptance/**/out*"
   - "acceptance/**/output.txt"
@@ -61,13 +61,13 @@ Files matching this rule's glob pattern are most likely generated artifacts. Aut
 - Everything, in one shot:
   - `./task generate` — aggregator that runs all generators below
 - OpenAPI SDK/CLI command stubs and related generated artifacts:
-  - `./task generate-cligen` — regenerates `cmd/account/**`, `cmd/workspace/**` and `.gitattributes` from the checked-in `.codegen/cli.json`.
-  - `./task generate-clijson` — refreshes `.codegen/cli.json` from the OpenAPI spec via genkit (requires universe repo); also updates `internal/genkit/tagging.py`.
+  - `./task generate-cligen` — regenerates `cmd/account/**`, `cmd/workspace/**` and `.gitattributes` from the checked-in `.codegen/cli.json.gz`.
+  - `./task generate-clijson` — refreshes `.codegen/cli.json.gz` from the OpenAPI spec via genkit (requires universe repo); also updates `internal/genkit/tagging.py`.
 - Direct engine generated YAML:
   - `./task generate-direct` (or `./task generate-direct-apitypes`, `./task generate-direct-resources`)
 - Bundle schemas:
   - `./task generate-schema`
-  - Rewrites `bundle/internal/schema/annotations.yml` in place: upstream docs are sourced from `.codegen/cli.json` at generation time, and the file is synced with the config structure (placeholders added, stale entries dropped).
+  - Rewrites `bundle/internal/schema/annotations.yml` in place: upstream docs are sourced from `.codegen/cli.json.gz` at generation time, and the file is synced with the config structure (placeholders added, stale entries dropped).
   - The docs schema (`jsonschema_for_docs.json`) is not generated on main; it is built and published to the `docgen` branch on release by `.github/workflows/update-schema-docs.yml`.
 - Validation generated code:
   - `./task generate-validation`

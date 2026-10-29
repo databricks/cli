@@ -12,6 +12,7 @@ previous run is removed.
 """
 
 import argparse
+import gzip
 import json
 import re
 import sys
@@ -212,7 +213,7 @@ def write_files(outdir, resource_behaviors):
 
 def main():
     parser = argparse.ArgumentParser(description="Generate resources YAML from the cli.json schema block")
-    parser.add_argument("apischema", type=Path, help="Path to cli.json schema block")
+    parser.add_argument("apischema", type=Path, help="Path to cli.json.gz schema block")
     parser.add_argument("apitypes", type=Path, help="Path to apitypes.generated.yml file")
     parser.add_argument("apitypes_override", type=Path, help="Path to apitypes.yml override file")
     parser.add_argument("out_fields", type=Path, help="Path to the refschema output directory")
@@ -221,7 +222,7 @@ def main():
 
     resource_types = parse_apitypes(args.apitypes, args.apitypes_override)
     state_fields, array_element_types = parse_out_fields(args.out_fields)
-    schemas = json.loads(args.apischema.read_text())["schemas"]
+    schemas = json.loads(gzip.decompress(args.apischema.read_bytes()))["schemas"]
 
     resource_behaviors = {}
     for resource, type_name in sorted(resource_types.items()):
