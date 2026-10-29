@@ -1,12 +1,116 @@
 package run
 
 import (
+	"encoding/json"
+	"fmt"
 	"testing"
 
 	flag "github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestPipelineOptionsPathSelectionsPayload(t *testing.T) {
+	tests := []struct {
+		name     string
+		opts     PipelineOptions
+		expected string
+	}{
+		{
+			name: "file selections for both refresh modes",
+			opts: PipelineOptions{
+				RefreshByPath:     []string{"/Workspace/Shared/source.sql"},
+				FullRefreshByPath: []string{"/Workspace/Shared/notebook"},
+			},
+			expected: `{
+				"refresh_selection_by_path": ["/Workspace/Shared/source.sql"],
+				"full_refresh_selection_by_path": ["/Workspace/Shared/notebook"]
+			}`,
+		},
+		{
+			name: "table refresh and file full-refresh",
+			opts: PipelineOptions{
+				Refresh:           []string{"catalog.schema.table1"},
+				FullRefreshByPath: []string{"/Workspace/Shared/notebook"},
+			},
+			expected: `{
+				"refresh_selection": ["catalog.schema.table1"],
+				"full_refresh_selection_by_path": ["/Workspace/Shared/notebook"]
+			}`,
+		},
+		{
+			name: "file refresh and table full-refresh",
+			opts: PipelineOptions{
+				RefreshByPath: []string{"/Workspace/Shared/source.sql"},
+				FullRefresh:   []string{"catalog.schema.table2"},
+			},
+			expected: `{
+				"refresh_selection_by_path": ["/Workspace/Shared/source.sql"],
+				"full_refresh_selection": ["catalog.schema.table2"]
+			}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			payload, err := tt.opts.toPayload(nil, "pipeline-id", false)
+			require.NoError(t, err)
+			assert.Equal(t, "pipeline-id", payload.PipelineId)
+			data, err := json.Marshal(payload)
+			require.NoError(t, err)
+			assert.JSONEq(t, tt.expected, string(data))
+		})
+	}
+}
+
+func TestPipelineOptionsRejectMixedSelectors(t *testing.T) {
+	tests := []struct {
+		name string
+		opts PipelineOptions
+	}{
+		{
+			name: "--refresh",
+			opts: PipelineOptions{
+				Refresh:       []string{"table1"},
+				RefreshByPath: []string{"/Workspace/Shared/source.sql"},
+			},
+		},
+		{
+			name: "--full-refresh",
+			opts: PipelineOptions{
+				FullRefresh:       []string{"table1"},
+				FullRefreshByPath: []string{"/Workspace/Shared/source.sql"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			payload, err := tt.opts.toPayload(nil, "pipeline-id", false)
+			require.ErrorContains(t, err, "cannot mix table names and source files in "+tt.name)
+			assert.Nil(t, payload)
+		})
+	}
+}
+
+func TestPipelineOptionsValidatePathSelections(t *testing.T) {
+	for _, full := range []bool{false, true} {
+		for _, exclusive := range []string{"refresh-all", "full-refresh-all", "validate-only"} {
+			t.Run(fmt.Sprintf("full=%t/%s", full, exclusive), func(t *testing.T) {
+				opts := PipelineOptions{
+					RefreshAll:     exclusive == "refresh-all",
+					FullRefreshAll: exclusive == "full-refresh-all",
+					ValidateOnly:   exclusive == "validate-only",
+				}
+				if full {
+					opts.FullRefreshByPath = []string{"/Workspace/Shared/source.sql"}
+				} else {
+					opts.RefreshByPath = []string{"/Workspace/Shared/source.sql"}
+				}
+				_, err := opts.toPayload(nil, "pipeline-id", false)
+				assert.ErrorContains(t, err, "cannot use --refresh or --full-refresh together with --"+exclusive)
+			})
+		}
+	}
+}
 
 func setupPipelineOptions(t *testing.T) (*flag.FlagSet, *PipelineOptions) {
 	var fs flag.FlagSet

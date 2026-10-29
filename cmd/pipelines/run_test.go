@@ -102,6 +102,34 @@ Pipeline configurations for this update:
 `,
 		},
 		{
+			name: "pipeline update with file refresh selections",
+			update: pipelines.UpdateInfo{
+				RefreshSelectionByPath:     []string{"/Workspace/Shared/source.sql"},
+				FullRefreshSelectionByPath: []string{"/Workspace/Shared/notebook"},
+			},
+			expected: `
+Update for pipeline completed successfully.
+
+Pipeline configurations for this update:
+• Refreshed tables defined in [/Workspace/Shared/source.sql]
+• Full refreshed tables defined in [/Workspace/Shared/notebook]
+`,
+		},
+		{
+			name: "pipeline update with table and file refresh selections",
+			update: pipelines.UpdateInfo{
+				RefreshSelection:       []string{"table1"},
+				RefreshSelectionByPath: []string{"/Workspace/Shared/source.sql"},
+			},
+			expected: `
+Update for pipeline completed successfully.
+
+Pipeline configurations for this update:
+• Refreshed [table1]
+• Refreshed tables defined in [/Workspace/Shared/source.sql]
+`,
+		},
+		{
 			name: "pipeline update with storage instead of catalog/schema",
 			update: pipelines.UpdateInfo{
 				UpdateId: "update-storage",

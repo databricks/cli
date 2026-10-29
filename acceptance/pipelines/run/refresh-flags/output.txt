@@ -19,7 +19,7 @@ Update ID: [UUID]
 Update for pipeline completed successfully.
 
 Pipeline configurations for this update:
-• All tables are refreshed
+• Refreshed [table1, table2]
 
 >>> print_requests.py //pipelines
 {
@@ -46,7 +46,7 @@ Update ID: [UUID]
 Update for pipeline completed successfully.
 
 Pipeline configurations for this update:
-• All tables are refreshed
+• All tables are fully refreshed
 
 >>> print_requests.py //pipelines
 {
@@ -70,7 +70,7 @@ Update ID: [UUID]
 Update for pipeline completed successfully.
 
 Pipeline configurations for this update:
-• All tables are refreshed
+• Full refreshed [table1, table2]
 
 >>> print_requests.py //pipelines
 {
@@ -85,7 +85,7 @@ Pipeline configurations for this update:
 }
 
 === Running pipeline with --full-refresh flag and --refresh flag
->>> [CLI] pipelines run --full-refresh table1,table2 --refresh table3,table4
+>>> [CLI] pipelines run --full-refresh table1 --refresh table2
 Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
@@ -97,7 +97,8 @@ Update ID: [UUID]
 Update for pipeline completed successfully.
 
 Pipeline configurations for this update:
-• All tables are refreshed
+• Refreshed [table2]
+• Full refreshed [table1]
 
 >>> print_requests.py //pipelines
 {
@@ -105,12 +106,103 @@ Pipeline configurations for this update:
   "path": "/api/2.0/pipelines/[UUID]/updates",
   "body": {
     "full_refresh_selection": [
-      "table1",
-      "table2"
+      "table1"
     ],
     "refresh_selection": [
-      "table3",
-      "table4"
+      "table2"
     ]
   }
 }
+
+=== Refreshing tables defined in a source file
+>>> [CLI] pipelines run --refresh pipeline_file.py
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+Update ID: [UUID]
+
+Update for pipeline completed successfully.
+
+Pipeline configurations for this update:
+• Refreshed tables defined in [/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files/pipeline_file.py]
+
+>>> print_requests.py //pipelines
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "refresh_selection_by_path": [
+      "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files/pipeline_file.py"
+    ]
+  }
+}
+
+=== Fully refreshing tables defined in a source file
+>>> [CLI] pipelines run --full-refresh pipeline_file.py
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+Update ID: [UUID]
+
+Update for pipeline completed successfully.
+
+Pipeline configurations for this update:
+• Full refreshed tables defined in [/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files/pipeline_file.py]
+
+>>> print_requests.py //pipelines
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "full_refresh_selection_by_path": [
+      "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files/pipeline_file.py"
+    ]
+  }
+}
+
+=== Rejecting missing sources and incompatible refresh modes
+>>> musterr [CLI] pipelines run --refresh ./missing.sql --no-wait
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Error: invalid --refresh: source file "./missing.sql" not found; use a table name or an existing source file
+
+>>> musterr [CLI] pipelines run --refresh pipeline_file.py --full-refresh-all --no-wait
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Error: cannot use --refresh or --full-refresh together with --full-refresh-all, these flags are mutually exclusive
+
+>>> musterr [CLI] pipelines run --full-refresh ./missing.sql --restart --no-wait
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Error: invalid --full-refresh: source file "./missing.sql" not found; use a table name or an existing source file
+
+>>> test ! -e [OUTPUT_DIR]/out.requests.txt
+
+=== Rejecting mixed selectors before restarting the pipeline
+>>> musterr [CLI] pipelines run --refresh table1,pipeline_file.py --restart --no-wait
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Error: cannot mix table names and source files in --refresh; use only table names or only source files
+
+>>> musterr [CLI] pipelines run --full-refresh table2,pipeline_file.py --restart --no-wait
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Error: cannot mix table names and source files in --full-refresh; use only table names or only source files
+
+>>> test ! -e [OUTPUT_DIR]/out.requests.txt
