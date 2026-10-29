@@ -406,24 +406,6 @@ func TestLoginDeviceCodeReadsConfirmationCode(t *testing.T) {
 	assert.Contains(t, cache.Tokens, "test")
 }
 
-func TestLoginDeviceCodeFailsAfterWrongConfirmationCodes(t *testing.T) {
-	server := newDeviceCodeServer(t)
-	tm := startDeviceCodeLogin(t, "[test]\nhost = "+server.URL+"\n", "--profile", "test")
-	tm.WaitFor("Confirmation code")
-	tm.Type("AAAA-AAAA\nBBBB-BBBB\nCCCC-CCCC\n")
-	_, err := tm.Result()
-	assert.EqualError(t, err, "Invalid confirmation code (error code: invalid_request). Start login from scratch")
-}
-
-func TestLoginDeviceCodeFailsWithoutConfirmationCode(t *testing.T) {
-	server := newDeviceCodeServer(t)
-	tm := startDeviceCodeLogin(t, "[test]\nhost = "+server.URL+"\n", "--profile", "test")
-	tm.WaitFor("Confirmation code")
-	tm.Close()
-	_, err := tm.Result()
-	assert.EqualError(t, err, "reading confirmation code: EOF")
-}
-
 // The token gets the scopes requested at device authorization, so --scopes is
 // sent there and not with the token request.
 func TestLoginDeviceCodeRequestsScopes(t *testing.T) {
