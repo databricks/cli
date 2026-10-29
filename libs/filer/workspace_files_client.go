@@ -11,13 +11,11 @@ import (
 	"net/http"
 	"net/url"
 	"path"
-	"regexp"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
-	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
@@ -172,18 +170,6 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 
 	err = w.apiClient.Do(ctx, http.MethodPost, urlPath, w.workspaceIDHeaders(), nil, body, nil)
 
-	// Overwrite can't change a node's type. If a node of the other type holds the
-	// path, delete it and upload again so the remote matches the local file.
-	if err != nil && overwrite {
-		deleted, derr := w.deleteNodeOfOtherType(ctx, absPath, err)
-		if derr != nil {
-			return derr
-		}
-		if deleted {
-			err = w.apiClient.Do(ctx, http.MethodPost, urlPath, w.workspaceIDHeaders(), nil, body, nil)
-		}
-	}
-
 	// Return early on success.
 	if err == nil {
 		return nil
@@ -235,68 +221,6 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 	}
 
 	return err
-}
-
-// Messages import-file returns when an overwrite would change a node's type. The
-// endpoint sets no error code for them. Matching is best-effort: if the wording
-// changes, the original error is returned as before.
-var (
-	// A file holds the name of a notebook upload. Captures the file's name.
-	fileHoldsNotebookName = regexp.MustCompile(`Node named '(.+)' already exists`)
-	// A notebook holds the name of a file upload (SQL notebook "x" holds "x.sql").
-	// Captures the upload's path.
-	notebookHoldsFileName = regexp.MustCompile(`Creating file failed\. An item with path (.+) already exists`)
-)
-
-// messageNames reports whether msg matches re and names name.
-func messageNames(re *regexp.Regexp, msg, name string) bool {
-	m := re.FindStringSubmatch(msg)
-	return m != nil && m[1] == name
-}
-
-// deleteNodeOfOtherType deletes the node that blocks an overwrite of absPath
-// because its type differs from the upload's, and reports whether it did.
-// CLI v1.21 and v1.22 uploaded some notebooks as files this way.
-func (w *WorkspaceFilesClient) deleteNodeOfOtherType(ctx context.Context, absPath string, uploadErr error) (bool, error) {
-	aerr, ok := errors.AsType[*apierr.APIError](uploadErr)
-	if !ok {
-		return false, nil
-	}
-
-	var nodePath string
-	var nodeType workspace.ObjectType
-	switch {
-	case messageNames(fileHoldsNotebookName, aerr.Message, path.Base(absPath)):
-		nodePath, nodeType = absPath, workspace.ObjectTypeFile
-	case messageNames(notebookHoldsFileName, aerr.Message, absPath):
-		nodePath, nodeType = strings.TrimSuffix(absPath, path.Ext(absPath)), workspace.ObjectTypeNotebook
-	default:
-		return false, nil
-	}
-
-	// The second message is also returned when a directory holds the path or
-	// when two writers create it at once, so only delete a node of the expected
-	// type. A notebook only holds the name with its language's extension: SQL
-	// notebook "x" holds "x.sql", not "x.py".
-	info, err := w.workspaceClient.Workspace.GetStatusByPath(ctx, nodePath)
-	if errors.Is(err, apierr.ErrNotFound) {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	if info.ObjectType != nodeType {
-		return false, nil
-	}
-	if nodeType == workspace.ObjectTypeNotebook && info.Language != notebook.ExtensionToLanguage[strings.ToLower(path.Ext(absPath))] {
-		return false, nil
-	}
-
-	err = w.workspaceClient.Workspace.Delete(ctx, workspace.Delete{Path: nodePath})
-	if err != nil {
-		return false, fmt.Errorf("failed to delete %s to replace it with %s: %w", nodePath, absPath, err)
-	}
-	return true, nil
 }
 
 func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {

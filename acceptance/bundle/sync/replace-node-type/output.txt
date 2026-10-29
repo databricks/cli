@@ -9,7 +9,18 @@
 FILE bom.sql
 NOTEBOOK plain
 
-=== Sync replaces both
+=== Sync fails and preserves both existing objects
+Action: PUT: bom.sql, plain.sql
+
+>>> list
+FILE bom.sql
+NOTEBOOK plain
+
+=== Sync succeeds after manually deleting the conflicting objects
+
+>>> [CLI] workspace delete /Workspace/Users/[USERNAME]/.bundle/replace-node-type-[UNIQUE_NAME]/default/files/bom.sql
+
+>>> [CLI] workspace delete /Workspace/Users/[USERNAME]/.bundle/replace-node-type-[UNIQUE_NAME]/default/files/plain
 
 >>> [CLI] bundle sync --output text
 Action: PUT: bom.sql, plain.sql

@@ -1,5 +1,4 @@
-# Overwrite can't change a node's type, so when the node at a path has the other type,
-# sync deletes it and uploads again. bom.sql is a notebook: its first line starts with a
+# Overwrite can't change a node's type. bom.sql is a notebook: its first line starts with a
 # byte order mark, and the first line only needs to contain "Databricks notebook source".
 # CLI v1.21 and v1.22 uploaded it as a file.
 envsubst < databricks.yml.tmpl > databricks.yml
@@ -20,6 +19,12 @@ trace $CLI workspace import "$remote/bom.sql" --file bom.sql --format RAW
 trace $CLI workspace import "$remote/plain" --file plain.sql --format SOURCE --language SQL
 trace list
 
-title "Sync replaces both\n"
+title "Sync fails and preserves both existing objects\n"
+trace musterr $CLI bundle sync --output text 2> LOG.sync | sort
+trace list
+
+title "Sync succeeds after manually deleting the conflicting objects\n"
+trace $CLI workspace delete "$remote/bom.sql"
+trace $CLI workspace delete "$remote/plain"
 trace $CLI bundle sync --output text 2>&1 | sort
 trace list
