@@ -70,6 +70,24 @@ func TestStoreLoginTokenDeletesStaleTokenOnFailure(t *testing.T) {
 	assert.ErrorIs(t, err, storage.ErrNotFound)
 }
 
+func TestStoreLoginTokenDeletesPendingDeviceCodeLogin(t *testing.T) {
+	const profileName = "TEST"
+	store := storage.NewMemoryStore()
+	pending := storage.Entry{PendingLogin: &storage.PendingLogin{DeviceCode: "device-code", UserCode: "WDJBMJHT"}}
+	require.NoError(t, store.Put(pendingLoginKey(profileName), pending))
+	require.NoError(t, store.Put(pendingLoginKey("OTHER"), pending))
+	arg, err := u2m.NewProfileWorkspaceOAuthArgument("https://workspace.example.test", profileName)
+	require.NoError(t, err)
+
+	err = storeLoginToken(t.Context(), store, storage.StorageModeSecure, arg, &oauth2.Token{AccessToken: "new-token"})
+
+	require.NoError(t, err)
+	_, err = store.Lookup(pendingLoginKey(profileName))
+	assert.ErrorIs(t, err, storage.ErrNotFound)
+	_, err = store.Lookup(pendingLoginKey("OTHER"))
+	assert.NoError(t, err)
+}
+
 // logBuffer is a thread-safe bytes.Buffer for capturing log output in tests.
 type logBuffer struct {
 	mu  sync.Mutex

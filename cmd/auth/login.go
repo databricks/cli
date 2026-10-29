@@ -104,6 +104,11 @@ func storeLoginToken(ctx context.Context, tokenStore storage.Store, mode storage
 		}
 		return storeErr
 	}
+	// A pending device code login for the same profile or host is left over
+	// once a login succeeds.
+	if err := tokenStore.Delete(pendingLoginKey(key)); err != nil {
+		log.Debugf(ctx, "Failed to delete the pending device code login: %v", err)
+	}
 	storage.PinSecureMode(ctx, mode, storage.StorageModeUnknown)
 	return nil
 }

@@ -96,7 +96,8 @@ Each profile, or host without a profile, has one pending login. Starting a
 second login for it replaces the first, so complete one login before starting
 another.
 
-`databricks auth logout` removes the pending login of the profile.
+A successful login for the profile, in any way, and `databricks auth logout`
+remove its pending login.
 
 `--configure-cluster` is not supported by the non-interactive login. Set
 `cluster_id` on the profile after the login.
