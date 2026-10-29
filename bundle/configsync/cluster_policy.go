@@ -2,7 +2,6 @@ package configsync
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"maps"
@@ -14,18 +13,24 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
+	"github.com/databricks/cli/libs/clusterpolicy"
 	"github.com/databricks/cli/libs/structs/structaccess"
-	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
+// clusterPolicyGate is the cluster spec field that attaches a policy. The direct engine's
+// remote addition rules gated on it mark where the backend applies policy values.
+const clusterPolicyGate = "policy_id"
+
 // FilterClusterPolicyValues removes policy-applied values from already extracted
-// and selected changes. The plan and input changes are read-only.
+// and selected changes. The plan and input changes are read-only. A resource whose
+// policy cannot be read is left out entirely and reported as skipped: its changes may
+// pair with each other (e.g. autoscale -> num_workers), so a partial result is unsafe.
 func FilterClusterPolicyValues(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, changes Changes) (Changes, []SkippedChange, error) {
 	definitions := make(clusterPolicyDefinitions)
-	lookupPolicy := func(id string) (clusterPolicyRules, error) {
+	lookupPolicy := func(id string) (clusterpolicy.Definition, error) {
 		return definitions.get(ctx, b, id)
 	}
 	filtered := make(Changes, len(changes))
@@ -39,83 +44,23 @@ func FilterClusterPolicyValues(ctx context.Context, b *bundle.Bundle, plan *depl
 			filtered[resourceKey] = changes[resourceKey]
 			continue
 		}
-		resourceChanges, resourceSkipped, err := filterClusterPolicyChanges(resourceKey, changes[resourceKey], filter)
+		resourceChanges, err := filter.filterChanges(changes[resourceKey])
+		if lookupErr, ok := errors.AsType[*clusterPolicyLookupError](err); ok {
+			skipped = append(skipped, lookupErr.skippedChange(resourceKey))
+			continue
+		}
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("filtering policy values for %s: %w", resourceKey, err)
 		}
 		if len(resourceChanges) > 0 {
 			filtered[resourceKey] = resourceChanges
 		}
-		skipped = append(skipped, resourceSkipped...)
 	}
 	return filtered, skipped, nil
 }
-
-// filterClusterPolicyChanges preserves atomic replacements and paired removals
-// when a missing policy prevents classifying part of a resource's changes.
-func filterClusterPolicyChanges(resourceKey string, changes ResourceChanges, filter *clusterPolicyFilter) (ResourceChanges, []SkippedChange, error) {
-	filtered := make(ResourceChanges, len(changes))
-	var skipped []SkippedChange
-	structural, removal := false, false
-	for _, path := range slices.Sorted(maps.Keys(changes)) {
-		change := *changes[path]
-		if change.Value != nil {
-			fieldPath, err := structpath.ParsePath(path)
-			if err != nil {
-				return nil, nil, fmt.Errorf("parsing change path %s.%s: %w", resourceKey, path, err)
-			}
-			value, keep, err := filter.prune(fieldPath, change.Value, true)
-			if err != nil {
-				lookupErr, ok := errors.AsType[*clusterPolicyLookupError](err)
-				if !ok || !errors.Is(err, apierr.ErrNotFound) {
-					return nil, nil, fmt.Errorf("filtering policy values for %s.%s (no configuration was saved): %w", resourceKey, path, err)
-				}
-				structural = structural || !filter.canSkipField(fieldPath)
-				skipped = append(skipped, SkippedChange{
-					ResourceKey: resourceKey, Path: path,
-					Reason: SkipReasonClusterPolicyNotFound, PolicyID: lookupErr.policyID,
-				})
-				continue
-			}
-			switch {
-			case !keep:
-				// Policy values never sync, even when they replaced an authored value.
-				continue
-			case change.Operation == OperationReplace && !reflect.DeepEqual(value, change.Value):
-				// Dropping policy values can leave exactly the authored value.
-				unchanged, err := filter.matchesAuthored(fieldPath, value)
-				if err != nil {
-					return nil, nil, fmt.Errorf("filtering policy values for %s.%s (no configuration was saved): %w", resourceKey, path, err)
-				}
-				if unchanged {
-					continue
-				}
-			}
-			change.Value = value
-		}
-		filtered[path] = &change
-		// A removal may be paired with a skipped addition, e.g. autoscale -> num_workers.
-		removal = removal || change.Operation == OperationRemove
-	}
-	// A structural change is always skipped too, so one length check covers both cases.
-	if len(skipped) > 0 && (structural || removal) {
-		return nil, []SkippedChange{{
-			ResourceKey: resourceKey, Reason: SkipReasonClusterPolicyNotFound, PolicyID: skipped[0].PolicyID,
-		}}, nil
-	}
-	return filtered, skipped, nil
-}
-
-type clusterPolicyRule struct {
-	Type         string `json:"type"`
-	Value        any    `json:"value"`
-	DefaultValue any    `json:"defaultValue"`
-}
-
-type clusterPolicyRules map[string]clusterPolicyRule
 
 type clusterPolicyDefinition struct {
-	rules clusterPolicyRules
+	rules clusterpolicy.Definition
 	err   error
 }
 
@@ -132,106 +77,119 @@ func (e *clusterPolicyLookupError) Error() string {
 
 func (e *clusterPolicyLookupError) Unwrap() error { return e.err }
 
-// get caches definitions and lookup failures per sync. The API returns the
-// effective definition, including policy-family overrides.
-func (definitions clusterPolicyDefinitions) get(ctx context.Context, b *bundle.Bundle, id string) (clusterPolicyRules, error) {
+func (e *clusterPolicyLookupError) skippedChange(resourceKey string) SkippedChange {
+	skip := SkippedChange{ResourceKey: resourceKey, Reason: SkipReasonClusterPolicyReadFailed, PolicyID: e.policyID, Error: e.err.Error()}
+	if errors.Is(e.err, apierr.ErrNotFound) {
+		skip.Reason, skip.Error = SkipReasonClusterPolicyNotFound, ""
+	}
+	return skip
+}
+
+// get caches definitions and failures per sync. The API returns the effective
+// definition, including policy-family overrides.
+func (definitions clusterPolicyDefinitions) get(ctx context.Context, b *bundle.Bundle, id string) (clusterpolicy.Definition, error) {
 	if definition, ok := definitions[id]; ok {
 		return definition.rules, definition.err
 	}
+	var rules clusterpolicy.Definition
 	policy, err := b.WorkspaceClient(ctx).ClusterPolicies.GetByPolicyId(ctx, id)
+	if err == nil {
+		rules, err = clusterpolicy.ParseDefinition(policy.Definition)
+	}
 	if err != nil {
-		lookupErr := &clusterPolicyLookupError{policyID: id, err: err}
-		definitions[id] = clusterPolicyDefinition{err: lookupErr}
-		return nil, lookupErr
+		err = &clusterPolicyLookupError{policyID: id, err: err}
 	}
-	decoder := json.NewDecoder(strings.NewReader(policy.Definition))
-	decoder.UseNumber()
-	var rules clusterPolicyRules
-	if err := decoder.Decode(&rules); err != nil {
-		return nil, fmt.Errorf("parsing cluster policy %s: %w", id, err)
-	}
-	definitions[id] = clusterPolicyDefinition{rules: rules}
-	return rules, nil
+	definitions[id] = clusterPolicyDefinition{rules: rules, err: err}
+	return rules, err
 }
 
-// supplied returns the value a rule sets, or nil if it sets none.
-func (r clusterPolicyRule) supplied(applyDefaults bool) any {
-	switch {
-	case r.Type == "fixed":
-		return r.Value
-	case applyDefaults && r.Type != "forbidden":
-		return r.DefaultValue
-	}
-	return nil
-}
-
-// supplies reports whether the rule could have set value. The backend rejects
-// values that differ from a fixed rule, so a fixed field is frozen whatever its
-// remote value; other rules only set their opted-in default.
-func (r clusterPolicyRule) supplies(value any, applyDefaults bool) bool {
-	if r.Type == "fixed" {
+// elementSupplies reports whether the policy element could have set value. The backend
+// rejects values that differ from a fixed element, so a fixed field is frozen whatever its
+// remote value; other elements only set their opted-in default.
+func elementSupplies(element clusterpolicy.Element, value any, applyDefaults bool) bool {
+	if element.Type == "fixed" {
 		return true
 	}
-	expected := r.supplied(applyDefaults)
-	return expected != nil && policyValueEquals(expected, value)
-}
-
-// policyValueEquals compares a decoded policy value with a normalized remote value.
-// Numbers compare by the remote type, and string fields such as spark_conf entries
-// match the literal of a JSON number or boolean.
-func policyValueEquals(policyValue, value any) bool {
-	switch policyValue := policyValue.(type) {
-	case json.Number:
-		switch value := value.(type) {
-		case string:
-			return value == policyValue.String()
-		case int64:
-			i, err := policyValue.Int64()
-			return err == nil && i == value
-		case float64:
-			f, err := policyValue.Float64()
-			return err == nil && f == value
-		}
-		return false
-	case bool:
-		if value, ok := value.(string); ok {
-			return value == strconv.FormatBool(policyValue)
-		}
-	}
-	return reflect.DeepEqual(policyValue, value)
+	expected := element.EffectiveValue(applyDefaults)
+	return expected != nil && clusterpolicy.ValueEquals(expected, value)
 }
 
 type clusterPolicyFilter struct {
-	lookupPolicy func(string) (clusterPolicyRules, error)
+	lookupPolicy func(string) (clusterpolicy.Definition, error)
 	config       any
 	remote       any
 	clusterRoots []*structpath.PatternNode
-	sliceKeys    map[string]structdiff.KeyFunc
 }
 
-type pruneAction int
-
-const (
-	pruneDescend pruneAction = iota // filter children individually
-	pruneKeep                       // keep the value as is
-	pruneDrop                       // the whole value comes from the policy
-)
-
-// prune removes omitted policy values from a normalized plan change, including
-// whole-object additions. It reports keep=false when the whole value comes from the policy.
-func (f *clusterPolicyFilter) prune(path *structpath.PathNode, value any, isChangeRoot bool) (any, bool, error) {
-	action, err := f.classify(path, value, isChangeRoot)
-	if err != nil {
-		return nil, false, err
+func (f *clusterPolicyFilter) filterChanges(changes ResourceChanges) (ResourceChanges, error) {
+	filtered := make(ResourceChanges, len(changes))
+	for _, path := range slices.Sorted(maps.Keys(changes)) {
+		change := *changes[path]
+		if change.Value != nil {
+			fieldPath, err := structpath.ParsePath(path)
+			if err != nil {
+				return nil, fmt.Errorf("parsing change path %s: %w", path, err)
+			}
+			value, keep, err := f.prune(fieldPath, change.Value, true)
+			if err != nil {
+				return nil, err
+			}
+			if !keep {
+				// Policy values never sync, even when they replaced an authored value.
+				continue
+			}
+			if change.Operation == OperationReplace && !reflect.DeepEqual(value, change.Value) {
+				// Dropping policy values can leave exactly the authored value.
+				unchanged, err := f.matchesAuthored(fieldPath, value)
+				if err != nil {
+					return nil, err
+				}
+				if unchanged {
+					continue
+				}
+			}
+			change.Value = value
+		}
+		filtered[path] = &change
 	}
-	switch action {
-	case pruneDrop:
-		return nil, false, nil
-	case pruneKeep:
-		return value, true, nil
-	default:
+	return filtered, nil
+}
+
+// prune removes policy values from a normalized change value, including whole-object
+// additions. It reports keep=false when the whole value comes from the policy. Values
+// outside cluster specs are descended into because they may contain whole clusters.
+func (f *clusterPolicyFilter) prune(path *structpath.PathNode, value any, isChangeRoot bool) (any, bool, error) {
+	clusterPath, inCluster := f.clusterPath(path)
+	if !inCluster {
 		return f.pruneChildren(path, value)
 	}
+	remotePolicyID, _ := structaccess.Get(f.remote, structpath.NewStringKey(clusterPath, clusterPolicyGate))
+	policyID, _ := remotePolicyID.(string)
+	if policyID == "" {
+		return value, true, nil
+	}
+	// A change may start inside an array, so protecting only sequence
+	// nodes would still allow an element to be emptied or removed.
+	for _, node := range path.SkipPrefix(clusterPath.Len()).AsSlice() {
+		if _, indexed := node.Index(); indexed {
+			return value, true, nil
+		}
+	}
+	// Keep required fields, but still filter their optional children.
+	if isChangeRoot || !isRequiredField(f.remote, path) {
+		policyOnly, err := f.isPolicyOnlySubtree(clusterPath, path, value, policyID)
+		if err != nil {
+			return nil, false, err
+		}
+		if policyOnly {
+			return nil, false, nil
+		}
+	}
+	// Removing elements would change indexed policy constraints.
+	if _, sequence := value.([]any); sequence {
+		return value, true, nil
+	}
+	return f.pruneChildren(path, value)
 }
 
 func (f *clusterPolicyFilter) pruneChildren(path *structpath.PathNode, value any) (any, bool, error) {
@@ -239,17 +197,18 @@ func (f *clusterPolicyFilter) pruneChildren(path *structpath.PathNode, value any
 	case map[string]any:
 		result := make(map[string]any, len(value))
 		for _, key := range slices.Sorted(maps.Keys(value)) {
-			filtered, keep, err := f.prune(structpath.NewStringKey(path, key), value[key], false)
+			child, keep, err := f.prune(structpath.NewStringKey(path, key), value[key], false)
 			if err != nil {
 				return nil, false, err
 			}
 			if keep {
-				result[key] = filtered
+				result[key] = child
 			}
 		}
 		return result, true, nil
 	case []any:
-		// Arrays inside clusters are never descended into; elements here cannot be dropped.
+		// Only reached outside cluster specs, e.g. a whole tasks array added remotely;
+		// arrays inside a cluster are kept as is above. Elements are never dropped.
 		result := make([]any, len(value))
 		for i, child := range value {
 			filtered, _, err := f.prune(structpath.NewIndex(path, i), child, false)
@@ -264,53 +223,7 @@ func (f *clusterPolicyFilter) pruneChildren(path *structpath.PathNode, value any
 	}
 }
 
-// classify decides how prune handles a value. Values outside cluster specs are
-// descended into because they may contain whole clusters.
-func (f *clusterPolicyFilter) classify(path *structpath.PathNode, value any, isChangeRoot bool) (pruneAction, error) {
-	clusterPath, ok := f.clusterPath(path)
-	if !ok {
-		return pruneDescend, nil
-	}
-	remotePolicyID, _ := structaccess.Get(f.remote, structpath.NewStringKey(clusterPath, "policy_id"))
-	policyID, _ := remotePolicyID.(string)
-	if policyID == "" {
-		return pruneKeep, nil
-	}
-	fieldPath := path
-	if f.sliceKeys != nil {
-		// Whole-object changes use remote indices; authored tasks may have another order.
-		var err error
-		fieldPath, err = structdiff.KeyedPath(f.remote, path, f.sliceKeys)
-		if err != nil {
-			return 0, err
-		}
-		clusterPath = fieldPath.Prefix(clusterPath.Len())
-	}
-	// A change may start inside an array, so protecting only sequence
-	// nodes would still allow an element to be emptied or removed.
-	for _, node := range fieldPath.SkipPrefix(clusterPath.Len()).AsSlice() {
-		if _, indexed := node.Index(); indexed {
-			return pruneKeep, nil
-		}
-	}
-	// Keep required fields, but still filter their optional children.
-	if isChangeRoot || !isRequiredField(f.remote, fieldPath) {
-		matches, err := f.isPolicyOnlySubtree(clusterPath, fieldPath, value, policyID)
-		if err != nil {
-			return 0, err
-		}
-		if matches {
-			return pruneDrop, nil
-		}
-	}
-	// Removing elements would change indexed policy constraints.
-	if _, sequence := value.([]any); sequence {
-		return pruneKeep, nil
-	}
-	return pruneDescend, nil
-}
-
-// clusterPath finds the cluster containing a field; the cluster itself is excluded.
+// clusterPath finds the cluster spec containing a field; the spec itself is excluded.
 func (f *clusterPolicyFilter) clusterPath(path *structpath.PathNode) (*structpath.PathNode, bool) {
 	for _, root := range f.clusterRoots {
 		if path.HasPatternPrefix(root) && path.Len() > root.Len() {
@@ -320,26 +233,8 @@ func (f *clusterPolicyFilter) clusterPath(path *structpath.PathNode) (*structpat
 	return nil, false
 }
 
-// canSkipField allows scalar and map changes strictly inside a cluster spec.
-// The caller must also check for removals paired with a skipped addition.
-func (f *clusterPolicyFilter) canSkipField(path *structpath.PathNode) bool {
-	if _, ok := f.clusterPath(path); !ok {
-		return false
-	}
-	remote, err := structaccess.Get(f.remote, path)
-	if err != nil || remote == nil {
-		return false
-	}
-	switch derefType(reflect.TypeOf(remote)).Kind() {
-	case reflect.Struct, reflect.Slice, reflect.Array:
-		return false
-	default:
-		return true
-	}
-}
-
 // isPolicyOnlySubtree requires every leaf to be absent from authored config and
-// set by the remote cluster's policy: under a fixed rule, or equal to an opted-in default.
+// set by the remote cluster's policy: under a fixed element, or equal to an opted-in default.
 func (f *clusterPolicyFilter) isPolicyOnlySubtree(clusterPath, path *structpath.PathNode, value any, policyID string) (bool, error) {
 	leaves := appendLeaves(nil, path, value)
 	if len(leaves) == 0 {
@@ -355,7 +250,7 @@ func (f *clusterPolicyFilter) isPolicyOnlySubtree(clusterPath, path *structpath.
 		}
 	}
 
-	rules, err := f.lookupPolicy(policyID)
+	definition, err := f.lookupPolicy(policyID)
 	if err != nil {
 		return false, err
 	}
@@ -365,21 +260,18 @@ func (f *clusterPolicyFilter) isPolicyOnlySubtree(clusterPath, path *structpath.
 		return false, err
 	}
 	for _, leaf := range leaves {
-		if !policySupplies(rules, leaf.path.SkipPrefix(clusterPath.Len()), leaf.value, applyDefaults == true) {
+		if !policySupplies(definition, leaf.path.SkipPrefix(clusterPath.Len()), leaf.value, applyDefaults == true) {
 			return false, nil
 		}
 	}
 	return true, nil
 }
 
-// authoredValue validates selectors before looking up fields so duplicate task
-// identities cannot make an authored value appear absent.
+// authoredValue returns the config value at path, or nil when the config does not declare
+// it. Change paths select keyed slice elements by key, so they address the same element in
+// config and remote regardless of order.
 func (f *clusterPolicyFilter) authoredValue(path *structpath.PathNode) (any, error) {
-	var value any
-	keyed, err := structdiff.KeyedPath(f.config, path, f.sliceKeys)
-	if err == nil {
-		value, err = structaccess.Get(f.config, keyed)
-	}
+	value, err := structaccess.Get(f.config, path)
 	if _, missing := errors.AsType[*structaccess.NotFoundError](err); missing {
 		return nil, nil
 	}
@@ -430,24 +322,18 @@ func isRequiredField(remote any, path *structpath.PathNode) bool {
 		return false
 	}
 	parent, _ := structaccess.Get(remote, path.Parent())
-	typ := reflect.TypeOf(parent)
-	if typ == nil {
+	parentValue := reflect.Indirect(reflect.ValueOf(parent))
+	if !parentValue.IsValid() || parentValue.Kind() != reflect.Struct {
 		return false
 	}
-	field, _, ok := structaccess.FindStructFieldByKeyType(derefType(typ), key)
+	field, _, ok := structaccess.FindStructFieldByKeyType(parentValue.Type(), key)
 	return ok && !structtag.JSONTag(field.Tag.Get("json")).OmitEmpty()
-}
-
-func derefType(typ reflect.Type) reflect.Type {
-	for typ.Kind() == reflect.Pointer {
-		typ = typ.Elem()
-	}
-	return typ
 }
 
 // policyAttributes renders a path relative to the cluster in the policy language,
 // once with indices and once with "*" in their place. Dotted map keys stay one key,
-// e.g. spark_conf["a.b"] becomes spark_conf.a.b.
+// e.g. spark_conf["a.b"] becomes spark_conf.a.b. Map keys are not wildcarded: a rule
+// such as spark_conf.* constrains values but is not treated as supplying them.
 func policyAttributes(path *structpath.PathNode) (indexed, wildcard string) {
 	var indexedParts, wildcardParts []string
 	for _, node := range path.AsSlice() {
@@ -465,29 +351,28 @@ func policyAttributes(path *structpath.PathNode) (indexed, wildcard string) {
 // policySupplies reports whether the policy could have set a leaf, translating the
 // policy language's log-delivery aliases. Indexed rules take precedence over wildcards.
 // https://docs.databricks.com/aws/en/admin/clusters/policy-definition
-func policySupplies(rules clusterPolicyRules, path *structpath.PathNode, value any, applyDefaults bool) bool {
+func policySupplies(definition clusterpolicy.Definition, path *structpath.PathNode, value any, applyDefaults bool) bool {
 	indexed, wildcard := policyAttributes(path)
 	if indexed == "cluster_log_conf.s3.region" {
-		return rules["cluster_log_conf.region"].supplies(value, applyDefaults)
+		return elementSupplies(definition["cluster_log_conf.region"], value, applyDefaults)
 	}
 	if storage, ok := strings.CutPrefix(indexed, "cluster_log_conf."); ok && strings.HasSuffix(storage, ".destination") {
 		storage = strings.ToUpper(strings.TrimSuffix(storage, ".destination"))
-		logType := rules["cluster_log_conf.type"].supplied(applyDefaults)
-		return policyValueEquals(logType, storage) && rules["cluster_log_conf.path"].supplies(value, applyDefaults)
+		logType := definition["cluster_log_conf.type"].EffectiveValue(applyDefaults)
+		return clusterpolicy.ValueEquals(logType, storage) && elementSupplies(definition["cluster_log_conf.path"], value, applyDefaults)
 	}
-	rule, ok := rules[indexed]
+	element, ok := definition[indexed]
 	if !ok {
-		rule = rules[wildcard]
+		element = definition[wildcard]
 	}
-	return rule.supplies(value, applyDefaults)
+	return elementSupplies(element, value, applyDefaults)
 }
 
-func policyFilterForResource(b *bundle.Bundle, resourceKey string, remote any, lookupPolicy func(string) (clusterPolicyRules, error)) (*clusterPolicyFilter, error) {
+func policyFilterForResource(b *bundle.Bundle, resourceKey string, remote any, lookupPolicy func(string) (clusterpolicy.Definition, error)) (*clusterPolicyFilter, error) {
 	filter := &clusterPolicyFilter{remote: remote, lookupPolicy: lookupPolicy}
 	switch remote.(type) {
 	case *dresources.JobRemote:
 		filter.clusterRoots = policyClusterRoots("jobs")
-		filter.sliceKeys = (&dresources.ResourceJob{}).KeyedSlices()
 	case *dresources.ClusterRemote:
 		filter.clusterRoots = policyClusterRoots("clusters")
 	default:
@@ -508,7 +393,7 @@ func policyFilterForResource(b *bundle.Bundle, resourceKey string, remote any, l
 func policyClusterRoots(resourceType string) []*structpath.PatternNode {
 	var roots []*structpath.PatternNode
 	for _, rule := range dresources.GetResourceConfig(resourceType).IgnoreRemoteAdditions {
-		if rule.WhenSet.String() == "policy_id" {
+		if rule.WhenSet.String() == clusterPolicyGate {
 			roots = append(roots, rule.Field)
 		}
 	}

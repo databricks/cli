@@ -41,7 +41,7 @@ trace diff.py databricks.yml.backup databricks.yml
 title "Deploy shared YAML with the prod policy"
 trace $CLI bundle deploy -t prod
 
-title "A deleted policy skips policy-dependent fields but still syncs authored edits"
+title "A deleted policy leaves the job unchanged, including its unrelated edits"
 edit_resource.py jobs "$job_id" <<'EOF'
 r["description"] = "Another UI edit"
 r["job_clusters"][0]["new_cluster"]["custom_tags"]["owner"] = "edited-owner"
@@ -53,7 +53,7 @@ cp databricks.yml databricks.yml.backup
 trace $CLI bundle config-remote-sync -t dev --save -o json | jq '{status, changes, skippedChanges}' | contains.py '"status": "partial"'
 trace diff.py databricks.yml.backup databricks.yml
 
-title "Only policy-dependent fields remain on the next sync"
+title "The job stays skipped on the next sync"
 trace $CLI bundle config-remote-sync -t dev -o json | jq '{status, changes, skippedChanges}' | contains.py '"status": "partial"'
 
 title "Text output reports the incomplete sync"

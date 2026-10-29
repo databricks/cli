@@ -34,15 +34,25 @@ const (
 	StatusFailed  SyncStatus = "failed"
 )
 
-const SkipReasonClusterPolicyNotFound = "cluster_policy_not_found"
+const (
+	SkipReasonClusterPolicyNotFound   = "cluster_policy_not_found"
+	SkipReasonClusterPolicyReadFailed = "cluster_policy_read_failed"
+)
 
-// SkippedChange identifies a change that could not be classified safely.
-// An empty Path means that the entire resource was left unchanged.
+// SkippedChange identifies a resource left unchanged because its remote changes
+// could not be classified safely.
 type SkippedChange struct {
 	ResourceKey string `json:"resourceKey"`
-	Path        string `json:"path,omitempty"`
 	Reason      string `json:"reason"`
 	PolicyID    string `json:"policyId"`
+	Error       string `json:"error,omitempty"`
+}
+
+func (s SkippedChange) describe() string {
+	if s.Reason == SkipReasonClusterPolicyNotFound {
+		return fmt.Sprintf("Left %s unchanged: cluster policy %s was not found.", s.ResourceKey, s.PolicyID)
+	}
+	return fmt.Sprintf("Left %s unchanged: cluster policy %s could not be read: %s", s.ResourceKey, s.PolicyID, s.Error)
 }
 
 // DiffOutput represents the complete output of the config-remote-sync command
@@ -86,11 +96,7 @@ func WriteResult(out io.Writer, jsonOutput bool, stats *Stats, files []FileChang
 		if len(skipped) > 0 {
 			_, _ = fmt.Fprintln(out, "Sync is incomplete: some remote changes were skipped.")
 			for _, skip := range skipped {
-				if skip.Path == "" {
-					_, _ = fmt.Fprintf(out, "Left %s unchanged: cluster policy %s was not found.\n", skip.ResourceKey, skip.PolicyID)
-				} else {
-					_, _ = fmt.Fprintf(out, "Skipped %s.%s: cluster policy %s was not found.\n", skip.ResourceKey, skip.Path, skip.PolicyID)
-				}
+				_, _ = fmt.Fprintln(out, skip.describe())
 			}
 		}
 		if len(files) == 0 && len(skipped) > 0 {

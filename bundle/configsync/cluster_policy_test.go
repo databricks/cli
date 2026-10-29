@@ -345,7 +345,7 @@ func TestFilterClusterPolicyValuesFiltersPolicyAppliedValues(t *testing.T) {
 	}
 }
 
-func TestFilterClusterPolicyValuesFailsOnPolicyLookupError(t *testing.T) {
+func TestFilterClusterPolicyValuesSkipsResourceOnPolicyLookupError(t *testing.T) {
 	for _, tt := range []struct {
 		name string
 		err  error
@@ -354,11 +354,10 @@ func TestFilterClusterPolicyValuesFailsOnPolicyLookupError(t *testing.T) {
 		{"service unavailable", errors.New("policy service unavailable")},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			lookupError := tt.err
 			b := policyTestBundle(t, "resources.clusters.test", map[string]any{"policy_id": "policy"})
 			client := mocks.NewMockWorkspaceClient(t)
 			b.SetWorkpaceClient(client.WorkspaceClient)
-			client.GetMockClusterPoliciesAPI().EXPECT().GetByPolicyId(mock.Anything, "policy").Return(nil, lookupError).Once()
+			client.GetMockClusterPoliciesAPI().EXPECT().GetByPolicyId(mock.Anything, "policy").Return(nil, tt.err).Once()
 			entry := &deployplan.PlanEntry{
 				RemoteState: &dresources.ClusterRemote{PolicyId: "policy"},
 				Changes: deployplan.Changes{
@@ -366,74 +365,62 @@ func TestFilterClusterPolicyValuesFailsOnPolicyLookupError(t *testing.T) {
 				},
 			}
 			changes, skipped, err := filterPolicyTestChanges(t, b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
-			require.ErrorIs(t, err, lookupError)
-			assert.Empty(t, skipped)
-			assert.ErrorContains(t, err, "no configuration was saved")
-			assert.Nil(t, changes)
+			require.NoError(t, err)
+			assert.Empty(t, changes)
+			assert.Equal(t, []configsync.SkippedChange{{
+				ResourceKey: "resources.clusters.test", Reason: configsync.SkipReasonClusterPolicyReadFailed,
+				PolicyID: "policy", Error: tt.err.Error(),
+			}}, skipped)
 		})
 	}
 }
 
-func TestFilterClusterPolicyValuesDoesNotHidePolicyErrorsAfterStructuralSkip(t *testing.T) {
-	key := "resources.jobs.test"
-	b := policyTestBundle(t, key, map[string]any{"job_clusters": []any{
-		map[string]any{"job_cluster_key": "a", "new_cluster": map[string]any{"policy_id": "missing"}},
-		map[string]any{"job_cluster_key": "b", "new_cluster": map[string]any{"policy_id": "denied"}},
-	}})
-	client := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(client.WorkspaceClient)
-	client.GetMockClusterPoliciesAPI().EXPECT().GetByPolicyId(mock.Anything, "missing").Return(nil, apierr.ErrNotFound).Once()
-	client.GetMockClusterPoliciesAPI().EXPECT().GetByPolicyId(mock.Anything, "denied").Return(nil, apierr.ErrPermissionDenied).Once()
-	remote := &dresources.JobRemote{}
-	require.NoError(t, json.Unmarshal([]byte(`{"job_clusters":[
-		{"job_cluster_key":"a","new_cluster":{"policy_id":"missing"}},
-		{"job_cluster_key":"b","new_cluster":{"policy_id":"denied"}}
-	]}`), remote))
-	entry := &deployplan.PlanEntry{
-		RemoteState: remote,
-		Changes: deployplan.Changes{
-			"job_clusters[job_cluster_key='a']":                            {Action: deployplan.Update, Remote: map[string]any{"new_cluster": map[string]any{"spark_env_vars": map[string]any{"ENV": "dev"}}}},
-			"job_clusters[job_cluster_key='b'].new_cluster.spark_env_vars": {Action: deployplan.Update, Remote: map[string]string{"ENV": "dev"}},
-		},
-	}
-	changes, skipped, err := filterPolicyTestChanges(t, b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{key: entry}})
-	assert.ErrorIs(t, err, apierr.ErrPermissionDenied)
-	assert.Nil(t, changes)
-	assert.Nil(t, skipped)
-}
-
-func TestFilterClusterPolicyValuesLooksUpMissingPolicyOnce(t *testing.T) {
+func TestFilterClusterPolicyValuesSkipsResourceWhenPolicyIsMissing(t *testing.T) {
 	b := policyTestBundle(t, "resources.clusters.test", map[string]any{
 		"policy_id": "policy", "cluster_name": "before",
 	})
+	require.NoError(t, b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		return dyn.SetByPath(v, dyn.MustPathFromString("resources.clusters.other"), dyn.V(map[string]dyn.Value{
+			"cluster_name": dyn.V("other-before"),
+		}))
+	}))
 	client := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(client.WorkspaceClient)
+	// Looked up once for the resource even though two additions depend on it.
 	client.GetMockClusterPoliciesAPI().EXPECT().GetByPolicyId(mock.Anything, "policy").
 		Return(nil, apierr.ErrResourceDoesNotExist).Once()
-	entry := &deployplan.PlanEntry{
-		RemoteState: &dresources.ClusterRemote{
-			PolicyId: "policy", ClusterName: "after",
-			CustomTags:   map[string]string{"environment": "dev"},
-			SparkEnvVars: map[string]string{"ENVIRONMENT": "dev"},
+	plan := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{
+		"resources.clusters.test": {
+			RemoteState: &dresources.ClusterRemote{
+				PolicyId: "policy", ClusterName: "after",
+				CustomTags:   map[string]string{"environment": "dev"},
+				SparkEnvVars: map[string]string{"ENVIRONMENT": "dev"},
+			},
+			Changes: deployplan.Changes{
+				"cluster_name":   {Action: deployplan.Update, Old: "before", New: "before", Remote: "after"},
+				"custom_tags":    {Action: deployplan.Skip, Reason: deployplan.ReasonRemoteAddition, Remote: map[string]string{"environment": "dev"}},
+				"spark_env_vars": {Action: deployplan.Skip, Reason: deployplan.ReasonRemoteAddition, Remote: map[string]string{"ENVIRONMENT": "dev"}},
+			},
 		},
-		Changes: deployplan.Changes{
-			"cluster_name":   {Action: deployplan.Update, Old: "before", New: "before", Remote: "after"},
-			"custom_tags":    {Action: deployplan.Skip, Reason: deployplan.ReasonRemoteAddition, Remote: map[string]string{"environment": "dev"}},
-			"spark_env_vars": {Action: deployplan.Skip, Reason: deployplan.ReasonRemoteAddition, Remote: map[string]string{"ENVIRONMENT": "dev"}},
+		"resources.clusters.other": {
+			RemoteState: &dresources.ClusterRemote{ClusterName: "other-after"},
+			Changes: deployplan.Changes{
+				"cluster_name": {Action: deployplan.Update, Old: "other-before", New: "other-before", Remote: "other-after"},
+			},
 		},
-	}
-	changes, skipped, err := filterPolicyTestChanges(t, b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.clusters.test": entry}})
+	}}
+	changes, skipped, err := filterPolicyTestChanges(t, b, plan)
 	require.NoError(t, err)
-	assert.Equal(t, configsync.Changes{"resources.clusters.test": {
-		"cluster_name": {Operation: configsync.OperationReplace, Value: "after"},
+	// The unrelated cluster_name edit is held back too: it may pair with a skipped change.
+	assert.Equal(t, configsync.Changes{"resources.clusters.other": {
+		"cluster_name": {Operation: configsync.OperationReplace, Value: "other-after"},
 	}}, changes)
 	assert.Equal(t, []configsync.SkippedChange{
-		{ResourceKey: "resources.clusters.test", Path: "custom_tags", Reason: configsync.SkipReasonClusterPolicyNotFound, PolicyID: "policy"},
-		{ResourceKey: "resources.clusters.test", Path: "spark_env_vars", Reason: configsync.SkipReasonClusterPolicyNotFound, PolicyID: "policy"},
+		{ResourceKey: "resources.clusters.test", Reason: configsync.SkipReasonClusterPolicyNotFound, PolicyID: "policy"},
 	}, skipped)
 }
 
-func TestFilterClusterPolicyValuesMatchesClustersByKeyAndRemotePolicy(t *testing.T) {
+func TestFilterClusterPolicyValuesUsesRemotePolicyPerCluster(t *testing.T) {
 	config := map[string]any{"job_clusters": []any{
 		map[string]any{"job_cluster_key": "explicit", "new_cluster": map[string]any{
 			"policy_id": "old-policy", "spark_env_vars": map[string]any{"ENV": "authored"},
@@ -452,11 +439,14 @@ func TestFilterClusterPolicyValuesMatchesClustersByKeyAndRemotePolicy(t *testing
 			"policy_id": "new-policy", "spark_env_vars": map[string]any{"ENV": "dev"},
 		}},
 	}}
+	env, authored := map[string]any{"ENV": "dev"}, map[string]any{"ENV": "authored"}
 	entry := &deployplan.PlanEntry{
 		RemoteState: typedPolicyResource(t, "shared", remote),
-		Changes: deployplan.Changes{"job_clusters": {
-			Action: deployplan.Update, New: config["job_clusters"], Remote: remote["job_clusters"],
-		}},
+		Changes: deployplan.Changes{
+			"job_clusters[job_cluster_key='explicit'].new_cluster.spark_env_vars":     {Action: deployplan.Update, Old: authored, New: authored, Remote: env},
+			"job_clusters[job_cluster_key='omitted'].new_cluster.spark_env_vars":      {Action: deployplan.Skip, Reason: deployplan.ReasonRemoteAddition, Remote: env},
+			"job_clusters[job_cluster_key='also_omitted'].new_cluster.spark_env_vars": {Action: deployplan.Skip, Reason: deployplan.ReasonRemoteAddition, Remote: env},
+		},
 	}
 	b := policyTestBundle(t, "resources.jobs.test", config)
 	client := mocks.NewMockWorkspaceClient(t)
@@ -468,15 +458,9 @@ func TestFilterClusterPolicyValuesMatchesClustersByKeyAndRemotePolicy(t *testing
 	changes, skipped, err := filterPolicyTestChanges(t, b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.jobs.test": entry}})
 	require.NoError(t, err)
 	assert.Empty(t, skipped)
-	require.Contains(t, changes, "resources.jobs.test")
-	require.Contains(t, changes["resources.jobs.test"], "job_clusters")
-	assert.Equal(t, []any{
-		map[string]any{"job_cluster_key": "also_omitted", "new_cluster": map[string]any{"policy_id": "new-policy"}},
-		map[string]any{"job_cluster_key": "omitted", "new_cluster": map[string]any{"policy_id": "new-policy"}},
-		map[string]any{"job_cluster_key": "explicit", "new_cluster": map[string]any{
-			"policy_id": "new-policy", "spark_env_vars": map[string]any{"ENV": "dev"},
-		}},
-	}, changes["resources.jobs.test"]["job_clusters"].Value)
+	assert.Equal(t, configsync.Changes{"resources.jobs.test": {
+		"job_clusters[job_cluster_key='explicit'].new_cluster.spark_env_vars": {Operation: configsync.OperationReplace, Value: env},
+	}}, changes)
 }
 
 func TestFilterClusterPolicyValuesDropsPolicyValueAtDottedLeaf(t *testing.T) {
@@ -645,46 +629,6 @@ func TestFilterClusterPolicyValuesDropsPolicyOnlyObjectAtChangeRoot(t *testing.T
 	require.NoError(t, err)
 	assert.Empty(t, skipped)
 	assert.Empty(t, changes)
-}
-
-func TestFilterClusterPolicyValuesRequiresUniqueTaskIdentityOnlyWithPolicy(t *testing.T) {
-	for _, tt := range []struct{ name, duplicateIn, policyID string }{
-		{"policy with duplicate authored tasks", "config", "policy"},
-		{"policy with duplicate remote tasks", "remote", "policy"},
-		{"no policy with duplicate authored tasks", "config", ""},
-		{"no policy with duplicate remote tasks", "remote", ""},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			task := map[string]any{
-				"task_key": "main", "new_cluster": map[string]any{
-					"policy_id": tt.policyID, "spark_env_vars": map[string]any{"ENV": "dev"},
-				},
-			}
-			configTasks, remoteTasks := []any{task}, []any{task}
-			if tt.duplicateIn == "config" {
-				configTasks = append(configTasks, task)
-			} else {
-				remoteTasks = append(remoteTasks, task)
-			}
-			key := "resources.jobs.test"
-			b := policyTestBundle(t, key, map[string]any{"tasks": configTasks})
-			entry := &deployplan.PlanEntry{
-				RemoteState: typedPolicyResource(t, "task", map[string]any{"tasks": remoteTasks}),
-				Changes:     deployplan.Changes{"tasks": {Action: deployplan.Update, Remote: remoteTasks}},
-			}
-			changes, skipped, err := filterPolicyTestChanges(t, b, &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{key: entry}})
-			if tt.policyID == "" {
-				require.NoError(t, err)
-				require.Contains(t, changes[key], "tasks")
-				assert.Equal(t, remoteTasks, changes[key]["tasks"].Value)
-				assert.Empty(t, skipped)
-				return
-			}
-			require.ErrorContains(t, err, "ambiguous")
-			assert.Nil(t, changes)
-			assert.Nil(t, skipped)
-		})
-	}
 }
 
 func TestFilterClusterPolicyValuesRejectsInvalidAuthoredPath(t *testing.T) {

@@ -34,34 +34,16 @@ Created jobs.policy_sync
 Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
-=== A deleted policy skips policy-dependent fields but still syncs authored edits
+=== A deleted policy leaves the job unchanged, including its unrelated edits
 >>> [CLI] cluster-policies delete [DEV_POLICY_ID]
 
 >>> [CLI] bundle config-remote-sync -t dev --save -o json
 {
   "status": "partial",
-  "changes": {
-    "resources.jobs.policy_sync": {
-      "description": {
-        "operation": "replace",
-        "value": "Another UI edit"
-      },
-      "job_clusters[job_cluster_key='main'].new_cluster.custom_tags['owner']": {
-        "operation": "replace",
-        "value": "edited-owner"
-      }
-    }
-  },
+  "changes": {},
   "skippedChanges": [
     {
       "resourceKey": "resources.jobs.policy_sync",
-      "path": "job_clusters[job_cluster_key='main'].new_cluster.custom_tags['workspace']",
-      "reason": "cluster_policy_not_found",
-      "policyId": "[DEV_POLICY_ID]"
-    },
-    {
-      "resourceKey": "resources.jobs.policy_sync",
-      "path": "job_clusters[job_cluster_key='main'].new_cluster.spark_env_vars",
       "reason": "cluster_policy_not_found",
       "policyId": "[DEV_POLICY_ID]"
     }
@@ -69,24 +51,8 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 >>> diff.py databricks.yml.backup databricks.yml
---- databricks.yml.backup
-+++ databricks.yml
-@@ -13,5 +13,5 @@
-     policy_sync:
-       name: test-job-[UNIQUE_NAME]-${bundle.target}
--      description: Edited in the UI
-+      description: Another UI edit
-       job_clusters:
-         - job_cluster_key: main
-@@ -22,5 +22,5 @@
-             num_workers: 1
-             custom_tags:
--              owner: bundle-author
-+              owner: edited-owner
-       tasks:
-         - task_key: main
 
-=== Only policy-dependent fields remain on the next sync
+=== The job stays skipped on the next sync
 >>> [CLI] bundle config-remote-sync -t dev -o json
 {
   "status": "partial",
@@ -94,13 +60,6 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "skippedChanges": [
     {
       "resourceKey": "resources.jobs.policy_sync",
-      "path": "job_clusters[job_cluster_key='main'].new_cluster.custom_tags['workspace']",
-      "reason": "cluster_policy_not_found",
-      "policyId": "[DEV_POLICY_ID]"
-    },
-    {
-      "resourceKey": "resources.jobs.policy_sync",
-      "path": "job_clusters[job_cluster_key='main'].new_cluster.spark_env_vars",
       "reason": "cluster_policy_not_found",
       "policyId": "[DEV_POLICY_ID]"
     }
@@ -110,8 +69,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 === Text output reports the incomplete sync
 >>> [CLI] bundle config-remote-sync -t dev
 Sync is incomplete: some remote changes were skipped.
-Skipped resources.jobs.policy_sync.job_clusters[job_cluster_key='main'].new_cluster.custom_tags['workspace']: cluster policy [DEV_POLICY_ID] was not found.
-Skipped resources.jobs.policy_sync.job_clusters[job_cluster_key='main'].new_cluster.spark_env_vars: cluster policy [DEV_POLICY_ID] was not found.
+Left resources.jobs.policy_sync unchanged: cluster policy [DEV_POLICY_ID] was not found.
 No changes could be synced.
 
 >>> [CLI] bundle destroy -t prod --auto-approve

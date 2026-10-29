@@ -68,27 +68,27 @@ title "Selecting the unaffected job does not read policies for unselected jobs"
 trace $CLI bundle config-remote-sync --select-ids "jobs:$unaffected_job_id" -o json | jq '{status, changes, skippedChanges}'
 trace print_requests.py //policies/clusters/get --get --oneline
 
-title "A selected job's policy permission error fails sync without saving"
+title "A selected job's policy read error leaves the job unchanged without saving"
 cp databricks.yml databricks.yml.backup
-trace $CLI bundle config-remote-sync --select-ids "jobs:$array_job_id" --save -o json | jq '{status, error, changes, skippedChanges}'
+trace $CLI bundle config-remote-sync --select-ids "jobs:$array_job_id" --save -o json | jq '{status, changes, skippedChanges}'
 trace diff.py databricks.yml.backup databricks.yml
 cmp databricks.yml.backup databricks.yml
 trace print_requests.py //policies/clusters/get --get --oneline
 
-title "An indivisible array replacement leaves the whole selected job unchanged"
+title "An array replacement leaves the selected job unchanged"
 cp databricks.yml databricks.yml.backup
 trace $CLI bundle config-remote-sync --select-ids "jobs:$array_job_id" --save -o json | jq '{status, changes, skippedChanges}'
 trace diff.py databricks.yml.backup databricks.yml
 
-title "A log-storage switch leaves the whole selected job unchanged"
+title "A log-storage switch leaves the selected job unchanged"
 trace $CLI bundle config-remote-sync --select-ids "jobs:$log_job_id" --save -o json | jq '{status, changes, skippedChanges}'
 trace diff.py databricks.yml.backup databricks.yml
 
-title "Switching autoscale to a fixed worker count leaves the whole selected job unchanged"
+title "Switching autoscale to a fixed worker count leaves the selected job unchanged"
 trace $CLI bundle config-remote-sync --select-ids "jobs:$worker_count_job_id" --save -o json | jq '{status, changes, skippedChanges}'
 trace diff.py databricks.yml.backup databricks.yml
 cmp databricks.yml.backup databricks.yml
 
-title "Unrelated edits still sync when other jobs have structural changes"
+title "Unrelated jobs still sync when other jobs depend on the missing policy"
 trace $CLI bundle config-remote-sync --save -o json | jq '{status, changes, skippedChanges}'
 trace diff.py databricks.yml.backup databricks.yml
