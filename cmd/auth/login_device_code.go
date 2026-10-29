@@ -169,17 +169,11 @@ func (l nonInteractiveDeviceCodeLogin) start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("store pending login: %w", err)
 	}
-	cmdio.LogString(ctx, strings.Join([]string{
-		"Using a browser on another device, visit:",
-		da.VerificationURI,
-		"",
-		"And enter the code:",
-		formatCode(da.UserCode),
-		"",
+	cmdio.LogString(ctx, strings.Join(append(approvalInstructions(*da),
 		"Once finished, complete the login by running the same command with",
-		"--user-code " + formatCode(da.UserCode) + " and --confirmation-code set to the confirmation code",
+		"--user-code "+formatCode(da.UserCode)+" and --confirmation-code set to the confirmation code",
 		"provided in your browser.",
-	}, "\n"))
+	), "\n"))
 	return nil
 }
 
@@ -241,15 +235,9 @@ func sameCode(a, b string) bool {
 // and asks again.
 func promptForConfirmationCode(ctx context.Context, da u2m.DeviceAuthorization, lastErr error, attemptsLeft int) (string, error) {
 	if lastErr == nil {
-		cmdio.LogString(ctx, strings.Join([]string{
-			"Using a browser on another device, visit:",
-			da.VerificationURI,
-			"",
-			"And enter the code:",
-			formatCode(da.UserCode),
-			"",
+		cmdio.LogString(ctx, strings.Join(append(approvalInstructions(da),
 			"Once finished, enter the confirmation code provided in your browser.",
-		}, "\n"))
+		), "\n"))
 	} else {
 		attempts := "attempts"
 		if attemptsLeft == 1 {
@@ -266,6 +254,19 @@ func promptForConfirmationCode(ctx context.Context, da u2m.DeviceAuthorization, 
 		return "", fmt.Errorf("reading confirmation code: %w", err)
 	}
 	return code, nil
+}
+
+// approvalInstructions returns the lines that show the user where to approve
+// the login. Both flows print them before saying how to complete the login.
+func approvalInstructions(da u2m.DeviceAuthorization) []string {
+	return []string{
+		"Using a browser on another device, visit:",
+		da.VerificationURI,
+		"",
+		"And enter the code:",
+		formatCode(da.UserCode),
+		"",
+	}
 }
 
 // formatCode displays an 8-character device code as two groups of four
