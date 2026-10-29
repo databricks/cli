@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"net/http"
 	"runtime"
 	"strings"
 	"testing"
@@ -17,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -303,4 +305,24 @@ resources = https://workspace.test/ai-gateway/mcp-services/system.ai.github
 	tm.Type(termtest.KeyCtrlC)
 	_, err := tm.Result()
 	assert.EqualError(t, err, "^C")
+}
+
+// Only a wrong confirmation code can be fixed by entering the code again, so
+// any other token exchange error ends the login.
+func TestLoginDeviceCodeFailsOnTokenExchangeError(t *testing.T) {
+	server := testserver.New(t)
+	// The router keeps the first handler registered for a route, so this one
+	// replaces the default token endpoint.
+	server.Handle("POST", "/oidc/v1/token", func(_ testserver.Request) any {
+		return testserver.Response{
+			StatusCode: http.StatusTooManyRequests,
+			Body:       map[string]string{"error": "invalid_request", "error_description": "Device grant rate limit exceeded"},
+		}
+	})
+	testserver.AddDefaultHandlers(server)
+	tm := startDeviceCodeLogin(t, "[test]\nhost = "+server.URL+"\n", "--profile", "test")
+	tm.WaitFor("Confirmation code")
+	tm.Type("FTFA-QQKY\n")
+	_, err := tm.Result()
+	assert.EqualError(t, err, "token exchange: Device grant rate limit exceeded (error code: invalid_request)")
 }
