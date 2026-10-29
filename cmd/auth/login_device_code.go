@@ -7,13 +7,13 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
@@ -30,6 +30,12 @@ const pendingLoginKeySuffix = "#device-code"
 // startNewLoginHint ends the errors of a non-interactive device code login
 // that cannot be completed.
 const startNewLoginHint = "Run the same command without --user-code and --confirmation-code to start a new login"
+
+// deviceCodeAgentNote tells an AI agent to pass the login on to the user, who
+// approves it in the browser.
+const deviceCodeAgentNote = "give the URL and the code above to the user.\n" +
+	"Do not open the URL or approve the login yourself: the user must approve it.\n" +
+	"Ask the user for the confirmation code their browser shows."
 
 // deviceCodeIncompatibleFlags lists flags that device code login cannot honor.
 var deviceCodeIncompatibleFlags = []string{
@@ -185,15 +191,8 @@ func (l nonInteractiveDeviceCodeLogin) start(ctx context.Context) error {
 		return fmt.Errorf("store pending login: %w", err)
 	}
 	lines := approvalInstructions(*da)
-	// An agent passes the login on to the user, who approves it in the
-	// browser.
-	if agent := useragent.AgentProvider(); agent != "" {
-		lines = append(lines,
-			"Note for AI agents ("+agent+"): give the URL and the code above to the user.",
-			"Do not open the URL or approve the login yourself: the user must approve it.",
-			"Ask the user for the confirmation code their browser shows.",
-			"",
-		)
+	if note := agent.Note(deviceCodeAgentNote); note != "" {
+		lines = append(lines, note, "")
 	}
 	lines = append(lines,
 		"Once finished, complete the login by running the same command with",
