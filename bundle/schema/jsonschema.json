@@ -868,7 +868,7 @@
                       "object_id",
                       "object_type"
                     ],
-                    "markdownDescription": "The data_quality_monitor resource allows you to define a [data quality monitor](https://docs.databricks.com/api/workspace/dataquality/createmonitor) on a Unity Catalog schema (anomaly detection) or table (data profiling). It supersedes the `quality_monitor` resource. For information about data quality monitoring, see [link](https://docs.databricks.com/data-governance/unity-catalog/data-quality-monitoring/index.html)."
+                    "markdownDescription": "The data_quality_monitor resource allows you to define a [data quality monitor](https://docs.databricks.com/api/workspace/dataquality/createmonitor) on a Unity Catalog schema (anomaly detection) or table (data profiling). It supersedes the `quality_monitor` resource. For information about data quality monitoring, see [link](https://docs.databricks.com/data-governance/unity-catalog/data-quality-monitoring/index.html).\n\nThe bundle manages the schema alert in `anomaly_detection_config.notification_settings`. If it is omitted, deploying an update removes any alert set in the Data Quality Monitoring UI, so define alerts for bundle-managed monitors in the bundle."
                   },
                   {
                     "type": "string",

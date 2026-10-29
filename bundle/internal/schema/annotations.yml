@@ -786,6 +786,8 @@ resources:
       "$type":
         "markdown_description": |-
           The data_quality_monitor resource allows you to define a [data quality monitor](/api/workspace/dataquality/createmonitor) on a Unity Catalog schema (anomaly detection) or table (data profiling). It supersedes the `quality_monitor` resource. For information about data quality monitoring, see [_](/data-governance/unity-catalog/data-quality-monitoring/index.md).
+
+          The bundle manages the schema alert in `anomaly_detection_config.notification_settings`. If it is omitted, deploying an update removes any alert set in the Data Quality Monitoring UI, so define alerts for bundle-managed monitors in the bundle.
         "markdown_examples": |-
           The following example defines an anomaly detection monitor on a schema:
 
