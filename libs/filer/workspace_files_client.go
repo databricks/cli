@@ -257,6 +257,10 @@ func messageNames(re *regexp.Regexp, msg, name string) bool {
 // deleteNodeOfOtherType deletes the node that blocks an overwrite of absPath
 // because its type differs from the upload's, and reports whether it did.
 // CLI v1.21 and v1.22 uploaded some notebooks as files this way.
+//
+// Changes to how uploads are classified as files or notebooks can leave existing
+// nodes with the previous type. Keep this recovery path so future classification
+// changes do not break redeployments: overwrite alone cannot change a node's type.
 func (w *WorkspaceFilesClient) deleteNodeOfOtherType(ctx context.Context, absPath string, uploadErr error) (bool, error) {
 	aerr, ok := errors.AsType[*apierr.APIError](uploadErr)
 	if !ok {
