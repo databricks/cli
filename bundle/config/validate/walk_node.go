@@ -29,8 +29,13 @@ func walkConfig(root *config.Root, refs bool, fn func(*walker, *walk.Node, *conf
 	return w.diags
 }
 
-// missing reports that the required field of n is not set.
+// missing reports that the required field of n is not set. A pure reference
+// (e.g. "${resources.jobs.base.schedule}") has no fields of its own; the referenced
+// value is checked where it is defined.
 func (w *walker) missing(n *walk.Node, field string) {
+	if n.IsReference() {
+		return
+	}
 	w.diags = append(w.diags, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   fmt.Sprintf("required field %q is not set", field),

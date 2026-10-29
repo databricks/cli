@@ -84,6 +84,11 @@ func (n *Node) isRef() bool {
 	return n.refs != nil && n.refs.ref
 }
 
+// IsReference reports whether n itself holds a pure variable reference.
+func (n *Node) IsReference() bool {
+	return n.isRef()
+}
+
 // IsRef reports whether the key k of n holds a pure variable reference. Only fields
 // that cannot hold a string can.
 func (n *Node) IsRef(k string) bool {
