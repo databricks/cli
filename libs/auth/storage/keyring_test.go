@@ -118,17 +118,27 @@ func TestKeyringStore_Lookup_ReturnsStoredToken(t *testing.T) {
 	assert.Equal(t, "Bearer", got.Token.TokenType)
 }
 
-func TestKeyringStore_Lookup_ReturnsStoredPendingLogin(t *testing.T) {
+func TestKeyringStore_PendingLoginIsApartFromTokens(t *testing.T) {
 	backend := newFakeBackend()
 	c := newTestStore(backend)
+	pending := PendingLogin{DeviceCode: "device-code", UserCode: "WDJBMJHT"}
+	require.NoError(t, c.Put("my-profile", Entry{Token: &oauth2.Token{AccessToken: "abc"}}))
+	require.NoError(t, c.PutPendingLogin("my-profile", pending))
 
-	want := &PendingLogin{DeviceCode: "device-code", UserCode: "WDJBMJHT"}
-	require.NoError(t, c.Put("my-profile#device-code", Entry{PendingLogin: want}))
-
-	got, err := c.Lookup("my-profile#device-code")
+	got, err := c.Lookup("my-profile")
 	require.NoError(t, err)
-	assert.Nil(t, got.Token)
-	assert.Equal(t, want, got.PendingLogin)
+	assert.Equal(t, "abc", got.Token.AccessToken)
+	gotPending, err := c.LookupPendingLogin("my-profile")
+	require.NoError(t, err)
+	assert.Equal(t, pending, gotPending)
+	assert.Contains(t, backend.items, itemKey(pendingLoginServiceName, "my-profile"))
+
+	require.NoError(t, c.DeletePendingLogin("my-profile"))
+	require.NoError(t, c.DeletePendingLogin("my-profile"))
+	_, err = c.LookupPendingLogin("my-profile")
+	assert.ErrorIs(t, err, ErrNotFound)
+	_, err = c.Lookup("my-profile")
+	assert.NoError(t, err)
 }
 
 func TestKeyringStore_Lookup_MissingReturnsCacheErrNotFound(t *testing.T) {

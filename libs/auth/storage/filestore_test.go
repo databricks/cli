@@ -36,26 +36,43 @@ func TestStoreAndLookup(t *testing.T) {
 	assert.Equal(t, ErrNotFound, err)
 }
 
-func TestStoreAndLookupPendingLogin(t *testing.T) {
+func TestPendingLoginIsApartFromTokens(t *testing.T) {
 	f := setup(t)
 	c, err := NewFileStore(t.Context(), WithFileLocation(f))
 	require.NoError(t, err)
-	pending := &PendingLogin{DeviceCode: "device-code", UserCode: "WDJBMJHT"}
-	require.NoError(t, c.Put("x#device-code", Entry{PendingLogin: pending}))
+	pendingLogins := c.(PendingLoginStore)
+	pending := PendingLogin{DeviceCode: "device-code", UserCode: "WDJBMJHT"}
+	require.NoError(t, c.Put("x", Entry{Token: &oauth2.Token{AccessToken: "abc"}}))
+	require.NoError(t, pendingLogins.PutPendingLogin("x", pending))
 
-	got, err := c.Lookup("x#device-code")
+	got, err := c.Lookup("x")
 	require.NoError(t, err)
-	assert.Nil(t, got.Token)
-	assert.Equal(t, pending, got.PendingLogin)
+	assert.Equal(t, "abc", got.Token.AccessToken)
+	gotPending, err := pendingLogins.LookupPendingLogin("x")
+	require.NoError(t, err)
+	assert.Equal(t, pending, gotPending)
+	_, err = pendingLogins.LookupPendingLogin("y")
+	assert.ErrorIs(t, err, ErrNotFound)
 
 	raw, err := os.ReadFile(f)
 	require.NoError(t, err)
 	assert.JSONEq(t, `{
 		"version": 1,
 		"tokens": {
-			"x#device-code": {"pending_login": {"device_code": "device-code", "user_code": "WDJBMJHT"}}
+			"x": {"access_token": "abc", "expiry": "0001-01-01T00:00:00Z"}
+		},
+		"pending_logins": {
+			"x": {"device_code": "device-code", "user_code": "WDJBMJHT"}
 		}
 	}`, string(raw))
+
+	require.NoError(t, pendingLogins.DeletePendingLogin("x"))
+	require.NoError(t, pendingLogins.DeletePendingLogin("y"))
+	_, err = pendingLogins.LookupPendingLogin("x")
+	assert.ErrorIs(t, err, ErrNotFound)
+	got, err = c.Lookup("x")
+	require.NoError(t, err)
+	assert.Equal(t, "abc", got.Token.AccessToken)
 }
 
 func TestNoStoreFileReturnsErrNotConfigured(t *testing.T) {

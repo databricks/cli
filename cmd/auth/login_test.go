@@ -73,19 +73,23 @@ func TestStoreLoginTokenDeletesStaleTokenOnFailure(t *testing.T) {
 func TestStoreLoginTokenDeletesPendingDeviceCodeLogin(t *testing.T) {
 	const profileName = "TEST"
 	store := storage.NewMemoryStore()
-	pending := storage.Entry{PendingLogin: &storage.PendingLogin{DeviceCode: "device-code", UserCode: "WDJBMJHT"}}
-	require.NoError(t, store.Put(pendingLoginKey(profileName), pending))
-	require.NoError(t, store.Put(pendingLoginKey("OTHER"), pending))
+	pendingLogins := store.(storage.PendingLoginStore)
+	pending := storage.PendingLogin{DeviceCode: "device-code", UserCode: "WDJBMJHT"}
+	require.NoError(t, pendingLogins.PutPendingLogin(profileName, pending))
+	require.NoError(t, pendingLogins.PutPendingLogin("OTHER", pending))
 	arg, err := u2m.NewProfileWorkspaceOAuthArgument("https://workspace.example.test", profileName)
 	require.NoError(t, err)
 
 	err = storeLoginToken(t.Context(), store, storage.StorageModeSecure, arg, &oauth2.Token{AccessToken: "new-token"})
 
 	require.NoError(t, err)
-	_, err = store.Lookup(pendingLoginKey(profileName))
+	_, err = pendingLogins.LookupPendingLogin(profileName)
 	assert.ErrorIs(t, err, storage.ErrNotFound)
-	_, err = store.Lookup(pendingLoginKey("OTHER"))
+	_, err = pendingLogins.LookupPendingLogin("OTHER")
 	assert.NoError(t, err)
+	got, err := store.Lookup(profileName)
+	require.NoError(t, err)
+	assert.Equal(t, "new-token", got.Token.AccessToken)
 }
 
 // logBuffer is a thread-safe bytes.Buffer for capturing log output in tests.

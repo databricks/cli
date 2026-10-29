@@ -18,9 +18,12 @@ provided in your browser.
 home/.databricks/token-cache.json
 
 >>> cache_keys
-[
-  "[DATABRICKS_URL]#device-code"
-]
+{
+  "pending_logins": [
+    "[DATABRICKS_URL]"
+  ],
+  "tokens": []
+}
 
 === Confirm the login
 
@@ -30,9 +33,12 @@ home/.databricks/token-cache.json
 json.access_token = "oauth-token";
 
 >>> cache_keys
-[
-  "[DATABRICKS_URL]"
-]
+{
+  "pending_logins": [],
+  "tokens": [
+    "[DATABRICKS_URL]"
+  ]
+}
 
 === Start the login with a profile
 
@@ -79,10 +85,13 @@ json.access_token = "oauth-token";
 Profile test was successfully saved
 
 >>> cache_keys
-[
-  "[DATABRICKS_URL]",
-  "test"
-]
+{
+  "pending_logins": [],
+  "tokens": [
+    "[DATABRICKS_URL]",
+    "test"
+  ]
+}
 
 >>> print_requests.py --oneline //oidc/v1/device/auth //oidc/v1/token
 {"method": "POST", "path": "/oidc/v1/device/auth", "raw_body": "client_id=databricks-cli&scope=offline_access+all-apis"}
