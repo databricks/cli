@@ -275,7 +275,7 @@ func clearTokenStore(ctx context.Context, p profile.Profile, profiler profile.Pr
 	}
 	// A pending device code login could still complete and restore the
 	// credentials that the user is logging out of.
-	if err := tokenStore.Delete(pendingLoginKey(p.Name)); err != nil {
+	if err := deletePendingLogin(tokenStore, p.Name); err != nil {
 		return fmt.Errorf("failed to delete pending device code login for profile %q: %w", p.Name, err)
 	}
 
@@ -298,7 +298,7 @@ func clearTokenStore(ctx context.Context, p profile.Profile, profiler profile.Pr
 		if err := tokenStore.Delete(hostCacheKey); err != nil {
 			return fmt.Errorf("failed to delete host-keyed token for %q: %w", hostCacheKey, err)
 		}
-		if err := tokenStore.Delete(pendingLoginKey(hostCacheKey)); err != nil {
+		if err := deletePendingLogin(tokenStore, hostCacheKey); err != nil {
 			return fmt.Errorf("failed to delete pending device code login for %q: %w", hostCacheKey, err)
 		}
 	}

@@ -77,10 +77,13 @@ Error: no pending device code login for profile test. Run the same command witho
 Error: token exchange: Invalid device code (error code: invalid_request). Run the same command without --user-code and --confirmation-code to start a new login
 
 >>> cache_keys
-[
-  "[DATABRICKS_URL]",
-  "test"
-]
+{
+  "pending_logins": [],
+  "tokens": [
+    "[DATABRICKS_URL]",
+    "test"
+  ]
+}
 
 >>> print_requests.py --oneline //oidc/v1/device/auth //oidc/v1/token
 {"method": "POST", "path": "/oidc/v1/device/auth", "raw_body": "client_id=databricks-cli&scope=offline_access+all-apis"}

@@ -8,9 +8,12 @@
 >>> update_file.py home/.databricks/token-cache.json WDJBMJHT NEWRCODE
 
 >>> cache_keys
-[
-  "test#device-code"
-]
+{
+  "pending_logins": [
+    "test"
+  ],
+  "tokens": []
+}
 
 >>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
 Error: a newer login for profile test replaced this one. Complete the newer login with its user code. Run the same command without --user-code and --confirmation-code to start a new login
@@ -30,13 +33,17 @@ Profile test was successfully saved
 >>> [CLI] auth login --host [DATABRICKS_URL] --use-device-code
 
 >>> cache_keys
-[
-  "a#device-code",
-  "b#device-code",
-  "[DATABRICKS_URL]",
-  "[DATABRICKS_URL]#device-code",
-  "test"
-]
+{
+  "pending_logins": [
+    "a",
+    "b",
+    "[DATABRICKS_URL]"
+  ],
+  "tokens": [
+    "[DATABRICKS_URL]",
+    "test"
+  ]
+}
 
 >>> [CLI] auth login --host [DATABRICKS_URL] --profile b --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
 Profile b was successfully saved
@@ -47,12 +54,15 @@ Profile b was successfully saved
 Profile a was successfully saved
 
 >>> cache_keys
-[
-  "a",
-  "b",
-  "[DATABRICKS_URL]",
-  "test"
-]
+{
+  "pending_logins": [],
+  "tokens": [
+    "a",
+    "b",
+    "[DATABRICKS_URL]",
+    "test"
+  ]
+}
 
 >>> print_requests.py --oneline //oidc/v1/token
 {"method": "POST", "path": "/oidc/v1/token", "raw_body": "client_id=databricks-cli&confirmation_code=FTFAQQKY&device_code=device-code-4&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"}

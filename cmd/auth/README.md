@@ -120,10 +120,13 @@ in two steps instead:
    flags exchanges the pending device code instead of requesting a new one,
    and the rest of the login runs as usual.
 
-The pending login is a token store entry with `PendingLogin` set instead of a
-token. Its key is the login's cache key (the profile name, or the host without
-a profile) with a `#device-code` suffix, so the target's current token keeps
-working until the login completes. The device code never leaves the machine;
+The pending login is kept in the token store (`storage.PendingLoginStore`) under
+the login's cache key (the profile name, or the host without a profile), but
+apart from the tokens: in the `pending_logins` map of the token cache file, or
+under the `databricks-cli-pending-login` keyring service. A pending login can
+therefore neither replace a token nor be read as one, whatever a profile is
+named, and the target's current token keeps working until the login completes.
+The device code never leaves the machine;
 only the user code and the confirmation code are printed or passed on the
 command line, and the confirmation code is useless without the device code.
 This keeps the confirmation code's protection against phishing: a code read

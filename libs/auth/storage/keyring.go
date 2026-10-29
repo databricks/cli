@@ -17,6 +17,10 @@ import (
 // cache key the U2M manager passes through Store.Put / Lookup.
 const keyringServiceName = "databricks-cli"
 
+// pendingLoginServiceName is the keyring service under which pending logins
+// are stored. It keeps them apart from the tokens under keyringServiceName.
+const pendingLoginServiceName = "databricks-cli-pending-login"
+
 // keyringProbeAccountPrefix is prefixed onto a per-call random suffix to form
 // the account name ProbeKeyring writes and deletes. A fixed name like
 // "__probe__" could collide with a user profile of the same name (which is
@@ -47,8 +51,7 @@ type keyringBackend interface {
 // checksum, store time, ...) without breaking older CLI versions that read
 // the same entry.
 type keyringEntry struct {
-	Token        *oauth2.Token `json:"token"`
-	PendingLogin *PendingLogin `json:"pending_login,omitempty"`
+	Token *oauth2.Token `json:"token"`
 }
 
 // zalandoBackend delegates to the process-wide zalando/go-keyring provider.
@@ -169,20 +172,9 @@ func (k *keyringStore) Delete(key string) error {
 
 // Lookup implements the Store interface, returning ErrNotFound on a miss.
 func (k *keyringStore) Lookup(key string) (Entry, error) {
-	var raw string
-	err := k.withTimeout("get", func() error {
-		got, gerr := k.backend.Get(k.keyringSvcName, key)
-		if gerr != nil {
-			return gerr
-		}
-		raw = got
-		return nil
-	})
-	if errors.Is(err, keyring.ErrNotFound) {
-		return Entry{}, ErrNotFound
-	}
+	raw, err := k.get(k.keyringSvcName, key)
 	if err != nil {
-		return Entry{}, wrapKeyringUnreachable(err)
+		return Entry{}, err
 	}
 
 	var entry keyringEntry
@@ -190,6 +182,63 @@ func (k *keyringStore) Lookup(key string) (Entry, error) {
 		return Entry{}, fmt.Errorf("unmarshal token: %w", err)
 	}
 	return Entry(entry), nil
+}
+
+// PutPendingLogin implements the PendingLoginStore interface.
+func (k *keyringStore) PutPendingLogin(key string, p PendingLogin) error {
+	raw, err := json.Marshal(p)
+	if err != nil {
+		return fmt.Errorf("marshal pending login: %w", err)
+	}
+	return k.withTimeout("set", func() error {
+		return k.backend.Set(pendingLoginServiceName, key, string(raw))
+	})
+}
+
+// LookupPendingLogin implements the PendingLoginStore interface, returning
+// ErrNotFound on a miss.
+func (k *keyringStore) LookupPendingLogin(key string) (PendingLogin, error) {
+	raw, err := k.get(pendingLoginServiceName, key)
+	if err != nil {
+		return PendingLogin{}, err
+	}
+	var p PendingLogin
+	if err := json.Unmarshal([]byte(raw), &p); err != nil {
+		return PendingLogin{}, fmt.Errorf("unmarshal pending login: %w", err)
+	}
+	return p, nil
+}
+
+// DeletePendingLogin implements the PendingLoginStore interface. Removing a
+// missing pending login is a no-op.
+func (k *keyringStore) DeletePendingLogin(key string) error {
+	return k.withTimeout("delete", func() error {
+		err := k.backend.Delete(pendingLoginServiceName, key)
+		if errors.Is(err, keyring.ErrNotFound) {
+			return nil
+		}
+		return err
+	})
+}
+
+// get returns the secret stored under key in service, or ErrNotFound.
+func (k *keyringStore) get(service, key string) (string, error) {
+	var raw string
+	err := k.withTimeout("get", func() error {
+		got, gerr := k.backend.Get(service, key)
+		if gerr != nil {
+			return gerr
+		}
+		raw = got
+		return nil
+	})
+	if errors.Is(err, keyring.ErrNotFound) {
+		return "", ErrNotFound
+	}
+	if err != nil {
+		return "", wrapKeyringUnreachable(err)
+	}
+	return raw, nil
 }
 
 // wrapKeyringUnreachable wraps a non-ErrNotFound keyring error with
@@ -210,8 +259,11 @@ func wrapKeyringUnreachable(err error) error {
 	return fmt.Errorf("OS keyring unreachable: %w (set DATABRICKS_AUTH_STORAGE=plaintext or run `databricks auth login` to use file-based token storage)", err)
 }
 
-// Compile-time confirmation that keyringStore satisfies the CLI interface.
-var _ Store = (*keyringStore)(nil)
+// Compile-time confirmation that keyringStore satisfies the CLI interfaces.
+var (
+	_ Store             = (*keyringStore)(nil)
+	_ PendingLoginStore = (*keyringStore)(nil)
+)
 
 // TimeoutError is returned when a keyring operation exceeds the configured
 // timeout. Callers can use errors.As to detect and present a clear message.
