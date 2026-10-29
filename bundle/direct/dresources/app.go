@@ -176,17 +176,31 @@ var UpdateMaskFields = []string{
 	"telemetry_export_destinations",
 }
 
+const userApiScopes = "user_api_scopes"
+
 var updateMask = strings.Join(UpdateMaskFields, ",")
+
+// updateMaskWithoutScopes is updateMask minus user_api_scopes.
+var updateMaskWithoutScopes = strings.Join(slices.DeleteFunc(slices.Clone(UpdateMaskFields), func(f string) bool {
+	return f == userApiScopes
+}), ",")
 
 func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState, entry *PlanEntry) (*AppRemote, error) {
 	// Deploy-only fields (source_code_path, config, git_source, lifecycle) are excluded
 	// from the request body; see appRequestBody.
 	if hasAppChanges(entry) {
 		app := appRequestBody(config)
+		// Sending user_api_scopes in the mask clears it unless the body carries a value, and some
+		// scopes (e.g. "jobs") can only be added outside this API. So leave it out unless the
+		// bundle manages it: declares it, or removed it (the mask is what clears it).
+		mask := updateMaskWithoutScopes
+		if change := entry.Changes[userApiScopes]; len(config.UserApiScopes) > 0 || (change != nil && change.Action != deployplan.Skip) {
+			mask = updateMask
+		}
 		request := apps.AsyncUpdateAppRequest{
 			App:        &app,
 			AppName:    id,
-			UpdateMask: updateMask,
+			UpdateMask: mask,
 		}
 		updateWaiter, err := r.client.Apps.CreateUpdate(ctx, request)
 		if err != nil {

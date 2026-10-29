@@ -16,5 +16,9 @@ backend_defaults:
   - field: lifecycle
   - field: lifecycle.started
 ignore_remote_changes:
+  # Scopes can be added out-of-band (e.g. "jobs" via account-level custom-app-integration update,
+  # which a bundle cannot declare). Remote-only drift alone does not plan an update.
+  - field: user_api_scopes
+    reason: managed
   - field: space # This field is not yet supported by Update APIs but exposed in the API spec. TODO: fix when update APIs supports it.
     reason: managed

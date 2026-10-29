@@ -1,0 +1,37 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created apps.mykey
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Out-of-band: set scopes on an app whose bundle does not declare any
+>>> MSYS_NO_PATHCONV=1 [CLI] api post /api/2.0/apps/myappname/update --json {"app": {"name": "myappname", "user_api_scopes": ["sql", "jobs"]}, "update_mask": "user_api_scopes"}
+
+=== Change description and re-deploy; user_api_scopes must not be in the update mask
+>>> update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated apps.mykey
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests
+
+>>> [CLI] apps get myappname
+{
+  "description": "MY_APP_DESCRIPTION",
+  "user_api_scopes": [
+    "sql",
+    "jobs"
+  ]
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.apps.mykey
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted
