@@ -1,1 +1,1 @@
-* Preserve existing workspace files and notebooks when an upload conflicts with their object type; remove the conflicting object manually before retrying the deployment.
+* Preserve existing workspace files and notebooks when an upload conflicts with their object type; remove the conflicting object manually before retrying the deployment. ([#7244](https://github.com/databricks/cli/pull/7244))
