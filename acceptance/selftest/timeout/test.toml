@@ -1,5 +1,6 @@
-# Test that timeout mechanism works (script sleeps 4s but should be killed much sooner)
-Timeout = '500ms'
-TimeoutWindows = '500ms'
-TimeoutCloud = '500ms'
+# Test that timeout mechanism works (script sleeps 4s but should be killed much sooner).
+# 2s rather than less: on a slow Windows runner bash may not reach `trace sleep 4` within 500ms.
+Timeout = '2s'
+TimeoutWindows = '2s'
+TimeoutCloud = '2s'
 TimeoutCIMultiplier = 1
