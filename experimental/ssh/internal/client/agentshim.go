@@ -65,12 +65,12 @@ const (
 	uvToolBinDir = agentDepsDir + "/uv_tools_bin-" + ugCommit
 
 	// pins the version of node/npm downloaded
-	nodeVersion = "v24.21.0"
+	nodeVersion = "v24.22.2"
 	nodeBaseURL = "https://nodejs.org/dist/" + nodeVersion + "/"
 
 	// SHA-256 of each pinned node release tarball
-	nodeX64LinuxChecksum   = "fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6"
-	nodeArm64LinuxChecksum = "6ad1325edbdb5649c379b75a237147a666c95d4f9ae8d340fef2d1575d289ad2"
+	nodeX64LinuxChecksum   = "48cc0e21e048790e54c0cf5749c2725005313d652651c40b7a21feb9697aaf75"
+	nodeArm64LinuxChecksum = "eb187837a2230d4047161ac0be008584e16b46f726e9c9490ee35dc6b17d9ba8"
 
 	npmExecutable = "npm"
 
