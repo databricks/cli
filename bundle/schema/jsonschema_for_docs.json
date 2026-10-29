@@ -24,22 +24,21 @@
                 "type": "object",
                 "properties": {
                   "custom_description": {
-                    "description": "Custom description for the alert. support mustache template.",
+                    "description": "Custom description for the alert. Interpreted according to `custom_template_format`.",
                     "$ref": "#/$defs/string",
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v0.279.0"
                   },
                   "custom_summary": {
-                    "description": "Custom summary for the alert. support mustache template.",
+                    "description": "Custom summary for the alert. Interpreted according to `custom_template_format`.",
                     "$ref": "#/$defs/string",
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v0.279.0"
                   },
                   "custom_template_format": {
-                    "description": "[Private Preview] The format used to interpret the `custom_summary` and `custom_description` templates.\n\n`HTML` treats both templates as HTML with Mustache `{{VARIABLE_NAME}}` placeholders.\n`MARKDOWN` treats them as Markdown with allowlisted `@VARIABLE_NAME` placeholders and converts\nthem to the format each notification destination expects, so a single template renders\ncorrectly in email, Slack, and Microsoft Teams.\n\nWhen unset, the API applies no default. Responses omit the field unless a format is stored,\nand a template with no format is rendered as HTML.",
+                    "description": "[Beta] The format used to interpret the `custom_summary` and `custom_description` templates.\n\n`HTML` treats both templates as HTML with Mustache `{{VARIABLE_NAME}}` placeholders.\n`MARKDOWN` treats them as Markdown with allowlisted `@VARIABLE_NAME` placeholders and converts\nthem to the format each notification destination expects, so a single template renders\ncorrectly in email, Slack, and Microsoft Teams.\n\nWhen unset, the API applies no default. Responses omit the field unless a format is stored,\nand a template with no format is rendered as HTML.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.CustomTemplateFormat",
-                    "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                    "doNotSuggest": true,
+                    "x-databricks-launch-stage": "PUBLIC_BETA",
                     "x-since-version": "v1.21.0"
                   },
                   "display_name": {
@@ -206,10 +205,9 @@
                     "x-since-version": "v0.239.0"
                   },
                   "space": {
-                    "description": "[Private Preview] Name of the space this app belongs to.",
+                    "description": "[Beta] Name of the space this app belongs to.",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                    "doNotSuggest": true,
+                    "x-databricks-launch-stage": "PUBLIC_BETA",
                     "x-since-version": "v0.290.0"
                   },
                   "telemetry_export_destinations": {
@@ -936,6 +934,20 @@
                   "name"
                 ]
               },
+              "resources.DependsOn": {
+                "type": "object",
+                "properties": {
+                  "resource": {
+                    "description": "Key of the resource to depend on, as `foo` or `jobs.foo`.",
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.23.0"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "resource"
+                ]
+              },
               "resources.ExternalLocation": {
                 "type": "object",
                 "properties": {
@@ -1630,6 +1642,11 @@
               "resources.JobRunLifecycle": {
                 "type": "object",
                 "properties": {
+                  "depends_on": {
+                    "description": "Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.",
+                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DependsOn",
+                    "x-since-version": "v1.23.0"
+                  },
                   "prevent_destroy": {
                     "description": "Lifecycle setting to prevent the resource from being destroyed.",
                     "$ref": "#/$defs/bool",
@@ -1662,6 +1679,11 @@
               "resources.Lifecycle": {
                 "type": "object",
                 "properties": {
+                  "depends_on": {
+                    "description": "Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.",
+                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DependsOn",
+                    "x-since-version": "v1.23.0"
+                  },
                   "prevent_destroy": {
                     "description": "Lifecycle setting to prevent the resource from being destroyed.",
                     "$ref": "#/$defs/bool",
@@ -1673,6 +1695,11 @@
               "resources.LifecycleWithStarted": {
                 "type": "object",
                 "properties": {
+                  "depends_on": {
+                    "description": "Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.",
+                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DependsOn",
+                    "x-since-version": "v1.23.0"
+                  },
                   "prevent_destroy": {
                     "description": "Lifecycle setting to prevent the resource from being destroyed.",
                     "$ref": "#/$defs/bool",
@@ -3294,7 +3321,8 @@
                     "description": "[Private Preview] Maximum compute capacity of a real-time SQL warehouse, in DBU per hour.\nMust be a multiple of 3 between 3 and 960. The effective maximum cannot be\nlower than the warehouse's minimum capacity.",
                     "$ref": "#/$defs/int",
                     "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                    "doNotSuggest": true
+                    "doNotSuggest": true,
+                    "x-since-version": "v1.23.0"
                   },
                   "max_num_clusters": {
                     "description": "Maximum number of clusters that the autoscaler will create to handle\nconcurrent queries.\n\nSupported values:\n- Must be \u003e= min_num_clusters\n- Must be \u003c= 40.\n\nDefaults to min_clusters if unset.",
@@ -3324,7 +3352,8 @@
                     "description": "[Private Preview] Cluster size multiplier for Reyden warehouses. Scales the effective compute\ncapacity relative to the nominal virtual cluster size. Only meaningful when\nthe warehouse is of Reyden type.\n\nAccepted range: 1.0 to the workspace-configured maximum (decimals\nallowed). The default maximum is 100.0.\n- Values below 1.0 are normalized to 1.0.\n- Values above the configured maximum are capped at that maximum.\n- When absent, the warehouse is treated as having a multiplier of 1.0.",
                     "$ref": "#/$defs/float64",
                     "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                    "doNotSuggest": true
+                    "doNotSuggest": true,
+                    "x-since-version": "v1.23.0"
                   },
                   "spot_instance_policy": {
                     "description": "Configurations whether the endpoint should use spot instances.",
@@ -3919,7 +3948,9 @@
                 "immutable_folder": {
                   "description": "Whether to deploy bundle files and artifacts as a single immutable snapshot. When true, all files are packaged into a content-addressed archive and workspace.file_path and workspace.artifact_path are set to the resulting location.",
                   "$ref": "#/$defs/bool",
-                  "x-since-version": "v1.6.0"
+                  "deprecationMessage": "Deprecated: please set workspace.sync_mode to immutable instead",
+                  "x-since-version": "v1.6.0",
+                  "deprecated": true
                 },
                 "pydabs": {
                   "description": "The PyDABs configuration.",
@@ -4024,7 +4055,9 @@
                 "source_linked_deployment": {
                   "description": "Whether to link the deployment to the bundle source.",
                   "$ref": "#/$defs/bool",
-                  "x-since-version": "v0.236.0"
+                  "deprecationMessage": "Deprecated: please set workspace.sync_mode to in-place instead",
+                  "x-since-version": "v0.236.0",
+                  "deprecated": true
                 },
                 "tags": {
                   "description": "The tags for the bundle deployment.",
@@ -4315,6 +4348,19 @@
               },
               "additionalProperties": false
             },
+            "config.SyncMode": {
+              "type": "string",
+              "enum": [
+                "overwrite",
+                "in-place",
+                "immutable"
+              ],
+              "enumDescriptions": [
+                "Upload bundle files to workspace.file_path, replacing the files of the previous deployment.",
+                "Do not upload bundle files. Deployed resources reference the source files in the workspace directly. Available only when deploying from the Databricks Workspace.",
+                "Upload bundle files and artifacts as a single immutable snapshot and set workspace.file_path and workspace.artifact_path to its location."
+              ]
+            },
             "config.Target": {
               "type": "object",
               "properties": {
@@ -4487,6 +4533,11 @@
                   "description": "The workspace state path",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.229.0"
+                },
+                "sync_mode": {
+                  "description": "How bundle files are made available to deployed resources. Valid values are `overwrite`, `in-place`, and `immutable`. Defaults to `in-place` for development deployments from the Databricks Workspace and to `overwrite` otherwise.",
+                  "$ref": "#/$defs/github.com/databricks/cli/bundle/config.SyncMode",
+                  "x-since-version": "v1.23.0"
                 },
                 "workspace_id": {
                   "description": "The Databricks workspace ID",
@@ -7270,7 +7321,7 @@
                   "x-since-version": "v0.271.0"
                 },
                 "project_environment": {
-                  "description": "[Beta] File path of pyproject.toml file that defines the project-scoped environment.",
+                  "description": "[Beta] Path to the `pyproject.toml` file that defines the project environment.\nThis field cannot be combined with `environment_version`, `base_environment`, dependency fields,\nor any other environment-source fields. Set the environment version and dependencies in `pyproject.toml` instead.\nFor more information, see the serverless dependencies documentation.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v1.20.0"
@@ -11097,8 +11148,15 @@
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.22.0"
                 },
+                "relative_error": {
+                  "description": "[Private Preview] The error the user accepts, as a fraction of the count, between 0.02 (by default) and 0.3.\nThis is one standard error of the estimate, the same meaning as Spark's relativeSD: 0.02 means\nthe result is within ±2% of the true count about 68% of the time (one standard deviation covers\n68% of the region). Feature Store picks the sketch size that gives this relative error. If\nneither relative_error nor relative_sd is set, 0.02 is default chosen at feature creation.",
+                  "$ref": "#/$defs/float64",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.23.0"
+                },
                 "relative_sd": {
-                  "description": "The maximum relative standard deviation allowed (default defined by Spark).",
+                  "description": "The maximum relative standard deviation allowed (default defined by Spark).\nDeprecated: use relative_error. When relative_error is set, reads return the same value here\nfor clients that don't have relative_error, and a request may only send that value.",
                   "$ref": "#/$defs/float64",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.22.0"
@@ -11114,7 +11172,7 @@
               "description": "Computes the approximate percentile of values.",
               "properties": {
                 "accuracy": {
-                  "description": "The accuracy parameter (higher is more accurate but slower).",
+                  "description": "The accuracy parameter (higher is more accurate but slower).\nDeprecated: use relative_error. When relative_error is set, reads return ceil(1 /\nrelative_error) here for clients that don't have relative_error, and a request may only send\nthat value.",
                   "$ref": "#/$defs/int64",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.22.0"
@@ -11130,6 +11188,13 @@
                   "$ref": "#/$defs/float64",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.22.0"
+                },
+                "relative_error": {
+                  "description": "[Private Preview] The error the user accepts, as a fraction of rank, between 0.01 (by default) and 0.3. The\nresult is within this rank error with 99% confidence: at 0.01, the value returned for p95 is\nbetween the true p94 and p96 at least 99% of the time. Feature Store picks the sketch size that\ngives this error.\nIf neither relative_error nor accuracy is set, 0.01 is default chosen at feature creation.",
+                  "$ref": "#/$defs/float64",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.23.0"
                 }
               },
               "additionalProperties": false,
@@ -11289,7 +11354,8 @@
                   "description": "[Private Preview] A Spark Declarative Pipeline data source.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.SdpSource",
                   "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                  "doNotSuggest": true
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.23.0"
                 },
                 "stream_source": {
                   "description": "A Stream data source.",
@@ -11964,37 +12030,43 @@
                   "description": "[Private Preview] Schema of the resulting dataframe after transformations, in Spark StructType JSON format (from df.schema.json()).\nRequired if transformation_sql is specified.\nExample: {\"type\":\"struct\",\"fields\":[{\"name\":\"col_a\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"col_c\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}}]}",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                  "doNotSuggest": true
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.23.0"
                 },
                 "filter_condition": {
                   "description": "[Private Preview] Single WHERE clause to filter the pipeline's output table before applying transformations. Will be row-wise evaluated, so should only include conditionals and projections.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                  "doNotSuggest": true
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.23.0"
                 },
                 "input_tables": {
-                  "description": "[Private Preview] The full three-part names of the tables the pipeline reads from. Required to materialize this\nfeature with a TableTrigger, which starts a run when these tables update. Each table must exist\nwhen the feature is created. After the pipeline runs, Feature Store checks that it reads from\nthese tables, and the run fails if it doesn't. At most 100 tables.",
+                  "description": "[Private Preview] The full three-part names of the tables the pipeline reads from. Required to materialize this\nfeature with a TableTrigger, which starts a run when these tables update. Each table must exist\nwhen the feature is created. Feature Store doesn't confirm that the pipeline reads from these\ntables. At most 100 tables.",
                   "$ref": "#/$defs/slice/string",
                   "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                  "doNotSuggest": true
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.23.0"
                 },
                 "output_table": {
                   "description": "[Private Preview] The full three-part (catalog, schema, table) name of the pipeline's output table to read from.\nThe table doesn't need to exist until the pipeline first runs. Required.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                  "doNotSuggest": true
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.23.0"
                 },
                 "pipeline_id": {
                   "description": "[Private Preview] The ID of the Spark Declarative Pipeline that Feature Store runs to produce this source, before\neach materialization or backfill. The pipeline must already exist when the feature is created,\nand you need CAN_RUN, CAN_MANAGE, or owner permission on it. It doesn't need to have run yet.\nDeleting the feature doesn't delete the pipeline. If the pipeline is deleted, this field reads\nback empty. Required.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                  "doNotSuggest": true
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.23.0"
                 },
                 "transformation_sql": {
                   "description": "[Private Preview] A single SQL SELECT expression applied after filter_condition.\nShould contain all the columns needed (eg. \"SELECT *, col_a + col_b AS col_c FROM x.y.z WHERE col_a \u003e 0\" would have `transformation_sql` \"*, col_a + col_b AS col_c\")\nIf transformation_sql is not provided, all columns of the pipeline's output table are present in the DataSource dataframe.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                  "doNotSuggest": true
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.23.0"
                 }
               },
               "additionalProperties": false
@@ -12479,6 +12551,13 @@
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.MetaMarketingOptions",
                   "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.299.2"
+                },
+                "onedrive_options": {
+                  "description": "[Private Preview]",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.OneDriveOptions",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.23.0"
                 },
                 "outlook_options": {
                   "description": "[Private Preview] Outlook specific options for ingestion",
@@ -13216,6 +13295,7 @@
                 "ZENDESK",
                 "SMARTSHEET",
                 "RABBITMQ",
+                "ONEDRIVE",
                 "FOREIGN_CATALOG"
               ],
               "enumDescriptions": [
@@ -13241,6 +13321,7 @@
                 "[Public Preview]",
                 "[Public Preview]",
                 "[Beta]",
+                "[Private Preview]",
                 "[Private Preview]"
               ]
             },
@@ -13623,6 +13704,45 @@
                 }
               },
               "additionalProperties": false
+            },
+            "pipelines.OneDriveOptions": {
+              "type": "object",
+              "properties": {
+                "entity_type": {
+                  "description": "[Private Preview] (Optional) The type of OneDrive entity to ingest.\nIf not specified, defaults to FILE.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.OneDriveOptionsOneDriveEntityType",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.23.0"
+                },
+                "file_ingestion_options": {
+                  "description": "[Private Preview] (Optional) File ingestion options for processing files.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.FileIngestionOptions",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.23.0"
+                },
+                "url": {
+                  "description": "[Private Preview] Required. The OneDrive URL.",
+                  "$ref": "#/$defs/string",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.23.0"
+                }
+              },
+              "additionalProperties": false
+            },
+            "pipelines.OneDriveOptionsOneDriveEntityType": {
+              "type": "string",
+              "description": "The type of OneDrive entity to ingest.",
+              "enum": [
+                "FILE",
+                "FILE_METADATA"
+              ],
+              "enumDescriptions": [
+                "[Private Preview]",
+                "[Private Preview]"
+              ]
             },
             "pipelines.OperationTimeWindow": {
               "type": "object",
@@ -14847,9 +14967,9 @@
               "description": "Take a snapshot once per day, at the configured hour.",
               "properties": {
                 "hour": {
-                  "description": "[Beta] The hour of the day, in UTC, at which to take the snapshot, in [0, 23].",
+                  "description": "The hour of the day, in UTC, at which to take the snapshot, in [0, 23].",
                   "$ref": "#/$defs/int",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
+                  "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.16.0"
                 }
               },
@@ -14866,15 +14986,6 @@
                 "FRIDAY",
                 "SATURDAY",
                 "SUNDAY"
-              ],
-              "enumDescriptions": [
-                "[Beta]",
-                "[Beta]",
-                "[Beta]",
-                "[Beta]",
-                "[Beta]",
-                "[Beta]",
-                "[Beta]"
               ]
             },
             "postgres.EndpointGroupSpec": {
@@ -14931,15 +15042,15 @@
               "description": "Take a snapshot once per month, on the configured day at the configured hour.",
               "properties": {
                 "day": {
-                  "description": "[Beta] The day of the month on which to take the snapshot, in [1, 31]. In shorter\nmonths the snapshot is taken on the last day instead (day 31 runs on Feb 28\nor 29, and on Apr 30), so every month gets exactly one snapshot.",
+                  "description": "The day of the month on which to take the snapshot, in [1, 31]. In shorter\nmonths the snapshot is taken on the last day instead (day 31 runs on Feb 28\nor 29, and on Apr 30), so every month gets exactly one snapshot.",
                   "$ref": "#/$defs/int",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
+                  "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.16.0"
                 },
                 "hour": {
-                  "description": "[Beta] The hour of the day, in UTC, at which to take the snapshot, in [0, 23].",
+                  "description": "The hour of the day, in UTC, at which to take the snapshot, in [0, 23].",
                   "$ref": "#/$defs/int",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
+                  "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.16.0"
                 }
               },
@@ -15101,27 +15212,27 @@
               "description": "One cadence at which automatic snapshots are taken.",
               "properties": {
                 "daily_schedule": {
-                  "description": "[Beta] Take a snapshot once per day.",
+                  "description": "Take a snapshot once per day.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.DailySchedule",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
+                  "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.16.0"
                 },
                 "monthly_schedule": {
-                  "description": "[Beta] Take a snapshot once per month.",
+                  "description": "Take a snapshot once per month.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.MonthlySchedule",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
+                  "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.16.0"
                 },
                 "retention": {
-                  "description": "[Beta] How long snapshots from this cadence are kept before automatic deletion.\nMust be at least 1 hour. Applied when a snapshot is taken; not retroactive,\nso changing it affects only later snapshots.",
+                  "description": "How long snapshots from this cadence are kept before automatic deletion.\nMust be at least 1 hour. Applied when a snapshot is taken; not retroactive,\nso changing it affects only later snapshots.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
+                  "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.16.0"
                 },
                 "weekly_schedule": {
-                  "description": "[Beta] Take a snapshot once per week.",
+                  "description": "Take a snapshot once per week.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.WeeklySchedule",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
+                  "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.16.0"
                 }
               },
@@ -15231,15 +15342,15 @@
               "description": "Take a snapshot once per week, on the configured day at the configured hour.",
               "properties": {
                 "day_of_week": {
-                  "description": "[Beta] The day of the week on which to take the snapshot.",
+                  "description": "The day of the week on which to take the snapshot.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.DayOfWeek",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
+                  "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.16.0"
                 },
                 "hour": {
-                  "description": "[Beta] The hour of the day, in UTC, at which to take the snapshot, in [0, 23].",
+                  "description": "The hour of the day, in UTC, at which to take the snapshot, in [0, 23].",
                   "$ref": "#/$defs/int",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
+                  "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.16.0"
                 }
               },
@@ -16783,8 +16894,8 @@
                 "MARKDOWN"
               ],
               "enumDescriptions": [
-                "[Private Preview]",
-                "[Private Preview]"
+                "[Beta]",
+                "[Beta]"
               ]
             },
             "sql.EndpointTagPair": {
@@ -17368,6 +17479,12 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.ClusterPolicyPermission"
+                  }
+                },
+                "resources.DependsOn": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DependsOn"
                   }
                 },
                 "resources.InstancePoolPermission": {
