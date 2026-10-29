@@ -199,7 +199,7 @@ func (locker *Locker) Unlock(ctx context.Context, opts ...UnlockOption) error {
 	}
 
 	err := locker.assertLockHeld(ctx)
-	if errors.As(err, &lockNotHeldError{}) {
+	if _, ok := errors.AsType[lockNotHeldError](err); ok {
 		return fmt.Errorf("unlock called when lock is not held: %w", err)
 	}
 	if err != nil {
