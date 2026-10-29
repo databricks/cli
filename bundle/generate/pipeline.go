@@ -28,7 +28,7 @@ func ConvertPipelineToValue(pipeline *pipelines.PipelineSpec, rootPath, remoteRo
 	// - storage: changes to this field are rare because changing the storage recreates pipeline-related resources
 	// - edition: this field is rarely changed
 	// - development: this field is specific to the mode where it's used and does not need to be saved to the bundle configuration.
-	value, err := structyaml.Struct(pipeline, "id", "storage", "edition", "development")
+	value, err := structyaml.Struct(pipeline, "id", "storage", "edition", "development", "deployment")
 	if err != nil {
 		return nil, err
 	}
