@@ -174,6 +174,7 @@ func TestDeviceCodeLogin_Errors(t *testing.T) {
 		name                  string
 		server                *fakeDeviceServer
 		wantErr               string
+		wantTokenRequests     int32
 		wantInvalidDeviceCode bool
 	}{
 		{
@@ -190,7 +191,8 @@ func TestDeviceCodeLogin_Errors(t *testing.T) {
 				tokenStatus: http.StatusBadRequest,
 				tokenBody:   `{"error": "invalid_client", "error_description": "Client is not allowed to use device code"}`,
 			},
-			wantErr: "Client is not allowed to use device code (error code: invalid_client)",
+			wantErr:           "Client is not allowed to use device code (error code: invalid_client)",
+			wantTokenRequests: 1,
 		},
 		{
 			name: "token request rate limited",
@@ -198,7 +200,8 @@ func TestDeviceCodeLogin_Errors(t *testing.T) {
 				tokenStatus: http.StatusTooManyRequests,
 				tokenBody:   `{"error": "invalid_request", "error_description": "Device grant rate limit exceeded"}`,
 			},
-			wantErr: "Device grant rate limit exceeded (error code: invalid_request)",
+			wantErr:           "Device grant rate limit exceeded (error code: invalid_request)",
+			wantTokenRequests: 1,
 		},
 		{
 			name: "unknown device code",
@@ -207,6 +210,7 @@ func TestDeviceCodeLogin_Errors(t *testing.T) {
 				tokenBody:   `{"error": "invalid_request", "error_description": "Invalid device code"}`,
 			},
 			wantErr:               "Invalid device code (error code: invalid_request)",
+			wantTokenRequests:     1,
 			wantInvalidDeviceCode: true,
 		},
 	}
@@ -215,7 +219,7 @@ func TestDeviceCodeLogin_Errors(t *testing.T) {
 			tc.server.expiresIn = 600
 			_, err := runDeviceCodeLogin(t.Context(), newDeviceCodeLogin(t, tc.server), testConfirmationCode)
 			assert.EqualError(t, err, tc.wantErr)
-			assert.LessOrEqual(t, tc.server.tokenRequests.Load(), int32(1))
+			assert.Equal(t, tc.wantTokenRequests, tc.server.tokenRequests.Load())
 			// None of these errors can be fixed by entering the confirmation
 			// code again.
 			assert.NotErrorIs(t, err, ErrInvalidConfirmationCode)
