@@ -52,9 +52,6 @@ const (
 	// deviceCodeEnvVar enables the experimental device code login flow
 	// (--use-device-code) while it is experimental.
 	deviceCodeEnvVar = "DATABRICKS_CLI_DEVICE_CODE"
-	// workspaceIDHint is shown instead of the workspace picker when login
-	// cannot prompt.
-	workspaceIDHint = "To use workspace commands, set workspace_id in your profile or pass --workspace-id."
 )
 
 // discoveryErr wraps an error (or creates a new one) and appends the
@@ -469,13 +466,7 @@ a new profile is created.
 		// 2. Configuring cluster and serverless;
 		// 3. Saving the profile.
 
-		promptWorkspace := shouldPromptWorkspace(authArguments, existingProfile, skipWorkspace)
-		switch {
-		case promptWorkspace && nonInteractive:
-			// The non-interactive device code login does not prompt, even in
-			// a terminal.
-			cmdio.LogString(ctx, workspaceIDHint)
-		case promptWorkspace:
+		if shouldPromptWorkspace(authArguments, existingProfile, skipWorkspace) {
 			wsID, wsErr := promptForWorkspaceSelection(ctx, authArguments, tokenSource)
 			if wsErr != nil {
 				log.Warnf(ctx, "Workspace selection failed: %v", wsErr)
@@ -990,7 +981,7 @@ func u2mResourcesFromProfile(p *profile.Profile) []string {
 // to the user.
 func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthArguments, tokenSource oauth2.TokenSource) (string, error) {
 	if !cmdio.IsPromptSupported(ctx) {
-		cmdio.LogString(ctx, workspaceIDHint)
+		cmdio.LogString(ctx, "To use workspace commands, set workspace_id in your profile or pass --workspace-id.")
 		return "", nil
 	}
 

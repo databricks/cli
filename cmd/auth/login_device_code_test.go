@@ -5,11 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
-	"net/http/httptest"
-	"net/http/httputil"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -468,40 +465,6 @@ func TestLoginDeviceCodeCompletesInTerminal(t *testing.T) {
 // A user code that does not match the pending login fails before the token
 // exchange, so the confirmation code is not sent with the device code of
 // another login.
-func TestLoginDeviceCodeCompletionInTerminalSkipsWorkspacePicker(t *testing.T) {
-	backend := newDeviceCodeServer(t)
-	backendURL, err := url.Parse(backend.URL)
-	require.NoError(t, err)
-	// The host metadata of the fake server has a workspace ID, which skips the
-	// workspace picker. Without it, login with an account ID asks for the
-	// workspace.
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/.well-known/databricks-config" {
-			fmt.Fprintf(w, `{"oidc_endpoint": %q}`, backend.URL+"/oidc")
-			return
-		}
-		httputil.NewSingleHostReverseProxy(backendURL).ServeHTTP(w, r)
-	}))
-	t.Cleanup(server.Close)
-	setUpDeviceCodeLogin(t, "")
-	host := server.URL + "?a=123"
-	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{}, "", ""))
-	require.NoError(t, runDeviceCodeLogin(ctx, "--host", host, "--profile", "test"))
-
-	tm := termtest.Run(t, func(ctx context.Context) (struct{}, error) {
-		return struct{}{}, runDeviceCodeLogin(ctx, "--host", host, "--profile", "test", "--user-code", "WDJB-MJHT", "--confirmation-code", "FTFA-QQKY")
-	})
-	tm.WaitFor(workspaceIDHint)
-	_, err = tm.Result()
-	require.NoError(t, err)
-
-	profiles, err := profile.DefaultProfiler.LoadProfiles(t.Context(), profile.WithName("test"))
-	require.NoError(t, err)
-	require.Len(t, profiles, 1)
-	assert.Equal(t, "123", profiles[0].AccountID)
-	assert.Empty(t, profiles[0].WorkspaceID)
-}
-
 func TestLoginDeviceCodeCompletionChecksUserCode(t *testing.T) {
 	server := newDeviceCodeServer(t)
 	var tokenRequests atomic.Int32
