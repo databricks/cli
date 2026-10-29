@@ -49,6 +49,11 @@ for delay in $delays; do
     space_ids+=("$space_id")
     start=$SECONDS
 
+    # The bundle deploy sets permissions right after creating the space, and the drift-check plan
+    # reads the space before the field-removal update; replay both.
+    $CLI permissions set genie "$space_id" --json '{"access_control_list": [{"group_name": "users", "permission_level": "CAN_READ"}]}' > /dev/null
+    $CLI genie get-space "$space_id" --include-serialized-space > /dev/null
+
     sleep "$delay"
 
     # Same update body as ResourceGenieSpace.DoUpdate after the description is removed from config:
