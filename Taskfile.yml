@@ -913,6 +913,13 @@ tasks:
       - go test -timeout 240s -run TestConsistentDatabricksSdkVersion github.com/databricks/cli/internal/build
       - task: generate-clijson-post
 
+  # Writes a plain, gitignored .codegen/cli.json next to the committed .gz for
+  # inspection. Readers always use the .gz, so edits to the copy have no effect.
+  unzip-clijson:
+    desc: Decompress .codegen/cli.json.gz to .codegen/cli.json for inspection
+    cmds:
+      - gzip -d -k -f .codegen/cli.json.gz
+
   # Post-processing for genkit's `update-sdk` output, factored out of
   # generate-clijson so the SDK bumper can run the same cleanup after its own
   # update-sdk invocation.
