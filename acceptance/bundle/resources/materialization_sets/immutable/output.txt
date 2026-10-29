@@ -39,7 +39,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-immutable-[UNIQUE_NAME]/default/files...
 Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Materialized features cannot be added to an existing materialization set, and feature 'main.matset_[UNIQUE_NAME].immb_[UNIQUE_NAME]' does not match any member of this set. Recreate the set instead. (400 INVALID_PARAMETER_VALUE)
 
-Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?request_id=[UUID]&update_mask=materialized_features
+Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?request_id=[UUID]&update_mask=%2A
 HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
 API message: Materialized features cannot be added to an existing materialization set, and feature 'main.matset_[UNIQUE_NAME].immb_[UNIQUE_NAME]' does not match any member of this set. Recreate the set instead.

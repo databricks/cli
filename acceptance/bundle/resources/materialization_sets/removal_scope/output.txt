@@ -47,7 +47,7 @@ Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
   "path": "/api/2.0/feature-engineering/materialization-sets/[UUID]",
   "q": {
     "request_id": "[UUID]",
-    "update_mask": "materialized_features"
+    "update_mask": "*"
   },
   "body": {
     "materialization_set_id": "[UUID]",
