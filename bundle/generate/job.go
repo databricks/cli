@@ -12,7 +12,7 @@ var (
 
 func ConvertJobToValue(job *jobs.Job) (structyaml.Map, error) {
 	// Tasks and parameters are processed separately.
-	value, err := structyaml.Struct(job.Settings, "format", "new_cluster", "existing_cluster_id", "tasks", "parameters")
+	value, err := structyaml.Struct(job.Settings, "format", "new_cluster", "existing_cluster_id", "deployment", "tasks", "parameters")
 	if err != nil {
 		return nil, err
 	}

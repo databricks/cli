@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/generate"
+	"github.com/databricks/cli/libs/structs/structyaml"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,5 +23,5 @@ func TestConvertJobToValueOmitsDeployment(t *testing.T) {
 
 	value, err := generate.ConvertJobToValue(job)
 	require.NoError(t, err)
-	assert.Equal(t, map[string]any{"name": "generated-job"}, value.AsAny())
+	assert.Equal(t, structyaml.M("name", "generated-job"), value)
 }
