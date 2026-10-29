@@ -32,10 +32,21 @@ const pendingLoginKeySuffix = "#device-code"
 const startNewLoginHint = "Run the same command without --user-code and --confirmation-code to start a new login"
 
 // deviceCodeAgentNote tells an AI agent to pass the login on to the user, who
-// approves it in the browser.
+// approves it in the browser. The notes of the two flows end with how the
+// agent completes the login.
 const deviceCodeAgentNote = "give the URL and the code above to the user.\n" +
-	"Do not open the URL or approve the login yourself: the user must approve it.\n" +
+	"Do not open the URL or approve the login yourself: the user must approve it.\n"
+
+// nonInteractiveAgentNote is followed by how to complete the login with a
+// rerun of the command.
+const nonInteractiveAgentNote = deviceCodeAgentNote +
 	"Ask the user for the confirmation code their browser shows."
+
+// interactiveAgentNote tells an agent that runs the login in a terminal to
+// enter the confirmation code into the running command.
+const interactiveAgentNote = deviceCodeAgentNote +
+	"Ask the user for the confirmation code their browser shows, and enter it\n" +
+	`at the "Confirmation code" prompt of this command.`
 
 // deviceCodeIncompatibleFlags lists flags that device code login cannot honor.
 var deviceCodeIncompatibleFlags = []string{
@@ -190,7 +201,7 @@ func (l nonInteractiveDeviceCodeLogin) start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("store pending login: %w", err)
 	}
-	cmdio.LogString(ctx, strings.Join(append(approvalInstructions(*da),
+	cmdio.LogString(ctx, strings.Join(append(approvalInstructions(*da, nonInteractiveAgentNote),
 		"Once finished, complete the login by running the same command with",
 		"--user-code "+formatCode(da.UserCode)+" and --confirmation-code set to the confirmation code",
 		"provided in your browser.",
@@ -274,7 +285,7 @@ func sameCode(a, b string) bool {
 // and asks again.
 func promptForConfirmationCode(ctx context.Context, da u2m.DeviceAuthorization, lastErr error, attemptsLeft int) (string, error) {
 	if lastErr == nil {
-		cmdio.LogString(ctx, strings.Join(append(approvalInstructions(da),
+		cmdio.LogString(ctx, strings.Join(append(approvalInstructions(da, interactiveAgentNote),
 			"Once finished, enter the confirmation code provided in your browser.",
 		), "\n"))
 	} else {
@@ -299,7 +310,7 @@ func promptForConfirmationCode(ctx context.Context, da u2m.DeviceAuthorization, 
 // the login. Both flows print them before saying how to complete the login.
 // An AI agent also gets a note to pass the login on to the user, whether or
 // not it runs the command in a terminal.
-func approvalInstructions(da u2m.DeviceAuthorization) []string {
+func approvalInstructions(da u2m.DeviceAuthorization, agentNote string) []string {
 	lines := []string{
 		"Using a browser on another device, visit:",
 		da.VerificationURI,
@@ -308,7 +319,7 @@ func approvalInstructions(da u2m.DeviceAuthorization) []string {
 		formatCode(da.UserCode),
 		"",
 	}
-	if note := agent.Note(deviceCodeAgentNote); note != "" {
+	if note := agent.Note(agentNote); note != "" {
 		lines = append(lines, note, "")
 	}
 	return lines
