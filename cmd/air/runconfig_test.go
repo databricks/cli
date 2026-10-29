@@ -822,6 +822,11 @@ func TestRunCommandHelpComputeOptions(t *testing.T) {
 			wantOptions: "    GPU_8xH100 - 4 accelerators per node [Public Preview]\n    GPU_FUTURE - 16 accelerators per node\n    GPU_1xA10 - 1 accelerator per node",
 		},
 		{
+			name:        "workspace confirms RTX6000 availability",
+			response:    `{"compute_options":[{"hardware_accelerator":"GPU_1xRTX6000","per_node_accelerator_count":1,"launch_stage":"GA"}]}`,
+			wantOptions: "    GPU_1xRTX6000 - 1 accelerator per node",
+		},
+		{
 			name:        "empty response",
 			response:    `{}`,
 			wantOptions: "    No accelerator types are currently available for AI Runtime in this workspace.",

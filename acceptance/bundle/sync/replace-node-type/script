@@ -1,0 +1,25 @@
+# Overwrite can't change a node's type, so when the node at a path has the other type,
+# sync deletes it and uploads again. bom.sql is a notebook: its first line starts with a
+# byte order mark, and the first line only needs to contain "Databricks notebook source".
+# CLI v1.21 and v1.22 uploaded it as a file.
+envsubst < databricks.yml.tmpl > databricks.yml
+remote=$($CLI bundle summary -o json | jq -r .workspace.file_path)
+
+cleanup() {
+  $CLI workspace delete "$($CLI bundle summary -o json | jq -r .workspace.root_path)" --recursive
+}
+trap cleanup EXIT
+
+list() {
+  $CLI workspace list -o json "$remote" | jq -r 'sort_by(.path)[] | "\(.object_type) \(.path | sub(".*/"; ""))"'
+}
+
+title "A file holds the name of notebook bom.sql, a notebook holds the name of file plain.sql\n"
+$CLI workspace mkdirs "$remote"
+trace $CLI workspace import "$remote/bom.sql" --file bom.sql --format RAW
+trace $CLI workspace import "$remote/plain" --file plain.sql --format SOURCE --language SQL
+trace list
+
+title "Sync replaces both\n"
+trace $CLI bundle sync --output text 2>&1 | sort
+trace list

@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"path/filepath"
 	"reflect"
 	"slices"
 	"strconv"
@@ -977,37 +976,181 @@ func (s *FakeWorkspace) hasChildren(dirPath string) bool {
 	return false
 }
 
-// detectNotebookLanguage mirrors the real /workspace/import format=AUTO logic:
-// a file whose extension is .py / .sql / .scala / .r and whose content starts
-// with the language-appropriate "Databricks notebook source" line-comment is
-// stored as a NOTEBOOK with the corresponding language; otherwise it's a FILE.
-//
-// The extension is lowercased because the real endpoint matches it
-// case-insensitively, and ".R" is the conventional spelling for R sources.
-func detectNotebookLanguage(extension string, body []byte) (workspace.Language, bool) {
-	switch strings.ToLower(extension) {
-	case ".py":
-		if bytes.HasPrefix(body, []byte("# Databricks notebook source")) {
-			return workspace.LanguagePython, true
-		}
-	case ".sql":
-		if bytes.HasPrefix(body, []byte("-- Databricks notebook source")) {
-			return workspace.LanguageSql, true
-		}
-	case ".scala":
-		if bytes.HasPrefix(body, []byte("// Databricks notebook source")) {
-			return workspace.LanguageScala, true
-		}
-	case ".r":
-		if bytes.HasPrefix(body, []byte("# Databricks notebook source")) {
-			return workspace.LanguageR, true
-		}
-	}
-	return "", false
+// notebookSourceMarker is the text that makes the workspace import a source
+// file as a notebook.
+const notebookSourceMarker = "Databricks notebook source"
+
+// notebookDetectionLength is how many leading bytes the workspace reads to
+// classify a source file (NOTEBOOK_IDENTIFIER_BUFFER_LENGTH in universe).
+const notebookDetectionLength = 200
+
+// Source notebook languages by extension. The workspace matches the extension
+// case-insensitively, so ".R", the conventional spelling for R sources, counts too.
+var sourceNotebookLanguages = map[string]workspace.Language{
+	".py":    workspace.LanguagePython,
+	".sql":   workspace.LanguageSql,
+	".scala": workspace.LanguageScala,
+	".r":     workspace.LanguageR,
 }
 
+// notebookDetector reports whether body uploaded at filePath is imported as a
+// notebook, and in which language.
+type notebookDetector func(filePath string, body []byte) (workspace.Language, bool)
+
+// detectLegacyNotebook mirrors the legacy import-file endpoint, which looks for
+// the marker on the first line only (NotebookUtils.checkSourceFileNotebook in
+// universe).
+func detectLegacyNotebook(filePath string, body []byte) (workspace.Language, bool) {
+	language, ok := sourceNotebookLanguages[strings.ToLower(path.Ext(filePath))]
+	firstLine, _, _ := bytes.Cut(notebookDetectionPrefix(body), []byte("\n"))
+	return language, ok && bytes.Contains(firstLine, []byte(notebookSourceMarker))
+}
+
+// detectAutoNotebook mirrors /workspace/import with format=AUTO, which finds the
+// marker on any line of the leading bytes.
+func detectAutoNotebook(filePath string, body []byte) (workspace.Language, bool) {
+	language, ok := sourceNotebookLanguages[strings.ToLower(path.Ext(filePath))]
+	return language, ok && bytes.Contains(notebookDetectionPrefix(body), []byte(notebookSourceMarker))
+}
+
+func notebookDetectionPrefix(body []byte) []byte {
+	return body[:min(len(body), notebookDetectionLength)]
+}
+
+// notebookSourceName returns the name a notebook reserves next to it: SQL
+// notebook "x" reserves "x.sql", so a file "x.sql" and notebook "x" can't coexist.
+func notebookSourceName(notebookPath string, language workspace.Language) string {
+	for ext, l := range sourceNotebookLanguages {
+		if l == language {
+			return notebookPath + ext
+		}
+	}
+	return ""
+}
+
+// importConflicts holds an endpoint's responses for an import that would
+// replace an object of another type. Overwrite never changes an object's type.
+type importConflicts struct {
+	// nameTaken is returned when a notebook's source name is taken by a file or directory.
+	nameTaken func(requestPath, name string) Response
+	// notebookTaken is returned when a file's path is an existing notebook's source name.
+	notebookTaken func(filePath string) Response
+}
+
+var workspaceImportConflicts = importConflicts{
+	nameTaken:     workspaceImportNameTaken,
+	notebookTaken: workspaceImportNotebookTaken,
+}
+
+func workspaceImportNameTaken(_, name string) Response {
+	return Response{
+		StatusCode: http.StatusBadRequest,
+		Body: map[string]string{
+			"error_code": "RESOURCE_ALREADY_EXISTS",
+			"message":    fmt.Sprintf("Node named '%s' already exists", name),
+		},
+	}
+}
+
+func workspaceImportNotebookTaken(string) Response {
+	return Response{
+		StatusCode: http.StatusBadRequest,
+		Body: map[string]any{
+			"error_code": "INVALID_PARAMETER_VALUE",
+			"message":    "Requested node type [FILE] is different from the existing node type [NOTEBOOK]",
+			"details": []map[string]any{
+				{
+					"@type":  "type.googleapis.com/google.rpc.ErrorInfo",
+					"reason": "WORKSPACE_OBJECT_TYPE_MISMATCH",
+					"domain": "workspace.databricks.com",
+				},
+			},
+		},
+	}
+}
+
+var importFileConflicts = importConflicts{
+	nameTaken:     importFileNameTaken,
+	notebookTaken: importFileNotebookTaken,
+}
+
+// importFileNameTaken wraps the notebook import error the way the legacy
+// endpoint does: in the message, without an error code.
+func importFileNameTaken(requestPath, name string) Response {
+	return Response{
+		StatusCode: http.StatusBadRequest,
+		Body: map[string]string{
+			"message": fmt.Sprintf("Request failed for POST %s: RESOURCE_ALREADY_EXISTS: Node named '%s' already exists", requestPath, name),
+		},
+	}
+}
+
+func importFileNotebookTaken(filePath string) Response {
+	return Response{
+		StatusCode: http.StatusConflict,
+		Body: map[string]string{
+			"message": fmt.Sprintf("Creating file failed. An item with path %s already exists", filePath),
+		},
+	}
+}
+
+// WorkspaceFilesImportFile mirrors the legacy import-file endpoint.
 func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, overwrite bool) Response {
-	return s.importFile(filePath, body, overwrite, true)
+	// The endpoint matches this extension case-sensitively.
+	if path.Ext(filePath) == ".zip" {
+		return s.importFileZip(filePath, body, overwrite)
+	}
+	return s.importFile(filePath, body, overwrite, detectLegacyNotebook, importFileConflicts)
+}
+
+// importFileZip mirrors import-file for a .zip (importZipFile in universe): each
+// entry is imported into the archive's parent folder, the archive itself is not
+// stored, and directories must have their own entry.
+func (s *FakeWorkspace) importFileZip(zipPath string, body []byte, overwrite bool) Response {
+	if !strings.HasPrefix(zipPath, "/") {
+		zipPath = "/" + zipPath
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+	if err != nil {
+		return Response{
+			StatusCode: http.StatusBadRequest,
+			Body:       map[string]string{"message": "Failed to unzip with error: " + err.Error()},
+		}
+	}
+
+	parent := path.Dir(zipPath)
+	for _, entry := range zr.File {
+		// macOS archives carry an extra __MACOSX directory.
+		if strings.HasPrefix(entry.Name, "__MACOSX") {
+			continue
+		}
+		entryPath := path.Join(parent, entry.Name)
+		if entry.FileInfo().IsDir() {
+			s.WorkspaceMkdirs(workspace.Mkdirs{Path: entryPath})
+			continue
+		}
+		if strings.HasSuffix(entry.Name, ".zip") {
+			return Response{
+				StatusCode: http.StatusBadRequest,
+				Body:       map[string]string{"message": fmt.Sprintf("Request failed for POST %s: don't support importing nested zip files", zipPath)},
+			}
+		}
+		data, err := readZipEntry(entry)
+		if err != nil {
+			return Response{StatusCode: http.StatusBadRequest, Body: map[string]string{"message": err.Error()}}
+		}
+		if resp := s.importFile(entryPath, data, overwrite, detectLegacyNotebook, importFileConflicts); resp.StatusCode != 0 {
+			return resp
+		}
+	}
+	return Response{}
+}
+
+// WorkspaceImportAutoFile mirrors /workspace/import with format=AUTO for a
+// file that is not an archive or another asset type.
+func (s *FakeWorkspace) WorkspaceImportAutoFile(filePath string, body []byte, overwrite bool) Response {
+	return s.importFile(filePath, body, overwrite, detectAutoNotebook, workspaceImportConflicts)
 }
 
 // WorkspaceImportZipFolder mirrors /workspace/import with format=AUTO for a .zip path
@@ -1085,7 +1228,7 @@ func (s *FakeWorkspace) WorkspaceImportZipFolder(zipPath string, body []byte, ov
 		if err != nil {
 			return Response{StatusCode: http.StatusBadRequest, Body: map[string]string{"message": err.Error()}}
 		}
-		if resp := s.importFile(entryPath, data, false, true); resp.StatusCode != 0 {
+		if resp := s.importFile(entryPath, data, false, detectAutoNotebook, workspaceImportConflicts); resp.StatusCode != 0 {
 			return resp
 		}
 	}
@@ -1104,62 +1247,90 @@ func readZipEntry(entry *zip.File) ([]byte, error) {
 // WorkspaceImportRawFile stores body as a file without notebook detection, as
 // /workspace/import does for format=RAW.
 func (s *FakeWorkspace) WorkspaceImportRawFile(filePath string, body []byte, overwrite bool) Response {
-	return s.importFile(filePath, body, overwrite, false)
+	return s.importFile(filePath, body, overwrite, nil, workspaceImportConflicts)
 }
 
-func (s *FakeWorkspace) importFile(filePath string, body []byte, overwrite, detectNotebooks bool) Response {
+// importFile stores body at filePath, as a notebook if detect says so. A nil
+// detect always stores a file.
+func (s *FakeWorkspace) importFile(filePath string, body []byte, overwrite bool, detect notebookDetector, conflicts importConflicts) Response {
 	if !strings.HasPrefix(filePath, "/") {
 		filePath = "/" + filePath
 	}
 
 	defer s.LockUnlock()()
 
-	workspacePath := filePath
-
-	if resp, ok := s.requireParentDirectory(workspacePath); !ok {
+	if resp, ok := s.requireParentDirectory(filePath); !ok {
 		return resp
 	}
 
 	if !overwrite {
-		if _, exists := s.files[workspacePath]; exists {
+		if _, exists := s.files[filePath]; exists {
 			return Response{
 				StatusCode: 409,
-				Body:       map[string]string{"message": fmt.Sprintf("File already exists at (%s).", workspacePath)},
+				Body:       map[string]string{"message": fmt.Sprintf("File already exists at (%s).", filePath)},
 			}
 		}
 	}
 
-	// Files with .py / .sql / .scala / .r extension can be notebooks if they
-	// carry the "Databricks notebook source" header comment in the language's
-	// line-comment syntax. Mirror the real workspace's auto-detection here so
-	// acceptance tests can assert the resulting object_type via /workspace/list.
-	extension := filepath.Ext(filePath)
-	if lang, isNotebook := detectNotebookLanguage(extension, body); detectNotebooks && isNotebook {
-		// Notebooks are stripped of their extension by the workspace import API.
-		workspacePath = strings.TrimSuffix(filePath, extension)
-		s.files[workspacePath] = FileEntry{
-			Info: workspace.ObjectInfo{
-				ObjectType: "NOTEBOOK",
-				Path:       workspacePath,
-				Language:   lang,
-				ObjectId:   nextTreenodeID(),
-			},
-			Data: body,
-		}
-	} else {
-		// The endpoint does not set language for files, so we omit that
-		// here as well.
-		// ref: https://docs.databricks.com/api/workspace/workspace/getstatus#language
-		s.files[workspacePath] = FileEntry{
-			Info: workspace.ObjectInfo{
-				ObjectType: "FILE",
-				Path:       workspacePath,
-				ObjectId:   nextTreenodeID(),
-			},
-			Data: body,
+	if detect != nil {
+		if language, isNotebook := detect(filePath, body); isNotebook {
+			// Notebooks are stripped of their extension by the workspace import API.
+			notebookPath := strings.TrimSuffix(filePath, path.Ext(filePath))
+			return s.storeNotebook(filePath, notebookPath, body, language, conflicts)
 		}
 	}
+
+	if s.isNotebookSourceName(filePath) {
+		return conflicts.notebookTaken(filePath)
+	}
+
+	// The endpoint does not set language for files, so we omit that
+	// here as well.
+	// ref: https://docs.databricks.com/api/workspace/workspace/getstatus#language
+	s.files[filePath] = FileEntry{
+		Info: workspace.ObjectInfo{
+			ObjectType: "FILE",
+			Path:       filePath,
+			ObjectId:   nextTreenodeID(),
+		},
+		Data: body,
+	}
 	return Response{}
+}
+
+// storeNotebook stores a notebook at notebookPath unless a file or directory
+// holds its source name. The caller must hold the lock.
+func (s *FakeWorkspace) storeNotebook(requestPath, notebookPath string, body []byte, language workspace.Language, conflicts importConflicts) Response {
+	sourceName := notebookSourceName(notebookPath, language)
+	_, isFile := s.files[sourceName]
+	_, isDir := s.directories[sourceName]
+	if isFile || isDir {
+		return conflicts.nameTaken(requestPath, path.Base(sourceName))
+	}
+
+	s.files[notebookPath] = FileEntry{
+		Info: workspace.ObjectInfo{
+			ObjectType: "NOTEBOOK",
+			Path:       notebookPath,
+			Language:   language,
+			ObjectId:   nextTreenodeID(),
+		},
+		Data: body,
+	}
+	return Response{}
+}
+
+// isNotebookSourceName reports whether filePath is the source name of an
+// existing notebook. The caller must hold the lock.
+func (s *FakeWorkspace) isNotebookSourceName(filePath string) bool {
+	ext := path.Ext(filePath)
+	if ext == "" {
+		return false
+	}
+	notebookPath := strings.TrimSuffix(filePath, ext)
+	entry, ok := s.files[notebookPath]
+	return ok && entry.Info.ObjectType == workspace.ObjectTypeNotebook &&
+		strings.EqualFold(notebookSourceName(notebookPath, entry.Info.Language), filePath)
 }
 
 // requireParentDirectory returns a 404 response when objectPath's parent
@@ -1206,16 +1377,7 @@ func (s *FakeWorkspace) WorkspaceImportNotebook(filePath string, body []byte, la
 		}
 	}
 
-	s.files[filePath] = FileEntry{
-		Info: workspace.ObjectInfo{
-			ObjectType: "NOTEBOOK",
-			Path:       filePath,
-			Language:   language,
-			ObjectId:   nextTreenodeID(),
-		},
-		Data: body,
-	}
-	return Response{}
+	return s.storeNotebook(filePath, filePath, body, language, workspaceImportConflicts)
 }
 
 func (s *FakeWorkspace) WorkspaceFilesExportFile(path string) []byte {

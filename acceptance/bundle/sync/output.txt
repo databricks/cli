@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle sync --output text
-Action: PUT: .gitignore, databricks.yml, dryrun/databricks.yml, dryrun/out.test.toml, ignored-folder/folder1/script.py, ignored-folder/script.py, upload-504/databricks.yml, upload-504/out.test.toml
+Action: PUT: .gitignore, databricks.yml, dryrun/databricks.yml, dryrun/out.test.toml, ignored-folder/folder1/script.py, ignored-folder/script.py, replace-node-type/bom.sql, replace-node-type/databricks.yml.tmpl, replace-node-type/out.test.toml, replace-node-type/plain.sql, upload-504/databricks.yml, upload-504/out.test.toml, zip-extract/archive.zip, zip-extract/archive_v2.zip, zip-extract/databricks.yml.tmpl, zip-extract/out.test.toml
 Initial Sync Complete
 Uploaded .gitignore
 Uploaded databricks.yml
@@ -10,6 +10,16 @@ Uploaded dryrun/out.test.toml
 Uploaded ignored-folder/folder1
 Uploaded ignored-folder/folder1/script.py
 Uploaded ignored-folder/script.py
+Uploaded replace-node-type
+Uploaded replace-node-type/bom.sql
+Uploaded replace-node-type/databricks.yml.tmpl
+Uploaded replace-node-type/out.test.toml
+Uploaded replace-node-type/plain.sql
 Uploaded upload-504
 Uploaded upload-504/databricks.yml
 Uploaded upload-504/out.test.toml
+Uploaded zip-extract
+Uploaded zip-extract/archive.zip
+Uploaded zip-extract/archive_v2.zip
+Uploaded zip-extract/databricks.yml.tmpl
+Uploaded zip-extract/out.test.toml

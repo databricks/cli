@@ -1,6 +1,8 @@
 package client
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -146,6 +148,17 @@ func TestUploadReleasesWithExistingBinary(t *testing.T) {
 	}
 }
 
+// releaseArchive returns a zip holding the databricks binary. The import-file
+// endpoint unzips uploaded archives, so it has to be valid.
+func releaseArchive(t *testing.T) []byte {
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	_, err := zw.Create("databricks")
+	require.NoError(t, err)
+	require.NoError(t, zw.Close())
+	return buf.Bytes()
+}
+
 func TestUploadReleasesSendsEachArchiveOnce(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -197,8 +210,9 @@ func TestUploadReleasesSendsEachArchiveOnce(t *testing.T) {
 			workspaceFiler, err := filer.NewWorkspaceFilesClient(client, "/Workspace/Users/tester@databricks.test/.databricks/ssh-tunnel/"+tt.version)
 			require.NoError(t, err)
 
+			archive := releaseArchive(t)
 			getRelease := func(ctx context.Context, architecture, version, releasesDir string) (io.ReadCloser, error) {
-				return io.NopCloser(strings.NewReader("archive")), nil
+				return io.NopCloser(bytes.NewReader(archive)), nil
 			}
 			for range tt.uploads {
 				err = uploadReleases(t.Context(), workspaceFiler, getRelease, tt.version, "")

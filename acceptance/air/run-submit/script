@@ -24,4 +24,10 @@ trace $CLI air run -f b300.yaml
 title "the B300 accelerator and runtime reach the submit payload"
 trace print_requests.py //api/2.2/jobs/runs/submit
 
+title "submit an RTX6000 workload with AI Runtime 6"
+trace $CLI air run -f rtx6000.yaml
+
+title "the RTX6000 accelerator and runtime reach the submit payload"
+trace print_requests.py //api/2.2/jobs/runs/submit
+
 rm -fr .git
