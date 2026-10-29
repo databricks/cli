@@ -1,5 +1,5 @@
 bundle:
-  name: test-matset-batch-$UNIQUE_NAME
+  name: test-matset-mixed-triggers-$UNIQUE_NAME
 
 resources:
   features:
@@ -21,8 +21,7 @@ resources:
       timeseries_column:
         name: timestamp
 
-    # Stream-sourced, so it materializes on the streaming path while batchfeat stays on the
-    # batch path. The set below asks for one of each.
+    # Stream-sourced, so it materializes from a stream while batchfeat materializes in batch.
     streamfeat:
       full_name: $CATALOG_NAME.$SCHEMA_NAME.batchstream_$UNIQUE_NAME
       source:
@@ -43,8 +42,6 @@ resources:
   materialization_sets:
     set1:
       materialized_features:
-        # The offline member a delete cascades from, and the only one a schedule state can be
-        # applied to.
         - feature_name: ${resources.features.batchfeat.full_name}
           offline_store_config:
             catalog_name: $CATALOG_NAME

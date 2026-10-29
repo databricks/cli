@@ -1,9 +1,7 @@
-# Local only. These cases need a Stream source, and a Stream is neither a bundle resource nor a CLI
-# command, so the integration suite has no way to provision one; it also needs a Unity Catalog
-# connection to a Kafka topic whose payload the feature definitions name. Run them against a
-# workspace by hand, overriding MATSET_CATALOG / MATSET_SCHEMA / MATSET_ONLINE_STORE /
-# MATSET_STREAM -- see README.md.
-Cloud = false
+# Pinned to one developer's catalog and online store; override MATSET_CATALOG / MATSET_SCHEMA /
+# MATSET_ONLINE_STORE to move it. The mixed-trigger refusal this case used to carry lives in
+# mixed_triggers, which needs a Stream and so cannot run here.
+Cloud = true
 
 Ignore = [
     ".databricks",

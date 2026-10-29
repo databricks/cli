@@ -1,7 +1,6 @@
 export CATALOG_NAME="${MATSET_CATALOG:-danielb}"
 export SCHEMA_NAME="${MATSET_SCHEMA:-fs2680}"
 export ONLINE_STORE_NAME="${MATSET_ONLINE_STORE:-danielb}"
-export STREAM_FULL_NAME="${MATSET_STREAM:-danielb.fs2680.fs2680_dch48o_stream}"
 export TABLE_NAME="$CATALOG_NAME.$SCHEMA_NAME.src_$UNIQUE_NAME"
 
 # Each phase is its own template rather than a string edit, so the fixture a phase deploys is
@@ -93,13 +92,6 @@ title "members of one feature disagreeing on the state"
 render paused-offline.yml.tmpl
 trace $CLI bundle plan -o json > out.plan.json
 trace set_actions
-trace musterr $CLI bundle deploy --auto-approve
-
-title "A set cannot mix a feature that materializes on the batch path with one that materializes"
-title "on the streaming path. The refusal above left no set behind, so this reaches the create"
-title "endpoint -- which reserves its operation record before it reaches this rule, so the refusal"
-title "settles that record and arrives as HTTP 200 rather than as an error on the call."
-render mixed.yml.tmpl
 trace musterr $CLI bundle deploy --auto-approve
 
 rm -f out.requests.txt out.plan.json
