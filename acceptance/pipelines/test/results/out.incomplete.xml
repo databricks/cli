@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites>
-  <testsuite name="my_pipeline" tests="2" failures="0" errors="1" skipped="0">
+  <testsuite name="my_pipeline" tests="4" failures="0" errors="3" skipped="0">
     <testcase classname="tests.test_compute" name="test_small_order" time="1.000"></testcase>
+    <testcase classname="tests.test_compute" name="test_crash_on_large_order">
+      <error message="no result received"></error>
+    </testcase>
+    <testcase classname="tests.test_compute" name="test_last_order">
+      <error message="no result received"></error>
+    </testcase>
     <testcase name="update [UUID]">
       <error message="RUN INCOMPLETE: the update failed before all test results were received.">RUN INCOMPLETE: the update failed before all test results were received.&#xA;update [UUID] is FAILED: ComputeTerminatedException: Compute terminated unexpectedly.</error>
     </testcase>

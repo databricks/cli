@@ -52,14 +52,16 @@ func newJUnitResult(text string) *junitResult {
 	return &junitResult{Message: message, Text: text}
 }
 
-// newJUnitReport has one entry per case with a final outcome. A non-empty problem, such as an
-// incomplete run, adds a failing entry for the update so the report never passes by omission.
+// junitNoResult is the error message of a collected case that has no final outcome.
+const junitNoResult = "no result received"
+
+// newJUnitReport has one entry per collected case; a case without a final outcome is an error,
+// because CI tools treat skipped entries as passing.
+// A non-empty problem, such as an incomplete run, adds a failing entry for the update so the
+// report never passes by omission.
 func newJUnitReport(suiteName, updateID string, run *testRun, problem string) junitTestSuites {
 	suite := junitTestSuite{Name: suiteName}
 	for _, c := range run.cases {
-		if !c.status.isFinal() {
-			continue
-		}
 		entry := junitTestCase{}
 		entry.ClassName, entry.Name = junitCaseName(c.id)
 		if d, ok := c.duration(); ok {
@@ -74,6 +76,7 @@ func newJUnitReport(suiteName, updateID string, run *testRun, problem string) ju
 			details = strings.TrimPrefix(details+"\n(details truncated)", "\n")
 		}
 		switch c.status {
+		case testCasePassed:
 		case testCaseFailed:
 			entry.Failure = newJUnitResult(details)
 			suite.Failures++
@@ -84,6 +87,8 @@ func newJUnitReport(suiteName, updateID string, run *testRun, problem string) ju
 			entry.Skipped = &junitResult{}
 			suite.Skipped++
 		default:
+			entry.Error = &junitResult{Message: junitNoResult}
+			suite.Errors++
 		}
 		suite.Cases = append(suite.Cases, entry)
 	}

@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites>
-  <testsuite name="my_pipeline" tests="1" failures="0" errors="1" skipped="0">
+  <testsuite name="my_pipeline" tests="2" failures="0" errors="2" skipped="0">
+    <testcase classname="tests.test_slow" name="test_hang_on_lock">
+      <error message="no result received"></error>
+    </testcase>
     <testcase name="update [UUID]">
       <error message="RUN INCOMPLETE: the update was canceled before all test results were received.">RUN INCOMPLETE: the update was canceled before all test results were received.&#xA;update [UUID] is CANCELED</error>
     </testcase>

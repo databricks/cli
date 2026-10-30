@@ -51,7 +51,7 @@ func TestWriteJUnitReport(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, `<?xml version="1.0" encoding="UTF-8"?>
 <testsuites>
-  <testsuite name="orders" tests="5" failures="1" errors="2" skipped="1">
+  <testsuite name="orders" tests="6" failures="1" errors="3" skipped="1">
     <testcase classname="tests.test_a" name="test_ok" time="1.840"></testcase>
     <testcase classname="tests.test_a" name="test_bad">
       <failure message="AssertionError: assert 1 == 2">AssertionError: assert 1 == 2&#xA;where 1 = f()&#xA;(details truncated)</failure>
@@ -61,6 +61,9 @@ func TestWriteJUnitReport(t *testing.T) {
     </testcase>
     <testcase classname="tests.test_a" name="test_old">
       <skipped></skipped>
+    </testcase>
+    <testcase classname="tests.test_a" name="test_unfinished">
+      <error message="no result received"></error>
     </testcase>
     <testcase name="update u1">
       <error message="RUN INCOMPLETE: received 4 of 5 test results.">RUN INCOMPLETE: received 4 of 5 test results.</error>
