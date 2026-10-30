@@ -278,8 +278,9 @@ func SaveResourcesToProfile(ctx context.Context, profileName, configFilePath str
 	}
 	if len(resources) == 0 {
 		section.DeleteKey("resources")
-	} else {
-		section.Key("resources").SetValue(strings.Join(resources, ","))
+	} else if _, err := section.NewKey("resources", strings.Join(resources, ",")); err != nil {
+		// See SaveToProfile for why this is not Section.Key.
+		return err
 	}
 	return writeConfigFile(ctx, configFile)
 }
@@ -461,8 +462,12 @@ func SaveToProfile(ctx context.Context, cfg *config.Config, clearKeys ...string)
 		if attr.IsZero(cfg) {
 			continue
 		}
-		key := section.Key(attr.Name)
-		key.SetValue(attr.GetString(cfg))
+		// Section.Key falls back to the parent section for dotted names
+		// ([team] for [team.prod]), so it would overwrite the parent's value.
+		// NewKey only looks at the section's own keys.
+		if _, err := section.NewKey(attr.Name, attr.GetString(cfg)); err != nil {
+			return err
+		}
 	}
 
 	// Auto-set default profile when saving the first profile to the config file.

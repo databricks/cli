@@ -1,0 +1,1 @@
+* Fix `databricks auth login` overwriting the parent profile when saving a profile with a dotted name such as `team.prod` next to an existing `[team]`. ([#7266](https://github.com/databricks/cli/pull/7266))
