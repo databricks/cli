@@ -91,3 +91,23 @@ Profile test was successfully saved
 {"method": "POST", "path": "/oidc/v1/token", "raw_body": "client_id=databricks-cli&confirmation_code=FTFAQQKY&device_code=device-code-2&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"}
 {"method": "POST", "path": "/oidc/v1/device/auth", "raw_body": "client_id=databricks-cli&scope=offline_access+all-apis"}
 {"method": "POST", "path": "/oidc/v1/token", "raw_body": "client_id=databricks-cli&confirmation_code=FTFAQQKY&device_code=device-code-3&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"}
+
+=== An AI agent gets notes on passing the login on to the user
+
+>>> AGENT=test-agent [CLI] auth login --host [DATABRICKS_URL] --profile agent --use-device-code
+Using a browser on another device, visit:
+[DATABRICKS_URL]/device/verification
+
+And enter the code:
+WDJB-MJHT
+
+Note for AI agents (test-agent): give the URL and the code above to the user.
+Do not open the URL or approve the login yourself: the user must approve it.
+Ask the user for the confirmation code their browser shows.
+
+Once finished, complete the login by running the same command with
+--user-code WDJB-MJHT and --confirmation-code set to the confirmation code
+provided in your browser.
+
+>>> AGENT=test-agent [CLI] auth login --host [DATABRICKS_URL] --profile agent --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+Profile agent was successfully saved

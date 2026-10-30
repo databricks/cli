@@ -31,5 +31,9 @@ trace $CLI auth login --profile test --use-device-code --user-code WDJB-MJHT --c
 trace cache_keys
 trace print_requests.py --oneline //oidc/v1/device/auth //oidc/v1/token
 
+title "An AI agent gets notes on passing the login on to the user\n"
+trace AGENT=test-agent $CLI auth login --host $DATABRICKS_HOST --profile agent --use-device-code
+trace AGENT=test-agent $CLI auth login --host $DATABRICKS_HOST --profile agent --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+
 # Track the .databrickscfg file that was created to surface changes.
 mv "./home/.databrickscfg" "./out.databrickscfg"
