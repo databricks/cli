@@ -391,4 +391,8 @@ func TestMergeNullModesNilRoot(t *testing.T) {
 	out, err = MergeKeepingNulls(b, dyn.NilValue)
 	require.NoError(t, err)
 	assert.Equal(t, dyn.KindNil, out.Kind())
+
+	out, err = MergeRemovingNulls(b, dyn.NilValue)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"null": nil, "value": "b"}, out.AsAny())
 }

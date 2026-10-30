@@ -1,2 +1,6 @@
-        "run_as": {
-  "run_as": {
+
+>>> [CLI] bundle validate -o json
+{
+  "run_as": null,
+  "job_run_as": null
+}

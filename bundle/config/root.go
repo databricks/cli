@@ -145,7 +145,7 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 	r.withNulls = v
 
 	// A null has nothing to remove in a file on its own, so it is dropped, except where
-	// it declares an empty target or variable.
+	// it declares an empty entry, e.g. a target.
 	nv, err := addDeclarations(dyn.DropNulls(v), dyn.NilValue, v)
 	if err != nil {
 		return nil, diags.Extend(diag.Errorf("failed to load %s: %v", path, err))
@@ -337,25 +337,39 @@ func (r *Root) Merge(other *Root) error {
 	})
 }
 
-// declarationSections are the sections where a null entry declares an empty entry
-// if there is no entry to remove, e.g. an empty "targets.dev:" declares target dev.
-var declarationSections = []string{"targets", "environments", "variables"}
+// declarationSections are the maps in which a null entry declares an empty entry if
+// there is no entry to remove: an empty "targets.dev:" declares target dev, and an
+// empty "resources.jobs.foo:" is reported as an undefined job. The resources section
+// holds one such map per resource type.
+var declarationSections = []string{"targets", "environments", "variables", "artifacts", "scripts"}
 
-// addDeclarations returns v with the null entries of the declaration sections of
-// nulls that base does not have.
+// addDeclarations returns v with the null entries of the declaration sections in nulls
+// that have no value to remove in base.
 func addDeclarations(v, base, nulls dyn.Value) (dyn.Value, error) {
+	var sections []dyn.Path
 	for _, section := range declarationSections {
-		entries, ok := nulls.Get(section).AsMap()
-		if !ok {
+		sections = append(sections, dyn.NewPath(dyn.Key(section)))
+	}
+	if resources, ok := nulls.Get("resources").AsMap(); ok {
+		for _, typ := range resources.Keys() {
+			sections = append(sections, dyn.NewPath(dyn.Key("resources"), dyn.Key(typ.MustString())))
+		}
+	}
+
+	for _, section := range sections {
+		entries, err := dyn.GetByPath(nulls, section)
+		if err != nil || entries.Kind() != dyn.KindMap {
 			continue
 		}
-		for _, pair := range entries.Pairs() {
-			name := pair.Key.MustString()
-			if pair.Value.Kind() != dyn.KindNil || base.Get(section).Get(name).IsValid() {
+		for _, pair := range entries.MustMap().Pairs() {
+			if pair.Value.Kind() != dyn.KindNil {
 				continue
 			}
-			var err error
-			v, err = dyn.SetByPath(v, dyn.NewPath(dyn.Key(section), dyn.Key(name)), pair.Value)
+			p := section.Append(dyn.Key(pair.Key.MustString()))
+			if bv, err := dyn.GetByPath(base, p); err == nil && bv.Kind() != dyn.KindNil {
+				continue
+			}
+			v, err = dyn.SetByPath(v, p, pair.Value)
 			if err != nil {
 				return dyn.InvalidValue, err
 			}
@@ -406,23 +420,51 @@ func setNulls(dst, src dyn.Value) (dyn.Value, error) {
 	return dst, nil
 }
 
+// setOrRemove returns v with the value at p set to nv without its nulls, or removed if
+// nv is null.
+func setOrRemove(v dyn.Value, p dyn.Path, nv dyn.Value) (dyn.Value, error) {
+	if nv.Kind() == dyn.KindNil {
+		return removeByPath(v, p)
+	}
+	return dyn.SetByPath(v, p, dyn.DropNulls(nv))
+}
+
+// removeByPath returns v without the value at p, if there is one.
+func removeByPath(v dyn.Value, p dyn.Path) (dyn.Value, error) {
+	return dyn.Walk(v, func(vp dyn.Path, v dyn.Value) (dyn.Value, error) {
+		switch {
+		case vp.Equal(p):
+			return v, dyn.ErrDrop
+		case p.HasPrefix(vp):
+			return v, nil
+		default:
+			return v, dyn.ErrSkip
+		}
+	})
+}
+
 func mergeField(rv, ov dyn.Value, name string) (dyn.Value, error) {
 	path := dyn.NewPath(dyn.Key(name))
 	reference, _ := dyn.GetByPath(rv, path)
 	override, _ := dyn.GetByPath(ov, path)
 
+	// A null override removes the field.
+	if override.Kind() == dyn.KindNil {
+		return removeByPath(rv, path)
+	}
+
 	// Merge the override into the reference.
 	var out dyn.Value
 	var err error
 	if reference.IsValid() && override.IsValid() {
-		out, err = merge.MergeKeepingNulls(reference, override)
+		out, err = merge.MergeRemovingNulls(reference, override)
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
 	} else if reference.IsValid() {
 		out = reference
 	} else if override.IsValid() {
-		out = override
+		out = dyn.DropNulls(override)
 	} else {
 		return rv, nil
 	}
@@ -443,11 +485,16 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		return err
 	}
 
-	// A null in the target removes the value from the root. The nulls are set here, and
-	// removed with what they override at the end.
+	// A null in the target removes the value from the root; the target as merged so
+	// far has lost its nulls, so they are set again.
 	target, err = setNulls(target, r.targetWithNulls(name))
 	if err != nil {
 		return fmt.Errorf("failed to apply the nulls of target=%s: %w", name, err)
+	}
+
+	root, target, err = mergeKeyedSequencesWithNulls(root, target)
+	if err != nil {
+		return err
 	}
 
 	// Merge fields that can be merged 1:1.
@@ -473,7 +520,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 			vDefault := variable.Get("default")
 			if vDefault.Kind() != dyn.KindInvalid {
 				defaultPath := varPath.Append(dyn.Key("default"))
-				root, err = dyn.SetByPath(root, defaultPath, vDefault)
+				root, err = setOrRemove(root, defaultPath, vDefault)
 				if err != nil {
 					return root, err
 				}
@@ -489,7 +536,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 			vLookup := variable.Get("lookup")
 			if vLookup.Kind() != dyn.KindInvalid {
 				lookupPath := varPath.Append(dyn.Key("lookup"))
-				root, err = dyn.SetByPath(root, lookupPath, vLookup)
+				root, err = setOrRemove(root, lookupPath, vLookup)
 				if err != nil {
 					return root, err
 				}
@@ -511,7 +558,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 
 	// Merge `run_as`. This field must be overwritten if set, not merged.
 	if v := target.Get("run_as"); v.Kind() != dyn.KindInvalid {
-		root, err = dyn.Set(root, "run_as", v)
+		root, err = setOrRemove(root, dyn.NewPath(dyn.Key("run_as")), v)
 		if err != nil {
 			return err
 		}
@@ -527,7 +574,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 
 	// Merge `mode`. This field must be overwritten if set, not merged.
 	if v := target.Get("mode"); v.Kind() != dyn.KindInvalid {
-		root, err = dyn.SetByPath(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("mode")), v)
+		root, err = setOrRemove(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("mode")), v)
 		if err != nil {
 			return err
 		}
@@ -535,7 +582,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 
 	// Merge `cluster_id`. This field must be overwritten if set, not merged.
 	if v := target.Get("cluster_id"); v.Kind() != dyn.KindInvalid {
-		root, err = dyn.SetByPath(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("cluster_id")), v)
+		root, err = setOrRemove(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("cluster_id")), v)
 		if err != nil {
 			return err
 		}
@@ -548,27 +595,22 @@ func (r *Root) MergeTargetOverrides(name string) error {
 			ref = dyn.V(map[string]dyn.Value{})
 		}
 
-		// Merge the override into the reference.
-		out, err := merge.MergeKeepingNulls(ref, v)
-		if err != nil {
-			return err
+		// Merge the override into the reference. A null override removes it.
+		out := v
+		if v.Kind() != dyn.KindNil {
+			out, err = merge.MergeRemovingNulls(ref, v)
+			if err != nil {
+				return err
+			}
 		}
 
 		// Set the merged value.
-		root, err = dyn.SetByPath(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("git")), out)
+		root, err = setOrRemove(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("git")), out)
 		if err != nil {
 			return err
 		}
 	}
 
-	root, err = mergeKeyedSequencesWithNulls(root)
-	if err != nil {
-		return err
-	}
-
-	// The nulls have replaced the values they remove. Remaining nulls had nothing to
-	// remove and are not added either.
-	root = dyn.DropNulls(root)
 	r.withNulls = dyn.InvalidValue
 
 	// Convert normalized configuration tree to typed configuration.
@@ -605,34 +647,49 @@ func pipelineClusterLabel(v dyn.Value) string {
 	return strings.ToLower(s)
 }
 
-// mergeKeyedSequencesWithNulls merges the elements with the same key of the keyed
-// sequences that hold nulls, so that a null removes the value from the element it
-// overrides. Resources and elements can still be ${...} references here, which are
-// left as they are.
-func mergeKeyedSequencesWithNulls(root dyn.Value) (dyn.Value, error) {
+// mergeKeyedSequencesWithNulls merges the keyed sequences of the target that hold nulls
+// with the same sequence of the root, element by element with the same key, so that a
+// null removes the value from the element it overrides. The merged sequence replaces the
+// one in the target and is removed from the root. Resources and elements can still be
+// ${...} references here, which are left as they are.
+func mergeKeyedSequencesWithNulls(root, target dyn.Value) (dyn.Value, dyn.Value, error) {
 	for _, ks := range keyedSequences {
-		resources, ok := root.Get("resources").Get(ks.resourceType).AsMap()
+		resources, ok := target.Get("resources").Get(ks.resourceType).AsMap()
 		if !ok {
 			continue
 		}
 		for _, pair := range resources.Pairs() {
-			field := pair.Value.Get(ks.field)
-			seq, ok := field.AsSequence()
-			if !ok || !hasNulls(field) || slices.ContainsFunc(seq, isNotMap) {
+			override := pair.Value.Get(ks.field)
+			seq, ok := override.AsSequence()
+			if !ok || !hasNulls(override) || slices.ContainsFunc(seq, isNotMap) {
 				continue
 			}
-			merged, err := merge.ElementsByKeyKeepingNulls(ks.key, ks.keyFunc)(dyn.EmptyPath, field)
-			if err != nil {
-				return dyn.InvalidValue, err
-			}
+
 			p := dyn.NewPath(dyn.Key("resources"), dyn.Key(ks.resourceType), dyn.Key(pair.Key.MustString()), dyn.Key(ks.field))
-			root, err = dyn.SetByPath(root, p, merged)
+			reference, _ := dyn.GetByPath(root, p)
+			if reference.IsValid() {
+				base, ok := reference.AsSequence()
+				if !ok || slices.ContainsFunc(base, isNotMap) {
+					continue
+				}
+				seq = slices.Concat(base, seq)
+			}
+
+			merged, err := merge.ElementsByKeyKeepingNulls(ks.key, ks.keyFunc)(p, dyn.NewValue(seq, override.Locations()))
 			if err != nil {
-				return dyn.InvalidValue, err
+				return dyn.InvalidValue, dyn.InvalidValue, err
+			}
+			target, err = dyn.SetByPath(target, p, dyn.DropNulls(merged))
+			if err != nil {
+				return dyn.InvalidValue, dyn.InvalidValue, err
+			}
+			root, err = removeByPath(root, p)
+			if err != nil {
+				return dyn.InvalidValue, dyn.InvalidValue, err
 			}
 		}
 	}
-	return root, nil
+	return root, target, nil
 }
 
 func isNotMap(v dyn.Value) bool {
