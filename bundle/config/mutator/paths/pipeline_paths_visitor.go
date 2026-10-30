@@ -50,42 +50,29 @@ func pipelineRewritePatterns() []pipelineRewritePattern {
 }
 
 func pipelineLibrariesRewritePatterns() []pipelineRewritePattern {
-	pipelineEnvironmentsPatterns := []pipelineRewritePattern{
-		{
-			pattern: dyn.NewPattern(
-				dyn.Key("resources"),
-				dyn.Key("pipelines"),
-				dyn.AnyKey(),
-				dyn.Key("environment"),
-				dyn.Key("dependencies"),
-				dyn.AnyIndex(),
-			),
-			mode: TranslateModeLocalRelativeWithPrefix,
-			skipRewrite: func(s string) bool {
-				return !libraries.IsLibraryLocal(s)
+	var patterns []pipelineRewritePattern
+	for _, dependencies := range []dyn.Pattern{
+		base.Append(dyn.Key("environment"), dyn.Key("dependencies"), dyn.AnyIndex()),
+	} {
+		patterns = append(patterns,
+			pipelineRewritePattern{
+				pattern: dependencies,
+				mode:    TranslateModeLocalRelativeWithPrefix,
+				skipRewrite: func(s string) bool {
+					return !libraries.IsLibraryLocal(s)
+				},
 			},
-		},
-	}
-
-	pipelineEnvironmentsPatternsWithPipFlags := []pipelineRewritePattern{
-		{
-			dyn.NewPattern(
-				dyn.Key("resources"),
-				dyn.Key("pipelines"),
-				dyn.AnyKey(),
-				dyn.Key("environment"),
-				dyn.Key("dependencies"),
-				dyn.AnyIndex(),
-			),
-			TranslateModeEnvironmentPipFlag,
-			func(s string) bool {
-				_, _, ok := libraries.IsLocalPathInPipFlag(s)
-				return !ok
+			pipelineRewritePattern{
+				pattern: dependencies,
+				mode:    TranslateModeEnvironmentPipFlag,
+				skipRewrite: func(s string) bool {
+					_, _, ok := libraries.IsLocalPathInPipFlag(s)
+					return !ok
+				},
 			},
-		},
+		)
 	}
-
-	return append(pipelineEnvironmentsPatterns, pipelineEnvironmentsPatternsWithPipFlags...)
+	return patterns
 }
 
 func VisitPipelinePaths(value dyn.Value, fn VisitFunc) (dyn.Value, error) {
