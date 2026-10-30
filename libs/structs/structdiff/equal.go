@@ -6,7 +6,6 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/libs/structs/structaccess"
-	"github.com/databricks/cli/libs/structs/structtag"
 )
 
 // IsEqual compares two Go structs and returns true if they are equal.
@@ -99,50 +98,29 @@ func equalValues(v1, v2 reflect.Value) bool {
 }
 
 func equalStruct(s1, s2 reflect.Value) bool {
-	t := s1.Type()
-	forced1 := getForceSendFields(s1)
-	forced2 := getForceSendFields(s2)
+	info := structaccess.GetStructInfo(s1.Type())
+	forced1 := info.ForceSendFields(s1)
+	forced2 := info.ForceSendFields(s2)
 
-	for i := range t.NumField() {
-		sf := t.Field(i)
-		if !sf.IsExported() || sf.Name == "ForceSendFields" {
-			continue
-		}
+	for _, f := range info.Fields {
+		v1Field := s1.Field(f.Index)
+		v2Field := s2.Field(f.Index)
 
 		// Continue traversing embedded structs. A tagged anonymous field is a named field to
 		// encoding/json, so it goes through the path below.
-		if structaccess.IsFlattenedEmbed(sf) {
-			if !equalValues(s1.Field(i), s2.Field(i)) {
+		if f.Flattened {
+			if !equalValues(v1Field, v2Field) {
 				return false
 			}
 			continue
 		}
 
-		jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
-
-		// Skip fields with json:"-"
-		if structaccess.IsSkippedField(sf) {
-			continue
-		}
-
-		v1Field := s1.Field(i)
-		v2Field := s2.Field(i)
-
-		zero1 := v1Field.IsZero()
-		zero2 := v2Field.IsZero()
-
-		if zero1 || zero2 {
-			if jsonTag.OmitEmpty() {
-				if zero1 {
-					if !slices.Contains(forced1, sf.Name) {
-						v1Field = reflect.ValueOf(nil)
-					}
-				}
-				if zero2 {
-					if !slices.Contains(forced2, sf.Name) {
-						v2Field = reflect.ValueOf(nil)
-					}
-				}
+		if f.OmitEmpty {
+			if v1Field.IsZero() && !slices.Contains(forced1, f.StructField.Name) {
+				v1Field = reflect.ValueOf(nil)
+			}
+			if v2Field.IsZero() && !slices.Contains(forced2, f.StructField.Name) {
+				v2Field = reflect.ValueOf(nil)
 			}
 		}
 
