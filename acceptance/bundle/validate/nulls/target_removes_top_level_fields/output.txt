@@ -1,5 +1,5 @@
 
->>> [CLI] bundle validate -o json -t dev
+>>> [CLI] bundle validate -o json -t dev --var with_default=from-cli --var with_lookup=from-cli
 Warning: expected a string value, found null
   at targets.dev.mode
   in databricks.yml:45:11
@@ -54,13 +54,13 @@ Warning: expected a string value, found null
   "variables": {
     "with_default": {
       "default": "base",
-      "value": "base"
+      "value": "from-cli"
     },
     "with_lookup": {
       "lookup": {
         "cluster": "some-test-cluster"
       },
-      "value": "4321"
+      "value": "from-cli"
     }
   },
   "run_as": {
