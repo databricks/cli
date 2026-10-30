@@ -26,8 +26,6 @@ var knownMissingInRemoteType = map[string][]string{
 		// Note that this is a deliberate omission: cascade_on_destroy is a client-side-only field.
 		// It has no remote counterpart, so it is never expected in RemoteType.
 		"cascade_on_destroy",
-		// testing is not in the Go SDK yet, so DoRead cannot return it.
-		"testing",
 	},
 	"quality_monitors": {
 		"skip_builtin_dashboard",

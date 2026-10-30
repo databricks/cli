@@ -28,8 +28,7 @@ type PipelineState struct {
 	// delete time; never sent on create/update.
 	CascadeOnDestroy *bool `json:"cascade_on_destroy,omitempty"`
 
-	// Testing is PipelineSpec.testing, which the Go SDK does not have yet. It is absent from
-	// PipelineRemote because the SDK cannot read it back, so remote changes to it are not detected.
+	// Testing is PipelineSpec.testing, which the Go SDK does not have yet.
 	Testing *resources.PipelineTesting `json:"testing,omitempty"`
 }
 
@@ -61,6 +60,9 @@ type PipelineRemote struct {
 	PipelineId                   string                              `json:"pipeline_id,omitempty"`
 	RunAsUserName                string                              `json:"run_as_user_name,omitempty"`
 	State                        pipelines.PipelineState             `json:"state,omitempty"`
+
+	// Testing is spec.testing of the Get response, read by DoRead because the Go SDK does not have it yet.
+	Testing *resources.PipelineTesting `json:"testing,omitempty"`
 }
 
 // Custom marshaler needed because embedded CreatePipeline has its own MarshalJSON
@@ -96,17 +98,35 @@ func (*ResourcePipeline) RemapState(remote *PipelineRemote) *PipelineState {
 		CreatePipeline: remote.CreatePipeline,
 		// cascade_on_destroy is input-only and absent from PipelineRemote, so it stays nil here.
 		CascadeOnDestroy: nil,
-		// testing is absent from PipelineRemote until the SDK has it.
-		Testing: nil,
+		Testing:          remote.Testing,
 	}
 }
 
+// pipelineTestingResponse holds spec.testing of a Get Pipeline response.
+type pipelineTestingResponse struct {
+	Spec struct {
+		Testing *resources.PipelineTesting `json:"testing"`
+	} `json:"spec"`
+}
+
+// DoRead sends the same request as GetByPipelineId, but raw, so that it can also read spec.testing,
+// which GetPipelineResponse does not have yet. Switch back to GetByPipelineId once it does.
 func (r *ResourcePipeline) DoRead(ctx context.Context, id string) (*PipelineRemote, error) {
-	resp, err := r.client.Pipelines.GetByPipelineId(ctx, id)
-	if err != nil {
+	var raw json.RawMessage
+	if err := r.doRaw(ctx, http.MethodGet, "/api/2.0/pipelines/"+id, nil, &raw); err != nil {
 		return nil, err
 	}
-	return makePipelineRemote(resp), nil
+	var resp pipelines.GetPipelineResponse
+	if err := json.Unmarshal(raw, &resp); err != nil {
+		return nil, err
+	}
+	var testing pipelineTestingResponse
+	if err := json.Unmarshal(raw, &testing); err != nil {
+		return nil, err
+	}
+	remote := makePipelineRemote(&resp)
+	remote.Testing = testing.Spec.Testing
+	return remote, nil
 }
 
 func makePipelineRemote(p *pipelines.GetPipelineResponse) *PipelineRemote {
@@ -167,6 +187,8 @@ func makePipelineRemote(p *pipelines.GetPipelineResponse) *PipelineRemote {
 		PipelineId:                   p.PipelineId,
 		RunAsUserName:                p.RunAsUserName,
 		State:                        p.State,
+		// GetPipelineResponse has no spec.testing; DoRead sets it from the raw response.
+		Testing: nil,
 	}
 }
 
@@ -282,12 +304,16 @@ func (r *ResourcePipeline) doWithTesting(ctx context.Context, method, path strin
 	if err != nil {
 		return err
 	}
+	return r.doRaw(ctx, method, path, body, response)
+}
 
+// doRaw sends a request that the Go SDK cannot express yet because it lacks the testing field.
+func (r *ResourcePipeline) doRaw(ctx context.Context, method, path string, request, response any) error {
 	apiClient, err := client.New(r.client.Config)
 	if err != nil {
 		return fmt.Errorf("failed to create API client: %w", err)
 	}
-	return apiClient.Do(ctx, method, path, auth.WorkspaceIDHeaders(r.client.Config), nil, body, response)
+	return apiClient.Do(ctx, method, path, auth.WorkspaceIDHeaders(r.client.Config), nil, request, response)
 }
 
 // Note, terraform provider either

@@ -137,29 +137,61 @@ func pipelineTestRootDir(rootPath string, sources []string) string {
 // pipelineTestingRequest holds the testing field of a Create or Edit request, which is not in the
 // Go SDK yet.
 type pipelineTestingRequest struct {
-	Testing *struct {
-		Sources []struct {
-			Glob *struct {
-				Include string `json:"include"`
-			} `json:"glob"`
-		} `json:"sources"`
-	} `json:"testing"`
+	Testing json.RawMessage `json:"testing"`
 }
 
-// setPipelineTestSources records the glob includes of testing.sources from a Create or Edit body.
+// pipelineTesting is the part of the testing field that test-only updates read.
+type pipelineTesting struct {
+	Sources []struct {
+		Glob *struct {
+			Include string `json:"include"`
+		} `json:"glob"`
+	} `json:"sources"`
+}
+
+// setPipelineTesting records the testing field of a Create or Edit body, so that Get returns it.
 // Like the rest of the spec, an Edit without testing removes it.
-func (s *FakeWorkspace) setPipelineTestSources(pipelineID string, body []byte) {
+func (s *FakeWorkspace) setPipelineTesting(pipelineID string, body []byte) {
 	var request pipelineTestingRequest
 	_ = json.Unmarshal(body, &request)
+	if len(request.Testing) == 0 || string(request.Testing) == "null" {
+		delete(s.pipelineTesting, pipelineID)
+		return
+	}
+	s.pipelineTesting[pipelineID] = request.Testing
+}
+
+// pipelineTestSources returns the glob includes of the pipeline's testing.sources.
+func (s *FakeWorkspace) pipelineTestSources(pipelineID string) []string {
+	var testing pipelineTesting
+	_ = json.Unmarshal(s.pipelineTesting[pipelineID], &testing)
 	var sources []string
-	if request.Testing != nil {
-		for _, source := range request.Testing.Sources {
-			if source.Glob != nil {
-				sources = append(sources, source.Glob.Include)
-			}
+	for _, source := range testing.Sources {
+		if source.Glob != nil {
+			sources = append(sources, source.Glob.Include)
 		}
 	}
-	s.pipelineTestSources[pipelineID] = sources
+	return sources
+}
+
+// withPipelineTesting adds spec.testing to a Get Pipeline response, which the Go SDK type cannot
+// hold. The JSON is merged as raw values, so numbers and the other fields are kept as they are.
+func withPipelineTesting(value pipelines.GetPipelineResponse, testing json.RawMessage) (map[string]json.RawMessage, error) {
+	data, err := json.Marshal(value)
+	if err != nil {
+		return nil, err
+	}
+	var body map[string]json.RawMessage
+	if err := json.Unmarshal(data, &body); err != nil {
+		return nil, err
+	}
+	var spec map[string]json.RawMessage
+	if err := json.Unmarshal(body["spec"], &spec); err != nil {
+		return nil, err
+	}
+	spec["testing"] = testing
+	body["spec"], err = json.Marshal(spec)
+	return body, err
 }
 
 // pipelineTestTargets returns the paths to collect tests from: the selection, which must be

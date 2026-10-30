@@ -100,3 +100,30 @@ func TestPipelineCreateAndUpdateSendTesting(t *testing.T) {
 	assert.JSONEq(t, `{"name": "orders"}`, bodies[2])
 	assert.JSONEq(t, `{"name": "orders"}`, bodies[3])
 }
+
+func TestPipelineReadReturnsTesting(t *testing.T) {
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}", func(req testserver.Request) any {
+		return map[string]any{
+			"pipeline_id": req.Vars["pipeline_id"],
+			"state":       "IDLE",
+			"spec": map[string]any{
+				"name":    "orders",
+				"testing": map[string]any{"sources": []any{map[string]any{"glob": map[string]any{"include": "/Workspace/orders/tests/**"}}}},
+			},
+		}
+	})
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+	r := (&ResourcePipeline{}).New(w)
+
+	remote, err := r.DoRead(t.Context(), "p1")
+	require.NoError(t, err)
+	assert.Equal(t, "p1", remote.PipelineId)
+	assert.Equal(t, "orders", remote.Name)
+	assert.Equal(t, pipelines.PipelineStateIdle, remote.State)
+	require.NotNil(t, remote.Testing)
+	require.Len(t, remote.Testing.Sources, 1)
+	assert.Equal(t, "/Workspace/orders/tests/**", remote.Testing.Sources[0].Glob.Include)
+	assert.Same(t, remote.Testing, r.RemapState(remote).Testing)
+}

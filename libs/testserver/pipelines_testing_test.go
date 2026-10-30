@@ -1,6 +1,7 @@
 package testserver
 
 import (
+	"encoding/json"
 	"net/url"
 	"testing"
 
@@ -77,11 +78,17 @@ func TestPipelineTestTargets(t *testing.T) {
 func TestPipelineEditReplacesTestSources(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 	pipelineID := createTestPipelineWithTests(t, workspace)
-	assert.Equal(t, []string{testRootPath + "/tests/**"}, workspace.pipelineTestSources[pipelineID])
+	assert.Equal(t, []string{testRootPath + "/tests/**"}, workspace.pipelineTestSources(pipelineID))
+	body, err := json.Marshal(workspace.PipelineGet(pipelineID).Body)
+	require.NoError(t, err)
+	assert.Contains(t, string(body), `"testing":{"sources":[{"glob":{"include":"`+testRootPath+`/tests/**"}}]}`)
 
 	response := workspace.PipelineUpdate(Request{Body: []byte(`{"name": "orders"}`)}, pipelineID)
 	require.Equal(t, 0, response.StatusCode)
-	assert.Empty(t, workspace.pipelineTestSources[pipelineID])
+	assert.Empty(t, workspace.pipelineTestSources(pipelineID))
+	body, err = json.Marshal(workspace.PipelineGet(pipelineID).Body)
+	require.NoError(t, err)
+	assert.NotContains(t, string(body), `"testing"`)
 	assert.Equal(t, 400, workspace.PipelineStartUpdate(pipelineID, []byte(`{"test_only": true}`)).StatusCode)
 }
 

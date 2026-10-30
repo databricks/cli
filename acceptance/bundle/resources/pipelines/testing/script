@@ -8,6 +8,16 @@ title "No changes after the deploy"
 trace $CLI bundle plan
 rm "$OUT_REQUESTS"
 
+title "A remote edit that drops testing shows in the plan"
+PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.orders.id')
+$CLI api get "/api/2.0/pipelines/$PIPELINE_ID" | jq '.spec | del(.testing)' > edit.json
+$CLI api put "/api/2.0/pipelines/$PIPELINE_ID" --json @edit.json > /dev/null
+rm edit.json
+trace $CLI bundle plan -o json | jq '.plan["resources.pipelines.orders"].changes.testing'
+trace $CLI bundle deploy
+trace $CLI bundle plan
+rm "$OUT_REQUESTS"
+
 title "Changing testing updates the pipeline"
 trace update_file.py databricks.yml './tests/**' './tests/unit/**'
 trace $CLI bundle plan

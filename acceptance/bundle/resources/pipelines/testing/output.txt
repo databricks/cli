@@ -67,6 +67,54 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
+=== A remote edit that drops testing shows in the plan
+>>> [CLI] bundle plan -o json
+{
+  "action": "update",
+  "old": {
+    "sources": [
+      {
+        "glob": {
+          "include": "/Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files/tests/**"
+        }
+      }
+    ],
+    "environment": {
+      "dependencies": [
+        "--editable /Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files[test]",
+        "-r /Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files/tests/requirements.txt",
+        "/Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/artifacts/.internal/test_helpers-0.1-py3-none-any.whl"
+      ]
+    }
+  },
+  "new": {
+    "sources": [
+      {
+        "glob": {
+          "include": "/Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files/tests/**"
+        }
+      }
+    ],
+    "environment": {
+      "dependencies": [
+        "--editable /Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files[test]",
+        "-r /Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files/tests/requirements.txt",
+        "/Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/artifacts/.internal/test_helpers-0.1-py3-none-any.whl"
+      ]
+    }
+  }
+}
+
+>>> [CLI] bundle deploy
+Uploading dist/test_helpers-0.1-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files...
+Updated pipelines.orders
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
 === Changing testing updates the pipeline
 >>> update_file.py databricks.yml ./tests/** ./tests/unit/**
 
