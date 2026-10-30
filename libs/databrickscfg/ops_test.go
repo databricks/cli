@@ -543,8 +543,8 @@ func TestValidateProfileName(t *testing.T) {
 		{name: "reserved", profile: "__settings__", wantErr: "reserved for internal use"},
 		{name: "newline", profile: "foo\nbar", wantErr: "must not contain line breaks"},
 		{name: "carriage return", profile: "foo\rbar", wantErr: "must not contain line breaks"},
-		{name: "opening bracket", profile: "[foo", wantErr: "must not contain square brackets"},
-		{name: "closing bracket", profile: "foo]", wantErr: "must not contain square brackets"},
+		{name: "opening bracket", profile: "[foo"},
+		{name: "closing bracket", profile: "foo]"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			err := ValidateProfileName(tc.profile)
@@ -555,6 +555,24 @@ func TestValidateProfileName(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSaveToProfile_SquareBracketsRoundTrip(t *testing.T) {
+	ctx := t.Context()
+	path := filepath.Join(t.TempDir(), "databrickscfg")
+
+	for _, name := range []string{"[foo]", "a[b", "a]b"} {
+		err := SaveToProfile(ctx, &config.Config{
+			ConfigFile: path,
+			Profile:    name,
+			Host:       "https://ws.cloud.databricks.test",
+		})
+		require.NoError(t, err)
+	}
+
+	got, err := GetSectionNames(ctx, path)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"[foo]", "__settings__", "a[b", "a]b"}, got)
 }
 
 func TestSaveToProfile_RejectsReservedProfileName(t *testing.T) {

@@ -237,13 +237,10 @@ func ValidateProfileName(profileName string) error {
 	if profileName == databricksSettingsSection {
 		return fmt.Errorf("profile name %q is reserved for internal use", databricksSettingsSection)
 	}
-	// go-ini writes section headers unescaped, so these characters would
-	// produce a config file that no longer parses.
+	// go-ini writes section headers unescaped, so a line break would produce a
+	// config file that no longer parses.
 	if strings.ContainsAny(profileName, "\r\n") {
 		return fmt.Errorf("profile name %q must not contain line breaks", profileName)
-	}
-	if strings.ContainsAny(profileName, "[]") {
-		return fmt.Errorf("profile name %q must not contain square brackets", profileName)
 	}
 	return nil
 }

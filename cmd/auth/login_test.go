@@ -1517,11 +1517,9 @@ func TestPromptForProfileRejectsMultilinePaste(t *testing.T) {
 	tm.Type("\x1b[200~foo\nbar\x1b[201~" + termtest.KeyEnter)
 	tm.WaitFor(`>> profile name "foo\nbar" must not contain line breaks`)
 	tm.Type(strings.Repeat(termtest.KeyBackspace, len("foo\nbar")) + "[foo]" + termtest.KeyEnter)
-	tm.WaitFor(`>> profile name "[foo]" must not contain square brackets`)
-	tm.Type(strings.Repeat(termtest.KeyBackspace, len("[foo]")) + "foo" + termtest.KeyEnter)
 	name, err := tm.Result()
 	require.NoError(t, err)
-	assert.Equal(t, "foo", name)
+	assert.Equal(t, "[foo]", name)
 }
 
 func TestLoginCreateNewProfileRejectsTakenName(t *testing.T) {
