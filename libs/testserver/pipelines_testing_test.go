@@ -169,9 +169,38 @@ func TestPipelineFiniteUpdateIsActiveUntilItEnds(t *testing.T) {
 
 	// Like the service, a second update is rejected until the first one ends, even if it will end on its own.
 	assert.Equal(t, 409, workspace.PipelineStartUpdate(pipelineID, []byte(selection)).StatusCode)
-	for getUpdateState(workspace, pipelineID, updateID) != pipelines.UpdateInfoStateCompleted {
-	}
+	assert.Equal(t, pipelines.UpdateInfoStateWaitingForResources, getUpdateState(workspace, pipelineID, updateID))
+	assert.Equal(t, pipelines.UpdateInfoStateRunning, getUpdateState(workspace, pipelineID, updateID))
+	require.Equal(t, pipelines.UpdateInfoStateCompleted, getUpdateState(workspace, pipelineID, updateID))
 	startTestUpdate(t, workspace, pipelineID, selection)
+}
+
+func TestPipelineUpdateThatIsNeverPolledEndsWithItsFirstState(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	pipelineID := createTestPipelineWithTests(t, workspace)
+
+	// A plain update completes at once, so a second one can start without polling the first.
+	updateID := startTestUpdate(t, workspace, pipelineID, `{}`)
+	startTestUpdate(t, workspace, pipelineID, `{}`)
+
+	// Stop leaves an update that already completed as it is.
+	require.Equal(t, 0, workspace.PipelineStop(pipelineID).StatusCode)
+	assert.Equal(t, pipelines.UpdateInfoStateCompleted, getUpdateState(workspace, pipelineID, updateID))
+}
+
+func TestPipelineStopHidesEventsOfStatesNotReached(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	pipelineID := createTestPipelineWithTests(t, workspace)
+	updateID := startTestUpdate(t, workspace, pipelineID, `{"test_only": true, "test_options": {"test_selection": ["`+testRootPath+`/tests/test_orders.py"]}}`)
+	query := url.Values{"filter": {"update_id='" + updateID + "'"}}
+
+	assert.Equal(t, pipelines.UpdateInfoStateWaitingForResources, getUpdateState(workspace, pipelineID, updateID))
+	require.Equal(t, 0, workspace.PipelineStop(pipelineID).StatusCode)
+	assert.Equal(t, pipelines.UpdateInfoStateCanceled, getUpdateState(workspace, pipelineID, updateID))
+
+	// The update was stopped before RUNNING, so its case results and summary never show.
+	events, _ := listEvents(t, workspace, pipelineID, query)
+	assert.Empty(t, events)
 }
 
 func TestPipelineStopCancelsAFiniteUpdate(t *testing.T) {

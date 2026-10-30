@@ -27,20 +27,31 @@ type fakePipelineUpdate struct {
 	pipelineID string
 	states     []pipelines.UpdateInfoState
 	polls      int
+
+	// canceled is set by cancel. CANCELED then holds the index of a state the update never reached.
+	canceled bool
 }
 
 // stateIndex returns the index of the state returned by the last Get Update call, or -1 before the
-// first call. Events emitted for a later state are not visible yet.
+// first call.
 func (u *fakePipelineUpdate) stateIndex() int {
 	return min(u.polls, len(u.states)) - 1
 }
 
-// active reports whether the update has not ended yet: it was not polled yet, or the state of the
-// last Get Update call is not terminal. Like the service, an update that will end on its own is
-// active until it does.
+// eventIndex returns the index of the last state whose events are visible. Events emitted for a
+// later state are not visible yet, and never are for a state that a canceled update did not reach.
+func (u *fakePipelineUpdate) eventIndex() int {
+	if u.canceled {
+		return len(u.states) - 2
+	}
+	return u.stateIndex()
+}
+
+// active reports whether the update has not ended yet: the state of the last Get Update call, or
+// the first state before that call, is not terminal. Like the service, an update that will end on
+// its own is active until it does.
 func (u *fakePipelineUpdate) active() bool {
-	i := u.stateIndex()
-	return i < 0 || !isTerminalUpdateState(u.states[i])
+	return !isTerminalUpdateState(u.states[max(u.stateIndex(), 0)])
 }
 
 // cancel ends the update at its current state, as Stop does. CANCELED is the update's state from
@@ -48,6 +59,7 @@ func (u *fakePipelineUpdate) active() bool {
 func (u *fakePipelineUpdate) cancel() {
 	u.states = append(u.states[:u.stateIndex()+1], pipelines.UpdateInfoStateCanceled)
 	u.polls = len(u.states)
+	u.canceled = true
 }
 
 func isTerminalUpdateState(state pipelines.UpdateInfoState) bool {
@@ -94,7 +106,8 @@ var pipelineTestFunctionRegexp = regexp.MustCompile(`(?m)^def (test_\w+)\(`)
 
 // pipelineTestRootDir returns pytest's rootdir for a test run, as the service sets it: the deepest
 // folder that holds rootPath and every test source or, without rootPath, the folder of every test
-// source. It is "" when there is neither.
+// source. It is "" when there is neither. The CLI applies the same rule (testIDBase in
+// cmd/pipelines), so acceptance tests cannot catch a wrong rule; only a run on a real workspace checks it.
 func pipelineTestRootDir(rootPath string, sources []string) string {
 	var folders [][]string
 	if rootPath != "" {
@@ -367,7 +380,7 @@ func (s *FakeWorkspace) PipelineEvents(pipelineId string, query url.Values) Resp
 	var events []fakePipelineEvent
 	for _, event := range s.pipelineEvents {
 		update := s.PipelineUpdates[event.Origin.UpdateId]
-		if update.pipelineID != pipelineId || event.visibleAt > update.stateIndex() {
+		if update.pipelineID != pipelineId || event.visibleAt > update.eventIndex() {
 			continue
 		}
 		if updateID != "" && event.Origin.UpdateId != updateID {
