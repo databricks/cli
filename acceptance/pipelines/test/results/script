@@ -12,10 +12,10 @@ title "No tests collected"
 trace musterr $CLI pipelines test my_pipeline tests/helpers.py --junit-xml out.no-tests.xml
 
 title "The update fails after all tests passed"
-trace musterr $CLI pipelines test my_pipeline tests/test_delivery.py
+trace musterr $CLI pipelines test my_pipeline tests/test_delivery.py --junit-xml out.update-failed.xml
 
 title "The update fails with an error of its own after a test failed"
-trace musterr $CLI pipelines test my_pipeline tests/test_late_failure.py
+trace musterr $CLI pipelines test my_pipeline tests/test_late_failure.py --junit-xml out.late-failure.xml
 
 title "Compute terminates before all results are received"
 trace musterr $CLI pipelines test my_pipeline tests/test_compute.py --junit-xml out.incomplete.xml

@@ -97,7 +97,7 @@ No tests were collected.
 JUnit report: out.no-tests.xml
 
 === The update fails after all tests passed
->>> musterr [CLI] pipelines test my_pipeline tests/test_delivery.py
+>>> musterr [CLI] pipelines test my_pipeline tests/test_delivery.py --junit-xml out.update-failed.xml
 Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
@@ -109,10 +109,11 @@ Running tests...
 tests/test_delivery.py::test_breaks_update_after_summary  PASSED (1.00s)
 
 1 test: 1 passed, 0 failed, 0 skipped, 0 errors
+JUnit report: out.update-failed.xml
 Error: update [UUID] is FAILED: ResultDeliveryException: Test results could not be verified.
 
 === The update fails with an error of its own after a test failed
->>> musterr [CLI] pipelines test my_pipeline tests/test_late_failure.py
+>>> musterr [CLI] pipelines test my_pipeline tests/test_late_failure.py --junit-xml out.late-failure.xml
 Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
@@ -129,6 +130,7 @@ tests/test_late_failure.py::test_backfill_fails
   AssertionError: assert 100 == 150
 
 2 tests: 1 passed, 1 failed, 0 skipped, 0 errors
+JUnit report: out.late-failure.xml
 Error: update [UUID] is FAILED: ResultDeliveryException: Test results could not be verified.
 
 === Compute terminates before all results are received
