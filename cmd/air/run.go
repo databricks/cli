@@ -122,7 +122,7 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 		}
 
 		var computeOptions []computeOption
-		if field.path == "config.compute" {
+		if field.path == "config.compute" || field.path == "config.compute.accelerator_type" {
 			computeOptions = loadComputeOptionsForHelp(c, args)
 		}
 		renderConfigField(c.OutOrStdout(), field, computeOptions)
