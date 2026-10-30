@@ -569,7 +569,7 @@ var errInvalidHost = errors.New("invalid host")
 // with an empty host login would use discovery or DATABRICKS_HOST instead.
 func normalizeLoginHost(authArguments *auth.AuthArguments) error {
 	rawHost := authArguments.Host
-	authArguments.Host = strings.TrimSuffix(authArguments.Host, "/")
+	authArguments.Host = strings.TrimSuffix(strings.TrimSpace(authArguments.Host), "/")
 
 	// Extract query parameters from the host URL (?o=workspace_id, ?a=account_id).
 	// URL params from explicit --host override stale profile values.

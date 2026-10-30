@@ -221,6 +221,18 @@ func TestSetHost(t *testing.T) {
 	err = setHostAndAccountId(ctx, &profile.Profile{Host: "/"}, &authArguments, []string{})
 	assert.ErrorIs(t, err, errInvalidHost)
 
+	// Test host of only spaces from flag
+	authArguments.Host = "  "
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
+	assert.EqualError(t, err, `invalid host "  "`)
+
+	// Test spaces around the host are trimmed before the query params are extracted
+	authArguments = auth.AuthArguments{Host: " https://www.host1.test/?o=123 "}
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
+	assert.NoError(t, err)
+	assert.Equal(t, "https://www.host1.test", authArguments.Host)
+	assert.Equal(t, "123", authArguments.WorkspaceID)
+
 	// Test host is not set. Should prompt.
 	authArguments.Host = ""
 	err = setHostAndAccountId(ctx, nil, &authArguments, []string{})
