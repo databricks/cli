@@ -251,7 +251,7 @@ func (s *FakeWorkspace) PipelineStop(pipelineId string) Response {
 	// Stop is pipeline-wide: it cancels whichever update is active.
 	for _, update := range s.PipelineUpdates {
 		if update.pipelineID == pipelineId && update.active() {
-			update.states = append(update.states, pipelines.UpdateInfoStateCanceled)
+			update.cancel()
 		}
 	}
 

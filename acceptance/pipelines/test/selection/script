@@ -4,14 +4,21 @@ rm "$OUT_REQUESTS"
 title "Run all tests of the only pipeline"
 trace $CLI pipelines test --no-wait
 trace print_requests.py //updates
+# Like the service, the test server rejects a new update while one is active.
+$CLI pipelines stop my_pipeline &>> LOG.stop
+rm "$OUT_REQUESTS"
 
 title "Select tests by relative path and test ID, with pytest arguments"
 trace $CLI pipelines test my_pipeline tests tests/test_orders.py::test_backfill /Workspace/Shared/tests/test_shared.py --pytest-arg=-k --pytest-arg='orders and not slow' --pytest-arg=-msmoke,fast --no-wait
 trace print_requests.py //updates
+$CLI pipelines stop my_pipeline &>> LOG.stop
+rm "$OUT_REQUESTS"
 
 title "--pytest-arg also takes its value as the next argument"
 trace $CLI pipelines test my_pipeline --pytest-arg -k --pytest-arg 'orders, returns' --pytest-arg -m --pytest-arg smoke --no-wait
 trace print_requests.py //updates
+$CLI pipelines stop my_pipeline &>> LOG.stop
+rm "$OUT_REQUESTS"
 
 title "Relative paths resolve from the working directory"
 cd tests

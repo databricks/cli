@@ -160,3 +160,29 @@ func TestPipelineTestRootDir(t *testing.T) {
 	assert.Equal(t, "/Workspace/Users/u/tests", pipelineTestRootDir("", []string{"/Workspace/Users/u/tests/test_x.py"}))
 	assert.Empty(t, pipelineTestRootDir("", nil))
 }
+
+func TestPipelineFiniteUpdateIsActiveUntilItEnds(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	pipelineID := createTestPipelineWithTests(t, workspace)
+	selection := `{"test_only": true, "test_options": {"test_selection": ["` + testRootPath + `/tests/test_orders.py::test_ok"]}}`
+	updateID := startTestUpdate(t, workspace, pipelineID, selection)
+
+	// Like the service, a second update is rejected until the first one ends, even if it will end on its own.
+	assert.Equal(t, 409, workspace.PipelineStartUpdate(pipelineID, []byte(selection)).StatusCode)
+	for getUpdateState(workspace, pipelineID, updateID) != pipelines.UpdateInfoStateCompleted {
+	}
+	startTestUpdate(t, workspace, pipelineID, selection)
+}
+
+func TestPipelineStopCancelsAFiniteUpdate(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	pipelineID := createTestPipelineWithTests(t, workspace)
+	selection := `{"test_only": true, "test_options": {"test_selection": ["` + testRootPath + `/tests/test_orders.py::test_ok"]}}`
+	updateID := startTestUpdate(t, workspace, pipelineID, selection)
+
+	require.Equal(t, 0, workspace.PipelineStop(pipelineID).StatusCode)
+	// The stopped update ends at once, so a new one can start before anyone reads the old one.
+	startTestUpdate(t, workspace, pipelineID, selection)
+	assert.Equal(t, pipelines.UpdateInfoStateCanceled, getUpdateState(workspace, pipelineID, updateID))
+	assert.Equal(t, pipelines.UpdateInfoStateCanceled, getUpdateState(workspace, pipelineID, updateID))
+}

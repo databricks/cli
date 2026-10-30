@@ -15,6 +15,13 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
+// Pipeline event types, which also name the event's details field.
+const (
+	pipelineEventUpdateProgress   = "update_progress"
+	pipelineEventTestCaseProgress = "test_case_progress"
+	pipelineEventTestRunSummary   = "test_run_summary"
+)
+
 // fakePipelineUpdate is a pipeline update whose state advances by one step on each Get Update call.
 type fakePipelineUpdate struct {
 	pipelineID string
@@ -28,9 +35,19 @@ func (u *fakePipelineUpdate) stateIndex() int {
 	return min(u.polls, len(u.states)) - 1
 }
 
-// active reports whether the update never finishes on its own.
+// active reports whether the update has not ended yet: it was not polled yet, or the state of the
+// last Get Update call is not terminal. Like the service, an update that will end on its own is
+// active until it does.
 func (u *fakePipelineUpdate) active() bool {
-	return !isTerminalUpdateState(u.states[len(u.states)-1])
+	i := u.stateIndex()
+	return i < 0 || !isTerminalUpdateState(u.states[i])
+}
+
+// cancel ends the update at its current state, as Stop does. CANCELED is the update's state from
+// now on, even before the next Get Update call.
+func (u *fakePipelineUpdate) cancel() {
+	u.states = append(u.states[:u.stateIndex()+1], pipelines.UpdateInfoStateCanceled)
+	u.polls = len(u.states)
 }
 
 func isTerminalUpdateState(state pipelines.UpdateInfoState) bool {
@@ -176,11 +193,11 @@ func (s *FakeWorkspace) startPipelineTestRun(pipelineID, updateID string, caseID
 	}
 	emitCase := func(id, status string, errorDetail *pipelines.ErrorDetail) {
 		event := fakePipelineEvent{
-			EventType: "test_case_progress",
+			EventType: pipelineEventTestCaseProgress,
 			Message:   fmt.Sprintf("Test case %s is %s.", id, status),
 			Origin:    fakePipelineEventOrigin{TestCaseId: id},
 			Error:     errorDetail,
-			Details:   map[string]any{"test_case_progress": map[string]any{"status": status}},
+			Details:   map[string]any{pipelineEventTestCaseProgress: map[string]any{"status": status}},
 		}
 		if errorDetail != nil {
 			event.Level = pipelines.EventLevelError
@@ -205,11 +222,11 @@ func (s *FakeWorkspace) startPipelineTestRun(pipelineID, updateID string, caseID
 			return update
 		case strings.Contains(name, "crash"):
 			emit(ended, fakePipelineEvent{
-				EventType: "update_progress",
+				EventType: pipelineEventUpdateProgress,
 				Level:     pipelines.EventLevelError,
 				Message:   fmt.Sprintf("Update %s is FAILED.", updateID[:6]),
 				Error:     &pipelines.ErrorDetail{Fatal: true, Exceptions: []pipelines.SerializedException{{ClassName: "ComputeTerminatedException", Message: "Compute terminated unexpectedly."}}},
-				Details:   map[string]any{"update_progress": map[string]any{"state": "FAILED"}},
+				Details:   map[string]any{pipelineEventUpdateProgress: map[string]any{"state": "FAILED"}},
 			})
 			update.states = append(update.states, pipelines.UpdateInfoStateFailed)
 			return update
@@ -233,9 +250,9 @@ func (s *FakeWorkspace) startPipelineTestRun(pipelineID, updateID string, caseID
 	}
 
 	emit(ended, fakePipelineEvent{
-		EventType: "test_run_summary",
+		EventType: pipelineEventTestRunSummary,
 		Message:   fmt.Sprintf("Collected %d tests.", len(caseIDs)),
-		Details: map[string]any{"test_run_summary": map[string]any{
+		Details: map[string]any{pipelineEventTestRunSummary: map[string]any{
 			"total":   len(caseIDs),
 			"passed":  counts["passed"],
 			"failed":  counts["failed"],
@@ -248,23 +265,23 @@ func (s *FakeWorkspace) startPipelineTestRun(pipelineID, updateID string, caseID
 	if !breaksUpdate && (counts["failed"] > 0 || counts["errors"] > 0) {
 		failed := counts["failed"] + counts["errors"]
 		emit(ended, fakePipelineEvent{
-			EventType: "update_progress",
+			EventType: pipelineEventUpdateProgress,
 			Level:     pipelines.EventLevelError,
 			Message:   fmt.Sprintf("%d pipeline tests failed.", failed),
 			Error: &pipelines.ErrorDetail{Fatal: true, Exceptions: []pipelines.SerializedException{{
 				ClassName: "TestFailure",
 				Message:   fmt.Sprintf("[PIPELINE_TEST_FAILED] %d of the pipeline's tests failed (%d passed, %d skipped).", failed, counts["passed"], counts["skipped"]),
 			}}},
-			Details: map[string]any{"update_progress": map[string]any{"state": "FAILED"}},
+			Details: map[string]any{pipelineEventUpdateProgress: map[string]any{"state": "FAILED"}},
 		})
 	}
 	if breaksUpdate {
 		emit(ended, fakePipelineEvent{
-			EventType: "update_progress",
+			EventType: pipelineEventUpdateProgress,
 			Level:     pipelines.EventLevelError,
 			Message:   fmt.Sprintf("Update %s is FAILED.", updateID[:6]),
 			Error:     &pipelines.ErrorDetail{Fatal: true, Exceptions: []pipelines.SerializedException{{ClassName: "ResultDeliveryException", Message: "Test results could not be verified."}}},
-			Details:   map[string]any{"update_progress": map[string]any{"state": "FAILED"}},
+			Details:   map[string]any{pipelineEventUpdateProgress: map[string]any{"state": "FAILED"}},
 		})
 	}
 	if len(caseIDs) == 0 || counts["failed"] > 0 || counts["errors"] > 0 || breaksUpdate {
