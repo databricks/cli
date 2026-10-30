@@ -61,16 +61,13 @@ func TestPipelineOverrideChangeDescCascadeOnDestroy(t *testing.T) {
 func TestPipelineRawRequests(t *testing.T) {
 	server := testserver.New(t)
 	var bodies, workspaceIDs []string
-	record := func(req testserver.Request) {
+	server.Handle("POST", "/api/2.0/pipelines", func(req testserver.Request) any {
 		bodies = append(bodies, string(req.Body))
 		workspaceIDs = append(workspaceIDs, req.Headers.Get(auth.WorkspaceIDHeader))
-	}
-	server.Handle("POST", "/api/2.0/pipelines", func(req testserver.Request) any {
-		record(req)
 		return pipelines.CreatePipelineResponse{PipelineId: "p1"}
 	})
 	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}", func(req testserver.Request) any {
-		record(req)
+		workspaceIDs = append(workspaceIDs, req.Headers.Get(auth.WorkspaceIDHeader))
 		return map[string]any{"pipeline_id": "p1", "spec": map[string]any{"name": "orders"}}
 	})
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token", WorkspaceID: "123"})
@@ -88,7 +85,7 @@ func TestPipelineRawRequests(t *testing.T) {
 
 	// The raw requests carry the workspace ID, as the SDK's do.
 	assert.Equal(t, []string{"123", "123", "123"}, workspaceIDs)
-	assert.JSONEq(t, `{"name": "orders"}`, bodies[2])
+	assert.JSONEq(t, `{"name": "orders"}`, bodies[1])
 }
 
 func TestPipelineReadReturnsTesting(t *testing.T) {

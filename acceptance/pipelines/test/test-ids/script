@@ -17,10 +17,10 @@ trace print_requests.py //updates | jq -c .body.test_options
 
 title "With tests outside root_path, a failing test ID printed in a subfolder runs again from there\n"
 cd src/split
-errcode $CLI pipelines test split > out.txt 2>&1
+musterr $CLI pipelines test split > out.txt 2>&1
 failed_id=$(grep -o '^[^ ]*::test_returned_fails' out.txt | head -1)
 rm out.txt "$OUT_REQUESTS"
 echo "Printed: $failed_id"
-trace errcode $CLI pipelines test split "$failed_id"
+trace musterr $CLI pipelines test split "$failed_id"
 cd ../..
 trace print_requests.py //updates | jq -c .body.test_options

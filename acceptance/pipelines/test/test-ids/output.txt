@@ -65,7 +65,7 @@ tests/test_a.py::test_one  PASSED (1.00s)
 === With tests outside root_path, a failing test ID printed in a subfolder runs again from there
 Printed: tests/test_returns.py::test_returned_fails
 
->>> errcode [CLI] pipelines test split tests/test_returns.py::test_returned_fails
+>>> musterr [CLI] pipelines test split tests/test_returns.py::test_returned_fails
 Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
@@ -81,8 +81,6 @@ tests/test_returns.py::test_returned_fails
   AssertionError: assert 100 == 150
 
 1 test: 0 passed, 1 failed, 0 skipped, 0 errors
-
-Exit code: 1
 
 >>> print_requests.py //updates
 {"test_selection":["/Workspace/Users/[USERNAME]/.bundle/test-pipeline-test-ids/default/files/tests/test_returns.py::test_returned_fails"]}
