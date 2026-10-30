@@ -1,0 +1,1 @@
+* `databricks auth login` saves the account's primary (SPOG) URL in the browser-based flow: picking an account saves it directly, and picking a workspace whose account has one runs a second sign-in through it so the profile holds an account-level SPOG token. ([#6854](https://github.com/databricks/cli/pull/6854))
