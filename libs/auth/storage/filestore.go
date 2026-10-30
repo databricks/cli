@@ -135,6 +135,9 @@ func (c *fileStore) Delete(key string) error {
 	if err != nil {
 		return fmt.Errorf("load: %w", err)
 	}
+	if _, ok := f.Tokens[key]; !ok {
+		return nil
+	}
 	delete(f.Tokens, key)
 	return c.write(f)
 }

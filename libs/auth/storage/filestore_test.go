@@ -63,6 +63,24 @@ func TestStoreAndLookupPendingLogin(t *testing.T) {
 	}`, string(raw))
 }
 
+func TestDeleteMissingKeyDoesNotRewriteFile(t *testing.T) {
+	f := setup(t)
+	c, err := NewFileStore(t.Context(), WithFileLocation(f))
+	require.NoError(t, err)
+	// The store writes indented JSON, so a rewrite would change the file.
+	raw := `{"version":1,"tokens":{"x":{"access_token":"abc"}}}`
+	require.NoError(t, os.WriteFile(f, []byte(raw), ownerReadWrite))
+
+	require.NoError(t, c.Delete("y"))
+	got, err := os.ReadFile(f)
+	require.NoError(t, err)
+	assert.Equal(t, raw, string(got))
+
+	require.NoError(t, c.Delete("x"))
+	_, err = c.Lookup("x")
+	assert.ErrorIs(t, err, ErrNotFound)
+}
+
 func TestNoStoreFileReturnsErrNotConfigured(t *testing.T) {
 	l, err := NewFileStore(t.Context(), WithFileLocation(setup(t)))
 	require.NoError(t, err)
