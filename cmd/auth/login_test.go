@@ -1463,6 +1463,17 @@ func TestLoginRejectsPositionalArgWithHostFlag(t *testing.T) {
 	assert.ErrorContains(t, err, `argument "myprofile" cannot be combined with --host or --profile`)
 }
 
+func TestLoginRejectsPositionalArgWithProfileFlag(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	authArgs := &auth.AuthArguments{}
+	cmd := newLoginCommand(authArgs)
+	cmd.Flags().String("profile", "", "")
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--profile", "myprofile", "https://example.com"})
+	err := cmd.Execute()
+	assert.ErrorContains(t, err, `argument "https://example.com" cannot be combined with --host or --profile`)
+}
+
 func TestLoginSkipWorkspaceHostEmptyAfterNormalization(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
@@ -1478,17 +1489,6 @@ func TestLoginSkipWorkspaceHostEmptyAfterNormalization(t *testing.T) {
 	cmd.SetArgs([]string{"--skip-workspace"})
 	err := cmd.Execute()
 	assert.EqualError(t, err, `invalid host "?a=123"`)
-}
-
-func TestLoginRejectsPositionalArgWithProfileFlag(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	authArgs := &auth.AuthArguments{}
-	cmd := newLoginCommand(authArgs)
-	cmd.Flags().String("profile", "", "")
-	cmd.SetContext(ctx)
-	cmd.SetArgs([]string{"--profile", "myprofile", "https://example.com"})
-	err := cmd.Execute()
-	assert.ErrorContains(t, err, `argument "https://example.com" cannot be combined with --host or --profile`)
 }
 
 func TestPromptForProfileRejectsTakenName(t *testing.T) {
