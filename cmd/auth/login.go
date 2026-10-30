@@ -563,7 +563,8 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 var errInvalidHost = errors.New("invalid host")
 
 // normalizeLoginHost strips the trailing slash and the query params from the
-// host and moves ?o= and ?a= into WorkspaceID and AccountID unless they are set.
+// host and moves the workspace and account ID query params into WorkspaceID and
+// AccountID unless they are set.
 // It fails if nothing is left of the host, e.g. for "/" or "?o=123", because
 // with an empty host login would use discovery or DATABRICKS_HOST instead.
 func normalizeLoginHost(authArguments *auth.AuthArguments) error {
