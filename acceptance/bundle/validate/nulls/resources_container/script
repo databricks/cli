@@ -1,2 +1,2 @@
-# resources: null is rejected.
+# A null resources section in databricks.yml has nothing to remove and is accepted.
 errcode trace $CLI bundle validate

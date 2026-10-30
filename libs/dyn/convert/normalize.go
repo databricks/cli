@@ -26,11 +26,17 @@ const (
 	// ToTyped, which force-sends it, and the backend rejects it (e.g.
 	// "'' is not a valid cluster policy ID").
 	DropEmptyStrings
+
+	// KeepNulls keeps the nil values of struct fields and map entries as they are,
+	// instead of dropping them with a warning (scalars) or keeping them (other types).
+	// Nil sequence elements are handled as without this option.
+	KeepNulls
 )
 
 type normalizeOptions struct {
 	includeMissingFields bool
 	dropEmptyStrings     bool
+	keepNulls            bool
 }
 
 func Normalize(dst any, src dyn.Value, opts ...NormalizeOption) (dyn.Value, diag.Diagnostics) {
@@ -41,6 +47,8 @@ func Normalize(dst any, src dyn.Value, opts ...NormalizeOption) (dyn.Value, diag
 			n.includeMissingFields = true
 		case DropEmptyStrings:
 			n.dropEmptyStrings = true
+		case KeepNulls:
+			n.keepNulls = true
 		}
 	}
 
@@ -167,6 +175,11 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 				continue
 			}
 
+			if n.keepNulls && pv.Kind() == dyn.KindNil {
+				out.SetLoc(pk.MustString(), pk.Locations(), pv)
+				continue
+			}
+
 			// Normalize the value according to the field type.
 			nv, err := n.normalizeType(typ.FieldByIndex(index).Type, pv, seen, path.Append(dyn.Key(pk.MustString())))
 			if err != nil {
@@ -262,6 +275,11 @@ func (n normalizeOptions) normalizeMap(typ reflect.Type, src dyn.Value, seen []r
 		for _, pair := range src.MustMap().Pairs() {
 			pk := pair.Key
 			pv := pair.Value
+
+			if n.keepNulls && pv.Kind() == dyn.KindNil {
+				out.SetLoc(pk.MustString(), pk.Locations(), pv)
+				continue
+			}
 
 			// Normalize the value according to the map element type.
 			nv, err := n.normalizeType(typ.Elem(), pv, seen, path.Append(dyn.Key(pk.MustString())))

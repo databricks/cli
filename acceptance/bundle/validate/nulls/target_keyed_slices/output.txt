@@ -1,24 +1,9 @@
 
 >>> [CLI] bundle validate -o json -t dev
-Warning: expected a int value, found null
-  at targets.dev.resources.jobs.foo.job_clusters[0].new_cluster.num_workers
-  in databricks.yml:45:30
-
-Warning: expected a string value, found null
-  at targets.dev.resources.jobs.foo.parameters[0].default
-  in databricks.yml:48:24
-
-Warning: expected a int value, found null
-  at targets.dev.resources.jobs.foo.tasks[0].max_retries
-  in databricks.yml:51:28
-
-Warning: expected a int value, found null
-  at targets.dev.resources.jobs.foo.tasks[1].max_retries
-  in databricks.yml:54:28
-
-Warning: expected a int value, found null
-  at targets.dev.resources.pipelines.bar.clusters[0].num_workers
-  in databricks.yml:61:28
+Warning: required field "default" is not set
+  at resources.jobs.foo.parameters[0]
+  in databricks.yml:15:11
+     databricks.yml:47:15
 
 {
   "job_clusters": [
@@ -26,21 +11,19 @@ Warning: expected a int value, found null
       "job_cluster_key": "c1",
       "new_cluster": {
         "node_type_id": "[NODE_TYPE_ID]",
-        "num_workers": 2,
+        "num_workers": 0,
         "spark_version": "15.4.x-scala2.12"
       }
     }
   ],
   "parameters": [
     {
-      "default": "base",
       "name": "p1"
     }
   ],
   "tasks": [
     {
       "job_cluster_key": "c1",
-      "max_retries": 3,
       "notebook_task": {
         "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/files/nb"
       },
@@ -66,8 +49,7 @@ Warning: expected a int value, found null
   "pipeline_clusters": [
     {
       "label": "default",
-      "node_type_id": "[NODE_TYPE_ID]",
-      "num_workers": 2
+      "node_type_id": "[NODE_TYPE_ID]"
     }
   ]
 }

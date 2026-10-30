@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -37,6 +38,14 @@ type Script struct {
 type Root struct { //nolint:recvcheck // value receivers for read-only accessors, pointer for mutators
 	value dyn.Value
 	depth int
+
+	// withNulls is the configuration including the nil values of maps, which remove the
+	// value they are merged onto (see [Root.Merge] and [Root.MergeTargetOverrides]).
+	// value cannot hold them: a nil scalar does not convert to the typed configuration,
+	// and the conversion around every mutator drops the other nils. For a loaded file this
+	// is the whole file; after merging, only the target sections, which keep their nils
+	// until the target is merged.
+	withNulls dyn.Value
 
 	// Contains user defined variables
 	Variables map[string]*variable.Variable `json:"variables,omitempty"`
@@ -132,10 +141,18 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 	}
 
 	// Normalize dynamic configuration tree according to configuration type.
-	v, diags := convert.Normalize(r, v)
+	v, diags := convert.Normalize(r, v, convert.KeepNulls)
+	r.withNulls = v
+
+	// A null has nothing to remove in a file on its own, so it is dropped, except where
+	// it declares an empty target or variable.
+	nv, err := addDeclarations(dyn.DropNulls(v), dyn.NilValue, v)
+	if err != nil {
+		return nil, diags.Extend(diag.Errorf("failed to load %s: %v", path, err))
+	}
 
 	// Convert normalized configuration tree to typed configuration.
-	err = r.updateWithDynamicValue(v)
+	err = r.updateWithDynamicValue(nv)
 	if err != nil {
 		diags = diags.Extend(diag.Errorf("failed to load %s: %v", path, err))
 		return nil, diags
@@ -163,9 +180,11 @@ func (r *Root) updateWithDynamicValue(nv dyn.Value) error {
 	// Hack: restore state; it may be cleared by [ToTyped] if
 	// the configuration equals nil (happens in tests).
 	depth := r.depth
+	withNulls := r.withNulls
 
 	defer func() {
 		r.depth = depth
+		r.withNulls = withNulls
 	}()
 
 	// Convert normalized configuration tree to typed configuration.
@@ -295,11 +314,96 @@ func (r *Root) InitializeVariables(vars []string) error {
 	return nil
 }
 
+// Merge merges other into r. Values in other take precedence, and a null in other
+// removes the value from r.
 func (r *Root) Merge(other *Root) error {
+	nulls := targetSections(other.withNulls)
+	if r.withNulls.IsValid() {
+		var err error
+		nulls, err = merge.MergeKeepingNulls(r.withNulls, nulls)
+		if err != nil {
+			return err
+		}
+	}
+	r.withNulls = nulls
+
 	// Merge dynamic configuration values.
 	return r.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		return merge.Merge(root, other.value)
+		merged, err := merge.MergeRemovingNulls(root, other.withNulls)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+		return addDeclarations(merged, root, other.withNulls)
 	})
+}
+
+// declarationSections are the sections where a null entry declares an empty entry
+// if there is no entry to remove, e.g. an empty "targets.dev:" declares target dev.
+var declarationSections = []string{"targets", "environments", "variables"}
+
+// addDeclarations returns v with the null entries of the declaration sections of
+// nulls that base does not have.
+func addDeclarations(v, base, nulls dyn.Value) (dyn.Value, error) {
+	for _, section := range declarationSections {
+		entries, ok := nulls.Get(section).AsMap()
+		if !ok {
+			continue
+		}
+		for _, pair := range entries.Pairs() {
+			name := pair.Key.MustString()
+			if pair.Value.Kind() != dyn.KindNil || base.Get(section).Get(name).IsValid() {
+				continue
+			}
+			var err error
+			v, err = dyn.SetByPath(v, dyn.NewPath(dyn.Key(section), dyn.Key(name)), pair.Value)
+			if err != nil {
+				return dyn.InvalidValue, err
+			}
+		}
+	}
+	return v, nil
+}
+
+// targetSections returns the sections of v that hold target overrides.
+func targetSections(v dyn.Value) dyn.Value {
+	out := dyn.NewMapping()
+	for _, key := range []string{"targets", "environments"} {
+		if section := v.Get(key); section.IsValid() {
+			out.SetLoc(key, nil, section)
+		}
+	}
+	return dyn.V(out)
+}
+
+// targetWithNulls returns the target as loaded, including its nulls.
+func (r *Root) targetWithNulls(name string) dyn.Value {
+	targets := r.withNulls.Get("targets")
+	if !targets.IsValid() {
+		// The deprecated name, renamed to "targets" by the EnvironmentsToTargets mutator.
+		targets = r.withNulls.Get("environments")
+	}
+	return targets.Get(name)
+}
+
+// setNulls returns dst with the nil map values of src set at the same paths.
+func setNulls(dst, src dyn.Value) (dyn.Value, error) {
+	var nulls []dyn.Path
+	_, err := dyn.Walk(src, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		if v.Kind() == dyn.KindNil && len(p) > 0 && p[len(p)-1].Key() != "" {
+			nulls = append(nulls, slices.Clone(p))
+		}
+		return v, nil
+	})
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+	for _, p := range nulls {
+		dst, err = dyn.SetByPath(dst, p, dyn.NilValue)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+	}
+	return dst, nil
 }
 
 func mergeField(rv, ov dyn.Value, name string) (dyn.Value, error) {
@@ -311,7 +415,7 @@ func mergeField(rv, ov dyn.Value, name string) (dyn.Value, error) {
 	var out dyn.Value
 	var err error
 	if reference.IsValid() && override.IsValid() {
-		out, err = merge.Merge(reference, override)
+		out, err = merge.MergeKeepingNulls(reference, override)
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
@@ -337,6 +441,13 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	err = validateVariableOverrides(root, target)
 	if err != nil {
 		return err
+	}
+
+	// A null in the target removes the value from the root. The nulls are set here, and
+	// removed with what they override at the end.
+	target, err = setNulls(target, r.targetWithNulls(name))
+	if err != nil {
+		return fmt.Errorf("failed to apply the nulls of target=%s: %w", name, err)
 	}
 
 	// Merge fields that can be merged 1:1.
@@ -369,8 +480,10 @@ func (r *Root) MergeTargetOverrides(name string) error {
 
 				// If the target explicitly sets a default value, drop any lookup from the
 				// root variable definition so SetVariables can assign this default.
-				lookupPath := varPath.Append(dyn.Key("lookup"))
-				root, err = dyn.SetByPath(root, lookupPath, dyn.NilValue)
+				if vDefault.Kind() != dyn.KindNil {
+					lookupPath := varPath.Append(dyn.Key("lookup"))
+					root, err = dyn.SetByPath(root, lookupPath, dyn.NilValue)
+				}
 			}
 
 			vLookup := variable.Get("lookup")
@@ -383,8 +496,10 @@ func (r *Root) MergeTargetOverrides(name string) error {
 
 				// If the target explicitly sets a lookup, drop any default value from the
 				// root variable definition so lookup resolution remains authoritative.
-				defaultPath := varPath.Append(dyn.Key("default"))
-				root, err = dyn.SetByPath(root, defaultPath, dyn.NilValue)
+				if vLookup.Kind() != dyn.KindNil {
+					defaultPath := varPath.Append(dyn.Key("default"))
+					root, err = dyn.SetByPath(root, defaultPath, dyn.NilValue)
+				}
 			}
 
 			return root, err
@@ -434,7 +549,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		}
 
 		// Merge the override into the reference.
-		out, err := merge.Merge(ref, v)
+		out, err := merge.MergeKeepingNulls(ref, v)
 		if err != nil {
 			return err
 		}
@@ -446,8 +561,99 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		}
 	}
 
+	root, err = mergeKeyedSequencesWithNulls(root)
+	if err != nil {
+		return err
+	}
+
+	// The nulls have replaced the values they remove. Remaining nulls had nothing to
+	// remove and are not added either.
+	root = dyn.DropNulls(root)
+	r.withNulls = dyn.InvalidValue
+
 	// Convert normalized configuration tree to typed configuration.
 	return r.updateWithDynamicValue(root)
+}
+
+// keyedSequences are the sequences whose elements the Merge* mutators in
+// bundle/config/mutator/resourcemutator merge by key. Those run after the nulls are
+// gone, so a sequence with nulls in its elements is merged by key with the target.
+var keyedSequences = []struct {
+	resourceType string
+	field        string
+	key          string
+	keyFunc      func(dyn.Value) string
+}{
+	{"jobs", "tasks", "task_key", stringKey},
+	{"jobs", "job_clusters", "job_cluster_key", stringKey},
+	{"jobs", "parameters", "name", stringKey},
+	{"pipelines", "clusters", "label", pipelineClusterLabel},
+}
+
+func stringKey(v dyn.Value) string {
+	s, _ := v.AsString()
+	return s
+}
+
+// pipelineClusterLabel matches the key of the MergePipelineClusters mutator: the label
+// is case-insensitive and defaults to "default".
+func pipelineClusterLabel(v dyn.Value) string {
+	s, ok := v.AsString()
+	if !ok {
+		return "default"
+	}
+	return strings.ToLower(s)
+}
+
+// mergeKeyedSequencesWithNulls merges the elements with the same key of the keyed
+// sequences that hold nulls, so that a null removes the value from the element it
+// overrides. Resources and elements can still be ${...} references here, which are
+// left as they are.
+func mergeKeyedSequencesWithNulls(root dyn.Value) (dyn.Value, error) {
+	for _, ks := range keyedSequences {
+		resources, ok := root.Get("resources").Get(ks.resourceType).AsMap()
+		if !ok {
+			continue
+		}
+		for _, pair := range resources.Pairs() {
+			field := pair.Value.Get(ks.field)
+			seq, ok := field.AsSequence()
+			if !ok || !hasNulls(field) || slices.ContainsFunc(seq, isNotMap) {
+				continue
+			}
+			merged, err := merge.ElementsByKeyKeepingNulls(ks.key, ks.keyFunc)(dyn.EmptyPath, field)
+			if err != nil {
+				return dyn.InvalidValue, err
+			}
+			p := dyn.NewPath(dyn.Key("resources"), dyn.Key(ks.resourceType), dyn.Key(pair.Key.MustString()), dyn.Key(ks.field))
+			root, err = dyn.SetByPath(root, p, merged)
+			if err != nil {
+				return dyn.InvalidValue, err
+			}
+		}
+	}
+	return root, nil
+}
+
+func isNotMap(v dyn.Value) bool {
+	return v.Kind() != dyn.KindMap
+}
+
+// hasNulls reports whether v holds a nil map value at any depth.
+func hasNulls(v dyn.Value) bool {
+	switch v.Kind() {
+	case dyn.KindMap:
+		for _, pair := range v.MustMap().Pairs() {
+			if pair.Value.Kind() == dyn.KindNil || hasNulls(pair.Value) {
+				return true
+			}
+		}
+	case dyn.KindSequence:
+		return slices.ContainsFunc(v.MustSequence(), hasNulls)
+	default:
+		// Leaf node.
+	}
+	return false
 }
 
 var allowedVariableDefinitions = []([]string){
