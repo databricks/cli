@@ -9,3 +9,17 @@ resources:
       libraries:
         - file:
             path: ./pipeline/transformations/orders.py
+      testing:
+        sources:
+          - glob:
+              include: ./pipeline/tests/**
+    split:
+      name: test-pipeline-test-ids-split
+      root_path: ./src/split
+      libraries:
+        - file:
+            path: ./src/split/transformations/returns.py
+      testing:
+        sources:
+          - glob:
+              include: ./tests/**

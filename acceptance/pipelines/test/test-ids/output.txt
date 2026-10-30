@@ -2,9 +2,11 @@
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-test-ids/default/files...
 Created pipelines.my_pipeline
-Files: 3 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+Created pipelines.split
+Files: 5 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
+View your pipeline split here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
 
 === A test ID resolves against the folder that test IDs are relative to
 
@@ -13,6 +15,74 @@ Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
 
-Error: Test-only updates require the pipeline to have testing.sources.
+Pipeline: my_pipeline ([UUID])
+Update: [UUID]
+Waiting for compute...
+Running tests...
+tests/test_a.py::test_one  PASSED (1.00s)
+
+1 test: 1 passed, 0 failed, 0 skipped, 0 errors
+
+>>> print_requests.py //updates
+{"test_selection":["/Workspace/Users/[USERNAME]/.bundle/test-pipeline-test-ids/default/files/pipeline/tests/test_a.py::test_one"]}
+
+=== The same ID from the pipeline folder, where it is a local path
+
+>>> [CLI] pipelines test my_pipeline tests/test_a.py::test_one
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Pipeline: my_pipeline ([UUID])
+Update: [UUID]
+Waiting for compute...
+Running tests...
+tests/test_a.py::test_one  PASSED (1.00s)
+
+1 test: 1 passed, 0 failed, 0 skipped, 0 errors
+
+>>> print_requests.py //updates
+{"test_selection":["/Workspace/Users/[USERNAME]/.bundle/test-pipeline-test-ids/default/files/pipeline/tests/test_a.py::test_one"]}
+
+=== A local path from the bundle root
+
+>>> [CLI] pipelines test my_pipeline pipeline/tests/test_a.py
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Pipeline: my_pipeline ([UUID])
+Update: [UUID]
+Waiting for compute...
+Running tests...
+tests/test_a.py::test_one  PASSED (1.00s)
+
+1 test: 1 passed, 0 failed, 0 skipped, 0 errors
+
+>>> print_requests.py //updates
+{"test_selection":["/Workspace/Users/[USERNAME]/.bundle/test-pipeline-test-ids/default/files/pipeline/tests/test_a.py"]}
+
+=== With tests outside root_path, a failing test ID printed in a subfolder runs again from there
+Printed: tests/test_returns.py::test_returned_fails
+
+>>> errcode [CLI] pipelines test split tests/test_returns.py::test_returned_fails
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Pipeline: split ([UUID])
+Update: [UUID]
+Waiting for compute...
+Running tests...
+tests/test_returns.py::test_returned_fails  FAILED (1.00s)
+
+FAILURES
+tests/test_returns.py::test_returned_fails
+  AssertionError: assert 100 == 150
+
+1 test: 0 passed, 1 failed, 0 skipped, 0 errors
 
 Exit code: 1
+
+>>> print_requests.py //updates
+{"test_selection":["/Workspace/Users/[USERNAME]/.bundle/test-pipeline-test-ids/default/files/tests/test_returns.py::test_returned_fails"]}

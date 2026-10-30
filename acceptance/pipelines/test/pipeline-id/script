@@ -1,31 +1,34 @@
 # testing is not in the Go SDK yet, so "pipelines create" would drop it.
-testing='{"sources": [{"glob": {"include": "/Workspace/Users/someone@example.com/orders/tests/**"}}, {"glob": {"include": "/Workspace/Shared/tests/**"}}]}'
-pipeline_id=$($CLI api post /api/2.0/pipelines --json '{"name": "orders", "root_path": "/Workspace/Users/someone@example.com/orders", "testing": '"$testing"'}' | jq -r .pipeline_id)
-no_root_pipeline_id=$($CLI api post /api/2.0/pipelines --json '{"name": "no-root", "testing": '"$testing"'}' | jq -r .pipeline_id)
+orders_tests='{"sources": [{"glob": {"include": "/Workspace/Users/someone@example.com/orders/tests/**"}}]}'
+two_folders='{"sources": [{"glob": {"include": "/Workspace/Users/someone@example.com/orders/tests/**"}}, {"glob": {"include": "/Workspace/Shared/tests/**"}}]}'
+pipeline_id=$($CLI api post /api/2.0/pipelines --json '{"name": "orders", "root_path": "/Workspace/Users/someone@example.com/orders", "testing": '"$orders_tests"'}' | jq -r .pipeline_id)
+no_root_pipeline_id=$($CLI api post /api/2.0/pipelines --json '{"name": "no-root", "testing": '"$orders_tests"'}' | jq -r .pipeline_id)
+two_folders_pipeline_id=$($CLI api post /api/2.0/pipelines --json '{"name": "two-folders", "root_path": "/Workspace/Users/someone@example.com/orders", "testing": '"$two_folders"'}' | jq -r .pipeline_id)
+empty_pipeline_id=$($CLI api post /api/2.0/pipelines --json '{"name": "empty"}' | jq -r .pipeline_id)
 $CLI workspace import-dir orders /Workspace/Users/someone@example.com/orders &> LOG.import
 rm "$OUT_REQUESTS"
 
-title "Relative test selections resolve against the pipeline root_path"
-trace $CLI pipelines test --pipeline-id $pipeline_id tests/test_orders.py::test_backfill /Workspace/Shared/tests --no-wait
+title "Relative test selections resolve against the folder of test IDs"
+trace $CLI pipelines test --pipeline-id $pipeline_id tests/test_orders.py::test_backfill /Workspace/Users/someone@example.com/orders/tests --no-wait
 trace print_requests.py //updates
 # Like the service, the test server rejects a new update while one is active.
 $CLI api post /api/2.0/pipelines/$pipeline_id/stop &>> LOG.stop
 rm "$OUT_REQUESTS"
 
-title "Test case IDs are shown relative to the pipeline root_path"
+title "Test case IDs are shown relative to that folder"
 trace $CLI pipelines test --pipeline-id $pipeline_id tests
 rm "$OUT_REQUESTS"
 
-title "Without a root_path, test selections must be workspace paths"
-trace musterr $CLI pipelines test --pipeline-id $no_root_pipeline_id tests
-trace $CLI pipelines test --pipeline-id $no_root_pipeline_id /Workspace/Shared/tests/test_shared.py::test_x --no-wait
-trace print_requests.py //updates
-$CLI api post /api/2.0/pipelines/$no_root_pipeline_id/stop &>> LOG.stop
+title "Without a root_path, the folder holds the test source folders"
+trace $CLI pipelines test --pipeline-id $no_root_pipeline_id tests/test_orders.py
 rm "$OUT_REQUESTS"
 
-title "Without a root_path, test case IDs are absolute workspace paths"
-trace $CLI pipelines test --pipeline-id $no_root_pipeline_id /Workspace/Users/someone@example.com/orders/tests/test_orders.py
+title "With test sources in two folders, IDs are relative to the folder that holds both"
+trace $CLI pipelines test --pipeline-id $two_folders_pipeline_id Users/someone@example.com/orders/tests/test_orders.py
 rm "$OUT_REQUESTS"
+
+title "Without a root_path or test sources, test selections must be workspace paths"
+trace musterr $CLI pipelines test --pipeline-id $empty_pipeline_id tests
 
 title "Outside a project, --pipeline-id is required"
 trace musterr $CLI pipelines test tests
