@@ -62,8 +62,9 @@ func TestRenderRegressionReport(t *testing.T) {
 	}}
 
 	report := renderRegressionReport("Selected 2", []regrColumn{branch, main})
-	assert.Contains(t, report, "| test | branch | main (abc) |")
+	assert.Contains(t, report, "<details>\n<summary>2 tests: regression=1 unreleased=0 coverage=0 failing=1</summary>\n\n| test | branch | main (abc) |")
 	assert.Contains(t, report, "| TestAccept/bundle/a | ❌ | ❌ |")
+	assert.Contains(t, report, "| TestAccept/bundle/inv/DMS=true/INPUT_CONFIG=x.yml.tmpl | ✅ | ➖ |\n\n</details>\n")
 	assert.Contains(t, report, "**main (abc):**\n````\nmain failure\n````")
 	assert.Contains(t, report, "failing=1")
 }
