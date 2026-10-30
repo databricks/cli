@@ -259,7 +259,8 @@ a new profile is created.
 		// is not a terminal, e.g. when an AI agent runs the login as a one-off
 		// command, nobody can type the code in. The non-interactive login then
 		// stores the device code, and a rerun of the command with --user-code
-		// and --confirmation-code completes the login. Neither step prompts.
+		// and --confirmation-code completes the login. Neither step prompts
+		// for the profile or the host.
 		var nonInteractive bool
 		if useDeviceCode {
 			if err := validateDeviceCodeLogin(ctx, cmd); err != nil {
