@@ -293,9 +293,16 @@ account_id = acct-123
 }
 
 func TestLoginDeviceCodeHostEmptyAfterNormalization(t *testing.T) {
-	for _, host := range []string{"/", "?o=123"} {
-		t.Run(host, func(t *testing.T) {
-			tm := startDeviceCodeLogin(t, "", "--profile", "newprof", "--host", host)
+	tests := []struct {
+		name string
+		host string
+	}{
+		{name: "slash", host: "/"},
+		{name: "query params only", host: "?o=123"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tm := startDeviceCodeLogin(t, "", "--profile", "newprof", "--host", tt.host)
 			_, err := tm.Result()
 			assert.ErrorIs(t, err, errInvalidHost)
 		})
