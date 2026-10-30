@@ -778,6 +778,36 @@ resources:
         "warehouse_id":
           "description": |-
             The warehouse ID used to run the dashboard.
+    "data_quality_monitors":
+      "description": |-
+        The data quality monitor definitions for the bundle, where each key is the name of the data quality monitor.
+      "markdown_description": |-
+        The data quality monitor definitions for the bundle, where each key is the name of the data quality monitor. See [\_](/dev-tools/bundles/resources.md#data_quality_monitors).
+      "$type":
+        "markdown_description": |-
+          The data_quality_monitor resource allows you to define a [data quality monitor](/api/workspace/dataquality/createmonitor) on a Unity Catalog schema (anomaly detection) or table (data profiling). It supersedes the `quality_monitor` resource. For information about data quality monitoring, see [_](/data-governance/unity-catalog/data-quality-monitoring/index.md).
+
+          The bundle manages the schema alert in `anomaly_detection_config.notification_settings`. If it is omitted, deploying an update removes any alert set in the Data Quality Monitoring UI, so define alerts for bundle-managed monitors in the bundle.
+        "markdown_examples": |-
+          The following example defines an anomaly detection monitor on a schema:
+
+          ```yaml
+          resources:
+            schemas:
+              my_schema:
+                catalog_name: main
+                name: my_schema
+
+            data_quality_monitors:
+              my_schema_monitor:
+                object_type: schema
+                object_id: ${resources.schemas.my_schema.schema_id}
+                anomaly_detection_config: {}
+          ```
+      "$fields":
+        "lifecycle":
+          "description": |-
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     "database_catalogs":
       "description": |-
         PLACEHOLDER

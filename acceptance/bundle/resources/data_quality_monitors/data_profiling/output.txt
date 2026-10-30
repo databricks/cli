@@ -1,0 +1,88 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created data_quality_monitors.table_monitor
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //data-quality
+{
+  "method": "POST",
+  "path": "/api/data-quality/v1/monitors",
+  "body": {
+    "data_profiling_config": {
+      "assets_dir": "/Workspace/Users/user@example.com/assets1",
+      "output_schema_id": "[UUID]",
+      "schedule": {
+        "quartz_cron_expression": "0 0 12 * * ?",
+        "timezone_id": "UTC"
+      },
+      "snapshot": {}
+    },
+    "object_id": "[UUID]",
+    "object_type": "table"
+  }
+}
+
+=== Verify deployment, including server-computed fields
+>>> [CLI] data-quality get-monitor table [UUID]
+{
+  "assets_dir": "/Workspace/Users/user@example.com/assets1",
+  "schedule": {
+    "quartz_cron_expression": "0 0 12 * * ?",
+    "timezone_id": "UTC"
+  },
+  "status": "DATA_PROFILING_STATUS_ACTIVE",
+  "monitor_version": 1
+}
+
+=== Server-computed fields do not show up as drift
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Update the schedule (should update in place)
+>>> update_file.py databricks.yml 0 0 12 * * ? 0 0 6 * * ?
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated data_quality_monitors.table_monitor
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //data-quality
+{
+  "method": "PATCH",
+  "path": "/api/data-quality/v1/monitors/table/[UUID]",
+  "q": {
+    "update_mask": "*"
+  },
+  "body": {
+    "data_profiling_config": {
+      "assets_dir": "/Workspace/Users/user@example.com/assets1",
+      "output_schema_id": "[UUID]",
+      "schedule": {
+        "quartz_cron_expression": "0 0 6 * * ?",
+        "timezone_id": "UTC"
+      },
+      "snapshot": {}
+    },
+    "object_id": "[UUID]",
+    "object_type": "table"
+  }
+}
+
+=== Change assets_dir (ignored by the update API, should plan a recreate)
+>>> update_file.py databricks.yml assets1 assets2
+
+>>> [CLI] bundle plan
+recreate data_quality_monitors.table_monitor
+
+Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.data_quality_monitors.table_monitor
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted

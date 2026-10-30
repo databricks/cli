@@ -1,0 +1,16 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  schemas:
+    foo_schema:
+      catalog_name: main
+      name: test-schema-$UNIQUE_NAME
+
+  data_quality_monitors:
+    foo:
+      object_type: schema
+      object_id: ${resources.schemas.foo_schema.schema_id}
+      anomaly_detection_config:
+        excluded_table_full_names:
+          - main.test-schema-$UNIQUE_NAME.excluded

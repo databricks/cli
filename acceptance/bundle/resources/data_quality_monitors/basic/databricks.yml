@@ -1,0 +1,16 @@
+bundle:
+  name: test-bundle
+
+resources:
+  schemas:
+    myschema:
+      catalog_name: main
+      name: myschema
+
+  data_quality_monitors:
+    schema_monitor:
+      object_type: schema
+      object_id: ${resources.schemas.myschema.schema_id}
+      anomaly_detection_config:
+        excluded_table_full_names:
+          - main.myschema.table1

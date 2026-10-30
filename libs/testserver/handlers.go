@@ -697,6 +697,24 @@ func AddDefaultHandlers(server *Server) {
 		return MapDelete(req.Workspace, req.Workspace.Monitors, req.Vars["table_name"])
 	})
 
+	// Data Quality Monitors:
+
+	server.Handle("POST", "/api/data-quality/v1/monitors", func(req Request) any {
+		return req.Workspace.DataQualityMonitorCreate(req)
+	})
+
+	server.Handle("GET", "/api/data-quality/v1/monitors/{object_type}/{object_id}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.DataQualityMonitors, dataQualityMonitorKey(req.Vars["object_type"], req.Vars["object_id"]))
+	})
+
+	server.Handle("PATCH", "/api/data-quality/v1/monitors/{object_type}/{object_id}", func(req Request) any {
+		return req.Workspace.DataQualityMonitorUpdate(req, req.Vars["object_type"], req.Vars["object_id"])
+	})
+
+	server.Handle("DELETE", "/api/data-quality/v1/monitors/{object_type}/{object_id}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.DataQualityMonitors, dataQualityMonitorKey(req.Vars["object_type"], req.Vars["object_id"]))
+	})
+
 	// Apps:
 
 	server.Handle("POST", "/api/2.0/apps/{name}/deployments", func(req Request) any {

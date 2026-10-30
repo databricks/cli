@@ -1,0 +1,2 @@
+trace $CLI bundle validate -o json -t development | jq '{ mode: .bundle.mode, data_quality_monitors: .resources.data_quality_monitors }'
+trace $CLI bundle validate -o json -t production | jq '{ mode: .bundle.mode, data_quality_monitors: .resources.data_quality_monitors }'

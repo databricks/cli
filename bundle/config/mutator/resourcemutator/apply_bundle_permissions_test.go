@@ -26,6 +26,7 @@ var unsupportedResources = []string{
 	"schemas",
 	"features",
 	"quality_monitors",
+	"data_quality_monitors",
 	"registered_models",
 	"model_services",
 	"mcp_services",
