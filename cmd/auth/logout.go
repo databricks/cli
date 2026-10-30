@@ -210,6 +210,13 @@ func runLogout(ctx context.Context, args logoutArgs) error {
 		if err != nil {
 			return fmt.Errorf("failed to clear token cache: %w", err)
 		}
+	} else {
+		// A device code login started for the profile could still complete
+		// and save a token for it.
+		err = args.tokenStore.Delete(pendingLoginKey(matchedProfile.Name))
+		if err != nil {
+			return fmt.Errorf("failed to delete pending device code login for profile %q: %w", matchedProfile.Name, err)
+		}
 	}
 
 	if args.deleteProfile {

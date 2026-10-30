@@ -7,6 +7,7 @@ Logged out of and deleted profile "dev".
 [
   "[DATABRICKS_URL]",
   "[DATABRICKS_URL]#device-code",
+  "pat#device-code",
   "staging",
   "staging#device-code"
 ]
@@ -16,4 +17,13 @@ Logged out of and deleted profile "dev".
 Logged out of profile "staging". Use --delete to also remove it from the config file.
 
 === Token cache keys after logout — no profile uses the host anymore
+[
+  "pat#device-code"
+]
+
+=== Logout pat, a profile that auth login did not create
+>>> [CLI] auth logout --profile pat --auto-approve
+No tokens to clear for profile "pat". Use --delete to remove it from the config file.
+
+=== Token cache keys after logout — the pending login of pat is removed
 []

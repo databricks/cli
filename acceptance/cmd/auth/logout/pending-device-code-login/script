@@ -8,6 +8,10 @@ auth_type  = databricks-cli
 [staging]
 host = ${DATABRICKS_HOST}
 auth_type  = databricks-cli
+
+[pat]
+host = ${DATABRICKS_HOST}
+token = dapi-pat-token
 EOF
 
 mkdir -p "./home/.databricks"
@@ -19,6 +23,7 @@ cat > "./home/.databricks/token-cache.json" <<EOF
     "dev#device-code": {"pending_login": {"device_code": "dev-device-code", "user_code": "WDJBMJHT"}},
     "staging": {"access_token": "staging-cached-token", "token_type": "Bearer"},
     "staging#device-code": {"pending_login": {"device_code": "staging-device-code", "user_code": "WDJBMJHT"}},
+    "pat#device-code": {"pending_login": {"device_code": "pat-device-code", "user_code": "WDJBMJHT"}},
     "${DATABRICKS_HOST}": {"access_token": "shared-host-token", "token_type": "Bearer"},
     "${DATABRICKS_HOST}#device-code": {"pending_login": {"device_code": "host-device-code", "user_code": "WDJBMJHT"}}
   }
@@ -35,4 +40,10 @@ title "Logout staging"
 trace $CLI auth logout --profile staging --auto-approve
 
 title "Token cache keys after logout — no profile uses the host anymore\n"
+jq -S '.tokens | keys' "./home/.databricks/token-cache.json"
+
+title "Logout pat, a profile that auth login did not create"
+trace $CLI auth logout --profile pat --auto-approve
+
+title "Token cache keys after logout — the pending login of pat is removed\n"
 jq -S '.tokens | keys' "./home/.databricks/token-cache.json"
