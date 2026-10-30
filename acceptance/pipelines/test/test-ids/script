@@ -1,0 +1,16 @@
+trace $CLI pipelines deploy
+rm "$OUT_REQUESTS"
+
+title "A test ID resolves against the folder that test IDs are relative to\n"
+trace $CLI pipelines test my_pipeline tests/test_a.py::test_one
+trace print_requests.py //updates | jq -c .body.test_options
+
+title "The same ID from the pipeline folder, where it is a local path\n"
+cd pipeline
+trace $CLI pipelines test my_pipeline tests/test_a.py::test_one
+cd ..
+trace print_requests.py //updates | jq -c .body.test_options
+
+title "A local path from the bundle root\n"
+trace $CLI pipelines test my_pipeline pipeline/tests/test_a.py
+trace print_requests.py //updates | jq -c .body.test_options
