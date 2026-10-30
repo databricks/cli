@@ -13,8 +13,8 @@ trap cleanup EXIT
 trace $CLI bundle deploy
 
 title "Run the tests and wait for the results\n"
-# Durations differ between runs, so only the exit code, the summary line and the report are compared.
-$CLI pipelines test --junit-xml junit.xml > test.log 2>&1
-echo "Exit code: $?"
-grep -E '^[0-9]+ tests?:' test.log
+# Durations differ between runs, so only the summary line and the report are compared. The script
+# stops if the command fails.
+$CLI pipelines test --junit-xml junit.xml &> LOG.test
+grep -E '^[0-9]+ tests?:' LOG.test
 grep -o '<testcase [^>]*name="[^"]*"' junit.xml

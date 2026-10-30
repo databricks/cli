@@ -109,7 +109,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 Uploading dist/test_helpers-0.1-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files...
 Updated pipelines.orders
-Files: 0 uploaded, 0 deleted
+Files: 1 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan
@@ -133,7 +133,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 >>> print_requests.py //api/2.0/pipelines --nostamp
 {
   "method": "PUT",
-  "path": "/api/2.0/pipelines/[UUID]",
+  "path": "/api/2.0/pipelines/[ORDERS_ID]",
   "body": {
     "channel": "CURRENT",
     "deployment": {
@@ -183,7 +183,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 >>> print_requests.py //api/2.0/pipelines --nostamp
 {
   "method": "PUT",
-  "path": "/api/2.0/pipelines/[UUID]",
+  "path": "/api/2.0/pipelines/[ORDERS_ID]",
   "body": {
     "channel": "CURRENT",
     "deployment": {

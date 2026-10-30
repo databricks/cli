@@ -9,9 +9,9 @@ trace $CLI bundle plan
 rm "$OUT_REQUESTS"
 
 title "A remote edit that drops testing shows in the plan"
-PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.orders.id')
+PIPELINE_ID=$(read_id.py orders)
 $CLI api get "/api/2.0/pipelines/$PIPELINE_ID" | jq '.spec | del(.testing)' > edit.json
-$CLI api put "/api/2.0/pipelines/$PIPELINE_ID" --json @edit.json > /dev/null
+$CLI api put "/api/2.0/pipelines/$PIPELINE_ID" --json @edit.json &> LOG.edit
 rm edit.json
 trace $CLI bundle plan -o json | jq '.plan["resources.pipelines.orders"].changes.testing'
 trace $CLI bundle deploy

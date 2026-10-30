@@ -6,7 +6,6 @@ Files: 4 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Run the tests and wait for the results
-Exit code: 0
 1 test: 1 passed, 0 failed, 0 skipped, 0 errors
 <testcase classname="tests.test_orders" name="test_order_total"
 

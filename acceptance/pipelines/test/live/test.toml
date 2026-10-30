@@ -3,4 +3,4 @@
 Cloud = true
 CloudSlow = true
 RecordRequests = false
-Ignore = [".databricks", "databricks.yml", "junit.xml", "test.log"]
+Ignore = [".databricks", "databricks.yml", "junit.xml"]

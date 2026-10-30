@@ -2,3 +2,5 @@
 Cloud = false
 RecordRequests = true
 Ignore = [".databricks"]
+# The api get and put paths start with "/"; keep Git Bash on Windows from rewriting them.
+Env.MSYS_NO_PATHCONV = "1"
