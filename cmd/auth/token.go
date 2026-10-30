@@ -466,6 +466,11 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 		return "", nil, err
 	}
 
+	// The section may have been created during the OAuth wait, after the
+	// taken names were read.
+	clearKeys := oauthLoginClearKeys()
+	clearKeys = append(clearKeys, databrickscfg.ExperimentalIsUnifiedHostKey)
+
 	err = databrickscfg.SaveToProfile(ctx, &config.Config{
 		Profile:     profileName,
 		Host:        loginArgs.Host,
@@ -473,7 +478,7 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 		AccountID:   loginArgs.AccountID,
 		WorkspaceID: loginArgs.WorkspaceID,
 		ConfigFile:  env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
-	})
+	}, clearKeys...)
 	if err != nil {
 		return "", nil, err
 	}
