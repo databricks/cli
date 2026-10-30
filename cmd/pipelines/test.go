@@ -609,12 +609,12 @@ names the cause.`,
 			ctx := logdiag.InitContext(cmd.Context())
 			cmd.SetContext(ctx)
 			if !bundle.HasRoot(ctx) {
-				return errors.New("outside a project, identify the pipeline with --pipeline-id")
+				return report.failed(ctx, errors.New("outside a project, identify the pipeline with --pipeline-id"))
 			}
 			target, err = resolveTestTargetInBundle(cmd, args, resumeUpdateID != "")
 		}
 		if err != nil {
-			return report.failed(err)
+			return report.failed(cmd.Context(), err)
 		}
 		report.suiteName = target.key
 		if report.suiteName == "" {
@@ -630,7 +630,7 @@ names the cause.`,
 			req := newStartTestUpdateRequest(target.selections, pytestArgs)
 			updateID, err = startTestUpdate(ctx, target.w, target.pipelineID, req)
 			if err != nil {
-				return report.failed(err)
+				return report.failed(ctx, err)
 			}
 		}
 		target.printHeader(out, updateID)
@@ -640,7 +640,7 @@ names the cause.`,
 
 		events, err := newTestEventReader(target.w, target.pipelineID, updateID)
 		if err != nil {
-			return report.failed(err)
+			return report.failed(ctx, err)
 		}
 		watcher := &testWatcher{
 			w:          target.w,

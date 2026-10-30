@@ -83,3 +83,17 @@ RUN INCOMPLETE: the update was canceled before all test results were received.
 Results received: none.
 JUnit report: out.resumed.xml
 Error: update [UUID] is CANCELED
+
+=== Outside a project, an older passing report is replaced
+Error: outside a project, identify the pipeline with --pipeline-id
+
+=== A project with errors names the first error in the report
+>>> musterr [CLI] pipelines test my_pipeline --junit-xml ../out.invalid.xml
+Error: reference does not exist: ${var.missing}
+
+
+=== When the report cannot be written either, the write error is shown
+>>> musterr [CLI] pipelines test my_pipeline --junit-xml missing/report.xml
+Error: reference does not exist: ${var.missing}
+
+Error: failed to write JUnit report: open missing/report.xml: no such file or directory

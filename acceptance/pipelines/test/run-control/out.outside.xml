@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="" tests="1" failures="0" errors="1" skipped="0">
+    <testcase name="pipelines test">
+      <error message="outside a project, identify the pipeline with --pipeline-id">outside a project, identify the pipeline with --pipeline-id</error>
+    </testcase>
+  </testsuite>
+</testsuites>

@@ -32,3 +32,23 @@ trace musterr $CLI pipelines test my_pipeline tests/test_orders.py --junit-xml o
 title "Stopping the pipeline cancels the test update"
 trace $CLI pipelines stop my_pipeline
 trace musterr $CLI pipelines test my_pipeline --resume $hang_update_id --junit-xml out.resumed.xml
+
+title "Outside a project, an older passing report is replaced\n"
+echo '<testsuites><testsuite name="my_pipeline" tests="1"><testcase name="test_old"></testcase></testsuite></testsuites>' > out.outside.xml
+here=$PWD
+outside=$(mktemp -d)
+cd $outside
+musterr $CLI pipelines test --junit-xml "$here/out.outside.xml"
+cd $here
+rm -r $outside
+
+title "A project with errors names the first error in the report"
+mkdir invalid
+printf 'bundle:\n  name: invalid\nresources:\n  pipelines:\n    my_pipeline:\n      name: ${var.missing}\n' > invalid/databricks.yml
+cd invalid
+trace musterr $CLI pipelines test my_pipeline --junit-xml ../out.invalid.xml
+
+title "When the report cannot be written either, the write error is shown"
+trace musterr $CLI pipelines test my_pipeline --junit-xml missing/report.xml
+cd ..
+rm -r invalid

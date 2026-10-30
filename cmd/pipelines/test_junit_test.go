@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -109,9 +111,27 @@ func TestTestReportReplacesAStaleReportOnError(t *testing.T) {
 	require.NoError(t, os.WriteFile(path, []byte("<testsuites></testsuites>"), 0o644))
 	report := &testReport{path: path, out: io.Discard, suiteName: "orders"}
 	startErr := errors.New("An active update already exists.")
-	assert.Equal(t, startErr, report.failed(startErr))
+	assert.Equal(t, startErr, report.failed(t.Context(), startErr))
 	data, err := os.ReadFile(path)
 	require.NoError(t, err)
 	assert.Contains(t, string(data), `<testcase name="pipelines test">`)
 	assert.Contains(t, string(data), `<error message="An active update already exists.">`)
+}
+
+func TestTestReportNamesAPrintedError(t *testing.T) {
+	ctx := logdiag.InitContext(t.Context())
+	logdiag.SetCollect(ctx, true)
+	logdiag.LogDiag(ctx, diag.Diagnostic{Severity: diag.Error, Summary: "reference does not exist: ${var.missing}"})
+	path := filepath.Join(t.TempDir(), "report.xml")
+	report := &testReport{path: path, out: io.Discard, suiteName: "orders"}
+	assert.Equal(t, root.ErrAlreadyPrinted, report.failed(ctx, root.ErrAlreadyPrinted))
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Contains(t, string(data), `<error message="reference does not exist: ${var.missing}">`)
+
+	// The sentinel would hide a joined write error, so the write error is returned alone.
+	report.path = filepath.Join(t.TempDir(), "missing", "report.xml")
+	err = report.failed(ctx, root.ErrAlreadyPrinted)
+	assert.NotErrorIs(t, err, root.ErrAlreadyPrinted)
+	assert.ErrorContains(t, err, "failed to write JUnit report")
 }
