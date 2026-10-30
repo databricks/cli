@@ -34,45 +34,37 @@ If you've made local changes, run 'databricks pipelines deploy' first to ensure 
 Pipeline: my_pipeline ([UUID])
 Update: [UUID]
 
->>> errcode [CLI] pipelines test my_pipeline --resume [UUID] --timeout 3s
+>>> musterr [CLI] pipelines test my_pipeline --resume [UUID] --timeout 3s
 Pipeline: my_pipeline ([UUID])
 Update: [UUID]
 Waiting for compute...
 Running tests...
 Error: stopped waiting for update [UUID] after 3s; the update keeps running, to get its results run: databricks pipelines test my_pipeline --resume [UUID]
 
-Exit code: 1
-
 === The command to read the results keeps the profile
->>> errcode [CLI] pipelines test my_pipeline --resume [UUID] --timeout 3s -p run-control
+>>> musterr [CLI] pipelines test my_pipeline --resume [UUID] --timeout 3s -p run-control
 Pipeline: my_pipeline ([UUID])
 Update: [UUID]
 Running tests...
 Error: stopped waiting for update [UUID] after 3s; the update keeps running, to get its results run: databricks pipelines test my_pipeline --profile run-control --resume [UUID]
 
-Exit code: 1
-
 === Another update cannot start while the test update is active
->>> errcode [CLI] pipelines test my_pipeline tests/test_orders.py
+>>> musterr [CLI] pipelines test my_pipeline tests/test_orders.py
 Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
 
 Error: An active update '[UUID]' already exists for pipeline '[UUID]'.
 
-Exit code: 1
-
 === Stopping the pipeline cancels the test update
 >>> [CLI] pipelines stop my_pipeline
 Stopping my_pipeline...
 my_pipeline has been stopped.
 
->>> errcode [CLI] pipelines test my_pipeline --resume [UUID]
+>>> musterr [CLI] pipelines test my_pipeline --resume [UUID]
 Pipeline: my_pipeline ([UUID])
 Update: [UUID]
 
 RUN INCOMPLETE: the update was canceled before all test results were received.
 Results received: none.
 Error: update [UUID] is CANCELED
-
-Exit code: 1

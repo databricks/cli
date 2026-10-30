@@ -24,6 +24,7 @@ import (
 	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/shellquote"
 	databricks "github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -379,15 +380,16 @@ func resolveTestTargetInBundle(cmd *cobra.Command, args []string, resume bool) (
 func (t testTarget) resumeCommand(cmd *cobra.Command, updateID string) string {
 	parts := []string{cmd.CommandPath()}
 	if t.key != "" {
-		parts = append(parts, t.key)
+		parts = append(parts, shellquote.BashArg(t.key))
 	} else {
-		parts = append(parts, "--pipeline-id", t.pipelineID)
+		parts = append(parts, "--pipeline-id", shellquote.BashArg(t.pipelineID))
 	}
+	// Quoted so that the command can be pasted into a shell as is.
 	if target := cmd.Flag("target").Value.String(); target != "" {
-		parts = append(parts, "--target", target)
+		parts = append(parts, "--target", shellquote.BashArg(target))
 	}
 	if profile := cmd.Flag("profile").Value.String(); profile != "" {
-		parts = append(parts, "--profile", profile)
+		parts = append(parts, "--profile", shellquote.BashArg(profile))
 	}
 	return strings.Join(append(parts, "--resume", updateID), " ")
 }

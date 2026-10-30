@@ -59,7 +59,7 @@ tests/test_orders.py::test_valid_order  PASSED (1.00s)
 }
 
 === Failed, errored, and skipped tests
->>> errcode [CLI] pipelines test my_pipeline tests/test_orders.py
+>>> musterr [CLI] pipelines test my_pipeline tests/test_orders.py
 Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
@@ -81,10 +81,8 @@ tests/test_orders.py::test_fixture_error
 
 4 tests: 1 passed, 1 failed, 1 skipped, 1 error
 
-Exit code: 1
-
 === No tests collected
->>> errcode [CLI] pipelines test my_pipeline tests/helpers.py
+>>> musterr [CLI] pipelines test my_pipeline tests/helpers.py
 Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
@@ -96,10 +94,8 @@ Running tests...
 
 No tests were collected.
 
-Exit code: 1
-
 === The update fails after all tests passed
->>> errcode [CLI] pipelines test my_pipeline tests/test_delivery.py
+>>> musterr [CLI] pipelines test my_pipeline tests/test_delivery.py
 Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
@@ -113,10 +109,8 @@ tests/test_delivery.py::test_breaks_update_after_summary  PASSED (1.00s)
 1 test: 1 passed, 0 failed, 0 skipped, 0 errors
 Error: update [UUID] is FAILED: ResultDeliveryException: Test results could not be verified.
 
-Exit code: 1
-
 === The update fails with an error of its own after a test failed
->>> errcode [CLI] pipelines test my_pipeline tests/test_late_failure.py
+>>> musterr [CLI] pipelines test my_pipeline tests/test_late_failure.py
 Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
@@ -135,10 +129,8 @@ tests/test_late_failure.py::test_backfill_fails
 2 tests: 1 passed, 1 failed, 0 skipped, 0 errors
 Error: update [UUID] is FAILED: ResultDeliveryException: Test results could not be verified.
 
-Exit code: 1
-
 === Compute terminates before all results are received
->>> errcode [CLI] pipelines test my_pipeline tests/test_compute.py
+>>> musterr [CLI] pipelines test my_pipeline tests/test_compute.py
 Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
@@ -152,5 +144,3 @@ tests/test_compute.py::test_small_order  PASSED (1.00s)
 RUN INCOMPLETE: the update failed before all test results were received.
 Results received: 1 passed.
 Error: update [UUID] is FAILED: ComputeTerminatedException: Compute terminated unexpectedly.
-
-Exit code: 1

@@ -261,6 +261,12 @@ func TestTestTargetResumeCommand(t *testing.T) {
 			want:   "databricks pipelines test my_pipeline --target dev --profile staging --resume u1",
 		},
 		{
+			name:   "names that need quoting",
+			target: testTarget{key: "my_pipeline", pipelineID: "p1"},
+			flags:  map[string]string{"target": "dev west", "profile": "CI West"},
+			want:   "databricks pipelines test my_pipeline --target 'dev west' --profile 'CI West' --resume u1",
+		},
+		{
 			name:   "pipeline ID with profile",
 			target: testTarget{pipelineID: "p1"},
 			flags:  map[string]string{"profile": "staging"},

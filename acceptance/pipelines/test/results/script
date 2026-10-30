@@ -6,17 +6,17 @@ trace $CLI pipelines test my_pipeline tests/test_orders.py::test_valid_order
 trace print_requests.py --get //events
 
 title "Failed, errored, and skipped tests"
-trace errcode $CLI pipelines test my_pipeline tests/test_orders.py
+trace musterr $CLI pipelines test my_pipeline tests/test_orders.py
 
 title "No tests collected"
-trace errcode $CLI pipelines test my_pipeline tests/helpers.py
+trace musterr $CLI pipelines test my_pipeline tests/helpers.py
 
 title "The update fails after all tests passed"
-trace errcode $CLI pipelines test my_pipeline tests/test_delivery.py
+trace musterr $CLI pipelines test my_pipeline tests/test_delivery.py
 
 title "The update fails with an error of its own after a test failed"
-trace errcode $CLI pipelines test my_pipeline tests/test_late_failure.py
+trace musterr $CLI pipelines test my_pipeline tests/test_late_failure.py
 
 title "Compute terminates before all results are received"
-trace errcode $CLI pipelines test my_pipeline tests/test_compute.py
+trace musterr $CLI pipelines test my_pipeline tests/test_compute.py
 rm "$OUT_REQUESTS"

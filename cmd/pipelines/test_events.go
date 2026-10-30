@@ -89,7 +89,8 @@ func (e testPipelineEvent) isTruncated(field string) bool {
 // testEventsPageSize is the largest page List Pipeline Events returns.
 const testEventsPageSize = 250
 
-// testEventReader reads the events of one update.
+// testEventReader reads the events of one update. fetchAllPipelineEvents in utils.go is not reused:
+// it reads one page into SDK events, which drop the test fields, and a test run needs every page.
 type testEventReader struct {
 	apiClient  *client.DatabricksClient
 	headers    map[string]string
