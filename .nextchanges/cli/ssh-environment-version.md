@@ -1,0 +1,1 @@
+* `databricks ssh connect` now documents `--environment-version` for choosing the serverless environment version, starts a separate default-named server for each version, and rejects the flag together with `--cluster`. ([#7264](https://github.com/databricks/cli/pull/7264))
