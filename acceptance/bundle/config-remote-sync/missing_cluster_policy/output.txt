@@ -36,7 +36,7 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
   "skippedChanges": [
     {
       "resourceKey": "resources.jobs.array_change",
-      "reason": "cluster_policy_read_failed",
+      "reason": "cluster_policy_permission_denied",
       "policyId": "[POLICY_ID]",
       "error": "Fault injected by test."
     }

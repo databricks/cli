@@ -146,7 +146,8 @@ Examples:
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryResolveFailed
 					return fmt.Errorf("failed to resolve field changes: %w", err)
 				}
-				stats.SkippedChangesCount = int64(skipped + len(policySkipped))
+				stats.SkippedChangesCount = int64(skipped)
+				stats.CollectSkippedResources(policySkipped)
 
 				if err := configsync.RestoreVariableReferences(ctx, b, fieldChanges, preResolved, &stats.Restore); err != nil {
 					log.Warnf(ctx, "variable restoration skipped: %v", err)

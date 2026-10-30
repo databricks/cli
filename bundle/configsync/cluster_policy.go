@@ -79,8 +79,11 @@ func (e *clusterPolicyLookupError) Unwrap() error { return e.err }
 
 func (e *clusterPolicyLookupError) skippedChange(resourceKey string) SkippedChange {
 	skip := SkippedChange{ResourceKey: resourceKey, Reason: SkipReasonClusterPolicyReadFailed, PolicyID: e.policyID, Error: e.err.Error()}
-	if errors.Is(e.err, apierr.ErrNotFound) {
+	switch {
+	case errors.Is(e.err, apierr.ErrNotFound):
 		skip.Reason, skip.Error = SkipReasonClusterPolicyNotFound, ""
+	case errors.Is(e.err, apierr.ErrPermissionDenied):
+		skip.Reason = SkipReasonClusterPolicyPermissionDenied
 	}
 	return skip
 }

@@ -347,11 +347,12 @@ func TestFilterClusterPolicyValuesFiltersPolicyAppliedValues(t *testing.T) {
 
 func TestFilterClusterPolicyValuesSkipsResourceOnPolicyLookupError(t *testing.T) {
 	for _, tt := range []struct {
-		name string
-		err  error
+		name   string
+		err    error
+		reason string
 	}{
-		{"permission denied", apierr.ErrPermissionDenied},
-		{"service unavailable", errors.New("policy service unavailable")},
+		{"permission denied", apierr.ErrPermissionDenied, configsync.SkipReasonClusterPolicyPermissionDenied},
+		{"service unavailable", errors.New("policy service unavailable"), configsync.SkipReasonClusterPolicyReadFailed},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			b := policyTestBundle(t, "resources.clusters.test", map[string]any{"policy_id": "policy"})
@@ -368,8 +369,7 @@ func TestFilterClusterPolicyValuesSkipsResourceOnPolicyLookupError(t *testing.T)
 			require.NoError(t, err)
 			assert.Empty(t, changes)
 			assert.Equal(t, []configsync.SkippedChange{{
-				ResourceKey: "resources.clusters.test", Reason: configsync.SkipReasonClusterPolicyReadFailed,
-				PolicyID: "policy", Error: tt.err.Error(),
+				ResourceKey: "resources.clusters.test", Reason: tt.reason, PolicyID: "policy", Error: tt.err.Error(),
 			}}, skipped)
 		})
 	}

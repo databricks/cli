@@ -35,8 +35,9 @@ const (
 )
 
 const (
-	SkipReasonClusterPolicyNotFound   = "cluster_policy_not_found"
-	SkipReasonClusterPolicyReadFailed = "cluster_policy_read_failed"
+	SkipReasonClusterPolicyNotFound         = "cluster_policy_not_found"
+	SkipReasonClusterPolicyPermissionDenied = "cluster_policy_permission_denied"
+	SkipReasonClusterPolicyReadFailed       = "cluster_policy_read_failed"
 )
 
 // SkippedChange identifies a resource left unchanged because its remote changes
@@ -49,10 +50,14 @@ type SkippedChange struct {
 }
 
 func (s SkippedChange) describe() string {
-	if s.Reason == SkipReasonClusterPolicyNotFound {
+	switch s.Reason {
+	case SkipReasonClusterPolicyNotFound:
 		return fmt.Sprintf("Left %s unchanged: cluster policy %s was not found.", s.ResourceKey, s.PolicyID)
+	case SkipReasonClusterPolicyPermissionDenied:
+		return fmt.Sprintf("Left %s unchanged: no permission to read cluster policy %s.", s.ResourceKey, s.PolicyID)
+	default:
+		return fmt.Sprintf("Left %s unchanged: cluster policy %s could not be read: %s", s.ResourceKey, s.PolicyID, s.Error)
 	}
-	return fmt.Sprintf("Left %s unchanged: cluster policy %s could not be read: %s", s.ResourceKey, s.PolicyID, s.Error)
 }
 
 // DiffOutput represents the complete output of the config-remote-sync command
