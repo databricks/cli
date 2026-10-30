@@ -320,3 +320,20 @@ func walkPaths(t *testing.T, value any) []string {
 	slices.Sort(paths)
 	return paths
 }
+
+type PromotedInner struct {
+	A               string   `json:"a,omitempty"`
+	ForceSendFields []string `json:"-"`
+}
+
+type promotedOuter struct {
+	PromotedInner
+	Own string `json:"own,omitempty"`
+}
+
+// The embedded struct's ForceSendFields does not force the outer struct's own fields;
+// the SDK marshaller would reject a name its struct does not have.
+func TestEmbeddedForceSendFieldsDoNotApplyToOuterFields(t *testing.T) {
+	v := promotedOuter{ForceSendFields: []string{"A", "Own"}}
+	assert.Equal(t, map[string]any{"a": ""}, flatten(t, v))
+}
