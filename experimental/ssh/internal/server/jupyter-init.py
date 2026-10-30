@@ -151,25 +151,51 @@ def _register_common_magics():
 @_log_exceptions
 def _register_pip_magics():
     """Register the pip magic command parser with IPython."""
+    import inspect
+
     from dbruntime import UserNamespaceInitializer
     from dbruntime.DatasetInfo import UserNamespaceDict
     from dbruntime.PipMagicOverrides import PipMagicOverrides
 
     user_namespace_initializer = UserNamespaceInitializer.getOrCreate()
     entry_point = user_namespace_initializer.get_spark_entry_point()
-    user_ns = UserNamespaceDict(
-        user_namespace_initializer.get_namespace_globals(),
-        entry_point.getDriverConf(),
-        entry_point,
-    )
     ip = get_ipython()
 
-    try:
-        # Older DBRs
-        pip_magic = PipMagicOverrides(entry_point, ip.user_ns["sc"]._conf, user_ns)
-    except Exception:
-        # Newer DBRs
-        pip_magic = PipMagicOverrides(entry_point, user_ns, ip)
+    params = inspect.signature(PipMagicOverrides).parameters
+    if "logger" in params:
+        # Runtimes that take a logger (serverless environment 5+) are migrating off Py4J, so build the
+        # magic from the driver connection the way dbruntime's own kernel does: on environment 6 the
+        # entry point is None. The constructor gained keyword arguments over several runtime releases,
+        # so pass only the ones this runtime accepts.
+        driver_connection = user_namespace_initializer.get_driver_connection()
+        driver_conf = driver_connection.runtime_integration_client.getDriverConf()
+        user_ns = UserNamespaceDict(user_namespace_initializer.get_namespace_globals(), driver_conf, entry_point)
+        kwargs = {
+            "orig_pip_magic": ip.magics_manager.magics["line"]["pip"],
+            "orig_conda_magic": ip.magics_manager.magics["line"]["conda"],
+            "driver_conf": driver_conf,
+            "environment_resource_client": driver_connection.environment_resource_client,
+            "sc_conf": user_namespace_initializer.db_connection.sc_conf,
+        }
+        pip_magic = PipMagicOverrides(
+            entry_point,
+            user_ns,
+            ip,
+            driver_connection.observability_client.getLogger(),
+            **{name: value for name, value in kwargs.items() if name in params},
+        )
+    else:
+        user_ns = UserNamespaceDict(
+            user_namespace_initializer.get_namespace_globals(),
+            entry_point.getDriverConf(),
+            entry_point,
+        )
+        try:
+            # Older DBRs
+            pip_magic = PipMagicOverrides(entry_point, ip.user_ns["sc"]._conf, user_ns)
+        except Exception:
+            # Newer DBRs
+            pip_magic = PipMagicOverrides(entry_point, user_ns, ip)
 
     ip.register_magics(pip_magic)
 
