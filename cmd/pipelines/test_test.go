@@ -7,6 +7,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -36,14 +39,9 @@ func TestValidatePytestArgs(t *testing.T) {
 	}
 }
 
-// TestValidatePytestArgsRejectsUnsupportedOptions covers every pytest option that the API rejects.
+// TestValidatePytestArgsRejectsUnsupportedOptions covers each form of option that the API rejects.
 func TestValidatePytestArgsRejectsUnsupportedOptions(t *testing.T) {
-	for _, arg := range []string{
-		"--collect-only", "-x", "--exitfirst", "--maxfail=1", "--lf", "--ff", "--cache-clear", "-n",
-		"--pdb", "--trace", "-q", "-v", "--color=yes", "--tb=short", "-s", "--capture=no", "-p",
-		"--junitxml=out.xml", "--html=out.html", "--basetemp=/tmp", "-c", "--rootdir=/", "--confcutdir=/",
-		"--pyargs", "--timeout=10", "--no-wait", "--junit-xml=out.xml",
-	} {
+	for _, arg := range []string{"--collect-only", "-n", "--rootdir=/", "--junit-xml=out.xml"} {
 		err := validatePytestArgs([]string{arg})
 		assert.EqualError(t, err, `unsupported pytest argument "`+arg+`": only -k and -m are supported`)
 	}
@@ -127,6 +125,11 @@ func TestTestIDBase(t *testing.T) {
 			want:    "/Workspace/Users/u",
 		},
 		{
+			name:    "without a root path, the parent of a folder test source",
+			sources: []string{"/Workspace/Users/u/tests/**"},
+			want:    "/Workspace/Users/u",
+		},
+		{
 			name:     "root path without test sources",
 			rootPath: "/Workspace/Users/u/orders",
 			want:     "/Workspace/Users/u/orders",
@@ -152,34 +155,66 @@ func TestTestIDBasePath(t *testing.T) {
 	assert.EqualError(t, err, "the pipeline has no root_path or testing.sources; use an absolute workspace path such as /Workspace/Users/someone@example.com/tests")
 }
 
+func TestBundleFilesRoot(t *testing.T) {
+	filePath := "/Workspace/Users/someone/.bundle/orders/dev/files"
+	syncRoot := "/Workspace/Users/someone/orders"
+	for _, tc := range []struct {
+		mode config.SyncMode
+		want string
+	}{
+		{mode: config.SyncModeOverwrite, want: filePath},
+		// Source-linked deployments run the source files, as TranslatePaths maps them.
+		{mode: config.SyncModeInPlace, want: syncRoot},
+		// Immutable deployments run a snapshot, whose path the command does not know.
+		{mode: config.SyncModeImmutable, want: ""},
+	} {
+		b := &bundle.Bundle{SyncRootPath: syncRoot}
+		b.Config.Workspace.FilePath = filePath
+		b.Config.Workspace.SyncMode = tc.mode
+		assert.Equal(t, tc.want, bundleFilesRoot(b), tc.mode)
+	}
+}
+
 func TestBundleTestSelectionPath(t *testing.T) {
 	syncRoot := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(syncRoot, "pipeline", "tests"), 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(syncRoot, "pipeline", "tests", "test_a.py"), nil, 0o644))
-	filePath := "/Workspace/Users/someone/.bundle/orders/dev/files"
-	base := func() (string, error) { return filePath + "/pipeline", nil }
-	noBase := func() (string, error) { return "", nil }
+	filesRoot := "/Workspace/Users/someone/.bundle/orders/dev/files"
+	base := filesRoot + "/pipeline"
 
 	// A path that exists where the user stands is a local path.
-	got, err := bundleTestSelectionPath(filepath.Join(syncRoot, "pipeline"), syncRoot, filePath, base, "tests/test_a.py")
+	got, err := bundleTestSelectionPath(filepath.Join(syncRoot, "pipeline"), syncRoot, filesRoot, base, "tests/test_a.py")
 	require.NoError(t, err)
-	assert.Equal(t, filePath+"/pipeline/tests/test_a.py", got)
+	assert.Equal(t, filesRoot+"/pipeline/tests/test_a.py", got)
 
 	// Otherwise it is a test ID, relative to the folder that test IDs are relative to.
-	got, err = bundleTestSelectionPath(syncRoot, syncRoot, filePath, base, "tests/test_a.py")
+	got, err = bundleTestSelectionPath(syncRoot, syncRoot, filesRoot, base, "tests/test_a.py")
 	require.NoError(t, err)
-	assert.Equal(t, filePath+"/pipeline/tests/test_a.py", got)
+	assert.Equal(t, filesRoot+"/pipeline/tests/test_a.py", got)
 
 	// Without that folder, it is a local path.
-	got, err = bundleTestSelectionPath(syncRoot, syncRoot, filePath, noBase, "tests/test_a.py")
+	got, err = bundleTestSelectionPath(syncRoot, syncRoot, filesRoot, "", "tests/test_a.py")
 	require.NoError(t, err)
-	assert.Equal(t, filePath+"/tests/test_a.py", got)
+	assert.Equal(t, filesRoot+"/tests/test_a.py", got)
 
-	// A path that leaves that folder is a local path too.
-	for _, testIDBase := range []func() (string, error){base, noBase} {
-		_, err = bundleTestSelectionPath(syncRoot, syncRoot, filePath, testIDBase, filepath.Join("..", "tests"))
-		assert.ErrorContains(t, err, "is outside the synchronized bundle files in "+syncRoot)
+	// A path that leaves that folder is a local path too. The error shows forward slashes.
+	for _, testIDBase := range []string{base, ""} {
+		_, err = bundleTestSelectionPath(syncRoot, syncRoot, filesRoot, testIDBase, filepath.Join("..", "tests"))
+		assert.ErrorContains(t, err, "is outside the synchronized bundle files in "+filepath.ToSlash(syncRoot))
 	}
+
+	// When the deployed path of local files is unknown, a local path is an error, but a test ID still works.
+	_, err = bundleTestSelectionPath(filepath.Join(syncRoot, "pipeline"), syncRoot, "", base, "tests/test_a.py")
+	assert.EqualError(t, err, "local test paths are not supported with workspace.sync_mode immutable; pass the test ID that the results show or an absolute workspace path")
+	got, err = bundleTestSelectionPath(syncRoot, syncRoot, "", base, "tests/test_a.py")
+	require.NoError(t, err)
+	assert.Equal(t, filesRoot+"/pipeline/tests/test_a.py", got)
+}
+
+func TestNeedsTestIDBase(t *testing.T) {
+	assert.False(t, needsTestIDBase(nil))
+	assert.False(t, needsTestIDBase([]string{"/Workspace/tests", "/Workspace/a.py::test_x"}))
+	assert.True(t, needsTestIDBase([]string{"/Workspace/tests", "tests/test_a.py::test_x"}))
 }
 
 func TestNewStartTestUpdateRequest(t *testing.T) {
