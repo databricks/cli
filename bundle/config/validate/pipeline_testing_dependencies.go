@@ -46,7 +46,7 @@ func (v *pipelineTestingDependencies) Apply(_ context.Context, b *bundle.Bundle)
 			return v, nil
 		}
 		summary := fmt.Sprintf("testing.environment.dependencies must point at files, not %q", dependency)
-		detail := "A test dependency is a project folder, a wheel, or a requirements file after -r, in the bundle, under /Workspace/, or under /Volumes/. Declare test packages in a project file, such as the test extra of a pyproject.toml, and reference that file, for example --editable ${workspace.file_path}[test]. For a path in the bundle, use -e or -r followed by a space. URLs, other pip options, and .. are not supported."
+		detail := "A test dependency is a project folder, a wheel, or a requirements file after -r, in the bundle, under /Workspace/, or under /Volumes/. Declare test packages in a project file, such as the test extra of a pyproject.toml, and reference its folder, for example -e ./project[test]. For a path in the bundle, use -e or -r followed by a space. URLs, other pip options, and .. are not supported."
 		switch pipelineTestingDependencyProblem(dependency) {
 		case "":
 			return v, nil

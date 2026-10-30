@@ -1,0 +1,33 @@
+bundle:
+  name: editable-folder
+
+resources:
+  jobs:
+    my_job:
+      name: my job
+      tasks:
+        - task_key: main
+          python_wheel_task:
+            package_name: orders
+            entry_point: main
+          environment_key: default
+      environments:
+        - environment_key: default
+          spec:
+            client: "1"
+            dependencies:
+              - -e ./project
+
+  pipelines:
+    my_pipeline:
+      name: my pipeline
+      environment:
+        dependencies:
+          - -e ./project
+      testing:
+        sources:
+          - glob:
+              include: /Workspace/Shared/orders/tests/**
+        environment:
+          dependencies:
+            - -e ./project[test]
