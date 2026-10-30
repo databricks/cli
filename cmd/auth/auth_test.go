@@ -3,6 +3,7 @@ package auth
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/cmd/root"
@@ -154,4 +155,15 @@ func TestPromptForHostRejectsEmptyHost(t *testing.T) {
 	host, err := tm.Result()
 	require.NoError(t, err)
 	assert.Equal(t, "https://workspace.test", host)
+}
+
+func TestPromptForHostRejectsHostEmptyAfterNormalization(t *testing.T) {
+	tm := termtest.Run(t, promptForHost)
+	tm.WaitFor("Databricks host")
+	tm.Type("?o=123" + termtest.KeyEnter)
+	tm.Golden("01-query-params")
+	tm.Type(strings.Repeat(termtest.KeyBackspace, len("?o=123")) + "https://workspace.test/?o=123" + termtest.KeyEnter)
+	host, err := tm.Result()
+	require.NoError(t, err)
+	assert.Equal(t, "https://workspace.test/?o=123", host)
 }

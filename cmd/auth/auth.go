@@ -58,7 +58,9 @@ func promptForHost(ctx context.Context) (string, error) {
 			if strings.TrimSpace(input) == "" {
 				return errors.New("host is required")
 			}
-			return nil
+			// Reject hosts that setHost would reject after the prompt,
+			// e.g. "/" or "?o=123", while the user can still edit them.
+			return normalizeLoginHost(&auth.AuthArguments{Host: input})
 		},
 	})
 	return strings.TrimSpace(result), err
