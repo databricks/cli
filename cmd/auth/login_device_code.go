@@ -153,6 +153,15 @@ func pendingLoginKey(cacheKey string) string {
 	return cacheKey + pendingLoginKeySuffix
 }
 
+// validateLoginProfileName returns an error if the token of profile name would
+// share its token store key with the pending login of another profile.
+func validateLoginProfileName(name string) error {
+	if strings.HasSuffix(name, pendingLoginKeySuffix) {
+		return fmt.Errorf("profile name %q must not end with %s, which marks pending device code logins", name, pendingLoginKeySuffix)
+	}
+	return nil
+}
+
 // target describes the login in errors.
 func (l nonInteractiveDeviceCodeLogin) target() string {
 	if l.profile != "" {

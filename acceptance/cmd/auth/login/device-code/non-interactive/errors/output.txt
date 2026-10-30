@@ -31,6 +31,11 @@ Error: --user-code requires --confirmation-code
 >>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
 Error: --confirmation-code requires --use-device-code
 
+=== Profile name that marks a pending login
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test#device-code --use-device-code
+Error: profile name "test#device-code" must not end with #device-code, which marks pending device code logins
+
 === Account host
 
 >>> musterr [CLI] auth login --host https://accounts.cloud.databricks.test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY

@@ -54,6 +54,9 @@ func promptForProfile(ctx context.Context, defaultValue string, takenNames []str
 			if err := databrickscfg.ValidateProfileName(input); err != nil {
 				return err
 			}
+			if err := validateLoginProfileName(input); err != nil {
+				return err
+			}
 			if slices.Contains(takenNames, input) {
 				return fmt.Errorf("profile %s already exists. Choose a different name, or rerun with --profile %s to use it", input, input)
 			}
@@ -363,6 +366,9 @@ a new profile is created.
 			if err != nil {
 				return err
 			}
+		}
+		if err := validateLoginProfileName(profileName); err != nil {
+			return err
 		}
 
 		// Load parameters from the existing profile if any.

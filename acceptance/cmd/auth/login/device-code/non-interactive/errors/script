@@ -20,6 +20,9 @@ trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-devic
 trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code --user-code WDJB-MJHT
 trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
 
+title "Profile name that marks a pending login\n"
+trace musterr $CLI auth login --host $DATABRICKS_HOST --profile 'test#device-code' --use-device-code
+
 title "Account host\n"
 trace musterr $CLI auth login --host https://accounts.cloud.databricks.test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
 
