@@ -156,6 +156,11 @@ type SshTunnelEvent struct {
 	// Whether the connection was successful.
 	IsSuccess bool `json:"is_success"`
 
+	// Serverless environment version the SSH server job is submitted with: the
+	// --environment-version value or the CLI default. Unset for dedicated clusters and
+	// for a custom base environment, which carries its own version.
+	EnvironmentVersion int `json:"environment_version,omitempty"`
+
 	// Whether a serverless usage policy was set via --usage-policy-id.
 	// Only the presence is recorded, not the policy ID itself.
 	HasUsagePolicy bool `json:"has_usage_policy"`
