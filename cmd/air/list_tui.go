@@ -17,7 +17,7 @@ import (
 // renderListText renders the table for text output: an inline navigable table in
 // a terminal (paging in older runs on demand), otherwise printed once. JSON is
 // handled by the caller.
-func renderListText(cmd *cobra.Command, f *runFetcher, limit int) error {
+func renderListText(cmd *cobra.Command, f *runFetcher, limit int, activeOnly bool) error {
 	ctx := cmd.Context()
 	out := cmd.OutOrStdout()
 
@@ -36,7 +36,7 @@ func renderListText(cmd *cobra.Command, f *runFetcher, limit int) error {
 			return err
 		}
 		if len(first) == 0 {
-			_, err := io.WriteString(out, "No runs found.\n")
+			_, err := io.WriteString(out, emptyListMessage(activeOnly))
 			return err
 		}
 		_, err = tea.NewProgram(
@@ -53,8 +53,19 @@ func renderListText(cmd *cobra.Command, f *runFetcher, limit int) error {
 		return err
 	}
 	warnIfTruncated(ctx, f)
+	if len(rows) == 0 {
+		_, err = io.WriteString(out, emptyListMessage(activeOnly))
+		return err
+	}
 	_, err = io.WriteString(out, staticListTable(r, rows, color))
 	return err
+}
+
+func emptyListMessage(activeOnly bool) string {
+	if activeOnly {
+		return "No active runs found.\n"
+	}
+	return "No runs found.\n"
 }
 
 // staticListTable renders the whole table once, with no selection — used when

@@ -183,6 +183,11 @@ func TestStaticListTable(t *testing.T) {
 	assert.Equal(t, "No runs found.\n", staticListTable(r, nil, false))
 }
 
+func TestEmptyListMessage(t *testing.T) {
+	assert.Equal(t, "No active runs found.\n", emptyListMessage(true))
+	assert.Equal(t, "No runs found.\n", emptyListMessage(false))
+}
+
 func TestStatusColor(t *testing.T) {
 	assert.Equal(t, colGreen, statusColor("SUCCESS"))
 	assert.Equal(t, colAmber, statusColor("RUNNING"))
