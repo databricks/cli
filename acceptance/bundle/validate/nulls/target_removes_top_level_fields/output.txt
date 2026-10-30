@@ -1,0 +1,77 @@
+
+>>> [CLI] bundle validate -o json -t dev
+Warning: expected a string value, found null
+  at targets.dev.mode
+  in databricks.yml:45:11
+
+Warning: expected a string value, found null
+  at targets.dev.cluster_id
+  in databricks.yml:46:17
+
+Warning: expected a string value, found null
+  at targets.dev.workspace.root_path
+  in databricks.yml:50:18
+
+Warning: expected a string value, found null
+  at targets.dev.presets.name_prefix
+  in databricks.yml:52:20
+
+Warning: expected a string value, found null
+  at targets.dev.presets.tags.removed
+  in databricks.yml:54:18
+
+{
+  "bundle": {
+    "mode": "development",
+    "cluster_id": "base-cluster",
+    "git": {
+      "branch": "base-branch"
+    }
+  },
+  "root_path": "/Workspace/Users/[USERNAME]/base",
+  "presets": {
+    "name_prefix": "base-[USERNAME]-",
+    "tags": {
+      "dev": "[USERNAME]",
+      "kept": "1",
+      "removed": "1"
+    }
+  },
+  "sync": {
+    "include": [
+      "databricks.yml"
+    ],
+    "paths": [
+      "."
+    ]
+  },
+  "permissions": [
+    {
+      "level": "CAN_MANAGE",
+      "user_name": "[USERNAME]"
+    }
+  ],
+  "variables": {
+    "with_default": {
+      "default": "base",
+      "value": "base"
+    },
+    "with_lookup": {
+      "lookup": {
+        "cluster": "some-test-cluster"
+      },
+      "value": "4321"
+    }
+  },
+  "run_as": {
+    "user_name": "base@example.com"
+  },
+  "artifacts": {
+    "kept": {
+      "build": "build-kept"
+    },
+    "removed": {
+      "build": "build-removed"
+    }
+  }
+}

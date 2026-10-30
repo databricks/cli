@@ -1,0 +1,11 @@
+# Null top-level fields in a target are meant to remove them, including the fields a target replaces rather than merges (mode, cluster_id, run_as, variable default and lookup).
+trace $CLI bundle validate -o json -t dev | jq '{
+  bundle: (.bundle | {mode, cluster_id, git: (.git | {branch})}),
+  root_path: .workspace.root_path,
+  presets: (.presets | {name_prefix, tags}),
+  sync,
+  permissions,
+  variables,
+  run_as,
+  artifacts: (.artifacts | map_values({build}))
+}'

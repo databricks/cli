@@ -1,0 +1,10 @@
+# Nulls in an included file are meant to remove the values set in databricks.yml, including a whole resource.
+errcode trace $CLI bundle validate -o json | jq '{
+  cluster_id: .bundle.cluster_id,
+  presets: (.presets | {name_prefix, tags}),
+  sync,
+  permissions,
+  variables,
+  run_as,
+  jobs: (.resources.jobs | keys)
+}'

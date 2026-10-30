@@ -1,0 +1,64 @@
+bundle:
+  name: test-bundle
+  mode: development
+  cluster_id: base-cluster
+  git:
+    branch: base-branch
+
+workspace:
+  root_path: ~/base
+
+presets:
+  name_prefix: base-${workspace.current_user.short_name}-
+  tags:
+    removed: "1"
+    kept: "1"
+
+sync:
+  include:
+    - databricks.yml
+
+permissions:
+  - level: CAN_MANAGE
+    user_name: ${workspace.current_user.userName}
+
+variables:
+  with_default:
+    default: base
+  with_lookup:
+    lookup:
+      cluster: some-test-cluster
+
+run_as:
+  user_name: base@example.com
+
+artifacts:
+  removed:
+    type: whl
+    build: build-removed
+  kept:
+    type: whl
+    build: build-kept
+
+targets:
+  dev:
+    mode: null
+    cluster_id: null
+    git: null
+    run_as: null
+    workspace:
+      root_path: null
+    presets:
+      name_prefix: null
+      tags:
+        removed: null
+    sync:
+      include: null
+    permissions: null
+    variables:
+      with_default:
+        default: null
+      with_lookup:
+        lookup: null
+    artifacts:
+      removed: null

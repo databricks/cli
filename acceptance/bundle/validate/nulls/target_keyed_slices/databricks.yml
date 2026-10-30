@@ -1,0 +1,61 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    foo:
+      name: foo
+      job_clusters:
+        - job_cluster_key: c1
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 2
+      parameters:
+        - name: p1
+          default: base
+      tasks:
+        - task_key: t1
+          job_cluster_key: c1
+          max_retries: 3
+          timeout_seconds: 60
+          notebook_task:
+            notebook_path: ./nb.py
+        - task_key: t2
+          job_cluster_key: c1
+          max_retries: 1
+          notebook_task:
+            notebook_path: ./nb.py
+  pipelines:
+    bar:
+      name: bar
+      clusters:
+        - label: default
+          num_workers: 2
+          node_type_id: i3.xlarge
+
+targets:
+  dev:
+    resources:
+      jobs:
+        foo:
+          job_clusters:
+            - job_cluster_key: c1
+              new_cluster:
+                num_workers: null
+          parameters:
+            - name: p1
+              default: null
+          tasks:
+            - task_key: t1
+              max_retries: null
+            - task_key: t3
+              job_cluster_key: c1
+              max_retries: null
+              notebook_task:
+                notebook_path: ./nb.py
+      pipelines:
+        bar:
+          clusters:
+            - label: default
+              num_workers: null
