@@ -1,0 +1,3 @@
+# A null resource in a target is meant to remove the resource from that target only; a null resource missing from the base should add nothing.
+errcode trace $CLI bundle validate -o json -t dev | jq '.resources | map_values(keys)'
+trace $CLI bundle validate -o json -t prod | jq '.resources | map_values(keys)'

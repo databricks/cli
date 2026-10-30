@@ -1,0 +1,58 @@
+
+>>> [CLI] bundle validate -o json
+Warning: expected a string value, found null
+  at bundle.cluster_id
+  in override.yml:2:15
+
+Warning: expected a string value, found null
+  at presets.name_prefix
+  in override.yml:5:16
+
+Warning: expected a string value, found null
+  at presets.tags.removed
+  in override.yml:7:14
+
+Warning: expected a string value, found null
+  at presets.tags.not_in_base
+  in override.yml:8:18
+
+Error: multiple resources or scripts have been defined with the same key: bar
+  at resources.jobs.bar
+  in databricks.yml:34:7
+     override.yml:23:10
+
+
+Exit code: 1
+{
+  "cluster_id": "base-cluster",
+  "presets": {
+    "name_prefix": "base-",
+    "tags": {
+      "kept": "1",
+      "removed": "1"
+    }
+  },
+  "sync": {
+    "include": [
+      "databricks.yml"
+    ]
+  },
+  "permissions": [
+    {
+      "group_name": "users",
+      "level": "CAN_VIEW"
+    }
+  ],
+  "variables": {
+    "with_default": {
+      "default": "base"
+    }
+  },
+  "run_as": {
+    "user_name": "base@example.com"
+  },
+  "jobs": [
+    "bar",
+    "foo"
+  ]
+}

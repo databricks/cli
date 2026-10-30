@@ -1,0 +1,31 @@
+bundle:
+  name: test-bundle
+
+include:
+  - a.yml
+  - b.yml
+
+resources:
+  jobs:
+    foo:
+      name: foo
+      description: base description
+      max_concurrent_runs: 5
+      timeout_seconds: 60
+      tags:
+        removed: "1"
+        kept: "1"
+      tasks:
+        - task_key: t1
+          max_retries: 3
+          notebook_task:
+            notebook_path: ./nb.py
+    bar:
+      name: bar
+
+targets:
+  dev:
+    resources:
+      jobs:
+        foo:
+          timeout_seconds: 120

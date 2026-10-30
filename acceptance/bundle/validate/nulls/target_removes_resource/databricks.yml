@@ -1,0 +1,22 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    foo:
+      name: foo
+    bar:
+      name: bar
+  pipelines:
+    baz:
+      name: baz
+
+targets:
+  dev:
+    resources:
+      jobs:
+        bar: null
+        not_in_base: null
+      pipelines:
+        baz:
+  prod: {}
