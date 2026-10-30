@@ -589,6 +589,18 @@ func TestLoginDeviceCodeCompletionChecksSettings(t *testing.T) {
 	}
 }
 
+// The host of the second step is compared in its canonical form, like the
+// host in the cache key.
+func TestLoginDeviceCodeCompletionWithSameHostInAnotherForm(t *testing.T) {
+	server := newDeviceCodeServer(t)
+	setUpDeviceCodeLogin(t, "")
+	ctx := cmdio.MockDiscard(t.Context())
+	require.NoError(t, runDeviceCodeLogin(ctx, "--host", server.URL))
+
+	err := runDeviceCodeLogin(ctx, "--host", server.URL+"/browse", "--user-code", "WDJB-MJHT", "--confirmation-code", "FTFA-QQKY")
+	assert.NoError(t, err)
+}
+
 // The server keeps rejecting the token requests for a rate limited device
 // code, so its pending login is deleted.
 func TestLoginDeviceCodeCompletionRateLimited(t *testing.T) {

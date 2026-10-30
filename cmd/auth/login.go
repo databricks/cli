@@ -481,7 +481,7 @@ a new profile is created.
 			tokenStore:     tokenStore,
 			key:            pendingLoginKey(oauthArgument.GetCacheKey()),
 			profile:        profileName,
-			host:           authArguments.Host,
+			host:           (&config.Config{Host: authArguments.Host}).CanonicalHostName(),
 			clientID:       clientID,
 			scopes:         scopesList,
 		}

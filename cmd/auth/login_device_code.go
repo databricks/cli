@@ -136,7 +136,9 @@ func validateDeviceCodeCompletionFlags(cmd *cobra.Command, useDeviceCode bool) e
 // nonInteractiveDeviceCodeLogin runs the two steps of a device code login
 // that cannot read the confirmation code from stdin. The first step stores the
 // device code as a pending login under key, and the second step exchanges it,
-// so that the device code never leaves the machine.
+// so that the device code never leaves the machine. The host is canonical, like
+// the host in the cache key, so that the same host passed in another form
+// completes the login.
 type nonInteractiveDeviceCodeLogin struct {
 	persistentAuth *u2m.PersistentAuth
 	tokenStore     storage.Store
