@@ -522,7 +522,7 @@ func TestLoginDeviceCodeCompletionChecksUserCode(t *testing.T) {
 	require.NoError(t, runDeviceCodeLogin(ctx, "--host", server.URL, "--profile", "test"))
 
 	err := runDeviceCodeLogin(ctx, "--host", server.URL, "--profile", "test", "--user-code", "AAAA-AAAA", "--confirmation-code", "FTFA-QQKY")
-	assert.EqualError(t, err, "a newer login for profile test replaced this one. Complete the newer login with its user code. "+startNewLoginHint)
+	assert.EqualError(t, err, "--user-code does not match the pending login for profile test. Check the user code. If you started a newer login, complete it with its user code. "+startNewLoginHint)
 	assert.Zero(t, tokenRequests.Load())
 
 	// The pending login is kept, and the user code is compared the way the

@@ -215,12 +215,13 @@ func (l nonInteractiveDeviceCodeLogin) complete(ctx context.Context, userCode, c
 	if pending == nil {
 		return nil, fmt.Errorf("no pending device code login for %s. %s", l.target(), startNewLoginHint)
 	}
-	// Each profile or host has one pending login, so a newer login replaces
-	// it. Checking the user code here avoids sending the confirmation code
-	// with the wrong device code, which the server would reject as a wrong
-	// confirmation code.
+	// The user code can be mistyped, or belong to a login that a newer one
+	// replaced, because each profile or host has one pending login. Checking
+	// the user code here avoids sending the confirmation code with the wrong
+	// device code, which the server would reject as a wrong confirmation
+	// code.
 	if !sameCode(pending.UserCode, userCode) {
-		return nil, fmt.Errorf("a newer login for %s replaced this one. Complete the newer login with its user code. %s", l.target(), startNewLoginHint)
+		return nil, fmt.Errorf("--user-code does not match the pending login for %s. Check the user code. If you started a newer login, complete it with its user code. %s", l.target(), startNewLoginHint)
 	}
 	if changed := l.changedSetting(*pending); changed != "" {
 		return nil, fmt.Errorf("the login for %s was started with %s. Complete it with the same command that started it. %s", l.target(), changed, startNewLoginHint)

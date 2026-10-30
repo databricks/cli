@@ -13,7 +13,7 @@
 ]
 
 >>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
-Error: a newer login for profile test replaced this one. Complete the newer login with its user code. Run the same command without --user-code and --confirmation-code to start a new login
+Error: --user-code does not match the pending login for profile test. Check the user code. If you started a newer login, complete it with its user code. Run the same command without --user-code and --confirmation-code to start a new login
 
 >>> [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --user-code NEWR-CODE --confirmation-code FTFA-QQKY
 Profile test was successfully saved
