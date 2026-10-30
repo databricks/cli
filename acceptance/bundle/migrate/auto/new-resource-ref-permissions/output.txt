@@ -111,12 +111,12 @@ Notice: migrating your bundle to direct deployment engine (https://github.com/da
           "object_id": "/jobs/[TEST_JOB_ID]",
           "__embed__": [
             {
-              "level": "CAN_VIEW",
-              "user_name": "viewer@databricks.com"
-            },
-            {
               "level": "CAN_MANAGE",
               "service_principal_name": "${resources.apps.new_app.service_principal_client_id}"
+            },
+            {
+              "level": "CAN_VIEW",
+              "user_name": "viewer@databricks.com"
             },
             {
               "level": "IS_OWNER",
@@ -125,7 +125,7 @@ Notice: migrating your bundle to direct deployment engine (https://github.com/da
           ]
         },
         "vars": {
-          "[1].service_principal_name": "${resources.apps.new_app.service_principal_client_id}"
+          "[0].service_principal_name": "${resources.apps.new_app.service_principal_client_id}"
         }
       },
       "remote_state": {

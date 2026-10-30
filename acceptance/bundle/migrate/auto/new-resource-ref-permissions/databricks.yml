@@ -15,10 +15,10 @@ resources:
           notebook_task:
             notebook_path: "./notebook.py"
       permissions:
-        - level: CAN_VIEW
-          user_name: viewer@databricks.com
         # - level: CAN_MANAGE
         #   service_principal_name: ${resources.apps.new_app.service_principal_client_id}
+        - level: CAN_VIEW
+          user_name: viewer@databricks.com
 
   pipelines:
     test_pipeline:
