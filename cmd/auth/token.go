@@ -452,14 +452,17 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 		u2m.WithOAuthArgument(oauthArgument),
 		u2m.WithBrowser(func(url string) error { return browser.Open(ctx, url) }),
 	}
+
+	// Challenge uses the context passed to NewPersistentAuth, so the timeout
+	// must be set before it.
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
 	persistentAuth, err := u2m.NewPersistentAuth(ctx, persistentAuthOpts...)
 	if err != nil {
 		return "", nil, err
 	}
 	defer persistentAuth.Close()
-
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
-	defer cancel()
 
 	token, err := persistentAuth.Challenge()
 	if err != nil {
