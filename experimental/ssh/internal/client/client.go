@@ -226,6 +226,16 @@ func (o *ClientOptions) IsServerlessMode() bool {
 	return o.ClusterID == "" && o.ConnectionName != ""
 }
 
+// submittedEnvironmentVersion returns the serverless environment version the server job is
+// submitted with, or 0 when it sets none: dedicated clusters have no environment, and a custom
+// base environment carries its own version.
+func (o *ClientOptions) submittedEnvironmentVersion() int {
+	if !o.IsServerlessMode() || o.BaseEnvironment != "" {
+		return 0
+	}
+	return max(o.EnvironmentVersion, minEnvironmentVersion)
+}
+
 // SessionIdentifier returns the unique identifier for the session.
 // For dedicated clusters, this is the cluster ID. For serverless, this is the connection name.
 func (o *ClientOptions) SessionIdentifier() string {
@@ -842,7 +852,7 @@ func buildSSHServerSubmitRun(version, secretScopeName, jobNotebookPath, baseEnvi
 		if baseEnvironment != "" {
 			spec.BaseEnvironment = baseEnvironment
 		} else {
-			spec.EnvironmentVersion = strconv.Itoa(max(opts.EnvironmentVersion, minEnvironmentVersion))
+			spec.EnvironmentVersion = strconv.Itoa(opts.submittedEnvironmentVersion())
 		}
 		submitRequest.Environments = []jobs.JobEnvironment{
 			{
@@ -1595,6 +1605,7 @@ func buildSshTunnelEvent(opts ClientOptions, outcome connectOutcome) *protos.Ssh
 		ServerStartTimeMs:  outcome.serverStartTimeMs,
 		IsSuccess:          outcome.isSuccess,
 		HasBaseEnvironment: opts.BaseEnvironment != "",
+		EnvironmentVersion: opts.submittedEnvironmentVersion(),
 		HasUsagePolicy:     opts.UsagePolicyID != "",
 		// The connect side can only report that the knob was asked for. Whether any detached
 		// process was there to keep is reported by the server, at teardown.
