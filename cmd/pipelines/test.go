@@ -10,9 +10,9 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -107,34 +107,55 @@ func resolveTestSelections(selections []string, toWorkspacePath func(string) (st
 }
 
 // bundleWorkspacePath maps a local path, relative to the working directory, to its deployed
-// path under the bundle's workspace file path.
-func bundleWorkspacePath(cwd, syncRoot, workspaceFilePath, localPath string) (string, error) {
+// path under filesRoot, the deployed path of the bundle's synchronized files.
+func bundleWorkspacePath(cwd, syncRoot, filesRoot, localPath string) (string, error) {
 	if !filepath.IsAbs(localPath) {
 		localPath = filepath.Join(cwd, localPath)
 	}
 	rel, err := filepath.Rel(syncRoot, localPath)
 	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
-		return "", fmt.Errorf("%s is outside the synchronized bundle files in %s", localPath, syncRoot)
+		return "", fmt.Errorf("%s is outside the synchronized bundle files in %s", filepath.ToSlash(localPath), filepath.ToSlash(syncRoot))
 	}
-	return path.Join(workspaceFilePath, filepath.ToSlash(rel)), nil
+	return path.Join(filesRoot, filepath.ToSlash(rel)), nil
+}
+
+// bundleFilesRoot returns the deployed path of the bundle's synchronized files, as TranslatePaths
+// maps resource paths, or "" for an immutable deployment, whose snapshot path the command does not know.
+func bundleFilesRoot(b *bundle.Bundle) string {
+	switch {
+	case b.SyncMode() == config.SyncModeImmutable:
+		return ""
+	case b.IsSourceLinkedDeployment():
+		return b.SyncRootPath
+	default:
+		return b.Config.Workspace.FilePath
+	}
 }
 
 // bundleTestSelectionPath maps a relative selection to a workspace path. A path that exists locally,
-// relative to the working directory, maps to its deployed path. Otherwise the selection is a test
-// ID that the CLI printed, relative to the folder that testIDBase returns, unless it leaves that folder.
-func bundleTestSelectionPath(cwd, syncRoot, workspaceFilePath string, testIDBase func() (string, error), localPath string) (string, error) {
+// relative to the working directory, maps to its deployed path under filesRoot. Otherwise the
+// selection is a test ID that the CLI printed, relative to testIDBase, unless it leaves the working
+// directory.
+func bundleTestSelectionPath(cwd, syncRoot, filesRoot, testIDBase, localPath string) (string, error) {
 	rel := path.Clean(filepath.ToSlash(localPath))
-	leavesBase := rel == ".." || strings.HasPrefix(rel, "../")
-	if _, err := os.Stat(filepath.Join(cwd, localPath)); err != nil && !leavesBase {
-		base, err := testIDBase()
-		if err != nil {
-			return "", err
-		}
-		if base != "" {
-			return testIDBasePath(base, localPath)
+	leavesCwd := rel == ".." || strings.HasPrefix(rel, "../")
+	if _, err := os.Stat(filepath.Join(cwd, localPath)); err != nil && !leavesCwd && testIDBase != "" {
+		return testIDBasePath(testIDBase, localPath)
+	}
+	if filesRoot == "" {
+		return "", errors.New("local test paths are not supported with workspace.sync_mode immutable; pass the test ID that the results show or an absolute workspace path")
+	}
+	return bundleWorkspacePath(cwd, syncRoot, filesRoot, localPath)
+}
+
+// needsTestIDBase reports whether a selection is a relative path, which may be a test ID.
+func needsTestIDBase(selections []string) bool {
+	for _, selection := range selections {
+		if p, _, _ := strings.Cut(selection, "::"); !strings.HasPrefix(p, "/") {
+			return true
 		}
 	}
-	return bundleWorkspacePath(cwd, syncRoot, workspaceFilePath, localPath)
+	return false
 }
 
 // testIDBase returns the folder that the service names test cases relative to, or "" if the
@@ -268,11 +289,12 @@ func (t testTarget) printHeader(out io.Writer, updateID string) {
 	fmt.Fprintf(out, "Update: %s\n", updateID)
 }
 
-// lazyTestIDBase returns a function that reads the folder of test IDs once, when a selection needs it.
-func lazyTestIDBase(ctx context.Context, w *databricks.WorkspaceClient, pipelineID string) func() (string, error) {
-	return sync.OnceValues(func() (string, error) {
-		return getTestIDBase(ctx, w, pipelineID)
-	})
+// readTestIDBase reads the folder of test IDs from the deployed pipeline, if a selection needs it.
+func readTestIDBase(ctx context.Context, w *databricks.WorkspaceClient, pipelineID string, selections []string) (string, error) {
+	if !needsTestIDBase(selections) {
+		return "", nil
+	}
+	return getTestIDBase(ctx, w, pipelineID)
 }
 
 // resolveTestTargetByID identifies the pipeline by --pipeline-id; all positional arguments are selections.
@@ -286,12 +308,11 @@ func resolveTestTargetByID(cmd *cobra.Command, args []string, pipelineID string)
 	ctx := cmd.Context()
 	w := cmdctx.WorkspaceClient(ctx)
 
-	base := lazyTestIDBase(ctx, w, pipelineID)
+	base, err := readTestIDBase(ctx, w, pipelineID, args)
+	if err != nil {
+		return testTarget{}, err
+	}
 	selections, err := resolveTestSelections(args, func(p string) (string, error) {
-		base, err := base()
-		if err != nil {
-			return "", err
-		}
 		return testIDBasePath(base, p)
 	})
 	if err != nil {
@@ -335,9 +356,13 @@ func resolveTestTargetInBundle(cmd *cobra.Command, args []string) (testTarget, e
 		selectionArgs = args[1:]
 	}
 	w := b.WorkspaceClient(ctx)
-	base := lazyTestIDBase(ctx, w, pipelineID)
+	base, err := readTestIDBase(ctx, w, pipelineID, selectionArgs)
+	if err != nil {
+		return testTarget{}, err
+	}
+	filesRoot := bundleFilesRoot(b)
 	selections, err := resolveTestSelections(selectionArgs, func(p string) (string, error) {
-		return bundleTestSelectionPath(cwd, b.SyncRootPath, b.Config.Workspace.FilePath, base, p)
+		return bundleTestSelectionPath(cwd, b.SyncRootPath, filesRoot, base, p)
 	})
 	if err != nil {
 		return testTarget{}, err
@@ -348,7 +373,7 @@ func resolveTestTargetInBundle(cmd *cobra.Command, args []string) (testTarget, e
 func testCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "test [PIPELINE_KEY] [TEST_SELECTION...] [flags] [--pytest-arg=ARG ...]",
-		Short: "Run the tests of a pipeline",
+		Short: "*Preview* Run the tests of a pipeline",
 		Long: `Run the tests of a pipeline in a test-only update.
 
 PIPELINE_KEY is the unique name of the pipeline, as defined in its YAML file.
