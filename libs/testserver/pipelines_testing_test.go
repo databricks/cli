@@ -83,9 +83,13 @@ func TestPipelineTestUpdate(t *testing.T) {
 	last := events[len(events)-1]
 	query.Set("filter", "update_id='"+updateID+"' AND timestamp >= '"+last.Timestamp+"'")
 	events, _ = listEvents(t, workspace, pipelineID, query)
-	require.Len(t, events, 2)
+	require.Len(t, events, 3)
 	assert.Equal(t, last.Id, events[0].Id)
 	assert.Equal(t, map[string]any{"total": 2, "passed": 1, "failed": 1, "skipped": 0, "errors": 0}, events[1].Details["test_run_summary"])
+	// Like the service, the update's error is the test verdict.
+	require.NotNil(t, events[2].Error)
+	assert.True(t, events[2].Error.Fatal)
+	assert.Equal(t, "[PIPELINE_TEST_FAILED] 1 of the pipeline's tests failed (1 passed, 0 skipped).", events[2].Error.Exceptions[0].Message)
 
 	query.Set("filter", "timestamp >= 'yesterday'")
 	assert.Equal(t, 400, workspace.PipelineEvents(pipelineID, query).StatusCode)

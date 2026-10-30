@@ -347,6 +347,30 @@ func TestTestRunError(t *testing.T) {
 			wantErr: "update u1 is FAILED: Commit failed.",
 		},
 		{
+			name: "update failed with the service's verdict after tests failed",
+			events: func() []testPipelineEvent {
+				return []testPipelineEvent{
+					caseEvent(t, "t::a", "FAILED", ""),
+					summaryEvent(t, 1, 0, 1, 0, 0),
+					decodeTestEvent(t, `{"id": "fatal", "error": {"fatal": true, "exceptions": [{"class_name": "TestFailure", "message": "[PIPELINE_TEST_FAILED] 1 of the pipeline's tests failed (0 passed, 0 skipped)."}]}}`),
+				}
+			},
+			state:   pipelines.UpdateInfoStateFailed,
+			wantErr: root.ErrAlreadyPrinted.Error(),
+		},
+		{
+			name: "update failed with the service's verdict although no test failed",
+			events: func() []testPipelineEvent {
+				return []testPipelineEvent{
+					caseEvent(t, "t::a", "PASSED", ""),
+					summaryEvent(t, 1, 1, 0, 0, 0),
+					decodeTestEvent(t, `{"id": "fatal", "error": {"fatal": true, "exceptions": [{"message": "[PIPELINE_TEST_FAILED] 1 of the pipeline's tests failed."}]}}`),
+				}
+			},
+			state:   pipelines.UpdateInfoStateFailed,
+			wantErr: "update u1 is FAILED: [PIPELINE_TEST_FAILED] 1 of the pipeline's tests failed.",
+		},
+		{
 			name: "canceled after tests failed",
 			events: func() []testPipelineEvent {
 				return []testPipelineEvent{caseEvent(t, "t::a", "FAILED", ""), summaryEvent(t, 1, 0, 1, 0, 0)}

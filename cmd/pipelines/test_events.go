@@ -183,6 +183,22 @@ type testRun struct {
 	unreadable int
 	// fatalError is the last fatal error reported for the update.
 	fatalError string
+	// fatalErrorIsVerdict is whether fatalError is the service's verdict that tests failed.
+	fatalErrorIsVerdict bool
+}
+
+// testVerdictErrorPrefix starts the message of the error by which the service reports that tests
+// failed, such as "[PIPELINE_TEST_FAILED] 1 of the pipeline's tests failed (1 passed, 0 skipped).".
+const testVerdictErrorPrefix = "[PIPELINE_TEST_FAILED]"
+
+// isTestVerdict reports whether an update error is the service's verdict that tests failed.
+func isTestVerdict(e *pipelines.ErrorDetail) bool {
+	for _, exception := range e.Exceptions {
+		if strings.HasPrefix(exception.Message, testVerdictErrorPrefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func newTestRun(root string) *testRun {
@@ -209,6 +225,7 @@ func (r *testRun) add(e testPipelineEvent) *testCaseResult {
 
 	if e.Error != nil && e.Error.Fatal {
 		r.fatalError = errorDetailText(e.Error)
+		r.fatalErrorIsVerdict = isTestVerdict(e.Error)
 	}
 
 	switch e.EventType {

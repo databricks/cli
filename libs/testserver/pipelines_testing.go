@@ -209,6 +209,21 @@ func (s *FakeWorkspace) startPipelineTestRun(pipelineID, updateID string, caseID
 			"errors":  counts["errors"],
 		}},
 	})
+	// Like the service, a run whose tests failed or errored ends with the test verdict as the
+	// update's error.
+	if !breaksUpdate && (counts["failed"] > 0 || counts["errors"] > 0) {
+		failed := counts["failed"] + counts["errors"]
+		emit(ended, fakePipelineEvent{
+			EventType: "update_progress",
+			Level:     pipelines.EventLevelError,
+			Message:   fmt.Sprintf("%d pipeline tests failed.", failed),
+			Error: &pipelines.ErrorDetail{Fatal: true, Exceptions: []pipelines.SerializedException{{
+				ClassName: "TestFailure",
+				Message:   fmt.Sprintf("[PIPELINE_TEST_FAILED] %d of the pipeline's tests failed (%d passed, %d skipped).", failed, counts["passed"], counts["skipped"]),
+			}}},
+			Details: map[string]any{"update_progress": map[string]any{"state": "FAILED"}},
+		})
+	}
 	if breaksUpdate {
 		emit(ended, fakePipelineEvent{
 			EventType: "update_progress",
