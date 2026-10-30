@@ -1016,3 +1016,40 @@ func TestNormalizeStructDropEmptyStringsKeepsNonEmpty(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, "value", opt.MustString())
 }
+
+func TestNormalizeKeepNulls(t *testing.T) {
+	type Inner struct {
+		Foo string `json:"foo"`
+	}
+	type Tmp struct {
+		Str   string            `json:"str"`
+		Int   int               `json:"int"`
+		Inner *Inner            `json:"inner"`
+		Map   map[string]string `json:"map"`
+		List  []string          `json:"list"`
+	}
+
+	var typ Tmp
+	vin := dyn.V(map[string]dyn.Value{
+		"str":   dyn.NilValue,
+		"int":   dyn.NilValue,
+		"inner": dyn.V(map[string]dyn.Value{"foo": dyn.NilValue}),
+		"map":   dyn.V(map[string]dyn.Value{"key": dyn.NilValue}),
+		"list":  dyn.V([]dyn.Value{dyn.V("a"), dyn.NilValue}),
+	})
+
+	vout, diags := Normalize(typ, vin, KeepNulls)
+	assert.Equal(t, diag.Diagnostics{{
+		Severity:  diag.Warning,
+		Summary:   `expected a string value, found null`,
+		Locations: []diag.Location{{}},
+		Paths:     []*structpath.PathNode{structpath.NewIndex(structpath.NewStringKey(nil, "list"), 1)},
+	}}, diags)
+	assert.Equal(t, map[string]any{
+		"str":   nil,
+		"int":   nil,
+		"inner": map[string]any{"foo": nil},
+		"map":   map[string]any{"key": nil},
+		"list":  []any{"a"},
+	}, vout.AsAny())
+}

@@ -71,6 +71,10 @@ func (e elementsByKey) Map(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 	return e.doMap(nil, v, Merge)
 }
 
+func (e elementsByKey) MapKeepingNulls(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
+	return e.doMap(nil, v, MergeKeepingNulls)
+}
+
 func (e elementsByKey) MapWithOverride(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 	return e.doMap(nil, v, func(a, b dyn.Value) (dyn.Value, error) {
 		return Override(a, b, OverrideVisitor{
@@ -104,4 +108,10 @@ func ElementsBySortedKey(key string, keyFunc func(dyn.Value) string) dyn.MapFunc
 
 func ElementsByKeyWithOverride(key string, keyFunc func(dyn.Value) string) dyn.MapFunc {
 	return elementsByKey{key, keyFunc, false}.MapWithOverride
+}
+
+// ElementsByKeyKeepingNulls is like [ElementsByKey], except that elements with the same
+// key are merged with [MergeKeepingNulls].
+func ElementsByKeyKeepingNulls(key string, keyFunc func(dyn.Value) string) dyn.MapFunc {
+	return elementsByKey{key, keyFunc, false}.MapKeepingNulls
 }

@@ -396,7 +396,7 @@ func TestRunAsIdentities(t *testing.T) {
 		runAs     string
 		wantError bool
 	}{
-		{`null`, true},
+		{`null`, false},
 		{`{}`, true},
 		{`{user_name: ""}`, true},
 		{`{service_principal_name: ""}`, true},

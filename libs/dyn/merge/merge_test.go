@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMergeMaps(t *testing.T) {
@@ -298,4 +299,100 @@ func TestMergePrimitivesError(t *testing.T) {
 		assert.EqualError(t, err, "cannot merge string with map")
 		assert.Equal(t, dyn.InvalidValue, out)
 	}
+}
+
+func TestMergeNullModes(t *testing.T) {
+	a := dyn.V(map[string]dyn.Value{
+		"removed": dyn.V("a"),
+		"kept":    dyn.V("a"),
+		"nested": dyn.V(map[string]dyn.Value{
+			"removed": dyn.V("a"),
+			"kept":    dyn.V("a"),
+		}),
+		"list": dyn.V([]dyn.Value{dyn.V("a")}),
+	})
+	b := dyn.V(map[string]dyn.Value{
+		"removed": dyn.NilValue,
+		"nested": dyn.V(map[string]dyn.Value{
+			"removed": dyn.NilValue,
+		}),
+		"not_in_a": dyn.NilValue,
+		"new": dyn.V(map[string]dyn.Value{
+			"null":  dyn.NilValue,
+			"value": dyn.V("b"),
+		}),
+		"list": dyn.V([]dyn.Value{
+			dyn.V(map[string]dyn.Value{"null": dyn.NilValue}),
+		}),
+	})
+
+	for _, tc := range []struct {
+		name  string
+		merge func(a, b dyn.Value) (dyn.Value, error)
+		want  map[string]any
+	}{
+		{
+			name:  "ignored",
+			merge: Merge,
+			want: map[string]any{
+				"removed":  "a",
+				"kept":     "a",
+				"nested":   map[string]any{"removed": "a", "kept": "a"},
+				"list":     []any{"a", map[string]any{"null": nil}},
+				"not_in_a": nil,
+				"new":      map[string]any{"null": nil, "value": "b"},
+			},
+		},
+		{
+			name:  "keeping nulls",
+			merge: MergeKeepingNulls,
+			want: map[string]any{
+				"removed":  nil,
+				"kept":     "a",
+				"nested":   map[string]any{"removed": nil, "kept": "a"},
+				"list":     []any{"a", map[string]any{"null": nil}},
+				"not_in_a": nil,
+				"new":      map[string]any{"null": nil, "value": "b"},
+			},
+		},
+		{
+			name:  "removing nulls",
+			merge: MergeRemovingNulls,
+			want: map[string]any{
+				"kept":   "a",
+				"nested": map[string]any{"kept": "a"},
+				"list":   []any{"a", map[string]any{}},
+				"new":    map[string]any{"value": "b"},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			out, err := tc.merge(a, b)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, out.AsAny())
+		})
+	}
+}
+
+func TestMergeNullModesNilRoot(t *testing.T) {
+	b := dyn.V(map[string]dyn.Value{
+		"null":  dyn.NilValue,
+		"value": dyn.V("b"),
+	})
+
+	out, err := MergeKeepingNulls(dyn.NilValue, b)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"null": nil, "value": "b"}, out.AsAny())
+
+	out, err = MergeRemovingNulls(dyn.NilValue, b)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"value": "b"}, out.AsAny())
+
+	out, err = MergeKeepingNulls(b, dyn.NilValue)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.KindNil, out.Kind())
+
+	out, err = MergeRemovingNulls(b, dyn.NilValue)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"null": nil, "value": "b"}, out.AsAny())
 }
