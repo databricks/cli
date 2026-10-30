@@ -1,0 +1,28 @@
+
+=== agent report with a receipt
+>>> [CLI] air feedback --message Logs omitted the failure reason --reporter agent --agent-name codex --run-id 123 -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "data": {
+    "received": true,
+    "feedback_id": "[UUID]"
+  }
+}
+
+=== human report
+>>> [CLI] air feedback --message The workaround succeeded
+Feedback received. Reference: [UUID]
+
+=== validation errors
+>>> musterr [CLI] air feedback --message     -o json
+true
+
+>>> musterr [CLI] air feedback --message Logs omitted the failure reason --reporter robot -o json
+true
+
+>>> musterr [CLI] air feedback --message Logs omitted the failure reason --agent-name codex -o json
+true
+
+>>> musterr [CLI] air feedback unexpected --message Logs omitted the failure reason -o json
+true
