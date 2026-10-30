@@ -21,7 +21,7 @@ Update: [UUID]
 
 === Without a root_path, test selections must be workspace paths
 >>> musterr [CLI] pipelines test --pipeline-id [UUID] tests
-Error: cannot resolve test selection "tests": the pipeline has no root_path; use an absolute workspace path such as /Workspace/Users/someone@example.com/tests
+Error: cannot resolve test selection "tests": the pipeline has no root_path or testing.sources; use an absolute workspace path such as /Workspace/Users/someone@example.com/tests
 
 >>> [CLI] pipelines test --pipeline-id [UUID] /Workspace/Shared/tests/test_shared.py::test_x
 Pipeline: [UUID]

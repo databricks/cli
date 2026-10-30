@@ -3,6 +3,7 @@ package pipelines
 import (
 	"encoding/json"
 	"errors"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -96,13 +97,89 @@ func TestBundleWorkspacePath(t *testing.T) {
 	assert.ErrorContains(t, err, "is outside the synchronized bundle files in "+syncRoot)
 }
 
-func TestRootPathWorkspacePath(t *testing.T) {
-	got, err := rootPathWorkspacePath("/Workspace/Users/someone/orders", "tests/test_orders.py")
+func TestTestIDBase(t *testing.T) {
+	tests := []struct {
+		name     string
+		rootPath string
+		sources  []string
+		want     string
+	}{
+		{
+			name:     "deepest folder holding the root path and every test source",
+			rootPath: "/Workspace/Users/u/files/src/my_pipeline",
+			sources:  []string{"/Workspace/Users/u/files/tests/**", "/Workspace/Users/u/files/checks/test_x.py"},
+			want:     "/Workspace/Users/u/files",
+		},
+		{
+			name:     "root path that holds the test sources",
+			rootPath: "/Users/u/sl",
+			sources:  []string{"/Users/u/sl/tests/**"},
+			want:     "/Workspace/Users/u/sl",
+		},
+		{
+			name:    "without a root path, the folder of a file test source",
+			sources: []string{"/Workspace/Users/u/tests/test_x.py"},
+			want:    "/Workspace/Users/u/tests",
+		},
+		{
+			name:    "without a root path, the deepest folder holding the folders of every test source",
+			sources: []string{"/Workspace/Users/u/a/tests/**", "/Workspace/Users/u/b/tests/**"},
+			want:    "/Workspace/Users/u",
+		},
+		{
+			name:     "root path without test sources",
+			rootPath: "/Workspace/Users/u/orders",
+			want:     "/Workspace/Users/u/orders",
+		},
+		{
+			name: "neither",
+			want: "",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, testIDBase(tc.rootPath, tc.sources))
+		})
+	}
+}
+
+func TestTestIDBasePath(t *testing.T) {
+	got, err := testIDBasePath("/Workspace/Users/someone/orders", "tests/test_orders.py")
 	require.NoError(t, err)
 	assert.Equal(t, "/Workspace/Users/someone/orders/tests/test_orders.py", got)
 
-	_, err = rootPathWorkspacePath("", "tests")
-	assert.EqualError(t, err, "the pipeline has no root_path; use an absolute workspace path such as /Workspace/Users/someone@example.com/tests")
+	_, err = testIDBasePath("", "tests")
+	assert.EqualError(t, err, "the pipeline has no root_path or testing.sources; use an absolute workspace path such as /Workspace/Users/someone@example.com/tests")
+}
+
+func TestBundleTestSelectionPath(t *testing.T) {
+	syncRoot := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(syncRoot, "pipeline", "tests"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(syncRoot, "pipeline", "tests", "test_a.py"), nil, 0o644))
+	filePath := "/Workspace/Users/someone/.bundle/orders/dev/files"
+	base := func() (string, error) { return filePath + "/pipeline", nil }
+	noBase := func() (string, error) { return "", nil }
+
+	// A path that exists where the user stands is a local path.
+	got, err := bundleTestSelectionPath(filepath.Join(syncRoot, "pipeline"), syncRoot, filePath, base, "tests/test_a.py")
+	require.NoError(t, err)
+	assert.Equal(t, filePath+"/pipeline/tests/test_a.py", got)
+
+	// Otherwise it is a test ID, relative to the folder that test IDs are relative to.
+	got, err = bundleTestSelectionPath(syncRoot, syncRoot, filePath, base, "tests/test_a.py")
+	require.NoError(t, err)
+	assert.Equal(t, filePath+"/pipeline/tests/test_a.py", got)
+
+	// Without that folder, it is a local path.
+	got, err = bundleTestSelectionPath(syncRoot, syncRoot, filePath, noBase, "tests/test_a.py")
+	require.NoError(t, err)
+	assert.Equal(t, filePath+"/tests/test_a.py", got)
+
+	// A path that leaves that folder is a local path too.
+	for _, testIDBase := range []func() (string, error){base, noBase} {
+		_, err = bundleTestSelectionPath(syncRoot, syncRoot, filePath, testIDBase, filepath.Join("..", "tests"))
+		assert.ErrorContains(t, err, "is outside the synchronized bundle files in "+syncRoot)
+	}
 }
 
 func TestNewStartTestUpdateRequest(t *testing.T) {
