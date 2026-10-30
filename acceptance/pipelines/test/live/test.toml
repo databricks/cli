@@ -1,0 +1,6 @@
+# Also runs against a real workspace, when that workspace has pipeline testing enabled.
+# The script skips the cloud run unless TEST_PIPELINES_TESTING_ENABLED is set.
+Cloud = true
+CloudSlow = true
+RecordRequests = false
+Ignore = [".databricks", "databricks.yml", "junit.xml", "test.log"]
