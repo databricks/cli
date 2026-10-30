@@ -33,9 +33,7 @@ type PromptOptions struct {
 	// Validate, when set, is called on every keystroke. While it returns a
 	// non-nil error the leading glyph flips from "✔" to "✗" and Enter is
 	// inert; pressing Enter while invalid surfaces the returned error
-	// below the prompt until the next edit. Until the first edit or Enter,
-	// an invalid input shows a blank glyph instead, so an empty prompt does
-	// not open as an error.
+	// below the prompt until the next edit.
 	Validate func(input string) error
 }
 
@@ -75,9 +73,6 @@ type promptModel struct {
 	deleted   bool
 	submitted bool
 
-	// edited is set by the first change to runes.
-	edited bool
-
 	// submitErr is the error from the last failed Enter attempt. Rendered
 	// below the prompt and cleared on the next edit.
 	submitErr error
@@ -97,16 +92,12 @@ func (m *promptModel) value() string {
 }
 
 // glyph returns the leading status indicator: bold-green ✔ when valid,
-// bold-red ✗ when validate rejects the buffer after an edit or Enter, and a
-// blank before that.
+// bold-red ✗ when validate rejects the buffer.
 func (m *promptModel) glyph() string {
-	if m.validate == nil || m.validate(m.value()) == nil {
-		return ansiBold + ansiGreen + glyphValid + ansiReset
+	if m.validate != nil && m.validate(m.value()) != nil {
+		return ansiBold + ansiRed + glyphInvalid + ansiReset
 	}
-	if !m.edited && m.submitErr == nil {
-		return " "
-	}
-	return ansiBold + ansiRed + glyphInvalid + ansiReset
+	return ansiBold + ansiGreen + glyphValid + ansiReset
 }
 
 func (m *promptModel) Init() tea.Cmd { return nil }
@@ -163,7 +154,6 @@ func (m *promptModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.runes = append(m.runes[:m.cursor-1], m.runes[m.cursor:]...)
 		m.cursor--
-		m.edited = true
 		m.submitErr = nil
 
 	case tea.KeyRunes, tea.KeySpace:
@@ -182,7 +172,6 @@ func (m *promptModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.runes = append(m.runes[:m.cursor], typed...)
 		m.runes = append(m.runes, tail...)
 		m.cursor += len(typed)
-		m.edited = true
 		m.submitErr = nil
 
 	default:

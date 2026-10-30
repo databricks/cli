@@ -47,7 +47,7 @@ func TestPromptBaseline_Validate(t *testing.T) {
 }
 
 // TestPromptBaseline_ValidateEnterBeforeEdit pins that Enter on an untouched
-// prompt flips the glyph to "✗" along with the error line.
+// prompt shows the error line.
 func TestPromptBaseline_ValidateEnterBeforeEdit(t *testing.T) {
 	t.Parallel()
 	tm := termtest.NewPrompt(t, cmdio.PromptOptions{
