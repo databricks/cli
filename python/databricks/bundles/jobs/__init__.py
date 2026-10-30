@@ -935,12 +935,9 @@ from databricks.bundles.jobs._models.workspace_storage_info import (
 def _resolve_recursive_imports():
     import typing
 
-    from databricks.bundles.core._variable import VariableOr
-    from databricks.bundles.jobs._models.task import Task
-
     ForEachTask.__annotations__ = typing.get_type_hints(
         ForEachTask,
-        globalns={"Task": Task, "VariableOr": VariableOr},
+        globalns={"Task": Task, "TaskParam": TaskParam},
     )
 
 
