@@ -1,0 +1,1 @@
+* Fix `${resources...}` references to resource keys ending in an underscore (e.g. `my_job_`). Deploying such a resource with `permissions` or `grants` failed with `cannot parse "/jobs/${resources.jobs.my_job_.id}"`, which also made the automatic migration of Terraform-deployed bundles fail. ([#6965](https://github.com/databricks/cli/pull/6965))
