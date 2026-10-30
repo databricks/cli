@@ -1,8 +1,15 @@
 
->>> [CLI] bundle validate
-Error: failed to load [TEST_TMP_DIR]/databricks.yml: yaml ([TEST_TMP_DIR]/databricks.yml:11:11): map merge requires map or sequence of maps as the value
+>>> [CLI] bundle validate --strict -t dev
+Name: test-bundle
+Target: dev
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev
 
+Validation OK!
 
-Found 1 error
-
-Exit code: 1
+>>> [CLI] bundle validate --strict -t dev -o json
+{
+  "default": "overridden",
+  "value": "overridden"
+}

@@ -138,3 +138,12 @@ func TestYAMLAnchor10(t *testing.T) {
 	assert.Equal(t, 1, self.Get("use1").Get("value").AsAny())
 	assert.Equal(t, 1, self.Get("use2").Get("value").AsAny())
 }
+
+func TestYAMLInlineMapMerge(t *testing.T) {
+	input := "target:\n  <<: {x: inherited, y: merged}\n  x: local\n"
+	value, err := yamlloader.LoadYAML("inline.yml", bytes.NewBufferString(input))
+	require.NoError(t, err)
+
+	assert.Equal(t, "local", value.Get("target").Get("x").AsAny())
+	assert.Equal(t, "merged", value.Get("target").Get("y").AsAny())
+}
