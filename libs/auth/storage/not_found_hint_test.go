@@ -15,7 +15,7 @@ import (
 
 // missingStore always returns ErrNotFound on Lookup. Lets us drive the
 // wrapper without going through the real file or keyring cache.
-type missingStore struct{}
+type missingStore struct{ noLock }
 
 func (missingStore) Put(string, Entry) error      { return nil }
 func (missingStore) Lookup(string) (Entry, error) { return Entry{}, ErrNotFound }
@@ -23,7 +23,10 @@ func (missingStore) Delete(string) error          { return nil }
 
 // foundStore always returns a token. Used to confirm the wrapper passes
 // successful lookups through unchanged.
-type foundStore struct{ tok *oauth2.Token }
+type foundStore struct {
+	noLock
+	tok *oauth2.Token
+}
 
 func (s foundStore) Put(string, Entry) error      { return nil }
 func (s foundStore) Lookup(string) (Entry, error) { return Entry{Token: s.tok}, nil }
@@ -31,7 +34,10 @@ func (s foundStore) Delete(string) error          { return nil }
 
 // boomStore returns a non-ErrNotFound error. The wrapper must not add a
 // "run auth login" hint here; the error is about something else.
-type boomStore struct{ err error }
+type boomStore struct {
+	noLock
+	err error
+}
 
 func (s boomStore) Put(string, Entry) error      { return nil }
 func (s boomStore) Lookup(string) (Entry, error) { return Entry{}, s.err }

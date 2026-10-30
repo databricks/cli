@@ -8,6 +8,7 @@
 package storage
 
 import (
+	"context"
 	"errors"
 
 	"golang.org/x/oauth2"
@@ -33,6 +34,13 @@ type Entry struct {
 // keyring and in-memory stores. The entry schema can evolve with additive
 // metadata without changing the Store interface.
 type Store interface {
+	// Lock acquires the lock that serializes a read-refresh-write sequence
+	// against other processes sharing the store, and returns a function that
+	// releases it. The lock covers every write made while it is held, including
+	// one still running after Put returned. Stores not shared with other
+	// processes return a no-op.
+	Lock(ctx context.Context) (unlock func(), err error)
+
 	// Put writes e under key, replacing any existing entry.
 	Put(key string, e Entry) error
 

@@ -1,0 +1,1 @@
+* Serialize concurrent U2M token refreshes across CLI invocations so parallel `databricks auth token --force-refresh` calls no longer fail on a contended token cache. ([#6759](https://github.com/databricks/cli/pull/6759))

@@ -96,6 +96,11 @@ func NewFileStore(ctx context.Context, opts ...FileStoreOption) (Store, error) {
 	return c, nil
 }
 
+// Lock implements the Store interface.
+func (c *fileStore) Lock(ctx context.Context) (func(), error) {
+	return lockTokenStore(ctx)
+}
+
 // Put implements the Store interface.
 func (c *fileStore) Put(key string, e Entry) error {
 	c.locker.Lock()

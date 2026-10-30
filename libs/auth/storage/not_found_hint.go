@@ -43,6 +43,8 @@ func (s *notFoundHintStore) Lookup(key string) (Entry, error) {
 
 func (s *notFoundHintStore) Delete(key string) error { return s.inner.Delete(key) }
 
+func (s *notFoundHintStore) Lock(ctx context.Context) (func(), error) { return s.inner.Lock(ctx) }
+
 // notFoundHint replaces ErrNotFound's terse "token not found" string
 // with an actionable message while still satisfying errors.Is(err,
 // ErrNotFound). PersistentAuth.loadToken wraps every store error with

@@ -16,16 +16,28 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// noLock gives test stores the no-op Lock of a store that is not shared with
+// other processes.
+type noLock struct{}
+
+func (noLock) Lock(context.Context) (func(), error) { return func() {}, nil }
+
 // stubStore is a test double for Store that records the source it was
 // constructed from. It lets the tests confirm which factory ran.
-type stubStore struct{ source string }
+type stubStore struct {
+	noLock
+	source string
+}
 
 func (stubStore) Put(string, Entry) error      { return nil }
 func (stubStore) Lookup(string) (Entry, error) { return Entry{}, ErrNotFound }
 func (stubStore) Delete(string) error          { return nil }
 
 // memStore is a functional in-memory Store for exercising the OAuth wrappers.
-type memStore struct{ entries map[string]Entry }
+type memStore struct {
+	noLock
+	entries map[string]Entry
+}
 
 func newMemStore() *memStore { return &memStore{entries: map[string]Entry{}} }
 
