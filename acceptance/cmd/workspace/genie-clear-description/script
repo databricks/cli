@@ -36,15 +36,23 @@ run_round() {
     local round=$1 delay=$2
     local timeline="LOG.timeline.$round" title="test-genie-space-$UNIQUE_NAME-$round"
 
-    # Same create body as the direct engine (ResourceGenieSpace.DoCreate).
-    local space_id
-    space_id=$($CLI genie create-space -o json --json "{
+    # Same create body and missing-parent handling as ResourceGenieSpace.DoCreate. Each round gets a
+    # parent folder that does not exist yet, as on a bundle's first deploy: the first create fails,
+    # then the folder is created and the create retried.
+    local parent="$parent_path/r$round" body space_id
+    body="{
         \"warehouse_id\": \"$TEST_DEFAULT_WAREHOUSE_ID\",
         \"title\": \"$title\",
         \"description\": \"This is a test genie space\",
-        \"parent_path\": \"$parent_path\",
+        \"parent_path\": \"$parent\",
         \"serialized_space\": \"{\\\"version\\\":1}\"
-    }" | jq -r .space_id)
+    }"
+    if ! $CLI genie create-space -o json --json "$body" > "LOG.create.$round" 2> "LOG.create.err.$round"; then
+        $CLI workspace mkdirs "$parent"
+        $CLI genie create-space -o json --json "$body" > "LOG.create.$round"
+    fi
+    space_id=$(jq -r .space_id "LOG.create.$round")
+    rm -f "LOG.create.$round" "LOG.create.err.$round"
     echo "$space_id" >> LOG.space_ids
     local start=$SECONDS
 
@@ -61,7 +69,7 @@ run_round() {
         \"description\": \"\",
         \"title\": \"$title\",
         \"warehouse_id\": \"$TEST_DEFAULT_WAREHOUSE_ID\",
-        \"parent_path\": \"$parent_path\",
+        \"parent_path\": \"$parent\",
         \"serialized_space\": \"{\\\"version\\\":1}\"
     }" > "LOG.upd.$round"
     local update_desc
