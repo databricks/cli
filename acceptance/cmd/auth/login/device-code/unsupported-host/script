@@ -4,7 +4,7 @@ title "No host\n"
 # The profile does not exist yet and no host is given. auth login does not read
 # DATABRICKS_HOST, so the usual login would fall back to the browser-based
 # discovery flow. Device code login skips it and asks for the host instead,
-# which fails without a terminal.
+# which the non-interactive login cannot do.
 trace musterr $CLI auth login --profile new-profile --use-device-code
 
 envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"

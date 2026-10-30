@@ -117,7 +117,7 @@ func (l *DeviceCodeLogin) RequestDeviceAuthorization(ctx context.Context) (*Devi
 // code valid, so the exchange can be retried with the right code. The caller
 // is responsible for storing the returned token.
 func (l *DeviceCodeLogin) RequestDeviceAccessToken(ctx context.Context, deviceCode, confirmationCode string) (*oauth2.Token, error) {
-	t, err := l.auth.exchangeDeviceCode(ctx, l.cfg, deviceCode, normalizeCode(confirmationCode))
+	t, err := l.auth.exchangeDeviceCode(ctx, l.cfg, deviceCode, NormalizeCode(confirmationCode))
 	if err == nil {
 		return t, nil
 	}
@@ -266,10 +266,10 @@ func (a *PersistentAuth) postForm(ctx context.Context, endpoint string, form url
 	return body, nil
 }
 
-// normalizeCode lets users enter a code the way it is displayed. Databricks
+// NormalizeCode lets users enter a code the way it is displayed. Databricks
 // codes consist of 8 uppercase alphanumeric characters and are compared
 // case-sensitively, but are often shown as two groups of four separated by a
 // dash (e.g. FTFA-QQKY).
-func normalizeCode(code string) string {
+func NormalizeCode(code string) string {
 	return strings.NewReplacer("-", "", " ", "").Replace(strings.ToUpper(strings.TrimSpace(code)))
 }

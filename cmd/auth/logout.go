@@ -273,6 +273,11 @@ func clearTokenStore(ctx context.Context, p profile.Profile, profiler profile.Pr
 	if err := tokenStore.Delete(p.Name); err != nil {
 		return fmt.Errorf("failed to delete profile-keyed token for profile %q: %w", p.Name, err)
 	}
+	// A pending device code login could still complete and restore the
+	// credentials that the user is logging out of.
+	if err := tokenStore.Delete(pendingLoginKey(p.Name)); err != nil {
+		return fmt.Errorf("failed to delete pending device code login for profile %q: %w", p.Name, err)
+	}
 
 	hostCacheKey, matchFn := hostCacheKeyAndMatchFn(p)
 	if hostCacheKey == "" {
@@ -292,6 +297,9 @@ func clearTokenStore(ctx context.Context, p profile.Profile, profiler profile.Pr
 	if len(otherProfiles) == 0 {
 		if err := tokenStore.Delete(hostCacheKey); err != nil {
 			return fmt.Errorf("failed to delete host-keyed token for %q: %w", hostCacheKey, err)
+		}
+		if err := tokenStore.Delete(pendingLoginKey(hostCacheKey)); err != nil {
+			return fmt.Errorf("failed to delete pending device code login for %q: %w", hostCacheKey, err)
 		}
 	}
 	return nil

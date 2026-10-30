@@ -1,0 +1,93 @@
+
+=== Start the login without a profile
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --use-device-code
+Using a browser on another device, visit:
+[DATABRICKS_URL]/device/verification
+
+And enter the code:
+WDJB-MJHT
+
+Once finished, complete the login by running the same command with
+--user-code WDJB-MJHT and --confirmation-code set to the confirmation code
+provided in your browser.
+
+=== The first step stores the device code and saves no profile
+
+>>> find.py home
+home/.databricks/token-cache.json
+
+>>> cache_keys
+[
+  "[DATABRICKS_URL]#device-code"
+]
+
+=== Confirm the login
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+
+>>> [CLI] auth token --host [DATABRICKS_URL]
+json.access_token = "oauth-token";
+
+>>> cache_keys
+[
+  "[DATABRICKS_URL]"
+]
+
+=== Start the login with a profile
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code
+Using a browser on another device, visit:
+[DATABRICKS_URL]/device/verification
+
+And enter the code:
+WDJB-MJHT
+
+Once finished, complete the login by running the same command with
+--user-code WDJB-MJHT and --confirmation-code set to the confirmation code
+provided in your browser.
+
+=== Confirm the login
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+Profile test was successfully saved
+
+>>> [CLI] auth token --profile test
+json.access_token = "oauth-token";
+
+>>> [CLI] auth profiles
+Name            Host                    Valid
+test (Default)  [DATABRICKS_URL]  YES
+
+=== Start the login again with the host from the saved profile
+
+>>> [CLI] auth login --profile test --use-device-code
+Using a browser on another device, visit:
+[DATABRICKS_URL]/device/verification
+
+And enter the code:
+WDJB-MJHT
+
+Once finished, complete the login by running the same command with
+--user-code WDJB-MJHT and --confirmation-code set to the confirmation code
+provided in your browser.
+
+>>> [CLI] auth token --profile test
+json.access_token = "oauth-token";
+
+>>> [CLI] auth login --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+Profile test was successfully saved
+
+>>> cache_keys
+[
+  "[DATABRICKS_URL]",
+  "test"
+]
+
+>>> print_requests.py --oneline //oidc/v1/device/auth //oidc/v1/token
+{"method": "POST", "path": "/oidc/v1/device/auth", "raw_body": "client_id=databricks-cli&scope=offline_access+all-apis"}
+{"method": "POST", "path": "/oidc/v1/token", "raw_body": "client_id=databricks-cli&confirmation_code=FTFAQQKY&device_code=device-code-1&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"}
+{"method": "POST", "path": "/oidc/v1/device/auth", "raw_body": "client_id=databricks-cli&scope=offline_access+all-apis"}
+{"method": "POST", "path": "/oidc/v1/token", "raw_body": "client_id=databricks-cli&confirmation_code=FTFAQQKY&device_code=device-code-2&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"}
+{"method": "POST", "path": "/oidc/v1/device/auth", "raw_body": "client_id=databricks-cli&scope=offline_access+all-apis"}
+{"method": "POST", "path": "/oidc/v1/token", "raw_body": "client_id=databricks-cli&confirmation_code=FTFAQQKY&device_code=device-code-3&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"}

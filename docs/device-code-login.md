@@ -46,10 +46,61 @@ Profile my-profile was successfully saved
 4. The browser shows a confirmation code. Type it into the CLI. Codes are not
    case-sensitive, and the dash is optional. If the code is rejected, the CLI
    asks for it again and shows how many attempts are left, up to 3 attempts in
-   total. Never share the confirmation code with anyone.
+   total. Only give the confirmation code to the CLI that started the login,
+   or to the AI agent that runs it (see
+   [Log in without a terminal](#log-in-without-a-terminal)). Never share it
+   with anyone else.
 
 The CLI saves the profile and the token the same way as the browser-based
 `databricks auth login`, so other commands use it via `--profile my-profile`.
+
+## Log in without a terminal
+
+When stdin is not a terminal, nobody can type the confirmation code into the
+running CLI. This is the case when a script or an AI agent such as Claude Code
+runs the login as a one-off command. The login then runs non-interactively, in
+two steps:
+
+```console
+$ databricks auth login --host https://<workspace-host> --profile my-profile --use-device-code < /dev/null
+Using a browser on another device, visit:
+https://<workspace-host>/device/verification
+
+And enter the code:
+WDJB-MJHT
+
+Once finished, complete the login by running the same command with
+--user-code WDJB-MJHT and --confirmation-code set to the confirmation code
+provided in your browser.
+$ databricks auth login --host https://<workspace-host> --profile my-profile --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+Profile my-profile was successfully saved
+```
+
+1. The first command prints the URL and the code, and keeps the pending login
+   in the CLI's token storage. It does not change the profile, so commands
+   that use it keep working until the login completes.
+2. Approve the login in the browser as described above.
+3. Run the same command with the hidden `--user-code` flag set to the code
+   from step 1 and the hidden `--confirmation-code` flag set to the
+   confirmation code. It saves the profile and the token. Without
+   `--profile`, it only stores the token for the host.
+
+The pending login stays on your machine, so a confirmation code that ends up
+somewhere else, such as an agent's conversation, cannot complete the login on
+another machine.
+
+If the confirmation code is rejected, check it and run the command again. If
+the login expired, start a new one.
+
+Each profile, or host without a profile, has one pending login. Starting a
+second login for it replaces the first, so complete one login before starting
+another.
+
+A successful login for the profile, in any way, and `databricks auth logout`
+remove its pending login.
+
+`--configure-cluster` is not supported by the non-interactive login. Set
+`cluster_id` on the profile after the login.
 
 ## Session lifetime
 
@@ -68,5 +119,13 @@ fail with a token refresh error and you need to run the login again.
 | `token exchange: Invalid device code` | The login expired. A confirmation code entered after the login expired is first rejected as `Invalid confirmation code`, and the workspace then discards the login. | Run the login again to get a new code. |
 | `token exchange: Device grant rate limit exceeded` | Too many confirmation codes were sent for this login. | Run the login again to get a new code. |
 | `unauthorized_client` or `invalid_client` | The OAuth client is not allowed to use device code login in this workspace. | Use the default `databricks-cli` client, or ask your admin to enable the custom client. |
-| `reading confirmation code: EOF` | stdin was closed before a code was entered. | Keep stdin open until you write the confirmation code. |
+| `--configure-cluster is not supported by the non-interactive device code login` | The cluster picker needs a terminal. | Log in first, then set `cluster_id` on the profile. |
+| `token exchange: Invalid confirmation code (error code: invalid_request). Check the confirmation code ...` | The confirmation code was mistyped, or the login was not approved yet. | Check the code and approve the login, then run the command again. If it still fails, start a new login. |
+| `token exchange: Invalid device code (error code: invalid_request). Run the same command without --user-code and --confirmation-code ...` | The login expired. | Start a new login. |
+| `a newer login for profile ... replaced this one` | A second login was started for the same profile or host. | Approve the newest code, and complete the newest login with its user code. |
+| `the login for profile ... was started with a different host` (or client ID, or scopes) | The second command does not use the host, `--client-id` or `--scopes` of the first one. | Complete the login with the same command that started it, plus `--user-code` and `--confirmation-code`. |
+| `no pending device code login for profile ...` | The login was already completed, or no login was started for this profile or host. | Start a new login. |
+| `--confirmation-code requires --user-code` | `--user-code` is missing from the command. | Add `--user-code` with the code from the first step. |
+| `--confirmation-code requires --use-device-code` | `--use-device-code` is missing from the command. | Run the same command as the first step, with `--user-code` and `--confirmation-code`. |
+| `reading confirmation code: EOF` | The input was closed, e.g. with Ctrl+D, before a code was entered. | Run the login again. |
 | `reading confirmation code: context deadline exceeded` | No confirmation code was entered before the login timed out (1 hour by default). | Run the login again. Use `--timeout` to change the limit. |

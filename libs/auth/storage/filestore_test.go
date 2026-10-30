@@ -36,6 +36,33 @@ func TestStoreAndLookup(t *testing.T) {
 	assert.Equal(t, ErrNotFound, err)
 }
 
+func TestStoreAndLookupPendingLogin(t *testing.T) {
+	f := setup(t)
+	c, err := NewFileStore(t.Context(), WithFileLocation(f))
+	require.NoError(t, err)
+	pending := &PendingLogin{
+		DeviceCode: "device-code",
+		UserCode:   "WDJBMJHT",
+		Host:       "https://workspace.test",
+		Scopes:     []string{"sql"},
+	}
+	require.NoError(t, c.Put("x#device-code", Entry{PendingLogin: pending}))
+
+	got, err := c.Lookup("x#device-code")
+	require.NoError(t, err)
+	assert.Nil(t, got.Token)
+	assert.Equal(t, pending, got.PendingLogin)
+
+	raw, err := os.ReadFile(f)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{
+		"version": 1,
+		"tokens": {
+			"x#device-code": {"pending_login": {"device_code": "device-code", "user_code": "WDJBMJHT", "host": "https://workspace.test", "scopes": ["sql"]}}
+		}
+	}`, string(raw))
+}
+
 func TestNoStoreFileReturnsErrNotConfigured(t *testing.T) {
 	l, err := NewFileStore(t.Context(), WithFileLocation(setup(t)))
 	require.NoError(t, err)

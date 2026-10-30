@@ -3,15 +3,21 @@ package auth
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
+	"os"
+	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/cmdio"
@@ -211,24 +217,37 @@ func TestIsDeviceCodeSupportedForHost(t *testing.T) {
 	}
 }
 
-// startDeviceCodeLogin runs "auth login --use-device-code" with args in a
-// terminal emulator, using config as the contents of .databrickscfg.
-func startDeviceCodeLogin(t *testing.T, config string, args ...string) *termtest.Term[struct{}] {
+// setUpDeviceCodeLogin isolates the environment of a device code login, using
+// config as the contents of .databrickscfg.
+func setUpDeviceCodeLogin(t *testing.T, config string) {
+	testutil.CleanupEnvironment(t)
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
 	t.Setenv("DATABRICKS_CONFIG_FILE", writeTempConfig(t, config))
 	t.Setenv("DATABRICKS_AUTH_STORAGE", "plaintext")
 	t.Setenv(deviceCodeEnvVar, "true")
+}
 
+// runDeviceCodeLogin runs "auth login --use-device-code" with args.
+func runDeviceCodeLogin(ctx context.Context, args ...string) error {
+	authArguments := &auth.AuthArguments{}
+	cmd := newLoginCommand(authArguments)
+	cmd.Flags().StringVar(&authArguments.Host, "host", "", "")
+	cmd.Flags().String("profile", "", "")
+	cmd.SetContext(ctx)
+	cmd.SetArgs(append([]string{"--use-device-code"}, args...))
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	return cmd.Execute()
+}
+
+// startDeviceCodeLogin runs "auth login --use-device-code" with args in a
+// terminal emulator, using config as the contents of .databrickscfg.
+func startDeviceCodeLogin(t *testing.T, config string, args ...string) *termtest.Term[struct{}] {
+	setUpDeviceCodeLogin(t, config)
 	return termtest.Run(t, func(ctx context.Context) (struct{}, error) {
-		cmd := newLoginCommand(&auth.AuthArguments{})
-		cmd.Flags().String("profile", "", "")
-		cmd.SetContext(ctx)
-		cmd.SetArgs(append([]string{"--use-device-code"}, args...))
-		cmd.SetOut(io.Discard)
-		cmd.SetErr(io.Discard)
-		return struct{}{}, cmd.Execute()
+		return struct{}{}, runDeviceCodeLogin(ctx, args...)
 	})
 }
 
@@ -306,6 +325,230 @@ resources = https://workspace.test/ai-gateway/mcp-services/system.ai.github
 	tm.Type(termtest.KeyCtrlC)
 	_, err := tm.Result()
 	assert.EqualError(t, err, "^C")
+}
+
+func TestValidateDeviceCodeCompletionFlags(t *testing.T) {
+	tests := []struct {
+		name          string
+		useDeviceCode bool
+		flags         map[string]string
+		wantErr       string
+	}{
+		{name: "neither", useDeviceCode: true},
+		{name: "both", useDeviceCode: true, flags: map[string]string{"user-code": "WDJB-MJHT", "confirmation-code": "FTFA-QQKY"}},
+		{name: "confirmation code only", useDeviceCode: true, flags: map[string]string{"confirmation-code": "FTFA-QQKY"}, wantErr: "--confirmation-code requires --user-code"},
+		{name: "user code only", useDeviceCode: true, flags: map[string]string{"user-code": "WDJB-MJHT"}, wantErr: "--user-code requires --confirmation-code"},
+		{name: "without device code", flags: map[string]string{"user-code": "WDJB-MJHT", "confirmation-code": "FTFA-QQKY"}, wantErr: "--confirmation-code requires --use-device-code"},
+		{name: "empty user code", useDeviceCode: true, flags: map[string]string{"user-code": "", "confirmation-code": "FTFA-QQKY"}, wantErr: "--user-code cannot be empty"},
+		{name: "blank confirmation code", useDeviceCode: true, flags: map[string]string{"user-code": "WDJB-MJHT", "confirmation-code": "  "}, wantErr: "--confirmation-code cannot be empty"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			cmd.Flags().String("user-code", "", "")
+			cmd.Flags().String("confirmation-code", "", "")
+			for name, value := range tt.flags {
+				require.NoError(t, cmd.Flags().Set(name, value))
+			}
+
+			err := validateDeviceCodeCompletionFlags(cmd, tt.useDeviceCode)
+			if tt.wantErr != "" {
+				assert.EqualError(t, err, tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestSameCode(t *testing.T) {
+	assert.True(t, sameCode("WDJBMJHT", "WDJB-MJHT"))
+	assert.True(t, sameCode("WDJBMJHT", "wdjbmjht"))
+	assert.True(t, sameCode("WDJBMJHT", " WDJB-MJHT\n"))
+	assert.False(t, sameCode("WDJBMJHT", "WDJB-MJHA"))
+}
+
+// newDeviceCodeServer returns a fake workspace with device code login.
+func newDeviceCodeServer(t *testing.T) *testserver.Server {
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+	return server
+}
+
+// A wrong or blank confirmation code leaves the device code valid, so the user
+// can enter it again. The code is accepted the way the browser displays it, in
+// any case.
+func TestLoginDeviceCodeReadsConfirmationCode(t *testing.T) {
+	server := newDeviceCodeServer(t)
+	tm := startDeviceCodeLogin(t, "[test]\nhost = "+server.URL+"\n", "--profile", "test")
+	tm.WaitFor("Confirmation code")
+	tm.Type("AAAA-AAAA\n")
+	tm.WaitFor("Enter the confirmation code again (2 attempts left)")
+	tm.Type("\n")
+	tm.WaitFor("Enter the confirmation code again (1 attempt left)")
+	tm.Type("ftfa-qqky\n")
+	_, err := tm.Result()
+	require.NoError(t, err)
+
+	p, err := loadProfileByName(t.Context(), "test", profile.DefaultProfiler)
+	require.NoError(t, err)
+	require.NotNil(t, p)
+	assert.Equal(t, server.URL, p.Host)
+	assert.Equal(t, strconv.Itoa(testserver.TestWorkspaceID), p.WorkspaceID)
+	assert.Equal(t, authTypeDatabricksCLI, p.AuthType)
+
+	raw, err := os.ReadFile(filepath.Join(os.Getenv("HOME"), ".databricks", "token-cache.json"))
+	require.NoError(t, err)
+	var cache struct {
+		Tokens map[string]json.RawMessage `json:"tokens"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &cache))
+	assert.Contains(t, cache.Tokens, "test")
+}
+
+// The token gets the scopes requested at device authorization, so --scopes is
+// sent there and not with the token request.
+func TestLoginDeviceCodeRequestsScopes(t *testing.T) {
+	server := newDeviceCodeServer(t)
+	var scope string
+	server.RequestCallback = func(r *testserver.Request) {
+		if r.URL.Path == "/oidc/v1/device/auth" {
+			form, err := url.ParseQuery(string(r.Body))
+			assert.NoError(t, err)
+			scope = form.Get("scope")
+		}
+	}
+	tm := startDeviceCodeLogin(t, "", "--host", server.URL, "--profile", "test", "--scopes", "sql")
+	tm.WaitFor("Confirmation code")
+	tm.Type("FTFA-QQKY\n")
+	_, err := tm.Result()
+	require.NoError(t, err)
+	assert.Equal(t, "offline_access sql", scope)
+
+	p, err := loadProfileByName(t.Context(), "test", profile.DefaultProfiler)
+	require.NoError(t, err)
+	require.NotNil(t, p)
+	assert.Equal(t, server.URL, p.Host)
+	assert.Equal(t, strconv.Itoa(testserver.TestWorkspaceID), p.WorkspaceID)
+	assert.Equal(t, "sql", p.Scopes)
+}
+
+// An agent without a terminal can start the login, and the user can complete
+// it in a terminal. The second step does not prompt for a profile, so it finds
+// the pending login under the host, like the first step did.
+func TestLoginDeviceCodeCompletesInTerminal(t *testing.T) {
+	server := newDeviceCodeServer(t)
+	setUpDeviceCodeLogin(t, "")
+	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{}, "", ""))
+	require.NoError(t, runDeviceCodeLogin(ctx, "--host", server.URL))
+
+	tm := termtest.Run(t, func(ctx context.Context) (struct{}, error) {
+		return struct{}{}, runDeviceCodeLogin(ctx, "--host", server.URL, "--user-code", "WDJB-MJHT", "--confirmation-code", "FTFA-QQKY")
+	})
+	_, err := tm.Result()
+	require.NoError(t, err)
+
+	raw, err := os.ReadFile(filepath.Join(os.Getenv("HOME"), ".databricks", "token-cache.json"))
+	require.NoError(t, err)
+	var cache struct {
+		Tokens map[string]json.RawMessage `json:"tokens"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &cache))
+	assert.Contains(t, cache.Tokens, server.URL)
+	assert.NotContains(t, cache.Tokens, pendingLoginKey(server.URL))
+
+	profiles, err := profile.DefaultProfiler.LoadProfiles(t.Context(), profile.MatchAllProfiles)
+	require.NoError(t, err)
+	assert.Empty(t, profiles)
+}
+
+// A user code that does not match the pending login fails before the token
+// exchange, so the confirmation code is not sent with the device code of
+// another login.
+func TestLoginDeviceCodeCompletionChecksUserCode(t *testing.T) {
+	server := newDeviceCodeServer(t)
+	var tokenRequests atomic.Int32
+	server.RequestCallback = func(req *testserver.Request) {
+		if req.URL.Path == "/oidc/v1/token" {
+			tokenRequests.Add(1)
+		}
+	}
+	setUpDeviceCodeLogin(t, "")
+	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{}, "", ""))
+	require.NoError(t, runDeviceCodeLogin(ctx, "--host", server.URL, "--profile", "test"))
+
+	err := runDeviceCodeLogin(ctx, "--host", server.URL, "--profile", "test", "--user-code", "AAAA-AAAA", "--confirmation-code", "FTFA-QQKY")
+	assert.EqualError(t, err, "a newer login for profile test replaced this one. Complete the newer login with its user code. "+startNewLoginHint)
+	assert.Zero(t, tokenRequests.Load())
+
+	// The pending login is kept, and the user code is compared the way the
+	// user enters it.
+	require.NoError(t, runDeviceCodeLogin(ctx, "--host", server.URL, "--profile", "test", "--user-code", "wdjbmjht", "--confirmation-code", "FTFA-QQKY"))
+	assert.Equal(t, int32(1), tokenRequests.Load())
+}
+
+func TestLoginDeviceCodeCompletionChecksSettings(t *testing.T) {
+	tests := []struct {
+		name string
+		// startArgs and completeArgs are added to the flags of each step.
+		startArgs    []string
+		completeArgs []string
+		// completeOnOtherHost completes the login on a second server.
+		completeOnOtherHost bool
+		wantChanged         string
+	}{
+		{
+			name:                "host",
+			completeOnOtherHost: true,
+			wantChanged:         "a different host",
+		},
+		{
+			name:         "client ID",
+			completeArgs: []string{"--client-id", "other-client"},
+			wantChanged:  "a different client ID",
+		},
+		{
+			name:        "scopes dropped",
+			startArgs:   []string{"--scopes", "sql"},
+			wantChanged: "different scopes",
+		},
+		{
+			name:         "scopes added",
+			completeArgs: []string{"--scopes", "sql"},
+			wantChanged:  "different scopes",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := newDeviceCodeServer(t)
+			var tokenRequests atomic.Int32
+			server.RequestCallback = func(req *testserver.Request) {
+				if req.URL.Path == "/oidc/v1/token" {
+					tokenRequests.Add(1)
+				}
+			}
+			setUpDeviceCodeLogin(t, "")
+			ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{}, "", ""))
+			require.NoError(t, runDeviceCodeLogin(ctx, append([]string{"--host", server.URL, "--profile", "test"}, tt.startArgs...)...))
+
+			host := server.URL
+			if tt.completeOnOtherHost {
+				other := newDeviceCodeServer(t)
+				other.RequestCallback = server.RequestCallback
+				host = other.URL
+			}
+			args := append([]string{"--host", host, "--profile", "test", "--user-code", "WDJB-MJHT", "--confirmation-code", "FTFA-QQKY"}, tt.completeArgs...)
+			err := runDeviceCodeLogin(ctx, args...)
+			assert.EqualError(t, err, "the login for profile test was started with "+tt.wantChanged+". Complete it with the same command that started it. "+startNewLoginHint)
+			assert.Zero(t, tokenRequests.Load())
+		})
+	}
+}
+
+func TestLoginDeviceCodeCompletionWithoutHostSkipsPicker(t *testing.T) {
+	tm := startDeviceCodeLogin(t, "", "--user-code", "WDJB-MJHT", "--confirmation-code", "FTFA-QQKY")
+	_, err := tm.Result()
+	assert.ErrorIs(t, err, errDeviceCodeNeedsHost)
 }
 
 // Only a wrong confirmation code can be fixed by entering the code again, so

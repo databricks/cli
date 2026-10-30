@@ -83,6 +83,15 @@ func IsPromptSupported(ctx context.Context) bool {
 	return c.capabilities.SupportsPrompt()
 }
 
+// IsInputTTY reports whether stdin is a terminal, so that a user can type
+// input into the command. Unlike IsPromptSupported, it does not depend on
+// stderr, NO_COLOR, TERM=dumb or Git Bash, which only matter for rendering
+// prompts.
+func IsInputTTY(ctx context.Context) bool {
+	c := fromContext(ctx)
+	return c.capabilities.stdinIsTTY
+}
+
 // IsPagerSupported reports whether stdin, stdout, and stderr are all interactive
 // terminals. This is the requirement for a full-screen or navigable output
 // program: unlike IsPromptSupported it also checks stdout, so it returns false

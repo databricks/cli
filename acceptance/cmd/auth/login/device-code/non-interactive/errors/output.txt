@@ -1,0 +1,98 @@
+
+=== Device code login is disabled by default
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code
+Error: --use-device-code is experimental. Set DATABRICKS_CLI_DEVICE_CODE=true to enable it
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+Error: --use-device-code is experimental. Set DATABRICKS_CLI_DEVICE_CODE=true to enable it
+
+=== Flags the non-interactive login cannot honor
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --configure-cluster
+Error: --configure-cluster is not supported by the non-interactive device code login. Set cluster_id on the profile after the login
+
+=== Missing host
+
+>>> musterr [CLI] auth login --use-device-code
+Error: --use-device-code requires a workspace host. Pass it as an argument or with --host
+
+>>> musterr [CLI] auth login --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+Error: --use-device-code requires a workspace host. Pass it as an argument or with --host
+
+=== Incomplete flags of the second step
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --confirmation-code FTFA-QQKY
+Error: --confirmation-code requires --user-code
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --user-code WDJB-MJHT
+Error: --user-code requires --confirmation-code
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+Error: --confirmation-code requires --use-device-code
+
+=== Account host
+
+>>> musterr [CLI] auth login --host https://accounts.cloud.databricks.test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+Warn: [hostmetadata] failed to fetch host metadata for https://accounts.cloud.databricks.test, will skip for 1m0s
+Error: --use-device-code is only supported for workspace hosts
+
+=== Profile scoped to resources
+
+>>> musterr [CLI] auth login --profile resources --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+Error: --use-device-code cannot be used with profile resources because its login is scoped to resources. Log in without --use-device-code
+
+=== No pending login
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+Error: no pending device code login for profile test. Run the same command without --user-code and --confirmation-code to start a new login
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+Error: no pending device code login for host [DATABRICKS_URL]. Run the same command without --user-code and --confirmation-code to start a new login
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code
+
+=== Wrong confirmation code
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code AAAA-AAAA
+Error: token exchange: Invalid confirmation code (error code: invalid_request). Check the confirmation code and approve the login if you haven't, then rerun this command. Run the same command without --user-code and --confirmation-code to start a new login if it still fails
+
+=== Rerun with the right confirmation code
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --user-code wdjb-mjht --confirmation-code ftfa-qqky
+Profile test was successfully saved
+
+=== Rerun after the login was completed
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+Error: no pending device code login for profile test. Run the same command without --user-code and --confirmation-code to start a new login
+
+=== Device code unknown to the server
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code
+
+>>> update_file.py home/.databricks/token-cache.json device-code-2 unknown-device-code
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+Error: token exchange: Invalid device code (error code: invalid_request). Run the same command without --user-code and --confirmation-code to start a new login
+
+>>> cache_keys
+[
+  "[DATABRICKS_URL]",
+  "test"
+]
+
+=== Scopes changed between the steps
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --scopes sql
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --user-code WDJB-MJHT --confirmation-code FTFA-QQKY
+Error: the login for profile test was started with different scopes. Complete it with the same command that started it. Run the same command without --user-code and --confirmation-code to start a new login
+
+>>> print_requests.py --oneline //oidc/v1/device/auth //oidc/v1/token
+{"method": "POST", "path": "/oidc/v1/device/auth", "raw_body": "client_id=databricks-cli&scope=offline_access+all-apis"}
+{"method": "POST", "path": "/oidc/v1/token", "raw_body": "client_id=databricks-cli&confirmation_code=AAAAAAAA&device_code=device-code-1&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"}
+{"method": "POST", "path": "/oidc/v1/token", "raw_body": "client_id=databricks-cli&confirmation_code=FTFAQQKY&device_code=device-code-1&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"}
+{"method": "POST", "path": "/oidc/v1/device/auth", "raw_body": "client_id=databricks-cli&scope=offline_access+all-apis"}
+{"method": "POST", "path": "/oidc/v1/token", "raw_body": "client_id=databricks-cli&confirmation_code=FTFAQQKY&device_code=unknown-device-code&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code"}
+{"method": "POST", "path": "/oidc/v1/device/auth", "raw_body": "client_id=databricks-cli&scope=offline_access+sql"}

@@ -1,0 +1,3 @@
+# A dedicated server issues device codes in a known order, so that the scripts
+# can confirm them.
+RecordRequests = true
