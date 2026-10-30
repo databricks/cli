@@ -1,0 +1,1 @@
+Badness = 'Resource keys must be unique across types (see select/ambiguous), but the check runs before target overrides, so a target can add a colliding key.'

@@ -1,0 +1,10 @@
+
+>>> [CLI] bundle validate -o json -t dev
+{
+  "mode": "development",
+  "cluster_id": "dev-cluster",
+  "git": {
+    "branch": "dev-branch",
+    "origin_url": "https://root.example.com"
+  }
+}

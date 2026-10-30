@@ -1,0 +1,14 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    foo:
+      name: foo
+
+targets:
+  dev:
+    resources:
+      pipelines:
+        foo:
+          name: foo

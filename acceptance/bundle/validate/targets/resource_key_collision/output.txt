@@ -1,0 +1,15 @@
+
+>>> [CLI] bundle validate -t dev
+Name: test-bundle
+Target: dev
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev
+
+Validation OK!
+
+>>> [CLI] bundle plan -t dev --select foo
+Error: ambiguous resource: foo (can resolve to jobs.foo, pipelines.foo); use a qualified name to disambiguate
+
+
+Exit code: 1

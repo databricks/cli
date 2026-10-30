@@ -1,0 +1,8 @@
+targets:
+  dev:
+    resources:
+      jobs:
+        foo:
+          name: foo-a
+          tags:
+            a: "1"

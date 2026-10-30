@@ -1,0 +1,11 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "include": [
+    "z.yml",
+    "conf/a.yml",
+    "conf/b.yml"
+  ],
+  "name_prefix": "conf-b-",
+  "root_path": "/Workspace/conf-a"
+}

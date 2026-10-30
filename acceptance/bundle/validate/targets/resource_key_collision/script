@@ -1,0 +1,3 @@
+# A target can add a resource with the key of a resource of another type; validate accepts it, --select finds it ambiguous.
+trace $CLI bundle validate -t dev
+errcode trace $CLI bundle plan -t dev --select foo
