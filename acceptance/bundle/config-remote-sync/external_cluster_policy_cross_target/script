@@ -1,0 +1,60 @@
+export DEV_POLICY_ID="" PROD_POLICY_ID=""
+bundle_configured=false
+cleanup() {
+    if $bundle_configured; then
+        errcode trace $CLI bundle destroy -t prod --auto-approve
+        errcode trace $CLI bundle destroy -t dev --auto-approve
+    fi
+    if [ -n "$DEV_POLICY_ID" ]; then
+        errcode trace $CLI cluster-policies delete "$DEV_POLICY_ID"
+    fi
+    if [ -n "$PROD_POLICY_ID" ]; then
+        errcode trace $CLI cluster-policies delete "$PROD_POLICY_ID"
+    fi
+}
+trap cleanup EXIT
+
+title "Create policies outside the bundle"
+export POLICY_ENVIRONMENT=dev
+DEV_POLICY_ID=$($CLI cluster-policies create --json "$(envsubst < policy.json.tmpl)" -o json | jq -er .policy_id)
+add_repl "$DEV_POLICY_ID" DEV_POLICY_ID
+export POLICY_ENVIRONMENT=prod
+PROD_POLICY_ID=$($CLI cluster-policies create --json "$(envsubst < policy.json.tmpl)" -o json | jq -er .policy_id)
+add_repl "$PROD_POLICY_ID" PROD_POLICY_ID
+
+envsubst < databricks.yml.tmpl > databricks.yml
+bundle_configured=true
+
+title "Deploy with the dev policy"
+trace $CLI bundle deploy -t dev
+job_id=$(read_id.py -t dev policy_sync)
+
+edit_resource.py jobs "$job_id" <<'EOF'
+r["description"] = "Edited in the UI"
+EOF
+
+title "Sync the UI edit into shared YAML"
+cp databricks.yml databricks.yml.backup
+trace $CLI bundle config-remote-sync -t dev --save
+trace diff.py databricks.yml.backup databricks.yml
+
+title "Deploy shared YAML with the prod policy"
+trace $CLI bundle deploy -t prod
+
+title "A deleted policy leaves the job unchanged, including its unrelated edits"
+edit_resource.py jobs "$job_id" <<'EOF'
+r["description"] = "Another UI edit"
+r["job_clusters"][0]["new_cluster"]["custom_tags"]["owner"] = "edited-owner"
+EOF
+trace $CLI cluster-policies delete "$DEV_POLICY_ID"
+DEV_POLICY_ID=""
+
+cp databricks.yml databricks.yml.backup
+trace $CLI bundle config-remote-sync -t dev --save -o json | jq '{status, changes, skippedChanges}' | contains.py '"status": "partial"'
+trace diff.py databricks.yml.backup databricks.yml
+
+title "The job stays skipped on the next sync"
+trace $CLI bundle config-remote-sync -t dev -o json | jq '{status, changes, skippedChanges}' | contains.py '"status": "partial"'
+
+title "Text output reports the incomplete sync"
+trace $CLI bundle config-remote-sync -t dev

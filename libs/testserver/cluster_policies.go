@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
-	"reflect"
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/libs/clusterpolicy"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
@@ -128,51 +128,6 @@ func (s *FakeWorkspace) ClusterPoliciesDelete(req Request) any {
 	return Response{}
 }
 
-// policyElement is the part of a cluster policy element the fake applies. The backend
-// supports more element types, but only these two fields materialize a value:
-// "fixed" elements set Value, every limiting type ("allowlist", "blocklist", "regex",
-// "range", "unlimited") may carry DefaultValue. "forbidden" only rejects and is ignored here.
-type policyElement struct {
-	Type         string `json:"type"`
-	Value        any    `json:"value"`
-	DefaultValue any    `json:"defaultValue"`
-}
-
-// effectiveValue returns the value this element materializes into a spec that omits the
-// attribute, or nil if it materializes none. Mirrors the backend: "fixed" applies whether
-// or not the request sets apply_policy_default_values, "defaultValue" only when it does.
-// Pinned against a real workspace by
-// acceptance/bundle/resources/jobs/cluster_policy (fixed_addition, default_flag).
-func (e policyElement) effectiveValue(applyDefaults bool) any {
-	if e.Type == "fixed" {
-		return e.Value
-	}
-	if applyDefaults {
-		return e.DefaultValue
-	}
-	return nil
-}
-
-// clusterPolicyValues returns the values the policy supplies, keyed by the policy's
-// attribute path (e.g. "spark_version", "custom_tags.CostCenter").
-func (s *FakeWorkspace) clusterPolicyValues(policyID string, applyDefaults bool) map[string]any {
-	policy, ok := s.ClusterPolicies[policyID]
-	if !ok {
-		return nil
-	}
-	var elements map[string]policyElement
-	if err := json.Unmarshal([]byte(policy.Definition), &elements); err != nil {
-		return nil
-	}
-	values := make(map[string]any, len(elements))
-	for path, element := range elements {
-		if value := element.effectiveValue(applyDefaults); value != nil {
-			values[path] = value
-		}
-	}
-	return values
-}
-
 // applyClusterPolicy fills in attributes the request omitted from the policy attached via
 // policyID. It returns the backend's validation message when a supplied value contradicts a
 // "fixed" element, or "" when the spec is acceptable; callers must hold the workspace lock and
@@ -185,8 +140,12 @@ func (s *FakeWorkspace) applyClusterPolicy(spec any, policyID string, applyDefau
 	if policyID == "" {
 		return ""
 	}
-	values := s.clusterPolicyValues(policyID, applyDefaults)
-	if len(values) == 0 {
+	policy, ok := s.ClusterPolicies[policyID]
+	if !ok {
+		return ""
+	}
+	definition, err := clusterpolicy.ParseDefinition(policy.Definition)
+	if err != nil || len(definition) == 0 {
 		return ""
 	}
 
@@ -207,13 +166,17 @@ func (s *FakeWorkspace) applyClusterPolicy(spec any, policyID string, applyDefau
 	// every key present, which makes fields the backend omits (e.g. the Jobs API dropping
 	// apply_policy_default_values) serialize as explicit zeros.
 	patch := map[string]any{}
-	for _, path := range slices.Sorted(maps.Keys(values)) {
-		value := values[path]
+	for _, path := range slices.Sorted(maps.Keys(definition)) {
+		element := definition[path]
+		value := element.EffectiveValue(applyDefaults)
+		if value == nil {
+			continue
+		}
 		segments := strings.Split(path, ".")
 		if existing, ok := lookup(doc, segments); ok {
 			// A "fixed" element enforces its value as well as supplying it; anything else
 			// only supplies a default, which the request is free to override.
-			if s.isFixed(policyID, path) && !reflect.DeepEqual(existing, value) {
+			if element.Type == "fixed" && !clusterpolicy.ValueEquals(value, existing) {
 				// Message shape copied from the real backend for a nested attribute
 				// ("custom_tags, CostCenter must be ..."); the wording for a top-level
 				// attribute has not been observed, so it is only approximated here.
@@ -232,15 +195,6 @@ func (s *FakeWorkspace) applyClusterPolicy(spec any, policyID string, applyDefau
 		_ = json.Unmarshal(raw, spec)
 	}
 	return ""
-}
-
-// isFixed reports whether the policy's element at path is a "fixed" element.
-func (s *FakeWorkspace) isFixed(policyID, path string) bool {
-	var elements map[string]policyElement
-	if err := json.Unmarshal([]byte(s.ClusterPolicies[policyID].Definition), &elements); err != nil {
-		return false
-	}
-	return elements[path].Type == "fixed"
 }
 
 // lookup returns the value at the given key path in doc.

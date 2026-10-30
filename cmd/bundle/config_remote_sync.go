@@ -71,8 +71,9 @@ Examples:
 		// Populated by PostStateFunc on success; rendered after the run so an
 		// error raised anywhere in ProcessBundleRet takes the same output path.
 		var (
-			files   []configsync.FileChange
-			changes configsync.Changes
+			files          []configsync.FileChange
+			changes        configsync.Changes
+			skippedChanges []configsync.SkippedChange
 		)
 
 		_, _, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
@@ -130,6 +131,12 @@ Examples:
 					detected = configsync.FilterChanges(detected, selected)
 				}
 
+				detected, policySkipped, err := configsync.FilterClusterPolicyValues(ctx, b, plan, detected)
+				if err != nil {
+					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryDetectChangesFailed
+					return fmt.Errorf("failed to extract changes: %w", err)
+				}
+
 				// Loaded once and shared: ResolveChanges uses it to skip changes whose
 				// parent is a variable reference, RestoreVariableReferences to restore refs.
 				preResolved := configsync.LoadPreResolvedConfig(ctx, b)
@@ -140,6 +147,7 @@ Examples:
 					return fmt.Errorf("failed to resolve field changes: %w", err)
 				}
 				stats.SkippedChangesCount = int64(skipped)
+				stats.CollectSkippedResources(policySkipped)
 
 				if err := configsync.RestoreVariableReferences(ctx, b, fieldChanges, preResolved, &stats.Restore); err != nil {
 					log.Warnf(ctx, "variable restoration skipped: %v", err)
@@ -162,11 +170,12 @@ Examples:
 
 				files = applied
 				changes = detected
+				skippedChanges = policySkipped
 				return nil
 			},
 		})
 
-		return configsync.WriteResult(cmd.OutOrStdout(), root.OutputType(cmd) == flags.OutputJSON, &stats, files, changes, err)
+		return configsync.WriteResult(cmd.OutOrStdout(), root.OutputType(cmd) == flags.OutputJSON, &stats, files, changes, skippedChanges, err)
 	}
 
 	return cmd

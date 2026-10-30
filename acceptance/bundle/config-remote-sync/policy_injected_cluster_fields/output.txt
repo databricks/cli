@@ -1,7 +1,13 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created cluster_policies.policy
 Created jobs.job1
 Files: 2 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Policy values alone do not need to be synced
+>>> [CLI] bundle config-remote-sync
+No changes detected.
+
 
 === Simulate a cluster policy injecting custom_tags and cluster_log_conf
 These fields exist only remotely (the user never set them in config).
@@ -20,7 +26,7 @@ Resource: resources.jobs.job1
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -9,5 +9,5 @@
+@@ -25,5 +25,5 @@
    jobs:
      job1:
 -      max_concurrent_runs: 1
@@ -28,10 +34,20 @@ Resource: resources.jobs.job1
        job_clusters:
          - job_cluster_key: shared
 
+=== Synced config deploys and converges under the policy
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
+  delete resources.cluster_policies.policy
   delete resources.jobs.job1
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Destroy: 1 deleted
+Destroy: 2 deleted

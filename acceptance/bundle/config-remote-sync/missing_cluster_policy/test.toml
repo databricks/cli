@@ -1,0 +1,2 @@
+RecordRequests = true
+Ignore = [".databricks", "databricks.yml", "databricks.yml.backup"]

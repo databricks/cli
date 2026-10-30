@@ -1,0 +1,77 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  jobs:
+    array_change:
+      name: test-array_change-$UNIQUE_NAME
+      description: Before UI edit
+      tasks:
+        - task_key: main
+          new_cluster:
+            policy_id: $POLICY_ID
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+            init_scripts:
+              - workspace:
+                  destination: /Workspace/init-a.sh
+              - workspace:
+                  destination: /Workspace/init-b.sh
+          spark_python_task:
+            python_file: ./hello.py
+    log_storage_change:
+      name: test-log_storage_change-$UNIQUE_NAME
+      description: Before UI edit
+      tasks:
+        - task_key: main
+          new_cluster:
+            policy_id: $POLICY_ID
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+            cluster_log_conf:
+              dbfs:
+                destination: dbfs:/logs
+          spark_python_task:
+            python_file: ./hello.py
+    new_task:
+      name: test-new_task-$UNIQUE_NAME
+      description: Before UI edit
+      tasks:
+        - task_key: main
+          new_cluster:
+            policy_id: $POLICY_ID
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+          spark_python_task:
+            python_file: ./hello.py
+    worker_count_change:
+      name: test-worker_count_change-$UNIQUE_NAME
+      description: Before UI edit
+      tasks:
+        - task_key: main
+          new_cluster:
+            policy_id: $POLICY_ID
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            autoscale:
+              min_workers: 1
+              max_workers: 4
+          spark_python_task:
+            python_file: ./hello.py
+    unaffected:
+      name: test-unaffected-$UNIQUE_NAME
+      description: Before UI edit
+      tasks:
+        - task_key: main
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+          spark_python_task:
+            python_file: ./hello.py
