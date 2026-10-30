@@ -20,3 +20,16 @@ Uploaded plain.sql
 >>> list
 NOTEBOOK bom
 FILE plain.sql
+
+=== Remove both local files and sync again
+
+>>> [CLI] bundle sync --output text
+Action: DELETE: bom.sql, plain.sql
+Deleted bom.sql
+Deleted plain.sql
+Initial Sync Complete
+
+=== BUG: bom remains after sync reports deleting bom.sql
+
+>>> list
+NOTEBOOK bom
