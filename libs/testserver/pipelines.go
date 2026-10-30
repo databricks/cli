@@ -1,10 +1,13 @@
 package testserver
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
@@ -64,6 +67,18 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	}
 	r.Parameters = create.Parameters
 
+	// "schema" and "target" both name the target schema; only one of them can be set.
+	schemaName := spec.Catalog + "." + cmp.Or(spec.Schema, spec.Target)
+	if !s.runAsCanCreateTables(schemaName, create.RunAs) {
+		return Response{
+			StatusCode: 403,
+			Body: map[string]string{
+				"error_code": permissionDeniedErrorCode,
+				"message":    fmt.Sprintf("User does not have CREATE TABLE on Schema '%s'.", schemaName),
+			},
+		}
+	}
+
 	pipelineId := nextUUID()
 	r.PipelineId = pipelineId
 	r.CreatorUserName = "tester@databricks.com"
@@ -86,6 +101,34 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 			PipelineId: pipelineId,
 		},
 	}
+}
+
+// runAsCanCreateTables reports whether the run_as principal of a new pipeline can create
+// tables in its target schema, which the backend requires to create the pipeline. Only
+// schemas created in this workspace are checked, because grants are tracked only for them.
+func (s *FakeWorkspace) runAsCanCreateTables(schemaName string, runAs *pipelines.RunAs) bool {
+	var principal string
+	if runAs != nil {
+		principal = cmp.Or(runAs.ServicePrincipalName, runAs.UserName)
+	}
+
+	schema, ok := s.Schemas[schemaName]
+	if principal == "" || !ok || principal == schema.Owner {
+		return true
+	}
+
+	// Privileges granted on the catalog are inherited by its schemas.
+	for _, key := range []string{grantsKey("catalog", schema.CatalogName), grantsKey("schema", schemaName)} {
+		for _, assignment := range s.Grants[key] {
+			if assignment.Principal != principal {
+				continue
+			}
+			if slices.Contains(assignment.Privileges, catalog.PrivilegeCreateTable) || slices.Contains(assignment.Privileges, catalog.PrivilegeAllPrivileges) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func setSpecDefaults(spec *pipelines.PipelineSpec, pipelineId string) {

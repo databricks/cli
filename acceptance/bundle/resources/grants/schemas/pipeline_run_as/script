@@ -1,0 +1,18 @@
+# Creating the pipeline fails unless its run_as principal can already create tables in the
+# schema, so the pipeline must be deployed after the grants it relies on.
+# See https://github.com/databricks/cli/issues/4573
+export RUN_AS_SP="${TEST_SP_APPLICATION_ID:-6f1c2b3a-4d5e-4f60-8a7b-9c0d1e2f3a4b}"
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle plan -o json | jq '.plan | map_values(.depends_on)'
+
+trace $CLI bundle deploy
+trace print_requests.py --summary //unity-catalog/catalogs //unity-catalog/schemas //unity-catalog/permissions //pipelines
+
+trace $CLI bundle plan
