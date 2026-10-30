@@ -45,3 +45,47 @@ func TestPromptBaseline_Validate(t *testing.T) {
 	require.NoError(t, err, "raw output: %q", tm.Raw())
 	assert.Equal(t, "https://example.com", v, "snapshot:\n%s", tm.Snapshot())
 }
+
+// TestPromptBaseline_ValidateEnterBeforeEdit pins that Enter on an untouched
+// prompt shows the error line.
+func TestPromptBaseline_ValidateEnterBeforeEdit(t *testing.T) {
+	t.Parallel()
+	tm := termtest.NewPrompt(t, cmdio.PromptOptions{
+		Label: "Workspace host",
+		Validate: func(s string) error {
+			if s == "" {
+				return errors.New("host is required")
+			}
+			return nil
+		},
+	})
+	tm.WaitFor("Workspace host")
+	tm.Type(termtest.KeyEnter)
+	tm.Golden("01-enter")
+
+	tm.Type(termtest.KeyCtrlC)
+	_, err := tm.Result()
+	assert.Error(t, err)
+}
+
+// TestPromptBaseline_ValidateValidBeforeEdit pins that an untouched prompt
+// whose input already passes Validate shows "✔".
+func TestPromptBaseline_ValidateValidBeforeEdit(t *testing.T) {
+	t.Parallel()
+	tm := termtest.NewPrompt(t, cmdio.PromptOptions{
+		Label: "Workspace host",
+		Validate: func(s string) error {
+			if strings.Contains(s, " ") {
+				return errors.New("must not contain spaces")
+			}
+			return nil
+		},
+	})
+	tm.WaitFor("Workspace host")
+	tm.Golden("01-initial")
+
+	tm.Type(termtest.KeyEnter)
+	v, err := tm.Result()
+	require.NoError(t, err, "raw output: %q", tm.Raw())
+	assert.Empty(t, v)
+}

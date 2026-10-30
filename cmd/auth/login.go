@@ -286,11 +286,6 @@ a new profile is created.
 				if err != nil {
 					return err
 				}
-				// Fail here rather than prompting for the host again after
-				// the profile name.
-				if useDeviceCode && host == "" {
-					return errDeviceCodeNeedsHost
-				}
 				authArguments.Host = host
 			case profilePickerCreateNew:
 				// Reject the names of existing profiles, including those the
@@ -310,13 +305,8 @@ a new profile is created.
 		// only populated by setHostAndAccountId further down, which runs after
 		// the profile-name prompt.
 		if skipWorkspace && profileName == "" && authArguments.Host != "" && authArguments.AccountID == "" {
-			params := auth.ExtractHostQueryParams(authArguments.Host)
-			authArguments.Host = params.Host
-			if authArguments.AccountID == "" {
-				authArguments.AccountID = params.AccountID
-			}
-			if authArguments.WorkspaceID == "" {
-				authArguments.WorkspaceID = params.WorkspaceID
+			if err := normalizeLoginHost(authArguments); err != nil {
+				return err
 			}
 			runHostDiscovery(ctx, authArguments)
 		}
@@ -379,15 +369,8 @@ a new profile is created.
 		// Check the host once it is resolved, before setAccountID prompts for
 		// an account ID for account and unified hosts. A workspace without
 		// device code login enabled is rejected later by deviceCodeLogin.
-		if useDeviceCode {
-			// The host prompt accepts an empty answer. Without this check,
-			// login would resolve the host from DATABRICKS_HOST instead.
-			if authArguments.Host == "" {
-				return errDeviceCodeNeedsHost
-			}
-			if !isDeviceCodeSupportedForHost(authArguments.Host, authArguments.DiscoveryURL) {
-				return errDeviceCodeWorkspaceOnly
-			}
+		if useDeviceCode && !isDeviceCodeSupportedForHost(authArguments.Host, authArguments.DiscoveryURL) {
+			return errDeviceCodeWorkspaceOnly
 		}
 		err = setAccountID(ctx, existingProfile, authArguments)
 		if err != nil {
@@ -577,6 +560,33 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 	return setAccountID(ctx, existingProfile, authArguments)
 }
 
+var errInvalidHost = errors.New("invalid host")
+
+// normalizeLoginHost strips the trailing slash and the query params from the
+// host and moves the workspace and account ID query params into WorkspaceID and
+// AccountID unless they are set.
+// It fails if nothing is left of the host, e.g. for "/" or "?o=123", because
+// with an empty host login would use discovery or DATABRICKS_HOST instead.
+func normalizeLoginHost(authArguments *auth.AuthArguments) error {
+	rawHost := authArguments.Host
+	authArguments.Host = strings.TrimSuffix(strings.TrimSpace(authArguments.Host), "/")
+
+	// Extract query parameters from the host URL (?o=workspace_id, ?a=account_id).
+	// URL params from explicit --host override stale profile values.
+	params := auth.ExtractHostQueryParams(authArguments.Host)
+	authArguments.Host = params.Host
+	if authArguments.Host == "" {
+		return fmt.Errorf("%w %q", errInvalidHost, rawHost)
+	}
+	if authArguments.WorkspaceID == "" {
+		authArguments.WorkspaceID = params.WorkspaceID
+	}
+	if authArguments.AccountID == "" {
+		authArguments.AccountID = params.AccountID
+	}
+	return nil
+}
+
 // Sets the host in the persistentAuth object based on the provided arguments and flags.
 // Follows the following precedence:
 // 1. [HOST] (first positional argument) or --host flag. Error if both are specified.
@@ -608,17 +618,8 @@ func setHost(ctx context.Context, existingProfile *profile.Profile, authArgument
 		}
 	}
 
-	authArguments.Host = strings.TrimSuffix(authArguments.Host, "/")
-
-	// Extract query parameters from the host URL (?o=workspace_id, ?a=account_id).
-	// URL params from explicit --host override stale profile values.
-	params := auth.ExtractHostQueryParams(authArguments.Host)
-	authArguments.Host = params.Host
-	if authArguments.WorkspaceID == "" {
-		authArguments.WorkspaceID = params.WorkspaceID
-	}
-	if authArguments.AccountID == "" {
-		authArguments.AccountID = params.AccountID
+	if err := normalizeLoginHost(authArguments); err != nil {
+		return err
 	}
 
 	// Inherit workspace_id from the existing profile AFTER URL param extraction.

@@ -1,0 +1,3 @@
+
+>>> musterr [CLI] auth token --host ?o=123
+Error: invalid host "?o=123"

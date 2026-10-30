@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
@@ -51,9 +52,18 @@ func promptForHost(ctx context.Context) (string, error) {
 	// long "label + value" line that wraps causes each keystroke to leave a
 	// stale render on screen instead of overwriting the previous one.
 	cmdio.LogString(ctx, "Example: https://<databricks-instance>.cloud.databricks.com")
-	return cmdio.RunPrompt(ctx, cmdio.PromptOptions{
+	result, err := cmdio.RunPrompt(ctx, cmdio.PromptOptions{
 		Label: "Databricks host",
+		Validate: func(input string) error {
+			if strings.TrimSpace(input) == "" {
+				return errors.New("host is required")
+			}
+			// Reject hosts that setHost would reject after the prompt,
+			// e.g. "/" or "?o=123", while the user can still edit them.
+			return normalizeLoginHost(&auth.AuthArguments{Host: input})
+		},
 	})
+	return strings.TrimSpace(result), err
 }
 
 func promptForAccountID(ctx context.Context) (string, error) {

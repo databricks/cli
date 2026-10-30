@@ -1,0 +1,1 @@
+* `databricks auth login` and `databricks auth token` now reject an empty host instead of falling back to `DATABRICKS_HOST`. An empty host after "Enter a host" in the login profile picker no longer starts discovery login. ([#7195](https://github.com/databricks/cli/pull/7195))

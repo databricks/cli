@@ -3,10 +3,12 @@ package auth
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -140,4 +142,28 @@ func TestProfileHostCompatibleViaCobra(t *testing.T) {
 	if err != nil {
 		assert.NotContains(t, err.Error(), "conflicts with --host")
 	}
+}
+
+func TestPromptForHostRejectsEmptyHost(t *testing.T) {
+	tm := termtest.Run(t, promptForHost)
+	tm.WaitFor("Databricks host")
+	tm.Type(termtest.KeyEnter)
+	tm.Golden("01-empty")
+	tm.Type("  " + termtest.KeyEnter)
+	tm.Golden("02-spaces")
+	tm.Type("https://workspace.test " + termtest.KeyEnter)
+	host, err := tm.Result()
+	require.NoError(t, err)
+	assert.Equal(t, "https://workspace.test", host)
+}
+
+func TestPromptForHostRejectsHostEmptyAfterNormalization(t *testing.T) {
+	tm := termtest.Run(t, promptForHost)
+	tm.WaitFor("Databricks host")
+	tm.Type("?o=123" + termtest.KeyEnter)
+	tm.Golden("01-query-params")
+	tm.Type(strings.Repeat(termtest.KeyBackspace, len("?o=123")) + "https://workspace.test/?o=123" + termtest.KeyEnter)
+	host, err := tm.Result()
+	require.NoError(t, err)
+	assert.Equal(t, "https://workspace.test/?o=123", host)
 }

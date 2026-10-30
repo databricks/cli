@@ -221,8 +221,10 @@ func startLogin(t *testing.T, config string, args ...string) *termtest.Term[stru
 	t.Setenv("DATABRICKS_AUTH_STORAGE", "plaintext")
 
 	return termtest.Run(t, func(ctx context.Context) (struct{}, error) {
-		cmd := newLoginCommand(&auth.AuthArguments{})
+		authArguments := &auth.AuthArguments{}
+		cmd := newLoginCommand(authArguments)
 		cmd.Flags().String("profile", "", "")
+		cmd.Flags().StringVar(&authArguments.Host, "host", "", "")
 		cmd.SetContext(ctx)
 		// Cobra reads os.Args when the args are nil.
 		cmd.SetArgs(append([]string{}, args...))
@@ -243,8 +245,10 @@ func TestLoginDeviceCodeNewProfilePromptsForHost(t *testing.T) {
 	tm := startDeviceCodeLogin(t, "", "--profile", "newprof")
 	tm.WaitFor("Databricks host")
 	tm.Type(termtest.KeyEnter)
+	tm.WaitFor(">> host is required")
+	tm.Type(termtest.KeyCtrlC)
 	_, err := tm.Result()
-	assert.ErrorIs(t, err, errDeviceCodeNeedsHost)
+	assert.EqualError(t, err, "^C")
 }
 
 func TestLoginDeviceCodePickerEmptyHost(t *testing.T) {
@@ -259,8 +263,10 @@ func TestLoginDeviceCodePickerEmptyHost(t *testing.T) {
 	tm.Type(termtest.KeyDown + termtest.KeyEnter)
 	tm.WaitFor("Databricks host")
 	tm.Type(termtest.KeyEnter)
+	tm.WaitFor(">> host is required")
+	tm.Type(termtest.KeyCtrlC)
 	_, err := tm.Result()
-	assert.ErrorIs(t, err, errDeviceCodeNeedsHost)
+	assert.EqualError(t, err, "^C")
 }
 
 func TestLoginDeviceCodeCreateNewProfileRejectsHiddenProfileName(t *testing.T) {
@@ -284,6 +290,23 @@ account_id = acct-123
 	tm.Type(termtest.KeyCtrlC)
 	_, err := tm.Result()
 	assert.EqualError(t, err, "^C")
+}
+
+func TestLoginDeviceCodeHostEmptyAfterNormalization(t *testing.T) {
+	tests := []struct {
+		name string
+		host string
+	}{
+		{name: "slash", host: "/"},
+		{name: "query params only", host: "?o=123"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tm := startDeviceCodeLogin(t, "", "--profile", "newprof", "--host", tt.host)
+			_, err := tm.Result()
+			assert.ErrorIs(t, err, errInvalidHost)
+		})
+	}
 }
 
 func TestMatchDeviceCodeProfiles(t *testing.T) {
