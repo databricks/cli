@@ -5,11 +5,11 @@
   "modified_status": "created",
   "materialized_features": [
     {
-      "feature_name": "main.myschema.batchfeat",
+      "feature_name": "[BATCHFEAT_ID]",
       "is_online": null
     },
     {
-      "feature_name": "main.myschema.batchfeat",
+      "feature_name": "[BATCHFEAT_ID]",
       "is_online": null
     }
   ]
@@ -37,7 +37,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
           "cron_expression": "0 0 * * * ?",
           "mode": "MANUAL"
         },
-        "feature_name": "main.myschema.batchfeat",
+        "feature_name": "[BATCHFEAT_ID]",
         "offline_store_config": {
           "catalog_name": "main",
           "schema_name": "myschema",
@@ -49,7 +49,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
           "cron_expression": "0 0 * * * ?",
           "mode": "MANUAL"
         },
-        "feature_name": "main.myschema.batchfeat",
+        "feature_name": "[BATCHFEAT_ID]",
         "online_store_config": {
           "catalog_name": "main",
           "online_store_name": "danielb",
@@ -70,7 +70,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 === The server assigned a set id and a member id per member
 >>> [CLI] bundle summary -o json
 {
-  "id": "[UUID]"
+  "id": "[SET1_ID]"
 }
 
 === Redeploying with no config change must plan nothing
@@ -102,7 +102,7 @@ Destroy: 2 deleted
 >>> print_requests.py --keep //materialization-sets
 {
   "method": "DELETE",
-  "path": "/api/2.0/feature-engineering/materialization-sets/[UUID]",
+  "path": "/api/2.0/feature-engineering/materialization-sets/[SET1_ID]",
   "q": {
     "request_id": "[UUID]"
   }

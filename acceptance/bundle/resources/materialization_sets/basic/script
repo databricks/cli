@@ -2,6 +2,7 @@ title "Summary before deploy"
 trace $CLI bundle summary -o json | jq '.resources.materialization_sets.set1 | {modified_status, materialized_features: [.materialized_features[] | {feature_name, is_online}]}'
 
 trace $CLI bundle deploy
+replace_ids.py
 
 title "The create returns a long-running operation, and the created set is read back from it"
 trace print_requests.py --keep //materialization-sets
