@@ -11,7 +11,7 @@ import (
 func TestTestProgressPrinter(t *testing.T) {
 	var out bytes.Buffer
 	p := &testProgressPrinter{out: &out}
-	run := newTestRun("")
+	run := newTestRun()
 
 	p.updateState(pipelines.UpdateInfoStateQueued)
 	p.updateState(pipelines.UpdateInfoStateWaitingForResources)
@@ -137,7 +137,7 @@ Results received: none.
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			run := newTestRun("")
+			run := newTestRun()
 			for _, e := range tc.events() {
 				run.add(e)
 			}

@@ -280,9 +280,7 @@ type testTarget struct {
 	key        string
 	pipelineID string
 	selections []string
-	// root is the workspace folder that test case IDs are shown relative to, or "" if unknown.
-	root string
-	w    *databricks.WorkspaceClient
+	w          *databricks.WorkspaceClient
 }
 
 func (t testTarget) printHeader(out io.Writer, updateID string) {
@@ -313,7 +311,7 @@ func resolveTestTargetByID(cmd *cobra.Command, args []string, pipelineID string)
 	ctx := cmd.Context()
 	w := cmdctx.WorkspaceClient(ctx)
 
-	base, err := getTestIDBase(ctx, w, pipelineID)
+	base, err := readTestIDBase(ctx, w, pipelineID, args)
 	if err != nil {
 		return testTarget{}, err
 	}
@@ -323,7 +321,7 @@ func resolveTestTargetByID(cmd *cobra.Command, args []string, pipelineID string)
 	if err != nil {
 		return testTarget{}, err
 	}
-	return testTarget{pipelineID: pipelineID, selections: selections, root: base, w: w}, nil
+	return testTarget{pipelineID: pipelineID, selections: selections, w: w}, nil
 }
 
 // resolveTestTargetInBundle identifies the pipeline by its bundle KEY, which must precede any selections.
@@ -363,8 +361,7 @@ func resolveTestTargetInBundle(cmd *cobra.Command, args []string, resume bool) (
 		selectionArgs = args[1:]
 	}
 	w := b.WorkspaceClient(ctx)
-	// The folder of test IDs also names the printed test cases, so it is read for every run.
-	base, err := getTestIDBase(ctx, w, pipelineID)
+	base, err := readTestIDBase(ctx, w, pipelineID, selectionArgs)
 	if err != nil {
 		return testTarget{}, err
 	}
@@ -375,8 +372,7 @@ func resolveTestTargetInBundle(cmd *cobra.Command, args []string, resume bool) (
 	if err != nil {
 		return testTarget{}, err
 	}
-	// Show test case IDs as the service names them, relative to the folder of test IDs.
-	return testTarget{key: key, pipelineID: pipelineID, selections: selections, root: base, w: w}, nil
+	return testTarget{key: key, pipelineID: pipelineID, selections: selections, w: w}, nil
 }
 
 // resumeCommand returns the command that reads the result of the update later.
@@ -612,7 +608,7 @@ to read the results later. To stop the update, run 'pipelines stop'.`,
 			updateID:   updateID,
 			events:     events,
 			printer:    &testProgressPrinter{out: out},
-			run:        newTestRun(target.root),
+			run:        newTestRun(),
 		}
 
 		waitCtx := ctx

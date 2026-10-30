@@ -43,9 +43,9 @@ func (p *testProgressPrinter) startRunning() {
 func (p *testProgressPrinter) caseFinished(c *testCaseResult) {
 	p.startRunning()
 	if d, ok := c.duration(); ok {
-		fmt.Fprintf(p.out, "%s  %s (%.2fs)\n", c.name, c.status, d.Seconds())
+		fmt.Fprintf(p.out, "%s  %s (%.2fs)\n", c.id, c.status, d.Seconds())
 	} else {
-		fmt.Fprintf(p.out, "%s  %s\n", c.name, c.status)
+		fmt.Fprintf(p.out, "%s  %s\n", c.id, c.status)
 	}
 }
 
@@ -64,7 +64,7 @@ func renderTestFailures(out io.Writer, run *testRun) {
 	fmt.Fprintln(out)
 	fmt.Fprintln(out, "FAILURES")
 	for _, c := range failed {
-		fmt.Fprintln(out, c.name)
+		fmt.Fprintln(out, c.id)
 		details := ""
 		if c.errorDetail != nil {
 			details = errorDetailText(c.errorDetail)

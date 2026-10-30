@@ -150,10 +150,9 @@ func (r *testEventReader) read(ctx context.Context, sinceTimestamp string) ([]te
 
 // testCaseResult is what the events report about one test case.
 type testCaseResult struct {
-	// id is origin.test_case_id: the absolute workspace path of the test file and the pytest test ID.
-	id string
-	// name is the id relative to the test run's root folder, for display.
-	name   string
+	// id is origin.test_case_id: the pytest test ID, relative to pytest's rootdir, such as
+	// tests/test_orders.py::test_backfill.
+	id     string
 	status testCaseStatus
 	// finals counts final outcomes; a complete result has exactly one per case.
 	finals           int
@@ -173,8 +172,6 @@ func (c *testCaseResult) duration() (time.Duration, bool) {
 
 // testRun accumulates the events of a test update, ignoring events it has already seen.
 type testRun struct {
-	// root is the workspace folder that case names are relative to, or "" to show absolute IDs.
-	root      string
 	seen      map[string]bool
 	cases     []*testCaseResult
 	byID      map[string]*testCaseResult
@@ -201,19 +198,8 @@ func isTestVerdict(e *pipelines.ErrorDetail) bool {
 	return false
 }
 
-func newTestRun(root string) *testRun {
-	return &testRun{root: root, seen: map[string]bool{}, byID: map[string]*testCaseResult{}}
-}
-
-// caseName returns the test case ID relative to the run's root folder, if it is under it.
-func (r *testRun) caseName(id string) string {
-	if r.root == "" {
-		return id
-	}
-	if name, ok := strings.CutPrefix(id, strings.TrimSuffix(r.root, "/")+"/"); ok {
-		return name
-	}
-	return id
+func newTestRun() *testRun {
+	return &testRun{seen: map[string]bool{}, byID: map[string]*testCaseResult{}}
 }
 
 // add records an event and returns the case it gave a final outcome to, if any.
@@ -249,7 +235,7 @@ func (r *testRun) add(e testPipelineEvent) *testCaseResult {
 
 		c, ok := r.byID[e.Origin.TestCaseId]
 		if !ok {
-			c = &testCaseResult{id: e.Origin.TestCaseId, name: r.caseName(e.Origin.TestCaseId), status: testCasePending}
+			c = &testCaseResult{id: e.Origin.TestCaseId, status: testCasePending}
 			r.byID[c.id] = c
 			r.cases = append(r.cases, c)
 		}
@@ -320,7 +306,7 @@ func (r *testRun) incompleteReason(state pipelines.UpdateInfoState) string {
 
 	for _, c := range r.cases {
 		if c.finals > 1 {
-			return fmt.Sprintf("test %s has more than one result", c.name)
+			return fmt.Sprintf("test %s has more than one result", c.id)
 		}
 	}
 	summary := r.summaries[0]
