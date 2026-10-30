@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"slices"
 	"sync"
 
 	"golang.org/x/oauth2"
@@ -31,6 +32,7 @@ func cloneEntry(e Entry) Entry {
 	e.Token = cloneToken(e.Token)
 	if e.PendingLogin != nil {
 		pending := *e.PendingLogin
+		pending.Scopes = slices.Clone(pending.Scopes)
 		e.PendingLogin = &pending
 	}
 	return e
