@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -26,14 +27,40 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func promptForProfile(ctx context.Context, defaultValue string) (string, error) {
+// promptForProfile prompts for a profile name, rejecting the names in
+// takenNames. A taken defaultValue is not suggested.
+func promptForProfile(ctx context.Context, defaultValue string, takenNames []string) (string, error) {
 	if !cmdio.IsPromptSupported(ctx) {
 		return "", nil
 	}
 
+	label := "Databricks profile name"
+	if slices.Contains(takenNames, defaultValue) {
+		defaultValue = ""
+	} else {
+		label += " [" + defaultValue + "]"
+	}
 	result, err := cmdio.RunPrompt(ctx, cmdio.PromptOptions{
-		Label: "Databricks profile name [" + defaultValue + "]",
+		Label: label,
+		Validate: func(input string) error {
+			input = strings.TrimSpace(input)
+			if input == "" {
+				input = defaultValue
+			}
+			if input == "" {
+				return errors.New("profile name is required")
+			}
+			// Fail here rather than after the OAuth flow, in SaveToProfile.
+			if err := databrickscfg.ValidateProfileName(input); err != nil {
+				return err
+			}
+			if slices.Contains(takenNames, input) {
+				return fmt.Errorf("profile %s already exists. Choose a different name, or rerun with --profile %s to use it", input, input)
+			}
+			return nil
+		},
 	})
+	result = strings.TrimSpace(result)
 	if result == "" {
 		return defaultValue, err
 	}
@@ -227,7 +254,8 @@ a new profile is created.
 		// two action entries so the user can choose between web-based discovery
 		// (Create a new profile) and a manual host URL. Device code login skips
 		// discovery, so its "Create a new profile" asks for the host after the
-		// profile name, unless a profile with that name already has a host.
+		// profile name.
+		var takenProfileNames []string
 		if profileName == "" && authArguments.Host == "" && len(args) == 0 && cmdio.IsPromptSupported(ctx) {
 			matchProfiles := profile.MatchAllProfiles
 			if useDeviceCode {
@@ -265,7 +293,14 @@ a new profile is created.
 				}
 				authArguments.Host = host
 			case profilePickerCreateNew:
-				// Fall through to the profile name prompt below.
+				// Reject the names of existing profiles, including those the
+				// picker hid and sections without a host, so that the profile
+				// name prompt below cannot log in to an existing profile and
+				// reuse its host or keys.
+				takenProfileNames, err = databrickscfg.GetSectionNames(ctx, env.Get(ctx, "DATABRICKS_CONFIG_FILE"))
+				if err != nil {
+					return err
+				}
 			}
 		}
 
@@ -293,7 +328,7 @@ a new profile is created.
 			if profileName == "" {
 				profileName = "DEFAULT"
 			}
-			profileName, err = promptForProfile(ctx, profileName)
+			profileName, err = promptForProfile(ctx, profileName, takenProfileNames)
 			if err != nil {
 				return err
 			}

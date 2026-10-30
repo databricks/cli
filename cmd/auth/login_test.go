@@ -10,6 +10,8 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -18,6 +20,7 @@ import (
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
@@ -1458,4 +1461,82 @@ func TestLoginRejectsPositionalArgWithProfileFlag(t *testing.T) {
 	cmd.SetArgs([]string{"--profile", "myprofile", "https://example.com"})
 	err := cmd.Execute()
 	assert.ErrorContains(t, err, `argument "https://example.com" cannot be combined with --host or --profile`)
+}
+
+func TestPromptForProfileRejectsTakenName(t *testing.T) {
+	tm := termtest.Run(t, func(ctx context.Context) (string, error) {
+		return promptForProfile(ctx, "DEFAULT", []string{"DEFAULT", "taken"})
+	})
+	screen := tm.WaitFor("Databricks profile name")
+	assert.NotContains(t, screen, "[DEFAULT]")
+	tm.Type(termtest.KeyEnter)
+	tm.WaitFor(">> profile name is required")
+	tm.Type("taken" + termtest.KeyEnter)
+	tm.WaitFor(">> profile taken already exists. Choose a different name, or rerun with --profile taken to use it")
+	tm.Type(strings.Repeat(termtest.KeyBackspace, len("taken")) + "__settings__" + termtest.KeyEnter)
+	tm.WaitFor(`>> profile name "__settings__" is reserved for internal use`)
+	tm.Type(strings.Repeat(termtest.KeyBackspace, len("__settings__")) + "take" + termtest.KeyEnter)
+	name, err := tm.Result()
+	require.NoError(t, err)
+	assert.Equal(t, "take", name)
+}
+
+func TestPromptForProfileSuggestsFreeDefault(t *testing.T) {
+	tm := termtest.Run(t, func(ctx context.Context) (string, error) {
+		return promptForProfile(ctx, "DEFAULT", []string{"taken"})
+	})
+	tm.WaitFor("Databricks profile name [DEFAULT]")
+	tm.Type(termtest.KeyEnter)
+	name, err := tm.Result()
+	require.NoError(t, err)
+	assert.Equal(t, "DEFAULT", name)
+}
+
+func TestPromptForProfileTrimsPastedName(t *testing.T) {
+	tm := termtest.Run(t, func(ctx context.Context) (string, error) {
+		return promptForProfile(ctx, "DEFAULT", []string{"DEFAULT", "taken"})
+	})
+	tm.WaitFor("Databricks profile name")
+	// A bracketed paste arrives as a single input event, so the trailing
+	// newline lands in the buffer instead of submitting the prompt.
+	tm.Type("\x1b[200~taken\n\x1b[201~" + termtest.KeyEnter)
+	tm.WaitFor(">> profile taken already exists")
+	tm.Type(strings.Repeat(termtest.KeyBackspace, len("taken\n")) + "   " + termtest.KeyEnter)
+	tm.WaitFor(">> profile name is required")
+	tm.Type(" new " + termtest.KeyEnter)
+	name, err := tm.Result()
+	require.NoError(t, err)
+	assert.Equal(t, "new", name)
+}
+
+func TestPromptForProfileRejectsMultilinePaste(t *testing.T) {
+	tm := termtest.Run(t, func(ctx context.Context) (string, error) {
+		return promptForProfile(ctx, "DEFAULT", nil)
+	})
+	tm.WaitFor("Databricks profile name [DEFAULT]")
+	tm.Type("\x1b[200~foo\nbar\x1b[201~" + termtest.KeyEnter)
+	tm.WaitFor(`>> profile name "foo\nbar" must not contain line breaks`)
+	tm.Type(strings.Repeat(termtest.KeyBackspace, len("foo\nbar")) + "[foo]" + termtest.KeyEnter)
+	name, err := tm.Result()
+	require.NoError(t, err)
+	assert.Equal(t, "[foo]", name)
+}
+
+func TestLoginCreateNewProfileRejectsTakenName(t *testing.T) {
+	// See TestLoginDeviceCodePickerEmptyHost.
+	if runtime.GOOS == "windows" {
+		t.Skip("bubbletea cannot cancel reads on non-console input on Windows")
+	}
+	tm := startLogin(t, `[DEFAULT]
+host = https://default.cloud.databricks.test
+`)
+	tm.WaitFor(profilePickerCreateNewLabel)
+	tm.Type(termtest.KeyDown + termtest.KeyEnter)
+	screen := tm.WaitFor("Databricks profile name")
+	assert.NotContains(t, screen, "[DEFAULT]")
+	tm.Type("DEFAULT" + termtest.KeyEnter)
+	tm.WaitFor(">> profile DEFAULT already exists")
+	tm.Type(termtest.KeyCtrlC)
+	_, err := tm.Result()
+	assert.EqualError(t, err, "^C")
 }
