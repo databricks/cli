@@ -1,0 +1,2 @@
+# Null values in a target leave the root values in place, including fields a target otherwise replaces (mode, cluster_id, run_as, variable defaults and lookups).
+trace $CLI bundle validate -o json -t dev | jq '{bundle: (.bundle | {mode, cluster_id, git: (.git | {branch})}), root_path: .workspace.root_path, presets: (.presets | {name_prefix, tags}), sync, permissions, variables, run_as, artifacts: (.artifacts | map_values({type, build}))}'

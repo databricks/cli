@@ -1,0 +1,37 @@
+
+>>> [CLI] bundle validate
+Name: test-bundle
+Target: dev
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev
+
+Validation OK!
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/files...
+Created jobs.foo
+Created pipelines.foo
+Files: 1 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle summary
+Name: test-bundle
+Target: dev
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev
+Resources:
+  Jobs:
+    foo:
+      Name: foo-job
+      URL:  [DATABRICKS_URL]/jobs/[FOO_ID]?w=[WORKSPACE_ID]
+  Pipelines:
+    foo:
+      Name: foo-pipeline
+      URL:  [DATABRICKS_URL]/pipelines/[FOO_ID_2]?w=[WORKSPACE_ID]
+
+>>> [CLI] bundle run foo
+Error: multiple resources with key "foo" found
+
+Exit code: 1

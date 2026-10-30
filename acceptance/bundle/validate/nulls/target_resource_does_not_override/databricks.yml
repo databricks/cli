@@ -1,0 +1,40 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    foo:
+      name: foo
+      max_concurrent_runs: 5
+      queue:
+        enabled: false
+      tags:
+        root: "1"
+      email_notifications:
+        on_failure:
+          - root@example.com
+      tasks:
+        - task_key: t1
+          notebook_task:
+            notebook_path: ./root.py
+    bar:
+      name: bar
+
+targets:
+  dev:
+    resources:
+      jobs:
+        foo:
+          name: null
+          max_concurrent_runs: null
+          queue:
+            enabled: null
+          tags:
+            root: null
+          email_notifications:
+            on_failure:
+              - null
+          tasks:
+            - task_key: t1
+              notebook_task: null
+        bar: null

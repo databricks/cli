@@ -1,0 +1,2 @@
+# experimental, scripts, python and include cannot be set in a target.
+trace $CLI bundle validate -o json -t dev | jq '{experimental, scripts, python, include}'

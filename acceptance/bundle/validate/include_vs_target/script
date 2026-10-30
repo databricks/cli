@@ -1,0 +1,9 @@
+# The same overrides applied from an included file and from the selected target.
+SECTIONS='{bundle: (.bundle | {cluster_id, git: (.git | {branch, origin_url})}), workspace: (.workspace | {root_path, file_path}), artifacts, experimental, presets, sync, permissions, variables, scripts, run_as}'
+
+cd include
+errcode trace $CLI bundle validate -o json | jq "$SECTIONS" > ../output.include.json
+cd ../target
+errcode trace $CLI bundle validate -o json -t dev | jq "$SECTIONS" > ../output.target.json
+cd ..
+trace diff.py output.include.json output.target.json

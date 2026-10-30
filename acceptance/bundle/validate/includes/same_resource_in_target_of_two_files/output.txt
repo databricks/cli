@@ -1,0 +1,11 @@
+
+>>> [CLI] bundle validate -o json -t dev
+{
+  "name": "foo-b",
+  "tags": {
+    "a": "1",
+    "b": "1",
+    "root": "1",
+    "root_dev": "1"
+  }
+}

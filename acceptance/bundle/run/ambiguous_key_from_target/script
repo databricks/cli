@@ -1,0 +1,6 @@
+# A target adds pipelines.foo next to jobs.foo: validate, deploy and summary accept it, run fails as ambiguous.
+trace $CLI bundle validate
+trace $CLI bundle deploy
+replace_ids.py
+trace $CLI bundle summary
+errcode trace $CLI bundle run foo
