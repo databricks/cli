@@ -2,11 +2,43 @@ package runlocal
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/require"
 )
+
+func TestReadAppSpecFile(t *testing.T) {
+	appDir := t.TempDir()
+	specDir := t.TempDir()
+
+	specYAML := "command:\n  - python\n  - app.py\n"
+	require.NoError(t, os.WriteFile(filepath.Join(appDir, "app.yml"), []byte(specYAML), 0o644))
+	// Absolute spec lives outside the app dir so the test proves the
+	// path is used verbatim instead of joined with AppPath.
+	absSpec := filepath.Join(specDir, "custom.yml")
+	require.NoError(t, os.WriteFile(absSpec, []byte(specYAML), 0o644))
+
+	t.Run("relative path", func(t *testing.T) {
+		spec, err := ReadAppSpecFile(&Config{AppPath: appDir, AppSpecFiles: []string{"app.yml"}})
+		require.NoError(t, err)
+		require.Equal(t, []string{"python", "app.py"}, spec.Command)
+	})
+
+	t.Run("absolute path", func(t *testing.T) {
+		spec, err := ReadAppSpecFile(&Config{AppPath: appDir, AppSpecFiles: []string{absSpec}})
+		require.NoError(t, err)
+		require.Equal(t, []string{"python", "app.py"}, spec.Command)
+	})
+
+	t.Run("missing file returns empty spec", func(t *testing.T) {
+		spec, err := ReadAppSpecFile(&Config{AppPath: appDir, AppSpecFiles: []string{"does-not-exist.yml"}})
+		require.NoError(t, err)
+		require.Empty(t, spec.Command)
+	})
+}
 
 func TestAppSpecLoadEnvVars(t *testing.T) {
 	tempDir := t.TempDir()
