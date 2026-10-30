@@ -36,6 +36,7 @@ Connect to serverless:
   databricks ssh connect
   databricks ssh connect --accelerator=<GPU_type>   # AI Runtime
   databricks ssh connect --base-environment=<name>  # custom base environment
+  databricks ssh connect --environment-version=5    # serverless environment version
 
 Connect to a dedicated cluster:
   databricks ssh connect --cluster=<cluster-id>`,
@@ -93,8 +94,7 @@ Connect to a dedicated cluster:
 	cmd.Flags().BoolVar(&skipSettingsCheck, "skip-settings-check", false, "Skip checking and updating IDE settings")
 	cmd.Flags().MarkHidden("skip-settings-check")
 
-	cmd.Flags().IntVar(&environmentVersion, "environment-version", defaultEnvironmentVersion, "Environment version for AI Runtime")
-	cmd.Flags().MarkHidden("environment-version")
+	cmd.Flags().IntVar(&environmentVersion, "environment-version", defaultEnvironmentVersion, "Serverless environment version for the SSH server job (serverless only)")
 
 	cmd.Flags().StringVar(&baseEnvironment, "base-environment", "", "Custom base environment for serverless compute: an env.yaml path, a workspace-base-environments resource ID, or a display name")
 
@@ -114,20 +114,20 @@ Connect to a dedicated cluster:
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		wsClient := cmdctx.WorkspaceClient(ctx)
+		// Only carry an explicitly-set environment version. Leaving it at 0 otherwise
+		// lets the submit path default to minEnvironmentVersion and lets Validate
+		// detect a real --environment-version + --base-environment conflict.
+		if !cmd.Flags().Changed("environment-version") {
+			environmentVersion = 0
+		}
 		if connectionName == "" && clusterID == "" && !proxyMode {
-			connectionName = client.GenerateDefaultConnectionName(wsClient.Config.Host, accelerator, baseEnvironment)
+			connectionName = client.GenerateDefaultConnectionName(wsClient.Config.Host, accelerator, baseEnvironment, environmentVersion)
 		}
 		// Serverless GPU compute can take much longer to provision than CPU compute,
 		// so allow extra time for the SSH server job to start.
 		startupTimeout := taskStartupTimeout
 		if accelerator != "" {
 			startupTimeout = gpuTaskStartupTimeout
-		}
-		// Only carry an explicitly-set environment version. Leaving it at 0 otherwise
-		// lets the submit path default to minEnvironmentVersion and lets Validate
-		// detect a real --environment-version + --base-environment conflict.
-		if !cmd.Flags().Changed("environment-version") {
-			environmentVersion = 0
 		}
 		opts := client.ClientOptions{
 			Profile:               wsClient.Config.Profile,

@@ -181,6 +181,9 @@ func (o *ClientOptions) Validate() error {
 	if o.BaseEnvironment != "" && o.ClusterID != "" {
 		return errors.New("--base-environment can only be used with serverless compute")
 	}
+	if o.EnvironmentVersion > 0 && o.ClusterID != "" {
+		return errors.New("--environment-version can only be used with serverless compute")
+	}
 	// A server started with fewer than one client slot rejects every connection with an
 	// opaque websocket handshake failure, so catch it here instead.
 	if o.MaxClients < 1 {
@@ -201,17 +204,22 @@ func (o *ClientOptions) Validate() error {
 }
 
 // GenerateDefaultConnectionName creates a deterministic connection name from
-// the workspace host, accelerator type, and base environment. The name includes
+// the workspace host, accelerator type, and environment. The name includes
 // a hash so that different workspaces produce different names (avoiding SSH
 // known_hosts conflicts). The environment is folded into the hash because a
 // serverless server bakes in its environment at startup: distinct environments
 // must map to distinct connection names so they don't reuse each other's server.
-func GenerateDefaultConnectionName(host, accelerator, baseEnvironment string) string {
-	// Keep the hash host-only when no base environment is set so existing default
+func GenerateDefaultConnectionName(host, accelerator, baseEnvironment string, environmentVersion int) string {
+	// Keep the hash host-only when no environment is set so existing default
 	// connection names are preserved.
 	hashInput := host
 	if baseEnvironment != "" {
 		hashInput = host + "\x00" + baseEnvironment
+	}
+	// The two are mutually exclusive. The key keeps a version from hashing like a
+	// base environment whose name is that number.
+	if environmentVersion > 0 {
+		hashInput = host + "\x00environment_version=" + strconv.Itoa(environmentVersion)
 	}
 	h := md5.Sum([]byte(hashInput))
 	hashStr := hex.EncodeToString(h[:4])
