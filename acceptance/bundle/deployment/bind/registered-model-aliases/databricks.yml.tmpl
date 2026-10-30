@@ -1,0 +1,15 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  registered_models:
+    model1:
+      name: $MODEL_NAME
+      catalog_name: main
+      schema_name: default
+      comment: Managed by the bundle
+      aliases:
+        - alias_name: test
+          version_num: 1
+        - alias_name: staging
+          version_num: 2

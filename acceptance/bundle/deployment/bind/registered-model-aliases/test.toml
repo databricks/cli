@@ -1,0 +1,7 @@
+# Binding an existing model and deploying sets the aliases the config declares (#4012).
+# Local only: the aliases need registered model versions, which the test registers through the
+# fake server rather than with MLflow.
+Cloud = false
+RecordRequests = true
+
+Env.MSYS_NO_PATHCONV = "1"

@@ -820,7 +820,7 @@ func AddDefaultHandlers(server *Server) {
 	// Registered Models:
 
 	server.Handle("GET", "/api/2.1/unity-catalog/models/{full_name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.RegisteredModels, req.Vars["full_name"])
+		return req.Workspace.RegisteredModelsGet(req, req.Vars["full_name"])
 	})
 
 	server.Handle("POST", "/api/2.1/unity-catalog/models", func(req Request) any {
@@ -832,7 +832,20 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/models/{full_name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.RegisteredModels, req.Vars["full_name"])
+		return req.Workspace.RegisteredModelsDelete(req.Vars["full_name"])
+	})
+
+	server.Handle("PUT", "/api/2.1/unity-catalog/models/{full_name}/aliases/{alias}", func(req Request) any {
+		return req.Workspace.RegisteredModelsSetAlias(req, req.Vars["full_name"], req.Vars["alias"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/models/{full_name}/aliases/{alias}", func(req Request) any {
+		return req.Workspace.RegisteredModelsDeleteAlias(req.Vars["full_name"], req.Vars["alias"])
+	})
+
+	// Model versions of Unity Catalog models are registered through the MLflow registry API.
+	server.Handle("POST", "/api/2.0/mlflow/unity-catalog/model-versions/create", func(req Request) any {
+		return req.Workspace.RegisteredModelsCreateVersion(req)
 	})
 
 	// Model Services (AI Gateway):
