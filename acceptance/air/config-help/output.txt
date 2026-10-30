@@ -131,6 +131,7 @@ config.compute.accelerator_type
   Supported accelerator types:
     GPU_1xH100 - 1 accelerator per node [Private Preview]
     GPU_8xH100 - 8 accelerators per node
+    GPU_1xRTX6000 - 1 accelerator per node
 
   Type:     string
   Required: no
