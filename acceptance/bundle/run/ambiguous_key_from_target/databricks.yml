@@ -4,11 +4,12 @@ bundle:
 resources:
   jobs:
     foo:
-      name: foo
+      name: foo-job
 
 targets:
   dev:
+    default: true
     resources:
       pipelines:
         foo:
-          name: foo
+          name: foo-pipeline
