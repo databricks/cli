@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
@@ -142,6 +143,11 @@ func TestCaptureUCDependencies(t *testing.T) {
 						Name: "mycatalog.myschema.myindex",
 					}},
 				},
+				Features: map[string]*resources.Feature{
+					"my_feature": {Feature: ml.Feature{
+						FullName: "mycatalog.myschema.myfeature",
+					}},
+				},
 				McpServices: map[string]*resources.McpService{
 					"my_mcp_service": {McpServiceConfig: resources.McpServiceConfig{
 						Parent: "schemas/mycatalog.myschema", McpServiceId: "mymcp",
@@ -190,6 +196,9 @@ func TestCaptureUCDependencies(t *testing.T) {
 
 	// Vector search index (three-part "catalog.schema.index" name).
 	assert.Equal(t, catalogRef+"."+schemaRef+".myindex", b.Config.Resources.VectorSearchIndexes["my_index"].Name)
+
+	// Feature (three-part "catalog.schema.feature" full name).
+	assert.Equal(t, catalogRef+"."+schemaRef+".myfeature", b.Config.Resources.Features["my_feature"].FullName)
 
 	// MCP service (same compound parent field).
 	assert.Equal(t, "schemas/"+catalogRef+"."+schemaRef, b.Config.Resources.McpServices["my_mcp_service"].Parent)

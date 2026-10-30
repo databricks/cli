@@ -147,8 +147,7 @@ func TestConnectionsManager_ShutdownTimer_TriggersOnEmptyConnections(t *testing.
 			case <-time.After(time.Hour):
 			}
 		}()
-		time.Sleep(time.Hour)
-		synctest.Wait()
+		synctest.Sleep(time.Hour)
 		assert.True(t, timedOut, "Expected timeout signal but didn't receive one")
 	})
 }
@@ -170,8 +169,7 @@ func TestConnectionsManager_ShutdownTimer_CancelledWhenConnectionAdded(t *testin
 		result := cm.TryAdd("test-id", conn)
 		require.True(t, result)
 
-		time.Sleep(time.Hour)
-		synctest.Wait()
+		synctest.Sleep(time.Hour)
 		assert.False(t, timedOut, "Unexpected timeout signal while connection exists")
 	})
 }
@@ -194,8 +192,7 @@ func TestConnectionsManager_ShutdownTimer_RestartsWhenLastConnectionRemoved(t *t
 		require.True(t, result)
 
 		// Wait a bit to ensure timer would have triggered if not cancelled
-		time.Sleep(time.Hour)
-		synctest.Wait()
+		synctest.Sleep(time.Hour)
 		assert.False(t, timedOut, "Unexpected timeout signal while connection exists")
 
 		// Setup new goroutine to listen for timeout signal
@@ -209,8 +206,7 @@ func TestConnectionsManager_ShutdownTimer_RestartsWhenLastConnectionRemoved(t *t
 		}()
 		// Remove connection - should restart shutdown timer
 		cm.Remove("test-id")
-		time.Sleep(time.Hour)
-		synctest.Wait()
+		synctest.Sleep(time.Hour)
 		assert.True(t, timedOut, "Expected timeout signal after last connection removed but didn't receive one")
 	})
 }
@@ -239,8 +235,7 @@ func TestConnectionsManager_ShutdownTimer_NoRestartWhenConnectionsRemain(t *test
 		cm.Remove("conn1")
 		assert.Equal(t, 1, cm.Count())
 
-		time.Sleep(time.Hour)
-		synctest.Wait()
+		synctest.Sleep(time.Hour)
 		assert.False(t, timedOut, "Unexpected timeout signal while connections still exist")
 	})
 }

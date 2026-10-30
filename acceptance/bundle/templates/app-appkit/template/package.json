@@ -1,0 +1,12 @@
+{
+  "name": "{{.projectName}}",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "{{.appDescription}}",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@databricks/appkit": "0.57.0"
+  }
+}

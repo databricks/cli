@@ -108,6 +108,21 @@ var testConfig map[string]any = map[string]any{
 		StorageLocation: "s3://my-bucket/my-path",
 	},
 
+	"features": &resources.Feature{
+		FullName:    "main.default.my_feature",
+		Description: "Test feature",
+		Source: ml.DataSource{
+			DeltaTableSource: &ml.DeltaTableSource{
+				FullName: "main.default.my_source",
+			},
+		},
+		Function: ml.Function{
+			ColumnSelection: &ml.ColumnSelection{Column: "amount"},
+		},
+		Entities:         []ml.EntityColumn{{Name: "id"}},
+		TimeseriesColumn: &ml.TimeseriesColumn{Name: "ts"},
+	},
+
 	"experiments": &resources.MlflowExperiment{
 		Name: "my-experiment",
 		Tags: []ml.ExperimentTag{
@@ -275,7 +290,7 @@ var testConfig map[string]any = map[string]any{
 	},
 
 	"internal_immutable_snapshots": &resources.Snapshot{
-		RemoteRoot: "/Workspace/Users/" + testserver.TestUserSP.UserName + "/.snapshots",
+		RemoteRoot: "/Workspace/Users/" + testserver.SnapshotRootUUID + "/.snapshots",
 		BundleID:   "test-bundle-id",
 		ACL:        []snapshot.ACLEntry{{UserName: "user@example.com", PermissionLevel: "CAN_READ"}},
 	},
@@ -1039,7 +1054,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		require.NoError(t, os.WriteFile(zipPath, content, 0o600))
 		ss.ZipPath = filepath.ToSlash(zipPath)
 		ss.RelativePath = ss.BundleID + "/" + hash
-		ss.FullPath = snap.RemoteRoot + "/" + ss.RelativePath
+		ss.FullPath = snap.RemoteRoot + "/" + ss.RelativePath + "/" + snapshot.ContentSubdir
 	}
 
 	ctx := t.Context()

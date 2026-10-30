@@ -1,0 +1,7 @@
+for target in no_host no_host_with_workspace_id; do
+  title "Target $target uses the default profile"
+  trace errcode $CLI bundle run -t $target show_auth
+done
+
+title "Target no_host_other_workspace is rejected"
+trace errcode $CLI bundle validate -t no_host_other_workspace

@@ -44,3 +44,15 @@ func BenchmarkZero(b *testing.B) {
 func BenchmarkNils(b *testing.B) {
 	bench(b, jobExampleResponse, jobExampleResponseNils)
 }
+
+func BenchmarkIsEqual(b *testing.B) {
+	var x, y jobs.JobSettings
+	require.NoError(b, json.Unmarshal([]byte(jobExampleResponse), &x))
+	require.NoError(b, json.Unmarshal([]byte(jobExampleResponse), &y))
+
+	for b.Loop() {
+		if !IsEqual(&x, &y) {
+			b.Fatal("expected equal")
+		}
+	}
+}

@@ -1,3 +1,6 @@
 Badness = "After deleting and recreating a vector search endpoint remotely with the same name but a different UUID, bundle plan/deploy treats it as unchanged instead of deleting and recreating it."
 
 RecordRequests = false
+
+# DMS=true half of the split; see the vector_search_* test.toml.
+EnvMatrix.DMS = ["true"]

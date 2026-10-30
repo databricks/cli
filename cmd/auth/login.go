@@ -49,6 +49,9 @@ const (
 	// host used by the discovery login flow. Intended for testing and
 	// development against non-production environments.
 	discoveryHostEnvVar = "DATABRICKS_DISCOVERY_HOST"
+	// deviceCodeEnvVar enables the experimental device code login flow
+	// (--use-device-code) while it is experimental.
+	deviceCodeEnvVar = "DATABRICKS_CLI_DEVICE_CODE"
 )
 
 // discoveryErr wraps an error (or creates a new one) and appends the
@@ -151,6 +154,7 @@ a new profile is created.
 	var scopes string
 	var clientID string
 	var resources []string
+	var useDeviceCode bool
 	cmd.Flags().DurationVar(&loginTimeout, "timeout", defaultTimeout,
 		"Timeout for completing login challenge in the browser")
 	cmd.Flags().BoolVar(&configureCluster, "configure-cluster", false,
@@ -165,6 +169,10 @@ a new profile is created.
 		"OAuth client ID to use for U2M authentication")
 	cmd.Flags().StringArrayVar(&resources, "resource", nil,
 		"RFC 8707 resource indicator to scope the login to (repeatable). Requires --host.")
+	cmd.Flags().BoolVar(&useDeviceCode, "use-device-code", false,
+		"Log in with a device code, using a browser on another device (experimental)")
+	// Hidden while device code login is experimental.
+	cmd.Flags().MarkHidden("use-device-code")
 
 	cmd.PreRunE = profileHostConflictCheck
 
@@ -197,6 +205,12 @@ a new profile is created.
 			}
 		}
 
+		if useDeviceCode {
+			if err := validateDeviceCodeLogin(ctx, cmd); err != nil {
+				return err
+			}
+		}
+
 		// Resolve the cache before the browser step so an unavailable
 		// keyring surfaces here rather than after OAuth. The probe also
 		// triggers the OS unlock prompt, which the user can answer during
@@ -211,9 +225,15 @@ a new profile is created.
 		// the user re-login to an existing profile, create a new one, or enter
 		// a host URL. With no profiles configured the picker still shows the
 		// two action entries so the user can choose between web-based discovery
-		// (Create a new profile) and a manual host URL.
+		// (Create a new profile) and a manual host URL. Device code login skips
+		// discovery, so its "Create a new profile" asks for the host after the
+		// profile name, unless a profile with that name already has a host.
 		if profileName == "" && authArguments.Host == "" && len(args) == 0 && cmdio.IsPromptSupported(ctx) {
-			allProfiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.MatchAllProfiles)
+			matchProfiles := profile.MatchAllProfiles
+			if useDeviceCode {
+				matchProfiles = matchDeviceCodeProfiles
+			}
+			allProfiles, err := profile.DefaultProfiler.LoadProfiles(ctx, matchProfiles)
 			if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
 				return err
 			}
@@ -237,6 +257,11 @@ a new profile is created.
 				host, err := promptForHost(ctx)
 				if err != nil {
 					return err
+				}
+				// Fail here rather than prompting for the host again after
+				// the profile name.
+				if useDeviceCode && host == "" {
+					return errDeviceCodeNeedsHost
 				}
 				authArguments.Host = host
 			case profilePickerCreateNew:
@@ -284,11 +309,18 @@ a new profile is created.
 		}
 		if len(resources) == 0 {
 			resources = u2mResourcesFromProfile(existingProfile)
+			// Device code login cannot scope the token to these resources, so
+			// the profile would claim a scoping its token does not have.
+			if useDeviceCode && len(resources) > 0 {
+				return fmt.Errorf("--use-device-code cannot be used with profile %s because its login is scoped to resources. Log in without --use-device-code", profileName)
+			}
 		}
 
 		// If no host is available from any source, use the discovery flow
-		// via login.databricks.com.
-		if shouldUseDiscovery(authArguments.Host, args, existingProfile) {
+		// via login.databricks.com. Discovery opens a browser on this machine,
+		// and device code login is meant for machines without one, so it skips
+		// discovery and setHost resolves the host instead.
+		if !useDeviceCode && shouldUseDiscovery(authArguments.Host, args, existingProfile) {
 			if err := validateDiscoveryFlagCompatibility(cmd); err != nil {
 				return err
 			}
@@ -305,7 +337,24 @@ a new profile is created.
 			})
 		}
 
-		err = setHostAndAccountId(ctx, existingProfile, authArguments, args)
+		err = setHost(ctx, existingProfile, authArguments, args)
+		if err != nil {
+			return err
+		}
+		// Check the host once it is resolved, before setAccountID prompts for
+		// an account ID for account and unified hosts. A workspace without
+		// device code login enabled is rejected later by DeviceCodeChallenge.
+		if useDeviceCode {
+			// The host prompt accepts an empty answer. Without this check,
+			// login would resolve the host from DATABRICKS_HOST instead.
+			if authArguments.Host == "" {
+				return errDeviceCodeNeedsHost
+			}
+			if !isDeviceCodeSupportedForHost(authArguments.Host, authArguments.DiscoveryURL) {
+				return errDeviceCodeWorkspaceOnly
+			}
+		}
+		err = setAccountID(ctx, existingProfile, authArguments)
 		if err != nil {
 			return err
 		}
@@ -340,16 +389,22 @@ a new profile is created.
 		if len(resources) > 0 {
 			persistentAuthOpts = append(persistentAuthOpts, u2m.WithResources(resources))
 		}
+		// Apply timeout before creating PersistentAuth so Challenge() respects it.
+		ctx, cancel := context.WithTimeout(ctx, loginTimeout)
+		defer cancel()
+
 		persistentAuth, err := u2m.NewPersistentAuth(ctx, persistentAuthOpts...)
 		if err != nil {
 			return err
 		}
 		defer persistentAuth.Close()
 
-		ctx, cancel := context.WithTimeout(ctx, loginTimeout)
-		defer cancel()
-
-		token, err := persistentAuth.Challenge()
+		var token *oauth2.Token
+		if useDeviceCode {
+			token, err = persistentAuth.DeviceCodeChallenge(ctx, promptForConfirmationCode)
+		} else {
+			token, err = persistentAuth.Challenge()
+		}
 		if err != nil {
 			return err
 		}
@@ -479,18 +534,20 @@ func shouldPromptWorkspace(authArguments *auth.AuthArguments, existingProfile *p
 	return true
 }
 
+// setHostAndAccountId calls setHost and then setAccountID.
+func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, authArguments *auth.AuthArguments, args []string) error {
+	if err := setHost(ctx, existingProfile, authArguments, args); err != nil {
+		return err
+	}
+	return setAccountID(ctx, existingProfile, authArguments)
+}
+
 // Sets the host in the persistentAuth object based on the provided arguments and flags.
 // Follows the following precedence:
 // 1. [HOST] (first positional argument) or --host flag. Error if both are specified.
 // 2. Profile host, if available.
 // 3. Prompt the user for the host.
-//
-// Set the account in the persistentAuth object based on the flags.
-// Follows the following precedence:
-// 1. --account-id flag.
-// 2. account-id from the specified profile, if available.
-// 3. Prompt the user for the account-id.
-func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, authArguments *auth.AuthArguments, args []string) error {
+func setHost(ctx context.Context, existingProfile *profile.Profile, authArguments *auth.AuthArguments, args []string) error {
 	// If both [HOST] and --host are provided, return an error.
 	host := authArguments.Host
 	if len(args) > 0 && host != "" {
@@ -540,7 +597,15 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 	// .well-known/databricks-config endpoint. This is best-effort: failures
 	// are logged as warnings and never block login.
 	runHostDiscovery(ctx, authArguments)
+	return nil
+}
 
+// Set the account in the persistentAuth object based on the flags.
+// Follows the following precedence:
+// 1. --account-id flag.
+// 2. account-id from the specified profile, if available.
+// 3. Prompt the user for the account-id.
+func setAccountID(ctx context.Context, existingProfile *profile.Profile, authArguments *auth.AuthArguments) error {
 	if needsAccountIDPrompt(authArguments.Host, authArguments.DiscoveryURL) && authArguments.AccountID == "" {
 		if existingProfile != nil && existingProfile.AccountID != "" {
 			authArguments.AccountID = existingProfile.AccountID
@@ -560,6 +625,13 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 // for OAuth URL construction. True for classic account hosts (accounts.*) and
 // for unified hosts detected via account-scoped DiscoveryURL.
 func needsAccountIDPrompt(host, discoveryURL string) bool {
+	return isAccountOrUnifiedHost(host, discoveryURL)
+}
+
+// isAccountOrUnifiedHost reports whether host is a classic account host
+// (accounts.* or accounts-dod.*) or a unified host with an account-scoped
+// discoveryURL.
+func isAccountOrUnifiedHost(host, discoveryURL string) bool {
 	canonicalHost := (&config.Config{Host: host}).CanonicalHostName()
 	if auth.IsClassicAccountHost(canonicalHost) {
 		return true

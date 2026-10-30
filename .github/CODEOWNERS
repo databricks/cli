@@ -40,6 +40,7 @@
 /cmd/auth/                              @databricks/eng-deco-cli @databricks/eng-deco-platform
 /libs/auth/                             @databricks/eng-deco-cli @databricks/eng-deco-platform
 /acceptance/auth/                       @databricks/eng-deco-cli @databricks/eng-deco-platform
+/.nextchanges/cli/auth-*.md             @databricks/eng-deco-cli @databricks/eng-deco-platform
 
 # Artifact Registry / Docker credentials
 /cmd/auth/docker/                       @databricks/eng-deco-cli @databricks/eng-artifact-registry

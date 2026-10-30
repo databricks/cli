@@ -1,0 +1,5 @@
+RecordRequests = true
+
+EnvMatrix.DMS = [""]
+# Telemetry doesn't depend on the databricks-bundles version.
+EnvMatrix.PYDAB_VERSION = ["current"]

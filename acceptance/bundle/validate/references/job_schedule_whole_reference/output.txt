@@ -1,0 +1,16 @@
+
+>>> [CLI] bundle validate
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Validation OK!
+
+>>> [CLI] bundle plan -o json
+{
+  "pause_status": "UNPAUSED",
+  "quartz_cron_expression": "0 0 * * * ?",
+  "timezone_id": "UTC"
+}

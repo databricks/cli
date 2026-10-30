@@ -1,0 +1,9 @@
+for target in default overwrite in-place immutable source_linked_enabled source_linked_disabled source_linked_with_sync_mode; do
+    title "target $target"
+    trace $CLI bundle validate -t $target -o json | jq '{sync_mode: .workspace.sync_mode, file_path: .workspace.file_path, artifact_path: .workspace.artifact_path, python_file: .resources.jobs.my_job.tasks[0].spark_python_task.python_file}'
+done
+
+for target in invalid variable immutable_file_path; do
+    title "target $target"
+    musterr trace $CLI bundle validate -t $target
+done

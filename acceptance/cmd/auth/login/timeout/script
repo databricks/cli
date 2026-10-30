@@ -1,0 +1,7 @@
+sethome "./home"
+
+# Use a fake browser that prints the authorization URL and never completes the
+# redirect, so only --timeout ends the login. The URL changes on every run.
+export BROWSER="echo_browser.py"
+
+trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --timeout 1s > /dev/null

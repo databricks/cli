@@ -16,6 +16,7 @@ import (
 
 	"github.com/databricks/cli/acceptance/internal/selection"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/sync/errgroup"
 )
 
 // Regression mode runs the acceptance tests this branch changed against other CLI
@@ -99,6 +100,9 @@ var (
 
 	// "    --- FAIL: TestAccept/foo (0.10s)"
 	resultLineRE = regexp.MustCompile(`^\s*--- (PASS|FAIL|SKIP): (\S+) `)
+
+	// The temp dir of a test, e.g. "/tmp/TestAcceptfoo123456"; the random suffix differs on every run.
+	tmpDirRE = regexp.MustCompile(`/TestAccept[^/\s]*`)
 )
 
 // parseTestOutput parses the output of a test binary run with -test.v into results by test name.
@@ -266,10 +270,19 @@ func renderDetails(b *strings.Builder, test string, columns []regrColumn) {
 		marks[i] = c.Title + " " + statusMark(c.status(test))
 	}
 	fmt.Fprintf(b, "<details>\n<summary>%s: %s</summary>\n\n", test, strings.Join(marks, " | "))
+	// A new test commonly fails the same way on main and on the release, which would print the
+	// same long diff twice.
+	firstWith := map[string]string{}
 	for _, c := range failed {
-		output := truncateLines(strings.Join(c.Results[test].Output, "\n"), regrDetailLines)
+		output := strings.TrimSpace(strings.Join(c.Results[test].Output, "\n"))
+		key := tmpDirRE.ReplaceAllString(output, "/TestAccept")
+		if first, ok := firstWith[key]; ok {
+			fmt.Fprintf(b, "**%s:** same output as %s\n\n", c.Title, first)
+			continue
+		}
+		firstWith[key] = c.Title
 		// The longer fence keeps backticks in the output from ending the block.
-		fmt.Fprintf(b, "**%s:**\n````\n%s\n````\n\n", c.Title, strings.TrimSpace(output))
+		fmt.Fprintf(b, "**%s:**\n````\n%s\n````\n\n", c.Title, truncateLines(output, regrDetailLines))
 	}
 	b.WriteString("</details>\n\n")
 }
@@ -322,18 +335,30 @@ func runRegression(t *testing.T) {
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
 
+	// The CLI of main does not depend on the branch run, so it is built while that runs.
+	var mainCLI, mainShort string
+	var mainBuild errgroup.Group
+	if RegrMain {
+		mergeBase := gitOutput(t, "merge-base", "HEAD", "origin/main")
+		mainShort = gitOutput(t, "rev-parse", "--short", mergeBase)
+		src, fips := t.TempDir(), readGOFIPS140(t, cwd)
+		fmt.Printf("Building the CLI of main (%s)\n", mainShort)
+		mainBuild.Go(func() (err error) {
+			mainCLI, err = buildCLIAtRef(src, mergeBase, fips)
+			return err
+		})
+	}
+
 	fmt.Println("Running the selected tests with the CLI of this branch")
 	columns := []regrColumn{{Title: "branch", Results: runAcceptanceChild(t, limit)}}
 
 	if RegrMain {
-		mergeBase := gitOutput(t, "merge-base", "HEAD", "origin/main")
-		short := gitOutput(t, "rev-parse", "--short", mergeBase)
-		fmt.Printf("Running the selected tests with the CLI of main (%s)\n", short)
-		cli := buildCLIAtRef(t, cwd, mergeBase)
+		require.NoError(t, mainBuild.Wait())
+		fmt.Printf("Running the selected tests with the CLI of main (%s)\n", mainShort)
 		columns = append(columns, regrColumn{
-			Title:    "main (" + short + ")",
+			Title:    "main (" + mainShort + ")",
 			Category: catRegression,
-			Results:  runAcceptanceChild(t, limit, "-clipath="+cli),
+			Results:  runAcceptanceChild(t, limit, "-clipath="+mainCLI),
 		})
 	}
 
@@ -377,27 +402,39 @@ func runAcceptanceChild(t *testing.T, limit int, args ...string) map[string]*tes
 	return results
 }
 
-// buildCLIAtRef builds the CLI from the source tree at ref, exported with git archive so the
-// working tree is not touched, and returns the path of the binary.
-func buildCLIAtRef(t *testing.T, cwd, ref string) string {
-	src := t.TempDir()
-
+// buildCLIAtRef builds the CLI from the source tree at ref in the empty directory src, and
+// returns the path of the binary. The tree is exported with git archive so the working tree is
+// not touched. It runs next to a test, so it reports errors instead of failing t.
+func buildCLIAtRef(src, ref, gofips140 string) (string, error) {
 	archive := exec.Command("git", "archive", "--format=tar", ref)
 	// git archive exports the subtree of its working directory, and the CLI is the whole repo.
 	archive.Dir = ".."
 	extract := exec.Command("tar", "-x", "-C", src)
 	pipe, err := archive.StdoutPipe()
-	require.NoError(t, err)
+	if err != nil {
+		return "", err
+	}
 	extract.Stdin = pipe
-	require.NoError(t, extract.Start())
-	archiveErr := archive.Run()
-	require.NoError(t, extract.Wait())
-	require.NoError(t, archiveErr)
+	if err := archive.Start(); err != nil {
+		return "", fmt.Errorf("git archive %s: %w", ref, err)
+	}
+	// Waiting for the extraction first lets tar drain the pipe before archive.Wait closes it.
+	if err := extract.Run(); err != nil {
+		return "", fmt.Errorf("extracting %s: %w", ref, err)
+	}
+	if err := archive.Wait(); err != nil {
+		return "", fmt.Errorf("git archive %s: %w", ref, err)
+	}
 
 	cli := filepath.Join(src, "databricks"+exeSuffix)
 	// The exported tree has no .git, so VCS stamping would fail.
-	RunCommand(t, []string{"go", "build", "-buildvcs=false", "-o", cli, "."}, src, []string{"GOFIPS140=" + readGOFIPS140(t, cwd)})
-	return cli
+	build := exec.Command("go", "build", "-buildvcs=false", "-o", cli, ".")
+	build.Dir = src
+	build.Env = append(os.Environ(), "GOFIPS140="+gofips140)
+	if out, err := build.CombinedOutput(); err != nil {
+		return "", fmt.Errorf("building the CLI at %s: %w\n%s", ref, err, strings.TrimSpace(string(out)))
+	}
+	return cli, nil
 }
 
 func gitOutput(t *testing.T, args ...string) string {

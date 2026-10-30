@@ -1,0 +1,122 @@
+
+=== target default
+>>> [CLI] bundle validate -t default -o json
+{
+  "sync_mode": null,
+  "file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files",
+  "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts",
+  "python_file": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/src/main.py"
+}
+
+=== target overwrite
+>>> [CLI] bundle validate -t overwrite -o json
+{
+  "sync_mode": "overwrite",
+  "file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/overwrite/files",
+  "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/overwrite/artifacts",
+  "python_file": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/overwrite/files/src/main.py"
+}
+
+=== target in-place
+>>> [CLI] bundle validate -t in-place -o json
+Warning: source-linked deployment is available only in the Databricks Workspace
+  at workspace.sync_mode
+  in databricks.yml:26:18
+
+{
+  "sync_mode": "overwrite",
+  "file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/in-place/files",
+  "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/in-place/artifacts",
+  "python_file": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/in-place/files/src/main.py"
+}
+
+=== target immutable
+>>> [CLI] bundle validate -t immutable -o json
+{
+  "sync_mode": "immutable",
+  "file_path": "${resources.internal_immutable_snapshots.immutable.full_path}/files",
+  "artifact_path": "${resources.internal_immutable_snapshots.immutable.full_path}/artifacts",
+  "python_file": "${resources.internal_immutable_snapshots.immutable.full_path}/files/src/main.py"
+}
+
+=== target source_linked_enabled
+>>> [CLI] bundle validate -t source_linked_enabled -o json
+Warning: presets.source_linked_deployment is deprecated, please set workspace.sync_mode to "in-place" instead
+  at presets.source_linked_deployment
+  in databricks.yml:32:33
+
+Warning: source-linked deployment is available only in the Databricks Workspace
+  at presets.source_linked_deployment
+  in databricks.yml:32:33
+
+{
+  "sync_mode": "overwrite",
+  "file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/source_linked_enabled/files",
+  "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/source_linked_enabled/artifacts",
+  "python_file": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/source_linked_enabled/files/src/main.py"
+}
+
+=== target source_linked_disabled
+>>> [CLI] bundle validate -t source_linked_disabled -o json
+Warning: presets.source_linked_deployment is deprecated, please set workspace.sync_mode to "overwrite" instead
+  at presets.source_linked_deployment
+  in databricks.yml:35:33
+
+{
+  "sync_mode": null,
+  "file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/source_linked_disabled/files",
+  "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/source_linked_disabled/artifacts",
+  "python_file": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/source_linked_disabled/files/src/main.py"
+}
+
+=== target source_linked_with_sync_mode
+>>> [CLI] bundle validate -t source_linked_with_sync_mode -o json
+Warning: presets.source_linked_deployment is deprecated and ignored because workspace.sync_mode is set, please remove it
+  at presets.source_linked_deployment
+  in databricks.yml:38:33
+
+{
+  "sync_mode": "immutable",
+  "file_path": "${resources.internal_immutable_snapshots.immutable.full_path}/files",
+  "artifact_path": "${resources.internal_immutable_snapshots.immutable.full_path}/artifacts",
+  "python_file": "${resources.internal_immutable_snapshots.immutable.full_path}/files/src/main.py"
+}
+
+=== target invalid
+>>> [CLI] bundle validate -t invalid
+Error: invalid value "inplace" for workspace.sync_mode (expected one of [overwrite in-place immutable])
+  at workspace.sync_mode
+  in databricks.yml:43:18
+
+Name: test-bundle
+Target: invalid
+Workspace:
+  User: [USERNAME]
+
+Found 1 error
+
+=== target variable
+>>> [CLI] bundle validate -t variable
+Error: invalid value "${var.mode}" for workspace.sync_mode (expected one of [overwrite in-place immutable])
+  at workspace.sync_mode
+  in databricks.yml:46:18
+
+Name: test-bundle
+Target: variable
+Workspace:
+  User: [USERNAME]
+
+Found 1 error
+
+=== target immutable_file_path
+>>> [CLI] bundle validate -t immutable_file_path
+Error: workspace.file_path cannot be configured when workspace.sync_mode is immutable
+  in databricks.yml:50:18
+
+Name: test-bundle
+Target: immutable_file_path
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/immutable_file_path
+
+Found 1 error

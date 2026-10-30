@@ -1,0 +1,7 @@
+# The test rewrites the deployment state by hand, which the recording service refuses because it
+# no longer matches the deployment it has recorded, so run without deployment history.
+EnvMatrix.DMS = [""]
+
+Ignore = [
+    "tmp.*",
+]

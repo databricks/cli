@@ -78,4 +78,8 @@ type OAuthAuthorizationServer struct {
 	// TokenEndpoint is the URL to exchange an authorization code for an access token.
 	// It typically ends with /v1/token.
 	TokenEndpoint string `json:"token_endpoint"`
+
+	// DeviceAuthorizationEndpoint is the RFC 8628 device authorization endpoint.
+	// Workspaces only advertise it when device code login is enabled for them.
+	DeviceAuthorizationEndpoint string `json:"device_authorization_endpoint"`
 }

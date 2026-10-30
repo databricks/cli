@@ -12,6 +12,9 @@ __all__ = [
     "CatalogGrantPrivilege",
     "CatalogGrantPrivilegeParam",
     "CatalogParam",
+    "DependsOn",
+    "DependsOnDict",
+    "DependsOnParam",
     "EncryptionSettings",
     "EncryptionSettingsDict",
     "EncryptionSettingsParam",
@@ -35,6 +38,11 @@ from databricks.bundles.catalogs._models.catalog import (
     Catalog,
     CatalogDict,
     CatalogParam,
+)
+from databricks.bundles.catalogs._models.depends_on import (
+    DependsOn,
+    DependsOnDict,
+    DependsOnParam,
 )
 from databricks.bundles.catalogs._models.encryption_settings import (
     EncryptionSettings,

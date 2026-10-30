@@ -16,8 +16,10 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/workspaceurls"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
@@ -70,13 +72,12 @@ func actionToSDK(a deployplan.ActionType) (bundledeployments.OperationActionType
 // run changed. current is the record the service holds (nil before the first recorded deploy),
 // diffed to mask the update down to what changed. Runs after approval, so a declined deploy leaves
 // no deployment behind; a first deploy's new id is then stamped into the plan (StampDeploymentID).
-func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bundledeployments.Deployment) {
+func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bundledeployments.Deployment) error {
 	db := &b.DeploymentBundle
 	w := b.WorkspaceClient(ctx)
 	metadata, err := deploymentMetadata(b)
 	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("failed to compute deployment metadata: %w", err))
-		return
+		return fmt.Errorf("failed to compute deployment metadata: %w", err)
 	}
 	deploymentID := db.StateDB.DeploymentID
 	if deploymentID == "" {
@@ -84,25 +85,24 @@ func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bu
 		dep.InitialParentPath = b.Config.Workspace.StatePath
 		created, err := w.BundleDeployments.CreateDeployment(ctx, bundledeployments.CreateDeploymentRequest{Deployment: dep})
 		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("failed to create deployment: %w", err))
-			return
+			return fmt.Errorf("failed to create deployment: %w", err)
 		}
 		// The id is the workspace node the server makes under the parent path.
 		deploymentID, err = dms.DeploymentIDFromName(created.Name)
 		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("failed to create deployment: %w", err))
-			return
+			return fmt.Errorf("failed to create deployment: %w", err)
 		}
 		db.StateDB.DeploymentID = deploymentID
 	} else if mask := metadata.StaleFields(current); mask != "" {
-		_, err := w.BundleDeployments.UpdateDeployment(ctx, bundledeployments.UpdateDeploymentRequest{
-			Name:       dms.DeploymentName(deploymentID),
-			Deployment: dms.DeploymentUpdate(metadata, mask),
-			UpdateMask: fieldmask.FieldMask{Paths: strings.Split(mask, ",")},
+		_, err := retry.With(ctx, retry.IsTransient, func() (*bundledeployments.Deployment, error) {
+			return w.BundleDeployments.UpdateDeployment(ctx, bundledeployments.UpdateDeploymentRequest{
+				Name:       dms.DeploymentName(deploymentID),
+				Deployment: dms.DeploymentUpdate(metadata, mask),
+				UpdateMask: fieldmask.FieldMask{Paths: strings.Split(mask, ",")},
+			})
 		})
 		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("failed to update deployment: %w", err))
-			return
+			return fmt.Errorf("failed to update deployment: %w", err)
 		}
 	}
 
@@ -110,14 +110,72 @@ func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bu
 	bundle.ApplyFuncContext(ctx, b, func(_ context.Context, b *bundle.Bundle) {
 		b.Config.Bundle.Deployment.DeploymentID = deploymentID
 	})
+	return nil
 }
 
-// startVersion claims the version the run settled on and opens the buffer that records
-// each state write under it. Called after approval, so a declined deploy never claims a number.
+// deleteDeployment deletes the deployment record. A retry that finds it missing succeeds: the
+// earlier attempt may have deleted it before its response was lost.
+func deleteDeployment(ctx context.Context, w *databricks.WorkspaceClient, deploymentID string) error {
+	retried := false
+	_, err := retry.With(ctx, retry.IsTransient, func() (struct{}, error) {
+		err := w.BundleDeployments.DeleteDeployment(ctx, bundledeployments.DeleteDeploymentRequest{Name: dms.DeploymentName(deploymentID)})
+		if retried && apierr.IsMissing(err) {
+			return struct{}{}, nil
+		}
+		retried = true
+		return struct{}{}, err
+	})
+	return err
+}
+
+// prepareDeploymentHistory creates history metadata and a version after approval.
+func prepareDeploymentHistory(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, current *bundledeployments.Deployment) error {
+	firstDeploy := b.DeploymentBundle.StateDB.DeploymentID == ""
+	if err := createOrUpdateDeployment(ctx, b, current); err != nil {
+		return err
+	}
+	if firstDeploy {
+		if err := b.DeploymentBundle.StampDeploymentIdForFirstVersion(b.DeploymentBundle.StateDB.DeploymentID); err != nil {
+			return err
+		}
+	}
+	staged, err := stagedOperations(plan)
+	if err != nil {
+		return err
+	}
+	if len(staged) == 0 {
+		return nil
+	}
+	if err := startVersion(ctx, b, dms.VersionTypeDeploy, staged); err != nil {
+		return err
+	}
+	logDeploymentVersion(ctx, b)
+	return nil
+}
+
+// prepareDestroyHistory records the approved destroy without changing its state source.
+func prepareDestroyHistory(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) error {
+	if !b.DeploymentBundle.StateDB.IsDeploymentMetadataService() && b.DeploymentBundle.StateDB.DeploymentID == "" {
+		if err := createOrUpdateDeployment(ctx, b, nil); err != nil {
+			return err
+		}
+	}
+	staged, err := stagedOperations(plan)
+	if err != nil {
+		return err
+	}
+	return startVersion(ctx, b, dms.VersionTypeDestroy, staged)
+}
+
+// startVersion opens a history version after approval. File-backed history skips empty versions;
+// DMS-only destroy retains its existing behavior. A declined deploy never claims a version.
 // A no-op when the bundle does not record deployment history.
 func startVersion(ctx context.Context, b *bundle.Bundle, versionType dms.VersionType, staged []bundledeployments.StagedOperation) error {
 	db := &b.DeploymentBundle
-	if !db.StateDB.IsDeploymentMetadataService() {
+	if !db.StateDB.RecordsHistory() {
+		return nil
+	}
+	if len(staged) == 0 && !db.StateDB.IsDeploymentMetadataService() {
 		return nil
 	}
 	w := b.WorkspaceClient(ctx)
@@ -126,7 +184,7 @@ func startVersion(ctx context.Context, b *bundle.Bundle, versionType dms.Version
 	// InitializeOperationBuffer moves the anchor below, so callers afterwards read the created
 	// version straight off the state.
 	previous := db.StateDB.VersionID
-	versionID := previous + 1
+	versionID := max(previous, db.StateDB.Data.Serial) + 1
 	previousVersionID := ""
 	if previous > 0 {
 		previousVersionID = strconv.Itoa(previous)
@@ -159,7 +217,7 @@ func startVersion(ctx context.Context, b *bundle.Bundle, versionType dms.Version
 	}
 	log.Infof(ctx, "Created deployment version: deployment=%s version=%s", deploymentID, version.VersionId)
 
-	db.StateDB.InitializeOperationBuffer(ctx, deploymentID, versionID)
+	db.StateDB.InitializeOperationBuffer(ctx, deploymentID, versionID, len(staged))
 	return nil
 }
 
@@ -208,7 +266,7 @@ func deploymentMetadata(b *bundle.Bundle) (dms.Metadata, error) {
 	}
 	// In a source-linked deployment files are not copied, so resources read them
 	// from the sync root instead of file_path (see bundle/deploy/metadata.Compute).
-	if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
+	if b.IsSourceLinkedDeployment() {
 		ws.FilePath = b.SyncRootPath
 		ws.SourceLinked = true
 	}

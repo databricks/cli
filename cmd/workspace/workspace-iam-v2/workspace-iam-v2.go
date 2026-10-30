@@ -23,18 +23,16 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "workspace-iam-v2",
-		Short: `*Beta* These APIs are used to manage identities and the workspace access of these identities in Databricks.`,
-		Long: `This command is in Beta and may change without notice.
-
-These APIs are used to manage identities and the workspace access of these
+		Short: `These APIs are used to manage identities and the workspace access of these identities in Databricks.`,
+		Long: `These APIs are used to manage identities and the workspace access of these
   identities in Databricks.`,
 		GroupID: "iam",
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreateDirectGroupMemberProxy())
@@ -2689,6 +2687,9 @@ Update a service principal in the account.
   Updates an existing service principal in the Databricks account that parents
   the calling workspace. Only the fields named in the update mask are modified.
   Returns the updated ServicePrincipal resource.
+
+  For locally managed service principals, is_agent must be set to true or false
+  when updated.
 
   When AIM is enabled and the service principal is an external identity (its
   external_id is set), only external_id can be updated; its other fields are

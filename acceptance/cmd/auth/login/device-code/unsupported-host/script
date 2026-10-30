@@ -1,0 +1,28 @@
+sethome "./home"
+
+title "No host\n"
+# The profile does not exist yet and no host is given. auth login does not read
+# DATABRICKS_HOST, so the usual login would fall back to the browser-based
+# discovery flow. Device code login skips it and asks for the host instead,
+# which fails without a terminal.
+trace musterr $CLI auth login --profile new-profile --use-device-code
+
+envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"
+
+# The host is rejected before the CLI would prompt for an account ID, whether
+# it is passed directly or comes from a profile without one.
+title "Account host\n"
+trace musterr $CLI auth login --host https://accounts.cloud.databricks.test --profile test --use-device-code
+trace musterr $CLI auth login --profile account --use-device-code
+
+# An account-scoped discovery URL marks the host as a unified host.
+title "Unified host\n"
+trace DATABRICKS_DISCOVERY_URL="$DATABRICKS_HOST/oidc/accounts/spog-acct-123/.well-known/oauth-authorization-server" musterr $CLI auth login --host $DATABRICKS_HOST --use-device-code
+
+title "Workspace without device code login\n"
+trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code
+trace musterr $CLI auth login --profile workspace --use-device-code
+
+# Every host is rejected before the device authorization request.
+title "Device authorization requests\n"
+trace print_requests.py //oidc/v1/device/auth

@@ -31,5 +31,5 @@ nostamp < .databricks/tmp.plan.json > out.plan.json
 
 rm "$OUT_REQUESTS"
 trace errcode $CLI bundle deploy &> out.deploy.txt
-trace print_requests.py '^//api/2.0/bundle' '^//workspace/' '^//telemetry-ext' > out.deploy.requests.json
+trace print_requests.py '^//api/2.0/bundle' '^//import-file/' '^//workspace/' '^//telemetry-ext' > out.deploy.requests.json
 trace errcode $CLI bundle plan &> out.plan_after_deploy.txt

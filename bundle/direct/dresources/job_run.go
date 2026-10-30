@@ -124,6 +124,7 @@ func makeJobRunRemote(run *jobs.Run) *JobRunRemote {
 	return &JobRunRemote{
 		JobId:             run.JobId,
 		JobParameters:     jobParameters,
+		DurationTarget:    run.DurationTarget,
 		DbtCommands:       overriding.DbtCommands,
 		JarParams:         overriding.JarParams,
 		NotebookParams:    overriding.NotebookParams,

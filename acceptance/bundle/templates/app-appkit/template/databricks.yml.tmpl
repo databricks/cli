@@ -1,0 +1,17 @@
+bundle:
+  name: {{.projectName}}
+
+resources:
+  apps:
+    app:
+      name: {{.projectName}}
+      description: {{.appDescription}}
+      source_code_path: ./
+      lifecycle:
+        started: true
+
+targets:
+  default:
+    default: true
+    workspace:
+      host: {{.workspaceHost}}

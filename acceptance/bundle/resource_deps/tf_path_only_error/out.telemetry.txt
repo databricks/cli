@@ -1,5 +1,6 @@
 experimental.use_legacy_run_as false
 has_tf_only_references true
+immutable_snapshot_used false
 local.cache.attempt true
 local.cache.hit true
 presets_name_prefix_is_set false

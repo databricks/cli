@@ -43,7 +43,7 @@ var uuidRe = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[
 // workspace checks performed by the backend.
 var unityCatalogImageRe = regexp.MustCompile(`^[^.:\s]+\.[^.:\s]+\.[^.:\s]+:[^:\s]+$`)
 
-var containerNameRe = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+var containerNameRe = regexp.MustCompile(`^[a-z]([-a-z0-9]{0,30}[a-z0-9])?$`)
 
 var secretTemplateRe = regexp.MustCompile(`^\{\{secrets/([^/{}]+)/([^/{}]+)\}\}$`)
 
@@ -228,7 +228,7 @@ func (c *runConfig) validate() error {
 // staged beside it because PuPr workspaces cannot consume the DEVELOPMENT API
 // field yet.
 type containerConfig struct {
-	Name                 string                               `yaml:"name" help:"Unique container name: at most 16 letters, digits, or underscores, not starting with a digit." required:"yes"`
+	Name                 string                               `yaml:"name" help:"Unique container name: 1–32 lowercase letters, digits, or hyphens; start with a letter and end with a letter or digit." required:"yes"`
 	Command              *string                              `yaml:"command" help:"Shell command run on every rank assigned to this container." required:"yes"`
 	Ranks                []int                                `yaml:"ranks" help:"Zero-based node ranks assigned to this container." required:"yes"`
 	UnityCatalogImage    string                               `yaml:"unity_catalog_image" help:"Unity Catalog image as <catalog>.<schema>.<image>:<tag>." required:"yes"`
@@ -256,8 +256,8 @@ func (c *runConfig) validateContainers() error {
 	for i := range c.Containers {
 		container := &c.Containers[i]
 		prefix := fmt.Sprintf("containers[%d]", i)
-		if !containerNameRe.MatchString(container.Name) || len(container.Name) > 16 {
-			return fmt.Errorf("%s.name must be at most 16 letters, digits, or underscores and must not start with a digit, got %q", prefix, container.Name)
+		if !containerNameRe.MatchString(container.Name) {
+			return fmt.Errorf("%s.name must start with a lowercase letter, contain only lowercase letters, digits, or '-', end with a letter or digit, and be at most 32 characters, got %q", prefix, container.Name)
 		}
 		if _, exists := names[container.Name]; exists {
 			return fmt.Errorf("%s.name %q is duplicated; container names must be unique", prefix, container.Name)
@@ -610,7 +610,7 @@ func writeConfigFieldHelp(w io.Writer, path string) error {
 	if err != nil {
 		return err
 	}
-	renderConfigField(w, field)
+	renderConfigField(w, field, nil)
 	return nil
 }
 
@@ -857,10 +857,19 @@ func underlyingConfigStruct(t reflect.Type) reflect.Type {
 
 // renderConfigField writes a resolved field's documentation. An object lists its
 // immediate children; a leaf gets its type, required-ness, and description.
-func renderConfigField(w io.Writer, f configField) {
+func renderConfigField(w io.Writer, f configField, computeOptions []computeOption) {
 	fmt.Fprintf(w, "%s\n", f.path)
 	if f.help != "" {
 		fmt.Fprintf(w, "  %s\n", f.help)
+	}
+	if f.path == "config.compute" && computeOptions != nil {
+		fmt.Fprintln(w, "\n  Supported accelerator types:")
+		if len(computeOptions) == 0 {
+			fmt.Fprintln(w, "    No accelerator types are currently available for AI Runtime in this workspace.")
+		}
+		for _, option := range computeOptions {
+			fmt.Fprintf(w, "    %s - %s%s\n", option.HardwareAccelerator, formatPerNodeAcceleratorCount(option), launchStageBadge(option.LaunchStage))
+		}
 	}
 
 	if len(f.children) == 0 {
@@ -888,6 +897,57 @@ func renderConfigField(w io.Writer, f configField) {
 		fmt.Fprintf(w, "    %-*s  %s\n", width, configLeafName(c.path), configFieldSummary(c))
 	}
 	fmt.Fprintf(w, "\nUse \"-h %s.<field>\" for details on a field.\n", f.path)
+}
+
+func fallbackComputeOptions() []computeOption {
+	options := make([]computeOption, 0, len(gpuTypes))
+	for _, acceleratorType := range gpuTypes {
+		// RTX6000 availability must be confirmed by the workspace API during rollout.
+		if acceleratorType == gpuType1xRTX6000 {
+			continue
+		}
+		perNode, err := gpusPerNode(acceleratorType)
+		if err != nil {
+			continue
+		}
+		options = append(options, computeOption{
+			HardwareAccelerator:     string(acceleratorType),
+			PerNodeAcceleratorCount: &perNode,
+		})
+	}
+	return options
+}
+
+func formatPerNodeAcceleratorCount(option computeOption) string {
+	count := option.PerNodeAcceleratorCount
+	if count == nil {
+		acceleratorType, err := parseGPUType(option.HardwareAccelerator)
+		if err == nil {
+			if fallback, err := gpusPerNode(acceleratorType); err == nil {
+				count = &fallback
+			}
+		}
+	}
+	if count == nil {
+		return "accelerator count per node unavailable"
+	}
+	unit := "accelerators"
+	if *count == 1 {
+		unit = "accelerator"
+	}
+	return fmt.Sprintf("%d %s per node", *count, unit)
+}
+
+func launchStageBadge(stage string) string {
+	labels := map[string]string{
+		"PRIVATE_PREVIEW": "Private Preview",
+		"PUBLIC_BETA":     "Beta",
+		"PUBLIC_PREVIEW":  "Public Preview",
+	}
+	if label := labels[stage]; label != "" {
+		return " [" + label + "]"
+	}
+	return ""
 }
 
 // configFieldSummary is the one-line description used in a field listing: the

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/auth/storage"
+	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/databricks/databricks-sdk-go/httpclient/fixtures"
 	"golang.org/x/oauth2"
 )
@@ -572,6 +573,39 @@ func TestToken_ReturnsInvalidRefreshTokenError(t *testing.T) {
 	}
 }
 
+func TestToken_ReturnsErrorWithoutErrorCode(t *testing.T) {
+	// The default ApiClient transport returns an error response as an
+	// *httpclient.HttpError, which is returned as is without an error code.
+	for _, body := range []string{"<html>Bad Gateway</html>", `{"error_description": "Bad Gateway"}`} {
+		t.Run(body, func(t *testing.T) {
+			arg, err := NewBasicAccountOAuthArgument("https://accounts.cloud.databricks.test", "xyz")
+			if err != nil {
+				t.Fatalf("NewBasicAccountOAuthArgument(): want no error, got %v", err)
+			}
+			p, err := NewPersistentAuth(
+				t.Context(),
+				WithTokenStore(&tokenStoreMock{lookup: func(string) (*oauth2.Token, error) {
+					return &oauth2.Token{AccessToken: "expired", RefreshToken: "cde", Expiry: time.Now().Add(-time.Minute)}, nil
+				}}),
+				WithHttpClient(&http.Client{Transport: httpclient.NewApiClient(httpclient.ClientConfig{
+					Transport: fixtures.SliceTransport{{Method: "POST", Resource: "/oidc/accounts/xyz/v1/token", Response: body, Status: 502}},
+				})}),
+				WithOAuthEndpointSupplier(MockOAuthEndpointSupplier{}),
+				WithOAuthArgument(arg),
+			)
+			if err != nil {
+				t.Fatalf("NewPersistentAuth(): want no error, got %v", err)
+			}
+			defer p.Close()
+			_, err = p.Token()
+			want := `token refresh: Post "https://accounts.cloud.databricks.test/oidc/accounts/xyz/v1/token": http 502: ` + body
+			if err == nil || err.Error() != want {
+				t.Errorf("p.Token(): want error %q, got %v", want, err)
+			}
+		})
+	}
+}
+
 func TestToken_ReturnsMissingRefreshTokenErrorWhenExpired(t *testing.T) {
 	c := &tokenStoreMock{
 		lookup: func(key string) (*oauth2.Token, error) {
@@ -1006,6 +1040,9 @@ func TestForceRefreshToken_FailsOnRefreshError(t *testing.T) {
 	want := "forced token refresh: temporarily unavailable (error code: temporarily_unavailable)"
 	if got := err.Error(); got != want {
 		t.Errorf("ForceRefreshToken(): want error %q, got %q", want, got)
+	}
+	if _, ok := errors.AsType[*oauth2.RetrieveError](err); !ok {
+		t.Errorf("ForceRefreshToken(): want error wrapping *oauth2.RetrieveError, got %v", err)
 	}
 }
 

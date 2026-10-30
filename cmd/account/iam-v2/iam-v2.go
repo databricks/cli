@@ -23,18 +23,16 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "iam-v2",
-		Short: `*Beta* These APIs are used to manage identities and the workspace access of these identities in Databricks.`,
-		Long: `This command is in Beta and may change without notice.
-
-These APIs are used to manage identities and the workspace access of these
+		Short: `These APIs are used to manage identities and the workspace access of these identities in Databricks.`,
+		Long: `These APIs are used to manage identities and the workspace access of these
   identities in Databricks.`,
 		GroupID: "iam",
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreateDirectGroupMember())
@@ -291,25 +289,29 @@ func newCreateIdentityVisibilityFilter() *cobra.Command {
 	cmd.Flags().StringVar(&createIdentityVisibilityFilterReq.IdentityVisibilityFilterId, "identity-visibility-filter-id", createIdentityVisibilityFilterReq.IdentityVisibilityFilterId, `Optional.`)
 	// TODO: complex arg: exact
 	// TODO: complex arg: prefix
+	// TODO: complex arg: regex
 
 	cmd.Use = "create-identity-visibility-filter PARENT PRINCIPAL_TYPE"
 	cmd.Short = `Create an identity-visibility filter in the account.`
 	cmd.Long = `Create an identity-visibility filter in the account.
 
-  Creates an identity-visibility filter in the account.
+  Creates a group visibility filter in the account. Requires account admin
+  privileges. Set principal_type to GROUP and specify exactly one of exact
+  (external ID), prefix (display-name starts with), or regex (full RE2
+  display-name match). The filter applies across all workspaces in the account.
+  A duplicate filter ID or an existing rule with the same type and match value
+  returns ALREADY_EXISTS. Filters are immutable; to change a rule, delete it
+  and create a new one.
 
   Arguments:
     PARENT: Required. The parent account. Format: accounts/{account_id}
-    PRINCIPAL_TYPE: Which type of principal (user, service principal, or group) this rule
-      applies to.
+    PRINCIPAL_TYPE: The type of principal this rule applies to. Set to GROUP when creating a
+      filter. Other principal types are not supported for creation.
       Supported values: [GROUP, SERVICE_PRINCIPAL, USER]`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -945,18 +947,20 @@ func newDeleteIdentityVisibilityFilter() *cobra.Command {
 	cmd.Short = `Delete an identity-visibility filter.`
 	cmd.Long = `Delete an identity-visibility filter.
 
-  Deletes an identity-visibility filter by resource name.
+  Deletes a group visibility filter by its resource name. Requires account admin
+  privileges. Deleting a filter does not delete groups or revoke access. Groups
+  covered only by this rule stop being discoverable unless they or a transitive
+  parent are already provisioned in the account. If no group filters remain, all
+  groups become visible again. Deleting a filter that does not exist succeeds
+  without making any changes.
 
   Arguments:
     NAME: Required. The resource name of the filter. Format:
       accounts/{account_id}/identity-visibility-filters/{identity_visibility_filter_id}`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1600,18 +1604,16 @@ func newGetIdentityVisibilityFilter() *cobra.Command {
 	cmd.Short = `Get an identity-visibility filter.`
 	cmd.Long = `Get an identity-visibility filter.
 
-  Fetches an identity-visibility filter by resource name.
+  Gets a group visibility filter by its resource name. Requires account admin
+  privileges. Returns the filter rule, not the groups matched by the rule.
 
   Arguments:
     NAME: Required. The resource name of the filter. Format:
       accounts/{account_id}/identity-visibility-filters/{identity_visibility_filter_id}`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2177,18 +2179,18 @@ func newListIdentityVisibilityFilters() *cobra.Command {
 	cmd.Short = `List the identity-visibility filters in the account.`
 	cmd.Long = `List the identity-visibility filters in the account.
 
-  Lists the identity-visibility filters in the account, returning one page per
-  call.
+  Lists group visibility filters in the account, returning one page per call.
+  Requires account admin privileges. Returns filter rules, not the groups
+  matched by those rules. To retrieve the next page, pass the response's
+  next_page_token as page_token in the next request. If next_page_token is
+  omitted, there are no more pages.
 
   Arguments:
     PARENT: Required. The parent account. Format: accounts/{account_id}`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2993,6 +2995,9 @@ Update a service principal in the account.
   Updates an existing service principal in the Databricks account. Only the
   fields named in the update mask are modified. Returns the updated
   ServicePrincipal resource.
+
+  For locally managed service principals, is_agent must be set to true or false
+  when updated.
 
   When AIM is enabled and the service principal is an external identity (its
   external_id is set), only external_id can be updated; its other fields are

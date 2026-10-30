@@ -8,8 +8,10 @@ class CreateWarehouseRequestWarehouseType(Enum):
     TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED"
     CLASSIC = "CLASSIC"
     PRO = "PRO"
+    REALTIME = "REALTIME"
 
 
 CreateWarehouseRequestWarehouseTypeParam = (
-    Literal["TYPE_UNSPECIFIED", "CLASSIC", "PRO"] | CreateWarehouseRequestWarehouseType
+    Literal["TYPE_UNSPECIFIED", "CLASSIC", "PRO", "REALTIME"]
+    | CreateWarehouseRequestWarehouseType
 )

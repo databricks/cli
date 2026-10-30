@@ -70,6 +70,7 @@ func TestGpuDisplayName(t *testing.T) {
 	assert.Equal(t, "H100", gpuDisplayName("GPU_8xH100"))
 	assert.Equal(t, "H100", gpuDisplayName("GPU_1xH100"))
 	assert.Equal(t, "B300", gpuDisplayName("GPU_8xB300"))
+	assert.Equal(t, "RTX6000", gpuDisplayName("GPU_1xRTX6000"))
 	// Unknown identifiers pass through unchanged.
 	assert.Equal(t, "b200", gpuDisplayName("b200"))
 	assert.Empty(t, gpuDisplayName(""))
@@ -228,6 +229,7 @@ func TestAcceleratorLabel(t *testing.T) {
 	assert.Equal(t, "8x H100", acceleratorLabel("GPU_8xH100", 8))
 	assert.Equal(t, "1x A10", acceleratorLabel("GPU_1xA10", 1))
 	assert.Equal(t, "16x B300", acceleratorLabel("GPU_8xB300", 16))
+	assert.Equal(t, "1x RTX6000", acceleratorLabel("GPU_1xRTX6000", 1))
 	// The RPC may report a count without a recognized type.
 	assert.Equal(t, "8x", acceleratorLabel("", 8))
 }

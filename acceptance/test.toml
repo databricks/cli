@@ -25,6 +25,11 @@ Env.PYTHONUTF8 = "1"
 # A test that needs the raw order sets SortLinesOn.deploy_actions = false.
 SortLines.deploy_actions = '^(Created|Updated|Deleted|Recreated|Resized) \S+$'
 
+# Retries are timing dependent, so their warnings would make output flaky. They go to the
+# test log instead. A test that injects errors deterministically and asserts the warning
+# sets SuppressLines.warn_retry = "".
+SuppressLines.warn_retry = '^Warn: .*retrying after '
+
 # >>> datetime.datetime.fromtimestamp(18000000000)
 # datetime.datetime(2027, 1, 15, 9, 0)
 # >>> datetime.datetime.fromtimestamp(1900000000)

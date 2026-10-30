@@ -7,8 +7,14 @@ Created jobs.my_job
 Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_workspace_imports
-/Workspace/Users/[USERNAME]/.bundle/whl-upload/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl
+>>> print_requests.py //artifacts/.internal --del-field raw_body
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-upload/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl",
+  "q": {
+    "overwrite": "true"
+  }
+}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -26,8 +32,14 @@ Created jobs.my_job
 Files: 4 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_workspace_imports
-/Workspace/Users/[USERNAME]/.bundle/whl-upload/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl
+>>> print_requests.py //artifacts/.internal --del-field raw_body
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-upload/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl",
+  "q": {
+    "overwrite": "true"
+  }
+}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

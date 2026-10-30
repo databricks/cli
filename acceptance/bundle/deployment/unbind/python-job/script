@@ -8,4 +8,4 @@ trace $UV_RUN $CLI bundle deployment unbind job_1 --var "job_name=My Job"
 
 trace $UV_RUN $CLI bundle deploy --var "job_name=Updated Job"
 
-trace $CLI jobs get $job_id --output json
+trace $CLI jobs get $job_id --output json | nostamp
