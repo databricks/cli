@@ -126,6 +126,12 @@ func TestTestRunIncompleteReason(t *testing.T) {
 			want:   "received 1 of 2 test results",
 		},
 		{
+			name:   "case without outcome that the summary leaves out",
+			events: []testPipelineEvent{passed(), caseEvent(t, "t::b", "RUNNING", ""), summaryEvent(t, 1, 1, 0, 0, 0)},
+			state:  pipelines.UpdateInfoStateCompleted,
+			want:   "test t::b has no result",
+		},
+		{
 			name:   "two outcomes for one case",
 			events: []testPipelineEvent{passed(), caseEvent(t, "t::a", "FAILED", ""), summaryEvent(t, 1, 1, 0, 0, 0)},
 			state:  pipelines.UpdateInfoStateCompleted,

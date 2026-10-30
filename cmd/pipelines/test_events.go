@@ -178,10 +178,10 @@ type testRun struct {
 	summaries []testRunSummary
 	// unreadable counts test events whose outcome is missing.
 	unreadable int
-	// fatalError is the last fatal error reported for the update.
+	// fatalError is the first fatal error that the update reported, other than the test verdict.
 	fatalError string
-	// fatalErrorIsVerdict is whether fatalError is the service's verdict that tests failed.
-	fatalErrorIsVerdict bool
+	// verdictError is the service's verdict that tests failed, if the update reported it.
+	verdictError string
 }
 
 // testVerdictErrorPrefix starts the message of the error by which the service reports that tests
@@ -210,8 +210,12 @@ func (r *testRun) add(e testPipelineEvent) *testCaseResult {
 	r.seen[e.Id] = true
 
 	if e.Error != nil && e.Error.Fatal {
-		r.fatalError = errorDetailText(e.Error)
-		r.fatalErrorIsVerdict = isTestVerdict(e.Error)
+		switch {
+		case isTestVerdict(e.Error):
+			r.verdictError = errorDetailText(e.Error)
+		case r.fatalError == "":
+			r.fatalError = errorDetailText(e.Error)
+		}
 	}
 
 	switch e.EventType {
@@ -317,7 +321,20 @@ func (r *testRun) incompleteReason(state pipelines.UpdateInfoState) string {
 	if received != summary {
 		return "the test results do not match the test summary"
 	}
+	for _, c := range r.cases {
+		if c.finals == 0 {
+			return fmt.Sprintf("test %s has no result", c.id)
+		}
+	}
 	return ""
+}
+
+// updateError returns the error that the update reported: its own, or else the test verdict.
+func (r *testRun) updateError() string {
+	if r.fatalError != "" {
+		return r.fatalError
+	}
+	return r.verdictError
 }
 
 func errorDetailText(detail *pipelines.ErrorDetail) string {

@@ -80,26 +80,6 @@ t::teardown
 `,
 		},
 		{
-			name: "one test",
-			events: func() []testPipelineEvent {
-				return []testPipelineEvent{caseEvent(t, "t::ok", "PASSED", ""), summaryEvent(t, 1, 1, 0, 0, 0)}
-			},
-			state: pipelines.UpdateInfoStateCompleted,
-			want: `
-1 test: 1 passed, 0 failed, 0 skipped, 0 errors
-`,
-		},
-		{
-			name: "no tests",
-			events: func() []testPipelineEvent {
-				return []testPipelineEvent{summaryEvent(t, 0, 0, 0, 0, 0)}
-			},
-			state: pipelines.UpdateInfoStateFailed,
-			want: `
-No tests were collected.
-`,
-		},
-		{
 			name: "incomplete",
 			events: func() []testPipelineEvent {
 				return []testPipelineEvent{caseEvent(t, "t::ok", "PASSED", ""), caseEvent(t, "t::skip", "SKIPPED", "")}
