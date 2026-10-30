@@ -77,12 +77,20 @@ func (s PipelineRemote) MarshalJSON() ([]byte, error) {
 
 type ResourcePipeline struct {
 	client *databricks.WorkspaceClient
+
+	// apiClient sends the requests that the Go SDK cannot express yet because it lacks the testing
+	// field. It is built once, so that those requests share one rate limiter.
+	apiClient    *client.DatabricksClient
+	apiClientErr error
 }
 
-func (*ResourcePipeline) New(client *databricks.WorkspaceClient) *ResourcePipeline {
-	return &ResourcePipeline{
-		client: client,
+func (*ResourcePipeline) New(w *databricks.WorkspaceClient) *ResourcePipeline {
+	r := &ResourcePipeline{client: w, apiClient: nil, apiClientErr: nil}
+	// The adapter also builds a resource without a client to read its configuration.
+	if w != nil {
+		r.apiClient, r.apiClientErr = client.New(w.Config)
 	}
+	return r
 }
 
 func (*ResourcePipeline) PrepareState(input *resources.Pipeline) *PipelineState {
@@ -309,11 +317,10 @@ func (r *ResourcePipeline) doWithTesting(ctx context.Context, method, path strin
 
 // doRaw sends a request that the Go SDK cannot express yet because it lacks the testing field.
 func (r *ResourcePipeline) doRaw(ctx context.Context, method, path string, request, response any) error {
-	apiClient, err := client.New(r.client.Config)
-	if err != nil {
-		return fmt.Errorf("failed to create API client: %w", err)
+	if r.apiClientErr != nil {
+		return fmt.Errorf("failed to create API client: %w", r.apiClientErr)
 	}
-	return apiClient.Do(ctx, method, path, auth.WorkspaceIDHeaders(r.client.Config), nil, request, response)
+	return r.apiClient.Do(ctx, method, path, auth.WorkspaceIDHeaders(r.client.Config), nil, request, response)
 }
 
 // Note, terraform provider either

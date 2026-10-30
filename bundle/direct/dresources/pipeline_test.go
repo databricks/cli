@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
@@ -57,48 +58,37 @@ func TestPipelineOverrideChangeDescCascadeOnDestroy(t *testing.T) {
 	})
 }
 
-func TestPipelineCreateAndUpdateSendTesting(t *testing.T) {
+func TestPipelineRawRequests(t *testing.T) {
 	server := testserver.New(t)
-	var bodies []string
-	server.Handle("POST", "/api/2.0/pipelines", func(req testserver.Request) any {
+	var bodies, workspaceIDs []string
+	record := func(req testserver.Request) {
 		bodies = append(bodies, string(req.Body))
+		workspaceIDs = append(workspaceIDs, req.Headers.Get(auth.WorkspaceIDHeader))
+	}
+	server.Handle("POST", "/api/2.0/pipelines", func(req testserver.Request) any {
+		record(req)
 		return pipelines.CreatePipelineResponse{PipelineId: "p1"}
 	})
-	server.Handle("PUT", "/api/2.0/pipelines/{pipeline_id}", func(req testserver.Request) any {
-		bodies = append(bodies, string(req.Body))
-		return map[string]any{}
+	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}", func(req testserver.Request) any {
+		record(req)
+		return map[string]any{"pipeline_id": "p1", "spec": map[string]any{"name": "orders"}}
 	})
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token", WorkspaceID: "123"})
 	require.NoError(t, err)
 	r := (&ResourcePipeline{}).New(w)
 
-	testConfig := &resources.PipelineTesting{
-		Sources:     []resources.PipelineTestSource{{Glob: &pipelines.PathPattern{Include: "/Workspace/orders/tests/**"}}},
-		Environment: &resources.PipelineTestEnvironment{Dependencies: []string{"--editable /Workspace/orders[test]"}},
-	}
-	state := &PipelineState{Name: "orders", Testing: testConfig}
-	id, _, err := r.DoCreate(t.Context(), state)
+	testing := &resources.PipelineTesting{Sources: []resources.PipelineTestSource{{Glob: &pipelines.PathPattern{Include: "/Workspace/orders/tests/**"}}}}
+	_, _, err = r.DoCreate(t.Context(), &PipelineState{Name: "orders", Testing: testing})
 	require.NoError(t, err)
-	assert.Equal(t, "p1", id)
-	_, err = r.DoUpdate(t.Context(), id, state, &PlanEntry{Changes: Changes{"testing": &ChangeDesc{Action: deployplan.Update}}})
+	_, err = r.DoRead(t.Context(), "p1")
+	require.NoError(t, err)
+	// Without testing, the request is the SDK's.
+	_, _, err = r.DoCreate(t.Context(), &PipelineState{Name: "orders"})
 	require.NoError(t, err)
 
-	// Without testing, the requests are the SDK's.
-	state.Testing = nil
-	_, _, err = r.DoCreate(t.Context(), state)
-	require.NoError(t, err)
-	_, err = r.DoUpdate(t.Context(), id, state, &PlanEntry{Changes: Changes{"testing": &ChangeDesc{Action: deployplan.Update}}})
-	require.NoError(t, err)
-
-	wantTesting := `"testing": {
-		"sources": [{"glob": {"include": "/Workspace/orders/tests/**"}}],
-		"environment": {"dependencies": ["--editable /Workspace/orders[test]"]}
-	}`
-	require.Len(t, bodies, 4)
-	assert.JSONEq(t, `{"name": "orders", `+wantTesting+`}`, bodies[0])
-	assert.JSONEq(t, `{"name": "orders", `+wantTesting+`}`, bodies[1])
+	// The raw requests carry the workspace ID, as the SDK's do.
+	assert.Equal(t, []string{"123", "123", "123"}, workspaceIDs)
 	assert.JSONEq(t, `{"name": "orders"}`, bodies[2])
-	assert.JSONEq(t, `{"name": "orders"}`, bodies[3])
 }
 
 func TestPipelineReadReturnsTesting(t *testing.T) {

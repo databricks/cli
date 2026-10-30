@@ -40,16 +40,11 @@ func TestVisitPipelinePaths(t *testing.T) {
 							},
 						},
 					},
+					// The acceptance test bundle/resources/pipelines/testing covers the testing paths
+					// that are rewritten. A package name is not a path.
 					Testing: &resources.PipelineTesting{
-						Sources: []resources.PipelineTestSource{
-							{Glob: &pipelines.PathPattern{Include: "tests/**"}},
-						},
 						Environment: &resources.PipelineTestEnvironment{
-							Dependencies: []string{
-								"-r ./tests/requirements.txt",
-								"dist/test_helpers.whl",
-								"faker",
-							},
+							Dependencies: []string{"faker"},
 						},
 					},
 				},
@@ -65,9 +60,6 @@ func TestVisitPipelinePaths(t *testing.T) {
 		dyn.MustPathFromString("resources.pipelines.pipeline0.libraries[2].glob.include"),
 		dyn.MustPathFromString("resources.pipelines.pipeline0.root_path"),
 		dyn.MustPathFromString("resources.pipelines.pipeline0.environment.dependencies[0]"),
-		dyn.MustPathFromString("resources.pipelines.pipeline0.testing.sources[0].glob.include"),
-		dyn.MustPathFromString("resources.pipelines.pipeline0.testing.environment.dependencies[0]"),
-		dyn.MustPathFromString("resources.pipelines.pipeline0.testing.environment.dependencies[1]"),
 	}
 
 	assert.ElementsMatch(t, expected, actual)
