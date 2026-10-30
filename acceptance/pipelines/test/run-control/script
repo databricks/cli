@@ -25,8 +25,9 @@ trace musterr $CLI pipelines test my_pipeline --resume $hang_update_id --timeout
 unset DATABRICKS_CONFIG_FILE
 rm .databrickscfg
 
-title "Another update cannot start while the test update is active"
-trace musterr $CLI pipelines test my_pipeline tests/test_orders.py
+title "Another update cannot start while the test update is active, and an older report is replaced"
+echo '<testsuites><testsuite name="my_pipeline" tests="1"><testcase name="test_old"></testcase></testsuite></testsuites>' > out.start-failed.xml
+trace musterr $CLI pipelines test my_pipeline tests/test_orders.py --junit-xml out.start-failed.xml
 
 title "Stopping the pipeline cancels the test update"
 trace $CLI pipelines stop my_pipeline

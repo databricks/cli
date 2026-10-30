@@ -2,9 +2,14 @@ package pipelines
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
 	"strings"
+
+	"github.com/databricks/cli/cmd/root"
 )
 
 type junitTestSuites struct {
@@ -36,9 +41,16 @@ type junitResult struct {
 }
 
 // junitCaseName splits a pytest test ID the way pytest's JUnit report does: the classname
-// is the module path plus any class names, joined by dots.
+// is the module path plus any class names, joined by dots. See
+// https://docs.pytest.org/en/stable/how-to/output.html#creating-junitxml-format-files.
+// A parameter ID in brackets, such as test_cast[a::int], stays with the test name.
 func junitCaseName(testID string) (string, string) {
+	params := ""
+	if i := strings.Index(testID, "["); i >= 0 {
+		testID, params = testID[:i], testID[i:]
+	}
 	parts := strings.Split(testID, "::")
+	parts[len(parts)-1] += params
 	module := strings.ReplaceAll(strings.TrimSuffix(strings.TrimPrefix(parts[0], "/"), ".py"), "/", ".")
 	if len(parts) == 1 {
 		return "", module
@@ -102,6 +114,47 @@ func newJUnitReport(suiteName, updateID string, run *testRun, problem string) ju
 	}
 	suite.Tests = len(suite.Cases)
 	return junitTestSuites{Suites: []junitTestSuite{suite}}
+}
+
+// testReport writes the JUnit report of a test run to path, if --junit-xml is set.
+type testReport struct {
+	path      string
+	out       io.Writer
+	suiteName string
+}
+
+// finish writes the report of a run that ended with runErr. A write error is joined with runErr,
+// so that neither is lost.
+func (r *testReport) finish(updateID string, run *testRun, problem string, runErr error) error {
+	if r.path == "" {
+		return runErr
+	}
+	if err := writeJUnitReport(r.path, newJUnitReport(r.suiteName, updateID, run, problem)); err != nil {
+		if runErr == nil || errors.Is(runErr, root.ErrAlreadyPrinted) {
+			return err
+		}
+		return errors.Join(runErr, err)
+	}
+	fmt.Fprintf(r.out, "JUnit report: %s\n", filepath.ToSlash(r.path))
+	return runErr
+}
+
+// failed writes a report with one failing entry for an error that ended the command before the
+// update could be read, so that an older report does not survive.
+func (r *testReport) failed(err error) error {
+	if r.path == "" {
+		return err
+	}
+	report := junitTestSuites{Suites: []junitTestSuite{{
+		Name:   r.suiteName,
+		Tests:  1,
+		Errors: 1,
+		Cases:  []junitTestCase{{Name: "pipelines test", Error: newJUnitResult(err.Error())}},
+	}}}
+	if writeErr := writeJUnitReport(r.path, report); writeErr != nil {
+		return errors.Join(err, writeErr)
+	}
+	return err
 }
 
 // writeJUnitReport replaces the file at path with the report.

@@ -40,7 +40,7 @@ Update: [UUID]
 Waiting for compute...
 Running tests...
 JUnit report: out.resumed.xml
-Error: stopped waiting for update [UUID] after 3s; the update keeps running, to get its results run: databricks pipelines test my_pipeline --resume [UUID]
+Error: stopped waiting for update [UUID] after 3s; the update keeps running, to get its results run: databricks pipelines test my_pipeline --junit-xml out.resumed.xml --resume [UUID]
 
 >>> cat out.resumed.xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -50,7 +50,7 @@ Error: stopped waiting for update [UUID] after 3s; the update keeps running, to 
       <error message="no result received"></error>
     </testcase>
     <testcase name="update [UUID]">
-      <error message="stopped waiting for update [UUID] after 3s; the update keeps running, to get its results run: databricks pipelines test my_pipeline --resume [UUID]">stopped waiting for update [UUID] after 3s; the update keeps running, to get its results run: databricks pipelines test my_pipeline --resume [UUID]</error>
+      <error message="stopped waiting for update [UUID] after 3s; the update keeps running, to get its results run: databricks pipelines test my_pipeline --junit-xml out.resumed.xml --resume [UUID]">stopped waiting for update [UUID] after 3s; the update keeps running, to get its results run: databricks pipelines test my_pipeline --junit-xml out.resumed.xml --resume [UUID]</error>
     </testcase>
   </testsuite>
 </testsuites>
@@ -62,8 +62,8 @@ Update: [UUID]
 Running tests...
 Error: stopped waiting for update [UUID] after 3s; the update keeps running, to get its results run: databricks pipelines test my_pipeline --profile run-control --resume [UUID]
 
-=== Another update cannot start while the test update is active
->>> musterr [CLI] pipelines test my_pipeline tests/test_orders.py
+=== Another update cannot start while the test update is active, and an older report is replaced
+>>> musterr [CLI] pipelines test my_pipeline tests/test_orders.py --junit-xml out.start-failed.xml
 Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.

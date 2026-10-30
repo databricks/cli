@@ -391,6 +391,10 @@ func (t testTarget) resumeCommand(cmd *cobra.Command, updateID string) string {
 	if profile := cmd.Flag("profile").Value.String(); profile != "" {
 		parts = append(parts, "--profile", shellquote.BashArg(profile))
 	}
+	// Reading the results again replaces the partial report.
+	if flag := cmd.Flag("junit-xml"); flag != nil && flag.Value.String() != "" {
+		parts = append(parts, "--junit-xml", shellquote.BashArg(flag.Value.String()))
+	}
 	return strings.Join(append(parts, "--resume", updateID), " ")
 }
 
@@ -591,6 +595,12 @@ names the cause.`,
 			}
 		}
 
+		// From here on, every exit writes the report, so that an older report never survives.
+		report := &testReport{path: junitPath, out: cmd.OutOrStdout(), suiteName: pipelineID}
+		if report.suiteName == "" && len(args) > 0 {
+			report.suiteName = args[0]
+		}
+
 		var target testTarget
 		var err error
 		if pipelineID != "" {
@@ -604,7 +614,11 @@ names the cause.`,
 			target, err = resolveTestTargetInBundle(cmd, args, resumeUpdateID != "")
 		}
 		if err != nil {
-			return err
+			return report.failed(err)
+		}
+		report.suiteName = target.key
+		if report.suiteName == "" {
+			report.suiteName = target.pipelineID
 		}
 		// The CLI root doesn't cancel the context on signals, so stop waiting here.
 		ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
@@ -616,7 +630,7 @@ names the cause.`,
 			req := newStartTestUpdateRequest(target.selections, pytestArgs)
 			updateID, err = startTestUpdate(ctx, target.w, target.pipelineID, req)
 			if err != nil {
-				return err
+				return report.failed(err)
 			}
 		}
 		target.printHeader(out, updateID)
@@ -626,7 +640,7 @@ names the cause.`,
 
 		events, err := newTestEventReader(target.w, target.pipelineID, updateID)
 		if err != nil {
-			return err
+			return report.failed(err)
 		}
 		watcher := &testWatcher{
 			w:          target.w,
@@ -643,44 +657,23 @@ names the cause.`,
 			waitCtx, cancel = context.WithTimeoutCause(ctx, timeout, errTestWaitTimeout)
 			defer cancel()
 		}
-		suiteName := target.key
-		if suiteName == "" {
-			suiteName = target.pipelineID
-		}
-		writeReport := func(problem string) error {
-			if junitPath == "" {
-				return nil
-			}
-			if err := writeJUnitReport(junitPath, newJUnitReport(suiteName, updateID, watcher.run, problem)); err != nil {
-				return err
-			}
-			fmt.Fprintf(out, "JUnit report: %s\n", junitPath)
-			return nil
-		}
-
 		state, err := watcher.watch(waitCtx)
 		if err != nil {
 			if waitCtx.Err() == nil {
-				return err
+				return report.finish(updateID, watcher.run, err.Error(), err)
 			}
 			resume := target.resumeCommand(cmd, updateID)
 			stopErr := fmt.Errorf("stopped waiting for update %s; the update keeps running, to get its results run: %s", updateID, resume)
 			if errors.Is(context.Cause(waitCtx), errTestWaitTimeout) {
 				stopErr = fmt.Errorf("stopped waiting for update %s after %s; the update keeps running, to get its results run: %s", updateID, timeout, resume)
 			}
-			if err := writeReport(stopErr.Error()); err != nil {
-				return err
-			}
-			return stopErr
+			return report.finish(updateID, watcher.run, stopErr.Error(), stopErr)
 		}
 
 		incompleteReason := watcher.run.incompleteReason(state)
 		renderTestResult(out, watcher.run, incompleteReason)
 		runErr := testRunError(updateID, state, watcher.run, incompleteReason)
-		if err := writeReport(testRunProblem(watcher.run, incompleteReason, runErr)); err != nil {
-			return err
-		}
-		return runErr
+		return report.finish(updateID, watcher.run, testRunProblem(watcher.run, incompleteReason, runErr), runErr)
 	}
 
 	return cmd

@@ -2,6 +2,7 @@ package pipelines
 
 import (
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -17,6 +18,9 @@ func TestJUnitCaseName(t *testing.T) {
 	}{
 		{"tests/test_orders.py::test_backfill", "tests.test_orders", "test_backfill"},
 		{"tests/test_orders.py::TestOrders::test_tax[a-b]", "tests.test_orders.TestOrders", "test_tax[a-b]"},
+		// A parameter ID may contain "::".
+		{"tests/test_a.py::test_cast[a::int]", "tests.test_a", "test_cast[a::int]"},
+		{"tests/test_a.py::TestCast::test_cast[a::int]", "tests.test_a.TestCast", "test_cast[a::int]"},
 		{"tests/test_orders.py", "", "tests.test_orders"},
 		{"/Workspace/Shared/tests/test_x.py::test_x", "Workspace.Shared.tests.test_x", "test_x"},
 	}
@@ -90,4 +94,24 @@ func TestTestRunProblem(t *testing.T) {
 
 	assert.Equal(t, "RUN INCOMPLETE: the update was canceled before all test results were received.\nupdate u1 is CANCELED",
 		testRunProblem(newTestRun(), "the update was canceled before all test results were received", errors.New("update u1 is CANCELED")))
+}
+
+func TestTestReportJoinsWriteErrors(t *testing.T) {
+	report := &testReport{path: filepath.Join(t.TempDir(), "missing", "report.xml"), out: io.Discard, suiteName: "orders"}
+	runErr := errors.New("update u1 is FAILED")
+	err := report.finish("u1", newTestRun(), runErr.Error(), runErr)
+	require.ErrorIs(t, err, runErr)
+	assert.ErrorContains(t, err, "failed to write JUnit report")
+}
+
+func TestTestReportReplacesAStaleReportOnError(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "report.xml")
+	require.NoError(t, os.WriteFile(path, []byte("<testsuites></testsuites>"), 0o644))
+	report := &testReport{path: path, out: io.Discard, suiteName: "orders"}
+	startErr := errors.New("An active update already exists.")
+	assert.Equal(t, startErr, report.failed(startErr))
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Contains(t, string(data), `<testcase name="pipelines test">`)
+	assert.Contains(t, string(data), `<error message="An active update already exists.">`)
 }

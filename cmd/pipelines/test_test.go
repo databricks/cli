@@ -267,6 +267,12 @@ func TestTestTargetResumeCommand(t *testing.T) {
 			want:   "databricks pipelines test my_pipeline --target 'dev west' --profile 'CI West' --resume u1",
 		},
 		{
+			name:   "JUnit report",
+			target: testTarget{key: "my_pipeline", pipelineID: "p1"},
+			flags:  map[string]string{"junit-xml": "reports/test results.xml"},
+			want:   "databricks pipelines test my_pipeline --junit-xml 'reports/test results.xml' --resume u1",
+		},
+		{
 			name:   "pipeline ID with profile",
 			target: testTarget{pipelineID: "p1"},
 			flags:  map[string]string{"profile": "staging"},
@@ -280,6 +286,7 @@ func TestTestTargetResumeCommand(t *testing.T) {
 			rootCmd.PersistentFlags().StringP("target", "t", "", "")
 			pipelinesCmd := &cobra.Command{Use: "pipelines"}
 			cmd := &cobra.Command{Use: "test"}
+			cmd.Flags().String("junit-xml", "", "")
 			rootCmd.AddCommand(pipelinesCmd)
 			pipelinesCmd.AddCommand(cmd)
 			for name, value := range tc.flags {
